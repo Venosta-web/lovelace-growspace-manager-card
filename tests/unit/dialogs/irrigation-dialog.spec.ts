@@ -4,7 +4,7 @@ import { IrrigationDialog } from '../../../src/dialogs/irrigation-dialog';
 import { transition } from '../../../src/dialogs/irrigation-dialog-sm';
 import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
-import { irrigationConfigs$ } from '../../../src/slices/irrigation';
+import { irrigationConfigs$, setTankLevels, tankLevels$ } from '../../../src/slices/irrigation';
 
 /** Helper: read a deeply-nested SM field without triggering any reactivity. */
 function smRead(el: IrrigationDialog, path: string): unknown {
@@ -155,6 +155,7 @@ describe('IrrigationDialog', () => {
             Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
         }
         irrigationConfigs$.set(new Map());
+        tankLevels$.set(new Map());
         vi.restoreAllMocks();
     });
 
@@ -708,42 +709,55 @@ describe('IrrigationDialog', () => {
     });
 
     describe('Tanks Tab', () => {
+        // ADR-0019: tanks render in the decomposed <irrigation-tanks-tab> child,
+        // whose VM reads from the Irrigation slice's tankLevels$ (seeded here as
+        // sync-service does in production), not from the device prop.
+        const TANKS = [
+            { sensorEntity: 'sensor.main', name: 'Main Tank', fillLevel: 75, isWarning: false, warningLevel: 20 },
+            { sensorEntity: 'sensor.reserve', name: 'Reserve Tank', fillLevel: 15, isWarning: true, warningLevel: 20 },
+            { sensorEntity: 'sensor.empty', name: 'Empty Tank', fillLevel: null, isWarning: true, warningLevel: 10 },
+        ];
+        const tanksRoot = () =>
+            element.shadowRoot!.querySelector('irrigation-tanks-tab')!.shadowRoot!;
+        const renderTanks = async () => {
+            const child = element.shadowRoot!.querySelector('irrigation-tanks-tab') as any;
+            await child.updateComplete;
+        };
+
         beforeEach(async () => {
             element.open = true;
             element.device = {
                 ...mockDevice,
                 environmentAttributes: {
                     ...mockDevice.environmentAttributes,
-                    irrigationTanks: [
-                        { name: 'Main Tank', fillLevel: 75, isWarning: false, warningLevel: 20 },
-                        { name: 'Reserve Tank', fillLevel: 15, isWarning: true, warningLevel: 20 },
-                        { name: 'Empty Tank', fillLevel: null, isWarning: true, warningLevel: 10 }
-                    ]
+                    irrigationTanks: TANKS,
                 }
             } as any;
+            setTankLevels('gs1', TANKS as any);
             document.body.appendChild(element);
             await element.updateComplete;
 
             // Switch to Tanks Tab
             const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-            (tabs?.[3] as HTMLElement).click();
+            (Array.from(tabs ?? []).find((t) => t.textContent?.includes('Tanks')) as HTMLElement)?.click();
             await element.updateComplete;
+            await renderTanks();
         });
 
         it('should render tank cards', () => {
-            const tankCards = element.shadowRoot?.querySelectorAll('.tank-row');
+            const tankCards = tanksRoot().querySelectorAll('.tank-row');
             expect(tankCards?.length).toBe(3);
         });
 
         it('should render main tank with correct level', () => {
-            const mainTank = element.shadowRoot?.querySelector('.tank-row:nth-child(1)');
+            const mainTank = tanksRoot().querySelector('.tank-row:nth-child(1)');
             expect(mainTank?.textContent).toContain('Main Tank');
             expect(mainTank?.querySelector('.tank-row-pct')?.textContent).toContain('75%');
             expect(mainTank?.classList.contains('warning')).toBe(false);
         });
 
         it('should render reserve tank with warning', () => {
-            const reserveTank = element.shadowRoot?.querySelector('.tank-row:nth-child(2)');
+            const reserveTank = tanksRoot().querySelector('.tank-row:nth-child(2)');
             expect(reserveTank?.textContent).toContain('Reserve Tank');
             expect(reserveTank?.querySelector('.tank-row-pct')?.textContent).toContain('15%');
             expect(reserveTank?.classList.contains('warning')).toBe(true);
@@ -751,7 +765,7 @@ describe('IrrigationDialog', () => {
         });
 
         it('should handle null fill level', () => {
-            const emptyTank = element.shadowRoot?.querySelector('.tank-row:nth-child(3)');
+            const emptyTank = tanksRoot().querySelector('.tank-row:nth-child(3)');
             const percentageText = emptyTank?.querySelector('.tank-row-pct');
             // We want to make sure it contains 'N/A' and NOT '0%'
             expect(percentageText?.textContent).toContain('N/A');
@@ -773,7 +787,7 @@ describe('IrrigationDialog', () => {
         it('should fallback to config when current tab is hidden', async () => {
             // Start on tanks tab (index 3 with all features)
             const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-            (tabs?.[3] as HTMLElement).click();
+            (Array.from(tabs ?? []).find((t) => t.textContent?.includes('Tanks')) as HTMLElement)?.click();
             await element.updateComplete;
             expect((element as any)._sm.activeTab).toBe('tanks');
 
@@ -1640,18 +1654,10 @@ describe('IrrigationDialog', () => {
             });
         });
 
-        describe('Empty tanks state in _renderTanksTab (line 2313)', () => {
-            it('should return an empty-state template when no tanks are configured', () => {
-                element.device = {
-                    ...mockDevice,
-                    environmentAttributes: { ...mockDevice.environmentAttributes, irrigationTanks: [] },
-                } as any;
-
-                // Call the private method directly to exercise the empty-tanks branch
-                const result = (element as any)._renderTanksTab();
-                expect(result).toBeDefined();
-            });
-        });
+        // ADR-0019: the Tanks tab empty-state moved into <irrigation-tanks-tab>
+        // and is covered by tests/unit/features/irrigation/components/
+        // irrigation-tanks-tab.spec.ts ("renders the empty state when the VM has
+        // no tanks") — the private `_renderTanksTab` no longer exists.
 
         describe('Water analytics with tank history (lines 2420-2424, 2527-2545)', () => {
             const recentTimestamp = new Date(Date.now() - 30 * 60 * 1000).toISOString();

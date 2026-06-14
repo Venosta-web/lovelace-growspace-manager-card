@@ -101,10 +101,30 @@ export interface ConfigTabState {
   sub: { kind: 'idle' };
 }
 
-// ─── Tanks tab (display only) ─────────────────────────────────────────────────
+// ─── Tanks tab ─────────────────────────────────────────────────────────────────
+
+/** The editable Tank Config facet (see CONTEXT.md "Tank Config vs Tank Levels"). */
+export interface TankDraft {
+  sensorEntity: string;
+  name: string;
+  volumeLiters: number | null;
+  warningLevel: number;
+}
+
+/**
+ * Transient inline-edit sub-state for the Tanks tab — one tank at a time,
+ * opened on demand and discarded on cancel (the Schedules `editing-*` shape,
+ * not a persistent draft). Identity is by array `index`; if a sync push
+ * reorders/removes tanks mid-edit the index can point at a different tank — a
+ * known limitation carried over from the pre-decomposition component state,
+ * tracked separately, deliberately not fixed in this refactor.
+ */
+export type TanksSubState =
+  | { kind: 'idle' }
+  | { kind: 'editing'; index: number; draft: TankDraft };
 
 export interface TanksTabState {
-  sub: { kind: 'idle' };
+  sub: TanksSubState;
 }
 
 // ─── Water analytics tab ───────────────────────────────────────────────────────
@@ -235,6 +255,14 @@ export type DialogEvent =
 
   // ── Config ──
   | { type: 'UPDATE_CONFIG_DRAFT'; partial: Partial<ConfigDraft> }
+
+  // ── Tanks ──
+  /** Open the inline editor for the tank at `index`, seeded with its config. */
+  | { type: 'EDIT_TANK'; index: number; draft: TankDraft }
+  /** Merge a field change into the open tank draft (no-op when not editing). */
+  | { type: 'UPDATE_TANK_DRAFT'; partial: Partial<TankDraft> }
+  /** Close the inline tank editor, discarding the draft. */
+  | { type: 'CANCEL_TANK_EDIT' }
 
   // ── Drain EC ──
   | { type: 'UPDATE_DRAIN_EC_DRAFT'; partial: Partial<DrainEcDraft> }
@@ -989,6 +1017,35 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
             draft: { ...sm.tabs.config.draft, ...event.partial },
           },
         },
+      };
+
+    // ── Tanks ────────────────────────────────────────────────────────────────
+
+    case 'EDIT_TANK':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          tanks: { sub: { kind: 'editing', index: event.index, draft: event.draft } },
+        },
+      };
+
+    case 'UPDATE_TANK_DRAFT': {
+      const sub = sm.tabs.tanks.sub;
+      if (sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          tanks: { sub: { ...sub, draft: { ...sub.draft, ...event.partial } } },
+        },
+      };
+    }
+
+    case 'CANCEL_TANK_EDIT':
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, tanks: { sub: { kind: 'idle' } } },
       };
 
     // ── Drain EC ─────────────────────────────────────────────────────────────

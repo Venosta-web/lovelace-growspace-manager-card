@@ -47,6 +47,7 @@ import {
   requestTabSwitch,
   discardAndSwitch,
   type DialogSM,
+  type TankDraft,
 } from '../../../dialogs/irrigation-dialog-sm';
 import { MutationRunController, type MutationRunEvent } from '../../../dialogs/mutation-run-controller';
 import { DataService } from '../../../services/data-service';
@@ -56,6 +57,7 @@ import { ecRampCurves$ } from '../../../slices/nutrient';
 import {
   cropSteeringHistory$,
   irrigationConfigs$,
+  tankLevels$,
   addIrrigationTime,
   removeIrrigationTime,
   addDrainTime,
@@ -64,11 +66,13 @@ import {
   updateIrrigationStrategy,
   runIrrigationCycle,
 } from '../../../slices/irrigation';
+import { configureEnvironment } from '../../../slices/growspace';
 import type {
   IrrigationConfig,
   SteeringMode,
   SubstrateProfile,
   SubstrateMediaType,
+  IrrigationTank,
 } from '../../../services/types';
 import '../../../features/shared/ui';
 import '../../../features/shared/ui/md3-text-input';
@@ -85,8 +89,15 @@ import {
   type OverviewTabViewModel,
 } from '../viewmodels/overview-tab.viewmodel';
 import { createShellViewModel, type ShellViewModel } from '../viewmodels/shell.viewmodel';
+// Decomposed Tanks tab (ADR-0019): the first *draft* tab adapter.
+import {
+  createTanksTabViewModel,
+  mergeTankDraft,
+  type TanksTabViewModel,
+} from '../viewmodels/tanks-tab.viewmodel';
 import { atom, type ReadableAtom } from 'nanostores';
 import '../components/irrigation-overview-tab';
+import '../components/irrigation-tanks-tab';
 
 // MDI check icon path for time chips
 const MDI_CHECK = 'M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z';
@@ -146,6 +157,11 @@ interface EditTimeParams {
   duration: number;
 }
 
+interface SaveTankParams {
+  growspaceId: string;
+  irrigationTanks: IrrigationTank[];
+}
+
 @customElement('irrigation-dialog')
 export class IrrigationDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
@@ -164,15 +180,18 @@ export class IrrigationDialog extends LitElement {
 
   /** Single reactive state atom. All 35 former @state() flags live here. */
   @state() private _sm: DialogSM = createInitialSM();
+  /**
+   * Nanostores mirror of `_sm`, synced once in `willUpdate` (the ~70 in-place
+   * `this._sm =` sites stay untouched). Lets per-tab ViewModels that depend on
+   * interaction state — e.g. the Tanks tab's edit draft — derive reactively.
+   */
+  private _smAtom = atom<DialogSM>(this._sm);
 
-  // ─── Tanks tab state ────────────────────────────────────────────────────
-  @state() private _editingTankIndex: number | null = null;
-  @state() private _tankDraft: {
-    sensorEntity: string;
-    name: string;
-    volumeLiters: number | null;
-    warningLevel: number;
-  } | null = null;
+  // ─── Tanks tab (ADR-0019: draft lives in the SM, not here) ──────────────
+  // Sensor/input_number entity_ids for the tank editor datalist — a hass-derived
+  // view input mirrored into an atom so the Tanks Tab ViewModel stays the single
+  // source and the component takes only `.vm`.
+  private _tankSensorOptions = atom<string[]>([]);
 
   // ─── EC Ramp tab state ──────────────────────────────────────────────────
   @state() private _ecRampView: 'LIST' | 'EDIT' = 'LIST';
@@ -202,6 +221,14 @@ export class IrrigationDialog extends LitElement {
     this._caps
   );
   private _overviewVmController = new StoreController(this, this._overviewVm);
+  /** Tanks tab ViewModel — the first *draft* tab adapter ($sm-first, no $caps). */
+  private _tanksVm: ReadableAtom<TanksTabViewModel> = createTanksTabViewModel(
+    this._smAtom,
+    tankLevels$,
+    this._tankSensorOptions,
+    this._deviceAtom
+  );
+  private _tanksVmController = new StoreController(this, this._tanksVm);
 
   // ─── Crop Steering History (Schedules tab) ────────────────────────────
   private _cropSteeringHistoryFetched = false;
@@ -238,6 +265,7 @@ export class IrrigationDialog extends LitElement {
     'run-now': () => this._effectRunNow(),
     'edit-irrigation-time': (params) => this._effectEditIrrigationTime(params as EditTimeParams),
     'edit-drain-time': (params) => this._effectEditDrainTime(params as EditTimeParams),
+    'save-tank': (params) => this._effectSaveTank(params as SaveTankParams),
   };
 
   static styles = [
@@ -785,56 +813,6 @@ export class IrrigationDialog extends LitElement {
         cursor: default;
       }
 
-      /* ── Tank row (bar-style) ── */
-      .tank-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.02);
-        transition: border-color 0.2s;
-      }
-      .tank-row.warning {
-        border-color: rgba(244, 67, 54, 0.4);
-        background: rgba(244, 67, 54, 0.04);
-      }
-      .tank-row-info {
-        flex: 1;
-        min-width: 0;
-      }
-      .tank-row-name {
-        font-size: 13px;
-        font-weight: 500;
-      }
-      .tank-bar-track {
-        height: 5px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
-        overflow: hidden;
-        margin-top: 5px;
-      }
-      .tank-bar-fill {
-        height: 100%;
-        border-radius: 3px;
-        transition: width 0.4s ease;
-      }
-      .tank-row-stat {
-        font-size: 12.5px;
-        text-align: right;
-        flex-shrink: 0;
-        font-variant-numeric: tabular-nums;
-      }
-      .tank-row-pct {
-        font-weight: 600;
-      }
-      .tank-row-sub {
-        font-size: 11px;
-        opacity: 0.5;
-        margin-top: 2px;
-      }
-
       /* ── Overlay (unchanged) ── */
       .overlay-backdrop {
         position: fixed;
@@ -1184,6 +1162,14 @@ export class IrrigationDialog extends LitElement {
     if (changedProps.has('device')) {
       this._deviceAtom.set(this.device);
     }
+    // Mirror the hass-derived sensor/input_number entity list into its atom so the
+    // Tanks Tab ViewModel's edit datalist stays current without the component
+    // reading hass.
+    if (this.hass && (changedProps.has('hass') || changedProps.has('device'))) {
+      this._tankSensorOptions.set(
+        this._getEntities(['sensor', 'input_number']).map((s) => s.entity_id)
+      );
+    }
     if (changedProps.has('open') && this.open) {
       this._initializeState();
       this._fetchStageAnalytics();
@@ -1246,6 +1232,11 @@ export class IrrigationDialog extends LitElement {
         this._cropSteeringPoller?.stop();
       }
     }
+
+    // Mirror `_sm` into its atom (after any in-willUpdate transitions above) so
+    // per-tab ViewModels deriving from `_smAtom` see the latest interaction state
+    // in this same render. No-op when the reference is unchanged.
+    this._smAtom.set(this._sm);
   }
 
   protected updated(changedProps: PropertyValues): void {
@@ -1910,7 +1901,13 @@ export class IrrigationDialog extends LitElement {
       case 'config':
         return this._renderConfigSection();
       case 'tanks':
-        return this._renderTanksTab();
+        return html`<irrigation-tanks-tab
+          .vm=${this._tanksVmController.value}
+          @edit-tank-requested=${this._onEditTankRequested}
+          @tank-draft-changed=${this._onTankDraftChanged}
+          @cancel-tank-edit=${this._onCancelTankEdit}
+          @save-tank-requested=${this._onSaveTankRequested}
+        ></irrigation-tanks-tab>`;
       case 'water_analytics':
         return this._renderWaterAnalyticsTab();
       case 'drain_ec':
@@ -3190,183 +3187,6 @@ export class IrrigationDialog extends LitElement {
     `;
   }
 
-  // ─── Tanks tab ────────────────────────────────────────────────────────────
-
-  private _renderTanksTab() {
-    const tanks = this.device?.environmentAttributes?.irrigationTanks || [];
-
-    if (tanks.length === 0) {
-      return html`
-        <div class="detail-card" style="text-align:center;padding:40px;">
-          <p style="opacity:0.7;">No irrigation tanks configured for this growspace.</p>
-          <p style="font-size:0.9rem;opacity:0.5;">
-            Configure tank sensors in the Environment Settings to monitor tank levels.
-          </p>
-        </div>
-      `;
-    }
-
-    return html`
-      <div class="detail-card">
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
-        >
-          <h3 style="margin:0;">Tank Levels</h3>
-          <span style="font-size:11px;opacity:0.45;">Updates every 30 s</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          ${tanks.map((tank: any, i: number) => this._renderTankRow(tank, i))}
-        </div>
-        ${this._editingTankIndex !== null && this._tankDraft !== null
-        ? this._renderTankEditForm()
-        : nothing}
-      </div>
-    `;
-  }
-
-  private _renderTankEditForm() {
-    const draft = this._tankDraft!;
-    const entities = this._getEntities(['sensor', 'input_number']);
-    return html`
-      <div
-        class="tank-edit-form"
-        style="margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--divider-color,rgba(255,255,255,0.15));border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;"
-      >
-        <div class="md3-input-group">
-          <label class="md3-label">Sensor Entity *</label>
-          <input
-            class="md3-input"
-            list="tank-edit-sensor-datalist"
-            .value=${draft.sensorEntity}
-            @input=${(e: Event) => {
-        this._tankDraft = {
-          ...this._tankDraft!,
-          sensorEntity: (e.target as HTMLInputElement).value,
-        };
-      }}
-            placeholder="Search entity..."
-          />
-          <datalist id="tank-edit-sensor-datalist">
-            ${entities.map((s) => html`<option value="${s.entity_id}"></option>`)}
-          </datalist>
-        </div>
-        <div class="md3-input-group">
-          <label class="md3-label">Name</label>
-          <input
-            class="md3-input"
-            type="text"
-            .value=${draft.name}
-            @input=${(e: Event) => {
-        this._tankDraft = {
-          ...this._tankDraft!,
-          name: (e.target as HTMLInputElement).value,
-        };
-      }}
-            placeholder="e.g. Main Tank"
-          />
-        </div>
-        <div class="row-col-grid">
-          <div class="md3-input-group">
-            <label class="md3-label">Volume (L, optional)</label>
-            <input
-              class="md3-input"
-              type="number"
-              min="0"
-              .value=${draft.volumeLiters !== null ? String(draft.volumeLiters) : ''}
-              @input=${(e: Event) => {
-        const v = parseFloat((e.target as HTMLInputElement).value);
-        this._tankDraft = {
-          ...this._tankDraft!,
-          volumeLiters: isNaN(v) ? null : v,
-        };
-      }}
-              placeholder="e.g. 200"
-            />
-          </div>
-          <div class="md3-input-group">
-            <label class="md3-label">Warning Level (%)</label>
-            <input
-              class="md3-input"
-              type="number"
-              min="0"
-              max="100"
-              .value=${String(draft.warningLevel)}
-              @input=${(e: Event) => {
-        const v = parseInt((e.target as HTMLInputElement).value, 10);
-        this._tankDraft = {
-          ...this._tankDraft!,
-          warningLevel: isNaN(v) ? 30 : v,
-        };
-      }}
-            />
-          </div>
-        </div>
-        <div class="button-group">
-          <button class="md3-button tonal" @click=${this._cancelTankEdit}>Cancel</button>
-          <button class="md3-button primary" @click=${this._saveTankEdit}>Save</button>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderTankRow(tank: any, index: number) {
-    const pct = tank.fillLevel ?? 0;
-    const isWarning = tank.isWarning;
-    const color = isWarning ? '#f44336' : (tank.hoursRemaining ?? 999) < 24 ? '#FF9800' : '#4caf50';
-    const depletionLabel =
-      tank.depletionStatus === 'depleting'
-        ? '↓ Depleting'
-        : tank.depletionStatus === 'refilling'
-          ? '↑ Refilling'
-          : tank.depletionStatus === 'static'
-            ? '— Stable'
-            : '';
-
-    return html`
-      <div class="tank-row ${isWarning ? 'warning' : ''}">
-        <div class="tank-row-info">
-          <div class="tank-row-name">${tank.name}</div>
-          <div class="tank-bar-track">
-            <div
-              class="tank-bar-fill"
-              style="width:${Math.max(0, Math.min(100, pct))}%;background:${color};"
-            ></div>
-          </div>
-        </div>
-        <div class="tank-row-stat">
-          <div class="tank-row-pct" style="color:${color};">
-            ${tank.fillLevel !== null && tank.fillLevel !== undefined
-        ? `${pct.toFixed(0)}%`
-        : 'N/A'}
-            ${isWarning ? html`<span style="margin-left:4px;">⚠️</span>` : nothing}
-          </div>
-          ${depletionLabel || tank.hoursRemaining != null
-        ? html`
-                <div class="tank-row-sub">
-                  ${depletionLabel
-            ? html`${depletionLabel}${tank.hoursRemaining != null ? ' · ' : ''}`
-            : nothing}
-                  ${tank.hoursRemaining != null
-            ? (tank.hoursRemaining >= 48
-              ? Math.floor(tank.hoursRemaining / 24) + 'd'
-              : Math.round(tank.hoursRemaining) + 'h') + ' left'
-            : nothing}
-                </div>
-              `
-        : nothing}
-          <button
-            class="md3-button text tank-edit-btn"
-            style="padding:4px;min-width:auto;margin-top:4px;"
-            title="Edit tank"
-            @click=${() => this._openTankEdit(index)}
-          >
-            <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
   // ─── Water Analytics tab ──────────────────────────────────────────────────
 
   private _renderWaterAnalyticsTab() {
@@ -4623,38 +4443,65 @@ export class IrrigationDialog extends LitElement {
     `;
   }
 
-  // ─── Tanks tab methods ────────────────────────────────────────────────────
+  // ─── Tanks tab: Tab Intent → SM-event translation (ADR-0019) ───────────────
+  // The Shell owns the translation; `<irrigation-tanks-tab>` only emits intents.
 
-  private _openTankEdit(index: number) {
-    const tank = (this.device?.environmentAttributes?.irrigationTanks ?? [])[index];
+  /** `edit-tank-requested` → seed the draft from the live tank and open the editor. */
+  private _onEditTankRequested(e: CustomEvent<{ index: number }>) {
+    const index = e.detail.index;
+    const tank = this._currentTanks()[index];
     if (!tank) return;
-    this._tankDraft = {
+    const draft: TankDraft = {
       sensorEntity: tank.sensorEntity,
       name: tank.name,
       volumeLiters: tank.volumeLiters ?? null,
       warningLevel: tank.warningLevel,
     };
-    this._editingTankIndex = index;
+    this.dispatch({ type: 'EDIT_TANK', index, draft });
   }
 
-  private _cancelTankEdit() {
-    this._editingTankIndex = null;
-    this._tankDraft = null;
+  /** `tank-draft-changed` → merge the field change into the open draft. */
+  private _onTankDraftChanged(e: CustomEvent<{ partial: Partial<TankDraft> }>) {
+    this.dispatch({ type: 'UPDATE_TANK_DRAFT', partial: e.detail.partial });
   }
 
-  private async _saveTankEdit() {
-    if (this._editingTankIndex === null || !this._tankDraft || !this.device) return;
-    const tanks = [...(this.device.environmentAttributes?.irrigationTanks ?? [])];
-    tanks[this._editingTankIndex] = {
-      ...tanks[this._editingTankIndex],
-      ...this._tankDraft,
-    };
-    await this._dataService?.configureEnvironment({
+  /** `cancel-tank-edit` → close the editor. */
+  private _onCancelTankEdit() {
+    this.dispatch({ type: 'CANCEL_TANK_EDIT' });
+  }
+
+  /**
+   * `save-tank-requested` → compose the full tank array (current tanks with the
+   * draft merged at `index`, preserving live levels) and dispatch SaveRequested.
+   * The payload is snapshotted into `applying.params` here so the effect never
+   * reads the (possibly-cleared) sub-state (ADR-0015).
+   */
+  private _onSaveTankRequested() {
+    const sub = this._sm.tabs.tanks.sub;
+    if (sub.kind !== 'editing' || !this.device?.deviceId) return;
+    const params: SaveTankParams = {
       growspaceId: this.device.deviceId,
-      irrigationTanks: tanks,
+      irrigationTanks: mergeTankDraft(this._currentTanks(), sub.index, sub.draft),
+    };
+    // Close the editor now; the payload is already snapshotted into `params` and
+    // travels in `applying.status`, so the effect never reads the cleared
+    // sub-state (ADR-0015). A failure surfaces as a toast with the editor closed.
+    this.dispatch({ type: 'CANCEL_TANK_EDIT' });
+    this.dispatch({ type: 'SaveRequested', action: 'save-tank', params });
+  }
+
+  /** Live tank list — the authoritative read source is the Irrigation slice. */
+  private _currentTanks(): IrrigationTank[] {
+    const id = this.device?.deviceId;
+    return (id ? tankLevels$.get().get(id) : undefined) ?? [];
+  }
+
+  /** Effect: persist tank config through the Growspace slice. Reads only params. */
+  private async _effectSaveTank(params: SaveTankParams) {
+    await configureEnvironment({
+      growspaceId: params.growspaceId,
+      irrigationTanks: params.irrigationTanks,
     });
-    this._editingTankIndex = null;
-    this._tankDraft = null;
   }
 
   // ─── EC Ramp tab ──────────────────────────────────────────────────────────

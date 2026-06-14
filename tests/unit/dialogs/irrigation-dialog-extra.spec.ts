@@ -4,7 +4,7 @@ import { IrrigationDialog } from '../../../src/dialogs/irrigation-dialog';
 import { transition } from '../../../src/dialogs/irrigation-dialog-sm';
 import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
-import { irrigationConfigs$ } from '../../../src/slices/irrigation';
+import { irrigationConfigs$, setTankLevels, tankLevels$ } from '../../../src/slices/irrigation';
 
 // Mock UI components
 vi.mock('../../../src/features/shared/ui/md3-text-input', () => ({
@@ -162,6 +162,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
     afterEach(() => {
         if (element.isConnected) document.body.removeChild(element);
         irrigationConfigs$.set(new Map());
+        tankLevels$.set(new Map());
         vi.restoreAllMocks();
     });
 
@@ -531,34 +532,42 @@ describe('IrrigationDialog - Extra Coverage', () => {
     });
 
     describe('Tank Rendering Edge Cases', () => {
+        // ADR-0019: tanks render in the decomposed <irrigation-tanks-tab> child,
+        // whose VM reads tankLevels$ (seeded here as sync-service does in prod).
+        const tanksText = async () => {
+            const child = element.shadowRoot!.querySelector('irrigation-tanks-tab') as any;
+            await child.updateComplete;
+            return child.shadowRoot?.textContent || '';
+        };
+
         it('should render tank status labels', async () => {
+            setTankLevels('gs1', mockDevice.environmentAttributes.irrigationTanks as any);
             const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-            (tabs?.[3] as HTMLElement).click(); // Tanks
+            (Array.from(tabs ?? []).find((t) => t.textContent?.includes('Tanks')) as HTMLElement)?.click(); // Tanks by label (indices shifted by overview tab)
             await element.updateComplete;
 
-            const text = element.shadowRoot?.textContent || '';
+            const text = await tanksText();
             expect(text).toContain('↓ Depleting');
             expect(text).toContain('2d left');
         });
 
         it('should handle refilling and stable status', async () => {
+            const tanks = [
+                { sensorEntity: 'sensor.r', name: 'Refilling', depletionStatus: 'refilling', fillLevel: 90 },
+                { sensorEntity: 'sensor.s', name: 'Stable', depletionStatus: 'static', fillLevel: 40 },
+            ];
             element.device = {
                 ...mockDevice,
-                environmentAttributes: {
-                    ...mockDevice.environmentAttributes,
-                    irrigationTanks: [
-                        { name: 'Refilling', depletionStatus: 'refilling', fillLevel: 90 },
-                        { name: 'Stable', depletionStatus: 'static', fillLevel: 40 }
-                    ]
-                }
+                environmentAttributes: { ...mockDevice.environmentAttributes, irrigationTanks: tanks },
             } as any;
+            setTankLevels('gs1', tanks as any);
             await element.updateComplete;
 
             const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-            (tabs?.[3] as HTMLElement).click(); // Tanks
+            (Array.from(tabs ?? []).find((t) => t.textContent?.includes('Tanks')) as HTMLElement)?.click(); // Tanks by label (indices shifted by overview tab)
             await element.updateComplete;
 
-            const text = element.shadowRoot?.textContent || '';
+            const text = await tanksText();
             expect(text).toContain('↑ Refilling');
             expect(text).toContain('— Stable');
         });

@@ -7,6 +7,7 @@ import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
 import type { ECRampCurve } from '../../../src/schemas/api-schema';
 import { ecRampCurves$ } from '../../../src/slices/nutrient';
+import { setTankLevels, tankLevels$ } from '../../../src/slices/irrigation';
 
 vi.mock('../../../src/features/shared/ui/md3-text-input', () => ({
   Md3TextInput: class extends HTMLElement {
@@ -145,6 +146,7 @@ describe('IrrigationDialog - Coverage', () => {
 
   afterEach(() => {
     if (element.isConnected) document.body.removeChild(element);
+    tankLevels$.set(new Map());
     vi.restoreAllMocks();
   });
 
@@ -205,62 +207,80 @@ describe('IrrigationDialog - Coverage', () => {
     });
   });
 
-  // ─── Tank Edit Form Input Handlers (lines 2993–3029) ──────────────────────
+  // ─── Tank Edit Form Inputs (decomposed — ADR-0019) ────────────────────────
+  // The editor lives in <irrigation-tanks-tab>; field edits flow as Tab Intents
+  // that the dialog translates into UPDATE_TANK_DRAFT, so the draft lands in the
+  // SM (`_sm.tabs.tanks.sub.draft`), not a component field.
 
   describe('Tank Edit Form Inputs', () => {
+    let tab: any;
+    const EDIT_TANK = {
+      sensorEntity: 'sensor.tank_old',
+      name: 'Tank 1',
+      volumeLiters: 200,
+      warningLevel: 25,
+      fillLevel: 50,
+      isWarning: false,
+      hoursRemaining: 48,
+      depletionStatus: 'depleting',
+    };
+    const draftOf = () => (element as any)._sm.tabs.tanks.sub.draft;
+    const tankInput = (placeholder: string): HTMLInputElement => {
+      const inputs = Array.from(tab.shadowRoot.querySelectorAll('input')) as HTMLInputElement[];
+      return inputs.find((i) => i.getAttribute('placeholder') === placeholder)!;
+    };
+
     beforeEach(async () => {
-      await switchToTab(3); // Tanks tab
-      // Open tank edit form
-      (element as any)._openTankEdit(0);
+      setTankLevels('gs1', [EDIT_TANK] as any);
+      // Switch to Tanks by label — indices shifted when the overview tab was added.
+      const navs = Array.from(element.shadowRoot?.querySelectorAll('.v1-nav-item') ?? []);
+      (navs.find((t) => t.textContent?.includes('Tanks')) as HTMLElement)?.click();
       await element.updateComplete;
+      tab = element.shadowRoot!.querySelector('irrigation-tanks-tab');
+      await tab.updateComplete;
+      // Open the editor via the edit button (emits edit-tank-requested).
+      tab.shadowRoot.querySelector('.tank-edit-btn').click();
+      await element.updateComplete;
+      await tab.updateComplete;
     });
 
-    it('updates sensorEntity on input (line 2993)', async () => {
-      const inputs = Array.from(element.shadowRoot?.querySelectorAll('input') ?? []);
-      const sensorInput = inputs.find(i => i.getAttribute('placeholder') === 'Search entity...') as HTMLInputElement;
-      expect(sensorInput).toBeTruthy();
-
-      Object.defineProperty(sensorInput, 'value', { value: 'sensor.new_entity', writable: true });
-      sensorInput.dispatchEvent(new Event('input'));
-      await element.updateComplete;
-
-      expect((element as any)._tankDraft.sensorEntity).toBe('sensor.new_entity');
+    it('opens the editor in the SM seeded from the tank', () => {
+      const sub = (element as any)._sm.tabs.tanks.sub;
+      expect(sub.kind).toBe('editing');
+      expect(sub.index).toBe(0);
+      expect(sub.draft.name).toBe('Tank 1');
     });
 
-    it('updates name on input (line 3011)', async () => {
-      const inputs = Array.from(element.shadowRoot?.querySelectorAll('input') ?? []);
-      const nameInput = inputs.find(i => i.getAttribute('placeholder') === 'e.g. Main Tank') as HTMLInputElement;
-      expect(nameInput).toBeTruthy();
-
-      Object.defineProperty(nameInput, 'value', { value: 'Nutrient Tank B', writable: true });
-      nameInput.dispatchEvent(new Event('input'));
+    it('updates sensorEntity on input', async () => {
+      const input = tankInput('Search entity...');
+      Object.defineProperty(input, 'value', { value: 'sensor.new_entity', writable: true });
+      input.dispatchEvent(new Event('input'));
       await element.updateComplete;
-
-      expect((element as any)._tankDraft.name).toBe('Nutrient Tank B');
+      expect(draftOf().sensorEntity).toBe('sensor.new_entity');
     });
 
-    it('updates volumeLiters with valid number on input (line 3029)', async () => {
-      const inputs = Array.from(element.shadowRoot?.querySelectorAll('input') ?? []);
-      const volInput = inputs.find(i => i.getAttribute('placeholder') === 'e.g. 200') as HTMLInputElement;
-      expect(volInput).toBeTruthy();
-
-      Object.defineProperty(volInput, 'value', { value: '350', writable: true });
-      volInput.dispatchEvent(new Event('input'));
+    it('updates name on input', async () => {
+      const input = tankInput('e.g. Main Tank');
+      Object.defineProperty(input, 'value', { value: 'Nutrient Tank B', writable: true });
+      input.dispatchEvent(new Event('input'));
       await element.updateComplete;
-
-      expect((element as any)._tankDraft.volumeLiters).toBe(350);
+      expect(draftOf().name).toBe('Nutrient Tank B');
     });
 
-    it('sets volumeLiters to null when input is empty/NaN (line 3031)', async () => {
-      const inputs = Array.from(element.shadowRoot?.querySelectorAll('input') ?? []);
-      const volInput = inputs.find(i => i.getAttribute('placeholder') === 'e.g. 200') as HTMLInputElement;
-      expect(volInput).toBeTruthy();
-
-      Object.defineProperty(volInput, 'value', { value: '', writable: true });
-      volInput.dispatchEvent(new Event('input'));
+    it('updates volumeLiters with valid number on input', async () => {
+      const input = tankInput('e.g. 200');
+      Object.defineProperty(input, 'value', { value: '350', writable: true });
+      input.dispatchEvent(new Event('input'));
       await element.updateComplete;
+      expect(draftOf().volumeLiters).toBe(350);
+    });
 
-      expect((element as any)._tankDraft.volumeLiters).toBeNull();
+    it('sets volumeLiters to null when input is empty/NaN', async () => {
+      const input = tankInput('e.g. 200');
+      Object.defineProperty(input, 'value', { value: '', writable: true });
+      input.dispatchEvent(new Event('input'));
+      await element.updateComplete;
+      expect(draftOf().volumeLiters).toBeNull();
     });
   });
 
