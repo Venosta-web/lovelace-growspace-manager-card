@@ -397,6 +397,16 @@ async function overviewRoot(el: IrrigationDialog): Promise<ShadowRoot> {
   return tab.shadowRoot!;
 }
 
+// The Schedules tab is likewise decomposed (ADR-0019): its content (the
+// <crop-steering-day-chart> host + the legend "not configured" notes) renders
+// inside the child `<irrigation-schedules-tab>`'s own shadow root.
+async function schedulesTabRoot(el: IrrigationDialog): Promise<ShadowRoot> {
+  const tab = el.shadowRoot!.querySelector('irrigation-schedules-tab') as LitElement | null;
+  if (!tab) throw new Error('irrigation-schedules-tab not rendered');
+  await tab.updateComplete;
+  return tab.shadowRoot!;
+}
+
 describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () => {
   it('opens on the Overview tab via initialTab when crop steering is available', async () => {
     const device = makeSteeringDevice();
@@ -1735,7 +1745,7 @@ describe('IrrigationDialog – Crop Steering Schedule: real VWC trace', () => {
     `);
     await el.updateComplete;
 
-    const chart = el.shadowRoot!.querySelector('crop-steering-day-chart') as any;
+    const chart = (await schedulesTabRoot(el)).querySelector('crop-steering-day-chart') as any;
     expect(chart).not.toBeNull();
     expect(chart.device?.deviceId).toBe(device.deviceId);
   });
@@ -1756,7 +1766,7 @@ describe('IrrigationDialog – Crop Steering Schedule: real VWC trace', () => {
     `);
     await el.updateComplete;
 
-    const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
+    const legend = (await schedulesTabRoot(el)).querySelectorAll('.cs-legend')[0];
     const text = normalize(legend?.textContent);
     expect(text).toContain('Pore EC not configured');
     expect(text).toContain('Bulk EC not configured');
@@ -1950,7 +1960,7 @@ describe('IrrigationDialog – Crop Steering Day Chart legend: EC sensor presenc
     await new Promise((resolve) => setTimeout(resolve, 0));
     await el.updateComplete;
 
-    const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
+    const legend = (await schedulesTabRoot(el)).querySelectorAll('.cs-legend')[0];
     const text = normalize(legend?.textContent);
     expect(text).not.toContain('Pore EC not configured');
     expect(text).not.toContain('Bulk EC not configured');
@@ -1977,7 +1987,7 @@ describe('IrrigationDialog – Crop Steering Day Chart legend: EC sensor presenc
     await new Promise((resolve) => setTimeout(resolve, 0));
     await el.updateComplete;
 
-    const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
+    const legend = (await schedulesTabRoot(el)).querySelectorAll('.cs-legend')[0];
     const text = normalize(legend?.textContent);
     expect(text).toContain('Pore EC not configured');
     expect(text).not.toContain('Bulk EC not configured');
@@ -2003,7 +2013,7 @@ describe('IrrigationDialog – Crop Steering Day Chart legend: EC sensor presenc
     await new Promise((resolve) => setTimeout(resolve, 0));
     await el.updateComplete;
 
-    const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
+    const legend = (await schedulesTabRoot(el)).querySelectorAll('.cs-legend')[0];
     const text = normalize(legend?.textContent);
     expect(text).toContain('Pore EC not configured');
     expect(text).toContain('Bulk EC not configured');
