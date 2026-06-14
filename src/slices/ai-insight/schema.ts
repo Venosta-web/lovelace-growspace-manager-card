@@ -15,13 +15,13 @@ import { z } from 'zod';
 // extract the text.
 const responseBody = z.union([
   z.string(),
-  z.object({ response: z.union([z.string(), z.record(z.unknown())]) }),
+  z.object({ response: z.union([z.string(), z.record(z.string(), z.unknown())]) }),
 ]);
 
 export const GrowAdviceResponseSchema = z.union([
   z.string(),
   z.object({ response: responseBody }),
-  z.record(z.unknown()),
+  z.record(z.string(), z.unknown()),
 ]);
 
 export type GrowAdviceResponsePayload = z.infer<typeof GrowAdviceResponseSchema>;
@@ -33,7 +33,7 @@ export type GrowAdviceResponsePayload = z.infer<typeof GrowAdviceResponseSchema>
 export const SuggestedActionSchema = z.object({
   service: z.string(),
   target_entity_id: z.string(),
-  service_data: z.record(z.unknown()),
+  service_data: z.record(z.string(), z.unknown()),
   description: z.string(),
   confidence: z.number().optional(),
 });
@@ -116,7 +116,7 @@ export const ConversationMessageSchema = z.object({
     .object({
       service: z.string(),
       target_entity_id: z.string(),
-      service_data: z.record(z.unknown()),
+      service_data: z.record(z.string(), z.unknown()),
       description: z.string(),
       confidence: z.number().optional(),
     })
