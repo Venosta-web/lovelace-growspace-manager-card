@@ -261,6 +261,13 @@ export class GrowspaceAdapter {
           autoLightTracking: irrigationStrategyRaw.auto_light_tracking,
           detectedLightsOnTime: irrigationStrategyRaw.detected_lights_on_time,
           declaredSteeringMode: irrigationStrategyRaw.declared_steering_mode ?? null,
+          // Adaptive Shot Control (ADR-0014). Master toggle defaults on to match
+          // the backend default and the previously always-on size feedback.
+          dynamicShotEnabled: irrigationStrategyRaw.dynamic_shot_enabled ?? true,
+          dynamicAggressiveness: irrigationStrategyRaw.dynamic_aggressiveness,
+          dynamicRecovery: irrigationStrategyRaw.dynamic_recovery,
+          dynamicShotSizeFloor: irrigationStrategyRaw.dynamic_shot_size_floor,
+          dynamicIntervalCeiling: irrigationStrategyRaw.dynamic_interval_ceiling,
         }
       : undefined;
 

@@ -72,6 +72,7 @@ import {
 import type {
   IrrigationConfig,
   SteeringMode,
+  ShotSizingMode,
   SteeringClassification,
   IntentDeviation,
 } from '../services/types';
@@ -2431,6 +2432,117 @@ export class IrrigationDialog extends LitElement {
   // ─── Steering tab ─────────────────────────────────────────────────────────
 
   /**
+   * Shot Sizing Mode selector (ADR-0011): seconds vs. percent of substrate
+   * volume. Volume Mode requires a substrate profile and pump flow rate; the
+   * backend rejects the switch when those are absent (the optimistic mutation
+   * rolls back and surfaces the error), so the toggle stays available and the
+   * note explains the prerequisite.
+   */
+  private _renderShotSizingToggle() {
+    const mode = this._sm.tabs.steering.draft.shotSizingMode ?? 'seconds';
+    const modes: Array<{ id: ShotSizingMode; name: string; desc: string }> = [
+      { id: 'seconds', name: 'Seconds', desc: 'Raw pump seconds — works with any pump.' },
+      { id: 'volume', name: 'Volume %', desc: 'Percent of substrate volume — needs profile + flow rate.' },
+    ];
+    return html`
+      <div style="grid-column:span 2;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <span style="font-size:0.85rem;opacity:0.8;">Shot Sizing Mode</span>
+          <gs-help-tooltip
+            content="Seconds: shot size is raw pump runtime. Volume %: shot size is a percent of total substrate volume, converted to pump seconds — only available when a substrate profile and pump flow rate are configured."
+          ></gs-help-tooltip>
+        </div>
+        <div class="phase-grid">
+          ${modes.map(
+        (m) => html`
+              <div
+                class="phase-card ${mode === m.id ? 'active' : ''}"
+                data-sizing-mode=${m.id}
+                @click=${() => this._updateStrategyField('shotSizingMode', m.id)}
+              >
+                <div class="phase-nm">${m.name}</div>
+                <div class="phase-desc">${m.desc}</div>
+              </div>
+            `
+      )}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Adaptive Shot Control (ADR-0014): master toggle plus the shared feedback
+   * tunables that govern how the loop reacts to the substrate's response —
+   * shrinking the shot and lengthening the interval on overshoot, recovering
+   * toward nominal on undershoot. Tunables are hidden while disabled.
+   */
+  private _renderAdaptiveShotControl() {
+    const draft = this._sm.tabs.steering.draft;
+    const enabled = draft.dynamicShotEnabled ?? true;
+    return html`
+      <div style="grid-column:span 2;margin-top:12px;">
+        <div
+          style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
+        >
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span>Adaptive Shot Control</span>
+            <gs-help-tooltip
+              content="When on, each shot's effect on VWC tunes the next one: overshoot shrinks the shot and lengthens the interval; undershoot recovers both toward nominal. Off freezes shots at the configured size and interval."
+            ></gs-help-tooltip>
+          </div>
+          <md3-switch
+            data-field="dynamicShotEnabled"
+            .checked=${enabled}
+            @change=${(e: Event) =>
+        this._updateStrategyField(
+          'dynamicShotEnabled',
+          (e.target as HTMLInputElement).checked
+        )}
+          ></md3-switch>
+        </div>
+        ${enabled
+        ? html`
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                <md3-number-input
+                  data-field="dynamicAggressiveness"
+                  label="Aggressiveness"
+                  step="0.1"
+                  .value=${String(draft.dynamicAggressiveness ?? 1.0)}
+                  @change=${(e: CustomEvent) =>
+            this._updateStrategyField('dynamicAggressiveness', parseFloat(e.detail))}
+                ></md3-number-input>
+                <md3-number-input
+                  data-field="dynamicRecovery"
+                  label="Recovery"
+                  step="0.05"
+                  .value=${String(draft.dynamicRecovery ?? 0.1)}
+                  @change=${(e: CustomEvent) =>
+            this._updateStrategyField('dynamicRecovery', parseFloat(e.detail))}
+                ></md3-number-input>
+                <md3-number-input
+                  data-field="dynamicShotSizeFloor"
+                  label="Shot Size Floor (×)"
+                  step="0.05"
+                  .value=${String(draft.dynamicShotSizeFloor ?? 0.5)}
+                  @change=${(e: CustomEvent) =>
+            this._updateStrategyField('dynamicShotSizeFloor', parseFloat(e.detail))}
+                ></md3-number-input>
+                <md3-number-input
+                  data-field="dynamicIntervalCeiling"
+                  label="Interval Ceiling (×)"
+                  step="0.1"
+                  .value=${String(draft.dynamicIntervalCeiling ?? 1.5)}
+                  @change=${(e: CustomEvent) =>
+            this._updateStrategyField('dynamicIntervalCeiling', parseFloat(e.detail))}
+                ></md3-number-input>
+              </div>
+            `
+        : nothing}
+      </div>
+    `;
+  }
+
+  /**
    * Per-phase P1/P2 shot parameters. The edited field and its unit label follow
    * the active Shot Sizing Mode (seconds vs. percent of substrate volume); the
    * shot interval is always expressed in minutes.
@@ -2725,7 +2837,9 @@ export class IrrigationDialog extends LitElement {
 
           <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Dosing</h4>
 
+          ${this._renderShotSizingToggle()}
           ${this._renderPhaseShotParams()}
+          ${this._renderAdaptiveShotControl()}
         </div>
       </div>
 

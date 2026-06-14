@@ -393,6 +393,15 @@ export async function updateIrrigationStrategy(
   if (updates.shotSizingMode !== undefined) payload.shot_sizing_mode = updates.shotSizingMode;
   if (updates.autoLightTracking !== undefined)
     payload.auto_light_tracking = updates.autoLightTracking;
+  if (updates.dynamicShotEnabled !== undefined)
+    payload.dynamic_shot_enabled = updates.dynamicShotEnabled;
+  if (updates.dynamicAggressiveness !== undefined)
+    payload.dynamic_aggressiveness = updates.dynamicAggressiveness;
+  if (updates.dynamicRecovery !== undefined) payload.dynamic_recovery = updates.dynamicRecovery;
+  if (updates.dynamicShotSizeFloor !== undefined)
+    payload.dynamic_shot_size_floor = updates.dynamicShotSizeFloor;
+  if (updates.dynamicIntervalCeiling !== undefined)
+    payload.dynamic_interval_ceiling = updates.dynamicIntervalCeiling;
 
   await mutate(
     {

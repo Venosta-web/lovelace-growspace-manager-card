@@ -5873,6 +5873,13 @@ class GrowspaceAdapter {
                 autoLightTracking: irrigationStrategyRaw.auto_light_tracking,
                 detectedLightsOnTime: irrigationStrategyRaw.detected_lights_on_time,
                 declaredSteeringMode: irrigationStrategyRaw.declared_steering_mode ?? null,
+                // Adaptive Shot Control (ADR-0014). Master toggle defaults on to match
+                // the backend default and the previously always-on size feedback.
+                dynamicShotEnabled: irrigationStrategyRaw.dynamic_shot_enabled ?? true,
+                dynamicAggressiveness: irrigationStrategyRaw.dynamic_aggressiveness,
+                dynamicRecovery: irrigationStrategyRaw.dynamic_recovery,
+                dynamicShotSizeFloor: irrigationStrategyRaw.dynamic_shot_size_floor,
+                dynamicIntervalCeiling: irrigationStrategyRaw.dynamic_interval_ceiling,
             }
             : undefined;
         const drainConfigRaw = irrigation?.drain_config;
@@ -26757,6 +26764,11 @@ function defaultSteeringDraft() {
         autoLightTracking: false,
         detectedLightsOnTime: null,
         declaredSteeringMode: null,
+        dynamicShotEnabled: true,
+        dynamicAggressiveness: 1.0,
+        dynamicRecovery: 0.1,
+        dynamicShotSizeFloor: 0.5,
+        dynamicIntervalCeiling: 1.5,
     };
 }
 function defaultConfigDraft() {
@@ -26839,6 +26851,11 @@ function applyDeviceToSM(sm, device) {
         autoLightTracking: strat?.autoLightTracking ?? false,
         detectedLightsOnTime: strat?.detectedLightsOnTime ?? null,
         declaredSteeringMode: strat?.declaredSteeringMode ?? null,
+        dynamicShotEnabled: strat?.dynamicShotEnabled ?? true,
+        dynamicAggressiveness: strat?.dynamicAggressiveness ?? 1.0,
+        dynamicRecovery: strat?.dynamicRecovery ?? 0.1,
+        dynamicShotSizeFloor: strat?.dynamicShotSizeFloor ?? 0.5,
+        dynamicIntervalCeiling: strat?.dynamicIntervalCeiling ?? 1.5,
     };
     const configDraft = {
         soilTriggerPercent: config.soilTriggerPercent ?? null,
@@ -26918,7 +26935,12 @@ function isSteeringDirty(sm, device) {
         (d.p2ShotVolumePercent ?? 4.0) !== (s.p2ShotVolumePercent ?? 4.0) ||
         (d.shotSizingMode ?? 'seconds') !== (s.shotSizingMode ?? 'seconds') ||
         (d.autoLightTracking ?? false) !== (s.autoLightTracking ?? false) ||
-        (d.detectedLightsOnTime ?? null) !== (s.detectedLightsOnTime ?? null));
+        (d.detectedLightsOnTime ?? null) !== (s.detectedLightsOnTime ?? null) ||
+        (d.dynamicShotEnabled ?? true) !== (s.dynamicShotEnabled ?? true) ||
+        (d.dynamicAggressiveness ?? 1.0) !== (s.dynamicAggressiveness ?? 1.0) ||
+        (d.dynamicRecovery ?? 0.1) !== (s.dynamicRecovery ?? 0.1) ||
+        (d.dynamicShotSizeFloor ?? 0.5) !== (s.dynamicShotSizeFloor ?? 0.5) ||
+        (d.dynamicIntervalCeiling ?? 1.5) !== (s.dynamicIntervalCeiling ?? 1.5));
 }
 /** True if the config tab has unsaved form changes relative to the device. */
 function isConfigDirty(sm, device) {
@@ -27574,6 +27596,12 @@ growspaceIdPayload.extend({
     p2_shot_volume_percent: numberType().optional(),
     shot_sizing_mode: enumType(['seconds', 'volume']).optional(),
     auto_light_tracking: booleanType().optional(),
+    // Adaptive Shot Control (ADR-0014).
+    dynamic_shot_enabled: booleanType().optional(),
+    dynamic_aggressiveness: numberType().optional(),
+    dynamic_recovery: numberType().optional(),
+    dynamic_shot_size_floor: numberType().optional(),
+    dynamic_interval_ceiling: numberType().optional(),
 });
 const SteeringModeSchema = enumType(['vegetative', 'balanced', 'generative']);
 /** Result of the apply_steering_mode WS command (server stamps the preset). */
@@ -27895,6 +27923,16 @@ async function updateIrrigationStrategy(growspaceId, updates) {
         payload.shot_sizing_mode = updates.shotSizingMode;
     if (updates.autoLightTracking !== undefined)
         payload.auto_light_tracking = updates.autoLightTracking;
+    if (updates.dynamicShotEnabled !== undefined)
+        payload.dynamic_shot_enabled = updates.dynamicShotEnabled;
+    if (updates.dynamicAggressiveness !== undefined)
+        payload.dynamic_aggressiveness = updates.dynamicAggressiveness;
+    if (updates.dynamicRecovery !== undefined)
+        payload.dynamic_recovery = updates.dynamicRecovery;
+    if (updates.dynamicShotSizeFloor !== undefined)
+        payload.dynamic_shot_size_floor = updates.dynamicShotSizeFloor;
+    if (updates.dynamicIntervalCeiling !== undefined)
+        payload.dynamic_interval_ceiling = updates.dynamicIntervalCeiling;
     await mutate({
         type: 'updateIrrigationStrategy',
         optimistic: () => _patchStrategy(growspaceId, updates),
@@ -30274,6 +30312,105 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     // ─── Steering tab ─────────────────────────────────────────────────────────
     /**
+     * Shot Sizing Mode selector (ADR-0011): seconds vs. percent of substrate
+     * volume. Volume Mode requires a substrate profile and pump flow rate; the
+     * backend rejects the switch when those are absent (the optimistic mutation
+     * rolls back and surfaces the error), so the toggle stays available and the
+     * note explains the prerequisite.
+     */
+    _renderShotSizingToggle() {
+        const mode = this._sm.tabs.steering.draft.shotSizingMode ?? 'seconds';
+        const modes = [
+            { id: 'seconds', name: 'Seconds', desc: 'Raw pump seconds — works with any pump.' },
+            { id: 'volume', name: 'Volume %', desc: 'Percent of substrate volume — needs profile + flow rate.' },
+        ];
+        return x `
+      <div style="grid-column:span 2;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <span style="font-size:0.85rem;opacity:0.8;">Shot Sizing Mode</span>
+          <gs-help-tooltip
+            content="Seconds: shot size is raw pump runtime. Volume %: shot size is a percent of total substrate volume, converted to pump seconds — only available when a substrate profile and pump flow rate are configured."
+          ></gs-help-tooltip>
+        </div>
+        <div class="phase-grid">
+          ${modes.map((m) => x `
+              <div
+                class="phase-card ${mode === m.id ? 'active' : ''}"
+                data-sizing-mode=${m.id}
+                @click=${() => this._updateStrategyField('shotSizingMode', m.id)}
+              >
+                <div class="phase-nm">${m.name}</div>
+                <div class="phase-desc">${m.desc}</div>
+              </div>
+            `)}
+        </div>
+      </div>
+    `;
+    }
+    /**
+     * Adaptive Shot Control (ADR-0014): master toggle plus the shared feedback
+     * tunables that govern how the loop reacts to the substrate's response —
+     * shrinking the shot and lengthening the interval on overshoot, recovering
+     * toward nominal on undershoot. Tunables are hidden while disabled.
+     */
+    _renderAdaptiveShotControl() {
+        const draft = this._sm.tabs.steering.draft;
+        const enabled = draft.dynamicShotEnabled ?? true;
+        return x `
+      <div style="grid-column:span 2;margin-top:12px;">
+        <div
+          style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
+        >
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span>Adaptive Shot Control</span>
+            <gs-help-tooltip
+              content="When on, each shot's effect on VWC tunes the next one: overshoot shrinks the shot and lengthens the interval; undershoot recovers both toward nominal. Off freezes shots at the configured size and interval."
+            ></gs-help-tooltip>
+          </div>
+          <md3-switch
+            data-field="dynamicShotEnabled"
+            .checked=${enabled}
+            @change=${(e) => this._updateStrategyField('dynamicShotEnabled', e.target.checked)}
+          ></md3-switch>
+        </div>
+        ${enabled
+            ? x `
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                <md3-number-input
+                  data-field="dynamicAggressiveness"
+                  label="Aggressiveness"
+                  step="0.1"
+                  .value=${String(draft.dynamicAggressiveness ?? 1.0)}
+                  @change=${(e) => this._updateStrategyField('dynamicAggressiveness', parseFloat(e.detail))}
+                ></md3-number-input>
+                <md3-number-input
+                  data-field="dynamicRecovery"
+                  label="Recovery"
+                  step="0.05"
+                  .value=${String(draft.dynamicRecovery ?? 0.1)}
+                  @change=${(e) => this._updateStrategyField('dynamicRecovery', parseFloat(e.detail))}
+                ></md3-number-input>
+                <md3-number-input
+                  data-field="dynamicShotSizeFloor"
+                  label="Shot Size Floor (×)"
+                  step="0.05"
+                  .value=${String(draft.dynamicShotSizeFloor ?? 0.5)}
+                  @change=${(e) => this._updateStrategyField('dynamicShotSizeFloor', parseFloat(e.detail))}
+                ></md3-number-input>
+                <md3-number-input
+                  data-field="dynamicIntervalCeiling"
+                  label="Interval Ceiling (×)"
+                  step="0.1"
+                  .value=${String(draft.dynamicIntervalCeiling ?? 1.5)}
+                  @change=${(e) => this._updateStrategyField('dynamicIntervalCeiling', parseFloat(e.detail))}
+                ></md3-number-input>
+              </div>
+            `
+            : E}
+      </div>
+    `;
+    }
+    /**
      * Per-phase P1/P2 shot parameters. The edited field and its unit label follow
      * the active Shot Sizing Mode (seconds vs. percent of substrate volume); the
      * shot interval is always expressed in minutes.
@@ -30544,7 +30681,9 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 
           <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Dosing</h4>
 
+          ${this._renderShotSizingToggle()}
           ${this._renderPhaseShotParams()}
+          ${this._renderAdaptiveShotControl()}
         </div>
       </div>
 
@@ -136604,7 +136743,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.39"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.40"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

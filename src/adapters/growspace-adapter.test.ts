@@ -37,6 +37,11 @@ describe('GrowspaceAdapter irrigation strategy', () => {
         p2_shot_volume_percent: 6,
         shot_sizing_mode: 'volume',
         declared_steering_mode: 'generative',
+        dynamic_shot_enabled: false,
+        dynamic_aggressiveness: 1.5,
+        dynamic_recovery: 0.2,
+        dynamic_shot_size_floor: 0.4,
+        dynamic_interval_ceiling: 2.0,
       })
     );
 
@@ -49,6 +54,11 @@ describe('GrowspaceAdapter irrigation strategy', () => {
     expect(strat?.p2ShotVolumePercent).toBe(6);
     expect(strat?.shotSizingMode).toBe('volume');
     expect(strat?.declaredSteeringMode).toBe('generative');
+    expect(strat?.dynamicShotEnabled).toBe(false);
+    expect(strat?.dynamicAggressiveness).toBe(1.5);
+    expect(strat?.dynamicRecovery).toBe(0.2);
+    expect(strat?.dynamicShotSizeFloor).toBe(0.4);
+    expect(strat?.dynamicIntervalCeiling).toBe(2.0);
   });
 
   it('falls back to legacy shared shot values when per-phase fields are absent', () => {
@@ -73,6 +83,9 @@ describe('GrowspaceAdapter irrigation strategy', () => {
     expect(strat?.p2ShotIntervalMinutes).toBe(18);
     expect(strat?.shotSizingMode).toBe('seconds');
     expect(strat?.declaredSteeringMode ?? null).toBeNull();
+    // Adaptive Shot Control defaults on when the backend omits the field, matching
+    // the previously always-on size feedback.
+    expect(strat?.dynamicShotEnabled).toBe(true);
   });
 });
 

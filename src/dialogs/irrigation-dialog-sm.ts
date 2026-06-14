@@ -285,6 +285,11 @@ function defaultSteeringDraft(): Partial<IrrigationStrategy> {
     autoLightTracking: false,
     detectedLightsOnTime: null,
     declaredSteeringMode: null,
+    dynamicShotEnabled: true,
+    dynamicAggressiveness: 1.0,
+    dynamicRecovery: 0.1,
+    dynamicShotSizeFloor: 0.5,
+    dynamicIntervalCeiling: 1.5,
   };
 }
 
@@ -378,6 +383,11 @@ function applyDeviceToSM(sm: DialogSM, device: GrowspaceDevice): DialogSM {
     autoLightTracking: strat?.autoLightTracking ?? false,
     detectedLightsOnTime: strat?.detectedLightsOnTime ?? null,
     declaredSteeringMode: strat?.declaredSteeringMode ?? null,
+    dynamicShotEnabled: strat?.dynamicShotEnabled ?? true,
+    dynamicAggressiveness: strat?.dynamicAggressiveness ?? 1.0,
+    dynamicRecovery: strat?.dynamicRecovery ?? 0.1,
+    dynamicShotSizeFloor: strat?.dynamicShotSizeFloor ?? 0.5,
+    dynamicIntervalCeiling: strat?.dynamicIntervalCeiling ?? 1.5,
   };
 
   const configDraft: ConfigDraft = {
@@ -468,7 +478,12 @@ export function isSteeringDirty(sm: DialogSM, device: GrowspaceDevice): boolean 
     (d.p2ShotVolumePercent ?? 4.0) !== (s.p2ShotVolumePercent ?? 4.0) ||
     (d.shotSizingMode ?? 'seconds') !== (s.shotSizingMode ?? 'seconds') ||
     (d.autoLightTracking ?? false) !== (s.autoLightTracking ?? false) ||
-    (d.detectedLightsOnTime ?? null) !== (s.detectedLightsOnTime ?? null)
+    (d.detectedLightsOnTime ?? null) !== (s.detectedLightsOnTime ?? null) ||
+    (d.dynamicShotEnabled ?? true) !== (s.dynamicShotEnabled ?? true) ||
+    (d.dynamicAggressiveness ?? 1.0) !== (s.dynamicAggressiveness ?? 1.0) ||
+    (d.dynamicRecovery ?? 0.1) !== (s.dynamicRecovery ?? 0.1) ||
+    (d.dynamicShotSizeFloor ?? 0.5) !== (s.dynamicShotSizeFloor ?? 0.5) ||
+    (d.dynamicIntervalCeiling ?? 1.5) !== (s.dynamicIntervalCeiling ?? 1.5)
   );
 }
 
