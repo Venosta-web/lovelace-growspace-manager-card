@@ -742,6 +742,50 @@ describe('IrrigationDialog – Steering tab: auto light tracking', () => {
     expect((el as any)._sm.tabs.steering.draft.autoLightTracking).toBe(true);
   });
 
+  it('renders the Adaptive Shot Control toggle and tunables, and toggles off', async () => {
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${makeSteeringDevice()}
+        .initialTab=${'steering'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const toggle = el.shadowRoot!.querySelector('[data-field="dynamicShotEnabled"]') as any;
+    expect(toggle).not.toBeNull();
+    // Tunables visible while enabled (defaults on).
+    expect(el.shadowRoot!.querySelector('[data-field="dynamicAggressiveness"]')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('[data-field="dynamicIntervalCeiling"]')).not.toBeNull();
+
+    toggle.checked = false;
+    toggle.dispatchEvent(new Event('change'));
+    await el.updateComplete;
+
+    expect((el as any)._sm.tabs.steering.draft.dynamicShotEnabled).toBe(false);
+    // Tunables hidden once disabled.
+    expect(el.shadowRoot!.querySelector('[data-field="dynamicAggressiveness"]')).toBeNull();
+  });
+
+  it('edits an Adaptive Shot Control tunable into the steering draft', async () => {
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${makeSteeringDevice()}
+        .initialTab=${'steering'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const input = el.shadowRoot!.querySelector('[data-field="dynamicAggressiveness"]') as HTMLElement;
+    expect(input).not.toBeNull();
+
+    input.dispatchEvent(new CustomEvent('change', { detail: '2.5' }));
+    await el.updateComplete;
+
+    expect((el as any)._sm.tabs.steering.draft.dynamicAggressiveness).toBe(2.5);
+  });
+
   it('does not show detected-time badge when detectedLightsOnTime is null', async () => {
     const device = makeSteeringDevice({
       irrigationStrategy: {

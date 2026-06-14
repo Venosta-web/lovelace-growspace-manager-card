@@ -79,6 +79,12 @@ export interface IrrigationStrategy {
   detectedLightsOnTime?: string | null;
   // Declared Steering Mode intent (#448); null/undefined means never stamped.
   declaredSteeringMode?: SteeringMode | null;
+  // Adaptive Shot Control (ADR-0014). Master toggle + shared feedback tunables.
+  dynamicShotEnabled?: boolean;
+  dynamicAggressiveness?: number;
+  dynamicRecovery?: number;
+  dynamicShotSizeFloor?: number;
+  dynamicIntervalCeiling?: number;
 }
 
 export interface IrrigationConfig {
@@ -126,6 +132,11 @@ export interface SerializedIrrigationStrategy {
   auto_light_tracking?: boolean;
   detected_lights_on_time?: string | null;
   declared_steering_mode?: SteeringMode | null;
+  dynamic_shot_enabled?: boolean;
+  dynamic_aggressiveness?: number;
+  dynamic_recovery?: number;
+  dynamic_shot_size_floor?: number;
+  dynamic_interval_ceiling?: number;
 }
 
 /** Measured Classification bucket — the score-derived steering measurement. */

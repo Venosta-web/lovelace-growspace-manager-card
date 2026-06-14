@@ -1085,6 +1085,41 @@ describe('isSteeringDirty', () => {
       expect(isSteeringDirty(sm, device), `Expected dirty for field: ${desc}`).toBe(true);
     }
   });
+
+  it('returns true when Adaptive Shot Control draft properties change', () => {
+    const strategy = {
+      enabled: true,
+      lightsOnTime: '06:00:00',
+      p0DurationMinutes: 60,
+      p2StopBeforeLightsOffMinutes: 120,
+      targetVwcPercent: 45.0,
+      maintenanceDrybackPercent: 3.0,
+      shotDurationSeconds: 15,
+      shotIntervalMinutes: 15,
+      autoLightTracking: false,
+      detectedLightsOnTime: null,
+      dynamicShotEnabled: true,
+      dynamicAggressiveness: 1.0,
+      dynamicRecovery: 0.1,
+      dynamicShotSizeFloor: 0.5,
+      dynamicIntervalCeiling: 1.5,
+    };
+    const device = makeDevice({ irrigationStrategy: strategy });
+
+    const fieldsToTest: Array<{ partial: Partial<typeof strategy>; desc: string }> = [
+      { partial: { dynamicShotEnabled: false }, desc: 'dynamicShotEnabled' },
+      { partial: { dynamicAggressiveness: 2.0 }, desc: 'dynamicAggressiveness' },
+      { partial: { dynamicRecovery: 0.3 }, desc: 'dynamicRecovery' },
+      { partial: { dynamicShotSizeFloor: 0.4 }, desc: 'dynamicShotSizeFloor' },
+      { partial: { dynamicIntervalCeiling: 2.5 }, desc: 'dynamicIntervalCeiling' },
+    ];
+
+    for (const { partial, desc } of fieldsToTest) {
+      let sm = createInitialSM(device);
+      sm = transition(sm, { type: 'UPDATE_STEERING_DRAFT', partial });
+      expect(isSteeringDirty(sm, device), `Expected dirty for field: ${desc}`).toBe(true);
+    }
+  });
 });
 
 describe('isConfigDirty', () => {

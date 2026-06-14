@@ -48,6 +48,12 @@ export const SetIrrigationStrategyPayloadSchema = growspaceIdPayload.extend({
   pore_ec_target_max: z.number().nullable().optional(),
   ec_modulation_enabled: z.boolean().optional(),
   auto_light_tracking: z.boolean().optional(),
+  // Adaptive Shot Control (ADR-0014).
+  dynamic_shot_enabled: z.boolean().optional(),
+  dynamic_aggressiveness: z.number().optional(),
+  dynamic_recovery: z.number().optional(),
+  dynamic_shot_size_floor: z.number().optional(),
+  dynamic_interval_ceiling: z.number().optional(),
 });
 
 export type SetIrrigationStrategyPayload = z.infer<typeof SetIrrigationStrategyPayloadSchema>;

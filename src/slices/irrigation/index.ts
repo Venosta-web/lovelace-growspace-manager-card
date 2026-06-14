@@ -403,6 +403,15 @@ export async function updateIrrigationStrategy(
     payload.ec_modulation_enabled = updates.ecModulationEnabled;
   if (updates.autoLightTracking !== undefined)
     payload.auto_light_tracking = updates.autoLightTracking;
+  if (updates.dynamicShotEnabled !== undefined)
+    payload.dynamic_shot_enabled = updates.dynamicShotEnabled;
+  if (updates.dynamicAggressiveness !== undefined)
+    payload.dynamic_aggressiveness = updates.dynamicAggressiveness;
+  if (updates.dynamicRecovery !== undefined) payload.dynamic_recovery = updates.dynamicRecovery;
+  if (updates.dynamicShotSizeFloor !== undefined)
+    payload.dynamic_shot_size_floor = updates.dynamicShotSizeFloor;
+  if (updates.dynamicIntervalCeiling !== undefined)
+    payload.dynamic_interval_ceiling = updates.dynamicIntervalCeiling;
 
   await mutate(
     {

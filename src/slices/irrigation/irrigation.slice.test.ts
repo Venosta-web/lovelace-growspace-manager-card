@@ -672,6 +672,31 @@ describe('updateIrrigationStrategy', () => {
     );
   });
 
+  it('serializes Adaptive Shot Control fields to the payload', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+
+    await updateIrrigationStrategy('gs1', {
+      dynamicShotEnabled: false,
+      dynamicAggressiveness: 1.5,
+      dynamicRecovery: 0.2,
+      dynamicShotSizeFloor: 0.4,
+      dynamicIntervalCeiling: 2.0,
+    });
+
+    expect(hassCall.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'set_irrigation_strategy',
+      expect.objectContaining({
+        growspace_id: 'gs1',
+        dynamic_shot_enabled: false,
+        dynamic_aggressiveness: 1.5,
+        dynamic_recovery: 0.2,
+        dynamic_shot_size_floor: 0.4,
+        dynamic_interval_ceiling: 2.0,
+      })
+    );
+  });
+
   it('serializes substrate profile to flat keys and band/modulation fields', async () => {
     setIrrigationStrategy('gs1', makeStrategy());
 
