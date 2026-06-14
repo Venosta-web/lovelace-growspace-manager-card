@@ -174,6 +174,21 @@ A mutator that affects more than one slice's atoms (e.g. transplant touches Plan
 **GridInteraction slice**
 Owns the [[Store-Driven Interaction]] state machine for Plant Grid Cells as a discriminated-union atom: `idle | selected | confirming-water | transplanting`. Peer to Plant and Grid slices, not a subset of either. Cards subscribe to it for selection highlighting and confirmation UI.
 
+**Tab ViewModel**
+The deep module behind a decomposed dialog tab: a pure factory `createXTabViewModel($sm, $caps, …slice atoms) → ReadableAtom<XTabViewModel>` that `computed`s a tab's entire render input — derived values, labels, validation flags, disabled/visible state — from the [[DialogStateMachine]] atom, the [[Dialog Capabilities atom]], and the tab's slice atoms. One factory per tab; each subscribes only to the atoms its tab needs (e.g. the Tanks tab VM does not re-derive when the Steering draft changes). The interface is the `XTabViewModel` shape; the derivation is the implementation. This is where the leverage of dialog decomposition concentrates — not in the [[Tab Component]] that renders it. Modelled on the proven `features/plants` ViewModel factory (`createStablePlantOverviewViewModel`). The Irrigation Dialog is the first dialog decomposed this way (`features/irrigation/viewmodels/`); reference adapters land overview-tab first (read-only, proves derivation) then tanks-tab (first draft tab, proves the intent→SM→effect loop).
+
+**Tab Component**
+A dumb presentational custom element (`<irrigation-steering-tab>`) for one decomposed dialog tab: `@property .vm: XTabViewModel` in, [[Tab Intent]]s out, **no `@state()` of its own**. All draft and interaction state lives in the [[DialogStateMachine]] (b1), so a Tab Component owns nothing — the [[Dialog Shell]] may lazily render only the active tab and unmounting on tab-switch loses no draft. Its test surface is exactly `{ vm-in, named-intents-out }`: mount with a hand-built VM, assert it emits the right intent on a gesture — no SM, no host, no slices. Distinct from `features/plants` presentational components, which *do* hold local `@state()`; that local-state pattern is deliberately **not** propagated into decomposed dialogs.
+
+**Tab Intent**
+A semantic UI-intent `CustomEvent` a [[Tab Component]] emits (e.g. `edit-tank-requested`, `cancel-edit`), describing *what the user did*, not *what the SM should do*. The [[Dialog Shell]] owns the translation table from Tab Intent → [[DialogStateMachine]] event. Keeps the SM event vocabulary out of the nine Tab Components, so a tab's contract is a small, SM-ignorant event set (chosen over passing a `dispatch` fn down, which would leak the SM event union into every tab).
+
+**Dialog Shell**
+The host container of a decomposed dialog (`features/irrigation/containers/irrigation-dialog.container.ts`), reduced to wiring: it owns the [[DialogStateMachine]] atom, the [[MutationRunController]], the [[Dialog Capabilities atom]], the shell ViewModel (nav rail / rail-group visibility / footer / active tab / toast), translates each [[Tab Intent]] into an SM event, and renders the active [[Tab Component]] with its [[Tab ViewModel]]. During migration it renders extracted tabs (`<irrigation-x-tab .vm=…>`) alongside still-inline `_renderXTab()` methods, so decomposition proceeds strictly tab-by-tab with both forms coexisting.
+
+**Dialog Capabilities atom**
+A single shared `computed` atom holding a dialog's cross-tab derived state — visibility gates (e.g. the Crop-Steering rail group's `(hasSoilMoisture || hasStrategy) && hasPump`, ADR-0016), server-authoritative capability flags (`volume_mode_capable`, ADR-0017), and cross-tab labels (Sizing-Mode relabelling the Steering tab's shot fields). It is a peer input to both the [[Dialog Shell]]'s shell VM and every [[Tab ViewModel]] — **never** re-derived per tab. This is the seam that lets per-tab ViewModels exist without re-fragmenting the cross-tab coupling ADR-0016/0017 deliberately consolidated.
+
 ## Irrigation
 
 **Irrigation config ownership (migration in progress)**

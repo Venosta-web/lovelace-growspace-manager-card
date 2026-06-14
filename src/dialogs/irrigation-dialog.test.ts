@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+import type { LitElement } from 'lit';
 import { atom } from 'nanostores';
 import { transition } from './irrigation-dialog-sm';
 import { cropSteeringHistory$, irrigationConfigs$ } from '../slices/irrigation';
@@ -377,6 +378,16 @@ function makeMetrics(
 // Overview tab (Crop Steering Command Center)
 // ---------------------------------------------------------------------------
 
+// The Overview tab is decomposed (ADR-0019): its content renders inside the
+// child `<irrigation-overview-tab>`'s own shadow root, so assertions pierce one
+// level deeper than the dialog's shadow root.
+async function overviewRoot(el: IrrigationDialog): Promise<ShadowRoot> {
+  const tab = el.shadowRoot!.querySelector('irrigation-overview-tab') as LitElement | null;
+  if (!tab) throw new Error('irrigation-overview-tab not rendered');
+  await tab.updateComplete;
+  return tab.shadowRoot!;
+}
+
 describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () => {
   it('opens on the Overview tab via initialTab when crop steering is available', async () => {
     const device = makeSteeringDevice();
@@ -401,7 +412,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
       ></irrigation-dialog>
     `);
     await el.updateComplete;
-    expect(normalize(el.shadowRoot!.textContent)).toContain(
+    expect(normalize((await overviewRoot(el)).textContent)).toContain(
       'Crop steering data is currently unavailable'
     );
   });
@@ -424,7 +435,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     `);
     await el.updateComplete;
 
-    const text = normalize(el.shadowRoot!.textContent);
+    const text = normalize((await overviewRoot(el)).textContent);
     expect(text).toContain('+0.60');
     expect(text).toContain('GENERATIVE');
     // Measured classification surfaces alongside the declared intent.
@@ -449,7 +460,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     `);
     await el.updateComplete;
 
-    const text = normalize(el.shadowRoot!.textContent).toLowerCase();
+    const text = normalize((await overviewRoot(el)).textContent).toLowerCase();
     // The deviation banner names both the declared intent and what the substrate reads.
     expect(text).toContain('generative');
     expect(text).toContain('vegetative');
@@ -475,7 +486,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     (el as any).requestUpdate('hass');
     await el.updateComplete;
 
-    const text = normalize(el.shadowRoot!.textContent);
+    const text = normalize((await overviewRoot(el)).textContent);
     expect(text).toContain('+0.10');
     expect(text).not.toContain('99');
   });
@@ -503,7 +514,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     `);
     await el.updateComplete;
 
-    const text = normalize(el.shadowRoot!.textContent);
+    const text = normalize((await overviewRoot(el)).textContent);
     expect(text.toLowerCase()).toContain('overnight');
     // Absolute VWC points, not a percent-of-peak.
     expect(text).toContain('12.5');
@@ -526,7 +537,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     `);
     await el.updateComplete;
 
-    const card = el.shadowRoot!.querySelector('[data-metric="overnight-dryback"]');
+    const card = (await overviewRoot(el)).querySelector('[data-metric="overnight-dryback"]');
     expect(card).not.toBeNull();
     expect(normalize(card!.textContent)).toContain('—');
   });
@@ -545,7 +556,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     `);
     await el.updateComplete;
 
-    const card = el.shadowRoot!.querySelector('[data-metric="incycle-dryback"]');
+    const card = (await overviewRoot(el)).querySelector('[data-metric="incycle-dryback"]');
     expect(card).not.toBeNull();
     const text = normalize(card!.textContent);
     expect(text).toContain('6');
@@ -567,7 +578,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     `);
     await el.updateComplete;
 
-    const card = el.shadowRoot!.querySelector('[data-metric="incycle-dryback"]');
+    const card = (await overviewRoot(el)).querySelector('[data-metric="incycle-dryback"]');
     expect(normalize(card!.textContent)).toContain('—');
   });
 
@@ -585,7 +596,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     `);
     await el.updateComplete;
 
-    const card = el.shadowRoot!.querySelector('[data-metric="ec-trend"]');
+    const card = (await overviewRoot(el)).querySelector('[data-metric="ec-trend"]');
     expect(card).not.toBeNull();
     expect(card!.classList.contains('cs-metric-locked')).toBe(false);
     expect(normalize(card!.textContent).toUpperCase()).toContain('RISING');
@@ -605,7 +616,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     `);
     await el.updateComplete;
 
-    const card = el.shadowRoot!.querySelector('[data-metric="ec-trend"]');
+    const card = (await overviewRoot(el)).querySelector('[data-metric="ec-trend"]');
     // Visible-but-locked: the card is present (never hidden), flagged locked,
     // with a one-line hint pointing at the missing prerequisite.
     expect(card).not.toBeNull();
@@ -652,7 +663,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     `);
     await el.updateComplete;
 
-    const panel = el.shadowRoot!.querySelector('[data-metric="shot-composition"]');
+    const panel = (await overviewRoot(el)).querySelector('[data-metric="shot-composition"]');
     expect(panel).not.toBeNull();
     const text = normalize(panel!.textContent);
     // Current phase surfaces.
@@ -676,7 +687,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     `);
     await el.updateComplete;
 
-    expect(el.shadowRoot!.querySelector('[data-metric="shot-composition"]')).toBeNull();
+    expect((await overviewRoot(el)).querySelector('[data-metric="shot-composition"]')).toBeNull();
   });
 });
 
