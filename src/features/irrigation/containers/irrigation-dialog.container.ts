@@ -9,11 +9,6 @@ import {
   mdiWater,
   mdiPlus,
   mdiAlert,
-  mdiPencil,
-  mdiDelete,
-  mdiContentSave,
-  mdiInformation,
-  mdiArrowLeft,
   mdiCalendarClock,
   mdiLeaf,
   mdiCog,
@@ -48,6 +43,7 @@ import {
   discardAndSwitch,
   type DialogSM,
   type TankDraft,
+  type EcRampCurveDraft,
 } from '../../../dialogs/irrigation-dialog-sm';
 import { MutationRunController, type MutationRunEvent } from '../../../dialogs/mutation-run-controller';
 import { DataService } from '../../../services/data-service';
@@ -95,9 +91,16 @@ import {
   mergeTankDraft,
   type TanksTabViewModel,
 } from '../viewmodels/tanks-tab.viewmodel';
+// Decomposed EC Ramp tab (ADR-0019): curves owned by the Nutrient slice (ADR-0005).
+import {
+  createEcRampTabViewModel,
+  composeEcRampSave,
+  type EcRampTabViewModel,
+} from '../viewmodels/ec-ramp-tab.viewmodel';
 import { atom, type ReadableAtom } from 'nanostores';
 import '../components/irrigation-overview-tab';
 import '../components/irrigation-tanks-tab';
+import '../components/irrigation-ec-ramp-tab';
 
 // MDI check icon path for time chips
 const MDI_CHECK = 'M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z';
@@ -162,6 +165,14 @@ interface SaveTankParams {
   irrigationTanks: IrrigationTank[];
 }
 
+/** EC Ramp save payload — composed by `composeEcRampSave`, carried in `applying.status`. */
+interface EcRampSaveParams {
+  curve_id?: string;
+  name: string;
+  stage: string;
+  points: ECRampPoint[];
+}
+
 @customElement('irrigation-dialog')
 export class IrrigationDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
@@ -193,12 +204,11 @@ export class IrrigationDialog extends LitElement {
   // source and the component takes only `.vm`.
   private _tankSensorOptions = atom<string[]>([]);
 
-  // ─── EC Ramp tab state ──────────────────────────────────────────────────
-  @state() private _ecRampView: 'LIST' | 'EDIT' = 'LIST';
-  @state() private _ecRampEditingCurve: Partial<ECRampCurve> | null = null;
-  @state() private _ecRampError: string | null = null;
+  // ─── EC Ramp tab (ADR-0019: view/draft/error live in the SM, not here) ───
+  // Curves are owned by the Nutrient slice (ADR-0005); the VM reads `ecRampCurves$`
+  // and the tab's StoreController re-renders on fetch. Only the lazy-fetch latch
+  // remains here.
   private _ecRampFetched = false;
-  private _ecRampCurvesController?: StoreController<Record<string, ECRampCurve> | null>;
 
   // ─── Irrigation Configs (live, non-draft reads) ───────────────────────
   private _irrigationConfigsController = new StoreController(this, irrigationConfigs$);
@@ -229,6 +239,12 @@ export class IrrigationDialog extends LitElement {
     this._deviceAtom
   );
   private _tanksVmController = new StoreController(this, this._tanksVm);
+  /** EC Ramp tab ViewModel — reads the Nutrient slice's `ecRampCurves$` (ADR-0005). */
+  private _ecRampVm: ReadableAtom<EcRampTabViewModel> = createEcRampTabViewModel(
+    this._smAtom,
+    ecRampCurves$
+  );
+  private _ecRampVmController = new StoreController(this, this._ecRampVm);
 
   // ─── Crop Steering History (Schedules tab) ────────────────────────────
   private _cropSteeringHistoryFetched = false;
@@ -266,6 +282,8 @@ export class IrrigationDialog extends LitElement {
     'edit-irrigation-time': (params) => this._effectEditIrrigationTime(params as EditTimeParams),
     'edit-drain-time': (params) => this._effectEditDrainTime(params as EditTimeParams),
     'save-tank': (params) => this._effectSaveTank(params as SaveTankParams),
+    'save-ec-ramp-curve': (params) => this._effectSaveEcRampCurve(params as EcRampSaveParams),
+    'remove-ec-ramp-curve': (params) => this._effectRemoveEcRampCurve(params as { curveId: string }),
   };
 
   static styles = [
@@ -1186,20 +1204,16 @@ export class IrrigationDialog extends LitElement {
       this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: 'config' });
     }
 
-    // EC Ramp: reset view when navigating to the tab; lazy-fetch on first visit.
+    // EC Ramp: lazy-fetch the curves on first visit. The view/draft reset on tab
+    // change is owned by the SM's SWITCH_TAB transition (ADR-0019); the VM reads
+    // `ecRampCurves$` directly so no StoreController is needed here.
     if (changedProps.has('_sm')) {
       const prev = changedProps.get('_sm') as DialogSM | undefined;
       const prevTab = prev?.activeTab;
       const nextTab = this._sm.activeTab;
       if (nextTab === 'ec_ramp' && prevTab !== 'ec_ramp') {
-        this._ecRampView = 'LIST';
-        this._ecRampEditingCurve = null;
-        this._ecRampError = null;
         if (!this._ecRampFetched && this.store) {
           this._ecRampFetched = true;
-          if (!this._ecRampCurvesController) {
-            this._ecRampCurvesController = new StoreController(this, ecRampCurves$);
-          }
           this.store.actions.library.fetchECRampCurves().catch(() => undefined);
         }
       }
@@ -1915,7 +1929,18 @@ export class IrrigationDialog extends LitElement {
       case 'substrate_ec':
         return this._renderSubstrateEcTab();
       case 'ec_ramp':
-        return this._renderEcRampTab();
+        return html`<irrigation-ec-ramp-tab
+          .vm=${this._ecRampVmController.value}
+          @ec-ramp-new-curve=${this._onEcRampNewCurve}
+          @ec-ramp-edit-curve=${this._onEcRampEditCurve}
+          @ec-ramp-delete-curve=${this._onEcRampDeleteCurve}
+          @ec-ramp-cancel-edit=${this._onEcRampCancelEdit}
+          @ec-ramp-curve-changed=${this._onEcRampCurveChanged}
+          @ec-ramp-add-point=${this._onEcRampAddPoint}
+          @ec-ramp-remove-point=${this._onEcRampRemovePoint}
+          @ec-ramp-update-point=${this._onEcRampUpdatePoint}
+          @ec-ramp-save-curve=${this._onEcRampSaveCurve}
+        ></irrigation-ec-ramp-tab>`;
       default:
         return nothing;
     }
@@ -4504,266 +4529,84 @@ export class IrrigationDialog extends LitElement {
     });
   }
 
-  // ─── EC Ramp tab ──────────────────────────────────────────────────────────
+  // ─── EC Ramp tab: Tab Intent → SM-event translation (ADR-0019) ─────────────
+  // The Shell owns the translation; `<irrigation-ec-ramp-tab>` only emits intents.
+  // Curves are owned by the Nutrient slice (ADR-0005); the editor draft lives in
+  // the SM.
 
-  private _renderEcRampTab() {
-    return html`
-      <div class="tab-section">
-        ${this._ecRampError
-        ? html`<div class="error-bar">${this._ecRampError}</div>`
-        : nothing}
-        ${this._ecRampView === 'LIST'
-        ? this._renderEcRampList()
-        : this._renderEcRampEdit()}
-      </div>
-    `;
+  private _onEcRampNewCurve() {
+    this.dispatch({ type: 'EC_RAMP_START_NEW' });
   }
 
-  private _renderEcRampList() {
-    const curves = this._ecRampCurvesController?.value ?? {};
-    const curveList = Object.values(curves) as ECRampCurve[];
-
-    if (curveList.length === 0) {
-      return html`
-        <div class="empty-state">
-          <ha-svg-icon .path=${mdiInformation}></ha-svg-icon>
-          <p>No EC ramp curves defined yet.</p>
-          <p style="font-size: 0.9rem;">
-            Create curves to schedule EC targets across your grow cycle.
-          </p>
-        </div>
-        <div class="button-group" style="margin-top: 16px;">
-          <button class="md3-button primary" @click=${this._ecRampStartNew}>
-            <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
-            New Curve
-          </button>
-        </div>
-      `;
-    }
-
-    return html`
-      <div class="curves-list">
-        ${curveList.map(
-      (curve) => html`
-            <div class="curve-item" @click=${() => this._ecRampEditCurve(curve)}>
-              <div class="curve-info">
-                <div class="curve-name">${curve.name}</div>
-                <div class="curve-details">
-                  ${curve.points.length} point${curve.points.length !== 1 ? 's' : ''} • Day
-                  ${Math.min(...curve.points.map((p) => p.day))}–${Math.max(
-        ...curve.points.map((p) => p.day)
-      )}
-                </div>
-              </div>
-              <div class="curve-actions">
-                <button
-                  class="md3-button icon"
-                  @click=${(e: Event) => {
-          e.stopPropagation();
-          this._ecRampEditCurve(curve);
-        }}
-                  title="Edit"
-                >
-                  <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
-                </button>
-                <button
-                  class="md3-button icon"
-                  @click=${(e: Event) => {
-          e.stopPropagation();
-          this._ecRampDeleteCurve(curve.id).catch(() => undefined);
-        }}
-                  title="Delete"
-                  style="color: var(--error-color);"
-                >
-                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                </button>
-              </div>
-            </div>
-          `
-    )}
-      </div>
-      <div class="button-group" style="margin-top: 16px;">
-        <button class="md3-button primary" @click=${this._ecRampStartNew}>
-          <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
-          New Curve
-        </button>
-      </div>
-    `;
-  }
-
-  private _renderEcRampEdit() {
-    const curve = this._ecRampEditingCurve;
-    if (!curve) return nothing;
-    const points = curve.points ?? [];
-
-    return html`
-      <div class="preset-form">
-        <div class="form-section">
-          <h3>Curve Info</h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <md3-text-input
-              label="Curve Name"
-              .value=${curve.name ?? ''}
-              @change=${(e: CustomEvent) =>
-        (this._ecRampEditingCurve = { ...curve, name: e.detail })}
-              placeholder="e.g. Veg Ramp, Bloom Progression"
-            ></md3-text-input>
-            <md3-select
-              label="Growth Stage"
-              .value=${curve.stage ?? 'flower'}
-              .options=${[
-        { label: 'Seedling', value: 'seedling' },
-        { label: 'Mother', value: 'mother' },
-        { label: 'Vegetative', value: 'veg' },
-        { label: 'Flower', value: 'flower' },
-        { label: 'Cure', value: 'cure' },
-      ]}
-              @change=${(e: CustomEvent) =>
-        (this._ecRampEditingCurve = { ...curve, stage: e.detail })}
-            ></md3-select>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <div class="points-header">
-            <h3>Ramp Points</h3>
-            <button class="md3-button text" @click=${this._ecRampAddPoint}>
-              <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
-              Add Point
-            </button>
-          </div>
-          <div class="points-list">
-            ${points.map(
-          (point: ECRampPoint, index: number) => html`
-                <div class="point-row">
-                  <md3-number-input
-                    label="Day"
-                    .value=${point.day}
-                    @change=${(e: CustomEvent) =>
-              this._ecRampUpdatePoint(index, { day: parseInt(e.detail) || 0 })}
-                    min="0"
-                  ></md3-number-input>
-                  <md3-number-input
-                    label="Target EC (mS/cm)"
-                    .value=${point.target_ec}
-                    @change=${(e: CustomEvent) =>
-              this._ecRampUpdatePoint(index, {
-                target_ec: parseFloat(e.detail) || 0,
-              })}
-                    min="0"
-                    step="0.1"
-                  ></md3-number-input>
-                  <button
-                    class="md3-button icon"
-                    @click=${() => this._ecRampRemovePoint(index)}
-                    style="color: var(--error-color);"
-                    ?disabled=${points.length <= 1}
-                  >
-                    <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                  </button>
-                </div>
-              `
-        )}
-          </div>
-        </div>
-      </div>
-
-      <div class="button-group" style="margin-top: 16px;">
-        <button
-          class="md3-button tonal"
-          @click=${() => {
-        this._ecRampView = 'LIST';
-        this._ecRampEditingCurve = null;
-        this._ecRampError = null;
-      }}
-        >
-          <ha-svg-icon .path=${mdiArrowLeft} style="margin-right: 8px;"></ha-svg-icon>
-          Back
-        </button>
-        <button class="md3-button primary" @click=${this._ecRampSaveCurve}>
-          <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
-          Save Curve
-        </button>
-      </div>
-    `;
-  }
-
-  private _ecRampStartNew() {
-    this._ecRampEditingCurve = {
-      name: '',
-      stage: 'flower',
-      points: [{ day: 1, target_ec: 1.0 }],
-    };
-    this._ecRampView = 'EDIT';
-    this._ecRampError = null;
-  }
-
-  private _ecRampEditCurve(curve: ECRampCurve) {
-    this._ecRampEditingCurve = JSON.parse(JSON.stringify(curve));
-    this._ecRampView = 'EDIT';
-    this._ecRampError = null;
-  }
-
-  private async _ecRampDeleteCurve(curveId: string) {
-    if (!confirm('Are you sure you want to delete this EC ramp curve?')) return;
-    try {
-      await this.store.actions.library.removeECRampCurve(curveId);
-    } catch (err: unknown) {
-      this._ecRampError = err instanceof Error ? err.message : 'Unknown error';
-    }
-  }
-
-  private _ecRampAddPoint() {
-    const curve = this._ecRampEditingCurve;
+  /** `ec-ramp-edit-curve` → deep-copy the saved curve into the SM editor draft. */
+  private _onEcRampEditCurve(e: CustomEvent<{ id: string }>) {
+    const curve = (ecRampCurves$.get() ?? {})[e.detail.id];
     if (!curve) return;
-    const points = [...(curve.points ?? [])];
-    const lastDay = points.length > 0 ? points[points.length - 1].day : 0;
-    const lastEc = points.length > 0 ? points[points.length - 1].target_ec : 1.0;
-    this._ecRampEditingCurve = {
-      ...curve,
-      points: [...points, { day: lastDay + 7, target_ec: lastEc + 0.2 }],
-    };
+    const draft: EcRampCurveDraft = JSON.parse(JSON.stringify(curve));
+    this.dispatch({ type: 'EC_RAMP_EDIT_CURVE', draft });
   }
 
-  private _ecRampRemovePoint(index: number) {
-    const curve = this._ecRampEditingCurve;
-    if (!curve) return;
-    const points = [...(curve.points ?? [])];
-    points.splice(index, 1);
-    this._ecRampEditingCurve = { ...curve, points };
+  private _onEcRampCancelEdit() {
+    this.dispatch({ type: 'EC_RAMP_CANCEL_EDIT' });
   }
 
-  private _ecRampUpdatePoint(index: number, updates: Partial<ECRampPoint>) {
-    const curve = this._ecRampEditingCurve;
-    if (!curve) return;
-    const points = [...(curve.points ?? [])];
-    points[index] = { ...points[index], ...updates };
-    this._ecRampEditingCurve = { ...curve, points };
+  private _onEcRampCurveChanged(e: CustomEvent<{ partial: Partial<ECRampCurve> }>) {
+    this.dispatch({ type: 'UPDATE_EC_RAMP_CURVE', partial: e.detail.partial });
   }
 
-  private async _ecRampSaveCurve() {
-    const curve = this._ecRampEditingCurve;
-    if (!curve?.name?.trim()) {
-      this._ecRampError = 'Curve name is required';
+  private _onEcRampAddPoint() {
+    this.dispatch({ type: 'EC_RAMP_ADD_POINT' });
+  }
+
+  private _onEcRampRemovePoint(e: CustomEvent<{ index: number }>) {
+    this.dispatch({ type: 'EC_RAMP_REMOVE_POINT', index: e.detail.index });
+  }
+
+  private _onEcRampUpdatePoint(e: CustomEvent<{ index: number; partial: Partial<ECRampPoint> }>) {
+    this.dispatch({ type: 'EC_RAMP_UPDATE_POINT', index: e.detail.index, partial: e.detail.partial });
+  }
+
+  /**
+   * `ec-ramp-delete-curve` → confirm (the Shell owns this guard so the component
+   * stays dumb), then run the remove effect (no editor draft involved).
+   */
+  private _onEcRampDeleteCurve(e: CustomEvent<{ id: string }>) {
+    if (!window.confirm('Are you sure you want to delete this EC ramp curve?')) return;
+    this.dispatch({
+      type: 'SaveRequested',
+      action: 'remove-ec-ramp-curve',
+      params: { curveId: e.detail.id },
+    });
+  }
+
+  /**
+   * `ec-ramp-save-curve` → validate + compose the payload from the open draft. A
+   * synchronous validation failure sets the SM error and stops; a valid payload
+   * closes the editor and dispatches SaveRequested with the payload snapshotted
+   * into `applying.status` (ADR-0015), so the effect never reads cleared state.
+   */
+  private _onEcRampSaveCurve() {
+    const sub = this._sm.tabs.ec_ramp.sub;
+    if (sub.kind !== 'editing') return;
+    const result = composeEcRampSave(sub.draft);
+    if (!result.ok) {
+      this.dispatch({ type: 'SET_EC_RAMP_ERROR', error: result.error });
       return;
     }
-    const points = (curve.points ?? []).filter((p) => p.day >= 0 && p.target_ec > 0);
-    if (points.length === 0) {
-      this._ecRampError = 'At least one valid EC point is required';
-      return;
-    }
-    try {
-      await this.store.actions.library.saveECRampCurve({
-        curve_id: curve.id,
-        name: curve.name.trim(),
-        stage: curve.stage ?? 'flower',
-        points: [...points].sort((a, b) => a.day - b.day),
-      });
-      this._ecRampView = 'LIST';
-      this._ecRampEditingCurve = null;
-      this._ecRampError = null;
-    } catch (err: unknown) {
-      this._ecRampError = err instanceof Error ? err.message : 'Unknown error';
-    }
+    this.dispatch({ type: 'EC_RAMP_CANCEL_EDIT' });
+    this.dispatch({ type: 'SaveRequested', action: 'save-ec-ramp-curve', params: result.payload });
+  }
+
+  /**
+   * Effects read only `params`. They route through the store's library actions
+   * (not the bare Nutrient mutators) because those save *and* refetch
+   * `ecRampCurves$` — the atom the VM reads — so the list reflects the change.
+   */
+  private async _effectSaveEcRampCurve(params: EcRampSaveParams) {
+    await this.store.actions.library.saveECRampCurve(params);
+  }
+
+  private async _effectRemoveEcRampCurve(params: { curveId: string }) {
+    await this.store.actions.library.removeECRampCurve(params.curveId);
   }
 }

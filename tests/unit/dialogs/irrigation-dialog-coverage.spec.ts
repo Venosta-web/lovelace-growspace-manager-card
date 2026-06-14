@@ -1,6 +1,5 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { atom } from 'nanostores';
 import { IrrigationDialog } from '../../../src/dialogs/irrigation-dialog';
 import { transition } from '../../../src/dialogs/irrigation-dialog-sm';
 import { GrowspaceDevice } from '../../../src/types';
@@ -334,9 +333,11 @@ describe('IrrigationDialog - Coverage', () => {
     });
   });
 
-  // ─── EC Ramp Tab – List View with Curves (lines 4269–4298) ────────────────
-
-  describe('EC Ramp Tab – List View', () => {
+  // ─── EC Ramp tab (decomposed into <irrigation-ec-ramp-tab> — ADR-0019) ──────
+  // The tab renders in the child whose VM reads the Nutrient slice's
+  // ecRampCurves$ (seeded here). Edit/point/validation logic is unit-tested in
+  // the SM + VM specs; these cover the dialog→child→effect integration only.
+  describe('EC Ramp tab (decomposed)', () => {
     const sampleCurve: ECRampCurve = {
       id: 'curve-1',
       name: 'Veg Ramp',
@@ -347,384 +348,81 @@ describe('IrrigationDialog - Coverage', () => {
       ],
     };
 
-    beforeEach(async () => {
+    async function openEcRampTab() {
       ecRampCurves$.set({ 'curve-1': sampleCurve });
-      mockStore = makeMockStore(mockDevice);
-      (element as any).store = mockStore;
-      await switchToTab(7); // EC Ramp tab (index 7)
+      const navs = Array.from(element.shadowRoot?.querySelectorAll('.v1-nav-item') ?? []);
+      (navs.find((t) => t.textContent?.includes('EC Ramp')) as HTMLElement)?.click();
       await element.updateComplete;
-    });
+      const tab = element.shadowRoot!.querySelector('irrigation-ec-ramp-tab') as any;
+      await tab.updateComplete;
+      return tab;
+    }
 
     afterEach(() => {
       ecRampCurves$.set(null);
     });
 
-    it('renders curve list when curves are present (line 4269)', () => {
-      const text = element.shadowRoot?.textContent ?? '';
+    it('renders the saved curves (read from ecRampCurves$) in the child', async () => {
+      const tab = await openEcRampTab();
+      const text = (tab.shadowRoot.textContent ?? '').replace(/\s+/g, ' ');
       expect(text).toContain('Veg Ramp');
       expect(text).toContain('2 point');
     });
 
-    it('shows singular "point" label when curve has exactly 1 point (line 4277)', async () => {
-      (element as any)._ecRampCurvesController = {
-        value: {
-          'curve-single': { id: 'curve-single', name: 'Single Point', stage: 'veg', points: [{ day: 1, target_ec: 1.0 }] },
-        },
-      };
-      element.requestUpdate();
+    it('clicking a curve opens the editor (draft lands in the SM)', async () => {
+      const tab = await openEcRampTab();
+      (tab.shadowRoot.querySelector('.curve-item') as HTMLElement).click();
       await element.updateComplete;
-      const text = element.shadowRoot?.textContent ?? '';
-      // "1 point" without trailing "s" (the plural branch is "points")
-      expect(text).toContain('1 point');
-      expect(text).not.toMatch(/1 points/);
+      const sub = (element as any)._sm.tabs.ec_ramp.sub;
+      expect(sub.kind).toBe('editing');
+      expect(sub.draft.name).toBe('Veg Ramp');
     });
 
-    it('clicking a curve item opens edit form (line 4273)', async () => {
-      const curveItem = element.shadowRoot?.querySelector('.curve-item') as HTMLElement;
-      expect(curveItem).toBeTruthy();
-      curveItem.click();
-      await element.updateComplete;
-      expect((element as any)._ecRampView).toBe('EDIT');
-      expect((element as any)._ecRampEditingCurve?.name).toBe('Veg Ramp');
-    });
-
-    it('clicking edit button opens edit form and stops propagation (lines 4287–4289)', async () => {
-      (element as any)._ecRampEditCurve = vi.fn();
-      const editBtn = element.shadowRoot?.querySelector('.curve-item .curve-actions button[title="Edit"]') as HTMLElement;
-      expect(editBtn).toBeTruthy();
-      const clickEvent = new MouseEvent('click', { bubbles: true, composed: true });
-      const stopSpy = vi.spyOn(clickEvent, 'stopPropagation');
-      editBtn.dispatchEvent(clickEvent);
-      await element.updateComplete;
-      expect(stopSpy).toHaveBeenCalled();
-    });
-
-    it('clicking delete button calls _ecRampDeleteCurve with curve id (line 4298)', async () => {
+    it('confirmed delete calls removeECRampCurve through the effect', async () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
-      const deleteBtn = element.shadowRoot?.querySelector('.curve-item .curve-actions button[title="Delete"]') as HTMLElement;
-      expect(deleteBtn).toBeTruthy();
-      deleteBtn.click();
-      await new Promise(r => setTimeout(r, 10));
+      const tab = await openEcRampTab();
+      (tab.shadowRoot.querySelector('button[title="Delete"]') as HTMLElement).click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await element.updateComplete;
       expect(mockStore.actions.library.removeECRampCurve).toHaveBeenCalledWith('curve-1');
     });
 
-    it('does not delete when user cancels confirm dialog (line 4433)', async () => {
+    it('cancelled delete does not call removeECRampCurve', async () => {
       vi.spyOn(window, 'confirm').mockReturnValue(false);
-      const deleteBtn = element.shadowRoot?.querySelector('.curve-item .curve-actions button[title="Delete"]') as HTMLElement;
-      expect(deleteBtn).toBeTruthy();
-      deleteBtn.click();
-      await new Promise(r => setTimeout(r, 10));
+      const tab = await openEcRampTab();
+      (tab.shadowRoot.querySelector('button[title="Delete"]') as HTMLElement).click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
       expect(mockStore.actions.library.removeECRampCurve).not.toHaveBeenCalled();
     });
 
-    it('sets _ecRampError when delete fails (line 4437)', async () => {
+    it('a failing delete surfaces an error toast (MutationRunController)', async () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
-      mockStore.actions.library.removeECRampCurve.mockRejectedValueOnce(new Error('Delete failed'));
-      const deleteBtn = element.shadowRoot?.querySelector('.curve-item .curve-actions button[title="Delete"]') as HTMLElement;
-      deleteBtn.click();
-      await new Promise(r => setTimeout(r, 20));
+      mockStore.actions.library.removeECRampCurve.mockRejectedValueOnce(new Error('boom'));
+      const tab = await openEcRampTab();
+      (tab.shadowRoot.querySelector('button[title="Delete"]') as HTMLElement).click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
       await element.updateComplete;
-      expect((element as any)._ecRampError).toBe('Delete failed');
+      expect((element as any)._sm.toast).toBe('Failed to delete EC ramp curve');
     });
-  });
 
-  // ─── EC Ramp Private Methods (lines 4322, 4333–4491) ──────────────────────
-
-  describe('EC Ramp – _ecRampStartNew', () => {
-    it('initializes a new empty curve and switches to EDIT view', async () => {
-      await switchToTab(7);
-      (element as any)._ecRampStartNew();
+    it('save composes the curve and calls saveECRampCurve through the effect', async () => {
+      const tab = await openEcRampTab();
+      (tab.shadowRoot.querySelector('.curve-item') as HTMLElement).click();
       await element.updateComplete;
-      expect((element as any)._ecRampView).toBe('EDIT');
-      const curve = (element as any)._ecRampEditingCurve;
-      expect(curve.name).toBe('');
-      expect(curve.stage).toBe('flower');
-      expect(curve.points).toEqual([{ day: 1, target_ec: 1.0 }]);
-    });
-  });
-
-  describe('EC Ramp – Edit Form Rendering and Interactions (lines 4322–4413)', () => {
-    const editingCurve: ECRampCurve = {
-      id: 'curve-2',
-      name: 'Bloom Ramp',
-      stage: 'flower',
-      points: [
-        { day: 1, target_ec: 1.2 },
-        { day: 21, target_ec: 2.0 },
-      ],
-    };
-
-    beforeEach(async () => {
-      await switchToTab(7);
-      (element as any)._ecRampEditingCurve = { ...editingCurve, points: [...editingCurve.points] };
-      (element as any)._ecRampView = 'EDIT';
-      await element.updateComplete;
-    });
-
-    it('renders edit form with curve details (line 4322)', () => {
-      const text = element.shadowRoot?.textContent ?? '';
-      expect(text).toContain('Ramp Points');
-      expect(text).toContain('Curve Info');
-    });
-
-    it('updates curve name on @change event (line 4333)', async () => {
-      const nameInput = element.shadowRoot?.querySelector('md3-text-input[label="Curve Name"]') as any;
-      expect(nameInput).toBeTruthy();
-      nameInput.dispatchEvent(new CustomEvent('change', { detail: 'New Name' }));
-      await element.updateComplete;
-      expect((element as any)._ecRampEditingCurve.name).toBe('New Name');
-    });
-
-    it('updates stage on @change event (line 4347)', async () => {
-      const stageSelect = element.shadowRoot?.querySelector('md3-select[label="Growth Stage"]') as any;
-      expect(stageSelect).toBeTruthy();
-      stageSelect.dispatchEvent(new CustomEvent('change', { detail: 'veg' }));
-      await element.updateComplete;
-      expect((element as any)._ecRampEditingCurve.stage).toBe('veg');
-    });
-
-    it('adds a new point when Add Point is clicked (line 4355)', async () => {
-      const addBtn = Array.from(element.shadowRoot?.querySelectorAll('button') ?? []).find(
-        b => b.textContent?.includes('Add Point')
+      await tab.updateComplete;
+      const saveBtn = Array.from(tab.shadowRoot.querySelectorAll('button')).find((b: Element) =>
+        b.textContent?.includes('Save Curve')
       ) as HTMLElement;
-      expect(addBtn).toBeTruthy();
-      addBtn.click();
+      saveBtn.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
       await element.updateComplete;
-      expect((element as any)._ecRampEditingCurve.points).toHaveLength(3);
-      // New point should be day 21 + 7 = 28
-      expect((element as any)._ecRampEditingCurve.points[2].day).toBe(28);
-    });
-
-    it('updates point day on @change event (line 4368)', async () => {
-      const dayInputs = element.shadowRoot?.querySelectorAll('md3-number-input[label="Day"]') as any;
-      expect(dayInputs?.length).toBeGreaterThan(0);
-      dayInputs[0].dispatchEvent(new CustomEvent('change', { detail: '5' }));
-      await element.updateComplete;
-      expect((element as any)._ecRampEditingCurve.points[0].day).toBe(5);
-    });
-
-    it('updates point target_ec on @change event (line 4375)', async () => {
-      const ecInputs = element.shadowRoot?.querySelectorAll('md3-number-input[label="Target EC (mS/cm)"]') as any;
-      expect(ecInputs?.length).toBeGreaterThan(0);
-      ecInputs[0].dispatchEvent(new CustomEvent('change', { detail: '1.8' }));
-      await element.updateComplete;
-      expect((element as any)._ecRampEditingCurve.points[0].target_ec).toBe(1.8);
-    });
-
-    it('removes a point when delete button is clicked (line 4383)', async () => {
-      const deleteButtons = Array.from(element.shadowRoot?.querySelectorAll('.point-row button') ?? []);
-      expect(deleteButtons.length).toBeGreaterThan(0);
-      (deleteButtons[0] as HTMLElement).click();
-      await element.updateComplete;
-      expect((element as any)._ecRampEditingCurve.points).toHaveLength(1);
-    });
-
-    it('disables remove button when only one point remains (?disabled branch)', async () => {
-      (element as any)._ecRampEditingCurve = {
-        id: 'c1',
-        name: 'Solo',
-        stage: 'veg',
-        points: [{ day: 1, target_ec: 1.0 }], // only 1 point
-      };
-      (element as any)._ecRampView = 'EDIT';
-      await element.updateComplete;
-      const deleteButtons = Array.from(element.shadowRoot?.querySelectorAll('.point-row button') ?? []);
-      expect(deleteButtons.length).toBeGreaterThan(0);
-      expect((deleteButtons[0] as HTMLButtonElement).disabled).toBe(true);
-    });
-
-    it('returns to LIST view when Back button is clicked (line 4400)', async () => {
-      const backBtn = Array.from(element.shadowRoot?.querySelectorAll('button') ?? []).find(
-        b => b.textContent?.includes('Back')
-      ) as HTMLElement;
-      expect(backBtn).toBeTruthy();
-      backBtn.click();
-      await element.updateComplete;
-      expect((element as any)._ecRampView).toBe('LIST');
-      expect((element as any)._ecRampEditingCurve).toBeNull();
-      expect((element as any)._ecRampError).toBeNull();
+      expect(mockStore.actions.library.saveECRampCurve).toHaveBeenCalledOnce();
+      const [arg] = mockStore.actions.library.saveECRampCurve.mock.calls[0];
+      expect(arg.name).toBe('Veg Ramp');
+      expect(arg.curve_id).toBe('curve-1');
+      // editor closed after save
+      expect((element as any)._sm.tabs.ec_ramp.sub.kind).toBe('list');
     });
   });
 
-  // ─── _ecRampSaveCurve (lines 4469–4492) ───────────────────────────────────
-
-  describe('_ecRampSaveCurve', () => {
-    beforeEach(async () => {
-      await switchToTab(7);
-    });
-
-    it('sets error when curve name is empty (line 4472)', async () => {
-      (element as any)._ecRampEditingCurve = { name: '', stage: 'flower', points: [{ day: 1, target_ec: 1.0 }] };
-      await (element as any)._ecRampSaveCurve();
-      expect((element as any)._ecRampError).toBe('Curve name is required');
-    });
-
-    it('sets error when no valid EC points exist (line 4477)', async () => {
-      (element as any)._ecRampEditingCurve = {
-        name: 'Valid Name',
-        stage: 'flower',
-        points: [{ day: -1, target_ec: 0 }], // invalid point (day < 0 or target_ec <= 0)
-      };
-      await (element as any)._ecRampSaveCurve();
-      expect((element as any)._ecRampError).toBe('At least one valid EC point is required');
-    });
-
-    it('saves curve successfully and returns to list view (line 4481)', async () => {
-      (element as any)._ecRampEditingCurve = {
-        name: 'Test Curve',
-        stage: 'flower',
-        points: [{ day: 1, target_ec: 1.5 }, { day: 14, target_ec: 2.0 }],
-      };
-      (element as any)._ecRampView = 'EDIT';
-      await (element as any)._ecRampSaveCurve();
-      await element.updateComplete;
-      expect(mockStore.actions.library.saveECRampCurve).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: 'Test Curve',
-          stage: 'flower',
-          points: expect.arrayContaining([{ day: 1, target_ec: 1.5 }]),
-        })
-      );
-      expect((element as any)._ecRampView).toBe('LIST');
-      expect((element as any)._ecRampEditingCurve).toBeNull();
-      expect((element as any)._ecRampError).toBeNull();
-    });
-
-    it('sets _ecRampError when save fails (line 4491)', async () => {
-      mockStore.actions.library.saveECRampCurve.mockRejectedValueOnce(new Error('Save error'));
-      (element as any)._ecRampEditingCurve = {
-        name: 'Test Curve',
-        stage: 'flower',
-        points: [{ day: 1, target_ec: 1.5 }],
-      };
-      await (element as any)._ecRampSaveCurve();
-      await element.updateComplete;
-      expect((element as any)._ecRampError).toBe('Save error');
-    });
-  });
-
-  // ─── _ecRampAddPoint with empty points array (line 4445–4450) ─────────────
-
-  describe('_ecRampAddPoint edge cases', () => {
-    it('adds first point with default values when points array is empty', async () => {
-      await switchToTab(7);
-      (element as any)._ecRampEditingCurve = { name: 'Ramp', stage: 'flower', points: [] };
-      (element as any)._ecRampAddPoint();
-      expect((element as any)._ecRampEditingCurve.points).toHaveLength(1);
-      expect((element as any)._ecRampEditingCurve.points[0]).toEqual({ day: 7, target_ec: 1.2 });
-    });
-
-    it('does nothing when _ecRampEditingCurve is null', async () => {
-      await switchToTab(7);
-      (element as any)._ecRampEditingCurve = null;
-      (element as any)._ecRampAddPoint(); // should not throw
-      expect((element as any)._ecRampEditingCurve).toBeNull();
-    });
-  });
-
-  // ─── _ecRampRemovePoint and _ecRampUpdatePoint guards ─────────────────────
-
-  describe('_ecRampRemovePoint and _ecRampUpdatePoint guards', () => {
-    it('_ecRampRemovePoint does nothing when curve is null', async () => {
-      (element as any)._ecRampEditingCurve = null;
-      (element as any)._ecRampRemovePoint(0); // should not throw
-    });
-
-    it('_ecRampUpdatePoint does nothing when curve is null', async () => {
-      (element as any)._ecRampEditingCurve = null;
-      (element as any)._ecRampUpdatePoint(0, { day: 5 }); // should not throw
-    });
-
-    it('_ecRampUpdatePoint merges partial updates into point', async () => {
-      (element as any)._ecRampEditingCurve = {
-        name: 'X',
-        stage: 'veg',
-        points: [{ day: 1, target_ec: 1.0 }],
-      };
-      (element as any)._ecRampUpdatePoint(0, { day: 7 });
-      expect((element as any)._ecRampEditingCurve.points[0]).toEqual({ day: 7, target_ec: 1.0 });
-    });
-  });
-
-  // ─── _ecRampSaveCurve branch coverage ─────────────────────────────────────
-
-  describe('_ecRampSaveCurve – branch coverage', () => {
-    beforeEach(async () => {
-      await switchToTab(7);
-    });
-
-    it('uses fallback empty array when curve.points is undefined (line 4475)', async () => {
-      (element as any)._ecRampEditingCurve = { name: 'Ramp', stage: 'flower', points: undefined };
-      await (element as any)._ecRampSaveCurve();
-      // No valid points after filter → error
-      expect((element as any)._ecRampError).toBe('At least one valid EC point is required');
-    });
-
-    it('uses "flower" fallback when curve.stage is undefined (line 4484)', async () => {
-      (element as any)._ecRampEditingCurve = {
-        name: 'Stageless Curve',
-        stage: undefined,
-        points: [{ day: 1, target_ec: 1.5 }],
-      };
-      await (element as any)._ecRampSaveCurve();
-      expect(mockStore.actions.library.saveECRampCurve).toHaveBeenCalledWith(
-        expect.objectContaining({ stage: 'flower' })
-      );
-    });
-
-    it('sets generic error message when thrown error is not an Error instance (line 4491)', async () => {
-      mockStore.actions.library.saveECRampCurve.mockRejectedValueOnce('plain string error');
-      (element as any)._ecRampEditingCurve = {
-        name: 'Test',
-        stage: 'veg',
-        points: [{ day: 1, target_ec: 1.0 }],
-      };
-      await (element as any)._ecRampSaveCurve();
-      expect((element as any)._ecRampError).toBe('Unknown error');
-    });
-  });
-
-  // ─── _ecRampDeleteCurve – non-Error exception branch ──────────────────────
-
-  describe('_ecRampDeleteCurve – non-Error exception', () => {
-    it('sets generic error when delete throws a non-Error value', async () => {
-      await switchToTab(7);
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
-      mockStore.actions.library.removeECRampCurve.mockRejectedValueOnce('string error');
-      await (element as any)._ecRampDeleteCurve('some-id');
-      expect((element as any)._ecRampError).toBe('Unknown error');
-    });
-  });
-
-  // ─── _ecRampAddPoint – undefined points fallback ──────────────────────────
-
-  describe('_ecRampAddPoint – undefined points fallback', () => {
-    it('uses empty array fallback when curve.points is undefined', async () => {
-      (element as any)._ecRampEditingCurve = { name: 'Ramp', stage: 'flower' }; // no points property
-      (element as any)._ecRampAddPoint();
-      expect((element as any)._ecRampEditingCurve.points).toHaveLength(1);
-      expect((element as any)._ecRampEditingCurve.points[0]).toEqual({ day: 7, target_ec: 1.2 });
-    });
-  });
-
-  // ─── _ecRampRemovePoint – undefined points fallback ──────────────────────
-
-  describe('_ecRampRemovePoint – undefined points fallback', () => {
-    it('uses empty array fallback when curve.points is undefined', async () => {
-      (element as any)._ecRampEditingCurve = { name: 'Ramp', stage: 'flower' }; // no points
-      (element as any)._ecRampRemovePoint(0); // splice on empty — no throw
-      expect((element as any)._ecRampEditingCurve.points).toHaveLength(0);
-    });
-  });
-
-  // ─── _ecRampUpdatePoint – undefined points fallback ──────────────────────
-
-  describe('_ecRampUpdatePoint – undefined points fallback', () => {
-    it('uses empty array fallback when curve.points is undefined', async () => {
-      (element as any)._ecRampEditingCurve = { name: 'Ramp', stage: 'flower' }; // no points
-      // index 0 on empty array just sets undefined, should not throw
-      (element as any)._ecRampUpdatePoint(0, { day: 5 });
-      expect((element as any)._ecRampEditingCurve.points).toHaveLength(1);
-    });
-  });
 });
