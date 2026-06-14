@@ -22,6 +22,7 @@ import {
   mdiStarOutline,
   mdiCamera,
   mdiImageMultiple,
+  mdiCameraFlip,
 } from '@mdi/js';
 import './strain-import-dialog';
 import { HomeAssistant } from 'custom-card-helpers';
@@ -46,6 +47,13 @@ export class StrainEditorView extends LitElement {
 
   @state() private _sm: StrainEditorSM = createInitialSM();
   @state() private _lineageTree: LineageNode | null = null;
+
+  // Live in-app camera capture (getUserMedia). Works inside the HA Android/iOS
+  // WebView where the `<input capture>` attribute is ignored and only opens the
+  // gallery picker. Null when the camera overlay is closed.
+  @state() private _cameraStream: MediaStream | null = null;
+  @state() private _cameraError: string | null = null;
+  private _cameraFacing: 'environment' | 'user' = 'environment';
 
   private _dispatchStateChange() {
     this.dispatchEvent(
@@ -414,6 +422,76 @@ export class StrainEditorView extends LitElement {
 
   private _gallery(): StrainGalleryImage[] {
     return this._sm.draft.images ?? [];
+  }
+
+  /**
+   * Open the live camera. Inside the HA companion-app WebView the
+   * `<input capture="environment">` hint is not honoured and only opens the
+   * gallery, so we drive the camera directly via getUserMedia. Falls back to
+   * the hidden file input when the MediaDevices API is unavailable.
+   */
+  private async _openCameraCapture(): Promise<void> {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      (this.shadowRoot?.getElementById('gallery-camera-input') as HTMLInputElement)?.click();
+      return;
+    }
+    this._cameraError = null;
+    try {
+      this._cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: this._cameraFacing } },
+        audio: false,
+      });
+    } catch (err) {
+      // Permission denied / no camera / not a secure context.
+      console.error('Camera access failed:', err);
+      this._cameraError =
+        'Could not access the camera. Grant the Home Assistant app camera permission, or use “Choose from Library”.';
+    }
+  }
+
+  private _stopCameraStream(): void {
+    this._cameraStream?.getTracks().forEach((t) => t.stop());
+    this._cameraStream = null;
+  }
+
+  private _closeCameraCapture(): void {
+    this._stopCameraStream();
+    this._cameraError = null;
+  }
+
+  private async _switchCamera(): Promise<void> {
+    this._cameraFacing = this._cameraFacing === 'environment' ? 'user' : 'environment';
+    this._stopCameraStream();
+    await this._openCameraCapture();
+  }
+
+  private _capturePhoto(): void {
+    const stream = this._cameraStream;
+    if (!stream) return;
+    const video = this.shadowRoot?.getElementById('camera-preview') as HTMLVideoElement | null;
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+          this._handleGalleryUpload(file);
+        }
+        this._closeCameraCapture();
+      },
+      'image/jpeg',
+      0.92
+    );
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._stopCameraStream();
   }
 
   private async _handleGalleryUpload(file: File): Promise<void> {
@@ -1228,9 +1306,7 @@ export class StrainEditorView extends LitElement {
                   @click=${(e: Event) => {
                     e.stopPropagation();
                     this._sm = transition(this._sm, { type: 'PhotoMenuClosed' });
-                    (
-                      this.shadowRoot?.getElementById('gallery-camera-input') as HTMLInputElement
-                    )?.click();
+                    this._openCameraCapture();
                   }}
                 >
                   <svg
@@ -1262,6 +1338,75 @@ export class StrainEditorView extends LitElement {
               </div>
             `
           : nothing}
+        ${this._renderCameraOverlay()}
+      </div>
+    `;
+  }
+
+  private _renderCameraOverlay(): TemplateResult | typeof nothing {
+    if (!this._cameraStream && !this._cameraError) return nothing;
+    return html`
+      <div
+        style="position:fixed; inset:0; z-index:600; background:#000; display:flex; flex-direction:column;"
+      >
+        ${this._cameraError
+          ? html`
+              <div
+                style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:24px; text-align:center; color:#fff;"
+              >
+                <svg style="width:48px;height:48px;fill:#f44336;" viewBox="0 0 24 24">
+                  <path d="${mdiCamera}"></path>
+                </svg>
+                <div style="max-width:320px; font-size:0.95rem;">${this._cameraError}</div>
+                <button
+                  class="md3-button tonal"
+                  @click=${() => this._closeCameraCapture()}
+                >
+                  Close
+                </button>
+              </div>
+            `
+          : html`
+              <video
+                id="camera-preview"
+                autoplay
+                playsinline
+                muted
+                .srcObject=${this._cameraStream}
+                style="flex:1; width:100%; height:100%; object-fit:cover; background:#000;"
+              ></video>
+              <div
+                style="position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; padding:16px;"
+              >
+                <button
+                  title="Close"
+                  style="background:rgba(0,0,0,0.5); border:none; width:44px; height:44px; border-radius:50%; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;"
+                  @click=${() => this._closeCameraCapture()}
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiClose}"></path>
+                  </svg>
+                </button>
+                <button
+                  title="Switch camera"
+                  style="background:rgba(0,0,0,0.5); border:none; width:44px; height:44px; border-radius:50%; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;"
+                  @click=${() => this._switchCamera()}
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiCameraFlip}"></path>
+                  </svg>
+                </button>
+              </div>
+              <div
+                style="position:absolute; bottom:0; left:0; right:0; display:flex; justify-content:center; padding:24px;"
+              >
+                <button
+                  title="Capture"
+                  style="width:72px; height:72px; border-radius:50%; border:4px solid rgba(255,255,255,0.4); background:#fff; cursor:pointer;"
+                  @click=${() => this._capturePhoto()}
+                ></button>
+              </div>
+            `}
       </div>
     `;
   }

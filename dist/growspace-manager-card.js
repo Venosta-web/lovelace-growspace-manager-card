@@ -105,6 +105,7 @@ var mdiBullseyeArrow = "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,
 var mdiCalculator = "M7,2H17A2,2 0 0,1 19,4V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V4A2,2 0 0,1 7,2M7,4V8H17V4H7M7,10V12H9V10H7M11,10V12H13V10H11M15,10V12H17V10H15M7,14V16H9V14H7M11,14V16H13V14H11M15,14V16H17V14H15M7,18V20H9V18H7M11,18V20H13V18H11M15,18V20H17V18H15Z";
 var mdiCalendarClock = "M15,13H16.5V15.82L18.94,17.23L18.19,18.53L15,16.69V13M19,8H5V19H9.67C9.24,18.09 9,17.07 9,16A7,7 0 0,1 16,9C17.07,9 18.09,9.24 19,9.67V8M5,21C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3H6V1H8V3H16V1H18V3H19A2,2 0 0,1 21,5V11.1C22.24,12.36 23,14.09 23,16A7,7 0 0,1 16,23C14.09,23 12.36,22.24 11.1,21H5M16,11.15A4.85,4.85 0 0,0 11.15,16C11.15,18.68 13.32,20.85 16,20.85A4.85,4.85 0 0,0 20.85,16C20.85,13.32 18.68,11.15 16,11.15Z";
 var mdiCamera = "M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z";
+var mdiCameraFlip = "M20 5H17L15 3H9L7 5H4C2.9 5 2 5.9 2 7V19C2 20.11 2.9 21 4 21H20C21.11 21 22 20.11 22 19V7C22 5.9 21.11 5 20 5M5 12H7.1C7.65 9.29 10.29 7.55 13 8.1C13.76 8.25 14.43 8.59 15 9L13.56 10.45C13.11 10.17 12.58 10 12 10C10.74 10 9.6 10.8 9.18 12H11L8 15L5 12M16.91 14C16.36 16.71 13.72 18.45 11 17.9C10.25 17.74 9.58 17.41 9 17L10.44 15.55C10.9 15.83 11.43 16 12 16C13.27 16 14.41 15.2 14.83 14H13L16 11L19 14H16.91Z";
 var mdiCameraPlus = "M3 4V1H5V4H8V6H5V9H3V6H0V4M6 10V7H9V4H16L17.8 6H21C22.1 6 23 6.9 23 8V20C23 21.1 22.1 22 21 22H5C3.9 22 3 21.1 3 20V10M13 19C17.45 19 19.69 13.62 16.54 10.46C13.39 7.31 8 9.55 8 14C8 16.76 10.24 19 13 19M9.8 14C9.8 16.85 13.25 18.28 15.26 16.26C17.28 14.25 15.85 10.8 13 10.8C11.24 10.8 9.8 12.24 9.8 14Z";
 var mdiCannabis = "M11.5,22V17.35C11,18.13 10,19.09 8.03,19.81C8.03,19.81 8.53,18.1 9.94,16.95C8.64,17.23 6.68,17.19 4,16C4,16 6.47,14.59 9.28,14.97C7.69,14 5.7,12.08 4.17,8.11C4.17,8.11 8.67,9.34 10.91,13.14C8.88,8.24 12,2 12,2C14.43,7.47 13.91,11.1 13.12,13.1C15.37,9.33 19.83,8.11 19.83,8.11C18.3,12.08 16.31,14 14.72,14.97C17.53,14.59 20,16 20,16C17.32,17.19 15.36,17.23 14.06,16.95C15.47,18.1 15.97,19.81 15.97,19.81C14,19.09 13,18.13 12.5,17.35V22H11.5Z";
 var mdiChartBar = "M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z";
@@ -43496,6 +43497,12 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         this.strains = [];
         this._sm = createInitialSM$1();
         this._lineageTree = null;
+        // Live in-app camera capture (getUserMedia). Works inside the HA Android/iOS
+        // WebView where the `<input capture>` attribute is ignored and only opens the
+        // gallery picker. Null when the camera overlay is closed.
+        this._cameraStream = null;
+        this._cameraError = null;
+        this._cameraFacing = 'environment';
     }
     _dispatchStateChange() {
         this.dispatchEvent(new CustomEvent('editing-strain-changed', {
@@ -43822,6 +43829,70 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     }
     _gallery() {
         return this._sm.draft.images ?? [];
+    }
+    /**
+     * Open the live camera. Inside the HA companion-app WebView the
+     * `<input capture="environment">` hint is not honoured and only opens the
+     * gallery, so we drive the camera directly via getUserMedia. Falls back to
+     * the hidden file input when the MediaDevices API is unavailable.
+     */
+    async _openCameraCapture() {
+        if (!navigator.mediaDevices?.getUserMedia) {
+            this.shadowRoot?.getElementById('gallery-camera-input')?.click();
+            return;
+        }
+        this._cameraError = null;
+        try {
+            this._cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: this._cameraFacing } },
+                audio: false,
+            });
+        }
+        catch (err) {
+            // Permission denied / no camera / not a secure context.
+            console.error('Camera access failed:', err);
+            this._cameraError =
+                'Could not access the camera. Grant the Home Assistant app camera permission, or use “Choose from Library”.';
+        }
+    }
+    _stopCameraStream() {
+        this._cameraStream?.getTracks().forEach((t) => t.stop());
+        this._cameraStream = null;
+    }
+    _closeCameraCapture() {
+        this._stopCameraStream();
+        this._cameraError = null;
+    }
+    async _switchCamera() {
+        this._cameraFacing = this._cameraFacing === 'environment' ? 'user' : 'environment';
+        this._stopCameraStream();
+        await this._openCameraCapture();
+    }
+    _capturePhoto() {
+        const stream = this._cameraStream;
+        if (!stream)
+            return;
+        const video = this.shadowRoot?.getElementById('camera-preview');
+        if (!video || !video.videoWidth)
+            return;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx)
+            return;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+            if (blob) {
+                const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                this._handleGalleryUpload(file);
+            }
+            this._closeCameraCapture();
+        }, 'image/jpeg', 0.92);
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._stopCameraStream();
     }
     async _handleGalleryUpload(file) {
         this._sm = transition$1(this._sm, { type: 'SaveRequested' });
@@ -44602,7 +44673,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                   @click=${(e) => {
                 e.stopPropagation();
                 this._sm = transition$1(this._sm, { type: 'PhotoMenuClosed' });
-                this.shadowRoot?.getElementById('gallery-camera-input')?.click();
+                this._openCameraCapture();
             }}
                 >
                   <svg
@@ -44632,6 +44703,75 @@ let StrainEditorView = class StrainEditorView extends i$3 {
               </div>
             `
             : E}
+        ${this._renderCameraOverlay()}
+      </div>
+    `;
+    }
+    _renderCameraOverlay() {
+        if (!this._cameraStream && !this._cameraError)
+            return E;
+        return x `
+      <div
+        style="position:fixed; inset:0; z-index:600; background:#000; display:flex; flex-direction:column;"
+      >
+        ${this._cameraError
+            ? x `
+              <div
+                style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:24px; text-align:center; color:#fff;"
+              >
+                <svg style="width:48px;height:48px;fill:#f44336;" viewBox="0 0 24 24">
+                  <path d="${mdiCamera}"></path>
+                </svg>
+                <div style="max-width:320px; font-size:0.95rem;">${this._cameraError}</div>
+                <button
+                  class="md3-button tonal"
+                  @click=${() => this._closeCameraCapture()}
+                >
+                  Close
+                </button>
+              </div>
+            `
+            : x `
+              <video
+                id="camera-preview"
+                autoplay
+                playsinline
+                muted
+                .srcObject=${this._cameraStream}
+                style="flex:1; width:100%; height:100%; object-fit:cover; background:#000;"
+              ></video>
+              <div
+                style="position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; padding:16px;"
+              >
+                <button
+                  title="Close"
+                  style="background:rgba(0,0,0,0.5); border:none; width:44px; height:44px; border-radius:50%; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;"
+                  @click=${() => this._closeCameraCapture()}
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiClose}"></path>
+                  </svg>
+                </button>
+                <button
+                  title="Switch camera"
+                  style="background:rgba(0,0,0,0.5); border:none; width:44px; height:44px; border-radius:50%; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;"
+                  @click=${() => this._switchCamera()}
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiCameraFlip}"></path>
+                  </svg>
+                </button>
+              </div>
+              <div
+                style="position:absolute; bottom:0; left:0; right:0; display:flex; justify-content:center; padding:24px;"
+              >
+                <button
+                  title="Capture"
+                  style="width:72px; height:72px; border-radius:50%; border:4px solid rgba(255,255,255,0.4); background:#fff; cursor:pointer;"
+                  @click=${() => this._capturePhoto()}
+                ></button>
+              </div>
+            `}
       </div>
     `;
     }
@@ -45457,6 +45597,12 @@ __decorate([
 __decorate([
     r$3()
 ], StrainEditorView.prototype, "_lineageTree", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_cameraStream", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_cameraError", void 0);
 StrainEditorView = __decorate([
     t$2('strain-editor-view')
 ], StrainEditorView);
