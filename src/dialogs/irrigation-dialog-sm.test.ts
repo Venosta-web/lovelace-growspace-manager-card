@@ -20,6 +20,7 @@ import {
   actionErrorMessage,
   type DialogSM,
   type TabId,
+  type TankDraft,
 } from './irrigation-dialog-sm';
 import { createGrowspaceDevice } from '../services/types';
 
@@ -1592,5 +1593,65 @@ describe('mutation-run events (ADR-0015)', () => {
     expect(actionErrorMessage('save-settings')).toBe('Failed to save irrigation settings');
     expect(actionErrorMessage('edit-drain-time')).toBe('Failed to save drain time');
     expect(actionErrorMessage('nonexistent')).toBe('Operation failed');
+  });
+});
+
+// ─── Tanks tab (ADR-0019: draft lives in the SM, not the component) ────────────
+
+describe('tanks tab', () => {
+  const draft: TankDraft = {
+    sensorEntity: 'sensor.tank_a',
+    name: 'Tank A',
+    volumeLiters: 200,
+    warningLevel: 30,
+  };
+
+  it('starts idle', () => {
+    expect(createInitialSM().tabs.tanks.sub.kind).toBe('idle');
+  });
+
+  it('EDIT_TANK opens the editor with the index and seeded draft', () => {
+    const sm = transition(createInitialSM(), { type: 'EDIT_TANK', index: 2, draft });
+    expect(sm.tabs.tanks.sub).toEqual({ kind: 'editing', index: 2, draft });
+  });
+
+  it('UPDATE_TANK_DRAFT merges a partial into the open draft', () => {
+    let sm = transition(createInitialSM(), { type: 'EDIT_TANK', index: 0, draft });
+    sm = transition(sm, { type: 'UPDATE_TANK_DRAFT', partial: { name: 'Renamed', warningLevel: 45 } });
+    const sub = sm.tabs.tanks.sub;
+    expect(sub.kind).toBe('editing');
+    if (sub.kind === 'editing') {
+      expect(sub.index).toBe(0);
+      expect(sub.draft).toEqual({ ...draft, name: 'Renamed', warningLevel: 45 });
+    }
+  });
+
+  it('UPDATE_TANK_DRAFT clearing volume sets it to null', () => {
+    let sm = transition(createInitialSM(), { type: 'EDIT_TANK', index: 0, draft });
+    sm = transition(sm, { type: 'UPDATE_TANK_DRAFT', partial: { volumeLiters: null } });
+    const sub = sm.tabs.tanks.sub;
+    expect(sub.kind === 'editing' && sub.draft.volumeLiters).toBeNull();
+  });
+
+  it('UPDATE_TANK_DRAFT is a no-op when not editing', () => {
+    const sm = createInitialSM();
+    const next = transition(sm, { type: 'UPDATE_TANK_DRAFT', partial: { name: 'x' } });
+    expect(next.tabs.tanks.sub.kind).toBe('idle');
+  });
+
+  it('CANCEL_TANK_EDIT returns to idle', () => {
+    let sm = transition(createInitialSM(), { type: 'EDIT_TANK', index: 1, draft });
+    sm = transition(sm, { type: 'CANCEL_TANK_EDIT' });
+    expect(sm.tabs.tanks.sub.kind).toBe('idle');
+  });
+
+  it('SaveRequested(save-tank) carries the composed payload into applying status', () => {
+    const params = { growspaceId: 'gs1', irrigationTanks: [] };
+    const sm = transition(createInitialSM(), {
+      type: 'SaveRequested',
+      action: 'save-tank',
+      params,
+    });
+    expect(sm.status).toEqual({ kind: 'applying', action: 'save-tank', params });
   });
 });

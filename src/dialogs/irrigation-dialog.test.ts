@@ -3,15 +3,24 @@ import { fixture, html } from '@open-wc/testing-helpers';
 import type { LitElement } from 'lit';
 import { atom } from 'nanostores';
 import { transition } from './irrigation-dialog-sm';
-import { cropSteeringHistory$, irrigationConfigs$ } from '../slices/irrigation';
+import { cropSteeringHistory$, irrigationConfigs$, setTankLevels, tankLevels$ } from '../slices/irrigation';
 import { createGrowspaceDevice } from '../services/types';
 import type { IrrigationDialog } from './irrigation-dialog';
 import './irrigation-dialog';
+
+// ADR-0019: the Tanks tab Save effect persists via the Growspace slice's
+// configureEnvironment. Mock it so the inline-edit test can assert the call.
+vi.mock('../slices/growspace', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../slices/growspace')>();
+  return { ...actual, configureEnvironment: vi.fn().mockResolvedValue(undefined) };
+});
+import { configureEnvironment } from '../slices/growspace';
 
 afterEach(() => {
   document.body.innerHTML = '';
   cropSteeringHistory$.set(new Map());
   irrigationConfigs$.set(new Map());
+  tankLevels$.set(new Map());
   vi.restoreAllMocks();
 });
 
@@ -1547,9 +1556,18 @@ describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
   });
 });
 
+
+// ---------------------------------------------------------------------------
+// Tanks tab inline edit (decomposed into <irrigation-tanks-tab> — ADR-0019)
+// ---------------------------------------------------------------------------
+
 describe('IrrigationDialog – Tanks tab inline edit', () => {
-  it('renders a pencil button for each tank row', async () => {
+  // The Tanks tab renders in the decomposed child whose VM reads tankLevels$
+  // (seeded here as sync-service does in prod). The edit draft lives in the SM;
+  // Save persists through the Growspace slice's configureEnvironment (mocked).
+  async function mountTanks() {
     const device = makeTankDevice();
+    setTankLevels('gs1', device.environmentAttributes!.irrigationTanks as never);
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog
         .open=${true}
@@ -1559,51 +1577,38 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
       ></irrigation-dialog>
     `);
     await el.updateComplete;
+    const tab = el.shadowRoot!.querySelector('irrigation-tanks-tab') as LitElement & {
+      shadowRoot: ShadowRoot;
+    };
+    await tab.updateComplete;
+    return { el, tab };
+  }
 
-    const pencilBtns = el.shadowRoot!.querySelectorAll('button.tank-edit-btn');
-    expect(pencilBtns.length).toBe(2);
+  const openEditor = async (
+    tab: { shadowRoot: ShadowRoot; updateComplete: Promise<unknown> },
+    el: IrrigationDialog
+  ) => {
+    (tab.shadowRoot.querySelector('button.tank-edit-btn') as HTMLButtonElement).click();
+    await el.updateComplete;
+    await tab.updateComplete;
+  };
+
+  it('renders a pencil button for each tank row', async () => {
+    const { tab } = await mountTanks();
+    expect(tab.shadowRoot.querySelectorAll('button.tank-edit-btn').length).toBe(2);
   });
 
   it('clicking pencil reveals an inline edit form', async () => {
-    const device = makeTankDevice();
-    const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog
-        .open=${true}
-        .device=${device}
-        .initialTab=${'tanks'}
-        growspaceName="Tent 1"
-      ></irrigation-dialog>
-    `);
-    await el.updateComplete;
-
-    expect(el.shadowRoot!.querySelector('.tank-edit-form')).toBeNull();
-
-    const firstPencil = el.shadowRoot!.querySelector('button.tank-edit-btn') as HTMLButtonElement;
-    firstPencil.click();
-    await el.updateComplete;
-
-    expect(el.shadowRoot!.querySelector('.tank-edit-form')).not.toBeNull();
+    const { el, tab } = await mountTanks();
+    expect(tab.shadowRoot.querySelector('.tank-edit-form')).toBeNull();
+    await openEditor(tab, el);
+    expect(tab.shadowRoot.querySelector('.tank-edit-form')).not.toBeNull();
   });
 
-  it('edit form pre-populates with the tank\'s current values', async () => {
-    const device = makeTankDevice();
-    const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog
-        .open=${true}
-        .device=${device}
-        .initialTab=${'tanks'}
-        growspaceName="Tent 1"
-      ></irrigation-dialog>
-    `);
-    await el.updateComplete;
-
-    const pencilBtns = el.shadowRoot!.querySelectorAll('button.tank-edit-btn');
-    (pencilBtns[0] as HTMLButtonElement).click();
-    await el.updateComplete;
-
-    const form = el.shadowRoot!.querySelector('.tank-edit-form')!;
-    const inputs = form.querySelectorAll('input.md3-input');
-    // sensorEntity, name, volume, warningLevel
+  it("edit form pre-populates with the tank's current values", async () => {
+    const { el, tab } = await mountTanks();
+    await openEditor(tab, el);
+    const inputs = tab.shadowRoot.querySelectorAll('input.md3-input');
     expect((inputs[0] as HTMLInputElement).value).toBe('sensor.tank_a');
     expect((inputs[1] as HTMLInputElement).value).toBe('Tank A');
     expect((inputs[2] as HTMLInputElement).value).toBe('200');
@@ -1611,57 +1616,30 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
   });
 
   it('clicking Cancel hides the edit form', async () => {
-    const device = makeTankDevice();
-    const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog
-        .open=${true}
-        .device=${device}
-        .initialTab=${'tanks'}
-        growspaceName="Tent 1"
-      ></irrigation-dialog>
-    `);
-    await el.updateComplete;
-
-    (el.shadowRoot!.querySelector('button.tank-edit-btn') as HTMLButtonElement).click();
-    await el.updateComplete;
-    expect(el.shadowRoot!.querySelector('.tank-edit-form')).not.toBeNull();
-
-    const cancelBtn = Array.from(
-      el.shadowRoot!.querySelectorAll('.tank-edit-form button')
-    ).find((b) => b.textContent?.trim() === 'Cancel') as HTMLButtonElement;
+    const { el, tab } = await mountTanks();
+    await openEditor(tab, el);
+    expect(tab.shadowRoot.querySelector('.tank-edit-form')).not.toBeNull();
+    const cancelBtn = Array.from(tab.shadowRoot.querySelectorAll('.tank-edit-form button')).find(
+      (b) => b.textContent?.trim() === 'Cancel'
+    ) as HTMLButtonElement;
     cancelBtn.click();
     await el.updateComplete;
-
-    expect(el.shadowRoot!.querySelector('.tank-edit-form')).toBeNull();
+    await tab.updateComplete;
+    expect(tab.shadowRoot.querySelector('.tank-edit-form')).toBeNull();
   });
 
   it('clicking Save calls configureEnvironment with the updated tank and closes the form', async () => {
-    const device = makeTankDevice();
-    const configureEnvironment = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(configureEnvironment).mockClear();
+    const { el, tab } = await mountTanks();
+    await openEditor(tab, el);
 
-    const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog
-        .open=${true}
-        .device=${device}
-        .initialTab=${'tanks'}
-        growspaceName="Tent 1"
-      ></irrigation-dialog>
-    `);
-    await el.updateComplete;
-
-    // Inject mock data service
-    (el as any)._dataService = { configureEnvironment };
-
-    // Open edit for Tank A (index 0)
-    (el.shadowRoot!.querySelector('button.tank-edit-btn') as HTMLButtonElement).click();
-    await el.updateComplete;
-
-    // Change warning level
-    const form = el.shadowRoot!.querySelector('.tank-edit-form')!;
+    // Change warning level (4th input)
+    const form = tab.shadowRoot.querySelector('.tank-edit-form')!;
     const warningInput = form.querySelectorAll('input.md3-input')[3] as HTMLInputElement;
     warningInput.value = '25';
     warningInput.dispatchEvent(new Event('input'));
     await el.updateComplete;
+    await tab.updateComplete;
 
     const saveBtn = Array.from(form.querySelectorAll('button')).find(
       (b) => b.textContent?.trim() === 'Save'
@@ -1669,16 +1647,17 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
     saveBtn.click();
     await new Promise((resolve) => setTimeout(resolve, 0));
     await el.updateComplete;
+    await tab.updateComplete;
 
     expect(configureEnvironment).toHaveBeenCalledOnce();
-    const [call] = configureEnvironment.mock.calls;
-    expect(call[0].growspaceId).toBe('gs1');
-    expect(call[0].irrigationTanks[0].warningLevel).toBe(25);
-    // Other tank unchanged
-    expect(call[0].irrigationTanks[1].name).toBe('Tank B');
+    const [call] = vi.mocked(configureEnvironment).mock.calls;
+    expect((call[0] as { growspaceId: string }).growspaceId).toBe('gs1');
+    const tanks = (call[0] as { irrigationTanks: Array<{ warningLevel: number; name: string }> })
+      .irrigationTanks;
+    expect(tanks[0].warningLevel).toBe(25);
+    expect(tanks[1].name).toBe('Tank B'); // other tank unchanged
 
-    // Form dismissed
-    expect(el.shadowRoot!.querySelector('.tank-edit-form')).toBeNull();
+    expect(tab.shadowRoot.querySelector('.tank-edit-form')).toBeNull();
   });
 });
 
