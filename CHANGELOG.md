@@ -1,3 +1,10 @@
+# [1.1.0-next.46](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.45...v1.1.0-next.46) (2026-06-14)
+
+
+### Features
+
+* **irrigation:** decompose ec_ramp tab into per-tab ViewModel adapter ([#297](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/297)) ([9dc70d8](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/9dc70d84576d536b5af5c6e65d86b5776c9bd405)), closes [#296](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/296)
+
 # [1.1.0-next.45](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.44...v1.1.0-next.45) (2026-06-14)
 
 
