@@ -89,26 +89,26 @@ describe('SyncService Unit Tests', () => {
   });
 
   describe('setCardConfig', () => {
-    it('does not trigger setDefaultApplied(false) when config default_growspace is the same', () => {
+    it('keeps the per-card default-applied flag when config default_growspace is the same', () => {
       const config1: GrowspaceManagerCardConfig = { default_growspace: 'room1' } as any;
       syncService.setCardConfig(config1);
-      vi.clearAllMocks();
+      (syncService as any)._defaultApplied = true;
 
       const config2: GrowspaceManagerCardConfig = { default_growspace: 'room1' } as any;
       syncService.setCardConfig(config2);
 
-      expect(uiStore.setDefaultApplied).not.toHaveBeenCalled();
+      expect((syncService as any)._defaultApplied).toBe(true);
     });
 
-    it('triggers setDefaultApplied(false) when config default_growspace is different', () => {
+    it('resets the per-card default-applied flag when config default_growspace is different', () => {
       const config1: GrowspaceManagerCardConfig = { default_growspace: 'room1' } as any;
       syncService.setCardConfig(config1);
-      vi.clearAllMocks();
+      (syncService as any)._defaultApplied = true;
 
       const config2: GrowspaceManagerCardConfig = { default_growspace: 'room2' } as any;
       syncService.setCardConfig(config2);
 
-      expect(uiStore.setDefaultApplied).toHaveBeenCalledWith(false);
+      expect((syncService as any)._defaultApplied).toBe(false);
     });
   });
 
@@ -703,7 +703,7 @@ describe('SyncService Unit Tests', () => {
 
     it('skips auto-selection if gridStore has selectedDevice and defaultApplied is true', () => {
       gridStore.$selectedDevice.set('d1');
-      uiStore.$defaultApplied.set(true);
+      (syncService as any)._defaultApplied = true;
 
       const newDevices: GrowspaceDevice[] = [{ deviceId: 'd1' } as any];
       vi.mocked(dataService.getGrowspaceDevices).mockReturnValue(newDevices);
@@ -715,7 +715,7 @@ describe('SyncService Unit Tests', () => {
 
     it('skips auto-selection if devices array is empty', () => {
       gridStore.$selectedDevice.set(null);
-      uiStore.$defaultApplied.set(false);
+      (syncService as any)._defaultApplied = false;
 
       vi.mocked(dataService.getGrowspaceDevices).mockReturnValue([]);
 
@@ -724,9 +724,9 @@ describe('SyncService Unit Tests', () => {
       expect(gridStore.setSelectedDevice).not.toHaveBeenCalled();
     });
 
-    it('returns early if defaultApplied becomes true during auto-selection checking', () => {
+    it('returns early if defaultApplied is already true while no device is selected', () => {
       gridStore.$selectedDevice.set(null);
-      uiStore.$defaultApplied.set(true);
+      (syncService as any)._defaultApplied = true;
 
       const newDevices: GrowspaceDevice[] = [{ deviceId: 'd1' } as any];
       vi.mocked(dataService.getGrowspaceDevices).mockReturnValue(newDevices);
@@ -738,7 +738,6 @@ describe('SyncService Unit Tests', () => {
 
     it('auto-selects device by default_growspace config match on deviceId', () => {
       gridStore.$selectedDevice.set(null);
-      uiStore.$defaultApplied.set(false);
       syncService.setCardConfig({ default_growspace: 'room_id_match' } as any);
 
       const newDevices: GrowspaceDevice[] = [
@@ -750,12 +749,11 @@ describe('SyncService Unit Tests', () => {
       syncService.updateDevicesState();
 
       expect(gridStore.setSelectedDevice).toHaveBeenCalledWith('room_id_match');
-      expect(uiStore.setDefaultApplied).toHaveBeenCalledWith(true);
+      expect((syncService as any)._defaultApplied).toBe(true);
     });
 
     it('auto-selects device by default_growspace config match on name', () => {
       gridStore.$selectedDevice.set(null);
-      uiStore.$defaultApplied.set(false);
       syncService.setCardConfig({ default_growspace: 'room_name_match' } as any);
 
       const newDevices: GrowspaceDevice[] = [
@@ -767,12 +765,11 @@ describe('SyncService Unit Tests', () => {
       syncService.updateDevicesState();
 
       expect(gridStore.setSelectedDevice).toHaveBeenCalledWith('d2');
-      expect(uiStore.setDefaultApplied).toHaveBeenCalledWith(true);
+      expect((syncService as any)._defaultApplied).toBe(true);
     });
 
     it('falls back to auto-selecting the first device if default_growspace does not match', () => {
       gridStore.$selectedDevice.set(null);
-      uiStore.$defaultApplied.set(false);
       syncService.setCardConfig({ default_growspace: 'no_match' } as any);
 
       const newDevices: GrowspaceDevice[] = [
@@ -784,7 +781,7 @@ describe('SyncService Unit Tests', () => {
       syncService.updateDevicesState();
 
       expect(gridStore.setSelectedDevice).toHaveBeenCalledWith('first_device');
-      expect(uiStore.setDefaultApplied).toHaveBeenCalledWith(true);
+      expect((syncService as any)._defaultApplied).toBe(true);
     });
   });
 

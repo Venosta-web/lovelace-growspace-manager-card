@@ -31,10 +31,16 @@ export class SyncService {
   private _cache: Record<string, GrowspaceAPIResponse> = {};
   /** Per-card config — not shared across card instances. */
   private _cardConfig: GrowspaceManagerCardConfig = {} as GrowspaceManagerCardConfig;
+  /**
+   * Whether this card has already applied its configured default growspace.
+   * Per-instance because `selectedDevice` is a per-card atom — a shared flag
+   * lets the first card that selects block every other card's auto-select.
+   */
+  private _defaultApplied = false;
 
   public setCardConfig(config: GrowspaceManagerCardConfig): void {
     if (config.default_growspace !== this._cardConfig?.default_growspace) {
-      this.uiStore.setDefaultApplied(false);
+      this._defaultApplied = false;
     }
     this._cardConfig = config;
   }
@@ -197,23 +203,23 @@ export class SyncService {
 
     const selectedDevice = this.gridStore.$selectedDevice.get();
     // Auto-select if needed
-    if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
+    if ((!selectedDevice || !this._defaultApplied) && devices.length > 0) {
       const config = this._cardConfig;
 
-      if (this.uiStore.$defaultApplied.get()) return;
+      if (this._defaultApplied) return;
 
       const defaultDevice = devices.find(
         (d) => d.deviceId === config.default_growspace || d.name === config.default_growspace
       );
       if (defaultDevice) {
         this.gridStore.setSelectedDevice(defaultDevice.deviceId);
-        this.uiStore.setDefaultApplied(true);
+        this._defaultApplied = true;
         return;
       }
 
       // Fallback to first device
       this.gridStore.setSelectedDevice(devices[0].deviceId);
-      this.uiStore.setDefaultApplied(true);
+      this._defaultApplied = true;
     }
   }
 
