@@ -1,3 +1,10 @@
+# [1.1.0-next.45](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.44...v1.1.0-next.45) (2026-06-14)
+
+
+### Features
+
+* **irrigation:** decompose tanks tab into per-tab ViewModel adapter ([#296](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/296)) ([734828d](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/734828d892a75a9c25794689eeac1e24e11f8388))
+
 # [1.1.0-next.44](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.43...v1.1.0-next.44) (2026-06-14)
 
 
