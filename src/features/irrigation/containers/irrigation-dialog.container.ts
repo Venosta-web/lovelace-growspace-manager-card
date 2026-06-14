@@ -7,7 +7,6 @@ import { PollingController } from '../../../features/shared/controllers/polling.
 import { hassContext, storeContext } from '../../../context';
 import {
   mdiWater,
-  mdiPlus,
   mdiAlert,
   mdiCalendarClock,
   mdiLeaf,
@@ -28,9 +27,7 @@ import {
   TankWaterEvent,
 } from '../../../types';
 import {
-  fmtMinuteOfDay,
   computeCropSteeringCycle,
-  computePhases,
   generateSubstrateProjection,
   type CropSteeringShot,
   type CropSteeringPhases,
@@ -97,15 +94,16 @@ import {
   composeEcRampSave,
   type EcRampTabViewModel,
 } from '../viewmodels/ec-ramp-tab.viewmodel';
+// Decomposed Schedules tab (ADR-0019): the largest tab adapter ($sm-first, no $caps).
+import {
+  createSchedulesTabViewModel,
+  type SchedulesTabViewModel,
+} from '../viewmodels/schedules-tab.viewmodel';
 import { atom, type ReadableAtom } from 'nanostores';
 import '../components/irrigation-overview-tab';
 import '../components/irrigation-tanks-tab';
 import '../components/irrigation-ec-ramp-tab';
-
-// MDI check icon path for time chips
-const MDI_CHECK = 'M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z';
-const MDI_INFO =
-  'M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z';
+import '../components/irrigation-schedules-tab';
 
 type TabId =
   | 'overview'
@@ -245,6 +243,18 @@ export class IrrigationDialog extends LitElement {
     ecRampCurves$
   );
   private _ecRampVmController = new StoreController(this, this._ecRampVm);
+  /**
+   * Schedules tab ViewModel — the largest adapter. `$sm`-first (it carries both
+   * `tabs.schedules` and the cross-tab `tabs.steering.draft`); the device atom
+   * supplies the schedule rows + chart + phase config, and `cropSteeringHistory$`
+   * the legend's sensor-presence flags. No `$caps`.
+   */
+  private _schedulesVm: ReadableAtom<SchedulesTabViewModel> = createSchedulesTabViewModel(
+    this._smAtom,
+    this._deviceAtom,
+    cropSteeringHistory$
+  );
+  private _schedulesVmController = new StoreController(this, this._schedulesVm);
 
   // ─── Crop Steering History (Schedules tab) ────────────────────────────
   private _cropSteeringHistoryFetched = false;
@@ -1446,50 +1456,6 @@ export class IrrigationDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
   }
 
-  private _startAddingIrrigationTime(x: number, width: number) {
-    const pct = Math.max(0, Math.min(1, x / width));
-    const totalMinutes = Math.round(pct * 24 * 60);
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
-    this._sm = transition(this._sm, {
-      type: 'BEGIN_ADD_IRRIGATION',
-      time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
-      duration: this._sm.tabs.schedules.draft.irrigationDuration,
-    });
-  }
-
-  private _startAddingDrainTime(x: number, width: number) {
-    const pct = Math.max(0, Math.min(1, x / width));
-    const totalMinutes = Math.round(pct * 24 * 60);
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
-    this._sm = transition(this._sm, {
-      type: 'BEGIN_ADD_DRAIN',
-      time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
-      duration: this._sm.tabs.schedules.draft.drainDuration,
-    });
-  }
-
-  private _startEditingIrrigationTime(timeStr: string, duration: number) {
-    this._sm = transition(this._sm, {
-      type: 'BEGIN_EDIT_IRRIGATION',
-      originalTime: timeStr,
-      originalDuration: duration,
-      time: timeStr.substring(0, 5),
-      duration,
-    });
-  }
-
-  private _startEditingDrainTime(timeStr: string, duration: number) {
-    this._sm = transition(this._sm, {
-      type: 'BEGIN_EDIT_DRAIN',
-      originalTime: timeStr,
-      originalDuration: duration,
-      time: timeStr.substring(0, 5),
-      duration,
-    });
-  }
-
   /**
    * Save an edited irrigation time. Synchronous: runs the duplicate-time guard,
    * builds params from the inline sub-state, then dispatches. The effect reads
@@ -1909,7 +1875,19 @@ export class IrrigationDialog extends LitElement {
           .vm=${this._overviewVmController.value}
         ></irrigation-overview-tab>`;
       case 'schedules':
-        return this._renderSchedulesTab(color);
+        return html`<irrigation-schedules-tab
+          .vm=${this._schedulesVmController.value}
+          @schedules-begin-add=${this._onSchedulesBeginAdd}
+          @schedules-begin-edit=${this._onSchedulesBeginEdit}
+          @schedules-update-add=${this._onSchedulesUpdateAdd}
+          @schedules-update-edit=${this._onSchedulesUpdateEdit}
+          @schedules-cancel-inline=${this._onSchedulesCancelInline}
+          @schedules-save-add=${this._onSchedulesSaveAdd}
+          @schedules-save-edit=${this._onSchedulesSaveEdit}
+          @schedules-delete-from-edit=${this._onSchedulesDeleteFromEdit}
+          @schedules-remove-time=${this._onSchedulesRemoveTime}
+          @schedules-open-steering=${this._onSchedulesOpenSteering}
+        ></irrigation-schedules-tab>`;
       case 'steering':
         return this._renderSteeringTab(color);
       case 'config':
@@ -1953,19 +1931,6 @@ export class IrrigationDialog extends LitElement {
     return computeCropSteeringCycle(this._sm.tabs.steering.draft as IrrigationStrategy, isFlower);
   }
 
-  private _fmtMin(minutes: number): string {
-    return fmtMinuteOfDay(minutes);
-  }
-
-  private _computePhases(): CropSteeringPhases | null {
-    const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
-    return computePhases(
-      this._sm.tabs.steering.draft as IrrigationStrategy,
-      isFlower,
-      this.device?.irrigationConfig
-    );
-  }
-
   private _generateSubstrateProjection(
     nowOffset: number,
     shots: CropSteeringShot[],
@@ -1976,546 +1941,6 @@ export class IrrigationDialog extends LitElement {
   ): SubstrateProjectionPoint[] {
     const target = this._sm.tabs.steering.draft.targetVwcPercent ?? 45;
     return generateSubstrateProjection(nowOffset, shots, phases, seedVwc, seedPoreEc, viewStart, target);
-  }
-
-  private _renderCropSteeringSchedule() {
-    const shots = this._computeCropSteeringCycle();
-    const phases = this._computePhases();
-
-    if (!phases) {
-      return html`
-        <div class="detail-card crop-steering-schedule">
-          <div
-            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
-          >
-            <h3 style="margin:0;">Crop Steering Schedule</h3>
-          </div>
-          <p style="font-size:0.8rem;opacity:0.6;text-align:center;margin-top:12px;">
-            No strategy configured — set Lights On Time in the Steering tab.
-          </p>
-        </div>
-      `;
-    }
-
-    const { lightsOnMin, lightsOffMin, lightHours } = phases;
-    const p2ShotCount = shots.length;
-
-    // The legend below flags missing sensors based on what the fetched history
-    // reports — the chart component does its own fetching, but the dialog keeps a
-    // read-only view of the same shared atom for this presence check.
-    const growspaceId = this.device?.deviceId ?? '';
-    const history = this._cropSteeringHistoryController?.value?.get(growspaceId);
-    const hasPoreEc = history?.pore_ec !== undefined;
-    const hasBulkEc = history?.bulk_ec !== undefined;
-
-    return html`
-      <div class="detail-card crop-steering-schedule">
-        <!-- Header -->
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
-        >
-          <div style="display:flex;align-items:center;gap:6px;">
-            <h3 style="margin:0;">Crop Steering Schedule</h3>
-            <gs-help-tooltip
-              content="Auto-generated irrigation shots based on your VWC strategy settings. Read-only — edit timing in the Steering tab."
-              placement="top"
-              label="Crop Steering Schedule"
-            ></gs-help-tooltip>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:0.75rem;opacity:0.55;"
-              >${p2ShotCount} shots · ${lightHours}h photoperiod</span
-            >
-            <span class="auto-pill"><span class="pulse-dot"></span>Auto</span>
-          </div>
-        </div>
-
-        <div class="cs-timeline">
-          <!-- Phase strip + shot track + substrate model: all owned by the shared chart -->
-          <crop-steering-day-chart .device=${this.device}></crop-steering-day-chart>
-
-          <!-- Legend: flags missing sensors only — the readout above already
-               supplies the color-to-trace mapping for configured metrics -->
-          <div class="cs-legend">
-            ${!hasPoreEc
-              ? html`
-                  <span class="cs-leg-chip" style="opacity:0.4;">
-                    Pore EC not configured — add it in Environment Settings
-                  </span>
-                `
-              : ''}
-            ${!hasBulkEc
-              ? html`
-                  <span class="cs-leg-chip" style="opacity:0.4;">
-                    Bulk EC not configured — add it in Environment Settings
-                  </span>
-                `
-              : ''}
-          </div>
-          <div class="cs-legend">
-            ${phases.phases.map(
-        (p) => html`
-                <span class="cs-leg-chip">
-                  <span class="cs-leg-dot" style="background:${p.color};"></span>
-                  <strong>${p.label}</strong> ${p.name}${p.id === 'p2'
-            ? html` · ${p2ShotCount} shots`
-            : nothing}
-                  · ${p.target}
-                </span>
-              `
-      )}
-            <span class="cs-leg-chip">
-              <span
-                style="width:8px;height:8px;border-radius:50%;background:rgba(255,235,59,0.85);flex-shrink:0;"
-              ></span>
-              ${this._fmtMin(lightsOnMin)}–${this._fmtMin(lightsOffMin)} · ${lightHours}h
-              photoperiod
-            </span>
-          </div>
-
-          ${shots.length === 0
-        ? html`
-                <p style="font-size:0.8rem;opacity:0.6;text-align:center;margin-top:4px;">
-                  No shots computed — check lights-on time and interval in the Steering tab.
-                </p>
-              `
-        : nothing}
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderSchedulesTab(color: string) {
-    const drainTimes = this.device?.irrigationConfig?.drainTimes || [];
-    const schedulesDraft = this._sm.tabs.schedules.draft;
-    const isCropSteering = !!this._sm.tabs.steering.draft.enabled;
-
-    return html`
-      ${isCropSteering
-        ? html`
-            <div class="info-banner banner-cs">
-              <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24">
-                <path d="${MDI_INFO}"></path>
-              </svg>
-              <div>
-                <strong>Crop Steering is active</strong> — irrigation cycles are computed
-                automatically from VWC targets.
-                <a
-                  href="#"
-                  style="color:#4CAF50;margin-left:4px;"
-                  @click=${(e: Event) => {
-            e.preventDefault();
-            this._sm = requestTabSwitch(this._sm, 'steering', this.device!);
-          }}
-                  >Open Crop Steering →</a
-                >
-              </div>
-            </div>
-            ${this._renderCropSteeringSchedule()}
-          `
-        : html`
-            ${this._renderScheduleSection(
-          'Irrigation Schedule',
-          this.device?.irrigationConfig?.irrigationTimes || [],
-          schedulesDraft.irrigationDuration,
-          'irrigation',
-          color
-        )}
-          `}
-      ${schedulesDraft.drainPumpEntity
-        ? this._renderScheduleSection(
-            'Drain Schedule',
-            drainTimes,
-            schedulesDraft.drainDuration,
-            'drain',
-            '#FF9800'
-          )
-        : nothing}
-      ${!isCropSteering
-        ? html`
-            <div class="info-banner nudge-card">
-              <svg
-                style="width:14px;height:14px;flex-shrink:0;fill:currentColor;"
-                viewBox="0 0 24 24"
-              >
-                <path d="${MDI_INFO}"></path>
-              </svg>
-              <div>
-                Enable <strong>Crop Steering</strong> in the Steering tab to switch from a fixed
-                daily plan to a phase-driven schedule that adapts to VWC targets.
-                <a
-                  href="#"
-                  style="color:var(--stage-color,${color});margin-left:4px;"
-                  @click=${(e: Event) => {
-            e.preventDefault();
-            this._sm = requestTabSwitch(this._sm, 'steering', this.device!);
-          }}
-                  >Open Crop Steering →</a
-                >
-              </div>
-            </div>
-          `
-        : nothing}
-    `;
-  }
-
-  private _renderScheduleSection(
-    title: string,
-    times: IrrigationTime[],
-    defaultDuration: number,
-    type: 'irrigation' | 'drain',
-    color: string
-  ) {
-    const nowMinutes = this._getNowMinutes();
-    const schedulesSub = this._sm.tabs.schedules.sub;
-    const addingTime =
-      type === 'irrigation' && schedulesSub.kind === 'adding-irrigation'
-        ? schedulesSub
-        : type === 'drain' && schedulesSub.kind === 'adding-drain'
-          ? schedulesSub
-          : undefined;
-    const editingTime =
-      type === 'irrigation' && schedulesSub.kind === 'editing-irrigation'
-        ? schedulesSub
-        : type === 'drain' && schedulesSub.kind === 'editing-drain'
-          ? schedulesSub
-          : undefined;
-    const chipClass = type === 'irrigation' ? 'irrig-chip' : 'drain-chip';
-
-    const validTimes = times.filter((t) => t && (t.time || t.start_time));
-
-    return html`
-      <div class="detail-card">
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
-        >
-          <div style="display:flex;align-items:center;gap:6px;">
-            <h3 style="margin:0;">${title}</h3>
-            <gs-help-tooltip
-              content=${type === 'irrigation'
-        ? 'Each block is a scheduled irrigation event. Click a block to edit it, or click anywhere on the track to add a new one.'
-        : 'Each block is a scheduled drain event. Run drain after irrigation to remove excess runoff.'}
-              placement="top"
-              label=${title}
-            ></gs-help-tooltip>
-          </div>
-          <button
-            class="md3-button primary btn-add-time"
-            style="background:${color};"
-            @click=${() => this._openAddTimeDialog(type)}
-          >
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiPlus}"></path>
-            </svg>
-            ADD TIME
-          </button>
-        </div>
-
-        <!-- Timeline track -->
-        <div
-          class="${type}-time-bar timeline-track"
-          style="border-color:${color}40;"
-          @click=${(e: MouseEvent) => {
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        if (type === 'irrigation')
-          this._startAddingIrrigationTime(e.clientX - rect.left, rect.width);
-        else this._startAddingDrainTime(e.clientX - rect.left, rect.width);
-      }}
-        >
-          ${Array.from({ length: 25 }, (_, i) => i).map(
-        (h) => html`
-              <div
-                class="grid-v ${h % 6 === 0 ? 'major' : ''}"
-                style="left:${(h / 24) * 100}%;"
-              ></div>
-              ${h % 3 === 0
-            ? html`
-                    <span class="x-label" style="left:${(h / 24) * 100}%;">
-                      ${h.toString().padStart(2, '0')}:00
-                    </span>
-                  `
-            : nothing}
-            `
-      )}
-
-          <!-- Event blocks -->
-          ${validTimes.map((t) => {
-        const timeStr = (t.time || t.start_time)!;
-        const [hh, mm] = timeStr.split(':').map(Number);
-        const startMin = hh * 60 + (mm || 0);
-        const dur = t.duration || t.duration_seconds || defaultDuration;
-        const leftPct = (startMin / 1440) * 100;
-        const widthPct = (dur / 86400) * 100;
-        const isPast = startMin < nowMinutes;
-        return html`
-              <div
-                class="timeline-event ${isPast ? 'completed' : ''}"
-                style="
-                  left: ${leftPct}%;
-                  width: max(${widthPct}%, 18px);
-                  background: ${color};
-                  box-shadow: 0 0 0 1px ${color}99, 0 2px 6px ${color}55;
-                "
-                @click=${(e: Event) => {
-            e.stopPropagation();
-            if (type === 'irrigation') this._startEditingIrrigationTime(timeStr, dur);
-            else this._startEditingDrainTime(timeStr, dur);
-          }}
-                title="${timeStr.substring(0, 5)} · ${dur}s"
-              >
-                <span class="event-lbl">${timeStr.substring(0, 5)}</span>
-              </div>
-            `;
-      })}
-
-          <!-- Now line -->
-          <div class="now-line" style="left:${(nowMinutes / 1440) * 100}%;"></div>
-        </div>
-
-        <!-- Time chips -->
-        <div class="time-chips">
-          ${validTimes.map((t) => {
-        const timeStr = (t.time || t.start_time)!;
-        const [hh, mm] = timeStr.split(':').map(Number);
-        const startMin = hh * 60 + (mm || 0);
-        const dur = t.duration || t.duration_seconds || defaultDuration;
-        const isPast = startMin < nowMinutes;
-        return html`
-              <span class="time-chip ${chipClass}">
-                ${isPast
-            ? html`
-                      <svg
-                        style="width:12px;height:12px;fill:#4caf50;flex-shrink:0;"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="${MDI_CHECK}"></path>
-                      </svg>
-                    `
-            : nothing}
-                ${timeStr.substring(0, 5)}
-                <span class="chip-dur">· ${Math.max(1, Math.round(dur / 60))}m</span>
-                <button
-                  class="chip-remove"
-                  @click=${(e: Event) => {
-            e.stopPropagation();
-            if (type === 'irrigation')
-              this._removeIrrigationTime(timeStr).catch(() => this._showErrorToast('Failed to remove irrigation time'));
-            else this._removeDrainTime(timeStr).catch(() => {});
-          }}
-                  title="Remove"
-                >
-                  ×
-                </button>
-              </span>
-            `;
-      })}
-          <button class="time-chip new-chip" @click=${() => this._openAddTimeDialog(type)}>
-            + New
-          </button>
-        </div>
-
-        <!-- Add overlay -->
-        ${addingTime
-        ? html`
-              <div class="overlay-backdrop" @click=${() => this._cancelAddTime(type)}>
-                <div
-                  class="detail-card"
-                  style="max-width:400px;margin:0;background:#2d2d2d;width:90%;"
-                  @click=${(e: Event) => e.stopPropagation()}
-                >
-                  <h3>Add ${title} Time</h3>
-                  <md3-text-input
-                    label="Time"
-                    type="time"
-                    .value=${addingTime.time}
-                    @change=${(e: CustomEvent) => {
-            const val = (e.target as HTMLInputElement).value || e.detail;
-            if (type === 'irrigation')
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_ADD_IRRIGATION',
-                time: val,
-              });
-            else this._sm = transition(this._sm, { type: 'UPDATE_ADD_DRAIN', time: val });
-          }}
-                  ></md3-text-input>
-                  <div
-                    style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);"
-                  >
-                    <span
-                      >${type === 'irrigation'
-            ? 'Shot Duration (seconds)'
-            : 'Drain Duration (seconds)'}</span
-                    >
-                    <gs-help-tooltip
-                      content=${type === 'irrigation'
-            ? 'How long the irrigation pump runs per shot. Typical: 15–120 seconds.'
-            : 'How long the drain pump runs. Too short = waterlogging.'}
-                      placement="right"
-                      label=${type === 'irrigation' ? 'Shot Duration' : 'Drain Duration'}
-                    ></gs-help-tooltip>
-                  </div>
-                  <md3-number-input
-                    label="Duration (seconds)"
-                    .value=${addingTime.duration}
-                    .min=${1}
-                    @change=${(e: CustomEvent) => {
-            const val = parseInt(e.detail);
-            if (!isNaN(val)) {
-              if (type === 'irrigation')
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_ADD_IRRIGATION',
-                  duration: val,
-                });
-              else
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_ADD_DRAIN',
-                  duration: val,
-                });
-            }
-          }}
-                  ></md3-number-input>
-                  <div class="button-group">
-                    <button class="md3-button tonal" @click=${() => this._cancelAddTime(type)}>
-                      Cancel
-                    </button>
-                    <button
-                      class="md3-button primary"
-                      @click=${() => {
-            if (type === 'irrigation')
-              this._addIrrigationTime(addingTime.time, addingTime.duration).catch(
-                () => this._showErrorToast('Failed to add irrigation time')
-              );
-            else
-              this._addDrainTime(addingTime.time, addingTime.duration).catch(() => {});
-          }}
-                      style="background:${color};"
-                    >
-                      Add Schedule
-                    </button>
-                  </div>
-                </div>
-              </div>
-            `
-        : ''}
-
-        <!-- Edit overlay -->
-        ${editingTime
-        ? html`
-              <div class="overlay-backdrop" @click=${() => this._cancelEditTime(type)}>
-                <div
-                  class="detail-card"
-                  style="max-width:400px;margin:0;background:#2d2d2d;width:90%;"
-                  @click=${(e: Event) => e.stopPropagation()}
-                >
-                  <h3>Edit ${title} Time</h3>
-                  <md3-text-input
-                    label="Time"
-                    type="time"
-                    .value=${editingTime.time}
-                    @change=${(e: CustomEvent) => {
-            const val = (e.target as HTMLInputElement).value || e.detail;
-            if (type === 'irrigation')
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_EDIT_IRRIGATION',
-                time: val,
-              });
-            else
-              this._sm = transition(this._sm, { type: 'UPDATE_EDIT_DRAIN', time: val });
-          }}
-                  ></md3-text-input>
-                  <div
-                    style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);"
-                  >
-                    <span
-                      >${type === 'irrigation'
-            ? 'Shot Duration (seconds)'
-            : 'Drain Duration (seconds)'}</span
-                    >
-                    <gs-help-tooltip
-                      content=${type === 'irrigation'
-            ? 'How long the irrigation pump runs per shot.'
-            : 'How long the drain pump runs.'}
-                      placement="right"
-                      label=${type === 'irrigation' ? 'Shot Duration' : 'Drain Duration'}
-                    ></gs-help-tooltip>
-                  </div>
-                  <md3-number-input
-                    label="Duration (seconds)"
-                    .value=${editingTime.duration}
-                    .min=${1}
-                    @change=${(e: CustomEvent) => {
-            const val = parseInt(e.detail);
-            if (!isNaN(val)) {
-              if (type === 'irrigation')
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_EDIT_IRRIGATION',
-                  duration: val,
-                });
-              else
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_EDIT_DRAIN',
-                  duration: val,
-                });
-            }
-          }}
-                  ></md3-number-input>
-                  <div class="edit-dialog-buttons">
-                    <button
-                      class="md3-button delete-button"
-                      @click=${() =>
-            type === 'irrigation'
-              ? this._deleteIrrigationTimeFromEdit()
-              : this._deleteDrainTimeFromEdit()}
-                    >
-                      Delete
-                    </button>
-                    <div class="spacer"></div>
-                    <div class="action-buttons">
-                      <button class="md3-button tonal" @click=${() => this._cancelEditTime(type)}>
-                        Cancel
-                      </button>
-                      <button
-                        class="md3-button primary"
-                        @click=${() =>
-            type === 'irrigation'
-              ? this._saveEditedIrrigationTime()
-              : this._saveEditedDrainTime()}
-                        style="background:${color};"
-                      >
-                        Save Changes
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            `
-        : ''}
-      </div>
-    `;
-  }
-
-  private _openAddTimeDialog(type: 'irrigation' | 'drain') {
-    if (type === 'irrigation') {
-      this._sm = transition(this._sm, {
-        type: 'BEGIN_ADD_IRRIGATION',
-        time: '12:00',
-        duration: this._sm.tabs.schedules.draft.irrigationDuration,
-      });
-    } else {
-      this._sm = transition(this._sm, {
-        type: 'BEGIN_ADD_DRAIN',
-        time: '12:00',
-        duration: this._sm.tabs.schedules.draft.drainDuration,
-      });
-    }
-  }
-
-  private _cancelAddTime(_type: 'irrigation' | 'drain') {
-    this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
-  }
-
-  private _cancelEditTime(_type: 'irrigation' | 'drain') {
-    this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
   }
 
   private _handlePhaseCardClick(phaseId: 'p1' | 'p2' | 'p3') {
@@ -4608,5 +4033,99 @@ export class IrrigationDialog extends LitElement {
 
   private async _effectRemoveEcRampCurve(params: { curveId: string }) {
     await this.store.actions.library.removeECRampCurve(params.curveId);
+  }
+
+  // ─── Schedules tab intents (ADR-0019) ──────────────────────────────────────
+  // Most map 1:1 to existing SM events / private handlers; the save/effect routing
+  // through the MutationRunController is preserved exactly.
+
+  private _onSchedulesBeginAdd(
+    e: CustomEvent<{ type: 'irrigation' | 'drain'; time: string; duration: number }>
+  ) {
+    const { type, time, duration } = e.detail;
+    this._sm = transition(this._sm, {
+      type: type === 'irrigation' ? 'BEGIN_ADD_IRRIGATION' : 'BEGIN_ADD_DRAIN',
+      time,
+      duration,
+    });
+  }
+
+  private _onSchedulesBeginEdit(
+    e: CustomEvent<{ type: 'irrigation' | 'drain'; timeStr: string; duration: number }>
+  ) {
+    const { type, timeStr, duration } = e.detail;
+    this._sm = transition(this._sm, {
+      type: type === 'irrigation' ? 'BEGIN_EDIT_IRRIGATION' : 'BEGIN_EDIT_DRAIN',
+      originalTime: timeStr,
+      originalDuration: duration,
+      time: timeStr.substring(0, 5),
+      duration,
+    });
+  }
+
+  private _onSchedulesUpdateAdd(
+    e: CustomEvent<{ type: 'irrigation' | 'drain'; time?: string; duration?: number }>
+  ) {
+    const { type, time, duration } = e.detail;
+    this._sm = transition(this._sm, {
+      type: type === 'irrigation' ? 'UPDATE_ADD_IRRIGATION' : 'UPDATE_ADD_DRAIN',
+      ...(time !== undefined && { time }),
+      ...(duration !== undefined && { duration }),
+    });
+  }
+
+  private _onSchedulesUpdateEdit(
+    e: CustomEvent<{ type: 'irrigation' | 'drain'; time?: string; duration?: number }>
+  ) {
+    const { type, time, duration } = e.detail;
+    this._sm = transition(this._sm, {
+      type: type === 'irrigation' ? 'UPDATE_EDIT_IRRIGATION' : 'UPDATE_EDIT_DRAIN',
+      ...(time !== undefined && { time }),
+      ...(duration !== undefined && { duration }),
+    });
+  }
+
+  private _onSchedulesCancelInline() {
+    this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
+  }
+
+  private _onSchedulesSaveAdd(
+    e: CustomEvent<{ type: 'irrigation' | 'drain'; time: string; duration: number }>
+  ) {
+    const { type, time, duration } = e.detail;
+    if (type === 'irrigation') {
+      this._addIrrigationTime(time, duration).catch(() =>
+        this._showErrorToast('Failed to add irrigation time')
+      );
+    } else {
+      this._addDrainTime(time, duration).catch(() => {});
+    }
+  }
+
+  private _onSchedulesSaveEdit(e: CustomEvent<{ type: 'irrigation' | 'drain' }>) {
+    if (e.detail.type === 'irrigation') this._saveEditedIrrigationTime();
+    else this._saveEditedDrainTime();
+  }
+
+  private _onSchedulesDeleteFromEdit(e: CustomEvent<{ type: 'irrigation' | 'drain' }>) {
+    if (e.detail.type === 'irrigation') this._deleteIrrigationTimeFromEdit();
+    else this._deleteDrainTimeFromEdit();
+  }
+
+  private _onSchedulesRemoveTime(
+    e: CustomEvent<{ type: 'irrigation' | 'drain'; timeStr: string }>
+  ) {
+    if (e.detail.type === 'irrigation') {
+      this._removeIrrigationTime(e.detail.timeStr).catch(() =>
+        this._showErrorToast('Failed to remove irrigation time')
+      );
+    } else {
+      this._removeDrainTime(e.detail.timeStr).catch(() => {});
+    }
+  }
+
+  private _onSchedulesOpenSteering() {
+    if (!this.device) return;
+    this._sm = requestTabSwitch(this._sm, 'steering', this.device);
   }
 }
