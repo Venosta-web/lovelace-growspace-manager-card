@@ -971,23 +971,9 @@ export class PlantOverviewContainer extends LitElement {
 
   private _handleSave(): void {
     const attrs = this._editedAttributesAtom.get();
-    const lifecycleDateFields: (keyof PlantOverviewEditedAttributes)[] = [
-      'seedling_start',
-      'mother_start',
-      'clone_start',
-      'veg_start',
-      'flower_start',
-      'dry_start',
-      'cure_start',
-    ];
-    const hasIncomplete = lifecycleDateFields.some((field) => {
-      const val = attrs[field];
-      return typeof val === 'string' && val.length > 0 && !/T\d{2}:\d{2}/.test(val);
-    });
-    if (hasIncomplete) {
-      this.store.ui.showToast('Set both date and time for lifecycle dates before saving.', 'error');
-      return;
-    }
+    // No date/time completeness validation: the md3-date-input datetime-local
+    // picker cannot emit a partial value, and the Lifecycle Timestamp seam owns
+    // the format on the way out (toWire). See ADR-0018.
     this.dispatchEvent(
       new CustomEvent('update-plant', {
         detail: attrs,

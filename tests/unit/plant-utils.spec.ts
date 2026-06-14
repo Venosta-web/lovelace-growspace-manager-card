@@ -166,21 +166,10 @@ describe('PlantUtils', () => {
     });
 
     describe('Date Helpers', () => {
-        it('should format backend date correctly', () => {
-            expect(PlantUtils.formatDateForBackend('2023-10-15T12:00:00')).toBe('2023-10-15');
-            expect(PlantUtils.formatDateForBackend('2023-10-15')).toBe('2023-10-15');
-            expect(PlantUtils.formatDateForBackend('')).toBeUndefined();
-        });
-
         it('should parse datetime local correctly', () => {
             // to ISO
             expect(PlantUtils.parseDateTimeLocal('2023-10-15T12:00')).toBe('2023-10-15T12:00:00');
             expect(PlantUtils.parseDateTimeLocal('')).toBeUndefined();
-        });
-
-        it('should convert to datetime local format', () => {
-            expect(PlantUtils.toDateTimeLocal('2023-10-15T12:00:00')).toBe('2023-10-15T12:00');
-            expect(PlantUtils.toDateTimeLocal(null)).toBe('');
         });
     });
 
@@ -225,13 +214,13 @@ describe('PlantUtils', () => {
             expect(payload.col).toBeUndefined();
         });
 
-        it('should handle date fields formatting', () => {
+        it('should send the lifecycle datetime verbatim, preserving the time', () => {
             const attrs = {
-                flower_start: '2023-10-15T10:00' // from Date input
+                flower_start: '2023-10-15T10:00' // from datetime-local input
             };
-            // formatDateForBackend extracts YYYY-MM-DD
+            // Lifecycle Timestamp: no truncation — the time reaches the backend (ADR-0018).
             const payload = PlantUtils.mapDialogToApiPayload(attrs, false);
-            expect(payload.flower_start).toBe('2023-10-15');
+            expect(payload.flower_start).toBe('2023-10-15T10:00');
         });
 
         it('should handle clearing date fields', () => {
@@ -568,30 +557,6 @@ describe('PlantUtils', () => {
         });
     });
 
-    describe('Date Helpers Edge Cases', () => {
-        it('should parse ISO string in formatDateForBackend fallback', () => {
-            // Already ISO roughly
-            expect(PlantUtils.formatDateForBackend('2023-12-25')).toBe('2023-12-25');
-            // Datetime string 
-            expect(PlantUtils.formatDateForBackend('2023-12-25T15:30:00')).toBe('2023-12-25');
-        });
-
-        it('should fallback to Date parsing in formatDateForBackend', () => {
-            // e.g. "12/25/2023" depending on locale, or full string
-            // MOCK_DATE is set, but this function creates new Date(value)
-            // explicit format
-            expect(PlantUtils.formatDateForBackend('Jan 01 2023')).toBe('2023-01-01');
-        });
-
-        it('should return undefined for invalid dates in formatDateForBackend', () => {
-            expect(PlantUtils.formatDateForBackend('not-a-date')).toBeUndefined();
-        });
-
-        it('should return empty string for invalid dates in toDateTimeLocal', () => {
-            expect(PlantUtils.toDateTimeLocal('invalid')).toBe('');
-        });
-    });
-
 });
 
 describe('Display Formatters', () => {
@@ -624,7 +589,6 @@ describe('Display Formatters', () => {
     it('should handle invalid inputs gracefully', () => {
         expect(PlantUtils.formatDate('', mockHass)).toBe('');
         expect(PlantUtils.formatDate('invalid-date', mockHass)).toBe('');
-        expect(PlantUtils.toDateTimeLocal('invalid')).toBe('');
         expect(PlantUtils.parseDateTimeLocal('invalid')).toBeUndefined();
     });
     it('should fallback when Intl.DateTimeFormat fails', () => {
@@ -770,24 +734,6 @@ describe('Coverage Gap Fillers', () => {
         vi.useRealTimers();
     });
 
-    it('should format datetime-local and handle catch block', () => {
-        // Normal case
-        const result = PlantUtils.toDateTimeLocal('2023-12-25T15:30:00');
-        expect(result).toContain('2023');
-        expect(result).toContain('12');
-        expect(result).toContain('25');
-    });
-
-    it('should return undefined for formatDateForBackend with undefined', () => {
-        const result = PlantUtils.formatDateForBackend(undefined);
-        expect(result).toBeUndefined();
-    });
-
-    it('should return undefined for formatDateForBackend with invalid string', () => {
-        const result = PlantUtils.formatDateForBackend('invalid-date');
-        expect(result).toBeUndefined();
-    });
-
     it('should handle invalid date string in parseDateTimeLocal', () => {
         expect(PlantUtils.parseDateTimeLocal('invalid')).toBeUndefined();
     });
@@ -926,12 +872,11 @@ describe('Coverage Gap Fillers', () => {
             spy.mockRestore();
         });
 
-        it('should ignore invalid dates in mapDialogToApiPayload', () => {
-            const attrs = {
-                seedling_start: 'invalid-date'
-            };
-            const payload = PlantUtils.mapDialogToApiPayload(attrs, false);
-            expect(payload).not.toHaveProperty('seedling_start');
+        it('maps an empty lifecycle date to null (clear) in mapDialogToApiPayload', () => {
+            // datetime-local cannot emit a malformed value; the seam sends non-empty
+            // values verbatim and maps empty/null-ish to null (ADR-0018).
+            const payload = PlantUtils.mapDialogToApiPayload({ seedling_start: '' }, false);
+            expect(payload.seedling_start).toBeNull();
         });
 
         it('should handle getPlantStageColor fallback', () => {
@@ -958,9 +903,6 @@ describe('Coverage Gap Fillers', () => {
 
             try {
                 expect(PlantUtils.parseDateTimeLocal('FORCE_ERROR')).toBeUndefined();
-                expect(PlantUtils.formatDateForBackend('FORCE_ERROR')).toBeUndefined();
-                // toDateTimeLocal returns '' on error
-                expect(PlantUtils.toDateTimeLocal('FORCE_ERROR')).toBe('');
             } finally {
                 (globalThis as any).Date = OriginalDate;
             }

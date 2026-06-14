@@ -38,7 +38,7 @@ import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../..
 import { mutate } from '../../services/mutate';
 import { callService, hassCall } from '../../services/hass-call';
 import type { IrrigationMode, PhaseWindows } from './schema';
-import { patchDeviceIrrigationConfig } from '../grid';
+import { patchDeviceIrrigationConfig, patchDeviceStrategy } from '../grid';
 import {
   CropSteeringHistorySchema,
   type CropSteeringHistory,
@@ -391,6 +391,16 @@ export async function updateIrrigationStrategy(
   if (updates.p2ShotVolumePercent !== undefined)
     payload.p2_shot_volume_percent = updates.p2ShotVolumePercent;
   if (updates.shotSizingMode !== undefined) payload.shot_sizing_mode = updates.shotSizingMode;
+  // Substrate Profile serializes to the backend's flat keys (folded into the
+  // nested substrate_profile server-side); the read side stays nested.
+  if (updates.substrateProfile !== undefined) {
+    payload.substrate_media_type = updates.substrateProfile.mediaType;
+    payload.substrate_liters_per_pot = updates.substrateProfile.litersPerPot;
+  }
+  if (updates.poreEcTargetMin !== undefined) payload.pore_ec_target_min = updates.poreEcTargetMin;
+  if (updates.poreEcTargetMax !== undefined) payload.pore_ec_target_max = updates.poreEcTargetMax;
+  if (updates.ecModulationEnabled !== undefined)
+    payload.ec_modulation_enabled = updates.ecModulationEnabled;
   if (updates.autoLightTracking !== undefined)
     payload.auto_light_tracking = updates.autoLightTracking;
   if (updates.dynamicShotEnabled !== undefined)
@@ -406,8 +416,17 @@ export async function updateIrrigationStrategy(
   await mutate(
     {
       type: 'updateIrrigationStrategy',
-      optimistic: () => _patchStrategy(growspaceId, updates),
-      inverse: () => _patchStrategy(growspaceId, prev),
+      // Patch both the strategy read-model atom and the device the dialog reads,
+      // so immediate-persist controls (sizing mode, profile, modulation) reflect
+      // optimistically without waiting for a full device sync (ADR-0017).
+      optimistic: () => {
+        _patchStrategy(growspaceId, updates);
+        patchDeviceStrategy(growspaceId, updates);
+      },
+      inverse: () => {
+        _patchStrategy(growspaceId, prev);
+        patchDeviceStrategy(growspaceId, prev);
+      },
       apply: () => callService('growspace_manager', 'set_irrigation_strategy', payload),
     },
     growspaceId

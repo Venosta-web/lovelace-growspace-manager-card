@@ -34,6 +34,18 @@ export type ShotSizingMode = 'seconds' | 'volume';
 /** Steering Mode declared intent (ADR-0012). `null` means never stamped. */
 export type SteeringMode = 'vegetative' | 'balanced' | 'generative';
 
+/** Substrate growing medium (backend SubstrateMediaType). */
+export type SubstrateMediaType = 'coco' | 'rockwool' | 'soil';
+
+/**
+ * Per-growspace growing-medium description. Configured once `litersPerPot` is
+ * positive; a configured profile is one prerequisite for Volume Mode (ADR-0011).
+ */
+export interface SubstrateProfile {
+  mediaType: SubstrateMediaType;
+  litersPerPot: number;
+}
+
 export interface IrrigationStrategy {
   enabled: boolean;
   lightsOnTime: string;
@@ -56,6 +68,13 @@ export interface IrrigationStrategy {
   p1ShotVolumePercent?: number;
   p2ShotVolumePercent?: number;
   shotSizingMode?: ShotSizingMode;
+  // Substrate Profile (#446); backs Volume Mode capability.
+  substrateProfile?: SubstrateProfile;
+  // Pore EC Target Band (#447, mS/cm); distinct from feed-EC ranges. null = unset.
+  poreEcTargetMin?: number | null;
+  poreEcTargetMax?: number | null;
+  // EC Modulation opt-in (#447); inert (factor 1.0) when off/band-absent/no sensors.
+  ecModulationEnabled?: boolean;
   autoLightTracking?: boolean;
   detectedLightsOnTime?: string | null;
   // Declared Steering Mode intent (#448); null/undefined means never stamped.
@@ -106,6 +125,10 @@ export interface SerializedIrrigationStrategy {
   p1_shot_volume_percent?: number;
   p2_shot_volume_percent?: number;
   shot_sizing_mode?: ShotSizingMode;
+  substrate_profile?: { media_type: SubstrateMediaType; liters_per_pot: number };
+  pore_ec_target_min?: number | null;
+  pore_ec_target_max?: number | null;
+  ec_modulation_enabled?: boolean;
   auto_light_tracking?: boolean;
   detected_lights_on_time?: string | null;
   declared_steering_mode?: SteeringMode | null;
@@ -412,6 +435,7 @@ export interface GrowspaceAPIResponse {
   irrigation: {
     irrigation_config: SerializedIrrigationConfig;
     irrigation_strategy?: SerializedIrrigationStrategy | null;
+    volume_mode_capable?: boolean;
     drain_config?: SerializedDrainConfig | null;
     water_usage?: SerializedWaterUsage | null;
     substrate?: SerializedSubstrateMetrics | null;
@@ -611,6 +635,12 @@ export interface GrowspaceDevice {
 
   irrigationConfig: IrrigationConfig;
   irrigationStrategy?: IrrigationStrategy;
+  /**
+   * Server-authoritative Volume Mode gate (ADR-0011): true only when a substrate
+   * profile and a positive pump flow rate are both saved. The card never recomputes
+   * this — it gates the Volume Mode toggle on this flag directly.
+   */
+  volumeModeCapable?: boolean;
 
   drainConfig?: DrainConfig | null;
   energyTracking?: EnergyTracking | null;

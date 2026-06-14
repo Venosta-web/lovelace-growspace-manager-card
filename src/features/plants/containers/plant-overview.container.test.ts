@@ -325,6 +325,65 @@ describe('PlantOverviewContainer – private method logic', () => {
 });
 
 // ---------------------------------------------------------------------------
+// _handleSave – no lifecycle date validation (ADR-0018: seam owns the format)
+// ---------------------------------------------------------------------------
+describe('PlantOverviewContainer – _handleSave', () => {
+  let store: ReturnType<typeof makeMockStore>;
+  let plant: PlantEntity;
+  let el: PlantOverviewContainer;
+
+  beforeEach(() => {
+    store = makeMockStore();
+    plant = makeMockPlant();
+    el = createElement(store, plant);
+    (el as any).plant = plant;
+    (el as any).store = store;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function saveWith(attrs: Record<string, unknown>): CustomEvent | null {
+    (el as any)._editedAttributesAtom.set(attrs);
+    let dispatched: CustomEvent | null = null;
+    el.addEventListener('update-plant', (e) => (dispatched = e as CustomEvent));
+    (el as any)._handleSave();
+    return dispatched;
+  }
+
+  it('dispatches update-plant when adding a flower datetime to a plant with date-only seedling/veg', () => {
+    // The original bug scenario: existing fields are date-only, user adds flower.
+    // No toast — the seam owns the format, there is no completeness validation.
+    const dispatched = saveWith({
+      seedling_start: '2026-01-15',
+      veg_start: '2026-02-01',
+      flower_start: '2026-03-01T14:30',
+    });
+
+    expect(store.ui.showToast).not.toHaveBeenCalled();
+    expect(dispatched).not.toBeNull();
+    expect((dispatched as unknown as CustomEvent).detail.flower_start).toBe('2026-03-01T14:30');
+  });
+
+  it('dispatches with existing date-only fields untouched, no toast', () => {
+    const dispatched = saveWith({ seedling_start: '2026-01-15', veg_start: '2026-02-01' });
+
+    expect(store.ui.showToast).not.toHaveBeenCalled();
+    expect(dispatched).not.toBeNull();
+  });
+
+  it('never raises the old "set both date and time" toast (validator removed)', () => {
+    // Even values the old guard would have rejected now dispatch unchanged —
+    // the validation is gone (ADR-0018).
+    const dispatched = saveWith({ flower_start: '2026-03-05', dry_start: '2026-03-05T' });
+
+    expect(store.ui.showToast).not.toHaveBeenCalled();
+    expect(dispatched).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Rendering tests – need DOM attachment
 // ---------------------------------------------------------------------------
 describe('PlantOverviewContainer – rendering branches', () => {

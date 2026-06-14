@@ -133,10 +133,21 @@ export interface DrainEcTabState {
   sub: DrainEcSubState;
 }
 
-// ─── Substrate & EC tab (per-stage feed-EC target ranges) ───────────────────────
+// ─── Substrate & EC tab ──────────────────────────────────────────────────────
+//
+// Buffered draft holds only the values saved through the dialog footer: the
+// pore-EC band (validated min ≤ max on save) and the per-stage feed-EC ranges.
+// Shot Sizing Mode, Substrate Profile, and EC Modulation persist immediately on
+// edit (ADR-0017) and are NOT part of this draft or the dirty guard.
+
+export interface SubstrateEcDraft {
+  ecTargetRanges: ECTargetRange[];
+  poreEcMin: number | null;
+  poreEcMax: number | null;
+}
 
 export interface SubstrateEcTabState {
-  draft: ECTargetRange[];
+  draft: SubstrateEcDraft;
   sub: { kind: 'idle' };
 }
 
@@ -232,6 +243,7 @@ export type DialogEvent =
 
   // ── EC Targets ──
   | { type: 'UPDATE_EC_TARGETS_DRAFT'; ranges: ECTargetRange[] }
+  | { type: 'UPDATE_PORE_EC_BAND'; min: number | null; max: number | null }
 
   // ── Mutation run (MutationRunController seam — ADR-0015) ──
   /**
@@ -281,7 +293,6 @@ function defaultSteeringDraft(): Partial<IrrigationStrategy> {
     p2ShotIntervalMinutes: 15,
     p1ShotVolumePercent: 4.0,
     p2ShotVolumePercent: 4.0,
-    shotSizingMode: 'seconds',
     autoLightTracking: false,
     detectedLightsOnTime: null,
     declaredSteeringMode: null,
@@ -319,8 +330,20 @@ function defaultDrainEcDraft(): DrainEcDraft {
   };
 }
 
-function defaultEcTargetsDraft(): ECTargetRange[] {
+function defaultEcTargetRanges(): ECTargetRange[] {
   return EC_STAGES.map((stage) => ({ stage, minEc: 0, maxEc: 0 }));
+}
+
+function defaultSubstrateEcDraft(): SubstrateEcDraft {
+  return { ecTargetRanges: defaultEcTargetRanges(), poreEcMin: null, poreEcMax: null };
+}
+
+/** Seed the feed-EC ranges from device config, padding missing stages with zeros. */
+function ecTargetRangesFromConfig(ranges: ECTargetRange[] | undefined): ECTargetRange[] {
+  if (!ranges || ranges.length === 0) return defaultEcTargetRanges();
+  return EC_STAGES.map(
+    (stage) => ranges.find((r) => r.stage === stage) ?? { stage, minEc: 0, maxEc: 0 }
+  );
 }
 
 function defaultTabs(): TabStates {
@@ -332,7 +355,7 @@ function defaultTabs(): TabStates {
     tanks: { sub: { kind: 'idle' } },
     water_analytics: { stageAggregates: null, sub: { kind: 'idle' } },
     drain_ec: { draft: defaultDrainEcDraft(), sub: { kind: 'idle' } },
-    substrate_ec: { draft: defaultEcTargetsDraft(), sub: { kind: 'idle' } },
+    substrate_ec: { draft: defaultSubstrateEcDraft(), sub: { kind: 'idle' } },
     ec_ramp: {},
   };
 }
@@ -379,7 +402,8 @@ function applyDeviceToSM(sm: DialogSM, device: GrowspaceDevice): DialogSM {
     p2ShotIntervalMinutes: strat?.p2ShotIntervalMinutes ?? strat?.shotIntervalMinutes ?? 15,
     p1ShotVolumePercent: strat?.p1ShotVolumePercent ?? 4.0,
     p2ShotVolumePercent: strat?.p2ShotVolumePercent ?? 4.0,
-    shotSizingMode: strat?.shotSizingMode ?? 'seconds',
+    // shotSizingMode is intentionally absent: it persists immediately on toggle
+    // (ADR-0017) and is read from the live strategy, not buffered here.
     autoLightTracking: strat?.autoLightTracking ?? false,
     detectedLightsOnTime: strat?.detectedLightsOnTime ?? null,
     declaredSteeringMode: strat?.declaredSteeringMode ?? null,
@@ -412,14 +436,11 @@ function applyDeviceToSM(sm: DialogSM, device: GrowspaceDevice): DialogSM {
     logDrainVolume: sm.tabs.drain_ec.draft.logDrainVolume,
   };
 
-  const ranges = config.ecTargetRanges;
-  const ecTargetsDraft: ECTargetRange[] =
-    ranges && ranges.length > 0
-      ? EC_STAGES.map((stage) => {
-          const found = ranges.find((r) => r.stage === stage);
-          return found ?? { stage, minEc: 0, maxEc: 0 };
-        })
-      : defaultEcTargetsDraft();
+  const substrateEcDraft: SubstrateEcDraft = {
+    ecTargetRanges: ecTargetRangesFromConfig(config.ecTargetRanges),
+    poreEcMin: strat?.poreEcTargetMin ?? null,
+    poreEcMax: strat?.poreEcTargetMax ?? null,
+  };
 
   const phase: Phase = (config.activeSteeringPhase as Phase | undefined) ?? sm.tabs.steering.phase;
 
@@ -431,7 +452,7 @@ function applyDeviceToSM(sm: DialogSM, device: GrowspaceDevice): DialogSM {
       steering: { ...sm.tabs.steering, draft: steeringDraft, phase },
       config: { ...sm.tabs.config, draft: configDraft },
       drain_ec: { ...sm.tabs.drain_ec, draft: drainEcDraft },
-      substrate_ec: { ...sm.tabs.substrate_ec, draft: ecTargetsDraft },
+      substrate_ec: { ...sm.tabs.substrate_ec, draft: substrateEcDraft },
     },
   };
 }
@@ -476,7 +497,7 @@ export function isSteeringDirty(sm: DialogSM, device: GrowspaceDevice): boolean 
       (s.p2ShotIntervalMinutes ?? s.shotIntervalMinutes) ||
     (d.p1ShotVolumePercent ?? 4.0) !== (s.p1ShotVolumePercent ?? 4.0) ||
     (d.p2ShotVolumePercent ?? 4.0) !== (s.p2ShotVolumePercent ?? 4.0) ||
-    (d.shotSizingMode ?? 'seconds') !== (s.shotSizingMode ?? 'seconds') ||
+    // shotSizingMode is not buffered here (ADR-0017) — it persists immediately.
     (d.autoLightTracking ?? false) !== (s.autoLightTracking ?? false) ||
     (d.detectedLightsOnTime ?? null) !== (s.detectedLightsOnTime ?? null) ||
     (d.dynamicShotEnabled ?? true) !== (s.dynamicShotEnabled ?? true) ||
@@ -516,17 +537,26 @@ export function isDrainEcDirty(sm: DialogSM, device: GrowspaceDevice): boolean {
   );
 }
 
-/** True if the substrate_ec tab has unsaved changes relative to the device. */
+/**
+ * True if the substrate_ec tab's buffered draft (feed-EC ranges + pore-EC band)
+ * has unsaved changes. Shot Sizing Mode, Substrate Profile, and EC Modulation
+ * persist immediately (ADR-0017) and are deliberately excluded.
+ */
 export function isSubstrateEcDirty(sm: DialogSM, device: GrowspaceDevice): boolean {
   const d = sm.tabs.substrate_ec.draft;
+  const strat = device.irrigationStrategy;
+  if ((d.poreEcMin ?? null) !== (strat?.poreEcTargetMin ?? null)) return true;
+  if ((d.poreEcMax ?? null) !== (strat?.poreEcTargetMax ?? null)) return true;
+
   const ranges = device.irrigationConfig?.ecTargetRanges ?? [];
+  const rows = d.ecTargetRanges;
   // When the device has no ranges, the SM initialises with all-zero defaults.
   // It is only dirty if the user has changed at least one value away from zero.
   if (ranges.length === 0) {
-    return d.some((r) => r.minEc !== 0 || r.maxEc !== 0);
+    return rows.some((r) => r.minEc !== 0 || r.maxEc !== 0);
   }
-  if (d.length !== ranges.length) return true;
-  return d.some((dr) => {
+  if (rows.length !== ranges.length) return true;
+  return rows.some((dr) => {
     const deviceRange = ranges.find((r) => r.stage === dr.stage);
     return !deviceRange || deviceRange.minEc !== dr.minEc || deviceRange.maxEc !== dr.maxEc;
   });
@@ -629,22 +659,18 @@ function resetActiveTabDraft(sm: DialogSM, device: GrowspaceDevice): TabStates {
           sub: { kind: 'idle' },
         },
       };
-    case 'substrate_ec': {
-      const ranges = config.ecTargetRanges;
+    case 'substrate_ec':
       return {
         ...sm.tabs,
         substrate_ec: {
-          draft:
-            ranges && ranges.length > 0
-              ? EC_STAGES.map((stage) => {
-                  const found = ranges.find((r) => r.stage === stage);
-                  return found ?? { stage, minEc: 0, maxEc: 0 };
-                })
-              : defaultEcTargetsDraft(),
+          draft: {
+            ecTargetRanges: ecTargetRangesFromConfig(config.ecTargetRanges),
+            poreEcMin: strat?.poreEcTargetMin ?? null,
+            poreEcMax: strat?.poreEcTargetMax ?? null,
+          },
           sub: { kind: 'idle' },
         },
       };
-    }
     default:
       return sm.tabs;
   }
@@ -1012,7 +1038,19 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
           ...sm.tabs,
           substrate_ec: {
             ...sm.tabs.substrate_ec,
-            draft: event.ranges,
+            draft: { ...sm.tabs.substrate_ec.draft, ecTargetRanges: event.ranges },
+          },
+        },
+      };
+
+    case 'UPDATE_PORE_EC_BAND':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          substrate_ec: {
+            ...sm.tabs.substrate_ec,
+            draft: { ...sm.tabs.substrate_ec.draft, poreEcMin: event.min, poreEcMax: event.max },
           },
         },
       };

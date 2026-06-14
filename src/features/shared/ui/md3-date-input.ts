@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { dialogStyles } from '../../../styles/dialog.styles';
-import { PlantUtils } from '../../../utils/plant-utils';
+import { fromBackend } from '../../../utils/lifecycle-timestamp';
 
 @customElement('md3-date-input')
 export class Md3DateInput extends LitElement {
@@ -28,7 +28,7 @@ export class Md3DateInput extends LitElement {
   render() {
     let formattedValue = this.value;
     if (this.time) {
-      formattedValue = PlantUtils.toDateTimeLocal(this.value);
+      formattedValue = fromBackend(this.value);
     } else {
       formattedValue = this.value ? this.value.split('T')[0] : '';
     }

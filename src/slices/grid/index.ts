@@ -29,7 +29,7 @@
 
 import { atom, computed, type ReadableAtom, type WritableAtom } from 'nanostores';
 import type { GrowspaceDevice, PlantEntity } from '../../types';
-import type { IrrigationConfig } from '../../services/types';
+import type { IrrigationConfig, IrrigationStrategy } from '../../services/types';
 import { PlantUtils } from '../../utils/plant-utils';
 
 // ---------------------------------------------------------------------------
@@ -200,6 +200,32 @@ export function patchDeviceIrrigationConfig(
   devices$.set(
     current.map((d, i) =>
       i === idx ? { ...d, irrigationConfig: { ...d.irrigationConfig, ...patch } } : d
+    )
+  );
+}
+
+/**
+ * Patch a single device's irrigationStrategy in place, mirroring
+ * patchDeviceIrrigationConfig. Lets immediate-persist strategy writes (Shot
+ * Sizing Mode, Substrate Profile, EC Modulation — ADR-0017) reflect on the
+ * device the dialog reads, so the Steering tab relabel and the toggles update
+ * optimistically rather than waiting for a full device sync.
+ */
+export function patchDeviceStrategy(
+  growspaceId: string,
+  patch: Partial<IrrigationStrategy>
+): void {
+  const current = devices$.get();
+  const idx = current.findIndex((d) => d.deviceId === growspaceId);
+  if (idx === -1) return;
+  devices$.set(
+    current.map((d, i) =>
+      i === idx
+        ? {
+            ...d,
+            irrigationStrategy: { ...(d.irrigationStrategy ?? {}), ...patch } as IrrigationStrategy,
+          }
+        : d
     )
   );
 }
