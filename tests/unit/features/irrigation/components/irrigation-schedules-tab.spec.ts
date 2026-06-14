@@ -220,6 +220,11 @@ describe('irrigation-schedules-tab', () => {
     expect(el.shadowRoot!.querySelector('crop-steering-day-chart')).toBeTruthy();
     // No irrigation section in crop-steering mode.
     expect(text).not.toContain('Enable Crop Steering');
+    // The read-only crop-steering panel has no ADD TIME button.
+    const addTime = Array.from(el.shadowRoot!.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('ADD TIME')
+    );
+    expect(addTime).toBeUndefined();
   });
 
   it('shows the crop-steering empty state when not configured', async () => {

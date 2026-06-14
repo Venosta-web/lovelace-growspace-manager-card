@@ -167,6 +167,30 @@ describe('createSchedulesTabViewModel — crop-steering mode', () => {
     expect(cs.phases.find((p) => p.id === 'p1')!.shotCount).toBeNull();
   });
 
+  it('still renders the drain section in crop-steering mode when a drain pump is set', () => {
+    const dev = device({
+      irrigationStrategy: {
+        enabled: true,
+        lightsOnTime: '06:00:00',
+        shotDurationSeconds: 15,
+        shotIntervalMinutes: 60,
+      },
+      irrigationConfig: {
+        irrigationPumpEntity: 'switch.pump',
+        drainPumpEntity: 'switch.drain',
+        irrigationDuration: 60,
+        drainDuration: 60,
+        irrigationTimes: [],
+        drainTimes: [{ time: '10:00:00', duration: 60 }],
+      },
+    } as unknown as Partial<GrowspaceDevice>);
+    const vm = build(createInitialSM(dev), dev);
+    expect(vm.isCropSteering).toBe(true);
+    expect(vm.irrigationSection).toBeNull();
+    expect(vm.drainSection).not.toBeNull();
+    expect(vm.drainSection!.times).toHaveLength(1);
+  });
+
   it('reports the empty state when no strategy is configured', () => {
     const dev = device({
       irrigationStrategy: { enabled: true, lightsOnTime: '' },
