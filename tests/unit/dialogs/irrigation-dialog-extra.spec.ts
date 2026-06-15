@@ -224,94 +224,113 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
     });
 
+    // The Drain EC tab is decomposed (ADR-0019): its config + log form render
+    // inside the child `<irrigation-drain-ec-tab>`'s own shadow root. These tests
+    // pierce that child shadow and select the Drain EC nav item by LABEL (overview
+    // shifted indices). The draft-edit and readings-derivation *logic* is covered
+    // by the pure VM spec and the component mount-and-assert spec; these remain as
+    // a lean end-to-end check that the child's intents wire through the Dialog
+    // Shell to the SM, plus the `_logDrainReadingNow` host method (its EC>0 guard
+    // and error handling live there, not in the SM or VM).
+    async function openDrainEcTab(): Promise<ShadowRoot> {
+        const navs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+        const drainNav = Array.from(navs ?? []).find((t) =>
+            t.textContent?.includes('Drain EC')
+        ) as HTMLElement | undefined;
+        drainNav?.click();
+        await element.updateComplete;
+        const tab = element.shadowRoot?.querySelector('irrigation-drain-ec-tab') as any;
+        await tab?.updateComplete;
+        return tab.shadowRoot as ShadowRoot;
+    }
+
     describe('Drain EC Tab', () => {
-        beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-            (tabs?.[5] as HTMLElement).click(); // Drain EC
-            await element.updateComplete;
-        });
+        it('toggles monitoring and updates config fields via the child intents', async () => {
+            const root = await openDrainEcTab();
 
-        it('should toggle monitoring and update settings', async () => {
-            const switchEl = element.shadowRoot?.querySelector('md3-switch') as any;
+            const switchEl = root.querySelector('md3-switch') as any;
             expect(switchEl).toBeTruthy();
-
-            // Toggle enabled
             switchEl.checked = true;
             switchEl.dispatchEvent(new Event('change'));
             await element.updateComplete;
             expect((element as any)._sm.tabs.drain_ec.draft.enabled).toBe(true);
 
-            // Update delta
-            const deltaInput = element.shadowRoot?.querySelector('md3-number-input[label*="Max EC Delta"]') as any;
+            const childRoot = (element.shadowRoot?.querySelector('irrigation-drain-ec-tab') as any)
+                .shadowRoot as ShadowRoot;
+            const deltaInput = childRoot.querySelector('md3-number-input[label*="Max EC Delta"]') as any;
             deltaInput.dispatchEvent(new CustomEvent('change', { detail: '1.2' }));
             await element.updateComplete;
             expect((element as any)._sm.tabs.drain_ec.draft.maxEcDelta).toBe(1.2);
 
-            // Update target runoff
-            const runoffInput = element.shadowRoot?.querySelector('md3-number-input[label*="Target Runoff"]') as any;
+            const runoffInput = childRoot.querySelector('md3-number-input[label*="Target Runoff"]') as any;
             runoffInput.dispatchEvent(new CustomEvent('change', { detail: '25' }));
             await element.updateComplete;
             expect((element as any)._sm.tabs.drain_ec.draft.targetRunoffPercent).toBe(25);
         });
 
-        it('should log reading successfully via manual inputs', async () => {
-            // ... set values
-            const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
-            // Set values directly to ensure state updates
-            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_DRAIN_EC_DRAFT', partial: { logFeedEc: 2.0, logDrainEc: 2.5 } });
+        it('logs a reading via the child Log Reading intent', async () => {
+            await openDrainEcTab();
+            (element as any)._sm = transition((element as any)._sm, {
+                type: 'UPDATE_DRAIN_EC_DRAFT',
+                partial: { logFeedEc: 2.0, logDrainEc: 2.5 },
+            });
             await element.updateComplete;
 
-            // Call method directly
-            await (element as any)._logDrainReadingNow();
+            const childRoot = (element.shadowRoot?.querySelector('irrigation-drain-ec-tab') as any)
+                .shadowRoot as ShadowRoot;
+            const btn = Array.from(childRoot.querySelectorAll('button')).find((b) =>
+                b.textContent?.includes('Log Reading')
+            ) as HTMLButtonElement;
+            btn.click();
+            await new Promise((r) => setTimeout(r, 10));
 
             expect(mocks.logDrainReading).toHaveBeenCalledWith('gs1', {
                 feedEc: 2.0,
                 drainEc: 2.5,
                 feedVolumeMl: undefined,
-                drainVolumeMl: undefined
+                drainVolumeMl: undefined,
             });
         });
 
-        it('should not log reading if EC is <= 0', async () => {
-            // ... set values
-            const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
-            const feedEcInput = Array.from(inputs || []).find(el => el.getAttribute('label')?.includes('Feed EC'));
-            const drainEcInput = Array.from(inputs || []).find(el => el.getAttribute('label')?.includes('Drain EC'));
-
-            // Set values to 0
-            (feedEcInput as any).value = '0';
-            feedEcInput?.dispatchEvent(new CustomEvent('change', { detail: '0' }));
-
-            (drainEcInput as any).value = '0';
-            drainEcInput?.dispatchEvent(new CustomEvent('change', { detail: '0' }));
-
+        // The EC>0 guard lives in the host `_logDrainReadingNow` method — not in
+        // the SM or VM — so it stays a host-level test.
+        it('does not log a reading when feed/drain EC are <= 0 (host guard)', async () => {
+            await openDrainEcTab();
+            (element as any)._sm = transition((element as any)._sm, {
+                type: 'UPDATE_DRAIN_EC_DRAFT',
+                partial: { logFeedEc: 0, logDrainEc: 0 },
+            });
             await element.updateComplete;
 
-            // Call method directly to test validation logic
             await (element as any)._logDrainReadingNow();
-
             await element.updateComplete;
 
             expect(mocks.logDrainReading).not.toHaveBeenCalled();
-            // Should show error toast
             const toast = element.shadowRoot?.querySelector('.toast-notification.error');
             expect(toast).toBeTruthy();
         });
 
-        it('should handle log error', async () => {
+        it('surfaces a log-reading failure as an error toast (host method)', async () => {
             mocks.logDrainReading.mockRejectedValueOnce(new Error('Log Fail'));
             const toastSpy = vi.spyOn(element as any, '_showErrorToast').mockImplementation(() => { });
 
-            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_DRAIN_EC_DRAFT', partial: { logFeedEc: 2.0, logDrainEc: 2.5 } });
+            (element as any)._sm = transition((element as any)._sm, {
+                type: 'UPDATE_DRAIN_EC_DRAFT',
+                partial: { logFeedEc: 2.0, logDrainEc: 2.5 },
+            });
             await (element as any)._logDrainReadingNow();
 
             expect(toastSpy).toHaveBeenCalledWith('Failed to log drain reading');
         });
 
-        it('should update feed and drain volumes', async () => {
-            const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
-            const feedVolInput = Array.from(inputs || []).find(i => i.getAttribute('label')?.includes('Feed Volume')) as any;
-            const drainVolInput = Array.from(inputs || []).find(i => i.getAttribute('label')?.includes('Drain Volume')) as any;
+        it('updates feed and drain volumes via the child intents', async () => {
+            const root = await openDrainEcTab();
+            const feedVolInput = Array.from(root.querySelectorAll('md3-number-input')).find((i) =>
+                i.getAttribute('label')?.includes('Feed Volume')
+            ) as any;
+            const drainVolInput = Array.from(root.querySelectorAll('md3-number-input')).find((i) =>
+                i.getAttribute('label')?.includes('Drain Volume')
+            ) as any;
 
             feedVolInput.dispatchEvent(new CustomEvent('change', { detail: '1500' }));
             drainVolInput.dispatchEvent(new CustomEvent('change', { detail: '300' }));
@@ -582,9 +601,12 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Drain Config Tab (Save)', () => {
         beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-            // When all features enabled: Schedules[0], Steering[1], Config[2], Tanks[3], Analytics[4], Drain EC[5]
-            (tabs?.[5] as HTMLElement).click();
+            // Select the Drain EC tab by LABEL (overview shifted indices, ADR-0019).
+            const navs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            const drainNav = Array.from(navs ?? []).find((t) =>
+                t.textContent?.includes('Drain EC')
+            ) as HTMLElement | undefined;
+            drainNav?.click();
             await element.updateComplete;
         });
 
@@ -938,12 +960,16 @@ describe('IrrigationDialog - Extra Coverage', () => {
     });
 
     describe('Branch Coverage - Drain Saving State and NaN Duration', () => {
-        it('should show Saving text when _drainSaving is true', async () => {
+        it('should show Saving text when the drain_ec saving sub-state is set', async () => {
+            // ADR-0019: the "Saving…" indicator now renders inside the decomposed
+            // child `<irrigation-drain-ec-tab>`, so pierce its shadow root.
             (element as any)._sm = { ...(element as any)._sm, activeTab: 'drain_ec' };
             (element as any)._sm = transition((element as any)._sm, { type: 'SET_DRAIN_SAVING', saving: true });
             await element.updateComplete;
+            const tab = element.shadowRoot?.querySelector('irrigation-drain-ec-tab') as any;
+            await tab?.updateComplete;
 
-            const text = element.shadowRoot?.textContent || '';
+            const text = (tab?.shadowRoot as ShadowRoot)?.textContent || '';
             expect(text).toContain('Saving');
         });
 
