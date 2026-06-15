@@ -536,6 +536,31 @@ describe('GrowspaceAdapter', () => {
       expect(result?.waterUsage?.litersToday).toBe(3.7);
     });
 
+    // growspace_manager's ADR-0017: liters_today is the backend's canonical
+    // Aggregate Water Use (tank-derived + manual in tank mode; manual +
+    // pump-estimate otherwise). This characterizes that the adapter surfaces the
+    // backend's pre-aggregated figure verbatim — it reads liters_today directly and
+    // does not sum or recompute from daily_readings (which are present here only to
+    // mirror the ADR-0017 additive scenario; the adapter never inspects them).
+    it('surfaces the additive liters_today verbatim, not a sum recomputed client-side', () => {
+      const ws = makeWsData({
+        irrigation: {
+          irrigation_config: { irrigation_times: [], drain_times: [] },
+          irrigation_strategy: null,
+          water_usage: {
+            total_liters: 100,
+            cycle_start_date: '2026-01-01',
+            // Backend already folded manual (3.2) into the tank-derived total to
+            // reach liters_today = 8.2; the adapter passes that 8.2 through as-is.
+            daily_readings: [{ date: '2026-06-15', liters: 3.2, source: 'manual' }],
+            liters_today: 8.2,
+          },
+        } as any,
+      });
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+      expect(result?.waterUsage?.litersToday).toBe(8.2);
+    });
+
     it('leaves litersToday undefined when liters_today is absent from payload', () => {
       const ws = makeWsData({
         irrigation: {
