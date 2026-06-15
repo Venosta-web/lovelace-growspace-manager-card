@@ -68474,6 +68474,19 @@ function _buildTankChip(tanks, activeEnvGraphs, linkedGraphGroups) {
         tooltip: `${tanks.length} tanks`,
     }, activeEnvGraphs, linkedGraphGroups);
 }
+/**
+ * Tank-Derived Water Chip: calendar-day water consumption for a growspace in
+ * Tank-Derived Water Mode. The backend supplies `litersToday` only in that mode
+ * (no flow/drain sensors), so its presence is the mode signal; the `tanks > 0`
+ * guard suppresses the 0-liter chip on an otherwise-unconfigured growspace.
+ * Clicking it routes `MetricKey.WATER` to the Tank Water Chart (Custom Graph
+ * Routing). See ADR-0020.
+ */
+function _buildWaterChip(litersToday, tanks, activeEnvGraphs, linkedGraphGroups) {
+    if (litersToday == null || tanks.length === 0)
+        return null;
+    return _makeChip(MetricKey.WATER, mdiWaterMinus, `${litersToday.toFixed(1)} L`, { label: 'Water', tooltip: 'Water consumed today, inferred from tank level' }, activeEnvGraphs, linkedGraphGroups);
+}
 // ---------------------------------------------------------------------------
 // Device chip builders
 // ---------------------------------------------------------------------------
@@ -68543,7 +68556,7 @@ function _buildLightChip(entry, isLightsOn, activeEnvGraphs, linkedGraphGroups, 
  *    deviceChips is empty when deviceSnapshot is null (trailing optional so
  *    existing call sites stay valid).
  */
-function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels, viewContext, activeEnvGraphs = new Set(), linkedGraphGroups = [], irrigationStrategy = null, deviceSnapshot = null) {
+function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels, viewContext, activeEnvGraphs = new Set(), linkedGraphGroups = [], irrigationStrategy = null, deviceSnapshot = null, litersToday = null) {
     // --- Dominant stage ---
     let dominant;
     const dominantRaw = PlantUtils.getDominantStage(plants);
@@ -68613,6 +68626,10 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
     const tankChip = _buildTankChip(tankLevels, activeEnvGraphs, linkedGraphGroups);
     if (tankChip)
         chips.push(tankChip);
+    // Tank-Derived Water Chip (calendar-day consumption; see ADR-0020)
+    const waterChip = _buildWaterChip(litersToday, tankLevels, activeEnvGraphs, linkedGraphGroups);
+    if (waterChip)
+        chips.push(waterChip);
     // Irrigation / drain timing
     if (irrigationConfig) {
         const steeringActive = irrigationStrategy?.enabled === true;
@@ -71796,7 +71813,7 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         const growspaceTanks = tankLevels$.get().get(growspaceId) ?? [];
         const deviceSnapshot = deviceSnapshots$.get().get(growspaceId) ?? null;
         const isFlower = PlantUtils.getDominantStage(growspacePlants)?.stage === 'flower';
-        const { hero: heroChips, chips: secondaryChips, deviceChips, dominant, } = computeHeaderMetrics(envSnapshot, growspacePlants, irrigationConfig, growspaceTanks, 'main', activeEnvGraphs, linkedGraphGroups, irrigationStrategy, deviceSnapshot);
+        const { hero: heroChips, chips: secondaryChips, deviceChips, dominant, } = computeHeaderMetrics(envSnapshot, growspacePlants, irrigationConfig, growspaceTanks, 'main', activeEnvGraphs, linkedGraphGroups, irrigationStrategy, deviceSnapshot, this.device.waterUsage?.litersToday ?? null);
         const hidden = this.config?.hidden_chips;
         return {
             heroChips: filterChips(heroChips, hidden),

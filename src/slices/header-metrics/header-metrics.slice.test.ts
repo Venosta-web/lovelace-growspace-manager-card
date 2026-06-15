@@ -493,6 +493,69 @@ describe('Cycle 6 — tank level chips', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Tank-Derived Water Chip (ADR-0020)
+// ---------------------------------------------------------------------------
+
+describe('Tank-Derived Water Chip', () => {
+  it('renders a MetricKey.WATER chip when litersToday is present and tanks exist', () => {
+    const tank = makeTank({ fillLevel: 60 });
+
+    const { chips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [tank],
+      'main',
+      new Set(),
+      [],
+      null,
+      null,
+      12.34
+    );
+
+    const chip = chips.find((c) => c.key === MetricKey.WATER);
+    expect(chip).toBeDefined();
+    expect(chip!.value).toBe('12.3 L');
+  });
+
+  it('omits the chip when litersToday is null (not in Tank-Derived Water Mode)', () => {
+    const tank = makeTank({ fillLevel: 60 });
+
+    const { chips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [tank],
+      'main',
+      new Set(),
+      [],
+      null,
+      null,
+      null
+    );
+
+    expect(chips.find((c) => c.key === MetricKey.WATER)).toBeUndefined();
+  });
+
+  it('omits the chip when no tanks exist even if litersToday is 0', () => {
+    const { chips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      null,
+      0
+    );
+
+    expect(chips.find((c) => c.key === MetricKey.WATER)).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Cycle 7 — DLI chip from EnvSnapshot.dli
 // ---------------------------------------------------------------------------
 
