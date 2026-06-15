@@ -1,3 +1,11 @@
+# [1.1.0-next.49](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.48...v1.1.0-next.49) (2026-06-15)
+
+
+### Features
+
+* **irrigation:** decompose config tab into per-tab adapter (ADR-0019) ([0a1a5fd](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/0a1a5fd1b4f0f49c4051d1394ceefbf3a7df8204))
+* **irrigation:** decompose water_analytics tab into per-tab adapter (ADR-0019) ([abda929](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/abda92918d204d2ba8c52b0b34cf0d13721a30e6))
+
 # [1.1.0-next.48](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.47...v1.1.0-next.48) (2026-06-15)
 
 
