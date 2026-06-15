@@ -1,64 +1,59 @@
+/**
+ * Substrate & EC tab — feed-EC ranges (decomposed into <irrigation-substrate-ec-tab>, ADR-0019).
+ *
+ * The per-stage feed-EC table renders in the decomposed child whose VM reads the
+ * SM draft; edits flow as `substrate-ec-targets-changed` intents the Dialog Shell
+ * translates into `UPDATE_EC_TARGETS_DRAFT`. (Detailed rendering/intent behavior
+ * is covered by the VM + component specs; this is the dialog→child→SM integration.)
+ */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import type { LitElement } from 'lit';
 import { IrrigationDialog } from '../../../src/dialogs/irrigation-dialog';
 import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
 import { irrigationConfigs$ } from '../../../src/slices/irrigation';
 
-vi.mock('../../../src/features/shared/ui/md3-text-input', () => ({
-  Md3TextInput: class extends HTMLElement {
-    get value() { return this.getAttribute('value') || ''; }
-    set value(v: string) { this.setAttribute('value', v); }
-  }
-}));
 vi.mock('../../../src/features/shared/ui/md3-number-input', () => ({
   Md3NumberInput: class extends HTMLElement {
     get value() { return this.getAttribute('value') || ''; }
     set value(v: string) { this.setAttribute('value', v); }
-  }
+  },
 }));
 vi.mock('../../../src/features/shared/ui/md3-switch', () => ({
   Md3Switch: class extends HTMLElement {
     get checked() { return this.hasAttribute('checked'); }
     set checked(v: boolean) { v ? this.setAttribute('checked', '') : this.removeAttribute('checked'); }
-  }
+  },
 }));
 
 const mocks = vi.hoisted(() => ({
-  setIrrigationSettings: vi.fn().mockResolvedValue(undefined),
-  setIrrigationStrategy: vi.fn().mockResolvedValue(undefined),
-  configureDrainMonitoring: vi.fn().mockResolvedValue(undefined),
-  setEcTargetRanges: vi.fn().mockResolvedValue(undefined),
   getIrrigationAnalytics: vi.fn().mockResolvedValue(null),
-  addIrrigationTime: vi.fn().mockResolvedValue(undefined),
-  removeIrrigationTime: vi.fn().mockResolvedValue(undefined),
-  addDrainTime: vi.fn().mockResolvedValue(undefined),
-  removeDrainTime: vi.fn().mockResolvedValue(undefined),
 }));
-
 vi.mock('../../../src/services/data-service', () => ({
   DataService: class {
     constructor() { return mocks; }
-  }
+  },
 }));
 
+// The Substrate & EC tab's immediate-persist path calls the Irrigation slice's
+// `updateIrrigationStrategy` mutator (ADR-0017), not the DataService. Spy on it
+// while keeping the real atoms (`irrigationConfigs$`) the dialog subscribes to.
+const sliceMocks = vi.hoisted(() => ({
+  updateIrrigationStrategy: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/slices/irrigation')>();
+  return { ...actual, updateIrrigationStrategy: sliceMocks.updateIrrigationStrategy };
+});
+
 function makeMockStore(device: GrowspaceDevice) {
-  const deviceCopy = JSON.parse(JSON.stringify(device));
-  const $devicesValue = [deviceCopy];
+  const $devicesValue = [JSON.parse(JSON.stringify(device))];
   return {
     context: {
       dataService: mocks,
-      data: {
-        $devices: { get: () => $devicesValue },
-        patchDeviceIrrigationConfig: vi.fn((gsId: string, patch: any) => {
-          const d = $devicesValue.find((x: any) => x.deviceId === gsId);
-          if (d) Object.assign(d.irrigationConfig, patch);
-        }),
-      },
-      showToast: vi.fn(),
-      closeDialog: vi.fn(),
-      refreshData: vi.fn().mockResolvedValue(undefined),
-      ui: { showToast: vi.fn() },
-      history: {}, grid: {}, hass: {}, syncService: {},
+      data: { $devices: { get: () => $devicesValue }, patchDeviceIrrigationConfig: vi.fn() },
+      showToast: vi.fn(), closeDialog: vi.fn(), refreshData: vi.fn().mockResolvedValue(undefined),
+      ui: { showToast: vi.fn() }, history: {}, grid: {}, hass: {}, syncService: {},
     },
     ui: { showToast: vi.fn() },
   };
@@ -73,7 +68,8 @@ const baseDevice: GrowspaceDevice = {
   plants: [],
   grid: {},
   biologicalMetrics: {} as any,
-  environmentAttributes: { feedEcSensors: ['sensor.feed_ec'] } as any,
+  // poreEcSensors → substrate_ec tab is visible; feedEcSensors for completeness.
+  environmentAttributes: { feedEcSensors: ['sensor.feed_ec'], poreEcSensors: ['sensor.pore_ec'] } as any,
   stats: {} as any,
   waterUsage: { litersToday: 0 } as any,
   drainConfig: null as any,
@@ -85,10 +81,10 @@ const baseDevice: GrowspaceDevice = {
     irrigationTimes: [],
     drainTimes: [],
   },
-  irrigationStrategy: undefined as any,
+  irrigationStrategy: { enabled: true } as any,
 };
 
-describe('IrrigationDialog – EC Targets tab', () => {
+describe('IrrigationDialog – Substrate & EC tab: feed-EC ranges', () => {
   let element: IrrigationDialog;
 
   beforeEach(() => {
@@ -105,88 +101,84 @@ describe('IrrigationDialog – EC Targets tab', () => {
     vi.restoreAllMocks();
   });
 
-  async function openOnEcTargetsTab() {
+  async function openOnSubstrateTab() {
     element.open = true;
-    (element as any)._sm = { ...(element as any)._sm, activeTab: 'ec_targets' };
+    (element as any)._sm = { ...(element as any)._sm, activeTab: 'substrate_ec' };
     document.body.appendChild(element);
     await element.updateComplete;
+    const tab = element.shadowRoot!.querySelector('irrigation-substrate-ec-tab') as LitElement & {
+      shadowRoot: ShadowRoot;
+    };
+    await tab.updateComplete;
+    return tab;
   }
 
-  // ── Tracer bullet ─────────────────────────────────────────────────────────
-
-  it('renders five stage rows: Seedling, Veg, Early Flower, Mid Flower, Late Flower / Flush', async () => {
-    await openOnEcTargetsTab();
-
-    const rows = element.shadowRoot!.querySelectorAll('.ec-target-row');
+  it('renders five stage rows in the child: Seedling … Late Flower / Flush', async () => {
+    const tab = await openOnSubstrateTab();
+    const rows = tab.shadowRoot.querySelectorAll('.ec-target-row');
     expect(rows.length).toBe(5);
-
     const labels = Array.from(rows).map((r) => r.querySelector('.ec-stage-label')?.textContent?.trim());
     expect(labels).toEqual(['Seedling', 'Veg', 'Early Flower', 'Mid Flower', 'Late Flower / Flush']);
   });
 
-  // ── Payload loading ───────────────────────────────────────────────────────
-
-  it('loads ecTargetRanges from device into inputs', async () => {
+  it('loads ecTargetRanges from device config into the child inputs', async () => {
     element.device = {
       ...JSON.parse(JSON.stringify(baseDevice)),
       irrigationConfig: {
         ...baseDevice.irrigationConfig,
         ecTargetRanges: [
-          { stage: 'seedling',     minEc: 0.8, maxEc: 1.2 },
-          { stage: 'veg',          minEc: 1.5, maxEc: 2.0 },
+          { stage: 'seedling', minEc: 0.8, maxEc: 1.2 },
+          { stage: 'veg', minEc: 1.5, maxEc: 2.0 },
           { stage: 'flower_early', minEc: 2.0, maxEc: 2.8 },
-          { stage: 'flower_mid',   minEc: 2.2, maxEc: 3.0 },
-          { stage: 'flower_late',  minEc: 0.2, maxEc: 0.5 },
+          { stage: 'flower_mid', minEc: 2.2, maxEc: 3.0 },
+          { stage: 'flower_late', minEc: 0.2, maxEc: 0.5 },
         ],
       },
     };
     (element as any).store = makeMockStore(element.device!);
-    await openOnEcTargetsTab();
+    const tab = await openOnSubstrateTab();
 
-    const rows = element.shadowRoot!.querySelectorAll('.ec-target-row');
-    const getInputs = (row: Element) => Array.from(row.querySelectorAll('input[type="number"]')) as HTMLInputElement[];
-
-    expect(getInputs(rows[0])[0].value).toBe('0.8');  // seedling min
-    expect(getInputs(rows[0])[1].value).toBe('1.2');  // seedling max
-    expect(getInputs(rows[1])[0].value).toBe('1.5');  // veg min
-    expect(getInputs(rows[4])[1].value).toBe('0.5');  // flower_late max
+    const rows = tab.shadowRoot.querySelectorAll('.ec-target-row');
+    const inputs = (row: Element) => Array.from(row.querySelectorAll('input[type="number"]')) as HTMLInputElement[];
+    expect(inputs(rows[0])[0].value).toBe('0.8');
+    expect(inputs(rows[0])[1].value).toBe('1.2');
+    expect(inputs(rows[1])[0].value).toBe('1.5');
+    expect(inputs(rows[4])[1].value).toBe('0.5');
   });
 
-  // ── State mutation ─────────────────────────────────────────────────────────
+  it('updates the SM draft when a min EC input changes (buffered, ADR-0017)', async () => {
+    const tab = await openOnSubstrateTab();
+    const firstMin = tab.shadowRoot.querySelector('.ec-target-row input[type="number"]') as HTMLInputElement;
+    firstMin.value = '1.1';
+    firstMin.dispatchEvent(new Event('input', { bubbles: true }));
+    await element.updateComplete;
+    expect((element as any)._sm.tabs.substrate_ec.draft.ecTargetRanges[0].minEc).toBe(1.1);
+  });
 
-  it('updates internal state when min EC input changes', async () => {
-    await openOnEcTargetsTab();
+  it('updates the SM draft when a max EC input changes', async () => {
+    const tab = await openOnSubstrateTab();
+    const firstMax = tab.shadowRoot.querySelectorAll('.ec-target-row input[type="number"]')[1] as HTMLInputElement;
+    firstMax.value = '2.5';
+    firstMax.dispatchEvent(new Event('input', { bubbles: true }));
+    await element.updateComplete;
+    expect((element as any)._sm.tabs.substrate_ec.draft.ecTargetRanges[0].maxEc).toBe(2.5);
+  });
 
-    const firstRow = element.shadowRoot!.querySelector('.ec-target-row')!;
-    const minInput = firstRow.querySelector('input[type="number"]') as HTMLInputElement;
-    minInput.value = '1.1';
-    minInput.dispatchEvent(new Event('input', { bubbles: true }));
+  it('persists sizing mode immediately (not buffered) — separate write path (ADR-0017)', async () => {
+    element.device = {
+      ...JSON.parse(JSON.stringify(baseDevice)),
+      volumeModeCapable: true,
+      irrigationStrategy: { enabled: true, shotSizingMode: 'seconds' },
+    } as any;
+    (element as any).store = makeMockStore(element.device!);
+    const tab = await openOnSubstrateTab();
+
+    const volumeBtn = tab.shadowRoot.querySelector('button[data-sizing-mode="volume"]') as HTMLButtonElement;
+    volumeBtn.click();
     await element.updateComplete;
 
-    const state = (element as any)._sm.tabs.ec_targets.draft as Array<{ stage: string; minEc: number; maxEc: number }>;
-    expect(state[0].minEc).toBe(1.1);
-  });
-
-  it('updates internal state when max EC input changes', async () => {
-    await openOnEcTargetsTab();
-
-    const firstRow = element.shadowRoot!.querySelector('.ec-target-row')!;
-    const maxInput = firstRow.querySelectorAll('input[type="number"]')[1] as HTMLInputElement;
-    maxInput.value = '2.5';
-    maxInput.dispatchEvent(new Event('input', { bubbles: true }));
-    await element.updateComplete;
-
-    const state = (element as any)._sm.tabs.ec_targets.draft as Array<{ stage: string; minEc: number; maxEc: number }>;
-    expect(state[0].maxEc).toBe(2.5);
-  });
-
-  // ── Placeholder removed ────────────────────────────────────────────────────
-
-  it('does not render "Coming soon" placeholder text', async () => {
-    await openOnEcTargetsTab();
-
-    const text = element.shadowRoot!.textContent ?? '';
-    expect(text).not.toContain('Coming soon');
-    expect(text).not.toContain('coming soon');
+    expect(sliceMocks.updateIrrigationStrategy).toHaveBeenCalledWith('gs1', { shotSizingMode: 'volume' });
+    // and it does NOT land in the buffered draft
+    expect((element as any)._sm.tabs.substrate_ec.draft).not.toHaveProperty('shotSizingMode');
   });
 });

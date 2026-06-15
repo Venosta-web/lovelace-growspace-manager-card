@@ -1076,85 +1076,91 @@ function makeSubstrateEcDevice(
   });
 }
 
+// ADR-0019: the Substrate & EC tab renders in the decomposed
+// <irrigation-substrate-ec-tab> child; DOM queries pierce its shadow.
 async function mountSubstrateEc(device: ReturnType<typeof createGrowspaceDevice>) {
   const el = await fixture<IrrigationDialog>(html`
     <irrigation-dialog .open=${true} .device=${device} .initialTab=${'substrate_ec'}></irrigation-dialog>
   `);
   await el.updateComplete;
-  return el;
+  const tab = el.shadowRoot!.querySelector('irrigation-substrate-ec-tab') as LitElement & {
+    shadowRoot: ShadowRoot;
+  };
+  await tab.updateComplete;
+  return { el, tab };
 }
 
 describe('IrrigationDialog – Substrate & EC tab', () => {
   it('locks Volume Mode with a "liters per pot" hint when no profile is configured', async () => {
-    const el = await mountSubstrateEc(makeSubstrateEcDevice({}, {}, { volumeModeCapable: false }));
-    const volumeBtn = el.shadowRoot!.querySelector('[data-sizing-mode="volume"]') as HTMLButtonElement;
+    const { tab } = await mountSubstrateEc(makeSubstrateEcDevice({}, {}, { volumeModeCapable: false }));
+    const volumeBtn = tab.shadowRoot.querySelector('[data-sizing-mode="volume"]') as HTMLButtonElement;
     expect(volumeBtn.disabled).toBe(true);
-    const hint = el.shadowRoot!.querySelector('.capability-unlock-hint')?.textContent ?? '';
+    const hint = tab.shadowRoot.querySelector('.capability-unlock-hint')?.textContent ?? '';
     expect(hint).toContain('liters per pot');
   });
 
   it('locks Volume Mode with a "pump flow rate" hint once liters-per-pot is set but still not capable', async () => {
-    const el = await mountSubstrateEc(
+    const { tab } = await mountSubstrateEc(
       makeSubstrateEcDevice(
         { substrateProfile: { mediaType: 'coco', litersPerPot: 5 } },
         {},
         { volumeModeCapable: false }
       )
     );
-    const volumeBtn = el.shadowRoot!.querySelector('[data-sizing-mode="volume"]') as HTMLButtonElement;
+    const volumeBtn = tab.shadowRoot.querySelector('[data-sizing-mode="volume"]') as HTMLButtonElement;
     expect(volumeBtn.disabled).toBe(true);
-    const hint = el.shadowRoot!.querySelector('.capability-unlock-hint')?.textContent ?? '';
+    const hint = tab.shadowRoot.querySelector('.capability-unlock-hint')?.textContent ?? '';
     expect(hint).toContain('pump flow rate');
   });
 
   it('enables the Volume Mode toggle when the backend reports it capable', async () => {
-    const el = await mountSubstrateEc(
+    const { tab } = await mountSubstrateEc(
       makeSubstrateEcDevice(
         { substrateProfile: { mediaType: 'coco', litersPerPot: 5 } },
         {},
         { volumeModeCapable: true }
       )
     );
-    const volumeBtn = el.shadowRoot!.querySelector('[data-sizing-mode="volume"]') as HTMLButtonElement;
+    const volumeBtn = tab.shadowRoot.querySelector('[data-sizing-mode="volume"]') as HTMLButtonElement;
     expect(volumeBtn.disabled).toBe(false);
   });
 
   it('locks EC Modulation with a hint when no pore-EC sensors are configured', async () => {
-    const el = await mountSubstrateEc(makeSubstrateEcDevice());
-    const toggle = el.shadowRoot!.querySelector('[data-field="ec_modulation_enabled"]') as any;
+    const { tab } = await mountSubstrateEc(makeSubstrateEcDevice());
+    const toggle = tab.shadowRoot.querySelector('[data-field="ec_modulation_enabled"]') as any;
     expect(toggle.disabled).toBe(true);
-    const hints = Array.from(el.shadowRoot!.querySelectorAll('.capability-unlock-hint')).map(
+    const hints = Array.from(tab.shadowRoot.querySelectorAll('.capability-unlock-hint')).map(
       (n) => n.textContent ?? ''
     );
     expect(hints.some((h) => h.includes('pore EC sensor'))).toBe(true);
   });
 
   it('enables EC Modulation when pore-EC sensors are configured', async () => {
-    const el = await mountSubstrateEc(
+    const { tab } = await mountSubstrateEc(
       makeSubstrateEcDevice({}, { poreEcSensors: ['sensor.pore_ec'] })
     );
-    const toggle = el.shadowRoot!.querySelector('[data-field="ec_modulation_enabled"]') as any;
+    const toggle = tab.shadowRoot.querySelector('[data-field="ec_modulation_enabled"]') as any;
     expect(toggle.disabled).toBe(false);
   });
 
   it('renders the pore-EC band and the feed-EC ranges as distinct sections', async () => {
-    const el = await mountSubstrateEc(makeSubstrateEcDevice());
-    expect(el.shadowRoot!.querySelector('[data-field="pore_ec_target_min"]')).not.toBeNull();
-    expect(el.shadowRoot!.querySelector('[data-field="pore_ec_target_max"]')).not.toBeNull();
+    const { tab } = await mountSubstrateEc(makeSubstrateEcDevice());
+    expect(tab.shadowRoot.querySelector('[data-field="pore_ec_target_min"]')).not.toBeNull();
+    expect(tab.shadowRoot.querySelector('[data-field="pore_ec_target_max"]')).not.toBeNull();
     // The feed-EC ranges remain as their own per-stage table.
-    expect(el.shadowRoot!.querySelector('.ec-target-row')).not.toBeNull();
+    expect(tab.shadowRoot.querySelector('.ec-target-row')).not.toBeNull();
   });
 
   it('buffers a pore-EC band edit into the substrate_ec draft', async () => {
-    const el = await mountSubstrateEc(makeSubstrateEcDevice());
-    const minInput = el.shadowRoot!.querySelector('[data-field="pore_ec_target_min"]') as any;
+    const { el, tab } = await mountSubstrateEc(makeSubstrateEcDevice());
+    const minInput = tab.shadowRoot.querySelector('[data-field="pore_ec_target_min"]') as any;
     minInput.dispatchEvent(new CustomEvent('change', { detail: '2.5' }));
     await el.updateComplete;
     expect((el as any)._sm.tabs.substrate_ec.draft.poreEcMin).toBe(2.5);
   });
 
   it('blocks save and toasts when the pore-EC band is inverted (min >= max)', async () => {
-    const el = await mountSubstrateEc(makeSubstrateEcDevice());
+    const { el } = await mountSubstrateEc(makeSubstrateEcDevice());
     (el as any)._sm = transition((el as any)._sm, {
       type: 'UPDATE_PORE_EC_BAND',
       min: 3.0,
@@ -1172,7 +1178,7 @@ describe('IrrigationDialog – Substrate & EC tab', () => {
   });
 
   it('allows save when the pore-EC band is valid (min < max)', async () => {
-    const el = await mountSubstrateEc(makeSubstrateEcDevice());
+    const { el } = await mountSubstrateEc(makeSubstrateEcDevice());
     (el as any)._sm = transition((el as any)._sm, {
       type: 'UPDATE_PORE_EC_BAND',
       min: 2.0,
