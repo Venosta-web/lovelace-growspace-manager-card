@@ -1,3 +1,10 @@
+# [1.1.0-next.52](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.51...v1.1.0-next.52) (2026-06-15)
+
+
+### Features
+
+* surface aggregate water use via Tank-Derived Water Chip ([#321](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/321)) ([57c8ca7](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/57c8ca74131652b3c4ffc8460f24938976b6d819))
+
 # [1.1.0-next.51](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.50...v1.1.0-next.51) (2026-06-15)
 
 
