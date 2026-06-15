@@ -15,6 +15,24 @@ function smWrite(el: IrrigationDialog, update: (sm: any) => any): void {
   (el as any)._sm = update((el as any)._sm);
 }
 
+/**
+ * ADR-0019: the Steering tab renders in the decomposed <irrigation-steering-tab>
+ * child. Selects the Steering tab by LABEL and returns the child's shadow root so
+ * DOM queries pierce it; SM assertions still read el._sm (the Shell updates it
+ * from the child's Tab Intents).
+ */
+async function steeringChild(el: IrrigationDialog): Promise<ShadowRoot> {
+  const tabs = el.shadowRoot?.querySelectorAll('.v1-nav-item');
+  const steeringTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Steering'));
+  (steeringTab as HTMLElement | undefined)?.click();
+  await el.updateComplete;
+  const child = el.shadowRoot?.querySelector('irrigation-steering-tab') as
+    | (HTMLElement & { updateComplete: Promise<boolean>; shadowRoot: ShadowRoot })
+    | null;
+  await child?.updateComplete;
+  return child!.shadowRoot;
+}
+
 // Mock dependencies
 vi.mock('../../../src/features/shared/ui/md3-text-input', () => ({
     Md3TextInput: class extends HTMLElement {
@@ -320,7 +338,9 @@ describe('IrrigationDialog', () => {
             (element as any)._sm = { ...(element as any)._sm, activeTab: 'steering' };
             await element.updateComplete;
 
-            const dateInput = element.shadowRoot?.querySelector('md3-text-input[label="Lights On Time"]');
+            const child = element.shadowRoot?.querySelector('irrigation-steering-tab') as any;
+            await child?.updateComplete;
+            const dateInput = child.shadowRoot?.querySelector('md3-text-input[label="Lights On Time"]');
             expect(dateInput).toBeTruthy();
 
             // Simulate event where target.value is empty but e.detail has value
@@ -410,9 +430,25 @@ describe('IrrigationDialog', () => {
             expect((element as any)._sm.tabs.steering.draft.p0DurationMinutes).toBe(60);
         });
 
-        it('should handle _updateStrategyField directly', () => {
-            (element as any)._updateStrategyField('enabled', true);
+        it('routes a steering-draft-changed Tab Intent into the steering draft', async () => {
+            // ADR-0019: the former private _updateStrategyField is gone; the steering
+            // draft now updates via the child's `steering-draft-changed` intent.
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+            (element as any)._sm = { ...(element as any)._sm, activeTab: 'steering' };
+            await element.updateComplete;
+            const child = element.shadowRoot!.querySelector('irrigation-steering-tab')!;
+            child.dispatchEvent(
+                new CustomEvent('steering-draft-changed', {
+                    detail: { partial: { enabled: true } },
+                    bubbles: true,
+                    composed: true,
+                })
+            );
+            await element.updateComplete;
             expect((element as any)._sm.tabs.steering.draft.enabled).toBe(true);
+            document.body.removeChild(element);
         });
     });
 
@@ -1153,7 +1189,8 @@ describe('IrrigationDialog', () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { haltOnRunoffEcThreshold: 4.0 } });
                 await element.updateComplete;
 
-                const haltInput = element.shadowRoot?.querySelector('md3-number-input[data-field="haltOnRunoffEcValue"]') as any;
+                const sr = await steeringChild(element);
+                const haltInput = sr.querySelector('md3-number-input[data-field="haltOnRunoffEcValue"]') as any;
                 expect(haltInput).toBeTruthy();
 
                 haltInput.dispatchEvent(new CustomEvent('change', { detail: '5.5' }));
@@ -1166,7 +1203,8 @@ describe('IrrigationDialog', () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { haltOnRunoffEcThreshold: 4.0 } });
                 await element.updateComplete;
 
-                const haltInput = element.shadowRoot?.querySelector('md3-number-input[data-field="haltOnRunoffEcValue"]') as any;
+                const sr = await steeringChild(element);
+                const haltInput = sr.querySelector('md3-number-input[data-field="haltOnRunoffEcValue"]') as any;
                 haltInput.dispatchEvent(new CustomEvent('change', { detail: 'not-a-number' }));
                 await element.updateComplete;
 
@@ -1191,13 +1229,9 @@ describe('IrrigationDialog', () => {
             });
 
             it('should update _soilTriggerPercent from the P2 Direct Trigger input', async () => {
-                // P2 Direct Trigger is in the Steering tab
-                const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-                const steeringTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Crop Steering'));
-                (steeringTab as HTMLElement)?.click();
-                await element.updateComplete;
-
-                const soilInput = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || [])
+                // P2 Direct Trigger lives in the Steering tab (decomposed child, ADR-0019).
+                const sr = await steeringChild(element);
+                const soilInput = Array.from(sr.querySelectorAll('md3-number-input'))
                     .find(i => i.getAttribute('label') === 'P2 Direct Trigger (%)') as any;
                 expect(soilInput).toBeTruthy();
 
@@ -1208,16 +1242,11 @@ describe('IrrigationDialog', () => {
             });
 
             it('should set _soilTriggerPercent to null when input is cleared', async () => {
-                // Navigate to Steering tab first, then mutate state so the input is in the DOM
-                const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-                const steeringTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Crop Steering'));
-                (steeringTab as HTMLElement)?.click();
-                await element.updateComplete;
-
+                const sr = await steeringChild(element);
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { soilTriggerPercent: 50 } });
                 await element.updateComplete;
 
-                const soilInput = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || [])
+                const soilInput = Array.from(sr.querySelectorAll('md3-number-input'))
                     .find(i => i.getAttribute('label') === 'P2 Direct Trigger (%)') as any;
                 expect(soilInput).toBeTruthy();
                 soilInput.dispatchEvent(new CustomEvent('change', { detail: '' }));
@@ -1428,20 +1457,17 @@ describe('IrrigationDialog', () => {
                 element.open = true;
                 document.body.appendChild(element);
                 await element.updateComplete;
-
-                const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-                const steeringTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Crop Steering'));
-                (steeringTab as HTMLElement)?.click();
-                await element.updateComplete;
             });
 
             it('labels the first VWC targets group "P1 Thresholds"', async () => {
-                const titles = element.shadowRoot?.querySelectorAll('.vwc-targets-group-title');
+                const sr = await steeringChild(element);
+                const titles = sr.querySelectorAll('.vwc-targets-group-title');
                 expect(titles?.[0]?.textContent?.trim()).toBe('P1 Thresholds');
             });
 
             it('labels the second VWC targets group "P2 Thresholds"', async () => {
-                const titles = element.shadowRoot?.querySelectorAll('.vwc-targets-group-title');
+                const sr = await steeringChild(element);
+                const titles = sr.querySelectorAll('.vwc-targets-group-title');
                 expect(titles?.[1]?.textContent?.trim()).toBe('P2 Thresholds');
             });
         });

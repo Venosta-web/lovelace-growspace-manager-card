@@ -112,10 +112,26 @@ async function openOnSteeringTab(element: IrrigationDialog): Promise<void> {
     element.open = true;
     document.body.appendChild(element);
     await element.updateComplete;
-    // Navigate to Steering tab (index 1)
+    // Select the Steering tab by LABEL (not index — nav order is gate-dependent).
     const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-    (tabs?.[1] as HTMLElement)?.click();
+    const steeringTab = Array.from(tabs ?? []).find((t) =>
+        t.textContent?.includes('Steering')
+    ) as HTMLElement | undefined;
+    steeringTab?.click();
     await element.updateComplete;
+}
+
+/**
+ * ADR-0019: the Steering tab renders in the decomposed <irrigation-steering-tab>
+ * child. Returns its shadow root so DOM queries pierce the child; SM assertions
+ * still read element._sm, which the Dialog Shell updates from the child's intents.
+ */
+async function steeringChild(element: IrrigationDialog): Promise<ShadowRoot> {
+    const child = element.shadowRoot?.querySelector('irrigation-steering-tab') as
+        | (HTMLElement & { updateComplete: Promise<boolean>; shadowRoot: ShadowRoot })
+        | null;
+    await child?.updateComplete;
+    return child!.shadowRoot;
 }
 
 describe('IrrigationDialog – Phase Triggers', () => {
@@ -195,9 +211,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="autoAdvanceP1ToP2"]'
-        ) as any;
+        const sr = await steeringChild(element);
+        const toggle = sr.querySelector('md3-switch[data-field="autoAdvanceP1ToP2"]') as any;
         expect(toggle).toBeTruthy();
         toggle.checked = true;
         toggle.dispatchEvent(new Event('change', { bubbles: true }));
@@ -214,9 +229,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="autoAdvanceP2ToP3"]'
-        ) as any;
+        const sr = await steeringChild(element);
+        const toggle = sr.querySelector('md3-switch[data-field="autoAdvanceP2ToP3"]') as any;
         expect(toggle).toBeTruthy();
         toggle.checked = true;
         toggle.dispatchEvent(new Event('change', { bubbles: true }));
@@ -233,9 +247,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="haltOnRunoffEc"]'
-        ) as any;
+        const sr = await steeringChild(element);
+        const toggle = sr.querySelector('md3-switch[data-field="haltOnRunoffEc"]') as any;
         expect(toggle).toBeTruthy();
 
         // Enable
@@ -261,9 +274,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        const thresholdInput = element.shadowRoot?.querySelector(
-            '[data-field="haltOnRunoffEcValue"]'
-        );
+        const sr = await steeringChild(element);
+        const thresholdInput = sr.querySelector('[data-field="haltOnRunoffEcValue"]');
         expect(thresholdInput).toBeTruthy();
     });
 
@@ -275,9 +287,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        const thresholdInput = element.shadowRoot?.querySelector(
-            '[data-field="haltOnRunoffEcValue"]'
-        );
+        const sr = await steeringChild(element);
+        const thresholdInput = sr.querySelector('[data-field="haltOnRunoffEcValue"]');
         expect(thresholdInput).toBeNull();
     });
 
@@ -294,7 +305,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
         (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
         await element.updateComplete;
 
-        const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
+        const sr = await steeringChild(element);
+        const phaseCards = sr.querySelectorAll('.phase-card');
         const activeCard = Array.from(phaseCards ?? []).find((card: Element) => card.textContent?.includes('Phase · P2')) as HTMLElement;
         expect(activeCard).toBeTruthy();
         activeCard.click();
@@ -315,7 +327,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
         (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
         await element.updateComplete;
 
-        const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
+        const sr = await steeringChild(element);
+        const phaseCards = sr.querySelectorAll('.phase-card');
         const inactiveCard = Array.from(phaseCards ?? []).find((card: Element) => card.textContent?.includes('Phase · P1')) as HTMLElement;
         expect(inactiveCard).toBeTruthy();
         inactiveCard.click();
@@ -338,7 +351,9 @@ describe('IrrigationDialog – Phase Triggers', () => {
         (element as any)._sm = transition((element as any)._sm, { type: 'REQUEST_PHASE_CHANGE', phase: 'p1' });
         await element.updateComplete;
 
-        (element as any)._cancelPhaseChange();
+        // The cancel gesture now flows as a Tab Intent the Shell translates.
+        const child = element.shadowRoot!.querySelector('irrigation-steering-tab')!;
+        child.dispatchEvent(new CustomEvent('phase-change-cancelled', { bubbles: true, composed: true }));
         await element.updateComplete;
 
         expect((element as any)._sm.tabs.steering.sub.kind).toBe('idle');
@@ -357,7 +372,10 @@ describe('IrrigationDialog – Phase Triggers', () => {
         (element as any)._sm = transition((element as any)._sm, { type: 'REQUEST_PHASE_CHANGE', phase: 'p1' });
         await element.updateComplete;
 
-        (element as any)._confirmPhaseChange();
+        // The confirm gesture now flows as a Tab Intent the Shell translates
+        // (CONFIRM_PHASE_CHANGE + _saveSettings).
+        const child = element.shadowRoot!.querySelector('irrigation-steering-tab')!;
+        child.dispatchEvent(new CustomEvent('phase-change-confirmed', { bubbles: true, composed: true }));
         await element.updateComplete;
 
         expect((element as any)._sm.tabs.steering.sub.kind).toBe('idle');
@@ -375,7 +393,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
         (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
         await element.updateComplete;
 
-        const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
+        const sr = await steeringChild(element);
+        const phaseCards = sr.querySelectorAll('.phase-card');
         const inactiveCard = Array.from(phaseCards ?? []).find((card: Element) => card.textContent?.includes('Phase · P1')) as HTMLElement;
         expect(inactiveCard).toBeTruthy();
         inactiveCard.click();
@@ -383,7 +402,12 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         expect((element as any)._sm.tabs.steering.sub.kind).toBe('confirm-phase');
 
-        const cancelBtn = element.shadowRoot?.querySelector('gs-dialog button.tonal') as HTMLElement;
+        const sr2 = await steeringChild(element);
+        // The phase-confirm overlay is the gs-dialog owning the Confirm button.
+        const phaseConfirmBtn = Array.from(sr2.querySelectorAll('gs-dialog button.primary')).find(
+            (b) => b.textContent?.trim() === 'Confirm'
+        ) as HTMLElement;
+        const cancelBtn = phaseConfirmBtn.closest('gs-dialog')!.querySelector('button.tonal') as HTMLElement;
         expect(cancelBtn).toBeTruthy();
         cancelBtn.click();
         await element.updateComplete;
@@ -403,7 +427,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
         (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
         await element.updateComplete;
 
-        const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
+        const sr = await steeringChild(element);
+        const phaseCards = sr.querySelectorAll('.phase-card');
         const inactiveCard = Array.from(phaseCards ?? []).find((card: Element) => card.textContent?.includes('Phase · P1')) as HTMLElement;
         expect(inactiveCard).toBeTruthy();
         inactiveCard.click();
@@ -411,7 +436,10 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         expect((element as any)._sm.tabs.steering.sub.kind).toBe('confirm-phase');
 
-        const confirmBtn = element.shadowRoot?.querySelector('gs-dialog button.primary') as HTMLElement;
+        const sr2 = await steeringChild(element);
+        const confirmBtn = Array.from(sr2.querySelectorAll('gs-dialog button.primary')).find(
+            (b) => b.textContent?.trim() === 'Confirm'
+        ) as HTMLElement;
         expect(confirmBtn).toBeTruthy();
         confirmBtn.click();
         await element.updateComplete;

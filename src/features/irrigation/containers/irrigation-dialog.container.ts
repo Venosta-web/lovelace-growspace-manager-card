@@ -36,6 +36,7 @@ import {
   type EcRampCurveDraft,
   type DrainEcDraft,
   type ConfigDraft,
+  type Phase,
 } from '../../../dialogs/irrigation-dialog-sm';
 import {
   MutationRunController,
@@ -130,6 +131,13 @@ import {
   createSubstrateEcTabViewModel,
   type SubstrateEcTabViewModel,
 } from '../viewmodels/substrate-ec-tab.viewmodel';
+// Decomposed Steering tab (ADR-0019 + ADR-0012 + ADR-0014 + ADR-0017): the hardest
+// fan-out slice — `$caps` consumer (cross-tab sizing-mode read), two confirm flows,
+// and the only tab writing BOTH the steering draft and the config draft.
+import {
+  createSteeringTabViewModel,
+  type SteeringTabViewModel,
+} from '../viewmodels/steering-tab.viewmodel';
 import { atom, type ReadableAtom } from 'nanostores';
 import '../components/irrigation-overview-tab';
 import '../components/irrigation-tanks-tab';
@@ -139,6 +147,7 @@ import '../components/irrigation-drain-ec-tab';
 import '../components/irrigation-config-tab';
 import '../components/irrigation-water-analytics-tab';
 import '../components/irrigation-substrate-ec-tab';
+import '../components/irrigation-steering-tab';
 
 type TabId =
   | 'overview'
@@ -334,6 +343,13 @@ export class IrrigationDialog extends LitElement {
     this._deviceAtom
   );
   private _substrateEcVmController = new StoreController(this, this._substrateEcVm);
+  /** Steering tab ViewModel — `$sm`-first, consumes `$caps` (cross-tab sizing mode, ADR-0019). */
+  private _steeringVm: ReadableAtom<SteeringTabViewModel> = createSteeringTabViewModel(
+    this._smAtom,
+    this._caps,
+    this._deviceAtom
+  );
+  private _steeringVmController = new StoreController(this, this._steeringVm);
 
   // ─── Crop Steering History (Schedules tab) ────────────────────────────
   private _cropSteeringHistoryFetched = false;
@@ -638,33 +654,8 @@ export class IrrigationDialog extends LitElement {
         gap: 8px;
       }
 
-      /* ── Phase cards ── */
-      .phase-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-      }
-
-      .phase-card {
-        padding: 12px 14px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.02);
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        cursor: pointer;
-        transition:
-          background 0.15s,
-          border-color 0.15s;
-      }
-      .phase-card:hover {
-        background: rgba(255, 255, 255, 0.035);
-      }
-      .phase-card.active {
-        border-color: rgba(33, 150, 243, 0.5);
-        background: rgba(33, 150, 243, 0.08);
-      }
+      /* ── Segmented toggle (.seg-btn kept here per ADR-0019; phase-card CSS
+         moved into <irrigation-steering-tab> with the decomposed tab) ── */
       .seg-btn {
         flex: 1;
         padding: 10px 12px;
@@ -683,22 +674,6 @@ export class IrrigationDialog extends LitElement {
       .seg-btn:disabled {
         opacity: 0.4;
         cursor: not-allowed;
-      }
-      .phase-card .phase-num {
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.4);
-      }
-      .phase-card .phase-nm {
-        font-size: 14px;
-        font-weight: 500;
-      }
-      .phase-card .phase-desc {
-        font-size: 11.5px;
-        color: rgba(255, 255, 255, 0.5);
-        line-height: 1.4;
       }
 
       /* ── Stub badge ── */
@@ -774,25 +749,6 @@ export class IrrigationDialog extends LitElement {
       .setup-hint .hint-icon {
         flex-shrink: 0;
         font-size: 1rem;
-      }
-
-      /* ── Disable stub controls ── */
-      .stub-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 12px;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 8px;
-        opacity: 0.55;
-      }
-      .stub-row-label {
-        font-size: 13px;
-      }
-      .stub-row-desc {
-        font-size: 11px;
-        opacity: 0.6;
-        margin-top: 2px;
       }
 
       @keyframes field-pulse-anim {
@@ -1368,10 +1324,6 @@ export class IrrigationDialog extends LitElement {
     }, 5000);
   }
 
-  private _updateStrategyField(field: keyof IrrigationStrategy, value: string | number | boolean) {
-    this._sm = transition(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { [field]: value } });
-  }
-
   /**
    * Immediately persist a capability-affecting strategy field edited on the
    * Substrate & EC tab (Shot Sizing Mode, Substrate Profile, EC Modulation).
@@ -1687,7 +1639,7 @@ export class IrrigationDialog extends LitElement {
     `;
   }
 
-  private _renderActiveTab(color: string) {
+  private _renderActiveTab(_color: string) {
     switch (this._sm.activeTab) {
       case 'overview':
         // Decomposed via the per-tab ViewModel adapter (ADR-0019). All other
@@ -1710,7 +1662,17 @@ export class IrrigationDialog extends LitElement {
           @schedules-open-steering=${this._onSchedulesOpenSteering}
         ></irrigation-schedules-tab>`;
       case 'steering':
-        return this._renderSteeringTab(color);
+        return html`<irrigation-steering-tab
+          .vm=${this._steeringVmController.value}
+          @steering-draft-changed=${this._onSteeringDraftChanged}
+          @steering-config-changed=${this._onSteeringConfigChanged}
+          @steering-mode-requested=${this._onSteeringModeRequested}
+          @steering-mode-confirmed=${this._onSteeringModeConfirmed}
+          @steering-mode-cancelled=${this._onSteeringModeCancelled}
+          @phase-change-requested=${this._onPhaseChangeRequested}
+          @phase-change-confirmed=${this._onPhaseChangeConfirmed}
+          @phase-change-cancelled=${this._onPhaseChangeCancelled}
+        ></irrigation-steering-tab>`;
       case 'config':
         return html`<irrigation-config-tab
           .vm=${this._configVmController.value}
@@ -1792,558 +1754,61 @@ export class IrrigationDialog extends LitElement {
     );
   }
 
-  private _handlePhaseCardClick(phaseId: 'p1' | 'p2' | 'p3') {
-    if (this._sm.tabs.steering.phase === phaseId) return;
-    this._sm = transition(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: phaseId });
+  // ─── Steering tab: Tab Intent → SM-event / side-effect routing (ADR-0019) ───
+  // The Shell owns the translation. The steering UI writes TWO drafts, so the
+  // steering tab emits two distinct draft intents (steering vs config). The two
+  // confirm-CONFIRMED intents keep their preserved side-effects here (ADR-0012):
+  // the `applySteeringMode` store action and `_saveSettings`.
+
+  /** Steering draft field → UPDATE_STEERING_DRAFT. */
+  private _onSteeringDraftChanged(e: CustomEvent<{ partial: Partial<IrrigationStrategy> }>) {
+    this._sm = transition(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: e.detail.partial });
   }
 
-  private _confirmPhaseChange() {
-    this._sm = transition(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
-    this._saveSettings();
+  /** Config draft field surfaced in the steering UI → UPDATE_CONFIG_DRAFT. */
+  private _onSteeringConfigChanged(e: CustomEvent<{ partial: Partial<ConfigDraft> }>) {
+    this._sm = transition(this._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: e.detail.partial });
   }
 
-  private _cancelPhaseChange() {
-    this._sm = transition(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
+  /** Open the Steering Mode confirm overlay (ADR-0012). */
+  private _onSteeringModeRequested(e: CustomEvent<{ mode: SteeringMode }>) {
+    this._sm = transition(this._sm, { type: 'REQUEST_STEERING_MODE', mode: e.detail.mode });
   }
 
-  private _handleSteeringModeClick(mode: SteeringMode) {
-    this._sm = transition(this._sm, { type: 'REQUEST_STEERING_MODE', mode });
-  }
-
-  private _cancelSteeringMode() {
+  /** Cancel/close the Steering Mode confirm overlay. */
+  private _onSteeringModeCancelled() {
     this._sm = transition(this._sm, { type: 'CANCEL_STEERING_MODE' });
   }
 
-  private async _confirmSteeringMode() {
+  /**
+   * Confirm the Steering Mode (ADR-0012): close the overlay, then apply the preset
+   * through the store action — the canonical write path; the server stamps the
+   * preset and the new field values arrive via device sync.
+   */
+  private async _onSteeringModeConfirmed() {
     const sub = this._sm.tabs.steering.sub;
     if (sub.kind !== 'confirm-mode') return;
     const id = this.device?.deviceId;
     this._sm = transition(this._sm, { type: 'CANCEL_STEERING_MODE' });
     if (!id) return;
-    // The slice mutator (via the store action) is the canonical write path; the
-    // server stamps the preset and the new field values arrive via device sync.
     await this.store?.actions.irrigation.applySteeringMode(id, sub.pending);
   }
 
-  // ─── Steering tab ─────────────────────────────────────────────────────────
-
-  /**
-   * Adaptive Shot Control (ADR-0014): master toggle plus the shared feedback
-   * tunables that govern how the loop reacts to the substrate's response —
-   * shrinking the shot and lengthening the interval on overshoot, recovering
-   * toward nominal on undershoot. Tunables are hidden while disabled.
-   */
-  private _renderAdaptiveShotControl() {
-    const draft = this._sm.tabs.steering.draft;
-    const enabled = draft.dynamicShotEnabled ?? true;
-    return html`
-      <div style="grid-column:span 2;margin-top:12px;">
-        <div
-          style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
-        >
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span>Adaptive Shot Control</span>
-            <gs-help-tooltip
-              content="When on, each shot's effect on VWC tunes the next one: overshoot shrinks the shot and lengthens the interval; undershoot recovers both toward nominal. Off freezes shots at the configured size and interval."
-            ></gs-help-tooltip>
-          </div>
-          <md3-switch
-            data-field="dynamicShotEnabled"
-            .checked=${enabled}
-            @change=${(e: Event) =>
-              this._updateStrategyField(
-                'dynamicShotEnabled',
-                (e.target as HTMLInputElement).checked
-              )}
-          ></md3-switch>
-        </div>
-        ${enabled
-          ? html`
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-                <md3-number-input
-                  data-field="dynamicAggressiveness"
-                  label="Aggressiveness"
-                  step="0.1"
-                  .value=${String(draft.dynamicAggressiveness ?? 1.0)}
-                  @change=${(e: CustomEvent) =>
-                    this._updateStrategyField('dynamicAggressiveness', parseFloat(e.detail))}
-                ></md3-number-input>
-                <md3-number-input
-                  data-field="dynamicRecovery"
-                  label="Recovery"
-                  step="0.05"
-                  .value=${String(draft.dynamicRecovery ?? 0.1)}
-                  @change=${(e: CustomEvent) =>
-                    this._updateStrategyField('dynamicRecovery', parseFloat(e.detail))}
-                ></md3-number-input>
-                <md3-number-input
-                  data-field="dynamicShotSizeFloor"
-                  label="Shot Size Floor (×)"
-                  step="0.05"
-                  .value=${String(draft.dynamicShotSizeFloor ?? 0.5)}
-                  @change=${(e: CustomEvent) =>
-                    this._updateStrategyField('dynamicShotSizeFloor', parseFloat(e.detail))}
-                ></md3-number-input>
-                <md3-number-input
-                  data-field="dynamicIntervalCeiling"
-                  label="Interval Ceiling (×)"
-                  step="0.1"
-                  .value=${String(draft.dynamicIntervalCeiling ?? 1.5)}
-                  @change=${(e: CustomEvent) =>
-                    this._updateStrategyField('dynamicIntervalCeiling', parseFloat(e.detail))}
-                ></md3-number-input>
-              </div>
-            `
-          : nothing}
-      </div>
-    `;
+  /** Open the phase-change confirm overlay (ADR-0012). */
+  private _onPhaseChangeRequested(e: CustomEvent<{ phase: Phase }>) {
+    if (this._sm.tabs.steering.phase === e.detail.phase) return;
+    this._sm = transition(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: e.detail.phase });
   }
 
-  /**
-   * Per-phase P1/P2 shot parameters. The edited field and its unit label follow
-   * the active Shot Sizing Mode (seconds vs. percent of substrate volume); the
-   * shot interval is always expressed in minutes.
-   */
-  private _renderPhaseShotParams() {
-    const draft = this._sm.tabs.steering.draft;
-    // Sizing mode persists immediately on the Substrate & EC tab (ADR-0017), so
-    // the relabel reads the live strategy rather than a buffered draft field.
-    const isVolume = (this.device?.irrigationStrategy?.shotSizingMode ?? 'seconds') === 'volume';
-    const phases: Array<{ id: 'p1' | 'p2'; label: string }> = [
-      { id: 'p1', label: 'P1' },
-      { id: 'p2', label: 'P2' },
-    ];
-    return phases.map((p) => {
-      const sizeField = isVolume
-        ? (`${p.id}ShotVolumePercent` as const)
-        : (`${p.id}ShotDurationSeconds` as const);
-      const sizeLabel = isVolume ? `${p.label} Shot Size (%)` : `${p.label} Shot Duration (sec)`;
-      const intervalField = `${p.id}ShotIntervalMinutes` as const;
-      return html`
-        <md3-number-input
-          data-field=${sizeField}
-          label=${sizeLabel}
-          .value=${String(draft[sizeField] ?? '')}
-          @change=${(e: CustomEvent) =>
-            this._updateStrategyField(
-              sizeField,
-              isVolume ? parseFloat(e.detail) : parseInt(e.detail)
-            )}
-        ></md3-number-input>
-        <md3-number-input
-          data-field=${intervalField}
-          label="${p.label} Shot Interval (min)"
-          .value=${String(draft[intervalField] ?? '')}
-          @change=${(e: CustomEvent) =>
-            this._updateStrategyField(intervalField, parseInt(e.detail))}
-        ></md3-number-input>
-      `;
-    });
+  /** Confirm the phase change (ADR-0012): commit the transition, then persist. */
+  private _onPhaseChangeConfirmed() {
+    this._sm = transition(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
+    this._saveSettings();
   }
 
-  /**
-   * Steering Mode selector (ADR-0012). Selecting a mode opens a confirm step;
-   * confirming stamps the server-owned preset into the editable fields. The
-   * declared mode renders as the active option.
-   */
-  private _renderSteeringModeSelector() {
-    const declared = this._sm.tabs.steering.draft.declaredSteeringMode ?? null;
-    const modes: Array<{ id: SteeringMode; name: string; desc: string }> = [
-      {
-        id: 'vegetative',
-        name: 'Vegetative',
-        desc: 'Frequent shots, small dryback — vegetative push.',
-      },
-      {
-        id: 'balanced',
-        name: 'Balanced',
-        desc: 'Middle ground between vegetative and generative.',
-      },
-      {
-        id: 'generative',
-        name: 'Generative',
-        desc: 'Fewer, larger shots and deeper dryback — generative push.',
-      },
-    ];
-    return html`
-      <div class="detail-card">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <h3 style="margin:0;">Steering Mode</h3>
-          <gs-help-tooltip
-            content="Selecting a mode stamps recommended setpoints (dryback, P2-stop offset, pore-EC band, shot sizes) into the editable fields below. You can fine-tune afterwards."
-          ></gs-help-tooltip>
-        </div>
-        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
-          ${declared
-            ? html`Declared intent: <strong>${declared}</strong>`
-            : 'No mode declared yet.'}
-        </p>
-        <div class="phase-grid">
-          ${modes.map(
-            (m) => html`
-              <div
-                class="phase-card ${declared === m.id ? 'active' : ''}"
-                data-steering-mode=${m.id}
-                @click=${() => this._handleSteeringModeClick(m.id)}
-              >
-                <div class="phase-nm">${m.name}</div>
-                <div class="phase-desc">${m.desc}</div>
-              </div>
-            `
-          )}
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderSteeringModeConfirm() {
-    const sub = this._sm.tabs.steering.sub;
-    const pending = sub.kind === 'confirm-mode' ? sub.pending : '';
-    return html`
-      <gs-dialog
-        .open=${sub.kind === 'confirm-mode'}
-        heading="Apply Steering Mode"
-        .iconPath=${mdiAlert}
-        stageColor="var(--warning-color, #ff9800)"
-        @close=${this._cancelSteeringMode}
-      >
-        <div style="padding: 20px;">
-          <p style="margin: 0 0 12px 0;">
-            Apply the <strong>${pending}</strong> preset? This overwrites these fields with
-            recommended values:
-          </p>
-          <ul
-            style="margin: 0; padding-left: 20px; font-size: 0.9rem; opacity: 0.85; line-height: 1.5;"
-          >
-            <li>Maintenance Dryback</li>
-            <li>P2 Stop Buffer</li>
-            <li>Pore EC Target Band</li>
-            <li>Per-phase shot sizes</li>
-          </ul>
-        </div>
-        <div
-          class="button-group"
-          style="padding: 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1);"
-        >
-          <button class="md3-button tonal" @click=${this._cancelSteeringMode}>Cancel</button>
-          <button
-            class="md3-button primary"
-            data-action="confirm-steering-mode"
-            @click=${this._confirmSteeringMode}
-          >
-            Apply
-          </button>
-        </div>
-      </gs-dialog>
-    `;
-  }
-
-  private _renderSteeringTab(_color: string) {
-    return html`
-      ${this._renderSteeringModeSelector()}
-
-      <!-- Phase cards -->
-      <div class="detail-card">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-          <h3 style="margin:0;">Crop Steering Phases</h3>
-          <gs-help-tooltip
-            content="Crop steering shapes the feeding pattern across three daily phases. P1 = saturation, P2 = maintenance, P3 = dryback."
-            placement="top"
-            label="Crop Steering Phases"
-          ></gs-help-tooltip>
-        </div>
-        <div class="phase-grid">
-          ${(
-            [
-              {
-                id: 'p1',
-                label: 'P1',
-                name: 'Saturation',
-                desc: 'Bring substrate to field capacity through frequent short shots.',
-              },
-              {
-                id: 'p2',
-                label: 'P2',
-                name: 'Maintenance',
-                desc: 'Maintain EC and irrigate to plant uptake — runoff target.',
-              },
-              {
-                id: 'p3',
-                label: 'P3',
-                name: 'Dryback',
-                desc: 'Final stretch of the photoperiod — controlled substrate dry.',
-              },
-            ] as const
-          ).map(
-            (p) => html`
-              <div
-                class="phase-card ${this._sm.tabs.steering.phase === p.id ? 'active' : ''}"
-                @click=${() => this._handlePhaseCardClick(p.id)}
-              >
-                <div class="phase-num">Phase · ${p.label}</div>
-                <div class="phase-nm">${p.name}</div>
-                <div class="phase-desc">${p.desc}</div>
-              </div>
-            `
-          )}
-        </div>
-      </div>
-
-      <!-- VWC strategy parameters -->
-      <div class="detail-card">
-        <h3 style="margin-top:0;">VWC Strategy Configuration</h3>
-        <p style="font-size:0.8rem;opacity:0.7;margin-bottom:20px;">
-          Enable logic-based irrigation based on volumetric water content (VWC) targets. Overrides
-          basic schedules when active.
-        </p>
-
-        <div
-          style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;"
-        >
-          <span>Enable VWC Steering</span>
-          <md3-switch
-            data-field="enabled"
-            .checked=${this._sm.tabs.steering.draft.enabled}
-            @change=${(e: Event) =>
-              this._updateStrategyField('enabled', (e.target as HTMLInputElement).checked)}
-          ></md3-switch>
-        </div>
-
-        ${
-          (this.device?.environmentAttributes?.lightSensors?.length ?? 0) > 0
-            ? html`
-                <div
-                  style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;"
-                >
-                  <span>Auto Track from Light Sensor</span>
-                  <md3-switch
-                    data-field="autoLightTracking"
-                    .checked=${!!this._sm.tabs.steering.draft.autoLightTracking}
-                    @change=${(e: Event) =>
-                      this._updateStrategyField(
-                        'autoLightTracking',
-                        (e.target as HTMLInputElement).checked
-                      )}
-                  ></md3-switch>
-                </div>
-              `
-            : ''
-        }
-
-        <div style="display:flex;flex-direction:column;gap:16px;">
-          <div class="vwc-targets-group">
-            <div class="vwc-targets-group-title" style="display:flex;align-items:center;gap:6px;">
-              P1 Thresholds
-              <gs-help-tooltip
-                content="Saturation Target: P1 ramps up until substrate VWC reaches this value, then switches to P2 maintenance."
-              ></gs-help-tooltip>
-            </div>
-            <md3-number-input
-              label="Saturation Target (%)"
-              .value=${this._sm.tabs.steering.draft.targetVwcPercent}
-              @change=${(e: CustomEvent) =>
-                this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
-            ></md3-number-input>
-          </div>
-
-          <div class="vwc-targets-group">
-            <div class="vwc-targets-group-title" style="display:flex;align-items:center;gap:6px;">
-              P2 Thresholds
-              <gs-help-tooltip
-                content="Maintenance Dryback: shots fire in P2 when VWC drops this many % below the saturation target. P2 Direct Trigger: optional — if set, bypasses the calculated threshold and fires directly when VWC drops below this value."
-              ></gs-help-tooltip>
-            </div>
-            <md3-number-input
-              label="Maintenance Dryback (%)"
-              .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
-              @change=${(e: CustomEvent) =>
-                this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
-            ></md3-number-input>
-            <md3-number-input
-              label="P2 Direct Trigger (%)"
-              placeholder="Off"
-              .value=${
-                this._sm.tabs.config.draft.soilTriggerPercent != null
-                  ? String(this._sm.tabs.config.draft.soilTriggerPercent)
-                  : ''
-              }
-              @change=${(e: CustomEvent) => {
-                const v = e.detail;
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_CONFIG_DRAFT',
-                  partial: {
-                    soilTriggerPercent: v !== '' && v != null ? parseFloat(String(v)) : null,
-                  },
-                });
-              }}
-            ></md3-number-input>
-          </div>
-        </div>
-
-          <h4 style="margin:4px 0;margin-top:12px;">Timing</h4>
-
-          <div style="display:flex;align-items:center;gap:8px;">
-            <md3-text-input
-              label="Lights On Time"
-              type="time"
-              data-scroll-target="lightsOnTime"
-              .value=${this._sm.tabs.steering.draft.lightsOnTime}
-              @change=${(e: CustomEvent) =>
-                this._updateStrategyField(
-                  'lightsOnTime',
-                  (e.target as HTMLInputElement).value || e.detail
-                )}
-            ></md3-text-input>
-            ${
-              this._sm.tabs.steering.draft.detectedLightsOnTime
-                ? html`
-                    <span class="auto-lights-badge"
-                      >auto: ${this._sm.tabs.steering.draft.detectedLightsOnTime}</span
-                    >
-                  `
-                : ''
-            }
-          </div>
-          <md3-number-input
-            label="P0 Duration (min)"
-            .value=${this._sm.tabs.steering.draft.p0DurationMinutes}
-            @change=${(e: CustomEvent) =>
-              this._updateStrategyField('p0DurationMinutes', parseInt(e.detail))}
-          ></md3-number-input>
-          <md3-number-input
-            label="P2 Stop Buffer (min)"
-            .value=${this._sm.tabs.steering.draft.p2StopBeforeLightsOffMinutes}
-            @change=${(e: CustomEvent) =>
-              this._updateStrategyField('p2StopBeforeLightsOffMinutes', parseInt(e.detail))}
-          ></md3-number-input>
-
-          <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Dosing</h4>
-
-          ${this._renderPhaseShotParams()}
-          ${this._renderAdaptiveShotControl()}
-        </div>
-      </div>
-
-      <!-- Phase Triggers -->
-      <div class="detail-card">
-        <div style="margin-bottom:14px;">
-          <h3 style="margin:0;">Phase Triggers</h3>
-        </div>
-        <div style="margin-bottom:8px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div>
-              <div class="stub-row-label">Auto-advance P1 → P2</div>
-              <div class="stub-row-desc">When substrate moisture reaches field capacity</div>
-            </div>
-            <md3-switch
-              data-field="autoAdvanceP1ToP2"
-              .checked=${this._sm.tabs.config.draft.autoAdvanceP1ToP2}
-              @change=${(e: Event) => {
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_CONFIG_DRAFT',
-                  partial: { autoAdvanceP1ToP2: (e.target as any).checked },
-                });
-              }}
-            ></md3-switch>
-          </div>
-        </div>
-        <div style="margin-bottom:8px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div>
-              <div class="stub-row-label">Auto-advance P2 → P3</div>
-              <div class="stub-row-desc">N hours before lights-off (per stage)</div>
-            </div>
-            <md3-switch
-              data-field="autoAdvanceP2ToP3"
-              .checked=${this._sm.tabs.config.draft.autoAdvanceP2ToP3}
-              @change=${(e: Event) => {
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_CONFIG_DRAFT',
-                  partial: { autoAdvanceP2ToP3: (e.target as any).checked },
-                });
-              }}
-            ></md3-switch>
-          </div>
-        </div>
-        <div>
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div>
-              <div class="stub-row-label">Halt on Runoff EC</div>
-              <div class="stub-row-desc">Suspend cycles and alert until manual resume</div>
-            </div>
-            <md3-switch
-              data-field="haltOnRunoffEc"
-              .checked=${this._sm.tabs.config.draft.haltOnRunoffEcThreshold !== null}
-              @change=${(e: Event) => {
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_CONFIG_DRAFT',
-                  partial: { haltOnRunoffEcThreshold: (e.target as any).checked ? 4.0 : null },
-                });
-              }}
-            ></md3-switch>
-          </div>
-          ${
-            this._sm.tabs.config.draft.haltOnRunoffEcThreshold !== null
-              ? html`
-                  <div style="margin-top:10px;">
-                    <md3-number-input
-                      data-field="haltOnRunoffEcValue"
-                      label="EC Threshold"
-                      min="0.1"
-                      step="0.1"
-                      .value=${String(this._sm.tabs.config.draft.haltOnRunoffEcThreshold)}
-                      @change=${(e: CustomEvent) => {
-                        const v = parseFloat(e.detail ?? (e.target as any).value);
-                        if (!isNaN(v))
-                          this._sm = transition(this._sm, {
-                            type: 'UPDATE_CONFIG_DRAFT',
-                            partial: { haltOnRunoffEcThreshold: v },
-                          });
-                      }}
-                    ></md3-number-input>
-                  </div>
-                `
-              : nothing
-          }
-        </div>
-      </div>
-
-      ${this._renderSteeringModeConfirm()}
-
-      <!-- Phase trigger confirmation dialog -->
-      <gs-dialog
-        .open=${this._sm.tabs.steering.sub.kind === 'confirm-phase'}
-        heading="Confirm Phase Transition"
-        .iconPath=${mdiAlert}
-        stageColor="var(--warning-color, #ff9800)"
-        @close=${this._cancelPhaseChange}
-      >
-        <div style="padding: 20px;">
-          <p style="margin: 0 0 12px 0;">
-            Are you sure you want to transition from
-            <strong>${this._sm.tabs.steering.phase.toUpperCase()}</strong> to
-            <strong
-              >${
-                this._sm.tabs.steering.sub.kind === 'confirm-phase'
-                  ? (this._sm.tabs.steering.sub as { pending: string }).pending.toUpperCase()
-                  : ''
-              }</strong
-            >?
-          </p>
-          <p style="margin: 0; font-size: 0.9rem; opacity: 0.8; line-height: 1.4;">
-            Manually shifting phases overrides the current schedule instantly. This is a severe
-            change that will disrupt timing and dosing parameters.
-          </p>
-        </div>
-        <div
-          class="button-group"
-          style="padding: 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1);"
-        >
-          <button class="md3-button tonal" @click=${this._cancelPhaseChange}>Cancel</button>
-          <button class="md3-button primary" @click=${this._confirmPhaseChange}>Confirm</button>
-        </div>
-      </gs-dialog>
-    `;
+  /** Cancel/close the phase-change confirm overlay. */
+  private _onPhaseChangeCancelled() {
+    this._sm = transition(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
   }
 
   // ─── Overview tab (crop-steering diagnostics, read-only) ──────────────────
