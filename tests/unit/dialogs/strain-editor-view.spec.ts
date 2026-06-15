@@ -1994,18 +1994,56 @@ describe('StrainEditorView', () => {
             expect(getSubKind(editorEl)).not.toBe('photo-menu');
         });
 
-        it('clicking Take Photo in menu triggers camera input click', async () => {
+        // "Take Photo" drives the live camera via getUserMedia; it only falls back
+        // to clicking the hidden file input when the MediaDevices API is absent.
+        const takePhotoButton = (el: StrainEditorView): HTMLElement => {
+            const menuButtons = el.shadowRoot?.querySelectorAll('[style*="bottom:0"] button');
+            return Array.from(menuButtons || []).find(b =>
+                b.textContent?.includes('Take Photo')
+            ) as HTMLElement;
+        };
+
+        it('clicking Take Photo opens the live camera via getUserMedia', async () => {
             setSubState(editorEl, { kind: 'photo-menu' });
             await editorEl.updateComplete;
+
+            // A real (empty) MediaStream — the camera overlay binds it to a
+            // <video .srcObject>, which rejects non-MediaStream values.
+            const fakeStream = new MediaStream();
+            const getUserMediaSpy = vi
+                .spyOn(navigator.mediaDevices, 'getUserMedia')
+                .mockResolvedValue(fakeStream);
+
+            const takePhotoBtn = takePhotoButton(editorEl);
+            expect(takePhotoBtn).toBeTruthy();
+            takePhotoBtn.click();
+
+            // _openCameraCapture is async and fire-and-forget from the click handler.
+            await new Promise(resolve => setTimeout(resolve, 0));
+            await editorEl.updateComplete;
+
+            expect(getUserMediaSpy).toHaveBeenCalled();
+            expect((editorEl as any)._cameraStream).toBe(fakeStream);
+            expect(getSubKind(editorEl)).not.toBe('photo-menu');
+        });
+
+        it('clicking Take Photo falls back to the file input when MediaDevices is unavailable', async () => {
+            setSubState(editorEl, { kind: 'photo-menu' });
+            await editorEl.updateComplete;
+
+            vi.spyOn(navigator, 'mediaDevices', 'get').mockReturnValue(
+                undefined as unknown as MediaDevices
+            );
 
             const cameraInput = editorEl.shadowRoot?.getElementById('gallery-camera-input') as HTMLInputElement;
             expect(cameraInput).toBeTruthy();
             const clickSpy = vi.spyOn(cameraInput, 'click').mockImplementation(() => {});
 
-            const menuButtons = editorEl.shadowRoot?.querySelectorAll('[style*="bottom:0"] button');
-            const takePhotoBtn = Array.from(menuButtons || []).find(b => b.textContent?.includes('Take Photo')) as HTMLElement;
+            const takePhotoBtn = takePhotoButton(editorEl);
             expect(takePhotoBtn).toBeTruthy();
             takePhotoBtn.click();
+
+            await new Promise(resolve => setTimeout(resolve, 0));
 
             expect(clickSpy).toHaveBeenCalled();
             expect(getSubKind(editorEl)).not.toBe('photo-menu');

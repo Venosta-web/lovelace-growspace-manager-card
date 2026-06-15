@@ -274,19 +274,23 @@ describe('IrrigationDialog', () => {
         });
 
         it('should switch tabs back and forth', async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item') as NodeListOf<HTMLElement>;
+            // Tabs are decomposed into child components (ADR-0019); select nav items by
+            // label (indices shifted with the Overview tab) and assert the matching
+            // child renders. The child's internals are covered in its own spec.
+            const navItem = (label: string) =>
+                Array.from(
+                    element.shadowRoot?.querySelectorAll('.v1-nav-item') ?? []
+                ).find((el) => el.textContent?.includes(label)) as HTMLElement | undefined;
 
-            // Click Steering
-            tabs[1].click();
+            navItem('Steering')!.click();
             await element.updateComplete;
             expect((element as any)._sm.activeTab).toBe('steering');
-            expect(element.shadowRoot?.querySelector('.phase-grid')).toBeTruthy();
+            expect(element.shadowRoot?.querySelector('irrigation-steering-tab')).toBeTruthy();
 
-            // Click Schedules
-            tabs[0].click();
+            navItem('Schedules')!.click();
             await element.updateComplete;
             expect((element as any)._sm.activeTab).toBe('schedules');
-            expect(element.shadowRoot?.querySelector('.timeline-track')).toBeTruthy();
+            expect(element.shadowRoot?.querySelector('irrigation-schedules-tab')).toBeTruthy();
         });
 
         it('should dispatch close event with composed: true', async () => {
@@ -714,7 +718,8 @@ describe('IrrigationDialog', () => {
 
             expect(labels).toContain('Schedules');
             expect(labels).toContain('Configuration');
-            expect(labels).not.toContain('Crop Steering');
+            expect(labels).not.toContain('Overview');
+            expect(labels).not.toContain('Steering');
             expect(labels).not.toContain('Tanks');
             expect(labels).not.toContain('Water Analytics');
             expect(labels).not.toContain('Drain EC');
@@ -732,7 +737,7 @@ describe('IrrigationDialog', () => {
 
             const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             const labels = Array.from(tabs || []).map(t => (t.querySelector('span:first-of-type') as HTMLElement)?.textContent?.trim());
-            expect(labels).toContain('Crop Steering');
+            expect(labels).toContain('Steering');
         });
 
         it('should show Tanks tab when irrigation tanks are configured', async () => {
@@ -831,8 +836,19 @@ describe('IrrigationDialog', () => {
             const tabsRow = element.shadowRoot?.querySelector('.tabs-row');
             expect(tabsRow).toBeFalsy();
         });
-
-        it('should render Schedules as the first nav item and mark it active by default', () => {
+        it('should render Schedules as the first nav item and mark it active by default', async () => {
+            // Gate out the whole Crop Steering group (Overview + Steering need a soil
+            // moisture sensor; Substrate & EC needs an EC sensor) so the first visible
+            // nav item is Schedules, which is also the default active tab.
+            element.device = {
+                ...mockDevice,
+                environmentAttributes: {
+                    ...mockDevice.environmentAttributes,
+                    soilMoistureSensor: undefined,
+                    bulkEcSensors: []
+                } as any
+            };
+            await element.updateComplete;
             const navItems = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             expect(navItems?.length).toBeGreaterThan(0);
             const first = navItems![0];

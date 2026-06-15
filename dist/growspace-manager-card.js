@@ -1211,217 +1211,573 @@ class BaseAPI {
     }
 }
 
-var util;
-(function (util) {
-    util.assertEqual = (_) => { };
-    function assertIs(_arg) { }
-    util.assertIs = assertIs;
-    function assertNever(_x) {
-        throw new Error();
+var _a$2;
+function $constructor(name, initializer, params) {
+    function init(inst, def) {
+        if (!inst._zod) {
+            Object.defineProperty(inst, "_zod", {
+                value: {
+                    def,
+                    constr: _,
+                    traits: new Set(),
+                },
+                enumerable: false,
+            });
+        }
+        if (inst._zod.traits.has(name)) {
+            return;
+        }
+        inst._zod.traits.add(name);
+        initializer(inst, def);
+        // support prototype modifications
+        const proto = _.prototype;
+        const keys = Object.keys(proto);
+        for (let i = 0; i < keys.length; i++) {
+            const k = keys[i];
+            if (!(k in inst)) {
+                inst[k] = proto[k].bind(inst);
+            }
+        }
     }
-    util.assertNever = assertNever;
-    util.arrayToEnum = (items) => {
-        const obj = {};
-        for (const item of items) {
-            obj[item] = item;
+    // doesn't work if Parent has a constructor with arguments
+    const Parent = params?.Parent ?? Object;
+    class Definition extends Parent {
+    }
+    Object.defineProperty(Definition, "name", { value: name });
+    function _(def) {
+        var _a;
+        const inst = params?.Parent ? new Definition() : this;
+        init(inst, def);
+        (_a = inst._zod).deferred ?? (_a.deferred = []);
+        for (const fn of inst._zod.deferred) {
+            fn();
         }
-        return obj;
+        return inst;
+    }
+    Object.defineProperty(_, "init", { value: init });
+    Object.defineProperty(_, Symbol.hasInstance, {
+        value: (inst) => {
+            if (params?.Parent && inst instanceof params.Parent)
+                return true;
+            return inst?._zod?.traits?.has(name);
+        },
+    });
+    Object.defineProperty(_, "name", { value: name });
+    return _;
+}
+class $ZodAsyncError extends Error {
+    constructor() {
+        super(`Encountered Promise during synchronous parse. Use .parseAsync() instead.`);
+    }
+}
+class $ZodEncodeError extends Error {
+    constructor(name) {
+        super(`Encountered unidirectional transform during encode: ${name}`);
+        this.name = "ZodEncodeError";
+    }
+}
+(_a$2 = globalThis).__zod_globalConfig ?? (_a$2.__zod_globalConfig = {});
+const globalConfig = globalThis.__zod_globalConfig;
+function config(newConfig) {
+    return globalConfig;
+}
+
+function getEnumValues(entries) {
+    const numericValues = Object.values(entries).filter((v) => typeof v === "number");
+    const values = Object.entries(entries)
+        .filter(([k, _]) => numericValues.indexOf(+k) === -1)
+        .map(([_, v]) => v);
+    return values;
+}
+function jsonStringifyReplacer(_, value) {
+    if (typeof value === "bigint")
+        return value.toString();
+    return value;
+}
+function cached(getter) {
+    return {
+        get value() {
+            {
+                const value = getter();
+                Object.defineProperty(this, "value", { value });
+                return value;
+            }
+        },
     };
-    util.getValidEnumValues = (obj) => {
-        const validKeys = util.objectKeys(obj).filter((k) => typeof obj[obj[k]] !== "number");
-        const filtered = {};
-        for (const k of validKeys) {
-            filtered[k] = obj[k];
+}
+function nullish(input) {
+    return input === null || input === undefined;
+}
+function cleanRegex(source) {
+    const start = source.startsWith("^") ? 1 : 0;
+    const end = source.endsWith("$") ? source.length - 1 : source.length;
+    return source.slice(start, end);
+}
+function floatSafeRemainder(val, step) {
+    const ratio = val / step;
+    const roundedRatio = Math.round(ratio);
+    // Use a relative epsilon scaled to the magnitude of the result
+    const tolerance = Number.EPSILON * Math.max(Math.abs(ratio), 1);
+    if (Math.abs(ratio - roundedRatio) < tolerance)
+        return 0;
+    return ratio - roundedRatio;
+}
+const EVALUATING = /* @__PURE__*/ Symbol("evaluating");
+function defineLazy(object, key, getter) {
+    let value = undefined;
+    Object.defineProperty(object, key, {
+        get() {
+            if (value === EVALUATING) {
+                // Circular reference detected, return undefined to break the cycle
+                return undefined;
+            }
+            if (value === undefined) {
+                value = EVALUATING;
+                value = getter();
+            }
+            return value;
+        },
+        set(v) {
+            Object.defineProperty(object, key, {
+                value: v,
+                // configurable: true,
+            });
+            // object[key] = v;
+        },
+        configurable: true,
+    });
+}
+function assignProp(target, prop, value) {
+    Object.defineProperty(target, prop, {
+        value,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+    });
+}
+function mergeDefs(...defs) {
+    const mergedDescriptors = {};
+    for (const def of defs) {
+        const descriptors = Object.getOwnPropertyDescriptors(def);
+        Object.assign(mergedDescriptors, descriptors);
+    }
+    return Object.defineProperties({}, mergedDescriptors);
+}
+function esc(str) {
+    return JSON.stringify(str);
+}
+function slugify(input) {
+    return input
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/[\s_-]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
+const captureStackTrace = ("captureStackTrace" in Error ? Error.captureStackTrace : (..._args) => { });
+function isObject(data) {
+    return typeof data === "object" && data !== null && !Array.isArray(data);
+}
+const allowsEval = /* @__PURE__*/ cached(() => {
+    // Skip the probe under `jitless`: strict CSPs report the caught `new Function`
+    // as a `securitypolicyviolation` even though the throw is swallowed.
+    if (globalConfig.jitless) {
+        return false;
+    }
+    // @ts-ignore
+    if (typeof navigator !== "undefined" && navigator?.userAgent?.includes("Cloudflare")) {
+        return false;
+    }
+    try {
+        const F = Function;
+        new F("");
+        return true;
+    }
+    catch (_) {
+        return false;
+    }
+});
+function isPlainObject(o) {
+    if (isObject(o) === false)
+        return false;
+    // modified constructor
+    const ctor = o.constructor;
+    if (ctor === undefined)
+        return true;
+    if (typeof ctor !== "function")
+        return true;
+    // modified prototype
+    const prot = ctor.prototype;
+    if (isObject(prot) === false)
+        return false;
+    // ctor doesn't have static `isPrototypeOf`
+    if (Object.prototype.hasOwnProperty.call(prot, "isPrototypeOf") === false) {
+        return false;
+    }
+    return true;
+}
+function shallowClone(o) {
+    if (isPlainObject(o))
+        return { ...o };
+    if (Array.isArray(o))
+        return [...o];
+    if (o instanceof Map)
+        return new Map(o);
+    if (o instanceof Set)
+        return new Set(o);
+    return o;
+}
+const propertyKeyTypes = /* @__PURE__*/ new Set(["string", "number", "symbol"]);
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+// zod-specific utils
+function clone$2(inst, def, params) {
+    const cl = new inst._zod.constr(def ?? inst._zod.def);
+    if (!def || params?.parent)
+        cl._zod.parent = inst;
+    return cl;
+}
+function normalizeParams(_params) {
+    const params = _params;
+    if (!params)
+        return {};
+    if (typeof params === "string")
+        return { error: () => params };
+    if (params?.message !== undefined) {
+        if (params?.error !== undefined)
+            throw new Error("Cannot specify both `message` and `error` params");
+        params.error = params.message;
+    }
+    delete params.message;
+    if (typeof params.error === "string")
+        return { ...params, error: () => params.error };
+    return params;
+}
+function optionalKeys(shape) {
+    return Object.keys(shape).filter((k) => {
+        return shape[k]._zod.optin === "optional" && shape[k]._zod.optout === "optional";
+    });
+}
+const NUMBER_FORMAT_RANGES = {
+    safeint: [Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER],
+    int32: [-2147483648, 2147483647],
+    uint32: [0, 4294967295],
+    float32: [-34028234663852886e22, 3.4028234663852886e38],
+    float64: [-Number.MAX_VALUE, Number.MAX_VALUE],
+};
+function pick$1(schema, mask) {
+    const currDef = schema._zod.def;
+    const checks = currDef.checks;
+    const hasChecks = checks && checks.length > 0;
+    if (hasChecks) {
+        throw new Error(".pick() cannot be used on object schemas containing refinements");
+    }
+    const def = mergeDefs(schema._zod.def, {
+        get shape() {
+            const newShape = {};
+            for (const key in mask) {
+                if (!(key in currDef.shape)) {
+                    throw new Error(`Unrecognized key: "${key}"`);
+                }
+                if (!mask[key])
+                    continue;
+                newShape[key] = currDef.shape[key];
+            }
+            assignProp(this, "shape", newShape); // self-caching
+            return newShape;
+        },
+        checks: [],
+    });
+    return clone$2(schema, def);
+}
+function omit(schema, mask) {
+    const currDef = schema._zod.def;
+    const checks = currDef.checks;
+    const hasChecks = checks && checks.length > 0;
+    if (hasChecks) {
+        throw new Error(".omit() cannot be used on object schemas containing refinements");
+    }
+    const def = mergeDefs(schema._zod.def, {
+        get shape() {
+            const newShape = { ...schema._zod.def.shape };
+            for (const key in mask) {
+                if (!(key in currDef.shape)) {
+                    throw new Error(`Unrecognized key: "${key}"`);
+                }
+                if (!mask[key])
+                    continue;
+                delete newShape[key];
+            }
+            assignProp(this, "shape", newShape); // self-caching
+            return newShape;
+        },
+        checks: [],
+    });
+    return clone$2(schema, def);
+}
+function extend(schema, shape) {
+    if (!isPlainObject(shape)) {
+        throw new Error("Invalid input to extend: expected a plain object");
+    }
+    const checks = schema._zod.def.checks;
+    const hasChecks = checks && checks.length > 0;
+    if (hasChecks) {
+        // Only throw if new shape overlaps with existing shape
+        // Use getOwnPropertyDescriptor to check key existence without accessing values
+        const existingShape = schema._zod.def.shape;
+        for (const key in shape) {
+            if (Object.getOwnPropertyDescriptor(existingShape, key) !== undefined) {
+                throw new Error("Cannot overwrite keys on object schemas containing refinements. Use `.safeExtend()` instead.");
+            }
         }
-        return util.objectValues(filtered);
-    };
-    util.objectValues = (obj) => {
-        return util.objectKeys(obj).map(function (e) {
-            return obj[e];
-        });
-    };
-    util.objectKeys = typeof Object.keys === "function" // eslint-disable-line ban/ban
-        ? (obj) => Object.keys(obj) // eslint-disable-line ban/ban
-        : (object) => {
-            const keys = [];
-            for (const key in object) {
-                if (Object.prototype.hasOwnProperty.call(object, key)) {
-                    keys.push(key);
+    }
+    const def = mergeDefs(schema._zod.def, {
+        get shape() {
+            const _shape = { ...schema._zod.def.shape, ...shape };
+            assignProp(this, "shape", _shape); // self-caching
+            return _shape;
+        },
+    });
+    return clone$2(schema, def);
+}
+function safeExtend(schema, shape) {
+    if (!isPlainObject(shape)) {
+        throw new Error("Invalid input to safeExtend: expected a plain object");
+    }
+    const def = mergeDefs(schema._zod.def, {
+        get shape() {
+            const _shape = { ...schema._zod.def.shape, ...shape };
+            assignProp(this, "shape", _shape); // self-caching
+            return _shape;
+        },
+    });
+    return clone$2(schema, def);
+}
+function merge(a, b) {
+    if (a._zod.def.checks?.length) {
+        throw new Error(".merge() cannot be used on object schemas containing refinements. Use .safeExtend() instead.");
+    }
+    const def = mergeDefs(a._zod.def, {
+        get shape() {
+            const _shape = { ...a._zod.def.shape, ...b._zod.def.shape };
+            assignProp(this, "shape", _shape); // self-caching
+            return _shape;
+        },
+        get catchall() {
+            return b._zod.def.catchall;
+        },
+        checks: b._zod.def.checks ?? [],
+    });
+    return clone$2(a, def);
+}
+function partial(Class, schema, mask) {
+    const currDef = schema._zod.def;
+    const checks = currDef.checks;
+    const hasChecks = checks && checks.length > 0;
+    if (hasChecks) {
+        throw new Error(".partial() cannot be used on object schemas containing refinements");
+    }
+    const def = mergeDefs(schema._zod.def, {
+        get shape() {
+            const oldShape = schema._zod.def.shape;
+            const shape = { ...oldShape };
+            if (mask) {
+                for (const key in mask) {
+                    if (!(key in oldShape)) {
+                        throw new Error(`Unrecognized key: "${key}"`);
+                    }
+                    if (!mask[key])
+                        continue;
+                    // if (oldShape[key]!._zod.optin === "optional") continue;
+                    shape[key] = Class
+                        ? new Class({
+                            type: "optional",
+                            innerType: oldShape[key],
+                        })
+                        : oldShape[key];
                 }
             }
-            return keys;
-        };
-    util.find = (arr, checker) => {
-        for (const item of arr) {
-            if (checker(item))
-                return item;
+            else {
+                for (const key in oldShape) {
+                    // if (oldShape[key]!._zod.optin === "optional") continue;
+                    shape[key] = Class
+                        ? new Class({
+                            type: "optional",
+                            innerType: oldShape[key],
+                        })
+                        : oldShape[key];
+                }
+            }
+            assignProp(this, "shape", shape); // self-caching
+            return shape;
+        },
+        checks: [],
+    });
+    return clone$2(schema, def);
+}
+function required(Class, schema, mask) {
+    const def = mergeDefs(schema._zod.def, {
+        get shape() {
+            const oldShape = schema._zod.def.shape;
+            const shape = { ...oldShape };
+            if (mask) {
+                for (const key in mask) {
+                    if (!(key in shape)) {
+                        throw new Error(`Unrecognized key: "${key}"`);
+                    }
+                    if (!mask[key])
+                        continue;
+                    // overwrite with non-optional
+                    shape[key] = new Class({
+                        type: "nonoptional",
+                        innerType: oldShape[key],
+                    });
+                }
+            }
+            else {
+                for (const key in oldShape) {
+                    // overwrite with non-optional
+                    shape[key] = new Class({
+                        type: "nonoptional",
+                        innerType: oldShape[key],
+                    });
+                }
+            }
+            assignProp(this, "shape", shape); // self-caching
+            return shape;
+        },
+    });
+    return clone$2(schema, def);
+}
+// invalid_type | too_big | too_small | invalid_format | not_multiple_of | unrecognized_keys | invalid_union | invalid_key | invalid_element | invalid_value | custom
+function aborted(x, startIndex = 0) {
+    if (x.aborted === true)
+        return true;
+    for (let i = startIndex; i < x.issues.length; i++) {
+        if (x.issues[i]?.continue !== true) {
+            return true;
         }
-        return undefined;
-    };
-    util.isInteger = typeof Number.isInteger === "function"
-        ? (val) => Number.isInteger(val) // eslint-disable-line ban/ban
-        : (val) => typeof val === "number" && Number.isFinite(val) && Math.floor(val) === val;
-    function joinValues(array, separator = " | ") {
-        return array.map((val) => (typeof val === "string" ? `'${val}'` : val)).join(separator);
     }
-    util.joinValues = joinValues;
-    util.jsonStringifyReplacer = (_, value) => {
-        if (typeof value === "bigint") {
-            return value.toString();
+    return false;
+}
+// Checks for explicit abort (continue === false), as opposed to implicit abort (continue === undefined).
+// Used to respect `abort: true` in .refine() even for checks that have a `when` function.
+function explicitlyAborted(x, startIndex = 0) {
+    if (x.aborted === true)
+        return true;
+    for (let i = startIndex; i < x.issues.length; i++) {
+        if (x.issues[i]?.continue === false) {
+            return true;
         }
-        return value;
-    };
-})(util || (util = {}));
-var objectUtil;
-(function (objectUtil) {
-    objectUtil.mergeShapes = (first, second) => {
+    }
+    return false;
+}
+function prefixIssues(path, issues) {
+    return issues.map((iss) => {
+        var _a;
+        (_a = iss).path ?? (_a.path = []);
+        iss.path.unshift(path);
+        return iss;
+    });
+}
+function unwrapMessage(message) {
+    return typeof message === "string" ? message : message?.message;
+}
+function finalizeIssue(iss, ctx, config) {
+    const message = iss.message
+        ? iss.message
+        : (unwrapMessage(iss.inst?._zod.def?.error?.(iss)) ??
+            unwrapMessage(ctx?.error?.(iss)) ??
+            unwrapMessage(config.customError?.(iss)) ??
+            unwrapMessage(config.localeError?.(iss)) ??
+            "Invalid input");
+    const { inst: _inst, continue: _continue, input: _input, ...rest } = iss;
+    rest.path ?? (rest.path = []);
+    rest.message = message;
+    if (ctx?.reportInput) {
+        rest.input = _input;
+    }
+    return rest;
+}
+function getLengthableOrigin(input) {
+    if (Array.isArray(input))
+        return "array";
+    if (typeof input === "string")
+        return "string";
+    return "unknown";
+}
+function issue(...args) {
+    const [iss, input, inst] = args;
+    if (typeof iss === "string") {
         return {
-            ...first,
-            ...second, // second overwrites first
+            message: iss,
+            code: "custom",
+            input,
+            inst,
         };
-    };
-})(objectUtil || (objectUtil = {}));
-const ZodParsedType = util.arrayToEnum([
-    "string",
-    "nan",
-    "number",
-    "integer",
-    "float",
-    "boolean",
-    "date",
-    "bigint",
-    "symbol",
-    "function",
-    "undefined",
-    "null",
-    "array",
-    "object",
-    "unknown",
-    "promise",
-    "void",
-    "never",
-    "map",
-    "set",
-]);
-const getParsedType = (data) => {
-    const t = typeof data;
-    switch (t) {
-        case "undefined":
-            return ZodParsedType.undefined;
-        case "string":
-            return ZodParsedType.string;
-        case "number":
-            return Number.isNaN(data) ? ZodParsedType.nan : ZodParsedType.number;
-        case "boolean":
-            return ZodParsedType.boolean;
-        case "function":
-            return ZodParsedType.function;
-        case "bigint":
-            return ZodParsedType.bigint;
-        case "symbol":
-            return ZodParsedType.symbol;
-        case "object":
-            if (Array.isArray(data)) {
-                return ZodParsedType.array;
-            }
-            if (data === null) {
-                return ZodParsedType.null;
-            }
-            if (data.then && typeof data.then === "function" && data.catch && typeof data.catch === "function") {
-                return ZodParsedType.promise;
-            }
-            if (typeof Map !== "undefined" && data instanceof Map) {
-                return ZodParsedType.map;
-            }
-            if (typeof Set !== "undefined" && data instanceof Set) {
-                return ZodParsedType.set;
-            }
-            if (typeof Date !== "undefined" && data instanceof Date) {
-                return ZodParsedType.date;
-            }
-            return ZodParsedType.object;
-        default:
-            return ZodParsedType.unknown;
     }
-};
+    return { ...iss };
+}
 
-const ZodIssueCode = util.arrayToEnum([
-    "invalid_type",
-    "invalid_literal",
-    "custom",
-    "invalid_union",
-    "invalid_union_discriminator",
-    "invalid_enum_value",
-    "unrecognized_keys",
-    "invalid_arguments",
-    "invalid_return_type",
-    "invalid_date",
-    "invalid_string",
-    "too_small",
-    "too_big",
-    "invalid_intersection_types",
-    "not_multiple_of",
-    "not_finite",
-]);
-class ZodError extends Error {
-    get errors() {
-        return this.issues;
-    }
-    constructor(issues) {
-        super();
-        this.issues = [];
-        this.addIssue = (sub) => {
-            this.issues = [...this.issues, sub];
-        };
-        this.addIssues = (subs = []) => {
-            this.issues = [...this.issues, ...subs];
-        };
-        const actualProto = new.target.prototype;
-        if (Object.setPrototypeOf) {
-            // eslint-disable-next-line ban/ban
-            Object.setPrototypeOf(this, actualProto);
+const initializer$1 = (inst, def) => {
+    inst.name = "$ZodError";
+    Object.defineProperty(inst, "_zod", {
+        value: inst._zod,
+        enumerable: false,
+    });
+    Object.defineProperty(inst, "issues", {
+        value: def,
+        enumerable: false,
+    });
+    inst.message = JSON.stringify(def, jsonStringifyReplacer, 2);
+    Object.defineProperty(inst, "toString", {
+        value: () => inst.message,
+        enumerable: false,
+    });
+};
+const $ZodError = $constructor("$ZodError", initializer$1);
+const $ZodRealError = $constructor("$ZodError", initializer$1, { Parent: Error });
+function flattenError(error, mapper = (issue) => issue.message) {
+    const fieldErrors = {};
+    const formErrors = [];
+    for (const sub of error.issues) {
+        if (sub.path.length > 0) {
+            fieldErrors[sub.path[0]] = fieldErrors[sub.path[0]] || [];
+            fieldErrors[sub.path[0]].push(mapper(sub));
         }
         else {
-            this.__proto__ = actualProto;
+            formErrors.push(mapper(sub));
         }
-        this.name = "ZodError";
-        this.issues = issues;
     }
-    format(_mapper) {
-        const mapper = _mapper ||
-            function (issue) {
-                return issue.message;
-            };
-        const fieldErrors = { _errors: [] };
-        const processError = (error) => {
-            for (const issue of error.issues) {
-                if (issue.code === "invalid_union") {
-                    issue.unionErrors.map(processError);
-                }
-                else if (issue.code === "invalid_return_type") {
-                    processError(issue.returnTypeError);
-                }
-                else if (issue.code === "invalid_arguments") {
-                    processError(issue.argumentsError);
-                }
-                else if (issue.path.length === 0) {
+    return { formErrors, fieldErrors };
+}
+function formatError(error, mapper = (issue) => issue.message) {
+    const fieldErrors = { _errors: [] };
+    const processError = (error, path = []) => {
+        for (const issue of error.issues) {
+            if (issue.code === "invalid_union" && issue.errors.length) {
+                issue.errors.map((issues) => processError({ issues }, [...path, ...issue.path]));
+            }
+            else if (issue.code === "invalid_key") {
+                processError({ issues: issue.issues }, [...path, ...issue.path]);
+            }
+            else if (issue.code === "invalid_element") {
+                processError({ issues: issue.issues }, [...path, ...issue.path]);
+            }
+            else {
+                const fullpath = [...path, ...issue.path];
+                if (fullpath.length === 0) {
                     fieldErrors._errors.push(mapper(issue));
                 }
                 else {
                     let curr = fieldErrors;
                     let i = 0;
-                    while (i < issue.path.length) {
-                        const el = issue.path[i];
-                        const terminal = i === issue.path.length - 1;
+                    while (i < fullpath.length) {
+                        const el = fullpath[i];
+                        const terminal = i === fullpath.length - 1;
                         if (!terminal) {
                             curr[el] = curr[el] || { _errors: [] };
-                            // if (typeof el === "string") {
-                            //   curr[el] = curr[el] || { _errors: [] };
-                            // } else if (typeof el === "number") {
-                            //   const errorArray: any = [];
-                            //   errorArray._errors = [];
-                            //   curr[el] = curr[el] || errorArray;
-                            // }
                         }
                         else {
                             curr[el] = curr[el] || { _errors: [] };
@@ -1432,729 +1788,1067 @@ class ZodError extends Error {
                     }
                 }
             }
-        };
-        processError(this);
-        return fieldErrors;
-    }
-    static assert(value) {
-        if (!(value instanceof ZodError)) {
-            throw new Error(`Not a ZodError: ${value}`);
         }
-    }
-    toString() {
-        return this.message;
-    }
-    get message() {
-        return JSON.stringify(this.issues, util.jsonStringifyReplacer, 2);
-    }
-    get isEmpty() {
-        return this.issues.length === 0;
-    }
-    flatten(mapper = (issue) => issue.message) {
-        const fieldErrors = {};
-        const formErrors = [];
-        for (const sub of this.issues) {
-            if (sub.path.length > 0) {
-                const firstEl = sub.path[0];
-                fieldErrors[firstEl] = fieldErrors[firstEl] || [];
-                fieldErrors[firstEl].push(mapper(sub));
-            }
-            else {
-                formErrors.push(mapper(sub));
-            }
-        }
-        return { formErrors, fieldErrors };
-    }
-    get formErrors() {
-        return this.flatten();
-    }
-}
-ZodError.create = (issues) => {
-    const error = new ZodError(issues);
-    return error;
-};
-
-const errorMap = (issue, _ctx) => {
-    let message;
-    switch (issue.code) {
-        case ZodIssueCode.invalid_type:
-            if (issue.received === ZodParsedType.undefined) {
-                message = "Required";
-            }
-            else {
-                message = `Expected ${issue.expected}, received ${issue.received}`;
-            }
-            break;
-        case ZodIssueCode.invalid_literal:
-            message = `Invalid literal value, expected ${JSON.stringify(issue.expected, util.jsonStringifyReplacer)}`;
-            break;
-        case ZodIssueCode.unrecognized_keys:
-            message = `Unrecognized key(s) in object: ${util.joinValues(issue.keys, ", ")}`;
-            break;
-        case ZodIssueCode.invalid_union:
-            message = `Invalid input`;
-            break;
-        case ZodIssueCode.invalid_union_discriminator:
-            message = `Invalid discriminator value. Expected ${util.joinValues(issue.options)}`;
-            break;
-        case ZodIssueCode.invalid_enum_value:
-            message = `Invalid enum value. Expected ${util.joinValues(issue.options)}, received '${issue.received}'`;
-            break;
-        case ZodIssueCode.invalid_arguments:
-            message = `Invalid function arguments`;
-            break;
-        case ZodIssueCode.invalid_return_type:
-            message = `Invalid function return type`;
-            break;
-        case ZodIssueCode.invalid_date:
-            message = `Invalid date`;
-            break;
-        case ZodIssueCode.invalid_string:
-            if (typeof issue.validation === "object") {
-                if ("includes" in issue.validation) {
-                    message = `Invalid input: must include "${issue.validation.includes}"`;
-                    if (typeof issue.validation.position === "number") {
-                        message = `${message} at one or more positions greater than or equal to ${issue.validation.position}`;
-                    }
-                }
-                else if ("startsWith" in issue.validation) {
-                    message = `Invalid input: must start with "${issue.validation.startsWith}"`;
-                }
-                else if ("endsWith" in issue.validation) {
-                    message = `Invalid input: must end with "${issue.validation.endsWith}"`;
-                }
-                else {
-                    util.assertNever(issue.validation);
-                }
-            }
-            else if (issue.validation !== "regex") {
-                message = `Invalid ${issue.validation}`;
-            }
-            else {
-                message = "Invalid";
-            }
-            break;
-        case ZodIssueCode.too_small:
-            if (issue.type === "array")
-                message = `Array must contain ${issue.exact ? "exactly" : issue.inclusive ? `at least` : `more than`} ${issue.minimum} element(s)`;
-            else if (issue.type === "string")
-                message = `String must contain ${issue.exact ? "exactly" : issue.inclusive ? `at least` : `over`} ${issue.minimum} character(s)`;
-            else if (issue.type === "number")
-                message = `Number must be ${issue.exact ? `exactly equal to ` : issue.inclusive ? `greater than or equal to ` : `greater than `}${issue.minimum}`;
-            else if (issue.type === "bigint")
-                message = `Number must be ${issue.exact ? `exactly equal to ` : issue.inclusive ? `greater than or equal to ` : `greater than `}${issue.minimum}`;
-            else if (issue.type === "date")
-                message = `Date must be ${issue.exact ? `exactly equal to ` : issue.inclusive ? `greater than or equal to ` : `greater than `}${new Date(Number(issue.minimum))}`;
-            else
-                message = "Invalid input";
-            break;
-        case ZodIssueCode.too_big:
-            if (issue.type === "array")
-                message = `Array must contain ${issue.exact ? `exactly` : issue.inclusive ? `at most` : `less than`} ${issue.maximum} element(s)`;
-            else if (issue.type === "string")
-                message = `String must contain ${issue.exact ? `exactly` : issue.inclusive ? `at most` : `under`} ${issue.maximum} character(s)`;
-            else if (issue.type === "number")
-                message = `Number must be ${issue.exact ? `exactly` : issue.inclusive ? `less than or equal to` : `less than`} ${issue.maximum}`;
-            else if (issue.type === "bigint")
-                message = `BigInt must be ${issue.exact ? `exactly` : issue.inclusive ? `less than or equal to` : `less than`} ${issue.maximum}`;
-            else if (issue.type === "date")
-                message = `Date must be ${issue.exact ? `exactly` : issue.inclusive ? `smaller than or equal to` : `smaller than`} ${new Date(Number(issue.maximum))}`;
-            else
-                message = "Invalid input";
-            break;
-        case ZodIssueCode.custom:
-            message = `Invalid input`;
-            break;
-        case ZodIssueCode.invalid_intersection_types:
-            message = `Intersection results could not be merged`;
-            break;
-        case ZodIssueCode.not_multiple_of:
-            message = `Number must be a multiple of ${issue.multipleOf}`;
-            break;
-        case ZodIssueCode.not_finite:
-            message = "Number must be finite";
-            break;
-        default:
-            message = _ctx.defaultError;
-            util.assertNever(issue);
-    }
-    return { message };
-};
-
-let overrideErrorMap = errorMap;
-function getErrorMap() {
-    return overrideErrorMap;
-}
-
-const makeIssue = (params) => {
-    const { data, path, errorMaps, issueData } = params;
-    const fullPath = [...path, ...(issueData.path || [])];
-    const fullIssue = {
-        ...issueData,
-        path: fullPath,
     };
-    if (issueData.message !== undefined) {
-        return {
-            ...issueData,
-            path: fullPath,
-            message: issueData.message,
-        };
+    processError(error);
+    return fieldErrors;
+}
+
+const _parse = (_Err) => (schema, value, _ctx, _params) => {
+    const ctx = _ctx ? { ..._ctx, async: false } : { async: false };
+    const result = schema._zod.run({ value, issues: [] }, ctx);
+    if (result instanceof Promise) {
+        throw new $ZodAsyncError();
     }
-    let errorMessage = "";
-    const maps = errorMaps
-        .filter((m) => !!m)
-        .slice()
-        .reverse();
-    for (const map of maps) {
-        errorMessage = map(fullIssue, { data, defaultError: errorMessage }).message;
+    if (result.issues.length) {
+        const e = new (_params?.Err ?? _Err)(result.issues.map((iss) => finalizeIssue(iss, ctx, config())));
+        captureStackTrace(e, _params?.callee);
+        throw e;
     }
-    return {
-        ...issueData,
-        path: fullPath,
-        message: errorMessage,
-    };
+    return result.value;
 };
-function addIssueToContext(ctx, issueData) {
-    const overrideMap = getErrorMap();
-    const issue = makeIssue({
-        issueData: issueData,
-        data: ctx.data,
-        path: ctx.path,
-        errorMaps: [
-            ctx.common.contextualErrorMap, // contextual error map is first priority
-            ctx.schemaErrorMap, // then schema-bound map if available
-            overrideMap, // then global override map
-            overrideMap === errorMap ? undefined : errorMap, // then global default map
-        ].filter((x) => !!x),
-    });
-    ctx.common.issues.push(issue);
-}
-class ParseStatus {
-    constructor() {
-        this.value = "valid";
+const _parseAsync = (_Err) => async (schema, value, _ctx, params) => {
+    const ctx = _ctx ? { ..._ctx, async: true } : { async: true };
+    let result = schema._zod.run({ value, issues: [] }, ctx);
+    if (result instanceof Promise)
+        result = await result;
+    if (result.issues.length) {
+        const e = new (params?.Err ?? _Err)(result.issues.map((iss) => finalizeIssue(iss, ctx, config())));
+        captureStackTrace(e, params?.callee);
+        throw e;
     }
-    dirty() {
-        if (this.value === "valid")
-            this.value = "dirty";
+    return result.value;
+};
+const _safeParse = (_Err) => (schema, value, _ctx) => {
+    const ctx = _ctx ? { ..._ctx, async: false } : { async: false };
+    const result = schema._zod.run({ value, issues: [] }, ctx);
+    if (result instanceof Promise) {
+        throw new $ZodAsyncError();
     }
-    abort() {
-        if (this.value !== "aborted")
-            this.value = "aborted";
-    }
-    static mergeArray(status, results) {
-        const arrayValue = [];
-        for (const s of results) {
-            if (s.status === "aborted")
-                return INVALID$3;
-            if (s.status === "dirty")
-                status.dirty();
-            arrayValue.push(s.value);
-        }
-        return { status: status.value, value: arrayValue };
-    }
-    static async mergeObjectAsync(status, pairs) {
-        const syncPairs = [];
-        for (const pair of pairs) {
-            const key = await pair.key;
-            const value = await pair.value;
-            syncPairs.push({
-                key,
-                value,
-            });
-        }
-        return ParseStatus.mergeObjectSync(status, syncPairs);
-    }
-    static mergeObjectSync(status, pairs) {
-        const finalObject = {};
-        for (const pair of pairs) {
-            const { key, value } = pair;
-            if (key.status === "aborted")
-                return INVALID$3;
-            if (value.status === "aborted")
-                return INVALID$3;
-            if (key.status === "dirty")
-                status.dirty();
-            if (value.status === "dirty")
-                status.dirty();
-            if (key.value !== "__proto__" && (typeof value.value !== "undefined" || pair.alwaysSet)) {
-                finalObject[key.value] = value.value;
-            }
-        }
-        return { status: status.value, value: finalObject };
-    }
-}
-const INVALID$3 = Object.freeze({
-    status: "aborted",
-});
-const DIRTY = (value) => ({ status: "dirty", value });
-const OK = (value) => ({ status: "valid", value });
-const isAborted = (x) => x.status === "aborted";
-const isDirty = (x) => x.status === "dirty";
-const isValid = (x) => x.status === "valid";
-const isAsync = (x) => typeof Promise !== "undefined" && x instanceof Promise;
-
-var errorUtil;
-(function (errorUtil) {
-    errorUtil.errToObj = (message) => typeof message === "string" ? { message } : message || {};
-    // biome-ignore lint:
-    errorUtil.toString = (message) => typeof message === "string" ? message : message?.message;
-})(errorUtil || (errorUtil = {}));
-
-class ParseInputLazyPath {
-    constructor(parent, value, path, key) {
-        this._cachedPath = [];
-        this.parent = parent;
-        this.data = value;
-        this._path = path;
-        this._key = key;
-    }
-    get path() {
-        if (!this._cachedPath.length) {
-            if (Array.isArray(this._key)) {
-                this._cachedPath.push(...this._path, ...this._key);
-            }
-            else {
-                this._cachedPath.push(...this._path, this._key);
-            }
-        }
-        return this._cachedPath;
-    }
-}
-const handleResult = (ctx, result) => {
-    if (isValid(result)) {
-        return { success: true, data: result.value };
-    }
-    else {
-        if (!ctx.common.issues.length) {
-            throw new Error("Validation failed but no issues detected.");
-        }
-        return {
+    return result.issues.length
+        ? {
             success: false,
-            get error() {
-                if (this._error)
-                    return this._error;
-                const error = new ZodError(ctx.common.issues);
-                this._error = error;
-                return this._error;
-            },
-        };
-    }
+            error: new (_Err ?? $ZodError)(result.issues.map((iss) => finalizeIssue(iss, ctx, config()))),
+        }
+        : { success: true, data: result.value };
 };
-function processCreateParams(params) {
-    if (!params)
-        return {};
-    const { errorMap, invalid_type_error, required_error, description } = params;
-    if (errorMap && (invalid_type_error || required_error)) {
-        throw new Error(`Can't use "invalid_type_error" or "required_error" in conjunction with custom error map.`);
-    }
-    if (errorMap)
-        return { errorMap: errorMap, description };
-    const customMap = (iss, ctx) => {
-        const { message } = params;
-        if (iss.code === "invalid_enum_value") {
-            return { message: message ?? ctx.defaultError };
+const safeParse$1 = /* @__PURE__*/ _safeParse($ZodRealError);
+const _safeParseAsync = (_Err) => async (schema, value, _ctx) => {
+    const ctx = _ctx ? { ..._ctx, async: true } : { async: true };
+    let result = schema._zod.run({ value, issues: [] }, ctx);
+    if (result instanceof Promise)
+        result = await result;
+    return result.issues.length
+        ? {
+            success: false,
+            error: new _Err(result.issues.map((iss) => finalizeIssue(iss, ctx, config()))),
         }
-        if (typeof ctx.data === "undefined") {
-            return { message: message ?? required_error ?? ctx.defaultError };
-        }
-        if (iss.code !== "invalid_type")
-            return { message: ctx.defaultError };
-        return { message: message ?? invalid_type_error ?? ctx.defaultError };
-    };
-    return { errorMap: customMap, description };
-}
-class ZodType {
-    get description() {
-        return this._def.description;
-    }
-    _getType(input) {
-        return getParsedType(input.data);
-    }
-    _getOrReturnCtx(input, ctx) {
-        return (ctx || {
-            common: input.parent.common,
-            data: input.data,
-            parsedType: getParsedType(input.data),
-            schemaErrorMap: this._def.errorMap,
-            path: input.path,
-            parent: input.parent,
-        });
-    }
-    _processInputParams(input) {
-        return {
-            status: new ParseStatus(),
-            ctx: {
-                common: input.parent.common,
-                data: input.data,
-                parsedType: getParsedType(input.data),
-                schemaErrorMap: this._def.errorMap,
-                path: input.path,
-                parent: input.parent,
-            },
-        };
-    }
-    _parseSync(input) {
-        const result = this._parse(input);
-        if (isAsync(result)) {
-            throw new Error("Synchronous parse encountered promise.");
-        }
-        return result;
-    }
-    _parseAsync(input) {
-        const result = this._parse(input);
-        return Promise.resolve(result);
-    }
-    parse(data, params) {
-        const result = this.safeParse(data, params);
-        if (result.success)
-            return result.data;
-        throw result.error;
-    }
-    safeParse(data, params) {
-        const ctx = {
-            common: {
-                issues: [],
-                async: params?.async ?? false,
-                contextualErrorMap: params?.errorMap,
-            },
-            path: params?.path || [],
-            schemaErrorMap: this._def.errorMap,
-            parent: null,
-            data,
-            parsedType: getParsedType(data),
-        };
-        const result = this._parseSync({ data, path: ctx.path, parent: ctx });
-        return handleResult(ctx, result);
-    }
-    "~validate"(data) {
-        const ctx = {
-            common: {
-                issues: [],
-                async: !!this["~standard"].async,
-            },
-            path: [],
-            schemaErrorMap: this._def.errorMap,
-            parent: null,
-            data,
-            parsedType: getParsedType(data),
-        };
-        if (!this["~standard"].async) {
-            try {
-                const result = this._parseSync({ data, path: [], parent: ctx });
-                return isValid(result)
-                    ? {
-                        value: result.value,
-                    }
-                    : {
-                        issues: ctx.common.issues,
-                    };
-            }
-            catch (err) {
-                if (err?.message?.toLowerCase()?.includes("encountered")) {
-                    this["~standard"].async = true;
-                }
-                ctx.common = {
-                    issues: [],
-                    async: true,
-                };
-            }
-        }
-        return this._parseAsync({ data, path: [], parent: ctx }).then((result) => isValid(result)
-            ? {
-                value: result.value,
-            }
-            : {
-                issues: ctx.common.issues,
-            });
-    }
-    async parseAsync(data, params) {
-        const result = await this.safeParseAsync(data, params);
-        if (result.success)
-            return result.data;
-        throw result.error;
-    }
-    async safeParseAsync(data, params) {
-        const ctx = {
-            common: {
-                issues: [],
-                contextualErrorMap: params?.errorMap,
-                async: true,
-            },
-            path: params?.path || [],
-            schemaErrorMap: this._def.errorMap,
-            parent: null,
-            data,
-            parsedType: getParsedType(data),
-        };
-        const maybeAsyncResult = this._parse({ data, path: ctx.path, parent: ctx });
-        const result = await (isAsync(maybeAsyncResult) ? maybeAsyncResult : Promise.resolve(maybeAsyncResult));
-        return handleResult(ctx, result);
-    }
-    refine(check, message) {
-        const getIssueProperties = (val) => {
-            if (typeof message === "string" || typeof message === "undefined") {
-                return { message };
-            }
-            else if (typeof message === "function") {
-                return message(val);
-            }
-            else {
-                return message;
-            }
-        };
-        return this._refinement((val, ctx) => {
-            const result = check(val);
-            const setError = () => ctx.addIssue({
-                code: ZodIssueCode.custom,
-                ...getIssueProperties(val),
-            });
-            if (typeof Promise !== "undefined" && result instanceof Promise) {
-                return result.then((data) => {
-                    if (!data) {
-                        setError();
-                        return false;
-                    }
-                    else {
-                        return true;
-                    }
-                });
-            }
-            if (!result) {
-                setError();
-                return false;
-            }
-            else {
-                return true;
-            }
-        });
-    }
-    refinement(check, refinementData) {
-        return this._refinement((val, ctx) => {
-            if (!check(val)) {
-                ctx.addIssue(typeof refinementData === "function" ? refinementData(val, ctx) : refinementData);
-                return false;
-            }
-            else {
-                return true;
-            }
-        });
-    }
-    _refinement(refinement) {
-        return new ZodEffects({
-            schema: this,
-            typeName: ZodFirstPartyTypeKind.ZodEffects,
-            effect: { type: "refinement", refinement },
-        });
-    }
-    superRefine(refinement) {
-        return this._refinement(refinement);
-    }
-    constructor(def) {
-        /** Alias of safeParseAsync */
-        this.spa = this.safeParseAsync;
-        this._def = def;
-        this.parse = this.parse.bind(this);
-        this.safeParse = this.safeParse.bind(this);
-        this.parseAsync = this.parseAsync.bind(this);
-        this.safeParseAsync = this.safeParseAsync.bind(this);
-        this.spa = this.spa.bind(this);
-        this.refine = this.refine.bind(this);
-        this.refinement = this.refinement.bind(this);
-        this.superRefine = this.superRefine.bind(this);
-        this.optional = this.optional.bind(this);
-        this.nullable = this.nullable.bind(this);
-        this.nullish = this.nullish.bind(this);
-        this.array = this.array.bind(this);
-        this.promise = this.promise.bind(this);
-        this.or = this.or.bind(this);
-        this.and = this.and.bind(this);
-        this.transform = this.transform.bind(this);
-        this.brand = this.brand.bind(this);
-        this.default = this.default.bind(this);
-        this.catch = this.catch.bind(this);
-        this.describe = this.describe.bind(this);
-        this.pipe = this.pipe.bind(this);
-        this.readonly = this.readonly.bind(this);
-        this.isNullable = this.isNullable.bind(this);
-        this.isOptional = this.isOptional.bind(this);
-        this["~standard"] = {
-            version: 1,
-            vendor: "zod",
-            validate: (data) => this["~validate"](data),
-        };
-    }
-    optional() {
-        return ZodOptional.create(this, this._def);
-    }
-    nullable() {
-        return ZodNullable.create(this, this._def);
-    }
-    nullish() {
-        return this.nullable().optional();
-    }
-    array() {
-        return ZodArray.create(this);
-    }
-    promise() {
-        return ZodPromise.create(this, this._def);
-    }
-    or(option) {
-        return ZodUnion.create([this, option], this._def);
-    }
-    and(incoming) {
-        return ZodIntersection.create(this, incoming, this._def);
-    }
-    transform(transform) {
-        return new ZodEffects({
-            ...processCreateParams(this._def),
-            schema: this,
-            typeName: ZodFirstPartyTypeKind.ZodEffects,
-            effect: { type: "transform", transform },
-        });
-    }
-    default(def) {
-        const defaultValueFunc = typeof def === "function" ? def : () => def;
-        return new ZodDefault({
-            ...processCreateParams(this._def),
-            innerType: this,
-            defaultValue: defaultValueFunc,
-            typeName: ZodFirstPartyTypeKind.ZodDefault,
-        });
-    }
-    brand() {
-        return new ZodBranded({
-            typeName: ZodFirstPartyTypeKind.ZodBranded,
-            type: this,
-            ...processCreateParams(this._def),
-        });
-    }
-    catch(def) {
-        const catchValueFunc = typeof def === "function" ? def : () => def;
-        return new ZodCatch({
-            ...processCreateParams(this._def),
-            innerType: this,
-            catchValue: catchValueFunc,
-            typeName: ZodFirstPartyTypeKind.ZodCatch,
-        });
-    }
-    describe(description) {
-        const This = this.constructor;
-        return new This({
-            ...this._def,
-            description,
-        });
-    }
-    pipe(target) {
-        return ZodPipeline.create(this, target);
-    }
-    readonly() {
-        return ZodReadonly.create(this);
-    }
-    isOptional() {
-        return this.safeParse(undefined).success;
-    }
-    isNullable() {
-        return this.safeParse(null).success;
-    }
-}
-const cuidRegex = /^c[^\s-]{8,}$/i;
-const cuid2Regex = /^[0-9a-z]+$/;
-const ulidRegex = /^[0-9A-HJKMNP-TV-Z]{26}$/i;
-// const uuidRegex =
-//   /^([a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[a-f0-9]{4}-[a-f0-9]{12}|00000000-0000-0000-0000-000000000000)$/i;
-const uuidRegex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i;
-const nanoidRegex = /^[a-z0-9_-]{21}$/i;
-const jwtRegex = /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]*$/;
-const durationRegex = /^[-+]?P(?!$)(?:(?:[-+]?\d+Y)|(?:[-+]?\d+[.,]\d+Y$))?(?:(?:[-+]?\d+M)|(?:[-+]?\d+[.,]\d+M$))?(?:(?:[-+]?\d+W)|(?:[-+]?\d+[.,]\d+W$))?(?:(?:[-+]?\d+D)|(?:[-+]?\d+[.,]\d+D$))?(?:T(?=[\d+-])(?:(?:[-+]?\d+H)|(?:[-+]?\d+[.,]\d+H$))?(?:(?:[-+]?\d+M)|(?:[-+]?\d+[.,]\d+M$))?(?:[-+]?\d+(?:[.,]\d+)?S)?)??$/;
-// from https://stackoverflow.com/a/46181/1550155
-// old version: too slow, didn't support unicode
-// const emailRegex = /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i;
-//old email regex
-// const emailRegex = /^(([^<>()[\].,;:\s@"]+(\.[^<>()[\].,;:\s@"]+)*)|(".+"))@((?!-)([^<>()[\].,;:\s@"]+\.)+[^<>()[\].,;:\s@"]{1,})[^-<>()[\].,;:\s@"]$/i;
-// eslint-disable-next-line
-// const emailRegex =
-//   /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[(((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2}))\.){3}((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2}))\])|(\[IPv6:(([a-f0-9]{1,4}:){7}|::([a-f0-9]{1,4}:){0,6}|([a-f0-9]{1,4}:){1}:([a-f0-9]{1,4}:){0,5}|([a-f0-9]{1,4}:){2}:([a-f0-9]{1,4}:){0,4}|([a-f0-9]{1,4}:){3}:([a-f0-9]{1,4}:){0,3}|([a-f0-9]{1,4}:){4}:([a-f0-9]{1,4}:){0,2}|([a-f0-9]{1,4}:){5}:([a-f0-9]{1,4}:){0,1})([a-f0-9]{1,4}|(((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2}))\.){3}((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2})))\])|([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])*(\.[A-Za-z]{2,})+))$/;
-// const emailRegex =
-//   /^[a-zA-Z0-9\.\!\#\$\%\&\'\*\+\/\=\?\^\_\`\{\|\}\~\-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-// const emailRegex =
-//   /^(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])$/i;
-const emailRegex = /^(?!\.)(?!.*\.\.)([A-Z0-9_'+\-\.]*)[A-Z0-9_+-]@([A-Z0-9][A-Z0-9\-]*\.)+[A-Z]{2,}$/i;
-// const emailRegex =
-//   /^[a-z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-z0-9-]+(?:\.[a-z0-9\-]+)*$/i;
+        : { success: true, data: result.value };
+};
+const safeParseAsync$1 = /* @__PURE__*/ _safeParseAsync($ZodRealError);
+const _encode = (_Err) => (schema, value, _ctx) => {
+    const ctx = _ctx ? { ..._ctx, direction: "backward" } : { direction: "backward" };
+    return _parse(_Err)(schema, value, ctx);
+};
+const _decode = (_Err) => (schema, value, _ctx) => {
+    return _parse(_Err)(schema, value, _ctx);
+};
+const _encodeAsync = (_Err) => async (schema, value, _ctx) => {
+    const ctx = _ctx ? { ..._ctx, direction: "backward" } : { direction: "backward" };
+    return _parseAsync(_Err)(schema, value, ctx);
+};
+const _decodeAsync = (_Err) => async (schema, value, _ctx) => {
+    return _parseAsync(_Err)(schema, value, _ctx);
+};
+const _safeEncode = (_Err) => (schema, value, _ctx) => {
+    const ctx = _ctx ? { ..._ctx, direction: "backward" } : { direction: "backward" };
+    return _safeParse(_Err)(schema, value, ctx);
+};
+const _safeDecode = (_Err) => (schema, value, _ctx) => {
+    return _safeParse(_Err)(schema, value, _ctx);
+};
+const _safeEncodeAsync = (_Err) => async (schema, value, _ctx) => {
+    const ctx = _ctx ? { ..._ctx, direction: "backward" } : { direction: "backward" };
+    return _safeParseAsync(_Err)(schema, value, ctx);
+};
+const _safeDecodeAsync = (_Err) => async (schema, value, _ctx) => {
+    return _safeParseAsync(_Err)(schema, value, _ctx);
+};
+
+/**
+ * @deprecated CUID v1 is deprecated by its authors due to information leakage
+ * (timestamps embedded in the id). Use {@link cuid2} instead.
+ * See https://github.com/paralleldrive/cuid.
+ */
+const cuid = /^[cC][0-9a-z]{6,}$/;
+const cuid2 = /^[0-9a-z]+$/;
+const ulid = /^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$/;
+const xid = /^[0-9a-vA-V]{20}$/;
+const ksuid = /^[A-Za-z0-9]{27}$/;
+const nanoid = /^[a-zA-Z0-9_-]{21}$/;
+/** ISO 8601-1 duration regex. Does not support the 8601-2 extensions like negative durations or fractional/negative components. */
+const duration$1 = /^P(?:(\d+W)|(?!.*W)(?=\d|T\d)(\d+Y)?(\d+M)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+([.,]\d+)?S)?)?)$/;
+/** A regex for any UUID-like identifier: 8-4-4-4-12 hex pattern */
+const guid = /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/;
+/** Returns a regex for validating an RFC 9562/4122 UUID.
+ *
+ * @param version Optionally specify a version 1-8. If no version is specified, all versions are supported. */
+const uuid = (version) => {
+    if (!version)
+        return /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/;
+    return new RegExp(`^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-${version}[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$`);
+};
+/** Practical email validation */
+const email = /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/;
 // from https://thekevinscott.com/emojis-in-javascript/#writing-a-regular-expression
-const _emojiRegex = `^(\\p{Extended_Pictographic}|\\p{Emoji_Component})+$`;
-let emojiRegex;
-// faster, simpler, safer
-const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$/;
-const ipv4CidrRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\/(3[0-2]|[12]?[0-9])$/;
-// const ipv6Regex =
-// /^(([a-f0-9]{1,4}:){7}|::([a-f0-9]{1,4}:){0,6}|([a-f0-9]{1,4}:){1}:([a-f0-9]{1,4}:){0,5}|([a-f0-9]{1,4}:){2}:([a-f0-9]{1,4}:){0,4}|([a-f0-9]{1,4}:){3}:([a-f0-9]{1,4}:){0,3}|([a-f0-9]{1,4}:){4}:([a-f0-9]{1,4}:){0,2}|([a-f0-9]{1,4}:){5}:([a-f0-9]{1,4}:){0,1})([a-f0-9]{1,4}|(((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2}))\.){3}((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2})))$/;
-const ipv6Regex = /^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/;
-const ipv6CidrRegex = /^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))\/(12[0-8]|1[01][0-9]|[1-9]?[0-9])$/;
-// https://stackoverflow.com/questions/7860392/determine-if-string-is-in-base64-using-javascript
-const base64Regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
-// https://base64.guru/standards/base64url
-const base64urlRegex = /^([0-9a-zA-Z-_]{4})*(([0-9a-zA-Z-_]{2}(==)?)|([0-9a-zA-Z-_]{3}(=)?))?$/;
-// simple
-// const dateRegexSource = `\\d{4}-\\d{2}-\\d{2}`;
-// no leap year validation
-// const dateRegexSource = `\\d{4}-((0[13578]|10|12)-31|(0[13-9]|1[0-2])-30|(0[1-9]|1[0-2])-(0[1-9]|1\\d|2\\d))`;
-// with leap year validation
-const dateRegexSource = `((\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-((0[13578]|1[02])-(0[1-9]|[12]\\d|3[01])|(0[469]|11)-(0[1-9]|[12]\\d|30)|(02)-(0[1-9]|1\\d|2[0-8])))`;
-const dateRegex = new RegExp(`^${dateRegexSource}$`);
-function timeRegexSource(args) {
-    let secondsRegexSource = `[0-5]\\d`;
-    if (args.precision) {
-        secondsRegexSource = `${secondsRegexSource}\\.\\d{${args.precision}}`;
-    }
-    else if (args.precision == null) {
-        secondsRegexSource = `${secondsRegexSource}(\\.\\d+)?`;
-    }
-    const secondsQuantifier = args.precision ? "+" : "?"; // require seconds if precision is nonzero
-    return `([01]\\d|2[0-3]):[0-5]\\d(:${secondsRegexSource})${secondsQuantifier}`;
+const _emoji$1 = `^(\\p{Extended_Pictographic}|\\p{Emoji_Component})+$`;
+function emoji() {
+    return new RegExp(_emoji$1, "u");
 }
-function timeRegex(args) {
-    return new RegExp(`^${timeRegexSource(args)}$`);
+const ipv4 = /^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$/;
+const ipv6 = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))$/;
+const cidrv4 = /^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\/([0-9]|[1-2][0-9]|3[0-2])$/;
+const cidrv6 = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|::|([0-9a-fA-F]{1,4})?::([0-9a-fA-F]{1,4}:?){0,6})\/(12[0-8]|1[01][0-9]|[1-9]?[0-9])$/;
+// https://stackoverflow.com/questions/7860392/determine-if-string-is-in-base64-using-javascript
+const base64 = /^$|^(?:[0-9a-zA-Z+/]{4})*(?:(?:[0-9a-zA-Z+/]{2}==)|(?:[0-9a-zA-Z+/]{3}=))?$/;
+const base64url = /^[A-Za-z0-9_-]*$/;
+const httpProtocol = /^https?$/;
+// https://blog.stevenlevithan.com/archives/validate-phone-number#r4-3 (regex sans spaces)
+// E.164: leading digit must be 1-9; total digits (excluding '+') between 7-15
+const e164 = /^\+[1-9]\d{6,14}$/;
+// const dateSource = `((\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-((0[13578]|1[02])-(0[1-9]|[12]\\d|3[01])|(0[469]|11)-(0[1-9]|[12]\\d|30)|(02)-(0[1-9]|1\\d|2[0-8])))`;
+const dateSource = `(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))`;
+const date$1 = /*@__PURE__*/ new RegExp(`^${dateSource}$`);
+function timeSource(args) {
+    const hhmm = `(?:[01]\\d|2[0-3]):[0-5]\\d`;
+    const regex = typeof args.precision === "number"
+        ? args.precision === -1
+            ? `${hhmm}`
+            : args.precision === 0
+                ? `${hhmm}:[0-5]\\d`
+                : `${hhmm}:[0-5]\\d\\.\\d{${args.precision}}`
+        : `${hhmm}(?::[0-5]\\d(?:\\.\\d+)?)?`;
+    return regex;
+}
+function time$1(args) {
+    return new RegExp(`^${timeSource(args)}$`);
 }
 // Adapted from https://stackoverflow.com/a/3143231
-function datetimeRegex(args) {
-    let regex = `${dateRegexSource}T${timeRegexSource(args)}`;
-    const opts = [];
-    opts.push(args.local ? `Z?` : `Z`);
+function datetime$1(args) {
+    const time = timeSource({ precision: args.precision });
+    const opts = ["Z"];
+    if (args.local)
+        opts.push("");
+    // if (args.offset) opts.push(`([+-]\\d{2}:\\d{2})`);
     if (args.offset)
-        opts.push(`([+-]\\d{2}:?\\d{2})`);
-    regex = `${regex}(${opts.join("|")})`;
+        opts.push(`([+-](?:[01]\\d|2[0-3]):[0-5]\\d)`);
+    const timeRegex = `${time}(?:${opts.join("|")})`;
+    return new RegExp(`^${dateSource}T(?:${timeRegex})$`);
+}
+const string$1 = (params) => {
+    const regex = params ? `[\\s\\S]{${params?.minimum ?? 0},${params?.maximum ?? ""}}` : `[\\s\\S]*`;
     return new RegExp(`^${regex}$`);
-}
-function isValidIP(ip, version) {
-    if ((version === "v4" || !version) && ipv4Regex.test(ip)) {
-        return true;
+};
+const integer = /^-?\d+$/;
+const number$1 = /^-?\d+(?:\.\d+)?$/;
+const boolean$1 = /^(?:true|false)$/i;
+// regex for string with no uppercase letters
+const lowercase = /^[^A-Z]*$/;
+// regex for string with no lowercase letters
+const uppercase = /^[^a-z]*$/;
+
+// import { $ZodType } from "./schemas.js";
+const $ZodCheck = /*@__PURE__*/ $constructor("$ZodCheck", (inst, def) => {
+    var _a;
+    inst._zod ?? (inst._zod = {});
+    inst._zod.def = def;
+    (_a = inst._zod).onattach ?? (_a.onattach = []);
+});
+const numericOriginMap = {
+    number: "number",
+    bigint: "bigint",
+    object: "date",
+};
+const $ZodCheckLessThan = /*@__PURE__*/ $constructor("$ZodCheckLessThan", (inst, def) => {
+    $ZodCheck.init(inst, def);
+    const origin = numericOriginMap[typeof def.value];
+    inst._zod.onattach.push((inst) => {
+        const bag = inst._zod.bag;
+        const curr = (def.inclusive ? bag.maximum : bag.exclusiveMaximum) ?? Number.POSITIVE_INFINITY;
+        if (def.value < curr) {
+            if (def.inclusive)
+                bag.maximum = def.value;
+            else
+                bag.exclusiveMaximum = def.value;
+        }
+    });
+    inst._zod.check = (payload) => {
+        if (def.inclusive ? payload.value <= def.value : payload.value < def.value) {
+            return;
+        }
+        payload.issues.push({
+            origin,
+            code: "too_big",
+            maximum: typeof def.value === "object" ? def.value.getTime() : def.value,
+            input: payload.value,
+            inclusive: def.inclusive,
+            inst,
+            continue: !def.abort,
+        });
+    };
+});
+const $ZodCheckGreaterThan = /*@__PURE__*/ $constructor("$ZodCheckGreaterThan", (inst, def) => {
+    $ZodCheck.init(inst, def);
+    const origin = numericOriginMap[typeof def.value];
+    inst._zod.onattach.push((inst) => {
+        const bag = inst._zod.bag;
+        const curr = (def.inclusive ? bag.minimum : bag.exclusiveMinimum) ?? Number.NEGATIVE_INFINITY;
+        if (def.value > curr) {
+            if (def.inclusive)
+                bag.minimum = def.value;
+            else
+                bag.exclusiveMinimum = def.value;
+        }
+    });
+    inst._zod.check = (payload) => {
+        if (def.inclusive ? payload.value >= def.value : payload.value > def.value) {
+            return;
+        }
+        payload.issues.push({
+            origin,
+            code: "too_small",
+            minimum: typeof def.value === "object" ? def.value.getTime() : def.value,
+            input: payload.value,
+            inclusive: def.inclusive,
+            inst,
+            continue: !def.abort,
+        });
+    };
+});
+const $ZodCheckMultipleOf = 
+/*@__PURE__*/ $constructor("$ZodCheckMultipleOf", (inst, def) => {
+    $ZodCheck.init(inst, def);
+    inst._zod.onattach.push((inst) => {
+        var _a;
+        (_a = inst._zod.bag).multipleOf ?? (_a.multipleOf = def.value);
+    });
+    inst._zod.check = (payload) => {
+        if (typeof payload.value !== typeof def.value)
+            throw new Error("Cannot mix number and bigint in multiple_of check.");
+        const isMultiple = typeof payload.value === "bigint"
+            ? payload.value % def.value === BigInt(0)
+            : floatSafeRemainder(payload.value, def.value) === 0;
+        if (isMultiple)
+            return;
+        payload.issues.push({
+            origin: typeof payload.value,
+            code: "not_multiple_of",
+            divisor: def.value,
+            input: payload.value,
+            inst,
+            continue: !def.abort,
+        });
+    };
+});
+const $ZodCheckNumberFormat = /*@__PURE__*/ $constructor("$ZodCheckNumberFormat", (inst, def) => {
+    $ZodCheck.init(inst, def); // no format checks
+    def.format = def.format || "float64";
+    const isInt = def.format?.includes("int");
+    const origin = isInt ? "int" : "number";
+    const [minimum, maximum] = NUMBER_FORMAT_RANGES[def.format];
+    inst._zod.onattach.push((inst) => {
+        const bag = inst._zod.bag;
+        bag.format = def.format;
+        bag.minimum = minimum;
+        bag.maximum = maximum;
+        if (isInt)
+            bag.pattern = integer;
+    });
+    inst._zod.check = (payload) => {
+        const input = payload.value;
+        if (isInt) {
+            if (!Number.isInteger(input)) {
+                // invalid_format issue
+                // payload.issues.push({
+                //   expected: def.format,
+                //   format: def.format,
+                //   code: "invalid_format",
+                //   input,
+                //   inst,
+                // });
+                // invalid_type issue
+                payload.issues.push({
+                    expected: origin,
+                    format: def.format,
+                    code: "invalid_type",
+                    continue: false,
+                    input,
+                    inst,
+                });
+                return;
+                // not_multiple_of issue
+                // payload.issues.push({
+                //   code: "not_multiple_of",
+                //   origin: "number",
+                //   input,
+                //   inst,
+                //   divisor: 1,
+                // });
+            }
+            if (!Number.isSafeInteger(input)) {
+                if (input > 0) {
+                    // too_big
+                    payload.issues.push({
+                        input,
+                        code: "too_big",
+                        maximum: Number.MAX_SAFE_INTEGER,
+                        note: "Integers must be within the safe integer range.",
+                        inst,
+                        origin,
+                        inclusive: true,
+                        continue: !def.abort,
+                    });
+                }
+                else {
+                    // too_small
+                    payload.issues.push({
+                        input,
+                        code: "too_small",
+                        minimum: Number.MIN_SAFE_INTEGER,
+                        note: "Integers must be within the safe integer range.",
+                        inst,
+                        origin,
+                        inclusive: true,
+                        continue: !def.abort,
+                    });
+                }
+                return;
+            }
+        }
+        if (input < minimum) {
+            payload.issues.push({
+                origin: "number",
+                input,
+                code: "too_small",
+                minimum,
+                inclusive: true,
+                inst,
+                continue: !def.abort,
+            });
+        }
+        if (input > maximum) {
+            payload.issues.push({
+                origin: "number",
+                input,
+                code: "too_big",
+                maximum,
+                inclusive: true,
+                inst,
+                continue: !def.abort,
+            });
+        }
+    };
+});
+const $ZodCheckMaxLength = /*@__PURE__*/ $constructor("$ZodCheckMaxLength", (inst, def) => {
+    var _a;
+    $ZodCheck.init(inst, def);
+    (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+        const val = payload.value;
+        return !nullish(val) && val.length !== undefined;
+    });
+    inst._zod.onattach.push((inst) => {
+        const curr = (inst._zod.bag.maximum ?? Number.POSITIVE_INFINITY);
+        if (def.maximum < curr)
+            inst._zod.bag.maximum = def.maximum;
+    });
+    inst._zod.check = (payload) => {
+        const input = payload.value;
+        const length = input.length;
+        if (length <= def.maximum)
+            return;
+        const origin = getLengthableOrigin(input);
+        payload.issues.push({
+            origin,
+            code: "too_big",
+            maximum: def.maximum,
+            inclusive: true,
+            input,
+            inst,
+            continue: !def.abort,
+        });
+    };
+});
+const $ZodCheckMinLength = /*@__PURE__*/ $constructor("$ZodCheckMinLength", (inst, def) => {
+    var _a;
+    $ZodCheck.init(inst, def);
+    (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+        const val = payload.value;
+        return !nullish(val) && val.length !== undefined;
+    });
+    inst._zod.onattach.push((inst) => {
+        const curr = (inst._zod.bag.minimum ?? Number.NEGATIVE_INFINITY);
+        if (def.minimum > curr)
+            inst._zod.bag.minimum = def.minimum;
+    });
+    inst._zod.check = (payload) => {
+        const input = payload.value;
+        const length = input.length;
+        if (length >= def.minimum)
+            return;
+        const origin = getLengthableOrigin(input);
+        payload.issues.push({
+            origin,
+            code: "too_small",
+            minimum: def.minimum,
+            inclusive: true,
+            input,
+            inst,
+            continue: !def.abort,
+        });
+    };
+});
+const $ZodCheckLengthEquals = /*@__PURE__*/ $constructor("$ZodCheckLengthEquals", (inst, def) => {
+    var _a;
+    $ZodCheck.init(inst, def);
+    (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+        const val = payload.value;
+        return !nullish(val) && val.length !== undefined;
+    });
+    inst._zod.onattach.push((inst) => {
+        const bag = inst._zod.bag;
+        bag.minimum = def.length;
+        bag.maximum = def.length;
+        bag.length = def.length;
+    });
+    inst._zod.check = (payload) => {
+        const input = payload.value;
+        const length = input.length;
+        if (length === def.length)
+            return;
+        const origin = getLengthableOrigin(input);
+        const tooBig = length > def.length;
+        payload.issues.push({
+            origin,
+            ...(tooBig ? { code: "too_big", maximum: def.length } : { code: "too_small", minimum: def.length }),
+            inclusive: true,
+            exact: true,
+            input: payload.value,
+            inst,
+            continue: !def.abort,
+        });
+    };
+});
+const $ZodCheckStringFormat = /*@__PURE__*/ $constructor("$ZodCheckStringFormat", (inst, def) => {
+    var _a, _b;
+    $ZodCheck.init(inst, def);
+    inst._zod.onattach.push((inst) => {
+        const bag = inst._zod.bag;
+        bag.format = def.format;
+        if (def.pattern) {
+            bag.patterns ?? (bag.patterns = new Set());
+            bag.patterns.add(def.pattern);
+        }
+    });
+    if (def.pattern)
+        (_a = inst._zod).check ?? (_a.check = (payload) => {
+            def.pattern.lastIndex = 0;
+            if (def.pattern.test(payload.value))
+                return;
+            payload.issues.push({
+                origin: "string",
+                code: "invalid_format",
+                format: def.format,
+                input: payload.value,
+                ...(def.pattern ? { pattern: def.pattern.toString() } : {}),
+                inst,
+                continue: !def.abort,
+            });
+        });
+    else
+        (_b = inst._zod).check ?? (_b.check = () => { });
+});
+const $ZodCheckRegex = /*@__PURE__*/ $constructor("$ZodCheckRegex", (inst, def) => {
+    $ZodCheckStringFormat.init(inst, def);
+    inst._zod.check = (payload) => {
+        def.pattern.lastIndex = 0;
+        if (def.pattern.test(payload.value))
+            return;
+        payload.issues.push({
+            origin: "string",
+            code: "invalid_format",
+            format: "regex",
+            input: payload.value,
+            pattern: def.pattern.toString(),
+            inst,
+            continue: !def.abort,
+        });
+    };
+});
+const $ZodCheckLowerCase = /*@__PURE__*/ $constructor("$ZodCheckLowerCase", (inst, def) => {
+    def.pattern ?? (def.pattern = lowercase);
+    $ZodCheckStringFormat.init(inst, def);
+});
+const $ZodCheckUpperCase = /*@__PURE__*/ $constructor("$ZodCheckUpperCase", (inst, def) => {
+    def.pattern ?? (def.pattern = uppercase);
+    $ZodCheckStringFormat.init(inst, def);
+});
+const $ZodCheckIncludes = /*@__PURE__*/ $constructor("$ZodCheckIncludes", (inst, def) => {
+    $ZodCheck.init(inst, def);
+    const escapedRegex = escapeRegex(def.includes);
+    const pattern = new RegExp(typeof def.position === "number" ? `^.{${def.position}}${escapedRegex}` : escapedRegex);
+    def.pattern = pattern;
+    inst._zod.onattach.push((inst) => {
+        const bag = inst._zod.bag;
+        bag.patterns ?? (bag.patterns = new Set());
+        bag.patterns.add(pattern);
+    });
+    inst._zod.check = (payload) => {
+        if (payload.value.includes(def.includes, def.position))
+            return;
+        payload.issues.push({
+            origin: "string",
+            code: "invalid_format",
+            format: "includes",
+            includes: def.includes,
+            input: payload.value,
+            inst,
+            continue: !def.abort,
+        });
+    };
+});
+const $ZodCheckStartsWith = /*@__PURE__*/ $constructor("$ZodCheckStartsWith", (inst, def) => {
+    $ZodCheck.init(inst, def);
+    const pattern = new RegExp(`^${escapeRegex(def.prefix)}.*`);
+    def.pattern ?? (def.pattern = pattern);
+    inst._zod.onattach.push((inst) => {
+        const bag = inst._zod.bag;
+        bag.patterns ?? (bag.patterns = new Set());
+        bag.patterns.add(pattern);
+    });
+    inst._zod.check = (payload) => {
+        if (payload.value.startsWith(def.prefix))
+            return;
+        payload.issues.push({
+            origin: "string",
+            code: "invalid_format",
+            format: "starts_with",
+            prefix: def.prefix,
+            input: payload.value,
+            inst,
+            continue: !def.abort,
+        });
+    };
+});
+const $ZodCheckEndsWith = /*@__PURE__*/ $constructor("$ZodCheckEndsWith", (inst, def) => {
+    $ZodCheck.init(inst, def);
+    const pattern = new RegExp(`.*${escapeRegex(def.suffix)}$`);
+    def.pattern ?? (def.pattern = pattern);
+    inst._zod.onattach.push((inst) => {
+        const bag = inst._zod.bag;
+        bag.patterns ?? (bag.patterns = new Set());
+        bag.patterns.add(pattern);
+    });
+    inst._zod.check = (payload) => {
+        if (payload.value.endsWith(def.suffix))
+            return;
+        payload.issues.push({
+            origin: "string",
+            code: "invalid_format",
+            format: "ends_with",
+            suffix: def.suffix,
+            input: payload.value,
+            inst,
+            continue: !def.abort,
+        });
+    };
+});
+const $ZodCheckOverwrite = /*@__PURE__*/ $constructor("$ZodCheckOverwrite", (inst, def) => {
+    $ZodCheck.init(inst, def);
+    inst._zod.check = (payload) => {
+        payload.value = def.tx(payload.value);
+    };
+});
+
+class Doc {
+    constructor(args = []) {
+        this.content = [];
+        this.indent = 0;
+        if (this)
+            this.args = args;
     }
-    if ((version === "v6" || !version) && ipv6Regex.test(ip)) {
-        return true;
+    indented(fn) {
+        this.indent += 1;
+        fn(this);
+        this.indent -= 1;
     }
-    return false;
+    write(arg) {
+        if (typeof arg === "function") {
+            arg(this, { execution: "sync" });
+            arg(this, { execution: "async" });
+            return;
+        }
+        const content = arg;
+        const lines = content.split("\n").filter((x) => x);
+        const minIndent = Math.min(...lines.map((x) => x.length - x.trimStart().length));
+        const dedented = lines.map((x) => x.slice(minIndent)).map((x) => " ".repeat(this.indent * 2) + x);
+        for (const line of dedented) {
+            this.content.push(line);
+        }
+    }
+    compile() {
+        const F = Function;
+        const args = this?.args;
+        const content = this?.content ?? [``];
+        const lines = [...content.map((x) => `  ${x}`)];
+        // console.log(lines.join("\n"));
+        return new F(...args, lines.join("\n"));
+    }
 }
-function isValidJWT(jwt, alg) {
-    if (!jwtRegex.test(jwt))
+
+const version = {
+    major: 4,
+    minor: 4,
+    patch: 3,
+};
+
+const $ZodType = /*@__PURE__*/ $constructor("$ZodType", (inst, def) => {
+    var _a;
+    inst ?? (inst = {});
+    inst._zod.def = def; // set _def property
+    inst._zod.bag = inst._zod.bag || {}; // initialize _bag object
+    inst._zod.version = version;
+    const checks = [...(inst._zod.def.checks ?? [])];
+    // if inst is itself a checks.$ZodCheck, run it as a check
+    if (inst._zod.traits.has("$ZodCheck")) {
+        checks.unshift(inst);
+    }
+    for (const ch of checks) {
+        for (const fn of ch._zod.onattach) {
+            fn(inst);
+        }
+    }
+    if (checks.length === 0) {
+        // deferred initializer
+        // inst._zod.parse is not yet defined
+        (_a = inst._zod).deferred ?? (_a.deferred = []);
+        inst._zod.deferred?.push(() => {
+            inst._zod.run = inst._zod.parse;
+        });
+    }
+    else {
+        const runChecks = (payload, checks, ctx) => {
+            let isAborted = aborted(payload);
+            let asyncResult;
+            for (const ch of checks) {
+                if (ch._zod.def.when) {
+                    if (explicitlyAborted(payload))
+                        continue;
+                    const shouldRun = ch._zod.def.when(payload);
+                    if (!shouldRun)
+                        continue;
+                }
+                else if (isAborted) {
+                    continue;
+                }
+                const currLen = payload.issues.length;
+                const _ = ch._zod.check(payload);
+                if (_ instanceof Promise && ctx?.async === false) {
+                    throw new $ZodAsyncError();
+                }
+                if (asyncResult || _ instanceof Promise) {
+                    asyncResult = (asyncResult ?? Promise.resolve()).then(async () => {
+                        await _;
+                        const nextLen = payload.issues.length;
+                        if (nextLen === currLen)
+                            return;
+                        if (!isAborted)
+                            isAborted = aborted(payload, currLen);
+                    });
+                }
+                else {
+                    const nextLen = payload.issues.length;
+                    if (nextLen === currLen)
+                        continue;
+                    if (!isAborted)
+                        isAborted = aborted(payload, currLen);
+                }
+            }
+            if (asyncResult) {
+                return asyncResult.then(() => {
+                    return payload;
+                });
+            }
+            return payload;
+        };
+        const handleCanaryResult = (canary, payload, ctx) => {
+            // abort if the canary is aborted
+            if (aborted(canary)) {
+                canary.aborted = true;
+                return canary;
+            }
+            // run checks first, then
+            const checkResult = runChecks(payload, checks, ctx);
+            if (checkResult instanceof Promise) {
+                if (ctx.async === false)
+                    throw new $ZodAsyncError();
+                return checkResult.then((checkResult) => inst._zod.parse(checkResult, ctx));
+            }
+            return inst._zod.parse(checkResult, ctx);
+        };
+        inst._zod.run = (payload, ctx) => {
+            if (ctx.skipChecks) {
+                return inst._zod.parse(payload, ctx);
+            }
+            if (ctx.direction === "backward") {
+                // run canary
+                // initial pass (no checks)
+                const canary = inst._zod.parse({ value: payload.value, issues: [] }, { ...ctx, skipChecks: true });
+                if (canary instanceof Promise) {
+                    return canary.then((canary) => {
+                        return handleCanaryResult(canary, payload, ctx);
+                    });
+                }
+                return handleCanaryResult(canary, payload, ctx);
+            }
+            // forward
+            const result = inst._zod.parse(payload, ctx);
+            if (result instanceof Promise) {
+                if (ctx.async === false)
+                    throw new $ZodAsyncError();
+                return result.then((result) => runChecks(result, checks, ctx));
+            }
+            return runChecks(result, checks, ctx);
+        };
+    }
+    // Lazy initialize ~standard to avoid creating objects for every schema
+    defineLazy(inst, "~standard", () => ({
+        validate: (value) => {
+            try {
+                const r = safeParse$1(inst, value);
+                return r.success ? { value: r.data } : { issues: r.error?.issues };
+            }
+            catch (_) {
+                return safeParseAsync$1(inst, value).then((r) => (r.success ? { value: r.data } : { issues: r.error?.issues }));
+            }
+        },
+        vendor: "zod",
+        version: 1,
+    }));
+});
+const $ZodString = /*@__PURE__*/ $constructor("$ZodString", (inst, def) => {
+    $ZodType.init(inst, def);
+    inst._zod.pattern = [...(inst?._zod.bag?.patterns ?? [])].pop() ?? string$1(inst._zod.bag);
+    inst._zod.parse = (payload, _) => {
+        if (def.coerce)
+            try {
+                payload.value = String(payload.value);
+            }
+            catch (_) { }
+        if (typeof payload.value === "string")
+            return payload;
+        payload.issues.push({
+            expected: "string",
+            code: "invalid_type",
+            input: payload.value,
+            inst,
+        });
+        return payload;
+    };
+});
+const $ZodStringFormat = /*@__PURE__*/ $constructor("$ZodStringFormat", (inst, def) => {
+    // check initialization must come first
+    $ZodCheckStringFormat.init(inst, def);
+    $ZodString.init(inst, def);
+});
+const $ZodGUID = /*@__PURE__*/ $constructor("$ZodGUID", (inst, def) => {
+    def.pattern ?? (def.pattern = guid);
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodUUID = /*@__PURE__*/ $constructor("$ZodUUID", (inst, def) => {
+    if (def.version) {
+        const versionMap = {
+            v1: 1,
+            v2: 2,
+            v3: 3,
+            v4: 4,
+            v5: 5,
+            v6: 6,
+            v7: 7,
+            v8: 8,
+        };
+        const v = versionMap[def.version];
+        if (v === undefined)
+            throw new Error(`Invalid UUID version: "${def.version}"`);
+        def.pattern ?? (def.pattern = uuid(v));
+    }
+    else
+        def.pattern ?? (def.pattern = uuid());
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodEmail = /*@__PURE__*/ $constructor("$ZodEmail", (inst, def) => {
+    def.pattern ?? (def.pattern = email);
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodURL = /*@__PURE__*/ $constructor("$ZodURL", (inst, def) => {
+    $ZodStringFormat.init(inst, def);
+    inst._zod.check = (payload) => {
+        try {
+            // Trim whitespace from input
+            const trimmed = payload.value.trim();
+            // When normalize is off, require :// for http/https URLs
+            // This prevents strings like "http:example.com" or "https:/path" from being silently accepted
+            if (!def.normalize && def.protocol?.source === httpProtocol.source) {
+                if (!/^https?:\/\//i.test(trimmed)) {
+                    payload.issues.push({
+                        code: "invalid_format",
+                        format: "url",
+                        note: "Invalid URL format",
+                        input: payload.value,
+                        inst,
+                        continue: !def.abort,
+                    });
+                    return;
+                }
+            }
+            // @ts-ignore
+            const url = new URL(trimmed);
+            if (def.hostname) {
+                def.hostname.lastIndex = 0;
+                if (!def.hostname.test(url.hostname)) {
+                    payload.issues.push({
+                        code: "invalid_format",
+                        format: "url",
+                        note: "Invalid hostname",
+                        pattern: def.hostname.source,
+                        input: payload.value,
+                        inst,
+                        continue: !def.abort,
+                    });
+                }
+            }
+            if (def.protocol) {
+                def.protocol.lastIndex = 0;
+                if (!def.protocol.test(url.protocol.endsWith(":") ? url.protocol.slice(0, -1) : url.protocol)) {
+                    payload.issues.push({
+                        code: "invalid_format",
+                        format: "url",
+                        note: "Invalid protocol",
+                        pattern: def.protocol.source,
+                        input: payload.value,
+                        inst,
+                        continue: !def.abort,
+                    });
+                }
+            }
+            // Set the output value based on normalize flag
+            if (def.normalize) {
+                // Use normalized URL
+                payload.value = url.href;
+            }
+            else {
+                // Preserve the original input (trimmed)
+                payload.value = trimmed;
+            }
+            return;
+        }
+        catch (_) {
+            payload.issues.push({
+                code: "invalid_format",
+                format: "url",
+                input: payload.value,
+                inst,
+                continue: !def.abort,
+            });
+        }
+    };
+});
+const $ZodEmoji = /*@__PURE__*/ $constructor("$ZodEmoji", (inst, def) => {
+    def.pattern ?? (def.pattern = emoji());
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodNanoID = /*@__PURE__*/ $constructor("$ZodNanoID", (inst, def) => {
+    def.pattern ?? (def.pattern = nanoid);
+    $ZodStringFormat.init(inst, def);
+});
+/**
+ * @deprecated CUID v1 is deprecated by its authors due to information leakage
+ * (timestamps embedded in the id). Use {@link $ZodCUID2} instead.
+ * See https://github.com/paralleldrive/cuid.
+ */
+const $ZodCUID = /*@__PURE__*/ $constructor("$ZodCUID", (inst, def) => {
+    def.pattern ?? (def.pattern = cuid);
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodCUID2 = /*@__PURE__*/ $constructor("$ZodCUID2", (inst, def) => {
+    def.pattern ?? (def.pattern = cuid2);
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodULID = /*@__PURE__*/ $constructor("$ZodULID", (inst, def) => {
+    def.pattern ?? (def.pattern = ulid);
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodXID = /*@__PURE__*/ $constructor("$ZodXID", (inst, def) => {
+    def.pattern ?? (def.pattern = xid);
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodKSUID = /*@__PURE__*/ $constructor("$ZodKSUID", (inst, def) => {
+    def.pattern ?? (def.pattern = ksuid);
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodISODateTime = /*@__PURE__*/ $constructor("$ZodISODateTime", (inst, def) => {
+    def.pattern ?? (def.pattern = datetime$1(def));
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodISODate = /*@__PURE__*/ $constructor("$ZodISODate", (inst, def) => {
+    def.pattern ?? (def.pattern = date$1);
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodISOTime = /*@__PURE__*/ $constructor("$ZodISOTime", (inst, def) => {
+    def.pattern ?? (def.pattern = time$1(def));
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodISODuration = /*@__PURE__*/ $constructor("$ZodISODuration", (inst, def) => {
+    def.pattern ?? (def.pattern = duration$1);
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodIPv4 = /*@__PURE__*/ $constructor("$ZodIPv4", (inst, def) => {
+    def.pattern ?? (def.pattern = ipv4);
+    $ZodStringFormat.init(inst, def);
+    inst._zod.bag.format = `ipv4`;
+});
+const $ZodIPv6 = /*@__PURE__*/ $constructor("$ZodIPv6", (inst, def) => {
+    def.pattern ?? (def.pattern = ipv6);
+    $ZodStringFormat.init(inst, def);
+    inst._zod.bag.format = `ipv6`;
+    inst._zod.check = (payload) => {
+        try {
+            // @ts-ignore
+            new URL(`http://[${payload.value}]`);
+            // return;
+        }
+        catch {
+            payload.issues.push({
+                code: "invalid_format",
+                format: "ipv6",
+                input: payload.value,
+                inst,
+                continue: !def.abort,
+            });
+        }
+    };
+});
+const $ZodCIDRv4 = /*@__PURE__*/ $constructor("$ZodCIDRv4", (inst, def) => {
+    def.pattern ?? (def.pattern = cidrv4);
+    $ZodStringFormat.init(inst, def);
+});
+const $ZodCIDRv6 = /*@__PURE__*/ $constructor("$ZodCIDRv6", (inst, def) => {
+    def.pattern ?? (def.pattern = cidrv6); // not used for validation
+    $ZodStringFormat.init(inst, def);
+    inst._zod.check = (payload) => {
+        const parts = payload.value.split("/");
+        try {
+            if (parts.length !== 2)
+                throw new Error();
+            const [address, prefix] = parts;
+            if (!prefix)
+                throw new Error();
+            const prefixNum = Number(prefix);
+            if (`${prefixNum}` !== prefix)
+                throw new Error();
+            if (prefixNum < 0 || prefixNum > 128)
+                throw new Error();
+            // @ts-ignore
+            new URL(`http://[${address}]`);
+        }
+        catch {
+            payload.issues.push({
+                code: "invalid_format",
+                format: "cidrv6",
+                input: payload.value,
+                inst,
+                continue: !def.abort,
+            });
+        }
+    };
+});
+//////////////////////////////   ZodBase64   //////////////////////////////
+function isValidBase64(data) {
+    if (data === "")
+        return true;
+    // atob ignores whitespace, so reject it up front.
+    if (/\s/.test(data))
+        return false;
+    if (data.length % 4 !== 0)
         return false;
     try {
-        const [header] = jwt.split(".");
+        // @ts-ignore
+        atob(data);
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
+const $ZodBase64 = /*@__PURE__*/ $constructor("$ZodBase64", (inst, def) => {
+    def.pattern ?? (def.pattern = base64);
+    $ZodStringFormat.init(inst, def);
+    inst._zod.bag.contentEncoding = "base64";
+    inst._zod.check = (payload) => {
+        if (isValidBase64(payload.value))
+            return;
+        payload.issues.push({
+            code: "invalid_format",
+            format: "base64",
+            input: payload.value,
+            inst,
+            continue: !def.abort,
+        });
+    };
+});
+//////////////////////////////   ZodBase64   //////////////////////////////
+function isValidBase64URL(data) {
+    if (!base64url.test(data))
+        return false;
+    const base64 = data.replace(/[-_]/g, (c) => (c === "-" ? "+" : "/"));
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    return isValidBase64(padded);
+}
+const $ZodBase64URL = /*@__PURE__*/ $constructor("$ZodBase64URL", (inst, def) => {
+    def.pattern ?? (def.pattern = base64url);
+    $ZodStringFormat.init(inst, def);
+    inst._zod.bag.contentEncoding = "base64url";
+    inst._zod.check = (payload) => {
+        if (isValidBase64URL(payload.value))
+            return;
+        payload.issues.push({
+            code: "invalid_format",
+            format: "base64url",
+            input: payload.value,
+            inst,
+            continue: !def.abort,
+        });
+    };
+});
+const $ZodE164 = /*@__PURE__*/ $constructor("$ZodE164", (inst, def) => {
+    def.pattern ?? (def.pattern = e164);
+    $ZodStringFormat.init(inst, def);
+});
+//////////////////////////////   ZodJWT   //////////////////////////////
+function isValidJWT(token, algorithm = null) {
+    try {
+        const tokensParts = token.split(".");
+        if (tokensParts.length !== 3)
+            return false;
+        const [header] = tokensParts;
         if (!header)
             return false;
-        // Convert base64url to base64
-        const base64 = header
-            .replace(/-/g, "+")
-            .replace(/_/g, "/")
-            .padEnd(header.length + ((4 - (header.length % 4)) % 4), "=");
-        const decoded = JSON.parse(atob(base64));
-        if (typeof decoded !== "object" || decoded === null)
+        // @ts-ignore
+        const parsedHeader = JSON.parse(atob(header));
+        if ("typ" in parsedHeader && parsedHeader?.typ !== "JWT")
             return false;
-        if ("typ" in decoded && decoded?.typ !== "JWT")
+        if (!parsedHeader.alg)
             return false;
-        if (!decoded.alg)
-            return false;
-        if (alg && decoded.alg !== alg)
+        if (algorithm && (!("alg" in parsedHeader) || parsedHeader.alg !== algorithm))
             return false;
         return true;
     }
@@ -2162,1922 +2856,529 @@ function isValidJWT(jwt, alg) {
         return false;
     }
 }
-function isValidCidr(ip, version) {
-    if ((version === "v4" || !version) && ipv4CidrRegex.test(ip)) {
-        return true;
-    }
-    if ((version === "v6" || !version) && ipv6CidrRegex.test(ip)) {
-        return true;
-    }
-    return false;
-}
-class ZodString extends ZodType {
-    _parse(input) {
-        if (this._def.coerce) {
-            input.data = String(input.data);
-        }
-        const parsedType = this._getType(input);
-        if (parsedType !== ZodParsedType.string) {
-            const ctx = this._getOrReturnCtx(input);
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.string,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        const status = new ParseStatus();
-        let ctx = undefined;
-        for (const check of this._def.checks) {
-            if (check.kind === "min") {
-                if (input.data.length < check.value) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.too_small,
-                        minimum: check.value,
-                        type: "string",
-                        inclusive: true,
-                        exact: false,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "max") {
-                if (input.data.length > check.value) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.too_big,
-                        maximum: check.value,
-                        type: "string",
-                        inclusive: true,
-                        exact: false,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "length") {
-                const tooBig = input.data.length > check.value;
-                const tooSmall = input.data.length < check.value;
-                if (tooBig || tooSmall) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    if (tooBig) {
-                        addIssueToContext(ctx, {
-                            code: ZodIssueCode.too_big,
-                            maximum: check.value,
-                            type: "string",
-                            inclusive: true,
-                            exact: true,
-                            message: check.message,
-                        });
-                    }
-                    else if (tooSmall) {
-                        addIssueToContext(ctx, {
-                            code: ZodIssueCode.too_small,
-                            minimum: check.value,
-                            type: "string",
-                            inclusive: true,
-                            exact: true,
-                            message: check.message,
-                        });
-                    }
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "email") {
-                if (!emailRegex.test(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "email",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "emoji") {
-                if (!emojiRegex) {
-                    emojiRegex = new RegExp(_emojiRegex, "u");
-                }
-                if (!emojiRegex.test(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "emoji",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "uuid") {
-                if (!uuidRegex.test(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "uuid",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "nanoid") {
-                if (!nanoidRegex.test(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "nanoid",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "cuid") {
-                if (!cuidRegex.test(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "cuid",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "cuid2") {
-                if (!cuid2Regex.test(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "cuid2",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "ulid") {
-                if (!ulidRegex.test(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "ulid",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "url") {
-                try {
-                    new URL(input.data);
-                }
-                catch {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "url",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "regex") {
-                check.regex.lastIndex = 0;
-                const testResult = check.regex.test(input.data);
-                if (!testResult) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "regex",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "trim") {
-                input.data = input.data.trim();
-            }
-            else if (check.kind === "includes") {
-                if (!input.data.includes(check.value, check.position)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.invalid_string,
-                        validation: { includes: check.value, position: check.position },
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "toLowerCase") {
-                input.data = input.data.toLowerCase();
-            }
-            else if (check.kind === "toUpperCase") {
-                input.data = input.data.toUpperCase();
-            }
-            else if (check.kind === "startsWith") {
-                if (!input.data.startsWith(check.value)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.invalid_string,
-                        validation: { startsWith: check.value },
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "endsWith") {
-                if (!input.data.endsWith(check.value)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.invalid_string,
-                        validation: { endsWith: check.value },
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "datetime") {
-                const regex = datetimeRegex(check);
-                if (!regex.test(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.invalid_string,
-                        validation: "datetime",
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "date") {
-                const regex = dateRegex;
-                if (!regex.test(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.invalid_string,
-                        validation: "date",
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "time") {
-                const regex = timeRegex(check);
-                if (!regex.test(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.invalid_string,
-                        validation: "time",
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "duration") {
-                if (!durationRegex.test(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "duration",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "ip") {
-                if (!isValidIP(input.data, check.version)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "ip",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "jwt") {
-                if (!isValidJWT(input.data, check.alg)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "jwt",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "cidr") {
-                if (!isValidCidr(input.data, check.version)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "cidr",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "base64") {
-                if (!base64Regex.test(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "base64",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "base64url") {
-                if (!base64urlRegex.test(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        validation: "base64url",
-                        code: ZodIssueCode.invalid_string,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else {
-                util.assertNever(check);
-            }
-        }
-        return { status: status.value, value: input.data };
-    }
-    _regex(regex, validation, message) {
-        return this.refinement((data) => regex.test(data), {
-            validation,
-            code: ZodIssueCode.invalid_string,
-            ...errorUtil.errToObj(message),
+const $ZodJWT = /*@__PURE__*/ $constructor("$ZodJWT", (inst, def) => {
+    $ZodStringFormat.init(inst, def);
+    inst._zod.check = (payload) => {
+        if (isValidJWT(payload.value, def.alg))
+            return;
+        payload.issues.push({
+            code: "invalid_format",
+            format: "jwt",
+            input: payload.value,
+            inst,
+            continue: !def.abort,
         });
-    }
-    _addCheck(check) {
-        return new ZodString({
-            ...this._def,
-            checks: [...this._def.checks, check],
-        });
-    }
-    email(message) {
-        return this._addCheck({ kind: "email", ...errorUtil.errToObj(message) });
-    }
-    url(message) {
-        return this._addCheck({ kind: "url", ...errorUtil.errToObj(message) });
-    }
-    emoji(message) {
-        return this._addCheck({ kind: "emoji", ...errorUtil.errToObj(message) });
-    }
-    uuid(message) {
-        return this._addCheck({ kind: "uuid", ...errorUtil.errToObj(message) });
-    }
-    nanoid(message) {
-        return this._addCheck({ kind: "nanoid", ...errorUtil.errToObj(message) });
-    }
-    cuid(message) {
-        return this._addCheck({ kind: "cuid", ...errorUtil.errToObj(message) });
-    }
-    cuid2(message) {
-        return this._addCheck({ kind: "cuid2", ...errorUtil.errToObj(message) });
-    }
-    ulid(message) {
-        return this._addCheck({ kind: "ulid", ...errorUtil.errToObj(message) });
-    }
-    base64(message) {
-        return this._addCheck({ kind: "base64", ...errorUtil.errToObj(message) });
-    }
-    base64url(message) {
-        // base64url encoding is a modification of base64 that can safely be used in URLs and filenames
-        return this._addCheck({
-            kind: "base64url",
-            ...errorUtil.errToObj(message),
-        });
-    }
-    jwt(options) {
-        return this._addCheck({ kind: "jwt", ...errorUtil.errToObj(options) });
-    }
-    ip(options) {
-        return this._addCheck({ kind: "ip", ...errorUtil.errToObj(options) });
-    }
-    cidr(options) {
-        return this._addCheck({ kind: "cidr", ...errorUtil.errToObj(options) });
-    }
-    datetime(options) {
-        if (typeof options === "string") {
-            return this._addCheck({
-                kind: "datetime",
-                precision: null,
-                offset: false,
-                local: false,
-                message: options,
-            });
-        }
-        return this._addCheck({
-            kind: "datetime",
-            precision: typeof options?.precision === "undefined" ? null : options?.precision,
-            offset: options?.offset ?? false,
-            local: options?.local ?? false,
-            ...errorUtil.errToObj(options?.message),
-        });
-    }
-    date(message) {
-        return this._addCheck({ kind: "date", message });
-    }
-    time(options) {
-        if (typeof options === "string") {
-            return this._addCheck({
-                kind: "time",
-                precision: null,
-                message: options,
-            });
-        }
-        return this._addCheck({
-            kind: "time",
-            precision: typeof options?.precision === "undefined" ? null : options?.precision,
-            ...errorUtil.errToObj(options?.message),
-        });
-    }
-    duration(message) {
-        return this._addCheck({ kind: "duration", ...errorUtil.errToObj(message) });
-    }
-    regex(regex, message) {
-        return this._addCheck({
-            kind: "regex",
-            regex: regex,
-            ...errorUtil.errToObj(message),
-        });
-    }
-    includes(value, options) {
-        return this._addCheck({
-            kind: "includes",
-            value: value,
-            position: options?.position,
-            ...errorUtil.errToObj(options?.message),
-        });
-    }
-    startsWith(value, message) {
-        return this._addCheck({
-            kind: "startsWith",
-            value: value,
-            ...errorUtil.errToObj(message),
-        });
-    }
-    endsWith(value, message) {
-        return this._addCheck({
-            kind: "endsWith",
-            value: value,
-            ...errorUtil.errToObj(message),
-        });
-    }
-    min(minLength, message) {
-        return this._addCheck({
-            kind: "min",
-            value: minLength,
-            ...errorUtil.errToObj(message),
-        });
-    }
-    max(maxLength, message) {
-        return this._addCheck({
-            kind: "max",
-            value: maxLength,
-            ...errorUtil.errToObj(message),
-        });
-    }
-    length(len, message) {
-        return this._addCheck({
-            kind: "length",
-            value: len,
-            ...errorUtil.errToObj(message),
-        });
-    }
-    /**
-     * Equivalent to `.min(1)`
-     */
-    nonempty(message) {
-        return this.min(1, errorUtil.errToObj(message));
-    }
-    trim() {
-        return new ZodString({
-            ...this._def,
-            checks: [...this._def.checks, { kind: "trim" }],
-        });
-    }
-    toLowerCase() {
-        return new ZodString({
-            ...this._def,
-            checks: [...this._def.checks, { kind: "toLowerCase" }],
-        });
-    }
-    toUpperCase() {
-        return new ZodString({
-            ...this._def,
-            checks: [...this._def.checks, { kind: "toUpperCase" }],
-        });
-    }
-    get isDatetime() {
-        return !!this._def.checks.find((ch) => ch.kind === "datetime");
-    }
-    get isDate() {
-        return !!this._def.checks.find((ch) => ch.kind === "date");
-    }
-    get isTime() {
-        return !!this._def.checks.find((ch) => ch.kind === "time");
-    }
-    get isDuration() {
-        return !!this._def.checks.find((ch) => ch.kind === "duration");
-    }
-    get isEmail() {
-        return !!this._def.checks.find((ch) => ch.kind === "email");
-    }
-    get isURL() {
-        return !!this._def.checks.find((ch) => ch.kind === "url");
-    }
-    get isEmoji() {
-        return !!this._def.checks.find((ch) => ch.kind === "emoji");
-    }
-    get isUUID() {
-        return !!this._def.checks.find((ch) => ch.kind === "uuid");
-    }
-    get isNANOID() {
-        return !!this._def.checks.find((ch) => ch.kind === "nanoid");
-    }
-    get isCUID() {
-        return !!this._def.checks.find((ch) => ch.kind === "cuid");
-    }
-    get isCUID2() {
-        return !!this._def.checks.find((ch) => ch.kind === "cuid2");
-    }
-    get isULID() {
-        return !!this._def.checks.find((ch) => ch.kind === "ulid");
-    }
-    get isIP() {
-        return !!this._def.checks.find((ch) => ch.kind === "ip");
-    }
-    get isCIDR() {
-        return !!this._def.checks.find((ch) => ch.kind === "cidr");
-    }
-    get isBase64() {
-        return !!this._def.checks.find((ch) => ch.kind === "base64");
-    }
-    get isBase64url() {
-        // base64url encoding is a modification of base64 that can safely be used in URLs and filenames
-        return !!this._def.checks.find((ch) => ch.kind === "base64url");
-    }
-    get minLength() {
-        let min = null;
-        for (const ch of this._def.checks) {
-            if (ch.kind === "min") {
-                if (min === null || ch.value > min)
-                    min = ch.value;
-            }
-        }
-        return min;
-    }
-    get maxLength() {
-        let max = null;
-        for (const ch of this._def.checks) {
-            if (ch.kind === "max") {
-                if (max === null || ch.value < max)
-                    max = ch.value;
-            }
-        }
-        return max;
-    }
-}
-ZodString.create = (params) => {
-    return new ZodString({
-        checks: [],
-        typeName: ZodFirstPartyTypeKind.ZodString,
-        coerce: params?.coerce ?? false,
-        ...processCreateParams(params),
-    });
-};
-// https://stackoverflow.com/questions/3966484/why-does-modulus-operator-return-fractional-number-in-javascript/31711034#31711034
-function floatSafeRemainder(val, step) {
-    const valDecCount = (val.toString().split(".")[1] || "").length;
-    const stepDecCount = (step.toString().split(".")[1] || "").length;
-    const decCount = valDecCount > stepDecCount ? valDecCount : stepDecCount;
-    const valInt = Number.parseInt(val.toFixed(decCount).replace(".", ""));
-    const stepInt = Number.parseInt(step.toFixed(decCount).replace(".", ""));
-    return (valInt % stepInt) / 10 ** decCount;
-}
-class ZodNumber extends ZodType {
-    constructor() {
-        super(...arguments);
-        this.min = this.gte;
-        this.max = this.lte;
-        this.step = this.multipleOf;
-    }
-    _parse(input) {
-        if (this._def.coerce) {
-            input.data = Number(input.data);
-        }
-        const parsedType = this._getType(input);
-        if (parsedType !== ZodParsedType.number) {
-            const ctx = this._getOrReturnCtx(input);
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.number,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        let ctx = undefined;
-        const status = new ParseStatus();
-        for (const check of this._def.checks) {
-            if (check.kind === "int") {
-                if (!util.isInteger(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.invalid_type,
-                        expected: "integer",
-                        received: "float",
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "min") {
-                const tooSmall = check.inclusive ? input.data < check.value : input.data <= check.value;
-                if (tooSmall) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.too_small,
-                        minimum: check.value,
-                        type: "number",
-                        inclusive: check.inclusive,
-                        exact: false,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "max") {
-                const tooBig = check.inclusive ? input.data > check.value : input.data >= check.value;
-                if (tooBig) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.too_big,
-                        maximum: check.value,
-                        type: "number",
-                        inclusive: check.inclusive,
-                        exact: false,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "multipleOf") {
-                if (floatSafeRemainder(input.data, check.value) !== 0) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.not_multiple_of,
-                        multipleOf: check.value,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "finite") {
-                if (!Number.isFinite(input.data)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.not_finite,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else {
-                util.assertNever(check);
-            }
-        }
-        return { status: status.value, value: input.data };
-    }
-    gte(value, message) {
-        return this.setLimit("min", value, true, errorUtil.toString(message));
-    }
-    gt(value, message) {
-        return this.setLimit("min", value, false, errorUtil.toString(message));
-    }
-    lte(value, message) {
-        return this.setLimit("max", value, true, errorUtil.toString(message));
-    }
-    lt(value, message) {
-        return this.setLimit("max", value, false, errorUtil.toString(message));
-    }
-    setLimit(kind, value, inclusive, message) {
-        return new ZodNumber({
-            ...this._def,
-            checks: [
-                ...this._def.checks,
-                {
-                    kind,
-                    value,
-                    inclusive,
-                    message: errorUtil.toString(message),
-                },
-            ],
-        });
-    }
-    _addCheck(check) {
-        return new ZodNumber({
-            ...this._def,
-            checks: [...this._def.checks, check],
-        });
-    }
-    int(message) {
-        return this._addCheck({
-            kind: "int",
-            message: errorUtil.toString(message),
-        });
-    }
-    positive(message) {
-        return this._addCheck({
-            kind: "min",
-            value: 0,
-            inclusive: false,
-            message: errorUtil.toString(message),
-        });
-    }
-    negative(message) {
-        return this._addCheck({
-            kind: "max",
-            value: 0,
-            inclusive: false,
-            message: errorUtil.toString(message),
-        });
-    }
-    nonpositive(message) {
-        return this._addCheck({
-            kind: "max",
-            value: 0,
-            inclusive: true,
-            message: errorUtil.toString(message),
-        });
-    }
-    nonnegative(message) {
-        return this._addCheck({
-            kind: "min",
-            value: 0,
-            inclusive: true,
-            message: errorUtil.toString(message),
-        });
-    }
-    multipleOf(value, message) {
-        return this._addCheck({
-            kind: "multipleOf",
-            value: value,
-            message: errorUtil.toString(message),
-        });
-    }
-    finite(message) {
-        return this._addCheck({
-            kind: "finite",
-            message: errorUtil.toString(message),
-        });
-    }
-    safe(message) {
-        return this._addCheck({
-            kind: "min",
-            inclusive: true,
-            value: Number.MIN_SAFE_INTEGER,
-            message: errorUtil.toString(message),
-        })._addCheck({
-            kind: "max",
-            inclusive: true,
-            value: Number.MAX_SAFE_INTEGER,
-            message: errorUtil.toString(message),
-        });
-    }
-    get minValue() {
-        let min = null;
-        for (const ch of this._def.checks) {
-            if (ch.kind === "min") {
-                if (min === null || ch.value > min)
-                    min = ch.value;
-            }
-        }
-        return min;
-    }
-    get maxValue() {
-        let max = null;
-        for (const ch of this._def.checks) {
-            if (ch.kind === "max") {
-                if (max === null || ch.value < max)
-                    max = ch.value;
-            }
-        }
-        return max;
-    }
-    get isInt() {
-        return !!this._def.checks.find((ch) => ch.kind === "int" || (ch.kind === "multipleOf" && util.isInteger(ch.value)));
-    }
-    get isFinite() {
-        let max = null;
-        let min = null;
-        for (const ch of this._def.checks) {
-            if (ch.kind === "finite" || ch.kind === "int" || ch.kind === "multipleOf") {
-                return true;
-            }
-            else if (ch.kind === "min") {
-                if (min === null || ch.value > min)
-                    min = ch.value;
-            }
-            else if (ch.kind === "max") {
-                if (max === null || ch.value < max)
-                    max = ch.value;
-            }
-        }
-        return Number.isFinite(min) && Number.isFinite(max);
-    }
-}
-ZodNumber.create = (params) => {
-    return new ZodNumber({
-        checks: [],
-        typeName: ZodFirstPartyTypeKind.ZodNumber,
-        coerce: params?.coerce || false,
-        ...processCreateParams(params),
-    });
-};
-class ZodBigInt extends ZodType {
-    constructor() {
-        super(...arguments);
-        this.min = this.gte;
-        this.max = this.lte;
-    }
-    _parse(input) {
-        if (this._def.coerce) {
+    };
+});
+const $ZodNumber = /*@__PURE__*/ $constructor("$ZodNumber", (inst, def) => {
+    $ZodType.init(inst, def);
+    inst._zod.pattern = inst._zod.bag.pattern ?? number$1;
+    inst._zod.parse = (payload, _ctx) => {
+        if (def.coerce)
             try {
-                input.data = BigInt(input.data);
+                payload.value = Number(payload.value);
             }
-            catch {
-                return this._getInvalidInput(input);
-            }
+            catch (_) { }
+        const input = payload.value;
+        if (typeof input === "number" && !Number.isNaN(input) && Number.isFinite(input)) {
+            return payload;
         }
-        const parsedType = this._getType(input);
-        if (parsedType !== ZodParsedType.bigint) {
-            return this._getInvalidInput(input);
+        const received = typeof input === "number"
+            ? Number.isNaN(input)
+                ? "NaN"
+                : !Number.isFinite(input)
+                    ? "Infinity"
+                    : undefined
+            : undefined;
+        payload.issues.push({
+            expected: "number",
+            code: "invalid_type",
+            input,
+            inst,
+            ...(received ? { received } : {}),
+        });
+        return payload;
+    };
+});
+const $ZodNumberFormat = /*@__PURE__*/ $constructor("$ZodNumberFormat", (inst, def) => {
+    $ZodCheckNumberFormat.init(inst, def);
+    $ZodNumber.init(inst, def); // no format checks
+});
+const $ZodBoolean = /*@__PURE__*/ $constructor("$ZodBoolean", (inst, def) => {
+    $ZodType.init(inst, def);
+    inst._zod.pattern = boolean$1;
+    inst._zod.parse = (payload, _ctx) => {
+        if (def.coerce)
+            try {
+                payload.value = Boolean(payload.value);
+            }
+            catch (_) { }
+        const input = payload.value;
+        if (typeof input === "boolean")
+            return payload;
+        payload.issues.push({
+            expected: "boolean",
+            code: "invalid_type",
+            input,
+            inst,
+        });
+        return payload;
+    };
+});
+const $ZodAny = /*@__PURE__*/ $constructor("$ZodAny", (inst, def) => {
+    $ZodType.init(inst, def);
+    inst._zod.parse = (payload) => payload;
+});
+const $ZodUnknown = /*@__PURE__*/ $constructor("$ZodUnknown", (inst, def) => {
+    $ZodType.init(inst, def);
+    inst._zod.parse = (payload) => payload;
+});
+const $ZodNever = /*@__PURE__*/ $constructor("$ZodNever", (inst, def) => {
+    $ZodType.init(inst, def);
+    inst._zod.parse = (payload, _ctx) => {
+        payload.issues.push({
+            expected: "never",
+            code: "invalid_type",
+            input: payload.value,
+            inst,
+        });
+        return payload;
+    };
+});
+function handleArrayResult(result, final, index) {
+    if (result.issues.length) {
+        final.issues.push(...prefixIssues(index, result.issues));
+    }
+    final.value[index] = result.value;
+}
+const $ZodArray = /*@__PURE__*/ $constructor("$ZodArray", (inst, def) => {
+    $ZodType.init(inst, def);
+    inst._zod.parse = (payload, ctx) => {
+        const input = payload.value;
+        if (!Array.isArray(input)) {
+            payload.issues.push({
+                expected: "array",
+                code: "invalid_type",
+                input,
+                inst,
+            });
+            return payload;
         }
-        let ctx = undefined;
-        const status = new ParseStatus();
-        for (const check of this._def.checks) {
-            if (check.kind === "min") {
-                const tooSmall = check.inclusive ? input.data < check.value : input.data <= check.value;
-                if (tooSmall) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.too_small,
-                        type: "bigint",
-                        minimum: check.value,
-                        inclusive: check.inclusive,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "max") {
-                const tooBig = check.inclusive ? input.data > check.value : input.data >= check.value;
-                if (tooBig) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.too_big,
-                        type: "bigint",
-                        maximum: check.value,
-                        inclusive: check.inclusive,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "multipleOf") {
-                if (input.data % check.value !== BigInt(0)) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.not_multiple_of,
-                        multipleOf: check.value,
-                        message: check.message,
-                    });
-                    status.dirty();
-                }
+        payload.value = Array(input.length);
+        const proms = [];
+        for (let i = 0; i < input.length; i++) {
+            const item = input[i];
+            const result = def.element._zod.run({
+                value: item,
+                issues: [],
+            }, ctx);
+            if (result instanceof Promise) {
+                proms.push(result.then((result) => handleArrayResult(result, payload, i)));
             }
             else {
-                util.assertNever(check);
+                handleArrayResult(result, payload, i);
             }
         }
-        return { status: status.value, value: input.data };
-    }
-    _getInvalidInput(input) {
-        const ctx = this._getOrReturnCtx(input);
-        addIssueToContext(ctx, {
-            code: ZodIssueCode.invalid_type,
-            expected: ZodParsedType.bigint,
-            received: ctx.parsedType,
-        });
-        return INVALID$3;
-    }
-    gte(value, message) {
-        return this.setLimit("min", value, true, errorUtil.toString(message));
-    }
-    gt(value, message) {
-        return this.setLimit("min", value, false, errorUtil.toString(message));
-    }
-    lte(value, message) {
-        return this.setLimit("max", value, true, errorUtil.toString(message));
-    }
-    lt(value, message) {
-        return this.setLimit("max", value, false, errorUtil.toString(message));
-    }
-    setLimit(kind, value, inclusive, message) {
-        return new ZodBigInt({
-            ...this._def,
-            checks: [
-                ...this._def.checks,
-                {
-                    kind,
-                    value,
-                    inclusive,
-                    message: errorUtil.toString(message),
-                },
-            ],
-        });
-    }
-    _addCheck(check) {
-        return new ZodBigInt({
-            ...this._def,
-            checks: [...this._def.checks, check],
-        });
-    }
-    positive(message) {
-        return this._addCheck({
-            kind: "min",
-            value: BigInt(0),
-            inclusive: false,
-            message: errorUtil.toString(message),
-        });
-    }
-    negative(message) {
-        return this._addCheck({
-            kind: "max",
-            value: BigInt(0),
-            inclusive: false,
-            message: errorUtil.toString(message),
-        });
-    }
-    nonpositive(message) {
-        return this._addCheck({
-            kind: "max",
-            value: BigInt(0),
-            inclusive: true,
-            message: errorUtil.toString(message),
-        });
-    }
-    nonnegative(message) {
-        return this._addCheck({
-            kind: "min",
-            value: BigInt(0),
-            inclusive: true,
-            message: errorUtil.toString(message),
-        });
-    }
-    multipleOf(value, message) {
-        return this._addCheck({
-            kind: "multipleOf",
-            value,
-            message: errorUtil.toString(message),
-        });
-    }
-    get minValue() {
-        let min = null;
-        for (const ch of this._def.checks) {
-            if (ch.kind === "min") {
-                if (min === null || ch.value > min)
-                    min = ch.value;
-            }
+        if (proms.length) {
+            return Promise.all(proms).then(() => payload);
         }
-        return min;
-    }
-    get maxValue() {
-        let max = null;
-        for (const ch of this._def.checks) {
-            if (ch.kind === "max") {
-                if (max === null || ch.value < max)
-                    max = ch.value;
-            }
+        return payload; //handleArrayResultsAsync(parseResults, final);
+    };
+});
+function handlePropertyResult(result, final, key, input, isOptionalIn, isOptionalOut) {
+    const isPresent = key in input;
+    if (result.issues.length) {
+        // For optional-in/out schemas, ignore errors on absent keys.
+        if (isOptionalIn && isOptionalOut && !isPresent) {
+            return;
         }
-        return max;
+        final.issues.push(...prefixIssues(key, result.issues));
     }
-}
-ZodBigInt.create = (params) => {
-    return new ZodBigInt({
-        checks: [],
-        typeName: ZodFirstPartyTypeKind.ZodBigInt,
-        coerce: params?.coerce ?? false,
-        ...processCreateParams(params),
-    });
-};
-class ZodBoolean extends ZodType {
-    _parse(input) {
-        if (this._def.coerce) {
-            input.data = Boolean(input.data);
-        }
-        const parsedType = this._getType(input);
-        if (parsedType !== ZodParsedType.boolean) {
-            const ctx = this._getOrReturnCtx(input);
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.boolean,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        return OK(input.data);
-    }
-}
-ZodBoolean.create = (params) => {
-    return new ZodBoolean({
-        typeName: ZodFirstPartyTypeKind.ZodBoolean,
-        coerce: params?.coerce || false,
-        ...processCreateParams(params),
-    });
-};
-class ZodDate extends ZodType {
-    _parse(input) {
-        if (this._def.coerce) {
-            input.data = new Date(input.data);
-        }
-        const parsedType = this._getType(input);
-        if (parsedType !== ZodParsedType.date) {
-            const ctx = this._getOrReturnCtx(input);
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.date,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        if (Number.isNaN(input.data.getTime())) {
-            const ctx = this._getOrReturnCtx(input);
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_date,
-            });
-            return INVALID$3;
-        }
-        const status = new ParseStatus();
-        let ctx = undefined;
-        for (const check of this._def.checks) {
-            if (check.kind === "min") {
-                if (input.data.getTime() < check.value) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.too_small,
-                        message: check.message,
-                        inclusive: true,
-                        exact: false,
-                        minimum: check.value,
-                        type: "date",
-                    });
-                    status.dirty();
-                }
-            }
-            else if (check.kind === "max") {
-                if (input.data.getTime() > check.value) {
-                    ctx = this._getOrReturnCtx(input, ctx);
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.too_big,
-                        message: check.message,
-                        inclusive: true,
-                        exact: false,
-                        maximum: check.value,
-                        type: "date",
-                    });
-                    status.dirty();
-                }
-            }
-            else {
-                util.assertNever(check);
-            }
-        }
-        return {
-            status: status.value,
-            value: new Date(input.data.getTime()),
-        };
-    }
-    _addCheck(check) {
-        return new ZodDate({
-            ...this._def,
-            checks: [...this._def.checks, check],
-        });
-    }
-    min(minDate, message) {
-        return this._addCheck({
-            kind: "min",
-            value: minDate.getTime(),
-            message: errorUtil.toString(message),
-        });
-    }
-    max(maxDate, message) {
-        return this._addCheck({
-            kind: "max",
-            value: maxDate.getTime(),
-            message: errorUtil.toString(message),
-        });
-    }
-    get minDate() {
-        let min = null;
-        for (const ch of this._def.checks) {
-            if (ch.kind === "min") {
-                if (min === null || ch.value > min)
-                    min = ch.value;
-            }
-        }
-        return min != null ? new Date(min) : null;
-    }
-    get maxDate() {
-        let max = null;
-        for (const ch of this._def.checks) {
-            if (ch.kind === "max") {
-                if (max === null || ch.value < max)
-                    max = ch.value;
-            }
-        }
-        return max != null ? new Date(max) : null;
-    }
-}
-ZodDate.create = (params) => {
-    return new ZodDate({
-        checks: [],
-        coerce: params?.coerce || false,
-        typeName: ZodFirstPartyTypeKind.ZodDate,
-        ...processCreateParams(params),
-    });
-};
-class ZodSymbol extends ZodType {
-    _parse(input) {
-        const parsedType = this._getType(input);
-        if (parsedType !== ZodParsedType.symbol) {
-            const ctx = this._getOrReturnCtx(input);
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.symbol,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        return OK(input.data);
-    }
-}
-ZodSymbol.create = (params) => {
-    return new ZodSymbol({
-        typeName: ZodFirstPartyTypeKind.ZodSymbol,
-        ...processCreateParams(params),
-    });
-};
-class ZodUndefined extends ZodType {
-    _parse(input) {
-        const parsedType = this._getType(input);
-        if (parsedType !== ZodParsedType.undefined) {
-            const ctx = this._getOrReturnCtx(input);
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.undefined,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        return OK(input.data);
-    }
-}
-ZodUndefined.create = (params) => {
-    return new ZodUndefined({
-        typeName: ZodFirstPartyTypeKind.ZodUndefined,
-        ...processCreateParams(params),
-    });
-};
-class ZodNull extends ZodType {
-    _parse(input) {
-        const parsedType = this._getType(input);
-        if (parsedType !== ZodParsedType.null) {
-            const ctx = this._getOrReturnCtx(input);
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.null,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        return OK(input.data);
-    }
-}
-ZodNull.create = (params) => {
-    return new ZodNull({
-        typeName: ZodFirstPartyTypeKind.ZodNull,
-        ...processCreateParams(params),
-    });
-};
-class ZodAny extends ZodType {
-    constructor() {
-        super(...arguments);
-        // to prevent instances of other classes from extending ZodAny. this causes issues with catchall in ZodObject.
-        this._any = true;
-    }
-    _parse(input) {
-        return OK(input.data);
-    }
-}
-ZodAny.create = (params) => {
-    return new ZodAny({
-        typeName: ZodFirstPartyTypeKind.ZodAny,
-        ...processCreateParams(params),
-    });
-};
-class ZodUnknown extends ZodType {
-    constructor() {
-        super(...arguments);
-        // required
-        this._unknown = true;
-    }
-    _parse(input) {
-        return OK(input.data);
-    }
-}
-ZodUnknown.create = (params) => {
-    return new ZodUnknown({
-        typeName: ZodFirstPartyTypeKind.ZodUnknown,
-        ...processCreateParams(params),
-    });
-};
-class ZodNever extends ZodType {
-    _parse(input) {
-        const ctx = this._getOrReturnCtx(input);
-        addIssueToContext(ctx, {
-            code: ZodIssueCode.invalid_type,
-            expected: ZodParsedType.never,
-            received: ctx.parsedType,
-        });
-        return INVALID$3;
-    }
-}
-ZodNever.create = (params) => {
-    return new ZodNever({
-        typeName: ZodFirstPartyTypeKind.ZodNever,
-        ...processCreateParams(params),
-    });
-};
-class ZodVoid extends ZodType {
-    _parse(input) {
-        const parsedType = this._getType(input);
-        if (parsedType !== ZodParsedType.undefined) {
-            const ctx = this._getOrReturnCtx(input);
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.void,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        return OK(input.data);
-    }
-}
-ZodVoid.create = (params) => {
-    return new ZodVoid({
-        typeName: ZodFirstPartyTypeKind.ZodVoid,
-        ...processCreateParams(params),
-    });
-};
-class ZodArray extends ZodType {
-    _parse(input) {
-        const { ctx, status } = this._processInputParams(input);
-        const def = this._def;
-        if (ctx.parsedType !== ZodParsedType.array) {
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.array,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        if (def.exactLength !== null) {
-            const tooBig = ctx.data.length > def.exactLength.value;
-            const tooSmall = ctx.data.length < def.exactLength.value;
-            if (tooBig || tooSmall) {
-                addIssueToContext(ctx, {
-                    code: tooBig ? ZodIssueCode.too_big : ZodIssueCode.too_small,
-                    minimum: (tooSmall ? def.exactLength.value : undefined),
-                    maximum: (tooBig ? def.exactLength.value : undefined),
-                    type: "array",
-                    inclusive: true,
-                    exact: true,
-                    message: def.exactLength.message,
-                });
-                status.dirty();
-            }
-        }
-        if (def.minLength !== null) {
-            if (ctx.data.length < def.minLength.value) {
-                addIssueToContext(ctx, {
-                    code: ZodIssueCode.too_small,
-                    minimum: def.minLength.value,
-                    type: "array",
-                    inclusive: true,
-                    exact: false,
-                    message: def.minLength.message,
-                });
-                status.dirty();
-            }
-        }
-        if (def.maxLength !== null) {
-            if (ctx.data.length > def.maxLength.value) {
-                addIssueToContext(ctx, {
-                    code: ZodIssueCode.too_big,
-                    maximum: def.maxLength.value,
-                    type: "array",
-                    inclusive: true,
-                    exact: false,
-                    message: def.maxLength.message,
-                });
-                status.dirty();
-            }
-        }
-        if (ctx.common.async) {
-            return Promise.all([...ctx.data].map((item, i) => {
-                return def.type._parseAsync(new ParseInputLazyPath(ctx, item, ctx.path, i));
-            })).then((result) => {
-                return ParseStatus.mergeArray(status, result);
+    if (!isPresent && !isOptionalIn) {
+        if (!result.issues.length) {
+            final.issues.push({
+                code: "invalid_type",
+                expected: "nonoptional",
+                input: undefined,
+                path: [key],
             });
         }
-        const result = [...ctx.data].map((item, i) => {
-            return def.type._parseSync(new ParseInputLazyPath(ctx, item, ctx.path, i));
-        });
-        return ParseStatus.mergeArray(status, result);
+        return;
     }
-    get element() {
-        return this._def.type;
-    }
-    min(minLength, message) {
-        return new ZodArray({
-            ...this._def,
-            minLength: { value: minLength, message: errorUtil.toString(message) },
-        });
-    }
-    max(maxLength, message) {
-        return new ZodArray({
-            ...this._def,
-            maxLength: { value: maxLength, message: errorUtil.toString(message) },
-        });
-    }
-    length(len, message) {
-        return new ZodArray({
-            ...this._def,
-            exactLength: { value: len, message: errorUtil.toString(message) },
-        });
-    }
-    nonempty(message) {
-        return this.min(1, message);
-    }
-}
-ZodArray.create = (schema, params) => {
-    return new ZodArray({
-        type: schema,
-        minLength: null,
-        maxLength: null,
-        exactLength: null,
-        typeName: ZodFirstPartyTypeKind.ZodArray,
-        ...processCreateParams(params),
-    });
-};
-function deepPartialify(schema) {
-    if (schema instanceof ZodObject) {
-        const newShape = {};
-        for (const key in schema.shape) {
-            const fieldSchema = schema.shape[key];
-            newShape[key] = ZodOptional.create(deepPartialify(fieldSchema));
+    if (result.value === undefined) {
+        if (isPresent) {
+            final.value[key] = undefined;
         }
-        return new ZodObject({
-            ...schema._def,
-            shape: () => newShape,
-        });
-    }
-    else if (schema instanceof ZodArray) {
-        return new ZodArray({
-            ...schema._def,
-            type: deepPartialify(schema.element),
-        });
-    }
-    else if (schema instanceof ZodOptional) {
-        return ZodOptional.create(deepPartialify(schema.unwrap()));
-    }
-    else if (schema instanceof ZodNullable) {
-        return ZodNullable.create(deepPartialify(schema.unwrap()));
-    }
-    else if (schema instanceof ZodTuple) {
-        return ZodTuple.create(schema.items.map((item) => deepPartialify(item)));
     }
     else {
-        return schema;
+        final.value[key] = result.value;
     }
 }
-class ZodObject extends ZodType {
-    constructor() {
-        super(...arguments);
-        this._cached = null;
-        /**
-         * @deprecated In most cases, this is no longer needed - unknown properties are now silently stripped.
-         * If you want to pass through unknown properties, use `.passthrough()` instead.
-         */
-        this.nonstrict = this.passthrough;
-        // extend<
-        //   Augmentation extends ZodRawShape,
-        //   NewOutput extends util.flatten<{
-        //     [k in keyof Augmentation | keyof Output]: k extends keyof Augmentation
-        //       ? Augmentation[k]["_output"]
-        //       : k extends keyof Output
-        //       ? Output[k]
-        //       : never;
-        //   }>,
-        //   NewInput extends util.flatten<{
-        //     [k in keyof Augmentation | keyof Input]: k extends keyof Augmentation
-        //       ? Augmentation[k]["_input"]
-        //       : k extends keyof Input
-        //       ? Input[k]
-        //       : never;
-        //   }>
-        // >(
-        //   augmentation: Augmentation
-        // ): ZodObject<
-        //   extendShape<T, Augmentation>,
-        //   UnknownKeys,
-        //   Catchall,
-        //   NewOutput,
-        //   NewInput
-        // > {
-        //   return new ZodObject({
-        //     ...this._def,
-        //     shape: () => ({
-        //       ...this._def.shape(),
-        //       ...augmentation,
-        //     }),
-        //   }) as any;
-        // }
-        /**
-         * @deprecated Use `.extend` instead
-         *  */
-        this.augment = this.extend;
-    }
-    _getCached() {
-        if (this._cached !== null)
-            return this._cached;
-        const shape = this._def.shape();
-        const keys = util.objectKeys(shape);
-        this._cached = { shape, keys };
-        return this._cached;
-    }
-    _parse(input) {
-        const parsedType = this._getType(input);
-        if (parsedType !== ZodParsedType.object) {
-            const ctx = this._getOrReturnCtx(input);
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.object,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        const { status, ctx } = this._processInputParams(input);
-        const { shape, keys: shapeKeys } = this._getCached();
-        const extraKeys = [];
-        if (!(this._def.catchall instanceof ZodNever && this._def.unknownKeys === "strip")) {
-            for (const key in ctx.data) {
-                if (!shapeKeys.includes(key)) {
-                    extraKeys.push(key);
-                }
-            }
-        }
-        const pairs = [];
-        for (const key of shapeKeys) {
-            const keyValidator = shape[key];
-            const value = ctx.data[key];
-            pairs.push({
-                key: { status: "valid", value: key },
-                value: keyValidator._parse(new ParseInputLazyPath(ctx, value, ctx.path, key)),
-                alwaysSet: key in ctx.data,
-            });
-        }
-        if (this._def.catchall instanceof ZodNever) {
-            const unknownKeys = this._def.unknownKeys;
-            if (unknownKeys === "passthrough") {
-                for (const key of extraKeys) {
-                    pairs.push({
-                        key: { status: "valid", value: key },
-                        value: { status: "valid", value: ctx.data[key] },
-                    });
-                }
-            }
-            else if (unknownKeys === "strict") {
-                if (extraKeys.length > 0) {
-                    addIssueToContext(ctx, {
-                        code: ZodIssueCode.unrecognized_keys,
-                        keys: extraKeys,
-                    });
-                    status.dirty();
-                }
-            }
-            else if (unknownKeys === "strip") ;
-            else {
-                throw new Error(`Internal ZodObject error: invalid unknownKeys value.`);
-            }
-        }
-        else {
-            // run catchall validation
-            const catchall = this._def.catchall;
-            for (const key of extraKeys) {
-                const value = ctx.data[key];
-                pairs.push({
-                    key: { status: "valid", value: key },
-                    value: catchall._parse(new ParseInputLazyPath(ctx, value, ctx.path, key) //, ctx.child(key), value, getParsedType(value)
-                    ),
-                    alwaysSet: key in ctx.data,
-                });
-            }
-        }
-        if (ctx.common.async) {
-            return Promise.resolve()
-                .then(async () => {
-                const syncPairs = [];
-                for (const pair of pairs) {
-                    const key = await pair.key;
-                    const value = await pair.value;
-                    syncPairs.push({
-                        key,
-                        value,
-                        alwaysSet: pair.alwaysSet,
-                    });
-                }
-                return syncPairs;
-            })
-                .then((syncPairs) => {
-                return ParseStatus.mergeObjectSync(status, syncPairs);
-            });
-        }
-        else {
-            return ParseStatus.mergeObjectSync(status, pairs);
+function normalizeDef(def) {
+    const keys = Object.keys(def.shape);
+    for (const k of keys) {
+        if (!def.shape?.[k]?._zod?.traits?.has("$ZodType")) {
+            throw new Error(`Invalid element at key "${k}": expected a Zod schema`);
         }
     }
-    get shape() {
-        return this._def.shape();
-    }
-    strict(message) {
-        errorUtil.errToObj;
-        return new ZodObject({
-            ...this._def,
-            unknownKeys: "strict",
-            ...(message !== undefined
-                ? {
-                    errorMap: (issue, ctx) => {
-                        const defaultError = this._def.errorMap?.(issue, ctx).message ?? ctx.defaultError;
-                        if (issue.code === "unrecognized_keys")
-                            return {
-                                message: errorUtil.errToObj(message).message ?? defaultError,
-                            };
-                        return {
-                            message: defaultError,
-                        };
-                    },
-                }
-                : {}),
-        });
-    }
-    strip() {
-        return new ZodObject({
-            ...this._def,
-            unknownKeys: "strip",
-        });
-    }
-    passthrough() {
-        return new ZodObject({
-            ...this._def,
-            unknownKeys: "passthrough",
-        });
-    }
-    // const AugmentFactory =
-    //   <Def extends ZodObjectDef>(def: Def) =>
-    //   <Augmentation extends ZodRawShape>(
-    //     augmentation: Augmentation
-    //   ): ZodObject<
-    //     extendShape<ReturnType<Def["shape"]>, Augmentation>,
-    //     Def["unknownKeys"],
-    //     Def["catchall"]
-    //   > => {
-    //     return new ZodObject({
-    //       ...def,
-    //       shape: () => ({
-    //         ...def.shape(),
-    //         ...augmentation,
-    //       }),
-    //     }) as any;
-    //   };
-    extend(augmentation) {
-        return new ZodObject({
-            ...this._def,
-            shape: () => ({
-                ...this._def.shape(),
-                ...augmentation,
-            }),
-        });
-    }
-    /**
-     * Prior to zod@1.0.12 there was a bug in the
-     * inferred type of merged objects. Please
-     * upgrade if you are experiencing issues.
-     */
-    merge(merging) {
-        const merged = new ZodObject({
-            unknownKeys: merging._def.unknownKeys,
-            catchall: merging._def.catchall,
-            shape: () => ({
-                ...this._def.shape(),
-                ...merging._def.shape(),
-            }),
-            typeName: ZodFirstPartyTypeKind.ZodObject,
-        });
-        return merged;
-    }
-    // merge<
-    //   Incoming extends AnyZodObject,
-    //   Augmentation extends Incoming["shape"],
-    //   NewOutput extends {
-    //     [k in keyof Augmentation | keyof Output]: k extends keyof Augmentation
-    //       ? Augmentation[k]["_output"]
-    //       : k extends keyof Output
-    //       ? Output[k]
-    //       : never;
-    //   },
-    //   NewInput extends {
-    //     [k in keyof Augmentation | keyof Input]: k extends keyof Augmentation
-    //       ? Augmentation[k]["_input"]
-    //       : k extends keyof Input
-    //       ? Input[k]
-    //       : never;
-    //   }
-    // >(
-    //   merging: Incoming
-    // ): ZodObject<
-    //   extendShape<T, ReturnType<Incoming["_def"]["shape"]>>,
-    //   Incoming["_def"]["unknownKeys"],
-    //   Incoming["_def"]["catchall"],
-    //   NewOutput,
-    //   NewInput
-    // > {
-    //   const merged: any = new ZodObject({
-    //     unknownKeys: merging._def.unknownKeys,
-    //     catchall: merging._def.catchall,
-    //     shape: () =>
-    //       objectUtil.mergeShapes(this._def.shape(), merging._def.shape()),
-    //     typeName: ZodFirstPartyTypeKind.ZodObject,
-    //   }) as any;
-    //   return merged;
-    // }
-    setKey(key, schema) {
-        return this.augment({ [key]: schema });
-    }
-    // merge<Incoming extends AnyZodObject>(
-    //   merging: Incoming
-    // ): //ZodObject<T & Incoming["_shape"], UnknownKeys, Catchall> = (merging) => {
-    // ZodObject<
-    //   extendShape<T, ReturnType<Incoming["_def"]["shape"]>>,
-    //   Incoming["_def"]["unknownKeys"],
-    //   Incoming["_def"]["catchall"]
-    // > {
-    //   // const mergedShape = objectUtil.mergeShapes(
-    //   //   this._def.shape(),
-    //   //   merging._def.shape()
-    //   // );
-    //   const merged: any = new ZodObject({
-    //     unknownKeys: merging._def.unknownKeys,
-    //     catchall: merging._def.catchall,
-    //     shape: () =>
-    //       objectUtil.mergeShapes(this._def.shape(), merging._def.shape()),
-    //     typeName: ZodFirstPartyTypeKind.ZodObject,
-    //   }) as any;
-    //   return merged;
-    // }
-    catchall(index) {
-        return new ZodObject({
-            ...this._def,
-            catchall: index,
-        });
-    }
-    pick(mask) {
-        const shape = {};
-        for (const key of util.objectKeys(mask)) {
-            if (mask[key] && this.shape[key]) {
-                shape[key] = this.shape[key];
-            }
-        }
-        return new ZodObject({
-            ...this._def,
-            shape: () => shape,
-        });
-    }
-    omit(mask) {
-        const shape = {};
-        for (const key of util.objectKeys(this.shape)) {
-            if (!mask[key]) {
-                shape[key] = this.shape[key];
-            }
-        }
-        return new ZodObject({
-            ...this._def,
-            shape: () => shape,
-        });
-    }
-    /**
-     * @deprecated
-     */
-    deepPartial() {
-        return deepPartialify(this);
-    }
-    partial(mask) {
-        const newShape = {};
-        for (const key of util.objectKeys(this.shape)) {
-            const fieldSchema = this.shape[key];
-            if (mask && !mask[key]) {
-                newShape[key] = fieldSchema;
-            }
-            else {
-                newShape[key] = fieldSchema.optional();
-            }
-        }
-        return new ZodObject({
-            ...this._def,
-            shape: () => newShape,
-        });
-    }
-    required(mask) {
-        const newShape = {};
-        for (const key of util.objectKeys(this.shape)) {
-            if (mask && !mask[key]) {
-                newShape[key] = this.shape[key];
-            }
-            else {
-                const fieldSchema = this.shape[key];
-                let newField = fieldSchema;
-                while (newField instanceof ZodOptional) {
-                    newField = newField._def.innerType;
-                }
-                newShape[key] = newField;
-            }
-        }
-        return new ZodObject({
-            ...this._def,
-            shape: () => newShape,
-        });
-    }
-    keyof() {
-        return createZodEnum(util.objectKeys(this.shape));
-    }
+    const okeys = optionalKeys(def.shape);
+    return {
+        ...def,
+        keys,
+        keySet: new Set(keys),
+        numKeys: keys.length,
+        optionalKeys: new Set(okeys),
+    };
 }
-ZodObject.create = (shape, params) => {
-    return new ZodObject({
-        shape: () => shape,
-        unknownKeys: "strip",
-        catchall: ZodNever.create(),
-        typeName: ZodFirstPartyTypeKind.ZodObject,
-        ...processCreateParams(params),
-    });
-};
-ZodObject.strictCreate = (shape, params) => {
-    return new ZodObject({
-        shape: () => shape,
-        unknownKeys: "strict",
-        catchall: ZodNever.create(),
-        typeName: ZodFirstPartyTypeKind.ZodObject,
-        ...processCreateParams(params),
-    });
-};
-ZodObject.lazycreate = (shape, params) => {
-    return new ZodObject({
-        shape,
-        unknownKeys: "strip",
-        catchall: ZodNever.create(),
-        typeName: ZodFirstPartyTypeKind.ZodObject,
-        ...processCreateParams(params),
-    });
-};
-class ZodUnion extends ZodType {
-    _parse(input) {
-        const { ctx } = this._processInputParams(input);
-        const options = this._def.options;
-        function handleResults(results) {
-            // return first issue-free validation if it exists
-            for (const result of results) {
-                if (result.result.status === "valid") {
-                    return result.result;
-                }
-            }
-            for (const result of results) {
-                if (result.result.status === "dirty") {
-                    // add issues from dirty option
-                    ctx.common.issues.push(...result.ctx.common.issues);
-                    return result.result;
-                }
-            }
-            // return invalid
-            const unionErrors = results.map((result) => new ZodError(result.ctx.common.issues));
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_union,
-                unionErrors,
-            });
-            return INVALID$3;
+function handleCatchall(proms, input, payload, ctx, def, inst) {
+    const unrecognized = [];
+    const keySet = def.keySet;
+    const _catchall = def.catchall._zod;
+    const t = _catchall.def.type;
+    const isOptionalIn = _catchall.optin === "optional";
+    const isOptionalOut = _catchall.optout === "optional";
+    for (const key in input) {
+        // skip __proto__ so it can't replace the result prototype via the
+        // assignment setter on the plain {} we build into
+        if (key === "__proto__")
+            continue;
+        if (keySet.has(key))
+            continue;
+        if (t === "never") {
+            unrecognized.push(key);
+            continue;
         }
-        if (ctx.common.async) {
-            return Promise.all(options.map(async (option) => {
-                const childCtx = {
-                    ...ctx,
-                    common: {
-                        ...ctx.common,
-                        issues: [],
-                    },
-                    parent: null,
-                };
-                return {
-                    result: await option._parseAsync({
-                        data: ctx.data,
-                        path: ctx.path,
-                        parent: childCtx,
-                    }),
-                    ctx: childCtx,
-                };
-            })).then(handleResults);
+        const r = _catchall.run({ value: input[key], issues: [] }, ctx);
+        if (r instanceof Promise) {
+            proms.push(r.then((r) => handlePropertyResult(r, payload, key, input, isOptionalIn, isOptionalOut)));
         }
         else {
-            let dirty = undefined;
-            const issues = [];
-            for (const option of options) {
-                const childCtx = {
-                    ...ctx,
-                    common: {
-                        ...ctx.common,
-                        issues: [],
-                    },
-                    parent: null,
-                };
-                const result = option._parseSync({
-                    data: ctx.data,
-                    path: ctx.path,
-                    parent: childCtx,
+            handlePropertyResult(r, payload, key, input, isOptionalIn, isOptionalOut);
+        }
+    }
+    if (unrecognized.length) {
+        payload.issues.push({
+            code: "unrecognized_keys",
+            keys: unrecognized,
+            input,
+            inst,
+        });
+    }
+    if (!proms.length)
+        return payload;
+    return Promise.all(proms).then(() => {
+        return payload;
+    });
+}
+const $ZodObject = /*@__PURE__*/ $constructor("$ZodObject", (inst, def) => {
+    // requires cast because technically $ZodObject doesn't extend
+    $ZodType.init(inst, def);
+    // const sh = def.shape;
+    const desc = Object.getOwnPropertyDescriptor(def, "shape");
+    if (!desc?.get) {
+        const sh = def.shape;
+        Object.defineProperty(def, "shape", {
+            get: () => {
+                const newSh = { ...sh };
+                Object.defineProperty(def, "shape", {
+                    value: newSh,
                 });
-                if (result.status === "valid") {
+                return newSh;
+            },
+        });
+    }
+    const _normalized = cached(() => normalizeDef(def));
+    defineLazy(inst._zod, "propValues", () => {
+        const shape = def.shape;
+        const propValues = {};
+        for (const key in shape) {
+            const field = shape[key]._zod;
+            if (field.values) {
+                propValues[key] ?? (propValues[key] = new Set());
+                for (const v of field.values)
+                    propValues[key].add(v);
+            }
+        }
+        return propValues;
+    });
+    const isObject$1 = isObject;
+    const catchall = def.catchall;
+    let value;
+    inst._zod.parse = (payload, ctx) => {
+        value ?? (value = _normalized.value);
+        const input = payload.value;
+        if (!isObject$1(input)) {
+            payload.issues.push({
+                expected: "object",
+                code: "invalid_type",
+                input,
+                inst,
+            });
+            return payload;
+        }
+        payload.value = {};
+        const proms = [];
+        const shape = value.shape;
+        for (const key of value.keys) {
+            const el = shape[key];
+            const isOptionalIn = el._zod.optin === "optional";
+            const isOptionalOut = el._zod.optout === "optional";
+            const r = el._zod.run({ value: input[key], issues: [] }, ctx);
+            if (r instanceof Promise) {
+                proms.push(r.then((r) => handlePropertyResult(r, payload, key, input, isOptionalIn, isOptionalOut)));
+            }
+            else {
+                handlePropertyResult(r, payload, key, input, isOptionalIn, isOptionalOut);
+            }
+        }
+        if (!catchall) {
+            return proms.length ? Promise.all(proms).then(() => payload) : payload;
+        }
+        return handleCatchall(proms, input, payload, ctx, _normalized.value, inst);
+    };
+});
+const $ZodObjectJIT = /*@__PURE__*/ $constructor("$ZodObjectJIT", (inst, def) => {
+    // requires cast because technically $ZodObject doesn't extend
+    $ZodObject.init(inst, def);
+    const superParse = inst._zod.parse;
+    const _normalized = cached(() => normalizeDef(def));
+    const generateFastpass = (shape) => {
+        const doc = new Doc(["shape", "payload", "ctx"]);
+        const normalized = _normalized.value;
+        const parseStr = (key) => {
+            const k = esc(key);
+            return `shape[${k}]._zod.run({ value: input[${k}], issues: [] }, ctx)`;
+        };
+        doc.write(`const input = payload.value;`);
+        const ids = Object.create(null);
+        let counter = 0;
+        for (const key of normalized.keys) {
+            ids[key] = `key_${counter++}`;
+        }
+        // A: preserve key order {
+        doc.write(`const newResult = {};`);
+        for (const key of normalized.keys) {
+            const id = ids[key];
+            const k = esc(key);
+            const schema = shape[key];
+            const isOptionalIn = schema?._zod?.optin === "optional";
+            const isOptionalOut = schema?._zod?.optout === "optional";
+            doc.write(`const ${id} = ${parseStr(key)};`);
+            if (isOptionalIn && isOptionalOut) {
+                // For optional-in/out schemas, ignore errors on absent keys
+                doc.write(`
+        if (${id}.issues.length) {
+          if (${k} in input) {
+            payload.issues = payload.issues.concat(${id}.issues.map(iss => ({
+              ...iss,
+              path: iss.path ? [${k}, ...iss.path] : [${k}]
+            })));
+          }
+        }
+        
+        if (${id}.value === undefined) {
+          if (${k} in input) {
+            newResult[${k}] = undefined;
+          }
+        } else {
+          newResult[${k}] = ${id}.value;
+        }
+        
+      `);
+            }
+            else if (!isOptionalIn) {
+                doc.write(`
+        const ${id}_present = ${k} in input;
+        if (${id}.issues.length) {
+          payload.issues = payload.issues.concat(${id}.issues.map(iss => ({
+            ...iss,
+            path: iss.path ? [${k}, ...iss.path] : [${k}]
+          })));
+        }
+        if (!${id}_present && !${id}.issues.length) {
+          payload.issues.push({
+            code: "invalid_type",
+            expected: "nonoptional",
+            input: undefined,
+            path: [${k}]
+          });
+        }
+
+        if (${id}_present) {
+          if (${id}.value === undefined) {
+            newResult[${k}] = undefined;
+          } else {
+            newResult[${k}] = ${id}.value;
+          }
+        }
+
+      `);
+            }
+            else {
+                doc.write(`
+        if (${id}.issues.length) {
+          payload.issues = payload.issues.concat(${id}.issues.map(iss => ({
+            ...iss,
+            path: iss.path ? [${k}, ...iss.path] : [${k}]
+          })));
+        }
+        
+        if (${id}.value === undefined) {
+          if (${k} in input) {
+            newResult[${k}] = undefined;
+          }
+        } else {
+          newResult[${k}] = ${id}.value;
+        }
+        
+      `);
+            }
+        }
+        doc.write(`payload.value = newResult;`);
+        doc.write(`return payload;`);
+        const fn = doc.compile();
+        return (payload, ctx) => fn(shape, payload, ctx);
+    };
+    let fastpass;
+    const isObject$1 = isObject;
+    const jit = !globalConfig.jitless;
+    const allowsEval$1 = allowsEval;
+    const fastEnabled = jit && allowsEval$1.value; // && !def.catchall;
+    const catchall = def.catchall;
+    let value;
+    inst._zod.parse = (payload, ctx) => {
+        value ?? (value = _normalized.value);
+        const input = payload.value;
+        if (!isObject$1(input)) {
+            payload.issues.push({
+                expected: "object",
+                code: "invalid_type",
+                input,
+                inst,
+            });
+            return payload;
+        }
+        if (jit && fastEnabled && ctx?.async === false && ctx.jitless !== true) {
+            // always synchronous
+            if (!fastpass)
+                fastpass = generateFastpass(def.shape);
+            payload = fastpass(payload, ctx);
+            if (!catchall)
+                return payload;
+            return handleCatchall([], input, payload, ctx, value, inst);
+        }
+        return superParse(payload, ctx);
+    };
+});
+function handleUnionResults(results, final, inst, ctx) {
+    for (const result of results) {
+        if (result.issues.length === 0) {
+            final.value = result.value;
+            return final;
+        }
+    }
+    const nonaborted = results.filter((r) => !aborted(r));
+    if (nonaborted.length === 1) {
+        final.value = nonaborted[0].value;
+        return nonaborted[0];
+    }
+    final.issues.push({
+        code: "invalid_union",
+        input: final.value,
+        inst,
+        errors: results.map((result) => result.issues.map((iss) => finalizeIssue(iss, ctx, config()))),
+    });
+    return final;
+}
+const $ZodUnion = /*@__PURE__*/ $constructor("$ZodUnion", (inst, def) => {
+    $ZodType.init(inst, def);
+    defineLazy(inst._zod, "optin", () => def.options.some((o) => o._zod.optin === "optional") ? "optional" : undefined);
+    defineLazy(inst._zod, "optout", () => def.options.some((o) => o._zod.optout === "optional") ? "optional" : undefined);
+    defineLazy(inst._zod, "values", () => {
+        if (def.options.every((o) => o._zod.values)) {
+            return new Set(def.options.flatMap((option) => Array.from(option._zod.values)));
+        }
+        return undefined;
+    });
+    defineLazy(inst._zod, "pattern", () => {
+        if (def.options.every((o) => o._zod.pattern)) {
+            const patterns = def.options.map((o) => o._zod.pattern);
+            return new RegExp(`^(${patterns.map((p) => cleanRegex(p.source)).join("|")})$`);
+        }
+        return undefined;
+    });
+    const first = def.options.length === 1 ? def.options[0]._zod.run : null;
+    inst._zod.parse = (payload, ctx) => {
+        if (first) {
+            return first(payload, ctx);
+        }
+        let async = false;
+        const results = [];
+        for (const option of def.options) {
+            const result = option._zod.run({
+                value: payload.value,
+                issues: [],
+            }, ctx);
+            if (result instanceof Promise) {
+                results.push(result);
+                async = true;
+            }
+            else {
+                if (result.issues.length === 0)
                     return result;
-                }
-                else if (result.status === "dirty" && !dirty) {
-                    dirty = { result, ctx: childCtx };
-                }
-                if (childCtx.common.issues.length) {
-                    issues.push(childCtx.common.issues);
-                }
+                results.push(result);
             }
-            if (dirty) {
-                ctx.common.issues.push(...dirty.ctx.common.issues);
-                return dirty.result;
-            }
-            const unionErrors = issues.map((issues) => new ZodError(issues));
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_union,
-                unionErrors,
-            });
-            return INVALID$3;
         }
-    }
-    get options() {
-        return this._def.options;
-    }
-}
-ZodUnion.create = (types, params) => {
-    return new ZodUnion({
-        options: types,
-        typeName: ZodFirstPartyTypeKind.ZodUnion,
-        ...processCreateParams(params),
-    });
-};
+        if (!async)
+            return handleUnionResults(results, payload, inst, ctx);
+        return Promise.all(results).then((results) => {
+            return handleUnionResults(results, payload, inst, ctx);
+        });
+    };
+});
+const $ZodIntersection = /*@__PURE__*/ $constructor("$ZodIntersection", (inst, def) => {
+    $ZodType.init(inst, def);
+    inst._zod.parse = (payload, ctx) => {
+        const input = payload.value;
+        const left = def.left._zod.run({ value: input, issues: [] }, ctx);
+        const right = def.right._zod.run({ value: input, issues: [] }, ctx);
+        const async = left instanceof Promise || right instanceof Promise;
+        if (async) {
+            return Promise.all([left, right]).then(([left, right]) => {
+                return handleIntersectionResults(payload, left, right);
+            });
+        }
+        return handleIntersectionResults(payload, left, right);
+    };
+});
 function mergeValues(a, b) {
-    const aType = getParsedType(a);
-    const bType = getParsedType(b);
+    // const aType = parse.t(a);
+    // const bType = parse.t(b);
     if (a === b) {
         return { valid: true, data: a };
     }
-    else if (aType === ZodParsedType.object && bType === ZodParsedType.object) {
-        const bKeys = util.objectKeys(b);
-        const sharedKeys = util.objectKeys(a).filter((key) => bKeys.indexOf(key) !== -1);
+    if (a instanceof Date && b instanceof Date && +a === +b) {
+        return { valid: true, data: a };
+    }
+    if (isPlainObject(a) && isPlainObject(b)) {
+        const bKeys = Object.keys(b);
+        const sharedKeys = Object.keys(a).filter((key) => bKeys.indexOf(key) !== -1);
         const newObj = { ...a, ...b };
         for (const key of sharedKeys) {
             const sharedValue = mergeValues(a[key], b[key]);
             if (!sharedValue.valid) {
-                return { valid: false };
+                return {
+                    valid: false,
+                    mergeErrorPath: [key, ...sharedValue.mergeErrorPath],
+                };
             }
             newObj[key] = sharedValue.data;
         }
         return { valid: true, data: newObj };
     }
-    else if (aType === ZodParsedType.array && bType === ZodParsedType.array) {
+    if (Array.isArray(a) && Array.isArray(b)) {
         if (a.length !== b.length) {
-            return { valid: false };
+            return { valid: false, mergeErrorPath: [] };
         }
         const newArray = [];
         for (let index = 0; index < a.length; index++) {
@@ -4085,971 +3386,2822 @@ function mergeValues(a, b) {
             const itemB = b[index];
             const sharedValue = mergeValues(itemA, itemB);
             if (!sharedValue.valid) {
-                return { valid: false };
+                return {
+                    valid: false,
+                    mergeErrorPath: [index, ...sharedValue.mergeErrorPath],
+                };
             }
             newArray.push(sharedValue.data);
         }
         return { valid: true, data: newArray };
     }
-    else if (aType === ZodParsedType.date && bType === ZodParsedType.date && +a === +b) {
-        return { valid: true, data: a };
+    return { valid: false, mergeErrorPath: [] };
+}
+function handleIntersectionResults(result, left, right) {
+    // Track which side(s) report each key as unrecognized
+    const unrecKeys = new Map();
+    let unrecIssue;
+    for (const iss of left.issues) {
+        if (iss.code === "unrecognized_keys") {
+            unrecIssue ?? (unrecIssue = iss);
+            for (const k of iss.keys) {
+                if (!unrecKeys.has(k))
+                    unrecKeys.set(k, {});
+                unrecKeys.get(k).l = true;
+            }
+        }
+        else {
+            result.issues.push(iss);
+        }
+    }
+    for (const iss of right.issues) {
+        if (iss.code === "unrecognized_keys") {
+            for (const k of iss.keys) {
+                if (!unrecKeys.has(k))
+                    unrecKeys.set(k, {});
+                unrecKeys.get(k).r = true;
+            }
+        }
+        else {
+            result.issues.push(iss);
+        }
+    }
+    // Report only keys unrecognized by BOTH sides
+    const bothKeys = [...unrecKeys].filter(([, f]) => f.l && f.r).map(([k]) => k);
+    if (bothKeys.length && unrecIssue) {
+        result.issues.push({ ...unrecIssue, keys: bothKeys });
+    }
+    if (aborted(result))
+        return result;
+    const merged = mergeValues(left.value, right.value);
+    if (!merged.valid) {
+        throw new Error(`Unmergable intersection. Error path: ` + `${JSON.stringify(merged.mergeErrorPath)}`);
+    }
+    result.value = merged.data;
+    return result;
+}
+const $ZodRecord = /*@__PURE__*/ $constructor("$ZodRecord", (inst, def) => {
+    $ZodType.init(inst, def);
+    inst._zod.parse = (payload, ctx) => {
+        const input = payload.value;
+        if (!isPlainObject(input)) {
+            payload.issues.push({
+                expected: "record",
+                code: "invalid_type",
+                input,
+                inst,
+            });
+            return payload;
+        }
+        const proms = [];
+        const values = def.keyType._zod.values;
+        if (values) {
+            payload.value = {};
+            const recordKeys = new Set();
+            for (const key of values) {
+                if (typeof key === "string" || typeof key === "number" || typeof key === "symbol") {
+                    recordKeys.add(typeof key === "number" ? key.toString() : key);
+                    const keyResult = def.keyType._zod.run({ value: key, issues: [] }, ctx);
+                    if (keyResult instanceof Promise) {
+                        throw new Error("Async schemas not supported in object keys currently");
+                    }
+                    if (keyResult.issues.length) {
+                        payload.issues.push({
+                            code: "invalid_key",
+                            origin: "record",
+                            issues: keyResult.issues.map((iss) => finalizeIssue(iss, ctx, config())),
+                            input: key,
+                            path: [key],
+                            inst,
+                        });
+                        continue;
+                    }
+                    const outKey = keyResult.value;
+                    const result = def.valueType._zod.run({ value: input[key], issues: [] }, ctx);
+                    if (result instanceof Promise) {
+                        proms.push(result.then((result) => {
+                            if (result.issues.length) {
+                                payload.issues.push(...prefixIssues(key, result.issues));
+                            }
+                            payload.value[outKey] = result.value;
+                        }));
+                    }
+                    else {
+                        if (result.issues.length) {
+                            payload.issues.push(...prefixIssues(key, result.issues));
+                        }
+                        payload.value[outKey] = result.value;
+                    }
+                }
+            }
+            let unrecognized;
+            for (const key in input) {
+                if (!recordKeys.has(key)) {
+                    unrecognized = unrecognized ?? [];
+                    unrecognized.push(key);
+                }
+            }
+            if (unrecognized && unrecognized.length > 0) {
+                payload.issues.push({
+                    code: "unrecognized_keys",
+                    input,
+                    inst,
+                    keys: unrecognized,
+                });
+            }
+        }
+        else {
+            payload.value = {};
+            // Reflect.ownKeys for Symbol-key support; filter non-enumerable to match z.object()
+            for (const key of Reflect.ownKeys(input)) {
+                if (key === "__proto__")
+                    continue;
+                if (!Object.prototype.propertyIsEnumerable.call(input, key))
+                    continue;
+                let keyResult = def.keyType._zod.run({ value: key, issues: [] }, ctx);
+                if (keyResult instanceof Promise) {
+                    throw new Error("Async schemas not supported in object keys currently");
+                }
+                // Numeric string fallback: if key is a numeric string and failed, retry with Number(key)
+                // This handles z.number(), z.literal([1, 2, 3]), and unions containing numeric literals
+                const checkNumericKey = typeof key === "string" && number$1.test(key) && keyResult.issues.length;
+                if (checkNumericKey) {
+                    const retryResult = def.keyType._zod.run({ value: Number(key), issues: [] }, ctx);
+                    if (retryResult instanceof Promise) {
+                        throw new Error("Async schemas not supported in object keys currently");
+                    }
+                    if (retryResult.issues.length === 0) {
+                        keyResult = retryResult;
+                    }
+                }
+                if (keyResult.issues.length) {
+                    if (def.mode === "loose") {
+                        // Pass through unchanged
+                        payload.value[key] = input[key];
+                    }
+                    else {
+                        // Default "strict" behavior: error on invalid key
+                        payload.issues.push({
+                            code: "invalid_key",
+                            origin: "record",
+                            issues: keyResult.issues.map((iss) => finalizeIssue(iss, ctx, config())),
+                            input: key,
+                            path: [key],
+                            inst,
+                        });
+                    }
+                    continue;
+                }
+                const result = def.valueType._zod.run({ value: input[key], issues: [] }, ctx);
+                if (result instanceof Promise) {
+                    proms.push(result.then((result) => {
+                        if (result.issues.length) {
+                            payload.issues.push(...prefixIssues(key, result.issues));
+                        }
+                        payload.value[keyResult.value] = result.value;
+                    }));
+                }
+                else {
+                    if (result.issues.length) {
+                        payload.issues.push(...prefixIssues(key, result.issues));
+                    }
+                    payload.value[keyResult.value] = result.value;
+                }
+            }
+        }
+        if (proms.length) {
+            return Promise.all(proms).then(() => payload);
+        }
+        return payload;
+    };
+});
+const $ZodEnum = /*@__PURE__*/ $constructor("$ZodEnum", (inst, def) => {
+    $ZodType.init(inst, def);
+    const values = getEnumValues(def.entries);
+    const valuesSet = new Set(values);
+    inst._zod.values = valuesSet;
+    inst._zod.pattern = new RegExp(`^(${values
+        .filter((k) => propertyKeyTypes.has(typeof k))
+        .map((o) => (typeof o === "string" ? escapeRegex(o) : o.toString()))
+        .join("|")})$`);
+    inst._zod.parse = (payload, _ctx) => {
+        const input = payload.value;
+        if (valuesSet.has(input)) {
+            return payload;
+        }
+        payload.issues.push({
+            code: "invalid_value",
+            values,
+            input,
+            inst,
+        });
+        return payload;
+    };
+});
+const $ZodTransform = /*@__PURE__*/ $constructor("$ZodTransform", (inst, def) => {
+    $ZodType.init(inst, def);
+    inst._zod.optin = "optional";
+    inst._zod.parse = (payload, ctx) => {
+        if (ctx.direction === "backward") {
+            throw new $ZodEncodeError(inst.constructor.name);
+        }
+        const _out = def.transform(payload.value, payload);
+        if (ctx.async) {
+            const output = _out instanceof Promise ? _out : Promise.resolve(_out);
+            return output.then((output) => {
+                payload.value = output;
+                payload.fallback = true;
+                return payload;
+            });
+        }
+        if (_out instanceof Promise) {
+            throw new $ZodAsyncError();
+        }
+        payload.value = _out;
+        payload.fallback = true;
+        return payload;
+    };
+});
+function handleOptionalResult(result, input) {
+    if (input === undefined && (result.issues.length || result.fallback)) {
+        return { issues: [], value: undefined };
+    }
+    return result;
+}
+const $ZodOptional = /*@__PURE__*/ $constructor("$ZodOptional", (inst, def) => {
+    $ZodType.init(inst, def);
+    inst._zod.optin = "optional";
+    inst._zod.optout = "optional";
+    defineLazy(inst._zod, "values", () => {
+        return def.innerType._zod.values ? new Set([...def.innerType._zod.values, undefined]) : undefined;
+    });
+    defineLazy(inst._zod, "pattern", () => {
+        const pattern = def.innerType._zod.pattern;
+        return pattern ? new RegExp(`^(${cleanRegex(pattern.source)})?$`) : undefined;
+    });
+    inst._zod.parse = (payload, ctx) => {
+        if (def.innerType._zod.optin === "optional") {
+            const input = payload.value;
+            const result = def.innerType._zod.run(payload, ctx);
+            if (result instanceof Promise)
+                return result.then((r) => handleOptionalResult(r, input));
+            return handleOptionalResult(result, input);
+        }
+        if (payload.value === undefined) {
+            return payload;
+        }
+        return def.innerType._zod.run(payload, ctx);
+    };
+});
+const $ZodExactOptional = /*@__PURE__*/ $constructor("$ZodExactOptional", (inst, def) => {
+    // Call parent init - inherits optin/optout = "optional"
+    $ZodOptional.init(inst, def);
+    // Override values/pattern to NOT add undefined
+    defineLazy(inst._zod, "values", () => def.innerType._zod.values);
+    defineLazy(inst._zod, "pattern", () => def.innerType._zod.pattern);
+    // Override parse to just delegate (no undefined handling)
+    inst._zod.parse = (payload, ctx) => {
+        return def.innerType._zod.run(payload, ctx);
+    };
+});
+const $ZodNullable = /*@__PURE__*/ $constructor("$ZodNullable", (inst, def) => {
+    $ZodType.init(inst, def);
+    defineLazy(inst._zod, "optin", () => def.innerType._zod.optin);
+    defineLazy(inst._zod, "optout", () => def.innerType._zod.optout);
+    defineLazy(inst._zod, "pattern", () => {
+        const pattern = def.innerType._zod.pattern;
+        return pattern ? new RegExp(`^(${cleanRegex(pattern.source)}|null)$`) : undefined;
+    });
+    defineLazy(inst._zod, "values", () => {
+        return def.innerType._zod.values ? new Set([...def.innerType._zod.values, null]) : undefined;
+    });
+    inst._zod.parse = (payload, ctx) => {
+        // Forward direction (decode): allow null to pass through
+        if (payload.value === null)
+            return payload;
+        return def.innerType._zod.run(payload, ctx);
+    };
+});
+const $ZodDefault = /*@__PURE__*/ $constructor("$ZodDefault", (inst, def) => {
+    $ZodType.init(inst, def);
+    // inst._zod.qin = "true";
+    inst._zod.optin = "optional";
+    defineLazy(inst._zod, "values", () => def.innerType._zod.values);
+    inst._zod.parse = (payload, ctx) => {
+        if (ctx.direction === "backward") {
+            return def.innerType._zod.run(payload, ctx);
+        }
+        // Forward direction (decode): apply defaults for undefined input
+        if (payload.value === undefined) {
+            payload.value = def.defaultValue;
+            /**
+             * $ZodDefault returns the default value immediately in forward direction.
+             * It doesn't pass the default value into the validator ("prefault"). There's no reason to pass the default value through validation. The validity of the default is enforced by TypeScript statically. Otherwise, it's the responsibility of the user to ensure the default is valid. In the case of pipes with divergent in/out types, you can specify the default on the `in` schema of your ZodPipe to set a "prefault" for the pipe.   */
+            return payload;
+        }
+        // Forward direction: continue with default handling
+        const result = def.innerType._zod.run(payload, ctx);
+        if (result instanceof Promise) {
+            return result.then((result) => handleDefaultResult(result, def));
+        }
+        return handleDefaultResult(result, def);
+    };
+});
+function handleDefaultResult(payload, def) {
+    if (payload.value === undefined) {
+        payload.value = def.defaultValue;
+    }
+    return payload;
+}
+const $ZodPrefault = /*@__PURE__*/ $constructor("$ZodPrefault", (inst, def) => {
+    $ZodType.init(inst, def);
+    inst._zod.optin = "optional";
+    defineLazy(inst._zod, "values", () => def.innerType._zod.values);
+    inst._zod.parse = (payload, ctx) => {
+        if (ctx.direction === "backward") {
+            return def.innerType._zod.run(payload, ctx);
+        }
+        // Forward direction (decode): apply prefault for undefined input
+        if (payload.value === undefined) {
+            payload.value = def.defaultValue;
+        }
+        return def.innerType._zod.run(payload, ctx);
+    };
+});
+const $ZodNonOptional = /*@__PURE__*/ $constructor("$ZodNonOptional", (inst, def) => {
+    $ZodType.init(inst, def);
+    defineLazy(inst._zod, "values", () => {
+        const v = def.innerType._zod.values;
+        return v ? new Set([...v].filter((x) => x !== undefined)) : undefined;
+    });
+    inst._zod.parse = (payload, ctx) => {
+        const result = def.innerType._zod.run(payload, ctx);
+        if (result instanceof Promise) {
+            return result.then((result) => handleNonOptionalResult(result, inst));
+        }
+        return handleNonOptionalResult(result, inst);
+    };
+});
+function handleNonOptionalResult(payload, inst) {
+    if (!payload.issues.length && payload.value === undefined) {
+        payload.issues.push({
+            code: "invalid_type",
+            expected: "nonoptional",
+            input: payload.value,
+            inst,
+        });
+    }
+    return payload;
+}
+const $ZodCatch = /*@__PURE__*/ $constructor("$ZodCatch", (inst, def) => {
+    $ZodType.init(inst, def);
+    inst._zod.optin = "optional";
+    defineLazy(inst._zod, "optout", () => def.innerType._zod.optout);
+    defineLazy(inst._zod, "values", () => def.innerType._zod.values);
+    inst._zod.parse = (payload, ctx) => {
+        if (ctx.direction === "backward") {
+            return def.innerType._zod.run(payload, ctx);
+        }
+        // Forward direction (decode): apply catch logic
+        const result = def.innerType._zod.run(payload, ctx);
+        if (result instanceof Promise) {
+            return result.then((result) => {
+                payload.value = result.value;
+                if (result.issues.length) {
+                    payload.value = def.catchValue({
+                        ...payload,
+                        error: {
+                            issues: result.issues.map((iss) => finalizeIssue(iss, ctx, config())),
+                        },
+                        input: payload.value,
+                    });
+                    payload.issues = [];
+                    payload.fallback = true;
+                }
+                return payload;
+            });
+        }
+        payload.value = result.value;
+        if (result.issues.length) {
+            payload.value = def.catchValue({
+                ...payload,
+                error: {
+                    issues: result.issues.map((iss) => finalizeIssue(iss, ctx, config())),
+                },
+                input: payload.value,
+            });
+            payload.issues = [];
+            payload.fallback = true;
+        }
+        return payload;
+    };
+});
+const $ZodPipe = /*@__PURE__*/ $constructor("$ZodPipe", (inst, def) => {
+    $ZodType.init(inst, def);
+    defineLazy(inst._zod, "values", () => def.in._zod.values);
+    defineLazy(inst._zod, "optin", () => def.in._zod.optin);
+    defineLazy(inst._zod, "optout", () => def.out._zod.optout);
+    defineLazy(inst._zod, "propValues", () => def.in._zod.propValues);
+    inst._zod.parse = (payload, ctx) => {
+        if (ctx.direction === "backward") {
+            const right = def.out._zod.run(payload, ctx);
+            if (right instanceof Promise) {
+                return right.then((right) => handlePipeResult(right, def.in, ctx));
+            }
+            return handlePipeResult(right, def.in, ctx);
+        }
+        const left = def.in._zod.run(payload, ctx);
+        if (left instanceof Promise) {
+            return left.then((left) => handlePipeResult(left, def.out, ctx));
+        }
+        return handlePipeResult(left, def.out, ctx);
+    };
+});
+function handlePipeResult(left, next, ctx) {
+    if (left.issues.length) {
+        // prevent further checks
+        left.aborted = true;
+        return left;
+    }
+    return next._zod.run({ value: left.value, issues: left.issues, fallback: left.fallback }, ctx);
+}
+const $ZodPreprocess = /*@__PURE__*/ $constructor("$ZodPreprocess", (inst, def) => {
+    $ZodPipe.init(inst, def);
+});
+const $ZodReadonly = /*@__PURE__*/ $constructor("$ZodReadonly", (inst, def) => {
+    $ZodType.init(inst, def);
+    defineLazy(inst._zod, "propValues", () => def.innerType._zod.propValues);
+    defineLazy(inst._zod, "values", () => def.innerType._zod.values);
+    defineLazy(inst._zod, "optin", () => def.innerType?._zod?.optin);
+    defineLazy(inst._zod, "optout", () => def.innerType?._zod?.optout);
+    inst._zod.parse = (payload, ctx) => {
+        if (ctx.direction === "backward") {
+            return def.innerType._zod.run(payload, ctx);
+        }
+        const result = def.innerType._zod.run(payload, ctx);
+        if (result instanceof Promise) {
+            return result.then(handleReadonlyResult);
+        }
+        return handleReadonlyResult(result);
+    };
+});
+function handleReadonlyResult(payload) {
+    payload.value = Object.freeze(payload.value);
+    return payload;
+}
+const $ZodLazy = /*@__PURE__*/ $constructor("$ZodLazy", (inst, def) => {
+    $ZodType.init(inst, def);
+    // Cache the resolved inner type on the shared `def` so all clones of this
+    // lazy (e.g. via `.describe()`/`.meta()`) share the same inner instance,
+    // preserving identity for cycle detection on recursive schemas.
+    defineLazy(inst._zod, "innerType", () => {
+        const d = def;
+        if (!d._cachedInner)
+            d._cachedInner = def.getter();
+        return d._cachedInner;
+    });
+    defineLazy(inst._zod, "pattern", () => inst._zod.innerType?._zod?.pattern);
+    defineLazy(inst._zod, "propValues", () => inst._zod.innerType?._zod?.propValues);
+    defineLazy(inst._zod, "optin", () => inst._zod.innerType?._zod?.optin ?? undefined);
+    defineLazy(inst._zod, "optout", () => inst._zod.innerType?._zod?.optout ?? undefined);
+    inst._zod.parse = (payload, ctx) => {
+        const inner = inst._zod.innerType;
+        return inner._zod.run(payload, ctx);
+    };
+});
+const $ZodCustom = /*@__PURE__*/ $constructor("$ZodCustom", (inst, def) => {
+    $ZodCheck.init(inst, def);
+    $ZodType.init(inst, def);
+    inst._zod.parse = (payload, _) => {
+        return payload;
+    };
+    inst._zod.check = (payload) => {
+        const input = payload.value;
+        const r = def.fn(input);
+        if (r instanceof Promise) {
+            return r.then((r) => handleRefineResult(r, payload, input, inst));
+        }
+        handleRefineResult(r, payload, input, inst);
+        return;
+    };
+});
+function handleRefineResult(result, payload, input, inst) {
+    if (!result) {
+        const _iss = {
+            code: "custom",
+            input,
+            inst, // incorporates params.error into issue reporting
+            path: [...(inst._zod.def.path ?? [])], // incorporates params.error into issue reporting
+            continue: !inst._zod.def.abort,
+            // params: inst._zod.def.params,
+        };
+        if (inst._zod.def.params)
+            _iss.params = inst._zod.def.params;
+        payload.issues.push(issue(_iss));
+    }
+}
+
+var _a$1;
+class $ZodRegistry {
+    constructor() {
+        this._map = new WeakMap();
+        this._idmap = new Map();
+    }
+    add(schema, ..._meta) {
+        const meta = _meta[0];
+        this._map.set(schema, meta);
+        if (meta && typeof meta === "object" && "id" in meta) {
+            this._idmap.set(meta.id, schema);
+        }
+        return this;
+    }
+    clear() {
+        this._map = new WeakMap();
+        this._idmap = new Map();
+        return this;
+    }
+    remove(schema) {
+        const meta = this._map.get(schema);
+        if (meta && typeof meta === "object" && "id" in meta) {
+            this._idmap.delete(meta.id);
+        }
+        this._map.delete(schema);
+        return this;
+    }
+    get(schema) {
+        // return this._map.get(schema) as any;
+        // inherit metadata
+        const p = schema._zod.parent;
+        if (p) {
+            const pm = { ...(this.get(p) ?? {}) };
+            delete pm.id; // do not inherit id
+            const f = { ...pm, ...this._map.get(schema) };
+            return Object.keys(f).length ? f : undefined;
+        }
+        return this._map.get(schema);
+    }
+    has(schema) {
+        return this._map.has(schema);
+    }
+}
+// registries
+function registry() {
+    return new $ZodRegistry();
+}
+(_a$1 = globalThis).__zod_globalRegistry ?? (_a$1.__zod_globalRegistry = registry());
+const globalRegistry = globalThis.__zod_globalRegistry;
+
+// @__NO_SIDE_EFFECTS__
+function _string(Class, params) {
+    return new Class({
+        type: "string",
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _email(Class, params) {
+    return new Class({
+        type: "string",
+        format: "email",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _guid(Class, params) {
+    return new Class({
+        type: "string",
+        format: "guid",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _uuid(Class, params) {
+    return new Class({
+        type: "string",
+        format: "uuid",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _uuidv4(Class, params) {
+    return new Class({
+        type: "string",
+        format: "uuid",
+        check: "string_format",
+        abort: false,
+        version: "v4",
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _uuidv6(Class, params) {
+    return new Class({
+        type: "string",
+        format: "uuid",
+        check: "string_format",
+        abort: false,
+        version: "v6",
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _uuidv7(Class, params) {
+    return new Class({
+        type: "string",
+        format: "uuid",
+        check: "string_format",
+        abort: false,
+        version: "v7",
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _url(Class, params) {
+    return new Class({
+        type: "string",
+        format: "url",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _emoji(Class, params) {
+    return new Class({
+        type: "string",
+        format: "emoji",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _nanoid(Class, params) {
+    return new Class({
+        type: "string",
+        format: "nanoid",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+/**
+ * @deprecated CUID v1 is deprecated by its authors due to information leakage
+ * (timestamps embedded in the id). Use {@link _cuid2} instead.
+ * See https://github.com/paralleldrive/cuid.
+ */
+// @__NO_SIDE_EFFECTS__
+function _cuid(Class, params) {
+    return new Class({
+        type: "string",
+        format: "cuid",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _cuid2(Class, params) {
+    return new Class({
+        type: "string",
+        format: "cuid2",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _ulid(Class, params) {
+    return new Class({
+        type: "string",
+        format: "ulid",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _xid(Class, params) {
+    return new Class({
+        type: "string",
+        format: "xid",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _ksuid(Class, params) {
+    return new Class({
+        type: "string",
+        format: "ksuid",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _ipv4(Class, params) {
+    return new Class({
+        type: "string",
+        format: "ipv4",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _ipv6(Class, params) {
+    return new Class({
+        type: "string",
+        format: "ipv6",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _cidrv4(Class, params) {
+    return new Class({
+        type: "string",
+        format: "cidrv4",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _cidrv6(Class, params) {
+    return new Class({
+        type: "string",
+        format: "cidrv6",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _base64(Class, params) {
+    return new Class({
+        type: "string",
+        format: "base64",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _base64url(Class, params) {
+    return new Class({
+        type: "string",
+        format: "base64url",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _e164(Class, params) {
+    return new Class({
+        type: "string",
+        format: "e164",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _jwt(Class, params) {
+    return new Class({
+        type: "string",
+        format: "jwt",
+        check: "string_format",
+        abort: false,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _isoDateTime(Class, params) {
+    return new Class({
+        type: "string",
+        format: "datetime",
+        check: "string_format",
+        offset: false,
+        local: false,
+        precision: null,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _isoDate(Class, params) {
+    return new Class({
+        type: "string",
+        format: "date",
+        check: "string_format",
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _isoTime(Class, params) {
+    return new Class({
+        type: "string",
+        format: "time",
+        check: "string_format",
+        precision: null,
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _isoDuration(Class, params) {
+    return new Class({
+        type: "string",
+        format: "duration",
+        check: "string_format",
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _number(Class, params) {
+    return new Class({
+        type: "number",
+        checks: [],
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _int(Class, params) {
+    return new Class({
+        type: "number",
+        check: "number_format",
+        abort: false,
+        format: "safeint",
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _boolean(Class, params) {
+    return new Class({
+        type: "boolean",
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _any(Class) {
+    return new Class({
+        type: "any",
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _unknown(Class) {
+    return new Class({
+        type: "unknown",
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _never(Class, params) {
+    return new Class({
+        type: "never",
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _lt(value, params) {
+    return new $ZodCheckLessThan({
+        check: "less_than",
+        ...normalizeParams(params),
+        value,
+        inclusive: false,
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _lte(value, params) {
+    return new $ZodCheckLessThan({
+        check: "less_than",
+        ...normalizeParams(params),
+        value,
+        inclusive: true,
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _gt(value, params) {
+    return new $ZodCheckGreaterThan({
+        check: "greater_than",
+        ...normalizeParams(params),
+        value,
+        inclusive: false,
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _gte(value, params) {
+    return new $ZodCheckGreaterThan({
+        check: "greater_than",
+        ...normalizeParams(params),
+        value,
+        inclusive: true,
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _multipleOf(value, params) {
+    return new $ZodCheckMultipleOf({
+        check: "multiple_of",
+        ...normalizeParams(params),
+        value,
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _maxLength(maximum, params) {
+    const ch = new $ZodCheckMaxLength({
+        check: "max_length",
+        ...normalizeParams(params),
+        maximum,
+    });
+    return ch;
+}
+// @__NO_SIDE_EFFECTS__
+function _minLength(minimum, params) {
+    return new $ZodCheckMinLength({
+        check: "min_length",
+        ...normalizeParams(params),
+        minimum,
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _length(length, params) {
+    return new $ZodCheckLengthEquals({
+        check: "length_equals",
+        ...normalizeParams(params),
+        length,
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _regex(pattern, params) {
+    return new $ZodCheckRegex({
+        check: "string_format",
+        format: "regex",
+        ...normalizeParams(params),
+        pattern,
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _lowercase(params) {
+    return new $ZodCheckLowerCase({
+        check: "string_format",
+        format: "lowercase",
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _uppercase(params) {
+    return new $ZodCheckUpperCase({
+        check: "string_format",
+        format: "uppercase",
+        ...normalizeParams(params),
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _includes(includes, params) {
+    return new $ZodCheckIncludes({
+        check: "string_format",
+        format: "includes",
+        ...normalizeParams(params),
+        includes,
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _startsWith(prefix, params) {
+    return new $ZodCheckStartsWith({
+        check: "string_format",
+        format: "starts_with",
+        ...normalizeParams(params),
+        prefix,
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _endsWith(suffix, params) {
+    return new $ZodCheckEndsWith({
+        check: "string_format",
+        format: "ends_with",
+        ...normalizeParams(params),
+        suffix,
+    });
+}
+// @__NO_SIDE_EFFECTS__
+function _overwrite(tx) {
+    return new $ZodCheckOverwrite({
+        check: "overwrite",
+        tx,
+    });
+}
+// normalize
+// @__NO_SIDE_EFFECTS__
+function _normalize(form) {
+    return _overwrite((input) => input.normalize(form));
+}
+// trim
+// @__NO_SIDE_EFFECTS__
+function _trim() {
+    return _overwrite((input) => input.trim());
+}
+// toLowerCase
+// @__NO_SIDE_EFFECTS__
+function _toLowerCase() {
+    return _overwrite((input) => input.toLowerCase());
+}
+// toUpperCase
+// @__NO_SIDE_EFFECTS__
+function _toUpperCase() {
+    return _overwrite((input) => input.toUpperCase());
+}
+// slugify
+// @__NO_SIDE_EFFECTS__
+function _slugify$1() {
+    return _overwrite((input) => slugify(input));
+}
+// @__NO_SIDE_EFFECTS__
+function _array(Class, element, params) {
+    return new Class({
+        type: "array",
+        element,
+        // get element() {
+        //   return element;
+        // },
+        ...normalizeParams(params),
+    });
+}
+// same as _custom but defaults to abort:false
+// @__NO_SIDE_EFFECTS__
+function _refine(Class, fn, _params) {
+    const schema = new Class({
+        type: "custom",
+        check: "custom",
+        fn: fn,
+        ...normalizeParams(_params),
+    });
+    return schema;
+}
+// @__NO_SIDE_EFFECTS__
+function _superRefine(fn, params) {
+    const ch = _check((payload) => {
+        payload.addIssue = (issue$1) => {
+            if (typeof issue$1 === "string") {
+                payload.issues.push(issue(issue$1, payload.value, ch._zod.def));
+            }
+            else {
+                // for Zod 3 backwards compatibility
+                const _issue = issue$1;
+                if (_issue.fatal)
+                    _issue.continue = false;
+                _issue.code ?? (_issue.code = "custom");
+                _issue.input ?? (_issue.input = payload.value);
+                _issue.inst ?? (_issue.inst = ch);
+                _issue.continue ?? (_issue.continue = !ch._zod.def.abort); // abort is always undefined, so this is always true...
+                payload.issues.push(issue(_issue));
+            }
+        };
+        return fn(payload.value, payload);
+    }, params);
+    return ch;
+}
+// @__NO_SIDE_EFFECTS__
+function _check(fn, params) {
+    const ch = new $ZodCheck({
+        check: "custom",
+        ...normalizeParams(params),
+    });
+    ch._zod.check = fn;
+    return ch;
+}
+
+// function initializeContext<T extends schemas.$ZodType>(inputs: JSONSchemaGeneratorParams<T>): ToJSONSchemaContext<T> {
+//   return {
+//     processor: inputs.processor,
+//     metadataRegistry: inputs.metadata ?? globalRegistry,
+//     target: inputs.target ?? "draft-2020-12",
+//     unrepresentable: inputs.unrepresentable ?? "throw",
+//   };
+// }
+function initializeContext(params) {
+    // Normalize target: convert old non-hyphenated versions to hyphenated versions
+    let target = params?.target ?? "draft-2020-12";
+    if (target === "draft-4")
+        target = "draft-04";
+    if (target === "draft-7")
+        target = "draft-07";
+    return {
+        processors: params.processors ?? {},
+        metadataRegistry: params?.metadata ?? globalRegistry,
+        target,
+        unrepresentable: params?.unrepresentable ?? "throw",
+        override: params?.override ?? (() => { }),
+        io: params?.io ?? "output",
+        counter: 0,
+        seen: new Map(),
+        cycles: params?.cycles ?? "ref",
+        reused: params?.reused ?? "inline",
+        external: params?.external ?? undefined,
+    };
+}
+function process(schema, ctx, _params = { path: [], schemaPath: [] }) {
+    var _a;
+    const def = schema._zod.def;
+    // check for schema in seens
+    const seen = ctx.seen.get(schema);
+    if (seen) {
+        seen.count++;
+        // check if cycle
+        const isCycle = _params.schemaPath.includes(schema);
+        if (isCycle) {
+            seen.cycle = _params.path;
+        }
+        return seen.schema;
+    }
+    // initialize
+    const result = { schema: {}, count: 1, cycle: undefined, path: _params.path };
+    ctx.seen.set(schema, result);
+    // custom method overrides default behavior
+    const overrideSchema = schema._zod.toJSONSchema?.();
+    if (overrideSchema) {
+        result.schema = overrideSchema;
     }
     else {
-        return { valid: false };
-    }
-}
-class ZodIntersection extends ZodType {
-    _parse(input) {
-        const { status, ctx } = this._processInputParams(input);
-        const handleParsed = (parsedLeft, parsedRight) => {
-            if (isAborted(parsedLeft) || isAborted(parsedRight)) {
-                return INVALID$3;
-            }
-            const merged = mergeValues(parsedLeft.value, parsedRight.value);
-            if (!merged.valid) {
-                addIssueToContext(ctx, {
-                    code: ZodIssueCode.invalid_intersection_types,
-                });
-                return INVALID$3;
-            }
-            if (isDirty(parsedLeft) || isDirty(parsedRight)) {
-                status.dirty();
-            }
-            return { status: status.value, value: merged.data };
+        const params = {
+            ..._params,
+            schemaPath: [..._params.schemaPath, schema],
+            path: _params.path,
         };
-        if (ctx.common.async) {
-            return Promise.all([
-                this._def.left._parseAsync({
-                    data: ctx.data,
-                    path: ctx.path,
-                    parent: ctx,
-                }),
-                this._def.right._parseAsync({
-                    data: ctx.data,
-                    path: ctx.path,
-                    parent: ctx,
-                }),
-            ]).then(([left, right]) => handleParsed(left, right));
+        if (schema._zod.processJSONSchema) {
+            schema._zod.processJSONSchema(ctx, result.schema, params);
         }
         else {
-            return handleParsed(this._def.left._parseSync({
-                data: ctx.data,
-                path: ctx.path,
-                parent: ctx,
-            }), this._def.right._parseSync({
-                data: ctx.data,
-                path: ctx.path,
-                parent: ctx,
-            }));
+            const _json = result.schema;
+            const processor = ctx.processors[def.type];
+            if (!processor) {
+                throw new Error(`[toJSONSchema]: Non-representable type encountered: ${def.type}`);
+            }
+            processor(schema, ctx, _json, params);
+        }
+        const parent = schema._zod.parent;
+        if (parent) {
+            // Also set ref if processor didn't (for inheritance)
+            if (!result.ref)
+                result.ref = parent;
+            process(parent, ctx, params);
+            ctx.seen.get(parent).isParent = true;
+        }
+    }
+    // metadata
+    const meta = ctx.metadataRegistry.get(schema);
+    if (meta)
+        Object.assign(result.schema, meta);
+    if (ctx.io === "input" && isTransforming(schema)) {
+        // examples/defaults only apply to output type of pipe
+        delete result.schema.examples;
+        delete result.schema.default;
+    }
+    // set prefault as default
+    if (ctx.io === "input" && "_prefault" in result.schema)
+        (_a = result.schema).default ?? (_a.default = result.schema._prefault);
+    delete result.schema._prefault;
+    // pulling fresh from ctx.seen in case it was overwritten
+    const _result = ctx.seen.get(schema);
+    return _result.schema;
+}
+function extractDefs(ctx, schema
+// params: EmitParams
+) {
+    // iterate over seen map;
+    const root = ctx.seen.get(schema);
+    if (!root)
+        throw new Error("Unprocessed schema. This is a bug in Zod.");
+    // Track ids to detect duplicates across different schemas
+    const idToSchema = new Map();
+    for (const entry of ctx.seen.entries()) {
+        const id = ctx.metadataRegistry.get(entry[0])?.id;
+        if (id) {
+            const existing = idToSchema.get(id);
+            if (existing && existing !== entry[0]) {
+                throw new Error(`Duplicate schema id "${id}" detected during JSON Schema conversion. Two different schemas cannot share the same id when converted together.`);
+            }
+            idToSchema.set(id, entry[0]);
+        }
+    }
+    // returns a ref to the schema
+    // defId will be empty if the ref points to an external schema (or #)
+    const makeURI = (entry) => {
+        // comparing the seen objects because sometimes
+        // multiple schemas map to the same seen object.
+        // e.g. lazy
+        // external is configured
+        const defsSegment = ctx.target === "draft-2020-12" ? "$defs" : "definitions";
+        if (ctx.external) {
+            const externalId = ctx.external.registry.get(entry[0])?.id; // ?? "__shared";// `__schema${ctx.counter++}`;
+            // check if schema is in the external registry
+            const uriGenerator = ctx.external.uri ?? ((id) => id);
+            if (externalId) {
+                return { ref: uriGenerator(externalId) };
+            }
+            // otherwise, add to __shared
+            const id = entry[1].defId ?? entry[1].schema.id ?? `schema${ctx.counter++}`;
+            entry[1].defId = id; // set defId so it will be reused if needed
+            return { defId: id, ref: `${uriGenerator("__shared")}#/${defsSegment}/${id}` };
+        }
+        if (entry[1] === root) {
+            return { ref: "#" };
+        }
+        // self-contained schema
+        const uriPrefix = `#`;
+        const defUriPrefix = `${uriPrefix}/${defsSegment}/`;
+        const defId = entry[1].schema.id ?? `__schema${ctx.counter++}`;
+        return { defId, ref: defUriPrefix + defId };
+    };
+    // stored cached version in `def` property
+    // remove all properties, set $ref
+    const extractToDef = (entry) => {
+        // if the schema is already a reference, do not extract it
+        if (entry[1].schema.$ref) {
+            return;
+        }
+        const seen = entry[1];
+        const { ref, defId } = makeURI(entry);
+        seen.def = { ...seen.schema };
+        // defId won't be set if the schema is a reference to an external schema
+        // or if the schema is the root schema
+        if (defId)
+            seen.defId = defId;
+        // wipe away all properties except $ref
+        const schema = seen.schema;
+        for (const key in schema) {
+            delete schema[key];
+        }
+        schema.$ref = ref;
+    };
+    // throw on cycles
+    // break cycles
+    if (ctx.cycles === "throw") {
+        for (const entry of ctx.seen.entries()) {
+            const seen = entry[1];
+            if (seen.cycle) {
+                throw new Error("Cycle detected: " +
+                    `#/${seen.cycle?.join("/")}/<root>` +
+                    '\n\nSet the `cycles` parameter to `"ref"` to resolve cyclical schemas with defs.');
+            }
+        }
+    }
+    // extract schemas into $defs
+    for (const entry of ctx.seen.entries()) {
+        const seen = entry[1];
+        // convert root schema to # $ref
+        if (schema === entry[0]) {
+            extractToDef(entry); // this has special handling for the root schema
+            continue;
+        }
+        // extract schemas that are in the external registry
+        if (ctx.external) {
+            const ext = ctx.external.registry.get(entry[0])?.id;
+            if (schema !== entry[0] && ext) {
+                extractToDef(entry);
+                continue;
+            }
+        }
+        // extract schemas with `id` meta
+        const id = ctx.metadataRegistry.get(entry[0])?.id;
+        if (id) {
+            extractToDef(entry);
+            continue;
+        }
+        // break cycles
+        if (seen.cycle) {
+            // any
+            extractToDef(entry);
+            continue;
+        }
+        // extract reused schemas
+        if (seen.count > 1) {
+            if (ctx.reused === "ref") {
+                extractToDef(entry);
+                // biome-ignore lint:
+                continue;
+            }
         }
     }
 }
-ZodIntersection.create = (left, right, params) => {
+function finalize(ctx, schema) {
+    const root = ctx.seen.get(schema);
+    if (!root)
+        throw new Error("Unprocessed schema. This is a bug in Zod.");
+    // flatten refs - inherit properties from parent schemas
+    const flattenRef = (zodSchema) => {
+        const seen = ctx.seen.get(zodSchema);
+        // already processed
+        if (seen.ref === null)
+            return;
+        const schema = seen.def ?? seen.schema;
+        const _cached = { ...schema };
+        const ref = seen.ref;
+        seen.ref = null; // prevent infinite recursion
+        if (ref) {
+            flattenRef(ref);
+            const refSeen = ctx.seen.get(ref);
+            const refSchema = refSeen.schema;
+            // merge referenced schema into current
+            if (refSchema.$ref && (ctx.target === "draft-07" || ctx.target === "draft-04" || ctx.target === "openapi-3.0")) {
+                // older drafts can't combine $ref with other properties
+                schema.allOf = schema.allOf ?? [];
+                schema.allOf.push(refSchema);
+            }
+            else {
+                Object.assign(schema, refSchema);
+            }
+            // restore child's own properties (child wins)
+            Object.assign(schema, _cached);
+            const isParentRef = zodSchema._zod.parent === ref;
+            // For parent chain, child is a refinement - remove parent-only properties
+            if (isParentRef) {
+                for (const key in schema) {
+                    if (key === "$ref" || key === "allOf")
+                        continue;
+                    if (!(key in _cached)) {
+                        delete schema[key];
+                    }
+                }
+            }
+            // When ref was extracted to $defs, remove properties that match the definition
+            if (refSchema.$ref && refSeen.def) {
+                for (const key in schema) {
+                    if (key === "$ref" || key === "allOf")
+                        continue;
+                    if (key in refSeen.def && JSON.stringify(schema[key]) === JSON.stringify(refSeen.def[key])) {
+                        delete schema[key];
+                    }
+                }
+            }
+        }
+        // If parent was extracted (has $ref), propagate $ref to this schema
+        // This handles cases like: readonly().meta({id}).describe()
+        // where processor sets ref to innerType but parent should be referenced
+        const parent = zodSchema._zod.parent;
+        if (parent && parent !== ref) {
+            // Ensure parent is processed first so its def has inherited properties
+            flattenRef(parent);
+            const parentSeen = ctx.seen.get(parent);
+            if (parentSeen?.schema.$ref) {
+                schema.$ref = parentSeen.schema.$ref;
+                // De-duplicate with parent's definition
+                if (parentSeen.def) {
+                    for (const key in schema) {
+                        if (key === "$ref" || key === "allOf")
+                            continue;
+                        if (key in parentSeen.def && JSON.stringify(schema[key]) === JSON.stringify(parentSeen.def[key])) {
+                            delete schema[key];
+                        }
+                    }
+                }
+            }
+        }
+        // execute overrides
+        ctx.override({
+            zodSchema: zodSchema,
+            jsonSchema: schema,
+            path: seen.path ?? [],
+        });
+    };
+    for (const entry of [...ctx.seen.entries()].reverse()) {
+        flattenRef(entry[0]);
+    }
+    const result = {};
+    if (ctx.target === "draft-2020-12") {
+        result.$schema = "https://json-schema.org/draft/2020-12/schema";
+    }
+    else if (ctx.target === "draft-07") {
+        result.$schema = "http://json-schema.org/draft-07/schema#";
+    }
+    else if (ctx.target === "draft-04") {
+        result.$schema = "http://json-schema.org/draft-04/schema#";
+    }
+    else if (ctx.target === "openapi-3.0") ;
+    else ;
+    if (ctx.external?.uri) {
+        const id = ctx.external.registry.get(schema)?.id;
+        if (!id)
+            throw new Error("Schema is missing an `id` property");
+        result.$id = ctx.external.uri(id);
+    }
+    Object.assign(result, root.def ?? root.schema);
+    // The `id` in `.meta()` is a Zod-specific registration tag used to extract
+    // schemas into $defs — it is not user-facing JSON Schema metadata. Strip it
+    // from the output body where it would otherwise leak. The id is preserved
+    // implicitly via the $defs key (and via $ref paths).
+    const rootMetaId = ctx.metadataRegistry.get(schema)?.id;
+    if (rootMetaId !== undefined && result.id === rootMetaId)
+        delete result.id;
+    // build defs object
+    const defs = ctx.external?.defs ?? {};
+    for (const entry of ctx.seen.entries()) {
+        const seen = entry[1];
+        if (seen.def && seen.defId) {
+            if (seen.def.id === seen.defId)
+                delete seen.def.id;
+            defs[seen.defId] = seen.def;
+        }
+    }
+    // set definitions in result
+    if (ctx.external) ;
+    else {
+        if (Object.keys(defs).length > 0) {
+            if (ctx.target === "draft-2020-12") {
+                result.$defs = defs;
+            }
+            else {
+                result.definitions = defs;
+            }
+        }
+    }
+    try {
+        // this "finalizes" this schema and ensures all cycles are removed
+        // each call to finalize() is functionally independent
+        // though the seen map is shared
+        const finalized = JSON.parse(JSON.stringify(result));
+        Object.defineProperty(finalized, "~standard", {
+            value: {
+                ...schema["~standard"],
+                jsonSchema: {
+                    input: createStandardJSONSchemaMethod(schema, "input", ctx.processors),
+                    output: createStandardJSONSchemaMethod(schema, "output", ctx.processors),
+                },
+            },
+            enumerable: false,
+            writable: false,
+        });
+        return finalized;
+    }
+    catch (_err) {
+        throw new Error("Error converting schema to JSON.");
+    }
+}
+function isTransforming(_schema, _ctx) {
+    const ctx = _ctx ?? { seen: new Set() };
+    if (ctx.seen.has(_schema))
+        return false;
+    ctx.seen.add(_schema);
+    const def = _schema._zod.def;
+    if (def.type === "transform")
+        return true;
+    if (def.type === "array")
+        return isTransforming(def.element, ctx);
+    if (def.type === "set")
+        return isTransforming(def.valueType, ctx);
+    if (def.type === "lazy")
+        return isTransforming(def.getter(), ctx);
+    if (def.type === "promise" ||
+        def.type === "optional" ||
+        def.type === "nonoptional" ||
+        def.type === "nullable" ||
+        def.type === "readonly" ||
+        def.type === "default" ||
+        def.type === "prefault") {
+        return isTransforming(def.innerType, ctx);
+    }
+    if (def.type === "intersection") {
+        return isTransforming(def.left, ctx) || isTransforming(def.right, ctx);
+    }
+    if (def.type === "record" || def.type === "map") {
+        return isTransforming(def.keyType, ctx) || isTransforming(def.valueType, ctx);
+    }
+    if (def.type === "pipe") {
+        if (_schema._zod.traits.has("$ZodCodec"))
+            return true;
+        return isTransforming(def.in, ctx) || isTransforming(def.out, ctx);
+    }
+    if (def.type === "object") {
+        for (const key in def.shape) {
+            if (isTransforming(def.shape[key], ctx))
+                return true;
+        }
+        return false;
+    }
+    if (def.type === "union") {
+        for (const option of def.options) {
+            if (isTransforming(option, ctx))
+                return true;
+        }
+        return false;
+    }
+    if (def.type === "tuple") {
+        for (const item of def.items) {
+            if (isTransforming(item, ctx))
+                return true;
+        }
+        if (def.rest && isTransforming(def.rest, ctx))
+            return true;
+        return false;
+    }
+    return false;
+}
+/**
+ * Creates a toJSONSchema method for a schema instance.
+ * This encapsulates the logic of initializing context, processing, extracting defs, and finalizing.
+ */
+const createToJSONSchemaMethod = (schema, processors = {}) => (params) => {
+    const ctx = initializeContext({ ...params, processors });
+    process(schema, ctx);
+    extractDefs(ctx, schema);
+    return finalize(ctx, schema);
+};
+const createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params) => {
+    const { libraryOptions, target } = params ?? {};
+    const ctx = initializeContext({ ...(libraryOptions ?? {}), target, io, processors });
+    process(schema, ctx);
+    extractDefs(ctx, schema);
+    return finalize(ctx, schema);
+};
+
+const formatMap = {
+    guid: "uuid",
+    url: "uri",
+    datetime: "date-time",
+    json_string: "json-string",
+    regex: "", // do not set
+};
+// ==================== SIMPLE TYPE PROCESSORS ====================
+const stringProcessor = (schema, ctx, _json, _params) => {
+    const json = _json;
+    json.type = "string";
+    const { minimum, maximum, format, patterns, contentEncoding } = schema._zod
+        .bag;
+    if (typeof minimum === "number")
+        json.minLength = minimum;
+    if (typeof maximum === "number")
+        json.maxLength = maximum;
+    // custom pattern overrides format
+    if (format) {
+        json.format = formatMap[format] ?? format;
+        if (json.format === "")
+            delete json.format; // empty format is not valid
+        // JSON Schema format: "time" requires a full time with offset or Z
+        // z.iso.time() does not include timezone information, so format: "time" should never be used
+        if (format === "time") {
+            delete json.format;
+        }
+    }
+    if (contentEncoding)
+        json.contentEncoding = contentEncoding;
+    if (patterns && patterns.size > 0) {
+        const regexes = [...patterns];
+        if (regexes.length === 1)
+            json.pattern = regexes[0].source;
+        else if (regexes.length > 1) {
+            json.allOf = [
+                ...regexes.map((regex) => ({
+                    ...(ctx.target === "draft-07" || ctx.target === "draft-04" || ctx.target === "openapi-3.0"
+                        ? { type: "string" }
+                        : {}),
+                    pattern: regex.source,
+                })),
+            ];
+        }
+    }
+};
+const numberProcessor = (schema, ctx, _json, _params) => {
+    const json = _json;
+    const { minimum, maximum, format, multipleOf, exclusiveMaximum, exclusiveMinimum } = schema._zod.bag;
+    if (typeof format === "string" && format.includes("int"))
+        json.type = "integer";
+    else
+        json.type = "number";
+    // when both minimum and exclusiveMinimum exist, pick the more restrictive one
+    const exMin = typeof exclusiveMinimum === "number" && exclusiveMinimum >= (minimum ?? Number.NEGATIVE_INFINITY);
+    const exMax = typeof exclusiveMaximum === "number" && exclusiveMaximum <= (maximum ?? Number.POSITIVE_INFINITY);
+    const legacy = ctx.target === "draft-04" || ctx.target === "openapi-3.0";
+    if (exMin) {
+        if (legacy) {
+            json.minimum = exclusiveMinimum;
+            json.exclusiveMinimum = true;
+        }
+        else {
+            json.exclusiveMinimum = exclusiveMinimum;
+        }
+    }
+    else if (typeof minimum === "number") {
+        json.minimum = minimum;
+    }
+    if (exMax) {
+        if (legacy) {
+            json.maximum = exclusiveMaximum;
+            json.exclusiveMaximum = true;
+        }
+        else {
+            json.exclusiveMaximum = exclusiveMaximum;
+        }
+    }
+    else if (typeof maximum === "number") {
+        json.maximum = maximum;
+    }
+    if (typeof multipleOf === "number")
+        json.multipleOf = multipleOf;
+};
+const booleanProcessor = (_schema, _ctx, json, _params) => {
+    json.type = "boolean";
+};
+const neverProcessor = (_schema, _ctx, json, _params) => {
+    json.not = {};
+};
+const anyProcessor = (_schema, _ctx, _json, _params) => {
+    // empty schema accepts anything
+};
+const unknownProcessor = (_schema, _ctx, _json, _params) => {
+    // empty schema accepts anything
+};
+const enumProcessor = (schema, _ctx, json, _params) => {
+    const def = schema._zod.def;
+    const values = getEnumValues(def.entries);
+    // Number enums can have both string and number values
+    if (values.every((v) => typeof v === "number"))
+        json.type = "number";
+    if (values.every((v) => typeof v === "string"))
+        json.type = "string";
+    json.enum = values;
+};
+const customProcessor = (_schema, ctx, _json, _params) => {
+    if (ctx.unrepresentable === "throw") {
+        throw new Error("Custom types cannot be represented in JSON Schema");
+    }
+};
+const transformProcessor = (_schema, ctx, _json, _params) => {
+    if (ctx.unrepresentable === "throw") {
+        throw new Error("Transforms cannot be represented in JSON Schema");
+    }
+};
+// ==================== COMPOSITE TYPE PROCESSORS ====================
+const arrayProcessor = (schema, ctx, _json, params) => {
+    const json = _json;
+    const def = schema._zod.def;
+    const { minimum, maximum } = schema._zod.bag;
+    if (typeof minimum === "number")
+        json.minItems = minimum;
+    if (typeof maximum === "number")
+        json.maxItems = maximum;
+    json.type = "array";
+    json.items = process(def.element, ctx, {
+        ...params,
+        path: [...params.path, "items"],
+    });
+};
+const objectProcessor = (schema, ctx, _json, params) => {
+    const json = _json;
+    const def = schema._zod.def;
+    json.type = "object";
+    json.properties = {};
+    const shape = def.shape;
+    for (const key in shape) {
+        json.properties[key] = process(shape[key], ctx, {
+            ...params,
+            path: [...params.path, "properties", key],
+        });
+    }
+    // required keys
+    const allKeys = new Set(Object.keys(shape));
+    const requiredKeys = new Set([...allKeys].filter((key) => {
+        const v = def.shape[key]._zod;
+        if (ctx.io === "input") {
+            return v.optin === undefined;
+        }
+        else {
+            return v.optout === undefined;
+        }
+    }));
+    if (requiredKeys.size > 0) {
+        json.required = Array.from(requiredKeys);
+    }
+    // catchall
+    if (def.catchall?._zod.def.type === "never") {
+        // strict
+        json.additionalProperties = false;
+    }
+    else if (!def.catchall) {
+        // regular
+        if (ctx.io === "output")
+            json.additionalProperties = false;
+    }
+    else if (def.catchall) {
+        json.additionalProperties = process(def.catchall, ctx, {
+            ...params,
+            path: [...params.path, "additionalProperties"],
+        });
+    }
+};
+const unionProcessor = (schema, ctx, json, params) => {
+    const def = schema._zod.def;
+    // Exclusive unions (inclusive === false) use oneOf (exactly one match) instead of anyOf (one or more matches)
+    // This includes both z.xor() and discriminated unions
+    const isExclusive = def.inclusive === false;
+    const options = def.options.map((x, i) => process(x, ctx, {
+        ...params,
+        path: [...params.path, isExclusive ? "oneOf" : "anyOf", i],
+    }));
+    if (isExclusive) {
+        json.oneOf = options;
+    }
+    else {
+        json.anyOf = options;
+    }
+};
+const intersectionProcessor = (schema, ctx, json, params) => {
+    const def = schema._zod.def;
+    const a = process(def.left, ctx, {
+        ...params,
+        path: [...params.path, "allOf", 0],
+    });
+    const b = process(def.right, ctx, {
+        ...params,
+        path: [...params.path, "allOf", 1],
+    });
+    const isSimpleIntersection = (val) => "allOf" in val && Object.keys(val).length === 1;
+    const allOf = [
+        ...(isSimpleIntersection(a) ? a.allOf : [a]),
+        ...(isSimpleIntersection(b) ? b.allOf : [b]),
+    ];
+    json.allOf = allOf;
+};
+const recordProcessor = (schema, ctx, _json, params) => {
+    const json = _json;
+    const def = schema._zod.def;
+    json.type = "object";
+    // For looseRecord with regex patterns, use patternProperties
+    // This correctly represents "only validate keys matching the pattern" semantics
+    // and composes well with allOf (intersections)
+    const keyType = def.keyType;
+    const keyBag = keyType._zod.bag;
+    const patterns = keyBag?.patterns;
+    if (def.mode === "loose" && patterns && patterns.size > 0) {
+        // Use patternProperties for looseRecord with regex patterns
+        const valueSchema = process(def.valueType, ctx, {
+            ...params,
+            path: [...params.path, "patternProperties", "*"],
+        });
+        json.patternProperties = {};
+        for (const pattern of patterns) {
+            json.patternProperties[pattern.source] = valueSchema;
+        }
+    }
+    else {
+        // Default behavior: use propertyNames + additionalProperties
+        if (ctx.target === "draft-07" || ctx.target === "draft-2020-12") {
+            json.propertyNames = process(def.keyType, ctx, {
+                ...params,
+                path: [...params.path, "propertyNames"],
+            });
+        }
+        json.additionalProperties = process(def.valueType, ctx, {
+            ...params,
+            path: [...params.path, "additionalProperties"],
+        });
+    }
+    // Add required for keys with discrete values (enum, literal, etc.)
+    const keyValues = keyType._zod.values;
+    if (keyValues) {
+        const validKeyValues = [...keyValues].filter((v) => typeof v === "string" || typeof v === "number");
+        if (validKeyValues.length > 0) {
+            json.required = validKeyValues;
+        }
+    }
+};
+const nullableProcessor = (schema, ctx, json, params) => {
+    const def = schema._zod.def;
+    const inner = process(def.innerType, ctx, params);
+    const seen = ctx.seen.get(schema);
+    if (ctx.target === "openapi-3.0") {
+        seen.ref = def.innerType;
+        json.nullable = true;
+    }
+    else {
+        json.anyOf = [inner, { type: "null" }];
+    }
+};
+const nonoptionalProcessor = (schema, ctx, _json, params) => {
+    const def = schema._zod.def;
+    process(def.innerType, ctx, params);
+    const seen = ctx.seen.get(schema);
+    seen.ref = def.innerType;
+};
+const defaultProcessor = (schema, ctx, json, params) => {
+    const def = schema._zod.def;
+    process(def.innerType, ctx, params);
+    const seen = ctx.seen.get(schema);
+    seen.ref = def.innerType;
+    json.default = JSON.parse(JSON.stringify(def.defaultValue));
+};
+const prefaultProcessor = (schema, ctx, json, params) => {
+    const def = schema._zod.def;
+    process(def.innerType, ctx, params);
+    const seen = ctx.seen.get(schema);
+    seen.ref = def.innerType;
+    if (ctx.io === "input")
+        json._prefault = JSON.parse(JSON.stringify(def.defaultValue));
+};
+const catchProcessor = (schema, ctx, json, params) => {
+    const def = schema._zod.def;
+    process(def.innerType, ctx, params);
+    const seen = ctx.seen.get(schema);
+    seen.ref = def.innerType;
+    let catchValue;
+    try {
+        catchValue = def.catchValue(undefined);
+    }
+    catch {
+        throw new Error("Dynamic catch values are not supported in JSON Schema");
+    }
+    json.default = catchValue;
+};
+const pipeProcessor = (schema, ctx, _json, params) => {
+    const def = schema._zod.def;
+    const inIsTransform = def.in._zod.traits.has("$ZodTransform");
+    const innerType = ctx.io === "input" ? (inIsTransform ? def.out : def.in) : def.out;
+    process(innerType, ctx, params);
+    const seen = ctx.seen.get(schema);
+    seen.ref = innerType;
+};
+const readonlyProcessor = (schema, ctx, json, params) => {
+    const def = schema._zod.def;
+    process(def.innerType, ctx, params);
+    const seen = ctx.seen.get(schema);
+    seen.ref = def.innerType;
+    json.readOnly = true;
+};
+const optionalProcessor = (schema, ctx, _json, params) => {
+    const def = schema._zod.def;
+    process(def.innerType, ctx, params);
+    const seen = ctx.seen.get(schema);
+    seen.ref = def.innerType;
+};
+const lazyProcessor = (schema, ctx, _json, params) => {
+    const innerType = schema._zod.innerType;
+    process(innerType, ctx, params);
+    const seen = ctx.seen.get(schema);
+    seen.ref = innerType;
+};
+
+const ZodISODateTime = /*@__PURE__*/ $constructor("ZodISODateTime", (inst, def) => {
+    $ZodISODateTime.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+function datetime(params) {
+    return _isoDateTime(ZodISODateTime, params);
+}
+const ZodISODate = /*@__PURE__*/ $constructor("ZodISODate", (inst, def) => {
+    $ZodISODate.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+function date(params) {
+    return _isoDate(ZodISODate, params);
+}
+const ZodISOTime = /*@__PURE__*/ $constructor("ZodISOTime", (inst, def) => {
+    $ZodISOTime.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+function time(params) {
+    return _isoTime(ZodISOTime, params);
+}
+const ZodISODuration = /*@__PURE__*/ $constructor("ZodISODuration", (inst, def) => {
+    $ZodISODuration.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+function duration(params) {
+    return _isoDuration(ZodISODuration, params);
+}
+
+const initializer = (inst, issues) => {
+    $ZodError.init(inst, issues);
+    inst.name = "ZodError";
+    Object.defineProperties(inst, {
+        format: {
+            value: (mapper) => formatError(inst, mapper),
+            // enumerable: false,
+        },
+        flatten: {
+            value: (mapper) => flattenError(inst, mapper),
+            // enumerable: false,
+        },
+        addIssue: {
+            value: (issue) => {
+                inst.issues.push(issue);
+                inst.message = JSON.stringify(inst.issues, jsonStringifyReplacer, 2);
+            },
+            // enumerable: false,
+        },
+        addIssues: {
+            value: (issues) => {
+                inst.issues.push(...issues);
+                inst.message = JSON.stringify(inst.issues, jsonStringifyReplacer, 2);
+            },
+            // enumerable: false,
+        },
+        isEmpty: {
+            get() {
+                return inst.issues.length === 0;
+            },
+            // enumerable: false,
+        },
+    });
+    // Object.defineProperty(inst, "isEmpty", {
+    //   get() {
+    //     return inst.issues.length === 0;
+    //   },
+    // });
+};
+const ZodRealError = /*@__PURE__*/ $constructor("ZodError", initializer, {
+    Parent: Error,
+});
+// /** @deprecated Use `z.core.$ZodErrorMapCtx` instead. */
+// export type ErrorMapCtx = core.$ZodErrorMapCtx;
+
+const parse$1 = /* @__PURE__ */ _parse(ZodRealError);
+const parseAsync = /* @__PURE__ */ _parseAsync(ZodRealError);
+const safeParse = /* @__PURE__ */ _safeParse(ZodRealError);
+const safeParseAsync = /* @__PURE__ */ _safeParseAsync(ZodRealError);
+// Codec functions
+const encode = /* @__PURE__ */ _encode(ZodRealError);
+const decode = /* @__PURE__ */ _decode(ZodRealError);
+const encodeAsync = /* @__PURE__ */ _encodeAsync(ZodRealError);
+const decodeAsync = /* @__PURE__ */ _decodeAsync(ZodRealError);
+const safeEncode = /* @__PURE__ */ _safeEncode(ZodRealError);
+const safeDecode = /* @__PURE__ */ _safeDecode(ZodRealError);
+const safeEncodeAsync = /* @__PURE__ */ _safeEncodeAsync(ZodRealError);
+const safeDecodeAsync = /* @__PURE__ */ _safeDecodeAsync(ZodRealError);
+
+// Lazy-bind builder methods.
+//
+// Builder methods (`.optional`, `.array`, `.refine`, ...) live as
+// non-enumerable getters on each concrete schema constructor's
+// prototype. On first access from an instance the getter allocates
+// `fn.bind(this)` and caches it as an own property on that instance,
+// so detached usage (`const m = schema.optional; m()`) still works
+// and the per-instance allocation only happens for methods actually
+// touched.
+//
+// One install per (prototype, group), memoized by `_installedGroups`.
+const _installedGroups = /* @__PURE__ */ new WeakMap();
+function _installLazyMethods(inst, group, methods) {
+    const proto = Object.getPrototypeOf(inst);
+    let installed = _installedGroups.get(proto);
+    if (!installed) {
+        installed = new Set();
+        _installedGroups.set(proto, installed);
+    }
+    if (installed.has(group))
+        return;
+    installed.add(group);
+    for (const key in methods) {
+        const fn = methods[key];
+        Object.defineProperty(proto, key, {
+            configurable: true,
+            enumerable: false,
+            get() {
+                const bound = fn.bind(this);
+                Object.defineProperty(this, key, {
+                    configurable: true,
+                    writable: true,
+                    enumerable: true,
+                    value: bound,
+                });
+                return bound;
+            },
+            set(v) {
+                Object.defineProperty(this, key, {
+                    configurable: true,
+                    writable: true,
+                    enumerable: true,
+                    value: v,
+                });
+            },
+        });
+    }
+}
+const ZodType = /*@__PURE__*/ $constructor("ZodType", (inst, def) => {
+    $ZodType.init(inst, def);
+    Object.assign(inst["~standard"], {
+        jsonSchema: {
+            input: createStandardJSONSchemaMethod(inst, "input"),
+            output: createStandardJSONSchemaMethod(inst, "output"),
+        },
+    });
+    inst.toJSONSchema = createToJSONSchemaMethod(inst, {});
+    inst.def = def;
+    inst.type = def.type;
+    Object.defineProperty(inst, "_def", { value: def });
+    // Parse-family is intentionally kept as per-instance closures: these are
+    // the hot path AND the most-detached methods (`arr.map(schema.parse)`,
+    // `const { parse } = schema`, etc.). Eager closures here mean callers pay
+    // ~12 closure allocations per schema but get monomorphic call sites and
+    // detached usage that "just works".
+    inst.parse = (data, params) => parse$1(inst, data, params, { callee: inst.parse });
+    inst.safeParse = (data, params) => safeParse(inst, data, params);
+    inst.parseAsync = async (data, params) => parseAsync(inst, data, params, { callee: inst.parseAsync });
+    inst.safeParseAsync = async (data, params) => safeParseAsync(inst, data, params);
+    inst.spa = inst.safeParseAsync;
+    inst.encode = (data, params) => encode(inst, data, params);
+    inst.decode = (data, params) => decode(inst, data, params);
+    inst.encodeAsync = async (data, params) => encodeAsync(inst, data, params);
+    inst.decodeAsync = async (data, params) => decodeAsync(inst, data, params);
+    inst.safeEncode = (data, params) => safeEncode(inst, data, params);
+    inst.safeDecode = (data, params) => safeDecode(inst, data, params);
+    inst.safeEncodeAsync = async (data, params) => safeEncodeAsync(inst, data, params);
+    inst.safeDecodeAsync = async (data, params) => safeDecodeAsync(inst, data, params);
+    // All builder methods are placed on the internal prototype as lazy-bind
+    // getters. On first access per-instance, a bound thunk is allocated and
+    // cached as an own property; subsequent accesses skip the getter. This
+    // means: no per-instance allocation for unused methods, full
+    // detachability preserved (`const m = schema.optional; m()` works), and
+    // shared underlying function references across all instances.
+    _installLazyMethods(inst, "ZodType", {
+        check(...chks) {
+            const def = this.def;
+            return this.clone(mergeDefs(def, {
+                checks: [
+                    ...(def.checks ?? []),
+                    ...chks.map((ch) => typeof ch === "function" ? { _zod: { check: ch, def: { check: "custom" }, onattach: [] } } : ch),
+                ],
+            }), { parent: true });
+        },
+        with(...chks) {
+            return this.check(...chks);
+        },
+        clone(def, params) {
+            return clone$2(this, def, params);
+        },
+        brand() {
+            return this;
+        },
+        register(reg, meta) {
+            reg.add(this, meta);
+            return this;
+        },
+        refine(check, params) {
+            return this.check(refine(check, params));
+        },
+        superRefine(refinement, params) {
+            return this.check(superRefine(refinement, params));
+        },
+        overwrite(fn) {
+            return this.check(_overwrite(fn));
+        },
+        optional() {
+            return optional(this);
+        },
+        exactOptional() {
+            return exactOptional(this);
+        },
+        nullable() {
+            return nullable(this);
+        },
+        nullish() {
+            return optional(nullable(this));
+        },
+        nonoptional(params) {
+            return nonoptional(this, params);
+        },
+        array() {
+            return array(this);
+        },
+        or(arg) {
+            return union([this, arg]);
+        },
+        and(arg) {
+            return intersection(this, arg);
+        },
+        transform(tx) {
+            return pipe(this, transform(tx));
+        },
+        default(d) {
+            return _default(this, d);
+        },
+        prefault(d) {
+            return prefault(this, d);
+        },
+        catch(params) {
+            return _catch(this, params);
+        },
+        pipe(target) {
+            return pipe(this, target);
+        },
+        readonly() {
+            return readonly(this);
+        },
+        describe(description) {
+            const cl = this.clone();
+            globalRegistry.add(cl, { description });
+            return cl;
+        },
+        meta(...args) {
+            // overloaded: meta() returns the registered metadata, meta(data)
+            // returns a clone with `data` registered. The mapped type picks
+            // up the second overload, so we accept variadic any-args and
+            // return `any` to satisfy both at runtime.
+            if (args.length === 0)
+                return globalRegistry.get(this);
+            const cl = this.clone();
+            globalRegistry.add(cl, args[0]);
+            return cl;
+        },
+        isOptional() {
+            return this.safeParse(undefined).success;
+        },
+        isNullable() {
+            return this.safeParse(null).success;
+        },
+        apply(fn) {
+            return fn(this);
+        },
+    });
+    Object.defineProperty(inst, "description", {
+        get() {
+            return globalRegistry.get(inst)?.description;
+        },
+        configurable: true,
+    });
+    return inst;
+});
+/** @internal */
+const _ZodString = /*@__PURE__*/ $constructor("_ZodString", (inst, def) => {
+    $ZodString.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => stringProcessor(inst, ctx, json);
+    const bag = inst._zod.bag;
+    inst.format = bag.format ?? null;
+    inst.minLength = bag.minimum ?? null;
+    inst.maxLength = bag.maximum ?? null;
+    _installLazyMethods(inst, "_ZodString", {
+        regex(...args) {
+            return this.check(_regex(...args));
+        },
+        includes(...args) {
+            return this.check(_includes(...args));
+        },
+        startsWith(...args) {
+            return this.check(_startsWith(...args));
+        },
+        endsWith(...args) {
+            return this.check(_endsWith(...args));
+        },
+        min(...args) {
+            return this.check(_minLength(...args));
+        },
+        max(...args) {
+            return this.check(_maxLength(...args));
+        },
+        length(...args) {
+            return this.check(_length(...args));
+        },
+        nonempty(...args) {
+            return this.check(_minLength(1, ...args));
+        },
+        lowercase(params) {
+            return this.check(_lowercase(params));
+        },
+        uppercase(params) {
+            return this.check(_uppercase(params));
+        },
+        trim() {
+            return this.check(_trim());
+        },
+        normalize(...args) {
+            return this.check(_normalize(...args));
+        },
+        toLowerCase() {
+            return this.check(_toLowerCase());
+        },
+        toUpperCase() {
+            return this.check(_toUpperCase());
+        },
+        slugify() {
+            return this.check(_slugify$1());
+        },
+    });
+});
+const ZodString = /*@__PURE__*/ $constructor("ZodString", (inst, def) => {
+    $ZodString.init(inst, def);
+    _ZodString.init(inst, def);
+    inst.email = (params) => inst.check(_email(ZodEmail, params));
+    inst.url = (params) => inst.check(_url(ZodURL, params));
+    inst.jwt = (params) => inst.check(_jwt(ZodJWT, params));
+    inst.emoji = (params) => inst.check(_emoji(ZodEmoji, params));
+    inst.guid = (params) => inst.check(_guid(ZodGUID, params));
+    inst.uuid = (params) => inst.check(_uuid(ZodUUID, params));
+    inst.uuidv4 = (params) => inst.check(_uuidv4(ZodUUID, params));
+    inst.uuidv6 = (params) => inst.check(_uuidv6(ZodUUID, params));
+    inst.uuidv7 = (params) => inst.check(_uuidv7(ZodUUID, params));
+    inst.nanoid = (params) => inst.check(_nanoid(ZodNanoID, params));
+    inst.guid = (params) => inst.check(_guid(ZodGUID, params));
+    inst.cuid = (params) => inst.check(_cuid(ZodCUID, params));
+    inst.cuid2 = (params) => inst.check(_cuid2(ZodCUID2, params));
+    inst.ulid = (params) => inst.check(_ulid(ZodULID, params));
+    inst.base64 = (params) => inst.check(_base64(ZodBase64, params));
+    inst.base64url = (params) => inst.check(_base64url(ZodBase64URL, params));
+    inst.xid = (params) => inst.check(_xid(ZodXID, params));
+    inst.ksuid = (params) => inst.check(_ksuid(ZodKSUID, params));
+    inst.ipv4 = (params) => inst.check(_ipv4(ZodIPv4, params));
+    inst.ipv6 = (params) => inst.check(_ipv6(ZodIPv6, params));
+    inst.cidrv4 = (params) => inst.check(_cidrv4(ZodCIDRv4, params));
+    inst.cidrv6 = (params) => inst.check(_cidrv6(ZodCIDRv6, params));
+    inst.e164 = (params) => inst.check(_e164(ZodE164, params));
+    // iso
+    inst.datetime = (params) => inst.check(datetime(params));
+    inst.date = (params) => inst.check(date(params));
+    inst.time = (params) => inst.check(time(params));
+    inst.duration = (params) => inst.check(duration(params));
+});
+function string(params) {
+    return _string(ZodString, params);
+}
+const ZodStringFormat = /*@__PURE__*/ $constructor("ZodStringFormat", (inst, def) => {
+    $ZodStringFormat.init(inst, def);
+    _ZodString.init(inst, def);
+});
+const ZodEmail = /*@__PURE__*/ $constructor("ZodEmail", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodEmail.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodGUID = /*@__PURE__*/ $constructor("ZodGUID", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodGUID.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodUUID = /*@__PURE__*/ $constructor("ZodUUID", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodUUID.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodURL = /*@__PURE__*/ $constructor("ZodURL", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodURL.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodEmoji = /*@__PURE__*/ $constructor("ZodEmoji", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodEmoji.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodNanoID = /*@__PURE__*/ $constructor("ZodNanoID", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodNanoID.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+/**
+ * @deprecated CUID v1 is deprecated by its authors due to information leakage
+ * (timestamps embedded in the id). Use {@link ZodCUID2} instead.
+ * See https://github.com/paralleldrive/cuid.
+ */
+const ZodCUID = /*@__PURE__*/ $constructor("ZodCUID", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodCUID.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodCUID2 = /*@__PURE__*/ $constructor("ZodCUID2", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodCUID2.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodULID = /*@__PURE__*/ $constructor("ZodULID", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodULID.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodXID = /*@__PURE__*/ $constructor("ZodXID", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodXID.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodKSUID = /*@__PURE__*/ $constructor("ZodKSUID", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodKSUID.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodIPv4 = /*@__PURE__*/ $constructor("ZodIPv4", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodIPv4.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodIPv6 = /*@__PURE__*/ $constructor("ZodIPv6", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodIPv6.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodCIDRv4 = /*@__PURE__*/ $constructor("ZodCIDRv4", (inst, def) => {
+    $ZodCIDRv4.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodCIDRv6 = /*@__PURE__*/ $constructor("ZodCIDRv6", (inst, def) => {
+    $ZodCIDRv6.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodBase64 = /*@__PURE__*/ $constructor("ZodBase64", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodBase64.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodBase64URL = /*@__PURE__*/ $constructor("ZodBase64URL", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodBase64URL.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodE164 = /*@__PURE__*/ $constructor("ZodE164", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodE164.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodJWT = /*@__PURE__*/ $constructor("ZodJWT", (inst, def) => {
+    // ZodStringFormat.init(inst, def);
+    $ZodJWT.init(inst, def);
+    ZodStringFormat.init(inst, def);
+});
+const ZodNumber = /*@__PURE__*/ $constructor("ZodNumber", (inst, def) => {
+    $ZodNumber.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => numberProcessor(inst, ctx, json);
+    _installLazyMethods(inst, "ZodNumber", {
+        gt(value, params) {
+            return this.check(_gt(value, params));
+        },
+        gte(value, params) {
+            return this.check(_gte(value, params));
+        },
+        min(value, params) {
+            return this.check(_gte(value, params));
+        },
+        lt(value, params) {
+            return this.check(_lt(value, params));
+        },
+        lte(value, params) {
+            return this.check(_lte(value, params));
+        },
+        max(value, params) {
+            return this.check(_lte(value, params));
+        },
+        int(params) {
+            return this.check(int$1(params));
+        },
+        safe(params) {
+            return this.check(int$1(params));
+        },
+        positive(params) {
+            return this.check(_gt(0, params));
+        },
+        nonnegative(params) {
+            return this.check(_gte(0, params));
+        },
+        negative(params) {
+            return this.check(_lt(0, params));
+        },
+        nonpositive(params) {
+            return this.check(_lte(0, params));
+        },
+        multipleOf(value, params) {
+            return this.check(_multipleOf(value, params));
+        },
+        step(value, params) {
+            return this.check(_multipleOf(value, params));
+        },
+        finite() {
+            return this;
+        },
+    });
+    const bag = inst._zod.bag;
+    inst.minValue =
+        Math.max(bag.minimum ?? Number.NEGATIVE_INFINITY, bag.exclusiveMinimum ?? Number.NEGATIVE_INFINITY) ?? null;
+    inst.maxValue =
+        Math.min(bag.maximum ?? Number.POSITIVE_INFINITY, bag.exclusiveMaximum ?? Number.POSITIVE_INFINITY) ?? null;
+    inst.isInt = (bag.format ?? "").includes("int") || Number.isSafeInteger(bag.multipleOf ?? 0.5);
+    inst.isFinite = true;
+    inst.format = bag.format ?? null;
+});
+function number(params) {
+    return _number(ZodNumber, params);
+}
+const ZodNumberFormat = /*@__PURE__*/ $constructor("ZodNumberFormat", (inst, def) => {
+    $ZodNumberFormat.init(inst, def);
+    ZodNumber.init(inst, def);
+});
+function int$1(params) {
+    return _int(ZodNumberFormat, params);
+}
+const ZodBoolean = /*@__PURE__*/ $constructor("ZodBoolean", (inst, def) => {
+    $ZodBoolean.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => booleanProcessor(inst, ctx, json);
+});
+function boolean(params) {
+    return _boolean(ZodBoolean, params);
+}
+const ZodAny = /*@__PURE__*/ $constructor("ZodAny", (inst, def) => {
+    $ZodAny.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => anyProcessor();
+});
+function any() {
+    return _any(ZodAny);
+}
+const ZodUnknown = /*@__PURE__*/ $constructor("ZodUnknown", (inst, def) => {
+    $ZodUnknown.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => unknownProcessor();
+});
+function unknown() {
+    return _unknown(ZodUnknown);
+}
+const ZodNever = /*@__PURE__*/ $constructor("ZodNever", (inst, def) => {
+    $ZodNever.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => neverProcessor(inst, ctx, json);
+});
+function never(params) {
+    return _never(ZodNever, params);
+}
+const ZodArray = /*@__PURE__*/ $constructor("ZodArray", (inst, def) => {
+    $ZodArray.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => arrayProcessor(inst, ctx, json, params);
+    inst.element = def.element;
+    _installLazyMethods(inst, "ZodArray", {
+        min(n, params) {
+            return this.check(_minLength(n, params));
+        },
+        nonempty(params) {
+            return this.check(_minLength(1, params));
+        },
+        max(n, params) {
+            return this.check(_maxLength(n, params));
+        },
+        length(n, params) {
+            return this.check(_length(n, params));
+        },
+        unwrap() {
+            return this.element;
+        },
+    });
+});
+function array(element, params) {
+    return _array(ZodArray, element, params);
+}
+const ZodObject = /*@__PURE__*/ $constructor("ZodObject", (inst, def) => {
+    $ZodObjectJIT.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => objectProcessor(inst, ctx, json, params);
+    defineLazy(inst, "shape", () => {
+        return def.shape;
+    });
+    _installLazyMethods(inst, "ZodObject", {
+        keyof() {
+            return _enum(Object.keys(this._zod.def.shape));
+        },
+        catchall(catchall) {
+            return this.clone({ ...this._zod.def, catchall: catchall });
+        },
+        passthrough() {
+            return this.clone({ ...this._zod.def, catchall: unknown() });
+        },
+        loose() {
+            return this.clone({ ...this._zod.def, catchall: unknown() });
+        },
+        strict() {
+            return this.clone({ ...this._zod.def, catchall: never() });
+        },
+        strip() {
+            return this.clone({ ...this._zod.def, catchall: undefined });
+        },
+        extend(incoming) {
+            return extend(this, incoming);
+        },
+        safeExtend(incoming) {
+            return safeExtend(this, incoming);
+        },
+        merge(other) {
+            return merge(this, other);
+        },
+        pick(mask) {
+            return pick$1(this, mask);
+        },
+        omit(mask) {
+            return omit(this, mask);
+        },
+        partial(...args) {
+            return partial(ZodOptional, this, args[0]);
+        },
+        required(...args) {
+            return required(ZodNonOptional, this, args[0]);
+        },
+    });
+});
+function object(shape, params) {
+    const def = {
+        type: "object",
+        shape: shape ?? {},
+        ...normalizeParams(params),
+    };
+    return new ZodObject(def);
+}
+const ZodUnion = /*@__PURE__*/ $constructor("ZodUnion", (inst, def) => {
+    $ZodUnion.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => unionProcessor(inst, ctx, json, params);
+    inst.options = def.options;
+});
+function union(options, params) {
+    return new ZodUnion({
+        type: "union",
+        options: options,
+        ...normalizeParams(params),
+    });
+}
+const ZodIntersection = /*@__PURE__*/ $constructor("ZodIntersection", (inst, def) => {
+    $ZodIntersection.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => intersectionProcessor(inst, ctx, json, params);
+});
+function intersection(left, right) {
     return new ZodIntersection({
+        type: "intersection",
         left: left,
         right: right,
-        typeName: ZodFirstPartyTypeKind.ZodIntersection,
-        ...processCreateParams(params),
     });
-};
-// type ZodTupleItems = [ZodTypeAny, ...ZodTypeAny[]];
-class ZodTuple extends ZodType {
-    _parse(input) {
-        const { status, ctx } = this._processInputParams(input);
-        if (ctx.parsedType !== ZodParsedType.array) {
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.array,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        if (ctx.data.length < this._def.items.length) {
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.too_small,
-                minimum: this._def.items.length,
-                inclusive: true,
-                exact: false,
-                type: "array",
-            });
-            return INVALID$3;
-        }
-        const rest = this._def.rest;
-        if (!rest && ctx.data.length > this._def.items.length) {
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.too_big,
-                maximum: this._def.items.length,
-                inclusive: true,
-                exact: false,
-                type: "array",
-            });
-            status.dirty();
-        }
-        const items = [...ctx.data]
-            .map((item, itemIndex) => {
-            const schema = this._def.items[itemIndex] || this._def.rest;
-            if (!schema)
-                return null;
-            return schema._parse(new ParseInputLazyPath(ctx, item, ctx.path, itemIndex));
-        })
-            .filter((x) => !!x); // filter nulls
-        if (ctx.common.async) {
-            return Promise.all(items).then((results) => {
-                return ParseStatus.mergeArray(status, results);
-            });
-        }
-        else {
-            return ParseStatus.mergeArray(status, items);
-        }
-    }
-    get items() {
-        return this._def.items;
-    }
-    rest(rest) {
-        return new ZodTuple({
-            ...this._def,
-            rest,
-        });
-    }
 }
-ZodTuple.create = (schemas, params) => {
-    if (!Array.isArray(schemas)) {
-        throw new Error("You must pass an array of schemas to z.tuple([ ... ])");
-    }
-    return new ZodTuple({
-        items: schemas,
-        typeName: ZodFirstPartyTypeKind.ZodTuple,
-        rest: null,
-        ...processCreateParams(params),
-    });
-};
-class ZodRecord extends ZodType {
-    get keySchema() {
-        return this._def.keyType;
-    }
-    get valueSchema() {
-        return this._def.valueType;
-    }
-    _parse(input) {
-        const { status, ctx } = this._processInputParams(input);
-        if (ctx.parsedType !== ZodParsedType.object) {
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.object,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        const pairs = [];
-        const keyType = this._def.keyType;
-        const valueType = this._def.valueType;
-        for (const key in ctx.data) {
-            pairs.push({
-                key: keyType._parse(new ParseInputLazyPath(ctx, key, ctx.path, key)),
-                value: valueType._parse(new ParseInputLazyPath(ctx, ctx.data[key], ctx.path, key)),
-                alwaysSet: key in ctx.data,
-            });
-        }
-        if (ctx.common.async) {
-            return ParseStatus.mergeObjectAsync(status, pairs);
-        }
-        else {
-            return ParseStatus.mergeObjectSync(status, pairs);
-        }
-    }
-    get element() {
-        return this._def.valueType;
-    }
-    static create(first, second, third) {
-        if (second instanceof ZodType) {
-            return new ZodRecord({
-                keyType: first,
-                valueType: second,
-                typeName: ZodFirstPartyTypeKind.ZodRecord,
-                ...processCreateParams(third),
-            });
-        }
+const ZodRecord = /*@__PURE__*/ $constructor("ZodRecord", (inst, def) => {
+    $ZodRecord.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => recordProcessor(inst, ctx, json, params);
+    inst.keyType = def.keyType;
+    inst.valueType = def.valueType;
+});
+function record(keyType, valueType, params) {
+    // v3-compat: z.record(valueType, params?) — defaults keyType to z.string()
+    if (!valueType || !valueType._zod) {
         return new ZodRecord({
-            keyType: ZodString.create(),
-            valueType: first,
-            typeName: ZodFirstPartyTypeKind.ZodRecord,
-            ...processCreateParams(second),
+            type: "record",
+            keyType: string(),
+            valueType: keyType,
+            ...normalizeParams(valueType),
         });
     }
-}
-class ZodMap extends ZodType {
-    get keySchema() {
-        return this._def.keyType;
-    }
-    get valueSchema() {
-        return this._def.valueType;
-    }
-    _parse(input) {
-        const { status, ctx } = this._processInputParams(input);
-        if (ctx.parsedType !== ZodParsedType.map) {
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.map,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        const keyType = this._def.keyType;
-        const valueType = this._def.valueType;
-        const pairs = [...ctx.data.entries()].map(([key, value], index) => {
-            return {
-                key: keyType._parse(new ParseInputLazyPath(ctx, key, ctx.path, [index, "key"])),
-                value: valueType._parse(new ParseInputLazyPath(ctx, value, ctx.path, [index, "value"])),
-            };
-        });
-        if (ctx.common.async) {
-            const finalMap = new Map();
-            return Promise.resolve().then(async () => {
-                for (const pair of pairs) {
-                    const key = await pair.key;
-                    const value = await pair.value;
-                    if (key.status === "aborted" || value.status === "aborted") {
-                        return INVALID$3;
-                    }
-                    if (key.status === "dirty" || value.status === "dirty") {
-                        status.dirty();
-                    }
-                    finalMap.set(key.value, value.value);
-                }
-                return { status: status.value, value: finalMap };
-            });
-        }
-        else {
-            const finalMap = new Map();
-            for (const pair of pairs) {
-                const key = pair.key;
-                const value = pair.value;
-                if (key.status === "aborted" || value.status === "aborted") {
-                    return INVALID$3;
-                }
-                if (key.status === "dirty" || value.status === "dirty") {
-                    status.dirty();
-                }
-                finalMap.set(key.value, value.value);
-            }
-            return { status: status.value, value: finalMap };
-        }
-    }
-}
-ZodMap.create = (keyType, valueType, params) => {
-    return new ZodMap({
-        valueType,
+    return new ZodRecord({
+        type: "record",
         keyType,
-        typeName: ZodFirstPartyTypeKind.ZodMap,
-        ...processCreateParams(params),
+        valueType: valueType,
+        ...normalizeParams(params),
     });
-};
-class ZodSet extends ZodType {
-    _parse(input) {
-        const { status, ctx } = this._processInputParams(input);
-        if (ctx.parsedType !== ZodParsedType.set) {
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.set,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        const def = this._def;
-        if (def.minSize !== null) {
-            if (ctx.data.size < def.minSize.value) {
-                addIssueToContext(ctx, {
-                    code: ZodIssueCode.too_small,
-                    minimum: def.minSize.value,
-                    type: "set",
-                    inclusive: true,
-                    exact: false,
-                    message: def.minSize.message,
-                });
-                status.dirty();
+}
+const ZodEnum = /*@__PURE__*/ $constructor("ZodEnum", (inst, def) => {
+    $ZodEnum.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => enumProcessor(inst, ctx, json);
+    inst.enum = def.entries;
+    inst.options = Object.values(def.entries);
+    const keys = new Set(Object.keys(def.entries));
+    inst.extract = (values, params) => {
+        const newEntries = {};
+        for (const value of values) {
+            if (keys.has(value)) {
+                newEntries[value] = def.entries[value];
             }
+            else
+                throw new Error(`Key ${value} not found in enum`);
         }
-        if (def.maxSize !== null) {
-            if (ctx.data.size > def.maxSize.value) {
-                addIssueToContext(ctx, {
-                    code: ZodIssueCode.too_big,
-                    maximum: def.maxSize.value,
-                    type: "set",
-                    inclusive: true,
-                    exact: false,
-                    message: def.maxSize.message,
-                });
-                status.dirty();
-            }
-        }
-        const valueType = this._def.valueType;
-        function finalizeSet(elements) {
-            const parsedSet = new Set();
-            for (const element of elements) {
-                if (element.status === "aborted")
-                    return INVALID$3;
-                if (element.status === "dirty")
-                    status.dirty();
-                parsedSet.add(element.value);
-            }
-            return { status: status.value, value: parsedSet };
-        }
-        const elements = [...ctx.data.values()].map((item, i) => valueType._parse(new ParseInputLazyPath(ctx, item, ctx.path, i)));
-        if (ctx.common.async) {
-            return Promise.all(elements).then((elements) => finalizeSet(elements));
-        }
-        else {
-            return finalizeSet(elements);
-        }
-    }
-    min(minSize, message) {
-        return new ZodSet({
-            ...this._def,
-            minSize: { value: minSize, message: errorUtil.toString(message) },
+        return new ZodEnum({
+            ...def,
+            checks: [],
+            ...normalizeParams(params),
+            entries: newEntries,
         });
-    }
-    max(maxSize, message) {
-        return new ZodSet({
-            ...this._def,
-            maxSize: { value: maxSize, message: errorUtil.toString(message) },
-        });
-    }
-    size(size, message) {
-        return this.min(size, message).max(size, message);
-    }
-    nonempty(message) {
-        return this.min(1, message);
-    }
-}
-ZodSet.create = (valueType, params) => {
-    return new ZodSet({
-        valueType,
-        minSize: null,
-        maxSize: null,
-        typeName: ZodFirstPartyTypeKind.ZodSet,
-        ...processCreateParams(params),
-    });
-};
-class ZodLazy extends ZodType {
-    get schema() {
-        return this._def.getter();
-    }
-    _parse(input) {
-        const { ctx } = this._processInputParams(input);
-        const lazySchema = this._def.getter();
-        return lazySchema._parse({ data: ctx.data, path: ctx.path, parent: ctx });
-    }
-}
-ZodLazy.create = (getter, params) => {
-    return new ZodLazy({
-        getter: getter,
-        typeName: ZodFirstPartyTypeKind.ZodLazy,
-        ...processCreateParams(params),
-    });
-};
-class ZodLiteral extends ZodType {
-    _parse(input) {
-        if (input.data !== this._def.value) {
-            const ctx = this._getOrReturnCtx(input);
-            addIssueToContext(ctx, {
-                received: ctx.data,
-                code: ZodIssueCode.invalid_literal,
-                expected: this._def.value,
-            });
-            return INVALID$3;
+    };
+    inst.exclude = (values, params) => {
+        const newEntries = { ...def.entries };
+        for (const value of values) {
+            if (keys.has(value)) {
+                delete newEntries[value];
+            }
+            else
+                throw new Error(`Key ${value} not found in enum`);
         }
-        return { status: "valid", value: input.data };
-    }
-    get value() {
-        return this._def.value;
-    }
-}
-ZodLiteral.create = (value, params) => {
-    return new ZodLiteral({
-        value: value,
-        typeName: ZodFirstPartyTypeKind.ZodLiteral,
-        ...processCreateParams(params),
-    });
-};
-function createZodEnum(values, params) {
+        return new ZodEnum({
+            ...def,
+            checks: [],
+            ...normalizeParams(params),
+            entries: newEntries,
+        });
+    };
+});
+function _enum(values, params) {
+    const entries = Array.isArray(values) ? Object.fromEntries(values.map((v) => [v, v])) : values;
     return new ZodEnum({
-        values,
-        typeName: ZodFirstPartyTypeKind.ZodEnum,
-        ...processCreateParams(params),
+        type: "enum",
+        entries,
+        ...normalizeParams(params),
     });
 }
-class ZodEnum extends ZodType {
-    _parse(input) {
-        if (typeof input.data !== "string") {
-            const ctx = this._getOrReturnCtx(input);
-            const expectedValues = this._def.values;
-            addIssueToContext(ctx, {
-                expected: util.joinValues(expectedValues),
-                received: ctx.parsedType,
-                code: ZodIssueCode.invalid_type,
-            });
-            return INVALID$3;
+const ZodTransform = /*@__PURE__*/ $constructor("ZodTransform", (inst, def) => {
+    $ZodTransform.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => transformProcessor(inst, ctx);
+    inst._zod.parse = (payload, _ctx) => {
+        if (_ctx.direction === "backward") {
+            throw new $ZodEncodeError(inst.constructor.name);
         }
-        if (!this._cache) {
-            this._cache = new Set(this._def.values);
-        }
-        if (!this._cache.has(input.data)) {
-            const ctx = this._getOrReturnCtx(input);
-            const expectedValues = this._def.values;
-            addIssueToContext(ctx, {
-                received: ctx.data,
-                code: ZodIssueCode.invalid_enum_value,
-                options: expectedValues,
-            });
-            return INVALID$3;
-        }
-        return OK(input.data);
-    }
-    get options() {
-        return this._def.values;
-    }
-    get enum() {
-        const enumValues = {};
-        for (const val of this._def.values) {
-            enumValues[val] = val;
-        }
-        return enumValues;
-    }
-    get Values() {
-        const enumValues = {};
-        for (const val of this._def.values) {
-            enumValues[val] = val;
-        }
-        return enumValues;
-    }
-    get Enum() {
-        const enumValues = {};
-        for (const val of this._def.values) {
-            enumValues[val] = val;
-        }
-        return enumValues;
-    }
-    extract(values, newDef = this._def) {
-        return ZodEnum.create(values, {
-            ...this._def,
-            ...newDef,
-        });
-    }
-    exclude(values, newDef = this._def) {
-        return ZodEnum.create(this.options.filter((opt) => !values.includes(opt)), {
-            ...this._def,
-            ...newDef,
-        });
-    }
-}
-ZodEnum.create = createZodEnum;
-class ZodNativeEnum extends ZodType {
-    _parse(input) {
-        const nativeEnumValues = util.getValidEnumValues(this._def.values);
-        const ctx = this._getOrReturnCtx(input);
-        if (ctx.parsedType !== ZodParsedType.string && ctx.parsedType !== ZodParsedType.number) {
-            const expectedValues = util.objectValues(nativeEnumValues);
-            addIssueToContext(ctx, {
-                expected: util.joinValues(expectedValues),
-                received: ctx.parsedType,
-                code: ZodIssueCode.invalid_type,
-            });
-            return INVALID$3;
-        }
-        if (!this._cache) {
-            this._cache = new Set(util.getValidEnumValues(this._def.values));
-        }
-        if (!this._cache.has(input.data)) {
-            const expectedValues = util.objectValues(nativeEnumValues);
-            addIssueToContext(ctx, {
-                received: ctx.data,
-                code: ZodIssueCode.invalid_enum_value,
-                options: expectedValues,
-            });
-            return INVALID$3;
-        }
-        return OK(input.data);
-    }
-    get enum() {
-        return this._def.values;
-    }
-}
-ZodNativeEnum.create = (values, params) => {
-    return new ZodNativeEnum({
-        values: values,
-        typeName: ZodFirstPartyTypeKind.ZodNativeEnum,
-        ...processCreateParams(params),
-    });
-};
-class ZodPromise extends ZodType {
-    unwrap() {
-        return this._def.type;
-    }
-    _parse(input) {
-        const { ctx } = this._processInputParams(input);
-        if (ctx.parsedType !== ZodParsedType.promise && ctx.common.async === false) {
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.promise,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        const promisified = ctx.parsedType === ZodParsedType.promise ? ctx.data : Promise.resolve(ctx.data);
-        return OK(promisified.then((data) => {
-            return this._def.type.parseAsync(data, {
-                path: ctx.path,
-                errorMap: ctx.common.contextualErrorMap,
-            });
-        }));
-    }
-}
-ZodPromise.create = (schema, params) => {
-    return new ZodPromise({
-        type: schema,
-        typeName: ZodFirstPartyTypeKind.ZodPromise,
-        ...processCreateParams(params),
-    });
-};
-class ZodEffects extends ZodType {
-    innerType() {
-        return this._def.schema;
-    }
-    sourceType() {
-        return this._def.schema._def.typeName === ZodFirstPartyTypeKind.ZodEffects
-            ? this._def.schema.sourceType()
-            : this._def.schema;
-    }
-    _parse(input) {
-        const { status, ctx } = this._processInputParams(input);
-        const effect = this._def.effect || null;
-        const checkCtx = {
-            addIssue: (arg) => {
-                addIssueToContext(ctx, arg);
-                if (arg.fatal) {
-                    status.abort();
-                }
-                else {
-                    status.dirty();
-                }
-            },
-            get path() {
-                return ctx.path;
-            },
+        payload.addIssue = (issue$1) => {
+            if (typeof issue$1 === "string") {
+                payload.issues.push(issue(issue$1, payload.value, def));
+            }
+            else {
+                // for Zod 3 backwards compatibility
+                const _issue = issue$1;
+                if (_issue.fatal)
+                    _issue.continue = false;
+                _issue.code ?? (_issue.code = "custom");
+                _issue.input ?? (_issue.input = payload.value);
+                _issue.inst ?? (_issue.inst = inst);
+                // _issue.continue ??= true;
+                payload.issues.push(issue(_issue));
+            }
         };
-        checkCtx.addIssue = checkCtx.addIssue.bind(checkCtx);
-        if (effect.type === "preprocess") {
-            const processed = effect.transform(ctx.data, checkCtx);
-            if (ctx.common.async) {
-                return Promise.resolve(processed).then(async (processed) => {
-                    if (status.value === "aborted")
-                        return INVALID$3;
-                    const result = await this._def.schema._parseAsync({
-                        data: processed,
-                        path: ctx.path,
-                        parent: ctx,
-                    });
-                    if (result.status === "aborted")
-                        return INVALID$3;
-                    if (result.status === "dirty")
-                        return DIRTY(result.value);
-                    if (status.value === "dirty")
-                        return DIRTY(result.value);
-                    return result;
-                });
-            }
-            else {
-                if (status.value === "aborted")
-                    return INVALID$3;
-                const result = this._def.schema._parseSync({
-                    data: processed,
-                    path: ctx.path,
-                    parent: ctx,
-                });
-                if (result.status === "aborted")
-                    return INVALID$3;
-                if (result.status === "dirty")
-                    return DIRTY(result.value);
-                if (status.value === "dirty")
-                    return DIRTY(result.value);
-                return result;
-            }
+        const output = def.transform(payload.value, payload);
+        if (output instanceof Promise) {
+            return output.then((output) => {
+                payload.value = output;
+                payload.fallback = true;
+                return payload;
+            });
         }
-        if (effect.type === "refinement") {
-            const executeRefinement = (acc) => {
-                const result = effect.refinement(acc, checkCtx);
-                if (ctx.common.async) {
-                    return Promise.resolve(result);
-                }
-                if (result instanceof Promise) {
-                    throw new Error("Async refinement encountered during synchronous parse operation. Use .parseAsync instead.");
-                }
-                return acc;
-            };
-            if (ctx.common.async === false) {
-                const inner = this._def.schema._parseSync({
-                    data: ctx.data,
-                    path: ctx.path,
-                    parent: ctx,
-                });
-                if (inner.status === "aborted")
-                    return INVALID$3;
-                if (inner.status === "dirty")
-                    status.dirty();
-                // return value is ignored
-                executeRefinement(inner.value);
-                return { status: status.value, value: inner.value };
-            }
-            else {
-                return this._def.schema._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx }).then((inner) => {
-                    if (inner.status === "aborted")
-                        return INVALID$3;
-                    if (inner.status === "dirty")
-                        status.dirty();
-                    return executeRefinement(inner.value).then(() => {
-                        return { status: status.value, value: inner.value };
-                    });
-                });
-            }
-        }
-        if (effect.type === "transform") {
-            if (ctx.common.async === false) {
-                const base = this._def.schema._parseSync({
-                    data: ctx.data,
-                    path: ctx.path,
-                    parent: ctx,
-                });
-                if (!isValid(base))
-                    return INVALID$3;
-                const result = effect.transform(base.value, checkCtx);
-                if (result instanceof Promise) {
-                    throw new Error(`Asynchronous transform encountered during synchronous parse operation. Use .parseAsync instead.`);
-                }
-                return { status: status.value, value: result };
-            }
-            else {
-                return this._def.schema._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx }).then((base) => {
-                    if (!isValid(base))
-                        return INVALID$3;
-                    return Promise.resolve(effect.transform(base.value, checkCtx)).then((result) => ({
-                        status: status.value,
-                        value: result,
-                    }));
-                });
-            }
-        }
-        util.assertNever(effect);
-    }
-}
-ZodEffects.create = (schema, effect, params) => {
-    return new ZodEffects({
-        schema,
-        typeName: ZodFirstPartyTypeKind.ZodEffects,
-        effect,
-        ...processCreateParams(params),
+        payload.value = output;
+        payload.fallback = true;
+        return payload;
+    };
+});
+function transform(fn) {
+    return new ZodTransform({
+        type: "transform",
+        transform: fn,
     });
-};
-ZodEffects.createWithPreprocess = (preprocess, schema, params) => {
-    return new ZodEffects({
-        schema,
-        effect: { type: "preprocess", transform: preprocess },
-        typeName: ZodFirstPartyTypeKind.ZodEffects,
-        ...processCreateParams(params),
-    });
-};
-class ZodOptional extends ZodType {
-    _parse(input) {
-        const parsedType = this._getType(input);
-        if (parsedType === ZodParsedType.undefined) {
-            return OK(undefined);
-        }
-        return this._def.innerType._parse(input);
-    }
-    unwrap() {
-        return this._def.innerType;
-    }
 }
-ZodOptional.create = (type, params) => {
+const ZodOptional = /*@__PURE__*/ $constructor("ZodOptional", (inst, def) => {
+    $ZodOptional.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => optionalProcessor(inst, ctx, json, params);
+    inst.unwrap = () => inst._zod.def.innerType;
+});
+function optional(innerType) {
     return new ZodOptional({
-        innerType: type,
-        typeName: ZodFirstPartyTypeKind.ZodOptional,
-        ...processCreateParams(params),
+        type: "optional",
+        innerType: innerType,
     });
-};
-class ZodNullable extends ZodType {
-    _parse(input) {
-        const parsedType = this._getType(input);
-        if (parsedType === ZodParsedType.null) {
-            return OK(null);
-        }
-        return this._def.innerType._parse(input);
-    }
-    unwrap() {
-        return this._def.innerType;
-    }
 }
-ZodNullable.create = (type, params) => {
+const ZodExactOptional = /*@__PURE__*/ $constructor("ZodExactOptional", (inst, def) => {
+    $ZodExactOptional.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => optionalProcessor(inst, ctx, json, params);
+    inst.unwrap = () => inst._zod.def.innerType;
+});
+function exactOptional(innerType) {
+    return new ZodExactOptional({
+        type: "optional",
+        innerType: innerType,
+    });
+}
+const ZodNullable = /*@__PURE__*/ $constructor("ZodNullable", (inst, def) => {
+    $ZodNullable.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => nullableProcessor(inst, ctx, json, params);
+    inst.unwrap = () => inst._zod.def.innerType;
+});
+function nullable(innerType) {
     return new ZodNullable({
-        innerType: type,
-        typeName: ZodFirstPartyTypeKind.ZodNullable,
-        ...processCreateParams(params),
+        type: "nullable",
+        innerType: innerType,
     });
-};
-class ZodDefault extends ZodType {
-    _parse(input) {
-        const { ctx } = this._processInputParams(input);
-        let data = ctx.data;
-        if (ctx.parsedType === ZodParsedType.undefined) {
-            data = this._def.defaultValue();
-        }
-        return this._def.innerType._parse({
-            data,
-            path: ctx.path,
-            parent: ctx,
-        });
-    }
-    removeDefault() {
-        return this._def.innerType;
-    }
 }
-ZodDefault.create = (type, params) => {
+const ZodDefault = /*@__PURE__*/ $constructor("ZodDefault", (inst, def) => {
+    $ZodDefault.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => defaultProcessor(inst, ctx, json, params);
+    inst.unwrap = () => inst._zod.def.innerType;
+    inst.removeDefault = inst.unwrap;
+});
+function _default(innerType, defaultValue) {
     return new ZodDefault({
-        innerType: type,
-        typeName: ZodFirstPartyTypeKind.ZodDefault,
-        defaultValue: typeof params.default === "function" ? params.default : () => params.default,
-        ...processCreateParams(params),
+        type: "default",
+        innerType: innerType,
+        get defaultValue() {
+            return typeof defaultValue === "function" ? defaultValue() : shallowClone(defaultValue);
+        },
     });
-};
-class ZodCatch extends ZodType {
-    _parse(input) {
-        const { ctx } = this._processInputParams(input);
-        // newCtx is used to not collect issues from inner types in ctx
-        const newCtx = {
-            ...ctx,
-            common: {
-                ...ctx.common,
-                issues: [],
-            },
-        };
-        const result = this._def.innerType._parse({
-            data: newCtx.data,
-            path: newCtx.path,
-            parent: {
-                ...newCtx,
-            },
-        });
-        if (isAsync(result)) {
-            return result.then((result) => {
-                return {
-                    status: "valid",
-                    value: result.status === "valid"
-                        ? result.value
-                        : this._def.catchValue({
-                            get error() {
-                                return new ZodError(newCtx.common.issues);
-                            },
-                            input: newCtx.data,
-                        }),
-                };
-            });
-        }
-        else {
-            return {
-                status: "valid",
-                value: result.status === "valid"
-                    ? result.value
-                    : this._def.catchValue({
-                        get error() {
-                            return new ZodError(newCtx.common.issues);
-                        },
-                        input: newCtx.data,
-                    }),
-            };
-        }
-    }
-    removeCatch() {
-        return this._def.innerType;
-    }
 }
-ZodCatch.create = (type, params) => {
+const ZodPrefault = /*@__PURE__*/ $constructor("ZodPrefault", (inst, def) => {
+    $ZodPrefault.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => prefaultProcessor(inst, ctx, json, params);
+    inst.unwrap = () => inst._zod.def.innerType;
+});
+function prefault(innerType, defaultValue) {
+    return new ZodPrefault({
+        type: "prefault",
+        innerType: innerType,
+        get defaultValue() {
+            return typeof defaultValue === "function" ? defaultValue() : shallowClone(defaultValue);
+        },
+    });
+}
+const ZodNonOptional = /*@__PURE__*/ $constructor("ZodNonOptional", (inst, def) => {
+    $ZodNonOptional.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => nonoptionalProcessor(inst, ctx, json, params);
+    inst.unwrap = () => inst._zod.def.innerType;
+});
+function nonoptional(innerType, params) {
+    return new ZodNonOptional({
+        type: "nonoptional",
+        innerType: innerType,
+        ...normalizeParams(params),
+    });
+}
+const ZodCatch = /*@__PURE__*/ $constructor("ZodCatch", (inst, def) => {
+    $ZodCatch.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => catchProcessor(inst, ctx, json, params);
+    inst.unwrap = () => inst._zod.def.innerType;
+    inst.removeCatch = inst.unwrap;
+});
+function _catch(innerType, catchValue) {
     return new ZodCatch({
-        innerType: type,
-        typeName: ZodFirstPartyTypeKind.ZodCatch,
-        catchValue: typeof params.catch === "function" ? params.catch : () => params.catch,
-        ...processCreateParams(params),
+        type: "catch",
+        innerType: innerType,
+        catchValue: (typeof catchValue === "function" ? catchValue : () => catchValue),
     });
-};
-class ZodNaN extends ZodType {
-    _parse(input) {
-        const parsedType = this._getType(input);
-        if (parsedType !== ZodParsedType.nan) {
-            const ctx = this._getOrReturnCtx(input);
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.nan,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        return { status: "valid", value: input.data };
-    }
 }
-ZodNaN.create = (params) => {
-    return new ZodNaN({
-        typeName: ZodFirstPartyTypeKind.ZodNaN,
-        ...processCreateParams(params),
+const ZodPipe = /*@__PURE__*/ $constructor("ZodPipe", (inst, def) => {
+    $ZodPipe.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => pipeProcessor(inst, ctx, json, params);
+    inst.in = def.in;
+    inst.out = def.out;
+});
+function pipe(in_, out) {
+    return new ZodPipe({
+        type: "pipe",
+        in: in_,
+        out: out,
+        // ...util.normalizeParams(params),
     });
-};
-class ZodBranded extends ZodType {
-    _parse(input) {
-        const { ctx } = this._processInputParams(input);
-        const data = ctx.data;
-        return this._def.type._parse({
-            data,
-            path: ctx.path,
-            parent: ctx,
-        });
-    }
-    unwrap() {
-        return this._def.type;
-    }
 }
-class ZodPipeline extends ZodType {
-    _parse(input) {
-        const { status, ctx } = this._processInputParams(input);
-        if (ctx.common.async) {
-            const handleAsync = async () => {
-                const inResult = await this._def.in._parseAsync({
-                    data: ctx.data,
-                    path: ctx.path,
-                    parent: ctx,
-                });
-                if (inResult.status === "aborted")
-                    return INVALID$3;
-                if (inResult.status === "dirty") {
-                    status.dirty();
-                    return DIRTY(inResult.value);
-                }
-                else {
-                    return this._def.out._parseAsync({
-                        data: inResult.value,
-                        path: ctx.path,
-                        parent: ctx,
-                    });
-                }
-            };
-            return handleAsync();
-        }
-        else {
-            const inResult = this._def.in._parseSync({
-                data: ctx.data,
-                path: ctx.path,
-                parent: ctx,
-            });
-            if (inResult.status === "aborted")
-                return INVALID$3;
-            if (inResult.status === "dirty") {
-                status.dirty();
-                return {
-                    status: "dirty",
-                    value: inResult.value,
-                };
-            }
-            else {
-                return this._def.out._parseSync({
-                    data: inResult.value,
-                    path: ctx.path,
-                    parent: ctx,
-                });
-            }
-        }
-    }
-    static create(a, b) {
-        return new ZodPipeline({
-            in: a,
-            out: b,
-            typeName: ZodFirstPartyTypeKind.ZodPipeline,
-        });
-    }
-}
-class ZodReadonly extends ZodType {
-    _parse(input) {
-        const result = this._def.innerType._parse(input);
-        const freeze = (data) => {
-            if (isValid(data)) {
-                data.value = Object.freeze(data.value);
-            }
-            return data;
-        };
-        return isAsync(result) ? result.then((data) => freeze(data)) : freeze(result);
-    }
-    unwrap() {
-        return this._def.innerType;
-    }
-}
-ZodReadonly.create = (type, params) => {
+const ZodPreprocess = /*@__PURE__*/ $constructor("ZodPreprocess", (inst, def) => {
+    ZodPipe.init(inst, def);
+    $ZodPreprocess.init(inst, def);
+});
+const ZodReadonly = /*@__PURE__*/ $constructor("ZodReadonly", (inst, def) => {
+    $ZodReadonly.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => readonlyProcessor(inst, ctx, json, params);
+    inst.unwrap = () => inst._zod.def.innerType;
+});
+function readonly(innerType) {
     return new ZodReadonly({
-        innerType: type,
-        typeName: ZodFirstPartyTypeKind.ZodReadonly,
-        ...processCreateParams(params),
+        type: "readonly",
+        innerType: innerType,
     });
-};
-var ZodFirstPartyTypeKind;
-(function (ZodFirstPartyTypeKind) {
-    ZodFirstPartyTypeKind["ZodString"] = "ZodString";
-    ZodFirstPartyTypeKind["ZodNumber"] = "ZodNumber";
-    ZodFirstPartyTypeKind["ZodNaN"] = "ZodNaN";
-    ZodFirstPartyTypeKind["ZodBigInt"] = "ZodBigInt";
-    ZodFirstPartyTypeKind["ZodBoolean"] = "ZodBoolean";
-    ZodFirstPartyTypeKind["ZodDate"] = "ZodDate";
-    ZodFirstPartyTypeKind["ZodSymbol"] = "ZodSymbol";
-    ZodFirstPartyTypeKind["ZodUndefined"] = "ZodUndefined";
-    ZodFirstPartyTypeKind["ZodNull"] = "ZodNull";
-    ZodFirstPartyTypeKind["ZodAny"] = "ZodAny";
-    ZodFirstPartyTypeKind["ZodUnknown"] = "ZodUnknown";
-    ZodFirstPartyTypeKind["ZodNever"] = "ZodNever";
-    ZodFirstPartyTypeKind["ZodVoid"] = "ZodVoid";
-    ZodFirstPartyTypeKind["ZodArray"] = "ZodArray";
-    ZodFirstPartyTypeKind["ZodObject"] = "ZodObject";
-    ZodFirstPartyTypeKind["ZodUnion"] = "ZodUnion";
-    ZodFirstPartyTypeKind["ZodDiscriminatedUnion"] = "ZodDiscriminatedUnion";
-    ZodFirstPartyTypeKind["ZodIntersection"] = "ZodIntersection";
-    ZodFirstPartyTypeKind["ZodTuple"] = "ZodTuple";
-    ZodFirstPartyTypeKind["ZodRecord"] = "ZodRecord";
-    ZodFirstPartyTypeKind["ZodMap"] = "ZodMap";
-    ZodFirstPartyTypeKind["ZodSet"] = "ZodSet";
-    ZodFirstPartyTypeKind["ZodFunction"] = "ZodFunction";
-    ZodFirstPartyTypeKind["ZodLazy"] = "ZodLazy";
-    ZodFirstPartyTypeKind["ZodLiteral"] = "ZodLiteral";
-    ZodFirstPartyTypeKind["ZodEnum"] = "ZodEnum";
-    ZodFirstPartyTypeKind["ZodEffects"] = "ZodEffects";
-    ZodFirstPartyTypeKind["ZodNativeEnum"] = "ZodNativeEnum";
-    ZodFirstPartyTypeKind["ZodOptional"] = "ZodOptional";
-    ZodFirstPartyTypeKind["ZodNullable"] = "ZodNullable";
-    ZodFirstPartyTypeKind["ZodDefault"] = "ZodDefault";
-    ZodFirstPartyTypeKind["ZodCatch"] = "ZodCatch";
-    ZodFirstPartyTypeKind["ZodPromise"] = "ZodPromise";
-    ZodFirstPartyTypeKind["ZodBranded"] = "ZodBranded";
-    ZodFirstPartyTypeKind["ZodPipeline"] = "ZodPipeline";
-    ZodFirstPartyTypeKind["ZodReadonly"] = "ZodReadonly";
-})(ZodFirstPartyTypeKind || (ZodFirstPartyTypeKind = {}));
-const stringType = ZodString.create;
-const numberType = ZodNumber.create;
-const booleanType = ZodBoolean.create;
-const anyType = ZodAny.create;
-const unknownType = ZodUnknown.create;
-ZodNever.create;
-const arrayType = ZodArray.create;
-const objectType = ZodObject.create;
-const unionType = ZodUnion.create;
-ZodIntersection.create;
-ZodTuple.create;
-const recordType = ZodRecord.create;
-const lazyType = ZodLazy.create;
-const enumType = ZodEnum.create;
-ZodPromise.create;
-ZodOptional.create;
-ZodNullable.create;
+}
+const ZodLazy = /*@__PURE__*/ $constructor("ZodLazy", (inst, def) => {
+    $ZodLazy.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => lazyProcessor(inst, ctx, json, params);
+    inst.unwrap = () => inst._zod.def.getter();
+});
+function lazy(getter) {
+    return new ZodLazy({
+        type: "lazy",
+        getter: getter,
+    });
+}
+const ZodCustom = /*@__PURE__*/ $constructor("ZodCustom", (inst, def) => {
+    $ZodCustom.init(inst, def);
+    ZodType.init(inst, def);
+    inst._zod.processJSONSchema = (ctx, json, params) => customProcessor(inst, ctx);
+});
+function refine(fn, _params = {}) {
+    return _refine(ZodCustom, fn, _params);
+}
+// superRefine
+function superRefine(fn, params) {
+    return _superRefine(fn, params);
+}
+// preprocess
+function preprocess(fn, schema) {
+    return new ZodPreprocess({
+        type: "pipe",
+        in: transform(fn),
+        out: schema,
+    });
+}
 
 /**
  * Grid slice — zod schemas for grid-domain API payloads.
@@ -5062,63 +6214,63 @@ ZodNullable.create;
 // ---------------------------------------------------------------------------
 // Individual plant slot (the grid cell description returned by the backend)
 // ---------------------------------------------------------------------------
-const PlantSlotSchema = objectType({
-    entity_id: stringType().optional().default(''),
-    plant_id: stringType().optional().default(''),
-    stage: stringType().optional().default('unknown'),
-    strain: stringType().optional().default(''),
-    phenotype: unionType([stringType(), unknownType()]).optional().default(''),
-    row: numberType().optional().default(0),
-    col: numberType().optional().default(0),
-    position: stringType().optional().default(''),
+const PlantSlotSchema = object({
+    entity_id: string().optional().default(''),
+    plant_id: string().optional().default(''),
+    stage: string().optional().default('unknown'),
+    strain: string().optional().default(''),
+    phenotype: union([string(), unknown()]).optional().default(''),
+    row: number().optional().default(0),
+    col: number().optional().default(0),
+    position: string().optional().default(''),
     // Days in stage
-    seedling_days: numberType().optional().default(0),
-    mother_days: numberType().optional().default(0),
-    clone_days: numberType().optional().default(0),
-    veg_days: numberType().optional().default(0),
-    flower_days: numberType().optional().default(0),
-    dry_days: numberType().optional().default(0),
-    cure_days: numberType().optional().default(0),
-    last_ipm: stringType().nullable().optional().default(null),
-    last_ipm_type: stringType().nullable().optional().default(null),
-    phi_clearance_date: stringType().nullable().optional().default(null),
-    phi_days_remaining: numberType().nullable().optional().default(null),
+    seedling_days: number().optional().default(0),
+    mother_days: number().optional().default(0),
+    clone_days: number().optional().default(0),
+    veg_days: number().optional().default(0),
+    flower_days: number().optional().default(0),
+    dry_days: number().optional().default(0),
+    cure_days: number().optional().default(0),
+    last_ipm: string().nullable().optional().default(null),
+    last_ipm_type: string().nullable().optional().default(null),
+    phi_clearance_date: string().nullable().optional().default(null),
+    phi_days_remaining: number().nullable().optional().default(null),
     // Start dates
-    seedling_start: stringType().nullable().optional().default(null),
-    mother_start: stringType().nullable().optional().default(null),
-    clone_start: stringType().nullable().optional().default(null),
-    veg_start: stringType().nullable().optional().default(null),
-    flower_start: stringType().nullable().optional().default(null),
-    dry_start: stringType().nullable().optional().default(null),
-    cure_start: stringType().nullable().optional().default(null),
+    seedling_start: string().nullable().optional().default(null),
+    mother_start: string().nullable().optional().default(null),
+    clone_start: string().nullable().optional().default(null),
+    veg_start: string().nullable().optional().default(null),
+    flower_start: string().nullable().optional().default(null),
+    dry_start: string().nullable().optional().default(null),
+    cure_start: string().nullable().optional().default(null),
 })
-    .catchall(unknownType())
+    .catchall(unknown())
     .nullable();
 // ---------------------------------------------------------------------------
 // Grid dimensions — physical size metadata for a growspace grid
 // ---------------------------------------------------------------------------
-const GridDimensionsSchema = objectType({
-    length: numberType().optional(),
-    width: numberType().optional(),
-    height: numberType().optional(),
-    unit: stringType().optional().default('cm'),
+const GridDimensionsSchema = object({
+    length: number().optional(),
+    width: number().optional(),
+    height: number().optional(),
+    unit: string().optional().default('cm'),
 })
     .optional();
 // ---------------------------------------------------------------------------
 // Grid API object — the `grid` key in a single growspace API response
 // ---------------------------------------------------------------------------
-const GridApiSchema = objectType({
-    rows: numberType().optional().default(3),
-    plants_per_row: numberType().optional().default(3),
-    total_plants: numberType().optional().default(0),
+const GridApiSchema = object({
+    rows: number().optional().default(3),
+    plants_per_row: number().optional().default(3),
+    total_plants: number().optional().default(0),
     dimensions: GridDimensionsSchema,
-    grid: recordType(stringType(), PlantSlotSchema)
+    grid: record(string(), PlantSlotSchema)
         .nullable()
         .optional()
         .transform((v) => v ?? {}),
 })
     .optional()
-    .default({});
+    .prefault({});
 
 /**
  * Subarea slice — zod schemas for WebSocket response validation.
@@ -5129,405 +6281,405 @@ const GridApiSchema = objectType({
 // ---------------------------------------------------------------------------
 // SensorGroup
 // ---------------------------------------------------------------------------
-const SensorGroupSchema = objectType({
-    id: stringType(),
-    name: stringType(),
-    x: numberType(),
-    y: numberType(),
-    z: numberType(),
-    temperature_sensors: arrayType(stringType()),
-    humidity_sensors: arrayType(stringType()),
-    vpd_sensors: arrayType(stringType()),
+const SensorGroupSchema = object({
+    id: string(),
+    name: string(),
+    x: number(),
+    y: number(),
+    z: number(),
+    temperature_sensors: array(string()),
+    humidity_sensors: array(string()),
+    vpd_sensors: array(string()),
 });
 // ---------------------------------------------------------------------------
 // EnvironmentConfig
 // ---------------------------------------------------------------------------
-const EnvironmentConfigSchema = objectType({
-    temperature_sensor: stringType().nullish(),
-    humidity_sensor: stringType().nullish(),
-    vpd_sensor: stringType().nullish(),
-    co2_sensor: stringType().nullish(),
-    soil_moisture_sensor: stringType().nullish(),
-    veg_day_hours: numberType().optional(),
-    flower_day_hours: numberType().optional(),
-    temperature_sensors: arrayType(stringType()).optional(),
-    humidity_sensors: arrayType(stringType()).optional(),
-    vpd_sensors: arrayType(stringType()).optional(),
-    light_sensors: arrayType(stringType()).optional(),
-    exhaust_fan_entities: arrayType(stringType()).optional(),
-    circulation_fan_entities: arrayType(stringType()).optional(),
-    humidifier_entities: arrayType(stringType()).optional(),
-    dehumidifier_entities: arrayType(stringType()).optional(),
-    sensor_coordinates: recordType(objectType({ x: numberType(), y: numberType(), z: numberType(), rotation: numberType().optional() }))
+const EnvironmentConfigSchema = object({
+    temperature_sensor: string().nullish(),
+    humidity_sensor: string().nullish(),
+    vpd_sensor: string().nullish(),
+    co2_sensor: string().nullish(),
+    soil_moisture_sensor: string().nullish(),
+    veg_day_hours: number().optional(),
+    flower_day_hours: number().optional(),
+    temperature_sensors: array(string()).optional(),
+    humidity_sensors: array(string()).optional(),
+    vpd_sensors: array(string()).optional(),
+    light_sensors: array(string()).optional(),
+    exhaust_fan_entities: array(string()).optional(),
+    circulation_fan_entities: array(string()).optional(),
+    humidifier_entities: array(string()).optional(),
+    dehumidifier_entities: array(string()).optional(),
+    sensor_coordinates: record(string(), object({ x: number(), y: number(), z: number(), rotation: number().optional() }))
         .optional(),
-    sensor_groups: arrayType(SensorGroupSchema).optional(),
-    substrate_temperature_sensors: arrayType(stringType()).optional(),
-    camera_entities: arrayType(stringType()).optional(),
-    lung_room_temp_sensors: arrayType(stringType()).optional(),
-    ph_sensors: arrayType(stringType()).optional(),
-    feed_ec_sensors: arrayType(stringType()).optional(),
-    bulk_ec_sensors: arrayType(stringType()).optional(),
-    pore_ec_sensors: arrayType(stringType()).optional(),
-    runoff_ec_sensors: arrayType(stringType()).optional(),
-    drain_volume_sensors: arrayType(stringType()).optional(),
-    irrigation_flow_sensors: arrayType(stringType()).optional(),
-    power_sensors: arrayType(stringType()).optional(),
-    energy_sensors: arrayType(stringType()).optional(),
-    electricity_cost_per_kwh: numberType().optional(),
-    dli_target_veg: numberType().optional(),
-    dli_target_flower: numberType().optional(),
-    control_dehumidifier: booleanType().optional(),
-    stress_threshold: numberType().optional(),
-    mold_threshold: numberType().optional(),
+    sensor_groups: array(SensorGroupSchema).optional(),
+    substrate_temperature_sensors: array(string()).optional(),
+    camera_entities: array(string()).optional(),
+    lung_room_temp_sensors: array(string()).optional(),
+    ph_sensors: array(string()).optional(),
+    feed_ec_sensors: array(string()).optional(),
+    bulk_ec_sensors: array(string()).optional(),
+    pore_ec_sensors: array(string()).optional(),
+    runoff_ec_sensors: array(string()).optional(),
+    drain_volume_sensors: array(string()).optional(),
+    irrigation_flow_sensors: array(string()).optional(),
+    power_sensors: array(string()).optional(),
+    energy_sensors: array(string()).optional(),
+    electricity_cost_per_kwh: number().optional(),
+    dli_target_veg: number().optional(),
+    dli_target_flower: number().optional(),
+    control_dehumidifier: boolean().optional(),
+    stress_threshold: number().optional(),
+    mold_threshold: number().optional(),
 });
 // ---------------------------------------------------------------------------
 // Subarea
 // ---------------------------------------------------------------------------
-const SubareaSchema = objectType({
-    id: stringType(),
-    name: stringType(),
+const SubareaSchema = object({
+    id: string(),
+    name: string(),
     environment_config: EnvironmentConfigSchema,
 });
 // ---------------------------------------------------------------------------
 // Response schemas
 // ---------------------------------------------------------------------------
 /** get_subareas returns an array of Subarea objects. */
-const GetSubareasResponseSchema = arrayType(SubareaSchema);
+const GetSubareasResponseSchema = array(SubareaSchema);
 /** add_subarea and update_subarea return a single Subarea. */
 const SubareaResponseSchema = SubareaSchema;
 /** remove_subarea returns nothing meaningful. */
-const RemoveSubareaResponseSchema = unknownType();
+const RemoveSubareaResponseSchema = unknown();
 
-const IrrigationScheduleItemSchema = objectType({
-    time: stringType().optional(),
-    start_time: stringType().optional(),
-    duration: numberType().nullable().optional(),
-    duration_seconds: numberType().nullable().optional(),
+const IrrigationScheduleItemSchema = object({
+    time: string().optional(),
+    start_time: string().optional(),
+    duration: number().nullable().optional(),
+    duration_seconds: number().nullable().optional(),
 })
     .transform((data) => ({
     time: data.time || data.start_time || '',
     duration: data.duration ?? data.duration_seconds ?? undefined,
 }))
     .refine((data) => data.time !== '', { message: 'Time is required' });
-const IrrigationStrategySchema = objectType({
-    enabled: booleanType(),
-    lights_on_time: stringType(),
-    p0_duration_minutes: numberType(),
-    p2_stop_before_lights_off_minutes: numberType(),
-    target_vwc_percent: numberType(),
-    maintenance_dryback_percent: numberType(),
-    shot_duration_seconds: numberType(),
-    shot_interval_minutes: numberType(),
-    auto_light_tracking: booleanType().default(false),
-    detected_lights_on_time: stringType().nullable().default(null),
+const IrrigationStrategySchema = object({
+    enabled: boolean(),
+    lights_on_time: string(),
+    p0_duration_minutes: number(),
+    p2_stop_before_lights_off_minutes: number(),
+    target_vwc_percent: number(),
+    maintenance_dryback_percent: number(),
+    shot_duration_seconds: number(),
+    shot_interval_minutes: number(),
+    auto_light_tracking: boolean().default(false),
+    detected_lights_on_time: string().nullable().default(null),
 });
-const IrrigationConfigSchema = objectType({
-    irrigation_pump_entity: stringType().nullable().optional(),
-    drain_pump_entity: stringType().nullable().optional(),
-    irrigation_duration: numberType().nullable().optional(),
-    drain_duration: numberType().nullable().optional(),
-    irrigation_times: arrayType(unionType([stringType().transform((t) => ({ time: t })), IrrigationScheduleItemSchema]))
+const IrrigationConfigSchema = object({
+    irrigation_pump_entity: string().nullable().optional(),
+    drain_pump_entity: string().nullable().optional(),
+    irrigation_duration: number().nullable().optional(),
+    drain_duration: number().nullable().optional(),
+    irrigation_times: array(union([string().transform((t) => ({ time: t })), IrrigationScheduleItemSchema]))
         .optional()
         .default([]),
-    drain_times: arrayType(unionType([stringType().transform((t) => ({ time: t })), IrrigationScheduleItemSchema]))
+    drain_times: array(union([string().transform((t) => ({ time: t })), IrrigationScheduleItemSchema]))
         .optional()
         .default([]),
-    veg_day_hours: numberType().optional(),
+    veg_day_hours: number().optional(),
 })
     .passthrough()
     .optional()
-    .default({});
-const DrainConfigSchema = objectType({
-    enabled: booleanType(),
-    max_ec_delta: numberType(),
-    target_runoff_percent: numberType(),
-    readings: arrayType(objectType({
-        timestamp: stringType(),
-        feed_ec: numberType(),
-        drain_ec: numberType(),
-        drain_volume_ml: numberType().nullable().optional(),
-        feed_volume_ml: numberType().nullable().optional(),
+    .prefault({});
+const DrainConfigSchema = object({
+    enabled: boolean(),
+    max_ec_delta: number(),
+    target_runoff_percent: number(),
+    readings: array(object({
+        timestamp: string(),
+        feed_ec: number(),
+        drain_ec: number(),
+        drain_volume_ml: number().nullable().optional(),
+        feed_volume_ml: number().nullable().optional(),
     }))
         .optional()
         .default([]),
 })
     .nullable()
     .optional();
-const DrybackEventSchema = objectType({
-    event_type: stringType().optional(),
-    peak_vwc: numberType(),
-    trough_vwc: numberType(),
-    dryback: numberType(),
-    peak_timestamp: stringType().nullable().optional(),
-    trough_timestamp: stringType().nullable().optional(),
+const DrybackEventSchema = object({
+    event_type: string().optional(),
+    peak_vwc: number(),
+    trough_vwc: number(),
+    dryback: number(),
+    peak_timestamp: string().nullable().optional(),
+    trough_timestamp: string().nullable().optional(),
 });
 // Measured steering readout (#444/#445/#448): tracker-derived dryback / EC
 // fields plus the injected score, Measured Classification, Intent Deviation,
 // and shot composition. Measured fields are nullable (no reading yet); a null
 // ec_trend with ec_trend_available=false drives the card's unlock hint.
-const SubstrateMetricsSchema = objectType({
-    overnight_dryback: numberType().nullable().optional(),
+const SubstrateMetricsSchema = object({
+    overnight_dryback: number().nullable().optional(),
     latest_overnight_event: DrybackEventSchema.nullable().optional(),
-    incycle_dryback_count: numberType().optional().default(0),
-    incycle_dryback_avg: numberType().nullable().optional(),
-    ec_trend: enumType(['rising', 'stable', 'falling']).nullable().optional(),
-    ec_trend_available: booleanType().optional().default(false),
-    ec_trend_detail: objectType({
-        trend: stringType(),
-        day_start_ec: numberType(),
-        current_ec: numberType(),
-        delta: numberType(),
+    incycle_dryback_count: number().optional().default(0),
+    incycle_dryback_avg: number().nullable().optional(),
+    ec_trend: _enum(['rising', 'stable', 'falling']).nullable().optional(),
+    ec_trend_available: boolean().optional().default(false),
+    ec_trend_detail: object({
+        trend: string(),
+        day_start_ec: number(),
+        current_ec: number(),
+        delta: number(),
     })
         .nullable()
         .optional(),
-    score: numberType().nullable().optional(),
-    measured_classification: enumType(['vegetative', 'balanced', 'generative'])
+    score: number().nullable().optional(),
+    measured_classification: _enum(['vegetative', 'balanced', 'generative'])
         .nullable()
         .optional(),
-    intent_deviation: enumType(['on_target', 'more_generative', 'more_vegetative'])
+    intent_deviation: _enum(['on_target', 'more_generative', 'more_vegetative'])
         .nullable()
         .optional(),
-    shot_composition: recordType(unknownType()).nullable().optional(),
+    shot_composition: record(string(), unknown()).nullable().optional(),
 })
     .passthrough()
     .nullable()
     .optional();
-const CirculationFanConfigSchema = objectType({
-    enabled: booleanType(),
-    regulation_mode: enumType(['vpd', 'humidity', 'temperature']),
-    min_speed: numberType(),
-    max_speed: numberType(),
-    vpd_target: numberType(),
-    vpd_tolerance: numberType(),
-    humidity_target: numberType(),
-    humidity_tolerance: numberType(),
-    temperature_target: numberType(),
-    temperature_tolerance: numberType(),
-    critical_temp_low: numberType().nullable(),
-    critical_temp_high: numberType().nullable(),
-    critical_temp_hysteresis: numberType(),
-    wind_enabled: booleanType(),
-    wind_period_seconds: numberType(),
-    wind_amplitude_pct: numberType(),
-    stage_vpd_enabled: booleanType(),
-    stage_vpd_overrides: recordType(stringType(), objectType({ day: numberType(), night: numberType() }))
+const CirculationFanConfigSchema = object({
+    enabled: boolean(),
+    regulation_mode: _enum(['vpd', 'humidity', 'temperature']),
+    min_speed: number(),
+    max_speed: number(),
+    vpd_target: number(),
+    vpd_tolerance: number(),
+    humidity_target: number(),
+    humidity_tolerance: number(),
+    temperature_target: number(),
+    temperature_tolerance: number(),
+    critical_temp_low: number().nullable(),
+    critical_temp_high: number().nullable(),
+    critical_temp_hysteresis: number(),
+    wind_enabled: boolean(),
+    wind_period_seconds: number(),
+    wind_amplitude_pct: number(),
+    stage_vpd_enabled: boolean(),
+    stage_vpd_overrides: record(string(), object({ day: number(), night: number() }))
         .optional()
         .default({}),
 });
-const GrowspaceAPIResponseSchema = objectType({
-    identity: objectType({
-        growspace_id: stringType(),
-        overview_entity_id: stringType().optional(),
-        name: stringType(),
-        type: enumType(['normal', 'mother', 'clone', 'dry', 'cure', 'flower', 'veg']),
-        notification_target: stringType().nullable().optional(),
+const GrowspaceAPIResponseSchema = object({
+    identity: object({
+        growspace_id: string(),
+        overview_entity_id: string().optional(),
+        name: string(),
+        type: _enum(['normal', 'mother', 'clone', 'dry', 'cure', 'flower', 'veg']),
+        notification_target: string().nullable().optional(),
     })
         .optional()
         .default({ growspace_id: '', name: '', type: 'normal' }),
     grid: GridApiSchema,
-    environment: objectType({
-        temperature_sensor: stringType().optional(),
-        humidity_sensor: stringType().optional(),
-        vpd_sensor: stringType().optional(),
-        co2_sensor: stringType().optional(),
-        soil_moisture_sensor: stringType().optional(),
-        light_sensor: stringType().optional(),
-        exhaust_entity: stringType().optional(),
-        humidifier_entity: stringType().optional(),
-        humidifier_control_enabled: booleanType().optional(),
-        dehumidifier_entity: stringType().optional(),
-        dehumidifier_control_enabled: booleanType().optional(),
-        circulation_fan_entity: stringType().optional(),
-        circulation_fan_entities: arrayType(stringType()).optional().default([]),
+    environment: object({
+        temperature_sensor: string().optional(),
+        humidity_sensor: string().optional(),
+        vpd_sensor: string().optional(),
+        co2_sensor: string().optional(),
+        soil_moisture_sensor: string().optional(),
+        light_sensor: string().optional(),
+        exhaust_entity: string().optional(),
+        humidifier_entity: string().optional(),
+        humidifier_control_enabled: boolean().optional(),
+        dehumidifier_entity: string().optional(),
+        dehumidifier_control_enabled: boolean().optional(),
+        circulation_fan_entity: string().optional(),
+        circulation_fan_entities: array(string()).optional().default([]),
         circulation_fan_config: CirculationFanConfigSchema.optional(),
-        exhaust_fan_entities: arrayType(stringType()).optional().default([]),
-        humidifier_entities: arrayType(stringType()).optional().default([]),
-        dehumidifier_entities: arrayType(stringType()).optional().default([]),
-        light_sensors: arrayType(stringType()).optional().default([]),
-        vpd: stringType().nullable().optional(),
-        soil_moisture_value: stringType().nullable().optional(),
-        dehumidifier_state: stringType().nullable().optional(),
-        humidifier_thresholds: recordType(stringType(), recordType(stringType(), objectType({ on: numberType(), off: numberType() })))
+        exhaust_fan_entities: array(string()).optional().default([]),
+        humidifier_entities: array(string()).optional().default([]),
+        dehumidifier_entities: array(string()).optional().default([]),
+        light_sensors: array(string()).optional().default([]),
+        vpd: string().nullable().optional(),
+        soil_moisture_value: string().nullable().optional(),
+        dehumidifier_state: string().nullable().optional(),
+        humidifier_thresholds: record(string(), record(string(), object({ on: number(), off: number() })))
             .optional()
             .default({}),
-        dehumidifier_thresholds: recordType(stringType(), recordType(stringType(), objectType({ on: numberType(), off: numberType() })))
+        dehumidifier_thresholds: record(string(), record(string(), object({ on: number(), off: number() })))
             .optional()
             .default({}),
-        vpd_optimal_overrides: recordType(stringType(), objectType({
-            day: objectType({ low: numberType(), high: numberType() }),
-            night: objectType({ low: numberType(), high: numberType() }),
+        vpd_optimal_overrides: record(string(), object({
+            day: object({ low: number(), high: number() }),
+            night: object({ low: number(), high: number() }),
         }))
             .optional()
             .default({}),
-        electricity_cost_per_kwh: numberType().nullable().optional(),
-        substrate_temperature_sensors: arrayType(stringType()).optional().default([]),
-        camera_entities: arrayType(stringType()).optional().default([]),
-        energy_sensors: arrayType(stringType()).optional().default([]),
-        irrigation_tanks: arrayType(unknownType()).optional().default([]),
-        irrigation_pump_state: stringType().nullable().optional(),
-        drain_pump_state: stringType().nullable().optional(),
-        active_events: recordType(unknownType()).optional().default({}),
+        electricity_cost_per_kwh: number().nullable().optional(),
+        substrate_temperature_sensors: array(string()).optional().default([]),
+        camera_entities: array(string()).optional().default([]),
+        energy_sensors: array(string()).optional().default([]),
+        irrigation_tanks: array(unknown()).optional().default([]),
+        irrigation_pump_state: string().nullable().optional(),
+        drain_pump_state: string().nullable().optional(),
+        active_events: record(string(), unknown()).optional().default({}),
     })
         .passthrough()
         .optional()
-        .default({}),
-    sensors: objectType({
-        sensor_types: recordType(stringType(), stringType()).optional().default({}),
-        sensor_coordinates: recordType(stringType(), objectType({
-            x: numberType(),
-            y: numberType(),
-            z: numberType(),
-            rotation: numberType().optional(),
+        .prefault({}),
+    sensors: object({
+        sensor_types: record(string(), string()).optional().default({}),
+        sensor_coordinates: record(string(), object({
+            x: number(),
+            y: number(),
+            z: number(),
+            rotation: number().optional(),
         }))
             .optional()
             .default({}),
-        sensor_groups: arrayType(unknownType()).optional().default([]),
+        sensor_groups: array(unknown()).optional().default([]),
     })
         .optional()
-        .default({}),
+        .prefault({}),
     // Same wire shape as get_subareas (SubareaSchema). Optional: older backends
     // don't include the key in the growspace payload.
-    subareas: arrayType(SubareaSchema).optional(),
-    irrigation: objectType({
+    subareas: array(SubareaSchema).optional(),
+    irrigation: object({
         irrigation_config: IrrigationConfigSchema,
         irrigation_strategy: IrrigationStrategySchema.nullable().optional().default(null),
         drain_config: DrainConfigSchema,
         substrate: SubstrateMetricsSchema,
-        water_usage: objectType({
-            total_liters: numberType().optional().default(0),
-            cycle_start_date: stringType().optional().default(''),
-            daily_readings: arrayType(unknownType()).optional().default([]),
+        water_usage: object({
+            total_liters: number().optional().default(0),
+            cycle_start_date: string().optional().default(''),
+            daily_readings: array(unknown()).optional().default([]),
         })
             .nullable()
             .optional(),
-        last_cycle_timestamp: stringType().nullable().optional(),
-        next_scheduled_cycle: stringType().nullable().optional(),
-        projected_shot_window: objectType({ start: stringType(), end: stringType() })
+        last_cycle_timestamp: string().nullable().optional(),
+        next_scheduled_cycle: string().nullable().optional(),
+        projected_shot_window: object({ start: string(), end: string() })
             .nullable()
             .optional(),
-        cycles_today: numberType().optional().default(0),
-        volume_dispensed_today: numberType().optional().default(0),
+        cycles_today: number().optional().default(0),
+        volume_dispensed_today: number().optional().default(0),
     })
         .optional()
-        .default({}),
-    metrics: objectType({
-        vpd_status: stringType().optional().default('unknown'),
-        vpd_target_min: numberType().optional().default(0),
-        vpd_target_max: numberType().optional().default(0),
-        vpd_danger_min: numberType().optional().default(0),
-        vpd_danger_max: numberType().optional().default(0),
-        granular_stage: stringType().optional().default('unknown'),
-        is_day: booleanType().optional().default(false),
-        veg_week: numberType().optional().default(0),
-        flower_week: numberType().optional().default(0),
-        max_veg_days: numberType().optional().default(0),
-        max_flower_days: numberType().optional().default(0),
-        max_dry_days: numberType().optional().default(0),
-        max_cure_days: numberType().optional().default(0),
-        max_stage_summary: stringType().optional().default(''),
-        air_exchange: unionType([stringType(), numberType().transform(String)])
+        .prefault({}),
+    metrics: object({
+        vpd_status: string().optional().default('unknown'),
+        vpd_target_min: preprocess((val) => (val === null ? undefined : val), number().optional().default(0)),
+        vpd_target_max: preprocess((val) => (val === null ? undefined : val), number().optional().default(0)),
+        vpd_danger_min: preprocess((val) => (val === null ? undefined : val), number().optional().default(0)),
+        vpd_danger_max: preprocess((val) => (val === null ? undefined : val), number().optional().default(0)),
+        granular_stage: string().optional().default('unknown'),
+        is_day: boolean().optional().default(false),
+        veg_week: number().optional().default(0),
+        flower_week: number().optional().default(0),
+        max_veg_days: number().optional().default(0),
+        max_flower_days: number().optional().default(0),
+        max_dry_days: number().optional().default(0),
+        max_cure_days: number().optional().default(0),
+        max_stage_summary: string().optional().default(''),
+        air_exchange: union([string(), number().transform(String)])
             .nullable()
             .optional(),
-        energy_tracking: objectType({
-            cycle_start_date: stringType().nullable().optional(),
-            cycle_start_kwh: numberType().nullable().optional(),
+        energy_tracking: object({
+            cycle_start_date: string().nullable().optional(),
+            cycle_start_kwh: number().nullable().optional(),
         })
             .nullable()
             .optional(),
     })
         .passthrough()
         .optional()
-        .default({}),
-    _ts: numberType().optional(),
+        .prefault({}),
+    _ts: number().optional(),
 })
     .passthrough();
-const GrowspaceAPICollectionSchema = recordType(stringType(), GrowspaceAPIResponseSchema);
-const GrowReportSchema = objectType({
-    summary: objectType({
-        plant_count: numberType(),
-        strains: arrayType(stringType()),
-        stages: recordType(unknownType()),
+const GrowspaceAPICollectionSchema = record(string(), GrowspaceAPIResponseSchema);
+const GrowReportSchema = object({
+    summary: object({
+        plant_count: number(),
+        strains: array(string()),
+        stages: record(string(), unknown()),
     }),
-    harvest: objectType({
-        total_wet_weight: numberType(),
-        total_dry_weight: numberType(),
-        total_trim_weight: numberType(),
-        top_thc: numberType().nullable().optional(),
+    harvest: object({
+        total_wet_weight: number(),
+        total_dry_weight: number(),
+        total_trim_weight: number(),
+        top_thc: number().nullable().optional(),
     }),
-    environment: objectType({
-        temperature_avg: numberType().nullable().optional(),
-        humidity_avg: numberType().nullable().optional(),
-        vpd_avg: numberType().nullable().optional(),
+    environment: object({
+        temperature_avg: number().nullable().optional(),
+        humidity_avg: number().nullable().optional(),
+        vpd_avg: number().nullable().optional(),
     }),
 });
 
 // ---------------------------------------------------------------------------
 // Nutrient Presets
 // ---------------------------------------------------------------------------
-const NutrientPresetsSchema = recordType(stringType(), objectType({
-    id: stringType(),
-    name: stringType(),
-    nutrients: arrayType(objectType({
-        nutrient_id: stringType(),
-        dose_ml_l: numberType(),
-        name: stringType().optional(),
+const NutrientPresetsSchema = record(string(), object({
+    id: string(),
+    name: string(),
+    nutrients: array(object({
+        nutrient_id: string(),
+        dose_ml_l: number(),
+        name: string().optional(),
     })),
-    stage: stringType()
+    stage: string()
         .nullish()
         .transform((v) => v || undefined),
-    min_days_in_stage: numberType()
+    min_days_in_stage: number()
         .nullish()
         .transform((v) => v || undefined),
-    week: numberType().int().min(1).optional().default(1),
-    ec_target: numberType().min(0).nullish().transform((v) => v ?? undefined),
-    ph_target: numberType().min(0).max(14).nullish().transform((v) => v ?? undefined),
+    week: number().int().min(1).optional().default(1),
+    ec_target: number().min(0).nullish().transform((v) => v ?? undefined),
+    ph_target: number().min(0).max(14).nullish().transform((v) => v ?? undefined),
 })
     .passthrough());
 // ---------------------------------------------------------------------------
 // IPM Presets
 // ---------------------------------------------------------------------------
-const IPMPresetSchema = objectType({
-    id: stringType(),
-    name: stringType(),
-    type: enumType(['foliar', 'drench', 'beneficials']),
-    items: arrayType(objectType({
-        name: stringType(),
-        dose_amount: numberType(),
-        dose_unit: stringType(),
-        phi_days: numberType().optional().default(0),
+const IPMPresetSchema = object({
+    id: string(),
+    name: string(),
+    type: _enum(['foliar', 'drench', 'beneficials']),
+    items: array(object({
+        name: string(),
+        dose_amount: number(),
+        dose_unit: string(),
+        phi_days: number().optional().default(0),
     })),
-    stage: stringType()
+    stage: string()
         .nullish()
         .transform((v) => v || undefined),
-    min_days_in_stage: numberType()
+    min_days_in_stage: number()
         .nullish()
         .transform((v) => v || undefined),
 })
     .passthrough();
-const IPMPresetsSchema = recordType(stringType(), IPMPresetSchema);
+const IPMPresetsSchema = record(string(), IPMPresetSchema);
 // ---------------------------------------------------------------------------
 // EC Ramp Curves
 // ---------------------------------------------------------------------------
-const ECRampPointSchema = objectType({
-    week: numberType().optional(),
-    ec_min: numberType().optional(),
-    ec_max: numberType().optional(),
-    day: numberType().optional(),
-    target_ec: numberType().optional(),
+const ECRampPointSchema = object({
+    week: number().optional(),
+    ec_min: number().optional(),
+    ec_max: number().optional(),
+    day: number().optional(),
+    target_ec: number().optional(),
 })
     .transform((data) => ({
     day: data.day ?? ((data.week ?? 1) - 1) * 7 + 1,
     target_ec: data.target_ec ?? data.ec_min ?? 0,
 }));
-const ECRampCurveSchema = objectType({
-    id: stringType(),
-    name: stringType(),
-    stage: stringType().optional().default('flower'),
-    points: arrayType(ECRampPointSchema),
+const ECRampCurveSchema = object({
+    id: string(),
+    name: string(),
+    stage: string().optional().default('flower'),
+    points: array(ECRampPointSchema),
 });
-const ECRampCurvesSchema = unionType([
-    recordType(stringType(), ECRampCurveSchema),
-    arrayType(anyType()).transform(() => ({})),
+const ECRampCurvesSchema = union([
+    record(string(), ECRampCurveSchema),
+    array(any()).transform(() => ({})),
 ]);
 // ---------------------------------------------------------------------------
 // Nutrient Inventory
@@ -5540,110 +6692,110 @@ const NUTRIENT_STOCK_TYPES = [
     'additive',
     'microbe',
 ];
-const NutrientStockSchema = objectType({
-    nutrient_id: stringType(),
-    name: stringType(),
-    current_ml: numberType(),
-    initial_ml: numberType(),
-    last_updated: stringType(),
-    brand: stringType().optional().default(''),
-    type: enumType(NUTRIENT_STOCK_TYPES).optional().default('base'),
-    npk: stringType().optional().default(''),
-    dose_ml_l: numberType().optional().default(0),
-    notes: stringType().optional().default(''),
+const NutrientStockSchema = object({
+    nutrient_id: string(),
+    name: string(),
+    current_ml: number(),
+    initial_ml: number(),
+    last_updated: string(),
+    brand: string().optional().default(''),
+    type: _enum(NUTRIENT_STOCK_TYPES).optional().default('base'),
+    npk: string().optional().default(''),
+    dose_ml_l: number().optional().default(0),
+    notes: string().optional().default(''),
 });
-const NutrientInventorySchema = objectType({
-    stocks: recordType(stringType(), NutrientStockSchema),
+const NutrientInventorySchema = object({
+    stocks: record(string(), NutrientStockSchema),
 });
 
-const StrainPhenotypeSchema$1 = objectType({
-    description: stringType()
+const StrainPhenotypeSchema$1 = object({
+    description: string()
         .nullable()
         .optional()
         .transform((v) => v ?? undefined),
-    image_path: stringType()
+    image_path: string()
         .nullable()
         .optional()
         .transform((v) => v ?? undefined),
-    image_crop_meta: objectType({ x: numberType(), y: numberType(), scale: numberType() })
+    image_crop_meta: object({ x: number(), y: number(), scale: number() })
         .nullable()
         .optional()
         .transform((v) => v ?? undefined),
-    flower_days_min: numberType()
+    flower_days_min: number()
         .nullable()
         .optional()
         .transform((v) => v ?? undefined),
-    flower_days_max: numberType()
+    flower_days_max: number()
         .nullable()
         .optional()
         .transform((v) => v ?? undefined),
 })
-    .catchall(unknownType());
-const StrainDataSchema$1 = objectType({
-    meta: objectType({
-        breeder: stringType()
+    .catchall(unknown());
+const StrainDataSchema$1 = object({
+    meta: object({
+        breeder: string()
             .nullable()
             .optional()
             .transform((v) => v ?? undefined),
-        breeder_logo: stringType()
+        breeder_logo: string()
             .nullable()
             .optional()
             .transform((v) => v ?? undefined),
-        type: stringType()
+        type: string()
             .nullable()
             .optional()
             .transform((v) => v ?? undefined),
-        lineage: stringType()
+        lineage: string()
             .nullable()
             .optional()
             .transform((v) => v ?? undefined),
-        sex: stringType()
+        sex: string()
             .nullable()
             .optional()
             .transform((v) => v ?? undefined),
-        sativa_percentage: numberType()
+        sativa_percentage: number()
             .nullable()
             .optional()
             .transform((v) => v ?? undefined),
-        indica_percentage: numberType()
+        indica_percentage: number()
             .nullable()
             .optional()
             .transform((v) => v ?? undefined),
-        is_stub: booleanType().optional(),
+        is_stub: boolean().optional(),
     })
         .passthrough()
         .optional()
-        .default({}),
-    phenotypes: recordType(stringType(), StrainPhenotypeSchema$1).optional().default({}),
+        .prefault({}),
+    phenotypes: record(string(), StrainPhenotypeSchema$1).optional().default({}),
 })
     .passthrough();
-const StrainLibrarySchema$1 = recordType(stringType(), StrainDataSchema$1);
-objectType({
+const StrainLibrarySchema$1 = record(string(), StrainDataSchema$1);
+object({
     strains: StrainLibrarySchema$1,
-    strain_list: arrayType(stringType()).optional(),
+    strain_list: array(string()).optional(),
 })
     .passthrough();
-const HistoryPointSchema = objectType({
-    s: unionType([stringType(), numberType()]).transform(String),
-    lu: unionType([stringType(), numberType()])
+const HistoryPointSchema = object({
+    s: union([string(), number()]).transform(String),
+    lu: union([string(), number()])
         .transform((v) => (typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v))),
-    a: recordType(unknownType()).optional().default({}), // Attributes
+    a: record(string(), unknown()).optional().default({}), // Attributes
 })
     .passthrough();
-const HistoryStatsResponseSchema = recordType(stringType(), arrayType(HistoryPointSchema));
+const HistoryStatsResponseSchema = record(string(), array(HistoryPointSchema));
 // ---------------------------------------------------------------------------
 // Crop Steering History
 // ---------------------------------------------------------------------------
-const CropSteeringBucketSchema = objectType({
-    timestamp: stringType(),
-    value: numberType().nullable(),
+const CropSteeringBucketSchema = object({
+    timestamp: string(),
+    value: number().nullable(),
 });
-const CropSteeringHistorySchema = objectType({
-    growspace_id: stringType(),
-    lights_on: stringType(),
-    soil_moisture: arrayType(CropSteeringBucketSchema),
-    pore_ec: arrayType(CropSteeringBucketSchema).optional(),
-    bulk_ec: arrayType(CropSteeringBucketSchema).optional(),
+const CropSteeringHistorySchema = object({
+    growspace_id: string(),
+    lights_on: string(),
+    soil_moisture: array(CropSteeringBucketSchema),
+    pore_ec: array(CropSteeringBucketSchema).optional(),
+    bulk_ec: array(CropSteeringBucketSchema).optional(),
 });
 
 class GrowspaceAdapter {
@@ -6692,7 +7844,7 @@ async function updateSensorCoordinates(growspaceId, entityId, x, y, zCoord, rota
         y: Math.round(y),
         z: Math.round(zCoord),
         rotation: rotation !== undefined ? Math.round(rotation) : undefined,
-    }, unknownType());
+    }, unknown());
 }
 async function configureEnvironment$1(data) {
     const payload = { growspace_id: data.growspaceId };
@@ -7209,54 +8361,54 @@ class AIAPI extends BaseAPI {
 // ---------------------------------------------------------------------------
 // Snapshot
 // ---------------------------------------------------------------------------
-const SnapshotSchema = objectType({
-    path: stringType(),
-    filename: stringType(),
-    timestamp: stringType(),
+const SnapshotSchema = object({
+    path: string(),
+    filename: string(),
+    timestamp: string(),
 });
 // ---------------------------------------------------------------------------
 // get_snapshots response
 // ---------------------------------------------------------------------------
-const GetSnapshotsResponseSchema = objectType({
-    growspace_id: stringType(),
-    snapshots: arrayType(SnapshotSchema),
-    total: numberType().int(),
+const GetSnapshotsResponseSchema = object({
+    growspace_id: string(),
+    snapshots: array(SnapshotSchema),
+    total: number().int(),
 });
 // ---------------------------------------------------------------------------
 // capture_snapshot response
 // ---------------------------------------------------------------------------
-const CaptureSnapshotResponseSchema = objectType({
-    growspace_id: stringType(),
-    timestamp: stringType(),
-    snapshots: arrayType(stringType()),
+const CaptureSnapshotResponseSchema = object({
+    growspace_id: string(),
+    timestamp: string(),
+    snapshots: array(string()),
 });
 // ---------------------------------------------------------------------------
 // Vision checkup config
 // ---------------------------------------------------------------------------
-objectType({
-    enabled: booleanType(),
-    early_check_offset_minutes: numberType(),
-    mid_check_hours: numberType(),
-    late_check_offset_minutes: numberType(),
+object({
+    enabled: boolean(),
+    early_check_offset_minutes: number(),
+    mid_check_hours: number(),
+    late_check_offset_minutes: number(),
 });
 // ---------------------------------------------------------------------------
 // Vision checkup result
 // ---------------------------------------------------------------------------
-const VisionCheckupResultSchema = objectType({
-    timestamp: stringType(),
-    check_type: enumType(['early', 'mid', 'late', 'manual']),
-    analysis: stringType(),
-    issues_detected: arrayType(stringType()),
-    severity: enumType(['none', 'low', 'medium', 'high', 'critical']),
-    recommendations: arrayType(stringType()),
-    snapshot_paths: arrayType(stringType()),
+const VisionCheckupResultSchema = object({
+    timestamp: string(),
+    check_type: _enum(['early', 'mid', 'late', 'manual']),
+    analysis: string(),
+    issues_detected: array(string()),
+    severity: _enum(['none', 'low', 'medium', 'high', 'critical']),
+    recommendations: array(string()),
+    snapshot_paths: array(string()),
 });
 // ---------------------------------------------------------------------------
 // get_vision_history response
 // ---------------------------------------------------------------------------
-const GetVisionHistoryResponseSchema = objectType({
-    history: arrayType(VisionCheckupResultSchema),
-    total: numberType().int(),
+const GetVisionHistoryResponseSchema = object({
+    history: array(VisionCheckupResultSchema),
+    total: number().int(),
 });
 // ---------------------------------------------------------------------------
 // trigger_vision_checkup response
@@ -7265,8 +8417,8 @@ const TriggerVisionCheckupResponseSchema = VisionCheckupResultSchema;
 // ---------------------------------------------------------------------------
 // update_vision_checkup_config response
 // ---------------------------------------------------------------------------
-const UpdateVisionCheckupConfigResponseSchema = objectType({
-    success: booleanType(),
+const UpdateVisionCheckupConfigResponseSchema = object({
+    success: boolean(),
 });
 
 /**
@@ -7420,10 +8572,10 @@ async function updateNutrientStock$1(nutrientId, name, currentMl, initialMl, bra
         npk,
         dose_ml_l: doseMlL,
         notes,
-    }, unknownType());
+    }, unknown());
 }
 async function removeNutrientStock$1(nutrientId) {
-    await hassCall('growspace_manager/remove_nutrient_stock', { nutrient_id: nutrientId }, unknownType());
+    await hassCall('growspace_manager/remove_nutrient_stock', { nutrient_id: nutrientId }, unknown());
 }
 // ---------------------------------------------------------------------------
 // Write mutators — EC Ramp Curves
@@ -7454,37 +8606,37 @@ async function removeECRampCurve$1(curveId) {
 // ---------------------------------------------------------------------------
 // Raw response shapes (WS: growspace_manager/get_strain_library)
 // ---------------------------------------------------------------------------
-const StrainPhenotypeSchema = objectType({
-    description: stringType().optional(),
-    image_path: stringType().optional(),
-    image_crop_meta: unknownType().optional(),
-    images: arrayType(unknownType()).optional(),
-    flower_days_min: numberType().optional(),
-    flower_days_max: numberType().optional(),
+const StrainPhenotypeSchema = object({
+    description: string().optional(),
+    image_path: string().optional(),
+    image_crop_meta: unknown().optional(),
+    images: array(unknown()).optional(),
+    flower_days_min: number().optional(),
+    flower_days_max: number().optional(),
 })
     .passthrough();
-const StrainDataSchema = objectType({
-    meta: objectType({
-        breeder: stringType().optional(),
-        breeder_logo: stringType().optional(),
-        type: stringType().optional(),
-        lineage: stringType().optional(),
-        lineage_tree: arrayType(objectType({ name: stringType(), source: stringType(), phenotype: stringType().optional() }))
+const StrainDataSchema = object({
+    meta: object({
+        breeder: string().optional(),
+        breeder_logo: string().optional(),
+        type: string().optional(),
+        lineage: string().optional(),
+        lineage_tree: array(object({ name: string(), source: string(), phenotype: string().optional() }))
             .optional(),
-        sex: stringType().optional(),
-        sativa_percentage: numberType().optional(),
-        indica_percentage: numberType().optional(),
-        is_stub: booleanType().optional(),
+        sex: string().optional(),
+        sativa_percentage: number().optional(),
+        indica_percentage: number().optional(),
+        is_stub: boolean().optional(),
     })
         .optional()
         .default({}),
-    phenotypes: recordType(stringType(), StrainPhenotypeSchema).optional().default({}),
+    phenotypes: record(string(), StrainPhenotypeSchema).optional().default({}),
 })
     .passthrough();
-const StrainLibrarySchema = recordType(stringType(), StrainDataSchema);
-const StrainLibraryWrapperSchema = objectType({
+const StrainLibrarySchema = record(string(), StrainDataSchema);
+const StrainLibraryWrapperSchema = object({
     strains: StrainLibrarySchema,
-    strain_list: arrayType(stringType()).optional(),
+    strain_list: array(string()).optional(),
 });
 
 /**
@@ -7670,13 +8822,13 @@ async function updateBreeder(oldName, newName, logo) {
         original_name: oldName,
         new_name: newName,
         ...(logo !== undefined ? { logo } : {}),
-    }, unknownType());
+    }, unknown());
 }
 /**
  * Delete a breeder and disassociate it from strains.
  */
 async function deleteBreeder(name) {
-    await hassCall('growspace_manager/delete_breeder', { breeder_name: name }, unknownType());
+    await hassCall('growspace_manager/delete_breeder', { breeder_name: name }, unknown());
 }
 
 /**
@@ -7878,7 +9030,7 @@ function makePerCardGridSlice() {
  * Action type, payload shapes, and zod schemas are private to this module.
  * Cross-slice side-effects via Grid slice sibling setters are wired below.
  */
-const wsVoid = (cmd, params) => hassCall(cmd, params, unknownType()).then(() => undefined);
+const wsVoid = (cmd, params) => hassCall(cmd, params, unknown()).then(() => undefined);
 // ---------------------------------------------------------------------------
 // Atoms (public read)
 // ---------------------------------------------------------------------------
@@ -8163,7 +9315,7 @@ async function printLabel$1(params) {
         payload.density = params.density;
     if (params.qrTarget !== undefined)
         payload.qr_target = params.qrTarget;
-    await hassCall('growspace_manager/print_label', payload, unknownType());
+    await hassCall('growspace_manager/print_label', payload, unknown());
 }
 /**
  * Persist harvest yield metrics on a harvested plant.
@@ -8255,42 +9407,42 @@ async function setVisualTag$1(plantId, visualTag) {
     }, _growspaceIdFor(plantId));
 }
 
-const SeedBatchSchema = objectType({
-    batch_id: stringType(),
-    strain_name: stringType(),
-    breeder: stringType(),
-    quantity: numberType(),
-    acquisition_date: stringType(),
-    generation: stringType(),
-    lineage: stringType().default(''),
-    parent_1_strain: stringType().nullable().optional(),
-    parent_1_phenotype: stringType().nullable().optional(),
-    parent_2_strain: stringType().nullable().optional(),
-    parent_2_phenotype: stringType().nullable().optional(),
-    notes: stringType().default(''),
+const SeedBatchSchema = object({
+    batch_id: string(),
+    strain_name: string(),
+    breeder: string(),
+    quantity: number(),
+    acquisition_date: string(),
+    generation: string(),
+    lineage: string().default(''),
+    parent_1_strain: string().nullable().optional(),
+    parent_1_phenotype: string().nullable().optional(),
+    parent_2_strain: string().nullable().optional(),
+    parent_2_phenotype: string().nullable().optional(),
+    notes: string().default(''),
 })
     .passthrough();
-const PollinationEventSchema = objectType({
-    event_id: stringType(),
-    date: stringType(),
-    donor_plant_id: stringType(),
-    receiver_plant_id: stringType(),
-    notes: stringType().default(''),
-    result_seed_batch_id: stringType().nullable().default(null),
+const PollinationEventSchema = object({
+    event_id: string(),
+    date: string(),
+    donor_plant_id: string(),
+    receiver_plant_id: string(),
+    notes: string().default(''),
+    result_seed_batch_id: string().nullable().default(null),
 })
     .passthrough();
-const LineageNodeSchema = lazyType(() => objectType({
-    id: stringType(),
-    name: stringType(),
-    type: enumType(['plant', 'seed_batch', 'strain']),
-    phenotype: stringType().optional(),
-    generation: stringType().optional(),
-    parents: arrayType(LineageNodeSchema).optional(),
+const LineageNodeSchema = lazy(() => object({
+    id: string(),
+    name: string(),
+    type: _enum(['plant', 'seed_batch', 'strain']),
+    phenotype: string().optional(),
+    generation: string().optional(),
+    parents: array(LineageNodeSchema).optional(),
 })
     .passthrough());
-const GeneticsDataSchema = objectType({
-    seed_batches: recordType(stringType(), SeedBatchSchema).default({}),
-    pollination_events: recordType(stringType(), PollinationEventSchema).default({}),
+const GeneticsDataSchema = object({
+    seed_batches: record(string(), SeedBatchSchema).default({}),
+    pollination_events: record(string(), PollinationEventSchema).default({}),
 });
 
 const seedBatches$ = atom([]);
@@ -8342,10 +9494,10 @@ async function getStrainLineageTree$1(strainName) {
     }
 }
 async function updateStrainLineageTree$1(strainName, parents) {
-    return (await hassCall('growspace_manager/update_strain_lineage_tree', { strain_name: strainName, parents }, objectType({ lineage: stringType() })));
+    return (await hassCall('growspace_manager/update_strain_lineage_tree', { strain_name: strainName, parents }, object({ lineage: string() })));
 }
 async function importStrainLineageTree(strainName, tree) {
-    await hassCall('growspace_manager/import_strain_lineage_tree', { strain_name: strainName, tree }, unknownType());
+    await hassCall('growspace_manager/import_strain_lineage_tree', { strain_name: strainName, tree }, unknown());
 }
 async function fetchGeneticsData$1() {
     const response = await hassCall('growspace_manager/get_genetics_data', {}, GeneticsDataSchema);
@@ -9106,122 +10258,122 @@ function dismissFlowerFlip(growspaceId, flowerStart) {
 // The backend returns either a plain string or a nested { response: string }
 // object (sometimes double-nested). We accept both shapes and let the slice
 // extract the text.
-const responseBody = unionType([
-    stringType(),
-    objectType({ response: unionType([stringType(), recordType(unknownType())]) }),
+const responseBody = union([
+    string(),
+    object({ response: union([string(), record(string(), unknown())]) }),
 ]);
-const GrowAdviceResponseSchema = unionType([
-    stringType(),
-    objectType({ response: responseBody }),
-    recordType(unknownType()),
+const GrowAdviceResponseSchema = union([
+    string(),
+    object({ response: responseBody }),
+    record(string(), unknown()),
 ]);
 // ---------------------------------------------------------------------------
 // SuggestedAction
 // ---------------------------------------------------------------------------
-const SuggestedActionSchema = objectType({
-    service: stringType(),
-    target_entity_id: stringType(),
-    service_data: recordType(unknownType()),
-    description: stringType(),
-    confidence: numberType().optional(),
+const SuggestedActionSchema = object({
+    service: string(),
+    target_entity_id: string(),
+    service_data: record(string(), unknown()),
+    description: string(),
+    confidence: number().optional(),
 });
 // ---------------------------------------------------------------------------
 // KPI (shared by TriageAlert and AIBriefing)
 // ---------------------------------------------------------------------------
-const KPISchema = objectType({
-    label: stringType(),
-    value: unionType([numberType(), stringType()]),
-    unit: stringType().optional(),
-    delta: stringType().optional(),
+const KPISchema = object({
+    label: string(),
+    value: union([number(), string()]),
+    unit: string().optional(),
+    delta: string().optional(),
 });
 // ---------------------------------------------------------------------------
 // TriageAlert
 // ---------------------------------------------------------------------------
-const TriageAlertSchema = objectType({
-    id: stringType(),
-    growspace_id: stringType(),
-    type: stringType(),
-    severity: enumType(['info', 'warning', 'danger']).default('info'),
-    title: stringType().optional(),
-    description: stringType().nullable().optional(),
-    bayesian_reasons: arrayType(stringType()),
-    ai_reasoning: stringType().nullable(),
-    timestamp: numberType(),
-    resolved: booleanType(),
-    resolution_note: stringType().nullable(),
-    confidence: numberType().optional(),
-    suggested_actions: arrayType(SuggestedActionSchema).optional(),
-    kpis: arrayType(KPISchema).optional(),
-    snapshot_entity_id: stringType().nullable().optional(),
+const TriageAlertSchema = object({
+    id: string(),
+    growspace_id: string(),
+    type: string(),
+    severity: _enum(['info', 'warning', 'danger']).default('info'),
+    title: string().optional(),
+    description: string().nullable().optional(),
+    bayesian_reasons: array(string()),
+    ai_reasoning: string().nullable(),
+    timestamp: number(),
+    resolved: boolean(),
+    resolution_note: string().nullable(),
+    confidence: number().optional(),
+    suggested_actions: array(SuggestedActionSchema).optional(),
+    kpis: array(KPISchema).optional(),
+    snapshot_entity_id: string().nullable().optional(),
 });
 // ---------------------------------------------------------------------------
 // ResolveAck
 // ---------------------------------------------------------------------------
-const ResolveAckSchema = objectType({
-    success: booleanType(),
-    alert_id: stringType(),
+const ResolveAckSchema = object({
+    success: boolean(),
+    alert_id: string(),
 });
 // ---------------------------------------------------------------------------
 // ConversationMessage
 // ---------------------------------------------------------------------------
-const SensorSnapshotItemSchema = objectType({
-    label: stringType(),
-    value: stringType(),
-    unit: stringType(),
-    delta: stringType().optional(),
+const SensorSnapshotItemSchema = object({
+    label: string(),
+    value: string(),
+    unit: string(),
+    delta: string().optional(),
 });
-const CitationSchema = objectType({
-    label: stringType(),
-    source: enumType(['sensor', 'logbook']),
+const CitationSchema = object({
+    label: string(),
+    source: _enum(['sensor', 'logbook']),
 });
-const ConversationMessageSchema = objectType({
-    role: enumType(['user', 'ai']),
-    text: stringType(),
-    timestamp: numberType().nonnegative(),
-    suggestedAction: objectType({
-        service: stringType(),
-        target_entity_id: stringType(),
-        service_data: recordType(unknownType()),
-        description: stringType(),
-        confidence: numberType().optional(),
+const ConversationMessageSchema = object({
+    role: _enum(['user', 'ai']),
+    text: string(),
+    timestamp: number().nonnegative(),
+    suggestedAction: object({
+        service: string(),
+        target_entity_id: string(),
+        service_data: record(string(), unknown()),
+        description: string(),
+        confidence: number().optional(),
     })
         .optional(),
-    confidence: numberType().optional(),
-    imageEntityId: stringType().optional(),
-    sensorSnapshot: arrayType(SensorSnapshotItemSchema).optional(),
-    citations: arrayType(CitationSchema).optional(),
+    confidence: number().optional(),
+    imageEntityId: string().optional(),
+    sensorSnapshot: array(SensorSnapshotItemSchema).optional(),
+    citations: array(CitationSchema).optional(),
 });
 // ---------------------------------------------------------------------------
 // ConversationThread
 // ---------------------------------------------------------------------------
 const MAX_PINNED_THREADS = 10;
 const MAX_RECENT_THREADS = 20;
-const ConversationThreadSchema = objectType({
-    thread_id: stringType(),
-    growspace_id: stringType(),
-    messages: arrayType(ConversationMessageSchema),
-    pinned: booleanType().default(false),
-    updated_at: numberType().nonnegative().default(0),
+const ConversationThreadSchema = object({
+    thread_id: string(),
+    growspace_id: string(),
+    messages: array(ConversationMessageSchema),
+    pinned: boolean().default(false),
+    updated_at: number().nonnegative().default(0),
 });
 // ---------------------------------------------------------------------------
 // AIBriefing
 // ---------------------------------------------------------------------------
-const RecommendationSchema = objectType({
-    title: stringType(),
-    description: stringType(),
-    impact: enumType(['high', 'medium', 'low']),
+const RecommendationSchema = object({
+    title: string(),
+    description: string(),
+    impact: _enum(['high', 'medium', 'low']),
     suggested_action: SuggestedActionSchema.optional(),
-    action_type: enumType(['apply', 'plan', 'remind']).optional(),
+    action_type: _enum(['apply', 'plan', 'remind']).optional(),
 });
-const AIBriefingSchema = objectType({
-    generated_at: numberType().nonnegative(),
-    summary_text: stringType(),
-    headline: stringType().optional(),
-    confidence: numberType().optional(),
-    drawn_from: stringType().optional(),
-    kpis: arrayType(KPISchema),
-    recommendations: arrayType(RecommendationSchema),
-    ai_available: booleanType(),
+const AIBriefingSchema = object({
+    generated_at: number().nonnegative(),
+    summary_text: string(),
+    headline: string().optional(),
+    confidence: number().optional(),
+    drawn_from: string().optional(),
+    kpis: array(KPISchema),
+    recommendations: array(RecommendationSchema),
+    ai_available: boolean(),
 });
 
 /**
@@ -9375,14 +10527,14 @@ function _evictThreads(threads, growspaceId) {
 }
 async function _saveConversationThreads(growspaceId) {
     const threads = [...conversationThreads$.get().values()].filter((t) => t.growspace_id === growspaceId);
-    await hassCall('growspace_manager/save_conversation_threads', { growspace_id: growspaceId, threads }, unknownType());
+    await hassCall('growspace_manager/save_conversation_threads', { growspace_id: growspaceId, threads }, unknown());
 }
 // ---------------------------------------------------------------------------
 // Thread persistence (public)
 // ---------------------------------------------------------------------------
 async function fetchConversationThreads(growspaceId) {
     try {
-        const ThreadsResponseSchema = arrayType(ConversationThreadSchema);
+        const ThreadsResponseSchema = array(ConversationThreadSchema);
         const fetched = await hassCall('growspace_manager/get_conversation_threads', { growspace_id: growspaceId }, ThreadsResponseSchema);
         const updated = new Map(conversationThreads$.get());
         for (const [id, t] of updated) {
@@ -9562,7 +10714,7 @@ async function fetchBriefing(growspaceId, forceRefresh) {
  * Silently ignores errors so the atom stays at its previous value.
  */
 async function fetchAiStatus() {
-    const AiStatusSchema = objectType({ ai_enabled: booleanType() });
+    const AiStatusSchema = object({ ai_enabled: boolean() });
     try {
         const result = await hassCall('growspace_manager/get_ai_status', {}, AiStatusSchema);
         aiEnabled$.set(result.ai_enabled);
@@ -9578,12 +10730,12 @@ async function fetchAiStatus() {
  * briefing atom so panels drop their unconfigured state without a page reload.
  */
 async function saveAiAgent(agentEntityId, growspaceId) {
-    await hassCall('growspace_manager/save_ai_agent', { agent_id: agentEntityId }, unknownType());
+    await hassCall('growspace_manager/save_ai_agent', { agent_id: agentEntityId }, unknown());
     aiEnabled$.set(true);
     await fetchBriefing(growspaceId, true);
 }
 async function saveAiSettings(draft) {
-    await hassCall('growspace_manager/save_ai_settings', draft, unknownType());
+    await hassCall('growspace_manager/save_ai_settings', draft, unknown());
 }
 /**
  * Fetch the current AI settings from the integration config entry.
@@ -9592,7 +10744,7 @@ async function saveAiSettings(draft) {
  * pre-populate its draft when the settings tab is opened.
  */
 async function fetchAiSettings() {
-    const result = await hassCall('growspace_manager/get_ai_settings', {}, recordType(unknownType()));
+    const result = await hassCall('growspace_manager/get_ai_settings', {}, record(string(), unknown()));
     return result;
 }
 
@@ -15496,25 +16648,25 @@ GsDialog = __decorate([
 // ---------------------------------------------------------------------------
 // LogbookEntry (a.k.a. GrowspaceEvent in legacy code)
 // ---------------------------------------------------------------------------
-const LogbookEntrySchema = objectType({
+const LogbookEntrySchema = object({
     // Required for all entries
-    growspace_id: stringType(),
-    category: stringType(),
+    growspace_id: string(),
+    category: string(),
     // Optional: present on GrowspaceEvent entries (watering/training/IPM/alert),
     // absent on note entries which carry `notes` instead.
-    sensor_type: stringType().optional(),
-    start_time: stringType().optional(),
-    end_time: stringType().optional(),
-    duration_sec: numberType().optional(),
-    severity: numberType().optional(),
-    reasons: arrayType(stringType()).optional(),
-    timestamp: stringType().optional(),
-    notes: stringType().optional(),
-    images: arrayType(stringType()).optional(),
-    tags: arrayType(stringType()).optional(),
-    plant_id: stringType().optional(),
-    metadata: recordType(unknownType()).optional(),
-    event_id: unionType([stringType(), numberType()]).optional(),
+    sensor_type: string().optional(),
+    start_time: string().optional(),
+    end_time: string().optional(),
+    duration_sec: number().optional(),
+    severity: number().optional(),
+    reasons: array(string()).optional(),
+    timestamp: string().optional(),
+    notes: string().optional(),
+    images: array(string()).optional(),
+    tags: array(string()).optional(),
+    plant_id: string().optional(),
+    metadata: record(string(), unknown()).optional(),
+    event_id: union([string(), number()]).optional(),
 });
 // ---------------------------------------------------------------------------
 // Response schemas
@@ -15523,11 +16675,11 @@ const LogbookEntrySchema = objectType({
  * get_log and get_alerts both return Record<id, LogbookEntry[]>.
  * The key is either growspace_id or plant_id depending on the call.
  */
-const LogResponseSchema = recordType(arrayType(LogbookEntrySchema));
+const LogResponseSchema = record(string(), array(LogbookEntrySchema));
 /** remove_timeline_event returns nothing meaningful. */
-const DeleteEventResponseSchema = unknownType();
+const DeleteEventResponseSchema = unknown();
 /** add_timeline_note and add_growspace_note return nothing meaningful. */
-const AddNoteResponseSchema = unknownType();
+const AddNoteResponseSchema = unknown();
 
 /**
  * Logbook slice — atoms and mutators for event log / timeline data.
@@ -26606,148 +27758,6 @@ class PollingController {
     }
 }
 
-/** Formats a minute-of-day (0-1439) as `HH:MM`, wrapping past midnight. */
-function fmtMinuteOfDay(minutes) {
-    const h = Math.floor((minutes / 60) % 24);
-    const m = minutes % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
-/** Generates the day's irrigation shot cycle (P1 ramp-up through the P2→P3 cutoff). */
-function computeCropSteeringCycle(strategy, isFlower) {
-    if (!strategy.lightsOnTime || !strategy.shotIntervalMinutes || strategy.shotIntervalMinutes <= 0 || !strategy.shotDurationSeconds) {
-        return [];
-    }
-    const lightHours = isFlower ? 12 : 18;
-    const [hh, mm] = strategy.lightsOnTime.split(':').map(Number);
-    const lightsOnMin = hh * 60 + (mm || 0);
-    const lightsOffMin = lightsOnMin + lightHours * 60;
-    const firstShotMin = lightsOnMin + (strategy.p0DurationMinutes ?? 0);
-    const cutoffMin = lightsOffMin - (strategy.p2StopBeforeLightsOffMinutes ?? 0);
-    const shots = [];
-    for (let t = firstShotMin; t < cutoffMin; t += strategy.shotIntervalMinutes) {
-        const h = Math.floor(t / 60) % 24;
-        const m = t % 60;
-        shots.push({
-            time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`,
-            duration: strategy.shotDurationSeconds,
-        });
-    }
-    return shots;
-}
-/**
- * Derives the day's P1/P2/P3 phase windows. P3's start prefers the backend's
- * recorded `phaseChangedAt` (Actual P3 Boundary) over the scheduled boundary,
- * when the growspace is currently in P3 — see [[Phase Windows]].
- */
-function computePhases(strategy, isFlower, irrigationConfig) {
-    const anchorLightsOnTime = strategy.detectedLightsOnTime ?? strategy.lightsOnTime;
-    if (!anchorLightsOnTime)
-        return null;
-    const lightHours = isFlower ? 12 : 18;
-    const [hh, mm] = anchorLightsOnTime.split(':').map(Number);
-    const lightsOnMin = hh * 60 + (mm || 0);
-    const lightsOffMin = lightsOnMin + lightHours * 60;
-    const p1End = lightsOnMin + (strategy.p0DurationMinutes ?? 60);
-    const scheduledP3Start = Math.max(p1End, lightsOffMin - (strategy.p2StopBeforeLightsOffMinutes ?? 120));
-    let p3Start = scheduledP3Start;
-    if (irrigationConfig?.activeSteeringPhase === 'p3' && irrigationConfig.phaseChangedAt) {
-        const d = new Date(irrigationConfig.phaseChangedAt);
-        const actualStart = d.getHours() * 60 + d.getMinutes();
-        p3Start = Math.max(p1End, Math.min(actualStart, scheduledP3Start));
-    }
-    return {
-        lightsOnMin,
-        lightsOffMin,
-        lightHours,
-        phases: [
-            {
-                id: 'p1',
-                label: 'P1',
-                name: 'Saturation',
-                start: lightsOnMin,
-                end: p1End,
-                color: '#4CAF50',
-                target: 'Reach FC',
-            },
-            {
-                id: 'p2',
-                label: 'P2',
-                name: 'Maintenance',
-                start: p1End,
-                end: p3Start,
-                color: '#2196F3',
-                target: 'Runoff target',
-            },
-            {
-                id: 'p3',
-                label: 'P3',
-                name: 'Dryback',
-                start: p3Start,
-                end: lightsOffMin,
-                color: '#FF9800',
-                target: `−${strategy.maintenanceDrybackPercent ?? 3}% VWC`,
-            },
-        ],
-    };
-}
-/**
- * Synthesizes the dashed "projected" tail of the Substrate Model trace from `nowOffset`
- * to end-of-day, modelling dryback rate per phase and shot-driven VWC/EC recovery.
- */
-function generateSubstrateProjection(nowOffset, shots, phases, seedVwc, seedPoreEc, viewStart, targetVwcPercent) {
-    const { lightsOnMin, lightsOffMin } = phases;
-    const target = targetVwcPercent ?? 45;
-    const vwcLo = Math.max(0, target - 18);
-    const vwcHi = target + 8;
-    const step = 3;
-    const p1End = phases.phases[0]?.end ?? lightsOnMin + 60;
-    const p2End = phases.phases[1]?.end ?? lightsOffMin - 120;
-    // Compare in view-offset space (viewStart anchored at 0) so the photoperiod
-    // boundaries stay correctly ordered even when lights-off wraps past midnight.
-    const offsetOf = (m) => (m - viewStart + 1440) % 1440;
-    const lightsOnOffset = offsetOf(lightsOnMin);
-    const lightsOffOffset = offsetOf(lightsOffMin);
-    const p1EndOffset = offsetOf(p1End);
-    const p2EndOffset = offsetOf(p2End);
-    const shotMins = shots.map((s) => {
-        const [hh, mm] = s.time.split(':').map(Number);
-        return hh * 60 + mm;
-    });
-    const pts = [];
-    let vwc = seedVwc;
-    let pore = seedPoreEc;
-    for (let off = nowOffset; off <= 1440; off += step) {
-        let dry;
-        if (off < lightsOnOffset || off >= lightsOffOffset) {
-            dry = 0.3 / 60;
-        }
-        else if (off < p1EndOffset) {
-            dry = 0.8 / 60;
-        }
-        else if (off < p2EndOffset) {
-            dry = 2.6 / 60;
-        }
-        else {
-            dry = 3.0 / 60;
-        }
-        vwc -= dry * step;
-        pore += dry * step * 0.18;
-        for (const shotMin of shotMins) {
-            const shotOff = (shotMin - viewStart + 1440) % 1440;
-            if (shotOff > nowOffset && shotOff >= off && shotOff < off + step) {
-                const isP1 = off < p1EndOffset;
-                vwc += isP1 ? 2.8 : 1.05;
-                pore -= isP1 ? 0.3 : 0.18;
-            }
-        }
-        vwc = Math.max(vwcLo, Math.min(vwcHi, vwc));
-        pore = Math.max(1.5, Math.min(5.5, pore));
-        const bulk = Math.max(0.8, pore * (vwc / 100) * 1.32);
-        pts.push({ offset: off, vwc, pore, bulk });
-    }
-    return pts;
-}
-
 /**
  * Irrigation Dialog State Machine
  *
@@ -26843,7 +27853,7 @@ function defaultTabs() {
         water_analytics: { stageAggregates: null, sub: { kind: 'idle' } },
         drain_ec: { draft: defaultDrainEcDraft(), sub: { kind: 'idle' } },
         substrate_ec: { draft: defaultSubstrateEcDraft(), sub: { kind: 'idle' } },
-        ec_ramp: {},
+        ec_ramp: { sub: { kind: 'list' }, error: null },
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
@@ -27148,6 +28158,8 @@ const ACTION_ERROR_MESSAGES = {
     'run-now': 'Failed to run irrigation cycle',
     'edit-irrigation-time': 'Failed to save irrigation time',
     'edit-drain-time': 'Failed to save drain time',
+    'save-ec-ramp-curve': 'Failed to save EC ramp curve',
+    'remove-ec-ramp-curve': 'Failed to delete EC ramp curve',
 };
 function actionErrorMessage(action) {
     return ACTION_ERROR_MESSAGES[action] ?? 'Operation failed';
@@ -27173,6 +28185,11 @@ function transition$4(sm, event) {
                     schedules: sm.activeTab === 'schedules'
                         ? { ...sm.tabs.schedules, sub: { kind: 'idle' } }
                         : sm.tabs.schedules,
+                    // Reset the EC Ramp tab to its list view when leaving it, so re-entering
+                    // never reopens a stale editor draft (replaces the old willUpdate reset).
+                    ec_ramp: sm.activeTab === 'ec_ramp'
+                        ? { sub: { kind: 'list' }, error: null }
+                        : sm.tabs.ec_ramp,
                 },
             };
         case 'DISCARD_AND_SWITCH': {
@@ -27427,6 +28444,131 @@ function transition$4(sm, event) {
                     },
                 },
             };
+        // ── Tanks ────────────────────────────────────────────────────────────────
+        case 'EDIT_TANK':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    tanks: { sub: { kind: 'editing', index: event.index, draft: event.draft } },
+                },
+            };
+        case 'UPDATE_TANK_DRAFT': {
+            const sub = sm.tabs.tanks.sub;
+            if (sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    tanks: { sub: { ...sub, draft: { ...sub.draft, ...event.partial } } },
+                },
+            };
+        }
+        case 'CANCEL_TANK_EDIT':
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, tanks: { sub: { kind: 'idle' } } },
+            };
+        // ── EC Ramp ──────────────────────────────────────────────────────────────
+        case 'EC_RAMP_START_NEW':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    ec_ramp: {
+                        sub: {
+                            kind: 'editing',
+                            draft: { name: '', stage: 'flower', points: [{ day: 1, target_ec: 1.0 }] },
+                        },
+                        error: null,
+                    },
+                },
+            };
+        case 'EC_RAMP_EDIT_CURVE':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    ec_ramp: { sub: { kind: 'editing', draft: event.draft }, error: null },
+                },
+            };
+        case 'EC_RAMP_CANCEL_EDIT':
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, ec_ramp: { sub: { kind: 'list' }, error: null } },
+            };
+        case 'UPDATE_EC_RAMP_CURVE': {
+            const sub = sm.tabs.ec_ramp.sub;
+            if (sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    ec_ramp: {
+                        ...sm.tabs.ec_ramp,
+                        sub: { ...sub, draft: { ...sub.draft, ...event.partial } },
+                    },
+                },
+            };
+        }
+        case 'EC_RAMP_ADD_POINT': {
+            const sub = sm.tabs.ec_ramp.sub;
+            if (sub.kind !== 'editing')
+                return sm;
+            const points = [...(sub.draft.points ?? [])];
+            const lastDay = points.length > 0 ? points[points.length - 1].day : 0;
+            const lastEc = points.length > 0 ? points[points.length - 1].target_ec : 1.0;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    ec_ramp: {
+                        ...sm.tabs.ec_ramp,
+                        sub: {
+                            ...sub,
+                            draft: { ...sub.draft, points: [...points, { day: lastDay + 7, target_ec: lastEc + 0.2 }] },
+                        },
+                    },
+                },
+            };
+        }
+        case 'EC_RAMP_REMOVE_POINT': {
+            const sub = sm.tabs.ec_ramp.sub;
+            if (sub.kind !== 'editing')
+                return sm;
+            const points = [...(sub.draft.points ?? [])];
+            points.splice(event.index, 1);
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    ec_ramp: { ...sm.tabs.ec_ramp, sub: { ...sub, draft: { ...sub.draft, points } } },
+                },
+            };
+        }
+        case 'EC_RAMP_UPDATE_POINT': {
+            const sub = sm.tabs.ec_ramp.sub;
+            if (sub.kind !== 'editing')
+                return sm;
+            const points = [...(sub.draft.points ?? [])];
+            if (event.index < 0 || event.index >= points.length)
+                return sm;
+            points[event.index] = { ...points[event.index], ...event.partial };
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    ec_ramp: { ...sm.tabs.ec_ramp, sub: { ...sub, draft: { ...sub.draft, points } } },
+                },
+            };
+        }
+        case 'SET_EC_RAMP_ERROR':
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, ec_ramp: { ...sm.tabs.ec_ramp, error: event.error } },
+            };
         // ── Drain EC ─────────────────────────────────────────────────────────────
         case 'UPDATE_DRAIN_EC_DRAFT':
             return {
@@ -27626,122 +28768,122 @@ class MutationRunController {
 // ---------------------------------------------------------------------------
 // Shared primitives
 // ---------------------------------------------------------------------------
-const growspaceIdPayload = objectType({ growspace_id: stringType() });
+const growspaceIdPayload = object({ growspace_id: string() });
 // ---------------------------------------------------------------------------
 // Mode / Strategy
 // ---------------------------------------------------------------------------
-enumType(['manual', 'crop_steering']);
+_enum(['manual', 'crop_steering']);
 growspaceIdPayload.extend({
-    enabled: booleanType().optional(),
-    lights_on_time: stringType().optional(),
-    p0_duration_minutes: numberType().int().optional(),
-    p2_stop_before_lights_off_minutes: numberType().int().optional(),
-    target_vwc_percent: numberType().optional(),
-    maintenance_dryback_percent: numberType().optional(),
-    shot_duration_seconds: numberType().int().optional(),
-    shot_interval_minutes: numberType().int().optional(),
-    p1_shot_duration_seconds: numberType().int().optional(),
-    p1_shot_interval_minutes: numberType().int().optional(),
-    p2_shot_duration_seconds: numberType().int().optional(),
-    p2_shot_interval_minutes: numberType().int().optional(),
-    p1_shot_volume_percent: numberType().optional(),
-    p2_shot_volume_percent: numberType().optional(),
-    shot_sizing_mode: enumType(['seconds', 'volume']).optional(),
+    enabled: boolean().optional(),
+    lights_on_time: string().optional(),
+    p0_duration_minutes: number().int().optional(),
+    p2_stop_before_lights_off_minutes: number().int().optional(),
+    target_vwc_percent: number().optional(),
+    maintenance_dryback_percent: number().optional(),
+    shot_duration_seconds: number().int().optional(),
+    shot_interval_minutes: number().int().optional(),
+    p1_shot_duration_seconds: number().int().optional(),
+    p1_shot_interval_minutes: number().int().optional(),
+    p2_shot_duration_seconds: number().int().optional(),
+    p2_shot_interval_minutes: number().int().optional(),
+    p1_shot_volume_percent: number().optional(),
+    p2_shot_volume_percent: number().optional(),
+    shot_sizing_mode: _enum(['seconds', 'volume']).optional(),
     // Substrate Profile (#446): the backend accepts flat keys and folds them into
     // the nested substrate_profile server-side (read side stays nested).
-    substrate_media_type: enumType(['coco', 'rockwool', 'soil']).optional(),
-    substrate_liters_per_pot: numberType().optional(),
+    substrate_media_type: _enum(['coco', 'rockwool', 'soil']).optional(),
+    substrate_liters_per_pot: number().optional(),
     // Pore EC Target Band + EC Modulation (#447). null clears a band edge.
-    pore_ec_target_min: numberType().nullable().optional(),
-    pore_ec_target_max: numberType().nullable().optional(),
-    ec_modulation_enabled: booleanType().optional(),
-    auto_light_tracking: booleanType().optional(),
+    pore_ec_target_min: number().nullable().optional(),
+    pore_ec_target_max: number().nullable().optional(),
+    ec_modulation_enabled: boolean().optional(),
+    auto_light_tracking: boolean().optional(),
     // Adaptive Shot Control (ADR-0014).
-    dynamic_shot_enabled: booleanType().optional(),
-    dynamic_aggressiveness: numberType().optional(),
-    dynamic_recovery: numberType().optional(),
-    dynamic_shot_size_floor: numberType().optional(),
-    dynamic_interval_ceiling: numberType().optional(),
+    dynamic_shot_enabled: boolean().optional(),
+    dynamic_aggressiveness: number().optional(),
+    dynamic_recovery: number().optional(),
+    dynamic_shot_size_floor: number().optional(),
+    dynamic_interval_ceiling: number().optional(),
 });
-const SteeringModeSchema = enumType(['vegetative', 'balanced', 'generative']);
+const SteeringModeSchema = _enum(['vegetative', 'balanced', 'generative']);
 /** Result of the apply_steering_mode WS command (server stamps the preset). */
-const ApplySteeringModeResultSchema = objectType({
-    growspace_id: stringType(),
+const ApplySteeringModeResultSchema = object({
+    growspace_id: string(),
     declared_steering_mode: SteeringModeSchema,
 });
 // ---------------------------------------------------------------------------
 // Settings
 // ---------------------------------------------------------------------------
 growspaceIdPayload.extend({
-    irrigation_pump_entity: stringType(),
-    drain_pump_entity: stringType(),
-    irrigation_duration: numberType().int(),
-    drain_duration: numberType().int(),
-    soil_trigger_percent: numberType().nullable().optional(),
-    daily_volume_cap_liters: numberType().nullable().optional(),
-    max_cycles_per_day: numberType().int().nullable().optional(),
-    skip_during_dark: booleanType().optional(),
-    pause_on_low_tank: booleanType().optional(),
-    log_to_logbook: booleanType().optional(),
-    auto_advance_p1_to_p2: booleanType().optional(),
-    auto_advance_p2_to_p3: booleanType().optional(),
-    halt_on_runoff_ec_threshold: numberType().nullable().optional(),
-    active_steering_phase: enumType(['p1', 'p2', 'p3']).optional(),
+    irrigation_pump_entity: string(),
+    drain_pump_entity: string(),
+    irrigation_duration: number().int(),
+    drain_duration: number().int(),
+    soil_trigger_percent: number().nullable().optional(),
+    daily_volume_cap_liters: number().nullable().optional(),
+    max_cycles_per_day: number().int().nullable().optional(),
+    skip_during_dark: boolean().optional(),
+    pause_on_low_tank: boolean().optional(),
+    log_to_logbook: boolean().optional(),
+    auto_advance_p1_to_p2: boolean().optional(),
+    auto_advance_p2_to_p3: boolean().optional(),
+    halt_on_runoff_ec_threshold: number().nullable().optional(),
+    active_steering_phase: _enum(['p1', 'p2', 'p3']).optional(),
 });
 // ---------------------------------------------------------------------------
 // Schedule
 // ---------------------------------------------------------------------------
 growspaceIdPayload.extend({
-    time: stringType(),
-    duration: numberType().int().optional(),
+    time: string(),
+    duration: number().int().optional(),
 });
 growspaceIdPayload.extend({
-    time: stringType(),
+    time: string(),
 });
 growspaceIdPayload.extend({
-    time: stringType(),
-    duration: numberType().int().optional(),
+    time: string(),
+    duration: number().int().optional(),
 });
 growspaceIdPayload.extend({
-    time: stringType(),
+    time: string(),
 });
 // ---------------------------------------------------------------------------
 // Drain monitoring
 // ---------------------------------------------------------------------------
 growspaceIdPayload.extend({
-    feed_ec: numberType(),
-    drain_ec: numberType(),
-    feed_volume_ml: numberType().optional(),
-    drain_volume_ml: numberType().optional(),
+    feed_ec: number(),
+    drain_ec: number(),
+    feed_volume_ml: number().optional(),
+    drain_volume_ml: number().optional(),
 });
 growspaceIdPayload.extend({
-    enabled: booleanType().optional(),
-    max_ec_delta: numberType().optional(),
-    target_runoff_percent: numberType().optional(),
+    enabled: boolean().optional(),
+    max_ec_delta: number().optional(),
+    target_runoff_percent: number().optional(),
 });
 // ---------------------------------------------------------------------------
 // Cycle
 // ---------------------------------------------------------------------------
 growspaceIdPayload.extend({
-    duration: numberType().int().optional(),
+    duration: number().int().optional(),
 });
 // ---------------------------------------------------------------------------
 // Phase windows (derived type — not a service payload)
 // ---------------------------------------------------------------------------
-const PhaseWindowSchema = objectType({
-    id: enumType(['p0', 'p1', 'p2', 'p3']),
-    label: stringType(),
-    name: stringType(),
-    start: numberType().int(),
-    end: numberType().int(),
-    color: stringType(),
-    target: stringType(),
+const PhaseWindowSchema = object({
+    id: _enum(['p0', 'p1', 'p2', 'p3']),
+    label: string(),
+    name: string(),
+    start: number().int(),
+    end: number().int(),
+    color: string(),
+    target: string(),
 });
-objectType({
-    lightsOnMin: numberType().int(),
-    lightsOffMin: numberType().int(),
-    lightHours: numberType(),
-    phases: arrayType(PhaseWindowSchema),
+object({
+    lightsOnMin: number().int(),
+    lightsOffMin: number().int(),
+    lightHours: number(),
+    phases: array(PhaseWindowSchema),
 });
 
 /**
@@ -28121,6 +29263,148 @@ async function fetchCropSteeringHistory(growspaceId) {
     const updated = new Map(cropSteeringHistory$.get());
     updated.set(growspaceId, result);
     cropSteeringHistory$.set(updated);
+}
+
+/** Formats a minute-of-day (0-1439) as `HH:MM`, wrapping past midnight. */
+function fmtMinuteOfDay(minutes) {
+    const h = Math.floor((minutes / 60) % 24);
+    const m = minutes % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+/** Generates the day's irrigation shot cycle (P1 ramp-up through the P2→P3 cutoff). */
+function computeCropSteeringCycle(strategy, isFlower) {
+    if (!strategy.lightsOnTime || !strategy.shotIntervalMinutes || strategy.shotIntervalMinutes <= 0 || !strategy.shotDurationSeconds) {
+        return [];
+    }
+    const lightHours = isFlower ? 12 : 18;
+    const [hh, mm] = strategy.lightsOnTime.split(':').map(Number);
+    const lightsOnMin = hh * 60 + (mm || 0);
+    const lightsOffMin = lightsOnMin + lightHours * 60;
+    const firstShotMin = lightsOnMin + (strategy.p0DurationMinutes ?? 0);
+    const cutoffMin = lightsOffMin - (strategy.p2StopBeforeLightsOffMinutes ?? 0);
+    const shots = [];
+    for (let t = firstShotMin; t < cutoffMin; t += strategy.shotIntervalMinutes) {
+        const h = Math.floor(t / 60) % 24;
+        const m = t % 60;
+        shots.push({
+            time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`,
+            duration: strategy.shotDurationSeconds,
+        });
+    }
+    return shots;
+}
+/**
+ * Derives the day's P1/P2/P3 phase windows. P3's start prefers the backend's
+ * recorded `phaseChangedAt` (Actual P3 Boundary) over the scheduled boundary,
+ * when the growspace is currently in P3 — see [[Phase Windows]].
+ */
+function computePhases(strategy, isFlower, irrigationConfig) {
+    const anchorLightsOnTime = strategy.detectedLightsOnTime ?? strategy.lightsOnTime;
+    if (!anchorLightsOnTime)
+        return null;
+    const lightHours = isFlower ? 12 : 18;
+    const [hh, mm] = anchorLightsOnTime.split(':').map(Number);
+    const lightsOnMin = hh * 60 + (mm || 0);
+    const lightsOffMin = lightsOnMin + lightHours * 60;
+    const p1End = lightsOnMin + (strategy.p0DurationMinutes ?? 60);
+    const scheduledP3Start = Math.max(p1End, lightsOffMin - (strategy.p2StopBeforeLightsOffMinutes ?? 120));
+    let p3Start = scheduledP3Start;
+    if (irrigationConfig?.activeSteeringPhase === 'p3' && irrigationConfig.phaseChangedAt) {
+        const d = new Date(irrigationConfig.phaseChangedAt);
+        const actualStart = d.getHours() * 60 + d.getMinutes();
+        p3Start = Math.max(p1End, Math.min(actualStart, scheduledP3Start));
+    }
+    return {
+        lightsOnMin,
+        lightsOffMin,
+        lightHours,
+        phases: [
+            {
+                id: 'p1',
+                label: 'P1',
+                name: 'Saturation',
+                start: lightsOnMin,
+                end: p1End,
+                color: '#4CAF50',
+                target: 'Reach FC',
+            },
+            {
+                id: 'p2',
+                label: 'P2',
+                name: 'Maintenance',
+                start: p1End,
+                end: p3Start,
+                color: '#2196F3',
+                target: 'Runoff target',
+            },
+            {
+                id: 'p3',
+                label: 'P3',
+                name: 'Dryback',
+                start: p3Start,
+                end: lightsOffMin,
+                color: '#FF9800',
+                target: `−${strategy.maintenanceDrybackPercent ?? 3}% VWC`,
+            },
+        ],
+    };
+}
+/**
+ * Synthesizes the dashed "projected" tail of the Substrate Model trace from `nowOffset`
+ * to end-of-day, modelling dryback rate per phase and shot-driven VWC/EC recovery.
+ */
+function generateSubstrateProjection(nowOffset, shots, phases, seedVwc, seedPoreEc, viewStart, targetVwcPercent) {
+    const { lightsOnMin, lightsOffMin } = phases;
+    const target = targetVwcPercent ?? 45;
+    const vwcLo = Math.max(0, target - 18);
+    const vwcHi = target + 8;
+    const step = 3;
+    const p1End = phases.phases[0]?.end ?? lightsOnMin + 60;
+    const p2End = phases.phases[1]?.end ?? lightsOffMin - 120;
+    // Compare in view-offset space (viewStart anchored at 0) so the photoperiod
+    // boundaries stay correctly ordered even when lights-off wraps past midnight.
+    const offsetOf = (m) => (m - viewStart + 1440) % 1440;
+    const lightsOnOffset = offsetOf(lightsOnMin);
+    const lightsOffOffset = offsetOf(lightsOffMin);
+    const p1EndOffset = offsetOf(p1End);
+    const p2EndOffset = offsetOf(p2End);
+    const shotMins = shots.map((s) => {
+        const [hh, mm] = s.time.split(':').map(Number);
+        return hh * 60 + mm;
+    });
+    const pts = [];
+    let vwc = seedVwc;
+    let pore = seedPoreEc;
+    for (let off = nowOffset; off <= 1440; off += step) {
+        let dry;
+        if (off < lightsOnOffset || off >= lightsOffOffset) {
+            dry = 0.3 / 60;
+        }
+        else if (off < p1EndOffset) {
+            dry = 0.8 / 60;
+        }
+        else if (off < p2EndOffset) {
+            dry = 2.6 / 60;
+        }
+        else {
+            dry = 3.0 / 60;
+        }
+        vwc -= dry * step;
+        pore += dry * step * 0.18;
+        for (const shotMin of shotMins) {
+            const shotOff = (shotMin - viewStart + 1440) % 1440;
+            if (shotOff > nowOffset && shotOff >= off && shotOff < off + step) {
+                const isP1 = off < p1EndOffset;
+                vwc += isP1 ? 2.8 : 1.05;
+                pore -= isP1 ? 0.3 : 0.18;
+            }
+        }
+        vwc = Math.max(vwcLo, Math.min(vwcHi, vwc));
+        pore = Math.max(1.5, Math.min(5.5, pore));
+        const bulk = Math.max(0.8, pore * (vwc / 100) * 1.32);
+        pts.push({ offset: off, vwc, pore, bulk });
+    }
+    return pts;
 }
 
 /**
@@ -29048,9 +30332,4441 @@ CropSteeringDayChart = __decorate([
     t$2('crop-steering-day-chart')
 ], CropSteeringDayChart);
 
-// MDI check icon path for time chips
-const MDI_CHECK = 'M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z';
+/**
+ * Dialog Capabilities atom (ADR-0019)
+ *
+ * The single shared `computed` for the Irrigation Dialog's cross-tab derived
+ * state: rail-group visibility gates (ADR-0016), the server-authoritative
+ * `volumeModeCapable` flag (ADR-0017), and cross-tab labels (Sizing-Mode).
+ *
+ * It is a peer input to both the Dialog Shell's shell ViewModel and every Tab
+ * ViewModel — **never** re-derived per tab. This is the seam that lets per-tab
+ * ViewModels exist without re-fragmenting the cross-tab coupling ADR-0016/0017
+ * deliberately consolidated.
+ *
+ * Overview is read-only, so this first slice only exercises the Crop-Steering
+ * rail-group gate. The remaining fields are wired here so later tabs (steering,
+ * substrate_ec) read them from the same atom instead of re-deriving inline.
+ */
+function deriveCapabilities(device, liveConfig) {
+    const env = device?.environmentAttributes;
+    const cfg = liveConfig ?? device?.irrigationConfig;
+    const hasPump = !!(cfg?.irrigationPumpEntity || cfg?.drainPumpEntity);
+    const hasSoilMoisture = !!env?.soilMoistureSensor || (env?.soilMoistureSensors?.length ?? 0) > 0;
+    const hasStrategy = !!device?.irrigationStrategy?.enabled;
+    const sizingMode = device?.irrigationStrategy?.shotSizingMode ?? 'seconds';
+    return {
+        hasPump,
+        hasSoilMoisture,
+        hasStrategy,
+        cropSteeringGroupVisible: (hasSoilMoisture || hasStrategy) && hasPump,
+        volumeModeCapable: device?.volumeModeCapable ?? false,
+        sizingModeLabel: sizingMode === 'volume' ? 'Volume' : 'Seconds',
+    };
+}
+/**
+ * Build the shared Dialog Capabilities atom from the dialog's device prop atom
+ * and the live irrigation-configs slice atom.
+ */
+function createDialogCapabilities($device, $irrigationConfigs) {
+    return computed([$device, $irrigationConfigs], (device, configs) => {
+        const liveConfig = device?.deviceId ? configs.get(device.deviceId) : undefined;
+        return deriveCapabilities(device, liveConfig);
+    });
+}
+
+/**
+ * Overview Tab ViewModel (ADR-0019)
+ *
+ * The pure derivation behind the Irrigation Dialog's read-only Overview tab
+ * (ADR-0016's trivial-SM tab). Crop-steering diagnostics only — no draft, no
+ * intents, no effects. It `computed`s the tab's entire render input (signed
+ * score text, badge classes, trend icon/colour, dryback strings, shot-composition
+ * rows) from the device prop atom and the shared Dialog Capabilities atom.
+ *
+ * Modelled on `features/plants`' `createStablePlantOverviewViewModel`: input
+ * atoms in, one `ReadableAtom<OverviewTabViewModel>` out, testable with no DOM.
+ * The formatting here is copied verbatim from the dialog's former inline
+ * `_renderOverviewTab` helpers so the rendered output stays byte-identical.
+ */
+const fmtNum = (v) => (typeof v === 'number' ? String(v) : '—');
+function deriveOvernightDryback(metrics) {
+    const dryback = metrics.overnightDryback;
+    const event = metrics.latestOvernightEvent;
+    const value = dryback === null ? '—' : `${dryback.toFixed(1)} pts`;
+    const sub = event
+        ? `peak ${event.peakVwc.toFixed(1)}% → trough ${event.troughVwc.toFixed(1)}%`
+        : null;
+    return { value, sub };
+}
+function deriveInCycleDryback(metrics) {
+    const avg = metrics.incycleDrybackAvg;
+    const value = avg === null ? '—' : `${avg.toFixed(1)} pts`;
+    return { value, sub: `${metrics.incycleDrybackCount} shots today` };
+}
+function deriveEcTrend(metrics) {
+    if (!metrics.ecTrendAvailable) {
+        return {
+            locked: true,
+            value: 'Locked',
+            icon: mdiMinus,
+            color: 'var(--secondary-text-color)',
+        };
+    }
+    const trend = metrics.ecTrend ?? 'stable';
+    let icon = mdiMinus;
+    let color = 'var(--secondary-text-color)';
+    if (trend === 'rising') {
+        icon = mdiArrowUp;
+        color = 'var(--error-color, #F44336)';
+    }
+    else if (trend === 'falling') {
+        icon = mdiArrowDown;
+        color = 'var(--success-color, #4CAF50)';
+    }
+    return { locked: false, value: trend.toUpperCase(), icon, color };
+}
+function deriveIntentBanner(deviation) {
+    if (deviation === 'on_target')
+        return 'ontarget';
+    if (deviation === 'more_generative' || deviation === 'more_vegetative')
+        return 'deviation';
+    return null;
+}
+function deriveShotComposition(metrics, device) {
+    const composition = metrics.shotComposition;
+    if (!composition)
+        return null;
+    const phase = device?.irrigationConfig?.activeSteeringPhase;
+    const phaseLabel = phase ? phase.toUpperCase() : null;
+    const lastShot = composition.last_shot;
+    if (!lastShot) {
+        return { phaseLabel, rows: null };
+    }
+    return {
+        phaseLabel,
+        rows: [
+            { label: 'Base', value: `${fmtNum(lastShot.base_seconds)}s` },
+            { label: 'VWC factor', value: `×${fmtNum(lastShot.vwc_factor)}` },
+            { label: 'EC factor', value: `×${fmtNum(lastShot.ec_factor)}` },
+            { label: 'Effective', value: `${fmtNum(lastShot.effective_seconds)}s` },
+        ],
+    };
+}
+function emptyMetricCard() {
+    return { value: '—', sub: null };
+}
+/**
+ * Pure factory: device prop atom + shared capabilities atom → one Overview VM atom.
+ * `$caps` is a peer input (never re-derived here).
+ *
+ * NOTE on signature: ADR-0019 documents the canonical seam as
+ * `createXTabViewModel($sm, $caps, …slice atoms)`. The Overview tab is the
+ * read-only reference adapter (ADR-0016's trivial-SM tab) — its SM state is the
+ * fixed `{ activeTab: 'overview' }` with no draft — so it has no `$sm` dependency
+ * and the parameter is omitted here. Draft tabs (tanks, steering) take `$sm` as
+ * the first argument per the documented seam; do not treat this narrower
+ * `($device, $caps)` shape as the template for those.
+ */
+function createOverviewTabViewModel($device, $caps) {
+    return computed([$device, $caps], (device, caps) => {
+        const metrics = device?.steeringMetrics;
+        if (!metrics) {
+            return {
+                unavailable: true,
+                scoreText: '—',
+                declared: null,
+                measured: null,
+                intentBanner: null,
+                overnightDryback: emptyMetricCard(),
+                inCycleDryback: emptyMetricCard(),
+                ecTrend: { locked: true, value: 'Locked', icon: mdiMinus, color: 'var(--secondary-text-color)' },
+                shotComposition: null,
+                caps,
+            };
+        }
+        const score = metrics.score;
+        const scoreText = score === null ? '—' : `${score > 0 ? '+' : ''}${score.toFixed(2)}`;
+        const declared = device?.irrigationStrategy?.declaredSteeringMode ?? null;
+        return {
+            unavailable: false,
+            scoreText,
+            declared,
+            measured: metrics.measuredClassification,
+            intentBanner: deriveIntentBanner(metrics.intentDeviation),
+            overnightDryback: deriveOvernightDryback(metrics),
+            inCycleDryback: deriveInCycleDryback(metrics),
+            ecTrend: deriveEcTrend(metrics),
+            shotComposition: deriveShotComposition(metrics, device),
+            caps,
+        };
+    });
+}
+/** Icons used by the metric cards, re-exported so the Tab Component stays dumb. */
+const OVERVIEW_ICONS = {
+    overnightDryback: mdiWeatherNight,
+    inCycleDryback: mdiCounter,
+};
+
+/**
+ * Dialog Shell ViewModel (ADR-0019)
+ *
+ * The host-level derived state for the Irrigation Dialog's wiring: the
+ * cross-tab rail-group visibility gates that decide which nav items show.
+ * It is a thin `computed` over the shared Dialog Capabilities atom — the same
+ * `$caps` atom every Tab ViewModel consumes — so the gate is owned in exactly
+ * one place (never re-derived per tab).
+ *
+ * This first slice only surfaces the Crop-Steering rail-group gate (Overview +
+ * Steering share it, ADR-0016). The nav rail / footer / toast stay rendered
+ * inline in the Dialog Shell for now; later slices fold more of that derivation
+ * here as tabs decompose.
+ */
+/**
+ * Pure factory: shared Dialog Capabilities atom → shell ViewModel atom.
+ */
+function createShellViewModel($caps) {
+    return computed([$caps], (caps) => ({
+        cropSteeringGroupVisible: caps.cropSteeringGroupVisible,
+    }));
+}
+
+/**
+ * Tanks Tab ViewModel (ADR-0019)
+ *
+ * The pure derivation behind the Irrigation Dialog's Tanks tab — the first
+ * *draft* tab adapter (the reference for the gesture→intent→effect loop the
+ * read-only Overview tab did not exercise). It `computed`s the tab's entire
+ * render input — the tank-level rows (config + live levels formatted for
+ * display) and the projected inline-edit sub-state — from the SM atom, the
+ * Irrigation slice's `tankLevels$`, and the sensor-entity options.
+ *
+ * Per the sharpened ADR-0019 seam, `$sm` is the one mandatory input (it carries
+ * the edit draft); the remaining deps are opt-in — the Tanks tab reads
+ * `tankLevels$` and the sensor options, and no `$caps` (it has no cross-tab
+ * capability gating). See CONTEXT.md "Tank Config vs Tank Levels": the rows read
+ * from `tankLevels$` (authoritative), while the Save effect writes through the
+ * Growspace slice's `configureEnvironment` with eventual (sync-driven)
+ * consistency — there is no optimistic Tank-Config bridge.
+ *
+ * The row formatting is transcribed verbatim from the dialog's former inline
+ * `_renderTankRow` so the rendered output stays byte-identical.
+ */
+function deriveRow$1(tank, index) {
+    const pct = tank.fillLevel ?? 0;
+    const isWarning = tank.isWarning;
+    const color = isWarning
+        ? '#f44336'
+        : (tank.hoursRemaining ?? 999) < 24
+            ? '#FF9800'
+            : '#4caf50';
+    const depletionLabel = tank.depletionStatus === 'depleting'
+        ? '↓ Depleting'
+        : tank.depletionStatus === 'refilling'
+            ? '↑ Refilling'
+            : tank.depletionStatus === 'static'
+                ? '— Stable'
+                : '';
+    const hoursLabel = tank.hoursRemaining != null
+        ? (tank.hoursRemaining >= 48
+            ? Math.floor(tank.hoursRemaining / 24) + 'd'
+            : Math.round(tank.hoursRemaining) + 'h') + ' left'
+        : '';
+    const subParts = [depletionLabel, hoursLabel].filter((p) => p !== '');
+    return {
+        index,
+        name: tank.name,
+        isWarning,
+        color,
+        barWidthPct: Math.max(0, Math.min(100, pct)),
+        fillLabel: tank.fillLevel !== null && tank.fillLevel !== undefined ? `${pct.toFixed(0)}%` : 'N/A',
+        subLine: subParts.length > 0 ? subParts.join(' · ') : null,
+    };
+}
+/**
+ * Pure helper that composes the Save payload: the full tank array with `draft`
+ * merged over the tank at `index`. The spread overwrites the four Tank Config
+ * fields and PRESERVES the live Tank Levels fields (fillLevel, isWarning, …) so
+ * an optimistic read never blanks live telemetry. Out-of-range indices are a
+ * no-op. Owned here (not in the effect) so the Dialog Shell can snapshot the
+ * payload into `applying.params` at dispatch time (ADR-0015).
+ */
+function mergeTankDraft(tanks, index, draft) {
+    if (index < 0 || index >= tanks.length)
+        return [...tanks];
+    const next = [...tanks];
+    next[index] = { ...next[index], ...draft };
+    return next;
+}
+/**
+ * Pure factory: SM atom + the Irrigation slice's `tankLevels$` + sensor-entity
+ * options + the device atom (for the growspace id key) → one Tanks VM atom. No
+ * `$caps` (the Tanks tab has no cross-tab capability gating). The device atom is
+ * taken only to key `tankLevels$` by `deviceId` — the tank *data* comes from the
+ * slice, not the device read-model. Testable with no DOM.
+ */
+function createTanksTabViewModel($sm, $tankLevels, $entityOptions, $device) {
+    return computed([$sm, $tankLevels, $entityOptions, $device], (sm, tankLevels, entityOptions, device) => {
+        const tanks = tankLevels.get(device?.deviceId ?? '') ?? [];
+        const sub = sm.tabs.tanks.sub;
+        return {
+            tanks: tanks.map(deriveRow$1),
+            editing: sub.kind === 'editing'
+                ? { index: sub.index, draft: sub.draft, entityOptions }
+                : null,
+        };
+    });
+}
+
+/**
+ * EC Ramp Tab ViewModel (ADR-0019)
+ *
+ * The pure derivation behind the Irrigation Dialog's EC Ramp tab. EC Ramp Curves
+ * belong to the **Nutrient slice** (ADR-0005), so the list rows are read from the
+ * slice's `ecRampCurves$` atom, while the LIST/EDIT view, the open curve draft,
+ * and the synchronous validation error come from the SM (`$sm`-first — the one
+ * mandatory input, mirroring tanks). No `$caps`: the EC Ramp tab has no cross-tab
+ * capability gating.
+ *
+ * The list-row summary (`N points • Day a–b`) and the edit-form projection are
+ * transcribed verbatim from the dialog's former inline `_renderEcRampList` /
+ * `_renderEcRampEdit` so the rendered output stays byte-identical.
+ */
+/** Curve summary line, transcribed verbatim from the former inline list markup. */
+function curveSummary(curve) {
+    const n = curve.points.length;
+    const days = curve.points.map((p) => p.day);
+    const lo = Math.min(...days);
+    const hi = Math.max(...days);
+    return `${n} point${n !== 1 ? 's' : ''} • Day ${lo}–${hi}`;
+}
+function deriveRow(curve) {
+    return { id: curve.id, name: curve.name, summary: curveSummary(curve) };
+}
+function composeEcRampSave(draft) {
+    if (!draft.name?.trim()) {
+        return { ok: false, error: 'Curve name is required' };
+    }
+    const points = (draft.points ?? []).filter((p) => p.day >= 0 && p.target_ec > 0);
+    if (points.length === 0) {
+        return { ok: false, error: 'At least one valid EC point is required' };
+    }
+    return {
+        ok: true,
+        payload: {
+            curve_id: draft.id,
+            name: draft.name.trim(),
+            stage: draft.stage ?? 'flower',
+            points: [...points].sort((a, b) => a.day - b.day),
+        },
+    };
+}
+/**
+ * Pure factory: SM atom + the Nutrient slice's `ecRampCurves$` → one EC Ramp VM
+ * atom. `$sm`-first (it carries the view + draft + error); the curve data comes
+ * from the slice (ADR-0005), not a fresh source. No `$caps`. Testable with no DOM.
+ */
+function createEcRampTabViewModel($sm, $ecRampCurves) {
+    return computed([$sm, $ecRampCurves], (sm, curves) => {
+        const tab = sm.tabs.ec_ramp;
+        const rows = Object.values(curves ?? {}).map(deriveRow);
+        const sub = tab.sub;
+        return {
+            curves: rows,
+            editing: sub.kind === 'editing' ? { draft: sub.draft, points: sub.draft.points ?? [] } : null,
+            error: tab.error,
+        };
+    });
+}
+
+/**
+ * Schedules Tab ViewModel (ADR-0019)
+ *
+ * The pure derivation behind the Irrigation Dialog's Schedules tab — the largest
+ * tab adapter. It projects two render modes from the SM atom:
+ *
+ *   - **Manual** (Crop Steering disabled): the Irrigation + Drain schedule
+ *     sections — each a list of scheduled times read from the device's
+ *     `irrigationConfig` (the SAME source the former inline render read, so the
+ *     output stays byte-identical) — plus the inline add/edit sub-state.
+ *   - **Crop Steering** (steering draft `enabled`): a read-only panel that hosts
+ *     the shared `<crop-steering-day-chart>` and a legend. The shots/phases come
+ *     from the PURE `crop-steering-model` helpers (called here, not in the
+ *     component), the sensor-presence flags from the Irrigation slice's
+ *     `cropSteeringHistory$`.
+ *
+ * `$sm`-first: the SM carries `tabs.schedules` (durations/draft + inline sub) AND
+ * `tabs.steering.draft` (the cross-tab read for shot/phase computation — expected
+ * per ADR-0019, the VM reads `$sm`; steering state is never duplicated). The
+ * device atom supplies the schedule rows, `flowerWeek`, `irrigationConfig` (for
+ * phase boundaries) and is passed through for the chart. The history atom supplies
+ * the legend's "sensor not configured" flags.
+ *
+ * Time-of-day (`now` / `isPast` / the now-line) is deliberately NOT derived here:
+ * it is view geometry that depends on `Date.now()`, so it stays in the component's
+ * `render()` to keep this factory deterministically testable with no clock.
+ */
+/** Builds the time-block list for one schedule section (transcribed verbatim). */
+function deriveTimes(times, defaultDuration) {
+    return times
+        .filter((t) => t && (t.time || t.start_time))
+        .map((t) => {
+        const timeStr = (t.time || t.start_time);
+        const [hh, mm] = timeStr.split(':').map(Number);
+        return {
+            timeStr,
+            startMin: hh * 60 + (mm || 0),
+            durationSeconds: t.duration || t.duration_seconds || defaultDuration,
+        };
+    });
+}
+function deriveCropSteeringPanel(device, strategy, history) {
+    const isFlower = (device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
+    const shots = computeCropSteeringCycle(strategy, isFlower);
+    const phases = computePhases(strategy, isFlower, device?.irrigationConfig);
+    if (!phases) {
+        return {
+            configured: false,
+            shotCount: 0,
+            lightHours: 0,
+            lightsOnLabel: '',
+            lightsOffLabel: '',
+            phases: [],
+            hasPoreEc: false,
+            hasBulkEc: false,
+        };
+    }
+    const shotCount = shots.length;
+    return {
+        configured: true,
+        shotCount,
+        lightHours: phases.lightHours,
+        lightsOnLabel: fmtMinuteOfDay(phases.lightsOnMin),
+        lightsOffLabel: fmtMinuteOfDay(phases.lightsOffMin),
+        phases: phases.phases.map((p) => ({
+            id: p.id,
+            label: p.label,
+            name: p.name,
+            color: p.color,
+            target: p.target,
+            shotCount: p.id === 'p2' ? shotCount : null,
+        })),
+        hasPoreEc: history?.pore_ec !== undefined,
+        hasBulkEc: history?.bulk_ec !== undefined,
+    };
+}
+/**
+ * Pure factory: the SM atom (carrying both `tabs.schedules` and the cross-tab
+ * `tabs.steering.draft`), the device atom (schedule rows + chart + phase config),
+ * and the Irrigation slice's `cropSteeringHistory$` → one Schedules VM atom.
+ * No `$caps` (the Schedules tab has no nav-visibility capability gating).
+ * Testable with no DOM and no clock.
+ */
+function createSchedulesTabViewModel($sm, $device, $cropSteeringHistory) {
+    return computed([$sm, $device, $cropSteeringHistory], (sm, device, history) => {
+        const draft = sm.tabs.schedules.draft;
+        const steeringDraft = sm.tabs.steering.draft;
+        const isCropSteering = !!steeringDraft.enabled;
+        const irrigationTimes = device?.irrigationConfig?.irrigationTimes || [];
+        const drainTimes = device?.irrigationConfig?.drainTimes || [];
+        const drainSection = draft.drainPumpEntity
+            ? {
+                type: 'drain',
+                title: 'Drain Schedule',
+                color: '#FF9800',
+                defaultDuration: draft.drainDuration,
+                times: deriveTimes(drainTimes, draft.drainDuration),
+            }
+            : null;
+        return {
+            isCropSteering,
+            sub: sm.tabs.schedules.sub,
+            irrigationSection: isCropSteering
+                ? null
+                : {
+                    type: 'irrigation',
+                    title: 'Irrigation Schedule',
+                    // The dialog's stage color is the fixed `#2196F3` the former render
+                    // passed through (`dialogColor`), so the VM carries it directly.
+                    color: '#2196F3',
+                    defaultDuration: draft.irrigationDuration,
+                    times: deriveTimes(irrigationTimes, draft.irrigationDuration),
+                },
+            drainSection,
+            cropSteering: isCropSteering
+                ? deriveCropSteeringPanel(device, steeringDraft, history.get(device?.deviceId ?? ''))
+                : null,
+            device,
+        };
+    });
+}
+
+/**
+ * Drain EC Tab ViewModel (ADR-0019)
+ *
+ * The pure derivation behind the Irrigation Dialog's Drain EC tab — drain/runoff
+ * EC monitoring. **Mixed source**: the monitoring/log draft + the saving/logging
+ * sub-state come from the SM (`$sm`-first, `tabs.drain_ec`), while the logged
+ * readings list is read from the device's `drainConfig.readings` — the SAME
+ * source the former inline `_renderDrainECTab` read (`this.device?.drainConfig`),
+ * so the rendered output stays byte-identical.
+ *
+ * Every threshold/color computation here is **draft-driven** (`draft.enabled`,
+ * `draft.maxEcDelta`), matching the former render: the status card, the live EC
+ * delta readout, and the per-row table coloring all read the in-flight draft, not
+ * the persisted config.
+ *
+ * Locale/clock-dependent formatting (`toLocaleString` timestamps, `toFixed`
+ * digit strings) is deliberately NOT done here: it is presentation, kept in the
+ * component's `render()` so this factory is deterministically testable with no
+ * clock and no locale. The VM projects raw derived numbers + flags only.
+ */
+/**
+ * Pure factory: the SM atom (carrying `tabs.drain_ec`) + the device atom (the
+ * readings source) → one Drain EC VM atom. `$sm`-first, mixed source (readings
+ * from `drainConfig`). No `$caps`. Testable with no DOM, no clock, no locale.
+ */
+function createDrainEcTabViewModel($sm, $device) {
+    return computed([$sm, $device], (sm, device) => {
+        const draft = sm.tabs.drain_ec.draft;
+        const dc = device?.drainConfig;
+        const readings = dc?.readings || [];
+        const recentReadings = readings.slice(-20).reverse();
+        const lastReading = recentReadings[0] ?? null;
+        const lastDelta = lastReading ? lastReading.drainEc - lastReading.feedEc : null;
+        const isOverThreshold = lastDelta !== null && draft.enabled && lastDelta > draft.maxEcDelta;
+        const color = !draft.enabled
+            ? 'rgba(255,255,255,0.3)'
+            : isOverThreshold
+                ? '#f44336'
+                : lastDelta !== null && lastDelta > draft.maxEcDelta * 0.7
+                    ? '#FF9800'
+                    : '#4caf50';
+        const text = !draft.enabled
+            ? 'Monitoring disabled'
+            : lastDelta === null
+                ? 'No readings yet'
+                : isOverThreshold
+                    ? `Salt buildup alert — Δ${lastDelta.toFixed(2)} mS/cm above threshold`
+                    : `EC OK — Δ${lastDelta.toFixed(2)} mS/cm`;
+        const recent = recentReadings.map((r) => {
+            const delta = r.drainEc - r.feedEc;
+            return {
+                reading: r,
+                delta,
+                overThreshold: draft.enabled && delta > draft.maxEcDelta,
+                runoffPercent: r.feedVolumeMl && r.drainVolumeMl ? (r.drainVolumeMl / r.feedVolumeMl) * 100 : null,
+            };
+        });
+        return {
+            draft,
+            sub: sm.tabs.drain_ec.sub,
+            status: { color, text, lastReading },
+            recent,
+            totalReadings: readings.length,
+        };
+    });
+}
+
+/**
+ * Config Tab ViewModel (ADR-0019)
+ *
+ * The pure derivation behind the Irrigation Dialog's Configuration tab — pump
+ * entity selection, optional safety caps, behaviour toggles and the manual
+ * "Run Now" override. **Mixed source, `$sm`-first**: the config draft
+ * (`tabs.config.draft`), the pump-entity drafts (`tabs.schedules.draft`, since
+ * the two pump selects persist through the same `save-all` payload) and the
+ * `steeringEnabled` gate (`tabs.steering.draft.enabled`) all come from the SM —
+ * never duplicated. The pump-entity option list and `hasPump` are host-derived
+ * view inputs mirrored into atoms by the container (the `_tankSensorOptions`
+ * pattern), so the component never reads `hass`. `hasPump` mirrors the host's
+ * `_hasPump` getter verbatim (which reads the *live* `irrigationConfigs$` slice,
+ * falling back to the device) so the panel gate stays byte-identical.
+ * `isRunningNow` (Run Now button state) is projected from the SM status.
+ *
+ * The Safety Caps card and the "Skip During Dark" toggle are gated on
+ * `steeringEnabled` exactly as the former inline `_renderConfigSection`: Safety
+ * Caps shows only when steering is enabled; Skip During Dark only when it is
+ * NOT. Both gates are surfaced as VM flags so the component holds no logic.
+ *
+ * No `$caps` (the Config tab is always visible). Number-string formatting
+ * (`String(value)` / `parseFloat`) stays in the component's `render()` so this
+ * factory is deterministically testable with no DOM.
+ */
+/**
+ * Pure factory: the SM atom (carrying `tabs.config`, `tabs.schedules.draft` and
+ * the cross-tab `tabs.steering.draft.enabled`), a `hasPump` atom (mirrored from
+ * the host's `_hasPump` getter), and the pump-entity option atom (mirrored from
+ * hass by the container) → one Config VM atom. `$sm`-first, mixed source. No
+ * `$caps`. Testable with no DOM and no hass.
+ */
+function createConfigTabViewModel($sm, $hasPump, $pumpEntityOptions) {
+    return computed([$sm, $hasPump, $pumpEntityOptions], (sm, hasPump, pumpEntityOptions) => {
+        const schedulesDraft = sm.tabs.schedules.draft;
+        const isApplying = sm.status.kind === 'applying';
+        const isRunningNow = sm.status.kind === 'applying' && sm.status.action === 'run-now';
+        return {
+            draft: sm.tabs.config.draft,
+            irrigationPumpEntity: schedulesDraft.irrigationPumpEntity,
+            drainPumpEntity: schedulesDraft.drainPumpEntity,
+            pumpEntityOptions,
+            steeringEnabled: !!sm.tabs.steering.draft.enabled,
+            hasPump,
+            isRunningNow,
+            isApplying,
+        };
+    });
+}
+
+/**
+ * Water Analytics Tab ViewModel (ADR-0019)
+ *
+ * The pure derivation behind the Irrigation Dialog's read-mostly Water Analytics
+ * tab. Like the Overview tab it owns no draft and has only two narrow
+ * interactions (reset-all-data, open-steering link); those are Tab Intents, not
+ * derivation, so the factory stays a pure projection.
+ *
+ * `$sm`-first per the documented ADR-0019 seam: the tab reads the cross-tab
+ * `tabs.steering.draft` (to compute the crop-steering shot summary via the PURE
+ * `crop-steering-model` helper, the way the Schedules VM does — never the host
+ * method) and `tabs.water_analytics.stageAggregates` (fetched by the host's
+ * `_fetchStageAnalytics`, passed through here). The device atom supplies every
+ * other input: `waterUsage`, `environmentAttributes.irrigationTanks`,
+ * `irrigationConfig.{irrigationTimes,drainTimes,…}`, `drainConfig.readings`, and
+ * the cycle-telemetry fields.
+ *
+ * Clock-dependent and locale-dependent formatting (the 24h consumption-bucket
+ * chart, `toLocaleString` timestamps, the recent-refills list) is kept in the
+ * component so this factory is deterministic and DOM-free; the VM hands the
+ * component the raw event arrays it needs for those.
+ *
+ * Markup-feeding values are copied verbatim from the dialog's former inline
+ * `_renderWaterAnalyticsTab` so the rendered output stays byte-identical.
+ */
+function deriveScheduleRows(times, fallbackDuration) {
+    return times.map((t) => ({
+        time: t.time ?? t.start_time ?? '',
+        duration: t.duration ?? t.duration_seconds ?? fallbackDuration,
+    }));
+}
+/**
+ * Pure factory: SM atom + device atom → one Water Analytics VM atom.
+ * `$sm`-first per ADR-0019 (it carries `tabs.steering.draft` and
+ * `tabs.water_analytics.stageAggregates`); the device atom supplies all the
+ * telemetry/tank/reading inputs.
+ */
+function createWaterAnalyticsTabViewModel($sm, $device) {
+    return computed([$sm, $device], (sm, device) => {
+        const wu = device?.waterUsage;
+        const tanks = device?.environmentAttributes?.irrigationTanks ?? [];
+        const irrigTimes = device?.irrigationConfig?.irrigationTimes ?? [];
+        const drainTimes = device?.irrigationConfig?.drainTimes ?? [];
+        const readings = device?.drainConfig?.readings ?? [];
+        const isCropSteering = !!sm.tabs.steering.draft.enabled;
+        const isFlower = (device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
+        const csShots = isCropSteering
+            ? computeCropSteeringCycle(sm.tabs.steering.draft, isFlower)
+            : [];
+        const hasPump = !!(device?.irrigationConfig?.irrigationPumpEntity ||
+            device?.irrigationConfig?.drainPumpEntity);
+        const hasTankSensors = tanks.some((t) => t.sensorEntity);
+        const recentReadings = readings.slice(-30).reverse();
+        const readingsWithVolumes = recentReadings.filter((r) => r.feedVolumeMl && r.drainVolumeMl);
+        const totalFeedMl = readingsWithVolumes.reduce((s, r) => s + (r.feedVolumeMl || 0), 0);
+        const totalDrainMl = readingsWithVolumes.reduce((s, r) => s + (r.drainVolumeMl || 0), 0);
+        const avgRunoff = totalFeedMl > 0 ? (totalDrainMl / totalFeedMl) * 100 : null;
+        const tanksWithData = tanks.filter((t) => t.fillLevel !== null && t.fillLevel !== undefined);
+        const avgTankLevel = tanksWithData.length > 0
+            ? tanksWithData.reduce((s, t) => s + (t.fillLevel ?? 0), 0) / tanksWithData.length
+            : null;
+        const warningTanks = tanks.filter((t) => t.isWarning);
+        const totalIrrig = irrigTimes.length;
+        const totalDrain = drainTimes.length;
+        const irrigDuration = device?.irrigationConfig?.irrigationDuration ?? 0;
+        const drainDuration = device?.irrigationConfig?.drainDuration ?? 0;
+        const tanksWithHistory = tanks.filter((t) => t.volumeLiters != null && t.waterHistory?.events?.length);
+        const allTankEvents = tanksWithHistory.flatMap((t) => t.waterHistory.events);
+        const allDaily7d = tanksWithHistory.flatMap((t) => t.waterHistory.daily_7d ?? []);
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const tankLitersToday = allDaily7d
+            .filter((d) => d.date === todayKey)
+            .reduce((s, d) => s + d.consumed, 0);
+        const tankLiters7d = allDaily7d.reduce((s, d) => s + d.consumed, 0);
+        const daysWithData = new Set(allDaily7d.filter((d) => d.consumed > 0).map((d) => d.date)).size;
+        const tankAvgPerDay = daysWithData > 0 ? tankLiters7d / daysWithData : 0;
+        const volumeRows = readingsWithVolumes.map((r) => ({
+            timestamp: r.timestamp,
+            feedVolumeMl: r.feedVolumeMl,
+            drainVolumeMl: r.drainVolumeMl,
+            runoff: r.feedVolumeMl ? (r.drainVolumeMl / r.feedVolumeMl) * 100 : null,
+            ecDelta: r.drainEc - r.feedEc,
+        }));
+        return {
+            hasPump,
+            cyclesToday: device?.cyclesToday ?? 0,
+            volumeDispensedToday: device?.volumeDispensedToday ?? 0,
+            lastCycleTimestamp: device?.lastCycleTimestamp ?? null,
+            nextScheduledCycle: device?.nextScheduledCycle ?? null,
+            waterUsage: wu,
+            avgRunoff,
+            readingsWithVolumesCount: readingsWithVolumes.length,
+            tanks: tanks.map((t) => ({
+                name: t.name,
+                fillLevel: t.fillLevel ?? null,
+                isWarning: !!t.isWarning,
+                hoursRemaining: t.hoursRemaining ?? null,
+            })),
+            warningTankCount: warningTanks.length,
+            avgTankLevel,
+            hasTankSensors,
+            tankLitersToday,
+            tankLiters7d,
+            tankAvgPerDay,
+            tankEvents: allTankEvents,
+            hasTankHistory: tanksWithHistory.length > 0,
+            isCropSteering,
+            cropSteering: {
+                shots: csShots,
+                drainRows: deriveScheduleRows(drainTimes, drainDuration),
+                totalDrain,
+                drainDuration,
+            },
+            schedule: {
+                totalIrrig,
+                totalDrain,
+                irrigDuration,
+                drainDuration,
+                irrigRows: deriveScheduleRows(irrigTimes, irrigDuration),
+                drainRows: deriveScheduleRows(drainTimes, drainDuration),
+            },
+            stageAggregates: sm.tabs.water_analytics.stageAggregates,
+            hasDrainPumpEntity: !!sm.tabs.schedules.draft.drainPumpEntity,
+            volumeRows,
+            totalFeedMl,
+            totalDrainMl,
+        };
+    });
+}
+
+/**
+ * Substrate & EC Tab ViewModel (ADR-0019 + ADR-0017)
+ *
+ * The pure derivation behind the Irrigation Dialog's Substrate & EC tab — the
+ * canonical `$caps` consumer (ADR-0019) and the FIRST tab with ADR-0017's
+ * deliberate **mixed persistence**:
+ *
+ *   - **Immediate-persist** capability-affecting fields — Shot Sizing Mode,
+ *     Substrate Profile (media type + liters per pot), and the EC Modulation
+ *     toggle — are projected as their CURRENT live values (read from the device's
+ *     `irrigationStrategy`). They are NOT part of the buffered draft; the Dialog
+ *     Shell writes them straight to the strategy the moment the user edits.
+ *   - **Buffered** fields — the Pore EC Target Band (min/max) and the per-stage
+ *     feed-EC ranges — come from the SM draft (`tabs.substrate_ec.draft`) and are
+ *     written through the unified footer `save-all`.
+ *
+ * **Capability gates stay server-authoritative.** `volumeModeCapable` and
+ * `sizingModeLabel` are read from the shared Dialog Capabilities atom (`$caps`) —
+ * never re-derived here (ADR-0017). The EC-modulation sensor gate is the presence
+ * of pore-EC sensors on the device. The ONLY client-side deduction is the
+ * locked-hint TEXT (which prerequisite to name), branched on the persisted
+ * profile's `litersPerPot` exactly as the former inline `_renderSubstrateEcTab`.
+ *
+ * Number-string formatting (`String(value)` / `parseFloat`) stays in the
+ * component's `render()` so this factory is deterministically testable with no
+ * DOM.
+ */
+/**
+ * Pure factory: the SM atom (carrying the buffered `tabs.substrate_ec` draft),
+ * the shared Dialog Capabilities atom (`volumeModeCapable` + `sizingModeLabel`,
+ * ADR-0017), and the device atom (live immediate-persist values + pore-EC sensor
+ * gate) → one Substrate & EC VM atom. `$sm`-first, `$caps` second per the
+ * documented ADR-0019 seam. Testable with no DOM.
+ */
+function createSubstrateEcTabViewModel($sm, $caps, $device) {
+    return computed([$sm, $caps, $device], (sm, caps, device) => {
+        const strat = device?.irrigationStrategy;
+        const draft = sm.tabs.substrate_ec.draft;
+        const profile = strat?.substrateProfile ?? {
+            mediaType: 'coco',
+            litersPerPot: 0,
+        };
+        const hasPoreEcSensors = (device?.environmentAttributes?.poreEcSensors?.length ?? 0) > 0;
+        // Deduced Volume Mode lock hint (ADR-0017): the server bool is the gate; we
+        // only branch the hint text on liters-per-pot to name the missing prereq.
+        const volumeLockHint = (profile.litersPerPot ?? 0) > 0
+            ? 'Set a pump flow rate to enable Volume Mode'
+            : 'Set liters per pot to enable Volume Mode';
+        const poreEcMin = draft.poreEcMin;
+        const poreEcMax = draft.poreEcMax;
+        const poreBandInverted = poreEcMin != null && poreEcMax != null && poreEcMin >= poreEcMax;
+        return {
+            profile,
+            sizingMode: strat?.shotSizingMode ?? 'seconds',
+            ecModulationEnabled: !!strat?.ecModulationEnabled,
+            volumeModeCapable: caps.volumeModeCapable,
+            sizingModeLabel: caps.sizingModeLabel,
+            hasPoreEcSensors,
+            volumeLockHint,
+            poreEcMin,
+            poreEcMax,
+            poreBandInverted,
+            ecTargetRanges: draft.ecTargetRanges,
+        };
+    });
+}
+
+/**
+ * Steering Tab ViewModel (ADR-0019 + ADR-0012 + ADR-0014 + ADR-0017)
+ *
+ * The pure derivation behind the Irrigation Dialog's Steering tab — the hardest
+ * fan-out slice of ADR-0019. It is `$sm`-first and a `$caps` consumer, and it is
+ * the tab that writes TWO different drafts:
+ *
+ *   - **Steering draft** (`tabs.steering.draft`, written via `UPDATE_STEERING_DRAFT`)
+ *     — the VWC strategy fields, timing, per-phase shot params, and the Adaptive
+ *     Shot Control tunables (ADR-0014).
+ *   - **Config draft** (`tabs.config.draft`, written via `UPDATE_CONFIG_DRAFT`) —
+ *     the P2 Direct Trigger and the three Phase-Trigger toggles (Auto-advance
+ *     P1→P2, Auto-advance P2→P3, Halt on Runoff EC). These live in the steering UI
+ *     but persist through the config draft; the Dialog Shell routes their dedicated
+ *     intent to `UPDATE_CONFIG_DRAFT`.
+ *
+ * **Cross-tab Sizing-Mode read (ADR-0017/0019).** The per-phase shot fields switch
+ * between "Shot Duration (sec)" and "Shot Size (%)" based on the live sizing mode.
+ * This VM reads that from the shared Dialog Capabilities atom
+ * (`$caps.sizingModeLabel === 'Volume'`) — the canonical cross-tab seam — never
+ * from a steering-draft field (sizing mode persists immediately on the Substrate &
+ * EC tab, ADR-0017). The field key/label/parse logic is preserved byte-for-byte:
+ * `${p.id}ShotVolumePercent` vs `${p.id}ShotDurationSeconds`, "P1 Shot Size (%)"
+ * vs "P1 Shot Duration (sec)", parseFloat vs parseInt (parse stays in the
+ * component, keyed off the descriptor's `isVolume`).
+ *
+ * **Confirm flows (ADR-0012).** Both the Steering Mode selector and the Phase card
+ * gesture open a confirm overlay. The VM only projects the confirm sub-state
+ * (`confirmMode` / `confirmPhase`); the Shell keeps the confirm side-effects (the
+ * `applySteeringMode` store action and `_saveSettings`).
+ *
+ * Number-string formatting (`String(value)` / `parseFloat` / `parseInt`) stays in
+ * the component's `render()` so this factory is deterministically testable with no
+ * DOM.
+ */
+const MODES = [
+    {
+        id: 'vegetative',
+        name: 'Vegetative',
+        desc: 'Frequent shots, small dryback — vegetative push.',
+    },
+    {
+        id: 'balanced',
+        name: 'Balanced',
+        desc: 'Middle ground between vegetative and generative.',
+    },
+    {
+        id: 'generative',
+        name: 'Generative',
+        desc: 'Fewer, larger shots and deeper dryback — generative push.',
+    },
+];
+const PHASES = [
+    { id: 'p1', label: 'P1' },
+    { id: 'p2', label: 'P2' },
+];
+/**
+ * Pure factory: the SM atom (carrying both the steering draft and the config
+ * draft fields surfaced in the steering UI), the shared Dialog Capabilities atom
+ * (`sizingModeLabel`, ADR-0017), and the device atom (light-sensor gate) → one
+ * Steering VM atom. `$sm`-first, `$caps` second per the documented ADR-0019 seam.
+ * Testable with no DOM.
+ */
+function createSteeringTabViewModel($sm, $caps, $device) {
+    return computed([$sm, $caps, $device], (sm, caps, device) => {
+        const steering = sm.tabs.steering;
+        const draft = steering.draft;
+        const config = sm.tabs.config.draft;
+        const sub = steering.sub;
+        // Cross-tab sizing-mode read (ADR-0017/0019): the canonical seam is `$caps`,
+        // which derives the label from the live strategy. Equivalent to the old inline
+        // `device.irrigationStrategy.shotSizingMode === 'volume'` read.
+        const isVolume = caps.sizingModeLabel === 'Volume';
+        const phaseShots = PHASES.map((p) => {
+            const sizeField = (isVolume ? `${p.id}ShotVolumePercent` : `${p.id}ShotDurationSeconds`);
+            const sizeLabel = isVolume
+                ? `${p.label} Shot Size (%)`
+                : `${p.label} Shot Duration (sec)`;
+            const intervalField = `${p.id}ShotIntervalMinutes`;
+            return {
+                id: p.id,
+                label: p.label,
+                sizeField,
+                sizeLabel,
+                sizeValue: draft[sizeField],
+                intervalField,
+                intervalValue: draft[intervalField],
+                isVolume,
+            };
+        });
+        return {
+            declaredMode: draft.declaredSteeringMode ?? null,
+            modes: MODES,
+            confirmMode: sub.kind === 'confirm-mode' ? sub.pending : null,
+            confirmPhase: sub.kind === 'confirm-phase' ? sub.pending : null,
+            activePhase: steering.phase,
+            draft,
+            hasLightSensors: (device?.environmentAttributes?.lightSensors?.length ?? 0) > 0,
+            detectedLightsOnTime: draft.detectedLightsOnTime,
+            phaseShots,
+            adaptiveEnabled: draft.dynamicShotEnabled ?? true,
+            soilTriggerPercent: config.soilTriggerPercent,
+            autoAdvanceP1ToP2: config.autoAdvanceP1ToP2,
+            autoAdvanceP2ToP3: config.autoAdvanceP2ToP3,
+            haltOnRunoffEcThreshold: config.haltOnRunoffEcThreshold,
+        };
+    });
+}
+
+/**
+ * Irrigation Overview Tab Component (ADR-0019)
+ *
+ * The dumb presentational element for the Irrigation Dialog's read-only Overview
+ * tab (crop-steering diagnostics). `@property .vm: OverviewTabViewModel` in, no
+ * `@state()` of its own — all state lives in the Dialog Shell / Tab ViewModel.
+ * Overview is read-only, so it emits no Tab Intents.
+ *
+ * Markup is transcribed verbatim from the former inline `_renderOverviewTab`
+ * helpers in `irrigation-dialog.ts` so the rendered output stays byte-identical.
+ * Its `cs-*` styles are copied from the dialog (the schedules tab keeps the
+ * separate `cs-timeline / cs-legend` rules inline), plus `detail-card` from the
+ * shared dialog styles.
+ */
+let IrrigationOverviewTab = class IrrigationOverviewTab extends i$3 {
+    render() {
+        const vm = this.vm;
+        if (!vm || vm.unavailable) {
+            return this._renderUnavailable();
+        }
+        return x `
+      ${this._renderScoreHeader(vm)}
+      <div class="cs-metric-grid">
+        ${this._renderOvernightDrybackCard(vm.overnightDryback)}
+        ${this._renderInCycleDrybackCard(vm.inCycleDryback)}
+        ${this._renderEcTrendCard(vm.ecTrend)}
+      </div>
+      ${this._renderShotComposition(vm.shotComposition)}
+    `;
+    }
+    _renderUnavailable() {
+        return x `
+      <div style="text-align: center; padding: 40px; opacity: 0.7;">
+        <ha-svg-icon
+          .path=${mdiChartTimelineVariantShimmer}
+          style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"
+        ></ha-svg-icon>
+        <p>Crop steering data is currently unavailable.</p>
+        <p style="font-size: 0.85rem;">
+          Ensure irrigation strategy is enabled and sensors are reporting data.
+        </p>
+      </div>
+    `;
+    }
+    /** Score readout + declared-intent vs measured-classification contrast. */
+    _renderScoreHeader(vm) {
+        const { scoreText, declared, measured } = vm;
+        return x `
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div
+          style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;"
+        >
+          <div style="font-size: 36px; font-weight: bold;">${scoreText}</div>
+          <gs-help-tooltip
+            content="Measured crop steering score (−1…+1): positive = generative (promoting flowering), negative = vegetative (promoting growth). This is a measurement of how the substrate is actually behaving, not a setting."
+            placement="right"
+            label="Crop Steering Score"
+          ></gs-help-tooltip>
+        </div>
+        <div
+          style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;"
+        >
+          ${declared
+            ? x `<div class="cs-mode-badge cs-mode-${declared}">
+                Declared: ${declared.toUpperCase()}
+              </div>`
+            : x `<div class="cs-mode-badge">No declared mode</div>`}
+          ${measured
+            ? x `<div class="cs-mode-badge cs-mode-${measured}">
+                Measured: ${measured.toUpperCase()}
+              </div>`
+            : E}
+        </div>
+        ${this._renderIntentDeviation(vm)}
+      </div>
+    `;
+    }
+    _renderIntentDeviation(vm) {
+        if (vm.intentBanner === 'ontarget') {
+            return x `
+        <div class="cs-intent cs-intent-ontarget">
+          On target — substrate reads ${vm.declared} as intended.
+        </div>
+      `;
+        }
+        if (vm.intentBanner === 'deviation') {
+            return x `
+        <div class="cs-intent cs-intent-deviation">
+          Intended ${vm.declared} — substrate reads ${vm.measured}.
+        </div>
+      `;
+        }
+        return E;
+    }
+    /** Overnight dryback (absolute VWC points) with last-window peak/trough context. */
+    _renderOvernightDrybackCard(card) {
+        return x `
+      <div class="cs-metric-card" data-metric="overnight-dryback">
+        <ha-svg-icon
+          .path=${OVERVIEW_ICONS.overnightDryback}
+          style="color: var(--primary-color); margin-bottom: 8px;"
+        ></ha-svg-icon>
+        <div class="cs-metric-value">${card.value}</div>
+        ${card.sub ? x `<div class="cs-metric-sub">${card.sub}</div>` : E}
+        <div
+          class="cs-metric-label"
+          style="display:flex;align-items:center;gap:4px;justify-content:center;"
+        >
+          Overnight Dryback
+          <gs-help-tooltip
+            content="The absolute VWC drop (peak − trough, in percentage points) across the most recent completed overnight window. Larger overnight drybacks push the substrate generative."
+            placement="bottom"
+            label="Overnight Dryback"
+          ></gs-help-tooltip>
+        </div>
+      </div>
+    `;
+    }
+    /** Today's in-cycle (P2) shot count and average P2 dryback. */
+    _renderInCycleDrybackCard(card) {
+        return x `
+      <div class="cs-metric-card" data-metric="incycle-dryback">
+        <ha-svg-icon
+          .path=${OVERVIEW_ICONS.inCycleDryback}
+          style="color: var(--info-color, #03a9f4); margin-bottom: 8px;"
+        ></ha-svg-icon>
+        <div class="cs-metric-value">${card.value}</div>
+        <div class="cs-metric-sub">${card.sub}</div>
+        <div
+          class="cs-metric-label"
+          style="display:flex;align-items:center;gap:4px;justify-content:center;"
+        >
+          In-Cycle Dryback
+          <gs-help-tooltip
+            content="Average P2 shot-to-shot dryback (absolute VWC points) across today's in-cycle irrigations, with the day's shot count. Smaller, more frequent shots read vegetative."
+            placement="bottom"
+            label="In-Cycle Dryback"
+          ></gs-help-tooltip>
+        </div>
+      </div>
+    `;
+    }
+    /**
+     * Measured pore-EC trend. Sensor-gated per the Capability Unlock Hint rule:
+     * when no pore-EC sensors report (locked) the card stays visible but locked
+     * with a one-line hint, never silently shows "stable".
+     */
+    _renderEcTrendCard(card) {
+        if (card.locked) {
+            return x `
+        <div class="cs-metric-card cs-metric-locked" data-metric="ec-trend">
+          <ha-svg-icon
+            .path=${card.icon}
+            style="color: var(--secondary-text-color); margin-bottom: 8px;"
+          ></ha-svg-icon>
+          <div class="cs-metric-value">Locked</div>
+          <div class="cs-metric-sub">Add a pore-EC sensor in Environment Settings</div>
+          <div class="cs-metric-label">EC Trend</div>
+        </div>
+      `;
+        }
+        return x `
+      <div class="cs-metric-card" data-metric="ec-trend">
+        <ha-svg-icon
+          .path=${card.icon}
+          style="color: ${card.color}; margin-bottom: 8px;"
+        ></ha-svg-icon>
+        <div class="cs-metric-value">${card.value}</div>
+        <div
+          class="cs-metric-label"
+          style="display:flex;align-items:center;gap:4px;justify-content:center;"
+        >
+          EC Trend
+          <gs-help-tooltip
+            content="Whether measured pore EC (nutrient strength in the substrate) is rising, falling, or stable over the day. Rising EC may indicate under-irrigation or salt build-up."
+            placement="bottom"
+            label="EC Trend"
+          ></gs-help-tooltip>
+        </div>
+      </div>
+    `;
+    }
+    /**
+     * Phase state + shot composition diagnostics. Absent on time-based irrigation
+     * (no VWC coordinator → null composition). Explains the last fired shot as
+     * base × vwc_factor × ec_factor so any shot is end-to-end accountable.
+     */
+    _renderShotComposition(panel) {
+        if (!panel)
+            return E;
+        return x `
+      <div class="detail-card cs-shot-composition" data-metric="shot-composition">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <h3 style="margin:0;border:none;padding:0;">Shot Composition</h3>
+          ${panel.phaseLabel
+            ? x `<span class="cs-phase-pill">Phase ${panel.phaseLabel}</span>`
+            : E}
+        </div>
+        ${panel.rows
+            ? x `
+              ${panel.rows.map((row, i) => i === panel.rows.length - 1
+                ? x `<div class="cs-shot-row cs-shot-total">
+                      <span>${row.label}</span><span>${row.value}</span>
+                    </div>`
+                : x `<div class="cs-shot-row">
+                      <span>${row.label}</span><span>${row.value}</span>
+                    </div>`)}
+            `
+            : x `<p style="font-size:0.8rem;opacity:0.6;margin:0;">
+              No shot fired yet this session — modulation capability shown above.
+            </p>`}
+      </div>
+    `;
+    }
+};
+IrrigationOverviewTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      /* ── Crop Steering Overview tab (copied from irrigation-dialog) ── */
+      .cs-metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .cs-metric-card {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .cs-metric-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: var(--primary-text-color);
+        margin: 8px 0;
+      }
+      .cs-metric-label {
+        font-size: 14px;
+        color: var(--secondary-text-color);
+      }
+      .cs-metric-sub {
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        margin-bottom: 6px;
+        font-variant-numeric: tabular-nums;
+      }
+      .cs-metric-locked {
+        opacity: 0.55;
+        border-style: dashed;
+      }
+      .cs-shot-composition {
+        margin-top: 16px;
+      }
+      .cs-phase-pill {
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+        color: var(--secondary-text-color);
+      }
+      .cs-shot-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        padding: 4px 0;
+        font-variant-numeric: tabular-nums;
+      }
+      .cs-shot-total {
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        margin-top: 4px;
+        padding-top: 8px;
+        font-weight: 600;
+      }
+      .cs-mode-badge {
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 14px;
+        font-weight: bold;
+        text-transform: capitalize;
+        margin-top: 8px;
+        display: inline-block;
+      }
+      .cs-mode-vegetative {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+      }
+      .cs-mode-generative {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+      }
+      .cs-mode-balanced {
+        background: rgba(33, 150, 243, 0.2);
+        color: #2196f3;
+      }
+      .cs-intent {
+        margin-top: 12px;
+        font-size: 0.85rem;
+        text-transform: capitalize;
+      }
+      .cs-intent-ontarget {
+        color: var(--success-color, #4caf50);
+      }
+      .cs-intent-deviation {
+        color: var(--warning-color, #ff9800);
+        font-weight: 500;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], IrrigationOverviewTab.prototype, "vm", void 0);
+IrrigationOverviewTab = __decorate([
+    t$2('irrigation-overview-tab')
+], IrrigationOverviewTab);
+
+/**
+ * Irrigation Tanks Tab Component (ADR-0019)
+ *
+ * The dumb presentational element for the Irrigation Dialog's Tanks tab.
+ * `@property .vm: TanksTabViewModel` in, semantic Tab Intents out, **no
+ * `@state()` of its own** — the edit draft lives in the DialogStateMachine and
+ * is projected into the VM (b1). Markup is transcribed verbatim from the former
+ * inline `_renderTanksTab` / `_renderTankEditForm` / `_renderTankRow` helpers so
+ * the rendered output stays byte-identical; the `.tank-*` styles moved here with
+ * it. `md3-*`, `detail-card`, `row-col-grid`, `button-group` come from the
+ * shared `dialogStyles`.
+ *
+ * Tab Intents (the Dialog Shell owns their translation to SM events):
+ *   - `edit-tank-requested`  detail: { index }
+ *   - `tank-draft-changed`   detail: { partial: Partial<TankDraft> }
+ *   - `cancel-tank-edit`     (no detail)
+ *   - `save-tank-requested`  (no detail)
+ */
+let IrrigationTanksTab = class IrrigationTanksTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    render() {
+        const vm = this.vm;
+        if (!vm || vm.tanks.length === 0) {
+            return x `
+        <div class="detail-card" style="text-align:center;padding:40px;">
+          <p style="opacity:0.7;">No irrigation tanks configured for this growspace.</p>
+          <p style="font-size:0.9rem;opacity:0.5;">
+            Configure tank sensors in the Environment Settings to monitor tank levels.
+          </p>
+        </div>
+      `;
+        }
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
+        >
+          <h3 style="margin:0;">Tank Levels</h3>
+          <span style="font-size:11px;opacity:0.45;">Updates every 30 s</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${vm.tanks.map((row) => this._renderTankRow(row))}
+        </div>
+        ${vm.editing ? this._renderTankEditForm(vm.editing) : E}
+      </div>
+    `;
+    }
+    _renderTankRow(row) {
+        return x `
+      <div class="tank-row ${row.isWarning ? 'warning' : ''}">
+        <div class="tank-row-info">
+          <div class="tank-row-name">${row.name}</div>
+          <div class="tank-bar-track">
+            <div
+              class="tank-bar-fill"
+              style="width:${row.barWidthPct}%;background:${row.color};"
+            ></div>
+          </div>
+        </div>
+        <div class="tank-row-stat">
+          <div class="tank-row-pct" style="color:${row.color};">
+            ${row.fillLabel}
+            ${row.isWarning ? x `<span style="margin-left:4px;">⚠️</span>` : E}
+          </div>
+          ${row.subLine ? x `<div class="tank-row-sub">${row.subLine}</div>` : E}
+          <button
+            class="md3-button text tank-edit-btn"
+            style="padding:4px;min-width:auto;margin-top:4px;"
+            title="Edit tank"
+            @click=${() => this._emit('edit-tank-requested', { index: row.index })}
+          >
+            <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    _renderTankEditForm(editing) {
+        const draft = editing.draft;
+        const update = (partial) => this._emit('tank-draft-changed', { partial });
+        return x `
+      <div
+        class="tank-edit-form"
+        style="margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--divider-color,rgba(255,255,255,0.15));border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;"
+      >
+        <div class="md3-input-group">
+          <label class="md3-label">Sensor Entity *</label>
+          <input
+            class="md3-input"
+            list="tank-edit-sensor-datalist"
+            .value=${draft.sensorEntity}
+            @input=${(e) => update({ sensorEntity: e.target.value })}
+            placeholder="Search entity..."
+          />
+          <datalist id="tank-edit-sensor-datalist">
+            ${editing.entityOptions.map((id) => x `<option value="${id}"></option>`)}
+          </datalist>
+        </div>
+        <div class="md3-input-group">
+          <label class="md3-label">Name</label>
+          <input
+            class="md3-input"
+            type="text"
+            .value=${draft.name}
+            @input=${(e) => update({ name: e.target.value })}
+            placeholder="e.g. Main Tank"
+          />
+        </div>
+        <div class="row-col-grid">
+          <div class="md3-input-group">
+            <label class="md3-label">Volume (L, optional)</label>
+            <input
+              class="md3-input"
+              type="number"
+              min="0"
+              .value=${draft.volumeLiters !== null ? String(draft.volumeLiters) : ''}
+              @input=${(e) => {
+            const v = parseFloat(e.target.value);
+            update({ volumeLiters: isNaN(v) ? null : v });
+        }}
+              placeholder="e.g. 200"
+            />
+          </div>
+          <div class="md3-input-group">
+            <label class="md3-label">Warning Level (%)</label>
+            <input
+              class="md3-input"
+              type="number"
+              min="0"
+              max="100"
+              .value=${String(draft.warningLevel)}
+              @input=${(e) => {
+            const v = parseInt(e.target.value, 10);
+            update({ warningLevel: isNaN(v) ? 30 : v });
+        }}
+            />
+          </div>
+        </div>
+        <div class="button-group">
+          <button class="md3-button tonal" @click=${() => this._emit('cancel-tank-edit')}>
+            Cancel
+          </button>
+          <button class="md3-button primary" @click=${() => this._emit('save-tank-requested')}>
+            Save
+          </button>
+        </div>
+      </div>
+    `;
+    }
+};
+IrrigationTanksTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      /* ── Tank row (bar-style) — copied from irrigation-dialog ── */
+      .tank-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.02);
+        transition: border-color 0.2s;
+      }
+      .tank-row.warning {
+        border-color: rgba(244, 67, 54, 0.4);
+        background: rgba(244, 67, 54, 0.04);
+      }
+      .tank-row-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .tank-row-name {
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .tank-bar-track {
+        height: 5px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 5px;
+      }
+      .tank-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.4s ease;
+      }
+      .tank-row-stat {
+        font-size: 12.5px;
+        text-align: right;
+        flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
+      }
+      .tank-row-pct {
+        font-weight: 600;
+      }
+      .tank-row-sub {
+        font-size: 11px;
+        opacity: 0.5;
+        margin-top: 2px;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], IrrigationTanksTab.prototype, "vm", void 0);
+IrrigationTanksTab = __decorate([
+    t$2('irrigation-tanks-tab')
+], IrrigationTanksTab);
+
+/**
+ * Irrigation EC Ramp Tab Component (ADR-0019)
+ *
+ * The dumb presentational element for the Irrigation Dialog's EC Ramp tab.
+ * `@property .vm: EcRampTabViewModel` in, semantic Tab Intents out, **no
+ * `@state()` of its own** — the LIST/EDIT view, the open curve draft, and the
+ * validation error live in the DialogStateMachine and are projected into the VM
+ * (b1). Markup is transcribed verbatim from the former inline `_renderEcRampTab`
+ * / `_renderEcRampList` / `_renderEcRampEdit` helpers so the rendered output
+ * stays byte-identical; the EC-ramp `.curve-*` / `.points-*` styles moved here.
+ *
+ * Tab Intents (the Dialog Shell owns their translation to SM events):
+ *   - `ec-ramp-new-curve`        (no detail)
+ *   - `ec-ramp-edit-curve`       detail: { id }
+ *   - `ec-ramp-delete-curve`     detail: { id }
+ *   - `ec-ramp-cancel-edit`      (no detail)
+ *   - `ec-ramp-curve-changed`    detail: { partial: Partial<ECRampCurve> }
+ *   - `ec-ramp-add-point`        (no detail)
+ *   - `ec-ramp-remove-point`     detail: { index }
+ *   - `ec-ramp-update-point`     detail: { index, partial: Partial<ECRampPoint> }
+ *   - `ec-ramp-save-curve`       (no detail)
+ */
+let IrrigationEcRampTab = class IrrigationEcRampTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    render() {
+        const vm = this.vm;
+        return x `
+      <div class="tab-section">
+        ${vm?.error ? x `<div class="error-bar">${vm.error}</div>` : E}
+        ${vm?.editing ? this._renderEdit(vm.editing) : this._renderList(vm?.curves ?? [])}
+      </div>
+    `;
+    }
+    _renderList(curves) {
+        if (curves.length === 0) {
+            return x `
+        <div class="empty-state">
+          <ha-svg-icon .path=${mdiInformation}></ha-svg-icon>
+          <p>No EC ramp curves defined yet.</p>
+          <p style="font-size: 0.9rem;">
+            Create curves to schedule EC targets across your grow cycle.
+          </p>
+        </div>
+        <div class="button-group" style="margin-top: 16px;">
+          <button class="md3-button primary" @click=${() => this._emit('ec-ramp-new-curve')}>
+            <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
+            New Curve
+          </button>
+        </div>
+      `;
+        }
+        return x `
+      <div class="curves-list">
+        ${curves.map((curve) => x `
+            <div class="curve-item" @click=${() => this._emit('ec-ramp-edit-curve', { id: curve.id })}>
+              <div class="curve-info">
+                <div class="curve-name">${curve.name}</div>
+                <div class="curve-details">${curve.summary}</div>
+              </div>
+              <div class="curve-actions">
+                <button
+                  class="md3-button icon"
+                  @click=${(e) => {
+            e.stopPropagation();
+            this._emit('ec-ramp-edit-curve', { id: curve.id });
+        }}
+                  title="Edit"
+                >
+                  <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
+                </button>
+                <button
+                  class="md3-button icon"
+                  @click=${(e) => {
+            e.stopPropagation();
+            this._emit('ec-ramp-delete-curve', { id: curve.id });
+        }}
+                  title="Delete"
+                  style="color: var(--error-color);"
+                >
+                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                </button>
+              </div>
+            </div>
+          `)}
+      </div>
+      <div class="button-group" style="margin-top: 16px;">
+        <button class="md3-button primary" @click=${() => this._emit('ec-ramp-new-curve')}>
+          <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
+          New Curve
+        </button>
+      </div>
+    `;
+    }
+    _renderEdit(editing) {
+        const curve = editing.draft;
+        const points = editing.points;
+        return x `
+      <div class="preset-form">
+        <div class="form-section">
+          <h3>Curve Info</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <md3-text-input
+              label="Curve Name"
+              .value=${curve.name ?? ''}
+              @change=${(e) => this._emit('ec-ramp-curve-changed', { partial: { name: e.detail } })}
+              placeholder="e.g. Veg Ramp, Bloom Progression"
+            ></md3-text-input>
+            <md3-select
+              label="Growth Stage"
+              .value=${curve.stage ?? 'flower'}
+              .options=${[
+            { label: 'Seedling', value: 'seedling' },
+            { label: 'Mother', value: 'mother' },
+            { label: 'Vegetative', value: 'veg' },
+            { label: 'Flower', value: 'flower' },
+            { label: 'Cure', value: 'cure' },
+        ]}
+              @change=${(e) => this._emit('ec-ramp-curve-changed', { partial: { stage: e.detail } })}
+            ></md3-select>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="points-header">
+            <h3>Ramp Points</h3>
+            <button class="md3-button text" @click=${() => this._emit('ec-ramp-add-point')}>
+              <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
+              Add Point
+            </button>
+          </div>
+          <div class="points-list">
+            ${points.map((point, index) => x `
+                <div class="point-row">
+                  <md3-number-input
+                    label="Day"
+                    .value=${point.day}
+                    @change=${(e) => this._emit('ec-ramp-update-point', { index, partial: { day: parseInt(e.detail) || 0 } })}
+                    min="0"
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="Target EC (mS/cm)"
+                    .value=${point.target_ec}
+                    @change=${(e) => this._emit('ec-ramp-update-point', {
+            index,
+            partial: { target_ec: parseFloat(e.detail) || 0 },
+        })}
+                    min="0"
+                    step="0.1"
+                  ></md3-number-input>
+                  <button
+                    class="md3-button icon"
+                    @click=${() => this._emit('ec-ramp-remove-point', { index })}
+                    style="color: var(--error-color);"
+                    ?disabled=${points.length <= 1}
+                  >
+                    <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                  </button>
+                </div>
+              `)}
+          </div>
+        </div>
+      </div>
+
+      <div class="button-group" style="margin-top: 16px;">
+        <button class="md3-button tonal" @click=${() => this._emit('ec-ramp-cancel-edit')}>
+          <ha-svg-icon .path=${mdiArrowLeft} style="margin-right: 8px;"></ha-svg-icon>
+          Back
+        </button>
+        <button class="md3-button primary" @click=${() => this._emit('ec-ramp-save-curve')}>
+          <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
+          Save Curve
+        </button>
+      </div>
+    `;
+    }
+};
+IrrigationEcRampTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      /* ── EC Ramp tab — copied from irrigation-dialog ── */
+      .tab-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .error-bar {
+        background: rgba(244, 67, 54, 0.12);
+        border: 1px solid rgba(244, 67, 54, 0.4);
+        color: var(--error-color, #f44336);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 32px 16px;
+        opacity: 0.7;
+      }
+      .empty-state ha-svg-icon {
+        --mdc-icon-size: 40px;
+        opacity: 0.4;
+      }
+      .curves-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .curve-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.02);
+        cursor: pointer;
+        transition: border-color 0.2s;
+      }
+      .curve-item:hover {
+        border-color: var(--primary-color, #03a9f4);
+      }
+      .curve-info {
+        min-width: 0;
+      }
+      .curve-name {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .curve-details {
+        font-size: 12px;
+        opacity: 0.6;
+        margin-top: 2px;
+      }
+      .curve-actions {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+      .preset-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .form-section h3 {
+        margin: 0 0 12px;
+        font-size: 14px;
+      }
+      .points-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .points-header h3 {
+        margin: 0;
+      }
+      .points-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .point-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 12px;
+        align-items: end;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], IrrigationEcRampTab.prototype, "vm", void 0);
+IrrigationEcRampTab = __decorate([
+    t$2('irrigation-ec-ramp-tab')
+], IrrigationEcRampTab);
+
+/**
+ * Irrigation Schedules Tab Component (ADR-0019)
+ *
+ * The dumb presentational element for the Irrigation Dialog's Schedules tab — the
+ * largest tab. `@property .vm: SchedulesTabViewModel` in, semantic Tab Intents
+ * out, **no `@state()` of its own** — the inline add/edit drafts live in the
+ * DialogStateMachine and are projected into the VM (b1). Markup is transcribed
+ * verbatim from the former inline `_renderSchedulesTab` /
+ * `_renderCropSteeringSchedule` / `_renderScheduleSection` so the rendered output
+ * stays byte-identical; the schedules-specific styles moved here.
+ *
+ * Time-of-day view geometry (the now-line position, `isPast` shading) is computed
+ * here in `render()` from `Date.now()` — it is presentation, not state, so it
+ * stays out of the pure ViewModel. The shared `<crop-steering-day-chart>` is
+ * hosted unchanged with the `device` passed through the VM.
+ *
+ * Tab Intents (the Dialog Shell owns their translation to SM events):
+ *   - `schedules-begin-add`        detail: { type, time, duration }
+ *   - `schedules-begin-edit`       detail: { type, timeStr, duration }
+ *   - `schedules-update-add`       detail: { type, time?, duration? }
+ *   - `schedules-update-edit`      detail: { type, time?, duration? }
+ *   - `schedules-cancel-inline`    (no detail)
+ *   - `schedules-save-add`         detail: { type, time, duration }
+ *   - `schedules-save-edit`        detail: { type }
+ *   - `schedules-delete-from-edit` detail: { type }
+ *   - `schedules-remove-time`      detail: { type, timeStr }
+ *   - `schedules-open-steering`    (no detail — the "Open Crop Steering →" links)
+ */
 const MDI_INFO = 'M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z';
+const MDI_CHECK = 'M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z';
+let IrrigationSchedulesTab = class IrrigationSchedulesTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    /** Current minute-of-day — view geometry, computed at render time (no clock in the VM). */
+    _getNowMinutes() {
+        const now = new Date();
+        return now.getHours() * 60 + now.getMinutes();
+    }
+    render() {
+        const vm = this.vm;
+        const isCropSteering = vm?.isCropSteering ?? false;
+        return x `
+      ${isCropSteering
+            ? x `
+            <div class="info-banner banner-cs">
+              <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24">
+                <path d="${MDI_INFO}"></path>
+              </svg>
+              <div>
+                <strong>Crop Steering is active</strong> — irrigation cycles are computed
+                automatically from VWC targets.
+                <a
+                  href="#"
+                  style="color:#4CAF50;margin-left:4px;"
+                  @click=${(e) => {
+                e.preventDefault();
+                this._emit('schedules-open-steering');
+            }}
+                  >Open Crop Steering →</a
+                >
+              </div>
+            </div>
+            ${vm?.cropSteering ? this._renderCropSteeringSchedule(vm.cropSteering) : E}
+          `
+            : vm?.irrigationSection
+                ? this._renderScheduleSection(vm.irrigationSection)
+                : E}
+      ${vm?.drainSection ? this._renderScheduleSection(vm.drainSection) : E}
+      ${!isCropSteering
+            ? x `
+            <div class="info-banner nudge-card">
+              <svg
+                style="width:14px;height:14px;flex-shrink:0;fill:currentColor;"
+                viewBox="0 0 24 24"
+              >
+                <path d="${MDI_INFO}"></path>
+              </svg>
+              <div>
+                Enable <strong>Crop Steering</strong> in the Steering tab to switch from a fixed
+                daily plan to a phase-driven schedule that adapts to VWC targets.
+                <a
+                  href="#"
+                  style="color:var(--stage-color,#2196F3);margin-left:4px;"
+                  @click=${(e) => {
+                e.preventDefault();
+                this._emit('schedules-open-steering');
+            }}
+                  >Open Crop Steering →</a
+                >
+              </div>
+            </div>
+          `
+            : E}
+    `;
+    }
+    _renderCropSteeringSchedule(cs) {
+        if (!cs.configured) {
+            return x `
+        <div class="detail-card crop-steering-schedule">
+          <div
+            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
+          >
+            <h3 style="margin:0;">Crop Steering Schedule</h3>
+          </div>
+          <p style="font-size:0.8rem;opacity:0.6;text-align:center;margin-top:12px;">
+            No strategy configured — set Lights On Time in the Steering tab.
+          </p>
+        </div>
+      `;
+        }
+        const p2ShotCount = cs.shotCount;
+        return x `
+      <div class="detail-card crop-steering-schedule">
+        <!-- Header -->
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
+        >
+          <div style="display:flex;align-items:center;gap:6px;">
+            <h3 style="margin:0;">Crop Steering Schedule</h3>
+            <gs-help-tooltip
+              content="Auto-generated irrigation shots based on your VWC strategy settings. Read-only — edit timing in the Steering tab."
+              placement="top"
+              label="Crop Steering Schedule"
+            ></gs-help-tooltip>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:0.75rem;opacity:0.55;"
+              >${p2ShotCount} shots · ${cs.lightHours}h photoperiod</span
+            >
+            <span class="auto-pill"><span class="pulse-dot"></span>Auto</span>
+          </div>
+        </div>
+
+        <div class="cs-timeline">
+          <!-- Phase strip + shot track + substrate model: all owned by the shared chart -->
+          <crop-steering-day-chart .device=${this.vm.device}></crop-steering-day-chart>
+
+          <!-- Legend: flags missing sensors only — the readout above already
+               supplies the color-to-trace mapping for configured metrics -->
+          <div class="cs-legend">
+            ${!cs.hasPoreEc
+            ? x `
+                  <span class="cs-leg-chip" style="opacity:0.4;">
+                    Pore EC not configured — add it in Environment Settings
+                  </span>
+                `
+            : ''}
+            ${!cs.hasBulkEc
+            ? x `
+                  <span class="cs-leg-chip" style="opacity:0.4;">
+                    Bulk EC not configured — add it in Environment Settings
+                  </span>
+                `
+            : ''}
+          </div>
+          <div class="cs-legend">
+            ${cs.phases.map((p) => x `
+                <span class="cs-leg-chip">
+                  <span class="cs-leg-dot" style="background:${p.color};"></span>
+                  <strong>${p.label}</strong> ${p.name}${p.shotCount !== null
+            ? x ` · ${p.shotCount} shots`
+            : E}
+                  · ${p.target}
+                </span>
+              `)}
+            <span class="cs-leg-chip">
+              <span
+                style="width:8px;height:8px;border-radius:50%;background:rgba(255,235,59,0.85);flex-shrink:0;"
+              ></span>
+              ${cs.lightsOnLabel}–${cs.lightsOffLabel} · ${cs.lightHours}h photoperiod
+            </span>
+          </div>
+
+          ${p2ShotCount === 0
+            ? x `
+                <p style="font-size:0.8rem;opacity:0.6;text-align:center;margin-top:4px;">
+                  No shots computed — check lights-on time and interval in the Steering tab.
+                </p>
+              `
+            : E}
+        </div>
+      </div>
+    `;
+    }
+    _renderScheduleSection(section) {
+        const { type, title, color, times } = section;
+        const nowMinutes = this._getNowMinutes();
+        const sub = this.vm.sub;
+        const addingTime = type === 'irrigation' && sub.kind === 'adding-irrigation'
+            ? sub
+            : type === 'drain' && sub.kind === 'adding-drain'
+                ? sub
+                : undefined;
+        const editingTime = type === 'irrigation' && sub.kind === 'editing-irrigation'
+            ? sub
+            : type === 'drain' && sub.kind === 'editing-drain'
+                ? sub
+                : undefined;
+        const chipClass = type === 'irrigation' ? 'irrig-chip' : 'drain-chip';
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
+        >
+          <div style="display:flex;align-items:center;gap:6px;">
+            <h3 style="margin:0;">${title}</h3>
+            <gs-help-tooltip
+              content=${type === 'irrigation'
+            ? 'Each block is a scheduled irrigation event. Click a block to edit it, or click anywhere on the track to add a new one.'
+            : 'Each block is a scheduled drain event. Run drain after irrigation to remove excess runoff.'}
+              placement="top"
+              label=${title}
+            ></gs-help-tooltip>
+          </div>
+          <button
+            class="md3-button primary btn-add-time"
+            style="background:${color};"
+            @click=${() => this._openAddTimeDialog(type)}
+          >
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiPlus}"></path>
+            </svg>
+            ADD TIME
+          </button>
+        </div>
+
+        <!-- Timeline track -->
+        <div
+          class="${type}-time-bar timeline-track"
+          style="border-color:${color}40;"
+          @click=${(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            this._startAddingTime(type, e.clientX - rect.left, rect.width);
+        }}
+        >
+          ${Array.from({ length: 25 }, (_, i) => i).map((h) => x `
+              <div
+                class="grid-v ${h % 6 === 0 ? 'major' : ''}"
+                style="left:${(h / 24) * 100}%;"
+              ></div>
+              ${h % 3 === 0
+            ? x `
+                    <span class="x-label" style="left:${(h / 24) * 100}%;">
+                      ${h.toString().padStart(2, '0')}:00
+                    </span>
+                  `
+            : E}
+            `)}
+
+          <!-- Event blocks -->
+          ${times.map((t) => {
+            const dur = t.durationSeconds;
+            const leftPct = (t.startMin / 1440) * 100;
+            const widthPct = (dur / 86400) * 100;
+            const isPast = t.startMin < nowMinutes;
+            return x `
+              <div
+                class="timeline-event ${isPast ? 'completed' : ''}"
+                style="
+                  left: ${leftPct}%;
+                  width: max(${widthPct}%, 18px);
+                  background: ${color};
+                  box-shadow: 0 0 0 1px ${color}99, 0 2px 6px ${color}55;
+                "
+                @click=${(e) => {
+                e.stopPropagation();
+                this._emit('schedules-begin-edit', {
+                    type,
+                    timeStr: t.timeStr,
+                    duration: dur,
+                });
+            }}
+                title="${t.timeStr.substring(0, 5)} · ${dur}s"
+              >
+                <span class="event-lbl">${t.timeStr.substring(0, 5)}</span>
+              </div>
+            `;
+        })}
+
+          <!-- Now line -->
+          <div class="now-line" style="left:${(nowMinutes / 1440) * 100}%;"></div>
+        </div>
+
+        <!-- Time chips -->
+        <div class="time-chips">
+          ${times.map((t) => {
+            const dur = t.durationSeconds;
+            const isPast = t.startMin < nowMinutes;
+            return x `
+              <span class="time-chip ${chipClass}">
+                ${isPast
+                ? x `
+                      <svg
+                        style="width:12px;height:12px;fill:#4caf50;flex-shrink:0;"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="${MDI_CHECK}"></path>
+                      </svg>
+                    `
+                : E}
+                ${t.timeStr.substring(0, 5)}
+                <span class="chip-dur">· ${Math.max(1, Math.round(dur / 60))}m</span>
+                <button
+                  class="chip-remove"
+                  @click=${(e) => {
+                e.stopPropagation();
+                this._emit('schedules-remove-time', { type, timeStr: t.timeStr });
+            }}
+                  title="Remove"
+                >
+                  ×
+                </button>
+              </span>
+            `;
+        })}
+          <button class="time-chip new-chip" @click=${() => this._openAddTimeDialog(type)}>
+            + New
+          </button>
+        </div>
+
+        <!-- Add overlay -->
+        ${addingTime
+            ? x `
+              <div class="overlay-backdrop" @click=${() => this._emit('schedules-cancel-inline')}>
+                <div
+                  class="detail-card"
+                  style="max-width:400px;margin:0;background:#2d2d2d;width:90%;"
+                  @click=${(e) => e.stopPropagation()}
+                >
+                  <h3>Add ${title} Time</h3>
+                  <md3-text-input
+                    label="Time"
+                    type="time"
+                    .value=${addingTime.time}
+                    @change=${(e) => {
+                const val = e.target.value || e.detail;
+                this._emit('schedules-update-add', { type, time: val });
+            }}
+                  ></md3-text-input>
+                  <div
+                    style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);"
+                  >
+                    <span
+                      >${type === 'irrigation'
+                ? 'Shot Duration (seconds)'
+                : 'Drain Duration (seconds)'}</span
+                    >
+                    <gs-help-tooltip
+                      content=${type === 'irrigation'
+                ? 'How long the irrigation pump runs per shot. Typical: 15–120 seconds.'
+                : 'How long the drain pump runs. Too short = waterlogging.'}
+                      placement="right"
+                      label=${type === 'irrigation' ? 'Shot Duration' : 'Drain Duration'}
+                    ></gs-help-tooltip>
+                  </div>
+                  <md3-number-input
+                    label="Duration (seconds)"
+                    .value=${addingTime.duration}
+                    .min=${1}
+                    @change=${(e) => {
+                const val = parseInt(e.detail);
+                if (!isNaN(val))
+                    this._emit('schedules-update-add', { type, duration: val });
+            }}
+                  ></md3-number-input>
+                  <div class="button-group">
+                    <button
+                      class="md3-button tonal"
+                      @click=${() => this._emit('schedules-cancel-inline')}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      class="md3-button primary"
+                      @click=${() => this._emit('schedules-save-add', {
+                type,
+                time: addingTime.time,
+                duration: addingTime.duration,
+            })}
+                      style="background:${color};"
+                    >
+                      Add Schedule
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `
+            : ''}
+
+        <!-- Edit overlay -->
+        ${editingTime
+            ? x `
+              <div class="overlay-backdrop" @click=${() => this._emit('schedules-cancel-inline')}>
+                <div
+                  class="detail-card"
+                  style="max-width:400px;margin:0;background:#2d2d2d;width:90%;"
+                  @click=${(e) => e.stopPropagation()}
+                >
+                  <h3>Edit ${title} Time</h3>
+                  <md3-text-input
+                    label="Time"
+                    type="time"
+                    .value=${editingTime.time}
+                    @change=${(e) => {
+                const val = e.target.value || e.detail;
+                this._emit('schedules-update-edit', { type, time: val });
+            }}
+                  ></md3-text-input>
+                  <div
+                    style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);"
+                  >
+                    <span
+                      >${type === 'irrigation'
+                ? 'Shot Duration (seconds)'
+                : 'Drain Duration (seconds)'}</span
+                    >
+                    <gs-help-tooltip
+                      content=${type === 'irrigation'
+                ? 'How long the irrigation pump runs per shot.'
+                : 'How long the drain pump runs.'}
+                      placement="right"
+                      label=${type === 'irrigation' ? 'Shot Duration' : 'Drain Duration'}
+                    ></gs-help-tooltip>
+                  </div>
+                  <md3-number-input
+                    label="Duration (seconds)"
+                    .value=${editingTime.duration}
+                    .min=${1}
+                    @change=${(e) => {
+                const val = parseInt(e.detail);
+                if (!isNaN(val))
+                    this._emit('schedules-update-edit', { type, duration: val });
+            }}
+                  ></md3-number-input>
+                  <div class="edit-dialog-buttons">
+                    <button
+                      class="md3-button delete-button"
+                      @click=${() => this._emit('schedules-delete-from-edit', { type })}
+                    >
+                      Delete
+                    </button>
+                    <div class="spacer"></div>
+                    <div class="action-buttons">
+                      <button
+                        class="md3-button tonal"
+                        @click=${() => this._emit('schedules-cancel-inline')}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        class="md3-button primary"
+                        @click=${() => this._emit('schedules-save-edit', { type })}
+                        style="background:${color};"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `
+            : ''}
+      </div>
+    `;
+    }
+    /** ADD TIME button + "+ New" chip → begin-add at the fixed 12:00 default. */
+    _openAddTimeDialog(type) {
+        const duration = type === 'irrigation'
+            ? (this.vm.irrigationSection?.defaultDuration ?? 60)
+            : (this.vm.drainSection?.defaultDuration ?? 60);
+        this._emit('schedules-begin-add', { type, time: '12:00', duration });
+    }
+    /** Track click → begin-add at the time computed from the click geometry. */
+    _startAddingTime(type, x, width) {
+        const pct = Math.max(0, Math.min(1, x / width));
+        const totalMinutes = Math.round(pct * 24 * 60);
+        const h = Math.floor(totalMinutes / 60);
+        const m = totalMinutes % 60;
+        const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        const duration = type === 'irrigation'
+            ? (this.vm.irrigationSection?.defaultDuration ?? 60)
+            : (this.vm.drainSection?.defaultDuration ?? 60);
+        this._emit('schedules-begin-add', { type, time, duration });
+    }
+};
+IrrigationSchedulesTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      /* ── Schedules tab — copied from irrigation-dialog ── */
+      .timeline-track {
+        position: relative;
+        height: 96px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        cursor: crosshair;
+      }
+      .grid-v {
+        position: absolute;
+        top: 0;
+        bottom: 18px;
+        width: 1px;
+        background: rgba(255, 255, 255, 0.04);
+        pointer-events: none;
+      }
+      .grid-v.major {
+        background: rgba(255, 255, 255, 0.09);
+      }
+      .x-label {
+        position: absolute;
+        bottom: 4px;
+        transform: translateX(-50%);
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.35);
+        font-variant-numeric: tabular-nums;
+        pointer-events: none;
+      }
+      .timeline-event {
+        position: absolute;
+        top: 10px;
+        height: 52px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: flex-end;
+        padding: 4px 5px;
+        overflow: hidden;
+        transition: transform 0.15s;
+        z-index: 5;
+      }
+      .timeline-event:hover {
+        transform: translateY(-2px);
+      }
+      .timeline-event.completed {
+        opacity: 0.45;
+      }
+      .timeline-event.completed::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          45deg,
+          transparent 0 3px,
+          rgba(0, 0, 0, 0.18) 3px 5px
+        );
+        pointer-events: none;
+      }
+      .timeline-event .event-lbl {
+        font-size: 9.5px;
+        color: rgba(0, 0, 0, 0.78);
+        font-weight: 600;
+        white-space: nowrap;
+        position: relative;
+        z-index: 1;
+      }
+      .now-line {
+        position: absolute;
+        top: 4px;
+        bottom: 22px;
+        width: 1px;
+        background: #ff9800;
+        box-shadow: 0 0 8px rgba(255, 152, 0, 0.5);
+        pointer-events: none;
+        z-index: 8;
+      }
+      .now-line::before {
+        content: '';
+        position: absolute;
+        left: -3px;
+        top: -3px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #ff9800;
+      }
+      /* ── Time chips ── */
+      .time-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .time-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 28px;
+        padding: 0 4px 0 10px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-variant-numeric: tabular-nums;
+      }
+      .time-chip.irrig-chip {
+        background: rgba(33, 150, 243, 0.14);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+        color: rgba(255, 255, 255, 0.9);
+      }
+      .time-chip.drain-chip {
+        background: rgba(255, 152, 0, 0.14);
+        border: 1px solid rgba(255, 152, 0, 0.3);
+        color: rgba(255, 255, 255, 0.9);
+      }
+      .time-chip.new-chip {
+        background: transparent;
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+        padding: 0 12px;
+        border-radius: 8px;
+      }
+      .time-chip.new-chip:hover {
+        border-color: rgba(255, 255, 255, 0.35);
+        color: rgba(255, 255, 255, 0.7);
+      }
+      .chip-dur {
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 11px;
+      }
+      .chip-remove {
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        line-height: 1;
+        margin-left: 2px;
+        flex-shrink: 0;
+      }
+      .chip-remove:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.85);
+      }
+      /* ── Info banners ── */
+      .info-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 14px;
+        background: rgba(33, 150, 243, 0.07);
+        border: 1px solid rgba(33, 150, 243, 0.2);
+        border-radius: 8px;
+        font-size: 12.5px;
+        color: rgba(255, 255, 255, 0.65);
+        line-height: 1.5;
+      }
+      .info-banner.banner-cs {
+        background: linear-gradient(90deg, rgba(76, 175, 80, 0.1), rgba(33, 150, 243, 0.06));
+        border: 1px solid rgba(76, 175, 80, 0.3);
+        border-left: 3px solid #4caf50;
+      }
+      .info-banner.banner-cs svg {
+        fill: #4caf50;
+      }
+      /* ── Overlay ── */
+      .overlay-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      }
+      /* ── Edit dialog buttons ── */
+      .edit-dialog-buttons {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .edit-dialog-buttons .delete-button {
+        flex: 0 0 auto;
+      }
+      .edit-dialog-buttons .spacer {
+        flex: 1;
+      }
+      .edit-dialog-buttons .action-buttons {
+        display: flex;
+        gap: 8px;
+      }
+      .md3-button.delete-button {
+        background: rgba(244, 67, 54, 0.2) !important;
+        color: #f44336 !important;
+        border: 1px solid rgba(244, 67, 54, 0.3);
+      }
+      .md3-button.delete-button:hover {
+        background: rgba(244, 67, 54, 0.3) !important;
+      }
+      /* ── Crop Steering Schedule ── */
+      .auto-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 22px;
+        padding: 0 8px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.18), rgba(33, 150, 243, 0.18));
+        border: 1px solid rgba(76, 175, 80, 0.4);
+        color: #4caf50;
+        border-radius: 6px;
+      }
+      .auto-pill .pulse-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #4caf50;
+        box-shadow: 0 0 6px rgba(76, 175, 80, 0.9);
+        flex-shrink: 0;
+      }
+      .cs-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .cs-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding-top: 2px;
+      }
+      .cs-leg-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 24px;
+        padding: 0 10px;
+        background: rgba(255, 255, 255, 0.025);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        font-size: 11.5px;
+        color: rgba(255, 255, 255, 0.6);
+        font-variant-numeric: tabular-nums;
+      }
+      .cs-leg-chip strong {
+        color: rgba(255, 255, 255, 0.9);
+        font-weight: 500;
+      }
+      .cs-leg-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], IrrigationSchedulesTab.prototype, "vm", void 0);
+IrrigationSchedulesTab = __decorate([
+    t$2('irrigation-schedules-tab')
+], IrrigationSchedulesTab);
+
+/**
+ * Irrigation Drain EC Tab Component (ADR-0019)
+ *
+ * The dumb presentational element for the Irrigation Dialog's Drain EC tab —
+ * drain/runoff EC monitoring. `@property .vm: DrainEcTabViewModel` in, semantic
+ * Tab Intents out, **no `@state()` of its own** — the monitoring/log draft and
+ * the saving/logging sub-state live in the DialogStateMachine and are projected
+ * into the VM (b1). Markup is transcribed verbatim from the former inline
+ * `_renderDrainECTab` so the rendered output stays byte-identical; the drain_ec
+ * styling was already inline so nothing moved into `static styles`.
+ *
+ * Locale/clock formatting (`toLocaleString` timestamps, `toFixed` digit strings)
+ * stays here in `render()` — it is presentation, not state, kept out of the pure
+ * ViewModel.
+ *
+ * Tab Intents (the Dialog Shell owns their translation to SM events):
+ *   - `drain-ec-draft-changed` detail: { partial: Partial<DrainEcDraft> }
+ *       — covers the monitoring toggle AND every log/config number field.
+ *   - `drain-ec-log-reading`   (no detail — the "Log Reading" button)
+ */
+let IrrigationDrainEcTab = class IrrigationDrainEcTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    /** Merge a field change into the SM draft via the shell. */
+    _updateDraft(partial) {
+        this._emit('drain-ec-draft-changed', { partial });
+    }
+    render() {
+        const vm = this.vm;
+        const draft = vm.draft;
+        const status = vm.status;
+        const lastReading = status.lastReading;
+        const isLogging = vm.sub.kind === 'logging';
+        return x `
+      <div class="detail-card" style="border-left:4px solid ${status.color};padding:16px 20px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div
+            style="width:14px;height:14px;border-radius:50%;background:${status.color};box-shadow:0 0 8px ${status.color};flex-shrink:0;"
+          ></div>
+          <div>
+            <div style="font-weight:600;font-size:1rem;">${status.text}</div>
+            ${lastReading
+            ? x `
+                  <div style="font-size:0.8rem;opacity:0.6;margin-top:2px;">
+                    Last reading: Feed ${lastReading.feedEc.toFixed(2)} → Drain
+                    ${lastReading.drainEc.toFixed(2)} mS/cm at
+                    ${new Date(lastReading.timestamp).toLocaleString()}
+                  </div>
+                `
+            : E}
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"
+        >
+          <h3 style="margin:0;">Monitoring Configuration</h3>
+          ${vm.sub.kind === 'saving'
+            ? x `<span style="font-size:0.8rem;opacity:0.6;">Saving…</span>`
+            : E}
+        </div>
+        <p style="font-size:0.82rem;opacity:0.7;margin-bottom:20px;">
+          Alert when drain EC exceeds feed EC by more than the max delta.
+        </p>
+        <div
+          style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:16px;"
+        >
+          <span>Enable EC drain monitoring</span>
+          <md3-switch
+            .checked=${draft.enabled}
+            @change=${(e) => {
+            this._updateDraft({ enabled: e.target.checked });
+        }}
+          ></md3-switch>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <md3-number-input
+            label="Max EC Delta (mS/cm)"
+            .value=${draft.maxEcDelta}
+            step="0.1"
+            min="0.1"
+            ?disabled=${!draft.enabled}
+            @change=${(e) => {
+            this._updateDraft({ maxEcDelta: parseFloat(e.detail) || 1.0 });
+        }}
+          ></md3-number-input>
+          <md3-number-input
+            label="Target Runoff (%)"
+            .value=${draft.targetRunoffPercent}
+            min="5"
+            max="50"
+            step="5"
+            ?disabled=${!draft.enabled}
+            @change=${(e) => {
+            this._updateDraft({ targetRunoffPercent: parseInt(e.detail) || 20 });
+        }}
+          ></md3-number-input>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <h3 style="margin-top:0;">Log Drain Reading</h3>
+        <p style="font-size:0.82rem;opacity:0.7;margin-bottom:20px;">
+          Manually log feed EC and drain EC values measured with a handheld meter. Volumes are
+          optional.
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <md3-number-input
+            label="Feed EC (mS/cm)"
+            .value=${draft.logFeedEc}
+            step="0.1"
+            min="0"
+            @change=${(e) => {
+            this._updateDraft({ logFeedEc: parseFloat(e.detail) || 0 });
+        }}
+          ></md3-number-input>
+          <md3-number-input
+            label="Drain EC (mS/cm)"
+            .value=${draft.logDrainEc}
+            step="0.1"
+            min="0"
+            @change=${(e) => {
+            this._updateDraft({ logDrainEc: parseFloat(e.detail) || 0 });
+        }}
+          ></md3-number-input>
+          <md3-number-input
+            label="Feed Volume (mL) — optional"
+            .value=${draft.logFeedVolume}
+            step="100"
+            min="0"
+            @change=${(e) => {
+            this._updateDraft({ logFeedVolume: parseInt(e.detail) || 0 });
+        }}
+          ></md3-number-input>
+          <md3-number-input
+            label="Drain Volume (mL) — optional"
+            .value=${draft.logDrainVolume}
+            step="100"
+            min="0"
+            @change=${(e) => {
+            this._updateDraft({ logDrainVolume: parseInt(e.detail) || 0 });
+        }}
+          ></md3-number-input>
+        </div>
+        ${draft.logFeedEc > 0 && draft.logDrainEc > 0
+            ? x `
+              <div
+                style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;gap:24px;align-items:center;font-size:0.9rem;"
+              >
+                <span
+                  >EC Delta:
+                  <strong
+                    style="color:${draft.logDrainEc - draft.logFeedEc > draft.maxEcDelta
+                ? '#f44336'
+                : '#4caf50'}"
+                  >
+                    Δ${(draft.logDrainEc - draft.logFeedEc).toFixed(2)} mS/cm
+                  </strong></span
+                >
+                ${draft.logFeedVolume > 0 && draft.logDrainVolume > 0
+                ? x `
+                      <span
+                        >Runoff:
+                        <strong
+                          >${((draft.logDrainVolume / draft.logFeedVolume) * 100).toFixed(1)}%</strong
+                        ></span
+                      >
+                    `
+                : E}
+              </div>
+            `
+            : E}
+        <button
+          class="md3-button primary"
+          style="background:#FF9800;"
+          @click=${() => this._emit('drain-ec-log-reading')}
+          ?disabled=${isLogging || draft.logFeedEc <= 0 || draft.logDrainEc <= 0}
+        >
+          ${isLogging ? 'Logging…' : 'Log Reading'}
+        </button>
+      </div>
+
+      <div class="detail-card">
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
+        >
+          <h3 style="margin:0;">Recent Readings</h3>
+          <span style="font-size:0.8rem;opacity:0.5;">${vm.totalReadings} total</span>
+        </div>
+        ${vm.recent.length === 0
+            ? x `
+              <p style="opacity:0.6;text-align:center;padding:20px 0;">No readings logged yet.</p>
+            `
+            : x `
+              <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
+                  <thead>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.15);opacity:0.7;">
+                      <th style="text-align:left;padding:6px 8px;font-weight:500;">Time</th>
+                      <th style="text-align:right;padding:6px 8px;font-weight:500;">Feed EC</th>
+                      <th style="text-align:right;padding:6px 8px;font-weight:500;">Drain EC</th>
+                      <th style="text-align:right;padding:6px 8px;font-weight:500;">Δ EC</th>
+                      <th style="text-align:right;padding:6px 8px;font-weight:500;">Runoff</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${vm.recent.map((row) => {
+                const r = row.reading;
+                const delta = row.delta;
+                const overThreshold = row.overThreshold;
+                const runoffPct = row.runoffPercent !== null ? row.runoffPercent.toFixed(1) + '%' : '—';
+                return x `
+                        <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                          <td style="padding:6px 8px;opacity:0.7;">
+                            ${new Date(r.timestamp).toLocaleString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                })}
+                          </td>
+                          <td style="text-align:right;padding:6px 8px;">${r.feedEc.toFixed(2)}</td>
+                          <td style="text-align:right;padding:6px 8px;">${r.drainEc.toFixed(2)}</td>
+                          <td
+                            style="text-align:right;padding:6px 8px;color:${overThreshold
+                    ? '#f44336'
+                    : delta > this.vm.draft.maxEcDelta * 0.7
+                        ? '#FF9800'
+                        : '#4caf50'};font-weight:500;"
+                          >
+                            ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
+                          </td>
+                          <td style="text-align:right;padding:6px 8px;opacity:0.6;">
+                            ${runoffPct}
+                          </td>
+                        </tr>
+                      `;
+            })}
+                  </tbody>
+                </table>
+              </div>
+            `}
+      </div>
+    `;
+    }
+};
+IrrigationDrainEcTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], IrrigationDrainEcTab.prototype, "vm", void 0);
+IrrigationDrainEcTab = __decorate([
+    t$2('irrigation-drain-ec-tab')
+], IrrigationDrainEcTab);
+
+/**
+ * Irrigation Config Tab Component (ADR-0019)
+ *
+ * The dumb presentational element for the Irrigation Dialog's Configuration tab —
+ * pump entity selection, optional safety caps, behaviour toggles and the manual
+ * "Run Now" override. `@property .vm: ConfigTabViewModel` in, semantic Tab
+ * Intents out, **no `@state()` of its own** — the config draft + the pump-entity
+ * drafts live in the DialogStateMachine and are projected into the VM (b1).
+ * Markup is transcribed verbatim from the former inline `_renderConfigSection`
+ * so the rendered output stays byte-identical; the config-only `.action-btn` CSS
+ * moved into `static styles` here (`.stub-row*` is shared with the still-inline
+ * Steering tab, so it stays in the host too and is duplicated here for the
+ * config rows that now live in this shadow).
+ *
+ * Number-string formatting (`String(value)` / `parseFloat` / `parseInt`) stays
+ * here in `render()` — it is presentation, not state, kept out of the pure VM.
+ *
+ * Tab Intents (the Dialog Shell owns their translation to SM events):
+ *   - `config-pump-changed`  detail: { which: 'irrigation' | 'drain'; value }
+ *       — the two pump `<select>`s; route to `UPDATE_SCHEDULES_DRAFT`.
+ *   - `config-draft-changed` detail: { partial: Partial<ConfigDraft> }
+ *       — caps + behaviour toggles; route to `UPDATE_CONFIG_DRAFT`.
+ *   - `config-run-now`       (no detail — the "▶ Run Now" button)
+ */
+let IrrigationConfigTab = class IrrigationConfigTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    /** Merge a field change into the SM config draft via the shell. */
+    _updateDraft(partial) {
+        this._emit('config-draft-changed', { partial });
+    }
+    _renderEntitySelect(label, value, options, which) {
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${label}</label>
+        <select
+          class="md3-input"
+          .value=${value}
+          @change=${(e) => this._emit('config-pump-changed', {
+            which,
+            value: e.target.value,
+        })}
+        >
+          <option value="">None</option>
+          ${options.map((o) => x `
+              <option value="${o.value}" ?selected=${o.value === value}>${o.label}</option>
+            `)}
+        </select>
+      </div>
+    `;
+    }
+    render() {
+        const vm = this.vm;
+        const draft = vm.draft;
+        return x `
+      <div class="detail-card">
+        <div class="section-header"><h3>Pump Configuration</h3></div>
+        <div class="section-content">
+          ${this._renderEntitySelect('Irrigation Pump', vm.irrigationPumpEntity, vm.pumpEntityOptions, 'irrigation')}
+          ${this._renderEntitySelect('Drain Pump (Optional)', vm.drainPumpEntity, vm.pumpEntityOptions, 'drain')}
+        </div>
+      </div>
+
+      ${vm.steeringEnabled
+            ? x `
+            <div class="detail-card">
+              <div
+                style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"
+              >
+                <h3 style="margin:0;">Safety Caps</h3>
+                <gs-help-tooltip
+                  content="Optional hard limits on top of the steering logic. Leave blank to disable."
+                ></gs-help-tooltip>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div class="md3-input-group">
+                  <label class="md3-label">Daily Volume Cap (L)</label>
+                  <input
+                    class="md3-input"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    .value=${draft.dailyVolumeCapLiters != null
+                ? String(draft.dailyVolumeCapLiters)
+                : ''}
+                    placeholder="Off"
+                    @change=${(e) => {
+                const v = e.target.value;
+                this._updateDraft({ dailyVolumeCapLiters: v ? parseFloat(v) : null });
+            }}
+                  />
+                </div>
+                <div class="md3-input-group">
+                  <label class="md3-label">Max Cycles / Day</label>
+                  <input
+                    class="md3-input"
+                    type="number"
+                    min="0"
+                    step="1"
+                    .value=${draft.maxCyclesPerDay != null ? String(draft.maxCyclesPerDay) : ''}
+                    placeholder="Off"
+                    @change=${(e) => {
+                const v = e.target.value;
+                this._updateDraft({ maxCyclesPerDay: v ? parseInt(v, 10) : null });
+            }}
+                  />
+                </div>
+              </div>
+            </div>
+          `
+            : E}
+      ${vm.hasPump
+            ? x `
+            <div class="detail-card">
+              <h3 style="margin:0 0 14px;">Behaviour</h3>
+              ${!vm.steeringEnabled
+                ? x `
+                    <div class="stub-row" style="margin-bottom:8px;">
+                      <div>
+                        <div class="stub-row-label">Skip During Dark Period</div>
+                        <div class="stub-row-desc">No cycles between lights-off and lights-on</div>
+                      </div>
+                      <md3-switch
+                        .checked=${draft.skipDuringDark}
+                        @change=${(e) => {
+                    this._updateDraft({ skipDuringDark: e.target.checked });
+                }}
+                      ></md3-switch>
+                    </div>
+                  `
+                : E}
+              ${[
+                {
+                    label: 'Pause on Tank Low',
+                    desc: 'Halt cycles when any tank is below warning level',
+                    get: () => draft.pauseOnLowTank,
+                    set: (v) => this._updateDraft({ pauseOnLowTank: v }),
+                },
+                {
+                    label: 'Log to Logbook',
+                    desc: 'Record start, duration, and moisture delta per cycle',
+                    get: () => draft.logToLogbook,
+                    set: (v) => this._updateDraft({ logToLogbook: v }),
+                },
+            ].map((row) => x `
+                  <div class="stub-row" style="margin-bottom:8px;">
+                    <div>
+                      <div class="stub-row-label">${row.label}</div>
+                      <div class="stub-row-desc">${row.desc}</div>
+                    </div>
+                    <md3-switch
+                      .checked=${row.get()}
+                      @change=${(e) => {
+                row.set(e.target.checked);
+            }}
+                    ></md3-switch>
+                  </div>
+                `)}
+            </div>
+
+            <div class="detail-card">
+              <h3 style="margin:0 0 14px;">Manual Override</h3>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <button
+                  class="action-btn${vm.isRunningNow ? ' saving' : ''}"
+                  ?disabled=${vm.isApplying}
+                  @click=${() => this._emit('config-run-now')}
+                >
+                  ${vm.isRunningNow ? 'Starting…' : '▶ Run Now'}
+                </button>
+                <span style="font-size:12px;opacity:0.55;">
+                  Triggers one irrigation cycle immediately, bypassing the schedule.
+                </span>
+              </div>
+            </div>
+          `
+            : E}
+    `;
+    }
+};
+IrrigationConfigTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+
+      .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 20px;
+        border: 1px solid rgba(79, 195, 247, 0.4);
+        background: rgba(79, 195, 247, 0.1);
+        color: #4fc3f7;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .action-btn:hover:not([disabled]) {
+        background: rgba(79, 195, 247, 0.2);
+      }
+      .action-btn[disabled],
+      .action-btn.saving {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      /* ── Disable stub controls (shared shape with the still-inline Steering tab) ── */
+      .stub-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 8px;
+        opacity: 0.55;
+      }
+      .stub-row-label {
+        font-size: 13px;
+      }
+      .stub-row-desc {
+        font-size: 11px;
+        opacity: 0.6;
+        margin-top: 2px;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], IrrigationConfigTab.prototype, "vm", void 0);
+IrrigationConfigTab = __decorate([
+    t$2('irrigation-config-tab')
+], IrrigationConfigTab);
+
+/**
+ * Irrigation Water Analytics Tab Component (ADR-0019)
+ *
+ * The dumb presentational element for the Irrigation Dialog's read-mostly Water
+ * Analytics tab. `@property .vm: WaterAnalyticsTabViewModel` in, no `@state()` of
+ * its own — all state lives in the Dialog Shell / Tab ViewModel.
+ *
+ * Read-mostly: the tab has exactly two interactive controls, surfaced as Tab
+ * Intents (not SM events):
+ *   - `water-analytics-open-steering` — the "edit in Steering →" link.
+ *   - `water-analytics-reset-tracking` — the Maintenance "Reset All Data" button.
+ *
+ * Clock/locale formatting kept here (per ADR-0019, to keep the VM factory
+ * deterministic): the 24h consumption-bucket chart and the recent-refills list
+ * are derived in-component from the VM's raw `tankEvents`, and timestamps are
+ * `toLocaleString`-formatted here.
+ *
+ * Markup is transcribed verbatim from the former inline `_renderWaterAnalyticsTab`
+ * in `irrigation-dialog.container.ts` so the rendered output stays byte-identical.
+ */
+let IrrigationWaterAnalyticsTab = class IrrigationWaterAnalyticsTab extends i$3 {
+    _emit(type) {
+        this.dispatchEvent(new CustomEvent(type, { bubbles: true, composed: true }));
+    }
+    _kpiCard(label, value, unit, color = 'rgba(255,255,255,0.7)', sub) {
+        return x `
+      <div
+        style="background:rgba(255,255,255,0.05);border-radius:12px;padding:16px 20px;display:flex;flex-direction:column;gap:4px;"
+      >
+        <div style="font-size:0.78rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;">
+          ${label}
+        </div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <span style="font-size:1.6rem;font-weight:700;color:${color};">${value}</span>
+          <span style="font-size:0.82rem;opacity:0.6;">${unit}</span>
+        </div>
+        ${sub ? x `<div style="font-size:0.75rem;opacity:0.5;">${sub}</div>` : E}
+      </div>
+    `;
+    }
+    _fmtCycle(ts) {
+        if (ts == null)
+            return null;
+        return new Date(ts).toLocaleString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        });
+    }
+    render() {
+        const vm = this.vm;
+        const lastCycle = this._fmtCycle(vm.lastCycleTimestamp);
+        const nextCycle = this._fmtCycle(vm.nextScheduledCycle);
+        return x `
+      ${this._renderCycleTelemetry(vm, lastCycle, nextCycle)}
+      ${this._renderTodaysUsage(vm)}
+      ${this._renderTankLevels(vm)}
+      ${this._renderTankDerivedUsage(vm)}
+      ${this._renderScheduleSummary(vm)}
+      ${this._renderStageAggregates(vm)}
+      ${this._renderVolumeHistory(vm)}
+      ${this._renderMaintenance()}
+    `;
+    }
+    _renderCycleTelemetry(vm, lastCycle, nextCycle) {
+        if (!vm.hasPump)
+            return E;
+        const volToday = vm.volumeDispensedToday;
+        return x `
+      <div class="detail-card">
+        <h3 style="margin-top:0;margin-bottom:16px;">Cycle Telemetry</h3>
+        <div
+          style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:0;"
+        >
+          ${this._kpiCard('Cycles today', String(vm.cyclesToday), '', '#4fc3f7')}
+          ${this._kpiCard('Dispensed today', volToday > 0 ? volToday.toFixed(2) : '—', volToday > 0 ? 'L' : '', '#81c784')}
+          ${lastCycle
+            ? this._kpiCard('Last cycle', lastCycle, '', 'rgba(255,255,255,0.7)')
+            : this._kpiCard('Last cycle', '—', '', 'rgba(255,255,255,0.4)')}
+          ${nextCycle
+            ? this._kpiCard('Next cycle', nextCycle, '', '#ce93d8')
+            : this._kpiCard('Next cycle', '—', '', 'rgba(255,255,255,0.4)')}
+        </div>
+      </div>
+    `;
+    }
+    _renderTodaysUsage(vm) {
+        if (!vm.hasPump)
+            return E;
+        const wu = vm.waterUsage;
+        const avgRunoff = vm.avgRunoff;
+        return x `
+      <div class="detail-card">
+        <h3 style="margin-top:0;margin-bottom:16px;">Today's Usage</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;">
+          ${wu?.litersToday != null
+            ? this._kpiCard('Liters today', wu.litersToday.toFixed(1), 'L', '#4fc3f7')
+            : this._kpiCard('Liters today', '—', '', 'rgba(255,255,255,0.4)')}
+          ${wu?.litersPerPlantPerDay != null
+            ? this._kpiCard('Per plant / day', wu.litersPerPlantPerDay.toFixed(2), 'L', '#81c784')
+            : this._kpiCard('Per plant / day', '—', '', 'rgba(255,255,255,0.4)')}
+          ${wu?.waterEfficiency != null
+            ? this._kpiCard('Water efficiency', (wu.waterEfficiency * 100).toFixed(0), '%', wu.waterEfficiency >= 0.85
+                ? '#4caf50'
+                : wu.waterEfficiency >= 0.65
+                    ? '#FF9800'
+                    : '#f44336', wu.waterEfficiency >= 0.85
+                ? 'Excellent'
+                : wu.waterEfficiency >= 0.65
+                    ? 'Good'
+                    : 'Review schedule')
+            : this._kpiCard('Water efficiency', '—', '', 'rgba(255,255,255,0.4)')}
+          ${avgRunoff !== null
+            ? this._kpiCard('Avg runoff', avgRunoff.toFixed(1), '%', '#ce93d8', `from ${vm.readingsWithVolumesCount} reading${vm.readingsWithVolumesCount !== 1 ? 's' : ''}`)
+            : this._kpiCard('Avg runoff', '—', '', 'rgba(255,255,255,0.4)', 'Log volumes in Drain EC tab')}
+        </div>
+      </div>
+    `;
+    }
+    _renderTankLevels(vm) {
+        if (vm.tanks.length === 0)
+            return E;
+        return x `
+      <div class="detail-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <h3 style="margin:0;">Tank Levels</h3>
+          ${vm.warningTankCount > 0
+            ? x `
+                <span
+                  style="background:rgba(244,67,54,0.2);color:#f44336;border:1px solid rgba(244,67,54,0.4);border-radius:20px;padding:3px 10px;font-size:0.78rem;font-weight:600;"
+                >
+                  ⚠ ${vm.warningTankCount} tank${vm.warningTankCount > 1 ? 's' : ''} low
+                </span>
+              `
+            : vm.avgTankLevel !== null
+                ? x `
+                  <span style="font-size:0.82rem;opacity:0.5;"
+                    >Avg ${vm.avgTankLevel.toFixed(0)}%</span
+                  >
+                `
+                : E}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          ${vm.tanks.map((tank) => {
+            const pct = tank.fillLevel ?? 0;
+            const c = tank.isWarning
+                ? '#f44336'
+                : (tank.hoursRemaining ?? 999) < 24
+                    ? '#FF9800'
+                    : '#4caf50';
+            return x `
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px;">
+                  <span style="font-weight:500;">${tank.name}</span>
+                  <span style="color:${c};font-weight:600;"
+                    >${tank.fillLevel !== null ? pct.toFixed(0) + '%' : '—'}</span
+                  >
+                </div>
+                <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;">
+                  <div
+                    style="height:100%;width:${Math.max(0, Math.min(100, pct))}%;background:${c};border-radius:3px;transition:width 0.4s ease;"
+                  ></div>
+                </div>
+              </div>
+            `;
+        })}
+        </div>
+      </div>
+    `;
+    }
+    _renderTankDerivedUsage(vm) {
+        if (!(vm.hasTankSensors && vm.hasTankHistory))
+            return E;
+        // 24h consumption buckets (15 min) + recent refills — clock-dependent, derived here.
+        const now = new Date();
+        const bucket15Min = 15 * 60 * 1000;
+        const bucketCount24h = 96;
+        const chartEnd = Math.ceil(now.getTime() / bucket15Min) * bucket15Min;
+        const chartStart = chartEnd - bucketCount24h * bucket15Min;
+        const consumptionBuckets24h = Array.from({ length: bucketCount24h }, (_, i) => ({
+            start: chartStart + i * bucket15Min,
+            liters: 0,
+        }));
+        for (const ev of vm.tankEvents) {
+            if (ev.event_type !== 'consumption')
+                continue;
+            const ts = new Date(ev.timestamp).getTime();
+            if (ts < chartStart || ts >= chartEnd)
+                continue;
+            const idx = Math.floor((ts - chartStart) / bucket15Min);
+            if (idx >= 0 && idx < bucketCount24h)
+                consumptionBuckets24h[idx].liters += ev.liters;
+        }
+        const maxBucketLiters = Math.max(...consumptionBuckets24h.map((b) => b.liters), 0.01);
+        const recentRefills = vm.tankEvents
+            .filter((e) => e.event_type === 'refill')
+            .slice(-10)
+            .reverse();
+        return x `
+      <div class="detail-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <h3 style="margin:0;">Tank-Derived Water Usage</h3>
+          <span
+            style="font-size:0.78rem;opacity:0.5;background:rgba(79,195,247,0.1);border:1px solid rgba(79,195,247,0.25);border-radius:20px;padding:2px 10px;"
+            >inferred from tank level</span
+          >
+        </div>
+        <div
+          style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;"
+        >
+          ${this._kpiCard('Consumed today', vm.tankLitersToday > 0 ? vm.tankLitersToday.toFixed(1) : '—', vm.tankLitersToday > 0 ? 'L' : '', '#4fc3f7')}
+          ${this._kpiCard('Last 7 days', vm.tankLiters7d > 0 ? vm.tankLiters7d.toFixed(1) : '—', vm.tankLiters7d > 0 ? 'L' : '', '#81c784')}
+          ${this._kpiCard('Avg per day', vm.tankAvgPerDay > 0 ? vm.tankAvgPerDay.toFixed(1) : '—', vm.tankAvgPerDay > 0 ? 'L/day' : '', '#ce93d8')}
+        </div>
+        <div style="margin-bottom:6px;">
+          <div
+            style="font-size:0.78rem;opacity:0.55;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;"
+          >
+            Consumption — last 24 hours (15 min buckets)
+          </div>
+          <div
+            style="display:flex;align-items:flex-end;gap:1px;height:60px;background:rgba(255,255,255,0.03);border-radius:6px;padding:6px 4px 0;"
+          >
+            ${consumptionBuckets24h.map((b) => {
+            const hp = (b.liters / maxBucketLiters) * 100;
+            const label = new Date(b.start).toLocaleTimeString(undefined, {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+            });
+            return x `
+                <div
+                  title="${label} — ${b.liters.toFixed(2)} L"
+                  style="flex:1;height:${Math.max(2, hp)}%;background:${b.liters > 0
+                ? '#4fc3f7'
+                : 'rgba(255,255,255,0.06)'};border-radius:2px 2px 0 0;min-width:0;"
+                ></div>
+              `;
+        })}
+          </div>
+          <div
+            style="display:flex;justify-content:space-between;font-size:0.68rem;opacity:0.45;margin-top:4px;padding:0 2px;"
+          >
+            <span>24h ago</span><span>12h ago</span><span>now</span>
+          </div>
+        </div>
+        ${recentRefills.length > 0
+            ? x `
+              <div style="margin-top:16px;">
+                <div
+                  style="font-size:0.78rem;opacity:0.55;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
+                >
+                  Recent refills
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  ${recentRefills.map((ev) => x `
+                      <div
+                        style="display:flex;justify-content:space-between;align-items:center;background:rgba(129,199,132,0.08);border-radius:6px;padding:5px 10px;font-size:0.82rem;"
+                      >
+                        <span style="opacity:0.65;"
+                          >${new Date(ev.timestamp).toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            })}</span
+                        >
+                        <span style="color:#81c784;font-weight:600;">+${ev.liters.toFixed(1)} L</span>
+                      </div>
+                    `)}
+                </div>
+              </div>
+            `
+            : E}
+      </div>
+    `;
+    }
+    _renderScheduleRow(row, bg) {
+        return x `
+      <div
+        style="display:flex;justify-content:space-between;background:${bg};border-radius:6px;padding:4px 10px;font-size:0.8rem;"
+      >
+        <span style="font-weight:500;">${row.time.substring(0, 5)}</span>
+        <span style="opacity:0.5;">${row.duration}s</span>
+      </div>
+    `;
+    }
+    _renderScheduleSummary(vm) {
+        if (vm.isCropSteering)
+            return this._renderCropSteeringSummary(vm);
+        if (vm.schedule.totalIrrig > 0 || vm.schedule.totalDrain > 0)
+            return this._renderPlainScheduleSummary(vm);
+        return E;
+    }
+    _renderCropSteeringSummary(vm) {
+        const cs = vm.cropSteering;
+        const { drainDuration } = cs;
+        return x `
+      <div class="detail-card">
+        <h3 style="margin-top:0;margin-bottom:16px;">Schedule Summary</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <div
+              style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
+            >
+              Irrigation
+            </div>
+            ${cs.shots.length === 0
+            ? x `<p style="opacity:0.5;font-size:0.85rem;margin:0;">No strategy configured</p>`
+            : x `
+                  <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
+                    ${cs.shots.length}
+                    <span style="font-size:0.85rem;font-weight:400;opacity:0.7;">shots/day</span>
+                  </div>
+                  <div style="font-size:0.75rem;opacity:0.5;margin-top:2px;">
+                    Managed automatically ·
+                    <a
+                      href="#"
+                      style="color:#4CAF50;"
+                      @click=${(e) => {
+                e.preventDefault();
+                this._emit('water-analytics-open-steering');
+            }}
+                      >edit in Steering →</a
+                    >
+                  </div>
+                  <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
+                    ${cs.shots.slice(0, 5).map((s) => x `
+                        <div
+                          style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
+                        >
+                          <span style="font-weight:500;">${s.time.substring(0, 5)}</span>
+                          <span style="opacity:0.5;">${s.duration}s</span>
+                        </div>
+                      `)}
+                    ${cs.shots.length > 5
+                ? x `<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
+                          +${cs.shots.length - 5} more
+                        </div>`
+                : E}
+                  </div>
+                `}
+          </div>
+          <div>
+            <div
+              style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
+            >
+              Drain
+            </div>
+            ${cs.totalDrain === 0
+            ? x `<p style="opacity:0.5;font-size:0.85rem;margin:0;">No events scheduled</p>`
+            : x `
+                  <div style="font-size:1.3rem;font-weight:700;color:#a5d6a7;">
+                    ${cs.totalDrain}
+                    <span style="font-size:0.85rem;font-weight:400;opacity:0.7;">events/day</span>
+                  </div>
+                  ${drainDuration
+                ? x `<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
+                        ${drainDuration}s per event
+                      </div>`
+                : E}
+                  <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
+                    ${cs.drainRows
+                .slice(0, 5)
+                .map((row) => this._renderScheduleRow(row, 'rgba(165,214,167,0.08)'))}
+                    ${cs.totalDrain > 5
+                ? x `<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
+                          +${cs.totalDrain - 5} more
+                        </div>`
+                : E}
+                  </div>
+                `}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _renderPlainScheduleSummary(vm) {
+        const s = vm.schedule;
+        return x `
+      <div class="detail-card">
+        <h3 style="margin-top:0;margin-bottom:16px;">Schedule Summary</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <div
+              style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
+            >
+              Irrigation
+            </div>
+            ${s.totalIrrig === 0
+            ? x `<p style="opacity:0.5;font-size:0.85rem;margin:0;">No events scheduled</p>`
+            : x `
+                  <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
+                    ${s.totalIrrig}
+                    <span style="font-size:0.85rem;font-weight:400;opacity:0.7;">events/day</span>
+                  </div>
+                  ${s.irrigDuration
+                ? x `<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
+                        ${s.irrigDuration}s per event
+                      </div>`
+                : E}
+                  <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
+                    ${s.irrigRows
+                .slice(0, 5)
+                .map((row) => this._renderScheduleRow(row, 'rgba(79,195,247,0.08)'))}
+                    ${s.totalIrrig > 5
+                ? x `<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
+                          +${s.totalIrrig - 5} more
+                        </div>`
+                : E}
+                  </div>
+                `}
+          </div>
+          <div>
+            <div
+              style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
+            >
+              Drain
+            </div>
+            ${s.totalDrain === 0
+            ? x `<p style="opacity:0.5;font-size:0.85rem;margin:0;">No events scheduled</p>`
+            : x `
+                  <div style="font-size:1.3rem;font-weight:700;color:#a5d6a7;">
+                    ${s.totalDrain}
+                    <span style="font-size:0.85rem;font-weight:400;opacity:0.7;">events/day</span>
+                  </div>
+                  ${s.drainDuration
+                ? x `<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
+                        ${s.drainDuration}s per event
+                      </div>`
+                : E}
+                  <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
+                    ${s.drainRows
+                .slice(0, 5)
+                .map((row) => this._renderScheduleRow(row, 'rgba(165,214,167,0.08)'))}
+                    ${s.totalDrain > 5
+                ? x `<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
+                          +${s.totalDrain - 5} more
+                        </div>`
+                : E}
+                  </div>
+                `}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _renderStageAggregates(vm) {
+        const agg = vm.stageAggregates;
+        if (!agg || Object.keys(agg).length === 0)
+            return E;
+        return x `
+      <div class="detail-card">
+        <h3 style="margin:0 0 14px;">Water Usage by Growth Stage</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${Object.entries(agg)
+            .sort(([, a], [, b]) => b - a)
+            .map(([stage, liters]) => x `
+                <div
+                  style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 14px;font-size:0.88rem;"
+                >
+                  <span style="text-transform:capitalize;font-weight:500;">${stage}</span>
+                  <span style="color:#4fc3f7;font-weight:600;">${liters.toFixed(1)} L</span>
+                </div>
+              `)}
+        </div>
+      </div>
+    `;
+    }
+    _renderVolumeHistory(vm) {
+        if (!vm.hasDrainPumpEntity)
+            return E;
+        const avgRunoff = vm.avgRunoff;
+        return x `
+      <div class="detail-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <h3 style="margin:0;">Volume History</h3>
+          <span style="font-size:0.8rem;opacity:0.5;">from drain EC readings</span>
+        </div>
+        ${vm.volumeRows.length === 0
+            ? x `
+              <p style="opacity:0.6;text-align:center;padding:20px 0;font-size:0.9rem;">
+                No volume data logged yet.<br />
+                <span style="font-size:0.8rem;opacity:0.7;"
+                  >Log feed and drain volumes in the <strong>Drain EC</strong> tab.</span
+                >
+              </p>
+            `
+            : x `
+              <div
+                style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;background:rgba(255,255,255,0.04);border-radius:10px;padding:12px 16px;font-size:0.88rem;"
+              >
+                <div style="text-align:center;">
+                  <div style="opacity:0.5;font-size:0.75rem;">Total feed</div>
+                  <div style="font-weight:700;color:#4fc3f7;">
+                    ${(vm.totalFeedMl / 1000).toFixed(1)} L
+                  </div>
+                </div>
+                <div style="text-align:center;">
+                  <div style="opacity:0.5;font-size:0.75rem;">Total drain</div>
+                  <div style="font-weight:700;color:#a5d6a7;">
+                    ${(vm.totalDrainMl / 1000).toFixed(1)} L
+                  </div>
+                </div>
+                <div style="text-align:center;">
+                  <div style="opacity:0.5;font-size:0.75rem;">Avg runoff</div>
+                  <div
+                    style="font-weight:700;color:${avgRunoff !== null &&
+                avgRunoff >= 15 &&
+                avgRunoff <= 35
+                ? '#4caf50'
+                : '#FF9800'};"
+                  >
+                    ${avgRunoff !== null ? avgRunoff.toFixed(1) + '%' : '—'}
+                  </div>
+                </div>
+              </div>
+              <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                  <thead>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.15);opacity:0.7;">
+                      <th style="text-align:left;padding:5px 8px;font-weight:500;">Time</th>
+                      <th style="text-align:right;padding:5px 8px;font-weight:500;">Feed (mL)</th>
+                      <th style="text-align:right;padding:5px 8px;font-weight:500;">Drain (mL)</th>
+                      <th style="text-align:right;padding:5px 8px;font-weight:500;">Runoff</th>
+                      <th style="text-align:right;padding:5px 8px;font-weight:500;">Δ EC</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${vm.volumeRows.map((r) => {
+                const runoffOk = r.runoff !== null && r.runoff >= 10 && r.runoff <= 40;
+                return x `
+                        <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                          <td style="padding:5px 8px;opacity:0.65;">
+                            ${new Date(r.timestamp).toLocaleString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                })}
+                          </td>
+                          <td style="text-align:right;padding:5px 8px;">${r.feedVolumeMl}</td>
+                          <td style="text-align:right;padding:5px 8px;">${r.drainVolumeMl}</td>
+                          <td
+                            style="text-align:right;padding:5px 8px;font-weight:600;color:${runoffOk
+                    ? '#4caf50'
+                    : '#FF9800'};"
+                          >
+                            ${r.runoff !== null ? r.runoff.toFixed(1) + '%' : '—'}
+                          </td>
+                          <td style="text-align:right;padding:5px 8px;opacity:0.7;">
+                            ${r.ecDelta >= 0 ? '+' : ''}${r.ecDelta.toFixed(2)}
+                          </td>
+                        </tr>
+                      `;
+            })}
+                  </tbody>
+                </table>
+              </div>
+            `}
+      </div>
+    `;
+    }
+    _renderMaintenance() {
+        return x `
+      <div
+        class="detail-card"
+        style="border:1px dashed rgba(244,67,54,0.3);background:rgba(244,67,54,0.05);margin-top:20px;"
+      >
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
+          <div style="flex:1;">
+            <h3 style="margin:0;color:#f44336;border:none;padding:0;font-size:1.1rem;">
+              Maintenance
+            </h3>
+            <p style="margin:4px 0 0 0;font-size:0.85rem;opacity:0.7;line-height:1.4;">
+              Reset irrigation counters, today's water usage, and recent volume history for this
+              growspace.
+            </p>
+          </div>
+          <button
+            class="md3-button tonal error"
+            @click=${() => this._emit('water-analytics-reset-tracking')}
+            style="white-space:nowrap;"
+          >
+            Reset All Data
+          </button>
+        </div>
+      </div>
+    `;
+    }
+};
+IrrigationWaterAnalyticsTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], IrrigationWaterAnalyticsTab.prototype, "vm", void 0);
+IrrigationWaterAnalyticsTab = __decorate([
+    t$2('irrigation-water-analytics-tab')
+], IrrigationWaterAnalyticsTab);
+
+/**
+ * Irrigation Substrate & EC Tab Component (ADR-0019 + ADR-0017)
+ *
+ * The dumb presentational element for the Substrate & EC tab. `@property .vm` in,
+ * semantic Tab Intents out, **no `@state()` of its own**. Markup transcribed
+ * verbatim from the former inline `_renderSubstrateEcTab` / `_renderFeedEcRanges`
+ * / `_renderUnlockHint` so the rendered output stays byte-identical.
+ *
+ * ADR-0017 mixed persistence is expressed through DISTINCT intents so the Dialog
+ * Shell can route each write path correctly:
+ *   - **Immediate-persist** (capability-affecting; Shell calls
+ *     `_persistProfile`/`_persistStrategyNow` straight away, NOT buffered):
+ *       `substrate-ec-profile-changed`   detail: { partial: Partial<SubstrateProfile> }
+ *       `substrate-ec-sizing-mode-changed` detail: { mode: ShotSizingMode }
+ *       `substrate-ec-modulation-toggled`  detail: { enabled: boolean }
+ *   - **Buffered** (SM draft → footer save-all):
+ *       `substrate-ec-pore-band-changed`  detail: { min: number|null, max: number|null }
+ *       `substrate-ec-targets-changed`    detail: { ranges: ECTargetRange[] }
+ */
+const MEDIA_OPTIONS = [
+    { id: 'coco', label: 'Coco' },
+    { id: 'rockwool', label: 'Rockwool' },
+    { id: 'soil', label: 'Soil' },
+];
+const STAGE_LABELS = {
+    seedling: 'Seedling',
+    veg: 'Veg',
+    flower_early: 'Early Flower',
+    flower_mid: 'Mid Flower',
+    flower_late: 'Late Flower / Flush',
+};
+let IrrigationSubstrateEcTab = class IrrigationSubstrateEcTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    _renderUnlockHint(text) {
+        return x `
+      <div
+        class="capability-unlock-hint"
+        style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--secondary-text-color);margin-top:6px;"
+      >
+        <ha-svg-icon .path=${mdiLockOutline} style="width:16px;height:16px;"></ha-svg-icon>
+        <span>${text}</span>
+      </div>
+    `;
+    }
+    render() {
+        const vm = this.vm;
+        if (!vm)
+            return x `${E}`;
+        const { profile, sizingMode, volumeModeCapable, hasPoreEcSensors } = vm;
+        return x `
+      <!-- Substrate Profile -->
+      <div class="detail-card">
+        <h3 style="margin:0 0 12px;">Substrate Profile</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:0.85rem;">
+            <span style="color:var(--secondary-text-color);">Media type</span>
+            <select
+              class="md3-input"
+              data-field="substrate_media_type"
+              .value=${profile.mediaType}
+              @change=${(e) => this._emit('substrate-ec-profile-changed', {
+            partial: { mediaType: e.target.value },
+        })}
+            >
+              ${MEDIA_OPTIONS.map((o) => x `<option value=${o.id} ?selected=${profile.mediaType === o.id}>
+                    ${o.label}
+                  </option>`)}
+            </select>
+          </label>
+          <md3-number-input
+            data-field="substrate_liters_per_pot"
+            label="Liters per pot"
+            .value=${profile.litersPerPot ? String(profile.litersPerPot) : ''}
+            @change=${(e) => this._emit('substrate-ec-profile-changed', {
+            partial: { litersPerPot: parseFloat(e.detail) || 0 },
+        })}
+          ></md3-number-input>
+        </div>
+      </div>
+
+      <!-- Shot Sizing Mode -->
+      <div class="detail-card">
+        <h3 style="margin:0 0 8px;">Shot Sizing Mode</h3>
+        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
+          How P1/P2 shot sizes are expressed. Volume Mode sizes shots as a percent of substrate
+          volume.
+        </p>
+        <div style="display:flex;gap:8px;">
+          <button
+            class="seg-btn ${sizingMode === 'seconds' ? 'active' : ''}"
+            data-sizing-mode="seconds"
+            @click=${() => sizingMode !== 'seconds' &&
+            this._emit('substrate-ec-sizing-mode-changed', { mode: 'seconds' })}
+          >
+            Seconds
+          </button>
+          <button
+            class="seg-btn ${sizingMode === 'volume' ? 'active' : ''}"
+            data-sizing-mode="volume"
+            ?disabled=${!volumeModeCapable}
+            @click=${() => volumeModeCapable &&
+            sizingMode !== 'volume' &&
+            this._emit('substrate-ec-sizing-mode-changed', { mode: 'volume' })}
+          >
+            Volume
+          </button>
+        </div>
+        ${!volumeModeCapable ? this._renderUnlockHint(vm.volumeLockHint) : E}
+      </div>
+
+      <!-- Pore EC Target Band -->
+      <div class="detail-card">
+        <h3 style="margin:0 0 8px;">Pore EC Target Band</h3>
+        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
+          The substrate (pore) EC range EC Modulation steers toward — distinct from the per-stage
+          feed-EC ranges below. Save with the footer button.
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <md3-number-input
+            data-field="pore_ec_target_min"
+            label="Min pore EC (mS/cm)"
+            .value=${vm.poreEcMin != null ? String(vm.poreEcMin) : ''}
+            @change=${(e) => this._emit('substrate-ec-pore-band-changed', {
+            min: e.detail === '' ? null : parseFloat(e.detail),
+            max: vm.poreEcMax,
+        })}
+          ></md3-number-input>
+          <md3-number-input
+            data-field="pore_ec_target_max"
+            label="Max pore EC (mS/cm)"
+            .value=${vm.poreEcMax != null ? String(vm.poreEcMax) : ''}
+            @change=${(e) => this._emit('substrate-ec-pore-band-changed', {
+            min: vm.poreEcMin,
+            max: e.detail === '' ? null : parseFloat(e.detail),
+        })}
+          ></md3-number-input>
+        </div>
+        ${vm.poreBandInverted
+            ? x `<div style="font-size:0.78rem;color:var(--error-color,#ef5350);margin-top:6px;">
+              Min must be below max.
+            </div>`
+            : E}
+      </div>
+
+      <!-- EC Modulation -->
+      <div class="detail-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h3 style="margin:0 0 4px;">EC Modulation</h3>
+            <p style="font-size:0.8rem;opacity:0.7;margin:0;">
+              Nudge feed EC toward the pore-EC band above.
+            </p>
+          </div>
+          <md3-switch
+            data-field="ec_modulation_enabled"
+            .checked=${vm.ecModulationEnabled}
+            ?disabled=${!hasPoreEcSensors}
+            @change=${(e) => hasPoreEcSensors &&
+            this._emit('substrate-ec-modulation-toggled', {
+                enabled: e.target.checked,
+            })}
+          ></md3-switch>
+        </div>
+        ${!hasPoreEcSensors
+            ? this._renderUnlockHint('Add a pore EC sensor to enable EC Modulation')
+            : E}
+      </div>
+
+      ${this._renderFeedEcRanges(vm.ecTargetRanges)}
+    `;
+    }
+    /** Per-stage feed-EC target ranges (buffered draft → footer save-all). */
+    _renderFeedEcRanges(ranges) {
+        return x `
+      <div class="detail-card" style="border-top:2px solid var(--divider-color,rgba(255,255,255,0.12));">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <h3 style="margin:0;border:none;padding:0;">Feed EC Targets per Stage</h3>
+        </div>
+        <p style="font-size:0.85rem;color:var(--secondary-text-color);margin:0 0 16px;">
+          Set feed EC target ranges (min / max) per growth stage. Save with the footer button.
+        </p>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);">
+                Stage
+              </th>
+              <th style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);">
+                Min EC (mS/cm)
+              </th>
+              <th style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);">
+                Max EC (mS/cm)
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ranges.map((range, idx) => x `
+                <tr class="ec-target-row" style="border-top:1px solid var(--divider-color,rgba(255,255,255,0.07));">
+                  <td style="padding:8px;">
+                    <span class="ec-stage-label" style="font-weight:500;"
+                      >${STAGE_LABELS[range.stage] ?? range.stage}</span
+                    >
+                  </td>
+                  <td style="padding:8px;">
+                    <input
+                      class="md3-input"
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      style="width:90px;"
+                      .value=${String(range.minEc)}
+                      @input=${(e) => {
+            const val = parseFloat(e.target.value) || 0;
+            this._emit('substrate-ec-targets-changed', {
+                ranges: ranges.map((r, i) => (i === idx ? { ...r, minEc: val } : r)),
+            });
+        }}
+                    />
+                  </td>
+                  <td style="padding:8px;">
+                    <input
+                      class="md3-input"
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      style="width:90px;"
+                      .value=${String(range.maxEc)}
+                      @input=${(e) => {
+            const val = parseFloat(e.target.value) || 0;
+            this._emit('substrate-ec-targets-changed', {
+                ranges: ranges.map((r, i) => (i === idx ? { ...r, maxEc: val } : r)),
+            });
+        }}
+                    />
+                  </td>
+                </tr>
+              `)}
+          </tbody>
+        </table>
+      </div>
+    `;
+    }
+};
+IrrigationSubstrateEcTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      /* ── Segmented toggle (Shot Sizing Mode), copied from irrigation-dialog ── */
+      .seg-btn {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--primary-text-color);
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+      .seg-btn.active {
+        border-color: rgba(33, 150, 243, 0.5);
+        background: rgba(33, 150, 243, 0.12);
+        font-weight: 600;
+      }
+      .seg-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], IrrigationSubstrateEcTab.prototype, "vm", void 0);
+IrrigationSubstrateEcTab = __decorate([
+    t$2('irrigation-substrate-ec-tab')
+], IrrigationSubstrateEcTab);
+
+/**
+ * Irrigation Steering Tab Component (ADR-0019 + ADR-0012 + ADR-0014 + ADR-0017)
+ *
+ * The dumb presentational element for the Steering tab. `@property .vm` in,
+ * semantic Tab Intents out, **no `@state()` of its own**. Markup transcribed
+ * verbatim from the former inline `_renderSteeringTab` / `_renderSteeringMode*` /
+ * `_renderPhaseShotParams` / `_renderAdaptiveShotControl` so the rendered output
+ * stays byte-identical.
+ *
+ * The Steering tab writes TWO drafts (see the ViewModel doc); the component keeps
+ * them on DISTINCT intents so the Dialog Shell routes each write path:
+ *   - **Steering draft** (Shell → `UPDATE_STEERING_DRAFT`):
+ *       `steering-draft-changed`   detail: { partial: Partial<IrrigationStrategy> }
+ *   - **Config draft** (Shell → `UPDATE_CONFIG_DRAFT`):
+ *       `steering-config-changed`  detail: { partial: Partial<ConfigDraft> }
+ *
+ * Confirm flows (ADR-0012) — the component renders the overlays from
+ * `vm.confirmMode` / `vm.confirmPhase` and emits intents; the Shell owns the
+ * side-effects (the `applySteeringMode` store action and `_saveSettings`):
+ *       `steering-mode-requested`  detail: { mode: SteeringMode }   (open confirm)
+ *       `steering-mode-confirmed`                                   (Apply)
+ *       `steering-mode-cancelled`                                   (Cancel/close)
+ *       `phase-change-requested`   detail: { phase: Phase }          (open confirm)
+ *       `phase-change-confirmed`                                    (Confirm)
+ *       `phase-change-cancelled`                                    (Cancel/close)
+ */
+let IrrigationSteeringTab = class IrrigationSteeringTab extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._confirmPhaseChange = () => {
+            this._emit('phase-change-confirmed');
+        };
+        this._cancelPhaseChange = () => {
+            this._emit('phase-change-cancelled');
+        };
+        this._confirmSteeringMode = () => {
+            this._emit('steering-mode-confirmed');
+        };
+        this._cancelSteeringMode = () => {
+            this._emit('steering-mode-cancelled');
+        };
+    }
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    /** Steering-draft field update → `UPDATE_STEERING_DRAFT` via the Shell. */
+    _updateStrategyField(field, value) {
+        this._emit('steering-draft-changed', { partial: { [field]: value } });
+    }
+    /** Config-draft field update → `UPDATE_CONFIG_DRAFT` via the Shell. */
+    _updateConfigField(partial) {
+        this._emit('steering-config-changed', { partial });
+    }
+    render() {
+        const vm = this.vm;
+        if (!vm)
+            return x `${E}`;
+        return x `
+      ${this._renderSteeringModeSelector()}
+
+      <!-- Phase cards -->
+      <div class="detail-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <h3 style="margin:0;">Crop Steering Phases</h3>
+          <gs-help-tooltip
+            content="Crop steering shapes the feeding pattern across three daily phases. P1 = saturation, P2 = maintenance, P3 = dryback."
+            placement="top"
+            label="Crop Steering Phases"
+          ></gs-help-tooltip>
+        </div>
+        <div class="phase-grid">
+          ${[
+            {
+                id: 'p1',
+                label: 'P1',
+                name: 'Saturation',
+                desc: 'Bring substrate to field capacity through frequent short shots.',
+            },
+            {
+                id: 'p2',
+                label: 'P2',
+                name: 'Maintenance',
+                desc: 'Maintain EC and irrigate to plant uptake — runoff target.',
+            },
+            {
+                id: 'p3',
+                label: 'P3',
+                name: 'Dryback',
+                desc: 'Final stretch of the photoperiod — controlled substrate dry.',
+            },
+        ].map((p) => x `
+              <div
+                class="phase-card ${vm.activePhase === p.id ? 'active' : ''}"
+                @click=${() => this._handlePhaseCardClick(p.id)}
+              >
+                <div class="phase-num">Phase · ${p.label}</div>
+                <div class="phase-nm">${p.name}</div>
+                <div class="phase-desc">${p.desc}</div>
+              </div>
+            `)}
+        </div>
+      </div>
+
+      <!-- VWC strategy parameters -->
+      <div class="detail-card">
+        <h3 style="margin-top:0;">VWC Strategy Configuration</h3>
+        <p style="font-size:0.8rem;opacity:0.7;margin-bottom:20px;">
+          Enable logic-based irrigation based on volumetric water content (VWC) targets. Overrides
+          basic schedules when active.
+        </p>
+
+        <div
+          style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;"
+        >
+          <span>Enable VWC Steering</span>
+          <md3-switch
+            data-field="enabled"
+            .checked=${vm.draft.enabled}
+            @change=${(e) => this._updateStrategyField('enabled', e.target.checked)}
+          ></md3-switch>
+        </div>
+
+        ${vm.hasLightSensors
+            ? x `
+                <div
+                  style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;"
+                >
+                  <span>Auto Track from Light Sensor</span>
+                  <md3-switch
+                    data-field="autoLightTracking"
+                    .checked=${!!vm.draft.autoLightTracking}
+                    @change=${(e) => this._updateStrategyField('autoLightTracking', e.target.checked)}
+                  ></md3-switch>
+                </div>
+              `
+            : ''}
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="vwc-targets-group">
+            <div class="vwc-targets-group-title" style="display:flex;align-items:center;gap:6px;">
+              P1 Thresholds
+              <gs-help-tooltip
+                content="Saturation Target: P1 ramps up until substrate VWC reaches this value, then switches to P2 maintenance."
+              ></gs-help-tooltip>
+            </div>
+            <md3-number-input
+              label="Saturation Target (%)"
+              .value=${vm.draft.targetVwcPercent}
+              @change=${(e) => this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
+            ></md3-number-input>
+          </div>
+
+          <div class="vwc-targets-group">
+            <div class="vwc-targets-group-title" style="display:flex;align-items:center;gap:6px;">
+              P2 Thresholds
+              <gs-help-tooltip
+                content="Maintenance Dryback: shots fire in P2 when VWC drops this many % below the saturation target. P2 Direct Trigger: optional — if set, bypasses the calculated threshold and fires directly when VWC drops below this value."
+              ></gs-help-tooltip>
+            </div>
+            <md3-number-input
+              label="Maintenance Dryback (%)"
+              .value=${vm.draft.maintenanceDrybackPercent}
+              @change=${(e) => this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
+            ></md3-number-input>
+            <md3-number-input
+              label="P2 Direct Trigger (%)"
+              placeholder="Off"
+              .value=${vm.soilTriggerPercent != null ? String(vm.soilTriggerPercent) : ''}
+              @change=${(e) => {
+            const v = e.detail;
+            this._updateConfigField({
+                soilTriggerPercent: v !== '' && v != null ? parseFloat(String(v)) : null,
+            });
+        }}
+            ></md3-number-input>
+          </div>
+        </div>
+
+          <h4 style="margin:4px 0;margin-top:12px;">Timing</h4>
+
+          <div style="display:flex;align-items:center;gap:8px;">
+            <md3-text-input
+              label="Lights On Time"
+              type="time"
+              data-scroll-target="lightsOnTime"
+              .value=${vm.draft.lightsOnTime}
+              @change=${(e) => this._updateStrategyField('lightsOnTime', e.target.value || e.detail)}
+            ></md3-text-input>
+            ${vm.detectedLightsOnTime
+            ? x `
+                    <span class="auto-lights-badge">auto: ${vm.detectedLightsOnTime}</span>
+                  `
+            : ''}
+          </div>
+          <md3-number-input
+            label="P0 Duration (min)"
+            .value=${vm.draft.p0DurationMinutes}
+            @change=${(e) => this._updateStrategyField('p0DurationMinutes', parseInt(e.detail))}
+          ></md3-number-input>
+          <md3-number-input
+            label="P2 Stop Buffer (min)"
+            .value=${vm.draft.p2StopBeforeLightsOffMinutes}
+            @change=${(e) => this._updateStrategyField('p2StopBeforeLightsOffMinutes', parseInt(e.detail))}
+          ></md3-number-input>
+
+          <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Dosing</h4>
+
+          ${this._renderPhaseShotParams()}
+          ${this._renderAdaptiveShotControl()}
+        </div>
+      </div>
+
+      <!-- Phase Triggers -->
+      <div class="detail-card">
+        <div style="margin-bottom:14px;">
+          <h3 style="margin:0;">Phase Triggers</h3>
+        </div>
+        <div style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="stub-row-label">Auto-advance P1 → P2</div>
+              <div class="stub-row-desc">When substrate moisture reaches field capacity</div>
+            </div>
+            <md3-switch
+              data-field="autoAdvanceP1ToP2"
+              .checked=${vm.autoAdvanceP1ToP2}
+              @change=${(e) => {
+            this._updateConfigField({ autoAdvanceP1ToP2: e.target.checked });
+        }}
+            ></md3-switch>
+          </div>
+        </div>
+        <div style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="stub-row-label">Auto-advance P2 → P3</div>
+              <div class="stub-row-desc">N hours before lights-off (per stage)</div>
+            </div>
+            <md3-switch
+              data-field="autoAdvanceP2ToP3"
+              .checked=${vm.autoAdvanceP2ToP3}
+              @change=${(e) => {
+            this._updateConfigField({ autoAdvanceP2ToP3: e.target.checked });
+        }}
+            ></md3-switch>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="stub-row-label">Halt on Runoff EC</div>
+              <div class="stub-row-desc">Suspend cycles and alert until manual resume</div>
+            </div>
+            <md3-switch
+              data-field="haltOnRunoffEc"
+              .checked=${vm.haltOnRunoffEcThreshold !== null}
+              @change=${(e) => {
+            this._updateConfigField({
+                haltOnRunoffEcThreshold: e.target.checked ? 4.0 : null,
+            });
+        }}
+            ></md3-switch>
+          </div>
+          ${vm.haltOnRunoffEcThreshold !== null
+            ? x `
+                  <div style="margin-top:10px;">
+                    <md3-number-input
+                      data-field="haltOnRunoffEcValue"
+                      label="EC Threshold"
+                      min="0.1"
+                      step="0.1"
+                      .value=${String(vm.haltOnRunoffEcThreshold)}
+                      @change=${(e) => {
+                const v = parseFloat(e.detail ?? e.target.value);
+                if (!isNaN(v))
+                    this._updateConfigField({ haltOnRunoffEcThreshold: v });
+            }}
+                    ></md3-number-input>
+                  </div>
+                `
+            : E}
+        </div>
+      </div>
+
+      ${this._renderSteeringModeConfirm()}
+
+      <!-- Phase trigger confirmation dialog -->
+      <gs-dialog
+        .open=${vm.confirmPhase !== null}
+        heading="Confirm Phase Transition"
+        .iconPath=${mdiAlert}
+        stageColor="var(--warning-color, #ff9800)"
+        @close=${this._cancelPhaseChange}
+      >
+        <div style="padding: 20px;">
+          <p style="margin: 0 0 12px 0;">
+            Are you sure you want to transition from
+            <strong>${vm.activePhase.toUpperCase()}</strong> to
+            <strong>${(vm.confirmPhase ?? '').toUpperCase()}</strong>?
+          </p>
+          <p style="margin: 0; font-size: 0.9rem; opacity: 0.8; line-height: 1.4;">
+            Manually shifting phases overrides the current schedule instantly. This is a severe
+            change that will disrupt timing and dosing parameters.
+          </p>
+        </div>
+        <div
+          class="button-group"
+          style="padding: 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1);"
+        >
+          <button class="md3-button tonal" @click=${this._cancelPhaseChange}>Cancel</button>
+          <button class="md3-button primary" @click=${this._confirmPhaseChange}>Confirm</button>
+        </div>
+      </gs-dialog>
+    `;
+    }
+    // ─── Phase cards ──────────────────────────────────────────────────────────
+    _handlePhaseCardClick(phaseId) {
+        if (this.vm.activePhase === phaseId)
+            return;
+        this._emit('phase-change-requested', { phase: phaseId });
+    }
+    // ─── Steering Mode selector (ADR-0012) ────────────────────────────────────
+    _handleSteeringModeClick(mode) {
+        this._emit('steering-mode-requested', { mode });
+    }
+    _renderSteeringModeSelector() {
+        const vm = this.vm;
+        const declared = vm.declaredMode;
+        return x `
+      <div class="detail-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <h3 style="margin:0;">Steering Mode</h3>
+          <gs-help-tooltip
+            content="Selecting a mode stamps recommended setpoints (dryback, P2-stop offset, pore-EC band, shot sizes) into the editable fields below. You can fine-tune afterwards."
+          ></gs-help-tooltip>
+        </div>
+        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
+          ${declared
+            ? x `Declared intent: <strong>${declared}</strong>`
+            : 'No mode declared yet.'}
+        </p>
+        <div class="phase-grid">
+          ${vm.modes.map((m) => x `
+              <div
+                class="phase-card ${declared === m.id ? 'active' : ''}"
+                data-steering-mode=${m.id}
+                @click=${() => this._handleSteeringModeClick(m.id)}
+              >
+                <div class="phase-nm">${m.name}</div>
+                <div class="phase-desc">${m.desc}</div>
+              </div>
+            `)}
+        </div>
+      </div>
+    `;
+    }
+    _renderSteeringModeConfirm() {
+        const pending = this.vm.confirmMode ?? '';
+        return x `
+      <gs-dialog
+        .open=${this.vm.confirmMode !== null}
+        heading="Apply Steering Mode"
+        .iconPath=${mdiAlert}
+        stageColor="var(--warning-color, #ff9800)"
+        @close=${this._cancelSteeringMode}
+      >
+        <div style="padding: 20px;">
+          <p style="margin: 0 0 12px 0;">
+            Apply the <strong>${pending}</strong> preset? This overwrites these fields with
+            recommended values:
+          </p>
+          <ul
+            style="margin: 0; padding-left: 20px; font-size: 0.9rem; opacity: 0.85; line-height: 1.5;"
+          >
+            <li>Maintenance Dryback</li>
+            <li>P2 Stop Buffer</li>
+            <li>Pore EC Target Band</li>
+            <li>Per-phase shot sizes</li>
+          </ul>
+        </div>
+        <div
+          class="button-group"
+          style="padding: 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1);"
+        >
+          <button class="md3-button tonal" @click=${this._cancelSteeringMode}>Cancel</button>
+          <button
+            class="md3-button primary"
+            data-action="confirm-steering-mode"
+            @click=${this._confirmSteeringMode}
+          >
+            Apply
+          </button>
+        </div>
+      </gs-dialog>
+    `;
+    }
+    // ─── Per-phase shot params (sizing-mode aware, ADR-0017) ──────────────────
+    _renderPhaseShotParams() {
+        return this.vm.phaseShots.map((p) => {
+            return x `
+        <md3-number-input
+          data-field=${p.sizeField}
+          label=${p.sizeLabel}
+          .value=${String(p.sizeValue ?? '')}
+          @change=${(e) => this._updateStrategyField(p.sizeField, p.isVolume ? parseFloat(e.detail) : parseInt(e.detail))}
+        ></md3-number-input>
+        <md3-number-input
+          data-field=${p.intervalField}
+          label="${p.label} Shot Interval (min)"
+          .value=${String(p.intervalValue ?? '')}
+          @change=${(e) => this._updateStrategyField(p.intervalField, parseInt(e.detail))}
+        ></md3-number-input>
+      `;
+        });
+    }
+    // ─── Adaptive Shot Control (ADR-0014) ─────────────────────────────────────
+    _renderAdaptiveShotControl() {
+        const draft = this.vm.draft;
+        const enabled = this.vm.adaptiveEnabled;
+        return x `
+      <div style="grid-column:span 2;margin-top:12px;">
+        <div
+          style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
+        >
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span>Adaptive Shot Control</span>
+            <gs-help-tooltip
+              content="When on, each shot's effect on VWC tunes the next one: overshoot shrinks the shot and lengthens the interval; undershoot recovers both toward nominal. Off freezes shots at the configured size and interval."
+            ></gs-help-tooltip>
+          </div>
+          <md3-switch
+            data-field="dynamicShotEnabled"
+            .checked=${enabled}
+            @change=${(e) => this._updateStrategyField('dynamicShotEnabled', e.target.checked)}
+          ></md3-switch>
+        </div>
+        ${enabled
+            ? x `
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                <md3-number-input
+                  data-field="dynamicAggressiveness"
+                  label="Aggressiveness"
+                  step="0.1"
+                  .value=${String(draft.dynamicAggressiveness ?? 1.0)}
+                  @change=${(e) => this._updateStrategyField('dynamicAggressiveness', parseFloat(e.detail))}
+                ></md3-number-input>
+                <md3-number-input
+                  data-field="dynamicRecovery"
+                  label="Recovery"
+                  step="0.05"
+                  .value=${String(draft.dynamicRecovery ?? 0.1)}
+                  @change=${(e) => this._updateStrategyField('dynamicRecovery', parseFloat(e.detail))}
+                ></md3-number-input>
+                <md3-number-input
+                  data-field="dynamicShotSizeFloor"
+                  label="Shot Size Floor (×)"
+                  step="0.05"
+                  .value=${String(draft.dynamicShotSizeFloor ?? 0.5)}
+                  @change=${(e) => this._updateStrategyField('dynamicShotSizeFloor', parseFloat(e.detail))}
+                ></md3-number-input>
+                <md3-number-input
+                  data-field="dynamicIntervalCeiling"
+                  label="Interval Ceiling (×)"
+                  step="0.1"
+                  .value=${String(draft.dynamicIntervalCeiling ?? 1.5)}
+                  @change=${(e) => this._updateStrategyField('dynamicIntervalCeiling', parseFloat(e.detail))}
+                ></md3-number-input>
+              </div>
+            `
+            : E}
+      </div>
+    `;
+    }
+};
+IrrigationSteeringTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      /* ── Phase cards / mode selector grid (copied from irrigation-dialog) ── */
+      .phase-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .phase-card {
+        padding: 12px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.02);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          border-color 0.15s;
+      }
+      .phase-card:hover {
+        background: rgba(255, 255, 255, 0.035);
+      }
+      .phase-card.active {
+        border-color: rgba(33, 150, 243, 0.5);
+        background: rgba(33, 150, 243, 0.08);
+      }
+      /* ── Segmented toggle (shared with substrate_ec) ── */
+      .seg-btn {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--primary-text-color);
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+      .seg-btn.active {
+        border-color: rgba(33, 150, 243, 0.5);
+        background: rgba(33, 150, 243, 0.12);
+        font-weight: 600;
+      }
+      .seg-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .phase-card .phase-num {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .phase-card .phase-nm {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .phase-card .phase-desc {
+        font-size: 11.5px;
+        color: rgba(255, 255, 255, 0.5);
+        line-height: 1.4;
+      }
+      .stub-row-label {
+        font-size: 13px;
+      }
+      .stub-row-desc {
+        font-size: 11px;
+        opacity: 0.6;
+        margin-top: 2px;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], IrrigationSteeringTab.prototype, "vm", void 0);
+IrrigationSteeringTab = __decorate([
+    t$2('irrigation-steering-tab')
+], IrrigationSteeringTab);
+
 let IrrigationDialog = class IrrigationDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -29060,16 +34776,84 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this.scrollToField = undefined;
         /** Single reactive state atom. All 35 former @state() flags live here. */
         this._sm = createInitialSM$4();
-        // ─── Tanks tab state ────────────────────────────────────────────────────
-        this._editingTankIndex = null;
-        this._tankDraft = null;
-        // ─── EC Ramp tab state ──────────────────────────────────────────────────
-        this._ecRampView = 'LIST';
-        this._ecRampEditingCurve = null;
-        this._ecRampError = null;
+        /**
+         * Nanostores mirror of `_sm`, synced once in `willUpdate` (the ~70 in-place
+         * `this._sm =` sites stay untouched). Lets per-tab ViewModels that depend on
+         * interaction state — e.g. the Tanks tab's edit draft — derive reactively.
+         */
+        this._smAtom = atom(this._sm);
+        // ─── Tanks tab (ADR-0019: draft lives in the SM, not here) ──────────────
+        // Sensor/input_number entity_ids for the tank editor datalist — a hass-derived
+        // view input mirrored into an atom so the Tanks Tab ViewModel stays the single
+        // source and the component takes only `.vm`.
+        this._tankSensorOptions = atom([]);
+        // ─── EC Ramp tab (ADR-0019: view/draft/error live in the SM, not here) ───
+        // Curves are owned by the Nutrient slice (ADR-0005); the VM reads `ecRampCurves$`
+        // and the tab's StoreController re-renders on fetch. Only the lazy-fetch latch
+        // remains here.
         this._ecRampFetched = false;
         // ─── Irrigation Configs (live, non-draft reads) ───────────────────────
         this._irrigationConfigsController = new libExports.StoreController(this, irrigationConfigs$);
+        // ─── Dialog Shell wiring (ADR-0019) ───────────────────────────────────
+        // The device arrives as a prop; mirror it into an atom so the shared
+        // Dialog Capabilities atom and the Overview Tab ViewModel can derive from it.
+        this._deviceAtom = atom(undefined);
+        /** Shared cross-tab capabilities — peer input to the shell VM and every tab VM. */
+        this._caps = createDialogCapabilities(this._deviceAtom, irrigationConfigs$);
+        /** Shell ViewModel — consumes `$caps` for the nav rail-group visibility gate. */
+        this._shellVm = createShellViewModel(this._caps);
+        this._shellVmController = new libExports.StoreController(this, this._shellVm);
+        /** Read-only Overview tab ViewModel (the reference per-tab adapter). */
+        this._overviewVm = createOverviewTabViewModel(this._deviceAtom, this._caps);
+        this._overviewVmController = new libExports.StoreController(this, this._overviewVm);
+        /** Tanks tab ViewModel — the first *draft* tab adapter ($sm-first, no $caps). */
+        this._tanksVm = createTanksTabViewModel(this._smAtom, tankLevels$, this._tankSensorOptions, this._deviceAtom);
+        this._tanksVmController = new libExports.StoreController(this, this._tanksVm);
+        /** EC Ramp tab ViewModel — reads the Nutrient slice's `ecRampCurves$` (ADR-0005). */
+        this._ecRampVm = createEcRampTabViewModel(this._smAtom, ecRampCurves$);
+        this._ecRampVmController = new libExports.StoreController(this, this._ecRampVm);
+        /**
+         * Schedules tab ViewModel — the largest adapter. `$sm`-first (it carries both
+         * `tabs.schedules` and the cross-tab `tabs.steering.draft`); the device atom
+         * supplies the schedule rows + chart + phase config, and `cropSteeringHistory$`
+         * the legend's sensor-presence flags. No `$caps`.
+         */
+        this._schedulesVm = createSchedulesTabViewModel(this._smAtom, this._deviceAtom, cropSteeringHistory$);
+        this._schedulesVmController = new libExports.StoreController(this, this._schedulesVm);
+        /**
+         * Drain EC tab ViewModel — `$sm`-first (it carries `tabs.drain_ec`); the device
+         * atom supplies the logged `drainConfig.readings`. No `$caps`. Config persists
+         * via the global `save-all`; logging routes through the `_logDrainReadingNow`
+         * host method (ADR-0015 effects are the drain *config* path, not logging).
+         */
+        this._drainEcVm = createDrainEcTabViewModel(this._smAtom, this._deviceAtom);
+        this._drainEcVmController = new libExports.StoreController(this, this._drainEcVm);
+        /**
+         * Water Analytics tab ViewModel — read-mostly, `$sm`-first (it carries the
+         * cross-tab `tabs.steering.draft` for the crop-steering shot summary and
+         * `tabs.water_analytics.stageAggregates`); the device atom supplies water
+         * usage, tanks, schedule rows, and drain readings. No `$caps`. The two
+         * interactions (open-steering link, reset-all) route through Tab Intents.
+         */
+        this._waterAnalyticsVm = createWaterAnalyticsTabViewModel(this._smAtom, this._deviceAtom);
+        this._waterAnalyticsVmController = new libExports.StoreController(this, this._waterAnalyticsVm);
+        // ─── Config tab (ADR-0019: draft lives in the SM, not here) ──────────────
+        // switch/input_boolean entity options for the two pump selects — a hass-derived
+        // view input mirrored into an atom (the `_tankSensorOptions` pattern) so the
+        // Config Tab ViewModel stays the single source and the component takes only `.vm`.
+        this._pumpEntityOptions = atom([]);
+        // `hasPump` mirrored from the host's `_hasPump` getter (reads the live
+        // `irrigationConfigs$` slice) so the in-tab panel gate stays byte-identical.
+        this._hasPumpAtom = atom(false);
+        /** Config tab ViewModel — `$sm`-first, mixed source (pump options + hasPump). No `$caps`. */
+        this._configVm = createConfigTabViewModel(this._smAtom, this._hasPumpAtom, this._pumpEntityOptions);
+        this._configVmController = new libExports.StoreController(this, this._configVm);
+        /** Substrate & EC tab ViewModel — `$sm`-first, consumes `$caps` (ADR-0017/0019). */
+        this._substrateEcVm = createSubstrateEcTabViewModel(this._smAtom, this._caps, this._deviceAtom);
+        this._substrateEcVmController = new libExports.StoreController(this, this._substrateEcVm);
+        /** Steering tab ViewModel — `$sm`-first, consumes `$caps` (cross-tab sizing mode, ADR-0019). */
+        this._steeringVm = createSteeringTabViewModel(this._smAtom, this._caps, this._deviceAtom);
+        this._steeringVmController = new libExports.StoreController(this, this._steeringVm);
         // ─── Crop Steering History (Schedules tab) ────────────────────────────
         this._cropSteeringHistoryFetched = false;
         /**
@@ -29089,6 +34873,9 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             'run-now': () => this._effectRunNow(),
             'edit-irrigation-time': (params) => this._effectEditIrrigationTime(params),
             'edit-drain-time': (params) => this._effectEditDrainTime(params),
+            'save-tank': (params) => this._effectSaveTank(params),
+            'save-ec-ramp-curve': (params) => this._effectSaveEcRampCurve(params),
+            'remove-ec-ramp-curve': (params) => this._effectRemoveEcRampCurve(params),
         };
     }
     /** Apply a transition and trigger a re-render. Used by the controller + handlers. */
@@ -29105,13 +34892,20 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         return !!(cfg?.irrigationPumpEntity || cfg?.drainPumpEntity);
     }
     get _visibleTabs() {
+        // `_visibleTabs` is read outside the render cycle (unit tests construct the
+        // element and read it without triggering `willUpdate`), so the device atom
+        // the shell VM derives from may not be synced yet. Reconcile it first. On the
+        // real render path `willUpdate` already synced it, so this is a no-op there.
+        if (this._deviceAtom.get() !== this.device) {
+            this._deviceAtom.set(this.device);
+        }
         const tabs = [];
         const env = this.device?.environmentAttributes;
-        const hasSoilMoisture = !!env?.soilMoistureSensor || (env?.soilMoistureSensors?.length ?? 0) > 0;
-        const hasStrategy = !!this.device?.irrigationStrategy?.enabled;
         const hasPump = this._hasPump;
-        // Crop Steering Command Center: Overview + Steering share one gate.
-        if ((hasSoilMoisture || hasStrategy) && hasPump) {
+        // Crop Steering Command Center: Overview + Steering share one gate. The gate
+        // is owned by the shared Dialog Capabilities atom (ADR-0019), not re-derived
+        // here. The other 7 tabs still gate inline until they are decomposed.
+        if (this._shellVm.get().cropSteeringGroupVisible) {
             tabs.push('overview');
             tabs.push('steering');
         }
@@ -29195,6 +34989,39 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         return id ? this._irrigationConfigsController.value?.get(id) : undefined;
     }
     willUpdate(changedProps) {
+        // Keep the device atom in sync with the prop so the Dialog Capabilities atom
+        // and the Overview Tab ViewModel re-derive when the payload changes.
+        if (changedProps.has('device')) {
+            this._deviceAtom.set(this.device);
+        }
+        // Mirror the hass-derived sensor/input_number entity list into its atom so the
+        // Tanks Tab ViewModel's edit datalist stays current without the component
+        // reading hass.
+        if (this.hass && (changedProps.has('hass') || changedProps.has('device'))) {
+            this._tankSensorOptions.set(this._getEntities(['sensor', 'input_number']).map((s) => s.entity_id));
+        }
+        // Mirror the switch/input_boolean pump-entity options into their atom so the
+        // Config Tab ViewModel stays the single source and the component never reads
+        // hass. `hass` is a plain (non-reactive) field, so it never appears in
+        // `changedProps`; recompute every update and set only when the option list
+        // actually changed (by signature), so clearing `hass` clears the options —
+        // matching the former inline `_renderEntitySelect`, which re-read hass each
+        // render and showed only "None" when hass was absent.
+        const pumpOpts = this._getEntities(['switch', 'input_boolean']).map((s) => ({
+            value: s.entity_id,
+            label: `${s.attributes.friendly_name || s.entity_id} (${s.entity_id})`,
+        }));
+        const prevPumpOpts = this._pumpEntityOptions.get();
+        const pumpSig = pumpOpts.map((o) => o.value).join(' ');
+        const prevPumpSig = prevPumpOpts.map((o) => o.value).join(' ');
+        if (pumpSig !== prevPumpSig) {
+            this._pumpEntityOptions.set(pumpOpts);
+        }
+        // `_hasPump` reads the live config slice; mirror it every update so the Config
+        // tab's panel gate (Behaviour / Manual Override) tracks post-save changes.
+        if (this._hasPumpAtom.get() !== this._hasPump) {
+            this._hasPumpAtom.set(this._hasPump);
+        }
         if (changedProps.has('open') && this.open) {
             this._initializeState();
             this._fetchStageAnalytics();
@@ -29210,26 +35037,24 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this._visibleTabs.includes(this._sm.activeTab)) {
             this._sm = transition$4(this._sm, { type: 'SWITCH_TAB', tab: 'config' });
         }
-        // EC Ramp: reset view when navigating to the tab; lazy-fetch on first visit.
+        // EC Ramp: lazy-fetch the curves on first visit. The view/draft reset on tab
+        // change is owned by the SM's SWITCH_TAB transition (ADR-0019); the VM reads
+        // `ecRampCurves$` directly so no StoreController is needed here.
         if (changedProps.has('_sm')) {
             const prev = changedProps.get('_sm');
             const prevTab = prev?.activeTab;
             const nextTab = this._sm.activeTab;
             if (nextTab === 'ec_ramp' && prevTab !== 'ec_ramp') {
-                this._ecRampView = 'LIST';
-                this._ecRampEditingCurve = null;
-                this._ecRampError = null;
                 if (!this._ecRampFetched && this.store) {
                     this._ecRampFetched = true;
-                    if (!this._ecRampCurvesController) {
-                        this._ecRampCurvesController = new libExports.StoreController(this, ecRampCurves$);
-                    }
                     this.store.actions.library.fetchECRampCurves().catch(() => undefined);
                 }
             }
             // Crop Steering History: lazy fetch + polling when Schedules tab is active.
             if (nextTab === 'schedules' && prevTab !== 'schedules') {
-                if (!this._cropSteeringHistoryFetched && this.store?.actions?.irrigation && this.device?.deviceId) {
+                if (!this._cropSteeringHistoryFetched &&
+                    this.store?.actions?.irrigation &&
+                    this.device?.deviceId) {
                     this._cropSteeringHistoryFetched = true;
                     if (!this._cropSteeringHistoryController) {
                         this._cropSteeringHistoryController = new libExports.StoreController(this, cropSteeringHistory$);
@@ -29252,6 +35077,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 this._cropSteeringPoller?.stop();
             }
         }
+        // Mirror `_sm` into its atom (after any in-willUpdate transitions above) so
+        // per-tab ViewModels deriving from `_smAtom` see the latest interaction state
+        // in this same render. No-op when the reference is unchanged.
+        this._smAtom.set(this._sm);
     }
     updated(changedProps) {
         if (changedProps.has('open') && this.open && this.scrollToField) {
@@ -29424,46 +35253,6 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     _notifyDataChanged() {
         this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
     }
-    _startAddingIrrigationTime(x, width) {
-        const pct = Math.max(0, Math.min(1, x / width));
-        const totalMinutes = Math.round(pct * 24 * 60);
-        const h = Math.floor(totalMinutes / 60);
-        const m = totalMinutes % 60;
-        this._sm = transition$4(this._sm, {
-            type: 'BEGIN_ADD_IRRIGATION',
-            time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
-            duration: this._sm.tabs.schedules.draft.irrigationDuration,
-        });
-    }
-    _startAddingDrainTime(x, width) {
-        const pct = Math.max(0, Math.min(1, x / width));
-        const totalMinutes = Math.round(pct * 24 * 60);
-        const h = Math.floor(totalMinutes / 60);
-        const m = totalMinutes % 60;
-        this._sm = transition$4(this._sm, {
-            type: 'BEGIN_ADD_DRAIN',
-            time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
-            duration: this._sm.tabs.schedules.draft.drainDuration,
-        });
-    }
-    _startEditingIrrigationTime(timeStr, duration) {
-        this._sm = transition$4(this._sm, {
-            type: 'BEGIN_EDIT_IRRIGATION',
-            originalTime: timeStr,
-            originalDuration: duration,
-            time: timeStr.substring(0, 5),
-            duration,
-        });
-    }
-    _startEditingDrainTime(timeStr, duration) {
-        this._sm = transition$4(this._sm, {
-            type: 'BEGIN_EDIT_DRAIN',
-            originalTime: timeStr,
-            originalDuration: duration,
-            time: timeStr.substring(0, 5),
-            duration,
-        });
-    }
     /**
      * Save an edited irrigation time. Synchronous: runs the duplicate-time guard,
      * builds params from the inline sub-state, then dispatches. The effect reads
@@ -29576,9 +35365,6 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._sm = transition$4(this._sm, { type: 'SET_TOAST', message: undefined });
         }, 5000);
     }
-    _updateStrategyField(field, value) {
-        this._sm = transition$4(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { [field]: value } });
-    }
     /**
      * Immediately persist a capability-affecting strategy field edited on the
      * Substrate & EC tab (Shot Sizing Mode, Substrate Profile, EC Modulation).
@@ -29598,6 +35384,30 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             litersPerPot: 0,
         };
         this._persistStrategyNow({ substrateProfile: { ...current, ...change } });
+    }
+    // ─── Substrate & EC tab: Tab Intent → write-path routing (ADR-0019 + ADR-0017)
+    // The Shell owns the split: capability-affecting fields persist IMMEDIATELY via
+    // _persistProfile/_persistStrategyNow (not buffered, not save-all); the pore-EC
+    // band + per-stage ranges buffer into the SM draft and save via the footer.
+    /** Immediate-persist: substrate profile (media type / liters per pot). */
+    _onSubstrateProfileChanged(e) {
+        this._persistProfile(e.detail.partial);
+    }
+    /** Immediate-persist: shot sizing mode. */
+    _onSubstrateSizingModeChanged(e) {
+        this._persistStrategyNow({ shotSizingMode: e.detail.mode });
+    }
+    /** Immediate-persist: EC modulation toggle. */
+    _onSubstrateModulationToggled(e) {
+        this._persistStrategyNow({ ecModulationEnabled: e.detail.enabled });
+    }
+    /** Buffered: pore-EC target band → SM draft, saved via the footer save-all. */
+    _onSubstratePoreBandChanged(e) {
+        this.dispatch({ type: 'UPDATE_PORE_EC_BAND', min: e.detail.min, max: e.detail.max });
+    }
+    /** Buffered: per-stage feed-EC ranges → SM draft, saved via the footer save-all. */
+    _onSubstrateTargetsChanged(e) {
+        this.dispatch({ type: 'UPDATE_EC_TARGETS_DRAFT', ranges: e.detail.ranges });
     }
     async _handleResetWaterTracking() {
         if (!this.device?.deviceId || !this._dataService)
@@ -29640,32 +35450,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     // ─── Helpers ──────────────────────────────────────────────────────────────
-    _getNowMinutes() {
-        const now = new Date();
-        return now.getHours() * 60 + now.getMinutes();
-    }
     _getEntities(domains) {
         if (!this.hass?.states)
             return [];
         return Object.values(this.hass.states)
             .filter((s) => s.entity_id && domains.includes(s.entity_id.split('.')[0]))
             .sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
-    }
-    _renderEntitySelect(label, value, domains, changeHandler) {
-        const entities = this._getEntities(domains);
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${label}</label>
-        <select class="md3-input" .value=${value} @change=${changeHandler}>
-          <option value="">None</option>
-          ${entities.map((e) => x `
-              <option value="${e.entity_id}" ?selected=${e.entity_id === value}>
-                ${e.attributes.friendly_name || e.entity_id} (${e.entity_id})
-              </option>
-            `)}
-        </select>
-      </div>
-    `;
     }
     // ─── Render ───────────────────────────────────────────────────────────────
     render() {
@@ -29677,10 +35467,21 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const NAV = [
             { id: 'overview', label: 'Overview', group: 'Crop Steering', icon: mdiCompassOutline },
             { id: 'steering', label: 'Steering', group: 'Crop Steering', icon: mdiLeaf },
-            { id: 'substrate_ec', label: 'Substrate & EC', group: 'Crop Steering', icon: mdiBullseyeArrow },
+            {
+                id: 'substrate_ec',
+                label: 'Substrate & EC',
+                group: 'Crop Steering',
+                icon: mdiBullseyeArrow,
+            },
             { id: 'schedules', label: 'Schedules', group: 'Daily Cycle', icon: mdiCalendarClock },
             { id: 'config', label: 'Configuration', group: 'Equipment', icon: mdiCog },
-            { id: 'tanks', label: 'Tanks', group: 'Equipment', icon: mdiWater, badge: tankCount || undefined },
+            {
+                id: 'tanks',
+                label: 'Tanks',
+                group: 'Equipment',
+                icon: mdiWater,
+                badge: tankCount || undefined,
+            },
             { id: 'water_analytics', label: 'Water Analytics', group: 'Telemetry', icon: mdiChartBar },
             { id: 'drain_ec', label: 'Drain EC', group: 'Telemetry', icon: mdiArrowDownCircle },
             { id: 'ec_ramp', label: 'EC Ramp', group: 'Telemetry', icon: mdiTrendingUp },
@@ -29841,7 +35642,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 this._sm = requestTabSwitch(this._sm, item.id, this.device);
             }}
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="flex-shrink:0;">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="currentColor"
+              style="flex-shrink:0;"
+            >
               <path d="${item.icon}" />
             </svg>
             <span style="flex:1;">${item.label}</span>
@@ -29851,570 +35658,120 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         })}
     `;
     }
-    _renderActiveTab(color) {
+    _renderActiveTab(_color) {
         switch (this._sm.activeTab) {
             case 'overview':
-                return this._renderOverviewTab();
+                // Decomposed via the per-tab ViewModel adapter (ADR-0019). All other
+                // tabs below still render through their inline `_renderXTab()` methods.
+                return x `<irrigation-overview-tab
+          .vm=${this._overviewVmController.value}
+        ></irrigation-overview-tab>`;
             case 'schedules':
-                return this._renderSchedulesTab(color);
+                return x `<irrigation-schedules-tab
+          .vm=${this._schedulesVmController.value}
+          @schedules-begin-add=${this._onSchedulesBeginAdd}
+          @schedules-begin-edit=${this._onSchedulesBeginEdit}
+          @schedules-update-add=${this._onSchedulesUpdateAdd}
+          @schedules-update-edit=${this._onSchedulesUpdateEdit}
+          @schedules-cancel-inline=${this._onSchedulesCancelInline}
+          @schedules-save-add=${this._onSchedulesSaveAdd}
+          @schedules-save-edit=${this._onSchedulesSaveEdit}
+          @schedules-delete-from-edit=${this._onSchedulesDeleteFromEdit}
+          @schedules-remove-time=${this._onSchedulesRemoveTime}
+          @schedules-open-steering=${this._onSchedulesOpenSteering}
+        ></irrigation-schedules-tab>`;
             case 'steering':
-                return this._renderSteeringTab(color);
+                return x `<irrigation-steering-tab
+          .vm=${this._steeringVmController.value}
+          @steering-draft-changed=${this._onSteeringDraftChanged}
+          @steering-config-changed=${this._onSteeringConfigChanged}
+          @steering-mode-requested=${this._onSteeringModeRequested}
+          @steering-mode-confirmed=${this._onSteeringModeConfirmed}
+          @steering-mode-cancelled=${this._onSteeringModeCancelled}
+          @phase-change-requested=${this._onPhaseChangeRequested}
+          @phase-change-confirmed=${this._onPhaseChangeConfirmed}
+          @phase-change-cancelled=${this._onPhaseChangeCancelled}
+        ></irrigation-steering-tab>`;
             case 'config':
-                return this._renderConfigSection();
+                return x `<irrigation-config-tab
+          .vm=${this._configVmController.value}
+          @config-pump-changed=${this._onConfigPumpChanged}
+          @config-draft-changed=${this._onConfigDraftChanged}
+          @config-run-now=${this._onConfigRunNow}
+        ></irrigation-config-tab>`;
             case 'tanks':
-                return this._renderTanksTab();
+                return x `<irrigation-tanks-tab
+          .vm=${this._tanksVmController.value}
+          @edit-tank-requested=${this._onEditTankRequested}
+          @tank-draft-changed=${this._onTankDraftChanged}
+          @cancel-tank-edit=${this._onCancelTankEdit}
+          @save-tank-requested=${this._onSaveTankRequested}
+        ></irrigation-tanks-tab>`;
             case 'water_analytics':
-                return this._renderWaterAnalyticsTab();
+                return x `<irrigation-water-analytics-tab
+          .vm=${this._waterAnalyticsVmController.value}
+          @water-analytics-open-steering=${this._onWaterAnalyticsOpenSteering}
+          @water-analytics-reset-tracking=${this._handleResetWaterTracking}
+        ></irrigation-water-analytics-tab>`;
             case 'drain_ec':
-                return this._renderDrainECTab();
+                return x `<irrigation-drain-ec-tab
+          .vm=${this._drainEcVmController.value}
+          @drain-ec-draft-changed=${this._onDrainEcDraftChanged}
+          @drain-ec-log-reading=${this._onDrainEcLogReading}
+        ></irrigation-drain-ec-tab>`;
             case 'substrate_ec':
-                return this._renderSubstrateEcTab();
+                return x `<irrigation-substrate-ec-tab
+          .vm=${this._substrateEcVmController.value}
+          @substrate-ec-profile-changed=${this._onSubstrateProfileChanged}
+          @substrate-ec-sizing-mode-changed=${this._onSubstrateSizingModeChanged}
+          @substrate-ec-modulation-toggled=${this._onSubstrateModulationToggled}
+          @substrate-ec-pore-band-changed=${this._onSubstratePoreBandChanged}
+          @substrate-ec-targets-changed=${this._onSubstrateTargetsChanged}
+        ></irrigation-substrate-ec-tab>`;
             case 'ec_ramp':
-                return this._renderEcRampTab();
+                return x `<irrigation-ec-ramp-tab
+          .vm=${this._ecRampVmController.value}
+          @ec-ramp-new-curve=${this._onEcRampNewCurve}
+          @ec-ramp-edit-curve=${this._onEcRampEditCurve}
+          @ec-ramp-delete-curve=${this._onEcRampDeleteCurve}
+          @ec-ramp-cancel-edit=${this._onEcRampCancelEdit}
+          @ec-ramp-curve-changed=${this._onEcRampCurveChanged}
+          @ec-ramp-add-point=${this._onEcRampAddPoint}
+          @ec-ramp-remove-point=${this._onEcRampRemovePoint}
+          @ec-ramp-update-point=${this._onEcRampUpdatePoint}
+          @ec-ramp-save-curve=${this._onEcRampSaveCurve}
+        ></irrigation-ec-ramp-tab>`;
             default:
                 return E;
         }
     }
-    // ─── Schedules tab ────────────────────────────────────────────────────────
-    _computeCropSteeringCycle() {
-        const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
-        return computeCropSteeringCycle(this._sm.tabs.steering.draft, isFlower);
+    // ─── Steering tab: Tab Intent → SM-event / side-effect routing (ADR-0019) ───
+    // The Shell owns the translation. The steering UI writes TWO drafts, so the
+    // steering tab emits two distinct draft intents (steering vs config). The two
+    // confirm-CONFIRMED intents keep their preserved side-effects here (ADR-0012):
+    // the `applySteeringMode` store action and `_saveSettings`.
+    /** Steering draft field → UPDATE_STEERING_DRAFT. */
+    _onSteeringDraftChanged(e) {
+        this._sm = transition$4(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: e.detail.partial });
     }
-    _fmtMin(minutes) {
-        return fmtMinuteOfDay(minutes);
+    /** Config draft field surfaced in the steering UI → UPDATE_CONFIG_DRAFT. */
+    _onSteeringConfigChanged(e) {
+        this._sm = transition$4(this._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: e.detail.partial });
     }
-    _computePhases() {
-        const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
-        return computePhases(this._sm.tabs.steering.draft, isFlower, this.device?.irrigationConfig);
+    /** Open the Steering Mode confirm overlay (ADR-0012). */
+    _onSteeringModeRequested(e) {
+        this._sm = transition$4(this._sm, { type: 'REQUEST_STEERING_MODE', mode: e.detail.mode });
     }
-    _generateSubstrateProjection(nowOffset, shots, phases, seedVwc, seedPoreEc, viewStart) {
-        const target = this._sm.tabs.steering.draft.targetVwcPercent ?? 45;
-        return generateSubstrateProjection(nowOffset, shots, phases, seedVwc, seedPoreEc, viewStart, target);
-    }
-    _renderCropSteeringSchedule() {
-        const shots = this._computeCropSteeringCycle();
-        const phases = this._computePhases();
-        if (!phases) {
-            return x `
-        <div class="detail-card crop-steering-schedule">
-          <div
-            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
-          >
-            <h3 style="margin:0;">Crop Steering Schedule</h3>
-          </div>
-          <p style="font-size:0.8rem;opacity:0.6;text-align:center;margin-top:12px;">
-            No strategy configured — set Lights On Time in the Steering tab.
-          </p>
-        </div>
-      `;
-        }
-        const { lightsOnMin, lightsOffMin, lightHours } = phases;
-        const p2ShotCount = shots.length;
-        // The legend below flags missing sensors based on what the fetched history
-        // reports — the chart component does its own fetching, but the dialog keeps a
-        // read-only view of the same shared atom for this presence check.
-        const growspaceId = this.device?.deviceId ?? '';
-        const history = this._cropSteeringHistoryController?.value?.get(growspaceId);
-        const hasPoreEc = history?.pore_ec !== undefined;
-        const hasBulkEc = history?.bulk_ec !== undefined;
-        return x `
-      <div class="detail-card crop-steering-schedule">
-        <!-- Header -->
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
-        >
-          <div style="display:flex;align-items:center;gap:6px;">
-            <h3 style="margin:0;">Crop Steering Schedule</h3>
-            <gs-help-tooltip
-              content="Auto-generated irrigation shots based on your VWC strategy settings. Read-only — edit timing in the Steering tab."
-              placement="top"
-              label="Crop Steering Schedule"
-            ></gs-help-tooltip>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:0.75rem;opacity:0.55;"
-              >${p2ShotCount} shots · ${lightHours}h photoperiod</span
-            >
-            <span class="auto-pill"><span class="pulse-dot"></span>Auto</span>
-          </div>
-        </div>
-
-        <div class="cs-timeline">
-          <!-- Phase strip + shot track + substrate model: all owned by the shared chart -->
-          <crop-steering-day-chart .device=${this.device}></crop-steering-day-chart>
-
-          <!-- Legend: flags missing sensors only — the readout above already
-               supplies the color-to-trace mapping for configured metrics -->
-          <div class="cs-legend">
-            ${!hasPoreEc
-            ? x `
-                  <span class="cs-leg-chip" style="opacity:0.4;">
-                    Pore EC not configured — add it in Environment Settings
-                  </span>
-                `
-            : ''}
-            ${!hasBulkEc
-            ? x `
-                  <span class="cs-leg-chip" style="opacity:0.4;">
-                    Bulk EC not configured — add it in Environment Settings
-                  </span>
-                `
-            : ''}
-          </div>
-          <div class="cs-legend">
-            ${phases.phases.map((p) => x `
-                <span class="cs-leg-chip">
-                  <span class="cs-leg-dot" style="background:${p.color};"></span>
-                  <strong>${p.label}</strong> ${p.name}${p.id === 'p2'
-            ? x ` · ${p2ShotCount} shots`
-            : E}
-                  · ${p.target}
-                </span>
-              `)}
-            <span class="cs-leg-chip">
-              <span
-                style="width:8px;height:8px;border-radius:50%;background:rgba(255,235,59,0.85);flex-shrink:0;"
-              ></span>
-              ${this._fmtMin(lightsOnMin)}–${this._fmtMin(lightsOffMin)} · ${lightHours}h
-              photoperiod
-            </span>
-          </div>
-
-          ${shots.length === 0
-            ? x `
-                <p style="font-size:0.8rem;opacity:0.6;text-align:center;margin-top:4px;">
-                  No shots computed — check lights-on time and interval in the Steering tab.
-                </p>
-              `
-            : E}
-        </div>
-      </div>
-    `;
-    }
-    _renderSchedulesTab(color) {
-        const drainTimes = this.device?.irrigationConfig?.drainTimes || [];
-        const schedulesDraft = this._sm.tabs.schedules.draft;
-        const isCropSteering = !!this._sm.tabs.steering.draft.enabled;
-        return x `
-      ${isCropSteering
-            ? x `
-            <div class="info-banner banner-cs">
-              <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24">
-                <path d="${MDI_INFO}"></path>
-              </svg>
-              <div>
-                <strong>Crop Steering is active</strong> — irrigation cycles are computed
-                automatically from VWC targets.
-                <a
-                  href="#"
-                  style="color:#4CAF50;margin-left:4px;"
-                  @click=${(e) => {
-                e.preventDefault();
-                this._sm = requestTabSwitch(this._sm, 'steering', this.device);
-            }}
-                  >Open Crop Steering →</a
-                >
-              </div>
-            </div>
-            ${this._renderCropSteeringSchedule()}
-          `
-            : x `
-            ${this._renderScheduleSection('Irrigation Schedule', this.device?.irrigationConfig?.irrigationTimes || [], schedulesDraft.irrigationDuration, 'irrigation', color)}
-          `}
-      ${schedulesDraft.drainPumpEntity
-            ? this._renderScheduleSection('Drain Schedule', drainTimes, schedulesDraft.drainDuration, 'drain', '#FF9800')
-            : E}
-      ${!isCropSteering
-            ? x `
-            <div class="info-banner nudge-card">
-              <svg
-                style="width:14px;height:14px;flex-shrink:0;fill:currentColor;"
-                viewBox="0 0 24 24"
-              >
-                <path d="${MDI_INFO}"></path>
-              </svg>
-              <div>
-                Enable <strong>Crop Steering</strong> in the Steering tab to switch from a fixed
-                daily plan to a phase-driven schedule that adapts to VWC targets.
-                <a
-                  href="#"
-                  style="color:var(--stage-color,${color});margin-left:4px;"
-                  @click=${(e) => {
-                e.preventDefault();
-                this._sm = requestTabSwitch(this._sm, 'steering', this.device);
-            }}
-                  >Open Crop Steering →</a
-                >
-              </div>
-            </div>
-          `
-            : E}
-    `;
-    }
-    _renderScheduleSection(title, times, defaultDuration, type, color) {
-        const nowMinutes = this._getNowMinutes();
-        const schedulesSub = this._sm.tabs.schedules.sub;
-        const addingTime = type === 'irrigation' && schedulesSub.kind === 'adding-irrigation'
-            ? schedulesSub
-            : type === 'drain' && schedulesSub.kind === 'adding-drain'
-                ? schedulesSub
-                : undefined;
-        const editingTime = type === 'irrigation' && schedulesSub.kind === 'editing-irrigation'
-            ? schedulesSub
-            : type === 'drain' && schedulesSub.kind === 'editing-drain'
-                ? schedulesSub
-                : undefined;
-        const chipClass = type === 'irrigation' ? 'irrig-chip' : 'drain-chip';
-        const validTimes = times.filter((t) => t && (t.time || t.start_time));
-        return x `
-      <div class="detail-card">
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
-        >
-          <div style="display:flex;align-items:center;gap:6px;">
-            <h3 style="margin:0;">${title}</h3>
-            <gs-help-tooltip
-              content=${type === 'irrigation'
-            ? 'Each block is a scheduled irrigation event. Click a block to edit it, or click anywhere on the track to add a new one.'
-            : 'Each block is a scheduled drain event. Run drain after irrigation to remove excess runoff.'}
-              placement="top"
-              label=${title}
-            ></gs-help-tooltip>
-          </div>
-          <button
-            class="md3-button primary btn-add-time"
-            style="background:${color};"
-            @click=${() => this._openAddTimeDialog(type)}
-          >
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiPlus}"></path>
-            </svg>
-            ADD TIME
-          </button>
-        </div>
-
-        <!-- Timeline track -->
-        <div
-          class="${type}-time-bar timeline-track"
-          style="border-color:${color}40;"
-          @click=${(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            if (type === 'irrigation')
-                this._startAddingIrrigationTime(e.clientX - rect.left, rect.width);
-            else
-                this._startAddingDrainTime(e.clientX - rect.left, rect.width);
-        }}
-        >
-          ${Array.from({ length: 25 }, (_, i) => i).map((h) => x `
-              <div
-                class="grid-v ${h % 6 === 0 ? 'major' : ''}"
-                style="left:${(h / 24) * 100}%;"
-              ></div>
-              ${h % 3 === 0
-            ? x `
-                    <span class="x-label" style="left:${(h / 24) * 100}%;">
-                      ${h.toString().padStart(2, '0')}:00
-                    </span>
-                  `
-            : E}
-            `)}
-
-          <!-- Event blocks -->
-          ${validTimes.map((t) => {
-            const timeStr = (t.time || t.start_time);
-            const [hh, mm] = timeStr.split(':').map(Number);
-            const startMin = hh * 60 + (mm || 0);
-            const dur = t.duration || t.duration_seconds || defaultDuration;
-            const leftPct = (startMin / 1440) * 100;
-            const widthPct = (dur / 86400) * 100;
-            const isPast = startMin < nowMinutes;
-            return x `
-              <div
-                class="timeline-event ${isPast ? 'completed' : ''}"
-                style="
-                  left: ${leftPct}%;
-                  width: max(${widthPct}%, 18px);
-                  background: ${color};
-                  box-shadow: 0 0 0 1px ${color}99, 0 2px 6px ${color}55;
-                "
-                @click=${(e) => {
-                e.stopPropagation();
-                if (type === 'irrigation')
-                    this._startEditingIrrigationTime(timeStr, dur);
-                else
-                    this._startEditingDrainTime(timeStr, dur);
-            }}
-                title="${timeStr.substring(0, 5)} · ${dur}s"
-              >
-                <span class="event-lbl">${timeStr.substring(0, 5)}</span>
-              </div>
-            `;
-        })}
-
-          <!-- Now line -->
-          <div class="now-line" style="left:${(nowMinutes / 1440) * 100}%;"></div>
-        </div>
-
-        <!-- Time chips -->
-        <div class="time-chips">
-          ${validTimes.map((t) => {
-            const timeStr = (t.time || t.start_time);
-            const [hh, mm] = timeStr.split(':').map(Number);
-            const startMin = hh * 60 + (mm || 0);
-            const dur = t.duration || t.duration_seconds || defaultDuration;
-            const isPast = startMin < nowMinutes;
-            return x `
-              <span class="time-chip ${chipClass}">
-                ${isPast
-                ? x `
-                      <svg
-                        style="width:12px;height:12px;fill:#4caf50;flex-shrink:0;"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="${MDI_CHECK}"></path>
-                      </svg>
-                    `
-                : E}
-                ${timeStr.substring(0, 5)}
-                <span class="chip-dur">· ${Math.max(1, Math.round(dur / 60))}m</span>
-                <button
-                  class="chip-remove"
-                  @click=${(e) => {
-                e.stopPropagation();
-                if (type === 'irrigation')
-                    this._removeIrrigationTime(timeStr).catch(() => this._showErrorToast('Failed to remove irrigation time'));
-                else
-                    this._removeDrainTime(timeStr).catch(() => { });
-            }}
-                  title="Remove"
-                >
-                  ×
-                </button>
-              </span>
-            `;
-        })}
-          <button class="time-chip new-chip" @click=${() => this._openAddTimeDialog(type)}>
-            + New
-          </button>
-        </div>
-
-        <!-- Add overlay -->
-        ${addingTime
-            ? x `
-              <div class="overlay-backdrop" @click=${() => this._cancelAddTime(type)}>
-                <div
-                  class="detail-card"
-                  style="max-width:400px;margin:0;background:#2d2d2d;width:90%;"
-                  @click=${(e) => e.stopPropagation()}
-                >
-                  <h3>Add ${title} Time</h3>
-                  <md3-text-input
-                    label="Time"
-                    type="time"
-                    .value=${addingTime.time}
-                    @change=${(e) => {
-                const val = e.target.value || e.detail;
-                if (type === 'irrigation')
-                    this._sm = transition$4(this._sm, {
-                        type: 'UPDATE_ADD_IRRIGATION',
-                        time: val,
-                    });
-                else
-                    this._sm = transition$4(this._sm, { type: 'UPDATE_ADD_DRAIN', time: val });
-            }}
-                  ></md3-text-input>
-                  <div
-                    style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);"
-                  >
-                    <span
-                      >${type === 'irrigation'
-                ? 'Shot Duration (seconds)'
-                : 'Drain Duration (seconds)'}</span
-                    >
-                    <gs-help-tooltip
-                      content=${type === 'irrigation'
-                ? 'How long the irrigation pump runs per shot. Typical: 15–120 seconds.'
-                : 'How long the drain pump runs. Too short = waterlogging.'}
-                      placement="right"
-                      label=${type === 'irrigation' ? 'Shot Duration' : 'Drain Duration'}
-                    ></gs-help-tooltip>
-                  </div>
-                  <md3-number-input
-                    label="Duration (seconds)"
-                    .value=${addingTime.duration}
-                    .min=${1}
-                    @change=${(e) => {
-                const val = parseInt(e.detail);
-                if (!isNaN(val)) {
-                    if (type === 'irrigation')
-                        this._sm = transition$4(this._sm, {
-                            type: 'UPDATE_ADD_IRRIGATION',
-                            duration: val,
-                        });
-                    else
-                        this._sm = transition$4(this._sm, {
-                            type: 'UPDATE_ADD_DRAIN',
-                            duration: val,
-                        });
-                }
-            }}
-                  ></md3-number-input>
-                  <div class="button-group">
-                    <button class="md3-button tonal" @click=${() => this._cancelAddTime(type)}>
-                      Cancel
-                    </button>
-                    <button
-                      class="md3-button primary"
-                      @click=${() => {
-                if (type === 'irrigation')
-                    this._addIrrigationTime(addingTime.time, addingTime.duration).catch(() => this._showErrorToast('Failed to add irrigation time'));
-                else
-                    this._addDrainTime(addingTime.time, addingTime.duration).catch(() => { });
-            }}
-                      style="background:${color};"
-                    >
-                      Add Schedule
-                    </button>
-                  </div>
-                </div>
-              </div>
-            `
-            : ''}
-
-        <!-- Edit overlay -->
-        ${editingTime
-            ? x `
-              <div class="overlay-backdrop" @click=${() => this._cancelEditTime(type)}>
-                <div
-                  class="detail-card"
-                  style="max-width:400px;margin:0;background:#2d2d2d;width:90%;"
-                  @click=${(e) => e.stopPropagation()}
-                >
-                  <h3>Edit ${title} Time</h3>
-                  <md3-text-input
-                    label="Time"
-                    type="time"
-                    .value=${editingTime.time}
-                    @change=${(e) => {
-                const val = e.target.value || e.detail;
-                if (type === 'irrigation')
-                    this._sm = transition$4(this._sm, {
-                        type: 'UPDATE_EDIT_IRRIGATION',
-                        time: val,
-                    });
-                else
-                    this._sm = transition$4(this._sm, { type: 'UPDATE_EDIT_DRAIN', time: val });
-            }}
-                  ></md3-text-input>
-                  <div
-                    style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);"
-                  >
-                    <span
-                      >${type === 'irrigation'
-                ? 'Shot Duration (seconds)'
-                : 'Drain Duration (seconds)'}</span
-                    >
-                    <gs-help-tooltip
-                      content=${type === 'irrigation'
-                ? 'How long the irrigation pump runs per shot.'
-                : 'How long the drain pump runs.'}
-                      placement="right"
-                      label=${type === 'irrigation' ? 'Shot Duration' : 'Drain Duration'}
-                    ></gs-help-tooltip>
-                  </div>
-                  <md3-number-input
-                    label="Duration (seconds)"
-                    .value=${editingTime.duration}
-                    .min=${1}
-                    @change=${(e) => {
-                const val = parseInt(e.detail);
-                if (!isNaN(val)) {
-                    if (type === 'irrigation')
-                        this._sm = transition$4(this._sm, {
-                            type: 'UPDATE_EDIT_IRRIGATION',
-                            duration: val,
-                        });
-                    else
-                        this._sm = transition$4(this._sm, {
-                            type: 'UPDATE_EDIT_DRAIN',
-                            duration: val,
-                        });
-                }
-            }}
-                  ></md3-number-input>
-                  <div class="edit-dialog-buttons">
-                    <button
-                      class="md3-button delete-button"
-                      @click=${() => type === 'irrigation'
-                ? this._deleteIrrigationTimeFromEdit()
-                : this._deleteDrainTimeFromEdit()}
-                    >
-                      Delete
-                    </button>
-                    <div class="spacer"></div>
-                    <div class="action-buttons">
-                      <button class="md3-button tonal" @click=${() => this._cancelEditTime(type)}>
-                        Cancel
-                      </button>
-                      <button
-                        class="md3-button primary"
-                        @click=${() => type === 'irrigation'
-                ? this._saveEditedIrrigationTime()
-                : this._saveEditedDrainTime()}
-                        style="background:${color};"
-                      >
-                        Save Changes
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            `
-            : ''}
-      </div>
-    `;
-    }
-    _openAddTimeDialog(type) {
-        if (type === 'irrigation') {
-            this._sm = transition$4(this._sm, {
-                type: 'BEGIN_ADD_IRRIGATION',
-                time: '12:00',
-                duration: this._sm.tabs.schedules.draft.irrigationDuration,
-            });
-        }
-        else {
-            this._sm = transition$4(this._sm, {
-                type: 'BEGIN_ADD_DRAIN',
-                time: '12:00',
-                duration: this._sm.tabs.schedules.draft.drainDuration,
-            });
-        }
-    }
-    _cancelAddTime(_type) {
-        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
-    }
-    _cancelEditTime(_type) {
-        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
-    }
-    _handlePhaseCardClick(phaseId) {
-        if (this._sm.tabs.steering.phase === phaseId)
-            return;
-        this._sm = transition$4(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: phaseId });
-    }
-    _confirmPhaseChange() {
-        this._sm = transition$4(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
-        this._saveSettings();
-    }
-    _cancelPhaseChange() {
-        this._sm = transition$4(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
-    }
-    _handleSteeringModeClick(mode) {
-        this._sm = transition$4(this._sm, { type: 'REQUEST_STEERING_MODE', mode });
-    }
-    _cancelSteeringMode() {
+    /** Cancel/close the Steering Mode confirm overlay. */
+    _onSteeringModeCancelled() {
         this._sm = transition$4(this._sm, { type: 'CANCEL_STEERING_MODE' });
     }
-    async _confirmSteeringMode() {
+    /**
+     * Confirm the Steering Mode (ADR-0012): close the overlay, then apply the preset
+     * through the store action — the canonical write path; the server stamps the
+     * preset and the new field values arrive via device sync.
+     */
+    async _onSteeringModeConfirmed() {
         const sub = this._sm.tabs.steering.sub;
         if (sub.kind !== 'confirm-mode')
             return;
@@ -30422,2567 +35779,290 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._sm = transition$4(this._sm, { type: 'CANCEL_STEERING_MODE' });
         if (!id)
             return;
-        // The slice mutator (via the store action) is the canonical write path; the
-        // server stamps the preset and the new field values arrive via device sync.
         await this.store?.actions.irrigation.applySteeringMode(id, sub.pending);
     }
-    // ─── Steering tab ─────────────────────────────────────────────────────────
-    /**
-     * Adaptive Shot Control (ADR-0014): master toggle plus the shared feedback
-     * tunables that govern how the loop reacts to the substrate's response —
-     * shrinking the shot and lengthening the interval on overshoot, recovering
-     * toward nominal on undershoot. Tunables are hidden while disabled.
-     */
-    _renderAdaptiveShotControl() {
-        const draft = this._sm.tabs.steering.draft;
-        const enabled = draft.dynamicShotEnabled ?? true;
-        return x `
-      <div style="grid-column:span 2;margin-top:12px;">
-        <div
-          style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
-        >
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span>Adaptive Shot Control</span>
-            <gs-help-tooltip
-              content="When on, each shot's effect on VWC tunes the next one: overshoot shrinks the shot and lengthens the interval; undershoot recovers both toward nominal. Off freezes shots at the configured size and interval."
-            ></gs-help-tooltip>
-          </div>
-          <md3-switch
-            data-field="dynamicShotEnabled"
-            .checked=${enabled}
-            @change=${(e) => this._updateStrategyField('dynamicShotEnabled', e.target.checked)}
-          ></md3-switch>
-        </div>
-        ${enabled
-            ? x `
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-                <md3-number-input
-                  data-field="dynamicAggressiveness"
-                  label="Aggressiveness"
-                  step="0.1"
-                  .value=${String(draft.dynamicAggressiveness ?? 1.0)}
-                  @change=${(e) => this._updateStrategyField('dynamicAggressiveness', parseFloat(e.detail))}
-                ></md3-number-input>
-                <md3-number-input
-                  data-field="dynamicRecovery"
-                  label="Recovery"
-                  step="0.05"
-                  .value=${String(draft.dynamicRecovery ?? 0.1)}
-                  @change=${(e) => this._updateStrategyField('dynamicRecovery', parseFloat(e.detail))}
-                ></md3-number-input>
-                <md3-number-input
-                  data-field="dynamicShotSizeFloor"
-                  label="Shot Size Floor (×)"
-                  step="0.05"
-                  .value=${String(draft.dynamicShotSizeFloor ?? 0.5)}
-                  @change=${(e) => this._updateStrategyField('dynamicShotSizeFloor', parseFloat(e.detail))}
-                ></md3-number-input>
-                <md3-number-input
-                  data-field="dynamicIntervalCeiling"
-                  label="Interval Ceiling (×)"
-                  step="0.1"
-                  .value=${String(draft.dynamicIntervalCeiling ?? 1.5)}
-                  @change=${(e) => this._updateStrategyField('dynamicIntervalCeiling', parseFloat(e.detail))}
-                ></md3-number-input>
-              </div>
-            `
-            : E}
-      </div>
-    `;
+    /** Open the phase-change confirm overlay (ADR-0012). */
+    _onPhaseChangeRequested(e) {
+        if (this._sm.tabs.steering.phase === e.detail.phase)
+            return;
+        this._sm = transition$4(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: e.detail.phase });
     }
-    /**
-     * Per-phase P1/P2 shot parameters. The edited field and its unit label follow
-     * the active Shot Sizing Mode (seconds vs. percent of substrate volume); the
-     * shot interval is always expressed in minutes.
-     */
-    _renderPhaseShotParams() {
-        const draft = this._sm.tabs.steering.draft;
-        // Sizing mode persists immediately on the Substrate & EC tab (ADR-0017), so
-        // the relabel reads the live strategy rather than a buffered draft field.
-        const isVolume = (this.device?.irrigationStrategy?.shotSizingMode ?? 'seconds') === 'volume';
-        const phases = [
-            { id: 'p1', label: 'P1' },
-            { id: 'p2', label: 'P2' },
-        ];
-        return phases.map((p) => {
-            const sizeField = isVolume
-                ? `${p.id}ShotVolumePercent`
-                : `${p.id}ShotDurationSeconds`;
-            const sizeLabel = isVolume
-                ? `${p.label} Shot Size (%)`
-                : `${p.label} Shot Duration (sec)`;
-            const intervalField = `${p.id}ShotIntervalMinutes`;
-            return x `
-        <md3-number-input
-          data-field=${sizeField}
-          label=${sizeLabel}
-          .value=${String(draft[sizeField] ?? '')}
-          @change=${(e) => this._updateStrategyField(sizeField, isVolume ? parseFloat(e.detail) : parseInt(e.detail))}
-        ></md3-number-input>
-        <md3-number-input
-          data-field=${intervalField}
-          label="${p.label} Shot Interval (min)"
-          .value=${String(draft[intervalField] ?? '')}
-          @change=${(e) => this._updateStrategyField(intervalField, parseInt(e.detail))}
-        ></md3-number-input>
-      `;
-        });
+    /** Confirm the phase change (ADR-0012): commit the transition, then persist. */
+    _onPhaseChangeConfirmed() {
+        this._sm = transition$4(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
+        this._saveSettings();
     }
-    /**
-     * Steering Mode selector (ADR-0012). Selecting a mode opens a confirm step;
-     * confirming stamps the server-owned preset into the editable fields. The
-     * declared mode renders as the active option.
-     */
-    _renderSteeringModeSelector() {
-        const declared = this._sm.tabs.steering.draft.declaredSteeringMode ?? null;
-        const modes = [
-            { id: 'vegetative', name: 'Vegetative', desc: 'Frequent shots, small dryback — vegetative push.' },
-            { id: 'balanced', name: 'Balanced', desc: 'Middle ground between vegetative and generative.' },
-            { id: 'generative', name: 'Generative', desc: 'Fewer, larger shots and deeper dryback — generative push.' },
-        ];
-        return x `
-      <div class="detail-card">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <h3 style="margin:0;">Steering Mode</h3>
-          <gs-help-tooltip
-            content="Selecting a mode stamps recommended setpoints (dryback, P2-stop offset, pore-EC band, shot sizes) into the editable fields below. You can fine-tune afterwards."
-          ></gs-help-tooltip>
-        </div>
-        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
-          ${declared
-            ? x `Declared intent: <strong>${declared}</strong>`
-            : 'No mode declared yet.'}
-        </p>
-        <div class="phase-grid">
-          ${modes.map((m) => x `
-              <div
-                class="phase-card ${declared === m.id ? 'active' : ''}"
-                data-steering-mode=${m.id}
-                @click=${() => this._handleSteeringModeClick(m.id)}
-              >
-                <div class="phase-nm">${m.name}</div>
-                <div class="phase-desc">${m.desc}</div>
-              </div>
-            `)}
-        </div>
-      </div>
-    `;
-    }
-    _renderSteeringModeConfirm() {
-        const sub = this._sm.tabs.steering.sub;
-        const pending = sub.kind === 'confirm-mode' ? sub.pending : '';
-        return x `
-      <gs-dialog
-        .open=${sub.kind === 'confirm-mode'}
-        heading="Apply Steering Mode"
-        .iconPath=${mdiAlert}
-        stageColor="var(--warning-color, #ff9800)"
-        @close=${this._cancelSteeringMode}
-      >
-        <div style="padding: 20px;">
-          <p style="margin: 0 0 12px 0;">
-            Apply the <strong>${pending}</strong> preset? This overwrites these fields with
-            recommended values:
-          </p>
-          <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem; opacity: 0.85; line-height: 1.5;">
-            <li>Maintenance Dryback</li>
-            <li>P2 Stop Buffer</li>
-            <li>Pore EC Target Band</li>
-            <li>Per-phase shot sizes</li>
-          </ul>
-        </div>
-        <div
-          class="button-group"
-          style="padding: 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1);"
-        >
-          <button class="md3-button tonal" @click=${this._cancelSteeringMode}>Cancel</button>
-          <button
-            class="md3-button primary"
-            data-action="confirm-steering-mode"
-            @click=${this._confirmSteeringMode}
-          >
-            Apply
-          </button>
-        </div>
-      </gs-dialog>
-    `;
-    }
-    _renderSteeringTab(_color) {
-        return x `
-      ${this._renderSteeringModeSelector()}
-
-      <!-- Phase cards -->
-      <div class="detail-card">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-          <h3 style="margin:0;">Crop Steering Phases</h3>
-          <gs-help-tooltip
-            content="Crop steering shapes the feeding pattern across three daily phases. P1 = saturation, P2 = maintenance, P3 = dryback."
-            placement="top"
-            label="Crop Steering Phases"
-          ></gs-help-tooltip>
-        </div>
-        <div class="phase-grid">
-          ${[
-            {
-                id: 'p1',
-                label: 'P1',
-                name: 'Saturation',
-                desc: 'Bring substrate to field capacity through frequent short shots.',
-            },
-            {
-                id: 'p2',
-                label: 'P2',
-                name: 'Maintenance',
-                desc: 'Maintain EC and irrigate to plant uptake — runoff target.',
-            },
-            {
-                id: 'p3',
-                label: 'P3',
-                name: 'Dryback',
-                desc: 'Final stretch of the photoperiod — controlled substrate dry.',
-            },
-        ].map((p) => x `
-              <div
-                class="phase-card ${this._sm.tabs.steering.phase === p.id ? 'active' : ''}"
-                @click=${() => this._handlePhaseCardClick(p.id)}
-              >
-                <div class="phase-num">Phase · ${p.label}</div>
-                <div class="phase-nm">${p.name}</div>
-                <div class="phase-desc">${p.desc}</div>
-              </div>
-            `)}
-        </div>
-      </div>
-
-      <!-- VWC strategy parameters -->
-      <div class="detail-card">
-        <h3 style="margin-top:0;">VWC Strategy Configuration</h3>
-        <p style="font-size:0.8rem;opacity:0.7;margin-bottom:20px;">
-          Enable logic-based irrigation based on volumetric water content (VWC) targets. Overrides
-          basic schedules when active.
-        </p>
-
-        <div
-          style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;"
-        >
-          <span>Enable VWC Steering</span>
-          <md3-switch
-            data-field="enabled"
-            .checked=${this._sm.tabs.steering.draft.enabled}
-            @change=${(e) => this._updateStrategyField('enabled', e.target.checked)}
-          ></md3-switch>
-        </div>
-
-        ${(this.device?.environmentAttributes?.lightSensors?.length ?? 0) > 0
-            ? x `
-              <div
-                style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;"
-              >
-                <span>Auto Track from Light Sensor</span>
-                <md3-switch
-                  data-field="autoLightTracking"
-                  .checked=${!!this._sm.tabs.steering.draft.autoLightTracking}
-                  @change=${(e) => this._updateStrategyField('autoLightTracking', e.target.checked)}
-                ></md3-switch>
-              </div>
-            `
-            : ''}
-
-        <div style="display:flex;flex-direction:column;gap:16px;">
-          <div class="vwc-targets-group">
-            <div class="vwc-targets-group-title" style="display:flex;align-items:center;gap:6px;">
-              P1 Thresholds
-              <gs-help-tooltip
-                content="Saturation Target: P1 ramps up until substrate VWC reaches this value, then switches to P2 maintenance."
-              ></gs-help-tooltip>
-            </div>
-            <md3-number-input
-              label="Saturation Target (%)"
-              .value=${this._sm.tabs.steering.draft.targetVwcPercent}
-              @change=${(e) => this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
-            ></md3-number-input>
-          </div>
-
-          <div class="vwc-targets-group">
-            <div class="vwc-targets-group-title" style="display:flex;align-items:center;gap:6px;">
-              P2 Thresholds
-              <gs-help-tooltip
-                content="Maintenance Dryback: shots fire in P2 when VWC drops this many % below the saturation target. P2 Direct Trigger: optional — if set, bypasses the calculated threshold and fires directly when VWC drops below this value."
-              ></gs-help-tooltip>
-            </div>
-            <md3-number-input
-              label="Maintenance Dryback (%)"
-              .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
-              @change=${(e) => this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
-            ></md3-number-input>
-            <md3-number-input
-              label="P2 Direct Trigger (%)"
-              placeholder="Off"
-              .value=${this._sm.tabs.config.draft.soilTriggerPercent != null
-            ? String(this._sm.tabs.config.draft.soilTriggerPercent)
-            : ''}
-              @change=${(e) => {
-            const v = e.detail;
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_CONFIG_DRAFT',
-                partial: { soilTriggerPercent: v !== '' && v != null ? parseFloat(String(v)) : null },
-            });
-        }}
-            ></md3-number-input>
-          </div>
-        </div>
-
-          <h4 style="margin:4px 0;margin-top:12px;">Timing</h4>
-
-          <div style="display:flex;align-items:center;gap:8px;">
-            <md3-text-input
-              label="Lights On Time"
-              type="time"
-              data-scroll-target="lightsOnTime"
-              .value=${this._sm.tabs.steering.draft.lightsOnTime}
-              @change=${(e) => this._updateStrategyField('lightsOnTime', e.target.value || e.detail)}
-            ></md3-text-input>
-            ${this._sm.tabs.steering.draft.detectedLightsOnTime
-            ? x `
-                  <span class="auto-lights-badge"
-                    >auto: ${this._sm.tabs.steering.draft.detectedLightsOnTime}</span
-                  >
-                `
-            : ''}
-          </div>
-          <md3-number-input
-            label="P0 Duration (min)"
-            .value=${this._sm.tabs.steering.draft.p0DurationMinutes}
-            @change=${(e) => this._updateStrategyField('p0DurationMinutes', parseInt(e.detail))}
-          ></md3-number-input>
-          <md3-number-input
-            label="P2 Stop Buffer (min)"
-            .value=${this._sm.tabs.steering.draft.p2StopBeforeLightsOffMinutes}
-            @change=${(e) => this._updateStrategyField('p2StopBeforeLightsOffMinutes', parseInt(e.detail))}
-          ></md3-number-input>
-
-          <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Dosing</h4>
-
-          ${this._renderPhaseShotParams()}
-          ${this._renderAdaptiveShotControl()}
-        </div>
-      </div>
-
-      <!-- Phase Triggers -->
-      <div class="detail-card">
-        <div style="margin-bottom:14px;">
-          <h3 style="margin:0;">Phase Triggers</h3>
-        </div>
-        <div style="margin-bottom:8px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div>
-              <div class="stub-row-label">Auto-advance P1 → P2</div>
-              <div class="stub-row-desc">When substrate moisture reaches field capacity</div>
-            </div>
-            <md3-switch
-              data-field="autoAdvanceP1ToP2"
-              .checked=${this._sm.tabs.config.draft.autoAdvanceP1ToP2}
-              @change=${(e) => {
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_CONFIG_DRAFT',
-                partial: { autoAdvanceP1ToP2: e.target.checked },
-            });
-        }}
-            ></md3-switch>
-          </div>
-        </div>
-        <div style="margin-bottom:8px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div>
-              <div class="stub-row-label">Auto-advance P2 → P3</div>
-              <div class="stub-row-desc">N hours before lights-off (per stage)</div>
-            </div>
-            <md3-switch
-              data-field="autoAdvanceP2ToP3"
-              .checked=${this._sm.tabs.config.draft.autoAdvanceP2ToP3}
-              @change=${(e) => {
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_CONFIG_DRAFT',
-                partial: { autoAdvanceP2ToP3: e.target.checked },
-            });
-        }}
-            ></md3-switch>
-          </div>
-        </div>
-        <div>
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div>
-              <div class="stub-row-label">Halt on Runoff EC</div>
-              <div class="stub-row-desc">Suspend cycles and alert until manual resume</div>
-            </div>
-            <md3-switch
-              data-field="haltOnRunoffEc"
-              .checked=${this._sm.tabs.config.draft.haltOnRunoffEcThreshold !== null}
-              @change=${(e) => {
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_CONFIG_DRAFT',
-                partial: { haltOnRunoffEcThreshold: e.target.checked ? 4.0 : null },
-            });
-        }}
-            ></md3-switch>
-          </div>
-          ${this._sm.tabs.config.draft.haltOnRunoffEcThreshold !== null
-            ? x `
-                <div style="margin-top:10px;">
-                  <md3-number-input
-                    data-field="haltOnRunoffEcValue"
-                    label="EC Threshold"
-                    min="0.1"
-                    step="0.1"
-                    .value=${String(this._sm.tabs.config.draft.haltOnRunoffEcThreshold)}
-                    @change=${(e) => {
-                const v = parseFloat(e.detail ?? e.target.value);
-                if (!isNaN(v))
-                    this._sm = transition$4(this._sm, {
-                        type: 'UPDATE_CONFIG_DRAFT',
-                        partial: { haltOnRunoffEcThreshold: v },
-                    });
-            }}
-                  ></md3-number-input>
-                </div>
-              `
-            : E}
-        </div>
-      </div>
-
-      ${this._renderSteeringModeConfirm()}
-
-      <!-- Phase trigger confirmation dialog -->
-      <gs-dialog
-        .open=${this._sm.tabs.steering.sub.kind === 'confirm-phase'}
-        heading="Confirm Phase Transition"
-        .iconPath=${mdiAlert}
-        stageColor="var(--warning-color, #ff9800)"
-        @close=${this._cancelPhaseChange}
-      >
-        <div style="padding: 20px;">
-          <p style="margin: 0 0 12px 0;">
-            Are you sure you want to transition from
-            <strong>${this._sm.tabs.steering.phase.toUpperCase()}</strong> to
-            <strong
-              >${this._sm.tabs.steering.sub.kind === 'confirm-phase'
-            ? this._sm.tabs.steering.sub.pending.toUpperCase()
-            : ''}</strong
-            >?
-          </p>
-          <p style="margin: 0; font-size: 0.9rem; opacity: 0.8; line-height: 1.4;">
-            Manually shifting phases overrides the current schedule instantly. This is a severe
-            change that will disrupt timing and dosing parameters.
-          </p>
-        </div>
-        <div
-          class="button-group"
-          style="padding: 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1);"
-        >
-          <button class="md3-button tonal" @click=${this._cancelPhaseChange}>Cancel</button>
-          <button class="md3-button primary" @click=${this._confirmPhaseChange}>Confirm</button>
-        </div>
-      </gs-dialog>
-    `;
-    }
-    // ─── Configuration tab ───────────────────────────────────────────────────
-    _renderConfigSection() {
-        return x `
-      <div class="detail-card">
-        <div class="section-header"><h3>Pump Configuration</h3></div>
-        <div class="section-content">
-          ${this._renderEntitySelect('Irrigation Pump', this._sm.tabs.schedules.draft.irrigationPumpEntity, ['switch', 'input_boolean'], (e) => {
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_SCHEDULES_DRAFT',
-                partial: { irrigationPumpEntity: e.target.value },
-            });
-        })}
-          ${this._renderEntitySelect('Drain Pump (Optional)', this._sm.tabs.schedules.draft.drainPumpEntity, ['switch', 'input_boolean'], (e) => {
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_SCHEDULES_DRAFT',
-                partial: { drainPumpEntity: e.target.value },
-            });
-        })}
-        </div>
-      </div>
-
-      ${this._sm.tabs.steering.draft.enabled ? x `
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"
-        >
-          <h3 style="margin:0;">Safety Caps</h3>
-          <gs-help-tooltip
-            content="Optional hard limits on top of the steering logic. Leave blank to disable."
-          ></gs-help-tooltip>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div class="md3-input-group">
-            <label class="md3-label">Daily Volume Cap (L)</label>
-            <input
-              class="md3-input"
-              type="number"
-              min="0"
-              step="0.1"
-              .value=${this._sm.tabs.config.draft.dailyVolumeCapLiters != null
-            ? String(this._sm.tabs.config.draft.dailyVolumeCapLiters)
-            : ''}
-              placeholder="Off"
-              @change=${(e) => {
-            const v = e.target.value;
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_CONFIG_DRAFT',
-                partial: { dailyVolumeCapLiters: v ? parseFloat(v) : null },
-            });
-        }}
-            />
-          </div>
-          <div class="md3-input-group">
-            <label class="md3-label">Max Cycles / Day</label>
-            <input
-              class="md3-input"
-              type="number"
-              min="0"
-              step="1"
-              .value=${this._sm.tabs.config.draft.maxCyclesPerDay != null
-            ? String(this._sm.tabs.config.draft.maxCyclesPerDay)
-            : ''}
-              placeholder="Off"
-              @change=${(e) => {
-            const v = e.target.value;
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_CONFIG_DRAFT',
-                partial: { maxCyclesPerDay: v ? parseInt(v, 10) : null },
-            });
-        }}
-            />
-          </div>
-        </div>
-      </div>
-      ` : E}
-
-      ${this._hasPump ? x `
-      <div class="detail-card">
-        <h3 style="margin:0 0 14px;">Behaviour</h3>
-        ${!this._sm.tabs.steering.draft.enabled ? x `
-            <div class="stub-row" style="margin-bottom:8px;">
-              <div>
-                <div class="stub-row-label">Skip During Dark Period</div>
-                <div class="stub-row-desc">No cycles between lights-off and lights-on</div>
-              </div>
-              <md3-switch
-                .checked=${this._sm.tabs.config.draft.skipDuringDark}
-                @change=${(e) => {
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_CONFIG_DRAFT',
-                partial: { skipDuringDark: e.target.checked },
-            });
-        }}
-              ></md3-switch>
-            </div>
-        ` : E}
-        ${[
-            {
-                label: 'Pause on Tank Low',
-                desc: 'Halt cycles when any tank is below warning level',
-                get: () => this._sm.tabs.config.draft.pauseOnLowTank,
-                set: (v) => {
-                    this._sm = transition$4(this._sm, {
-                        type: 'UPDATE_CONFIG_DRAFT',
-                        partial: { pauseOnLowTank: v },
-                    });
-                },
-            },
-            {
-                label: 'Log to Logbook',
-                desc: 'Record start, duration, and moisture delta per cycle',
-                get: () => this._sm.tabs.config.draft.logToLogbook,
-                set: (v) => {
-                    this._sm = transition$4(this._sm, {
-                        type: 'UPDATE_CONFIG_DRAFT',
-                        partial: { logToLogbook: v },
-                    });
-                },
-            },
-        ].map((row) => x `
-            <div class="stub-row" style="margin-bottom:8px;">
-              <div>
-                <div class="stub-row-label">${row.label}</div>
-                <div class="stub-row-desc">${row.desc}</div>
-              </div>
-              <md3-switch
-                .checked=${row.get()}
-                @change=${(e) => {
-            row.set(e.target.checked);
-        }}
-              ></md3-switch>
-            </div>
-          `)}
-      </div>
-
-      <div class="detail-card">
-        <h3 style="margin:0 0 14px;">Manual Override</h3>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <button
-            class="action-btn${this._isRunningNow ? ' saving' : ''}"
-            ?disabled=${this._sm.status.kind === 'applying'}
-            @click=${this._handleRunNow}
-          >
-            ${this._isRunningNow ? 'Starting…' : '▶ Run Now'}
-          </button>
-          <span style="font-size:12px;opacity:0.55;">
-            Triggers one irrigation cycle immediately, bypassing the schedule.
-          </span>
-        </div>
-      </div>
-      ` : E}
-    `;
-    }
-    // ─── Tanks tab ────────────────────────────────────────────────────────────
-    _renderTanksTab() {
-        const tanks = this.device?.environmentAttributes?.irrigationTanks || [];
-        if (tanks.length === 0) {
-            return x `
-        <div class="detail-card" style="text-align:center;padding:40px;">
-          <p style="opacity:0.7;">No irrigation tanks configured for this growspace.</p>
-          <p style="font-size:0.9rem;opacity:0.5;">
-            Configure tank sensors in the Environment Settings to monitor tank levels.
-          </p>
-        </div>
-      `;
-        }
-        return x `
-      <div class="detail-card">
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
-        >
-          <h3 style="margin:0;">Tank Levels</h3>
-          <span style="font-size:11px;opacity:0.45;">Updates every 30 s</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          ${tanks.map((tank, i) => this._renderTankRow(tank, i))}
-        </div>
-        ${this._editingTankIndex !== null && this._tankDraft !== null
-            ? this._renderTankEditForm()
-            : E}
-      </div>
-    `;
-    }
-    _renderTankEditForm() {
-        const draft = this._tankDraft;
-        const entities = this._getEntities(['sensor', 'input_number']);
-        return x `
-      <div
-        class="tank-edit-form"
-        style="margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--divider-color,rgba(255,255,255,0.15));border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;"
-      >
-        <div class="md3-input-group">
-          <label class="md3-label">Sensor Entity *</label>
-          <input
-            class="md3-input"
-            list="tank-edit-sensor-datalist"
-            .value=${draft.sensorEntity}
-            @input=${(e) => {
-            this._tankDraft = {
-                ...this._tankDraft,
-                sensorEntity: e.target.value,
-            };
-        }}
-            placeholder="Search entity..."
-          />
-          <datalist id="tank-edit-sensor-datalist">
-            ${entities.map((s) => x `<option value="${s.entity_id}"></option>`)}
-          </datalist>
-        </div>
-        <div class="md3-input-group">
-          <label class="md3-label">Name</label>
-          <input
-            class="md3-input"
-            type="text"
-            .value=${draft.name}
-            @input=${(e) => {
-            this._tankDraft = {
-                ...this._tankDraft,
-                name: e.target.value,
-            };
-        }}
-            placeholder="e.g. Main Tank"
-          />
-        </div>
-        <div class="row-col-grid">
-          <div class="md3-input-group">
-            <label class="md3-label">Volume (L, optional)</label>
-            <input
-              class="md3-input"
-              type="number"
-              min="0"
-              .value=${draft.volumeLiters !== null ? String(draft.volumeLiters) : ''}
-              @input=${(e) => {
-            const v = parseFloat(e.target.value);
-            this._tankDraft = {
-                ...this._tankDraft,
-                volumeLiters: isNaN(v) ? null : v,
-            };
-        }}
-              placeholder="e.g. 200"
-            />
-          </div>
-          <div class="md3-input-group">
-            <label class="md3-label">Warning Level (%)</label>
-            <input
-              class="md3-input"
-              type="number"
-              min="0"
-              max="100"
-              .value=${String(draft.warningLevel)}
-              @input=${(e) => {
-            const v = parseInt(e.target.value, 10);
-            this._tankDraft = {
-                ...this._tankDraft,
-                warningLevel: isNaN(v) ? 30 : v,
-            };
-        }}
-            />
-          </div>
-        </div>
-        <div class="button-group">
-          <button class="md3-button tonal" @click=${this._cancelTankEdit}>Cancel</button>
-          <button class="md3-button primary" @click=${this._saveTankEdit}>Save</button>
-        </div>
-      </div>
-    `;
-    }
-    _renderTankRow(tank, index) {
-        const pct = tank.fillLevel ?? 0;
-        const isWarning = tank.isWarning;
-        const color = isWarning ? '#f44336' : (tank.hoursRemaining ?? 999) < 24 ? '#FF9800' : '#4caf50';
-        const depletionLabel = tank.depletionStatus === 'depleting'
-            ? '↓ Depleting'
-            : tank.depletionStatus === 'refilling'
-                ? '↑ Refilling'
-                : tank.depletionStatus === 'static'
-                    ? '— Stable'
-                    : '';
-        return x `
-      <div class="tank-row ${isWarning ? 'warning' : ''}">
-        <div class="tank-row-info">
-          <div class="tank-row-name">${tank.name}</div>
-          <div class="tank-bar-track">
-            <div
-              class="tank-bar-fill"
-              style="width:${Math.max(0, Math.min(100, pct))}%;background:${color};"
-            ></div>
-          </div>
-        </div>
-        <div class="tank-row-stat">
-          <div class="tank-row-pct" style="color:${color};">
-            ${tank.fillLevel !== null && tank.fillLevel !== undefined
-            ? `${pct.toFixed(0)}%`
-            : 'N/A'}
-            ${isWarning ? x `<span style="margin-left:4px;">⚠️</span>` : E}
-          </div>
-          ${depletionLabel || tank.hoursRemaining != null
-            ? x `
-                <div class="tank-row-sub">
-                  ${depletionLabel
-                ? x `${depletionLabel}${tank.hoursRemaining != null ? ' · ' : ''}`
-                : E}
-                  ${tank.hoursRemaining != null
-                ? (tank.hoursRemaining >= 48
-                    ? Math.floor(tank.hoursRemaining / 24) + 'd'
-                    : Math.round(tank.hoursRemaining) + 'h') + ' left'
-                : E}
-                </div>
-              `
-            : E}
-          <button
-            class="md3-button text tank-edit-btn"
-            style="padding:4px;min-width:auto;margin-top:4px;"
-            title="Edit tank"
-            @click=${() => this._openTankEdit(index)}
-          >
-            <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
-          </button>
-        </div>
-      </div>
-    `;
-    }
-    // ─── Water Analytics tab ──────────────────────────────────────────────────
-    _renderWaterAnalyticsTab() {
-        const wu = this.device?.waterUsage;
-        const tanks = this.device?.environmentAttributes?.irrigationTanks || [];
-        const irrigTimes = this.device?.irrigationConfig?.irrigationTimes || [];
-        const drainTimes = this.device?.irrigationConfig?.drainTimes || [];
-        const readings = this.device?.drainConfig?.readings || [];
-        const isCropSteering = !!this._sm.tabs.steering.draft.enabled;
-        const csShots = isCropSteering ? this._computeCropSteeringCycle() : [];
-        const hasPump = !!(this.device?.irrigationConfig?.irrigationPumpEntity ||
-            this.device?.irrigationConfig?.drainPumpEntity);
-        const hasTankSensors = tanks.some((t) => t.sensorEntity);
-        const recentReadings = readings.slice(-30).reverse();
-        const readingsWithVolumes = recentReadings.filter((r) => r.feedVolumeMl && r.drainVolumeMl);
-        const totalFeedMl = readingsWithVolumes.reduce((s, r) => s + (r.feedVolumeMl || 0), 0);
-        const totalDrainMl = readingsWithVolumes.reduce((s, r) => s + (r.drainVolumeMl || 0), 0);
-        const avgRunoff = totalFeedMl > 0 ? (totalDrainMl / totalFeedMl) * 100 : null;
-        const tanksWithData = tanks.filter((t) => t.fillLevel !== null && t.fillLevel !== undefined);
-        const avgTankLevel = tanksWithData.length > 0
-            ? tanksWithData.reduce((s, t) => s + (t.fillLevel ?? 0), 0) /
-                tanksWithData.length
-            : null;
-        const warningTanks = tanks.filter((t) => t.isWarning);
-        const totalIrrig = irrigTimes.length;
-        const totalDrain = drainTimes.length;
-        const irrigDuration = this.device?.irrigationConfig?.irrigationDuration ?? 0;
-        const drainDuration = this.device?.irrigationConfig?.drainDuration ?? 0;
-        const tanksWithHistory = tanks.filter((t) => t.volumeLiters != null && t.waterHistory?.events?.length);
-        const allTankEvents = tanksWithHistory.flatMap((t) => t.waterHistory.events);
-        const now = new Date();
-        const allDaily7d = tanksWithHistory.flatMap((t) => t.waterHistory.daily_7d ?? []);
-        const todayKey = now.toISOString().slice(0, 10);
-        const tankLitersToday = allDaily7d
-            .filter((d) => d.date === todayKey)
-            .reduce((s, d) => s + d.consumed, 0);
-        const tankLiters7d = allDaily7d.reduce((s, d) => s + d.consumed, 0);
-        const daysWithData = new Set(allDaily7d.filter((d) => d.consumed > 0).map((d) => d.date)).size;
-        const tankAvgPerDay = daysWithData > 0 ? tankLiters7d / daysWithData : 0;
-        const bucket15Min = 15 * 60 * 1000;
-        const bucketCount24h = 96;
-        const chartEnd = Math.ceil(now.getTime() / bucket15Min) * bucket15Min;
-        const chartStart = chartEnd - bucketCount24h * bucket15Min;
-        const consumptionBuckets24h = Array.from({ length: bucketCount24h }, (_, i) => ({
-            start: chartStart + i * bucket15Min,
-            liters: 0,
-        }));
-        for (const ev of allTankEvents) {
-            if (ev.event_type !== 'consumption')
-                continue;
-            const ts = new Date(ev.timestamp).getTime();
-            if (ts < chartStart || ts >= chartEnd)
-                continue;
-            const idx = Math.floor((ts - chartStart) / bucket15Min);
-            if (idx >= 0 && idx < bucketCount24h)
-                consumptionBuckets24h[idx].liters += ev.liters;
-        }
-        const maxBucketLiters = Math.max(...consumptionBuckets24h.map((b) => b.liters), 0.01);
-        const recentRefills = allTankEvents
-            .filter((e) => e.event_type === 'refill')
-            .slice(-10)
-            .reverse();
-        const kpiCard = (label, value, unit, color = 'rgba(255,255,255,0.7)', sub) => x `
-      <div
-        style="background:rgba(255,255,255,0.05);border-radius:12px;padding:16px 20px;display:flex;flex-direction:column;gap:4px;"
-      >
-        <div style="font-size:0.78rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;">
-          ${label}
-        </div>
-        <div style="display:flex;align-items:baseline;gap:4px;">
-          <span style="font-size:1.6rem;font-weight:700;color:${color};">${value}</span>
-          <span style="font-size:0.82rem;opacity:0.6;">${unit}</span>
-        </div>
-        ${sub ? x `<div style="font-size:0.75rem;opacity:0.5;">${sub}</div>` : E}
-      </div>
-    `;
-        const lastCycle = this.device?.lastCycleTimestamp
-            ? new Date(this.device.lastCycleTimestamp).toLocaleString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-            })
-            : null;
-        const nextCycle = this.device?.nextScheduledCycle
-            ? new Date(this.device.nextScheduledCycle).toLocaleString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-            })
-            : null;
-        const cyclesToday = this.device?.cyclesToday ?? 0;
-        const volToday = this.device?.volumeDispensedToday ?? 0;
-        return x `
-      ${hasPump
-            ? x `
-            <div class="detail-card">
-              <h3 style="margin-top:0;margin-bottom:16px;">Cycle Telemetry</h3>
-              <div
-                style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:0;"
-              >
-                ${kpiCard('Cycles today', String(cyclesToday), '', '#4fc3f7')}
-                ${kpiCard('Dispensed today', volToday > 0 ? volToday.toFixed(2) : '—', volToday > 0 ? 'L' : '', '#81c784')}
-                ${lastCycle
-                ? kpiCard('Last cycle', lastCycle, '', 'rgba(255,255,255,0.7)')
-                : kpiCard('Last cycle', '—', '', 'rgba(255,255,255,0.4)')}
-                ${nextCycle
-                ? kpiCard('Next cycle', nextCycle, '', '#ce93d8')
-                : kpiCard('Next cycle', '—', '', 'rgba(255,255,255,0.4)')}
-              </div>
-            </div>
-          `
-            : E}
-      ${hasPump
-            ? x `
-            <div class="detail-card">
-              <h3 style="margin-top:0;margin-bottom:16px;">Today's Usage</h3>
-              <div
-                style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;"
-              >
-                ${wu?.litersToday != null
-                ? kpiCard('Liters today', wu.litersToday.toFixed(1), 'L', '#4fc3f7')
-                : kpiCard('Liters today', '—', '', 'rgba(255,255,255,0.4)')}
-                ${wu?.litersPerPlantPerDay != null
-                ? kpiCard('Per plant / day', wu.litersPerPlantPerDay.toFixed(2), 'L', '#81c784')
-                : kpiCard('Per plant / day', '—', '', 'rgba(255,255,255,0.4)')}
-                ${wu?.waterEfficiency != null
-                ? kpiCard('Water efficiency', (wu.waterEfficiency * 100).toFixed(0), '%', wu.waterEfficiency >= 0.85
-                    ? '#4caf50'
-                    : wu.waterEfficiency >= 0.65
-                        ? '#FF9800'
-                        : '#f44336', wu.waterEfficiency >= 0.85
-                    ? 'Excellent'
-                    : wu.waterEfficiency >= 0.65
-                        ? 'Good'
-                        : 'Review schedule')
-                : kpiCard('Water efficiency', '—', '', 'rgba(255,255,255,0.4)')}
-                ${avgRunoff !== null
-                ? kpiCard('Avg runoff', avgRunoff.toFixed(1), '%', '#ce93d8', `from ${readingsWithVolumes.length} reading${readingsWithVolumes.length !== 1 ? 's' : ''}`)
-                : kpiCard('Avg runoff', '—', '', 'rgba(255,255,255,0.4)', 'Log volumes in Drain EC tab')}
-              </div>
-            </div>
-          `
-            : E}
-      ${tanks.length > 0
-            ? x `
-            <div class="detail-card">
-              <div
-                style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
-              >
-                <h3 style="margin:0;">Tank Levels</h3>
-                ${warningTanks.length > 0
-                ? x `
-                      <span
-                        style="background:rgba(244,67,54,0.2);color:#f44336;border:1px solid rgba(244,67,54,0.4);border-radius:20px;padding:3px 10px;font-size:0.78rem;font-weight:600;"
-                      >
-                        ⚠ ${warningTanks.length} tank${warningTanks.length > 1 ? 's' : ''} low
-                      </span>
-                    `
-                : avgTankLevel !== null
-                    ? x `
-                        <span style="font-size:0.82rem;opacity:0.5;"
-                          >Avg ${avgTankLevel.toFixed(0)}%</span
-                        >
-                      `
-                    : E}
-              </div>
-              <div style="display:flex;flex-direction:column;gap:10px;">
-                ${tanks.map((tank) => {
-                const pct = tank.fillLevel ?? 0;
-                const c = tank.isWarning
-                    ? '#f44336'
-                    : (tank.hoursRemaining ?? 999) < 24
-                        ? '#FF9800'
-                        : '#4caf50';
-                return x `
-                    <div>
-                      <div
-                        style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px;"
-                      >
-                        <span style="font-weight:500;">${tank.name}</span>
-                        <span style="color:${c};font-weight:600;"
-                          >${tank.fillLevel !== null ? pct.toFixed(0) + '%' : '—'}</span
-                        >
-                      </div>
-                      <div
-                        style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;"
-                      >
-                        <div
-                          style="height:100%;width:${Math.max(0, Math.min(100, pct))}%;background:${c};border-radius:3px;transition:width 0.4s ease;"
-                        ></div>
-                      </div>
-                    </div>
-                  `;
-            })}
-              </div>
-            </div>
-          `
-            : E}
-      ${hasTankSensors && tanksWithHistory.length > 0
-            ? x `
-            <div class="detail-card">
-              <div
-                style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
-              >
-                <h3 style="margin:0;">Tank-Derived Water Usage</h3>
-                <span
-                  style="font-size:0.78rem;opacity:0.5;background:rgba(79,195,247,0.1);border:1px solid rgba(79,195,247,0.25);border-radius:20px;padding:2px 10px;"
-                  >inferred from tank level</span
-                >
-              </div>
-              <div
-                style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;"
-              >
-                ${kpiCard('Consumed today', tankLitersToday > 0 ? tankLitersToday.toFixed(1) : '—', tankLitersToday > 0 ? 'L' : '', '#4fc3f7')}
-                ${kpiCard('Last 7 days', tankLiters7d > 0 ? tankLiters7d.toFixed(1) : '—', tankLiters7d > 0 ? 'L' : '', '#81c784')}
-                ${kpiCard('Avg per day', tankAvgPerDay > 0 ? tankAvgPerDay.toFixed(1) : '—', tankAvgPerDay > 0 ? 'L/day' : '', '#ce93d8')}
-              </div>
-              <div style="margin-bottom:6px;">
-                <div
-                  style="font-size:0.78rem;opacity:0.55;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;"
-                >
-                  Consumption — last 24 hours (15 min buckets)
-                </div>
-                <div
-                  style="display:flex;align-items:flex-end;gap:1px;height:60px;background:rgba(255,255,255,0.03);border-radius:6px;padding:6px 4px 0;"
-                >
-                  ${consumptionBuckets24h.map((b) => {
-                const hp = (b.liters / maxBucketLiters) * 100;
-                const label = new Date(b.start).toLocaleTimeString(undefined, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false,
-                });
-                return x `
-                      <div
-                        title="${label} — ${b.liters.toFixed(2)} L"
-                        style="flex:1;height:${Math.max(2, hp)}%;background:${b.liters > 0
-                    ? '#4fc3f7'
-                    : 'rgba(255,255,255,0.06)'};border-radius:2px 2px 0 0;min-width:0;"
-                      ></div>
-                    `;
-            })}
-                </div>
-                <div
-                  style="display:flex;justify-content:space-between;font-size:0.68rem;opacity:0.45;margin-top:4px;padding:0 2px;"
-                >
-                  <span>24h ago</span><span>12h ago</span><span>now</span>
-                </div>
-              </div>
-              ${recentRefills.length > 0
-                ? x `
-                    <div style="margin-top:16px;">
-                      <div
-                        style="font-size:0.78rem;opacity:0.55;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
-                      >
-                        Recent refills
-                      </div>
-                      <div style="display:flex;flex-direction:column;gap:4px;">
-                        ${recentRefills.map((ev) => x `
-                            <div
-                              style="display:flex;justify-content:space-between;align-items:center;background:rgba(129,199,132,0.08);border-radius:6px;padding:5px 10px;font-size:0.82rem;"
-                            >
-                              <span style="opacity:0.65;"
-                                >${new Date(ev.timestamp).toLocaleString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                })}</span
-                              >
-                              <span style="color:#81c784;font-weight:600;"
-                                >+${ev.liters.toFixed(1)} L</span
-                              >
-                            </div>
-                          `)}
-                      </div>
-                    </div>
-                  `
-                : E}
-            </div>
-          `
-            : E}
-      ${isCropSteering
-            ? x `
-            <div class="detail-card">
-              <h3 style="margin-top:0;margin-bottom:16px;">Schedule Summary</h3>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                <div>
-                  <div
-                    style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
-                  >
-                    Irrigation
-                  </div>
-                  ${csShots.length === 0
-                ? x `<p style="opacity:0.5;font-size:0.85rem;margin:0;">
-                        No strategy configured
-                      </p>`
-                : x `
-                        <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
-                          ${csShots.length}
-                          <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
-                            >shots/day</span
-                          >
-                        </div>
-                        <div style="font-size:0.75rem;opacity:0.5;margin-top:2px;">
-                          Managed automatically ·
-                          <a
-                            href="#"
-                            style="color:#4CAF50;"
-                            @click=${(e) => {
-                    e.preventDefault();
-                    this._sm = requestTabSwitch(this._sm, 'steering', this.device);
-                }}
-                            >edit in Steering →</a
-                          >
-                        </div>
-                        <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
-                          ${csShots.slice(0, 5).map((s) => x `
-                            <div
-                              style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
-                            >
-                              <span style="font-weight:500;">${s.time.substring(0, 5)}</span>
-                              <span style="opacity:0.5;">${s.duration}s</span>
-                            </div>
-                          `)}
-                          ${csShots.length > 5
-                    ? x `<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
-                                +${csShots.length - 5} more
-                              </div>`
-                    : E}
-                        </div>
-                      `}
-                </div>
-                <div>
-                  <div
-                    style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
-                  >
-                    Drain
-                  </div>
-                  ${totalDrain === 0
-                ? x `<p style="opacity:0.5;font-size:0.85rem;margin:0;">
-                        No events scheduled
-                      </p>`
-                : x `
-                        <div style="font-size:1.3rem;font-weight:700;color:#a5d6a7;">
-                          ${totalDrain}
-                          <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
-                            >events/day</span
-                          >
-                        </div>
-                        ${drainDuration
-                    ? x `<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
-                              ${drainDuration}s per event
-                            </div>`
-                    : E}
-                        <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
-                          ${drainTimes.slice(0, 5).map((t) => {
-                    const time = t.time ?? t.start_time ?? '';
-                    const dur = t.duration ?? t.duration_seconds ?? drainDuration;
-                    return x `
-                              <div
-                                style="display:flex;justify-content:space-between;background:rgba(165,214,167,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
-                              >
-                                <span style="font-weight:500;">${time.substring(0, 5)}</span>
-                                <span style="opacity:0.5;">${dur}s</span>
-                              </div>
-                            `;
-                })}
-                          ${totalDrain > 5
-                    ? x `<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
-                                +${totalDrain - 5} more
-                              </div>`
-                    : E}
-                        </div>
-                      `}
-                </div>
-              </div>
-            </div>
-          `
-            : totalIrrig > 0 || totalDrain > 0
-                ? x `
-              <div class="detail-card">
-                <h3 style="margin-top:0;margin-bottom:16px;">Schedule Summary</h3>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                  <div>
-                    <div
-                      style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
-                    >
-                      Irrigation
-                    </div>
-                    ${totalIrrig === 0
-                    ? x `<p style="opacity:0.5;font-size:0.85rem;margin:0;">
-                          No events scheduled
-                        </p>`
-                    : x `
-                          <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
-                            ${totalIrrig}
-                            <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
-                              >events/day</span
-                            >
-                          </div>
-                          ${irrigDuration
-                        ? x `<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
-                                ${irrigDuration}s per event
-                              </div>`
-                        : E}
-                          <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
-                            ${irrigTimes.slice(0, 5).map((t) => {
-                        const time = t.time ?? t.start_time ?? '';
-                        const dur = t.duration ?? t.duration_seconds ?? irrigDuration;
-                        return x `
-                                <div
-                                  style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
-                                >
-                                  <span style="font-weight:500;">${time.substring(0, 5)}</span>
-                                  <span style="opacity:0.5;">${dur}s</span>
-                                </div>
-                              `;
-                    })}
-                            ${totalIrrig > 5
-                        ? x `<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
-                                  +${totalIrrig - 5} more
-                                </div>`
-                        : E}
-                          </div>
-                        `}
-                  </div>
-                  <div>
-                    <div
-                      style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
-                    >
-                      Drain
-                    </div>
-                    ${totalDrain === 0
-                    ? x `<p style="opacity:0.5;font-size:0.85rem;margin:0;">
-                          No events scheduled
-                        </p>`
-                    : x `
-                          <div style="font-size:1.3rem;font-weight:700;color:#a5d6a7;">
-                            ${totalDrain}
-                            <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
-                              >events/day</span
-                            >
-                          </div>
-                          ${drainDuration
-                        ? x `<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
-                                ${drainDuration}s per event
-                              </div>`
-                        : E}
-                          <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
-                            ${drainTimes.slice(0, 5).map((t) => {
-                        const time = t.time ?? t.start_time ?? '';
-                        const dur = t.duration ?? t.duration_seconds ?? drainDuration;
-                        return x `
-                                <div
-                                  style="display:flex;justify-content:space-between;background:rgba(165,214,167,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
-                                >
-                                  <span style="font-weight:500;">${time.substring(0, 5)}</span>
-                                  <span style="opacity:0.5;">${dur}s</span>
-                                </div>
-                              `;
-                    })}
-                            ${totalDrain > 5
-                        ? x `<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
-                                  +${totalDrain - 5} more
-                                </div>`
-                        : E}
-                          </div>
-                        `}
-                  </div>
-                </div>
-              </div>
-            `
-                : E}
-      ${this._sm.tabs.water_analytics.stageAggregates &&
-            Object.keys(this._sm.tabs.water_analytics.stageAggregates).length > 0
-            ? x `
-            <div class="detail-card">
-              <h3 style="margin:0 0 14px;">Water Usage by Growth Stage</h3>
-              <div style="display:flex;flex-direction:column;gap:8px;">
-                ${Object.entries(this._sm.tabs.water_analytics.stageAggregates)
-                .sort(([, a], [, b]) => b - a)
-                .map(([stage, liters]) => x `
-                      <div
-                        style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 14px;font-size:0.88rem;"
-                      >
-                        <span style="text-transform:capitalize;font-weight:500;">${stage}</span>
-                        <span style="color:#4fc3f7;font-weight:600;">${liters.toFixed(1)} L</span>
-                      </div>
-                    `)}
-              </div>
-            </div>
-          `
-            : E}
-      ${this._sm.tabs.schedules.draft.drainPumpEntity
-            ? x `
-            <div class="detail-card">
-              <div
-                style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
-              >
-                <h3 style="margin:0;">Volume History</h3>
-                <span style="font-size:0.8rem;opacity:0.5;">from drain EC readings</span>
-              </div>
-              ${readingsWithVolumes.length === 0
-                ? x `
-                    <p style="opacity:0.6;text-align:center;padding:20px 0;font-size:0.9rem;">
-                      No volume data logged yet.<br />
-                      <span style="font-size:0.8rem;opacity:0.7;"
-                        >Log feed and drain volumes in the <strong>Drain EC</strong> tab.</span
-                      >
-                    </p>
-                  `
-                : x `
-                    <div
-                      style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;background:rgba(255,255,255,0.04);border-radius:10px;padding:12px 16px;font-size:0.88rem;"
-                    >
-                      <div style="text-align:center;">
-                        <div style="opacity:0.5;font-size:0.75rem;">Total feed</div>
-                        <div style="font-weight:700;color:#4fc3f7;">
-                          ${(totalFeedMl / 1000).toFixed(1)} L
-                        </div>
-                      </div>
-                      <div style="text-align:center;">
-                        <div style="opacity:0.5;font-size:0.75rem;">Total drain</div>
-                        <div style="font-weight:700;color:#a5d6a7;">
-                          ${(totalDrainMl / 1000).toFixed(1)} L
-                        </div>
-                      </div>
-                      <div style="text-align:center;">
-                        <div style="opacity:0.5;font-size:0.75rem;">Avg runoff</div>
-                        <div
-                          style="font-weight:700;color:${avgRunoff !== null &&
-                    avgRunoff >= 15 &&
-                    avgRunoff <= 35
-                    ? '#4caf50'
-                    : '#FF9800'};"
-                        >
-                          ${avgRunoff !== null ? avgRunoff.toFixed(1) + '%' : '—'}
-                        </div>
-                      </div>
-                    </div>
-                    <div style="overflow-x:auto;">
-                      <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
-                        <thead>
-                          <tr style="border-bottom:1px solid rgba(255,255,255,0.15);opacity:0.7;">
-                            <th style="text-align:left;padding:5px 8px;font-weight:500;">Time</th>
-                            <th style="text-align:right;padding:5px 8px;font-weight:500;">
-                              Feed (mL)
-                            </th>
-                            <th style="text-align:right;padding:5px 8px;font-weight:500;">
-                              Drain (mL)
-                            </th>
-                            <th style="text-align:right;padding:5px 8px;font-weight:500;">
-                              Runoff
-                            </th>
-                            <th style="text-align:right;padding:5px 8px;font-weight:500;">Δ EC</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${readingsWithVolumes.map((r) => {
-                    const runoff = r.feedVolumeMl
-                        ? (r.drainVolumeMl / r.feedVolumeMl) * 100
-                        : null;
-                    const delta = r.drainEc - r.feedEc;
-                    const runoffOk = runoff !== null && runoff >= 10 && runoff <= 40;
-                    return x `
-                              <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                                <td style="padding:5px 8px;opacity:0.65;">
-                                  ${new Date(r.timestamp).toLocaleString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                    })}
-                                </td>
-                                <td style="text-align:right;padding:5px 8px;">${r.feedVolumeMl}</td>
-                                <td style="text-align:right;padding:5px 8px;">
-                                  ${r.drainVolumeMl}
-                                </td>
-                                <td
-                                  style="text-align:right;padding:5px 8px;font-weight:600;color:${runoffOk
-                        ? '#4caf50'
-                        : '#FF9800'};"
-                                >
-                                  ${runoff !== null ? runoff.toFixed(1) + '%' : '—'}
-                                </td>
-                                <td style="text-align:right;padding:5px 8px;opacity:0.7;">
-                                  ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
-                                </td>
-                              </tr>
-                            `;
-                })}
-                        </tbody>
-                      </table>
-                    </div>
-                  `}
-            </div>
-          `
-            : E}
-
-      <div
-        class="detail-card"
-        style="border:1px dashed rgba(244,67,54,0.3);background:rgba(244,67,54,0.05);margin-top:20px;"
-      >
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
-          <div style="flex:1;">
-            <h3 style="margin:0;color:#f44336;border:none;padding:0;font-size:1.1rem;">
-              Maintenance
-            </h3>
-            <p style="margin:4px 0 0 0;font-size:0.85rem;opacity:0.7;line-height:1.4;">
-              Reset irrigation counters, today's water usage, and recent volume history for this
-              growspace.
-            </p>
-          </div>
-          <button
-            class="md3-button tonal error"
-            @click=${this._handleResetWaterTracking}
-            style="white-space:nowrap;"
-          >
-            Reset All Data
-          </button>
-        </div>
-      </div>
-    `;
-    }
-    // ─── Drain EC tab ─────────────────────────────────────────────────────────
-    _renderDrainECTab() {
-        const dc = this.device?.drainConfig;
-        const readings = dc?.readings || [];
-        const recent = readings.slice(-20).reverse();
-        const lastReading = recent[0];
-        const lastDelta = lastReading ? lastReading.drainEc - lastReading.feedEc : null;
-        const drainDraft = this._sm.tabs.drain_ec.draft;
-        const isOverThreshold = lastDelta !== null && drainDraft.enabled && lastDelta > drainDraft.maxEcDelta;
-        const statusColor = !drainDraft.enabled
-            ? 'rgba(255,255,255,0.3)'
-            : isOverThreshold
-                ? '#f44336'
-                : lastDelta !== null && lastDelta > drainDraft.maxEcDelta * 0.7
-                    ? '#FF9800'
-                    : '#4caf50';
-        const statusText = !drainDraft.enabled
-            ? 'Monitoring disabled'
-            : lastDelta === null
-                ? 'No readings yet'
-                : isOverThreshold
-                    ? `Salt buildup alert — Δ${lastDelta.toFixed(2)} mS/cm above threshold`
-                    : `EC OK — Δ${lastDelta.toFixed(2)} mS/cm`;
-        return x `
-      <div class="detail-card" style="border-left:4px solid ${statusColor};padding:16px 20px;">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div
-            style="width:14px;height:14px;border-radius:50%;background:${statusColor};box-shadow:0 0 8px ${statusColor};flex-shrink:0;"
-          ></div>
-          <div>
-            <div style="font-weight:600;font-size:1rem;">${statusText}</div>
-            ${lastReading
-            ? x `
-                  <div style="font-size:0.8rem;opacity:0.6;margin-top:2px;">
-                    Last reading: Feed ${lastReading.feedEc.toFixed(2)} → Drain
-                    ${lastReading.drainEc.toFixed(2)} mS/cm at
-                    ${new Date(lastReading.timestamp).toLocaleString()}
-                  </div>
-                `
-            : E}
-          </div>
-        </div>
-      </div>
-
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"
-        >
-          <h3 style="margin:0;">Monitoring Configuration</h3>
-          ${this._sm.tabs.drain_ec.sub.kind === 'saving'
-            ? x `<span style="font-size:0.8rem;opacity:0.6;">Saving…</span>`
-            : E}
-        </div>
-        <p style="font-size:0.82rem;opacity:0.7;margin-bottom:20px;">
-          Alert when drain EC exceeds feed EC by more than the max delta.
-        </p>
-        <div
-          style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:16px;"
-        >
-          <span>Enable EC drain monitoring</span>
-          <md3-switch
-            .checked=${drainDraft.enabled}
-            @change=${(e) => {
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { enabled: e.target.checked },
-            });
-        }}
-          ></md3-switch>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <md3-number-input
-            label="Max EC Delta (mS/cm)"
-            .value=${drainDraft.maxEcDelta}
-            step="0.1"
-            min="0.1"
-            ?disabled=${!drainDraft.enabled}
-            @change=${(e) => {
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { maxEcDelta: parseFloat(e.detail) || 1.0 },
-            });
-        }}
-          ></md3-number-input>
-          <md3-number-input
-            label="Target Runoff (%)"
-            .value=${drainDraft.targetRunoffPercent}
-            min="5"
-            max="50"
-            step="5"
-            ?disabled=${!drainDraft.enabled}
-            @change=${(e) => {
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { targetRunoffPercent: parseInt(e.detail) || 20 },
-            });
-        }}
-          ></md3-number-input>
-        </div>
-      </div>
-
-      <div class="detail-card">
-        <h3 style="margin-top:0;">Log Drain Reading</h3>
-        <p style="font-size:0.82rem;opacity:0.7;margin-bottom:20px;">
-          Manually log feed EC and drain EC values measured with a handheld meter. Volumes are
-          optional.
-        </p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-          <md3-number-input
-            label="Feed EC (mS/cm)"
-            .value=${drainDraft.logFeedEc}
-            step="0.1"
-            min="0"
-            @change=${(e) => {
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { logFeedEc: parseFloat(e.detail) || 0 },
-            });
-        }}
-          ></md3-number-input>
-          <md3-number-input
-            label="Drain EC (mS/cm)"
-            .value=${drainDraft.logDrainEc}
-            step="0.1"
-            min="0"
-            @change=${(e) => {
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { logDrainEc: parseFloat(e.detail) || 0 },
-            });
-        }}
-          ></md3-number-input>
-          <md3-number-input
-            label="Feed Volume (mL) — optional"
-            .value=${drainDraft.logFeedVolume}
-            step="100"
-            min="0"
-            @change=${(e) => {
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { logFeedVolume: parseInt(e.detail) || 0 },
-            });
-        }}
-          ></md3-number-input>
-          <md3-number-input
-            label="Drain Volume (mL) — optional"
-            .value=${drainDraft.logDrainVolume}
-            step="100"
-            min="0"
-            @change=${(e) => {
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { logDrainVolume: parseInt(e.detail) || 0 },
-            });
-        }}
-          ></md3-number-input>
-        </div>
-        ${drainDraft.logFeedEc > 0 && drainDraft.logDrainEc > 0
-            ? x `
-              <div
-                style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;gap:24px;align-items:center;font-size:0.9rem;"
-              >
-                <span
-                  >EC Delta:
-                  <strong
-                    style="color:${drainDraft.logDrainEc - drainDraft.logFeedEc >
-                drainDraft.maxEcDelta
-                ? '#f44336'
-                : '#4caf50'}"
-                  >
-                    Δ${(drainDraft.logDrainEc - drainDraft.logFeedEc).toFixed(2)} mS/cm
-                  </strong></span
-                >
-                ${drainDraft.logFeedVolume > 0 && drainDraft.logDrainVolume > 0
-                ? x `
-                      <span
-                        >Runoff:
-                        <strong
-                          >${((drainDraft.logDrainVolume / drainDraft.logFeedVolume) * 100).toFixed(1)}%</strong
-                        ></span
-                      >
-                    `
-                : E}
-              </div>
-            `
-            : E}
-        <button
-          class="md3-button primary"
-          style="background:#FF9800;"
-          @click=${this._logDrainReadingNow}
-          ?disabled=${this._sm.tabs.drain_ec.sub.kind === 'logging' ||
-            drainDraft.logFeedEc <= 0 ||
-            drainDraft.logDrainEc <= 0}
-        >
-          ${this._sm.tabs.drain_ec.sub.kind === 'logging' ? 'Logging…' : 'Log Reading'}
-        </button>
-      </div>
-
-      <div class="detail-card">
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
-        >
-          <h3 style="margin:0;">Recent Readings</h3>
-          <span style="font-size:0.8rem;opacity:0.5;">${readings.length} total</span>
-        </div>
-        ${recent.length === 0
-            ? x `
-              <p style="opacity:0.6;text-align:center;padding:20px 0;">No readings logged yet.</p>
-            `
-            : x `
-              <div style="overflow-x:auto;">
-                <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
-                  <thead>
-                    <tr style="border-bottom:1px solid rgba(255,255,255,0.15);opacity:0.7;">
-                      <th style="text-align:left;padding:6px 8px;font-weight:500;">Time</th>
-                      <th style="text-align:right;padding:6px 8px;font-weight:500;">Feed EC</th>
-                      <th style="text-align:right;padding:6px 8px;font-weight:500;">Drain EC</th>
-                      <th style="text-align:right;padding:6px 8px;font-weight:500;">Δ EC</th>
-                      <th style="text-align:right;padding:6px 8px;font-weight:500;">Runoff</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${recent.map((r) => {
-                const delta = r.drainEc - r.feedEc;
-                const overThreshold = drainDraft.enabled && delta > drainDraft.maxEcDelta;
-                const runoffPct = r.feedVolumeMl && r.drainVolumeMl
-                    ? ((r.drainVolumeMl / r.feedVolumeMl) * 100).toFixed(1) + '%'
-                    : '—';
-                return x `
-                        <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                          <td style="padding:6px 8px;opacity:0.7;">
-                            ${new Date(r.timestamp).toLocaleString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                })}
-                          </td>
-                          <td style="text-align:right;padding:6px 8px;">${r.feedEc.toFixed(2)}</td>
-                          <td style="text-align:right;padding:6px 8px;">${r.drainEc.toFixed(2)}</td>
-                          <td
-                            style="text-align:right;padding:6px 8px;color:${overThreshold
-                    ? '#f44336'
-                    : delta > drainDraft.maxEcDelta * 0.7
-                        ? '#FF9800'
-                        : '#4caf50'};font-weight:500;"
-                          >
-                            ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
-                          </td>
-                          <td style="text-align:right;padding:6px 8px;opacity:0.6;">
-                            ${runoffPct}
-                          </td>
-                        </tr>
-                      `;
-            })}
-                  </tbody>
-                </table>
-              </div>
-            `}
-      </div>
-    `;
+    /** Cancel/close the phase-change confirm overlay. */
+    _onPhaseChangeCancelled() {
+        this._sm = transition$4(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
     }
     // ─── Overview tab (crop-steering diagnostics, read-only) ──────────────────
     //
-    // All values come from the growspace payload (device.steeringMetrics), never
-    // hass.states — the backend surfaces the measured readout in irrigation.substrate.
-    _renderOverviewMetricCard(title, value, icon, color, help = '') {
-        return x `
-      <div class="cs-metric-card">
-        <ha-svg-icon .path=${icon} style="color: ${color}; margin-bottom: 8px;"></ha-svg-icon>
-        <div class="cs-metric-value">${value}</div>
-        <div
-          class="cs-metric-label"
-          style="display:flex;align-items:center;gap:4px;justify-content:center;"
-        >
-          ${title}
-          ${help
-            ? x `<gs-help-tooltip
-                .content=${help}
-                placement="bottom"
-                .label=${title}
-              ></gs-help-tooltip>`
-            : ''}
-        </div>
-      </div>
-    `;
-    }
-    _renderOverviewTab() {
-        const metrics = this.device?.steeringMetrics;
-        if (!metrics) {
-            return x `
-        <div style="text-align: center; padding: 40px; opacity: 0.7;">
-          <ha-svg-icon
-            .path=${mdiChartTimelineVariantShimmer}
-            style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"
-          ></ha-svg-icon>
-          <p>Crop steering data is currently unavailable.</p>
-          <p style="font-size: 0.85rem;">
-            Ensure irrigation strategy is enabled and sensors are reporting data.
-          </p>
-        </div>
-      `;
-        }
-        const declared = this.device?.irrigationStrategy?.declaredSteeringMode ?? null;
-        return x `
-      ${this._renderSteeringScoreHeader(metrics, declared)}
-      <div class="cs-metric-grid">
-        ${this._renderOvernightDrybackCard(metrics)}
-        ${this._renderInCycleDrybackCard(metrics)}
-        ${this._renderEcTrendCard(metrics)}
-      </div>
-      ${this._renderShotCompositionPanel(metrics)}
-    `;
-    }
-    /**
-     * Phase state + shot composition diagnostics. Absent on time-based irrigation
-     * (no VWC coordinator → null composition). Explains the last fired shot as
-     * base × vwc_factor × ec_factor so any shot is end-to-end accountable.
-     */
-    _renderShotCompositionPanel(metrics) {
-        const composition = metrics.shotComposition;
-        if (!composition)
-            return E;
-        const phase = this.device?.irrigationConfig?.activeSteeringPhase;
-        const lastShot = composition.last_shot;
-        const fmt = (v) => (typeof v === 'number' ? String(v) : '—');
-        return x `
-      <div class="detail-card cs-shot-composition" data-metric="shot-composition">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-          <h3 style="margin:0;border:none;padding:0;">Shot Composition</h3>
-          ${phase
-            ? x `<span class="cs-phase-pill">Phase ${phase.toUpperCase()}</span>`
-            : E}
-        </div>
-        ${lastShot
-            ? x `
-              <div class="cs-shot-row">
-                <span>Base</span><span>${fmt(lastShot.base_seconds)}s</span>
-              </div>
-              <div class="cs-shot-row">
-                <span>VWC factor</span><span>×${fmt(lastShot.vwc_factor)}</span>
-              </div>
-              <div class="cs-shot-row">
-                <span>EC factor</span><span>×${fmt(lastShot.ec_factor)}</span>
-              </div>
-              <div class="cs-shot-row cs-shot-total">
-                <span>Effective</span><span>${fmt(lastShot.effective_seconds)}s</span>
-              </div>
-            `
-            : x `<p style="font-size:0.8rem;opacity:0.6;margin:0;">
-              No shot fired yet this session — modulation capability shown above.
-            </p>`}
-      </div>
-    `;
-    }
-    /**
-     * Measured pore-EC trend. Sensor-gated per the Capability Unlock Hint rule:
-     * when no pore-EC sensors report (ecTrendAvailable === false) the card stays
-     * visible but locked with a one-line hint, never silently shows "stable".
-     */
-    _renderEcTrendCard(metrics) {
-        if (!metrics.ecTrendAvailable) {
-            return x `
-        <div class="cs-metric-card cs-metric-locked" data-metric="ec-trend">
-          <ha-svg-icon
-            .path=${mdiMinus}
-            style="color: var(--secondary-text-color); margin-bottom: 8px;"
-          ></ha-svg-icon>
-          <div class="cs-metric-value">Locked</div>
-          <div class="cs-metric-sub">Add a pore-EC sensor in Environment Settings</div>
-          <div class="cs-metric-label">EC Trend</div>
-        </div>
-      `;
-        }
-        const trend = metrics.ecTrend ?? 'stable';
-        let trendIcon = mdiMinus;
-        let trendColor = 'var(--secondary-text-color)';
-        if (trend === 'rising') {
-            trendIcon = mdiArrowUp;
-            trendColor = 'var(--error-color, #F44336)';
-        }
-        else if (trend === 'falling') {
-            trendIcon = mdiArrowDown;
-            trendColor = 'var(--success-color, #4CAF50)';
-        }
-        return x `
-      <div class="cs-metric-card" data-metric="ec-trend">
-        <ha-svg-icon
-          .path=${trendIcon}
-          style="color: ${trendColor}; margin-bottom: 8px;"
-        ></ha-svg-icon>
-        <div class="cs-metric-value">${trend.toUpperCase()}</div>
-        <div
-          class="cs-metric-label"
-          style="display:flex;align-items:center;gap:4px;justify-content:center;"
-        >
-          EC Trend
-          <gs-help-tooltip
-            content="Whether measured pore EC (nutrient strength in the substrate) is rising, falling, or stable over the day. Rising EC may indicate under-irrigation or salt build-up."
-            placement="bottom"
-            label="EC Trend"
-          ></gs-help-tooltip>
-        </div>
-      </div>
-    `;
-    }
-    /** Overnight dryback (absolute VWC points) with last-window peak/trough context. */
-    _renderOvernightDrybackCard(metrics) {
-        const dryback = metrics.overnightDryback;
-        const event = metrics.latestOvernightEvent;
-        const value = dryback === null ? '—' : `${dryback.toFixed(1)} pts`;
-        const context = event
-            ? x `<div class="cs-metric-sub">
-          peak ${event.peakVwc.toFixed(1)}% → trough ${event.troughVwc.toFixed(1)}%
-        </div>`
-            : E;
-        return x `
-      <div class="cs-metric-card" data-metric="overnight-dryback">
-        <ha-svg-icon
-          .path=${mdiWeatherNight}
-          style="color: var(--primary-color); margin-bottom: 8px;"
-        ></ha-svg-icon>
-        <div class="cs-metric-value">${value}</div>
-        ${context}
-        <div
-          class="cs-metric-label"
-          style="display:flex;align-items:center;gap:4px;justify-content:center;"
-        >
-          Overnight Dryback
-          <gs-help-tooltip
-            content="The absolute VWC drop (peak − trough, in percentage points) across the most recent completed overnight window. Larger overnight drybacks push the substrate generative."
-            placement="bottom"
-            label="Overnight Dryback"
-          ></gs-help-tooltip>
-        </div>
-      </div>
-    `;
-    }
-    /** Today's in-cycle (P2) shot count and average P2 dryback. */
-    _renderInCycleDrybackCard(metrics) {
-        const avg = metrics.incycleDrybackAvg;
-        const value = avg === null ? '—' : `${avg.toFixed(1)} pts`;
-        return x `
-      <div class="cs-metric-card" data-metric="incycle-dryback">
-        <ha-svg-icon
-          .path=${mdiCounter}
-          style="color: var(--info-color, #03a9f4); margin-bottom: 8px;"
-        ></ha-svg-icon>
-        <div class="cs-metric-value">${value}</div>
-        <div class="cs-metric-sub">${metrics.incycleDrybackCount} shots today</div>
-        <div
-          class="cs-metric-label"
-          style="display:flex;align-items:center;gap:4px;justify-content:center;"
-        >
-          In-Cycle Dryback
-          <gs-help-tooltip
-            content="Average P2 shot-to-shot dryback (absolute VWC points) across today's in-cycle irrigations, with the day's shot count. Smaller, more frequent shots read vegetative."
-            placement="bottom"
-            label="In-Cycle Dryback"
-          ></gs-help-tooltip>
-        </div>
-      </div>
-    `;
-    }
-    /** Score readout + declared-intent vs measured-classification contrast. */
-    _renderSteeringScoreHeader(metrics, declared) {
-        const score = metrics.score;
-        const measured = metrics.measuredClassification;
-        const scoreText = score === null ? '—' : `${score > 0 ? '+' : ''}${score.toFixed(2)}`;
-        return x `
-      <div style="text-align: center; margin-bottom: 24px;">
-        <div
-          style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;"
-        >
-          <div style="font-size: 36px; font-weight: bold;">${scoreText}</div>
-          <gs-help-tooltip
-            content="Measured crop steering score (−1…+1): positive = generative (promoting flowering), negative = vegetative (promoting growth). This is a measurement of how the substrate is actually behaving, not a setting."
-            placement="right"
-            label="Crop Steering Score"
-          ></gs-help-tooltip>
-        </div>
-        <div
-          style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;"
-        >
-          ${declared
-            ? x `<div class="cs-mode-badge cs-mode-${declared}">
-                Declared: ${declared.toUpperCase()}
-              </div>`
-            : x `<div class="cs-mode-badge">No declared mode</div>`}
-          ${measured
-            ? x `<div class="cs-mode-badge cs-mode-${measured}">
-                Measured: ${measured.toUpperCase()}
-              </div>`
-            : E}
-        </div>
-        ${this._renderIntentDeviation(declared, measured, metrics.intentDeviation)}
-      </div>
-    `;
-    }
-    /**
-     * Surfaces the backend's Intent Deviation: when the measured classification
-     * diverges from the declared mode, name both sides ("intended generative,
-     * substrate reads vegetative"). Silent when nothing is declared / no reading.
-     */
-    _renderIntentDeviation(declared, measured, deviation) {
-        if (deviation === 'on_target') {
-            return x `
-        <div class="cs-intent cs-intent-ontarget">
-          On target — substrate reads ${declared} as intended.
-        </div>
-      `;
-        }
-        if (deviation === 'more_generative' || deviation === 'more_vegetative') {
-            return x `
-        <div class="cs-intent cs-intent-deviation">
-          Intended ${declared} — substrate reads ${measured}.
-        </div>
-      `;
-        }
-        return E;
-    }
-    // ─── EC Targets tab (stub) ────────────────────────────────────────────────
-    /** Capability Unlock Hint: a one-line locked-prerequisite note (never hidden). */
-    _renderUnlockHint(text) {
-        return x `
-      <div
-        class="capability-unlock-hint"
-        style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--secondary-text-color);margin-top:6px;"
-      >
-        <ha-svg-icon .path=${mdiLockOutline} style="width:16px;height:16px;"></ha-svg-icon>
-        <span>${text}</span>
-      </div>
-    `;
-    }
-    /** Substrate & EC tab: profile, sizing mode, pore-EC band, modulation, feed-EC ranges. */
-    _renderSubstrateEcTab() {
-        const strat = this.device?.irrigationStrategy;
-        const draft = this._sm.tabs.substrate_ec.draft;
-        const profile = strat?.substrateProfile ?? {
-            mediaType: 'coco',
-            litersPerPot: 0,
-        };
-        const sizingMode = strat?.shotSizingMode ?? 'seconds';
-        const volumeCapable = this.device?.volumeModeCapable ?? false;
-        const hasPoreEcSensors = (this.device?.environmentAttributes?.poreEcSensors?.length ?? 0) > 0;
-        // Deduced Volume Mode lock hint (ADR-0017): the server bool is the gate; we
-        // only branch the hint text on liters-per-pot to name the missing prereq.
-        const volumeLockHint = (profile.litersPerPot ?? 0) > 0
-            ? 'Set a pump flow rate to enable Volume Mode'
-            : 'Set liters per pot to enable Volume Mode';
-        const mediaOptions = [
-            { id: 'coco', label: 'Coco' },
-            { id: 'rockwool', label: 'Rockwool' },
-            { id: 'soil', label: 'Soil' },
-        ];
-        return x `
-      <!-- Substrate Profile -->
-      <div class="detail-card">
-        <h3 style="margin:0 0 12px;">Substrate Profile</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <label style="display:flex;flex-direction:column;gap:4px;font-size:0.85rem;">
-            <span style="color:var(--secondary-text-color);">Media type</span>
-            <select
-              class="md3-input"
-              data-field="substrate_media_type"
-              .value=${profile.mediaType}
-              @change=${(e) => this._persistProfile({
-            mediaType: e.target.value,
-        })}
-            >
-              ${mediaOptions.map((o) => x `<option value=${o.id} ?selected=${profile.mediaType === o.id}>
-                  ${o.label}
-                </option>`)}
-            </select>
-          </label>
-          <md3-number-input
-            data-field="substrate_liters_per_pot"
-            label="Liters per pot"
-            .value=${profile.litersPerPot ? String(profile.litersPerPot) : ''}
-            @change=${(e) => this._persistProfile({ litersPerPot: parseFloat(e.detail) || 0 })}
-          ></md3-number-input>
-        </div>
-      </div>
-
-      <!-- Shot Sizing Mode -->
-      <div class="detail-card">
-        <h3 style="margin:0 0 8px;">Shot Sizing Mode</h3>
-        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
-          How P1/P2 shot sizes are expressed. Volume Mode sizes shots as a percent of
-          substrate volume.
-        </p>
-        <div style="display:flex;gap:8px;">
-          <button
-            class="seg-btn ${sizingMode === 'seconds' ? 'active' : ''}"
-            data-sizing-mode="seconds"
-            @click=${() => sizingMode !== 'seconds' && this._persistStrategyNow({ shotSizingMode: 'seconds' })}
-          >
-            Seconds
-          </button>
-          <button
-            class="seg-btn ${sizingMode === 'volume' ? 'active' : ''}"
-            data-sizing-mode="volume"
-            ?disabled=${!volumeCapable}
-            @click=${() => volumeCapable &&
-            sizingMode !== 'volume' &&
-            this._persistStrategyNow({ shotSizingMode: 'volume' })}
-          >
-            Volume
-          </button>
-        </div>
-        ${!volumeCapable ? this._renderUnlockHint(volumeLockHint) : E}
-      </div>
-
-      <!-- Pore EC Target Band -->
-      <div class="detail-card">
-        <h3 style="margin:0 0 8px;">Pore EC Target Band</h3>
-        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
-          The substrate (pore) EC range EC Modulation steers toward — distinct from the
-          per-stage feed-EC ranges below. Save with the footer button.
-        </p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <md3-number-input
-            data-field="pore_ec_target_min"
-            label="Min pore EC (mS/cm)"
-            .value=${draft.poreEcMin != null ? String(draft.poreEcMin) : ''}
-            @change=${(e) => (this._sm = transition$4(this._sm, {
-            type: 'UPDATE_PORE_EC_BAND',
-            min: e.detail === '' ? null : parseFloat(e.detail),
-            max: draft.poreEcMax,
-        }))}
-          ></md3-number-input>
-          <md3-number-input
-            data-field="pore_ec_target_max"
-            label="Max pore EC (mS/cm)"
-            .value=${draft.poreEcMax != null ? String(draft.poreEcMax) : ''}
-            @change=${(e) => (this._sm = transition$4(this._sm, {
-            type: 'UPDATE_PORE_EC_BAND',
-            min: draft.poreEcMin,
-            max: e.detail === '' ? null : parseFloat(e.detail),
-        }))}
-          ></md3-number-input>
-        </div>
-        ${draft.poreEcMin != null && draft.poreEcMax != null && draft.poreEcMin >= draft.poreEcMax
-            ? x `<div
-              style="font-size:0.78rem;color:var(--error-color,#ef5350);margin-top:6px;"
-            >
-              Min must be below max.
-            </div>`
-            : E}
-      </div>
-
-      <!-- EC Modulation -->
-      <div class="detail-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div>
-            <h3 style="margin:0 0 4px;">EC Modulation</h3>
-            <p style="font-size:0.8rem;opacity:0.7;margin:0;">
-              Nudge feed EC toward the pore-EC band above.
-            </p>
-          </div>
-          <md3-switch
-            data-field="ec_modulation_enabled"
-            .checked=${!!strat?.ecModulationEnabled}
-            ?disabled=${!hasPoreEcSensors}
-            @change=${(e) => hasPoreEcSensors &&
-            this._persistStrategyNow({
-                ecModulationEnabled: e.target.checked,
-            })}
-          ></md3-switch>
-        </div>
-        ${!hasPoreEcSensors
-            ? this._renderUnlockHint('Add a pore EC sensor to enable EC Modulation')
-            : E}
-      </div>
-
-      ${this._renderFeedEcRanges()}
-    `;
-    }
-    /** Per-stage feed-EC target ranges, kept visually separated from the pore-EC band. */
-    _renderFeedEcRanges() {
-        const stageLabels = {
-            seedling: 'Seedling',
-            veg: 'Veg',
-            flower_early: 'Early Flower',
-            flower_mid: 'Mid Flower',
-            flower_late: 'Late Flower / Flush',
-        };
-        return x `
-      <div class="detail-card" style="border-top:2px solid var(--divider-color,rgba(255,255,255,0.12));">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <h3 style="margin:0;border:none;padding:0;">Feed EC Targets per Stage</h3>
-        </div>
-        <p style="font-size:0.85rem;color:var(--secondary-text-color);margin:0 0 16px;">
-          Set feed EC target ranges (min / max) per growth stage. Save with the footer button.
-        </p>
-        <table style="width:100%;border-collapse:collapse;">
-          <thead>
-            <tr>
-              <th
-                style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);"
-              >
-                Stage
-              </th>
-              <th
-                style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);"
-              >
-                Min EC (mS/cm)
-              </th>
-              <th
-                style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);"
-              >
-                Max EC (mS/cm)
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            ${this._sm.tabs.substrate_ec.draft.ecTargetRanges.map((range, idx) => x `
-                <tr
-                  class="ec-target-row"
-                  style="border-top:1px solid var(--divider-color,rgba(255,255,255,0.07));"
-                >
-                  <td style="padding:8px;">
-                    <span class="ec-stage-label" style="font-weight:500;"
-                      >${stageLabels[range.stage] ?? range.stage}</span
-                    >
-                  </td>
-                  <td style="padding:8px;">
-                    <input
-                      class="md3-input"
-                      type="number"
-                      min="0"
-                      max="10"
-                      step="0.1"
-                      style="width:90px;"
-                      .value=${String(range.minEc)}
-                      @input=${(e) => {
-            const val = parseFloat(e.target.value) || 0;
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_EC_TARGETS_DRAFT',
-                ranges: this._sm.tabs.substrate_ec.draft.ecTargetRanges.map((r, i) => i === idx ? { ...r, minEc: val } : r),
-            });
-        }}
-                    />
-                  </td>
-                  <td style="padding:8px;">
-                    <input
-                      class="md3-input"
-                      type="number"
-                      min="0"
-                      max="10"
-                      step="0.1"
-                      style="width:90px;"
-                      .value=${String(range.maxEc)}
-                      @input=${(e) => {
-            const val = parseFloat(e.target.value) || 0;
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_EC_TARGETS_DRAFT',
-                ranges: this._sm.tabs.substrate_ec.draft.ecTargetRanges.map((r, i) => i === idx ? { ...r, maxEc: val } : r),
-            });
-        }}
-                    />
-                  </td>
-                </tr>
-              `)}
-          </tbody>
-        </table>
-      </div>
-    `;
-    }
-    // ─── Tanks tab methods ────────────────────────────────────────────────────
-    _openTankEdit(index) {
-        const tank = (this.device?.environmentAttributes?.irrigationTanks ?? [])[index];
+    // Decomposed (ADR-0019): the Overview tab renders through
+    // `<irrigation-overview-tab .vm=…>` driven by `createOverviewTabViewModel`.
+    // All values still come from the growspace payload (device.steeringMetrics),
+    // never hass.states. The former inline `_renderOverview*` helpers moved into
+    // the Tab Component / Tab ViewModel.
+    // ─── Tanks tab: Tab Intent → SM-event translation (ADR-0019) ───────────────
+    // The Shell owns the translation; `<irrigation-tanks-tab>` only emits intents.
+    /** `edit-tank-requested` → seed the draft from the live tank and open the editor. */
+    _onEditTankRequested(e) {
+        const index = e.detail.index;
+        const tank = this._currentTanks()[index];
         if (!tank)
             return;
-        this._tankDraft = {
+        const draft = {
             sensorEntity: tank.sensorEntity,
             name: tank.name,
             volumeLiters: tank.volumeLiters ?? null,
             warningLevel: tank.warningLevel,
         };
-        this._editingTankIndex = index;
+        this.dispatch({ type: 'EDIT_TANK', index, draft });
     }
-    _cancelTankEdit() {
-        this._editingTankIndex = null;
-        this._tankDraft = null;
+    /** `tank-draft-changed` → merge the field change into the open draft. */
+    _onTankDraftChanged(e) {
+        this.dispatch({ type: 'UPDATE_TANK_DRAFT', partial: e.detail.partial });
     }
-    async _saveTankEdit() {
-        if (this._editingTankIndex === null || !this._tankDraft || !this.device)
+    /** `cancel-tank-edit` → close the editor. */
+    _onCancelTankEdit() {
+        this.dispatch({ type: 'CANCEL_TANK_EDIT' });
+    }
+    /**
+     * `save-tank-requested` → compose the full tank array (current tanks with the
+     * draft merged at `index`, preserving live levels) and dispatch SaveRequested.
+     * The payload is snapshotted into `applying.params` here so the effect never
+     * reads the (possibly-cleared) sub-state (ADR-0015).
+     */
+    _onSaveTankRequested() {
+        const sub = this._sm.tabs.tanks.sub;
+        if (sub.kind !== 'editing' || !this.device?.deviceId)
             return;
-        const tanks = [...(this.device.environmentAttributes?.irrigationTanks ?? [])];
-        tanks[this._editingTankIndex] = {
-            ...tanks[this._editingTankIndex],
-            ...this._tankDraft,
-        };
-        await this._dataService?.configureEnvironment({
+        const params = {
             growspaceId: this.device.deviceId,
-            irrigationTanks: tanks,
+            irrigationTanks: mergeTankDraft(this._currentTanks(), sub.index, sub.draft),
+        };
+        // Close the editor now; the payload is already snapshotted into `params` and
+        // travels in `applying.status`, so the effect never reads the cleared
+        // sub-state (ADR-0015). A failure surfaces as a toast with the editor closed.
+        this.dispatch({ type: 'CANCEL_TANK_EDIT' });
+        this.dispatch({ type: 'SaveRequested', action: 'save-tank', params });
+    }
+    /** Live tank list — the authoritative read source is the Irrigation slice. */
+    _currentTanks() {
+        const id = this.device?.deviceId;
+        return (id ? tankLevels$.get().get(id) : undefined) ?? [];
+    }
+    /** Effect: persist tank config through the Growspace slice. Reads only params. */
+    async _effectSaveTank(params) {
+        await configureEnvironment$1({
+            growspaceId: params.growspaceId,
+            irrigationTanks: params.irrigationTanks,
         });
-        this._editingTankIndex = null;
-        this._tankDraft = null;
     }
-    // ─── EC Ramp tab ──────────────────────────────────────────────────────────
-    _renderEcRampTab() {
-        return x `
-      <div class="tab-section">
-        ${this._ecRampError
-            ? x `<div class="error-bar">${this._ecRampError}</div>`
-            : E}
-        ${this._ecRampView === 'LIST'
-            ? this._renderEcRampList()
-            : this._renderEcRampEdit()}
-      </div>
-    `;
+    // ─── EC Ramp tab: Tab Intent → SM-event translation (ADR-0019) ─────────────
+    // The Shell owns the translation; `<irrigation-ec-ramp-tab>` only emits intents.
+    // Curves are owned by the Nutrient slice (ADR-0005); the editor draft lives in
+    // the SM.
+    _onEcRampNewCurve() {
+        this.dispatch({ type: 'EC_RAMP_START_NEW' });
     }
-    _renderEcRampList() {
-        const curves = this._ecRampCurvesController?.value ?? {};
-        const curveList = Object.values(curves);
-        if (curveList.length === 0) {
-            return x `
-        <div class="empty-state">
-          <ha-svg-icon .path=${mdiInformation}></ha-svg-icon>
-          <p>No EC ramp curves defined yet.</p>
-          <p style="font-size: 0.9rem;">
-            Create curves to schedule EC targets across your grow cycle.
-          </p>
-        </div>
-        <div class="button-group" style="margin-top: 16px;">
-          <button class="md3-button primary" @click=${this._ecRampStartNew}>
-            <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
-            New Curve
-          </button>
-        </div>
-      `;
-        }
-        return x `
-      <div class="curves-list">
-        ${curveList.map((curve) => x `
-            <div class="curve-item" @click=${() => this._ecRampEditCurve(curve)}>
-              <div class="curve-info">
-                <div class="curve-name">${curve.name}</div>
-                <div class="curve-details">
-                  ${curve.points.length} point${curve.points.length !== 1 ? 's' : ''} • Day
-                  ${Math.min(...curve.points.map((p) => p.day))}–${Math.max(...curve.points.map((p) => p.day))}
-                </div>
-              </div>
-              <div class="curve-actions">
-                <button
-                  class="md3-button icon"
-                  @click=${(e) => {
-            e.stopPropagation();
-            this._ecRampEditCurve(curve);
-        }}
-                  title="Edit"
-                >
-                  <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
-                </button>
-                <button
-                  class="md3-button icon"
-                  @click=${(e) => {
-            e.stopPropagation();
-            this._ecRampDeleteCurve(curve.id).catch(() => undefined);
-        }}
-                  title="Delete"
-                  style="color: var(--error-color);"
-                >
-                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                </button>
-              </div>
-            </div>
-          `)}
-      </div>
-      <div class="button-group" style="margin-top: 16px;">
-        <button class="md3-button primary" @click=${this._ecRampStartNew}>
-          <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
-          New Curve
-        </button>
-      </div>
-    `;
-    }
-    _renderEcRampEdit() {
-        const curve = this._ecRampEditingCurve;
-        if (!curve)
-            return E;
-        const points = curve.points ?? [];
-        return x `
-      <div class="preset-form">
-        <div class="form-section">
-          <h3>Curve Info</h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <md3-text-input
-              label="Curve Name"
-              .value=${curve.name ?? ''}
-              @change=${(e) => (this._ecRampEditingCurve = { ...curve, name: e.detail })}
-              placeholder="e.g. Veg Ramp, Bloom Progression"
-            ></md3-text-input>
-            <md3-select
-              label="Growth Stage"
-              .value=${curve.stage ?? 'flower'}
-              .options=${[
-            { label: 'Seedling', value: 'seedling' },
-            { label: 'Mother', value: 'mother' },
-            { label: 'Vegetative', value: 'veg' },
-            { label: 'Flower', value: 'flower' },
-            { label: 'Cure', value: 'cure' },
-        ]}
-              @change=${(e) => (this._ecRampEditingCurve = { ...curve, stage: e.detail })}
-            ></md3-select>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <div class="points-header">
-            <h3>Ramp Points</h3>
-            <button class="md3-button text" @click=${this._ecRampAddPoint}>
-              <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
-              Add Point
-            </button>
-          </div>
-          <div class="points-list">
-            ${points.map((point, index) => x `
-                <div class="point-row">
-                  <md3-number-input
-                    label="Day"
-                    .value=${point.day}
-                    @change=${(e) => this._ecRampUpdatePoint(index, { day: parseInt(e.detail) || 0 })}
-                    min="0"
-                  ></md3-number-input>
-                  <md3-number-input
-                    label="Target EC (mS/cm)"
-                    .value=${point.target_ec}
-                    @change=${(e) => this._ecRampUpdatePoint(index, {
-            target_ec: parseFloat(e.detail) || 0,
-        })}
-                    min="0"
-                    step="0.1"
-                  ></md3-number-input>
-                  <button
-                    class="md3-button icon"
-                    @click=${() => this._ecRampRemovePoint(index)}
-                    style="color: var(--error-color);"
-                    ?disabled=${points.length <= 1}
-                  >
-                    <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                  </button>
-                </div>
-              `)}
-          </div>
-        </div>
-      </div>
-
-      <div class="button-group" style="margin-top: 16px;">
-        <button
-          class="md3-button tonal"
-          @click=${() => {
-            this._ecRampView = 'LIST';
-            this._ecRampEditingCurve = null;
-            this._ecRampError = null;
-        }}
-        >
-          <ha-svg-icon .path=${mdiArrowLeft} style="margin-right: 8px;"></ha-svg-icon>
-          Back
-        </button>
-        <button class="md3-button primary" @click=${this._ecRampSaveCurve}>
-          <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
-          Save Curve
-        </button>
-      </div>
-    `;
-    }
-    _ecRampStartNew() {
-        this._ecRampEditingCurve = {
-            name: '',
-            stage: 'flower',
-            points: [{ day: 1, target_ec: 1.0 }],
-        };
-        this._ecRampView = 'EDIT';
-        this._ecRampError = null;
-    }
-    _ecRampEditCurve(curve) {
-        this._ecRampEditingCurve = JSON.parse(JSON.stringify(curve));
-        this._ecRampView = 'EDIT';
-        this._ecRampError = null;
-    }
-    async _ecRampDeleteCurve(curveId) {
-        if (!confirm('Are you sure you want to delete this EC ramp curve?'))
-            return;
-        try {
-            await this.store.actions.library.removeECRampCurve(curveId);
-        }
-        catch (err) {
-            this._ecRampError = err instanceof Error ? err.message : 'Unknown error';
-        }
-    }
-    _ecRampAddPoint() {
-        const curve = this._ecRampEditingCurve;
+    /** `ec-ramp-edit-curve` → deep-copy the saved curve into the SM editor draft. */
+    _onEcRampEditCurve(e) {
+        const curve = (ecRampCurves$.get() ?? {})[e.detail.id];
         if (!curve)
             return;
-        const points = [...(curve.points ?? [])];
-        const lastDay = points.length > 0 ? points[points.length - 1].day : 0;
-        const lastEc = points.length > 0 ? points[points.length - 1].target_ec : 1.0;
-        this._ecRampEditingCurve = {
-            ...curve,
-            points: [...points, { day: lastDay + 7, target_ec: lastEc + 0.2 }],
-        };
+        const draft = JSON.parse(JSON.stringify(curve));
+        this.dispatch({ type: 'EC_RAMP_EDIT_CURVE', draft });
     }
-    _ecRampRemovePoint(index) {
-        const curve = this._ecRampEditingCurve;
-        if (!curve)
-            return;
-        const points = [...(curve.points ?? [])];
-        points.splice(index, 1);
-        this._ecRampEditingCurve = { ...curve, points };
+    _onEcRampCancelEdit() {
+        this.dispatch({ type: 'EC_RAMP_CANCEL_EDIT' });
     }
-    _ecRampUpdatePoint(index, updates) {
-        const curve = this._ecRampEditingCurve;
-        if (!curve)
-            return;
-        const points = [...(curve.points ?? [])];
-        points[index] = { ...points[index], ...updates };
-        this._ecRampEditingCurve = { ...curve, points };
+    _onEcRampCurveChanged(e) {
+        this.dispatch({ type: 'UPDATE_EC_RAMP_CURVE', partial: e.detail.partial });
     }
-    async _ecRampSaveCurve() {
-        const curve = this._ecRampEditingCurve;
-        if (!curve?.name?.trim()) {
-            this._ecRampError = 'Curve name is required';
+    _onEcRampAddPoint() {
+        this.dispatch({ type: 'EC_RAMP_ADD_POINT' });
+    }
+    _onEcRampRemovePoint(e) {
+        this.dispatch({ type: 'EC_RAMP_REMOVE_POINT', index: e.detail.index });
+    }
+    _onEcRampUpdatePoint(e) {
+        this.dispatch({
+            type: 'EC_RAMP_UPDATE_POINT',
+            index: e.detail.index,
+            partial: e.detail.partial,
+        });
+    }
+    /**
+     * `ec-ramp-delete-curve` → confirm (the Shell owns this guard so the component
+     * stays dumb), then run the remove effect (no editor draft involved).
+     */
+    _onEcRampDeleteCurve(e) {
+        if (!window.confirm('Are you sure you want to delete this EC ramp curve?'))
+            return;
+        this.dispatch({
+            type: 'SaveRequested',
+            action: 'remove-ec-ramp-curve',
+            params: { curveId: e.detail.id },
+        });
+    }
+    /**
+     * `ec-ramp-save-curve` → validate + compose the payload from the open draft. A
+     * synchronous validation failure sets the SM error and stops; a valid payload
+     * closes the editor and dispatches SaveRequested with the payload snapshotted
+     * into `applying.status` (ADR-0015), so the effect never reads cleared state.
+     */
+    _onEcRampSaveCurve() {
+        const sub = this._sm.tabs.ec_ramp.sub;
+        if (sub.kind !== 'editing')
+            return;
+        const result = composeEcRampSave(sub.draft);
+        if (!result.ok) {
+            this.dispatch({ type: 'SET_EC_RAMP_ERROR', error: result.error });
             return;
         }
-        const points = (curve.points ?? []).filter((p) => p.day >= 0 && p.target_ec > 0);
-        if (points.length === 0) {
-            this._ecRampError = 'At least one valid EC point is required';
+        this.dispatch({ type: 'EC_RAMP_CANCEL_EDIT' });
+        this.dispatch({ type: 'SaveRequested', action: 'save-ec-ramp-curve', params: result.payload });
+    }
+    /**
+     * Effects read only `params`. They route through the store's library actions
+     * (not the bare Nutrient mutators) because those save *and* refetch
+     * `ecRampCurves$` — the atom the VM reads — so the list reflects the change.
+     */
+    async _effectSaveEcRampCurve(params) {
+        await this.store.actions.library.saveECRampCurve(params);
+    }
+    async _effectRemoveEcRampCurve(params) {
+        await this.store.actions.library.removeECRampCurve(params.curveId);
+    }
+    // ─── Drain EC tab intents (ADR-0019) ───────────────────────────────────────
+    // The monitoring/log draft lives in the SM; config persists via the global
+    // `save-all` effect. The `_logDrainReadingNow` flow is preserved exactly — an
+    // imperative host method (its `feedEc/drainEc > 0` guard lives here, not in the
+    // SM or VM), surfaced to the dumb component via the `drain-ec-log-reading` intent.
+    /** `drain-ec-draft-changed` → merge the field change into the SM draft. */
+    _onDrainEcDraftChanged(e) {
+        this._sm = transition$4(this._sm, {
+            type: 'UPDATE_DRAIN_EC_DRAFT',
+            partial: e.detail.partial,
+        });
+    }
+    /** `drain-ec-log-reading` → run the existing imperative log flow unchanged. */
+    _onDrainEcLogReading() {
+        this._logDrainReadingNow().catch(() => { });
+    }
+    // ─── Config tab intents (ADR-0019) ─────────────────────────────────────────
+    // The config draft + pump-entity drafts live in the SM; both persist through the
+    // global `save-all` footer path. Run Now reuses the existing `_handleRunNow`.
+    /** `config-pump-changed` → write the pump select into the SHARED schedules draft. */
+    _onConfigPumpChanged(e) {
+        const { which, value } = e.detail;
+        this._sm = transition$4(this._sm, {
+            type: 'UPDATE_SCHEDULES_DRAFT',
+            partial: which === 'irrigation' ? { irrigationPumpEntity: value } : { drainPumpEntity: value },
+        });
+    }
+    /** `config-draft-changed` → merge the field change into the SM config draft. */
+    _onConfigDraftChanged(e) {
+        this._sm = transition$4(this._sm, {
+            type: 'UPDATE_CONFIG_DRAFT',
+            partial: e.detail.partial,
+        });
+    }
+    /** `config-run-now` → run the existing manual-override flow unchanged. */
+    _onConfigRunNow() {
+        this._handleRunNow();
+    }
+    // ─── Schedules tab intents (ADR-0019) ──────────────────────────────────────
+    // Most map 1:1 to existing SM events / private handlers; the save/effect routing
+    // through the MutationRunController is preserved exactly.
+    _onSchedulesBeginAdd(e) {
+        const { type, time, duration } = e.detail;
+        this._sm = transition$4(this._sm, {
+            type: type === 'irrigation' ? 'BEGIN_ADD_IRRIGATION' : 'BEGIN_ADD_DRAIN',
+            time,
+            duration,
+        });
+    }
+    _onSchedulesBeginEdit(e) {
+        const { type, timeStr, duration } = e.detail;
+        this._sm = transition$4(this._sm, {
+            type: type === 'irrigation' ? 'BEGIN_EDIT_IRRIGATION' : 'BEGIN_EDIT_DRAIN',
+            originalTime: timeStr,
+            originalDuration: duration,
+            time: timeStr.substring(0, 5),
+            duration,
+        });
+    }
+    _onSchedulesUpdateAdd(e) {
+        const { type, time, duration } = e.detail;
+        this._sm = transition$4(this._sm, {
+            type: type === 'irrigation' ? 'UPDATE_ADD_IRRIGATION' : 'UPDATE_ADD_DRAIN',
+            ...(time !== undefined && { time }),
+            ...(duration !== undefined && { duration }),
+        });
+    }
+    _onSchedulesUpdateEdit(e) {
+        const { type, time, duration } = e.detail;
+        this._sm = transition$4(this._sm, {
+            type: type === 'irrigation' ? 'UPDATE_EDIT_IRRIGATION' : 'UPDATE_EDIT_DRAIN',
+            ...(time !== undefined && { time }),
+            ...(duration !== undefined && { duration }),
+        });
+    }
+    _onSchedulesCancelInline() {
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
+    }
+    _onSchedulesSaveAdd(e) {
+        const { type, time, duration } = e.detail;
+        if (type === 'irrigation') {
+            this._addIrrigationTime(time, duration).catch(() => this._showErrorToast('Failed to add irrigation time'));
+        }
+        else {
+            this._addDrainTime(time, duration).catch(() => { });
+        }
+    }
+    _onSchedulesSaveEdit(e) {
+        if (e.detail.type === 'irrigation')
+            this._saveEditedIrrigationTime();
+        else
+            this._saveEditedDrainTime();
+    }
+    _onSchedulesDeleteFromEdit(e) {
+        if (e.detail.type === 'irrigation')
+            this._deleteIrrigationTimeFromEdit();
+        else
+            this._deleteDrainTimeFromEdit();
+    }
+    _onSchedulesRemoveTime(e) {
+        if (e.detail.type === 'irrigation') {
+            this._removeIrrigationTime(e.detail.timeStr).catch(() => this._showErrorToast('Failed to remove irrigation time'));
+        }
+        else {
+            this._removeDrainTime(e.detail.timeStr).catch(() => { });
+        }
+    }
+    _onSchedulesOpenSteering() {
+        if (!this.device)
             return;
-        }
-        try {
-            await this.store.actions.library.saveECRampCurve({
-                curve_id: curve.id,
-                name: curve.name.trim(),
-                stage: curve.stage ?? 'flower',
-                points: [...points].sort((a, b) => a.day - b.day),
-            });
-            this._ecRampView = 'LIST';
-            this._ecRampEditingCurve = null;
-            this._ecRampError = null;
-        }
-        catch (err) {
-            this._ecRampError = err instanceof Error ? err.message : 'Unknown error';
-        }
+        this._sm = requestTabSwitch(this._sm, 'steering', this.device);
+    }
+    // ─── Water Analytics tab intents (ADR-0019) ───────────────────────────────
+    // The decomposed `<irrigation-water-analytics-tab>` is read-mostly with two
+    // interactions: the "edit in Steering →" link (→ tab switch) and the
+    // Maintenance "Reset All Data" button (→ the existing `_handleResetWaterTracking`,
+    // bound directly in the render case). The crop-steering shot summary derives in
+    // the VM via the pure `crop-steering-model` helper, and `stageAggregates` is
+    // still fetched by `_fetchStageAnalytics` and passed through the VM.
+    _onWaterAnalyticsOpenSteering() {
+        if (!this.device)
+            return;
+        this._sm = requestTabSwitch(this._sm, 'steering', this.device);
     }
 };
 IrrigationDialog.styles = [
     dialogStyles,
     i$6 `
-      /* ── Crop Steering Overview tab ── */
-      .cs-metric-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-        margin-top: 16px;
-      }
-      .cs-metric-card {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border-radius: 12px;
-        padding: 16px;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-      }
-      .cs-metric-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: var(--primary-text-color);
-        margin: 8px 0;
-      }
-      .cs-metric-label {
-        font-size: 14px;
-        color: var(--secondary-text-color);
-      }
-      .cs-metric-sub {
-        font-size: 0.75rem;
-        color: var(--secondary-text-color);
-        margin-bottom: 6px;
-        font-variant-numeric: tabular-nums;
-      }
-      .cs-metric-locked {
-        opacity: 0.55;
-        border-style: dashed;
-      }
-      .cs-shot-composition {
-        margin-top: 16px;
-      }
-      .cs-phase-pill {
-        padding: 2px 10px;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
-        color: var(--secondary-text-color);
-      }
-      .cs-shot-row {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.85rem;
-        padding: 4px 0;
-        font-variant-numeric: tabular-nums;
-      }
-      .cs-shot-total {
-        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        margin-top: 4px;
-        padding-top: 8px;
-        font-weight: 600;
-      }
-      .cs-mode-badge {
-        padding: 4px 12px;
-        border-radius: 16px;
-        font-size: 14px;
-        font-weight: bold;
-        text-transform: capitalize;
-        margin-top: 8px;
-        display: inline-block;
-      }
-      .cs-mode-vegetative {
-        background: rgba(76, 175, 80, 0.2);
-        color: #4caf50;
-      }
-      .cs-mode-generative {
-        background: rgba(244, 67, 54, 0.2);
-        color: #f44336;
-      }
-      .cs-mode-balanced {
-        background: rgba(33, 150, 243, 0.2);
-        color: #2196f3;
-      }
-      .cs-intent {
-        margin-top: 12px;
-        font-size: 0.85rem;
-        text-transform: capitalize;
-      }
-      .cs-intent-ontarget {
-        color: var(--success-color, #4caf50);
-      }
-      .cs-intent-deviation {
-        color: var(--warning-color, #ff9800);
-        font-weight: 500;
-      }
-
       /* ── Body layout ── */
       .glass-dialog-container {
         max-height: 90vh;
@@ -33147,353 +36227,6 @@ IrrigationDialog.styles = [
         gap: 8px;
       }
 
-      /* ── Timeline ── */
-      .timeline-track {
-        position: relative;
-        height: 96px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        background: rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-        cursor: crosshair;
-      }
-
-      .grid-v {
-        position: absolute;
-        top: 0;
-        bottom: 18px;
-        width: 1px;
-        background: rgba(255, 255, 255, 0.04);
-        pointer-events: none;
-      }
-      .grid-v.major {
-        background: rgba(255, 255, 255, 0.09);
-      }
-
-      .x-label {
-        position: absolute;
-        bottom: 4px;
-        transform: translateX(-50%);
-        font-size: 10px;
-        color: rgba(255, 255, 255, 0.35);
-        font-variant-numeric: tabular-nums;
-        pointer-events: none;
-      }
-
-      .timeline-event {
-        position: absolute;
-        top: 10px;
-        height: 52px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: flex-end;
-        padding: 4px 5px;
-        overflow: hidden;
-        transition: transform 0.15s;
-        z-index: 5;
-      }
-
-      .timeline-event:hover {
-        transform: translateY(-2px);
-      }
-
-      .timeline-event.completed {
-        opacity: 0.45;
-      }
-
-      .timeline-event.completed::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: repeating-linear-gradient(
-          45deg,
-          transparent 0 3px,
-          rgba(0, 0, 0, 0.18) 3px 5px
-        );
-        pointer-events: none;
-      }
-
-      .timeline-event .event-lbl {
-        font-size: 9.5px;
-        color: rgba(0, 0, 0, 0.78);
-        font-weight: 600;
-        white-space: nowrap;
-        position: relative;
-        z-index: 1;
-      }
-
-      .now-line {
-        position: absolute;
-        top: 4px;
-        bottom: 22px;
-        width: 1px;
-        background: #ff9800;
-        box-shadow: 0 0 8px rgba(255, 152, 0, 0.5);
-        pointer-events: none;
-        z-index: 8;
-      }
-
-      .now-line::before {
-        content: '';
-        position: absolute;
-        left: -3px;
-        top: -3px;
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #ff9800;
-      }
-
-      /* ── Time chips ── */
-      .time-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 8px;
-      }
-
-      .time-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        height: 28px;
-        padding: 0 4px 0 10px;
-        border-radius: 8px;
-        font-size: 12.5px;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .time-chip.irrig-chip {
-        background: rgba(33, 150, 243, 0.14);
-        border: 1px solid rgba(33, 150, 243, 0.3);
-        color: rgba(255, 255, 255, 0.9);
-      }
-
-      .time-chip.drain-chip {
-        background: rgba(255, 152, 0, 0.14);
-        border: 1px solid rgba(255, 152, 0, 0.3);
-        color: rgba(255, 255, 255, 0.9);
-      }
-
-      .time-chip.new-chip {
-        background: transparent;
-        border: 1px dashed rgba(255, 255, 255, 0.2);
-        color: rgba(255, 255, 255, 0.4);
-        cursor: pointer;
-        padding: 0 12px;
-        border-radius: 8px;
-      }
-      .time-chip.new-chip:hover {
-        border-color: rgba(255, 255, 255, 0.35);
-        color: rgba(255, 255, 255, 0.7);
-      }
-
-      .chip-dur {
-        color: rgba(255, 255, 255, 0.45);
-        font-size: 11px;
-      }
-
-      .chip-remove {
-        width: 20px;
-        height: 20px;
-        border-radius: 6px;
-        background: transparent;
-        border: none;
-        color: rgba(255, 255, 255, 0.4);
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        line-height: 1;
-        margin-left: 2px;
-        flex-shrink: 0;
-      }
-      .chip-remove:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: rgba(255, 255, 255, 0.85);
-      }
-
-      /* ── Phase cards ── */
-      .phase-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-      }
-
-      .phase-card {
-        padding: 12px 14px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.02);
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        cursor: pointer;
-        transition:
-          background 0.15s,
-          border-color 0.15s;
-      }
-      .phase-card:hover {
-        background: rgba(255, 255, 255, 0.035);
-      }
-      .phase-card.active {
-        border-color: rgba(33, 150, 243, 0.5);
-        background: rgba(33, 150, 243, 0.08);
-      }
-      .seg-btn {
-        flex: 1;
-        padding: 10px 12px;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.04);
-        color: var(--primary-text-color);
-        font-size: 0.85rem;
-        cursor: pointer;
-      }
-      .seg-btn.active {
-        border-color: rgba(33, 150, 243, 0.5);
-        background: rgba(33, 150, 243, 0.12);
-        font-weight: 600;
-      }
-      .seg-btn:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
-      .phase-card .phase-num {
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.4);
-      }
-      .phase-card .phase-nm {
-        font-size: 14px;
-        font-weight: 500;
-      }
-      .phase-card .phase-desc {
-        font-size: 11.5px;
-        color: rgba(255, 255, 255, 0.5);
-        line-height: 1.4;
-      }
-
-      /* ── Info banner ── */
-      .info-banner {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        padding: 10px 14px;
-        background: rgba(33, 150, 243, 0.07);
-        border: 1px solid rgba(33, 150, 243, 0.2);
-        border-radius: 8px;
-        font-size: 12.5px;
-        color: rgba(255, 255, 255, 0.65);
-        line-height: 1.5;
-      }
-
-      /* ── Stub badge ── */
-      .stub-badge {
-        display: inline-block;
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        padding: 2px 8px;
-        border-radius: 10px;
-        background: rgba(255, 152, 0, 0.12);
-        color: #ff9800;
-        border: 1px solid rgba(255, 152, 0, 0.3);
-        margin-left: 8px;
-      }
-
-      .action-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 18px;
-        border-radius: 20px;
-        border: 1px solid rgba(79, 195, 247, 0.4);
-        background: rgba(79, 195, 247, 0.1);
-        color: #4fc3f7;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.15s;
-      }
-      .action-btn:hover:not([disabled]) {
-        background: rgba(79, 195, 247, 0.2);
-      }
-      .action-btn[disabled],
-      .action-btn.saving {
-        opacity: 0.5;
-        cursor: default;
-      }
-
-      /* ── Tank row (bar-style) ── */
-      .tank-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.02);
-        transition: border-color 0.2s;
-      }
-      .tank-row.warning {
-        border-color: rgba(244, 67, 54, 0.4);
-        background: rgba(244, 67, 54, 0.04);
-      }
-      .tank-row-info {
-        flex: 1;
-        min-width: 0;
-      }
-      .tank-row-name {
-        font-size: 13px;
-        font-weight: 500;
-      }
-      .tank-bar-track {
-        height: 5px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
-        overflow: hidden;
-        margin-top: 5px;
-      }
-      .tank-bar-fill {
-        height: 100%;
-        border-radius: 3px;
-        transition: width 0.4s ease;
-      }
-      .tank-row-stat {
-        font-size: 12.5px;
-        text-align: right;
-        flex-shrink: 0;
-        font-variant-numeric: tabular-nums;
-      }
-      .tank-row-pct {
-        font-weight: 600;
-      }
-      .tank-row-sub {
-        font-size: 11px;
-        opacity: 0.5;
-        margin-top: 2px;
-      }
-
-      /* ── Overlay (unchanged) ── */
-      .overlay-backdrop {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-      }
-
       /* ── Toast ── */
       .toast-notification {
         position: fixed;
@@ -33531,31 +36264,6 @@ IrrigationDialog.styles = [
         font-size: 0.9rem;
       }
 
-      /* ── Edit dialog buttons ── */
-      .edit-dialog-buttons {
-        display: flex;
-        gap: 8px;
-        margin-top: 16px;
-      }
-      .edit-dialog-buttons .delete-button {
-        flex: 0 0 auto;
-      }
-      .edit-dialog-buttons .spacer {
-        flex: 1;
-      }
-      .edit-dialog-buttons .action-buttons {
-        display: flex;
-        gap: 8px;
-      }
-      .md3-button.delete-button {
-        background: rgba(244, 67, 54, 0.2) !important;
-        color: #f44336 !important;
-        border: 1px solid rgba(244, 67, 54, 0.3);
-      }
-      .md3-button.delete-button:hover {
-        background: rgba(244, 67, 54, 0.3) !important;
-      }
-
       /* ── Setup hints ── */
       .setup-hints {
         display: flex;
@@ -33577,92 +36285,6 @@ IrrigationDialog.styles = [
       .setup-hint .hint-icon {
         flex-shrink: 0;
         font-size: 1rem;
-      }
-
-      /* ── Disable stub controls ── */
-      .stub-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 12px;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 8px;
-        opacity: 0.55;
-      }
-      .stub-row-label {
-        font-size: 13px;
-      }
-      .stub-row-desc {
-        font-size: 11px;
-        opacity: 0.6;
-        margin-top: 2px;
-      }
-
-      /* ── Crop Steering Schedule ── */
-      .auto-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        height: 22px;
-        padding: 0 8px;
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        background: linear-gradient(135deg, rgba(76, 175, 80, 0.18), rgba(33, 150, 243, 0.18));
-        border: 1px solid rgba(76, 175, 80, 0.4);
-        color: #4caf50;
-        border-radius: 6px;
-      }
-      .auto-pill .pulse-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: #4caf50;
-        box-shadow: 0 0 6px rgba(76, 175, 80, 0.9);
-        flex-shrink: 0;
-      }
-      .cs-timeline {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .cs-legend {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        padding-top: 2px;
-      }
-      .cs-leg-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        height: 24px;
-        padding: 0 10px;
-        background: rgba(255, 255, 255, 0.025);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 6px;
-        font-size: 11.5px;
-        color: rgba(255, 255, 255, 0.6);
-        font-variant-numeric: tabular-nums;
-      }
-      .cs-leg-chip strong {
-        color: rgba(255, 255, 255, 0.9);
-        font-weight: 500;
-      }
-      .cs-leg-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
-      .info-banner.banner-cs {
-        background: linear-gradient(90deg, rgba(76, 175, 80, 0.1), rgba(33, 150, 243, 0.06));
-        border: 1px solid rgba(76, 175, 80, 0.3);
-        border-left: 3px solid #4caf50;
-      }
-      .info-banner.banner-cs svg {
-        fill: #4caf50;
       }
 
       @keyframes field-pulse-anim {
@@ -33734,21 +36356,6 @@ __decorate([
 __decorate([
     r$3()
 ], IrrigationDialog.prototype, "_sm", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_editingTankIndex", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_tankDraft", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_ecRampView", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_ecRampEditingCurve", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_ecRampError", void 0);
 IrrigationDialog = __decorate([
     t$2('irrigation-dialog')
 ], IrrigationDialog);
@@ -70791,12 +73398,12 @@ const growspaceCardStyles = i$6 `
   }
 `;
 
-const TankWaterBucketSchema = objectType({
-    timestamp: stringType(),
-    liters: numberType(),
+const TankWaterBucketSchema = object({
+    timestamp: string(),
+    liters: number(),
 });
-const TankWaterHistorySchema = objectType({
-    buckets: arrayType(TankWaterBucketSchema),
+const TankWaterHistorySchema = object({
+    buckets: array(TankWaterBucketSchema),
 });
 let TankWaterChart = class TankWaterChart extends i$3 {
     constructor() {
@@ -137137,7 +139744,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.42"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.51"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

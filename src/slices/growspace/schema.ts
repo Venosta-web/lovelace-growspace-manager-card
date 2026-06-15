@@ -262,10 +262,10 @@ export const GrowspaceAPIResponseSchema = z
     metrics: z
       .object({
         vpd_status: z.string().optional().default('unknown'),
-        vpd_target_min: z.number().optional().default(0),
-        vpd_target_max: z.number().optional().default(0),
-        vpd_danger_min: z.number().optional().default(0),
-        vpd_danger_max: z.number().optional().default(0),
+        vpd_target_min: z.preprocess((val) => (val === null ? undefined : val), z.number().optional().default(0)),
+        vpd_target_max: z.preprocess((val) => (val === null ? undefined : val), z.number().optional().default(0)),
+        vpd_danger_min: z.preprocess((val) => (val === null ? undefined : val), z.number().optional().default(0)),
+        vpd_danger_max: z.preprocess((val) => (val === null ? undefined : val), z.number().optional().default(0)),
         granular_stage: z.string().optional().default('unknown'),
         is_day: z.boolean().optional().default(false),
         veg_week: z.number().optional().default(0),

@@ -646,12 +646,6 @@ describe('GrowspaceDialogHostContainer', () => {
         expect(element.shadowRoot?.querySelector('snapshots-dialog')).toBeTruthy();
     });
 
-    it('should render crop-steering-dialog for CROP_STEERING type', async () => {
-        mockStore.ui.$activeDialog.set({ type: 'CROP_STEERING', payload: {} });
-        await element.updateComplete;
-        await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('crop-steering-dialog')).toBeTruthy();
-    });
 
     it('should return empty template for unknown dialog type', async () => {
         mockStore.ui.$activeDialog.set({ type: 'UNKNOWN_TYPE' as any, payload: {} });
@@ -1078,14 +1072,6 @@ describe('GrowspaceDialogHostContainer', () => {
             vi.useRealTimers();
         });
 
-        it('should handle @data-changed on CROP_STEERING', async () => {
-            vi.useFakeTimers();
-            const refreshSpy = vi.spyOn(mockStore, 'refreshData');
-            await testDialogEvent('CROP_STEERING', 'crop-steering-dialog', 'data-changed', () => {});
-            vi.runAllTimers();
-            expect(mockStore.actions.ui.refreshData).toHaveBeenCalled();
-            vi.useRealTimers();
-        });
 
         it('should handle @data-changed on NUTRIENT_INVENTORY', async () => {
             vi.useFakeTimers();
@@ -1133,9 +1119,6 @@ describe('GrowspaceDialogHostContainer', () => {
             testDialogEvent('SNAPSHOTS', 'snapshots-dialog', 'close', () => 
                 expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()));
 
-        it('should handle @close on CROP_STEERING', () => 
-            testDialogEvent('CROP_STEERING', 'crop-steering-dialog', 'close', () => 
-                expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()));
 
         it('should handle @close on NUTRIENT_INVENTORY', () => 
             testDialogEvent('NUTRIENT_INVENTORY', 'growspace-nutrient-inventory-dialog-ui', 'close', () => 
@@ -1422,7 +1405,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 { type: 'PRINT_LABEL', selector: 'print-label-dialog' },
                 { type: 'HARVEST_SCORING', selector: 'harvest-scoring-dialog' },
                 { type: 'SNAPSHOTS', selector: 'snapshots-dialog' },
-                { type: 'CROP_STEERING', selector: 'crop-steering-dialog' },
+
             ];
 
             for (const { type, selector } of dialogTypes) {
@@ -2523,7 +2506,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 { name: '_renderTrainingDialog', args: [badActive, undefined] },
                 { name: '_renderIPMDialog', args: [badActive, {}, undefined] },
                 { name: '_renderSnapshotsDialog', args: [badActive, undefined] },
-                { name: '_renderCropSteeringDialog', args: [badActive, undefined] },
+
                 { name: '_renderNutrientInventoryDialog', args: [badActive, null, undefined] },
                 { name: '_renderCloneDialog', args: [badActive, {}, undefined] },
                 { name: '_renderNutrientDialog', args: [badActive, undefined] },

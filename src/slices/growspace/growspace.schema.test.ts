@@ -135,6 +135,21 @@ describe('Growspace Zod Schemas', () => {
       });
     });
 
+    it('parses null vpd metrics and defaults them to 0', () => {
+      const parsed = GrowspaceAPIResponseSchema.parse({
+        metrics: {
+          vpd_target_min: null,
+          vpd_target_max: null,
+          vpd_danger_min: null,
+          vpd_danger_max: null,
+        },
+      });
+      expect(parsed.metrics.vpd_target_min).toBe(0);
+      expect(parsed.metrics.vpd_target_max).toBe(0);
+      expect(parsed.metrics.vpd_danger_min).toBe(0);
+      expect(parsed.metrics.vpd_danger_max).toBe(0);
+    });
+
     it('validates circulation_fan_config when present in the environment block', () => {
       expect(() =>
         GrowspaceAPIResponseSchema.parse({
