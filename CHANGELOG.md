@@ -1,3 +1,12 @@
+# [1.1.0-next.47](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.46...v1.1.0-next.47) (2026-06-15)
+
+
+### Features
+
+* **irrigation:** add schedules tab Component (ADR-0019) ([62a7aa7](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/62a7aa78a2d12ca80be8e613d1c57fe71c9264ca))
+* **irrigation:** add schedules tab ViewModel factory (ADR-0019) ([ad3765b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/ad3765b794b8cd0856b29a5971834b48475c83a8))
+* **irrigation:** wire schedules tab into the Dialog Shell (ADR-0019) ([28d791c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/28d791c14cc5d0868c321fcf5eb39fe1755c517f))
+
 # [1.1.0-next.46](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.45...v1.1.0-next.46) (2026-06-14)
 
 
