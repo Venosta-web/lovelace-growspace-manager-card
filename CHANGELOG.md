@@ -1,3 +1,10 @@
+# [1.1.0-next.50](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.49...v1.1.0-next.50) (2026-06-15)
+
+
+### Features
+
+* **irrigation:** decompose substrate_ec tab into per-tab adapter (ADR-0019 + ADR-0017) ([3fed2fd](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/3fed2fd9f1fae086bce47667c4da649cdfa47556))
+
 # [1.1.0-next.49](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.48...v1.1.0-next.49) (2026-06-15)
 
 
