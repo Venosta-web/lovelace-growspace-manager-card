@@ -382,6 +382,31 @@ function _buildTankChip(
   );
 }
 
+/**
+ * Tank-Derived Water Chip: calendar-day water consumption for a growspace in
+ * Tank-Derived Water Mode. The backend supplies `litersToday` only in that mode
+ * (no flow/drain sensors), so its presence is the mode signal; the `tanks > 0`
+ * guard suppresses the 0-liter chip on an otherwise-unconfigured growspace.
+ * Clicking it routes `MetricKey.WATER` to the Tank Water Chart (Custom Graph
+ * Routing). See ADR-0020.
+ */
+function _buildWaterChip(
+  litersToday: number | null,
+  tanks: IrrigationTank[],
+  activeEnvGraphs: Set<string>,
+  linkedGraphGroups: string[][]
+): HeaderChip | null {
+  if (litersToday == null || tanks.length === 0) return null;
+  return _makeChip(
+    MetricKey.WATER,
+    mdiWaterMinus,
+    `${litersToday.toFixed(1)} L`,
+    { label: 'Water', tooltip: 'Water consumed today, inferred from tank level' },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Device chip builders
 // ---------------------------------------------------------------------------
@@ -503,7 +528,8 @@ export function computeHeaderMetrics(
   activeEnvGraphs: Set<string> = new Set(),
   linkedGraphGroups: string[][] = [],
   irrigationStrategy: IrrigationStrategy | null = null,
-  deviceSnapshot: DeviceSnapshot | null = null
+  deviceSnapshot: DeviceSnapshot | null = null,
+  litersToday: number | null = null
 ): HeaderMetricsResult {
   // --- Dominant stage ---
   let dominant: DominantStageInfo | undefined;
@@ -644,6 +670,15 @@ export function computeHeaderMetrics(
   // Tank levels
   const tankChip = _buildTankChip(tankLevels, activeEnvGraphs, linkedGraphGroups);
   if (tankChip) chips.push(tankChip);
+
+  // Tank-Derived Water Chip (calendar-day consumption; see ADR-0020)
+  const waterChip = _buildWaterChip(
+    litersToday,
+    tankLevels,
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+  if (waterChip) chips.push(waterChip);
 
   // Irrigation / drain timing
   if (irrigationConfig) {

@@ -142,7 +142,8 @@ export class GrowspaceHeaderContainer extends LitElement {
       activeEnvGraphs,
       linkedGraphGroups,
       irrigationStrategy,
-      deviceSnapshot
+      deviceSnapshot,
+      this.device.waterUsage?.litersToday ?? null
     );
 
     const hidden = this.config?.hidden_chips;
