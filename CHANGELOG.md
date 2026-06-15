@@ -1,3 +1,10 @@
+# [1.1.0-next.51](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.50...v1.1.0-next.51) (2026-06-15)
+
+
+### Features
+
+* **irrigation:** decompose steering tab into per-tab adapter (ADR-0019) ([b88499d](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b88499d8771550d6727043ec0f0a38d096dc7eae))
+
 # [1.1.0-next.50](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.49...v1.1.0-next.50) (2026-06-15)
 
 
