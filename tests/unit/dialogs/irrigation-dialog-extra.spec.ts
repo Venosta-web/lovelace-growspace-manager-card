@@ -322,37 +322,47 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
     });
 
+    // The Schedules tab is decomposed (ADR-0019): its add/edit overlays render
+    // inside the child `<irrigation-schedules-tab>`'s own shadow root. These tests
+    // pierce that child shadow and select the Schedules nav item by LABEL (overview
+    // shifted indices). The exhaustive add/edit/cancel/delete *logic* is covered by
+    // the SM transitions, the pure VM spec and the component mount-and-assert spec;
+    // these remain as a lean end-to-end check that the child's emitted intents wire
+    // through the Dialog Shell to the SM.
+    async function openSchedulesTab(): Promise<ShadowRoot> {
+        const navs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+        const schedulesNav = Array.from(navs ?? []).find((t) =>
+            t.textContent?.includes('Schedules')
+        ) as HTMLElement | undefined;
+        schedulesNav?.click();
+        await element.updateComplete;
+        const tab = element.shadowRoot?.querySelector('irrigation-schedules-tab') as any;
+        await tab?.updateComplete;
+        return tab.shadowRoot as ShadowRoot;
+    }
+
     describe('Schedule Editing - Irrigation Times', () => {
-        beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-            (tabs?.[0] as HTMLElement).click(); // Schedules
-            await element.updateComplete;
-        });
-
         it('should edit irrigation time', async () => {
-            // Open edit dialog for first irrigation time
-            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');
-            expect(irrigationTimes?.length).toBeGreaterThan(0);
-            (irrigationTimes?.[0] as HTMLElement).click();
+            const root = await openSchedulesTab();
+            const irrigationTimes = root.querySelectorAll('.irrigation-time-bar .timeline-event');
+            expect(irrigationTimes.length).toBeGreaterThan(0);
+            (irrigationTimes[0] as HTMLElement).click();
             await element.updateComplete;
+            const childRoot = (element.shadowRoot?.querySelector('irrigation-schedules-tab') as any)
+                .shadowRoot as ShadowRoot;
 
-            const editDialog = element.shadowRoot?.querySelector('.overlay-backdrop');
-            expect(editDialog).toBeTruthy();
+            expect(childRoot.querySelector('.overlay-backdrop')).toBeTruthy();
 
-            // Change time
-            const timeInput = element.shadowRoot?.querySelector('md3-text-input[label="Time"]') as any;
+            const timeInput = childRoot.querySelector('md3-text-input[label="Time"]') as any;
             timeInput.dispatchEvent(new CustomEvent('change', { detail: '10:30' }));
-
-            // Change duration
-            const durationInput = element.shadowRoot?.querySelector('md3-number-input[label*="Duration"]') as any;
+            const durationInput = childRoot.querySelector('md3-number-input[label*="Duration"]') as any;
             durationInput.dispatchEvent(new CustomEvent('change', { detail: '90' }));
-
             await element.updateComplete;
 
-            const saveBtn = element.shadowRoot?.querySelector('.overlay-backdrop button.primary') as HTMLElement;
+            const saveBtn = childRoot.querySelector('.overlay-backdrop button.primary') as HTMLElement;
             expect(saveBtn).toBeTruthy();
             saveBtn.click();
-            await new Promise(r => setTimeout(r, 10)); // wait for async data service calls
+            await new Promise((r) => setTimeout(r, 10)); // wait for async data service calls
             await element.updateComplete;
 
             expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
@@ -374,12 +384,13 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should delete irrigation time via edit dialog', async () => {
-            // Open edit dialog
-            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');
-            (irrigationTimes?.[0] as HTMLElement).click();
+            const root = await openSchedulesTab();
+            (root.querySelector('.irrigation-time-bar .timeline-event') as HTMLElement).click();
             await element.updateComplete;
+            const childRoot = (element.shadowRoot?.querySelector('irrigation-schedules-tab') as any)
+                .shadowRoot as ShadowRoot;
 
-            const deleteBtn = element.shadowRoot?.querySelector('.overlay-backdrop button.delete-button') as HTMLElement;
+            const deleteBtn = childRoot.querySelector('.overlay-backdrop button.delete-button') as HTMLElement;
             expect(deleteBtn).toBeTruthy();
             deleteBtn.click();
             await element.updateComplete;
@@ -388,12 +399,13 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should cancel irrigation time editing', async () => {
-            // Open edit dialog
-            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');
-            (irrigationTimes?.[0] as HTMLElement).click();
+            const root = await openSchedulesTab();
+            (root.querySelector('.irrigation-time-bar .timeline-event') as HTMLElement).click();
             await element.updateComplete;
+            const childRoot = (element.shadowRoot?.querySelector('irrigation-schedules-tab') as any)
+                .shadowRoot as ShadowRoot;
 
-            const cancelBtn = element.shadowRoot?.querySelector('.overlay-backdrop button.tonal') as HTMLElement;
+            const cancelBtn = childRoot.querySelector('.overlay-backdrop button.tonal') as HTMLElement;
             expect(cancelBtn).toBeTruthy();
             cancelBtn.click();
             await element.updateComplete;
@@ -402,12 +414,13 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should cancel irrigation time editing by clicking backdrop', async () => {
-            // Open edit dialog
-            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');
-            (irrigationTimes?.[0] as HTMLElement).click();
+            const root = await openSchedulesTab();
+            (root.querySelector('.irrigation-time-bar .timeline-event') as HTMLElement).click();
             await element.updateComplete;
+            const childRoot = (element.shadowRoot?.querySelector('irrigation-schedules-tab') as any)
+                .shadowRoot as ShadowRoot;
 
-            const backdrop = element.shadowRoot?.querySelector('.overlay-backdrop') as HTMLElement;
+            const backdrop = childRoot.querySelector('.overlay-backdrop') as HTMLElement;
             expect(backdrop).toBeTruthy();
             backdrop.dispatchEvent(new CustomEvent('click', { bubbles: true, composed: true }));
             await element.updateComplete;
@@ -417,19 +430,16 @@ describe('IrrigationDialog - Extra Coverage', () => {
     });
 
     describe('Schedule Adding', () => {
-        beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-            (tabs?.[0] as HTMLElement).click(); // Schedules
-            await element.updateComplete;
-        });
-
         it('should cancel adding irrigation time by clicking backdrop', async () => {
-            const timeBar = element.shadowRoot?.querySelector('.irrigation-time-bar');
+            const root = await openSchedulesTab();
+            const timeBar = root.querySelector('.irrigation-time-bar');
             expect(timeBar).toBeTruthy();
             (timeBar as HTMLElement).click();
             await element.updateComplete;
+            const childRoot = (element.shadowRoot?.querySelector('irrigation-schedules-tab') as any)
+                .shadowRoot as ShadowRoot;
 
-            const backdrop = element.shadowRoot?.querySelector('.overlay-backdrop') as HTMLElement;
+            const backdrop = childRoot.querySelector('.overlay-backdrop') as HTMLElement;
             expect(backdrop).toBeTruthy();
             backdrop.dispatchEvent(new CustomEvent('click', { bubbles: true, composed: true }));
             await element.updateComplete;
@@ -438,12 +448,15 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should cancel adding drain time by clicking backdrop', async () => {
-            const timeBar = element.shadowRoot?.querySelector('.drain-time-bar');
+            const root = await openSchedulesTab();
+            const timeBar = root.querySelector('.drain-time-bar');
             expect(timeBar).toBeTruthy();
             (timeBar as HTMLElement).click();
             await element.updateComplete;
+            const childRoot = (element.shadowRoot?.querySelector('irrigation-schedules-tab') as any)
+                .shadowRoot as ShadowRoot;
 
-            const backdrop = element.shadowRoot?.querySelector('.overlay-backdrop') as HTMLElement;
+            const backdrop = childRoot.querySelector('.overlay-backdrop') as HTMLElement;
             expect(backdrop).toBeTruthy();
             backdrop.dispatchEvent(new CustomEvent('click', { bubbles: true, composed: true }));
             await element.updateComplete;
@@ -453,48 +466,40 @@ describe('IrrigationDialog - Extra Coverage', () => {
     });
 
     describe('Schedule Editing - Drain Times', () => {
-        beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-            (tabs?.[0] as HTMLElement).click(); // Schedules
-            await element.updateComplete;
-        });
-
         it('should edit drain time', async () => {
-            // Open edit dialog for first drain time
-            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .timeline-event');
-            expect(drainTimes?.length).toBeGreaterThan(0);
-            (drainTimes?.[0] as HTMLElement).click();
+            const root = await openSchedulesTab();
+            const drainTimes = root.querySelectorAll('.drain-time-bar .timeline-event');
+            expect(drainTimes.length).toBeGreaterThan(0);
+            (drainTimes[0] as HTMLElement).click();
             await element.updateComplete;
+            const childRoot = (element.shadowRoot?.querySelector('irrigation-schedules-tab') as any)
+                .shadowRoot as ShadowRoot;
 
-            const editDialog = element.shadowRoot?.querySelector('.overlay-backdrop');
-            expect(editDialog).toBeTruthy();
+            expect(childRoot.querySelector('.overlay-backdrop')).toBeTruthy();
 
-            // Change time
-            const timeInput = element.shadowRoot?.querySelector('md3-text-input[label="Time"]') as any;
+            const timeInput = childRoot.querySelector('md3-text-input[label="Time"]') as any;
             timeInput.dispatchEvent(new CustomEvent('change', { detail: '10:30' }));
-
-            // Change duration
-            const durationInput = element.shadowRoot?.querySelector('md3-number-input[label*="Duration"]') as any;
+            const durationInput = childRoot.querySelector('md3-number-input[label*="Duration"]') as any;
             durationInput.dispatchEvent(new CustomEvent('change', { detail: '90' }));
-
             await element.updateComplete;
 
-            const saveBtn = element.shadowRoot?.querySelector('.overlay-backdrop button.primary') as HTMLElement;
+            const saveBtn = childRoot.querySelector('.overlay-backdrop button.primary') as HTMLElement;
             expect(saveBtn).toBeTruthy();
             saveBtn.click();
-            await new Promise(r => setTimeout(r, 10)); // wait for async data service calls
+            await new Promise((r) => setTimeout(r, 10)); // wait for async data service calls
             await element.updateComplete;
 
             expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
         });
 
         it('should delete drain time via edit dialog', async () => {
-            // Open edit dialog
-            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .timeline-event');
-            (drainTimes?.[0] as HTMLElement).click();
+            const root = await openSchedulesTab();
+            (root.querySelector('.drain-time-bar .timeline-event') as HTMLElement).click();
             await element.updateComplete;
+            const childRoot = (element.shadowRoot?.querySelector('irrigation-schedules-tab') as any)
+                .shadowRoot as ShadowRoot;
 
-            const deleteBtn = element.shadowRoot?.querySelector('.overlay-backdrop button.delete-button') as HTMLElement;
+            const deleteBtn = childRoot.querySelector('.overlay-backdrop button.delete-button') as HTMLElement;
             expect(deleteBtn).toBeTruthy();
             deleteBtn.click();
             await element.updateComplete;
@@ -503,12 +508,13 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should cancel drain time editing', async () => {
-            // Open edit dialog
-            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .timeline-event');
-            (drainTimes?.[0] as HTMLElement).click();
+            const root = await openSchedulesTab();
+            (root.querySelector('.drain-time-bar .timeline-event') as HTMLElement).click();
             await element.updateComplete;
+            const childRoot = (element.shadowRoot?.querySelector('irrigation-schedules-tab') as any)
+                .shadowRoot as ShadowRoot;
 
-            const cancelBtn = element.shadowRoot?.querySelector('.overlay-backdrop button.tonal') as HTMLElement;
+            const cancelBtn = childRoot.querySelector('.overlay-backdrop button.tonal') as HTMLElement;
             expect(cancelBtn).toBeTruthy();
             cancelBtn.click();
             await element.updateComplete;
@@ -517,12 +523,13 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should cancel drain time editing by clicking backdrop', async () => {
-            // Open edit dialog
-            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .timeline-event');
-            (drainTimes?.[0] as HTMLElement).click();
+            const root = await openSchedulesTab();
+            (root.querySelector('.drain-time-bar .timeline-event') as HTMLElement).click();
             await element.updateComplete;
+            const childRoot = (element.shadowRoot?.querySelector('irrigation-schedules-tab') as any)
+                .shadowRoot as ShadowRoot;
 
-            const backdrop = element.shadowRoot?.querySelector('.overlay-backdrop') as HTMLElement;
+            const backdrop = childRoot.querySelector('.overlay-backdrop') as HTMLElement;
             expect(backdrop).toBeTruthy();
             backdrop.dispatchEvent(new CustomEvent('click', { bubbles: true, composed: true }));
             await element.updateComplete;
@@ -614,24 +621,36 @@ describe('IrrigationDialog - Extra Coverage', () => {
     });
 
     describe('Template Event Handlers', () => {
+        // The overlay inputs now live in the child <irrigation-schedules-tab>;
+        // these pierce its shadow and verify the change -> intent -> SM wiring.
+        async function openSchedulesChild(): Promise<ShadowRoot> {
+            const navs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            const schedulesNav = Array.from(navs ?? []).find((t) =>
+                t.textContent?.includes('Schedules')
+            ) as HTMLElement | undefined;
+            schedulesNav?.click();
+            await element.updateComplete;
+            const tab = element.shadowRoot?.querySelector('irrigation-schedules-tab') as any;
+            await tab?.updateComplete;
+            return tab.shadowRoot as ShadowRoot;
+        }
+
         it('should update adding state on time change', async () => {
             (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_IRRIGATION', time: '08:00', duration: 30 });
-            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_ADD_IRRIGATION', time: '08:00', duration: 60 });
-            await element.updateComplete;
+            const root = await openSchedulesChild();
 
-            const timeInput = element.shadowRoot?.querySelector('md3-text-input[label="Time"]') as any;
-            timeInput.value = "09:30";
-            timeInput.dispatchEvent(new CustomEvent("change", { detail: "09:30" }));
+            const timeInput = root.querySelector('md3-text-input[label="Time"]') as any;
+            timeInput.value = '09:30';
+            timeInput.dispatchEvent(new CustomEvent('change', { detail: '09:30' }));
 
             expect((element as any)._sm.tabs.schedules.sub.time).toBe('09:30');
         });
 
         it('should update adding state on duration change', async () => {
             (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_IRRIGATION', time: '08:00', duration: 30 });
-            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_ADD_IRRIGATION', time: '08:00', duration: 60 });
-            await element.updateComplete;
+            const root = await openSchedulesChild();
 
-            const durationInput = element.shadowRoot?.querySelector('md3-number-input[label*="Duration"]') as any;
+            const durationInput = root.querySelector('md3-number-input[label*="Duration"]') as any;
             durationInput.value = '120';
             durationInput.dispatchEvent(new CustomEvent('change', { detail: '120' }));
 
@@ -640,22 +659,20 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
         it('should update editing state on time change', async () => {
             (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 60, originalTime: '08:00', originalDuration: 60 });
-            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '08:00', duration: 60 });
-            await element.updateComplete;
+            const root = await openSchedulesChild();
 
-            const timeInput = element.shadowRoot?.querySelector('md3-text-input[label="Time"]') as any;
-            timeInput.value = "09:30";
-            timeInput.dispatchEvent(new CustomEvent("change", { detail: "09:30" }));
+            const timeInput = root.querySelector('md3-text-input[label="Time"]') as any;
+            timeInput.value = '09:30';
+            timeInput.dispatchEvent(new CustomEvent('change', { detail: '09:30' }));
 
             expect((element as any)._sm.tabs.schedules.sub.time).toBe('09:30');
         });
 
         it('should update editing state on duration change', async () => {
             (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 60, originalTime: '08:00', originalDuration: 60 });
-            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '08:00', duration: 60 });
-            await element.updateComplete;
+            const root = await openSchedulesChild();
 
-            const durationInput = element.shadowRoot?.querySelector('md3-number-input[label*="Duration"]') as any;
+            const durationInput = root.querySelector('md3-number-input[label*="Duration"]') as any;
             durationInput.value = '120';
             durationInput.dispatchEvent(new CustomEvent('change', { detail: '120' }));
 
@@ -664,10 +681,9 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
         it('should handle invalid duration input', async () => {
             (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_IRRIGATION', time: '08:00', duration: 60 });
-            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_ADD_IRRIGATION', time: '08:00', duration: 60 });
-            await element.updateComplete;
+            const root = await openSchedulesChild();
 
-            const durationInput = element.shadowRoot?.querySelector('md3-number-input[label*="Duration"]') as any;
+            const durationInput = root.querySelector('md3-number-input[label*="Duration"]') as any;
             durationInput.value = 'invalid';
             durationInput.dispatchEvent(new CustomEvent('change', { detail: 'invalid' }));
 
