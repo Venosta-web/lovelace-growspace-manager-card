@@ -48,6 +48,7 @@ const mocks = vi.hoisted(() => ({
 const sliceMocks = vi.hoisted(() => ({
     saveIrrigationSettings: vi.fn().mockResolvedValue(undefined),
     runIrrigationCycle: vi.fn().mockResolvedValue(undefined),
+    updateIrrigationStrategy: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
@@ -56,6 +57,7 @@ vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
         ...actual,
         saveIrrigationSettings: sliceMocks.saveIrrigationSettings,
         runIrrigationCycle: sliceMocks.runIrrigationCycle,
+        updateIrrigationStrategy: sliceMocks.updateIrrigationStrategy,
     };
 });
 
@@ -652,7 +654,9 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Targeted Coverage - Edge Cases', () => {
         it('surfaces a strategy save failure (within save-all) as an error toast', async () => {
-            mocks.setIrrigationStrategy.mockRejectedValueOnce(new Error('Save Fail'));
+            // Strategy now persists via the irrigation slice mutator (ADR-0001),
+            // not DataService.setIrrigationStrategy.
+            sliceMocks.updateIrrigationStrategy.mockRejectedValueOnce(new Error('Save Fail'));
 
             (element as any)._saveAll();
             await runController(element);
