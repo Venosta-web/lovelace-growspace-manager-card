@@ -308,17 +308,33 @@ describe('IrrigationDialog - Coverage', () => {
           drainDuration: 45,
         },
       } as any;
-      await switchToTab(4); // Water Analytics tab
+      await element.updateComplete;
+      // Select the Water Analytics tab by LABEL (overview/steering shifted indices).
+      const navs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+      const waNav = Array.from(navs ?? []).find((t) => t.textContent?.includes('Water Analytics'));
+      (waNav as HTMLElement)?.click();
+      await element.updateComplete;
     });
 
-    it('renders crop steering shots list with "edit in Steering" link (line 3508)', () => {
-      const text = element.shadowRoot?.textContent ?? '';
+    // ADR-0019: the crop-steering schedule summary renders inside the decomposed
+    // `<irrigation-water-analytics-tab>` child shadow; the "edit in Steering →"
+    // link emits a `water-analytics-open-steering` Tab Intent that the Dialog
+    // Shell translates to the steering tab switch.
+    async function waChild(): Promise<ShadowRoot> {
+      const tab = element.shadowRoot?.querySelector('irrigation-water-analytics-tab') as any;
+      await tab?.updateComplete;
+      return tab.shadowRoot as ShadowRoot;
+    }
+
+    it('renders crop steering shots list with "edit in Steering" link', async () => {
+      const text = (await waChild()).textContent ?? '';
       expect(text).toContain('shots/day');
       expect(text).toContain('edit in Steering');
     });
 
-    it('clicking "edit in Steering" link switches to steering tab (line 3509)', async () => {
-      const links = Array.from(element.shadowRoot?.querySelectorAll('a') ?? []);
+    it('clicking "edit in Steering" link switches to steering tab via the Tab Intent', async () => {
+      const root = await waChild();
+      const links = Array.from(root.querySelectorAll('a'));
       const steeringLink = links.find(l => l.textContent?.includes('edit in Steering'));
       expect(steeringLink).toBeTruthy();
       steeringLink!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, cancelable: true }));
@@ -326,8 +342,8 @@ describe('IrrigationDialog - Coverage', () => {
       expect((element as any)._sm.activeTab).toBe('steering');
     });
 
-    it('renders drain events section with count and times when totalDrain > 0 (lines 3537–3557)', () => {
-      const text = element.shadowRoot?.textContent ?? '';
+    it('renders drain events section with count and times when totalDrain > 0', async () => {
+      const text = (await waChild()).textContent ?? '';
       expect(text).toContain('events/day');
       expect(text).toContain('09:00');
     });

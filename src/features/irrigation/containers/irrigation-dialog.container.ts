@@ -19,12 +19,7 @@ import {
   mdiLockOutline,
 } from '@mdi/js';
 import type { ECRampCurve, ECRampPoint, CropSteeringHistory } from '../../../schemas/api-schema';
-import {
-  IrrigationTime,
-  IrrigationStrategy,
-  GrowspaceDevice,
-  TankWaterEvent,
-} from '../../../types';
+import { IrrigationStrategy, GrowspaceDevice } from '../../../types';
 import {
   computeCropSteeringCycle,
   generateSubstrateProjection,
@@ -120,6 +115,13 @@ import {
   type ConfigTabViewModel,
   type PumpEntityOptionVM,
 } from '../viewmodels/config-tab.viewmodel';
+// Decomposed Water Analytics tab (ADR-0019): read-mostly, $sm-first. The crop-
+// steering shot summary derives from the PURE crop-steering-model helper (not the
+// host method); `stageAggregates` is fetched by the host and passed through the VM.
+import {
+  createWaterAnalyticsTabViewModel,
+  type WaterAnalyticsTabViewModel,
+} from '../viewmodels/water-analytics-tab.viewmodel';
 import { atom, type ReadableAtom } from 'nanostores';
 import '../components/irrigation-overview-tab';
 import '../components/irrigation-tanks-tab';
@@ -127,6 +129,7 @@ import '../components/irrigation-ec-ramp-tab';
 import '../components/irrigation-schedules-tab';
 import '../components/irrigation-drain-ec-tab';
 import '../components/irrigation-config-tab';
+import '../components/irrigation-water-analytics-tab';
 
 type TabId =
   | 'overview'
@@ -289,6 +292,16 @@ export class IrrigationDialog extends LitElement {
     this._deviceAtom
   );
   private _drainEcVmController = new StoreController(this, this._drainEcVm);
+  /**
+   * Water Analytics tab ViewModel — read-mostly, `$sm`-first (it carries the
+   * cross-tab `tabs.steering.draft` for the crop-steering shot summary and
+   * `tabs.water_analytics.stageAggregates`); the device atom supplies water
+   * usage, tanks, schedule rows, and drain readings. No `$caps`. The two
+   * interactions (open-steering link, reset-all) route through Tab Intents.
+   */
+  private _waterAnalyticsVm: ReadableAtom<WaterAnalyticsTabViewModel> =
+    createWaterAnalyticsTabViewModel(this._smAtom, this._deviceAtom);
+  private _waterAnalyticsVmController = new StoreController(this, this._waterAnalyticsVm);
 
   // ─── Config tab (ADR-0019: draft lives in the SM, not here) ──────────────
   // switch/input_boolean entity options for the two pump selects — a hass-derived
@@ -1668,7 +1681,11 @@ export class IrrigationDialog extends LitElement {
           @save-tank-requested=${this._onSaveTankRequested}
         ></irrigation-tanks-tab>`;
       case 'water_analytics':
-        return this._renderWaterAnalyticsTab();
+        return html`<irrigation-water-analytics-tab
+          .vm=${this._waterAnalyticsVmController.value}
+          @water-analytics-open-steering=${this._onWaterAnalyticsOpenSteering}
+          @water-analytics-reset-tracking=${this._handleResetWaterTracking}
+        ></irrigation-water-analytics-tab>`;
       case 'drain_ec':
         return html`<irrigation-drain-ec-tab
           .vm=${this._drainEcVmController.value}
@@ -2276,713 +2293,6 @@ export class IrrigationDialog extends LitElement {
     `;
   }
 
-  // ─── Water Analytics tab ──────────────────────────────────────────────────
-
-  private _renderWaterAnalyticsTab() {
-    const wu = this.device?.waterUsage;
-    const tanks = this.device?.environmentAttributes?.irrigationTanks || [];
-    const irrigTimes = this.device?.irrigationConfig?.irrigationTimes || [];
-    const drainTimes = this.device?.irrigationConfig?.drainTimes || [];
-    const readings = this.device?.drainConfig?.readings || [];
-    const isCropSteering = !!this._sm.tabs.steering.draft.enabled;
-    const csShots = isCropSteering ? this._computeCropSteeringCycle() : [];
-    const hasPump = !!(
-      this.device?.irrigationConfig?.irrigationPumpEntity ||
-      this.device?.irrigationConfig?.drainPumpEntity
-    );
-    const hasTankSensors = tanks.some((t: any) => t.sensorEntity);
-
-    const recentReadings = readings.slice(-30).reverse();
-    const readingsWithVolumes = recentReadings.filter(
-      (r: any) => r.feedVolumeMl && r.drainVolumeMl
-    );
-    const totalFeedMl = readingsWithVolumes.reduce(
-      (s: number, r: any) => s + (r.feedVolumeMl || 0),
-      0
-    );
-    const totalDrainMl = readingsWithVolumes.reduce(
-      (s: number, r: any) => s + (r.drainVolumeMl || 0),
-      0
-    );
-    const avgRunoff = totalFeedMl > 0 ? (totalDrainMl / totalFeedMl) * 100 : null;
-
-    const tanksWithData = tanks.filter(
-      (t: any) => t.fillLevel !== null && t.fillLevel !== undefined
-    );
-    const avgTankLevel =
-      tanksWithData.length > 0
-        ? tanksWithData.reduce((s: number, t: any) => s + (t.fillLevel ?? 0), 0) /
-          tanksWithData.length
-        : null;
-    const warningTanks = tanks.filter((t: any) => t.isWarning);
-
-    const totalIrrig = irrigTimes.length;
-    const totalDrain = drainTimes.length;
-    const irrigDuration = this.device?.irrigationConfig?.irrigationDuration ?? 0;
-    const drainDuration = this.device?.irrigationConfig?.drainDuration ?? 0;
-
-    const tanksWithHistory = tanks.filter(
-      (t: any) => t.volumeLiters != null && t.waterHistory?.events?.length
-    );
-    const allTankEvents: TankWaterEvent[] = tanksWithHistory.flatMap(
-      (t: any) => t.waterHistory!.events
-    );
-    const now = new Date();
-    const allDaily7d = tanksWithHistory.flatMap((t: any) => t.waterHistory!.daily_7d ?? []);
-    const todayKey = now.toISOString().slice(0, 10);
-    const tankLitersToday = allDaily7d
-      .filter((d: any) => d.date === todayKey)
-      .reduce((s: number, d: any) => s + d.consumed, 0);
-    const tankLiters7d = allDaily7d.reduce((s: number, d: any) => s + d.consumed, 0);
-    const daysWithData = new Set(
-      allDaily7d.filter((d: any) => d.consumed > 0).map((d: any) => d.date)
-    ).size;
-    const tankAvgPerDay = daysWithData > 0 ? tankLiters7d / daysWithData : 0;
-
-    const bucket15Min = 15 * 60 * 1000;
-    const bucketCount24h = 96;
-    const chartEnd = Math.ceil(now.getTime() / bucket15Min) * bucket15Min;
-    const chartStart = chartEnd - bucketCount24h * bucket15Min;
-    const consumptionBuckets24h = Array.from({ length: bucketCount24h }, (_, i) => ({
-      start: chartStart + i * bucket15Min,
-      liters: 0,
-    }));
-    for (const ev of allTankEvents) {
-      if ((ev as any).event_type !== 'consumption') continue;
-      const ts = new Date((ev as any).timestamp).getTime();
-      if (ts < chartStart || ts >= chartEnd) continue;
-      const idx = Math.floor((ts - chartStart) / bucket15Min);
-      if (idx >= 0 && idx < bucketCount24h) consumptionBuckets24h[idx].liters += (ev as any).liters;
-    }
-    const maxBucketLiters = Math.max(...consumptionBuckets24h.map((b) => b.liters), 0.01);
-    const recentRefills = allTankEvents
-      .filter((e: any) => e.event_type === 'refill')
-      .slice(-10)
-      .reverse();
-
-    const kpiCard = (
-      label: string,
-      value: string,
-      unit: string,
-      color = 'rgba(255,255,255,0.7)',
-      sub?: string
-    ) => html`
-      <div
-        style="background:rgba(255,255,255,0.05);border-radius:12px;padding:16px 20px;display:flex;flex-direction:column;gap:4px;"
-      >
-        <div style="font-size:0.78rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;">
-          ${label}
-        </div>
-        <div style="display:flex;align-items:baseline;gap:4px;">
-          <span style="font-size:1.6rem;font-weight:700;color:${color};">${value}</span>
-          <span style="font-size:0.82rem;opacity:0.6;">${unit}</span>
-        </div>
-        ${sub ? html`<div style="font-size:0.75rem;opacity:0.5;">${sub}</div>` : nothing}
-      </div>
-    `;
-
-    const lastCycle = this.device?.lastCycleTimestamp
-      ? new Date(this.device.lastCycleTimestamp).toLocaleString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        })
-      : null;
-    const nextCycle = this.device?.nextScheduledCycle
-      ? new Date(this.device.nextScheduledCycle).toLocaleString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        })
-      : null;
-    const cyclesToday = this.device?.cyclesToday ?? 0;
-    const volToday = this.device?.volumeDispensedToday ?? 0;
-
-    return html`
-      ${hasPump
-        ? html`
-            <div class="detail-card">
-              <h3 style="margin-top:0;margin-bottom:16px;">Cycle Telemetry</h3>
-              <div
-                style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:0;"
-              >
-                ${kpiCard('Cycles today', String(cyclesToday), '', '#4fc3f7')}
-                ${kpiCard(
-                  'Dispensed today',
-                  volToday > 0 ? volToday.toFixed(2) : '—',
-                  volToday > 0 ? 'L' : '',
-                  '#81c784'
-                )}
-                ${lastCycle
-                  ? kpiCard('Last cycle', lastCycle, '', 'rgba(255,255,255,0.7)')
-                  : kpiCard('Last cycle', '—', '', 'rgba(255,255,255,0.4)')}
-                ${nextCycle
-                  ? kpiCard('Next cycle', nextCycle, '', '#ce93d8')
-                  : kpiCard('Next cycle', '—', '', 'rgba(255,255,255,0.4)')}
-              </div>
-            </div>
-          `
-        : nothing}
-      ${hasPump
-        ? html`
-            <div class="detail-card">
-              <h3 style="margin-top:0;margin-bottom:16px;">Today's Usage</h3>
-              <div
-                style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;"
-              >
-                ${wu?.litersToday != null
-                  ? kpiCard('Liters today', wu.litersToday.toFixed(1), 'L', '#4fc3f7')
-                  : kpiCard('Liters today', '—', '', 'rgba(255,255,255,0.4)')}
-                ${wu?.litersPerPlantPerDay != null
-                  ? kpiCard('Per plant / day', wu.litersPerPlantPerDay.toFixed(2), 'L', '#81c784')
-                  : kpiCard('Per plant / day', '—', '', 'rgba(255,255,255,0.4)')}
-                ${wu?.waterEfficiency != null
-                  ? kpiCard(
-                      'Water efficiency',
-                      (wu.waterEfficiency * 100).toFixed(0),
-                      '%',
-                      wu.waterEfficiency >= 0.85
-                        ? '#4caf50'
-                        : wu.waterEfficiency >= 0.65
-                          ? '#FF9800'
-                          : '#f44336',
-                      wu.waterEfficiency >= 0.85
-                        ? 'Excellent'
-                        : wu.waterEfficiency >= 0.65
-                          ? 'Good'
-                          : 'Review schedule'
-                    )
-                  : kpiCard('Water efficiency', '—', '', 'rgba(255,255,255,0.4)')}
-                ${avgRunoff !== null
-                  ? kpiCard(
-                      'Avg runoff',
-                      avgRunoff.toFixed(1),
-                      '%',
-                      '#ce93d8',
-                      `from ${readingsWithVolumes.length} reading${readingsWithVolumes.length !== 1 ? 's' : ''}`
-                    )
-                  : kpiCard(
-                      'Avg runoff',
-                      '—',
-                      '',
-                      'rgba(255,255,255,0.4)',
-                      'Log volumes in Drain EC tab'
-                    )}
-              </div>
-            </div>
-          `
-        : nothing}
-      ${tanks.length > 0
-        ? html`
-            <div class="detail-card">
-              <div
-                style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
-              >
-                <h3 style="margin:0;">Tank Levels</h3>
-                ${warningTanks.length > 0
-                  ? html`
-                      <span
-                        style="background:rgba(244,67,54,0.2);color:#f44336;border:1px solid rgba(244,67,54,0.4);border-radius:20px;padding:3px 10px;font-size:0.78rem;font-weight:600;"
-                      >
-                        ⚠ ${warningTanks.length} tank${warningTanks.length > 1 ? 's' : ''} low
-                      </span>
-                    `
-                  : avgTankLevel !== null
-                    ? html`
-                        <span style="font-size:0.82rem;opacity:0.5;"
-                          >Avg ${avgTankLevel.toFixed(0)}%</span
-                        >
-                      `
-                    : nothing}
-              </div>
-              <div style="display:flex;flex-direction:column;gap:10px;">
-                ${tanks.map((tank: any) => {
-                  const pct = tank.fillLevel ?? 0;
-                  const c = tank.isWarning
-                    ? '#f44336'
-                    : (tank.hoursRemaining ?? 999) < 24
-                      ? '#FF9800'
-                      : '#4caf50';
-                  return html`
-                    <div>
-                      <div
-                        style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px;"
-                      >
-                        <span style="font-weight:500;">${tank.name}</span>
-                        <span style="color:${c};font-weight:600;"
-                          >${tank.fillLevel !== null ? pct.toFixed(0) + '%' : '—'}</span
-                        >
-                      </div>
-                      <div
-                        style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;"
-                      >
-                        <div
-                          style="height:100%;width:${Math.max(
-                            0,
-                            Math.min(100, pct)
-                          )}%;background:${c};border-radius:3px;transition:width 0.4s ease;"
-                        ></div>
-                      </div>
-                    </div>
-                  `;
-                })}
-              </div>
-            </div>
-          `
-        : nothing}
-      ${hasTankSensors && tanksWithHistory.length > 0
-        ? html`
-            <div class="detail-card">
-              <div
-                style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
-              >
-                <h3 style="margin:0;">Tank-Derived Water Usage</h3>
-                <span
-                  style="font-size:0.78rem;opacity:0.5;background:rgba(79,195,247,0.1);border:1px solid rgba(79,195,247,0.25);border-radius:20px;padding:2px 10px;"
-                  >inferred from tank level</span
-                >
-              </div>
-              <div
-                style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;"
-              >
-                ${kpiCard(
-                  'Consumed today',
-                  tankLitersToday > 0 ? tankLitersToday.toFixed(1) : '—',
-                  tankLitersToday > 0 ? 'L' : '',
-                  '#4fc3f7'
-                )}
-                ${kpiCard(
-                  'Last 7 days',
-                  tankLiters7d > 0 ? tankLiters7d.toFixed(1) : '—',
-                  tankLiters7d > 0 ? 'L' : '',
-                  '#81c784'
-                )}
-                ${kpiCard(
-                  'Avg per day',
-                  tankAvgPerDay > 0 ? tankAvgPerDay.toFixed(1) : '—',
-                  tankAvgPerDay > 0 ? 'L/day' : '',
-                  '#ce93d8'
-                )}
-              </div>
-              <div style="margin-bottom:6px;">
-                <div
-                  style="font-size:0.78rem;opacity:0.55;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;"
-                >
-                  Consumption — last 24 hours (15 min buckets)
-                </div>
-                <div
-                  style="display:flex;align-items:flex-end;gap:1px;height:60px;background:rgba(255,255,255,0.03);border-radius:6px;padding:6px 4px 0;"
-                >
-                  ${consumptionBuckets24h.map((b) => {
-                    const hp = (b.liters / maxBucketLiters) * 100;
-                    const label = new Date(b.start).toLocaleTimeString(undefined, {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false,
-                    });
-                    return html`
-                      <div
-                        title="${label} — ${b.liters.toFixed(2)} L"
-                        style="flex:1;height:${Math.max(2, hp)}%;background:${b.liters > 0
-                          ? '#4fc3f7'
-                          : 'rgba(255,255,255,0.06)'};border-radius:2px 2px 0 0;min-width:0;"
-                      ></div>
-                    `;
-                  })}
-                </div>
-                <div
-                  style="display:flex;justify-content:space-between;font-size:0.68rem;opacity:0.45;margin-top:4px;padding:0 2px;"
-                >
-                  <span>24h ago</span><span>12h ago</span><span>now</span>
-                </div>
-              </div>
-              ${recentRefills.length > 0
-                ? html`
-                    <div style="margin-top:16px;">
-                      <div
-                        style="font-size:0.78rem;opacity:0.55;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
-                      >
-                        Recent refills
-                      </div>
-                      <div style="display:flex;flex-direction:column;gap:4px;">
-                        ${recentRefills.map(
-                          (ev: any) => html`
-                            <div
-                              style="display:flex;justify-content:space-between;align-items:center;background:rgba(129,199,132,0.08);border-radius:6px;padding:5px 10px;font-size:0.82rem;"
-                            >
-                              <span style="opacity:0.65;"
-                                >${new Date(ev.timestamp).toLocaleString(undefined, {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}</span
-                              >
-                              <span style="color:#81c784;font-weight:600;"
-                                >+${ev.liters.toFixed(1)} L</span
-                              >
-                            </div>
-                          `
-                        )}
-                      </div>
-                    </div>
-                  `
-                : nothing}
-            </div>
-          `
-        : nothing}
-      ${isCropSteering
-        ? html`
-            <div class="detail-card">
-              <h3 style="margin-top:0;margin-bottom:16px;">Schedule Summary</h3>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                <div>
-                  <div
-                    style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
-                  >
-                    Irrigation
-                  </div>
-                  ${csShots.length === 0
-                    ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
-                        No strategy configured
-                      </p>`
-                    : html`
-                        <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
-                          ${csShots.length}
-                          <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
-                            >shots/day</span
-                          >
-                        </div>
-                        <div style="font-size:0.75rem;opacity:0.5;margin-top:2px;">
-                          Managed automatically ·
-                          <a
-                            href="#"
-                            style="color:#4CAF50;"
-                            @click=${(e: Event) => {
-                              e.preventDefault();
-                              this._sm = requestTabSwitch(this._sm, 'steering', this.device!);
-                            }}
-                            >edit in Steering →</a
-                          >
-                        </div>
-                        <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
-                          ${csShots.slice(0, 5).map(
-                            (s) => html`
-                              <div
-                                style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
-                              >
-                                <span style="font-weight:500;">${s.time.substring(0, 5)}</span>
-                                <span style="opacity:0.5;">${s.duration}s</span>
-                              </div>
-                            `
-                          )}
-                          ${csShots.length > 5
-                            ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
-                                +${csShots.length - 5} more
-                              </div>`
-                            : nothing}
-                        </div>
-                      `}
-                </div>
-                <div>
-                  <div
-                    style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
-                  >
-                    Drain
-                  </div>
-                  ${totalDrain === 0
-                    ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
-                        No events scheduled
-                      </p>`
-                    : html`
-                        <div style="font-size:1.3rem;font-weight:700;color:#a5d6a7;">
-                          ${totalDrain}
-                          <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
-                            >events/day</span
-                          >
-                        </div>
-                        ${drainDuration
-                          ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
-                              ${drainDuration}s per event
-                            </div>`
-                          : nothing}
-                        <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
-                          ${drainTimes.slice(0, 5).map((t: IrrigationTime) => {
-                            const time = t.time ?? t.start_time ?? '';
-                            const dur = t.duration ?? t.duration_seconds ?? drainDuration;
-                            return html`
-                              <div
-                                style="display:flex;justify-content:space-between;background:rgba(165,214,167,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
-                              >
-                                <span style="font-weight:500;">${time.substring(0, 5)}</span>
-                                <span style="opacity:0.5;">${dur}s</span>
-                              </div>
-                            `;
-                          })}
-                          ${totalDrain > 5
-                            ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
-                                +${totalDrain - 5} more
-                              </div>`
-                            : nothing}
-                        </div>
-                      `}
-                </div>
-              </div>
-            </div>
-          `
-        : totalIrrig > 0 || totalDrain > 0
-          ? html`
-              <div class="detail-card">
-                <h3 style="margin-top:0;margin-bottom:16px;">Schedule Summary</h3>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                  <div>
-                    <div
-                      style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
-                    >
-                      Irrigation
-                    </div>
-                    ${totalIrrig === 0
-                      ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
-                          No events scheduled
-                        </p>`
-                      : html`
-                          <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
-                            ${totalIrrig}
-                            <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
-                              >events/day</span
-                            >
-                          </div>
-                          ${irrigDuration
-                            ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
-                                ${irrigDuration}s per event
-                              </div>`
-                            : nothing}
-                          <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
-                            ${irrigTimes.slice(0, 5).map((t: IrrigationTime) => {
-                              const time = t.time ?? t.start_time ?? '';
-                              const dur = t.duration ?? t.duration_seconds ?? irrigDuration;
-                              return html`
-                                <div
-                                  style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
-                                >
-                                  <span style="font-weight:500;">${time.substring(0, 5)}</span>
-                                  <span style="opacity:0.5;">${dur}s</span>
-                                </div>
-                              `;
-                            })}
-                            ${totalIrrig > 5
-                              ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
-                                  +${totalIrrig - 5} more
-                                </div>`
-                              : nothing}
-                          </div>
-                        `}
-                  </div>
-                  <div>
-                    <div
-                      style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
-                    >
-                      Drain
-                    </div>
-                    ${totalDrain === 0
-                      ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
-                          No events scheduled
-                        </p>`
-                      : html`
-                          <div style="font-size:1.3rem;font-weight:700;color:#a5d6a7;">
-                            ${totalDrain}
-                            <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
-                              >events/day</span
-                            >
-                          </div>
-                          ${drainDuration
-                            ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
-                                ${drainDuration}s per event
-                              </div>`
-                            : nothing}
-                          <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
-                            ${drainTimes.slice(0, 5).map((t: IrrigationTime) => {
-                              const time = t.time ?? t.start_time ?? '';
-                              const dur = t.duration ?? t.duration_seconds ?? drainDuration;
-                              return html`
-                                <div
-                                  style="display:flex;justify-content:space-between;background:rgba(165,214,167,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
-                                >
-                                  <span style="font-weight:500;">${time.substring(0, 5)}</span>
-                                  <span style="opacity:0.5;">${dur}s</span>
-                                </div>
-                              `;
-                            })}
-                            ${totalDrain > 5
-                              ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
-                                  +${totalDrain - 5} more
-                                </div>`
-                              : nothing}
-                          </div>
-                        `}
-                  </div>
-                </div>
-              </div>
-            `
-          : nothing}
-      ${this._sm.tabs.water_analytics.stageAggregates &&
-      Object.keys(this._sm.tabs.water_analytics.stageAggregates).length > 0
-        ? html`
-            <div class="detail-card">
-              <h3 style="margin:0 0 14px;">Water Usage by Growth Stage</h3>
-              <div style="display:flex;flex-direction:column;gap:8px;">
-                ${Object.entries(this._sm.tabs.water_analytics.stageAggregates)
-                  .sort(([, a], [, b]) => b - a)
-                  .map(
-                    ([stage, liters]) => html`
-                      <div
-                        style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 14px;font-size:0.88rem;"
-                      >
-                        <span style="text-transform:capitalize;font-weight:500;">${stage}</span>
-                        <span style="color:#4fc3f7;font-weight:600;">${liters.toFixed(1)} L</span>
-                      </div>
-                    `
-                  )}
-              </div>
-            </div>
-          `
-        : nothing}
-      ${this._sm.tabs.schedules.draft.drainPumpEntity
-        ? html`
-            <div class="detail-card">
-              <div
-                style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
-              >
-                <h3 style="margin:0;">Volume History</h3>
-                <span style="font-size:0.8rem;opacity:0.5;">from drain EC readings</span>
-              </div>
-              ${readingsWithVolumes.length === 0
-                ? html`
-                    <p style="opacity:0.6;text-align:center;padding:20px 0;font-size:0.9rem;">
-                      No volume data logged yet.<br />
-                      <span style="font-size:0.8rem;opacity:0.7;"
-                        >Log feed and drain volumes in the <strong>Drain EC</strong> tab.</span
-                      >
-                    </p>
-                  `
-                : html`
-                    <div
-                      style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;background:rgba(255,255,255,0.04);border-radius:10px;padding:12px 16px;font-size:0.88rem;"
-                    >
-                      <div style="text-align:center;">
-                        <div style="opacity:0.5;font-size:0.75rem;">Total feed</div>
-                        <div style="font-weight:700;color:#4fc3f7;">
-                          ${(totalFeedMl / 1000).toFixed(1)} L
-                        </div>
-                      </div>
-                      <div style="text-align:center;">
-                        <div style="opacity:0.5;font-size:0.75rem;">Total drain</div>
-                        <div style="font-weight:700;color:#a5d6a7;">
-                          ${(totalDrainMl / 1000).toFixed(1)} L
-                        </div>
-                      </div>
-                      <div style="text-align:center;">
-                        <div style="opacity:0.5;font-size:0.75rem;">Avg runoff</div>
-                        <div
-                          style="font-weight:700;color:${avgRunoff !== null &&
-                          avgRunoff >= 15 &&
-                          avgRunoff <= 35
-                            ? '#4caf50'
-                            : '#FF9800'};"
-                        >
-                          ${avgRunoff !== null ? avgRunoff.toFixed(1) + '%' : '—'}
-                        </div>
-                      </div>
-                    </div>
-                    <div style="overflow-x:auto;">
-                      <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
-                        <thead>
-                          <tr style="border-bottom:1px solid rgba(255,255,255,0.15);opacity:0.7;">
-                            <th style="text-align:left;padding:5px 8px;font-weight:500;">Time</th>
-                            <th style="text-align:right;padding:5px 8px;font-weight:500;">
-                              Feed (mL)
-                            </th>
-                            <th style="text-align:right;padding:5px 8px;font-weight:500;">
-                              Drain (mL)
-                            </th>
-                            <th style="text-align:right;padding:5px 8px;font-weight:500;">
-                              Runoff
-                            </th>
-                            <th style="text-align:right;padding:5px 8px;font-weight:500;">Δ EC</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${readingsWithVolumes.map((r: any) => {
-                            const runoff = r.feedVolumeMl
-                              ? (r.drainVolumeMl! / r.feedVolumeMl!) * 100
-                              : null;
-                            const delta = r.drainEc - r.feedEc;
-                            const runoffOk = runoff !== null && runoff >= 10 && runoff <= 40;
-                            return html`
-                              <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                                <td style="padding:5px 8px;opacity:0.65;">
-                                  ${new Date(r.timestamp).toLocaleString(undefined, {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
-                                </td>
-                                <td style="text-align:right;padding:5px 8px;">${r.feedVolumeMl}</td>
-                                <td style="text-align:right;padding:5px 8px;">
-                                  ${r.drainVolumeMl}
-                                </td>
-                                <td
-                                  style="text-align:right;padding:5px 8px;font-weight:600;color:${runoffOk
-                                    ? '#4caf50'
-                                    : '#FF9800'};"
-                                >
-                                  ${runoff !== null ? runoff.toFixed(1) + '%' : '—'}
-                                </td>
-                                <td style="text-align:right;padding:5px 8px;opacity:0.7;">
-                                  ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
-                                </td>
-                              </tr>
-                            `;
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  `}
-            </div>
-          `
-        : nothing}
-
-      <div
-        class="detail-card"
-        style="border:1px dashed rgba(244,67,54,0.3);background:rgba(244,67,54,0.05);margin-top:20px;"
-      >
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
-          <div style="flex:1;">
-            <h3 style="margin:0;color:#f44336;border:none;padding:0;font-size:1.1rem;">
-              Maintenance
-            </h3>
-            <p style="margin:4px 0 0 0;font-size:0.85rem;opacity:0.7;line-height:1.4;">
-              Reset irrigation counters, today's water usage, and recent volume history for this
-              growspace.
-            </p>
-          </div>
-          <button
-            class="md3-button tonal error"
-            @click=${this._handleResetWaterTracking}
-            style="white-space:nowrap;"
-          >
-            Reset All Data
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
   // ─── Overview tab (crop-steering diagnostics, read-only) ──────────────────
   //
   // Decomposed (ADR-0019): the Overview tab renders through
@@ -3548,6 +2858,18 @@ export class IrrigationDialog extends LitElement {
   }
 
   private _onSchedulesOpenSteering() {
+    if (!this.device) return;
+    this._sm = requestTabSwitch(this._sm, 'steering', this.device);
+  }
+
+  // ─── Water Analytics tab intents (ADR-0019) ───────────────────────────────
+  // The decomposed `<irrigation-water-analytics-tab>` is read-mostly with two
+  // interactions: the "edit in Steering →" link (→ tab switch) and the
+  // Maintenance "Reset All Data" button (→ the existing `_handleResetWaterTracking`,
+  // bound directly in the render case). The crop-steering shot summary derives in
+  // the VM via the pure `crop-steering-model` helper, and `stageAggregates` is
+  // still fetched by `_fetchStageAnalytics` and passed through the VM.
+  private _onWaterAnalyticsOpenSteering() {
     if (!this.device) return;
     this._sm = requestTabSwitch(this._sm, 'steering', this.device);
   }
