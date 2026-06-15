@@ -20,13 +20,6 @@ import {
 import type { ECRampCurve, ECRampPoint, CropSteeringHistory } from '../../../schemas/api-schema';
 import { IrrigationStrategy, GrowspaceDevice } from '../../../types';
 import {
-  computeCropSteeringCycle,
-  generateSubstrateProjection,
-  type CropSteeringShot,
-  type CropSteeringPhases,
-  type SubstrateProjectionPoint,
-} from '../../../features/environment/crop-steering-model';
-import {
   createInitialSM,
   transition,
   requestTabSwitch,
@@ -395,101 +388,6 @@ export class IrrigationDialog extends LitElement {
   static styles = [
     dialogStyles,
     css`
-      /* ── Crop Steering Overview tab ── */
-      .cs-metric-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-        margin-top: 16px;
-      }
-      .cs-metric-card {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border-radius: 12px;
-        padding: 16px;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-      }
-      .cs-metric-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: var(--primary-text-color);
-        margin: 8px 0;
-      }
-      .cs-metric-label {
-        font-size: 14px;
-        color: var(--secondary-text-color);
-      }
-      .cs-metric-sub {
-        font-size: 0.75rem;
-        color: var(--secondary-text-color);
-        margin-bottom: 6px;
-        font-variant-numeric: tabular-nums;
-      }
-      .cs-metric-locked {
-        opacity: 0.55;
-        border-style: dashed;
-      }
-      .cs-shot-composition {
-        margin-top: 16px;
-      }
-      .cs-phase-pill {
-        padding: 2px 10px;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
-        color: var(--secondary-text-color);
-      }
-      .cs-shot-row {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.85rem;
-        padding: 4px 0;
-        font-variant-numeric: tabular-nums;
-      }
-      .cs-shot-total {
-        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        margin-top: 4px;
-        padding-top: 8px;
-        font-weight: 600;
-      }
-      .cs-mode-badge {
-        padding: 4px 12px;
-        border-radius: 16px;
-        font-size: 14px;
-        font-weight: bold;
-        text-transform: capitalize;
-        margin-top: 8px;
-        display: inline-block;
-      }
-      .cs-mode-vegetative {
-        background: rgba(76, 175, 80, 0.2);
-        color: #4caf50;
-      }
-      .cs-mode-generative {
-        background: rgba(244, 67, 54, 0.2);
-        color: #f44336;
-      }
-      .cs-mode-balanced {
-        background: rgba(33, 150, 243, 0.2);
-        color: #2196f3;
-      }
-      .cs-intent {
-        margin-top: 12px;
-        font-size: 0.85rem;
-        text-transform: capitalize;
-      }
-      .cs-intent-ontarget {
-        color: var(--success-color, #4caf50);
-      }
-      .cs-intent-deviation {
-        color: var(--warning-color, #ff9800);
-        font-weight: 500;
-      }
-
       /* ── Body layout ── */
       .glass-dialog-container {
         max-height: 90vh;
@@ -652,43 +550,6 @@ export class IrrigationDialog extends LitElement {
       .dlg-footer-actions {
         display: flex;
         gap: 8px;
-      }
-
-      /* ── Segmented toggle (.seg-btn kept here per ADR-0019; phase-card CSS
-         moved into <irrigation-steering-tab> with the decomposed tab) ── */
-      .seg-btn {
-        flex: 1;
-        padding: 10px 12px;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.04);
-        color: var(--primary-text-color);
-        font-size: 0.85rem;
-        cursor: pointer;
-      }
-      .seg-btn.active {
-        border-color: rgba(33, 150, 243, 0.5);
-        background: rgba(33, 150, 243, 0.12);
-        font-weight: 600;
-      }
-      .seg-btn:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
-
-      /* ── Stub badge ── */
-      .stub-badge {
-        display: inline-block;
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        padding: 2px 8px;
-        border-radius: 10px;
-        background: rgba(255, 152, 0, 0.12);
-        color: #ff9800;
-        border: 1px solid rgba(255, 152, 0, 0.3);
-        margin-left: 8px;
       }
 
       /* ── Toast ── */
@@ -1415,11 +1276,6 @@ export class IrrigationDialog extends LitElement {
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
-  private _getNowMinutes(): number {
-    const now = new Date();
-    return now.getHours() * 60 + now.getMinutes();
-  }
-
   private _getEntities(domains: string[]) {
     if (!this.hass?.states) return [];
     return Object.values(this.hass.states)
@@ -1725,33 +1581,6 @@ export class IrrigationDialog extends LitElement {
       default:
         return nothing;
     }
-  }
-
-  // ─── Schedules tab ────────────────────────────────────────────────────────
-
-  private _computeCropSteeringCycle(): CropSteeringShot[] {
-    const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
-    return computeCropSteeringCycle(this._sm.tabs.steering.draft as IrrigationStrategy, isFlower);
-  }
-
-  private _generateSubstrateProjection(
-    nowOffset: number,
-    shots: CropSteeringShot[],
-    phases: Pick<CropSteeringPhases, 'lightsOnMin' | 'lightsOffMin' | 'phases'>,
-    seedVwc: number,
-    seedPoreEc: number,
-    viewStart: number
-  ): SubstrateProjectionPoint[] {
-    const target = this._sm.tabs.steering.draft.targetVwcPercent ?? 45;
-    return generateSubstrateProjection(
-      nowOffset,
-      shots,
-      phases,
-      seedVwc,
-      seedPoreEc,
-      viewStart,
-      target
-    );
   }
 
   // ─── Steering tab: Tab Intent → SM-event / side-effect routing (ADR-0019) ───
