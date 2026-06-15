@@ -191,8 +191,14 @@ describe('IrrigationDialog – Run Now button', () => {
 // ---------------------------------------------------------------------------
 
 describe('IrrigationDialog – Config tab: pump-gated panels', () => {
+  // The Config tab is decomposed (ADR-0019): its panels render in the child
+  // <irrigation-config-tab> shadow, so pierce it. When no pump is configured the
+  // Config tab is still shown but the child renders only the Pump Configuration
+  // card (Behaviour / Manual Override are gated off), so an absent child = no panels.
   function configHeadings(el: IrrigationDialog) {
-    return Array.from(el.shadowRoot!.querySelectorAll('.detail-card h3')).map((h) =>
+    const child = el.shadowRoot!.querySelector('irrigation-config-tab');
+    if (!child?.shadowRoot) return [];
+    return Array.from(child.shadowRoot.querySelectorAll('.detail-card h3')).map((h) =>
       normalize(h.textContent)
     );
   }
