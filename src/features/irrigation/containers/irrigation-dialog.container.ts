@@ -23,7 +23,6 @@ import {
   IrrigationTime,
   IrrigationStrategy,
   GrowspaceDevice,
-  DrainECReading,
   TankWaterEvent,
 } from '../../../types';
 import {
@@ -41,6 +40,7 @@ import {
   type DialogSM,
   type TankDraft,
   type EcRampCurveDraft,
+  type DrainEcDraft,
 } from '../../../dialogs/irrigation-dialog-sm';
 import {
   MutationRunController,
@@ -105,11 +105,19 @@ import {
   createSchedulesTabViewModel,
   type SchedulesTabViewModel,
 } from '../viewmodels/schedules-tab.viewmodel';
+// Decomposed Drain EC tab (ADR-0019): $sm-first, mixed source (readings from
+// `device.drainConfig`). Config persists via the global `save-all`; logging stays
+// an imperative host method routed through a Tab Intent.
+import {
+  createDrainEcTabViewModel,
+  type DrainEcTabViewModel,
+} from '../viewmodels/drain-ec-tab.viewmodel';
 import { atom, type ReadableAtom } from 'nanostores';
 import '../components/irrigation-overview-tab';
 import '../components/irrigation-tanks-tab';
 import '../components/irrigation-ec-ramp-tab';
 import '../components/irrigation-schedules-tab';
+import '../components/irrigation-drain-ec-tab';
 
 type TabId =
   | 'overview'
@@ -261,6 +269,17 @@ export class IrrigationDialog extends LitElement {
     cropSteeringHistory$
   );
   private _schedulesVmController = new StoreController(this, this._schedulesVm);
+  /**
+   * Drain EC tab ViewModel — `$sm`-first (it carries `tabs.drain_ec`); the device
+   * atom supplies the logged `drainConfig.readings`. No `$caps`. Config persists
+   * via the global `save-all`; logging routes through the `_logDrainReadingNow`
+   * host method (ADR-0015 effects are the drain *config* path, not logging).
+   */
+  private _drainEcVm: ReadableAtom<DrainEcTabViewModel> = createDrainEcTabViewModel(
+    this._smAtom,
+    this._deviceAtom
+  );
+  private _drainEcVmController = new StoreController(this, this._drainEcVm);
 
   // ─── Crop Steering History (Schedules tab) ────────────────────────────
   private _cropSteeringHistoryFetched = false;
@@ -1646,7 +1665,11 @@ export class IrrigationDialog extends LitElement {
       case 'water_analytics':
         return this._renderWaterAnalyticsTab();
       case 'drain_ec':
-        return this._renderDrainECTab();
+        return html`<irrigation-drain-ec-tab
+          .vm=${this._drainEcVmController.value}
+          @drain-ec-draft-changed=${this._onDrainEcDraftChanged}
+          @drain-ec-log-reading=${this._onDrainEcLogReading}
+        ></irrigation-drain-ec-tab>`;
       case 'substrate_ec':
         return this._renderSubstrateEcTab();
       case 'ec_ramp':
@@ -3127,277 +3150,6 @@ export class IrrigationDialog extends LitElement {
     `;
   }
 
-  // ─── Drain EC tab ─────────────────────────────────────────────────────────
-
-  private _renderDrainECTab() {
-    const dc = this.device?.drainConfig;
-    const readings: DrainECReading[] = dc?.readings || [];
-    const recent = readings.slice(-20).reverse();
-    const lastReading = recent[0];
-    const lastDelta = lastReading ? lastReading.drainEc - lastReading.feedEc : null;
-    const drainDraft = this._sm.tabs.drain_ec.draft;
-    const isOverThreshold =
-      lastDelta !== null && drainDraft.enabled && lastDelta > drainDraft.maxEcDelta;
-
-    const statusColor = !drainDraft.enabled
-      ? 'rgba(255,255,255,0.3)'
-      : isOverThreshold
-        ? '#f44336'
-        : lastDelta !== null && lastDelta > drainDraft.maxEcDelta * 0.7
-          ? '#FF9800'
-          : '#4caf50';
-
-    const statusText = !drainDraft.enabled
-      ? 'Monitoring disabled'
-      : lastDelta === null
-        ? 'No readings yet'
-        : isOverThreshold
-          ? `Salt buildup alert — Δ${lastDelta.toFixed(2)} mS/cm above threshold`
-          : `EC OK — Δ${lastDelta.toFixed(2)} mS/cm`;
-
-    return html`
-      <div class="detail-card" style="border-left:4px solid ${statusColor};padding:16px 20px;">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div
-            style="width:14px;height:14px;border-radius:50%;background:${statusColor};box-shadow:0 0 8px ${statusColor};flex-shrink:0;"
-          ></div>
-          <div>
-            <div style="font-weight:600;font-size:1rem;">${statusText}</div>
-            ${lastReading
-              ? html`
-                  <div style="font-size:0.8rem;opacity:0.6;margin-top:2px;">
-                    Last reading: Feed ${lastReading.feedEc.toFixed(2)} → Drain
-                    ${lastReading.drainEc.toFixed(2)} mS/cm at
-                    ${new Date(lastReading.timestamp).toLocaleString()}
-                  </div>
-                `
-              : nothing}
-          </div>
-        </div>
-      </div>
-
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"
-        >
-          <h3 style="margin:0;">Monitoring Configuration</h3>
-          ${this._sm.tabs.drain_ec.sub.kind === 'saving'
-            ? html`<span style="font-size:0.8rem;opacity:0.6;">Saving…</span>`
-            : nothing}
-        </div>
-        <p style="font-size:0.82rem;opacity:0.7;margin-bottom:20px;">
-          Alert when drain EC exceeds feed EC by more than the max delta.
-        </p>
-        <div
-          style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:16px;"
-        >
-          <span>Enable EC drain monitoring</span>
-          <md3-switch
-            .checked=${drainDraft.enabled}
-            @change=${(e: Event) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { enabled: (e.target as HTMLInputElement).checked },
-              });
-            }}
-          ></md3-switch>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <md3-number-input
-            label="Max EC Delta (mS/cm)"
-            .value=${drainDraft.maxEcDelta}
-            step="0.1"
-            min="0.1"
-            ?disabled=${!drainDraft.enabled}
-            @change=${(e: CustomEvent) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { maxEcDelta: parseFloat(e.detail) || 1.0 },
-              });
-            }}
-          ></md3-number-input>
-          <md3-number-input
-            label="Target Runoff (%)"
-            .value=${drainDraft.targetRunoffPercent}
-            min="5"
-            max="50"
-            step="5"
-            ?disabled=${!drainDraft.enabled}
-            @change=${(e: CustomEvent) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { targetRunoffPercent: parseInt(e.detail) || 20 },
-              });
-            }}
-          ></md3-number-input>
-        </div>
-      </div>
-
-      <div class="detail-card">
-        <h3 style="margin-top:0;">Log Drain Reading</h3>
-        <p style="font-size:0.82rem;opacity:0.7;margin-bottom:20px;">
-          Manually log feed EC and drain EC values measured with a handheld meter. Volumes are
-          optional.
-        </p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-          <md3-number-input
-            label="Feed EC (mS/cm)"
-            .value=${drainDraft.logFeedEc}
-            step="0.1"
-            min="0"
-            @change=${(e: CustomEvent) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { logFeedEc: parseFloat(e.detail) || 0 },
-              });
-            }}
-          ></md3-number-input>
-          <md3-number-input
-            label="Drain EC (mS/cm)"
-            .value=${drainDraft.logDrainEc}
-            step="0.1"
-            min="0"
-            @change=${(e: CustomEvent) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { logDrainEc: parseFloat(e.detail) || 0 },
-              });
-            }}
-          ></md3-number-input>
-          <md3-number-input
-            label="Feed Volume (mL) — optional"
-            .value=${drainDraft.logFeedVolume}
-            step="100"
-            min="0"
-            @change=${(e: CustomEvent) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { logFeedVolume: parseInt(e.detail) || 0 },
-              });
-            }}
-          ></md3-number-input>
-          <md3-number-input
-            label="Drain Volume (mL) — optional"
-            .value=${drainDraft.logDrainVolume}
-            step="100"
-            min="0"
-            @change=${(e: CustomEvent) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { logDrainVolume: parseInt(e.detail) || 0 },
-              });
-            }}
-          ></md3-number-input>
-        </div>
-        ${drainDraft.logFeedEc > 0 && drainDraft.logDrainEc > 0
-          ? html`
-              <div
-                style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;gap:24px;align-items:center;font-size:0.9rem;"
-              >
-                <span
-                  >EC Delta:
-                  <strong
-                    style="color:${drainDraft.logDrainEc - drainDraft.logFeedEc >
-                    drainDraft.maxEcDelta
-                      ? '#f44336'
-                      : '#4caf50'}"
-                  >
-                    Δ${(drainDraft.logDrainEc - drainDraft.logFeedEc).toFixed(2)} mS/cm
-                  </strong></span
-                >
-                ${drainDraft.logFeedVolume > 0 && drainDraft.logDrainVolume > 0
-                  ? html`
-                      <span
-                        >Runoff:
-                        <strong
-                          >${((drainDraft.logDrainVolume / drainDraft.logFeedVolume) * 100).toFixed(
-                            1
-                          )}%</strong
-                        ></span
-                      >
-                    `
-                  : nothing}
-              </div>
-            `
-          : nothing}
-        <button
-          class="md3-button primary"
-          style="background:#FF9800;"
-          @click=${this._logDrainReadingNow}
-          ?disabled=${this._sm.tabs.drain_ec.sub.kind === 'logging' ||
-          drainDraft.logFeedEc <= 0 ||
-          drainDraft.logDrainEc <= 0}
-        >
-          ${this._sm.tabs.drain_ec.sub.kind === 'logging' ? 'Logging…' : 'Log Reading'}
-        </button>
-      </div>
-
-      <div class="detail-card">
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
-        >
-          <h3 style="margin:0;">Recent Readings</h3>
-          <span style="font-size:0.8rem;opacity:0.5;">${readings.length} total</span>
-        </div>
-        ${recent.length === 0
-          ? html`
-              <p style="opacity:0.6;text-align:center;padding:20px 0;">No readings logged yet.</p>
-            `
-          : html`
-              <div style="overflow-x:auto;">
-                <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
-                  <thead>
-                    <tr style="border-bottom:1px solid rgba(255,255,255,0.15);opacity:0.7;">
-                      <th style="text-align:left;padding:6px 8px;font-weight:500;">Time</th>
-                      <th style="text-align:right;padding:6px 8px;font-weight:500;">Feed EC</th>
-                      <th style="text-align:right;padding:6px 8px;font-weight:500;">Drain EC</th>
-                      <th style="text-align:right;padding:6px 8px;font-weight:500;">Δ EC</th>
-                      <th style="text-align:right;padding:6px 8px;font-weight:500;">Runoff</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${recent.map((r: DrainECReading) => {
-                      const delta = r.drainEc - r.feedEc;
-                      const overThreshold = drainDraft.enabled && delta > drainDraft.maxEcDelta;
-                      const runoffPct =
-                        r.feedVolumeMl && r.drainVolumeMl
-                          ? ((r.drainVolumeMl / r.feedVolumeMl) * 100).toFixed(1) + '%'
-                          : '—';
-                      return html`
-                        <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                          <td style="padding:6px 8px;opacity:0.7;">
-                            ${new Date(r.timestamp).toLocaleString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </td>
-                          <td style="text-align:right;padding:6px 8px;">${r.feedEc.toFixed(2)}</td>
-                          <td style="text-align:right;padding:6px 8px;">${r.drainEc.toFixed(2)}</td>
-                          <td
-                            style="text-align:right;padding:6px 8px;color:${overThreshold
-                              ? '#f44336'
-                              : delta > drainDraft.maxEcDelta * 0.7
-                                ? '#FF9800'
-                                : '#4caf50'};font-weight:500;"
-                          >
-                            ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
-                          </td>
-                          <td style="text-align:right;padding:6px 8px;opacity:0.6;">
-                            ${runoffPct}
-                          </td>
-                        </tr>
-                      `;
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            `}
-      </div>
-    `;
-  }
-
   // ─── Overview tab (crop-steering diagnostics, read-only) ──────────────────
   //
   // Decomposed (ADR-0019): the Overview tab renders through
@@ -3825,6 +3577,25 @@ export class IrrigationDialog extends LitElement {
 
   private async _effectRemoveEcRampCurve(params: { curveId: string }) {
     await this.store.actions.library.removeECRampCurve(params.curveId);
+  }
+
+  // ─── Drain EC tab intents (ADR-0019) ───────────────────────────────────────
+  // The monitoring/log draft lives in the SM; config persists via the global
+  // `save-all` effect. The `_logDrainReadingNow` flow is preserved exactly — an
+  // imperative host method (its `feedEc/drainEc > 0` guard lives here, not in the
+  // SM or VM), surfaced to the dumb component via the `drain-ec-log-reading` intent.
+
+  /** `drain-ec-draft-changed` → merge the field change into the SM draft. */
+  private _onDrainEcDraftChanged(e: CustomEvent<{ partial: Partial<DrainEcDraft> }>) {
+    this._sm = transition(this._sm, {
+      type: 'UPDATE_DRAIN_EC_DRAFT',
+      partial: e.detail.partial,
+    });
+  }
+
+  /** `drain-ec-log-reading` → run the existing imperative log flow unchanged. */
+  private _onDrainEcLogReading() {
+    this._logDrainReadingNow().catch(() => {});
   }
 
   // ─── Schedules tab intents (ADR-0019) ──────────────────────────────────────
