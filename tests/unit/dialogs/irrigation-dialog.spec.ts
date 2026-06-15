@@ -1491,14 +1491,25 @@ describe('IrrigationDialog', () => {
                 await element.updateComplete;
             });
 
-            it('should render the Tank-Derived Water Usage section with consumption chart', () => {
-                const content = element.shadowRoot?.querySelector('.v1-content-scroll');
-                expect(content?.textContent).toContain('Tank-Derived Water Usage');
+            // ADR-0019: the Tank-Derived Water Usage section + consumption chart
+            // now render inside the decomposed `<irrigation-water-analytics-tab>`
+            // child shadow, so pierce it. The clock-dependent 24h bucketing is
+            // kept in the component (the VM stays deterministic).
+            async function waChild(): Promise<ShadowRoot> {
+                const tab = element.shadowRoot?.querySelector('irrigation-water-analytics-tab') as any;
+                await tab?.updateComplete;
+                return tab.shadowRoot as ShadowRoot;
+            }
+
+            it('should render the Tank-Derived Water Usage section with consumption chart', async () => {
+                const root = await waChild();
+                expect(root.textContent).toContain('Tank-Derived Water Usage');
             });
 
-            it('should render consumption buckets chart bars for the last 24 hours', () => {
+            it('should render consumption buckets chart bars for the last 24 hours', async () => {
+                const root = await waChild();
                 // The chart bars are flex-child divs inside the consumption chart container
-                const allDivs = element.shadowRoot?.querySelectorAll('div[title]');
+                const allDivs = root.querySelectorAll('div[title]');
                 const chartBars = Array.from(allDivs ?? []).filter((d) => d.getAttribute('title')?.includes('—'));
                 expect(chartBars.length).toBeGreaterThan(0);
             });
@@ -1518,7 +1529,10 @@ describe('IrrigationDialog', () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'SET_STAGE_AGGREGATES', data: { seedling: 3, veg: 15, flower: 25 } });
                 await element.updateComplete;
 
-                const content = element.shadowRoot?.querySelector('.v1-content-scroll');
+                // ADR-0019: stage aggregates render inside the child shadow.
+                const tab = element.shadowRoot?.querySelector('irrigation-water-analytics-tab') as any;
+                await tab?.updateComplete;
+                const content = tab.shadowRoot as ShadowRoot;
                 expect(content?.textContent).toContain('Water Usage by Growth Stage');
                 expect(content?.textContent).toContain('25.0 L');
                 expect(content?.textContent).toContain('flower');

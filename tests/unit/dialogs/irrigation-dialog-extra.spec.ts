@@ -166,6 +166,25 @@ describe('IrrigationDialog - Extra Coverage', () => {
         vi.restoreAllMocks();
     });
 
+    // The Water Analytics tab is decomposed (ADR-0019): its KPI cards, tank
+    // levels, schedule summary, stage aggregates, and volume history render
+    // inside the child `<irrigation-water-analytics-tab>`'s own shadow root.
+    // These tests select the nav item by LABEL (overview shifted indices) and
+    // pierce that child shadow. The derivation *logic* is covered by the pure VM
+    // spec and the component mount-and-assert spec; these remain a lean
+    // end-to-end check that the device prop flows through the Dialog Shell to the
+    // child, plus the host-level reset/intent wiring.
+    async function waChildText(): Promise<string> {
+        const tab = element.shadowRoot?.querySelector('irrigation-water-analytics-tab') as any;
+        await tab?.updateComplete;
+        return ((tab?.shadowRoot as ShadowRoot)?.textContent ?? '').replace(/\s+/g, ' ');
+    }
+    async function waChildRoot(): Promise<ShadowRoot> {
+        const tab = element.shadowRoot?.querySelector('irrigation-water-analytics-tab') as any;
+        await tab?.updateComplete;
+        return tab.shadowRoot as ShadowRoot;
+    }
+
     describe('Analytics Tab', () => {
         beforeEach(async () => {
             const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
@@ -174,8 +193,8 @@ describe('IrrigationDialog - Extra Coverage', () => {
             await element.updateComplete;
         });
 
-        it('should render KPI cards with usage data', () => {
-            const text = element.shadowRoot?.textContent;
+        it('should render KPI cards with usage data', async () => {
+            const text = await waChildText();
             expect(text).toContain('10.5');
             expect(text).toContain('0.65');
             expect(text).toContain('85'); // Efficiency 85%
@@ -186,12 +205,12 @@ describe('IrrigationDialog - Extra Coverage', () => {
             element.device = { ...mockDevice, waterUsage: undefined, drainConfig: { readings: [] } } as any;
             await element.updateComplete;
 
-            const text = element.shadowRoot?.textContent || '';
+            const text = await waChildText();
             expect(text).toContain('—'); // Placeholder for missing KPI
         });
 
-        it('should render schedule summary with irrigation and drain events', () => {
-            const text = (element.shadowRoot?.textContent ?? '').replace(/\s+/g, ' ');
+        it('should render schedule summary with irrigation and drain events', async () => {
+            const text = await waChildText();
             expect(text).toContain('1 events/day');
             expect(text).toContain('08:00');
             expect(text).toContain('09:00');
@@ -217,7 +236,8 @@ describe('IrrigationDialog - Extra Coverage', () => {
             } as any;
             await element.updateComplete;
 
-            const rows = element.shadowRoot?.querySelectorAll('tbody tr');
+            const root = await waChildRoot();
+            const rows = root.querySelectorAll('tbody tr');
             expect(rows?.length).toBe(1);
             expect(rows?.[0].textContent).toContain('20.0%');
             expect(rows?.[0].textContent).toContain('+0.30'); // 1.8 - 1.5 delta
@@ -793,7 +813,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             } as any;
             await element.updateComplete;
 
-            const text = element.shadowRoot?.textContent || '';
+            const text = await waChildText();
             expect(text).not.toContain('Schedule Summary');
         });
 
@@ -804,7 +824,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             } as any;
             await element.updateComplete;
 
-            const text = element.shadowRoot?.textContent || '';
+            const text = await waChildText();
             expect(text).toContain('Good');
         });
 
@@ -815,7 +835,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             } as any;
             await element.updateComplete;
 
-            const text = element.shadowRoot?.textContent || '';
+            const text = await waChildText();
             expect(text).toContain('Review schedule');
         });
 
@@ -839,7 +859,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             } as any;
             await element.updateComplete;
 
-            const text = element.shadowRoot?.textContent || '';
+            const text = await waChildText();
             expect(text).toContain('readings');
         });
 
@@ -850,7 +870,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             } as any;
             await element.updateComplete;
 
-            const text = element.shadowRoot?.textContent || '';
+            const text = await waChildText();
             expect(text).not.toContain('Schedule Summary');
         });
 
@@ -861,7 +881,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             } as any;
             await element.updateComplete;
 
-            const text = element.shadowRoot?.textContent || '';
+            const text = await waChildText();
             expect(text).not.toContain('Tank Levels');
         });
 
@@ -889,7 +909,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             } as any;
             await element.updateComplete;
 
-            const text = element.shadowRoot?.textContent || '';
+            const text = await waChildText();
             expect(text).toContain('Warning Tank');
             expect(text).toContain('⚠');
         });
@@ -911,7 +931,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             } as any;
             await element.updateComplete;
 
-            const text = element.shadowRoot?.textContent || '';
+            const text = await waChildText();
             expect(text).toContain('Mystery Tank');
         });
 
@@ -932,7 +952,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             } as any;
             await element.updateComplete;
 
-            const text = element.shadowRoot?.textContent || '';
+            const text = await waChildText();
             expect(text).toContain('Unknown Tank');
         });
     });
