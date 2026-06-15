@@ -41,6 +41,7 @@ import {
   type TankDraft,
   type EcRampCurveDraft,
   type DrainEcDraft,
+  type ConfigDraft,
 } from '../../../dialogs/irrigation-dialog-sm';
 import {
   MutationRunController,
@@ -112,12 +113,20 @@ import {
   createDrainEcTabViewModel,
   type DrainEcTabViewModel,
 } from '../viewmodels/drain-ec-tab.viewmodel';
+// Decomposed Config tab (ADR-0019): $sm-first, mixed source (pump-entity options
+// + `hasPump` mirrored from the host). Persists via the global `save-all`.
+import {
+  createConfigTabViewModel,
+  type ConfigTabViewModel,
+  type PumpEntityOptionVM,
+} from '../viewmodels/config-tab.viewmodel';
 import { atom, type ReadableAtom } from 'nanostores';
 import '../components/irrigation-overview-tab';
 import '../components/irrigation-tanks-tab';
 import '../components/irrigation-ec-ramp-tab';
 import '../components/irrigation-schedules-tab';
 import '../components/irrigation-drain-ec-tab';
+import '../components/irrigation-config-tab';
 
 type TabId =
   | 'overview'
@@ -280,6 +289,22 @@ export class IrrigationDialog extends LitElement {
     this._deviceAtom
   );
   private _drainEcVmController = new StoreController(this, this._drainEcVm);
+
+  // ─── Config tab (ADR-0019: draft lives in the SM, not here) ──────────────
+  // switch/input_boolean entity options for the two pump selects — a hass-derived
+  // view input mirrored into an atom (the `_tankSensorOptions` pattern) so the
+  // Config Tab ViewModel stays the single source and the component takes only `.vm`.
+  private _pumpEntityOptions = atom<PumpEntityOptionVM[]>([]);
+  // `hasPump` mirrored from the host's `_hasPump` getter (reads the live
+  // `irrigationConfigs$` slice) so the in-tab panel gate stays byte-identical.
+  private _hasPumpAtom = atom<boolean>(false);
+  /** Config tab ViewModel — `$sm`-first, mixed source (pump options + hasPump). No `$caps`. */
+  private _configVm: ReadableAtom<ConfigTabViewModel> = createConfigTabViewModel(
+    this._smAtom,
+    this._hasPumpAtom,
+    this._pumpEntityOptions
+  );
+  private _configVmController = new StoreController(this, this._configVm);
 
   // ─── Crop Steering History (Schedules tab) ────────────────────────────
   private _cropSteeringHistoryFetched = false;
@@ -662,29 +687,6 @@ export class IrrigationDialog extends LitElement {
         margin-left: 8px;
       }
 
-      .action-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 18px;
-        border-radius: 20px;
-        border: 1px solid rgba(79, 195, 247, 0.4);
-        background: rgba(79, 195, 247, 0.1);
-        color: #4fc3f7;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.15s;
-      }
-      .action-btn:hover:not([disabled]) {
-        background: rgba(79, 195, 247, 0.2);
-      }
-      .action-btn[disabled],
-      .action-btn.saving {
-        opacity: 0.5;
-        cursor: default;
-      }
-
       /* ── Toast ── */
       .toast-notification {
         position: fixed;
@@ -936,6 +938,28 @@ export class IrrigationDialog extends LitElement {
       this._tankSensorOptions.set(
         this._getEntities(['sensor', 'input_number']).map((s) => s.entity_id)
       );
+    }
+    // Mirror the switch/input_boolean pump-entity options into their atom so the
+    // Config Tab ViewModel stays the single source and the component never reads
+    // hass. `hass` is a plain (non-reactive) field, so it never appears in
+    // `changedProps`; recompute every update and set only when the option list
+    // actually changed (by signature), so clearing `hass` clears the options —
+    // matching the former inline `_renderEntitySelect`, which re-read hass each
+    // render and showed only "None" when hass was absent.
+    const pumpOpts = this._getEntities(['switch', 'input_boolean']).map((s) => ({
+      value: s.entity_id,
+      label: `${s.attributes.friendly_name || s.entity_id} (${s.entity_id})`,
+    }));
+    const prevPumpOpts = this._pumpEntityOptions.get();
+    const pumpSig = pumpOpts.map((o) => o.value).join(' ');
+    const prevPumpSig = prevPumpOpts.map((o) => o.value).join(' ');
+    if (pumpSig !== prevPumpSig) {
+      this._pumpEntityOptions.set(pumpOpts);
+    }
+    // `_hasPump` reads the live config slice; mirror it every update so the Config
+    // tab's panel gate (Behaviour / Manual Override) tracks post-save changes.
+    if (this._hasPumpAtom.get() !== this._hasPump) {
+      this._hasPumpAtom.set(this._hasPump);
     }
     if (changedProps.has('open') && this.open) {
       this._initializeState();
@@ -1396,30 +1420,6 @@ export class IrrigationDialog extends LitElement {
       );
   }
 
-  private _renderEntitySelect(
-    label: string,
-    value: string,
-    domains: string[],
-    changeHandler: (e: Event) => void
-  ) {
-    const entities = this._getEntities(domains);
-    return html`
-      <div class="md3-input-group">
-        <label class="md3-label">${label}</label>
-        <select class="md3-input" .value=${value} @change=${changeHandler}>
-          <option value="">None</option>
-          ${entities.map(
-            (e) => html`
-              <option value="${e.entity_id}" ?selected=${e.entity_id === value}>
-                ${e.attributes.friendly_name || e.entity_id} (${e.entity_id})
-              </option>
-            `
-          )}
-        </select>
-      </div>
-    `;
-  }
-
   // ─── Render ───────────────────────────────────────────────────────────────
 
   protected render() {
@@ -1653,7 +1653,12 @@ export class IrrigationDialog extends LitElement {
       case 'steering':
         return this._renderSteeringTab(color);
       case 'config':
-        return this._renderConfigSection();
+        return html`<irrigation-config-tab
+          .vm=${this._configVmController.value}
+          @config-pump-changed=${this._onConfigPumpChanged}
+          @config-draft-changed=${this._onConfigDraftChanged}
+          @config-run-now=${this._onConfigRunNow}
+        ></irrigation-config-tab>`;
       case 'tanks':
         return html`<irrigation-tanks-tab
           .vm=${this._tanksVmController.value}
@@ -2268,178 +2273,6 @@ export class IrrigationDialog extends LitElement {
           <button class="md3-button primary" @click=${this._confirmPhaseChange}>Confirm</button>
         </div>
       </gs-dialog>
-    `;
-  }
-
-  // ─── Configuration tab ───────────────────────────────────────────────────
-
-  private _renderConfigSection() {
-    return html`
-      <div class="detail-card">
-        <div class="section-header"><h3>Pump Configuration</h3></div>
-        <div class="section-content">
-          ${this._renderEntitySelect(
-            'Irrigation Pump',
-            this._sm.tabs.schedules.draft.irrigationPumpEntity,
-            ['switch', 'input_boolean'],
-            (e) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_SCHEDULES_DRAFT',
-                partial: { irrigationPumpEntity: (e.target as HTMLSelectElement).value },
-              });
-            }
-          )}
-          ${this._renderEntitySelect(
-            'Drain Pump (Optional)',
-            this._sm.tabs.schedules.draft.drainPumpEntity,
-            ['switch', 'input_boolean'],
-            (e) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_SCHEDULES_DRAFT',
-                partial: { drainPumpEntity: (e.target as HTMLSelectElement).value },
-              });
-            }
-          )}
-        </div>
-      </div>
-
-      ${this._sm.tabs.steering.draft.enabled
-        ? html`
-            <div class="detail-card">
-              <div
-                style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"
-              >
-                <h3 style="margin:0;">Safety Caps</h3>
-                <gs-help-tooltip
-                  content="Optional hard limits on top of the steering logic. Leave blank to disable."
-                ></gs-help-tooltip>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                <div class="md3-input-group">
-                  <label class="md3-label">Daily Volume Cap (L)</label>
-                  <input
-                    class="md3-input"
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    .value=${this._sm.tabs.config.draft.dailyVolumeCapLiters != null
-                      ? String(this._sm.tabs.config.draft.dailyVolumeCapLiters)
-                      : ''}
-                    placeholder="Off"
-                    @change=${(e: Event) => {
-                      const v = (e.target as HTMLInputElement).value;
-                      this._sm = transition(this._sm, {
-                        type: 'UPDATE_CONFIG_DRAFT',
-                        partial: { dailyVolumeCapLiters: v ? parseFloat(v) : null },
-                      });
-                    }}
-                  />
-                </div>
-                <div class="md3-input-group">
-                  <label class="md3-label">Max Cycles / Day</label>
-                  <input
-                    class="md3-input"
-                    type="number"
-                    min="0"
-                    step="1"
-                    .value=${this._sm.tabs.config.draft.maxCyclesPerDay != null
-                      ? String(this._sm.tabs.config.draft.maxCyclesPerDay)
-                      : ''}
-                    placeholder="Off"
-                    @change=${(e: Event) => {
-                      const v = (e.target as HTMLInputElement).value;
-                      this._sm = transition(this._sm, {
-                        type: 'UPDATE_CONFIG_DRAFT',
-                        partial: { maxCyclesPerDay: v ? parseInt(v, 10) : null },
-                      });
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          `
-        : nothing}
-      ${this._hasPump
-        ? html`
-            <div class="detail-card">
-              <h3 style="margin:0 0 14px;">Behaviour</h3>
-              ${!this._sm.tabs.steering.draft.enabled
-                ? html`
-                    <div class="stub-row" style="margin-bottom:8px;">
-                      <div>
-                        <div class="stub-row-label">Skip During Dark Period</div>
-                        <div class="stub-row-desc">No cycles between lights-off and lights-on</div>
-                      </div>
-                      <md3-switch
-                        .checked=${this._sm.tabs.config.draft.skipDuringDark}
-                        @change=${(e: CustomEvent) => {
-                          this._sm = transition(this._sm, {
-                            type: 'UPDATE_CONFIG_DRAFT',
-                            partial: { skipDuringDark: (e.target as any).checked },
-                          });
-                        }}
-                      ></md3-switch>
-                    </div>
-                  `
-                : nothing}
-              ${[
-                {
-                  label: 'Pause on Tank Low',
-                  desc: 'Halt cycles when any tank is below warning level',
-                  get: () => this._sm.tabs.config.draft.pauseOnLowTank,
-                  set: (v: boolean) => {
-                    this._sm = transition(this._sm, {
-                      type: 'UPDATE_CONFIG_DRAFT',
-                      partial: { pauseOnLowTank: v },
-                    });
-                  },
-                },
-                {
-                  label: 'Log to Logbook',
-                  desc: 'Record start, duration, and moisture delta per cycle',
-                  get: () => this._sm.tabs.config.draft.logToLogbook,
-                  set: (v: boolean) => {
-                    this._sm = transition(this._sm, {
-                      type: 'UPDATE_CONFIG_DRAFT',
-                      partial: { logToLogbook: v },
-                    });
-                  },
-                },
-              ].map(
-                (row) => html`
-                  <div class="stub-row" style="margin-bottom:8px;">
-                    <div>
-                      <div class="stub-row-label">${row.label}</div>
-                      <div class="stub-row-desc">${row.desc}</div>
-                    </div>
-                    <md3-switch
-                      .checked=${row.get()}
-                      @change=${(e: CustomEvent) => {
-                        row.set((e.target as any).checked);
-                      }}
-                    ></md3-switch>
-                  </div>
-                `
-              )}
-            </div>
-
-            <div class="detail-card">
-              <h3 style="margin:0 0 14px;">Manual Override</h3>
-              <div style="display:flex;align-items:center;gap:12px;">
-                <button
-                  class="action-btn${this._isRunningNow ? ' saving' : ''}"
-                  ?disabled=${this._sm.status.kind === 'applying'}
-                  @click=${this._handleRunNow}
-                >
-                  ${this._isRunningNow ? 'Starting…' : '▶ Run Now'}
-                </button>
-                <span style="font-size:12px;opacity:0.55;">
-                  Triggers one irrigation cycle immediately, bypassing the schedule.
-                </span>
-              </div>
-            </div>
-          `
-        : nothing}
     `;
   }
 
@@ -3596,6 +3429,33 @@ export class IrrigationDialog extends LitElement {
   /** `drain-ec-log-reading` → run the existing imperative log flow unchanged. */
   private _onDrainEcLogReading() {
     this._logDrainReadingNow().catch(() => {});
+  }
+
+  // ─── Config tab intents (ADR-0019) ─────────────────────────────────────────
+  // The config draft + pump-entity drafts live in the SM; both persist through the
+  // global `save-all` footer path. Run Now reuses the existing `_handleRunNow`.
+
+  /** `config-pump-changed` → write the pump select into the SHARED schedules draft. */
+  private _onConfigPumpChanged(e: CustomEvent<{ which: 'irrigation' | 'drain'; value: string }>) {
+    const { which, value } = e.detail;
+    this._sm = transition(this._sm, {
+      type: 'UPDATE_SCHEDULES_DRAFT',
+      partial:
+        which === 'irrigation' ? { irrigationPumpEntity: value } : { drainPumpEntity: value },
+    });
+  }
+
+  /** `config-draft-changed` → merge the field change into the SM config draft. */
+  private _onConfigDraftChanged(e: CustomEvent<{ partial: Partial<ConfigDraft> }>) {
+    this._sm = transition(this._sm, {
+      type: 'UPDATE_CONFIG_DRAFT',
+      partial: e.detail.partial,
+    });
+  }
+
+  /** `config-run-now` → run the existing manual-override flow unchanged. */
+  private _onConfigRunNow() {
+    this._handleRunNow();
   }
 
   // ─── Schedules tab intents (ADR-0019) ──────────────────────────────────────
