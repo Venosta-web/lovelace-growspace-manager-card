@@ -654,33 +654,8 @@ export class IrrigationDialog extends LitElement {
         gap: 8px;
       }
 
-      /* ── Phase cards ── */
-      .phase-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-      }
-
-      .phase-card {
-        padding: 12px 14px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.02);
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        cursor: pointer;
-        transition:
-          background 0.15s,
-          border-color 0.15s;
-      }
-      .phase-card:hover {
-        background: rgba(255, 255, 255, 0.035);
-      }
-      .phase-card.active {
-        border-color: rgba(33, 150, 243, 0.5);
-        background: rgba(33, 150, 243, 0.08);
-      }
+      /* ── Segmented toggle (.seg-btn kept here per ADR-0019; phase-card CSS
+         moved into <irrigation-steering-tab> with the decomposed tab) ── */
       .seg-btn {
         flex: 1;
         padding: 10px 12px;
@@ -699,22 +674,6 @@ export class IrrigationDialog extends LitElement {
       .seg-btn:disabled {
         opacity: 0.4;
         cursor: not-allowed;
-      }
-      .phase-card .phase-num {
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.4);
-      }
-      .phase-card .phase-nm {
-        font-size: 14px;
-        font-weight: 500;
-      }
-      .phase-card .phase-desc {
-        font-size: 11.5px;
-        color: rgba(255, 255, 255, 0.5);
-        line-height: 1.4;
       }
 
       /* ── Stub badge ── */
@@ -790,25 +749,6 @@ export class IrrigationDialog extends LitElement {
       .setup-hint .hint-icon {
         flex-shrink: 0;
         font-size: 1rem;
-      }
-
-      /* ── Disable stub controls ── */
-      .stub-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 12px;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 8px;
-        opacity: 0.55;
-      }
-      .stub-row-label {
-        font-size: 13px;
-      }
-      .stub-row-desc {
-        font-size: 11px;
-        opacity: 0.6;
-        margin-top: 2px;
       }
 
       @keyframes field-pulse-anim {
