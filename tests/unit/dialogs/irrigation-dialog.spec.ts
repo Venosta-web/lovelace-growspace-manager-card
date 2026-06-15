@@ -433,20 +433,33 @@ describe('IrrigationDialog', () => {
             document.body.appendChild(element);
             await element.updateComplete;
 
-            // Switch to Config Tab
-            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-            (tabs?.[2] as HTMLElement).click();
+            // Switch to Config Tab — select by LABEL (decomposition shifted indices).
+            const configItem = Array.from(
+                element.shadowRoot?.querySelectorAll('.v1-nav-item') ?? []
+            ).find(el => el.textContent?.includes('Configuration'));
+            (configItem as HTMLElement).click();
             await element.updateComplete;
         });
 
+        // The Config tab is decomposed (ADR-0019): the markup lives in the child
+        // <irrigation-config-tab> shadow, fed by the host's mirrored pump options.
+        function configChild() {
+            return element.shadowRoot?.querySelector('irrigation-config-tab') as
+                | HTMLElement
+                | null
+                | undefined;
+        }
+
         it('should render configuration tab content', () => {
-            const section = element.shadowRoot?.querySelector('.detail-card');
+            const child = configChild();
+            expect(child).toBeTruthy();
+            const section = child!.shadowRoot?.querySelector('.detail-card');
             expect(section).toBeTruthy();
-            expect(element.shadowRoot?.innerHTML).toContain('Pump Configuration');
+            expect(child!.shadowRoot?.innerHTML).toContain('Pump Configuration');
         });
 
         it('should populate entity selects with filtered and sorted entities', () => {
-            const selects = element.shadowRoot?.querySelectorAll('select');
+            const selects = configChild()!.shadowRoot?.querySelectorAll('select');
             const pumpSelect = selects?.[0]; // Irrigation Pump
 
             const options = Array.from(pumpSelect?.querySelectorAll('option') || []).map(o => o.value).filter(v => v);
@@ -460,17 +473,12 @@ describe('IrrigationDialog', () => {
             // Check sorting if needed, but existence is key for coverage
         });
 
-        it('should handle missing hass safely in _getEntities', async () => {
+        it('should handle missing hass safely (empty pump options)', async () => {
             element.hass = undefined as any;
             await element.requestUpdate();
             await element.updateComplete;
 
-            // Re-render to trigger _getEntities
-            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-            (tabs?.[2] as HTMLElement).click();
-            await element.updateComplete;
-
-            const selects = element.shadowRoot?.querySelectorAll('select');
+            const selects = configChild()!.shadowRoot?.querySelectorAll('select');
             expect(selects?.length).toBeGreaterThan(0);
             const options = selects?.[0]?.querySelectorAll('option');
             // Should have 1 option (None)
@@ -1218,8 +1226,16 @@ describe('IrrigationDialog', () => {
                 expect((element as any)._sm.tabs.config.draft.soilTriggerPercent).toBeNull();
             });
 
+            // The cycle-param inputs (Daily Volume Cap, Max Cycles) are decomposed
+            // (ADR-0019): they render in the child <irrigation-config-tab> shadow and
+            // emit `config-draft-changed`. Pierce the child; assert the host wires the
+            // intent into the SM draft.
+            function configChild() {
+                return element.shadowRoot?.querySelector('irrigation-config-tab') as HTMLElement;
+            }
+
             it('should update _dailyVolumeCapLiters from the Daily Volume Cap input', async () => {
-                const volInput = element.shadowRoot?.querySelector('input[step="0.1"]') as HTMLInputElement;
+                const volInput = configChild().shadowRoot?.querySelector('input[step="0.1"]') as HTMLInputElement;
                 expect(volInput).toBeTruthy();
 
                 volInput.value = '20.5';
@@ -1233,7 +1249,7 @@ describe('IrrigationDialog', () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { dailyVolumeCapLiters: 10 } });
                 await element.updateComplete;
 
-                const volInput = element.shadowRoot?.querySelector('input[step="0.1"]') as HTMLInputElement;
+                const volInput = configChild().shadowRoot?.querySelector('input[step="0.1"]') as HTMLInputElement;
                 volInput.value = '';
                 volInput.dispatchEvent(new Event('change'));
                 await element.updateComplete;
@@ -1243,7 +1259,7 @@ describe('IrrigationDialog', () => {
 
             it('should update _maxCyclesPerDay from the Max Cycles input', async () => {
                 // Max Cycles input: min="0" step="1" without max attribute
-                const allNumberInputs = Array.from(element.shadowRoot?.querySelectorAll('input[type="number"]') ?? []) as HTMLInputElement[];
+                const allNumberInputs = Array.from(configChild().shadowRoot?.querySelectorAll('input[type="number"]') ?? []) as HTMLInputElement[];
                 const maxCyclesInput = allNumberInputs.find((i) => i.getAttribute('step') === '1' && !i.getAttribute('max'));
                 expect(maxCyclesInput).toBeTruthy();
 
@@ -1258,7 +1274,7 @@ describe('IrrigationDialog', () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { maxCyclesPerDay: 5 } });
                 await element.updateComplete;
 
-                const allNumberInputs = Array.from(element.shadowRoot?.querySelectorAll('input[type="number"]') ?? []) as HTMLInputElement[];
+                const allNumberInputs = Array.from(configChild().shadowRoot?.querySelectorAll('input[type="number"]') ?? []) as HTMLInputElement[];
                 const maxCyclesInput = allNumberInputs.find((i) => i.getAttribute('step') === '1' && !i.getAttribute('max'));
                 maxCyclesInput!.value = '';
                 maxCyclesInput!.dispatchEvent(new Event('change'));
@@ -1280,9 +1296,15 @@ describe('IrrigationDialog', () => {
                 await element.updateComplete;
             });
 
+            // Behaviour toggles are decomposed: pierce the child <irrigation-config-tab>
+            // shadow and assert the host wires `config-draft-changed` into the SM.
+            function behaviourSwitches() {
+                const child = element.shadowRoot?.querySelector('irrigation-config-tab') as HTMLElement;
+                return child.shadowRoot?.querySelectorAll('.stub-row md3-switch');
+            }
+
             it('should update _skipDuringDark when first behaviour switch fires change', async () => {
-                const switches = element.shadowRoot?.querySelectorAll('.stub-row md3-switch');
-                const sw = switches?.[0] as any;
+                const sw = behaviourSwitches()?.[0] as any;
                 expect(sw).toBeTruthy();
 
                 sw.checked = true;
@@ -1293,8 +1315,7 @@ describe('IrrigationDialog', () => {
             });
 
             it('should update _pauseOnLowTank when second behaviour switch fires change', async () => {
-                const switches = element.shadowRoot?.querySelectorAll('.stub-row md3-switch');
-                const sw = switches?.[1] as any;
+                const sw = behaviourSwitches()?.[1] as any;
                 expect(sw).toBeTruthy();
 
                 sw.checked = false;
@@ -1305,8 +1326,7 @@ describe('IrrigationDialog', () => {
             });
 
             it('should update _logToLogbook when third behaviour switch fires change', async () => {
-                const switches = element.shadowRoot?.querySelectorAll('.stub-row md3-switch');
-                const sw = switches?.[2] as any;
+                const sw = behaviourSwitches()?.[2] as any;
                 expect(sw).toBeTruthy();
 
                 sw.checked = false;
@@ -1329,68 +1349,77 @@ describe('IrrigationDialog', () => {
                 await element.updateComplete;
             });
 
+            // The config tab content is decomposed (ADR-0019): assert against the
+            // child <irrigation-config-tab> shadow instead of the host innerHTML.
+            function childHtml() {
+                const child = element.shadowRoot?.querySelector('irrigation-config-tab') as HTMLElement | null;
+                return child?.shadowRoot?.innerHTML ?? '';
+            }
+            function configSwitches() {
+                const child = element.shadowRoot?.querySelector('irrigation-config-tab') as HTMLElement;
+                return child.shadowRoot?.querySelectorAll('.stub-row md3-switch');
+            }
+
             it('hides Safety Caps when crop steering is OFF', async () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: false } });
                 await element.updateComplete;
 
-                expect(element.shadowRoot?.innerHTML).not.toContain('Safety Caps');
+                expect(childHtml()).not.toContain('Safety Caps');
             });
 
             it('shows Safety Caps when crop steering is ON', async () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
                 await element.updateComplete;
 
-                expect(element.shadowRoot?.innerHTML).toContain('Safety Caps');
+                expect(childHtml()).toContain('Safety Caps');
             });
 
             it('shows Skip During Dark when crop steering is OFF', async () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: false } });
                 await element.updateComplete;
 
-                expect(element.shadowRoot?.innerHTML).toContain('Skip During Dark Period');
+                expect(childHtml()).toContain('Skip During Dark Period');
             });
 
             it('hides Skip During Dark when crop steering is ON', async () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
                 await element.updateComplete;
 
-                expect(element.shadowRoot?.innerHTML).not.toContain('Skip During Dark Period');
+                expect(childHtml()).not.toContain('Skip During Dark Period');
             });
 
             it('always shows Pause on Tank Low regardless of crop steering', async () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: false } });
                 await element.updateComplete;
-                expect(element.shadowRoot?.innerHTML).toContain('Pause on Tank Low');
+                expect(childHtml()).toContain('Pause on Tank Low');
 
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
                 await element.updateComplete;
-                expect(element.shadowRoot?.innerHTML).toContain('Pause on Tank Low');
+                expect(childHtml()).toContain('Pause on Tank Low');
             });
 
             it('always shows Log to Logbook regardless of crop steering', async () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: false } });
                 await element.updateComplete;
-                expect(element.shadowRoot?.innerHTML).toContain('Log to Logbook');
+                expect(childHtml()).toContain('Log to Logbook');
 
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
                 await element.updateComplete;
-                expect(element.shadowRoot?.innerHTML).toContain('Log to Logbook');
+                expect(childHtml()).toContain('Log to Logbook');
             });
 
             it('shows correct switch count when crop steering is OFF (3 switches)', async () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: false } });
                 await element.updateComplete;
 
-                const switches = element.shadowRoot?.querySelectorAll('.stub-row md3-switch');
-                expect(switches?.length).toBe(3); // skipDuringDark + pauseOnLowTank + logToLogbook
+                expect(configSwitches()?.length).toBe(3); // skipDuringDark + pauseOnLowTank + logToLogbook
             });
 
             it('shows correct switch count when crop steering is ON (2 switches)', async () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
                 await element.updateComplete;
 
-                const switches = element.shadowRoot?.querySelectorAll('.stub-row md3-switch');
-                expect(switches?.length).toBe(2); // pauseOnLowTank + logToLogbook
+                expect(configSwitches()?.length).toBe(2); // pauseOnLowTank + logToLogbook
             });
         });
 
@@ -1462,14 +1491,25 @@ describe('IrrigationDialog', () => {
                 await element.updateComplete;
             });
 
-            it('should render the Tank-Derived Water Usage section with consumption chart', () => {
-                const content = element.shadowRoot?.querySelector('.v1-content-scroll');
-                expect(content?.textContent).toContain('Tank-Derived Water Usage');
+            // ADR-0019: the Tank-Derived Water Usage section + consumption chart
+            // now render inside the decomposed `<irrigation-water-analytics-tab>`
+            // child shadow, so pierce it. The clock-dependent 24h bucketing is
+            // kept in the component (the VM stays deterministic).
+            async function waChild(): Promise<ShadowRoot> {
+                const tab = element.shadowRoot?.querySelector('irrigation-water-analytics-tab') as any;
+                await tab?.updateComplete;
+                return tab.shadowRoot as ShadowRoot;
+            }
+
+            it('should render the Tank-Derived Water Usage section with consumption chart', async () => {
+                const root = await waChild();
+                expect(root.textContent).toContain('Tank-Derived Water Usage');
             });
 
-            it('should render consumption buckets chart bars for the last 24 hours', () => {
+            it('should render consumption buckets chart bars for the last 24 hours', async () => {
+                const root = await waChild();
                 // The chart bars are flex-child divs inside the consumption chart container
-                const allDivs = element.shadowRoot?.querySelectorAll('div[title]');
+                const allDivs = root.querySelectorAll('div[title]');
                 const chartBars = Array.from(allDivs ?? []).filter((d) => d.getAttribute('title')?.includes('—'));
                 expect(chartBars.length).toBeGreaterThan(0);
             });
@@ -1489,7 +1529,10 @@ describe('IrrigationDialog', () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'SET_STAGE_AGGREGATES', data: { seedling: 3, veg: 15, flower: 25 } });
                 await element.updateComplete;
 
-                const content = element.shadowRoot?.querySelector('.v1-content-scroll');
+                // ADR-0019: stage aggregates render inside the child shadow.
+                const tab = element.shadowRoot?.querySelector('irrigation-water-analytics-tab') as any;
+                await tab?.updateComplete;
+                const content = tab.shadowRoot as ShadowRoot;
                 expect(content?.textContent).toContain('Water Usage by Growth Stage');
                 expect(content?.textContent).toContain('25.0 L');
                 expect(content?.textContent).toContain('flower');
