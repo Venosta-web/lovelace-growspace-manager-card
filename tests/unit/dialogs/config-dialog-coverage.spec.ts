@@ -1023,9 +1023,15 @@ describe('ConfigDialog - Fan Controller Panel coverage', () => {
         await element.updateComplete;
         expect(fanCfg().wind_enabled).toBe(true);
 
-        // Wind inputs are the last row-col-grid with margin-top style
+        // Wind inputs are the last margin-top row-col-grid *within the circulation
+        // Fan Controller panel* — scope to that card so the sibling Exhaust Fan
+        // Controller panel (rendered below it) doesn't shadow the global selector.
+        const fanCard = Array.from(
+            element.shadowRoot?.querySelectorAll('.detail-card') ?? []
+        ).find((c) => c.querySelector('h3')?.textContent?.trim() === 'Fan Controller');
+        expect(fanCard).toBeDefined();
         const marginGrids = Array.from(
-            element.shadowRoot?.querySelectorAll('.row-col-grid[style*="margin-top"]') ?? []
+            fanCard!.querySelectorAll('.row-col-grid[style*="margin-top"]')
         );
         const windInputs = Array.from(marginGrids[marginGrids.length - 1].querySelectorAll('md3-number-input'));
         expect(windInputs.length).toBe(2);

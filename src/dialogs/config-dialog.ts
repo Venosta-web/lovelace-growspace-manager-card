@@ -1037,6 +1037,9 @@ export class ConfigDialog extends LitElement {
           ...(environmentData.circulationFanConfig
             ? { circulationFanConfig: environmentData.circulationFanConfig }
             : {}),
+          ...(environmentData.exhaustFanConfig
+            ? { exhaustFanConfig: environmentData.exhaustFanConfig }
+            : {}),
           vpdOptimalOverrides: environmentData.vpdOptimalOverrides || {},
         }
       : {};
@@ -1128,6 +1131,7 @@ export class ConfigDialog extends LitElement {
           powerSensors: d.powerSensors,
           energySensors: d.energySensors,
           circulationFanConfig: d.circulationFanConfig,
+          exhaustFanConfig: d.exhaustFanConfig,
           vpdOptimalOverrides: d.vpdOptimalOverrides,
         } satisfies EnvironmentConfigEventDetail,
         bubbles: true,
@@ -2183,6 +2187,7 @@ export class ConfigDialog extends LitElement {
   }
 
   @state() private _fanTempOverrideExpanded = false;
+  @state() private _exhaustCriticalTempExpanded = false;
 
   private _updateFanConfig(partial: Partial<import('../slices/growspace/schema').CirculationFanConfig>) {
     this._t({
@@ -2422,6 +2427,208 @@ export class ConfigDialog extends LitElement {
                       @change=${(e: CustomEvent) =>
                         this._updateFanConfig({ wind_amplitude_pct: parseFloat(e.detail) })}
                       step="1"
+                    ></md3-number-input>
+                  </div>
+                `
+              : nothing}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _updateExhaustFanConfig(
+    partial: Partial<import('../slices/growspace/schema').ExhaustFanConfig>
+  ) {
+    this._t({
+      type: 'UPDATE_ENV_DRAFT',
+      partial: {
+        exhaustFanConfig: { ...this._sm.environmentDraft.exhaustFanConfig, ...partial },
+      },
+    });
+  }
+
+  private _renderExhaustFanControllerPanel() {
+    const fan = this._sm.environmentDraft.exhaustFanConfig;
+    const disabled = !fan.enabled;
+
+    return html`
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
+            <path d="${mdiFan}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">Exhaust Fan Controller</h3>
+        </div>
+
+        <!-- Enabled toggle -->
+        <div class="form-section">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              .checked=${fan.enabled}
+              @change=${(e: Event) =>
+                this._updateExhaustFanConfig({ enabled: (e.target as HTMLInputElement).checked })}
+            />
+            <span>Enabled</span>
+          </label>
+        </div>
+
+        <!-- Combined demand: temp + humidity + VPD all live (no regulation mode) -->
+        <div class="form-section" style="${disabled ? 'opacity:0.5;pointer-events:none;' : ''}">
+          <!-- Stage-Aware VPD toggle (always available — no VPD-mode gate) -->
+          <div>
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                .checked=${fan.stage_vpd_enabled}
+                @change=${(e: Event) =>
+                  this._updateExhaustFanConfig({
+                    stage_vpd_enabled: (e.target as HTMLInputElement).checked,
+                  })}
+              />
+              <span>Stage-Aware VPD</span>
+            </label>
+          </div>
+          ${fan.stage_vpd_enabled
+            ? html`
+                <div style="margin-top:12px;">
+                  <stage-vpd-overrides-table
+                    .overrides=${(fan.stage_vpd_overrides ?? {}) as StageVpdOverrides}
+                    @overrides-change=${(e: CustomEvent<StageVpdOverrides>) =>
+                      this._updateExhaustFanConfig({ stage_vpd_overrides: e.detail })}
+                  ></stage-vpd-overrides-table>
+                </div>
+              `
+            : nothing}
+
+          <!-- Temperature target + tolerance -->
+          <div class="row-col-grid" style="margin-top:8px;">
+            <md3-number-input
+              label="Temperature Target (°C)"
+              .value=${fan.temperature_target}
+              @change=${(e: CustomEvent) =>
+                this._updateExhaustFanConfig({ temperature_target: parseFloat(e.detail) })}
+              step="0.1"
+            ></md3-number-input>
+            <md3-number-input
+              label="Temperature Tolerance (°C)"
+              .value=${fan.temperature_tolerance}
+              @change=${(e: CustomEvent) =>
+                this._updateExhaustFanConfig({ temperature_tolerance: parseFloat(e.detail) })}
+              step="0.1"
+            ></md3-number-input>
+          </div>
+
+          <!-- Humidity target + tolerance -->
+          <div class="row-col-grid">
+            <md3-number-input
+              label="Humidity Target (%)"
+              .value=${fan.humidity_target}
+              @change=${(e: CustomEvent) =>
+                this._updateExhaustFanConfig({ humidity_target: parseFloat(e.detail) })}
+              step="0.1"
+            ></md3-number-input>
+            <md3-number-input
+              label="Humidity Tolerance (%)"
+              .value=${fan.humidity_tolerance}
+              @change=${(e: CustomEvent) =>
+                this._updateExhaustFanConfig({ humidity_tolerance: parseFloat(e.detail) })}
+              step="0.1"
+            ></md3-number-input>
+          </div>
+
+          <!-- VPD target + tolerance -->
+          <div class="row-col-grid">
+            <md3-number-input
+              label="${fan.stage_vpd_enabled ? 'Fallback VPD Target (kPa)' : 'VPD Target (kPa)'}"
+              style="${fan.stage_vpd_enabled ? 'opacity:0.5;' : ''}"
+              .value=${fan.vpd_target}
+              @change=${(e: CustomEvent) =>
+                this._updateExhaustFanConfig({ vpd_target: parseFloat(e.detail) })}
+              step="0.01"
+            ></md3-number-input>
+            <md3-number-input
+              label="VPD Tolerance (kPa)"
+              .value=${fan.vpd_tolerance}
+              @change=${(e: CustomEvent) =>
+                this._updateExhaustFanConfig({ vpd_tolerance: parseFloat(e.detail) })}
+              step="0.01"
+            ></md3-number-input>
+          </div>
+
+          <!-- Min / Max speed -->
+          <div class="row-col-grid" style="margin-top:8px;">
+            <md3-number-input
+              label="Min Speed (%)"
+              .value=${fan.min_speed}
+              @change=${(e: CustomEvent) =>
+                this._updateExhaustFanConfig({ min_speed: parseFloat(e.detail) })}
+              step="1"
+            ></md3-number-input>
+            <md3-number-input
+              label="Max Speed (%)"
+              .value=${fan.max_speed}
+              @change=${(e: CustomEvent) =>
+                this._updateExhaustFanConfig({ max_speed: parseFloat(e.detail) })}
+              step="1"
+            ></md3-number-input>
+          </div>
+
+          <!-- Critical Temperature (collapsible, collapsed by default) -->
+          <div style="margin-top:8px;">
+            <button
+              class="md3-button tonal"
+              style="display:flex;align-items:center;gap:4px;width:100%;justify-content:space-between;"
+              @click=${() => {
+                this._exhaustCriticalTempExpanded = !this._exhaustCriticalTempExpanded;
+              }}
+            >
+              <span>Critical Temperature</span>
+              <svg
+                style="width:18px;height:18px;transition:transform 0.2s;transform:rotate(${this
+                  ._exhaustCriticalTempExpanded
+                  ? '180deg'
+                  : '0deg'});"
+                viewBox="0 0 24 24"
+              >
+                <path d="${mdiChevronDown}"></path>
+              </svg>
+            </button>
+            ${this._exhaustCriticalTempExpanded
+              ? html`
+                  <div class="row-col-grid" style="margin-top:8px;">
+                    <md3-number-input
+                      label="Critical Temp Low (°C)"
+                      .value=${fan.critical_temp_low ?? ''}
+                      @change=${(e: CustomEvent) =>
+                        this._updateExhaustFanConfig({
+                          critical_temp_low: e.detail !== '' ? parseFloat(e.detail) : null,
+                        })}
+                      step="0.1"
+                    ></md3-number-input>
+                    <md3-number-input
+                      label="Critical Temp High (°C)"
+                      .value=${fan.critical_temp_high ?? ''}
+                      @change=${(e: CustomEvent) =>
+                        this._updateExhaustFanConfig({
+                          critical_temp_high: e.detail !== '' ? parseFloat(e.detail) : null,
+                        })}
+                      step="0.1"
+                    ></md3-number-input>
+                    <md3-number-input
+                      label="Critical Temp Hysteresis (°C)"
+                      .value=${fan.critical_temp_hysteresis}
+                      @change=${(e: CustomEvent) =>
+                        this._updateExhaustFanConfig({
+                          critical_temp_hysteresis: parseFloat(e.detail),
+                        })}
+                      step="0.1"
                     ></md3-number-input>
                   </div>
                 `
@@ -3463,6 +3670,9 @@ export class ConfigDialog extends LitElement {
                 ${this.currentTab === ConfigTab.CLIMATE ? this._renderClimateSection() : nothing}
                 ${this.currentTab === ConfigTab.CLIMATE
                   ? this._renderFanControllerPanel()
+                  : nothing}
+                ${this.currentTab === ConfigTab.CLIMATE
+                  ? this._renderExhaustFanControllerPanel()
                   : nothing}
                 ${this.currentTab === ConfigTab.HUMIDITY ? this._renderHumiditySection() : nothing}
                 ${this.currentTab === ConfigTab.IRRIGATION

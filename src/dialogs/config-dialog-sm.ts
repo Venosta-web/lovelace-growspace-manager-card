@@ -16,7 +16,7 @@
 import type { DialogStateMachine } from './dialog-sm';
 import type { GrowspaceDevice, SensorGroup } from '../types';
 import type { Subarea } from '../slices/subarea/schema';
-import type { CirculationFanConfig } from '../slices/growspace/schema';
+import type { CirculationFanConfig, ExhaustFanConfig } from '../slices/growspace/schema';
 
 // ─── Tab ID ───────────────────────────────────────────────────────────────────
 
@@ -94,6 +94,7 @@ export interface EnvironmentDraft {
 
   // Fan controller
   circulationFanConfig: CirculationFanConfig;
+  exhaustFanConfig: ExhaustFanConfig;
 
   // VPD optimal overrides
   vpdOptimalOverrides: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
@@ -382,6 +383,22 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
       stage_vpd_enabled: false,
       stage_vpd_overrides: {},
     },
+    exhaustFanConfig: {
+      enabled: false,
+      min_speed: 0,
+      max_speed: 100,
+      vpd_target: 1.0,
+      vpd_tolerance: 0.2,
+      humidity_target: 60.0,
+      humidity_tolerance: 5.0,
+      temperature_target: 25.0,
+      temperature_tolerance: 2.0,
+      critical_temp_low: null,
+      critical_temp_high: null,
+      critical_temp_hysteresis: 1.0,
+      stage_vpd_enabled: false,
+      stage_vpd_overrides: {},
+    },
     vpdOptimalOverrides: {},
   };
 }
@@ -506,6 +523,7 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
     visionMidHours: vc?.mid_check_hours ?? 6,
     visionLateOffset: vc?.late_check_offset_minutes ?? 60,
     circulationFanConfig: attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
+    exhaustFanConfig: attrs.exhaustFanConfig ?? defaultEnvironmentDraft().exhaustFanConfig,
     vpdOptimalOverrides: attrs.vpdOptimalOverrides ?? {},
   };
 }

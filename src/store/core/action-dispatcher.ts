@@ -306,6 +306,9 @@ export class ActionDispatcher {
     configureFanController: (
       data: Parameters<typeof environmentActions.configureFanController>[1]
     ) => environmentActions.configureFanController(this.ctx, data),
+    configureExhaustFan: (
+      data: Parameters<typeof environmentActions.configureExhaustFan>[1]
+    ) => environmentActions.configureExhaustFan(this.ctx, data),
     remove: (growspaceId: string) => environmentActions.removeEnvironment(this.ctx, growspaceId),
     resetWaterTracking: (growspaceId: string) =>
       environmentActions.resetWaterTracking(this.ctx, growspaceId),

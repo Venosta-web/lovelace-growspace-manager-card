@@ -140,6 +140,31 @@ export const CirculationFanConfigSchema = z.object({
 
 export type CirculationFanConfig = z.infer<typeof CirculationFanConfigSchema>;
 
+// Standalone schema mirroring the backend's independent ExhaustFanConfig dataclass
+// (not a subclass of CirculationFanConfig). Exhaust demand is always combined, so
+// there is no regulation_mode; exhaust has no wind effect either.
+export const ExhaustFanConfigSchema = z.object({
+  enabled: z.boolean(),
+  min_speed: z.number(),
+  max_speed: z.number(),
+  vpd_target: z.number(),
+  vpd_tolerance: z.number(),
+  humidity_target: z.number(),
+  humidity_tolerance: z.number(),
+  temperature_target: z.number(),
+  temperature_tolerance: z.number(),
+  critical_temp_low: z.number().nullable(),
+  critical_temp_high: z.number().nullable(),
+  critical_temp_hysteresis: z.number(),
+  stage_vpd_enabled: z.boolean(),
+  stage_vpd_overrides: z
+    .record(z.string(), z.object({ day: z.number(), night: z.number() }))
+    .optional()
+    .default({}),
+});
+
+export type ExhaustFanConfig = z.infer<typeof ExhaustFanConfigSchema>;
+
 export const GrowspaceAPIResponseSchema = z
   .object({
     identity: z
@@ -171,6 +196,7 @@ export const GrowspaceAPIResponseSchema = z
         circulation_fan_entity: z.string().optional(),
         circulation_fan_entities: z.array(z.string()).optional().default([]),
         circulation_fan_config: CirculationFanConfigSchema.optional(),
+        exhaust_fan_config: ExhaustFanConfigSchema.optional(),
         exhaust_fan_entities: z.array(z.string()).optional().default([]),
         humidifier_entities: z.array(z.string()).optional().default([]),
         dehumidifier_entities: z.array(z.string()).optional().default([]),

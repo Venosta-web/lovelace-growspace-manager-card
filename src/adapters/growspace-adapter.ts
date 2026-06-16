@@ -127,6 +127,7 @@ export class GrowspaceAdapter {
       circulationFanEntity: (environment as any)?.circulation_fan_entity,
       circulationFanEntities: (environment as any)?.circulation_fan_entities,
       circulationFanConfig: (environment as any)?.circulation_fan_config,
+      exhaustFanConfig: (environment as any)?.exhaust_fan_config,
       vpd: (environment as any)?.vpd,
       soilMoistureValue: (environment as any)?.soil_moisture_value,
       exhaustSensor: (environment as any)?.exhaust_sensor,

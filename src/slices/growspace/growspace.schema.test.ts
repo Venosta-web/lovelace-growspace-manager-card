@@ -5,6 +5,7 @@ import {
   GrowspaceAPICollectionSchema,
   GrowReportSchema,
   CirculationFanConfigSchema,
+  ExhaustFanConfigSchema,
 } from './schema';
 
 describe('CirculationFanConfigSchema', () => {
@@ -72,6 +73,62 @@ describe('CirculationFanConfigSchema', () => {
       stage_vpd_enabled: false,
       stage_vpd_overrides: {},
     });
+  });
+});
+
+describe('ExhaustFanConfigSchema', () => {
+  it('parses a full backend payload (no regulation_mode/wind, defaults stage_vpd_overrides)', () => {
+    const result = ExhaustFanConfigSchema.parse({
+      enabled: true,
+      min_speed: 15,
+      max_speed: 85,
+      vpd_target: 1.2,
+      vpd_tolerance: 0.3,
+      humidity_target: 55.0,
+      humidity_tolerance: 6.0,
+      temperature_target: 24.0,
+      temperature_tolerance: 3.0,
+      critical_temp_low: 17.0,
+      critical_temp_high: 31.0,
+      critical_temp_hysteresis: 1.0,
+      stage_vpd_enabled: true,
+    });
+    expect(result).toEqual({
+      enabled: true,
+      min_speed: 15,
+      max_speed: 85,
+      vpd_target: 1.2,
+      vpd_tolerance: 0.3,
+      humidity_target: 55.0,
+      humidity_tolerance: 6.0,
+      temperature_target: 24.0,
+      temperature_tolerance: 3.0,
+      critical_temp_low: 17.0,
+      critical_temp_high: 31.0,
+      critical_temp_hysteresis: 1.0,
+      stage_vpd_enabled: true,
+      stage_vpd_overrides: {},
+    });
+  });
+
+  it('rejects a non-numeric temperature_target', () => {
+    expect(() =>
+      ExhaustFanConfigSchema.parse({
+        enabled: false,
+        min_speed: 0,
+        max_speed: 100,
+        vpd_target: 1.0,
+        vpd_tolerance: 0.2,
+        humidity_target: 60.0,
+        humidity_tolerance: 5.0,
+        temperature_target: 'warm',
+        temperature_tolerance: 2.0,
+        critical_temp_low: null,
+        critical_temp_high: null,
+        critical_temp_hysteresis: 1.0,
+        stage_vpd_enabled: false,
+      }),
+    ).toThrow(ZodError);
   });
 });
 

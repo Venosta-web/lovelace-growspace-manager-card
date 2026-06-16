@@ -1,10 +1,11 @@
 import type { PlantEntity, PlantAttributes, StrainEntry } from '../../features/plants/types';
 import type { SensorGroup } from '../../features/environment/types';
 import type { VisionCheckupConfig } from '../../slices/camera';
-import type { CirculationFanConfig } from '../../slices/growspace/schema';
+import type { CirculationFanConfig, ExhaustFanConfig } from '../../slices/growspace/schema';
 
 export type { VisionCheckupConfig };
 export type { CirculationFanConfig };
+export type { ExhaustFanConfig };
 
 export interface VisionCheckupResult {
   severity: string;
@@ -130,6 +131,7 @@ export interface EnvironmentConfigData {
   powerSensors?: string[];
   energySensors?: string[];
   circulationFanConfig?: CirculationFanConfig;
+  exhaustFanConfig?: ExhaustFanConfig;
   vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
 }
 
@@ -182,6 +184,7 @@ export interface EnvironmentConfigEventDetail {
   powerSensors?: string[];
   energySensors?: string[];
   circulationFanConfig?: CirculationFanConfig;
+  exhaustFanConfig?: ExhaustFanConfig;
   vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
 }
 

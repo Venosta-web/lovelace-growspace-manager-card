@@ -17,7 +17,7 @@ import {
   type ConfigTabId,
 } from './config-dialog-sm';
 import { createGrowspaceDevice } from '../services/types';
-import type { CirculationFanConfig } from '../slices/growspace/schema';
+import type { CirculationFanConfig, ExhaustFanConfig } from '../slices/growspace/schema';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1021,6 +1021,56 @@ describe('circulationFanConfig in EnvironmentDraft', () => {
       wind_enabled: false,
       wind_period_seconds: 60,
       wind_amplitude_pct: 10,
+      stage_vpd_enabled: false,
+      stage_vpd_overrides: {},
+    });
+  });
+});
+
+// ─── exhaustFanConfig in EnvironmentDraft ─────────────────────────────────────
+
+const exhaustFanConfig: ExhaustFanConfig = {
+  enabled: true,
+  min_speed: 20,
+  max_speed: 80,
+  vpd_target: 1.1,
+  vpd_tolerance: 0.25,
+  humidity_target: 58.0,
+  humidity_tolerance: 4.0,
+  temperature_target: 23.0,
+  temperature_tolerance: 1.5,
+  critical_temp_low: 18,
+  critical_temp_high: 30,
+  critical_temp_hysteresis: 1.0,
+  stage_vpd_enabled: true,
+  stage_vpd_overrides: { flower_mid: { day: 1.3, night: 1.1 } },
+};
+
+describe('exhaustFanConfig in EnvironmentDraft', () => {
+  it('seeds exhaustFanConfig from device attributes when present', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanConfig } as any,
+    });
+    const sm = createInitialSM(device);
+    expect(sm.environmentDraft.exhaustFanConfig).toEqual(exhaustFanConfig);
+  });
+
+  it('uses backend-matching defaults when exhaustFanConfig is absent (no mode/wind)', () => {
+    const device = makeDevice();
+    const sm = createInitialSM(device);
+    expect(sm.environmentDraft.exhaustFanConfig).toEqual({
+      enabled: false,
+      min_speed: 0,
+      max_speed: 100,
+      vpd_target: 1.0,
+      vpd_tolerance: 0.2,
+      humidity_target: 60.0,
+      humidity_tolerance: 5.0,
+      temperature_target: 25.0,
+      temperature_tolerance: 2.0,
+      critical_temp_low: null,
+      critical_temp_high: null,
+      critical_temp_hysteresis: 1.0,
       stage_vpd_enabled: false,
       stage_vpd_overrides: {},
     });
