@@ -1,4 +1,5 @@
-import { BaseAPI, WSError } from '../base-api';
+import { BaseAPI } from '../base-api';
+import { WSError } from '../errors';
 import { GrowAdviceResponse } from '../../types';
 import { DOMAIN, SERVICES } from '../../constants';
 

@@ -19,7 +19,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as hassCall from '../../services/hass-call';
-import { WSError } from '../../services/base-api';
+import { WSError } from '../../services/errors';
 import { notification$ } from '../ui';
 import { SuggestedActionSchema, TriageAlertSchema, AIBriefingSchema, ResolveAckSchema, ConversationThreadSchema, MAX_PINNED_THREADS, MAX_RECENT_THREADS } from './schema';
 import type { ConversationThread } from './schema';

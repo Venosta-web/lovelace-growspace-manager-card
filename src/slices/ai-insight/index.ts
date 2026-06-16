@@ -28,7 +28,7 @@
 
 import { atom } from 'nanostores';
 import { z } from 'zod';
-import { WSError } from '../../services/base-api';
+import { WSError } from '../../services/errors';
 import { callService, callServiceReturning, hassCall } from '../../services/hass-call';
 import { showToast } from '../ui';
 import {

@@ -48,7 +48,7 @@ import type { GrowspaceViewMode, GridOverlayMode } from '../../types';
 import { ViewMode, GridOverlayMode as GridOverlayModeEnum } from '../../constants';
 import type { ActiveDialogState } from '../../store/ui/dialog-types';
 import { cancel } from '../grid-interaction';
-import { WSError } from '../../services/base-api';
+import { WSError } from '../../services/errors';
 
 // ---------------------------------------------------------------------------
 // Atoms (public)

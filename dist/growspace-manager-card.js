@@ -1119,6 +1119,7 @@ class WSError extends Error {
         this.name = 'WSError';
     }
 }
+
 function isHassWSError(error) {
     return (typeof error === 'object' &&
         error !== null &&

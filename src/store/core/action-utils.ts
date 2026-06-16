@@ -1,5 +1,5 @@
 import { ActionContext } from './action-context';
-import { WSError } from '../../services/base-api';
+import { WSError } from '../../services/errors';
 
 const WS_ERROR_MESSAGES: Record<string, string> = {
   coordinator_not_ready: 'Integration not loaded — try reloading the page',

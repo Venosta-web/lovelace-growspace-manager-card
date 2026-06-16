@@ -1,5 +1,5 @@
 import { ActionContext } from '../core/action-context';
-import { WSError } from '../../services/base-api';
+import { WSError } from '../../services/errors';
 import { GrowAdviceResponse } from '../../types';
 
 export async function analyzeGrowspace(

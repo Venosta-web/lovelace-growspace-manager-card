@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AIAPI } from '../../../../src/services/api/ai-api';
-import { WSError } from '../../../../src/services/base-api';
+import { WSError } from '../../../../src/services/errors';
 import { DOMAIN, SERVICES } from '../../../../src/lib/constants';
 
 let sendMessagePromiseMock: ReturnType<typeof vi.fn>;

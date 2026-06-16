@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { atom } from 'nanostores';
 import type { ActionContext } from '../core/action-context';
-import { WSError } from '../../services/base-api';
+import { WSError } from '../../services/errors';
 import { analyzeGrowspace, getStrainRecommendation } from './ai-actions';
 
 function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {

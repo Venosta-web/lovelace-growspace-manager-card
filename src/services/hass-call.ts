@@ -1,6 +1,6 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { z } from 'zod';
-import { WSError, type ErrorCode } from './base-api';
+import { WSError, type ErrorCode } from './errors';
 
 let _hass: HomeAssistant | undefined;
 

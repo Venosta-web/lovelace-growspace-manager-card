@@ -1,7 +1,8 @@
 
 import { HomeAssistant } from 'custom-card-helpers';
 import { describe, it, expect, vi } from 'vitest';
-import { BaseAPI, WSError } from '../../../src/services/base-api';
+import { BaseAPI } from '../../../src/services/base-api';
+import { WSError } from '../../../src/services/errors';
 
 class TestAPI extends BaseAPI {
     constructor(hass?: HomeAssistant) {

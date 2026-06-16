@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import { hassCall, setHass, callService, callFetch, callServiceReturning } from '../../../src/services/hass-call';
-import { WSError } from '../../../src/services/base-api';
+import { WSError } from '../../../src/services/errors';
 
 function makeMockHass(callWSImpl: (msg: unknown) => unknown = () => ({})) {
   return { callWS: vi.fn().mockImplementation(callWSImpl) } as any;

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { withAction } from '../../../../src/store/core/action-utils';
-import { WSError } from '../../../../src/services/base-api';
+import { WSError } from '../../../../src/services/errors';
 import type { ActionContext } from '../../../../src/store/core/action-context';
 
 function makeCtx(): ActionContext {
