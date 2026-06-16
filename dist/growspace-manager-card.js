@@ -58873,6 +58873,11 @@ PlantOverviewContainer.styles = [
         overflow-x: auto;
         scrollbar-width: none;
         -ms-overflow-style: none;
+        /* overflow-x:auto sets the flex min-height to 0, so without this
+           the column flexbox collapses the tab bar (instead of the scroll
+           area) when content exceeds max-height, hiding it behind the
+           overflowing tab content. */
+        flex-shrink: 0;
       }
       .tabs-container::-webkit-scrollbar {
         display: none;
@@ -58932,6 +58937,9 @@ PlantOverviewContainer.styles = [
         overflow-x: auto;
         -ms-overflow-style: none;
         scrollbar-width: none;
+        /* Same flex-shrink guard as .tabs-container (overflow-x:auto would
+           otherwise let the column flexbox collapse this row). */
+        flex-shrink: 0;
       }
 
       .quickbar::-webkit-scrollbar {
@@ -140149,7 +140157,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.53"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.54"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

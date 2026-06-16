@@ -118,6 +118,11 @@ export class PlantOverviewContainer extends LitElement {
         overflow-x: auto;
         scrollbar-width: none;
         -ms-overflow-style: none;
+        /* overflow-x:auto sets the flex min-height to 0, so without this
+           the column flexbox collapses the tab bar (instead of the scroll
+           area) when content exceeds max-height, hiding it behind the
+           overflowing tab content. */
+        flex-shrink: 0;
       }
       .tabs-container::-webkit-scrollbar {
         display: none;
@@ -177,6 +182,9 @@ export class PlantOverviewContainer extends LitElement {
         overflow-x: auto;
         -ms-overflow-style: none;
         scrollbar-width: none;
+        /* Same flex-shrink guard as .tabs-container (overflow-x:auto would
+           otherwise let the column flexbox collapse this row). */
+        flex-shrink: 0;
       }
 
       .quickbar::-webkit-scrollbar {
