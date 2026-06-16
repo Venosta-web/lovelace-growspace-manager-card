@@ -8,7 +8,7 @@
 import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
 import * as libraryActions from '../plant/library-actions';
-import type { CirculationFanConfig } from '../../slices/growspace/schema';
+import type { CirculationFanConfig, ExhaustFanConfig } from '../../slices/growspace/schema';
 
 type ConfigureEnvironmentData = Parameters<ActionContext['dataService']['configureEnvironment']>[0];
 
@@ -115,6 +115,25 @@ export async function configureFanController(
     {
       success: 'Fan controller configured successfully!',
       errorPrefix: 'Failed to configure fan controller',
+      rethrow: true,
+    }
+  );
+}
+
+/** Configure the exhaust fan controller for a growspace */
+export async function configureExhaustFan(
+  ctx: ActionContext,
+  data: { growspaceId: string; fanConfig: ExhaustFanConfig }
+): Promise<void> {
+  await withAction(
+    ctx,
+    async () => {
+      await ctx.dataService.configureExhaustFan(data);
+      await ctx.refreshData();
+    },
+    {
+      success: 'Exhaust fan controller configured successfully!',
+      errorPrefix: 'Failed to configure exhaust fan controller',
       rethrow: true,
     }
   );

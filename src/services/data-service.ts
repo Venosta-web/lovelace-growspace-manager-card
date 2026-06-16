@@ -5,6 +5,7 @@ import { GrowspaceAPI } from './api/growspace-api';
 import {
   configureEnvironment as growspaceSliceConfigureEnvironment,
   configureCirculationFan as growspaceSliceConfigureCirculationFan,
+  configureExhaustFan as growspaceSliceConfigureExhaustFan,
   setDehumidifierControl as growspaceSliceSetDehumidifierControl,
   removeEnvironment as growspaceSliceRemoveEnvironment,
   resetWaterTracking as growspaceSliceResetWaterTracking,
@@ -152,6 +153,9 @@ export class DataService {
   configureCirculationFan = (
     data: Parameters<typeof growspaceSliceConfigureCirculationFan>[0]
   ) => growspaceSliceConfigureCirculationFan(data);
+
+  configureExhaustFan = (data: Parameters<typeof growspaceSliceConfigureExhaustFan>[0]) =>
+    growspaceSliceConfigureExhaustFan(data);
 
   setDehumidifierControl = (growspaceId: string, enabled: boolean) =>
     growspaceSliceSetDehumidifierControl(growspaceId, enabled);

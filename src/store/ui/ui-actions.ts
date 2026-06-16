@@ -377,6 +377,7 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
         powerSensors: device?.environmentAttributes?.powerSensors || [],
         energySensors: device?.environmentAttributes?.energySensors || [],
         circulationFanConfig: device?.environmentAttributes?.circulationFanConfig,
+        exhaustFanConfig: device?.environmentAttributes?.exhaustFanConfig,
         vpdOptimalOverrides: device?.environmentAttributes?.vpdOptimalOverrides || {},
       } as EnvironmentConfigData,
     },

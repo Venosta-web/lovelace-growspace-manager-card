@@ -8,6 +8,7 @@ import {
   GrowReportSchema,
   type GrowReport,
   type CirculationFanConfig,
+  type ExhaustFanConfig,
 } from './schema';
 import type { SensorGroup } from '../../features/environment/types';
 import type { GrowspaceDevice, GrowspaceAPIResponse } from '../../services/types';
@@ -246,6 +247,19 @@ export async function configureCirculationFan({
   fanConfig: CirculationFanConfig;
 }): Promise<void> {
   await callService('growspace_manager', 'configure_circulation_fan', {
+    growspace_id: growspaceId,
+    ...fanConfig,
+  });
+}
+
+export async function configureExhaustFan({
+  growspaceId,
+  fanConfig,
+}: {
+  growspaceId: string;
+  fanConfig: ExhaustFanConfig;
+}): Promise<void> {
+  await callService('growspace_manager', 'configure_exhaust_fan', {
     growspace_id: growspaceId,
     ...fanConfig,
   });

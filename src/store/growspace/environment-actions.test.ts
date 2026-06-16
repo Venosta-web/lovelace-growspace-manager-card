@@ -6,8 +6,9 @@ import {
   waterPlant,
   waterGrowspace,
   configureFanController,
+  configureExhaustFan,
 } from './environment-actions';
-import type { CirculationFanConfig } from '../../slices/growspace/schema';
+import type { CirculationFanConfig, ExhaustFanConfig } from '../../slices/growspace/schema';
 import type { ActionContext } from '../core/action-context';
 import * as libraryActions from '../plant/library-actions';
 
@@ -261,6 +262,62 @@ describe('configureFanController', () => {
     );
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
       expect.stringContaining('fan-err'),
+      'error'
+    );
+    expect(ctx.refreshData).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// configureExhaustFan
+// ---------------------------------------------------------------------------
+
+const exhaustFanConfig: ExhaustFanConfig = {
+  enabled: true,
+  min_speed: 15,
+  max_speed: 85,
+  vpd_target: 1.2,
+  vpd_tolerance: 0.3,
+  humidity_target: 55,
+  humidity_tolerance: 6,
+  temperature_target: 24,
+  temperature_tolerance: 3,
+  critical_temp_low: null,
+  critical_temp_high: null,
+  critical_temp_hysteresis: 1,
+  stage_vpd_enabled: false,
+  stage_vpd_overrides: {},
+};
+
+describe('configureExhaustFan', () => {
+  let ctx: ReturnType<typeof makeContext>;
+
+  beforeEach(() => {
+    ctx = makeContext();
+  });
+
+  it('calls dataService.configureExhaustFan, toasts success, and refreshes', async () => {
+    await configureExhaustFan(ctx, { growspaceId: 'gs-1', fanConfig: exhaustFanConfig });
+
+    expect((ctx.dataService as any).configureExhaustFan).toHaveBeenCalledWith({
+      growspaceId: 'gs-1',
+      fanConfig: exhaustFanConfig,
+    });
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
+      'Exhaust fan controller configured successfully!',
+      'success'
+    );
+    expect(ctx.refreshData).toHaveBeenCalled();
+  });
+
+  it('shows error toast and rethrows on failure', async () => {
+    (ctx.dataService as any).configureExhaustFan.mockRejectedValue(new Error('exhaust-err'));
+
+    await expect(
+      configureExhaustFan(ctx, { growspaceId: 'gs-1', fanConfig: exhaustFanConfig })
+    ).rejects.toThrow('exhaust-err');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
+      expect.stringContaining('exhaust-err'),
       'error'
     );
     expect(ctx.refreshData).not.toHaveBeenCalled();

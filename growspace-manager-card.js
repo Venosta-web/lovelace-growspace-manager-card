@@ -6466,6 +6466,27 @@ const CirculationFanConfigSchema = object({
         .optional()
         .default({}),
 });
+// Standalone schema mirroring the backend's independent ExhaustFanConfig dataclass
+// (not a subclass of CirculationFanConfig). Exhaust demand is always combined, so
+// there is no regulation_mode; exhaust has no wind effect either.
+const ExhaustFanConfigSchema = object({
+    enabled: boolean(),
+    min_speed: number(),
+    max_speed: number(),
+    vpd_target: number(),
+    vpd_tolerance: number(),
+    humidity_target: number(),
+    humidity_tolerance: number(),
+    temperature_target: number(),
+    temperature_tolerance: number(),
+    critical_temp_low: number().nullable(),
+    critical_temp_high: number().nullable(),
+    critical_temp_hysteresis: number(),
+    stage_vpd_enabled: boolean(),
+    stage_vpd_overrides: record(string(), object({ day: number(), night: number() }))
+        .optional()
+        .default({}),
+});
 const GrowspaceAPIResponseSchema = object({
     identity: object({
         growspace_id: string(),
@@ -6492,6 +6513,7 @@ const GrowspaceAPIResponseSchema = object({
         circulation_fan_entity: string().optional(),
         circulation_fan_entities: array(string()).optional().default([]),
         circulation_fan_config: CirculationFanConfigSchema.optional(),
+        exhaust_fan_config: ExhaustFanConfigSchema.optional(),
         exhaust_fan_entities: array(string()).optional().default([]),
         humidifier_entities: array(string()).optional().default([]),
         dehumidifier_entities: array(string()).optional().default([]),
@@ -6899,6 +6921,7 @@ class GrowspaceAdapter {
             circulationFanEntity: environment?.circulation_fan_entity,
             circulationFanEntities: environment?.circulation_fan_entities,
             circulationFanConfig: environment?.circulation_fan_config,
+            exhaustFanConfig: environment?.exhaust_fan_config,
             vpd: environment?.vpd,
             soilMoistureValue: environment?.soil_moisture_value,
             exhaustSensor: environment?.exhaust_sensor,
@@ -7944,6 +7967,12 @@ async function configureEnvironment$1(data) {
 }
 async function configureCirculationFan({ growspaceId, fanConfig, }) {
     await callService('growspace_manager', 'configure_circulation_fan', {
+        growspace_id: growspaceId,
+        ...fanConfig,
+    });
+}
+async function configureExhaustFan$1({ growspaceId, fanConfig, }) {
+    await callService('growspace_manager', 'configure_exhaust_fan', {
         growspace_id: growspaceId,
         ...fanConfig,
     });
@@ -9607,6 +9636,7 @@ class DataService {
         this.removeGrowspace = (growspaceId) => this._growspaceAPI.removeGrowspace(growspaceId);
         this.configureEnvironment = (data) => configureEnvironment$1(data);
         this.configureCirculationFan = (data) => configureCirculationFan(data);
+        this.configureExhaustFan = (data) => configureExhaustFan$1(data);
         this.setDehumidifierControl = (growspaceId, enabled) => setDehumidifierControl(growspaceId, enabled);
         this.removeEnvironment = (growspaceId) => removeEnvironment$1(growspaceId);
         this.resetWaterTracking = (growspaceId) => resetWaterTracking$1(growspaceId);
@@ -19722,6 +19752,22 @@ function defaultEnvironmentDraft() {
             stage_vpd_enabled: false,
             stage_vpd_overrides: {},
         },
+        exhaustFanConfig: {
+            enabled: false,
+            min_speed: 0,
+            max_speed: 100,
+            vpd_target: 1.0,
+            vpd_tolerance: 0.2,
+            humidity_target: 60.0,
+            humidity_tolerance: 5.0,
+            temperature_target: 25.0,
+            temperature_tolerance: 2.0,
+            critical_temp_low: null,
+            critical_temp_high: null,
+            critical_temp_hysteresis: 1.0,
+            stage_vpd_enabled: false,
+            stage_vpd_overrides: {},
+        },
         vpdOptimalOverrides: {},
     };
 }
@@ -19843,6 +19889,7 @@ function envDraftFromDevice(device) {
         visionMidHours: vc?.mid_check_hours ?? 6,
         visionLateOffset: vc?.late_check_offset_minutes ?? 60,
         circulationFanConfig: attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
+        exhaustFanConfig: attrs.exhaustFanConfig ?? defaultEnvironmentDraft().exhaustFanConfig,
         vpdOptimalOverrides: attrs.vpdOptimalOverrides ?? {},
     };
 }
@@ -20274,6 +20321,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this._humidifierControlEnabled = false;
         this._initialStateApplied = false;
         this._fanTempOverrideExpanded = false;
+        this._exhaustCriticalTempExpanded = false;
     }
     /** Convenience: dispatch a SM transition and assign the result. */
     _t(event) {
@@ -20617,6 +20665,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 ...(environmentData.circulationFanConfig
                     ? { circulationFanConfig: environmentData.circulationFanConfig }
                     : {}),
+                ...(environmentData.exhaustFanConfig
+                    ? { exhaustFanConfig: environmentData.exhaustFanConfig }
+                    : {}),
                 vpdOptimalOverrides: environmentData.vpdOptimalOverrides || {},
             }
             : {};
@@ -20699,6 +20750,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 powerSensors: d.powerSensors,
                 energySensors: d.energySensors,
                 circulationFanConfig: d.circulationFanConfig,
+                exhaustFanConfig: d.exhaustFanConfig,
                 vpdOptimalOverrides: d.vpdOptimalOverrides,
             },
             bubbles: true,
@@ -21826,6 +21878,189 @@ let ConfigDialog = class ConfigDialog extends i$3 {
       </div>
     `;
     }
+    _updateExhaustFanConfig(partial) {
+        this._t({
+            type: 'UPDATE_ENV_DRAFT',
+            partial: {
+                exhaustFanConfig: { ...this._sm.environmentDraft.exhaustFanConfig, ...partial },
+            },
+        });
+    }
+    _renderExhaustFanControllerPanel() {
+        const fan = this._sm.environmentDraft.exhaustFanConfig;
+        const disabled = !fan.enabled;
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
+            <path d="${mdiFan}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">Exhaust Fan Controller</h3>
+        </div>
+
+        <!-- Enabled toggle -->
+        <div class="form-section">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              .checked=${fan.enabled}
+              @change=${(e) => this._updateExhaustFanConfig({ enabled: e.target.checked })}
+            />
+            <span>Enabled</span>
+          </label>
+        </div>
+
+        <!-- Combined demand: temp + humidity + VPD all live (no regulation mode) -->
+        <div class="form-section" style="${disabled ? 'opacity:0.5;pointer-events:none;' : ''}">
+          <!-- Stage-Aware VPD toggle (always available — no VPD-mode gate) -->
+          <div>
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                .checked=${fan.stage_vpd_enabled}
+                @change=${(e) => this._updateExhaustFanConfig({
+            stage_vpd_enabled: e.target.checked,
+        })}
+              />
+              <span>Stage-Aware VPD</span>
+            </label>
+          </div>
+          ${fan.stage_vpd_enabled
+            ? x `
+                <div style="margin-top:12px;">
+                  <stage-vpd-overrides-table
+                    .overrides=${(fan.stage_vpd_overrides ?? {})}
+                    @overrides-change=${(e) => this._updateExhaustFanConfig({ stage_vpd_overrides: e.detail })}
+                  ></stage-vpd-overrides-table>
+                </div>
+              `
+            : E}
+
+          <!-- Temperature target + tolerance -->
+          <div class="row-col-grid" style="margin-top:8px;">
+            <md3-number-input
+              label="Temperature Target (°C)"
+              .value=${fan.temperature_target}
+              @change=${(e) => this._updateExhaustFanConfig({ temperature_target: parseFloat(e.detail) })}
+              step="0.1"
+            ></md3-number-input>
+            <md3-number-input
+              label="Temperature Tolerance (°C)"
+              .value=${fan.temperature_tolerance}
+              @change=${(e) => this._updateExhaustFanConfig({ temperature_tolerance: parseFloat(e.detail) })}
+              step="0.1"
+            ></md3-number-input>
+          </div>
+
+          <!-- Humidity target + tolerance -->
+          <div class="row-col-grid">
+            <md3-number-input
+              label="Humidity Target (%)"
+              .value=${fan.humidity_target}
+              @change=${(e) => this._updateExhaustFanConfig({ humidity_target: parseFloat(e.detail) })}
+              step="0.1"
+            ></md3-number-input>
+            <md3-number-input
+              label="Humidity Tolerance (%)"
+              .value=${fan.humidity_tolerance}
+              @change=${(e) => this._updateExhaustFanConfig({ humidity_tolerance: parseFloat(e.detail) })}
+              step="0.1"
+            ></md3-number-input>
+          </div>
+
+          <!-- VPD target + tolerance -->
+          <div class="row-col-grid">
+            <md3-number-input
+              label="${fan.stage_vpd_enabled ? 'Fallback VPD Target (kPa)' : 'VPD Target (kPa)'}"
+              style="${fan.stage_vpd_enabled ? 'opacity:0.5;' : ''}"
+              .value=${fan.vpd_target}
+              @change=${(e) => this._updateExhaustFanConfig({ vpd_target: parseFloat(e.detail) })}
+              step="0.01"
+            ></md3-number-input>
+            <md3-number-input
+              label="VPD Tolerance (kPa)"
+              .value=${fan.vpd_tolerance}
+              @change=${(e) => this._updateExhaustFanConfig({ vpd_tolerance: parseFloat(e.detail) })}
+              step="0.01"
+            ></md3-number-input>
+          </div>
+
+          <!-- Min / Max speed -->
+          <div class="row-col-grid" style="margin-top:8px;">
+            <md3-number-input
+              label="Min Speed (%)"
+              .value=${fan.min_speed}
+              @change=${(e) => this._updateExhaustFanConfig({ min_speed: parseFloat(e.detail) })}
+              step="1"
+            ></md3-number-input>
+            <md3-number-input
+              label="Max Speed (%)"
+              .value=${fan.max_speed}
+              @change=${(e) => this._updateExhaustFanConfig({ max_speed: parseFloat(e.detail) })}
+              step="1"
+            ></md3-number-input>
+          </div>
+
+          <!-- Critical Temperature (collapsible, collapsed by default) -->
+          <div style="margin-top:8px;">
+            <button
+              class="md3-button tonal"
+              style="display:flex;align-items:center;gap:4px;width:100%;justify-content:space-between;"
+              @click=${() => {
+            this._exhaustCriticalTempExpanded = !this._exhaustCriticalTempExpanded;
+        }}
+            >
+              <span>Critical Temperature</span>
+              <svg
+                style="width:18px;height:18px;transition:transform 0.2s;transform:rotate(${this
+            ._exhaustCriticalTempExpanded
+            ? '180deg'
+            : '0deg'});"
+                viewBox="0 0 24 24"
+              >
+                <path d="${mdiChevronDown}"></path>
+              </svg>
+            </button>
+            ${this._exhaustCriticalTempExpanded
+            ? x `
+                  <div class="row-col-grid" style="margin-top:8px;">
+                    <md3-number-input
+                      label="Critical Temp Low (°C)"
+                      .value=${fan.critical_temp_low ?? ''}
+                      @change=${(e) => this._updateExhaustFanConfig({
+                critical_temp_low: e.detail !== '' ? parseFloat(e.detail) : null,
+            })}
+                      step="0.1"
+                    ></md3-number-input>
+                    <md3-number-input
+                      label="Critical Temp High (°C)"
+                      .value=${fan.critical_temp_high ?? ''}
+                      @change=${(e) => this._updateExhaustFanConfig({
+                critical_temp_high: e.detail !== '' ? parseFloat(e.detail) : null,
+            })}
+                      step="0.1"
+                    ></md3-number-input>
+                    <md3-number-input
+                      label="Critical Temp Hysteresis (°C)"
+                      .value=${fan.critical_temp_hysteresis}
+                      @change=${(e) => this._updateExhaustFanConfig({
+                critical_temp_hysteresis: parseFloat(e.detail),
+            })}
+                      step="0.1"
+                    ></md3-number-input>
+                  </div>
+                `
+            : E}
+          </div>
+        </div>
+      </div>
+    `;
+    }
     _renderHumiditySection() {
         const stageColors = {
             seedling: '#8bc34a',
@@ -22698,6 +22933,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 ${this.currentTab === ConfigTab.CLIMATE
             ? this._renderFanControllerPanel()
             : E}
+                ${this.currentTab === ConfigTab.CLIMATE
+            ? this._renderExhaustFanControllerPanel()
+            : E}
                 ${this.currentTab === ConfigTab.HUMIDITY ? this._renderHumiditySection() : E}
                 ${this.currentTab === ConfigTab.IRRIGATION
             ? this._renderIrrigationSection()
@@ -23327,6 +23565,9 @@ __decorate([
 __decorate([
     r$3()
 ], ConfigDialog.prototype, "_fanTempOverrideExpanded", void 0);
+__decorate([
+    r$3()
+], ConfigDialog.prototype, "_exhaustCriticalTempExpanded", void 0);
 ConfigDialog = __decorate([
     t$2('config-dialog')
 ], ConfigDialog);
@@ -59289,6 +59530,16 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 circulationFanConfig: detail.circulationFanConfig,
                 vpdOptimalOverrides: detail.vpdOptimalOverrides,
             });
+            // Exhaust config can't ride the configure_environment payload (the backend
+            // service doesn't accept it), so persist it via its dedicated service.
+            // Dispatched last: configure_environment rebuilds EnvironmentConfig and
+            // resets exhaust_fan_config to default, so this must run after it.
+            if (detail.exhaustFanConfig) {
+                await this.store?.actions.environment.configureExhaustFan({
+                    growspaceId: detail.selectedGrowspaceId,
+                    fanConfig: detail.exhaustFanConfig,
+                });
+            }
             this.store?.actions.ui.closeDialog();
         }
         catch (e) {
@@ -135983,6 +136234,7 @@ function openConfigDialog(ctx, device) {
                 powerSensors: device?.environmentAttributes?.powerSensors || [],
                 energySensors: device?.environmentAttributes?.energySensors || [],
                 circulationFanConfig: device?.environmentAttributes?.circulationFanConfig,
+                exhaustFanConfig: device?.environmentAttributes?.exhaustFanConfig,
                 vpdOptimalOverrides: device?.environmentAttributes?.vpdOptimalOverrides || {},
             },
         },
@@ -136198,6 +136450,17 @@ async function configureFanController(ctx, data) {
     }, {
         success: 'Fan controller configured successfully!',
         errorPrefix: 'Failed to configure fan controller',
+        rethrow: true,
+    });
+}
+/** Configure the exhaust fan controller for a growspace */
+async function configureExhaustFan(ctx, data) {
+    await withAction(ctx, async () => {
+        await ctx.dataService.configureExhaustFan(data);
+        await ctx.refreshData();
+    }, {
+        success: 'Exhaust fan controller configured successfully!',
+        errorPrefix: 'Failed to configure exhaust fan controller',
         rethrow: true,
     });
 }
@@ -136659,6 +136922,7 @@ class ActionDispatcher {
         this.environment = {
             configure: (data) => configureEnvironment(this.ctx, data),
             configureFanController: (data) => configureFanController(this.ctx, data),
+            configureExhaustFan: (data) => configureExhaustFan(this.ctx, data),
             remove: (growspaceId) => removeEnvironment(this.ctx, growspaceId),
             resetWaterTracking: (growspaceId) => resetWaterTracking(this.ctx, growspaceId),
             waterPlant: (plantId, amount, nutrients, presetId) => waterPlant(this.ctx, plantId, amount, nutrients, presetId),
@@ -139761,7 +140025,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.51"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.52"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

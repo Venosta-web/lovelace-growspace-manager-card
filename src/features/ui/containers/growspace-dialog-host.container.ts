@@ -809,6 +809,16 @@ export class GrowspaceDialogHost extends LitElement {
         circulationFanConfig: detail.circulationFanConfig,
         vpdOptimalOverrides: detail.vpdOptimalOverrides,
       });
+      // Exhaust config can't ride the configure_environment payload (the backend
+      // service doesn't accept it), so persist it via its dedicated service.
+      // Dispatched last: configure_environment rebuilds EnvironmentConfig and
+      // resets exhaust_fan_config to default, so this must run after it.
+      if (detail.exhaustFanConfig) {
+        await this.store?.actions.environment.configureExhaustFan({
+          growspaceId: detail.selectedGrowspaceId,
+          fanConfig: detail.exhaustFanConfig,
+        });
+      }
       this.store?.actions.ui.closeDialog();
     } catch (e: unknown) {
       console.error('[DialogHost] configureEnvironment failed:', e);
