@@ -1,3 +1,10 @@
+# [1.1.0-next.53](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.52...v1.1.0-next.53) (2026-06-16)
+
+
+### Features
+
+* **climate:** Exhaust Fan Controller panel in config dialog ([#319](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/319)) ([f92b89c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/f92b89c09649d15f972acb2bf9ac7eda52720389)), closes [growspace_manager#488](https://github.com/growspace_manager/issues/488)
+
 # [1.1.0-next.52](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.51...v1.1.0-next.52) (2026-06-15)
 
 
