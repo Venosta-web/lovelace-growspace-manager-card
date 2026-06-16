@@ -1,9 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from 'vitest';
-import { GrowspaceHistoryStore } from './history-store';
+import { GrowspaceHistoryStore, getHistory, getBatchHistory, getHistoryStats } from './history-store';
 import type { DataService } from '../../services/data-service';
 import type { GrowspaceDevice } from '../../types';
 import { atom } from 'nanostores';
 import { setDevices } from '../../slices/grid';
+import * as hassCallModule from '../../services/hass-call';
+
+vi.mock('../../services/hass-call', () => ({
+  callApi: vi.fn(),
+  hassCall: vi.fn(),
+  getHass: vi.fn(),
+  setHass: vi.fn(),
+}));
+
+// Clear call history between every test so stale calls don't bleed across describe blocks.
+beforeEach(() => {
+  vi.mocked(hassCallModule.hassCall).mockReset();
+  vi.mocked(hassCallModule.callApi).mockReset();
+  vi.mocked(hassCallModule.getHass).mockReset();
+});
 
 const makeStore = () => {
   const mockDataService = {} as DataService;
@@ -105,12 +120,7 @@ describe('GrowspaceHistoryStore.$headerHistoryState', () => {
 
 const TEMP_ENTITY = 'sensor.tent1_temperature';
 
-const makeTransportStore = (getHistoryStats: ReturnType<typeof vi.fn>) => {
-  const mockDataService = {
-    getHistoryStats,
-    hass: { states: {} },
-  } as unknown as DataService;
-
+const makeTransportStore = () => {
   const device = {
     deviceId: 'dev1',
     name: 'Tent 1',
@@ -119,12 +129,14 @@ const makeTransportStore = (getHistoryStats: ReturnType<typeof vi.fn>) => {
 
   setDevices([device]);
   const $selectedDevice = atom<string | null>('dev1');
-  return new GrowspaceHistoryStore(mockDataService, $selectedDevice);
+  return new GrowspaceHistoryStore({} as DataService, $selectedDevice);
 };
 
 describe('GrowspaceHistoryStore - history transport', () => {
   afterEach(() => {
     setDevices([]);
+    vi.mocked(hassCallModule.hassCall).mockReset();
+    vi.mocked(hassCallModule.callApi).mockReset();
   });
 
   beforeEach(() => {
@@ -133,9 +145,10 @@ describe('GrowspaceHistoryStore - history transport', () => {
   });
 
   it('fetch success: $historyCache is populated and $historyLoaded becomes true', async () => {
-    const point = { entity_id: TEMP_ENTITY, state: '22', last_changed: '2024-01-01T00:00:00Z', last_updated: '2024-01-01T00:00:00Z', attributes: {} };
-    const getHistoryStats = vi.fn().mockResolvedValue({ [TEMP_ENTITY]: [point] });
-    const store = makeTransportStore(getHistoryStats);
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      [TEMP_ENTITY]: [{ s: '22', lu: '2024-01-01T00:00:00.000Z', a: {} }],
+    });
+    const store = makeTransportStore();
 
     await store.loadHistoryOnDemand();
 
@@ -145,11 +158,11 @@ describe('GrowspaceHistoryStore - history transport', () => {
     expect(store.$historyLoading.get()).toBe(false);
   });
 
-  it('WS fallback to REST: store receives data when getHistoryStats falls back internally', async () => {
-    // DataService.getHistoryStats resolves via REST fallback — the store only sees the resolved value
+  it('WS fallback to REST: store receives data when WS fails but REST succeeds', async () => {
     const point = { entity_id: TEMP_ENTITY, state: '18', last_changed: '2024-01-02T00:00:00Z', last_updated: '2024-01-02T00:00:00Z', attributes: {} };
-    const getHistoryStats = vi.fn().mockResolvedValue({ [TEMP_ENTITY]: [point] });
-    const store = makeTransportStore(getHistoryStats);
+    vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('WS failed'));
+    vi.mocked(hassCallModule.callApi).mockResolvedValueOnce([[point]]);
+    const store = makeTransportStore();
 
     await store.loadHistoryOnDemand();
 
@@ -157,35 +170,34 @@ describe('GrowspaceHistoryStore - history transport', () => {
     expect(store.$historyLoaded.get()).toBe(true);
   });
 
-  it('fetch error: $historyError is set and $historyLoaded stays false', async () => {
-    const getHistoryStats = vi.fn().mockRejectedValue(new Error('Transport failure'));
-    const store = makeTransportStore(getHistoryStats);
+  it('fetch error: $historyError is set and $historyLoaded stays false when both transports fail', async () => {
+    vi.mocked(hassCallModule.hassCall).mockRejectedValue(new Error('WS Transport failure'));
+    vi.mocked(hassCallModule.callApi).mockRejectedValue(new Error('REST Transport failure'));
+    const store = makeTransportStore();
 
     await store.loadHistoryOnDemand();
 
-    expect(store.$historyError.get()).toContain('Transport failure');
+    expect(store.$historyError.get()).toBeTruthy();
     expect(store.$historyLoaded.get()).toBe(false);
     expect(store.$historyLoading.get()).toBe(false);
   });
 
   it('loadHistoryOnDemand is a no-op when already loaded', async () => {
-    const getHistoryStats = vi.fn().mockResolvedValue({});
-    const store = makeTransportStore(getHistoryStats);
+    const store = makeTransportStore();
     store.$historyLoaded.set(true);
 
     await store.loadHistoryOnDemand();
 
-    expect(getHistoryStats).not.toHaveBeenCalled();
+    expect(hassCallModule.hassCall).not.toHaveBeenCalled();
   });
 
   it('loadHistoryOnDemand is a no-op when already loading', async () => {
-    const getHistoryStats = vi.fn().mockResolvedValue({});
-    const store = makeTransportStore(getHistoryStats);
+    const store = makeTransportStore();
     store.$historyLoading.set(true);
 
     await store.loadHistoryOnDemand();
 
-    expect(getHistoryStats).not.toHaveBeenCalled();
+    expect(hassCallModule.hassCall).not.toHaveBeenCalled();
   });
 });
 
@@ -438,12 +450,9 @@ describe('GrowspaceHistoryStore - localStorage', () => {
       throw new Error('QuotaExceeded');
     });
 
-    const point = {
-      value: '22',
-      last_changed: '2024-01-01T00:00:00Z',
-      last_updated: '2024-01-01T00:00:00Z',
-    };
-    const getHistoryStats = vi.fn().mockResolvedValue({ [TEMP_ENTITY]: [point] });
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      [TEMP_ENTITY]: [{ s: '22', lu: '2024-01-01T00:00:00.000Z', a: {} }],
+    });
     const device = {
       deviceId: 'dev1',
       name: 'Tent 1',
@@ -451,10 +460,7 @@ describe('GrowspaceHistoryStore - localStorage', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
 
     await expect(store.loadHistoryOnDemand()).resolves.not.toThrow();
   });
@@ -661,10 +667,10 @@ describe('GrowspaceHistoryStore - getEntityIdsForMetric', () => {
 
   it('returns the calculated VPD entity when it exists in hass states', () => {
     const calculatedId = 'sensor.tent_1_calculated_vpd';
-    const mockDataService = {
-      hass: { states: { [calculatedId]: { state: '1.2' } } },
-    } as unknown as DataService;
-    const storeWithHass = new GrowspaceHistoryStore(mockDataService, atom<string | null>(null));
+    vi.mocked(hassCallModule.getHass).mockReturnValue({
+      states: { [calculatedId]: { state: '1.2' } },
+    } as any);
+    const storeWithHass = new GrowspaceHistoryStore({} as DataService, atom<string | null>(null));
 
     const device = {
       deviceId: 'dev1',
@@ -673,6 +679,7 @@ describe('GrowspaceHistoryStore - getEntityIdsForMetric', () => {
     } as unknown as GrowspaceDevice;
     const ids = (storeWithHass as any).getEntityIdsForMetric(device, 'vpd');
     expect(ids).toEqual([calculatedId]);
+    vi.mocked(hassCallModule.getHass).mockReset();
   });
 
   it('returns irrigation pump entity from camelCase irrigationConfig key', () => {
@@ -782,6 +789,8 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
   afterEach(() => {
     setDevices([]);
     vi.restoreAllMocks();
+    vi.mocked(hassCallModule.hassCall).mockReset();
+    vi.mocked(hassCallModule.callApi).mockReset();
   });
 
   beforeEach(() => {
@@ -790,8 +799,8 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
   });
 
   it('includes overviewEntityId in the fetch set', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({});
     const overviewEntityId = 'sensor.tent1_overview';
-    const getHistoryStats = vi.fn().mockResolvedValue({});
     const device = {
       deviceId: 'dev1',
       name: 'Tent 1',
@@ -800,19 +809,16 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
 
     await store.loadHistoryOnDemand();
 
-    const [entities] = getHistoryStats.mock.calls[0] as [string[], ...unknown[]];
-    expect(entities).toContain(overviewEntityId);
+    const [, wsParams] = hassCallModule.hassCall.mock.calls[0] as [string, { entity_ids: string[] }];
+    expect(wsParams.entity_ids).toContain(overviewEntityId);
   });
 
-  it('handles null batchResults from getHistoryStats gracefully', async () => {
-    const getHistoryStats = vi.fn().mockResolvedValue(null);
+  it('handles empty batchResults from getHistoryStats gracefully', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({});
     const device = {
       deviceId: 'dev1',
       name: 'Tent 1',
@@ -820,17 +826,16 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
     await store.loadHistoryOnDemand();
     expect(store.$historyLoaded.get()).toBe(true); // completed without error
-    expect(store.$historyCache.get()).toEqual({});
+    // Implementation writes empty-array placeholders for all resolved metric keys
+    expect(store.$historyCache.get()['temperature']).toEqual([]);
+    expect(store.$historyError.get()).toBeFalsy();
   });
 
   it('skips non-composite active graph keys when building the entity set', async () => {
-    const getHistoryStats = vi.fn().mockResolvedValue({});
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({});
     const device = {
       deviceId: 'dev1',
       name: 'Tent 1',
@@ -838,30 +843,25 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
     // A plain (non-composite, no ':') graph key should be ignored in the composite-key loop
     store.$activeEnvGraphs.set(new Set(['temperature']));
 
     await store.loadHistoryOnDemand();
 
-    const [entities] = getHistoryStats.mock.calls[0] as [string[], ...unknown[]];
+    const [, wsParams] = hassCallModule.hassCall.mock.calls[0] as [string, { entity_ids: string[] }];
     // Only TEMP_ENTITY from the metric loop; 'temperature' key has no ':'
-    expect(entities).toContain(TEMP_ENTITY);
-    expect(entities).not.toContain('temperature');
+    expect(wsParams.entity_ids).toContain(TEMP_ENTITY);
+    expect(wsParams.entity_ids).not.toContain('temperature');
   });
 
   it('uses metric:entityId composite key when device has plural sensors', async () => {
     const entity1 = 'sensor.tent1_temp1';
     const entity2 = 'sensor.tent1_temp2';
-    const point = {
-      value: '22',
-      last_changed: '2024-01-01T00:00:00Z',
-      last_updated: '2024-01-01T00:00:00Z',
-    };
-    const getHistoryStats = vi.fn().mockResolvedValue({ [entity1]: [point], [entity2]: [point] });
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({
+      [entity1]: [{ s: '22', lu: '2024-01-01T00:00:00.000Z', a: {} }],
+      [entity2]: [{ s: '22', lu: '2024-01-01T00:00:00.000Z', a: {} }],
+    });
     const device = {
       deviceId: 'dev1',
       name: 'Tent 1',
@@ -869,10 +869,7 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
 
     await store.loadHistoryOnDemand();
 
@@ -881,11 +878,11 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
   });
 
   it('fetches power, energy, ph, and feed_ec entities when they are configured', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({});
     const powerEntity = 'sensor.power1';
     const energyEntity = 'sensor.energy1';
     const phEntity = 'sensor.ph1';
     const feedEcEntity = 'sensor.feed_ec1';
-    const getHistoryStats = vi.fn().mockResolvedValue({});
     const device = {
       deviceId: 'dev1',
       name: 'Tent 1',
@@ -898,23 +895,20 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
 
     await store.loadHistoryOnDemand();
 
-    const [entities] = getHistoryStats.mock.calls[0] as [string[], ...unknown[]];
-    expect(entities).toContain(powerEntity);
-    expect(entities).toContain(energyEntity);
-    expect(entities).toContain(phEntity);
-    expect(entities).toContain(feedEcEntity);
+    const [, wsParams] = hassCallModule.hassCall.mock.calls[0] as [string, { entity_ids: string[] }];
+    expect(wsParams.entity_ids).toContain(powerEntity);
+    expect(wsParams.entity_ids).toContain(energyEntity);
+    expect(wsParams.entity_ids).toContain(phEntity);
+    expect(wsParams.entity_ids).toContain(feedEcEntity);
   });
 
   it('includes composite key entities in the fetch set', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({});
     const compositeEntityId = 'sensor.extra_device_temp';
-    const getHistoryStats = vi.fn().mockResolvedValue({});
     const device = {
       deviceId: 'dev1',
       name: 'Tent 1',
@@ -922,16 +916,13 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
     store.$activeEnvGraphs.set(new Set([`temperature:${compositeEntityId}`]));
 
     await store.loadHistoryOnDemand();
 
-    const [entities] = getHistoryStats.mock.calls[0] as [string[], ...unknown[]];
-    expect(entities).toContain(compositeEntityId);
+    const [, wsParams] = hassCallModule.hassCall.mock.calls[0] as [string, { entity_ids: string[] }];
+    expect(wsParams.entity_ids).toContain(compositeEntityId);
   });
 });
 
@@ -978,15 +969,16 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
       last_changed: '2024-01-01T00:00:00Z',
       last_updated: '2024-01-01T00:00:00Z',
     };
+    // getHistoryStats maps compact WS format {s, lu} → HistorySensorState {state, last_changed, last_updated}
     const newPoint = {
-      value: '22',
-      last_changed: '2024-01-01T01:00:00Z',
-      last_updated: '2024-01-01T01:00:00Z',
+      state: '22',
+      last_changed: '2024-01-01T01:00:00.000Z',
+      last_updated: '2024-01-01T01:00:00.000Z',
     };
     const compositeEntityId = 'sensor.extra_temp';
-    const getHistoryStats = vi.fn().mockResolvedValue({
-      [TEMP_ENTITY]: [newPoint],
-      [compositeEntityId]: [newPoint],
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({
+      [TEMP_ENTITY]: [{ s: '22', lu: '2024-01-01T01:00:00.000Z', a: {} }],
+      [compositeEntityId]: [{ s: '22', lu: '2024-01-01T01:00:00.000Z', a: {} }],
     });
 
     const device = {
@@ -996,10 +988,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
 
     // Seed cache and timestamps so delta fetch takes the incremental path
     store.setHistoryData('temperature', [existingPoint] as any);
@@ -1021,37 +1010,28 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
 
   it('delta fetch returns early when selected device is null', async () => {
     vi.useFakeTimers();
-    const getHistoryStats = vi.fn().mockResolvedValue({});
     const $selectedDevice = atom<string | null>(null); // no device
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
     store.startAutoRefresh();
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 100);
     store.stopAutoRefresh();
-    expect(getHistoryStats).not.toHaveBeenCalled();
+    expect(hassCallModule.hassCall).not.toHaveBeenCalled();
   });
 
   it('delta fetch returns early when selected device is not in the devices list', async () => {
     vi.useFakeTimers();
-    const getHistoryStats = vi.fn().mockResolvedValue({});
     setDevices([]); // device list is empty
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
     store.startAutoRefresh();
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 100);
     store.stopAutoRefresh();
-    expect(getHistoryStats).not.toHaveBeenCalled();
+    expect(hassCallModule.hassCall).not.toHaveBeenCalled();
   });
 
   it('delta fetch returns early when entitiesToFetch is empty', async () => {
     vi.useFakeTimers();
 
-    const getHistoryStats = vi.fn().mockResolvedValue({});
     const device = {
       deviceId: 'dev1',
       name: 'Tent 1',
@@ -1059,10 +1039,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
 
     // Timestamps present (so hasAnyTimestamps=true) but none match a known metric key
     store.$lastTimestamps.set({ unrelated_key: '2024-01-01T00:00:00Z' });
@@ -1071,13 +1048,13 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 100);
     store.stopAutoRefresh();
 
-    expect(getHistoryStats).not.toHaveBeenCalled();
+    expect(hassCallModule.hassCall).not.toHaveBeenCalled();
   });
 
-  it('delta fetch handles null batchResults gracefully', async () => {
+  it('delta fetch handles empty batchResults gracefully', async () => {
     vi.useFakeTimers();
 
-    const getHistoryStats = vi.fn().mockResolvedValue(null);
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({});
     const device = {
       deviceId: 'dev1',
       name: 'Tent 1',
@@ -1085,10 +1062,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
 
     store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
     store.startAutoRefresh();
@@ -1103,14 +1077,9 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
 
     const entity1 = 'sensor.tent1_temp1';
     const entity2 = 'sensor.tent1_temp2';
-    const newPoint = {
-      value: '22',
-      last_changed: '2024-01-01T01:00:00Z',
-      last_updated: '2024-01-01T01:00:00Z',
-    };
-    const getHistoryStats = vi.fn().mockResolvedValue({
-      [entity1]: [newPoint],
-      [entity2]: [newPoint],
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({
+      [entity1]: [{ s: '22', lu: '2024-01-01T01:00:00.000Z', a: {} }],
+      [entity2]: [{ s: '22', lu: '2024-01-01T01:00:00.000Z', a: {} }],
     });
 
     const device = {
@@ -1120,10 +1089,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
 
     // Seed composite-key timestamps so the delta loop picks them up
     store.$lastTimestamps.setKey(`temperature:${entity1}`, '2024-01-01T00:00:00Z');
@@ -1133,17 +1099,16 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 100);
     store.stopAutoRefresh();
 
-    expect(getHistoryStats).toHaveBeenCalled();
-    const [entities] = getHistoryStats.mock.calls[0] as [string[], ...unknown[]];
-    expect(entities).toContain(entity1);
-    expect(entities).toContain(entity2);
+    expect(hassCallModule.hassCall).toHaveBeenCalled();
+    const [, wsParams] = hassCallModule.hassCall.mock.calls[0] as [string, { entity_ids: string[] }];
+    expect(wsParams.entity_ids).toContain(entity1);
+    expect(wsParams.entity_ids).toContain(entity2);
   });
 
   it('delta fetch does not call _mergeDeltaData when batchResults have no data for an entity', async () => {
     vi.useFakeTimers();
 
-    // Return no key for the entity — exercises the `|| []` fallback and `deltaData.length > 0` false branch
-    const getHistoryStats = vi.fn().mockResolvedValue({});
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({});
     const device = {
       deviceId: 'dev1',
       name: 'Tent 1',
@@ -1152,10 +1117,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
 
     store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
     store.startAutoRefresh();
@@ -1169,7 +1131,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
   it('delta fetch skips composite keys that have no matching timestamp', async () => {
     vi.useFakeTimers();
 
-    const getHistoryStats = vi.fn().mockResolvedValue({ [TEMP_ENTITY]: [] });
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({ [TEMP_ENTITY]: [] });
     const device = {
       deviceId: 'dev1',
       name: 'Tent 1',
@@ -1177,10 +1139,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
 
     store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
     // Composite key in active graphs but NO matching timestamp — should not be fetched
@@ -1190,14 +1149,15 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 100);
     store.stopAutoRefresh();
 
-    const [entities] = getHistoryStats.mock.calls[0] as [string[], ...unknown[]];
-    expect(entities).not.toContain('sensor.extra');
+    const [, wsParams] = hassCallModule.hassCall.mock.calls[0] as [string, { entity_ids: string[] }];
+    expect(wsParams.entity_ids).not.toContain('sensor.extra');
   });
 
   it('delta fetch error is caught and does not propagate', async () => {
     vi.useFakeTimers();
 
-    const getHistoryStats = vi.fn().mockRejectedValue(new Error('network error'));
+    vi.mocked(hassCallModule.hassCall).mockRejectedValue(new Error('WS error'));
+    vi.mocked(hassCallModule.callApi).mockRejectedValue(new Error('REST error'));
     const device = {
       deviceId: 'dev1',
       name: 'Tent 1',
@@ -1205,10 +1165,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
 
     store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
     store.startAutoRefresh();
@@ -1220,12 +1177,9 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
   it('delta fetch falls back to full fetch when no timestamps exist', async () => {
     vi.useFakeTimers();
 
-    const point = {
-      value: '20',
-      last_changed: '2024-01-01T00:00:00Z',
-      last_updated: '2024-01-01T00:00:00Z',
-    };
-    const getHistoryStats = vi.fn().mockResolvedValue({ [TEMP_ENTITY]: [point] });
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({
+      [TEMP_ENTITY]: [{ s: '20', lu: '2024-01-01T00:00:00.000Z', a: {} }],
+    });
 
     const device = {
       deviceId: 'dev1',
@@ -1234,10 +1188,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
 
     // No timestamps — delta should fall back to full fetch
     store.startAutoRefresh();
@@ -1245,11 +1196,11 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
 
     store.stopAutoRefresh();
 
-    expect(getHistoryStats).toHaveBeenCalled();
+    expect(hassCallModule.hassCall).toHaveBeenCalled();
   });
 
   it('visibility change triggers delta fetch when tab is visible', async () => {
-    const getHistoryStats = vi.fn().mockResolvedValue({ [TEMP_ENTITY]: [] });
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({ [TEMP_ENTITY]: [] });
 
     const device = {
       deviceId: 'dev1',
@@ -1258,10 +1209,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore(
-      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
-      $selectedDevice
-    );
+    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
     store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
 
     store.startAutoRefresh();
@@ -1274,6 +1222,175 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
 
     store.stopAutoRefresh();
 
-    expect(getHistoryStats).toHaveBeenCalled();
+    expect(hassCallModule.hassCall).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Seam-based reads: getHistory, getBatchHistory, getHistoryStats
+// These functions call the hassCall seam directly, not DataService/HistoryAPI.
+// ---------------------------------------------------------------------------
+
+const HISTORY_ENTITY = 'sensor.tent1_temperature';
+const HISTORY_POINT = {
+  entity_id: HISTORY_ENTITY,
+  state: '22',
+  last_changed: '2024-01-01T00:00:00Z',
+  last_updated: '2024-01-01T00:00:00Z',
+  attributes: {},
+};
+
+describe('getHistory', () => {
+  beforeEach(() => {
+    vi.mocked(hassCallModule.callApi).mockReset();
+  });
+
+  it('calls callApi with the history REST path for a single entity', async () => {
+    vi.mocked(hassCallModule.callApi).mockResolvedValueOnce([[HISTORY_POINT]]);
+    const start = new Date('2024-01-01T00:00:00Z');
+
+    await getHistory(HISTORY_ENTITY, start);
+
+    expect(hassCallModule.callApi).toHaveBeenCalledWith(
+      'GET',
+      expect.stringContaining(HISTORY_ENTITY)
+    );
+  });
+
+  it('returns the first entity array from the REST response', async () => {
+    vi.mocked(hassCallModule.callApi).mockResolvedValueOnce([[HISTORY_POINT]]);
+    const start = new Date('2024-01-01T00:00:00Z');
+
+    const result = await getHistory(HISTORY_ENTITY, start);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].state).toBe('22');
+  });
+
+  it('throws when callApi fails', async () => {
+    vi.mocked(hassCallModule.callApi).mockRejectedValueOnce(new Error('network'));
+    const start = new Date('2024-01-01T00:00:00Z');
+
+    await expect(getHistory(HISTORY_ENTITY, start)).rejects.toThrow('network');
+  });
+
+  it('includes end_time in the path when endTime is provided', async () => {
+    vi.mocked(hassCallModule.callApi).mockResolvedValueOnce([]);
+    const start = new Date('2024-01-01T00:00:00Z');
+    const end = new Date('2024-01-02T00:00:00Z');
+
+    await getHistory(HISTORY_ENTITY, start, end);
+
+    expect(hassCallModule.callApi).toHaveBeenCalledWith(
+      'GET',
+      expect.stringContaining('end_time=')
+    );
+  });
+});
+
+describe('getBatchHistory', () => {
+  beforeEach(() => {
+    vi.mocked(hassCallModule.callApi).mockReset();
+  });
+
+  it('calls callApi with all entity ids joined in the path', async () => {
+    vi.mocked(hassCallModule.callApi).mockResolvedValueOnce([]);
+    const start = new Date('2024-01-01T00:00:00Z');
+
+    await getBatchHistory([HISTORY_ENTITY, 'sensor.humidity'], start);
+
+    expect(hassCallModule.callApi).toHaveBeenCalledWith(
+      'GET',
+      expect.stringContaining(HISTORY_ENTITY)
+    );
+  });
+
+  it('returns a map of entity_id to state arrays', async () => {
+    vi.mocked(hassCallModule.callApi).mockResolvedValueOnce([[HISTORY_POINT]]);
+    const start = new Date('2024-01-01T00:00:00Z');
+
+    const result = await getBatchHistory([HISTORY_ENTITY], start);
+
+    expect(result[HISTORY_ENTITY]).toHaveLength(1);
+    expect(result[HISTORY_ENTITY][0].state).toBe('22');
+  });
+
+  it('returns empty object for empty entity list', async () => {
+    const start = new Date('2024-01-01T00:00:00Z');
+
+    const result = await getBatchHistory([], start);
+
+    expect(result).toEqual({});
+    expect(hassCallModule.callApi).not.toHaveBeenCalled();
+  });
+
+  it('throws when callApi fails', async () => {
+    vi.mocked(hassCallModule.callApi).mockRejectedValueOnce(new Error('network'));
+    const start = new Date('2024-01-01T00:00:00Z');
+
+    await expect(getBatchHistory([HISTORY_ENTITY], start)).rejects.toThrow('network');
+  });
+});
+
+describe('getHistoryStats', () => {
+  const WS_RESPONSE = {
+    [HISTORY_ENTITY]: [{ s: '22', lu: '2024-01-01T00:00:00.000Z', a: {} }],
+  };
+
+  beforeEach(() => {
+    vi.mocked(hassCallModule.hassCall).mockReset();
+    vi.mocked(hassCallModule.callApi).mockReset();
+  });
+
+  it('calls hassCall with the history stats WS command', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({ [HISTORY_ENTITY]: [HISTORY_POINT] });
+    const start = new Date('2024-01-01T00:00:00Z');
+
+    await getHistoryStats([HISTORY_ENTITY], start);
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_history_stats',
+      expect.objectContaining({ entity_ids: [HISTORY_ENTITY] }),
+      expect.anything()
+    );
+  });
+
+  it('maps compact WS format to HistorySensorState[]', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce(WS_RESPONSE);
+    const start = new Date('2024-01-01T00:00:00Z');
+
+    const result = await getHistoryStats([HISTORY_ENTITY], start);
+
+    expect(result[HISTORY_ENTITY]).toHaveLength(1);
+    expect(result[HISTORY_ENTITY][0].state).toBe('22');
+    expect(result[HISTORY_ENTITY][0].entity_id).toBe(HISTORY_ENTITY);
+  });
+
+  it('falls back to REST batch when WS hassCall fails', async () => {
+    vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('WS failed'));
+    vi.mocked(hassCallModule.callApi).mockResolvedValueOnce([[HISTORY_POINT]]);
+    const start = new Date('2024-01-01T00:00:00Z');
+
+    const result = await getHistoryStats([HISTORY_ENTITY], start);
+
+    expect(hassCallModule.callApi).toHaveBeenCalled();
+    expect(result[HISTORY_ENTITY]).toHaveLength(1);
+  });
+
+  it('throws when both WS and REST fallback fail', async () => {
+    vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('WS failed'));
+    vi.mocked(hassCallModule.callApi).mockRejectedValueOnce(new Error('REST failed'));
+    const start = new Date('2024-01-01T00:00:00Z');
+
+    await expect(getHistoryStats([HISTORY_ENTITY], start)).rejects.toThrow();
+  });
+
+  it('returns empty object for empty entity list', async () => {
+    const start = new Date('2024-01-01T00:00:00Z');
+
+    const result = await getHistoryStats([], start);
+
+    expect(result).toEqual({});
+    expect(hassCallModule.hassCall).not.toHaveBeenCalled();
   });
 });

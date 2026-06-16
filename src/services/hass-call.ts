@@ -28,6 +28,28 @@ export function setHass(hass: HomeAssistant): void {
 }
 
 /**
+ * Return the current HomeAssistant instance, or undefined if not yet set.
+ * Used by history-store to access hass.states for entity checks.
+ */
+export function getHass(): HomeAssistant | undefined {
+  return _hass;
+}
+
+/**
+ * Call the Home Assistant REST API through the shared hass reference.
+ * Wraps `hass.callApi` for use from history-store reads that require REST.
+ *
+ * @param method - HTTP method ('GET', etc.)
+ * @param path   - HA REST API path relative to the base URL (e.g. 'history/period/...')
+ */
+export async function callApi<T>(method: string, path: string): Promise<T> {
+  if (!_hass) {
+    throw new WSError('internal_error', 'callApi: hass is not set — call setHass() first');
+  }
+  return _hass.callApi<T>(method, path);
+}
+
+/**
  * Make an authenticated HTTP request through the shared hass reference.
  * Wraps `hass.fetchWithAuth` for use from slice mutators that need REST APIs
  * (e.g. multipart file uploads) rather than WebSocket calls.

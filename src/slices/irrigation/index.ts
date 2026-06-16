@@ -37,7 +37,8 @@ import { atom } from 'nanostores';
 import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../../services/types';
 import { mutate } from '../../services/mutate';
 import { callService, hassCall } from '../../services/hass-call';
-import type { IrrigationMode, PhaseWindows } from './schema';
+import type { IrrigationMode, PhaseWindows, IrrigationAnalytics } from './schema';
+import { IrrigationAnalyticsSchema } from './schema';
 import { patchDeviceIrrigationConfig, patchDeviceStrategy } from '../grid';
 import {
   CropSteeringHistorySchema,
@@ -611,4 +612,28 @@ export async function fetchCropSteeringHistory(growspaceId: string): Promise<voi
   const updated = new Map(cropSteeringHistory$.get());
   updated.set(growspaceId, result);
   cropSteeringHistory$.set(updated);
+}
+
+/**
+ * Fetch irrigation analytics for a growspace.
+ *
+ * Returns null when the backend call fails so callers can treat absent analytics
+ * the same way as the legacy IrrigationAPI.getIrrigationAnalytics (sendWebSocketSafe).
+ */
+export async function getIrrigationAnalytics(
+  growspaceId: string
+): Promise<IrrigationAnalytics | null> {
+  try {
+    return await hassCall(
+      'growspace_manager/irrigation_analytics',
+      { growspace_id: growspaceId },
+      IrrigationAnalyticsSchema
+    );
+  } catch (err) {
+    console.error(
+      '[IrrigationSlice] getIrrigationAnalytics failed:',
+      err instanceof Error ? err.message : err
+    );
+    return null;
+  }
 }

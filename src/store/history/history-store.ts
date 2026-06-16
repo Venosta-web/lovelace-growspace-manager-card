@@ -5,9 +5,99 @@ import {
   HistoryTimeRange,
   GrowspaceDevice,
 } from '../../types';
-import { METRIC_ENTITY_KEYS, STORAGE_KEYS } from '../../constants';
+import { METRIC_ENTITY_KEYS, STORAGE_KEYS, WS_TYPE_GET_HISTORY_STATS } from '../../constants';
 import type { DataService } from '../../services/data-service';
 import { devices$ } from '../../slices/grid';
+import { callApi, hassCall, getHass } from '../../services/hass-call';
+import { HistoryStatsResponseSchema } from '../../schemas/api-schema';
+
+// ---------------------------------------------------------------------------
+// Seam-based history reads (ADR-0022 Step 1)
+// These replace HistoryAPI.getHistory / getBatchHistory / getHistoryStats.
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch history for a single entity via the HA REST API.
+ * Throws on transport failure so callers can surface errors.
+ */
+export async function getHistory(
+  entityId: string,
+  startTime: Date,
+  endTime?: Date
+): Promise<HistorySensorState[]> {
+  const startStr = startTime.toISOString();
+  let url = `history/period/${startStr}?filter_entity_id=${entityId}`;
+  if (endTime) url += `&end_time=${endTime.toISOString()}`;
+  const res = await callApi<HistorySensorState[][]>('GET', url);
+  return res && res.length > 0 ? res[0] : [];
+}
+
+/**
+ * Fetch history for multiple entities in a single REST call.
+ * Throws on transport failure so callers can surface errors.
+ */
+export async function getBatchHistory(
+  entityIds: string[],
+  startTime: Date,
+  endTime?: Date
+): Promise<Record<string, HistorySensorState[]>> {
+  if (entityIds.length === 0) return {};
+  const startStr = startTime.toISOString();
+  const entityList = entityIds.join(',');
+  let url = `history/period/${startStr}?filter_entity_id=${entityList}&minimal_response`;
+  if (endTime) url += `&end_time=${endTime.toISOString()}`;
+  const res = await callApi<HistorySensorState[][]>('GET', url);
+  const resultMap: Record<string, HistorySensorState[]> = {};
+  if (res) {
+    res.forEach((entityHistory) => {
+      if (entityHistory && entityHistory.length > 0) {
+        resultMap[entityHistory[0].entity_id] = entityHistory;
+      }
+    });
+  }
+  return resultMap;
+}
+
+/**
+ * Fetch downsampled history stats via WebSocket, falling back to REST batch on failure.
+ * Throws when both WS and REST transports fail so callers can surface errors.
+ */
+export async function getHistoryStats(
+  entityIds: string[],
+  startTime: Date,
+  endTime?: Date,
+  intervalMinutes: number = 15,
+  significantChangesOnly: boolean = true
+): Promise<Record<string, HistorySensorState[]>> {
+  if (entityIds.length === 0) return {};
+  try {
+    const raw = await hassCall(
+      WS_TYPE_GET_HISTORY_STATS,
+      {
+        entity_ids: entityIds,
+        start_time: startTime.toISOString(),
+        end_time: endTime?.toISOString(),
+        interval_minutes: intervalMinutes,
+        significant_changes_only: significantChangesOnly,
+      },
+      HistoryStatsResponseSchema
+    );
+    const mappedResult: Record<string, HistorySensorState[]> = {};
+    for (const [entityId, points] of Object.entries(raw)) {
+      mappedResult[entityId] = points.map((p) => ({
+        entity_id: entityId,
+        state: p.s,
+        last_changed: p.lu,
+        last_updated: p.lu,
+        attributes: p.a || {},
+      }));
+    }
+    return mappedResult;
+  } catch (wsErr) {
+    console.warn('[HistoryStore] getHistoryStats WS failed, falling back to REST batch:', wsErr);
+    return getBatchHistory(entityIds, startTime, endTime);
+  }
+}
 
 export class GrowspaceHistoryStore {
   // --- Core History Cache ---
@@ -27,7 +117,6 @@ export class GrowspaceHistoryStore {
   public readonly $linkedGraphGroups: WritableAtom<string[][]>;
 
   // --- Dependencies ---
-  private dataService: DataService;
   private _selectedDevice: ReadableAtom<string | null>;
 
   // --- Internals ---
@@ -66,10 +155,9 @@ export class GrowspaceHistoryStore {
   }>;
 
   constructor(
-    dataService: DataService,
+    _dataService: DataService,
     selectedDevice: ReadableAtom<string | null>
   ) {
-    this.dataService = dataService;
     this._selectedDevice = selectedDevice;
 
     this.$historyCache = map<Record<string, HistorySensorState[]>>({});
@@ -372,7 +460,7 @@ export class GrowspaceHistoryStore {
 
     if (entitiesToFetch.size === 0) return;
 
-    const batchResults = await this.dataService.getHistoryStats(
+    const batchResults = await getHistoryStats(
       Array.from(entitiesToFetch),
       start,
       end,
@@ -463,7 +551,7 @@ export class GrowspaceHistoryStore {
       );
       const start = new Date(oldestTimestamp);
 
-      const batchResults = await this.dataService.getHistoryStats(
+      const batchResults = await getHistoryStats(
         Array.from(entitiesToFetch),
         start,
         now,
@@ -650,7 +738,7 @@ export class GrowspaceHistoryStore {
             .replace(/-+$/, '');
         const calcName = `${device.name} Calculated VPD`;
         const calculatedId = `sensor.${slugify(calcName)}`;
-        if (this.dataService.hass && this.dataService.hass.states[calculatedId]) {
+        if (getHass()?.states[calculatedId]) {
           entityId = calculatedId;
         }
       }

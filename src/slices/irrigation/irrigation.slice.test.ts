@@ -40,6 +40,7 @@ import {
   configureDrainMonitoring,
   runIrrigationCycle,
   fetchCropSteeringHistory,
+  getIrrigationAnalytics,
 } from './index';
 import { CropSteeringHistorySchema } from '../../schemas/api-schema';
 import {
@@ -1238,5 +1239,43 @@ describe('fetchCropSteeringHistory', () => {
 
     await expect(fetchCropSteeringHistory('gs1')).rejects.toThrow('ws error');
     expect(cropSteeringHistory$.get().get('gs1')).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getIrrigationAnalytics
+// ---------------------------------------------------------------------------
+
+describe('getIrrigationAnalytics', () => {
+  it('calls hassCall with irrigation_analytics command and growspace_id', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      growspace_id: 'gs1',
+      stage_aggregates: { veg: 1.5, flower: 2.1 },
+    });
+
+    await getIrrigationAnalytics('gs1');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/irrigation_analytics',
+      { growspace_id: 'gs1' },
+      expect.anything()
+    );
+  });
+
+  it('returns the analytics payload on success', async () => {
+    const payload = { growspace_id: 'gs1', stage_aggregates: { veg: 1.5 } };
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(payload);
+
+    const result = await getIrrigationAnalytics('gs1');
+
+    expect(result).toEqual(payload);
+  });
+
+  it('returns null when hassCall throws', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('network error'));
+
+    const result = await getIrrigationAnalytics('gs1');
+
+    expect(result).toBeNull();
   });
 });
