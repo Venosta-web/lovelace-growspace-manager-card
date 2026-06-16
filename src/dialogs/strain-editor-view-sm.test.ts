@@ -383,29 +383,6 @@ describe('BreederDialogClosed', () => {
   });
 });
 
-// ─── Sub-state: photo menu ────────────────────────────────────────────────────
-
-describe('PhotoMenuToggled', () => {
-  it('opens photo-menu from idle', () => {
-    const sm = createInitialSM();
-    expect(transition(sm, { type: 'PhotoMenuToggled' }).sub.kind).toBe('photo-menu');
-  });
-
-  it('closes photo-menu when already open', () => {
-    let sm = createInitialSM();
-    sm = transition(sm, { type: 'PhotoMenuToggled' });
-    expect(transition(sm, { type: 'PhotoMenuToggled' }).sub.kind).toBe('idle');
-  });
-});
-
-describe('PhotoMenuClosed', () => {
-  it('returns to idle', () => {
-    let sm = createInitialSM();
-    sm = transition(sm, { type: 'PhotoMenuToggled' });
-    expect(transition(sm, { type: 'PhotoMenuClosed' }).sub.kind).toBe('idle');
-  });
-});
-
 // ─── ToastDismissed ───────────────────────────────────────────────────────────
 
 describe('ToastDismissed', () => {

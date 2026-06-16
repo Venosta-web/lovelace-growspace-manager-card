@@ -37053,6 +37053,399 @@ GrowspaceTimeline = __decorate([
 ], GrowspaceTimeline);
 
 /**
+ * Shared image-capture component.
+ *
+ * Owns the whole "add a photo" flow after the consumer triggers it: a bottom-sheet
+ * menu (Take Photo / Choose from Library), the two hidden file inputs, and a live
+ * fullscreen camera overlay. Emits the selected/captured files via a `capture`
+ * event — persistence stays with the consumer (strain → WS upload; notes → base64).
+ *
+ * Inside the HA companion-app WebView the `<input capture>` attribute is ignored and
+ * only opens the gallery, so the live camera is driven directly via getUserMedia. See
+ * ADR 0021. The hidden file input is the fallback when MediaDevices is unavailable.
+ *
+ * Usage:
+ *   <camera-capture .multiple=${true} @capture=${this._onCapture}></camera-capture>
+ *   // then call open() on the element to start the flow
+ */
+let CameraCapture = class CameraCapture extends i$3 {
+    constructor() {
+        super(...arguments);
+        /** Allow selecting multiple files from the library. Live camera always emits one. */
+        this.multiple = false;
+        this._menuOpen = false;
+        this._cameraStream = null;
+        this._cameraError = null;
+        this._cameraFacing = 'environment';
+    }
+    /** Open the bottom-sheet photo menu. Called by the consumer's trigger. */
+    open() {
+        this._menuOpen = true;
+    }
+    _closeMenu() {
+        this._menuOpen = false;
+    }
+    _emit(files) {
+        if (!files.length)
+            return;
+        this.dispatchEvent(new CustomEvent('capture', {
+            detail: { files },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _handleFileChange(e) {
+        const input = e.target;
+        const files = input.files ? Array.from(input.files) : [];
+        input.value = '';
+        this._closeMenu();
+        this._emit(files);
+    }
+    /**
+     * Open the live camera. Inside the HA companion-app WebView the
+     * `<input capture="environment">` hint is not honoured and only opens the gallery,
+     * so we drive the camera directly via getUserMedia. Falls back to the hidden file
+     * input when the MediaDevices API is unavailable.
+     */
+    async _openCameraCapture() {
+        this._closeMenu();
+        if (!navigator.mediaDevices?.getUserMedia) {
+            this._cameraInput?.click();
+            return;
+        }
+        this._cameraError = null;
+        try {
+            this._cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: this._cameraFacing } },
+                audio: false,
+            });
+        }
+        catch (err) {
+            // Permission denied / no camera / not a secure context.
+            console.error('Camera access failed:', err);
+            this._cameraError =
+                'Could not access the camera. Grant the Home Assistant app camera permission, or use “Choose from Library”.';
+        }
+    }
+    _stopCameraStream() {
+        this._cameraStream?.getTracks().forEach((t) => t.stop());
+        this._cameraStream = null;
+    }
+    _closeCameraCapture() {
+        this._stopCameraStream();
+        this._cameraError = null;
+    }
+    async _switchCamera() {
+        this._cameraFacing = this._cameraFacing === 'environment' ? 'user' : 'environment';
+        this._stopCameraStream();
+        await this._openCameraCapture();
+    }
+    _capturePhoto() {
+        const stream = this._cameraStream;
+        if (!stream)
+            return;
+        const video = this.shadowRoot?.getElementById('camera-preview');
+        if (!video || !video.videoWidth)
+            return;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx)
+            return;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+            if (blob) {
+                const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                this._emit([file]);
+            }
+            this._closeCameraCapture();
+        }, 'image/jpeg', 0.92);
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._stopCameraStream();
+    }
+    _renderMenu() {
+        if (!this._menuOpen)
+            return E;
+        return x `
+      <div class="scrim" @click=${this._closeMenu}></div>
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <button
+          class="sheet-action"
+          @click=${(e) => {
+            e.stopPropagation();
+            this._openCameraCapture();
+        }}
+        >
+          <svg viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
+          Take Photo
+        </button>
+        <button
+          class="sheet-action"
+          @click=${(e) => {
+            e.stopPropagation();
+            this._closeMenu();
+            this._libraryInput?.click();
+        }}
+        >
+          <svg viewBox="0 0 24 24"><path d="${mdiImageMultiple}"></path></svg>
+          Choose from Library
+        </button>
+      </div>
+    `;
+    }
+    _renderOverlay() {
+        if (!this._cameraStream && !this._cameraError)
+            return E;
+        return x `
+      <div class="overlay">
+        ${this._cameraError
+            ? x `
+              <div class="overlay-error">
+                <svg viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
+                <div class="overlay-error-message">${this._cameraError}</div>
+                <button class="close-btn" @click=${() => this._closeCameraCapture()}>Close</button>
+              </div>
+            `
+            : x `
+              <video
+                id="camera-preview"
+                autoplay
+                playsinline
+                muted
+                .srcObject=${this._cameraStream}
+              ></video>
+              <div class="overlay-top">
+                <button
+                  class="overlay-icon-btn"
+                  title="Close"
+                  @click=${() => this._closeCameraCapture()}
+                >
+                  <svg viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+                </button>
+                <button
+                  class="overlay-icon-btn"
+                  title="Switch camera"
+                  @click=${() => this._switchCamera()}
+                >
+                  <svg viewBox="0 0 24 24"><path d="${mdiCameraFlip}"></path></svg>
+                </button>
+              </div>
+              <div class="overlay-bottom">
+                <button class="shutter" title="Capture" @click=${() => this._capturePhoto()}></button>
+              </div>
+            `}
+      </div>
+    `;
+    }
+    render() {
+        return x `
+      <input
+        id="gallery-camera-input"
+        type="file"
+        accept="image/*"
+        capture="environment"
+        @change=${this._handleFileChange}
+      />
+      <input
+        id="gallery-library-input"
+        type="file"
+        accept="image/*"
+        ?multiple=${this.multiple}
+        @change=${this._handleFileChange}
+      />
+      ${this._renderMenu()}${this._renderOverlay()}
+    `;
+    }
+};
+CameraCapture.styles = i$6 `
+    /* The element generates no layout box of its own: the menu/overlay are
+       position:fixed and the file inputs are display:none. Without this the host
+       would occupy a grid cell (strain gallery) / flex slot (note action bar). */
+    :host {
+      display: contents;
+    }
+
+    .scrim {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .sheet {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 501;
+      background: var(--card-background-color, #1e1e1e);
+      border-radius: 16px 16px 0 0;
+      padding: 16px 16px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sheet-handle {
+      width: 40px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.2);
+      margin: 0 auto 8px;
+    }
+
+    .sheet-action {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--primary-text-color, #fff);
+      font-size: 1rem;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .sheet-action svg {
+      width: 24px;
+      height: 24px;
+      fill: var(--accent-green, #4caf50);
+      flex-shrink: 0;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 600;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .overlay-error {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 24px;
+      text-align: center;
+      color: #fff;
+    }
+
+    .overlay-error svg {
+      width: 48px;
+      height: 48px;
+      fill: #f44336;
+    }
+
+    .overlay-error-message {
+      max-width: 320px;
+      font-size: 0.95rem;
+    }
+
+    video {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+    }
+
+    .overlay-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      padding: 16px;
+    }
+
+    .overlay-icon-btn {
+      background: rgba(0, 0, 0, 0.5);
+      border: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .overlay-icon-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .overlay-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .shutter {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: 4px solid rgba(255, 255, 255, 0.4);
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .close-btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    input[type='file'] {
+      display: none;
+    }
+  `;
+__decorate([
+    n$5({ type: Boolean })
+], CameraCapture.prototype, "multiple", void 0);
+__decorate([
+    r$3()
+], CameraCapture.prototype, "_menuOpen", void 0);
+__decorate([
+    r$3()
+], CameraCapture.prototype, "_cameraStream", void 0);
+__decorate([
+    r$3()
+], CameraCapture.prototype, "_cameraError", void 0);
+__decorate([
+    e$7('#gallery-camera-input')
+], CameraCapture.prototype, "_cameraInput", void 0);
+__decorate([
+    e$7('#gallery-library-input')
+], CameraCapture.prototype, "_libraryInput", void 0);
+CameraCapture = __decorate([
+    t$2('camera-capture')
+], CameraCapture);
+
+/**
  * Quick note input component with image upload support
  * Extracted from plant-timeline for reusability
  */
@@ -37066,68 +37459,17 @@ let QuickNoteInput = class QuickNoteInput extends i$3 {
         this._images = [];
         this._isSaving = false;
     }
-    /**
-     * Resize and compress an image file
-     */
-    async _resizeImage(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) {
-                        reject(new Error('Could not get canvas context'));
-                        return;
-                    }
-                    // Max dimensions
-                    const MAX_WIDTH = 1024;
-                    const MAX_HEIGHT = 1024;
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                    }
-                    else {
-                        if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                        }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-                    // Compress to JPEG 0.8
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    resolve(dataUrl);
-                };
-                img.onerror = (e) => reject(e);
-                img.src = e.target?.result;
-            };
-            reader.onerror = (e) => reject(e);
-            reader.readAsDataURL(file);
-        });
-    }
-    async _handleFileSelect(e) {
-        const input = e.target;
-        if (!input.files)
-            return;
-        const files = Array.from(input.files);
-        for (const file of files) {
+    async _handleCapture(e) {
+        for (const file of e.detail.files) {
             try {
-                const resized = await this._resizeImage(file);
-                this._images = [...this._images, resized];
+                // Keep the note's historical 1024px/0.8 sizing (PlantUtils defaults are smaller).
+                const compressed = await PlantUtils.compressImage(file, 1024, 1024, 0.8);
+                this._images = [...this._images, compressed];
             }
             catch (err) {
                 console.error('Error processing image:', err);
             }
         }
-        // Clear input to allow re-selecting same file
-        input.value = '';
     }
     _removeImage(index) {
         this._images = this._images.filter((_, i) => i !== index);
@@ -37202,15 +37544,9 @@ let QuickNoteInput = class QuickNoteInput extends i$3 {
           <div class="action-buttons">
             ${this.allowImages
             ? x `
-                  <input
-                    type="file"
-                    id="fileInput"
-                    @change=${this._handleFileSelect}
-                    multiple
-                    accept="image/*"
-                  />
+                  <camera-capture .multiple=${true} @capture=${this._handleCapture}></camera-capture>
                   <button
-                    @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}
+                    @click=${() => this._camera?.open()}
                     ?disabled=${this.disabled || this._isSaving}
                     aria-label="Add image"
                     title="Add image"
@@ -37372,10 +37708,6 @@ QuickNoteInput.styles = i$6 `
     .remove-img:hover {
       background: var(--error-color-dark, #d32f2f);
     }
-
-    input[type='file'] {
-      display: none;
-    }
   `;
 __decorate([
     n$5({ type: String })
@@ -37386,6 +37718,9 @@ __decorate([
 __decorate([
     n$5({ type: Boolean })
 ], QuickNoteInput.prototype, "disabled", void 0);
+__decorate([
+    e$7('camera-capture')
+], QuickNoteInput.prototype, "_camera", void 0);
 __decorate([
     r$3()
 ], QuickNoteInput.prototype, "_text", void 0);
@@ -46330,10 +46665,6 @@ function transition$1(sm, event) {
             return { ...sm, sub: { kind: 'breeder-list' } };
         case 'BreederDialogClosed':
             return { ...sm, sub: { kind: 'idle' } };
-        case 'PhotoMenuToggled':
-            return { ...sm, sub: sm.sub.kind === 'photo-menu' ? { kind: 'idle' } : { kind: 'photo-menu' } };
-        case 'PhotoMenuClosed':
-            return { ...sm, sub: { kind: 'idle' } };
         case 'ToastDismissed':
             return { ...sm, toast: undefined };
     }
@@ -46345,12 +46676,6 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         this.strains = [];
         this._sm = createInitialSM$1();
         this._lineageTree = null;
-        // Live in-app camera capture (getUserMedia). Works inside the HA Android/iOS
-        // WebView where the `<input capture>` attribute is ignored and only opens the
-        // gallery picker. Null when the camera overlay is closed.
-        this._cameraStream = null;
-        this._cameraError = null;
-        this._cameraFacing = 'environment';
     }
     _dispatchStateChange() {
         this.dispatchEvent(new CustomEvent('editing-strain-changed', {
@@ -46678,69 +47003,10 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     _gallery() {
         return this._sm.draft.images ?? [];
     }
-    /**
-     * Open the live camera. Inside the HA companion-app WebView the
-     * `<input capture="environment">` hint is not honoured and only opens the
-     * gallery, so we drive the camera directly via getUserMedia. Falls back to
-     * the hidden file input when the MediaDevices API is unavailable.
-     */
-    async _openCameraCapture() {
-        if (!navigator.mediaDevices?.getUserMedia) {
-            this.shadowRoot?.getElementById('gallery-camera-input')?.click();
-            return;
+    _handleCapture(e) {
+        for (const file of e.detail.files) {
+            this._handleGalleryUpload(file);
         }
-        this._cameraError = null;
-        try {
-            this._cameraStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: this._cameraFacing } },
-                audio: false,
-            });
-        }
-        catch (err) {
-            // Permission denied / no camera / not a secure context.
-            console.error('Camera access failed:', err);
-            this._cameraError =
-                'Could not access the camera. Grant the Home Assistant app camera permission, or use “Choose from Library”.';
-        }
-    }
-    _stopCameraStream() {
-        this._cameraStream?.getTracks().forEach((t) => t.stop());
-        this._cameraStream = null;
-    }
-    _closeCameraCapture() {
-        this._stopCameraStream();
-        this._cameraError = null;
-    }
-    async _switchCamera() {
-        this._cameraFacing = this._cameraFacing === 'environment' ? 'user' : 'environment';
-        this._stopCameraStream();
-        await this._openCameraCapture();
-    }
-    _capturePhoto() {
-        const stream = this._cameraStream;
-        if (!stream)
-            return;
-        const video = this.shadowRoot?.getElementById('camera-preview');
-        if (!video || !video.videoWidth)
-            return;
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        if (!ctx)
-            return;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob((blob) => {
-            if (blob) {
-                const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
-                this._handleGalleryUpload(file);
-            }
-            this._closeCameraCapture();
-        }, 'image/jpeg', 0.92);
-    }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this._stopCameraStream();
     }
     async _handleGalleryUpload(file) {
         this._sm = transition$1(this._sm, { type: 'SaveRequested' });
@@ -47368,13 +47634,6 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     _renderGallery() {
         const gallery = this._gallery();
         const thumbIndex = gallery.findIndex((img) => img.is_thumbnail);
-        const handleFileChange = (e) => {
-            const file = e.target.files?.[0];
-            if (file)
-                this._handleGalleryUpload(file);
-            e.target.value = '';
-            this._sm = transition$1(this._sm, { type: 'PhotoMenuClosed' });
-        };
         const handleDrop = (e) => {
             e.preventDefault();
             const file = e.dataTransfer?.files[0];
@@ -47461,7 +47720,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             ?disabled=${this._sm.status.kind === 'applying'}
             @click=${() => {
             if (this._sm.status.kind !== 'applying') {
-                this._sm = transition$1(this._sm, { type: 'PhotoMenuToggled' });
+                this._camera?.open();
             }
         }}
           >
@@ -47477,22 +47736,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                 `}
           </button>
 
-          <!-- Hidden inputs: one for camera, one for file picker -->
-          <input
-            id="gallery-camera-input"
-            type="file"
-            accept="image/*"
-            capture="environment"
-            style="display:none"
-            @change=${handleFileChange}
-          />
-          <input
-            id="gallery-library-input"
-            type="file"
-            accept="image/*"
-            style="display:none"
-            @change=${handleFileChange}
-          />
+          <camera-capture @capture=${this._handleCapture}></camera-capture>
         </div>
 
         ${thumbIndex >= 0 && gallery[thumbIndex]?.crop_meta
@@ -47503,123 +47747,6 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             `
             : E}
 
-        <!-- Add-photo choice menu -->
-        ${this._sm.sub.kind === 'photo-menu'
-            ? x `
-              <div
-                style="position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.5);"
-                @click=${() => { this._sm = transition$1(this._sm, { type: 'PhotoMenuClosed' }); }}
-              ></div>
-              <div
-                style="position:fixed; bottom:0; left:0; right:0; z-index:501; background:var(--card-background-color, #1e1e1e); border-radius:16px 16px 0 0; padding:16px 16px 32px; display:flex; flex-direction:column; gap:8px;"
-              >
-                <div
-                  style="width:40px; height:4px; border-radius:2px; background:rgba(255,255,255,0.2); margin:0 auto 8px;"
-                ></div>
-                <button
-                  style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
-                  @click=${(e) => {
-                e.stopPropagation();
-                this._sm = transition$1(this._sm, { type: 'PhotoMenuClosed' });
-                this._openCameraCapture();
-            }}
-                >
-                  <svg
-                    style="width:24px;height:24px;fill:var(--accent-green,#4caf50);flex-shrink:0;"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="${mdiCamera}"></path>
-                  </svg>
-                  Take Photo
-                </button>
-                <button
-                  style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
-                  @click=${(e) => {
-                e.stopPropagation();
-                this._sm = transition$1(this._sm, { type: 'PhotoMenuClosed' });
-                this.shadowRoot?.getElementById('gallery-library-input')?.click();
-            }}
-                >
-                  <svg
-                    style="width:24px;height:24px;fill:var(--accent-green,#4caf50);flex-shrink:0;"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="${mdiImageMultiple}"></path>
-                  </svg>
-                  Choose from Library
-                </button>
-              </div>
-            `
-            : E}
-        ${this._renderCameraOverlay()}
-      </div>
-    `;
-    }
-    _renderCameraOverlay() {
-        if (!this._cameraStream && !this._cameraError)
-            return E;
-        return x `
-      <div
-        style="position:fixed; inset:0; z-index:600; background:#000; display:flex; flex-direction:column;"
-      >
-        ${this._cameraError
-            ? x `
-              <div
-                style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:24px; text-align:center; color:#fff;"
-              >
-                <svg style="width:48px;height:48px;fill:#f44336;" viewBox="0 0 24 24">
-                  <path d="${mdiCamera}"></path>
-                </svg>
-                <div style="max-width:320px; font-size:0.95rem;">${this._cameraError}</div>
-                <button
-                  class="md3-button tonal"
-                  @click=${() => this._closeCameraCapture()}
-                >
-                  Close
-                </button>
-              </div>
-            `
-            : x `
-              <video
-                id="camera-preview"
-                autoplay
-                playsinline
-                muted
-                .srcObject=${this._cameraStream}
-                style="flex:1; width:100%; height:100%; object-fit:cover; background:#000;"
-              ></video>
-              <div
-                style="position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; padding:16px;"
-              >
-                <button
-                  title="Close"
-                  style="background:rgba(0,0,0,0.5); border:none; width:44px; height:44px; border-radius:50%; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;"
-                  @click=${() => this._closeCameraCapture()}
-                >
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiClose}"></path>
-                  </svg>
-                </button>
-                <button
-                  title="Switch camera"
-                  style="background:rgba(0,0,0,0.5); border:none; width:44px; height:44px; border-radius:50%; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;"
-                  @click=${() => this._switchCamera()}
-                >
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiCameraFlip}"></path>
-                  </svg>
-                </button>
-              </div>
-              <div
-                style="position:absolute; bottom:0; left:0; right:0; display:flex; justify-content:center; padding:24px;"
-              >
-                <button
-                  title="Capture"
-                  style="width:72px; height:72px; border-radius:50%; border:4px solid rgba(255,255,255,0.4); background:#fff; cursor:pointer;"
-                  @click=${() => this._capturePhoto()}
-                ></button>
-              </div>
-            `}
       </div>
     `;
     }
@@ -48446,11 +48573,8 @@ __decorate([
     r$3()
 ], StrainEditorView.prototype, "_lineageTree", void 0);
 __decorate([
-    r$3()
-], StrainEditorView.prototype, "_cameraStream", void 0);
-__decorate([
-    r$3()
-], StrainEditorView.prototype, "_cameraError", void 0);
+    e$7('camera-capture')
+], StrainEditorView.prototype, "_camera", void 0);
 StrainEditorView = __decorate([
     t$2('strain-editor-view')
 ], StrainEditorView);
@@ -140025,7 +140149,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.52"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.53"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',
