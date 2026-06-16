@@ -36,8 +36,7 @@ export type SubState =
   | { kind: 'seedfinder' }
   | { kind: 'breeder-list' }
   | { kind: 'breeder-editing'; draft: BreederDraft }
-  | { kind: 'breeder-confirm-delete'; name: string }
-  | { kind: 'photo-menu' };
+  | { kind: 'breeder-confirm-delete'; name: string };
 
 // ─── Root SM ──────────────────────────────────────────────────────────────────
 
@@ -77,8 +76,6 @@ export type EditorEvent =
   | { type: 'BreederDeleteConfirmed' }
   | { type: 'BreederDeleteCancelled' }
   | { type: 'BreederDialogClosed' }
-  | { type: 'PhotoMenuToggled' }
-  | { type: 'PhotoMenuClosed' }
   | { type: 'ToastDismissed' };
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -183,12 +180,6 @@ export function transition(sm: StrainEditorSM, event: EditorEvent): StrainEditor
       return { ...sm, sub: { kind: 'breeder-list' } };
 
     case 'BreederDialogClosed':
-      return { ...sm, sub: { kind: 'idle' } };
-
-    case 'PhotoMenuToggled':
-      return { ...sm, sub: sm.sub.kind === 'photo-menu' ? { kind: 'idle' } : { kind: 'photo-menu' } };
-
-    case 'PhotoMenuClosed':
       return { ...sm, sub: { kind: 'idle' } };
 
     case 'ToastDismissed':

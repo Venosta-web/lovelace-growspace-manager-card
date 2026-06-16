@@ -1,5 +1,5 @@
 import { LitElement, html, css, PropertyValues, TemplateResult, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property, state, query } from 'lit/decorators.js';
 import {
   mdiClose,
   mdiDelete,
@@ -20,9 +20,6 @@ import {
   mdiPlus,
   mdiStar,
   mdiStarOutline,
-  mdiCamera,
-  mdiImageMultiple,
-  mdiCameraFlip,
 } from '@mdi/js';
 import './strain-import-dialog';
 import { HomeAssistant } from 'custom-card-helpers';
@@ -33,6 +30,8 @@ import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../features/shared/ui/lineage-tree';
 import '../features/shared/ui/gs-help-tooltip';
+import '../features/shared/ui/camera-capture';
+import type { CameraCapture } from '../features/shared/ui/camera-capture';
 import { createInitialSM, transition, type StrainEditorSM } from './strain-editor-view-sm';
 
 @customElement('strain-editor-view')
@@ -48,12 +47,7 @@ export class StrainEditorView extends LitElement {
   @state() private _sm: StrainEditorSM = createInitialSM();
   @state() private _lineageTree: LineageNode | null = null;
 
-  // Live in-app camera capture (getUserMedia). Works inside the HA Android/iOS
-  // WebView where the `<input capture>` attribute is ignored and only opens the
-  // gallery picker. Null when the camera overlay is closed.
-  @state() private _cameraStream: MediaStream | null = null;
-  @state() private _cameraError: string | null = null;
-  private _cameraFacing: 'environment' | 'user' = 'environment';
+  @query('camera-capture') private _camera!: CameraCapture;
 
   private _dispatchStateChange() {
     this.dispatchEvent(
@@ -424,74 +418,10 @@ export class StrainEditorView extends LitElement {
     return this._sm.draft.images ?? [];
   }
 
-  /**
-   * Open the live camera. Inside the HA companion-app WebView the
-   * `<input capture="environment">` hint is not honoured and only opens the
-   * gallery, so we drive the camera directly via getUserMedia. Falls back to
-   * the hidden file input when the MediaDevices API is unavailable.
-   */
-  private async _openCameraCapture(): Promise<void> {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      (this.shadowRoot?.getElementById('gallery-camera-input') as HTMLInputElement)?.click();
-      return;
+  private _handleCapture(e: CustomEvent<{ files: File[] }>): void {
+    for (const file of e.detail.files) {
+      this._handleGalleryUpload(file);
     }
-    this._cameraError = null;
-    try {
-      this._cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: this._cameraFacing } },
-        audio: false,
-      });
-    } catch (err) {
-      // Permission denied / no camera / not a secure context.
-      console.error('Camera access failed:', err);
-      this._cameraError =
-        'Could not access the camera. Grant the Home Assistant app camera permission, or use “Choose from Library”.';
-    }
-  }
-
-  private _stopCameraStream(): void {
-    this._cameraStream?.getTracks().forEach((t) => t.stop());
-    this._cameraStream = null;
-  }
-
-  private _closeCameraCapture(): void {
-    this._stopCameraStream();
-    this._cameraError = null;
-  }
-
-  private async _switchCamera(): Promise<void> {
-    this._cameraFacing = this._cameraFacing === 'environment' ? 'user' : 'environment';
-    this._stopCameraStream();
-    await this._openCameraCapture();
-  }
-
-  private _capturePhoto(): void {
-    const stream = this._cameraStream;
-    if (!stream) return;
-    const video = this.shadowRoot?.getElementById('camera-preview') as HTMLVideoElement | null;
-    if (!video || !video.videoWidth) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob(
-      (blob) => {
-        if (blob) {
-          const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
-          this._handleGalleryUpload(file);
-        }
-        this._closeCameraCapture();
-      },
-      'image/jpeg',
-      0.92
-    );
-  }
-
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this._stopCameraStream();
   }
 
   private async _handleGalleryUpload(file: File): Promise<void> {
@@ -1151,13 +1081,6 @@ export class StrainEditorView extends LitElement {
     const gallery = this._gallery();
     const thumbIndex = gallery.findIndex((img) => img.is_thumbnail);
 
-    const handleFileChange = (e: Event) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) this._handleGalleryUpload(file);
-      (e.target as HTMLInputElement).value = '';
-      this._sm = transition(this._sm, { type: 'PhotoMenuClosed' });
-    };
-
     const handleDrop = (e: DragEvent) => {
       e.preventDefault();
       const file = e.dataTransfer?.files[0];
@@ -1246,7 +1169,7 @@ export class StrainEditorView extends LitElement {
             ?disabled=${this._sm.status.kind === 'applying'}
             @click=${() => {
               if (this._sm.status.kind !== 'applying') {
-                this._sm = transition(this._sm, { type: 'PhotoMenuToggled' });
+                this._camera?.open();
               }
             }}
           >
@@ -1262,22 +1185,7 @@ export class StrainEditorView extends LitElement {
                 `}
           </button>
 
-          <!-- Hidden inputs: one for camera, one for file picker -->
-          <input
-            id="gallery-camera-input"
-            type="file"
-            accept="image/*"
-            capture="environment"
-            style="display:none"
-            @change=${handleFileChange}
-          />
-          <input
-            id="gallery-library-input"
-            type="file"
-            accept="image/*"
-            style="display:none"
-            @change=${handleFileChange}
-          />
+          <camera-capture @capture=${this._handleCapture}></camera-capture>
         </div>
 
         ${thumbIndex >= 0 && gallery[thumbIndex]?.crop_meta
@@ -1288,125 +1196,6 @@ export class StrainEditorView extends LitElement {
             `
           : nothing}
 
-        <!-- Add-photo choice menu -->
-        ${this._sm.sub.kind === 'photo-menu'
-          ? html`
-              <div
-                style="position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.5);"
-                @click=${() => { this._sm = transition(this._sm, { type: 'PhotoMenuClosed' }); }}
-              ></div>
-              <div
-                style="position:fixed; bottom:0; left:0; right:0; z-index:501; background:var(--card-background-color, #1e1e1e); border-radius:16px 16px 0 0; padding:16px 16px 32px; display:flex; flex-direction:column; gap:8px;"
-              >
-                <div
-                  style="width:40px; height:4px; border-radius:2px; background:rgba(255,255,255,0.2); margin:0 auto 8px;"
-                ></div>
-                <button
-                  style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
-                  @click=${(e: Event) => {
-                    e.stopPropagation();
-                    this._sm = transition(this._sm, { type: 'PhotoMenuClosed' });
-                    this._openCameraCapture();
-                  }}
-                >
-                  <svg
-                    style="width:24px;height:24px;fill:var(--accent-green,#4caf50);flex-shrink:0;"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="${mdiCamera}"></path>
-                  </svg>
-                  Take Photo
-                </button>
-                <button
-                  style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
-                  @click=${(e: Event) => {
-                    e.stopPropagation();
-                    this._sm = transition(this._sm, { type: 'PhotoMenuClosed' });
-                    (
-                      this.shadowRoot?.getElementById('gallery-library-input') as HTMLInputElement
-                    )?.click();
-                  }}
-                >
-                  <svg
-                    style="width:24px;height:24px;fill:var(--accent-green,#4caf50);flex-shrink:0;"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="${mdiImageMultiple}"></path>
-                  </svg>
-                  Choose from Library
-                </button>
-              </div>
-            `
-          : nothing}
-        ${this._renderCameraOverlay()}
-      </div>
-    `;
-  }
-
-  private _renderCameraOverlay(): TemplateResult | typeof nothing {
-    if (!this._cameraStream && !this._cameraError) return nothing;
-    return html`
-      <div
-        style="position:fixed; inset:0; z-index:600; background:#000; display:flex; flex-direction:column;"
-      >
-        ${this._cameraError
-          ? html`
-              <div
-                style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:24px; text-align:center; color:#fff;"
-              >
-                <svg style="width:48px;height:48px;fill:#f44336;" viewBox="0 0 24 24">
-                  <path d="${mdiCamera}"></path>
-                </svg>
-                <div style="max-width:320px; font-size:0.95rem;">${this._cameraError}</div>
-                <button
-                  class="md3-button tonal"
-                  @click=${() => this._closeCameraCapture()}
-                >
-                  Close
-                </button>
-              </div>
-            `
-          : html`
-              <video
-                id="camera-preview"
-                autoplay
-                playsinline
-                muted
-                .srcObject=${this._cameraStream}
-                style="flex:1; width:100%; height:100%; object-fit:cover; background:#000;"
-              ></video>
-              <div
-                style="position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; padding:16px;"
-              >
-                <button
-                  title="Close"
-                  style="background:rgba(0,0,0,0.5); border:none; width:44px; height:44px; border-radius:50%; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;"
-                  @click=${() => this._closeCameraCapture()}
-                >
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiClose}"></path>
-                  </svg>
-                </button>
-                <button
-                  title="Switch camera"
-                  style="background:rgba(0,0,0,0.5); border:none; width:44px; height:44px; border-radius:50%; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;"
-                  @click=${() => this._switchCamera()}
-                >
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiCameraFlip}"></path>
-                  </svg>
-                </button>
-              </div>
-              <div
-                style="position:absolute; bottom:0; left:0; right:0; display:flex; justify-content:center; padding:24px;"
-              >
-                <button
-                  title="Capture"
-                  style="width:72px; height:72px; border-radius:50%; border:4px solid rgba(255,255,255,0.4); background:#fff; cursor:pointer;"
-                  @click=${() => this._capturePhoto()}
-                ></button>
-              </div>
-            `}
       </div>
     `;
   }
