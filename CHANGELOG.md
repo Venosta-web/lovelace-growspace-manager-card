@@ -1,3 +1,10 @@
+# [1.1.0-next.54](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.53...v1.1.0-next.54) (2026-06-16)
+
+
+### Features
+
+* **camera:** shared live-camera capture for note & strain photos ([824613c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/824613c238b1ddd52738a9fd6cb9352af20c8e6e))
+
 # [1.1.0-next.53](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.52...v1.1.0-next.53) (2026-06-16)
 
 
