@@ -75,6 +75,41 @@ describe('camera-capture', () => {
     expect(fired).toBe(false);
   });
 
+  it('closes the menu when the backdrop is clicked', async () => {
+    const el = await fixture<CameraCapture>(html`<camera-capture></camera-capture>`);
+    el.open();
+    await el.updateComplete;
+    expect(el.shadowRoot?.querySelector('.sheet')).not.toBeNull();
+
+    (el.shadowRoot?.querySelector('.scrim') as HTMLElement).click();
+    await el.updateComplete;
+
+    expect(el.shadowRoot?.querySelector('.sheet')).toBeNull();
+  });
+
+  it('opens the live camera via getUserMedia when Take Photo is clicked', async () => {
+    const el = await fixture<CameraCapture>(html`<camera-capture></camera-capture>`);
+
+    // A real (empty) MediaStream — the overlay binds it to a <video .srcObject>,
+    // which rejects non-MediaStream values.
+    const fakeStream = new MediaStream();
+    const getUserMediaSpy = vi
+      .spyOn(navigator.mediaDevices, 'getUserMedia')
+      .mockResolvedValue(fakeStream);
+
+    el.open();
+    await el.updateComplete;
+    (el.shadowRoot?.querySelectorAll('.sheet-action')[0] as HTMLButtonElement).click();
+
+    // _openCameraCapture is async and fire-and-forget from the click handler.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await el.updateComplete;
+
+    expect(getUserMediaSpy).toHaveBeenCalled();
+    expect((el as unknown as { _cameraStream: MediaStream | null })._cameraStream).toBe(fakeStream);
+    expect(el.shadowRoot?.querySelector('.sheet')).toBeNull();
+  });
+
   it('falls back to the hidden camera input when getUserMedia is unavailable', async () => {
     const el = await fixture<CameraCapture>(html`<camera-capture></camera-capture>`);
     // Simulate a context without MediaDevices (e.g. insecure origin).

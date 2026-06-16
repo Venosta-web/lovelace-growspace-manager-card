@@ -626,19 +626,19 @@ describe('StrainEditorView', () => {
             expect(closeSpy).toHaveBeenCalled();
         });
 
-        it('should handle compression error via File Input change', async () => {
+        it('should log when a captured gallery upload fails', async () => {
             await editorEl.updateComplete;
 
-            const input = editorEl.shadowRoot?.querySelector('input[type="file"]');
-            expect(input).toBeTruthy();
+            const camera = editorEl.shadowRoot?.querySelector('camera-capture');
+            expect(camera).toBeTruthy();
 
             const file = new File([''], 'fail.png', { type: 'image/png' });
-            Object.defineProperty(input, 'files', { get: () => [file] });
-
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
             (PlantUtils.compressImage as any).mockRejectedValueOnce('Compression Failed inside Input');
 
-            (input as HTMLInputElement).dispatchEvent(new Event('change'));
+            camera?.dispatchEvent(
+                new CustomEvent('capture', { detail: { files: [file] }, bubbles: true, composed: true })
+            );
 
             await new Promise(resolve => setTimeout(resolve, 0));
 
@@ -1975,95 +1975,38 @@ describe('StrainEditorView', () => {
             expect(getSubKind(editorEl)).toBe('cropping');
         });
 
-        it('clicking Add button opens the add-photo menu', async () => {
-            expect(getSubKind(editorEl)).not.toBe('photo-menu');
+        // The add-photo menu, file inputs and live camera now live inside the shared
+        // <camera-capture> element (covered by camera-capture.test.ts). The editor's
+        // job is just to open it and handle the resulting `capture` event.
+        it('clicking Add button opens the camera-capture menu', async () => {
+            const camera = editorEl.shadowRoot?.querySelector('camera-capture');
+            expect(camera).toBeTruthy();
+            const openSpy = vi.spyOn(camera as any, 'open');
+
             const addBtn = Array.from(editorEl.shadowRoot?.querySelectorAll('.gallery-drop-area > button') || [])
                 .find(b => b.textContent?.includes('Add')) as HTMLElement;
             expect(addBtn).toBeTruthy();
             addBtn.click();
-            expect(getSubKind(editorEl)).toBe('photo-menu');
+
+            expect(openSpy).toHaveBeenCalled();
         });
 
-        it('clicking backdrop in add-photo menu closes the menu', async () => {
-            setSubState(editorEl, { kind: 'photo-menu' });
-            await editorEl.updateComplete;
+        it('uploads every file emitted by the camera-capture capture event', async () => {
+            const camera = editorEl.shadowRoot?.querySelector('camera-capture');
+            expect(camera).toBeTruthy();
 
-            const backdrop = editorEl.shadowRoot?.querySelector('[style*="inset:0"]') as HTMLElement;
-            expect(backdrop).toBeTruthy();
-            backdrop.click();
-            expect(getSubKind(editorEl)).not.toBe('photo-menu');
-        });
-
-        // "Take Photo" drives the live camera via getUserMedia; it only falls back
-        // to clicking the hidden file input when the MediaDevices API is absent.
-        const takePhotoButton = (el: StrainEditorView): HTMLElement => {
-            const menuButtons = el.shadowRoot?.querySelectorAll('[style*="bottom:0"] button');
-            return Array.from(menuButtons || []).find(b =>
-                b.textContent?.includes('Take Photo')
-            ) as HTMLElement;
-        };
-
-        it('clicking Take Photo opens the live camera via getUserMedia', async () => {
-            setSubState(editorEl, { kind: 'photo-menu' });
-            await editorEl.updateComplete;
-
-            // A real (empty) MediaStream — the camera overlay binds it to a
-            // <video .srcObject>, which rejects non-MediaStream values.
-            const fakeStream = new MediaStream();
-            const getUserMediaSpy = vi
-                .spyOn(navigator.mediaDevices, 'getUserMedia')
-                .mockResolvedValue(fakeStream);
-
-            const takePhotoBtn = takePhotoButton(editorEl);
-            expect(takePhotoBtn).toBeTruthy();
-            takePhotoBtn.click();
-
-            // _openCameraCapture is async and fire-and-forget from the click handler.
-            await new Promise(resolve => setTimeout(resolve, 0));
-            await editorEl.updateComplete;
-
-            expect(getUserMediaSpy).toHaveBeenCalled();
-            expect((editorEl as any)._cameraStream).toBe(fakeStream);
-            expect(getSubKind(editorEl)).not.toBe('photo-menu');
-        });
-
-        it('clicking Take Photo falls back to the file input when MediaDevices is unavailable', async () => {
-            setSubState(editorEl, { kind: 'photo-menu' });
-            await editorEl.updateComplete;
-
-            vi.spyOn(navigator, 'mediaDevices', 'get').mockReturnValue(
-                undefined as unknown as MediaDevices
+            const files = [
+                new File([''], 'a.jpg', { type: 'image/jpeg' }),
+                new File([''], 'b.jpg', { type: 'image/jpeg' }),
+            ];
+            camera?.dispatchEvent(
+                new CustomEvent('capture', { detail: { files }, bubbles: true, composed: true })
             );
 
-            const cameraInput = editorEl.shadowRoot?.getElementById('gallery-camera-input') as HTMLInputElement;
-            expect(cameraInput).toBeTruthy();
-            const clickSpy = vi.spyOn(cameraInput, 'click').mockImplementation(() => {});
-
-            const takePhotoBtn = takePhotoButton(editorEl);
-            expect(takePhotoBtn).toBeTruthy();
-            takePhotoBtn.click();
-
             await new Promise(resolve => setTimeout(resolve, 0));
 
-            expect(clickSpy).toHaveBeenCalled();
-            expect(getSubKind(editorEl)).not.toBe('photo-menu');
-        });
-
-        it('clicking Choose from Library in menu triggers library input click', async () => {
-            setSubState(editorEl, { kind: 'photo-menu' });
-            await editorEl.updateComplete;
-
-            const libraryInput = editorEl.shadowRoot?.getElementById('gallery-library-input') as HTMLInputElement;
-            expect(libraryInput).toBeTruthy();
-            const clickSpy = vi.spyOn(libraryInput, 'click').mockImplementation(() => {});
-
-            const menuButtons = editorEl.shadowRoot?.querySelectorAll('[style*="bottom:0"] button');
-            const libraryBtn = Array.from(menuButtons || []).find(b => b.textContent?.includes('Choose from Library')) as HTMLElement;
-            expect(libraryBtn).toBeTruthy();
-            libraryBtn.click();
-
-            expect(clickSpy).toHaveBeenCalled();
-            expect(getSubKind(editorEl)).not.toBe('photo-menu');
+            expect(PlantUtils.compressImage).toHaveBeenCalledWith(files[0]);
+            expect(PlantUtils.compressImage).toHaveBeenCalledWith(files[1]);
         });
     });
 });
