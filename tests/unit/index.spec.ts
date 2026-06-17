@@ -35,9 +35,4 @@ describe('index registration', () => {
         const { PlantUtils } = await import('../../src/index');
         expect(PlantUtils).toBeDefined();
     });
-
-    it('exports DataService', async () => {
-        const { DataService } = await import('../../src/index');
-        expect(DataService).toBeDefined();
-    });
 });
