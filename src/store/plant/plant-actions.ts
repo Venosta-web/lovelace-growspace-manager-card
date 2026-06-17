@@ -20,6 +20,20 @@ import {
   addOptimisticDeletedPlantId,
   removeOptimisticDeletedPlantId,
 } from '../../slices/grid';
+import {
+  updatePlant as plantSliceUpdatePlant,
+  deletePlant as plantSliceDeletePlant,
+  addPlant as plantSliceAddPlant,
+  addPlants as plantSliceAddPlants,
+  harvestPlant as plantSliceHarvestPlant,
+  takeClone as plantSliceTakeClone,
+  moveClone as plantSliceMoveClone,
+  swapPlants as plantSliceSwapPlants,
+  printLabel as plantSlicePrintLabel,
+  scorePlant as plantSliceScorePlant,
+  saveHarvestMetrics as plantSliceSaveHarvestMetrics,
+} from '../../slices/plant';
+import { addStrain as strainSliceAdd } from '../../slices/strain';
 
 /**
  * Update a single plant with new attributes.
@@ -29,7 +43,7 @@ export async function updatePlant(
   plantId: string,
   updates: Partial<PlantEntity['attributes']>
 ): Promise<void> {
-  await withAction(ctx, () => ctx.dataService.updatePlant({ plant_id: plantId, ...updates }), {
+  await withAction(ctx, () => plantSliceUpdatePlant(plantId, updates), {
     success: 'Plant updated',
     errorPrefix: 'Failed to update plant',
   });
@@ -57,9 +71,7 @@ export async function updatePlantFromDialog(
     ctx,
     async () => {
       await Promise.all(
-        targetIds.map((id: string) =>
-          ctx.dataService.updatePlant({ ...payloadTemplate, plant_id: id })
-        )
+        targetIds.map((id: string) => plantSliceUpdatePlant(id, payloadTemplate))
       );
       ctx.closeDialog();
       await ctx.refreshData();
@@ -79,7 +91,7 @@ async function _deletePlantsApi(ctx: ActionContext, plantIds: string[]): Promise
   plantIds.forEach((id) => addOptimisticDeletedPlantId(id));
 
   try {
-    await Promise.all(plantIds.map((id) => ctx.dataService.removePlant(id)));
+    await Promise.all(plantIds.map((id) => plantSliceDeletePlant(id)));
     return true;
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
@@ -145,7 +157,7 @@ export async function handleDeletePlant(ctx: ActionContext, plantId: string | st
           (async () => {
             for (const p of plantsToRestore) {
               // plantsToRestore contains required fields from the original plant.
-              await ctx.dataService.addPlant(p as Parameters<typeof ctx.dataService.addPlant>[0]);
+              await plantSliceAddPlant(p as Parameters<typeof plantSliceAddPlant>[0]);
             }
             await ctx.refreshData();
           })().catch((err) => console.error('[Undo delete failed]', err));
@@ -206,7 +218,7 @@ export async function movePlantToNextStage(
     ctx,
     async () => {
       const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-      await ctx.dataService.harvestPlant(plantId, targetGrowspace, ...(metrics ? [metrics] : []));
+      await plantSliceHarvestPlant(plantId, targetGrowspace, ...(metrics ? [metrics] : []));
       // Small delay to allow backend commit to complete before fetching updated data
       await new Promise((resolve) => setTimeout(resolve, 500));
       await ctx.refreshData();
@@ -225,10 +237,9 @@ async function _movePlantApi(ctx: ActionContext, plant: PlantEntity, targetGrows
   const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
 
   if (plant.attributes.stage === 'clone') {
-    await ctx.dataService.moveClone(plantId, targetGrowspaceId);
+    await plantSliceMoveClone(plantId, targetGrowspaceId);
   } else {
-    // Note: historically this integration used harvestPlant for general room moves
-    await ctx.dataService.harvestPlant(plantId, targetGrowspaceId);
+    await plantSliceHarvestPlant(plantId, targetGrowspaceId);
   }
 }
 
@@ -282,17 +293,11 @@ export async function takeClone(
   numClones?: number,
   targetGrowspaceId?: string
 ): Promise<boolean> {
-  const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
-
   const cloneCount = numClones || 1;
   const ok = await withAction(
     ctx,
     async () => {
-      await ctx.dataService.takeClone({
-        mother_plant_id: plantId,
-        num_clones: numClones,
-        target_growspace_id: targetGrowspaceId,
-      });
+      await plantSliceTakeClone(motherPlant, numClones, targetGrowspaceId);
       return true as const;
     },
     {
@@ -314,11 +319,7 @@ export async function movePlantPosition(
 ): Promise<boolean> {
   try {
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-    await ctx.dataService.updatePlant({
-      plant_id: plantId,
-      row: newRow,
-      col: newCol,
-    });
+    await plantSliceUpdatePlant(plantId, { row: newRow, col: newCol });
     return true;
   } catch (err) {
     console.error('Error moving plant:', err);
@@ -417,7 +418,7 @@ export async function handlePlantDrop(
           type: 'swap',
           label: `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}`,
           optimistic: () => performOptimisticGridUpdate(false),
-          apply: () => ctx.dataService.swapPlants(sourceId, targetId!),
+          apply: () => plantSliceSwapPlants(sourceId, targetId!),
           inverse: () => performOptimisticGridUpdate(true),
         },
         growspaceId
@@ -496,7 +497,7 @@ export async function confirmAddPlant(
     async () => {
       if (detail.addToLibrary) {
         try {
-          await ctx.dataService.addStrain({ strain: detail.strain, phenotype: detail.phenotype });
+          await strainSliceAdd({ strain: detail.strain, phenotype: detail.phenotype });
           await libraryActions.fetchStrainLibrary(ctx, true);
           ctx.ui.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
         } catch (e) {
@@ -504,7 +505,7 @@ export async function confirmAddPlant(
           ctx.ui.showToast(`Failed to add strain to library, conducting plant addition`, 'info');
         }
       }
-      await ctx.dataService.addPlant({
+      await plantSliceAddPlant({
         growspace_id: selectedDevice,
         row: detail.row,
         col: detail.col,
@@ -551,7 +552,7 @@ export async function confirmAddPlants(
         : `Strain #${currentNumber}`;
       if (detail.strain) {
         promises.push(
-          ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName })
+          strainSliceAdd({ strain: detail.strain, phenotype: phenoName })
         );
       }
     }
@@ -573,10 +574,10 @@ export async function confirmAddPlants(
     ctx,
     async () => {
       const { addToLibrary: _, ...apiPayload } = detail;
-      await ctx.dataService.addPlants({
+      await plantSliceAddPlants({
         ...apiPayload,
         growspace_id: selectedDevice,
-      } as Parameters<typeof ctx.dataService.addPlants>[0]);
+      } as Parameters<typeof plantSliceAddPlants>[0]);
 
       await ctx.refreshData();
 
@@ -639,20 +640,20 @@ export async function printLabel(
   const baseUrl = window.location.origin + window.location.pathname;
 
   try {
-    const result = await ctx.dataService.printLabel({
-      plant_id: plantId,
+    const result = await plantSlicePrintLabel({
+      plantId,
       strain,
       phenotype,
       breeder,
       lineage,
-      breeder_logo: breederLogo,
-      device_id: deviceId,
+      breederLogo,
+      deviceId,
       preview,
-      base_url: baseUrl,
+      baseUrl,
       fields,
-      size_id: sizeId,
+      sizeId,
       density,
-      qr_target: qrTarget,
+      qrTarget,
     });
     if (!preview) {
       ctx.ui.showToast('Label printing command sent', 'success');
@@ -677,7 +678,7 @@ export async function saveHarvestMetrics(
 ): Promise<void> {
   if (Object.keys(metrics).length === 0) return;
   try {
-    await ctx.dataService.updateHarvestMetrics({ plant_id: plantId, ...metrics });
+    await plantSliceSaveHarvestMetrics(plantId, metrics);
     ctx.ui.showToast('Harvest metrics saved', 'success');
     await ctx.refreshData(true);
   } catch (error) {
@@ -698,7 +699,7 @@ export async function scorePhenotype(
   const hasValue = Object.values(scores).some((v) => v !== null && v !== undefined);
   if (!hasValue) return;
   try {
-    await ctx.dataService.scorePlant({ plant_id: plantId, ...scores });
+    await plantSliceScorePlant(plantId, scores);
     ctx.ui.showToast('Scores saved', 'success');
     await ctx.refreshData(true);
   } catch (error) {

@@ -5,6 +5,8 @@
 import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
 import { devices$, setDevices } from '../../slices/grid';
+import { callService } from '../../services/hass-call';
+import { DOMAIN, SERVICES } from '../../lib/constants';
 
 export async function addGrowspace(
   ctx: ActionContext,
@@ -21,7 +23,12 @@ export async function addGrowspace(
   const ok = await withAction(
     ctx,
     async () => {
-      await ctx.dataService.addGrowspace({ name, rows, plantsPerRow, notificationService });
+      await callService(DOMAIN, SERVICES.ADD_GROWSPACE, {
+        name,
+        rows,
+        plants_per_row: plantsPerRow,
+        notification_target: notificationService,
+      });
       await ctx.refreshData();
       ctx.closeDialog();
       return true as const;
@@ -48,7 +55,11 @@ export async function updateGrowspace(
         newDevices[deviceIdx] = { ...newDevices[deviceIdx], name, rows, plantsPerRow };
         setDevices(newDevices);
       }
-      await ctx.dataService.updateGrowspace({ growspaceId, name, rows, plantsPerRow });
+      const payload: Record<string, unknown> = { growspace_id: growspaceId };
+      if (name) payload.name = name;
+      if (rows) payload.rows = rows;
+      if (plantsPerRow) payload.plants_per_row = plantsPerRow;
+      await callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
       await ctx.refreshData();
       ctx.closeDialog();
       return true as const;
@@ -62,7 +73,7 @@ export async function removeGrowspace(ctx: ActionContext, growspaceId: string): 
   const ok = await withAction(
     ctx,
     async () => {
-      await ctx.dataService.removeGrowspace(growspaceId);
+      await callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, { growspace_id: growspaceId });
       await ctx.refreshData();
       ctx.closeDialog();
       return true as const;

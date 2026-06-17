@@ -5,6 +5,7 @@ import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-hel
 import { GrowspaceLogbookCardConfig } from '../lib/types/config';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
+import { BootstrapController } from '../controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 import { hassContext, configContext, storeContext } from '../lib/context';
 import { variables } from '../styles/variables';
@@ -32,6 +33,7 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
   private _store = new GrowspaceStore(this._sharedStore);
 
   private _viewController = new StoreController(this, this._store.$sharedCardViewState);
+  private _bootstrapCtrl!: BootstrapController;
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import('./editors/growspace-logbook-card-editor.js');
@@ -53,7 +55,12 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
     this._config = config;
     this._activeTab = config.default_view || 'list';
 
-    this._store.initializeSelectedDevice(config);
+    if (!this._bootstrapCtrl) {
+      this._bootstrapCtrl = new BootstrapController(this, this._store.grid, config);
+      this._store.setRefreshCallback(() => this._bootstrapCtrl.refresh());
+    } else {
+      this._bootstrapCtrl.setCardConfig(config);
+    }
   }
 
   public disconnectedCallback(): void {
@@ -66,6 +73,7 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
     super.updated(changedProps);
     if (changedProps.has('hass') && this.hass) {
       this._store.updateHass(this.hass);
+      this._bootstrapCtrl?.updateHass(this.hass);
     }
   }
 

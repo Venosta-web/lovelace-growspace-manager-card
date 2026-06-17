@@ -15,7 +15,8 @@ vi.mock('../../src/services/mutate', () => ({
     mutate: vi.fn(),
 }));
 
-vi.mock('../../src/slices/grid', () => ({
+vi.mock('../../src/slices/grid', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../src/slices/grid')>()),
     selectedDeviceId$: { get: vi.fn() },
     optimisticDeletedPlantIds$: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
     addOptimisticDeletedPlantId: vi.fn(),
@@ -149,6 +150,7 @@ vi.mock('../../src/store/core/growspace-store', () => ({
         constructor(host: any) { this.host = host; }
         updateHass() { }
         initializeSelectedDevice() { }
+        setRefreshCallback = vi.fn();
         handleDeviceChange() { }
         destroy = vi.fn();
         refreshData = vi.fn();
@@ -290,14 +292,12 @@ describe('GrowspaceManagerCard', () => {
     describe('Lifecycle & Rendering', () => {
         it('should initialize store on first update', () => {
             const spyUpdateHass = vi.spyOn(element.store, 'updateHass');
-            const spyInitDevice = vi.spyOn(element.store, 'initializeSelectedDevice');
             const spyFetchStrain = vi.spyOn(element.store.actions.library, 'fetchStrains');
 
             element.setConfig({ type: 'custom:growspace-manager-card' });
             (element as any).firstUpdated();
 
             expect(spyUpdateHass).toHaveBeenCalledWith(mockHass);
-            expect(spyInitDevice).toHaveBeenCalled();
             expect(spyFetchStrain).toHaveBeenCalled();
         });
 
@@ -317,7 +317,6 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should expose public getters', () => {
-            expect(element.dataService).toBe(element.store.dataService);
             // devices and selectedDevice now come from $gridViewState
             expect(element.devices).toEqual(atomMocks.$gridViewState.get().devices);
             expect(element.selectedDevice).toBe(atomMocks.$gridViewState.get().selectedDevice);

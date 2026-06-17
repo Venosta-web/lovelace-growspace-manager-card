@@ -8,19 +8,35 @@
 import type { LineageNode } from '../../features/plants/types';
 import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
+import {
+  addSeedBatch as geneticsSliceAddSeedBatch,
+  updateSeedBatch as geneticsSliceUpdateSeedBatch,
+  removeSeedBatch as geneticsSliceRemoveSeedBatch,
+  logPollinationEvent as geneticsSliceLogPollinationEvent,
+  updatePollinationEvent as geneticsSliceUpdatePollinationEvent,
+  deletePollinationEvent as geneticsSliceDeletePollinationEvent,
+  harvestSeeds as geneticsSliceHarvestSeeds,
+  fetchGeneticsData as geneticsSliceFetchData,
+  sowSeed as geneticsSliceSowSeed,
+  setPlantSex as geneticsSliceSetPlantSex,
+  unlinkSeedBatch as geneticsSliceUnlinkSeedBatch,
+  getLineageTree as geneticsSliceGetLineageTree,
+  getStrainLineageTree as geneticsSliceGetStrainLineageTree,
+  updateStrainLineageTree as geneticsSliceUpdateStrainLineageTree,
+} from '../../slices/genetics';
 
-type AddSeedBatchData = Parameters<ActionContext['dataService']['addSeedBatch']>[0];
-type UpdateSeedBatchData = Parameters<ActionContext['dataService']['updateSeedBatch']>[0];
-type LogPollinationData = Parameters<ActionContext['dataService']['logPollination']>[0];
-type UpdatePollinationData = Parameters<ActionContext['dataService']['updatePollination']>[0];
-type HarvestSeedsData = Parameters<ActionContext['dataService']['harvestSeeds']>[0];
+type AddSeedBatchData = Parameters<typeof geneticsSliceAddSeedBatch>[0];
+type UpdateSeedBatchData = Parameters<typeof geneticsSliceUpdateSeedBatch>[0];
+type LogPollinationData = Parameters<typeof geneticsSliceLogPollinationEvent>[0];
+type UpdatePollinationData = Parameters<typeof geneticsSliceUpdatePollinationEvent>[0];
+type HarvestSeedsData = Parameters<typeof geneticsSliceHarvestSeeds>[0];
 
 /** Add a new seed batch to the genetics library */
 export async function addSeedBatch(ctx: ActionContext, data: AddSeedBatchData): Promise<void> {
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.addSeedBatch(data);
+      await geneticsSliceAddSeedBatch(data);
       await ctx.refreshData();
     },
     {
@@ -39,7 +55,7 @@ export async function updateSeedBatch(
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.updateSeedBatch(data);
+      await geneticsSliceUpdateSeedBatch(data);
       await ctx.refreshData();
     },
     {
@@ -55,7 +71,7 @@ export async function logPollination(ctx: ActionContext, data: LogPollinationDat
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.logPollination(data);
+      await geneticsSliceLogPollinationEvent(data);
       await ctx.refreshData();
     },
     {
@@ -74,7 +90,7 @@ export async function updatePollination(
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.updatePollination(data);
+      await geneticsSliceUpdatePollinationEvent(data);
       await ctx.refreshData();
     },
     {
@@ -90,7 +106,7 @@ export async function deletePollination(ctx: ActionContext, eventId: string): Pr
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.deletePollination(eventId);
+      await geneticsSliceDeletePollinationEvent(eventId);
       await ctx.refreshData();
     },
     {
@@ -106,7 +122,7 @@ export async function harvestSeeds(ctx: ActionContext, data: HarvestSeedsData): 
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.harvestSeeds(data);
+      await geneticsSliceHarvestSeeds(data);
       await ctx.refreshData();
     },
     {
@@ -119,7 +135,7 @@ export async function harvestSeeds(ctx: ActionContext, data: HarvestSeedsData): 
 
 /** Fetch genetics data (seed batches and pollination events) */
 export async function fetchGeneticsData(ctx: ActionContext) {
-  return withAction(ctx, () => ctx.dataService.fetchGeneticsData(), {
+  return withAction(ctx, () => geneticsSliceFetchData(), {
     errorPrefix: 'Failed to fetch genetics data',
     rethrow: true,
   });
@@ -130,7 +146,7 @@ export async function deleteSeedBatch(ctx: ActionContext, batchId: string): Prom
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.deleteSeedBatch(batchId);
+      await geneticsSliceRemoveSeedBatch(batchId);
       await ctx.refreshData();
     },
     {
@@ -146,7 +162,7 @@ export async function sowSeed(ctx: ActionContext, batchId: string, plantId: stri
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.sowSeed(batchId, plantId);
+      await geneticsSliceSowSeed(batchId, plantId);
       await ctx.refreshData();
     },
     {
@@ -166,7 +182,7 @@ export async function setPlantSex(
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.setPlantSex(plantId, sex);
+      await geneticsSliceSetPlantSex(plantId, sex);
       await ctx.refreshData();
     },
     {
@@ -182,7 +198,7 @@ export async function unlinkSeedBatch(ctx: ActionContext, plantId: string): Prom
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.unlinkSeedBatch(plantId);
+      await geneticsSliceUnlinkSeedBatch(plantId);
       await ctx.refreshData();
     },
     {
@@ -198,7 +214,7 @@ export async function getLineageTree(
   ctx: ActionContext,
   plantId: string
 ): Promise<LineageNode | null> {
-  return withAction(ctx, () => ctx.dataService.getLineageTree(plantId), {
+  return withAction(ctx, () => geneticsSliceGetLineageTree(plantId), {
     errorPrefix: 'Failed to fetch lineage tree',
     rethrow: true,
   }) as Promise<LineageNode | null>;
@@ -209,7 +225,7 @@ export async function getStrainLineageTree(
   ctx: ActionContext,
   strainName: string
 ): Promise<LineageNode | null> {
-  return withAction(ctx, () => ctx.dataService.getStrainLineageTree(strainName), {
+  return withAction(ctx, () => geneticsSliceGetStrainLineageTree(strainName), {
     errorPrefix: 'Failed to fetch strain lineage tree',
     rethrow: true,
   }) as Promise<LineageNode | null>;
@@ -221,7 +237,7 @@ export async function updateStrainLineageTree(
   strainName: string,
   parents: Array<{ name: string; source: 'library' | 'manual' }>
 ): Promise<{ lineage: string }> {
-  return withAction(ctx, () => ctx.dataService.updateStrainLineageTree(strainName, parents), {
+  return withAction(ctx, () => geneticsSliceUpdateStrainLineageTree(strainName, parents), {
     errorPrefix: 'Failed to update strain lineage tree',
     rethrow: true,
   }) as Promise<{ lineage: string }>;

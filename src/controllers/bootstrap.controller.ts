@@ -5,6 +5,7 @@ import { devices$ } from '../slices/grid';
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import { fetchRawCollection } from '../slices/growspace';
 import { hydrate } from '../services/hydrate';
+import { setHass } from '../services/hass-call';
 import type { GrowspaceAPIResponse } from '../types';
 
 /**
@@ -76,6 +77,10 @@ export class BootstrapController implements ReactiveController {
 
   async updateHass(hass: HomeAssistant): Promise<void> {
     if (this._lastHassRef === hass) return;
+
+    // The hydration fetch (fetchRawCollection) and every slice mutation go
+    // through the global hass-call seam, so the controller must keep it primed.
+    setHass(hass);
 
     if (!this._lastCollection) {
       this._lastHassRef = hass;

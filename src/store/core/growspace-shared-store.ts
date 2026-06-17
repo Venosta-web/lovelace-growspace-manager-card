@@ -1,22 +1,13 @@
 import { HomeAssistant } from 'custom-card-helpers';
 
-import { DataService } from '../../services/data-service';
-
 export class GrowspaceSharedStore {
-  public readonly dataService: DataService;
-
   private _hass?: HomeAssistant;
   private _unsubEvents?: () => void;
   private _staleCallbacks = new Set<() => Promise<void>>();
 
-  constructor() {
-    this.dataService = new DataService();
-  }
-
   updateHass(hass: HomeAssistant): void {
     if (this._hass === hass) return;
     this._hass = hass;
-    this.dataService.updateHass(hass);
     if (!this._unsubEvents) {
       this._subscribe(hass);
     }
@@ -51,7 +42,6 @@ export class GrowspaceSharedStore {
   }
 
   private _handleEvent(_event: unknown): void {
-    this.dataService.invalidateCache();
     this._staleCallbacks.forEach((cb) => { cb().catch(() => {}); });
   }
 }

@@ -17,6 +17,12 @@ vi.mock('../../../src/services/timeline-service', () => ({
     }),
 }));
 vi.mock('../../../src/cards/editors/growspace-logbook-card-editor', () => ({}));
+vi.mock('../../../src/slices/growspace', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../src/slices/growspace')>();
+    // Never-resolving mock so the bootstrap controller's async fetch doesn't
+    // race with the manual setDevices() seed in this rendering test.
+    return { ...actual, fetchRawCollection: vi.fn(() => new Promise(() => {})) };
+});
 
 if (!customElements.get('growspace-logbook-card')) {
     customElements.define('growspace-logbook-card', GrowspaceLogbookCard);
@@ -26,8 +32,6 @@ test('growspace-logbook-card visual snapshot', async () => {
     const element = await fixture<GrowspaceLogbookCard>(html`<growspace-logbook-card></growspace-logbook-card>`);
     element.hass = aHass() as any;
 
-    vi.spyOn((element as any)._store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
-    vi.spyOn((element as any)._store.syncService, 'updateDevicesState').mockImplementation(() => {});
 
     element.setConfig({ type: 'custom:growspace-logbook-card', default_growspace: 'test_tent' } as any);
 

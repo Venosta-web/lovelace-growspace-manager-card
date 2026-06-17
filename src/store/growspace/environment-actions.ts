@@ -9,8 +9,18 @@ import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
 import * as libraryActions from '../plant/library-actions';
 import type { CirculationFanConfig, ExhaustFanConfig } from '../../slices/growspace/schema';
+import {
+  configureEnvironment as growspaceSliceConfigureEnvironment,
+  configureCirculationFan as growspaceSliceConfigureCirculationFan,
+  configureExhaustFan as growspaceSliceConfigureExhaustFan,
+  removeEnvironment as growspaceSliceRemoveEnvironment,
+  resetWaterTracking as growspaceSliceResetWaterTracking,
+} from '../../slices/growspace';
+import { waterPlant as plantSliceWaterPlant } from '../../slices/plant';
+import { callService } from '../../services/hass-call';
+import { DOMAIN, SERVICES } from '../../lib/constants';
 
-type ConfigureEnvironmentData = Parameters<ActionContext['dataService']['configureEnvironment']>[0];
+type ConfigureEnvironmentData = Parameters<typeof growspaceSliceConfigureEnvironment>[0];
 
 /** Configure the sensor layout for a growspace */
 export async function configureEnvironment(
@@ -20,7 +30,7 @@ export async function configureEnvironment(
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.configureEnvironment(data);
+      await growspaceSliceConfigureEnvironment(data);
       await ctx.refreshData();
     },
     {
@@ -36,7 +46,7 @@ export async function removeEnvironment(ctx: ActionContext, growspaceId: string)
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.removeEnvironment(growspaceId);
+      await growspaceSliceRemoveEnvironment(growspaceId);
       await ctx.refreshData();
     },
     {
@@ -52,7 +62,7 @@ export async function resetWaterTracking(ctx: ActionContext, growspaceId: string
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.resetWaterTracking(growspaceId);
+      await growspaceSliceResetWaterTracking(growspaceId);
       await ctx.refreshData();
     },
     {
@@ -74,7 +84,7 @@ export async function waterPlant(
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.waterPlant(plantId, amount, nutrients, presetId);
+      await plantSliceWaterPlant(plantId, amount, nutrients, presetId);
       if (nutrients && Object.keys(nutrients).length > 0)
         await libraryActions.fetchNutrientInventory(ctx, true);
     },
@@ -93,7 +103,10 @@ export async function waterGrowspace(
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.waterGrowspace(growspaceId, amount, nutrients, presetId);
+      const payload: Record<string, unknown> = { growspace_id: growspaceId, amount };
+      if (nutrients && Object.keys(nutrients).length > 0) payload.nutrients = nutrients;
+      if (presetId) payload.preset_id = presetId;
+      await callService(DOMAIN, SERVICES.WATER_GROWSPACE, payload);
       if (nutrients && Object.keys(nutrients).length > 0)
         await libraryActions.fetchNutrientInventory(ctx, true);
     },
@@ -109,7 +122,7 @@ export async function configureFanController(
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.configureCirculationFan(data);
+      await growspaceSliceConfigureCirculationFan(data);
       await ctx.refreshData();
     },
     {
@@ -128,7 +141,7 @@ export async function configureExhaustFan(
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.configureExhaustFan(data);
+      await growspaceSliceConfigureExhaustFan(data);
       await ctx.refreshData();
     },
     {

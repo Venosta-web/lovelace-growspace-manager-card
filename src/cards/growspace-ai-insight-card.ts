@@ -26,6 +26,7 @@ import { variables } from '../styles/variables';
 
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { activeDevices$ } from '../slices/grid';
+import { BootstrapController } from '../controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 
 import {
@@ -45,6 +46,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
   store = new GrowspaceStore(this._sharedStore);
 
   protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
+  private _bootstrapCtrl!: BootstrapController;
   protected _aiInsightController = new StoreController(this, aiInsight$);
   protected _aiLoadingController = new StoreController(this, isAiLoading$);
   protected _aiErrorController = new StoreController(this, aiError$);
@@ -168,8 +170,8 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
   protected firstUpdated() {
     if (this.hass) {
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl?.updateHass(this.hass);
     }
-    this.store.initializeSelectedDevice(this._config);
   }
 
   disconnectedCallback() {
@@ -183,6 +185,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
     super.updated(changedProps);
     if (changedProps.has('hass') && this.hass) {
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl?.updateHass(this.hass);
     }
   }
 
@@ -203,7 +206,12 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
   public setConfig(config: GrowspaceManagerCardConfig): void {
     if (!config) throw new Error('Invalid configuration');
     this._config = config;
-    this.store.initializeSelectedDevice(this._config);
+    if (!this._bootstrapCtrl) {
+      this._bootstrapCtrl = new BootstrapController(this, this.store.grid, this._config);
+      this.store.setRefreshCallback(() => this._bootstrapCtrl.refresh());
+    } else {
+      this._bootstrapCtrl.setCardConfig(this._config);
+    }
   }
 
   public getCardSize(): number {

@@ -49,6 +49,13 @@ vi.mock('../plant/library-actions', () => ({
   fetchIPMPresets: vi.fn(),
 }));
 
+vi.mock('../../slices/strain', () => ({
+  fetchStrainLibrary: vi.fn().mockResolvedValue([]),
+  strainLibrary$: { get: vi.fn().mockReturnValue([]) },
+}));
+
+import { fetchStrainLibrary as strainSliceFetchLibrary } from '../../slices/strain';
+
 function makePlant(plantId: string, row = 1, col = 1): PlantEntity {
   return {
     entity_id: `sensor.${plantId}`,
@@ -62,7 +69,6 @@ function makeCtx(overrides: Partial<ActionContext> = {}): ActionContext {
   return {
     ui,
     grid: { $selectedDevice } as unknown as ActionContext['grid'],
-    dataService: {} as ActionContext['dataService'],
     closeDialog: vi.fn(),
     refreshData: vi.fn(),
     ...overrides,
@@ -596,10 +602,8 @@ describe('exportStrainLibrary', () => {
     vi.spyOn(document, 'createElement').mockReturnValueOnce(mockAnchor as any);
     const appendSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockAnchor as any);
 
+    vi.mocked(strainSliceFetchLibrary).mockResolvedValueOnce([{ strain: 'test' }] as any);
     const ctx = makeCtx();
-    (ctx as any).dataService = {
-      fetchStrainLibrary: vi.fn().mockResolvedValue([{ strain: 'test' }]),
-    };
 
     await exportStrainLibrary(ctx);
 
@@ -609,10 +613,8 @@ describe('exportStrainLibrary', () => {
   });
 
   it('shows error toast when export fails', async () => {
+    vi.mocked(strainSliceFetchLibrary).mockRejectedValueOnce(new Error('network error'));
     const ctx = makeCtx();
-    (ctx as any).dataService = {
-      fetchStrainLibrary: vi.fn().mockRejectedValue(new Error('network error')),
-    };
     const spy = vi.spyOn(ctx.ui, 'showToast');
 
     await exportStrainLibrary(ctx);

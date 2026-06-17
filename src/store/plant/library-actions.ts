@@ -9,16 +9,17 @@ import {
   ipmPresets$,
   nutrientInventory$,
   ecRampCurves$,
+  fetchNutrientPresets as nutrientSliceFetchPresets,
+  fetchIPMPresets as nutrientSliceFetchIPMPresets,
+  fetchNutrientInventory as nutrientSliceFetchInventory,
+  updateNutrientStock as nutrientSliceUpdateStock,
+  removeNutrientStock as nutrientSliceRemoveStock,
+  fetchECRampCurves as nutrientSliceFetchECRampCurves,
+  saveECRampCurve as nutrientSliceSaveECRampCurve,
+  removeECRampCurve as nutrientSliceRemoveECRampCurve,
 } from '../../slices/nutrient';
 
 export async function fetchStrainLibrary(ctx: ActionContext, force: boolean = false) {
-  // Requires hass to be present in store (usually via dataService or just check store)
-  // The original code checks this.hass.
-  // We assume dataService has valid connection or we check it.
-
-  // Original code checked `if (!this.hass) return;`
-  // We can check if dataService is initialized or catch errors.
-
   const CACHE_KEY = 'growspace_strain_library_v2';
   const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -80,7 +81,7 @@ export async function fetchNutrientPresets(ctx: ActionContext, force: boolean = 
   console.log('[LibraryActions] Fetching nutrient presets from server (Force: %s)', force);
 
   try {
-    await ctx.dataService.fetchNutrientPresets();
+    await nutrientSliceFetchPresets();
     const result = nutrientPresets$.get();
     if (result) {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
@@ -113,7 +114,7 @@ export async function fetchIPMPresets(ctx: ActionContext, force: boolean = false
   console.log('[LibraryActions] Fetching IPM presets from server (Force: %s)', force);
 
   try {
-    await ctx.dataService.fetchIPMPresets();
+    await nutrientSliceFetchIPMPresets();
     const result = ipmPresets$.get();
     if (result) {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
@@ -142,7 +143,7 @@ export async function fetchNutrientInventory(ctx: ActionContext, force: boolean 
   }
 
   try {
-    await ctx.dataService.fetchNutrientInventory();
+    await nutrientSliceFetchInventory();
     const result = nutrientInventory$.get();
     if (result) {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
@@ -162,7 +163,7 @@ export async function updateNutrientStock(
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
+      await nutrientSliceUpdateStock(nutrientId, name, currentMl, initialMl);
       await fetchNutrientInventory(ctx, true);
     },
     { success: `Updated stock: ${name}`, errorPrefix: 'Failed to update stock' }
@@ -173,7 +174,7 @@ export async function removeNutrientStock(ctx: ActionContext, nutrientId: string
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.removeNutrientStock(nutrientId);
+      await nutrientSliceRemoveStock(nutrientId);
       await fetchNutrientInventory(ctx, true);
     },
     { success: 'Removed nutrient stock', errorPrefix: 'Failed to remove stock' }
@@ -203,7 +204,7 @@ export async function fetchECRampCurves(ctx: ActionContext, force: boolean = fal
   console.log('[LibraryActions] Fetching EC ramp curves from server (Force: %s)', force);
 
   try {
-    await ctx.dataService.fetchECRampCurves();
+    await nutrientSliceFetchECRampCurves();
     const result = ecRampCurves$.get();
     if (result) {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
@@ -225,7 +226,7 @@ export async function saveECRampCurve(
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.saveECRampCurve(data);
+      await nutrientSliceSaveECRampCurve(data);
       await fetchECRampCurves(ctx, true);
     },
     { success: `Saved EC ramp: ${data.name}`, errorPrefix: 'Failed to save EC ramp' }
@@ -236,7 +237,7 @@ export async function removeECRampCurve(ctx: ActionContext, curveId: string) {
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.removeECRampCurve(curveId);
+      await nutrientSliceRemoveECRampCurve(curveId);
       await fetchECRampCurves(ctx, true);
     },
     { success: 'Removed EC ramp curve', errorPrefix: 'Failed to remove EC ramp' }

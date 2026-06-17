@@ -3,6 +3,7 @@ import { ViewMode, ConfigTab } from '../../constants';
 import { PlantEntity, GrowspaceDevice, EnvironmentConfigData } from '../../types';
 import * as libraryActions from '../plant/library-actions';
 import { devices$, optimisticDeletedPlantIds$, plantToDeviceMap$ } from '../../slices/grid';
+import { fetchStrainLibrary as strainSliceFetchLibrary } from '../../slices/strain';
 
 export function setIsCompactView(ctx: ActionContext, value: boolean) {
   if (value) {
@@ -292,7 +293,7 @@ export function openLogbookDialog(ctx: ActionContext) {
 
 export async function exportStrainLibrary(ctx: ActionContext) {
   try {
-    const library = await ctx.dataService.fetchStrainLibrary();
+    const library = await strainSliceFetchLibrary();
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(library));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute('href', dataStr);

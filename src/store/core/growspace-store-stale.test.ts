@@ -12,19 +12,18 @@ describe('GrowspaceStore stale wiring', () => {
     store = new GrowspaceStore(shared);
   });
 
-  it('calls refreshGrowspaceData then emits data:stale on eventBus when WS event arrives', async () => {
-    const refreshSpy = vi
-      .spyOn(store.syncService, 'refreshGrowspaceData')
-      .mockResolvedValue(undefined);
+  it('calls refreshCallback then emits data:stale on eventBus when WS event arrives', async () => {
+    const refreshCb = vi.fn().mockResolvedValue(undefined);
+    store.setRefreshCallback(refreshCb);
     const emitSpy = vi.spyOn(store.eventBus, 'emit');
 
     (shared as any)._handleEvent({});
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(refreshSpy).toHaveBeenCalledOnce();
+    expect(refreshCb).toHaveBeenCalledOnce();
     expect(emitSpy).toHaveBeenCalledWith(DATA_STALE_EVENT, undefined);
-    expect(refreshSpy.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(refreshCb.mock.invocationCallOrder[0]).toBeLessThan(
       emitSpy.mock.invocationCallOrder[0]
     );
   });

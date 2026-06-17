@@ -40,6 +40,10 @@ vi.mock('../../src/utils/chart-utils', () => ({
 }));
 
 vi.mock('../../src/cards/editors/growspace-subarea-card-editor.js', () => ({}));
+vi.mock('../../src/slices/growspace', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/slices/growspace')>()),
+  fetchRawCollection: vi.fn(() => new Promise(() => {})),
+}));
 
 
 describe('GrowspaceSubareaCard', () => {
@@ -507,14 +511,12 @@ describe('GrowspaceSubareaCard', () => {
         expect(loadSpy).toHaveBeenCalled();
     });
 
-    test('firstUpdated initializes store when _config.growspace_id is set', async () => {
+    test('firstUpdated calls _loadSubarea when _subarea is null and not loading', async () => {
         (element as any)._config = { type: 'custom:growspace-subarea-card', growspace_id: 'gs2', subarea_id: 'sa1' };
         (element as any)._loading = false;
         (element as any)._subarea = null;
-        const initSpy = vi.spyOn(element.store, 'initializeSelectedDevice');
         const loadSpy = vi.spyOn(element as any, '_loadSubarea');
         await (element as any).firstUpdated();
-        expect(initSpy).toHaveBeenCalled();
         expect(loadSpy).toHaveBeenCalled();
     });
 

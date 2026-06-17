@@ -16,6 +16,10 @@ vi.mock('../../src/features/shared/ui/error-boundary', () => ({
 vi.mock('../../src/cards/editors/growspace-analytics-card-editor', () => ({
   GrowspaceAnalyticsCardEditor: class extends HTMLElement {},
 }));
+vi.mock('../../src/slices/growspace', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/slices/growspace')>()),
+  fetchRawCollection: vi.fn(() => new Promise(() => {})),
+}));
 
 describe('GrowspaceAnalyticsCard', () => {
   const growspace = aGrowspace();
@@ -35,10 +39,9 @@ describe('GrowspaceAnalyticsCard', () => {
 
   test('initializes default growspace from config', async () => {
     const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
-    const initSpy = vi.spyOn(handle.element.store, 'initializeSelectedDevice');
     handle.element.setConfig({ type: 'custom:growspace-analytics-card', default_growspace: growspace.growspaceId });
     expect(handle.element._config?.default_growspace).toBe(growspace.growspaceId);
-    expect(initSpy).toHaveBeenCalled();
+    expect((handle.element.store as any)._refreshCallback).toBeDefined();
     handle.unmount();
   });
 

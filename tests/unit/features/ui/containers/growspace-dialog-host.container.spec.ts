@@ -2,7 +2,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceDialogHost } from '../../../../../src/features/ui/containers/growspace-dialog-host.container';
 import { atom } from 'nanostores';
-import { waterPlant as sliceWaterPlant } from '../../../../../src/slices/plant';
+import { waterPlant as sliceWaterPlant, addPlants as sliceAddPlants } from '../../../../../src/slices/plant';
 import { hassCall, callService } from '../../../../../src/services/hass-call';
 import { notification$ } from '../../../../../src/slices/ui';
 
@@ -2428,7 +2428,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 seed_batch_id: 'batch123'
             };
             await dialog.onSowSeeds(sowData);
-            expect(mockStore.dataService.addPlants).toHaveBeenCalledWith({
+            expect(sliceAddPlants).toHaveBeenCalledWith({
                 growspace_id: 'g1',
                 strain: 'Sour Diesel',
                 amount: 5,

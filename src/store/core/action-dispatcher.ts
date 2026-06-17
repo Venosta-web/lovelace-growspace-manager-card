@@ -22,6 +22,8 @@ import {
 } from '../../types';
 import { ActionContext } from './action-context';
 import { addOptimisticDeletedPlantId, removeOptimisticDeletedPlantId } from '../../slices/grid';
+import { callService } from '../../services/hass-call';
+import { removeEnvironment, resetWaterTracking } from '../../slices/growspace';
 import { ViewMode } from '../../constants';
 import type { GrowspaceHistoryStore } from '../history/history-store';
 
@@ -110,7 +112,7 @@ export class ActionDispatcher {
         entityIds.forEach((id) => addOptimisticDeletedPlantId(id));
       }
       try {
-        await this.ctx.dataService.callService('growspace_manager', 'batch_action', {
+        await callService('growspace_manager', 'batch_action', {
           entity_ids: entityIds,
           action,
           data: data || {},
@@ -156,8 +158,8 @@ export class ActionDispatcher {
         detail.plantsPerRow
       ),
     remove: (id: string) => growspaceActions.removeGrowspace(this.ctx, id),
-    removeEnvironment: (id: string) => this.ctx.dataService.removeEnvironment(id),
-    resetWaterTracking: (id: string) => this.ctx.dataService.resetWaterTracking(id),
+    removeEnvironment: (id: string) => removeEnvironment(id),
+    resetWaterTracking: (id: string) => resetWaterTracking(id),
   };
 
   public readonly strain = {

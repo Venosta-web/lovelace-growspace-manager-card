@@ -29,6 +29,7 @@ import { growspaceCardStyles } from './styles/growspace-card.styles';
 import { variables } from './styles/variables';
 import { GrowspaceStore } from './store/core/growspace-store';
 import { growspaceStoreRegistry } from './store/core/growspace-store-registry';
+import { BootstrapController } from './controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 import { startTransplant, completeTransplant, gridInteraction$ } from './slices/grid-interaction';
 
@@ -41,6 +42,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   private _dialogPortal: GrowspaceDialogHost | null = null;
   private _viewModeInitialized = false;
+  private _bootstrapCtrl!: BootstrapController;
 
   protected _viewController = new StoreController(this, this.store.$mainCardState);
 
@@ -51,11 +53,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @provide({ context: strainLibraryContext })
   @state()
   _strainLibrary: StrainEntry[] = [];
-
-  // Getter to satisfy GrowspaceCardHost interface and allow external access
-  get dataService() {
-    return this.store.dataService;
-  }
 
   get devices() {
     return this._viewController.value.grid.devices;
@@ -75,9 +72,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (this.hass) {
       setHass(this.hass);
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl?.updateHass(this.hass);
       fetchAiStatus();
     }
-    this.store.initializeSelectedDevice(this._config);
     this.store.actions.library.fetchStrains();
     this.store.actions.library.fetchNutrientPresets();
     this.store.actions.library.fetchIPMPresets();
@@ -156,6 +153,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (changedProps.has('hass')) {
       setHass(this.hass);
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl?.updateHass(this.hass);
       if (this._dialogPortal) {
         this._dialogPortal.hass = this.hass;
       }
@@ -201,8 +199,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       this._viewModeInitialized = true;
     }
 
-    // Initialize store config immediately to prevent race conditions with updateHass
-    this.store.initializeSelectedDevice(this._config);
+    if (!this._bootstrapCtrl) {
+      this._bootstrapCtrl = new BootstrapController(this, this.store.grid, this._config);
+      this.store.setRefreshCallback(() => this._bootstrapCtrl.refresh());
+    } else {
+      this._bootstrapCtrl.setCardConfig(this._config);
+    }
   }
 
   public getCardSize(): number {

@@ -23,10 +23,6 @@ vi.mock('./library-actions', () => ({
   fetchStrainLibrary: vi.fn().mockResolvedValue(undefined),
 }));
 
-// Mock the mutate primitive so tests can inspect the recorded action
-// (type/label/optimistic/inverse/apply) without exercising the real undo stack.
-// The mock still runs optimistic() then apply() so call sites that perform their
-// backend work inside apply (e.g. the swap path) behave as in production.
 vi.mock('../../services/mutate', () => ({
   mutate: vi.fn(async (action: Action) => {
     action.optimistic();
@@ -34,27 +30,46 @@ vi.mock('../../services/mutate', () => ({
   }),
 }));
 
+vi.mock('../../slices/plant', () => ({
+  updatePlant: vi.fn().mockResolvedValue(undefined),
+  deletePlant: vi.fn().mockResolvedValue(undefined),
+  harvestPlant: vi.fn().mockResolvedValue(undefined),
+  moveClone: vi.fn().mockResolvedValue(undefined),
+  takeClone: vi.fn().mockResolvedValue(undefined),
+  swapPlants: vi.fn().mockResolvedValue(undefined),
+  addPlant: vi.fn().mockResolvedValue(undefined),
+  addPlants: vi.fn().mockResolvedValue(undefined),
+  printLabel: vi.fn().mockResolvedValue(undefined),
+  saveHarvestMetrics: vi.fn().mockResolvedValue(undefined),
+  scorePlant: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../slices/strain', () => ({
+  addStrain: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../services/hass-call', () => ({
+  callService: vi.fn().mockResolvedValue(undefined),
+  hassCall: vi.fn().mockResolvedValue(undefined),
+  setHass: vi.fn(),
+  getHass: vi.fn(),
+  callApi: vi.fn().mockResolvedValue(undefined),
+  callFetch: vi.fn().mockResolvedValue(undefined),
+  callServiceReturning: vi.fn().mockResolvedValue(undefined),
+}));
+
+import * as plantSlice from '../../slices/plant';
+import * as strainSlice from '../../slices/strain';
+
 /** Read the action object recorded by the nth mutate() call. */
 function mutateAction(n = 0): Action {
   return (mutate as unknown as ReturnType<typeof vi.fn>).mock.calls[n][0] as Action;
 }
 
-function makeDataService() {
-  return new Proxy({} as any, {
-    get(target, prop) {
-      if (!(prop in target)) target[prop] = vi.fn().mockResolvedValue(undefined);
-      return target[prop];
-    },
-  });
-}
-
 function makeContext() {
   const showToast = vi.fn();
-  const dataService = makeDataService();
-  const devices: any[] = [];
 
   return {
-    dataService,
     ui: {
       showToast,
       $isEditMode: { get: vi.fn().mockReturnValue(false) },
@@ -87,6 +102,10 @@ function makePlant(overrides: any = {}): any {
   };
 }
 
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
 afterEach(() => {
   setDevices([]);
   optimisticDeletedPlantIds$.set(new Set());
@@ -99,18 +118,15 @@ describe('updatePlant', () => {
   let ctx: ReturnType<typeof makeContext>;
   beforeEach(() => { ctx = makeContext(); });
 
-  it('calls dataService.updatePlant with merged payload and toasts success', async () => {
+  it('calls slice.updatePlant with plantId and updates, toasts success', async () => {
     await updatePlant(ctx, 'plant-1', { strain: 'Blue Dream' });
 
-    expect((ctx.dataService as any).updatePlant).toHaveBeenCalledWith({
-      plant_id: 'plant-1',
-      strain: 'Blue Dream',
-    });
+    expect(plantSlice.updatePlant).toHaveBeenCalledWith('plant-1', { strain: 'Blue Dream' });
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Plant updated', 'success');
   });
 
   it('toasts error on failure without rethrowing', async () => {
-    (ctx.dataService as any).updatePlant.mockRejectedValue(new Error('api-fail'));
+    vi.mocked(plantSlice.updatePlant).mockRejectedValueOnce(new Error('api-fail'));
 
     const result = await updatePlant(ctx, 'plant-1', {});
 
@@ -137,7 +153,7 @@ describe('updatePlantFromDialog', () => {
       activeTab: 'dashboard',
     });
 
-    expect((ctx.dataService as any).updatePlant).toHaveBeenCalledOnce();
+    expect(plantSlice.updatePlant).toHaveBeenCalledOnce();
     expect(ctx.closeDialog).toHaveBeenCalled();
     expect(ctx.refreshData).toHaveBeenCalled();
   });
@@ -151,7 +167,7 @@ describe('updatePlantFromDialog', () => {
       activeTab: 'dashboard',
     });
 
-    expect((ctx.dataService as any).updatePlant).toHaveBeenCalledTimes(3);
+    expect(plantSlice.updatePlant).toHaveBeenCalledTimes(3);
   });
 
   it('clears edit mode when active after bulk update', async () => {
@@ -182,7 +198,7 @@ describe('handleDeletePlant', () => {
     await handleDeletePlant(ctx, 'plant-1');
 
     expect(optimisticDeletedPlantIds$.get().has('plant-1')).toBe(true);
-    expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('plant-1');
+    expect(plantSlice.deletePlant).toHaveBeenCalledWith('plant-1');
     expect(mutate).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'delete' }),
       expect.any(String)
@@ -194,7 +210,7 @@ describe('handleDeletePlant', () => {
 
     await handleDeletePlant(ctx, ['plant-1', 'plant-2']);
 
-    expect((ctx.dataService as any).removePlant).toHaveBeenCalledTimes(2);
+    expect(plantSlice.deletePlant).toHaveBeenCalledTimes(2);
     expect(mutate).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'batch-delete' }),
       expect.any(String)
@@ -202,7 +218,7 @@ describe('handleDeletePlant', () => {
   });
 
   it('removes optimistic id and shows error when API fails', async () => {
-    (ctx.dataService as any).removePlant.mockRejectedValue(new Error('del-fail'));
+    vi.mocked(plantSlice.deletePlant).mockRejectedValueOnce(new Error('del-fail'));
     setDevices([]);
 
     await handleDeletePlant(ctx, 'plant-1');
@@ -273,7 +289,7 @@ describe('handleDeletePlant', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect((ctx.dataService as any).addPlant).toHaveBeenCalledWith(
+    expect(plantSlice.addPlant).toHaveBeenCalledWith(
       expect.objectContaining({ strain: 'OG Kush', row: 1, col: 0 })
     );
     expect(ctx.refreshData).toHaveBeenCalled();
@@ -312,7 +328,7 @@ describe('movePlantToNextStage', () => {
     const result = await run(plant);
 
     expect(result).toBe(true);
-    expect((ctx.dataService as any).harvestPlant).toHaveBeenCalledWith('p1', 'dry');
+    expect(plantSlice.harvestPlant).toHaveBeenCalledWith('p1', 'dry');
   });
 
   it('moves dry plant to cure growspace', async () => {
@@ -320,7 +336,7 @@ describe('movePlantToNextStage', () => {
     const result = await run(plant);
 
     expect(result).toBe(true);
-    expect((ctx.dataService as any).harvestPlant).toHaveBeenCalledWith('p1', 'cure');
+    expect(plantSlice.harvestPlant).toHaveBeenCalledWith('p1', 'cure');
   });
 
   it('moves mother plant to clone growspace', async () => {
@@ -328,7 +344,7 @@ describe('movePlantToNextStage', () => {
     const result = await run(plant);
 
     expect(result).toBe(true);
-    expect((ctx.dataService as any).harvestPlant).toHaveBeenCalledWith('p1', 'clone');
+    expect(plantSlice.harvestPlant).toHaveBeenCalledWith('p1', 'clone');
   });
 
   it('returns false when stage is cure (no target defined)', async () => {
@@ -356,7 +372,7 @@ describe('movePlantToGrowspace', () => {
     const result = await promise;
 
     expect(result).toBe(true);
-    expect((ctx.dataService as any).harvestPlant).toHaveBeenCalledWith('p1', 'dst');
+    expect(plantSlice.harvestPlant).toHaveBeenCalledWith('p1', 'dst');
     expect(ctx.closeDialog).toHaveBeenCalled();
     expect(mutate).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'move' }),
@@ -370,12 +386,12 @@ describe('movePlantToGrowspace', () => {
     await vi.runAllTimersAsync();
     await promise;
 
-    expect((ctx.dataService as any).moveClone).toHaveBeenCalledWith('p1', 'dst');
-    expect((ctx.dataService as any).harvestPlant).not.toHaveBeenCalled();
+    expect(plantSlice.moveClone).toHaveBeenCalledWith('p1', 'dst');
+    expect(plantSlice.harvestPlant).not.toHaveBeenCalled();
   });
 
   it('returns false when API fails', async () => {
-    (ctx.dataService as any).harvestPlant.mockRejectedValue(new Error('move-fail'));
+    vi.mocked(plantSlice.harvestPlant).mockRejectedValueOnce(new Error('move-fail'));
     const plant = makePlant({ attributes: { plant_id: 'p1', stage: 'veg', growspace_id: 'src' } });
     const promise = movePlantToGrowspace(ctx, plant, 'dst');
     await vi.runAllTimersAsync();
@@ -397,7 +413,7 @@ describe('movePlantToGrowspace', () => {
     mutateAction().inverse();
     await vi.runAllTimersAsync();
 
-    expect((ctx.dataService as any).harvestPlant).toHaveBeenCalledWith('p1', 'src');
+    expect(plantSlice.harvestPlant).toHaveBeenCalledWith('p1', 'src');
   });
 });
 
@@ -407,16 +423,12 @@ describe('takeClone', () => {
   let ctx: ReturnType<typeof makeContext>;
   beforeEach(() => { ctx = makeContext(); });
 
-  it('calls dataService.takeClone with correct payload', async () => {
+  it('calls slice.takeClone with motherPlant, numClones, targetGrowspaceId', async () => {
     const mother = makePlant({ attributes: { plant_id: 'm1', stage: 'mother' } });
     const result = await takeClone(ctx, mother, 3, 'clone-room');
 
     expect(result).toBe(true);
-    expect((ctx.dataService as any).takeClone).toHaveBeenCalledWith({
-      mother_plant_id: 'm1',
-      num_clones: 3,
-      target_growspace_id: 'clone-room',
-    });
+    expect(plantSlice.takeClone).toHaveBeenCalledWith(mother, 3, 'clone-room');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
       expect.stringContaining('3 clones'),
       'success'
@@ -434,7 +446,7 @@ describe('takeClone', () => {
   });
 
   it('returns false on API failure', async () => {
-    (ctx.dataService as any).takeClone.mockRejectedValue(new Error('clone-fail'));
+    vi.mocked(plantSlice.takeClone).mockRejectedValueOnce(new Error('clone-fail'));
     const mother = makePlant({ attributes: { plant_id: 'm1', stage: 'mother' } });
     const result = await takeClone(ctx, mother);
 
@@ -448,20 +460,16 @@ describe('movePlantPosition', () => {
   let ctx: ReturnType<typeof makeContext>;
   beforeEach(() => { ctx = makeContext(); });
 
-  it('calls updatePlant with new position and returns true', async () => {
+  it('calls updatePlant with plantId and new position and returns true', async () => {
     const plant = makePlant({ attributes: { plant_id: 'p1' } });
     const result = await movePlantPosition(ctx, plant, 2, 3);
 
     expect(result).toBe(true);
-    expect((ctx.dataService as any).updatePlant).toHaveBeenCalledWith({
-      plant_id: 'p1',
-      row: 2,
-      col: 3,
-    });
+    expect(plantSlice.updatePlant).toHaveBeenCalledWith('p1', { row: 2, col: 3 });
   });
 
   it('returns false on API failure', async () => {
-    (ctx.dataService as any).updatePlant.mockRejectedValue(new Error('pos-fail'));
+    vi.mocked(plantSlice.updatePlant).mockRejectedValueOnce(new Error('pos-fail'));
     const plant = makePlant({ attributes: { plant_id: 'p1' } });
     const result = await movePlantPosition(ctx, plant, 2, 3);
 
@@ -507,7 +515,7 @@ describe('handlePlantDrop', () => {
       }),
       'gs'
     );
-    expect((ctx.dataService as any).swapPlants).toHaveBeenCalledWith('p1', 'p2');
+    expect(plantSlice.swapPlants).toHaveBeenCalledWith('p1', 'p2');
   });
 
   it('moves to empty cell and registers undo when no target plant', async () => {
@@ -516,8 +524,9 @@ describe('handlePlantDrop', () => {
     const result = await handlePlantDrop(ctx, 2, 3, null, source);
 
     expect(result).toBe(true);
-    expect((ctx.dataService as any).updatePlant).toHaveBeenCalledWith(
-      expect.objectContaining({ plant_id: 'p1', row: 2, col: 3 })
+    expect(plantSlice.updatePlant).toHaveBeenCalledWith(
+      'p1',
+      expect.objectContaining({ row: 2, col: 3 })
     );
     expect(mutate).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'move' }),
@@ -556,13 +565,14 @@ describe('handlePlantDrop', () => {
 
     await handlePlantDrop(ctx, 2, 3, null, source);
 
-    (ctx.dataService as any).updatePlant.mockClear();
+    vi.mocked(plantSlice.updatePlant).mockClear();
     mutateAction().inverse();
     await Promise.resolve();
     await Promise.resolve();
 
-    expect((ctx.dataService as any).updatePlant).toHaveBeenCalledWith(
-      expect.objectContaining({ plant_id: 'p1', row: 0, col: 0 })
+    expect(plantSlice.updatePlant).toHaveBeenCalledWith(
+      'p1',
+      expect.objectContaining({ row: 0, col: 0 })
     );
   });
 
@@ -571,14 +581,13 @@ describe('handlePlantDrop', () => {
     const target = makePlant({ attributes: { plant_id: 'p2', growspace_id: 'gs', row: 1, col: 1 } });
 
     setDevices([{ deviceId: 'gs', plants: [], grid: {} } as any]);
-    (ctx.dataService as any).swapPlants.mockRejectedValue(new Error('swap-fail'));
+    vi.mocked(plantSlice.swapPlants).mockRejectedValueOnce(new Error('swap-fail'));
 
     const result = await handlePlantDrop(ctx, 1, 1, target, source);
 
     expect(result).toBe(false);
     expect(ctx.refreshData).toHaveBeenCalled();
   });
-
 });
 
 // ─── confirmAddPlant ──────────────────────────────────────────────────────────
@@ -605,7 +614,7 @@ describe('confirmAddPlant', () => {
     });
 
     expect(result).toBe(true);
-    expect((ctx.dataService as any).addPlant).toHaveBeenCalledWith(
+    expect(plantSlice.addPlant).toHaveBeenCalledWith(
       expect.objectContaining({
         growspace_id: 'device-1',
         row: 1,
@@ -621,14 +630,14 @@ describe('confirmAddPlant', () => {
   it('also calls addStrain when addToLibrary is true', async () => {
     await confirmAddPlant(ctx, { row: 0, col: 0, strain: 'Gelato', addToLibrary: true });
 
-    expect((ctx.dataService as any).addStrain).toHaveBeenCalledWith({
+    expect(strainSlice.addStrain).toHaveBeenCalledWith({
       strain: 'Gelato',
       phenotype: undefined,
     });
   });
 
   it('shows info toast and still adds plant when addStrain fails', async () => {
-    (ctx.dataService as any).addStrain.mockRejectedValue(new Error('lib-fail'));
+    vi.mocked(strainSlice.addStrain).mockRejectedValueOnce(new Error('lib-fail'));
 
     const result = await confirmAddPlant(ctx, { row: 0, col: 0, strain: 'Gelato', addToLibrary: true });
 
@@ -636,7 +645,7 @@ describe('confirmAddPlant', () => {
       expect.stringContaining('Failed to add strain to library'),
       'info'
     );
-    expect((ctx.dataService as any).addPlant).toHaveBeenCalled();
+    expect(plantSlice.addPlant).toHaveBeenCalled();
     expect(result).toBe(true);
   });
 });
@@ -653,7 +662,7 @@ describe('confirmAddPlants', () => {
     await confirmAddPlants(ctx, { strain: 'OG', amount: 2 } as any);
 
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith('No growspace selected', 'error');
-    expect((ctx.dataService as any).addPlants).not.toHaveBeenCalled();
+    expect(plantSlice.addPlants).not.toHaveBeenCalled();
   });
 
   it('calls addPlants, refreshes, and toasts success', async () => {
@@ -661,7 +670,7 @@ describe('confirmAddPlants', () => {
 
     await confirmAddPlants(ctx, { strain: 'Gelato', amount: 3 } as any);
 
-    expect((ctx.dataService as any).addPlants).toHaveBeenCalledWith(
+    expect(plantSlice.addPlants).toHaveBeenCalledWith(
       expect.objectContaining({ growspace_id: 'device-1', strain: 'Gelato', amount: 3 })
     );
     expect(ctx.refreshData).toHaveBeenCalled();
@@ -681,12 +690,12 @@ describe('confirmAddPlants', () => {
       addToLibrary: true,
     } as any);
 
-    expect((ctx.dataService as any).addStrain).toHaveBeenCalledTimes(2);
+    expect(strainSlice.addStrain).toHaveBeenCalledTimes(2);
   });
 
   it('throws and does not add plants when addStrain fails', async () => {
     setDevices([]);
-    (ctx.dataService as any).addStrain.mockRejectedValue(new Error('lib-fail'));
+    vi.mocked(strainSlice.addStrain).mockRejectedValueOnce(new Error('lib-fail'));
 
     await expect(
       confirmAddPlants(ctx, {
@@ -696,12 +705,12 @@ describe('confirmAddPlants', () => {
       } as any)
     ).rejects.toThrow('lib-fail');
 
-    expect((ctx.dataService as any).addPlants).not.toHaveBeenCalled();
+    expect(plantSlice.addPlants).not.toHaveBeenCalled();
   });
 
   it('rethrows a non-Error rejection as an Error when addStrain fails', async () => {
     setDevices([]);
-    (ctx.dataService as any).addStrain.mockRejectedValue('raw string error');
+    vi.mocked(strainSlice.addStrain).mockRejectedValueOnce('raw string error');
 
     await expect(
       confirmAddPlants(ctx, {
@@ -748,12 +757,12 @@ describe('confirmAddPlants', () => {
 
     await confirmAddPlants(ctx, { strain: 'Gelato', amount: 1 } as any);
 
-    (ctx.dataService as any).removePlant.mockClear();
+    vi.mocked(plantSlice.deletePlant).mockClear();
     mutateAction().inverse();
     await Promise.resolve();
     await Promise.resolve();
 
-    expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('new-plant-1');
+    expect(plantSlice.deletePlant).toHaveBeenCalledWith('new-plant-1');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 });
@@ -782,13 +791,12 @@ describe('confirmAddPlants — beforeIds forEach branches', () => {
     await confirmAddPlants(ctx, { strain: 'OG', amount: 1 } as any);
 
     expect(mutateAction().type).toBe('batch-delete');
-    // Only new-plant should be in the undo action, not old-plant
-    (ctx.dataService as any).removePlant.mockResolvedValue(undefined);
+    vi.mocked(plantSlice.deletePlant).mockResolvedValue(undefined);
     mutateAction().inverse();
     await Promise.resolve();
     await Promise.resolve();
-    expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('new-plant');
-    expect((ctx.dataService as any).removePlant).not.toHaveBeenCalledWith('old-plant');
+    expect(plantSlice.deletePlant).toHaveBeenCalledWith('new-plant');
+    expect(plantSlice.deletePlant).not.toHaveBeenCalledWith('old-plant');
   });
 
   it('handles plants with no plant_id (p.attributes.plant_id falsy)', async () => {
@@ -836,23 +844,20 @@ describe('saveHarvestMetrics', () => {
   it('no-ops when metrics object is empty', async () => {
     await saveHarvestMetrics(ctx, 'p1', {});
 
-    expect((ctx.dataService as any).updateHarvestMetrics).not.toHaveBeenCalled();
+    expect(plantSlice.saveHarvestMetrics).not.toHaveBeenCalled();
     expect((ctx.ui as any).showToast).not.toHaveBeenCalled();
   });
 
-  it('calls updateHarvestMetrics, toasts success, and refreshes with force', async () => {
+  it('calls saveHarvestMetrics, toasts success, and refreshes with force', async () => {
     await saveHarvestMetrics(ctx, 'p1', { wet_weight: 100 });
 
-    expect((ctx.dataService as any).updateHarvestMetrics).toHaveBeenCalledWith({
-      plant_id: 'p1',
-      wet_weight: 100,
-    });
+    expect(plantSlice.saveHarvestMetrics).toHaveBeenCalledWith('p1', { wet_weight: 100 });
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Harvest metrics saved', 'success');
     expect(ctx.refreshData).toHaveBeenCalledWith(true);
   });
 
   it('toasts error and rethrows on failure', async () => {
-    (ctx.dataService as any).updateHarvestMetrics.mockRejectedValue(new Error('metrics-fail'));
+    vi.mocked(plantSlice.saveHarvestMetrics).mockRejectedValueOnce(new Error('metrics-fail'));
 
     await expect(saveHarvestMetrics(ctx, 'p1', { wet_weight: 50 })).rejects.toThrow('metrics-fail');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
@@ -871,23 +876,19 @@ describe('scorePhenotype', () => {
   it('no-ops when all score values are null or undefined', async () => {
     await scorePhenotype(ctx, 'p1', { aroma: null, yield: undefined as any });
 
-    expect((ctx.dataService as any).scorePlant).not.toHaveBeenCalled();
+    expect(plantSlice.scorePlant).not.toHaveBeenCalled();
   });
 
   it('calls scorePlant, toasts success, and refreshes with force when scores have values', async () => {
     await scorePhenotype(ctx, 'p1', { aroma: 8, yield: null });
 
-    expect((ctx.dataService as any).scorePlant).toHaveBeenCalledWith({
-      plant_id: 'p1',
-      aroma: 8,
-      yield: null,
-    });
+    expect(plantSlice.scorePlant).toHaveBeenCalledWith('p1', { aroma: 8, yield: null });
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Scores saved', 'success');
     expect(ctx.refreshData).toHaveBeenCalledWith(true);
   });
 
   it('toasts error and rethrows on failure', async () => {
-    (ctx.dataService as any).scorePlant.mockRejectedValue(new Error('score-fail'));
+    vi.mocked(plantSlice.scorePlant).mockRejectedValueOnce(new Error('score-fail'));
 
     await expect(scorePhenotype(ctx, 'p1', { aroma: 9 })).rejects.toThrow('score-fail');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
@@ -903,15 +904,12 @@ describe('printLabel', () => {
   let ctx: ReturnType<typeof makeContext>;
   beforeEach(() => { ctx = makeContext(); });
 
-  it('calls dataService.printLabel, toasts success when not preview', async () => {
-    (ctx.dataService as any).printLabel.mockResolvedValue({ url: 'http://label' });
+  it('calls slice.printLabel, toasts success when not preview', async () => {
+    await printLabel(ctx, { plantId: 'p1', strain: 'OG', preview: false });
 
-    const result = await printLabel(ctx, { plantId: 'p1', strain: 'OG', preview: false });
-
-    expect((ctx.dataService as any).printLabel).toHaveBeenCalledWith(
-      expect.objectContaining({ plant_id: 'p1', strain: 'OG', preview: false })
+    expect(plantSlice.printLabel).toHaveBeenCalledWith(
+      expect.objectContaining({ plantId: 'p1', strain: 'OG', preview: false })
     );
-    expect(result).toEqual({ url: 'http://label' });
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Label printing command sent', 'success');
   });
 
@@ -922,7 +920,7 @@ describe('printLabel', () => {
   });
 
   it('toasts error and rethrows on failure', async () => {
-    (ctx.dataService as any).printLabel.mockRejectedValue(new Error('print-fail'));
+    vi.mocked(plantSlice.printLabel).mockRejectedValueOnce(new Error('print-fail'));
 
     await expect(printLabel(ctx, { plantId: 'p1' })).rejects.toThrow('print-fail');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
@@ -932,7 +930,7 @@ describe('printLabel', () => {
   });
 
   it('shows "Unknown error" in toast when a non-Error is thrown', async () => {
-    (ctx.dataService as any).printLabel.mockRejectedValue('plain string');
+    vi.mocked(plantSlice.printLabel).mockRejectedValueOnce('plain string');
 
     await expect(printLabel(ctx, { plantId: 'p1' })).rejects.toBe('plain string');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
