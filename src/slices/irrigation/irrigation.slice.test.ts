@@ -38,6 +38,7 @@ import {
   saveIrrigationSettings,
   logDrainReading,
   configureDrainMonitoring,
+  setEcTargetRanges,
   runIrrigationCycle,
   fetchCropSteeringHistory,
   getIrrigationAnalytics,
@@ -980,6 +981,35 @@ describe('configureDrainMonitoring', () => {
       'configure_drain_monitoring',
       { growspace_id: 'gs1' }
     );
+  });
+});
+
+describe('setEcTargetRanges', () => {
+  it('does not call the service when the ranges array is empty', async () => {
+    await setEcTargetRanges('gs1', []);
+
+    expect(hassCall.callService).not.toHaveBeenCalled();
+  });
+
+  it('calls set_ec_target_range once per range, remapping min/max to feed_ec bounds', async () => {
+    await setEcTargetRanges('gs1', [
+      { stage: 'veg', minEc: 1.2, maxEc: 1.8 },
+      { stage: 'flower_early', minEc: 1.5, maxEc: 2.2 },
+    ]);
+
+    expect(hassCall.callService).toHaveBeenCalledTimes(2);
+    expect(hassCall.callService).toHaveBeenNthCalledWith(1, 'growspace_manager', 'set_ec_target_range', {
+      growspace_id: 'gs1',
+      stage: 'veg',
+      feed_ec_min: 1.2,
+      feed_ec_max: 1.8,
+    });
+    expect(hassCall.callService).toHaveBeenNthCalledWith(2, 'growspace_manager', 'set_ec_target_range', {
+      growspace_id: 'gs1',
+      stage: 'flower_early',
+      feed_ec_min: 1.5,
+      feed_ec_max: 2.2,
+    });
   });
 });
 

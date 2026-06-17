@@ -34,7 +34,12 @@
  */
 
 import { atom } from 'nanostores';
-import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../../services/types';
+import type {
+  IrrigationConfig,
+  IrrigationStrategy,
+  IrrigationTank,
+  ECTargetRange,
+} from '../../services/types';
 import { mutate } from '../../services/mutate';
 import { callService, hassCall } from '../../services/hass-call';
 import type { IrrigationMode, PhaseWindows, IrrigationAnalytics } from './schema';
@@ -589,6 +594,25 @@ export async function configureDrainMonitoring(
     payload.target_runoff_percent = params.targetRunoffPercent;
 
   await callService('growspace_manager', 'configure_drain_monitoring', payload);
+}
+
+/**
+ * Set per-stage EC target ranges. One service call per range.
+ *
+ * Fire-and-forget — no optimistic update, no undo.
+ */
+export async function setEcTargetRanges(
+  growspaceId: string,
+  ranges: ECTargetRange[]
+): Promise<void> {
+  for (const r of ranges) {
+    await callService('growspace_manager', 'set_ec_target_range', {
+      growspace_id: growspaceId,
+      stage: r.stage,
+      feed_ec_min: r.minEc,
+      feed_ec_max: r.maxEc,
+    });
+  }
 }
 
 /**

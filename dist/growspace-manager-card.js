@@ -29145,7 +29145,7 @@ object({
 // ---------------------------------------------------------------------------
 // Irrigation analytics (read — not a service payload)
 // ---------------------------------------------------------------------------
-object({
+const IrrigationAnalyticsSchema = object({
     growspace_id: string(),
     stage_aggregates: record(string(), number()),
 });
@@ -29514,6 +29514,53 @@ async function saveIrrigationSettings(growspaceId, settings) {
     }, growspaceId);
 }
 /**
+ * Record a drain/runoff EC reading.
+ *
+ * Fire-and-forget — no optimistic update, no undo.
+ */
+async function logDrainReading(growspaceId, params) {
+    const payload = {
+        growspace_id: growspaceId,
+        feed_ec: params.feedEc,
+        drain_ec: params.drainEc,
+    };
+    if (params.feedVolumeMl !== undefined)
+        payload.feed_volume_ml = params.feedVolumeMl;
+    if (params.drainVolumeMl !== undefined)
+        payload.drain_volume_ml = params.drainVolumeMl;
+    await callService('growspace_manager', 'log_drain_reading', payload);
+}
+/**
+ * Configure drain EC monitoring thresholds.
+ *
+ * Fire-and-forget — no optimistic update, no undo.
+ */
+async function configureDrainMonitoring(growspaceId, params) {
+    const payload = { growspace_id: growspaceId };
+    if (params.enabled !== undefined)
+        payload.enabled = params.enabled;
+    if (params.maxEcDelta !== undefined)
+        payload.max_ec_delta = params.maxEcDelta;
+    if (params.targetRunoffPercent !== undefined)
+        payload.target_runoff_percent = params.targetRunoffPercent;
+    await callService('growspace_manager', 'configure_drain_monitoring', payload);
+}
+/**
+ * Set per-stage EC target ranges. One service call per range.
+ *
+ * Fire-and-forget — no optimistic update, no undo.
+ */
+async function setEcTargetRanges(growspaceId, ranges) {
+    for (const r of ranges) {
+        await callService('growspace_manager', 'set_ec_target_range', {
+            growspace_id: growspaceId,
+            stage: r.stage,
+            feed_ec_min: r.minEc,
+            feed_ec_max: r.maxEc,
+        });
+    }
+}
+/**
  * Trigger a manual irrigation cycle.
  *
  * Fire-and-forget — no optimistic update, no undo.
@@ -29527,6 +29574,21 @@ async function fetchCropSteeringHistory(growspaceId) {
     const updated = new Map(cropSteeringHistory$.get());
     updated.set(growspaceId, result);
     cropSteeringHistory$.set(updated);
+}
+/**
+ * Fetch irrigation analytics for a growspace.
+ *
+ * Returns null when the backend call fails so callers can treat absent analytics
+ * the same way as the legacy IrrigationAPI.getIrrigationAnalytics (sendWebSocketSafe).
+ */
+async function getIrrigationAnalytics(growspaceId) {
+    try {
+        return await hassCall('growspace_manager/irrigation_analytics', { growspace_id: growspaceId }, IrrigationAnalyticsSchema);
+    }
+    catch (err) {
+        console.error('[IrrigationSlice] getIrrigationAnalytics failed:', err instanceof Error ? err.message : err);
+        return null;
+    }
 }
 
 /** Formats a minute-of-day (0-1439) as `HH:MM`, wrapping past midnight. */
@@ -35295,9 +35357,6 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 this._sm = transition$4(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
             }
         }
-        if (this.hass && (changedProps.has('hass') || !this._dataService)) {
-            this._dataService = new DataService(this.hass);
-        }
         if (!this._visibleTabs.includes(this._sm.activeTab)) {
             this._sm = transition$4(this._sm, { type: 'SWITCH_TAB', tab: 'config' });
         }
@@ -35432,13 +35491,11 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!id)
             return;
         await saveIrrigationSettings(id, params.settings);
-        // Strategy writes go through the Irrigation slice mutator (ADR-0001 / CONTEXT
-        // data-flow layering); drain + EC ranges still use the legacy DataService path.
+        // Strategy writes, drain monitoring + EC ranges all go through the Irrigation
+        // slice mutators (ADR-0001 / CONTEXT data-flow layering).
         await updateIrrigationStrategy(id, params.strategy);
-        if (this._dataService) {
-            await this._dataService.configureDrainMonitoring(id, params.drainConfig);
-            await this._dataService.setEcTargetRanges(id, params.ecTargetRanges);
-        }
+        await configureDrainMonitoring(id, params.drainConfig);
+        await setEcTargetRanges(id, params.ecTargetRanges);
     }
     /** Save just the settings (used by phase-change confirm). Synchronous dispatcher. */
     _saveSettings() {
@@ -35456,9 +35513,9 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         await saveIrrigationSettings(this.device.deviceId, params);
     }
     async _fetchStageAnalytics() {
-        if (!this.device?.deviceId || !this._dataService)
+        if (!this.device?.deviceId)
             return;
-        const result = await this._dataService.getIrrigationAnalytics(this.device.deviceId);
+        const result = await getIrrigationAnalytics(this.device.deviceId);
         this._sm = transition$4(this._sm, {
             type: 'SET_STAGE_AGGREGATES',
             data: result?.stage_aggregates ?? null,
@@ -35674,13 +35731,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this.dispatch({ type: 'UPDATE_EC_TARGETS_DRAFT', ranges: e.detail.ranges });
     }
     async _handleResetWaterTracking() {
-        if (!this.device?.deviceId || !this._dataService)
+        if (!this.device?.deviceId)
             return;
         const confirmed = window.confirm("Are you sure you want to reset all water tracking data for this growspace? This includes today's usage counters and volume history.");
         if (!confirmed)
             return;
         try {
-            await this._dataService.resetWaterTracking(this.device.deviceId);
+            await resetWaterTracking$1(this.device.deviceId);
             this._showErrorToast('Water tracking data reset successfully');
             this._notifyDataChanged();
         }
@@ -35690,7 +35747,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     async _logDrainReadingNow() {
-        if (!this.device?.deviceId || !this._dataService)
+        if (!this.device?.deviceId)
             return;
         const d = this._sm.tabs.drain_ec.draft;
         if (d.logFeedEc <= 0 || d.logDrainEc <= 0) {
@@ -35699,7 +35756,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
         this._sm = transition$4(this._sm, { type: 'SET_DRAIN_LOGGING', logging: true });
         try {
-            await this._dataService.logDrainReading(this.device.deviceId, {
+            await logDrainReading(this.device.deviceId, {
                 feedEc: d.logFeedEc,
                 drainEc: d.logDrainEc,
                 feedVolumeMl: d.logFeedVolume || undefined,
