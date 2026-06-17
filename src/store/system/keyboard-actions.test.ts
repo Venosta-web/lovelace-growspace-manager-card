@@ -4,7 +4,7 @@ import * as uiActions from '../ui/ui-actions';
 import * as plantActions from '../plant/plant-actions';
 import { select } from '../../slices/grid-interaction';
 import type { ActionContext } from '../core/action-context';
-import { setDevices, devices$, optimisticDeletedPlantIds$ } from '../../slices/grid';
+import { setDevices, optimisticDeletedPlantIds$ } from '../../slices/grid';
 import { GrowspaceUIStore } from '../ui/ui-store';
 import type { PlantEntity } from '../../types';
 import { handleKeyboardNavigation } from './keyboard-actions';
@@ -31,7 +31,6 @@ function makeContext(plants: PlantEntity[] = []): ActionContext {
   return {
     ui,
     grid: { $selectedDevice } as unknown as ActionContext['grid'],
-    dataService: {} as ActionContext['dataService'],
     closeDialog: () => {},
     refreshData: async () => {},
   } satisfies ActionContext;

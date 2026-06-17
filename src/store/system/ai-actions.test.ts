@@ -3,6 +3,15 @@ import { atom } from 'nanostores';
 import type { ActionContext } from '../core/action-context';
 import { WSError } from '../../services/errors';
 import { analyzeGrowspace, getStrainRecommendation } from './ai-actions';
+import { callServiceReturning } from '../../services/hass-call';
+
+vi.mock('../../services/hass-call', () => ({
+  callServiceReturning: vi.fn().mockResolvedValue({ response: 'ok' }),
+  callService: vi.fn().mockResolvedValue(undefined),
+  hassCall: vi.fn().mockResolvedValue(undefined),
+  setHass: vi.fn(),
+  getHass: vi.fn(),
+}));
 
 function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
   const $activeDialog = atom<{ type: string; payload?: Record<string, unknown> }>({ type: 'NONE' });
@@ -10,11 +19,6 @@ function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
   const toastMessages: Array<{ message: string; type: string }> = [];
 
   return {
-    dataService: {
-      askGrowAdvice: vi.fn().mockResolvedValue({ response: 'ok' }),
-      analyzeAllGrowspaces: vi.fn().mockResolvedValue({ response: 'ok' }),
-      getStrainRecommendation: vi.fn().mockResolvedValue({ response: 'great strain' }),
-    } as unknown as ActionContext['dataService'],
     ui: {
       $activeDialog,
       setActiveDialog: (d: { type: string; payload?: Record<string, unknown> }) => $activeDialog.set(d),
@@ -31,14 +35,14 @@ function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.mocked(callServiceReturning).mockResolvedValue({ response: 'ok' } as any);
 });
 
 describe('analyzeGrowspace — rate limiting', () => {
   it('shows a toast and clears loading state when rate_limited — does not crash the dialog', async () => {
     const ctx = makeContext();
     ctx.ui.$activeDialog.set({ type: 'GROW_MASTER', payload: { growspaceId: 'gs1', isLoading: false, response: null, mode: 'single' as const } });
-    vi.mocked(ctx.dataService.askGrowAdvice as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+    vi.mocked(callServiceReturning).mockRejectedValueOnce(
       new WSError('rate_limited', 'Rate limit exceeded — try again later')
     );
     ctx.grid.$selectedDevice.set('device-1');
@@ -57,7 +61,7 @@ describe('analyzeGrowspace — rate limiting', () => {
   it('does not close the GROW_MASTER dialog on rate_limited', async () => {
     const ctx = makeContext();
     ctx.ui.$activeDialog.set({ type: 'GROW_MASTER', payload: { growspaceId: 'gs1', isLoading: false, response: null, mode: 'single' as const } });
-    vi.mocked(ctx.dataService.askGrowAdvice as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+    vi.mocked(callServiceReturning).mockRejectedValueOnce(
       new WSError('rate_limited', 'Rate limit exceeded — try again later')
     );
     ctx.grid.$selectedDevice.set('device-1');
@@ -69,25 +73,34 @@ describe('analyzeGrowspace — rate limiting', () => {
 });
 
 describe('analyzeGrowspace — success path', () => {
-  it('calls askGrowAdvice with selected device when all=false', async () => {
+  it('calls callServiceReturning for ASK_GROW_ADVICE with selected device when all=false', async () => {
     const ctx = makeContext();
     ctx.grid.$selectedDevice.set('device-42');
-    vi.mocked(ctx.dataService.askGrowAdvice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ response: 'looks good' });
+    vi.mocked(callServiceReturning).mockResolvedValueOnce({ response: 'looks good' } as any);
 
     const result = await analyzeGrowspace(ctx, 'Check VPD', false);
 
-    expect(ctx.dataService.askGrowAdvice).toHaveBeenCalledWith('device-42', 'Check VPD');
+    expect(callServiceReturning).toHaveBeenCalledWith(
+      'growspace_manager',
+      expect.stringContaining('grow_advice'),
+      { growspace_id: 'device-42', user_query: 'Check VPD' },
+      expect.anything()
+    );
     expect(result).toBe('looks good');
   });
 
-  it('calls analyzeAllGrowspaces when all=true', async () => {
+  it('calls callServiceReturning for ANALYZE_ALL when all=true', async () => {
     const ctx = makeContext();
-    vi.mocked(ctx.dataService.analyzeAllGrowspaces as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ response: 'all good' });
+    vi.mocked(callServiceReturning).mockResolvedValueOnce({ response: 'all good' } as any);
 
     const result = await analyzeGrowspace(ctx, '', true);
 
-    expect(ctx.dataService.analyzeAllGrowspaces).toHaveBeenCalled();
-    expect(ctx.dataService.askGrowAdvice).not.toHaveBeenCalled();
+    expect(callServiceReturning).toHaveBeenCalledWith(
+      'growspace_manager',
+      expect.stringContaining('analyz'),
+      {},
+      expect.anything()
+    );
     expect(result).toBe('all good');
   });
 
@@ -95,7 +108,7 @@ describe('analyzeGrowspace — success path', () => {
     const ctx = makeContext();
     ctx.ui.$activeDialog.set({ type: 'GROW_MASTER', payload: { growspaceId: 'gs1', isLoading: false, response: null, mode: 'single' as const } });
     ctx.grid.$selectedDevice.set('device-1');
-    vi.mocked(ctx.dataService.askGrowAdvice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ response: 'nice plants' });
+    vi.mocked(callServiceReturning).mockResolvedValueOnce({ response: 'nice plants' } as any);
 
     const result = await analyzeGrowspace(ctx, 'status?', false);
 
@@ -109,7 +122,7 @@ describe('analyzeGrowspace — success path', () => {
   it('does not touch the dialog when it is not GROW_MASTER', async () => {
     const ctx = makeContext();
     ctx.grid.$selectedDevice.set('device-1');
-    vi.mocked(ctx.dataService.askGrowAdvice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ response: 'all fine' });
+    vi.mocked(callServiceReturning).mockResolvedValueOnce({ response: 'all fine' } as any);
 
     await analyzeGrowspace(ctx, 'q', false);
 
@@ -119,7 +132,7 @@ describe('analyzeGrowspace — success path', () => {
   it('handles a plain string response', async () => {
     const ctx = makeContext();
     ctx.grid.$selectedDevice.set('device-1');
-    vi.mocked(ctx.dataService.askGrowAdvice as ReturnType<typeof vi.fn>).mockResolvedValueOnce('just a string' as unknown as { response: string });
+    vi.mocked(callServiceReturning).mockResolvedValueOnce('just a string' as any);
 
     const result = await analyzeGrowspace(ctx, 'q', false);
 
@@ -130,7 +143,7 @@ describe('analyzeGrowspace — success path', () => {
     const ctx = makeContext();
     ctx.grid.$selectedDevice.set('device-1');
     const raw = { data: 'something' };
-    vi.mocked(ctx.dataService.askGrowAdvice as ReturnType<typeof vi.fn>).mockResolvedValueOnce(raw as unknown as { response: string });
+    vi.mocked(callServiceReturning).mockResolvedValueOnce(raw as any);
 
     const result = await analyzeGrowspace(ctx, 'q', false);
 
@@ -140,7 +153,7 @@ describe('analyzeGrowspace — success path', () => {
   it('extracts deeply nested response.response string', async () => {
     const ctx = makeContext();
     ctx.grid.$selectedDevice.set('device-1');
-    vi.mocked(ctx.dataService.askGrowAdvice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ response: { response: 'deep text' } } as unknown as { response: string });
+    vi.mocked(callServiceReturning).mockResolvedValueOnce({ response: { response: 'deep text' } } as any);
 
     const result = await analyzeGrowspace(ctx, 'q', false);
 
@@ -151,7 +164,7 @@ describe('analyzeGrowspace — success path', () => {
     const ctx = makeContext();
     ctx.grid.$selectedDevice.set('device-1');
     const inner = { data: 42 };
-    vi.mocked(ctx.dataService.askGrowAdvice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ response: inner } as unknown as { response: string });
+    vi.mocked(callServiceReturning).mockResolvedValueOnce({ response: inner } as any);
 
     const result = await analyzeGrowspace(ctx, 'q', false);
 
@@ -170,7 +183,7 @@ describe('analyzeGrowspace — rate limiting when dialog is not GROW_MASTER', ()
   it('shows a toast and does not crash when rate_limited and dialog is not GROW_MASTER', async () => {
     const ctx = makeContext();
     ctx.grid.$selectedDevice.set('device-1');
-    vi.mocked(ctx.dataService.askGrowAdvice as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+    vi.mocked(callServiceReturning).mockRejectedValueOnce(
       new WSError('rate_limited', 'Rate limit exceeded')
     );
 
@@ -187,7 +200,7 @@ describe('analyzeGrowspace — general error handling', () => {
     const ctx = makeContext();
     ctx.ui.$activeDialog.set({ type: 'GROW_MASTER', payload: { growspaceId: 'gs1', isLoading: true, response: null, mode: 'single' as const } });
     ctx.grid.$selectedDevice.set('device-1');
-    vi.mocked(ctx.dataService.askGrowAdvice as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('connection failed'));
+    vi.mocked(callServiceReturning).mockRejectedValueOnce(new Error('connection failed'));
 
     await analyzeGrowspace(ctx, 'q', false);
 
@@ -200,7 +213,7 @@ describe('analyzeGrowspace — general error handling', () => {
     const ctx = makeContext();
     ctx.ui.$activeDialog.set({ type: 'GROW_MASTER', payload: { growspaceId: 'gs1', isLoading: true, response: null, mode: 'single' as const } });
     ctx.grid.$selectedDevice.set('device-1');
-    vi.mocked(ctx.dataService.askGrowAdvice as ReturnType<typeof vi.fn>).mockRejectedValueOnce('something weird');
+    vi.mocked(callServiceReturning).mockRejectedValueOnce('something weird');
 
     await analyzeGrowspace(ctx, 'q', false);
 
@@ -211,7 +224,7 @@ describe('analyzeGrowspace — general error handling', () => {
   it('does not update dialog on error when dialog is not GROW_MASTER', async () => {
     const ctx = makeContext();
     ctx.grid.$selectedDevice.set('device-1');
-    vi.mocked(ctx.dataService.askGrowAdvice as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('boom'));
+    vi.mocked(callServiceReturning).mockRejectedValueOnce(new Error('boom'));
 
     await analyzeGrowspace(ctx, 'q', false);
 
@@ -222,7 +235,7 @@ describe('analyzeGrowspace — general error handling', () => {
 describe('getStrainRecommendation', () => {
   it('returns the response string from an object response', async () => {
     const ctx = makeContext();
-    vi.mocked(ctx.dataService.getStrainRecommendation as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ response: 'Blue Dream is ideal' });
+    vi.mocked(callServiceReturning).mockResolvedValueOnce({ response: 'Blue Dream is ideal' } as any);
 
     const result = await getStrainRecommendation(ctx, 'high yield');
 
@@ -231,7 +244,7 @@ describe('getStrainRecommendation', () => {
 
   it('returns the string directly when the service returns a plain string', async () => {
     const ctx = makeContext();
-    vi.mocked(ctx.dataService.getStrainRecommendation as ReturnType<typeof vi.fn>).mockResolvedValueOnce('try OG Kush');
+    vi.mocked(callServiceReturning).mockResolvedValueOnce('try OG Kush' as any);
 
     const result = await getStrainRecommendation(ctx, 'any');
 
@@ -241,7 +254,7 @@ describe('getStrainRecommendation', () => {
   it('JSON-stringifies when the response value is not a string', async () => {
     const ctx = makeContext();
     const inner = { strains: ['A', 'B'] };
-    vi.mocked(ctx.dataService.getStrainRecommendation as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ response: inner });
+    vi.mocked(callServiceReturning).mockResolvedValueOnce({ response: inner } as any);
 
     const result = await getStrainRecommendation(ctx, 'any');
 
@@ -250,7 +263,7 @@ describe('getStrainRecommendation', () => {
 
   it('JSON-stringifies when service returns a non-string non-object', async () => {
     const ctx = makeContext();
-    vi.mocked(ctx.dataService.getStrainRecommendation as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
+    vi.mocked(callServiceReturning).mockResolvedValueOnce(null as any);
 
     const result = await getStrainRecommendation(ctx, 'any');
 

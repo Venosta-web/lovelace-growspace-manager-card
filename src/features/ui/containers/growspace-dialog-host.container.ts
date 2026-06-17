@@ -2,7 +2,7 @@ import { LitElement, html, TemplateResult, PropertyValues, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume, provide } from '@lit/context';
 import { hassContext, storeContext, configContext } from '../../../lib/context';
-import { waterPlant as sliceWaterPlant } from '../../../slices/plant';
+import { waterPlant as sliceWaterPlant, addPlants } from '../../../slices/plant';
 import { seedBatches$, pollinationEvents$ } from '../../../slices/genetics';
 import { updateVisionCheckupConfig } from '../../../slices/camera';
 import { updateBreeder, deleteBreeder } from '../../../slices/strain';
@@ -587,12 +587,12 @@ export class GrowspaceDialogHost extends LitElement {
         seed_batch_id: string;
         generation?: string;
       }) => {
-        await this.store?.dataService.addPlants({
+        await addPlants({
           growspace_id: data.growspace_id,
           strain: data.strain,
           amount: data.amount,
           seed_batch_id: data.seed_batch_id,
-        } as Parameters<typeof this.store.dataService.addPlants>[0]);
+        });
         this.store?.refreshData();
       }}
         @close=${() => this._closeDialogIfActive('STRAIN_LIBRARY')}

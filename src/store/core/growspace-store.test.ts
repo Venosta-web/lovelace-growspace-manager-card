@@ -111,12 +111,11 @@ describe('GrowspaceStore – initialize and destroy', () => {
   });
 
   it('destroy unsubscribes from shared stale events', () => {
-    const refreshSpy = vi
-      .spyOn(store.syncService, 'refreshGrowspaceData')
-      .mockResolvedValue(undefined);
+    const refreshCb = vi.fn().mockResolvedValue(undefined);
+    store.setRefreshCallback(refreshCb);
     store.destroy();
     (store as any)._shared._handleEvent({});
-    expect(refreshSpy).not.toHaveBeenCalled();
+    expect(refreshCb).not.toHaveBeenCalled();
   });
 });
 
@@ -128,13 +127,11 @@ describe('GrowspaceStore – updateHass', () => {
     ({ store, shared } = makeStore());
   });
 
-  it('propagates hass to shared store and syncService', () => {
+  it('propagates hass to shared store', () => {
     const sharedSpy = vi.spyOn(shared, 'updateHass');
-    const syncSpy = vi.spyOn(store.syncService, 'updateHass');
     const hass = makeHass();
     store.updateHass(hass);
     expect(sharedSpy).toHaveBeenCalledWith(hass);
-    expect(syncSpy).toHaveBeenCalledWith(hass);
     expect(store.hass).toBe(hass);
   });
 
@@ -157,7 +154,6 @@ describe('GrowspaceStore – refreshData', () => {
 
   beforeEach(() => {
     ({ store } = makeStore());
-    vi.spyOn(store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -165,21 +161,15 @@ describe('GrowspaceStore – refreshData', () => {
     optimisticDeletedPlantIds$.set(new Set());
   });
 
-  it('calls syncService.refreshGrowspaceData', async () => {
+  it('calls refreshCallback when one is set', async () => {
+    const refreshCb = vi.fn().mockResolvedValue(undefined);
+    store.setRefreshCallback(refreshCb);
     await store.refreshData();
-    expect(store.syncService.refreshGrowspaceData).toHaveBeenCalledOnce();
+    expect(refreshCb).toHaveBeenCalledOnce();
   });
 
-  it('invalidates cache when force=true', async () => {
-    const invalidateSpy = vi.spyOn(store.dataService, 'invalidateCache');
-    await store.refreshData(true);
-    expect(invalidateSpy).toHaveBeenCalledOnce();
-  });
-
-  it('does not invalidate cache when force=false', async () => {
-    const invalidateSpy = vi.spyOn(store.dataService, 'invalidateCache');
-    await store.refreshData(false);
-    expect(invalidateSpy).not.toHaveBeenCalled();
+  it('does nothing when no refreshCallback is set', async () => {
+    await expect(store.refreshData()).resolves.not.toThrow();
   });
 });
 
@@ -188,7 +178,7 @@ describe('GrowspaceStore – _pruneOptimisticDeletions', () => {
 
   beforeEach(() => {
     ({ store } = makeStore());
-    vi.spyOn(store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
+    store.setRefreshCallback(vi.fn().mockResolvedValue(undefined));
   });
 
   afterEach(() => {
@@ -218,26 +208,11 @@ describe('GrowspaceStore – _pruneOptimisticDeletions', () => {
   });
 });
 
-describe('GrowspaceStore – initializeSelectedDevice and handleDeviceChange', () => {
+describe('GrowspaceStore – handleDeviceChange', () => {
   let store: GrowspaceStore;
 
   beforeEach(() => {
     ({ store } = makeStore());
-  });
-
-  it('initializeSelectedDevice does nothing when config is falsy', () => {
-    const spy = vi.spyOn(store.syncService, 'setCardConfig');
-    store.initializeSelectedDevice(null as any);
-    expect(spy).not.toHaveBeenCalled();
-  });
-
-  it('initializeSelectedDevice delegates to syncService', () => {
-    const setConfigSpy = vi.spyOn(store.syncService, 'setCardConfig');
-    const updateSpy = vi.spyOn(store.syncService, 'updateDevicesState');
-    const config = { default_growspace: 'gs1' } as any;
-    store.initializeSelectedDevice(config);
-    expect(setConfigSpy).toHaveBeenCalledWith(config);
-    expect(updateSpy).toHaveBeenCalledOnce();
   });
 
   it('handleDeviceChange sets selected device on grid', () => {
@@ -251,24 +226,10 @@ describe('GrowspaceStore – updateGrid', () => {
 
   beforeEach(() => {
     ({ store } = makeStore());
-    vi.spyOn(store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
+    store.setRefreshCallback(vi.fn().mockResolvedValue(undefined));
   });
 
-  it('calls dataService.updateHass when hass is set', () => {
-    const hass = makeHass();
-    store.hass = hass;
-    const spy = vi.spyOn(store.dataService, 'updateHass');
-    store.updateGrid();
-    expect(spy).toHaveBeenCalledWith(hass);
-  });
-
-  it('skips dataService.updateHass when hass is not set', () => {
-    const spy = vi.spyOn(store.dataService, 'updateHass');
-    store.updateGrid();
-    expect(spy).not.toHaveBeenCalled();
-  });
-
-  it('calls refreshData after updating', () => {
+  it('calls refreshData', () => {
     const refreshSpy = vi.spyOn(store, 'refreshData');
     store.updateGrid();
     expect(refreshSpy).toHaveBeenCalledOnce();
@@ -280,7 +241,7 @@ describe('GrowspaceStore – movePlant', () => {
 
   beforeEach(() => {
     ({ store } = makeStore());
-    vi.spyOn(store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
+    store.setRefreshCallback(vi.fn().mockResolvedValue(undefined));
   });
 
   it('calls updatePlant and then updateGrid on success', async () => {
@@ -362,13 +323,13 @@ describe('GrowspaceStore – context getter', () => {
 
   it('returns ActionContext with expected keys', () => {
     const ctx = store.context;
-    expect(ctx).toHaveProperty('dataService');
     expect(ctx).toHaveProperty('ui');
     expect(ctx).toHaveProperty('grid');
     expect(ctx).toHaveProperty('closeDialog');
     expect(ctx).toHaveProperty('refreshData');
     expect(ctx).not.toHaveProperty('undoRedoManager');
     expect(ctx).not.toHaveProperty('optimisticManager');
+    expect(ctx).not.toHaveProperty('dataService');
   });
 
   it('closeDialog in context calls ui.closeDialog', () => {

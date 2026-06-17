@@ -11,8 +11,14 @@ import { aHass, aGrowspaceDevice } from '../../fixtures';
 vi.mock('../../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
 vi.mock('../../../src/features/ui/containers/growspace-toast.container', () => ({}));
 vi.mock('../../../src/cards/editors/growspace-grid-card-editor', () => ({
-    GrowspaceGridCardEditor: class extends HTMLElement {}
+    GrowspaceGridCardEditor: class extends HTMLElement {},
 }));
+vi.mock('../../../src/slices/growspace', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../src/slices/growspace')>();
+    // Never-resolving mock so the bootstrap controller's async fetch doesn't
+    // race with the manual setDevices() seed in this rendering test.
+    return { ...actual, fetchRawCollection: vi.fn(() => new Promise(() => {})) };
+});
 
 if (!customElements.get('growspace-grid-card')) {
     customElements.define('growspace-grid-card', GrowspaceGridCard);
@@ -22,8 +28,6 @@ test('growspace-grid-card visual snapshot', async () => {
     const element = await fixture<GrowspaceGridCard>(html`<growspace-grid-card></growspace-grid-card>`);
     element.hass = aHass() as any;
 
-    vi.spyOn(element.store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
-    vi.spyOn(element.store.syncService, 'updateDevicesState').mockImplementation(() => {});
 
     element.setConfig({ type: 'custom:growspace-grid-card', default_growspace: 'test_tent' } as any);
 

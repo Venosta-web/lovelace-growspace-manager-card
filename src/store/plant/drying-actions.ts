@@ -1,5 +1,10 @@
 import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
+import {
+  logDryingWeight as plantSliceLogDryingWeight,
+  logMoistureReading as plantSliceLogMoistureReading,
+  setVisualTag as plantSliceSetVisualTag,
+} from '../../slices/plant';
 
 export async function logDryingWeight(
   ctx: ActionContext,
@@ -9,7 +14,7 @@ export async function logDryingWeight(
 ): Promise<void> {
   await withAction(
     ctx,
-    () => ctx.dataService.logDryingWeight({ plant_id: plantId, weight_grams: weightGrams, date }),
+    () => plantSliceLogDryingWeight(plantId, weightGrams, date),
     {
       success: 'Weight logged',
       errorPrefix: 'Failed to log weight',
@@ -26,12 +31,7 @@ export async function logMoistureReading(
 ): Promise<void> {
   await withAction(
     ctx,
-    () =>
-      ctx.dataService.logMoistureReading({
-        plant_id: plantId,
-        moisture_percent: moisturePercent,
-        date,
-      }),
+    () => plantSliceLogMoistureReading(plantId, moisturePercent, date),
     {
       success: 'Moisture logged',
       errorPrefix: 'Failed to log moisture',
@@ -47,7 +47,7 @@ export async function setVisualTag(
 ): Promise<void> {
   await withAction(
     ctx,
-    () => ctx.dataService.setVisualTag({ plant_id: plantId, visual_tag: visualTag }),
+    () => plantSliceSetVisualTag(plantId, visualTag),
     {
       success: 'Visual tag saved',
       errorPrefix: 'Failed to save visual tag',

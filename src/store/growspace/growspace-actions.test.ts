@@ -2,21 +2,26 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { addGrowspace, updateGrowspace, removeGrowspace } from './growspace-actions';
 import type { ActionContext } from '../core/action-context';
 import { devices$, setDevices } from '../../slices/grid';
+import { callService } from '../../services/hass-call';
+
+vi.mock('../../services/hass-call', () => ({
+  callService: vi.fn().mockResolvedValue(undefined),
+  hassCall: vi.fn().mockResolvedValue(undefined),
+  setHass: vi.fn(),
+  getHass: vi.fn(),
+  callApi: vi.fn().mockResolvedValue(undefined),
+  callFetch: vi.fn().mockResolvedValue(undefined),
+  callServiceReturning: vi.fn().mockResolvedValue(undefined),
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 function makeContext(initialDevices: any[] = []) {
   setDevices(initialDevices);
   const showToast = vi.fn();
-  const dataService = new Proxy({} as any, {
-    get(target, prop) {
-      if (!(prop in target)) {
-        target[prop] = vi.fn().mockResolvedValue(undefined);
-      }
-      return target[prop];
-    },
-  });
-
   return {
-    dataService,
     ui: { showToast } as unknown as ActionContext['ui'],
     refreshData: vi.fn().mockResolvedValue(undefined),
     closeDialog: vi.fn(),
@@ -39,15 +44,14 @@ describe('addGrowspace', () => {
     ctx = makeContext();
   });
 
-  it('calls dataService with correct params and returns true on success', async () => {
+  it('calls callService with correct params and returns true on success', async () => {
     const result = await addGrowspace(ctx, 'Tent A', 4, 4, 'mobile_app');
 
-    expect(ctx.dataService.addGrowspace).toHaveBeenCalledWith({
-      name: 'Tent A',
-      rows: 4,
-      plantsPerRow: 4,
-      notificationService: 'mobile_app',
-    });
+    expect(callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'add_growspace',
+      { name: 'Tent A', rows: 4, plants_per_row: 4, notification_target: 'mobile_app' }
+    );
     expect(result).toBe(true);
   });
 
@@ -71,14 +75,14 @@ describe('addGrowspace', () => {
     expect(ctx.ui.showToast).toHaveBeenCalledWith('Name is required', 'error');
   });
 
-  it('does not call dataService when name is empty', async () => {
+  it('does not call callService when name is empty', async () => {
     await addGrowspace(ctx, '');
 
-    expect(ctx.dataService.addGrowspace).not.toHaveBeenCalled();
+    expect(callService).not.toHaveBeenCalled();
   });
 
   it('returns false and shows error toast when service throws', async () => {
-    ctx.dataService.addGrowspace.mockRejectedValue(new Error('network error'));
+    vi.mocked(callService).mockRejectedValueOnce(new Error('network error'));
 
     const result = await addGrowspace(ctx, 'Tent A');
 
@@ -90,7 +94,7 @@ describe('addGrowspace', () => {
   });
 
   it('does not close dialog when service throws', async () => {
-    ctx.dataService.addGrowspace.mockRejectedValue(new Error('fail'));
+    vi.mocked(callService).mockRejectedValueOnce(new Error('fail'));
 
     await addGrowspace(ctx, 'Tent A');
 
@@ -110,15 +114,14 @@ describe('updateGrowspace', () => {
     ctx = makeContext([existingDevice]);
   });
 
-  it('calls dataService with correct params and returns true on success', async () => {
+  it('calls callService with correct params and returns true on success', async () => {
     const result = await updateGrowspace(ctx, 'gs-1', 'New Name', 4, 8);
 
-    expect(ctx.dataService.updateGrowspace).toHaveBeenCalledWith({
-      growspaceId: 'gs-1',
-      name: 'New Name',
-      rows: 4,
-      plantsPerRow: 8,
-    });
+    expect(callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'update_growspace',
+      expect.objectContaining({ growspace_id: 'gs-1', name: 'New Name', rows: 4, plants_per_row: 8 })
+    );
     expect(result).toBe(true);
   });
 
@@ -137,7 +140,7 @@ describe('updateGrowspace', () => {
 
   it('patches $devices optimistically before calling the service', async () => {
     let devicesAtCallTime: any[] | undefined;
-    ctx.dataService.updateGrowspace.mockImplementation(async () => {
+    vi.mocked(callService).mockImplementationOnce(async () => {
       devicesAtCallTime = devices$.get();
     });
 
@@ -151,17 +154,16 @@ describe('updateGrowspace', () => {
   it('does not crash when growspaceId is not found in $devices', async () => {
     const result = await updateGrowspace(ctx, 'unknown-id', 'Name', 2, 2);
 
-    expect(ctx.dataService.updateGrowspace).toHaveBeenCalledWith({
-      growspaceId: 'unknown-id',
-      name: 'Name',
-      rows: 2,
-      plantsPerRow: 2,
-    });
+    expect(callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'update_growspace',
+      expect.objectContaining({ growspace_id: 'unknown-id' })
+    );
     expect(result).toBe(true);
   });
 
   it('returns false and shows error toast when service throws', async () => {
-    ctx.dataService.updateGrowspace.mockRejectedValue(new Error('update failed'));
+    vi.mocked(callService).mockRejectedValueOnce(new Error('update failed'));
 
     const result = await updateGrowspace(ctx, 'gs-1', 'New Name', 4, 8);
 
@@ -184,10 +186,14 @@ describe('removeGrowspace', () => {
     ctx = makeContext();
   });
 
-  it('calls dataService with correct growspaceId and returns true on success', async () => {
+  it('calls callService with correct growspaceId and returns true on success', async () => {
     const result = await removeGrowspace(ctx, 'gs-1');
 
-    expect(ctx.dataService.removeGrowspace).toHaveBeenCalledWith('gs-1');
+    expect(callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'remove_growspace',
+      { growspace_id: 'gs-1' }
+    );
     expect(result).toBe(true);
   });
 
@@ -205,7 +211,7 @@ describe('removeGrowspace', () => {
   });
 
   it('returns false and shows error toast when service throws', async () => {
-    ctx.dataService.removeGrowspace.mockRejectedValue(new Error('remove failed'));
+    vi.mocked(callService).mockRejectedValueOnce(new Error('remove failed'));
 
     const result = await removeGrowspace(ctx, 'gs-1');
 
@@ -217,7 +223,7 @@ describe('removeGrowspace', () => {
   });
 
   it('does not close dialog when service throws', async () => {
-    ctx.dataService.removeGrowspace.mockRejectedValue(new Error('fail'));
+    vi.mocked(callService).mockRejectedValueOnce(new Error('fail'));
 
     await removeGrowspace(ctx, 'gs-1');
 

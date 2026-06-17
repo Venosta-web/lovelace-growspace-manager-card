@@ -20,6 +20,10 @@ vi.mock('../../src/features/shared/ui/error-boundary', () => ({
 vi.mock('../../src/cards/editors/growspace-tank-card-editor', () => ({
   GrowspaceTankCardEditor: class extends HTMLElement {},
 }));
+vi.mock('../../src/slices/growspace', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/slices/growspace')>()),
+  fetchRawCollection: vi.fn(() => new Promise(() => {})),
+}));
 
 describe('GrowspaceTankCard', () => {
   const growspace = aGrowspace();

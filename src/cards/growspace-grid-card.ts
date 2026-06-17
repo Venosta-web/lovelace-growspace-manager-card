@@ -10,6 +10,7 @@ import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import { ViewMode } from '../features/environment/constants';
 
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
+import { BootstrapController } from '../controllers/bootstrap.controller';
 import '../features/ui/containers/growspace-dialog-host.container';
 import '../features/ui/containers/growspace-toast.container';
 import '../features/shared/layouts/growspace-view-switcher';
@@ -32,6 +33,8 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
   store = new GrowspaceStore(this._sharedStore);
 
   protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
+
+  private _bootstrapCtrl!: BootstrapController;
 
   get selectedDevice() {
     return this._viewController.value.grid.selectedDevice;
@@ -67,13 +70,8 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
   protected firstUpdated() {
     if (this.hass) {
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl?.updateHass(this.hass);
     }
-    const forcedConfig = {
-      ...this._config,
-      compact: true,
-      initial_view_mode: ViewMode.STANDARD as unknown as string,
-    };
-    this.store.initializeSelectedDevice(forcedConfig as GrowspaceManagerCardConfig);
     this.store.ui.setViewMode(ViewMode.STANDARD);
   }
 
@@ -88,6 +86,7 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
 
     if (changedProps.has('hass') && this.hass) {
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl.updateHass(this.hass);
     }
   }
 
@@ -112,8 +111,14 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
       ...this._config,
       compact: true,
       initial_view_mode: ViewMode.STANDARD as unknown as string,
-    };
-    this.store.initializeSelectedDevice(forcedConfig as GrowspaceManagerCardConfig);
+    } as GrowspaceManagerCardConfig;
+
+    if (!this._bootstrapCtrl) {
+      this._bootstrapCtrl = new BootstrapController(this, this.store.grid, forcedConfig);
+      this.store.setRefreshCallback(() => this._bootstrapCtrl.refresh());
+    } else {
+      this._bootstrapCtrl.setCardConfig(forcedConfig);
+    }
     this.store.ui.setViewMode(ViewMode.STANDARD);
   }
 

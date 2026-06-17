@@ -13,6 +13,7 @@ import {
   strainLibrary$,
   setStrainLibrary,
 } from '../../slices/strain';
+import { importStrainLineageTree as geneticsSliceImportStrainLineageTree } from '../../slices/genetics';
 
 /**
  * Create consistent payload for strain operations.
@@ -58,7 +59,7 @@ export async function addStrain(
       );
       const tree = (strainData as any).parents;
       if (tree?.parents?.length) {
-        await ctx.dataService.importStrainLineageTree(strainData.strain!, tree);
+        await geneticsSliceImportStrainLineageTree(strainData.strain!, tree);
       }
       await fetchStrainLibrary(ctx, true);
       return true as const;
@@ -85,7 +86,7 @@ export async function updateStrain(
       );
       const tree = (strainData as any).parents;
       if (tree?.parents?.length) {
-        await ctx.dataService.importStrainLineageTree(strainData.strain!, tree);
+        await geneticsSliceImportStrainLineageTree(strainData.strain!, tree);
       }
       await fetchStrainLibrary(ctx, true);
       return true as const;

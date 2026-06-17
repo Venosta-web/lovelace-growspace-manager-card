@@ -18,8 +18,6 @@ test('growspace-ai-insight-card visual snapshot', async () => {
     const element = await fixture<GrowspaceAiInsightCard>(html`<growspace-ai-insight-card></growspace-ai-insight-card>`);
     element.hass = aHass() as any;
 
-    vi.spyOn(element.store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
-    vi.spyOn(element.store.syncService, 'updateDevicesState').mockImplementation(() => {});
 
     element.setConfig({ type: 'custom:growspace-ai-insight-card', default_growspace: 'test_tent' } as any);
 

@@ -188,6 +188,7 @@ export async function addPlants(params: {
   clone_start?: string;
   dry_start?: string;
   cure_start?: string;
+  seed_batch_id?: string;
 }): Promise<void> {
   const payload: Record<string, unknown> = { ...params };
 

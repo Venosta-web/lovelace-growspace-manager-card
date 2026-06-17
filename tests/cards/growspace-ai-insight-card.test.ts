@@ -15,6 +15,10 @@ vi.mock('../../src/features/shared/ui/error-boundary', () => ({
 vi.mock('../../src/cards/editors/growspace-ai-insight-card-editor', () => ({
   GrowspaceAiInsightCardEditor: class extends HTMLElement {},
 }));
+vi.mock('../../src/slices/growspace', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/slices/growspace')>()),
+  fetchRawCollection: vi.fn(() => new Promise(() => {})),
+}));
 
 vi.mock('../../src/slices/ai-insight', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../src/slices/ai-insight')>();

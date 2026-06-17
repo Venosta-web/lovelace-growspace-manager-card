@@ -1,8 +1,7 @@
 import { computed, ReadableAtom } from 'nanostores';
 import { HomeAssistant } from 'custom-card-helpers';
-import { PlantEntity, GrowspaceManagerCardConfig } from '../../types';
+import { PlantEntity } from '../../types';
 import type { NutrientPresetsResponse } from '../../slices/nutrient';
-import { DataService } from '../../services/data-service';
 
 // Sub-stores
 import { GrowspaceUIStore } from '../ui/ui-store';
@@ -25,26 +24,20 @@ import {
 } from '../../slices/nutrient';
 import { strainLibrary$ } from '../../slices/strain';
 
-// Services
-import { SyncService } from '../../services/sync-service';
-
 // New infrastructure (Phase 1)
 import { EventBus, DATA_STALE_EVENT } from '../../features/shared/events';
 
 export class GrowspaceStore {
   private readonly _shared: GrowspaceSharedStore;
   private _staleUnsub?: () => void;
+  private _refreshCallback?: () => Promise<void>;
 
-  dataService!: DataService;
   hass!: HomeAssistant;
 
   // Per-card stores
   public readonly ui: GrowspaceUIStore;
   public readonly grid: GridSliceRef;
   public readonly history: GrowspaceHistoryStore;
-
-  // Services
-  public readonly syncService: SyncService;
 
   // New infrastructure (Phase 1)
   public readonly eventBus: EventBus;
@@ -113,7 +106,6 @@ export class GrowspaceStore {
   /** Unified Action Context */
   public get context(): ActionContext {
     return {
-      dataService: this.dataService,
       ui: this.ui,
       grid: this.grid,
       closeDialog: () => this.ui.closeDialog(),
@@ -128,15 +120,11 @@ export class GrowspaceStore {
 
   constructor(shared: GrowspaceSharedStore) {
     this._shared = shared;
-    this.dataService = shared.dataService;
 
     // Per-card stores
     this.ui = new GrowspaceUIStore();
     this.grid = makePerCardGridSlice();
-    this.history = new GrowspaceHistoryStore(
-      shared.dataService,
-      this.grid.$selectedDevice
-    );
+    this.history = new GrowspaceHistoryStore(this.grid.$selectedDevice);
 
     // Cross-store computed atoms
     this.$dialogHostState = computed(
@@ -210,17 +198,19 @@ export class GrowspaceStore {
       (grid, ui, strainLibrary) => ({ grid, ui, strainLibrary })
     );
 
-    // Initialize services
-    this.syncService = new SyncService(this.dataService, this.ui, this.grid);
-
-    // Initialize new infrastructure (Phase 1)
+    // New infrastructure (Phase 1)
     this.eventBus = new EventBus();
 
-    // Trigger a full refresh whenever the shared store signals stale data
+    // Trigger a full refresh whenever the shared store signals stale data.
+    // _refreshCallback is set by the card's Bootstrap controller via setRefreshCallback().
     this._staleUnsub = shared.addOnStale(async () => {
-      await this.syncService.refreshGrowspaceData();
+      await this._refreshCallback?.();
       this.eventBus.emit(DATA_STALE_EVENT, undefined);
     });
+  }
+
+  public setRefreshCallback(cb: () => Promise<void>): void {
+    this._refreshCallback = cb;
   }
 
   public initialize(hass: HomeAssistant): void {
@@ -238,17 +228,13 @@ export class GrowspaceStore {
   updateHass(hass: HomeAssistant) {
     this.hass = hass;
     this._shared.updateHass(hass);
-    this.syncService.updateHass(hass);
     if (hass.language && hass.language !== this.ui.$language.get()) {
       this.ui.setLanguage(hass.language);
     }
   }
 
-  async refreshData(force = false) {
-    if (force) {
-      this.dataService.invalidateCache();
-    }
-    await this.syncService.refreshGrowspaceData();
+  async refreshData(_force = false) {
+    await this._refreshCallback?.();
     this._pruneOptimisticDeletions();
   }
 
@@ -275,22 +261,12 @@ export class GrowspaceStore {
     }
   }
 
-  // Device coordination — these belong on the store as they manage lifecycle state
-  initializeSelectedDevice(config: GrowspaceManagerCardConfig) {
-    if (!config) return;
-    this.syncService.setCardConfig(config);
-    this.syncService.updateDevicesState();
-  }
-
   handleDeviceChange(deviceId: string) {
     this.grid.setSelectedDevice(deviceId);
   }
 
   // Grid helper — triggers a data refresh after a position change
   updateGrid() {
-    if (this.hass) {
-      this.dataService.updateHass(this.hass);
-    }
     this.refreshData();
   }
 

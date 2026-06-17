@@ -43,14 +43,10 @@ describe('GrowspaceGridCard', () => {
       initial_view_mode: 'heatmap' as any,
     };
 
-    const initSpy = vi.spyOn(element.store, 'initializeSelectedDevice');
     const setViewSpy = vi.spyOn(element.store.ui, 'setViewMode');
 
     element.setConfig(config);
 
-    expect(initSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ compact: true, initial_view_mode: ViewMode.STANDARD })
-    );
     expect(setViewSpy).toHaveBeenCalledWith(ViewMode.STANDARD);
   });
 
@@ -81,8 +77,9 @@ describe('GrowspaceGridCard', () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  test('WS event triggers data refresh', async () => {
-    const refreshSpy = vi.spyOn(element.store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
+  test('WS event triggers data refresh via bootstrap controller', async () => {
+    const bootstrapCtrl = (element as any)._bootstrapCtrl;
+    const refreshSpy = vi.spyOn(bootstrapCtrl, 'refresh').mockResolvedValue(undefined);
     (element.store as any)._shared._handleEvent({});
     await Promise.resolve();
     expect(refreshSpy).toHaveBeenCalled();

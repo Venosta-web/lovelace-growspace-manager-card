@@ -10,6 +10,14 @@ vi.mock('../../slices/nutrient', () => ({
   ipmPresets$: { get: vi.fn(), set: vi.fn() },
   nutrientInventory$: { get: vi.fn(), set: vi.fn() },
   ecRampCurves$: { get: vi.fn(), set: vi.fn() },
+  fetchNutrientPresets: vi.fn().mockResolvedValue(undefined),
+  fetchIPMPresets: vi.fn().mockResolvedValue(undefined),
+  fetchNutrientInventory: vi.fn().mockResolvedValue(undefined),
+  fetchECRampCurves: vi.fn().mockResolvedValue(undefined),
+  updateNutrientStock: vi.fn().mockResolvedValue(undefined),
+  removeNutrientStock: vi.fn().mockResolvedValue(undefined),
+  saveECRampCurve: vi.fn().mockResolvedValue(undefined),
+  removeECRampCurve: vi.fn().mockResolvedValue(undefined),
 }));
 
 import {
@@ -30,18 +38,14 @@ import {
   ipmPresets$,
   nutrientInventory$,
   ecRampCurves$,
+  fetchNutrientPresets as nutrientSliceFetchPresets,
+  fetchIPMPresets as nutrientSliceFetchIPMPresets,
+  fetchNutrientInventory as nutrientSliceFetchInventory,
+  fetchECRampCurves as nutrientSliceFetchECRampCurves,
 } from '../../slices/nutrient';
 
-function makeCtx(dsOverrides: Record<string, unknown> = {}) {
+function makeCtx() {
   return {
-    dataService: {
-      fetchNutrientPresets: vi.fn().mockResolvedValue(undefined),
-      fetchIPMPresets: vi.fn().mockResolvedValue(undefined),
-      fetchNutrientInventory: vi.fn().mockResolvedValue(undefined),
-      fetchECRampCurves: vi.fn().mockResolvedValue(undefined),
-      ...dsOverrides,
-    },
-    data: {},
     ui: { showToast: vi.fn() },
   } as any;
 }
@@ -135,7 +139,7 @@ describe('fetchNutrientPresets', () => {
     await fetchNutrientPresets(ctx);
 
     expect(vi.mocked(nutrientPresets$).set).toHaveBeenCalledWith(presets);
-    expect(ctx.dataService.fetchNutrientPresets).not.toHaveBeenCalled();
+    expect(nutrientSliceFetchPresets).not.toHaveBeenCalled();
   });
 
   it('removes corrupt cache entry and fetches from server', async () => {
@@ -146,7 +150,7 @@ describe('fetchNutrientPresets', () => {
     await fetchNutrientPresets(ctx);
 
     expect(localStorage.getItem(NUTRIENT_PRESETS_KEY)).toBeNull();
-    expect(ctx.dataService.fetchNutrientPresets).toHaveBeenCalled();
+    expect(nutrientSliceFetchPresets).toHaveBeenCalled();
   });
 
   it('caches result after server fetch', async () => {
@@ -174,7 +178,7 @@ describe('fetchIPMPresets', () => {
     await fetchIPMPresets(ctx);
 
     expect(vi.mocked(ipmPresets$).set).toHaveBeenCalledWith(presets);
-    expect(ctx.dataService.fetchIPMPresets).not.toHaveBeenCalled();
+    expect(nutrientSliceFetchIPMPresets).not.toHaveBeenCalled();
   });
 
   it('removes corrupt IPM cache and fetches from server', async () => {
@@ -185,7 +189,7 @@ describe('fetchIPMPresets', () => {
     await fetchIPMPresets(ctx);
 
     expect(localStorage.getItem(IPM_PRESETS_KEY)).toBeNull();
-    expect(ctx.dataService.fetchIPMPresets).toHaveBeenCalled();
+    expect(nutrientSliceFetchIPMPresets).toHaveBeenCalled();
   });
 });
 
@@ -202,7 +206,7 @@ describe('fetchNutrientInventory', () => {
     await fetchNutrientInventory(ctx);
 
     expect(vi.mocked(nutrientInventory$).set).toHaveBeenCalledWith(inventory);
-    expect(ctx.dataService.fetchNutrientInventory).not.toHaveBeenCalled();
+    expect(nutrientSliceFetchInventory).not.toHaveBeenCalled();
   });
 
   it('removes corrupt inventory cache and fetches from server', async () => {
@@ -213,7 +217,7 @@ describe('fetchNutrientInventory', () => {
     await fetchNutrientInventory(ctx);
 
     expect(localStorage.getItem(NUTRIENT_INVENTORY_KEY)).toBeNull();
-    expect(ctx.dataService.fetchNutrientInventory).toHaveBeenCalled();
+    expect(nutrientSliceFetchInventory).toHaveBeenCalled();
   });
 
   it('caches inventory result after server fetch', async () => {
@@ -241,7 +245,7 @@ describe('fetchECRampCurves', () => {
     await fetchECRampCurves(ctx);
 
     expect(vi.mocked(ecRampCurves$).set).toHaveBeenCalledWith(curves);
-    expect(ctx.dataService.fetchECRampCurves).not.toHaveBeenCalled();
+    expect(nutrientSliceFetchECRampCurves).not.toHaveBeenCalled();
   });
 
   it('removes corrupt EC ramp cache and fetches from server', async () => {
@@ -252,7 +256,7 @@ describe('fetchECRampCurves', () => {
     await fetchECRampCurves(ctx);
 
     expect(localStorage.getItem(EC_RAMP_KEY)).toBeNull();
-    expect(ctx.dataService.fetchECRampCurves).toHaveBeenCalled();
+    expect(nutrientSliceFetchECRampCurves).toHaveBeenCalled();
   });
 
   it('caches EC ramp result after server fetch', async () => {
@@ -267,9 +271,8 @@ describe('fetchECRampCurves', () => {
   });
 
   it('logs error and does not throw when server fetch fails', async () => {
-    const ctx = makeCtx({
-      fetchECRampCurves: vi.fn().mockRejectedValue(new Error('server error')),
-    });
+    vi.mocked(nutrientSliceFetchECRampCurves).mockRejectedValueOnce(new Error('server error'));
+    const ctx = makeCtx();
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await expect(fetchECRampCurves(ctx, true)).resolves.toBeUndefined();
@@ -281,7 +284,6 @@ describe('fetchECRampCurves', () => {
   });
 });
 
-
 describe('fetchECRampCurves — stale cache', () => {
   it('bypasses stale cache and fetches from server', async () => {
     const staleCache = JSON.stringify({ timestamp: Date.now() - 31 * 60 * 1000, data: [] });
@@ -291,6 +293,6 @@ describe('fetchECRampCurves — stale cache', () => {
 
     await fetchECRampCurves(ctx);
 
-    expect(ctx.dataService.fetchECRampCurves).toHaveBeenCalled();
+    expect(nutrientSliceFetchECRampCurves).toHaveBeenCalled();
   });
 });

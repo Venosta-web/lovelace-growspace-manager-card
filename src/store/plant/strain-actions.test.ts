@@ -13,22 +13,21 @@ vi.mock('../../slices/strain', async (importOriginal) => ({
   removeStrain: vi.fn().mockResolvedValue(undefined),
 }));
 
-import * as strainSlice from '../../slices/strain';
+vi.mock('../../slices/genetics', () => ({
+  importStrainLineageTree: vi.fn().mockResolvedValue(undefined),
+}));
 
-function makeDataService() {
-  return new Proxy({} as any, {
-    get(target, prop) {
-      if (!(prop in target)) target[prop] = vi.fn().mockResolvedValue(undefined);
-      return target[prop];
-    },
-  });
-}
+import * as strainSlice from '../../slices/strain';
+import * as geneticsSlice from '../../slices/genetics';
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 function makeContext() {
   const showToast = vi.fn();
 
   return {
-    dataService: makeDataService(),
     ui: { showToast } as unknown as ActionContext['ui'],
     refreshData: vi.fn().mockResolvedValue(undefined),
     closeDialog: vi.fn(),
@@ -74,7 +73,7 @@ describe('addStrain', () => {
 
     await addStrain(ctx, withLineage);
 
-    expect((ctx.dataService as any).importStrainLineageTree).toHaveBeenCalledWith(
+    expect(geneticsSlice.importStrainLineageTree).toHaveBeenCalledWith(
       'Gelato',
       withLineage.parents
     );
@@ -83,7 +82,7 @@ describe('addStrain', () => {
   it('does not import lineage when parents array is empty', async () => {
     await addStrain(ctx, { ...strainData, parents: { parents: [] } });
 
-    expect((ctx.dataService as any).importStrainLineageTree).not.toHaveBeenCalled();
+    expect(geneticsSlice.importStrainLineageTree).not.toHaveBeenCalled();
   });
 
   it('returns false and toasts error when slice throws', async () => {
@@ -138,7 +137,7 @@ describe('updateStrain', () => {
 
     await updateStrain(ctx, withLineage);
 
-    expect((ctx.dataService as any).importStrainLineageTree).toHaveBeenCalledWith(
+    expect(geneticsSlice.importStrainLineageTree).toHaveBeenCalledWith(
       'Gelato',
       withLineage.parents
     );

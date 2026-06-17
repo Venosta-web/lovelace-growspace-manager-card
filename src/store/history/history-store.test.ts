@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowspaceHistoryStore, getHistory, getBatchHistory, getHistoryStats } from './history-store';
-import type { DataService } from '../../services/data-service';
 import type { GrowspaceDevice } from '../../types';
 import { atom } from 'nanostores';
 import { setDevices } from '../../slices/grid';
@@ -21,9 +20,8 @@ beforeEach(() => {
 });
 
 const makeStore = () => {
-  const mockDataService = {} as DataService;
   const $selectedDevice = atom<string | null>(null);
-  return new GrowspaceHistoryStore(mockDataService, $selectedDevice);
+  return new GrowspaceHistoryStore($selectedDevice);
 };
 
 describe('GrowspaceHistoryStore.$analyticsViewState', () => {
@@ -129,7 +127,7 @@ const makeTransportStore = () => {
 
   setDevices([device]);
   const $selectedDevice = atom<string | null>('dev1');
-  return new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+  return new GrowspaceHistoryStore($selectedDevice);
 };
 
 describe('GrowspaceHistoryStore - history transport', () => {
@@ -386,7 +384,7 @@ describe('GrowspaceHistoryStore - localStorage', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     expect(store.$historyCache.get()['temperature']).toHaveLength(1);
     expect(store.$lastTimestamps.get()['temperature']).toBe('2024-01-01T00:00:00Z');
@@ -411,7 +409,7 @@ describe('GrowspaceHistoryStore - localStorage', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    new GrowspaceHistoryStore($selectedDevice);
 
     expect(removeSpy).toHaveBeenCalled();
   });
@@ -420,7 +418,7 @@ describe('GrowspaceHistoryStore - localStorage', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('{not valid json}');
 
     const $selectedDevice = atom<string | null>('dev1');
-    expect(() => new GrowspaceHistoryStore({} as DataService, $selectedDevice)).not.toThrow();
+    expect(() => new GrowspaceHistoryStore($selectedDevice)).not.toThrow();
   });
 
   it('loads cached data that has no timestamps field gracefully', () => {
@@ -439,7 +437,7 @@ describe('GrowspaceHistoryStore - localStorage', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     expect(store.$lastTimestamps.get()).toEqual({});
   });
@@ -460,7 +458,7 @@ describe('GrowspaceHistoryStore - localStorage', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     await expect(store.loadHistoryOnDemand()).resolves.not.toThrow();
   });
@@ -670,7 +668,7 @@ describe('GrowspaceHistoryStore - getEntityIdsForMetric', () => {
     vi.mocked(hassCallModule.getHass).mockReturnValue({
       states: { [calculatedId]: { state: '1.2' } },
     } as any);
-    const storeWithHass = new GrowspaceHistoryStore({} as DataService, atom<string | null>(null));
+    const storeWithHass = new GrowspaceHistoryStore(atom<string | null>(null));
 
     const device = {
       deviceId: 'dev1',
@@ -809,11 +807,15 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     await store.loadHistoryOnDemand();
 
-    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [string, { entity_ids: string[] }];
+    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [
+      string,
+      { entity_ids: string[] },
+      unknown,
+    ];
     expect(wsParams.entity_ids).toContain(overviewEntityId);
   });
 
@@ -826,7 +828,7 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
     await store.loadHistoryOnDemand();
     expect(store.$historyLoaded.get()).toBe(true); // completed without error
     // Implementation writes empty-array placeholders for all resolved metric keys
@@ -843,13 +845,17 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
     // A plain (non-composite, no ':') graph key should be ignored in the composite-key loop
     store.$activeEnvGraphs.set(new Set(['temperature']));
 
     await store.loadHistoryOnDemand();
 
-    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [string, { entity_ids: string[] }];
+    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [
+      string,
+      { entity_ids: string[] },
+      unknown,
+    ];
     // Only TEMP_ENTITY from the metric loop; 'temperature' key has no ':'
     expect(wsParams.entity_ids).toContain(TEMP_ENTITY);
     expect(wsParams.entity_ids).not.toContain('temperature');
@@ -869,7 +875,7 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     await store.loadHistoryOnDemand();
 
@@ -895,11 +901,15 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     await store.loadHistoryOnDemand();
 
-    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [string, { entity_ids: string[] }];
+    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [
+      string,
+      { entity_ids: string[] },
+      unknown,
+    ];
     expect(wsParams.entity_ids).toContain(powerEntity);
     expect(wsParams.entity_ids).toContain(energyEntity);
     expect(wsParams.entity_ids).toContain(phEntity);
@@ -916,12 +926,16 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
     store.$activeEnvGraphs.set(new Set([`temperature:${compositeEntityId}`]));
 
     await store.loadHistoryOnDemand();
 
-    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [string, { entity_ids: string[] }];
+    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [
+      string,
+      { entity_ids: string[] },
+      unknown,
+    ];
     expect(wsParams.entity_ids).toContain(compositeEntityId);
   });
 });
@@ -951,13 +965,13 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
 
   it('destroy stops refresh and unsubscribes from device changes', () => {
     const $selectedDevice = atom<string | null>(null);
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
     store.startAutoRefresh();
     expect(() => store.destroy()).not.toThrow();
   });
 
   it('_saveToStorage is a no-op when no device is selected', () => {
-    const store = new GrowspaceHistoryStore({} as DataService, atom<string | null>(null));
+    const store = new GrowspaceHistoryStore(atom<string | null>(null));
     expect(() => (store as any)._saveToStorage()).not.toThrow();
   });
 
@@ -988,7 +1002,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     // Seed cache and timestamps so delta fetch takes the incremental path
     store.setHistoryData('temperature', [existingPoint] as any);
@@ -1011,7 +1025,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
   it('delta fetch returns early when selected device is null', async () => {
     vi.useFakeTimers();
     const $selectedDevice = atom<string | null>(null); // no device
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
     store.startAutoRefresh();
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 100);
     store.stopAutoRefresh();
@@ -1022,7 +1036,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     vi.useFakeTimers();
     setDevices([]); // device list is empty
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
     store.startAutoRefresh();
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 100);
     store.stopAutoRefresh();
@@ -1039,7 +1053,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     // Timestamps present (so hasAnyTimestamps=true) but none match a known metric key
     store.$lastTimestamps.set({ unrelated_key: '2024-01-01T00:00:00Z' });
@@ -1062,7 +1076,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
     store.startAutoRefresh();
@@ -1089,7 +1103,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     // Seed composite-key timestamps so the delta loop picks them up
     store.$lastTimestamps.setKey(`temperature:${entity1}`, '2024-01-01T00:00:00Z');
@@ -1100,7 +1114,11 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     store.stopAutoRefresh();
 
     expect(hassCallModule.hassCall).toHaveBeenCalled();
-    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [string, { entity_ids: string[] }];
+    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [
+      string,
+      { entity_ids: string[] },
+      unknown,
+    ];
     expect(wsParams.entity_ids).toContain(entity1);
     expect(wsParams.entity_ids).toContain(entity2);
   });
@@ -1117,7 +1135,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
     store.startAutoRefresh();
@@ -1139,7 +1157,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
     // Composite key in active graphs but NO matching timestamp — should not be fetched
@@ -1149,7 +1167,11 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 100);
     store.stopAutoRefresh();
 
-    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [string, { entity_ids: string[] }];
+    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [
+      string,
+      { entity_ids: string[] },
+      unknown,
+    ];
     expect(wsParams.entity_ids).not.toContain('sensor.extra');
   });
 
@@ -1165,7 +1187,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
     store.startAutoRefresh();
@@ -1188,7 +1210,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
 
     // No timestamps — delta should fall back to full fetch
     store.startAutoRefresh();
@@ -1209,7 +1231,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     } as unknown as GrowspaceDevice;
     setDevices([device]);
     const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore({} as DataService, $selectedDevice);
+    const store = new GrowspaceHistoryStore($selectedDevice);
     store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
 
     store.startAutoRefresh();

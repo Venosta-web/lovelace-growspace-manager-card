@@ -6,7 +6,6 @@ import {
   GrowspaceDevice,
 } from '../../types';
 import { METRIC_ENTITY_KEYS, STORAGE_KEYS, WS_TYPE_GET_HISTORY_STATS } from '../../constants';
-import type { DataService } from '../../services/data-service';
 import { devices$ } from '../../slices/grid';
 import { callApi, hassCall, getHass } from '../../services/hass-call';
 import { HistoryStatsResponseSchema } from '../../schemas/api-schema';
@@ -154,10 +153,7 @@ export class GrowspaceHistoryStore {
     graphRanges: Record<string, HistoryTimeRange>;
   }>;
 
-  constructor(
-    _dataService: DataService,
-    selectedDevice: ReadableAtom<string | null>
-  ) {
+  constructor(selectedDevice: ReadableAtom<string | null>) {
     this._selectedDevice = selectedDevice;
 
     this.$historyCache = map<Record<string, HistorySensorState[]>>({});

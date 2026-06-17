@@ -272,3 +272,9 @@ export async function fetchGrowspaceData(): Promise<void> {
     .filter((d): d is GrowspaceDevice => d !== null);
   growspaceDevices$.set(devices);
 }
+
+export async function fetchRawCollection(): Promise<Record<string, GrowspaceAPIResponse>> {
+  return hassCall('growspace_manager/get_data', {}, GrowspaceAPICollectionSchema) as Promise<
+    Record<string, GrowspaceAPIResponse>
+  >;
+}

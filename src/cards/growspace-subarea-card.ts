@@ -44,6 +44,7 @@ import { growspaceCardStyles } from '../styles/growspace-card.styles';
 import { variables } from '../styles/variables';
 
 import { GrowspaceStore } from '../store/core/growspace-store';
+import { BootstrapController } from '../controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
 
@@ -85,6 +86,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     store = new GrowspaceStore(this._sharedStore);
 
     protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
+    private _bootstrapCtrl!: BootstrapController;
     protected _subareaEnvController = new StoreController(this, subareaEnvSnapshots$);
     protected _subareaDeviceController = new StoreController(this, subareaDeviceSnapshots$);
     private _resizeController = new ResizeController(this, () => { });
@@ -231,13 +233,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         if (this.hass) {
             this.store.updateHass(this.hass);
             setHass(this.hass);
-        }
-        if (this._config?.growspace_id) {
-            const syntheticConfig: GrowspaceManagerCardConfig = {
-                ...this._config,
-                default_growspace: this._config.growspace_id,
-            };
-            this.store.initializeSelectedDevice(syntheticConfig);
+            this._bootstrapCtrl?.updateHass(this.hass);
         }
         if (!this._subarea && !this._loading) {
             this._loadSubarea();
@@ -262,14 +258,10 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         if (changedProps.has('hass') && this.hass) {
             this.store.updateHass(this.hass);
             setHass(this.hass);
+            this._bootstrapCtrl?.updateHass(this.hass);
         }
 
         if (changedProps.has('_config') && this._config?.growspace_id) {
-            const syntheticConfig: GrowspaceManagerCardConfig = {
-                ...this._config,
-                default_growspace: this._config.growspace_id,
-            };
-            this.store.initializeSelectedDevice(syntheticConfig);
             this._loadSubarea();
         }
 
@@ -406,7 +398,12 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             ...config,
             default_growspace: config.growspace_id || '',
         };
-        this.store.initializeSelectedDevice(syntheticConfig);
+        if (!this._bootstrapCtrl) {
+            this._bootstrapCtrl = new BootstrapController(this, this.store.grid, syntheticConfig);
+            this.store.setRefreshCallback(() => this._bootstrapCtrl.refresh());
+        } else {
+            this._bootstrapCtrl.setCardConfig(syntheticConfig);
+        }
     }
 
     public getCardSize(): number {

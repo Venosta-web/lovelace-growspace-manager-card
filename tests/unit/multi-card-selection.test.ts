@@ -1,63 +1,71 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { GrowspaceStore } from '../../src/store/core/growspace-store';
-import { GrowspaceSharedStore } from '../../src/store/core/growspace-shared-store';
-import { devices$, setDevices } from '../../src/slices/grid';
-import { defaultApplied$ } from '../../src/slices/ui';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { BootstrapController } from '../../src/controllers/bootstrap.controller';
+import { makePerCardGridSlice, devices$, setDevices } from '../../src/slices/grid';
 import type { GrowspaceManagerCardConfig } from '../../src/types';
 
-/**
- * Regression for the dashboard bug where the tank/logbook cards render
- * "Please select a growspace in the card configuration." even though a
- * growspace is configured.
- *
- * Root cause: `selectedDevice` is a per-card atom (makePerCardGridSlice) but
- * `defaultApplied` was a module-global atom. Once the first card auto-applies
- * its default and flips the shared `defaultApplied` to true, a second card whose
- * own `selectedDevice` is still null bails out of auto-select and never picks a
- * device — so `devices.find(d => d.deviceId === null)` is undefined and the card
- * shows the error.
- */
+vi.mock('../../src/slices/growspace', () => ({
+  fetchRawCollection: vi.fn(),
+}));
 
-const WS_DATA: Record<string, any> = {
-  gs1: {
-    identity: { growspace_id: 'gs1', name: 'Tent One', overview_entity_id: 'sensor.gs1' },
-  },
-};
+vi.mock('../../src/services/hydrate', () => ({
+  hydrate: vi.fn(() => new Set<string>()),
+}));
+
+import { fetchRawCollection } from '../../src/slices/growspace';
+import { hydrate } from '../../src/services/hydrate';
+
+const DEVICE = {
+  deviceId: 'gs1',
+  name: 'Tent One',
+  rows: 2,
+  plantsPerRow: 2,
+  plants: [],
+} as any;
 
 function aConfig(): GrowspaceManagerCardConfig {
   return { type: 'custom:growspace-tank-card', default_growspace: 'gs1' } as GrowspaceManagerCardConfig;
 }
 
+function makeHost() {
+  return { addController: vi.fn(), requestUpdate: vi.fn() } as any;
+}
+
+/**
+ * Regression: each card's BootstrapController has its own _defaultApplied flag.
+ * Previously defaultApplied$ was a shared module-global atom, so card A applying
+ * its default blocked card B from applying its own default.
+ */
 describe('multi-card default selection', () => {
   beforeEach(() => {
     setDevices([]);
-    defaultApplied$.set(false);
+    vi.clearAllMocks();
+    vi.mocked(fetchRawCollection).mockResolvedValue({ gs1: {} as any });
+    vi.mocked(hydrate).mockImplementation(() => {
+      setDevices([DEVICE]);
+      return new Set<string>();
+    });
   });
 
-  it('a second card still auto-selects its default when another card applied first', () => {
-    const shared = new GrowspaceSharedStore();
-    const cardA = new GrowspaceStore(shared);
-    const cardB = new GrowspaceStore(shared);
+  it('a second card still auto-selects its default when another card applied first', async () => {
+    const hostA = makeHost();
+    const hostB = makeHost();
+    const gridA = makePerCardGridSlice();
+    const gridB = makePerCardGridSlice();
 
-    // Both cards receive their config while no growspace data has loaded yet
-    // (hass not set → empty cache → no selection, defaultApplied reset to false).
-    cardA.initializeSelectedDevice(aConfig());
-    cardB.initializeSelectedDevice(aConfig());
+    const controllerA = new BootstrapController(hostA, gridA, aConfig());
+    const controllerB = new BootstrapController(hostB, gridB, aConfig());
 
-    expect(cardA.grid.$selectedDevice.get()).toBeNull();
-    expect(cardB.grid.$selectedDevice.get()).toBeNull();
+    // Card A hydrates first — sets devices and auto-selects its default
+    await controllerA.refresh();
 
-    // Data arrives. Card A's sync cycle runs first and applies its default.
-    (cardA.syncService as any)._cache = WS_DATA;
-    cardA.syncService.updateDevicesState();
-
-    // Card B's sync cycle runs second (e.g. a later hass update). No setConfig
-    // happens in between, so the shared defaultApplied flag is still true.
-    (cardB.syncService as any)._cache = WS_DATA;
-    cardB.syncService.updateDevicesState();
-
+    expect(gridA.$selectedDevice.get()).toBe('gs1');
+    // Devices are set in the shared atom
     expect(devices$.get().map((d) => d.deviceId)).toContain('gs1');
-    expect(cardA.grid.$selectedDevice.get()).toBe('gs1');
-    expect(cardB.grid.$selectedDevice.get()).toBe('gs1');
+
+    // Card B hydrates second — its own _defaultApplied is still false,
+    // so it should also auto-select its default despite card A having already done so
+    await controllerB.refresh();
+
+    expect(gridB.$selectedDevice.get()).toBe('gs1');
   });
 });
