@@ -1,3 +1,11 @@
+# [1.1.0-next.57](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.56...v1.1.0-next.57) (2026-06-17)
+
+
+### Features
+
+* **adr-0022-step2:** build hydrate orchestrator + Bootstrap controller, wire growspace-grid-card ([c9c3aea](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/c9c3aeaf9b9ed4bfb23539b30e73763529eaa120))
+* **adr-0022-step3b:** complete Bootstrap hydration cutover off SyncService/DataService ([8d5676c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/8d5676c41f2b7d2e89b8fd12d3cb6a6501a73fca))
+
 # [1.1.0-next.56](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.55...v1.1.0-next.56) (2026-06-17)
 
 
