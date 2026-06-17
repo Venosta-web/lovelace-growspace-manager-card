@@ -29144,7 +29144,7 @@ object({
 // ---------------------------------------------------------------------------
 object({
     growspace_id: string(),
-    stage_aggregates: record(number()),
+    stage_aggregates: record(string(), number()),
 });
 
 /**

@@ -813,7 +813,7 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
 
     await store.loadHistoryOnDemand();
 
-    const [, wsParams] = hassCallModule.hassCall.mock.calls[0] as [string, { entity_ids: string[] }];
+    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [string, { entity_ids: string[] }];
     expect(wsParams.entity_ids).toContain(overviewEntityId);
   });
 
@@ -849,7 +849,7 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
 
     await store.loadHistoryOnDemand();
 
-    const [, wsParams] = hassCallModule.hassCall.mock.calls[0] as [string, { entity_ids: string[] }];
+    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [string, { entity_ids: string[] }];
     // Only TEMP_ENTITY from the metric loop; 'temperature' key has no ':'
     expect(wsParams.entity_ids).toContain(TEMP_ENTITY);
     expect(wsParams.entity_ids).not.toContain('temperature');
@@ -899,7 +899,7 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
 
     await store.loadHistoryOnDemand();
 
-    const [, wsParams] = hassCallModule.hassCall.mock.calls[0] as [string, { entity_ids: string[] }];
+    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [string, { entity_ids: string[] }];
     expect(wsParams.entity_ids).toContain(powerEntity);
     expect(wsParams.entity_ids).toContain(energyEntity);
     expect(wsParams.entity_ids).toContain(phEntity);
@@ -921,7 +921,7 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
 
     await store.loadHistoryOnDemand();
 
-    const [, wsParams] = hassCallModule.hassCall.mock.calls[0] as [string, { entity_ids: string[] }];
+    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [string, { entity_ids: string[] }];
     expect(wsParams.entity_ids).toContain(compositeEntityId);
   });
 });
@@ -1100,7 +1100,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     store.stopAutoRefresh();
 
     expect(hassCallModule.hassCall).toHaveBeenCalled();
-    const [, wsParams] = hassCallModule.hassCall.mock.calls[0] as [string, { entity_ids: string[] }];
+    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [string, { entity_ids: string[] }];
     expect(wsParams.entity_ids).toContain(entity1);
     expect(wsParams.entity_ids).toContain(entity2);
   });
@@ -1149,7 +1149,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 100);
     store.stopAutoRefresh();
 
-    const [, wsParams] = hassCallModule.hassCall.mock.calls[0] as [string, { entity_ids: string[] }];
+    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [string, { entity_ids: string[] }];
     expect(wsParams.entity_ids).not.toContain('sensor.extra');
   });
 
