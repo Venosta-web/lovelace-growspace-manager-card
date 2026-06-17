@@ -1,3 +1,15 @@
+# [1.1.0-next.56](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.55...v1.1.0-next.56) (2026-06-17)
+
+
+### Bug Fixes
+
+* **build:** resolve TS warnings in hass-call, irrigation schema, and history-store tests ([779bc17](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/779bc17b995f6fd13722393088e6403c1f1cc69c))
+
+
+### Features
+
+* **adr-0022-step3a:** repoint config-dialog, heatmap-3d, subarea-card off DataService ([#328](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/328)) ([7fe76d2](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7fe76d2e447a80635957c07d6faae2ccfcc3709c))
+
 # [1.1.0-next.55](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.54...v1.1.0-next.55) (2026-06-17)
 
 
