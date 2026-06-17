@@ -25,23 +25,26 @@ vi.mock('../../../src/features/shared/ui/md3-switch', () => ({
     }
 }));
 
-const mocks = vi.hoisted(() => ({
-    setIrrigationSettings: vi.fn().mockResolvedValue(undefined),
-    addIrrigationTime: vi.fn().mockResolvedValue(undefined),
-    removeIrrigationTime: vi.fn().mockResolvedValue(undefined),
-    addDrainTime: vi.fn().mockResolvedValue(undefined),
-    removeDrainTime: vi.fn().mockResolvedValue(undefined),
-    setIrrigationStrategy: vi.fn().mockResolvedValue(undefined),
+// Stub the Irrigation slice mutators the dialog calls (ADR-0001) so they don't
+// hit the real callService/hassCall seam (no hass in this unit context), while
+// keeping the real atoms the dialog subscribes to.
+const sliceMocks = vi.hoisted(() => ({
     getIrrigationAnalytics: vi.fn().mockResolvedValue(null),
     configureDrainMonitoring: vi.fn().mockResolvedValue(undefined),
     setEcTargetRanges: vi.fn().mockResolvedValue(undefined),
+    logDrainReading: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('../../../src/services/data-service', () => ({
-    DataService: class {
-        constructor() { return mocks; }
-    }
-}));
+vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../src/slices/irrigation')>();
+    return {
+        ...actual,
+        getIrrigationAnalytics: sliceMocks.getIrrigationAnalytics,
+        configureDrainMonitoring: sliceMocks.configureDrainMonitoring,
+        setEcTargetRanges: sliceMocks.setEcTargetRanges,
+        logDrainReading: sliceMocks.logDrainReading,
+    };
+});
 
 class HaDialogMock extends HTMLElement { open = false; }
 if (!customElements.get('ha-dialog')) customElements.define('ha-dialog', HaDialogMock);
@@ -90,7 +93,6 @@ function makeMockStore(device: GrowspaceDevice) {
     const $devicesValue = [JSON.parse(JSON.stringify(device))];
     return {
         context: {
-            dataService: mocks,
             data: {
                 $devices: { get: () => $devicesValue },
                 patchDeviceIrrigationConfig: vi.fn((gsId: string, patch: any) => {

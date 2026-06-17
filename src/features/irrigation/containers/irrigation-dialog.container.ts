@@ -35,7 +35,6 @@ import {
   MutationRunController,
   type MutationRunEvent,
 } from '../../../dialogs/mutation-run-controller';
-import { DataService } from '../../../services/data-service';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { ecRampCurves$ } from '../../../slices/nutrient';
@@ -50,8 +49,12 @@ import {
   saveIrrigationSettings,
   updateIrrigationStrategy,
   runIrrigationCycle,
+  configureDrainMonitoring,
+  setEcTargetRanges,
+  getIrrigationAnalytics,
+  logDrainReading,
 } from '../../../slices/irrigation';
-import { configureEnvironment } from '../../../slices/growspace';
+import { configureEnvironment, resetWaterTracking } from '../../../slices/growspace';
 import type {
   IrrigationConfig,
   SteeringMode,
@@ -348,8 +351,6 @@ export class IrrigationDialog extends LitElement {
   private _cropSteeringHistoryFetched = false;
   private _cropSteeringPoller?: PollingController;
   private _cropSteeringHistoryController?: StoreController<Map<string, CropSteeringHistory>>;
-
-  private _dataService?: DataService;
 
   /**
    * Owns the gesture->mutation seam (ADR-0015). Handlers stay synchronous and
@@ -816,9 +817,6 @@ export class IrrigationDialog extends LitElement {
         this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
       }
     }
-    if (this.hass && (changedProps.has('hass') || !this._dataService)) {
-      this._dataService = new DataService(this.hass);
-    }
     if (!this._visibleTabs.includes(this._sm.activeTab)) {
       this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: 'config' });
     }
@@ -976,13 +974,11 @@ export class IrrigationDialog extends LitElement {
     const id = this.device?.deviceId;
     if (!id) return;
     await saveIrrigationSettings(id, params.settings);
-    // Strategy writes go through the Irrigation slice mutator (ADR-0001 / CONTEXT
-    // data-flow layering); drain + EC ranges still use the legacy DataService path.
+    // Strategy writes, drain monitoring + EC ranges all go through the Irrigation
+    // slice mutators (ADR-0001 / CONTEXT data-flow layering).
     await updateIrrigationStrategy(id, params.strategy);
-    if (this._dataService) {
-      await this._dataService.configureDrainMonitoring(id, params.drainConfig);
-      await this._dataService.setEcTargetRanges(id, params.ecTargetRanges);
-    }
+    await configureDrainMonitoring(id, params.drainConfig);
+    await setEcTargetRanges(id, params.ecTargetRanges);
   }
 
   /** Save just the settings (used by phase-change confirm). Synchronous dispatcher. */
@@ -1001,8 +997,8 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _fetchStageAnalytics() {
-    if (!this.device?.deviceId || !this._dataService) return;
-    const result = await this._dataService.getIrrigationAnalytics(this.device.deviceId);
+    if (!this.device?.deviceId) return;
+    const result = await getIrrigationAnalytics(this.device.deviceId);
     this._sm = transition(this._sm, {
       type: 'SET_STAGE_AGGREGATES',
       data: result?.stage_aggregates ?? null,
@@ -1237,13 +1233,13 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _handleResetWaterTracking() {
-    if (!this.device?.deviceId || !this._dataService) return;
+    if (!this.device?.deviceId) return;
     const confirmed = window.confirm(
       "Are you sure you want to reset all water tracking data for this growspace? This includes today's usage counters and volume history."
     );
     if (!confirmed) return;
     try {
-      await this._dataService.resetWaterTracking(this.device.deviceId);
+      await resetWaterTracking(this.device.deviceId);
       this._showErrorToast('Water tracking data reset successfully');
       this._notifyDataChanged();
     } catch (e) {
@@ -1253,7 +1249,7 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _logDrainReadingNow() {
-    if (!this.device?.deviceId || !this._dataService) return;
+    if (!this.device?.deviceId) return;
     const d = this._sm.tabs.drain_ec.draft;
     if (d.logFeedEc <= 0 || d.logDrainEc <= 0) {
       this._showErrorToast('Feed EC and Drain EC must be > 0');
@@ -1261,7 +1257,7 @@ export class IrrigationDialog extends LitElement {
     }
     this._sm = transition(this._sm, { type: 'SET_DRAIN_LOGGING', logging: true });
     try {
-      await this._dataService.logDrainReading(this.device.deviceId, {
+      await logDrainReading(this.device.deviceId, {
         feedEc: d.logFeedEc,
         drainEc: d.logDrainEc,
         feedVolumeMl: d.logFeedVolume || undefined,

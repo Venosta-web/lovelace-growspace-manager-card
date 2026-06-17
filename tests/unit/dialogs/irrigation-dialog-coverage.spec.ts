@@ -27,26 +27,39 @@ vi.mock('../../../src/features/shared/ui/md3-switch', () => ({
   },
 }));
 
-const mocks = vi.hoisted(() => ({
+// Stub the slice mutators the dialog calls (ADR-0001) so they don't hit the real
+// callService/hassCall seam (no hass in this unit context), while keeping the real
+// atoms the dialog subscribes to.
+const sliceMocks = vi.hoisted(() => ({
   logDrainReading: vi.fn().mockResolvedValue(undefined),
-  configureDrainMonitoring: vi.fn().mockResolvedValue(true),
-  configureEnvironment: vi.fn().mockResolvedValue(true),
-  fetchGrowspace: vi.fn(),
-  setIrrigationStrategy: vi.fn().mockResolvedValue(true),
-  saveSettings: vi.fn(),
+  configureDrainMonitoring: vi.fn().mockResolvedValue(undefined),
+  setEcTargetRanges: vi.fn().mockResolvedValue(undefined),
+  getIrrigationAnalytics: vi
+    .fn()
+    .mockResolvedValue({ growspace_id: 'gs1', stage_aggregates: { veg: 12.5, flower: 30.0 } }),
   resetWaterTracking: vi.fn().mockResolvedValue(undefined),
-  removeDrainTime: vi.fn().mockResolvedValue(true),
-  addDrainTime: vi.fn().mockResolvedValue(true),
-  removeIrrigationTime: vi.fn().mockResolvedValue(true),
-  addIrrigationTime: vi.fn().mockResolvedValue(true),
-  getIrrigationAnalytics: vi.fn().mockResolvedValue({ growspace_id: 'gs1', stage_aggregates: { veg: 12.5, flower: 30.0 } }),
+  configureEnvironment: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('../../../src/services/data-service', () => ({
-  DataService: class {
-    constructor() { return mocks; }
-  },
-}));
+vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/slices/irrigation')>();
+  return {
+    ...actual,
+    logDrainReading: sliceMocks.logDrainReading,
+    configureDrainMonitoring: sliceMocks.configureDrainMonitoring,
+    setEcTargetRanges: sliceMocks.setEcTargetRanges,
+    getIrrigationAnalytics: sliceMocks.getIrrigationAnalytics,
+  };
+});
+
+vi.mock('../../../src/slices/growspace', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/slices/growspace')>();
+  return {
+    ...actual,
+    resetWaterTracking: sliceMocks.resetWaterTracking,
+    configureEnvironment: sliceMocks.configureEnvironment,
+  };
+});
 
 const mockDevice: GrowspaceDevice = {
   deviceId: 'gs1',
@@ -102,7 +115,6 @@ function makeMockStore(device: GrowspaceDevice) {
   };
   return {
     context: {
-      dataService: mocks,
       data: dataStore,
       showToast: vi.fn(),
       closeDialog: vi.fn(),

@@ -58,16 +58,18 @@ vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
         saveIrrigationSettings: sliceMocks.saveIrrigationSettings,
         runIrrigationCycle: sliceMocks.runIrrigationCycle,
         updateIrrigationStrategy: sliceMocks.updateIrrigationStrategy,
+        configureDrainMonitoring: mocks.configureDrainMonitoring,
+        setEcTargetRanges: mocks.setEcTargetRanges,
+        getIrrigationAnalytics: mocks.getIrrigationAnalytics,
+        logDrainReading: mocks.logDrainReading,
     };
 });
 
-vi.mock('../../../src/services/data-service', () => {
+vi.mock('../../../src/slices/growspace', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../src/slices/growspace')>();
     return {
-        DataService: class {
-            constructor() {
-                return mocks;
-            }
-        }
+        ...actual,
+        resetWaterTracking: mocks.resetWaterTracking,
     };
 });
 

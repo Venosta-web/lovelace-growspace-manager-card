@@ -26,31 +26,26 @@ vi.mock('../../../src/features/shared/ui/md3-switch', () => ({
   },
 }));
 
-const mocks = vi.hoisted(() => ({
-  getIrrigationAnalytics: vi.fn().mockResolvedValue(null),
-}));
-vi.mock('../../../src/services/data-service', () => ({
-  DataService: class {
-    constructor() { return mocks; }
-  },
-}));
-
 // The Substrate & EC tab's immediate-persist path calls the Irrigation slice's
-// `updateIrrigationStrategy` mutator (ADR-0017), not the DataService. Spy on it
-// while keeping the real atoms (`irrigationConfigs$`) the dialog subscribes to.
+// `updateIrrigationStrategy` mutator (ADR-0017). Spy on the slice mutators while
+// keeping the real atoms (`irrigationConfigs$`) the dialog subscribes to.
 const sliceMocks = vi.hoisted(() => ({
   updateIrrigationStrategy: vi.fn().mockResolvedValue(undefined),
+  getIrrigationAnalytics: vi.fn().mockResolvedValue(null),
 }));
 vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/slices/irrigation')>();
-  return { ...actual, updateIrrigationStrategy: sliceMocks.updateIrrigationStrategy };
+  return {
+    ...actual,
+    updateIrrigationStrategy: sliceMocks.updateIrrigationStrategy,
+    getIrrigationAnalytics: sliceMocks.getIrrigationAnalytics,
+  };
 });
 
 function makeMockStore(device: GrowspaceDevice) {
   const $devicesValue = [JSON.parse(JSON.stringify(device))];
   return {
     context: {
-      dataService: mocks,
       data: { $devices: { get: () => $devicesValue }, patchDeviceIrrigationConfig: vi.fn() },
       showToast: vi.fn(), closeDialog: vi.fn(), refreshData: vi.fn().mockResolvedValue(undefined),
       ui: { showToast: vi.fn() }, history: {}, grid: {}, hass: {}, syncService: {},

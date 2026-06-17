@@ -53,25 +53,34 @@ vi.mock('../../../src/features/shared/ui/md3-switch', () => ({
     }
 }));
 
+// Stub the Irrigation slice mutators the dialog calls (ADR-0001) so they don't
+// hit the real callService/hassCall seam (no hass in this unit context), while
+// keeping the real atoms the dialog subscribes to.
 const mocks = vi.hoisted(() => ({
-    setIrrigationSettings: vi.fn().mockResolvedValue(undefined),
+    saveIrrigationSettings: vi.fn().mockResolvedValue(undefined),
     addIrrigationTime: vi.fn().mockResolvedValue(undefined),
     removeIrrigationTime: vi.fn().mockResolvedValue(undefined),
     addDrainTime: vi.fn().mockResolvedValue(undefined),
     removeDrainTime: vi.fn().mockResolvedValue(undefined),
-    setIrrigationStrategy: vi.fn().mockResolvedValue(undefined),
+    updateIrrigationStrategy: vi.fn().mockResolvedValue(undefined),
     getIrrigationAnalytics: vi.fn().mockResolvedValue(null),
     setEcTargetRanges: vi.fn().mockResolvedValue(undefined),
     configureDrainMonitoring: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('../../../src/services/data-service', () => {
+vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../src/slices/irrigation')>();
     return {
-        DataService: class {
-            constructor() {
-                return mocks;
-            }
-        }
+        ...actual,
+        saveIrrigationSettings: mocks.saveIrrigationSettings,
+        addIrrigationTime: mocks.addIrrigationTime,
+        removeIrrigationTime: mocks.removeIrrigationTime,
+        addDrainTime: mocks.addDrainTime,
+        removeDrainTime: mocks.removeDrainTime,
+        updateIrrigationStrategy: mocks.updateIrrigationStrategy,
+        getIrrigationAnalytics: mocks.getIrrigationAnalytics,
+        setEcTargetRanges: mocks.setEcTargetRanges,
+        configureDrainMonitoring: mocks.configureDrainMonitoring,
     };
 });
 
@@ -233,16 +242,6 @@ describe('IrrigationDialog', () => {
             expect((element as any)._sm.tabs.schedules.draft.irrigationDuration).toBe(60);
         });
 
-        it('should create DataService if missing when hass changes', async () => {
-            document.body.appendChild(element); // Connect to DOM
-            // force dataService undefined
-            (element as any)._dataService = undefined;
-            element.hass = { ...element.hass }; // Trigger update
-            await element.updateComplete;
-
-            expect((element as any)._dataService).toBeDefined();
-        });
-
         // ADR-0019: the add-time overlay open/cancel/backdrop + time-bar-click
         // gestures are exercised in the component mount-and-assert spec
         // (irrigation-schedules-tab.spec.ts) and the end-to-end add/cancel wiring in
@@ -262,7 +261,7 @@ describe('IrrigationDialog', () => {
             (element as any)._saveAll();
 
             // Should simply return without error/call
-            expect(mocks.setIrrigationSettings).not.toHaveBeenCalled();
+            expect(mocks.saveIrrigationSettings).not.toHaveBeenCalled();
         });
     });
 
