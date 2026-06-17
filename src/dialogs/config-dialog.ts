@@ -47,7 +47,6 @@ import { ConfigTab } from '../constants';
 import { setDehumidifierControl, setHumidifierControl } from '../slices/growspace';
 import { getSubareas, addSubarea, removeSubarea } from '../slices/subarea';
 import type { Subarea } from '../slices/subarea';
-import { DataService } from '../services/data-service';
 import {
   createInitialSM,
   transition,
@@ -151,7 +150,6 @@ export class ConfigDialog extends LitElement {
   @state() private _humidifierControlEnabled = false;
 
   private _initialStateApplied = false;
-  private _dataService?: DataService;
 
   /** Convenience: dispatch a SM transition and assign the result. */
   private _t(event: ConfigDialogEvent): void {
@@ -957,10 +955,6 @@ export class ConfigDialog extends LitElement {
   protected updated(changedProperties: Map<string, unknown>) {
     super.updated(changedProperties);
 
-    if (changedProperties.has('hass') && this.hass) {
-      this._dataService = new DataService(this.hass);
-    }
-
     if (changedProperties.has('open')) {
       if (this.open) {
         if (!this._initialStateApplied) {
@@ -1517,11 +1511,6 @@ export class ConfigDialog extends LitElement {
   }
 
   // ── Subarea methods ──────────────────────────────────────────────────────
-
-  private _getDataService(): DataService {
-    if (!this._dataService) this._dataService = new DataService(this.hass);
-    return this._dataService;
-  }
 
   private async _loadSubareas() {
     const envId = this._sm.environmentDraft.selectedGrowspaceId;

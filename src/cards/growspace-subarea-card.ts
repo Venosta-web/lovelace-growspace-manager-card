@@ -22,7 +22,8 @@ import { setSubareaEnvSnapshot, subareaEnvSnapshots$ } from '../slices/environme
 import type { EnvSnapshot, SensorReadings } from '../slices/environment';
 import { setSubareaDeviceSnapshot, subareaDeviceSnapshots$ } from '../slices/device-state';
 import { computeHeaderMetrics } from '../slices/header-metrics';
-import { DataService } from '../services/data-service';
+import { setHass } from '../services/hass-call';
+import { getBatchHistory } from '../store/history/history-store';
 import { ConfigTab } from '../features/environment/constants';
 import type { HistoryTimeRange } from '../features/environment/constants';
 import { ResizeController } from '../controllers/resize-controller';
@@ -88,7 +89,6 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     protected _subareaDeviceController = new StoreController(this, subareaDeviceSnapshots$);
     private _resizeController = new ResizeController(this, () => { });
 
-    private _dataService: DataService | null = null;
     private _analyticsStateController: StoreController<any> | null = null;
     private _staleUnsub?: () => void;
 
@@ -230,7 +230,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     protected firstUpdated(): void {
         if (this.hass) {
             this.store.updateHass(this.hass);
-            this._dataService = new DataService(this.hass);
+            setHass(this.hass);
         }
         if (this._config?.growspace_id) {
             const syntheticConfig: GrowspaceManagerCardConfig = {
@@ -261,11 +261,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
 
         if (changedProps.has('hass') && this.hass) {
             this.store.updateHass(this.hass);
-            if (!this._dataService) {
-                this._dataService = new DataService(this.hass);
-            } else {
-                this._dataService.updateHass(this.hass);
-            }
+            setHass(this.hass);
         }
 
         if (changedProps.has('_config') && this._config?.growspace_id) {
@@ -289,10 +285,6 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     private async _loadSubarea(): Promise<void> {
         if (!this._config?.growspace_id || !this._config?.subarea_id) return;
         if (!this.hass) return;
-
-        if (!this._dataService) {
-            this._dataService = new DataService(this.hass);
-        }
 
         this._loading = true;
         this._error = null;
@@ -352,8 +344,6 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     }
 
     private async _loadHistory(subarea: Subarea, range?: HistoryTimeRange): Promise<void> {
-        if (!this._dataService) return;
-
         const snapshot = subareaEnvSnapshots$.get().get(subarea.id);
         if (!snapshot) return;
 
@@ -367,7 +357,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         if (!allEntityIds.length) return;
 
         try {
-            const batchResults = await this._dataService.getBatchHistory(allEntityIds, start, end);
+            const batchResults = await getBatchHistory(allEntityIds, start, end);
             const cache: Record<string, any[]> = {};
 
             for (const { metric, entityIds } of metricEntities) {

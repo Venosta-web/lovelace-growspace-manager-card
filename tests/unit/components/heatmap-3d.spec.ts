@@ -6,6 +6,14 @@ import '../../../src/features/environment/components/heatmap-3d';
 import { Heatmap3D } from '../../../src/features/environment/components/heatmap-3d';
 import { GrowspaceType } from '../../../src/constants';
 
+vi.mock('../../../src/store/history/history-store', async () => {
+    const actual = await vi.importActual('../../../src/store/history/history-store') as any;
+    return {
+        ...actual,
+        getHistoryStats: vi.fn().mockResolvedValue({}),
+    };
+});
+
 // --- Mocks ---
 
 vi.mock('three', async () => {
@@ -332,13 +340,6 @@ describe('Heatmap3D Logic', () => {
         vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => { });
         vi.stubGlobal('ResizeObserver', MockResizeObserver);
 
-        // Mock getHistoryStats globally
-        if (!(Heatmap3D.prototype as any).dataService) {
-            (Heatmap3D.prototype as any).dataService = { getHistoryStats: vi.fn().mockResolvedValue({}) };
-        } else {
-            vi.spyOn((Heatmap3D.prototype as any).dataService, 'getHistoryStats').mockResolvedValue({});
-        }
-
         vi.clearAllMocks();
         element = await fixture(html`
             <heatmap-3d .device=${JSON.parse(JSON.stringify(mockDevice))} .hass=${mockHass}></heatmap-3d>
@@ -366,14 +367,8 @@ describe('Heatmap3D Logic', () => {
 
         it('should handle fetchHistory failure', async () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-
-            // Ensure dataService exists
-            if (!(element as any).dataService) {
-                (element as any).dataService = { getHistoryStats: vi.fn() };
-            }
-
-            // Mock getHistoryStats failure directly
-            const getHistoryStatsSpy = vi.spyOn((element as any).dataService, 'getHistoryStats').mockRejectedValue(new Error('Fetch Error'));
+            const { getHistoryStats } = await import('../../../src/store/history/history-store');
+            vi.mocked(getHistoryStats).mockRejectedValueOnce(new Error('Fetch Error'));
 
             // Add sensors so setup proceeds
             const env = { sensorCoordinates: { 'sensor.t1': { x: 0, y: 0, z: 0 } } };
@@ -382,7 +377,6 @@ describe('Heatmap3D Logic', () => {
             await (element as any).fetchHistory();
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to fetch history'), expect.any(Error));
 
-            getHistoryStatsSpy.mockRestore();
             consoleSpy.mockRestore();
         });
     });
@@ -887,9 +881,9 @@ describe('Heatmap3D Logic', () => {
 
         it('should fetch history with sensor groups', async () => {
             element.device = { ...mockDevice, environmentAttributes: { sensorGroups: [{ temperature_sensors: ['s.t1'], humidity_sensors: ['s.h1'], vpd_sensors: ['s.v1'] }] } };
-            const historySpy = vi.spyOn((element as any).dataService, 'getHistoryStats');
+            const { getHistoryStats } = await import('../../../src/store/history/history-store');
             await (element as any).fetchHistory();
-            expect(historySpy).toHaveBeenCalledWith(expect.arrayContaining(['s.t1', 's.h1', 's.v1']), expect.any(Date));
+            expect(getHistoryStats).toHaveBeenCalledWith(expect.arrayContaining(['s.t1', 's.h1', 's.v1']), expect.any(Date));
         });
 
         it('should return 0 for unknown sensor values', () => {
@@ -1053,21 +1047,18 @@ describe('Heatmap3D Logic', () => {
     });
 
     describe('Edge Cases and Missing Branches', () => {
-        it('should handle updateBackendCoordinates when dataService is missing', () => {
-            const originalService = (element as any).dataService;
-            (element as any).dataService = undefined;
+        it('should handle updateBackendCoordinates when sceneManager is missing', () => {
+            (element as any).sceneManager = undefined;
             const mesh = new THREE.Mesh();
-            (element as any).sceneManager.sensorMeshes.set('s1', mesh);
-
             expect(() => (element as any).updateBackendCoordinates(mesh)).not.toThrow();
-            (element as any).dataService = originalService;
         });
 
         it('should handle fetchHistory with no entityIds', async () => {
             element.device = { ...mockDevice, environmentAttributes: { sensorCoordinates: {} } };
-            const spy = vi.spyOn((element as any).dataService, 'getHistoryStats');
+            const { getHistoryStats } = await import('../../../src/store/history/history-store');
+            vi.mocked(getHistoryStats).mockClear();
             await (element as any).fetchHistory();
-            expect(spy).not.toHaveBeenCalled();
+            expect(getHistoryStats).not.toHaveBeenCalled();
         });
 
         it('should initialize environmentAttributes in _handleLink if missing', () => {

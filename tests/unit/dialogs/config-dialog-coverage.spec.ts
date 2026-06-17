@@ -648,9 +648,6 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
     it('renders add-subarea form: clicking Add Subarea button and Cancel covers inline handlers', async () => {
         (element as any).envSelectedId = 'gs1';
         element.currentTab = ConfigTab.SUBAREAS;
-        vi.spyOn(element as any, '_getDataService').mockReturnValue({
-            getSubareas: vi.fn().mockResolvedValue([]),
-        });
         await element.updateComplete;
 
         // Click the "Add Subarea" button to cover the arrow fn at line 1811
@@ -694,9 +691,6 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any)._deleteConfirmSubareaId = '';
         // Mock _loadSubareas so the async chain after _confirmDeleteSubarea doesn't clear _subareas
         vi.spyOn(element as any, '_loadSubareas').mockResolvedValue(undefined);
-        vi.spyOn(element as any, '_getDataService').mockReturnValue({
-            removeSubarea: vi.fn().mockResolvedValue(undefined),
-        });
         await element.updateComplete;
 
         // Normal state: click the delete button (arrow fn at line 1849 → _handleDeleteSubarea)
@@ -834,12 +828,6 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         await element.updateComplete;
         expect((element as any)._showTankForm).toBe(false);
         expect((element as any)._editingTankIndex).toBeNull();
-    });
-
-    it('_getDataService lazily creates DataService when _dataService is unset', () => {
-        (element as any)._dataService = undefined;
-        const svc = (element as any)._getDataService();
-        expect(svc).toBeDefined();
     });
 
     it('_handleEnvGrowspaceChange maps irrigationTanks from device attributes', async () => {

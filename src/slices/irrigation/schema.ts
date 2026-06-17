@@ -184,7 +184,7 @@ export type PhaseWindows = z.infer<typeof PhaseWindowsSchema>;
 
 export const IrrigationAnalyticsSchema = z.object({
   growspace_id: z.string(),
-  stage_aggregates: z.record(z.number()),
+  stage_aggregates: z.record(z.string(), z.number()),
 });
 
 export type IrrigationAnalytics = z.infer<typeof IrrigationAnalyticsSchema>;

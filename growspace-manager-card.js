@@ -7669,6 +7669,26 @@ function setHass(hass) {
     _hass = hass;
 }
 /**
+ * Return the current HomeAssistant instance, or undefined if not yet set.
+ * Used by history-store to access hass.states for entity checks.
+ */
+function getHass() {
+    return _hass;
+}
+/**
+ * Call the Home Assistant REST API through the shared hass reference.
+ * Wraps `hass.callApi` for use from history-store reads that require REST.
+ *
+ * @param method - HTTP method ('GET', etc.)
+ * @param path   - HA REST API path relative to the base URL (e.g. 'history/period/...')
+ */
+async function callApi(method, path) {
+    if (!_hass) {
+        throw new WSError('internal_error', 'callApi: hass is not set — call setHass() first');
+    }
+    return _hass.callApi(method, path);
+}
+/**
  * Make an authenticated HTTP request through the shared hass reference.
  * Wraps `hass.fetchWithAuth` for use from slice mutators that need REST APIs
  * (e.g. multipart file uploads) rather than WebSocket calls.
@@ -20590,9 +20610,6 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     updated(changedProperties) {
         super.updated(changedProperties);
-        if (changedProperties.has('hass') && this.hass) {
-            this._dataService = new DataService(this.hass);
-        }
         if (changedProperties.has('open')) {
             if (this.open) {
                 if (!this._initialStateApplied) {
@@ -21079,11 +21096,6 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this._t({ type: 'CLOSE_GROUP_DIALOG' });
     }
     // ── Subarea methods ──────────────────────────────────────────────────────
-    _getDataService() {
-        if (!this._dataService)
-            this._dataService = new DataService(this.hass);
-        return this._dataService;
-    }
     async _loadSubareas() {
         const envId = this._sm.environmentDraft.selectedGrowspaceId;
         const gsSub = this._sm.tabs.growspaces.sub;
@@ -29126,6 +29138,13 @@ object({
     lightsOffMin: number().int(),
     lightHours: number(),
     phases: array(PhaseWindowSchema),
+});
+// ---------------------------------------------------------------------------
+// Irrigation analytics (read — not a service payload)
+// ---------------------------------------------------------------------------
+object({
+    growspace_id: string(),
+    stage_aggregates: record(string(), number()),
 });
 
 /**
@@ -132935,6 +132954,592 @@ class InteractionManager {
     }
 }
 
+/**
+ * Fetch history for multiple entities in a single REST call.
+ * Throws on transport failure so callers can surface errors.
+ */
+async function getBatchHistory(entityIds, startTime, endTime) {
+    if (entityIds.length === 0)
+        return {};
+    const startStr = startTime.toISOString();
+    const entityList = entityIds.join(',');
+    let url = `history/period/${startStr}?filter_entity_id=${entityList}&minimal_response`;
+    if (endTime)
+        url += `&end_time=${endTime.toISOString()}`;
+    const res = await callApi('GET', url);
+    const resultMap = {};
+    if (res) {
+        res.forEach((entityHistory) => {
+            if (entityHistory && entityHistory.length > 0) {
+                resultMap[entityHistory[0].entity_id] = entityHistory;
+            }
+        });
+    }
+    return resultMap;
+}
+/**
+ * Fetch downsampled history stats via WebSocket, falling back to REST batch on failure.
+ * Throws when both WS and REST transports fail so callers can surface errors.
+ */
+async function getHistoryStats(entityIds, startTime, endTime, intervalMinutes = 15, significantChangesOnly = true) {
+    if (entityIds.length === 0)
+        return {};
+    try {
+        const raw = await hassCall(WS_TYPE_GET_HISTORY_STATS, {
+            entity_ids: entityIds,
+            start_time: startTime.toISOString(),
+            end_time: endTime?.toISOString(),
+            interval_minutes: intervalMinutes,
+            significant_changes_only: significantChangesOnly,
+        }, HistoryStatsResponseSchema);
+        const mappedResult = {};
+        for (const [entityId, points] of Object.entries(raw)) {
+            mappedResult[entityId] = points.map((p) => ({
+                entity_id: entityId,
+                state: p.s,
+                last_changed: p.lu,
+                last_updated: p.lu,
+                attributes: p.a || {},
+            }));
+        }
+        return mappedResult;
+    }
+    catch (wsErr) {
+        console.warn('[HistoryStore] getHistoryStats WS failed, falling back to REST batch:', wsErr);
+        return getBatchHistory(entityIds, startTime, endTime);
+    }
+}
+class GrowspaceHistoryStore {
+    constructor(_dataService, selectedDevice) {
+        // --- Internals ---
+        this.STORAGE_KEY_PREFIX = STORAGE_KEYS.HISTORY_PREFIX;
+        this.CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000;
+        this._refreshInterval = null;
+        this._selectedDeviceUnsub = null;
+        this._visibilityHandler = null;
+        this._selectedDevice = selectedDevice;
+        this.$historyCache = map({});
+        this.$lastTimestamps = map({});
+        this.$historyLoading = atom(false);
+        this.$historyLoaded = atom(false);
+        this.$historyError = atom(null);
+        this.$graphRanges = map({});
+        this.$activeEnvGraphs = atom(new Set());
+        this.$linkedGraphGroups = atom([]);
+        // Subscribe to device changes to handle cache and storage
+        this._selectedDeviceUnsub = this._selectedDevice.subscribe((deviceId) => {
+            if (deviceId) {
+                this.handleDeviceChange(deviceId);
+            }
+        });
+        this.$headerHistoryState = computed([this.$historyCache, this.$historyLoading, this.$activeEnvGraphs, this.$linkedGraphGroups], (historyCache, historyLoading, activeEnvGraphs, linkedGraphGroups) => ({
+            historyCache,
+            historyLoading,
+            activeEnvGraphs,
+            linkedGraphGroups,
+        }));
+        this.$combinedHistory = computed(this.$historyCache, (cache) => {
+            const result = { ...cache };
+            const commonMetrics = [
+                'temperature',
+                'humidity',
+                'vpd',
+                'co2',
+                'soil_moisture',
+                'light',
+                'optimal',
+            ];
+            commonMetrics.forEach((m) => {
+                if (!result[m])
+                    result[m] = [];
+            });
+            return result;
+        });
+        this.$analyticsViewState = computed([
+            this.$historyLoading,
+            this.$historyLoaded,
+            this.$activeEnvGraphs,
+            this.$linkedGraphGroups,
+            this.$combinedHistory,
+            this.$graphRanges,
+        ], (historyLoading, historyLoaded, activeEnvGraphs, linkedGraphGroups, combinedHistory, graphRanges) => ({
+            historyLoading,
+            historyLoaded,
+            activeEnvGraphs,
+            linkedGraphGroups,
+            combinedHistory,
+            graphRanges,
+        }));
+    }
+    // --- Actions ---
+    setHistoryData(metric, data) {
+        const current = this.$historyCache.get();
+        this.$historyCache.set({ ...current, [metric]: data });
+    }
+    setHistoryBatch(updates) {
+        const current = this.$historyCache.get();
+        this.$historyCache.set({ ...current, ...updates });
+    }
+    updateLastTimestamp(metric, data) {
+        if (data.length === 0)
+            return;
+        const lastPoint = data[data.length - 1];
+        const timestamp = lastPoint.last_updated || lastPoint.last_changed;
+        if (timestamp) {
+            this.$lastTimestamps.setKey(metric, timestamp);
+        }
+    }
+    clearHistoryCache() {
+        this.$historyCache.set({});
+        this.$lastTimestamps.set({});
+        this.$historyLoaded.set(false);
+        this.$historyError.set(null);
+    }
+    setHistoryLoading(loading) {
+        this.$historyLoading.set(loading);
+    }
+    setHistoryLoaded(loaded) {
+        this.$historyLoaded.set(loaded);
+    }
+    setGraphRange(deviceId, range) {
+        this.$graphRanges.setKey(deviceId, range);
+        this.setHistoryLoaded(false);
+    }
+    getGraphRange(deviceId) {
+        if (!deviceId)
+            return '24h';
+        return this.$graphRanges.get()[deviceId] || '24h';
+    }
+    toggleEnvGraph(metric) {
+        const current = this.$activeEnvGraphs.get();
+        const newSet = new Set(current);
+        if (newSet.has(metric)) {
+            newSet.delete(metric);
+            this.$activeEnvGraphs.set(newSet);
+            return false;
+        }
+        else {
+            newSet.add(metric);
+            this.$activeEnvGraphs.set(newSet);
+            return true;
+        }
+    }
+    linkGraphs(metric1, metric2) {
+        const groups = this.$linkedGraphGroups.get();
+        const existingGroupIndex = groups.findIndex((group) => group.includes(metric1) || group.includes(metric2));
+        const newGroups = [...groups];
+        if (existingGroupIndex >= 0) {
+            const group = new Set(newGroups[existingGroupIndex]);
+            group.add(metric1);
+            group.add(metric2);
+            newGroups[existingGroupIndex] = Array.from(group);
+        }
+        else {
+            newGroups.push([metric1, metric2]);
+        }
+        this.$linkedGraphGroups.set(newGroups);
+        const newActive = new Set(this.$activeEnvGraphs.get());
+        newActive.add(metric1);
+        newActive.add(metric2);
+        this.$activeEnvGraphs.set(newActive);
+    }
+    unlinkGraphGroup(index) {
+        const groups = this.$linkedGraphGroups.get();
+        if (index >= 0 && index < groups.length) {
+            const newGroups = [...groups];
+            newGroups.splice(index, 1);
+            this.$linkedGraphGroups.set(newGroups);
+        }
+    }
+    unlinkGraphMetric(metric) {
+        const groups = this.$linkedGraphGroups.get();
+        const newGroups = groups
+            .map((group) => group.filter((m) => m !== metric))
+            .filter((group) => group.length > 1);
+        this.$linkedGraphGroups.set(newGroups);
+    }
+    clearAllLinks() {
+        this.$linkedGraphGroups.set([]);
+    }
+    getHistoryForMetric(metric) {
+        return this.$historyCache.get()[metric] || null;
+    }
+    // --- Fetching & Logic (Migrated from Controller) ---
+    handleDeviceChange(deviceId) {
+        // Clear runtime cache
+        this.clearHistoryCache();
+        // Try load from storage
+        this._loadFromStorage(deviceId);
+    }
+    async loadHistoryOnDemand() {
+        if (this.$historyLoading.get() || this.$historyLoaded.get()) {
+            return;
+        }
+        this.setHistoryLoading(true);
+        try {
+            await this._fetchHistory(this.getRange());
+            this.setHistoryLoaded(true);
+            console.log('[HistoryStore] History loaded successfully');
+        }
+        catch (error) {
+            const e = error instanceof Error ? error.message : undefined;
+            console.error('[HistoryStore] Failed to load history', error);
+            this.$historyError.set(e || 'Failed to load history');
+        }
+        finally {
+            this.setHistoryLoading(false);
+        }
+    }
+    startAutoRefresh() {
+        if (this._refreshInterval)
+            return;
+        this._refreshInterval = window.setInterval(() => {
+            this._fetchHistoryDelta();
+        }, 5 * 60 * 1000); // 5 minutes
+        // Refresh when tab becomes visible again (browsers throttle setInterval when hidden)
+        this._visibilityHandler = () => {
+            if (!document.hidden) {
+                this._fetchHistoryDelta();
+            }
+        };
+        document.addEventListener('visibilitychange', this._visibilityHandler);
+    }
+    stopAutoRefresh() {
+        if (this._refreshInterval) {
+            window.clearInterval(this._refreshInterval);
+            this._refreshInterval = null;
+        }
+        if (this._visibilityHandler) {
+            document.removeEventListener('visibilitychange', this._visibilityHandler);
+            this._visibilityHandler = null;
+        }
+    }
+    destroy() {
+        this.stopAutoRefresh();
+        if (this._selectedDeviceUnsub) {
+            this._selectedDeviceUnsub();
+            this._selectedDeviceUnsub = null;
+        }
+    }
+    getRange() {
+        const deviceId = this._selectedDevice.get();
+        return this.getGraphRange(deviceId);
+    }
+    async _fetchHistory(range = '24h') {
+        const deviceId = this._selectedDevice.get();
+        if (!deviceId)
+            return;
+        const devices = devices$.get();
+        const device = devices.find((d) => d.deviceId === deviceId);
+        if (!device)
+            return;
+        const { start, end } = this.calculateTimeRange(range);
+        const metricsToFetch = ['optimal', ...Object.keys(METRIC_ENTITY_KEYS)];
+        const entitiesToFetch = new Set();
+        // 1. Identify Overview Entity
+        if (device.overviewEntityId) {
+            entitiesToFetch.add(device.overviewEntityId);
+            // Map main overview entity to 'main' for timestamp tracking if needed,
+            // but usually main data is split into metrics.
+            // The controller logic mapped overview_entity_id to 'main' in some places,
+            // let's follow that pattern if consistent.
+        }
+        // 2. Identify Metric Entities
+        for (const metric of metricsToFetch) {
+            const entityIds = this.getEntityIdsForMetric(device, metric);
+            entityIds.forEach((entityId) => {
+                entityIds.length > 1 ? `${metric}:${entityId}` : metric;
+                entitiesToFetch.add(entityId);
+            });
+        }
+        // 3. Identify Composite Keys (Multi-Device Graphs)
+        const activeGraphs = this.$activeEnvGraphs.get();
+        activeGraphs.forEach((key) => {
+            if (key.includes(':')) {
+                const [metric, entityId] = key.split(':');
+                if (metric && entityId) {
+                    entitiesToFetch.add(entityId);
+                }
+            }
+        });
+        if (entitiesToFetch.size === 0)
+            return;
+        const batchResults = await getHistoryStats(Array.from(entitiesToFetch), start, end, this._getIntervalForRange(range), true);
+        if (!batchResults)
+            return;
+        // Overview/Main
+        // Metrics
+        const formattedUpdates = {};
+        for (const metric of metricsToFetch) {
+            const entityIds = this.getEntityIdsForMetric(device, metric);
+            entityIds.forEach((entityId) => {
+                const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
+                const result = batchResults[entityId] || [];
+                formattedUpdates[key] = result;
+                this.updateLastTimestamp(key, result);
+            });
+        }
+        this.setHistoryBatch(formattedUpdates);
+        this._saveToStorage();
+    }
+    async _fetchHistoryDelta() {
+        const deviceId = this._selectedDevice.get();
+        if (!deviceId)
+            return;
+        const devices = devices$.get();
+        const device = devices.find((d) => d.deviceId === deviceId);
+        if (!device)
+            return;
+        const currentTimestamps = this.$lastTimestamps.get();
+        const hasAnyTimestamps = Object.keys(currentTimestamps).length > 0;
+        if (!hasAnyTimestamps) {
+            await this._fetchHistory(this.getRange());
+            return;
+        }
+        const now = new Date();
+        const metricsToFetch = ['optimal', ...Object.keys(METRIC_ENTITY_KEYS)];
+        const entityMap = {};
+        const entitiesToFetch = new Set();
+        // Overview
+        if (device.overviewEntityId) ;
+        for (const metric of metricsToFetch) {
+            const entityIds = this.getEntityIdsForMetric(device, metric);
+            entityIds.forEach((entityId) => {
+                const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
+                const lastTimestamp = currentTimestamps[key];
+                if (lastTimestamp) {
+                    entityMap[key] = entityId;
+                    entitiesToFetch.add(entityId);
+                }
+            });
+        }
+        // Composite Keys Delta
+        const activeGraphs = this.$activeEnvGraphs.get();
+        activeGraphs.forEach((key) => {
+            if (key.includes(':')) {
+                const [metric, entityId] = key.split(':');
+                const lastTimestamp = currentTimestamps[key];
+                if (metric && entityId && lastTimestamp) {
+                    entityMap[key] = entityId;
+                    entitiesToFetch.add(entityId);
+                }
+            }
+        });
+        if (entitiesToFetch.size === 0)
+            return;
+        try {
+            const oldestTimestamp = Math.min(...Object.values(currentTimestamps)
+                .filter((t) => t)
+                .map((t) => new Date(t).getTime()));
+            const start = new Date(oldestTimestamp);
+            const batchResults = await getHistoryStats(Array.from(entitiesToFetch), start, now, 5, // Small interval
+            true);
+            if (!batchResults)
+                return;
+            for (const [key, entityId] of Object.entries(entityMap)) {
+                const deltaData = batchResults[entityId] || [];
+                if (deltaData.length > 0) {
+                    this._mergeDeltaData(key, deltaData);
+                }
+            }
+            this._saveToStorage();
+        }
+        catch (e) {
+            console.error('[HistoryStore] Failed to fetch delta history', e);
+        }
+    }
+    _mergeDeltaData(metric, deltaData) {
+        const currentCache = this.$historyCache.get();
+        const existing = currentCache[metric] || [];
+        if (existing.length === 0) {
+            this.setHistoryData(metric, deltaData);
+            this.updateLastTimestamp(metric, deltaData);
+            return;
+        }
+        const lastExisting = existing[existing.length - 1];
+        const lastTimestamp = new Date(lastExisting.last_updated || lastExisting.last_changed).getTime();
+        const newData = deltaData.filter((point) => {
+            const pointTime = new Date(point.last_updated || point.last_changed).getTime();
+            return pointTime > lastTimestamp;
+        });
+        if (newData.length > 0) {
+            this.setHistoryData(metric, [...existing, ...newData]);
+            this.updateLastTimestamp(metric, newData);
+        }
+    }
+    _loadFromStorage(deviceId) {
+        try {
+            const key = this.STORAGE_KEY_PREFIX + deviceId;
+            const raw = localStorage.getItem(key);
+            if (!raw)
+                return false;
+            const data = JSON.parse(raw);
+            if (!data || !data.version || !data.timestamp || !data.history)
+                return false;
+            const age = Date.now() - data.timestamp;
+            if (age > this.CACHE_VALIDITY_MS) {
+                localStorage.removeItem(key);
+                return false;
+            }
+            this.setHistoryBatch(data.history);
+            // Restore timestamps
+            const timestamps = data.timestamps || {};
+            this.$lastTimestamps.set(timestamps);
+            // Don't mark as fully loaded — localStorage data serves as an
+            // immediate preview while loadHistoryOnDemand() fetches fresh data.
+            // Previously this set historyLoaded=true, which prevented fresh
+            // fetches and left graphs showing stale cached data for hours.
+            return true;
+        }
+        catch (e) {
+            console.error('[HistoryStore] Failed to load from storage', e);
+            return false;
+        }
+    }
+    _saveToStorage() {
+        const deviceId = this._selectedDevice.get();
+        if (!deviceId)
+            return;
+        try {
+            const key = this.STORAGE_KEY_PREFIX + deviceId;
+            const data = {
+                version: 1,
+                timestamp: Date.now(),
+                history: this.$historyCache.get(),
+                timestamps: this.$lastTimestamps.get(),
+            };
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+        catch (e) {
+            console.error('[HistoryStore] Failed to save to storage', e);
+        }
+    }
+    // --- Utils ---
+    getEntityIdsForMetric(device, metricKey) {
+        const ids = [];
+        if (metricKey === 'optimal') {
+            let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+            const overviewId = device.overviewEntityId ||
+                device.overview_entity_id;
+            if (overviewId) {
+                slug = overviewId.replace('sensor.', '').replace(/_overview$/, '');
+            }
+            let optimalId = `binary_sensor.${slug}_optimal_conditions`;
+            if (slug === 'cure')
+                optimalId = `binary_sensor.cure_optimal_curing`;
+            else if (slug === 'dry')
+                optimalId = `binary_sensor.dry_optimal_drying`;
+            ids.push(optimalId);
+            return ids;
+        }
+        const mapping = METRIC_ENTITY_KEYS[metricKey];
+        if (!mapping)
+            return ids;
+        const envAttrs = (device.environmentAttributes ||
+            device.environment_attributes ||
+            {});
+        // Primary key is already a string[] (e.g. energySensors, powerSensors)
+        const directValue = envAttrs[mapping.primary];
+        if (Array.isArray(directValue) && (directValue.length === 0 || typeof directValue[0] === 'string')) {
+            return directValue;
+        }
+        // 1. Try plural keys first
+        const pluralKey = mapping.primary.endsWith('Sensor')
+            ? mapping.primary.replace('Sensor', 'Sensors')
+            : `${mapping.primary}s`;
+        let pluralIds = envAttrs[pluralKey];
+        if (!pluralIds && /[A-Z]/.test(pluralKey)) {
+            const snakePlural = pluralKey.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+            pluralIds = envAttrs[snakePlural];
+        }
+        if (pluralIds && Array.isArray(pluralIds) && pluralIds.length > 0) {
+            return pluralIds;
+        }
+        // 2. Fallback to single primary/fallback
+        if (mapping.source === 'irrigation') {
+            const config = (device.irrigationConfig ||
+                device.irrigation_config);
+            if (!config)
+                return ids;
+            let entityId = config[mapping.primary];
+            if (!entityId && /[A-Z]/.test(mapping.primary)) {
+                const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+                entityId = config[snakeKey];
+            }
+            if (typeof entityId === 'string')
+                ids.push(entityId);
+        }
+        else {
+            let entityId = envAttrs[mapping.primary];
+            if (!entityId && mapping.fallback) {
+                entityId = envAttrs[mapping.fallback];
+            }
+            if (!entityId && /[A-Z]/.test(mapping.primary)) {
+                const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+                entityId = envAttrs[snakeKey];
+            }
+            // Special fallback for VPD calculated sensor
+            if (!entityId && metricKey === 'vpd' && device.name) {
+                const slugify = (text) => text
+                    .toString()
+                    .toLowerCase()
+                    .replace(/\s+/g, '_')
+                    .replace(/[^\w-]+/g, '')
+                    .replace(/--+/g, '_')
+                    .replace(/^-+/, '')
+                    .replace(/-+$/, '');
+                const calcName = `${device.name} Calculated VPD`;
+                const calculatedId = `sensor.${slugify(calcName)}`;
+                if (getHass()?.states[calculatedId]) {
+                    entityId = calculatedId;
+                }
+            }
+            if (entityId)
+                ids.push(entityId);
+        }
+        // Special case for irrigation_tank_level - extract sensor entities from tanks array
+        if (metricKey === 'irrigation_tank_level') {
+            const tanks = envAttrs['irrigationTanks'] || [];
+            return tanks.map((t) => t.sensorEntity).filter(Boolean);
+        }
+        return ids;
+    }
+    getEntityIdForMetric(device, metricKey) {
+        const ids = this.getEntityIdsForMetric(device, metricKey);
+        return ids.length > 0 ? ids[0] : null;
+    }
+    calculateTimeRange(range) {
+        const now = new Date();
+        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        switch (range) {
+            case '1h':
+                startTime = new Date(now.getTime() - 60 * 60 * 1000);
+                break;
+            case '6h':
+                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+                break;
+            case '7d':
+                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+        }
+        return { start: startTime, end: now };
+    }
+    _getIntervalForRange(range) {
+        switch (range) {
+            case '7d':
+                return 240;
+            case '24h':
+                return 30;
+            case '6h':
+                return 15;
+            case '1h':
+                return 5;
+            default:
+                return 15;
+        }
+    }
+}
+
 let Heatmap3D = class Heatmap3D extends i$3 {
     constructor() {
         super(...arguments);
@@ -132974,7 +133579,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
     firstUpdated() {
         if (!this.container || !this.hass)
             return;
-        this.dataService = new DataService(this.hass);
+        setHass(this.hass);
         // Initialize Scene Manager
         if (this.device) {
             this.sceneManager = new SceneManager(this.container, this.device, this.hass, {
@@ -133115,7 +133720,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
     _updatePumpTankLinks() {
         if (!this.device)
             return;
-        this.dataService?.callService('growspace_manager', 'update_environment_attributes', {
+        callService('growspace_manager', 'update_environment_attributes', {
             growspace_id: this.device.deviceId,
             pump_tank_links: this.device.environmentAttributes.pump_tank_links,
         });
@@ -133171,13 +133776,13 @@ let Heatmap3D = class Heatmap3D extends i$3 {
                     if (obj && obj.userData)
                         rotation = obj.userData.baseRotation;
                 }
-                this.dataService?.updateSensorCoordinates(this.device.deviceId, id, x, y, z, rotation);
+                updateSensorCoordinates(this.device.deviceId, id, x, y, z, rotation);
                 break;
             }
         }
     }
     async fetchHistory() {
-        if (!this.dataService || !this.device)
+        if (!this.device)
             return;
         const env = this.device.environmentAttributes;
         const sensorCoords = env?.sensorCoordinates || {};
@@ -133192,7 +133797,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             return;
         try {
             const start = new Date(Date.now() - 24 * 60 * 60 * 1000);
-            this.historyData = await this.dataService.getHistoryStats(Array.from(entityIds), start);
+            this.historyData = await getHistoryStats(Array.from(entityIds), start);
         }
         catch (e) {
             console.error('Failed to fetch history:', e);
@@ -134711,538 +135316,6 @@ class GrowspaceUIStore {
     }
 }
 
-class GrowspaceHistoryStore {
-    constructor(dataService, selectedDevice) {
-        // --- Internals ---
-        this.STORAGE_KEY_PREFIX = STORAGE_KEYS.HISTORY_PREFIX;
-        this.CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000;
-        this._refreshInterval = null;
-        this._selectedDeviceUnsub = null;
-        this._visibilityHandler = null;
-        this.dataService = dataService;
-        this._selectedDevice = selectedDevice;
-        this.$historyCache = map({});
-        this.$lastTimestamps = map({});
-        this.$historyLoading = atom(false);
-        this.$historyLoaded = atom(false);
-        this.$historyError = atom(null);
-        this.$graphRanges = map({});
-        this.$activeEnvGraphs = atom(new Set());
-        this.$linkedGraphGroups = atom([]);
-        // Subscribe to device changes to handle cache and storage
-        this._selectedDeviceUnsub = this._selectedDevice.subscribe((deviceId) => {
-            if (deviceId) {
-                this.handleDeviceChange(deviceId);
-            }
-        });
-        this.$headerHistoryState = computed([this.$historyCache, this.$historyLoading, this.$activeEnvGraphs, this.$linkedGraphGroups], (historyCache, historyLoading, activeEnvGraphs, linkedGraphGroups) => ({
-            historyCache,
-            historyLoading,
-            activeEnvGraphs,
-            linkedGraphGroups,
-        }));
-        this.$combinedHistory = computed(this.$historyCache, (cache) => {
-            const result = { ...cache };
-            const commonMetrics = [
-                'temperature',
-                'humidity',
-                'vpd',
-                'co2',
-                'soil_moisture',
-                'light',
-                'optimal',
-            ];
-            commonMetrics.forEach((m) => {
-                if (!result[m])
-                    result[m] = [];
-            });
-            return result;
-        });
-        this.$analyticsViewState = computed([
-            this.$historyLoading,
-            this.$historyLoaded,
-            this.$activeEnvGraphs,
-            this.$linkedGraphGroups,
-            this.$combinedHistory,
-            this.$graphRanges,
-        ], (historyLoading, historyLoaded, activeEnvGraphs, linkedGraphGroups, combinedHistory, graphRanges) => ({
-            historyLoading,
-            historyLoaded,
-            activeEnvGraphs,
-            linkedGraphGroups,
-            combinedHistory,
-            graphRanges,
-        }));
-    }
-    // --- Actions ---
-    setHistoryData(metric, data) {
-        const current = this.$historyCache.get();
-        this.$historyCache.set({ ...current, [metric]: data });
-    }
-    setHistoryBatch(updates) {
-        const current = this.$historyCache.get();
-        this.$historyCache.set({ ...current, ...updates });
-    }
-    updateLastTimestamp(metric, data) {
-        if (data.length === 0)
-            return;
-        const lastPoint = data[data.length - 1];
-        const timestamp = lastPoint.last_updated || lastPoint.last_changed;
-        if (timestamp) {
-            this.$lastTimestamps.setKey(metric, timestamp);
-        }
-    }
-    clearHistoryCache() {
-        this.$historyCache.set({});
-        this.$lastTimestamps.set({});
-        this.$historyLoaded.set(false);
-        this.$historyError.set(null);
-    }
-    setHistoryLoading(loading) {
-        this.$historyLoading.set(loading);
-    }
-    setHistoryLoaded(loaded) {
-        this.$historyLoaded.set(loaded);
-    }
-    setGraphRange(deviceId, range) {
-        this.$graphRanges.setKey(deviceId, range);
-        this.setHistoryLoaded(false);
-    }
-    getGraphRange(deviceId) {
-        if (!deviceId)
-            return '24h';
-        return this.$graphRanges.get()[deviceId] || '24h';
-    }
-    toggleEnvGraph(metric) {
-        const current = this.$activeEnvGraphs.get();
-        const newSet = new Set(current);
-        if (newSet.has(metric)) {
-            newSet.delete(metric);
-            this.$activeEnvGraphs.set(newSet);
-            return false;
-        }
-        else {
-            newSet.add(metric);
-            this.$activeEnvGraphs.set(newSet);
-            return true;
-        }
-    }
-    linkGraphs(metric1, metric2) {
-        const groups = this.$linkedGraphGroups.get();
-        const existingGroupIndex = groups.findIndex((group) => group.includes(metric1) || group.includes(metric2));
-        const newGroups = [...groups];
-        if (existingGroupIndex >= 0) {
-            const group = new Set(newGroups[existingGroupIndex]);
-            group.add(metric1);
-            group.add(metric2);
-            newGroups[existingGroupIndex] = Array.from(group);
-        }
-        else {
-            newGroups.push([metric1, metric2]);
-        }
-        this.$linkedGraphGroups.set(newGroups);
-        const newActive = new Set(this.$activeEnvGraphs.get());
-        newActive.add(metric1);
-        newActive.add(metric2);
-        this.$activeEnvGraphs.set(newActive);
-    }
-    unlinkGraphGroup(index) {
-        const groups = this.$linkedGraphGroups.get();
-        if (index >= 0 && index < groups.length) {
-            const newGroups = [...groups];
-            newGroups.splice(index, 1);
-            this.$linkedGraphGroups.set(newGroups);
-        }
-    }
-    unlinkGraphMetric(metric) {
-        const groups = this.$linkedGraphGroups.get();
-        const newGroups = groups
-            .map((group) => group.filter((m) => m !== metric))
-            .filter((group) => group.length > 1);
-        this.$linkedGraphGroups.set(newGroups);
-    }
-    clearAllLinks() {
-        this.$linkedGraphGroups.set([]);
-    }
-    getHistoryForMetric(metric) {
-        return this.$historyCache.get()[metric] || null;
-    }
-    // --- Fetching & Logic (Migrated from Controller) ---
-    handleDeviceChange(deviceId) {
-        // Clear runtime cache
-        this.clearHistoryCache();
-        // Try load from storage
-        this._loadFromStorage(deviceId);
-    }
-    async loadHistoryOnDemand() {
-        if (this.$historyLoading.get() || this.$historyLoaded.get()) {
-            return;
-        }
-        this.setHistoryLoading(true);
-        try {
-            await this._fetchHistory(this.getRange());
-            this.setHistoryLoaded(true);
-            console.log('[HistoryStore] History loaded successfully');
-        }
-        catch (error) {
-            const e = error instanceof Error ? error.message : undefined;
-            console.error('[HistoryStore] Failed to load history', error);
-            this.$historyError.set(e || 'Failed to load history');
-        }
-        finally {
-            this.setHistoryLoading(false);
-        }
-    }
-    startAutoRefresh() {
-        if (this._refreshInterval)
-            return;
-        this._refreshInterval = window.setInterval(() => {
-            this._fetchHistoryDelta();
-        }, 5 * 60 * 1000); // 5 minutes
-        // Refresh when tab becomes visible again (browsers throttle setInterval when hidden)
-        this._visibilityHandler = () => {
-            if (!document.hidden) {
-                this._fetchHistoryDelta();
-            }
-        };
-        document.addEventListener('visibilitychange', this._visibilityHandler);
-    }
-    stopAutoRefresh() {
-        if (this._refreshInterval) {
-            window.clearInterval(this._refreshInterval);
-            this._refreshInterval = null;
-        }
-        if (this._visibilityHandler) {
-            document.removeEventListener('visibilitychange', this._visibilityHandler);
-            this._visibilityHandler = null;
-        }
-    }
-    destroy() {
-        this.stopAutoRefresh();
-        if (this._selectedDeviceUnsub) {
-            this._selectedDeviceUnsub();
-            this._selectedDeviceUnsub = null;
-        }
-    }
-    getRange() {
-        const deviceId = this._selectedDevice.get();
-        return this.getGraphRange(deviceId);
-    }
-    async _fetchHistory(range = '24h') {
-        const deviceId = this._selectedDevice.get();
-        if (!deviceId)
-            return;
-        const devices = devices$.get();
-        const device = devices.find((d) => d.deviceId === deviceId);
-        if (!device)
-            return;
-        const { start, end } = this.calculateTimeRange(range);
-        const metricsToFetch = ['optimal', ...Object.keys(METRIC_ENTITY_KEYS)];
-        const entitiesToFetch = new Set();
-        // 1. Identify Overview Entity
-        if (device.overviewEntityId) {
-            entitiesToFetch.add(device.overviewEntityId);
-            // Map main overview entity to 'main' for timestamp tracking if needed,
-            // but usually main data is split into metrics.
-            // The controller logic mapped overview_entity_id to 'main' in some places,
-            // let's follow that pattern if consistent.
-        }
-        // 2. Identify Metric Entities
-        for (const metric of metricsToFetch) {
-            const entityIds = this.getEntityIdsForMetric(device, metric);
-            entityIds.forEach((entityId) => {
-                entityIds.length > 1 ? `${metric}:${entityId}` : metric;
-                entitiesToFetch.add(entityId);
-            });
-        }
-        // 3. Identify Composite Keys (Multi-Device Graphs)
-        const activeGraphs = this.$activeEnvGraphs.get();
-        activeGraphs.forEach((key) => {
-            if (key.includes(':')) {
-                const [metric, entityId] = key.split(':');
-                if (metric && entityId) {
-                    entitiesToFetch.add(entityId);
-                }
-            }
-        });
-        if (entitiesToFetch.size === 0)
-            return;
-        const batchResults = await this.dataService.getHistoryStats(Array.from(entitiesToFetch), start, end, this._getIntervalForRange(range), true);
-        if (!batchResults)
-            return;
-        // Overview/Main
-        // Metrics
-        const formattedUpdates = {};
-        for (const metric of metricsToFetch) {
-            const entityIds = this.getEntityIdsForMetric(device, metric);
-            entityIds.forEach((entityId) => {
-                const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
-                const result = batchResults[entityId] || [];
-                formattedUpdates[key] = result;
-                this.updateLastTimestamp(key, result);
-            });
-        }
-        this.setHistoryBatch(formattedUpdates);
-        this._saveToStorage();
-    }
-    async _fetchHistoryDelta() {
-        const deviceId = this._selectedDevice.get();
-        if (!deviceId)
-            return;
-        const devices = devices$.get();
-        const device = devices.find((d) => d.deviceId === deviceId);
-        if (!device)
-            return;
-        const currentTimestamps = this.$lastTimestamps.get();
-        const hasAnyTimestamps = Object.keys(currentTimestamps).length > 0;
-        if (!hasAnyTimestamps) {
-            await this._fetchHistory(this.getRange());
-            return;
-        }
-        const now = new Date();
-        const metricsToFetch = ['optimal', ...Object.keys(METRIC_ENTITY_KEYS)];
-        const entityMap = {};
-        const entitiesToFetch = new Set();
-        // Overview
-        if (device.overviewEntityId) ;
-        for (const metric of metricsToFetch) {
-            const entityIds = this.getEntityIdsForMetric(device, metric);
-            entityIds.forEach((entityId) => {
-                const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
-                const lastTimestamp = currentTimestamps[key];
-                if (lastTimestamp) {
-                    entityMap[key] = entityId;
-                    entitiesToFetch.add(entityId);
-                }
-            });
-        }
-        // Composite Keys Delta
-        const activeGraphs = this.$activeEnvGraphs.get();
-        activeGraphs.forEach((key) => {
-            if (key.includes(':')) {
-                const [metric, entityId] = key.split(':');
-                const lastTimestamp = currentTimestamps[key];
-                if (metric && entityId && lastTimestamp) {
-                    entityMap[key] = entityId;
-                    entitiesToFetch.add(entityId);
-                }
-            }
-        });
-        if (entitiesToFetch.size === 0)
-            return;
-        try {
-            const oldestTimestamp = Math.min(...Object.values(currentTimestamps)
-                .filter((t) => t)
-                .map((t) => new Date(t).getTime()));
-            const start = new Date(oldestTimestamp);
-            const batchResults = await this.dataService.getHistoryStats(Array.from(entitiesToFetch), start, now, 5, // Small interval
-            true);
-            if (!batchResults)
-                return;
-            for (const [key, entityId] of Object.entries(entityMap)) {
-                const deltaData = batchResults[entityId] || [];
-                if (deltaData.length > 0) {
-                    this._mergeDeltaData(key, deltaData);
-                }
-            }
-            this._saveToStorage();
-        }
-        catch (e) {
-            console.error('[HistoryStore] Failed to fetch delta history', e);
-        }
-    }
-    _mergeDeltaData(metric, deltaData) {
-        const currentCache = this.$historyCache.get();
-        const existing = currentCache[metric] || [];
-        if (existing.length === 0) {
-            this.setHistoryData(metric, deltaData);
-            this.updateLastTimestamp(metric, deltaData);
-            return;
-        }
-        const lastExisting = existing[existing.length - 1];
-        const lastTimestamp = new Date(lastExisting.last_updated || lastExisting.last_changed).getTime();
-        const newData = deltaData.filter((point) => {
-            const pointTime = new Date(point.last_updated || point.last_changed).getTime();
-            return pointTime > lastTimestamp;
-        });
-        if (newData.length > 0) {
-            this.setHistoryData(metric, [...existing, ...newData]);
-            this.updateLastTimestamp(metric, newData);
-        }
-    }
-    _loadFromStorage(deviceId) {
-        try {
-            const key = this.STORAGE_KEY_PREFIX + deviceId;
-            const raw = localStorage.getItem(key);
-            if (!raw)
-                return false;
-            const data = JSON.parse(raw);
-            if (!data || !data.version || !data.timestamp || !data.history)
-                return false;
-            const age = Date.now() - data.timestamp;
-            if (age > this.CACHE_VALIDITY_MS) {
-                localStorage.removeItem(key);
-                return false;
-            }
-            this.setHistoryBatch(data.history);
-            // Restore timestamps
-            const timestamps = data.timestamps || {};
-            this.$lastTimestamps.set(timestamps);
-            // Don't mark as fully loaded — localStorage data serves as an
-            // immediate preview while loadHistoryOnDemand() fetches fresh data.
-            // Previously this set historyLoaded=true, which prevented fresh
-            // fetches and left graphs showing stale cached data for hours.
-            return true;
-        }
-        catch (e) {
-            console.error('[HistoryStore] Failed to load from storage', e);
-            return false;
-        }
-    }
-    _saveToStorage() {
-        const deviceId = this._selectedDevice.get();
-        if (!deviceId)
-            return;
-        try {
-            const key = this.STORAGE_KEY_PREFIX + deviceId;
-            const data = {
-                version: 1,
-                timestamp: Date.now(),
-                history: this.$historyCache.get(),
-                timestamps: this.$lastTimestamps.get(),
-            };
-            localStorage.setItem(key, JSON.stringify(data));
-        }
-        catch (e) {
-            console.error('[HistoryStore] Failed to save to storage', e);
-        }
-    }
-    // --- Utils ---
-    getEntityIdsForMetric(device, metricKey) {
-        const ids = [];
-        if (metricKey === 'optimal') {
-            let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-            const overviewId = device.overviewEntityId ||
-                device.overview_entity_id;
-            if (overviewId) {
-                slug = overviewId.replace('sensor.', '').replace(/_overview$/, '');
-            }
-            let optimalId = `binary_sensor.${slug}_optimal_conditions`;
-            if (slug === 'cure')
-                optimalId = `binary_sensor.cure_optimal_curing`;
-            else if (slug === 'dry')
-                optimalId = `binary_sensor.dry_optimal_drying`;
-            ids.push(optimalId);
-            return ids;
-        }
-        const mapping = METRIC_ENTITY_KEYS[metricKey];
-        if (!mapping)
-            return ids;
-        const envAttrs = (device.environmentAttributes ||
-            device.environment_attributes ||
-            {});
-        // Primary key is already a string[] (e.g. energySensors, powerSensors)
-        const directValue = envAttrs[mapping.primary];
-        if (Array.isArray(directValue) && (directValue.length === 0 || typeof directValue[0] === 'string')) {
-            return directValue;
-        }
-        // 1. Try plural keys first
-        const pluralKey = mapping.primary.endsWith('Sensor')
-            ? mapping.primary.replace('Sensor', 'Sensors')
-            : `${mapping.primary}s`;
-        let pluralIds = envAttrs[pluralKey];
-        if (!pluralIds && /[A-Z]/.test(pluralKey)) {
-            const snakePlural = pluralKey.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-            pluralIds = envAttrs[snakePlural];
-        }
-        if (pluralIds && Array.isArray(pluralIds) && pluralIds.length > 0) {
-            return pluralIds;
-        }
-        // 2. Fallback to single primary/fallback
-        if (mapping.source === 'irrigation') {
-            const config = (device.irrigationConfig ||
-                device.irrigation_config);
-            if (!config)
-                return ids;
-            let entityId = config[mapping.primary];
-            if (!entityId && /[A-Z]/.test(mapping.primary)) {
-                const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-                entityId = config[snakeKey];
-            }
-            if (typeof entityId === 'string')
-                ids.push(entityId);
-        }
-        else {
-            let entityId = envAttrs[mapping.primary];
-            if (!entityId && mapping.fallback) {
-                entityId = envAttrs[mapping.fallback];
-            }
-            if (!entityId && /[A-Z]/.test(mapping.primary)) {
-                const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-                entityId = envAttrs[snakeKey];
-            }
-            // Special fallback for VPD calculated sensor
-            if (!entityId && metricKey === 'vpd' && device.name) {
-                const slugify = (text) => text
-                    .toString()
-                    .toLowerCase()
-                    .replace(/\s+/g, '_')
-                    .replace(/[^\w-]+/g, '')
-                    .replace(/--+/g, '_')
-                    .replace(/^-+/, '')
-                    .replace(/-+$/, '');
-                const calcName = `${device.name} Calculated VPD`;
-                const calculatedId = `sensor.${slugify(calcName)}`;
-                if (this.dataService.hass && this.dataService.hass.states[calculatedId]) {
-                    entityId = calculatedId;
-                }
-            }
-            if (entityId)
-                ids.push(entityId);
-        }
-        // Special case for irrigation_tank_level - extract sensor entities from tanks array
-        if (metricKey === 'irrigation_tank_level') {
-            const tanks = envAttrs['irrigationTanks'] || [];
-            return tanks.map((t) => t.sensorEntity).filter(Boolean);
-        }
-        return ids;
-    }
-    getEntityIdForMetric(device, metricKey) {
-        const ids = this.getEntityIdsForMetric(device, metricKey);
-        return ids.length > 0 ? ids[0] : null;
-    }
-    calculateTimeRange(range) {
-        const now = new Date();
-        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        switch (range) {
-            case '1h':
-                startTime = new Date(now.getTime() - 60 * 60 * 1000);
-                break;
-            case '6h':
-                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-                break;
-            case '7d':
-                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                break;
-        }
-        return { start: startTime, end: now };
-    }
-    _getIntervalForRange(range) {
-        switch (range) {
-            case '7d':
-                return 240;
-            case '24h':
-                return 30;
-            case '6h':
-                return 15;
-            case '1h':
-                return 5;
-            default:
-                return 15;
-        }
-    }
-}
-
 const WS_ERROR_MESSAGES = {
     coordinator_not_ready: 'Integration not loaded — try reloading the page',
     entity_not_found: 'Item not found — it may have been removed',
@@ -136355,6 +136428,7 @@ function openConfigDialog(ctx, device) {
                 sensorCoordinates: device?.environmentAttributes?.sensorCoordinates || {},
                 irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
                 cameraEntities: device?.environmentAttributes?.cameraEntities || [],
+                lungroomTempSensors: device?.environmentAttributes?.lungroomTempSensors || [],
                 visionCheckupConfig: device?.environmentAttributes?.visionCheckupConfig,
                 substrateTemperatureSensors: device?.environmentAttributes?.substrateTemperatureSensors || [],
                 phSensors: device?.environmentAttributes?.phSensors || [],
@@ -139196,7 +139270,6 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         this._subareaEnvController = new libExports.StoreController(this, subareaEnvSnapshots$);
         this._subareaDeviceController = new libExports.StoreController(this, subareaDeviceSnapshots$);
         this._resizeController = new ResizeController(this, () => { });
-        this._dataService = null;
         this._analyticsStateController = null;
         this._subarea = null;
         this._loading = true;
@@ -139230,7 +139303,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     firstUpdated() {
         if (this.hass) {
             this.store.updateHass(this.hass);
-            this._dataService = new DataService(this.hass);
+            setHass(this.hass);
         }
         if (this._config?.growspace_id) {
             const syntheticConfig = {
@@ -139258,12 +139331,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         super.updated(changedProps);
         if (changedProps.has('hass') && this.hass) {
             this.store.updateHass(this.hass);
-            if (!this._dataService) {
-                this._dataService = new DataService(this.hass);
-            }
-            else {
-                this._dataService.updateHass(this.hass);
-            }
+            setHass(this.hass);
         }
         if (changedProps.has('_config') && this._config?.growspace_id) {
             const syntheticConfig = {
@@ -139286,9 +139354,6 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
             return;
         if (!this.hass)
             return;
-        if (!this._dataService) {
-            this._dataService = new DataService(this.hass);
-        }
         this._loading = true;
         this._error = null;
         try {
@@ -139342,8 +139407,6 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         }
     }
     async _loadHistory(subarea, range) {
-        if (!this._dataService)
-            return;
         const snapshot = subareaEnvSnapshots$.get().get(subarea.id);
         if (!snapshot)
             return;
@@ -139355,7 +139418,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         if (!allEntityIds.length)
             return;
         try {
-            const batchResults = await this._dataService.getBatchHistory(allEntityIds, start, end);
+            const batchResults = await getBatchHistory(allEntityIds, start, end);
             const cache = {};
             for (const { metric, entityIds } of metricEntities) {
                 if (entityIds.length === 1) {
@@ -140158,7 +140221,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.54"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.55"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',
