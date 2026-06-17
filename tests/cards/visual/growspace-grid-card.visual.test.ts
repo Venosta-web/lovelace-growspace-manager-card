@@ -11,8 +11,14 @@ import { aHass, aGrowspaceDevice } from '../../fixtures';
 vi.mock('../../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
 vi.mock('../../../src/features/ui/containers/growspace-toast.container', () => ({}));
 vi.mock('../../../src/cards/editors/growspace-grid-card-editor', () => ({
-    GrowspaceGridCardEditor: class extends HTMLElement {}
+    GrowspaceGridCardEditor: class extends HTMLElement {},
 }));
+vi.mock('../../../src/slices/growspace', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../src/slices/growspace')>();
+    // Never-resolving mock so the bootstrap controller's async fetch doesn't
+    // race with the manual setDevices() seed in this rendering test.
+    return { ...actual, fetchRawCollection: vi.fn(() => new Promise(() => {})) };
+});
 
 if (!customElements.get('growspace-grid-card')) {
     customElements.define('growspace-grid-card', GrowspaceGridCard);

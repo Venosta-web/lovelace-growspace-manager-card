@@ -34,6 +34,7 @@ import { EventBus, DATA_STALE_EVENT } from '../../features/shared/events';
 export class GrowspaceStore {
   private readonly _shared: GrowspaceSharedStore;
   private _staleUnsub?: () => void;
+  private _refreshCallback?: () => Promise<void>;
 
   dataService!: DataService;
   hass!: HomeAssistant;
@@ -218,9 +219,17 @@ export class GrowspaceStore {
 
     // Trigger a full refresh whenever the shared store signals stale data
     this._staleUnsub = shared.addOnStale(async () => {
-      await this.syncService.refreshGrowspaceData();
+      if (this._refreshCallback) {
+        await this._refreshCallback();
+      } else {
+        await this.syncService.refreshGrowspaceData();
+      }
       this.eventBus.emit(DATA_STALE_EVENT, undefined);
     });
+  }
+
+  public setRefreshCallback(cb: () => Promise<void>): void {
+    this._refreshCallback = cb;
   }
 
   public initialize(hass: HomeAssistant): void {
