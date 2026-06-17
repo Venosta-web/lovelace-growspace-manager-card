@@ -72,7 +72,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (this.hass) {
       setHass(this.hass);
       this.store.updateHass(this.hass);
-      this._bootstrapCtrl?.updateHass(this.hass);
+      this._bootstrapCtrl
+        ?.updateHass(this.hass)
+        .catch((err: unknown) => console.error('[bootstrap updateHass failed]', err));
       fetchAiStatus();
     }
     this.store.actions.library.fetchStrains();
@@ -153,7 +155,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (changedProps.has('hass')) {
       setHass(this.hass);
       this.store.updateHass(this.hass);
-      this._bootstrapCtrl?.updateHass(this.hass);
+      this._bootstrapCtrl
+        ?.updateHass(this.hass)
+        .catch((err: unknown) => console.error('[bootstrap updateHass failed]', err));
       if (this._dialogPortal) {
         this._dialogPortal.hass = this.hass;
       }
