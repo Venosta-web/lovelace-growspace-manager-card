@@ -1,3 +1,16 @@
+# [1.1.0-next.58](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.57...v1.1.0-next.58) (2026-06-17)
+
+
+### Bug Fixes
+
+* **adr-0022:** restore isLoading$ atom write in BootstrapController ([1e60f4b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1e60f4bd804d47c9d5cfdf1c8091238a8803c970))
+
+
+### Features
+
+* **adr-0022:** delete legacy read/bootstrap stack (Step 4, [#330](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/330)) ([5e4fd8b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/5e4fd8b79834ceeb28d6c0e6b5cde59be13cfa88)), closes [#328](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/328)
+* **adr-0022:** repoint irrigation-dialog off DataService ([0cc68cc](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/0cc68cccc8015e365ec16ca853f6f606cf13e3c2)), closes [#330](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/330)
+
 # [1.1.0-next.57](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.56...v1.1.0-next.57) (2026-06-17)
 
 
