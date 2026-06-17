@@ -1,32 +1,24 @@
 import { expect, test, describe, aroundEach, vi } from 'vitest';
 import { GrowspaceSubareaCard, deriveSubareaMetricEntities } from '../../src/cards/growspace-subarea-card';
 import { setSubareaEnvSnapshot, subareaEnvSnapshots$ } from '../../src/slices/environment';
-import { DataService } from '../../src/services/data-service';
 import { ChartUtils } from '../../src/utils/chart-utils';
 import { ViewMode } from '../../src/features/environment/constants';
 import { aHass, aGrowspace } from '../fixtures';
 import { renderCard } from '../harness';
 
-const { mockDataService, mockGetSubareas } = vi.hoisted(() => {
+const { mockGetBatchHistory, mockGetSubareas } = vi.hoisted(() => {
     const mockGetSubareas = vi.fn();
-    return {
-        mockDataService: {
-            getSubareas: mockGetSubareas,
-            getBatchHistory: vi.fn(),
-            getGrowspaceDevices: vi.fn(),
-            updateHass: vi.fn(),
-        },
-        mockGetSubareas,
-    };
+    const mockGetBatchHistory = vi.fn();
+    return { mockGetBatchHistory, mockGetSubareas };
 });
 
-vi.mock('../../src/services/data-service', () => ({
-    DataService: class {
-        constructor() {
-            return mockDataService;
-        }
-    }
-}));
+vi.mock('../../src/store/history/history-store', async () => {
+    const actual = await vi.importActual('../../src/store/history/history-store') as any;
+    return {
+        ...actual,
+        getBatchHistory: mockGetBatchHistory,
+    };
+});
 
 // Subarea slice — getSubareas is now the source of truth
 vi.mock('../../src/slices/subarea', () => ({
@@ -69,8 +61,8 @@ describe('GrowspaceSubareaCard', () => {
     };
 
     aroundEach(async (runTest) => {
-        mockDataService.getSubareas.mockResolvedValue([mockSubarea as any]);
-        mockDataService.getBatchHistory.mockResolvedValue({
+        mockGetSubareas.mockResolvedValue([mockSubarea as any]);
+        mockGetBatchHistory.mockResolvedValue({
             'sensor.veg_temp': [
                 { entity_id: 'sensor.veg_temp', attributes: {}, last_changed: '2024-01-01T10:00:00Z', state: '22.5' },
                 { entity_id: 'sensor.veg_temp', attributes: {}, last_changed: '2024-01-01T11:00:00Z', state: '23.0' }
@@ -80,9 +72,6 @@ describe('GrowspaceSubareaCard', () => {
                 { entity_id: 'sensor.veg_humidity', attributes: {}, last_changed: '2024-01-01T11:00:00Z', state: '52' }
             ]
         });
-        mockDataService.getGrowspaceDevices.mockReturnValue([]);
-        mockDataService.updateHass.mockReturnValue(undefined);
-
         vi.mocked(ChartUtils.generateSparklinePath).mockReturnValue('M 0,0 L 100,100');
         vi.mocked(ChartUtils.getSparklineColor).mockReturnValue('#ff0000');
 
@@ -183,7 +172,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('renders error state when subarea not found', async () => {
-        mockDataService.getSubareas.mockResolvedValue([]);
+        mockGetSubareas.mockResolvedValue([]);
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
@@ -223,7 +212,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('renders no-sensors message when environment_config is empty', async () => {
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {}
@@ -234,7 +223,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('renders VPD and CO2 sensors', async () => {
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -256,7 +245,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('renders multiple entity IDs in hero card (multi-sensor path)', async () => {
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -278,7 +267,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('renders additional sensors (substrate temp, pH, feed EC, bulk EC, pore EC)', async () => {
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -311,7 +300,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('renders device chip state as n/n for multi-entity groups', async () => {
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -348,7 +337,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('_loadHistory catches and logs errors', async () => {
-        mockDataService.getBatchHistory.mockRejectedValue(new Error('History fetch failed'));
+        mockGetBatchHistory.mockRejectedValue(new Error('History fetch failed'));
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
         await (element as any)._loadHistory(mockSubarea);
         expect(consoleSpy).toHaveBeenCalled();
@@ -358,9 +347,9 @@ describe('GrowspaceSubareaCard', () => {
     test('_loadHistory returns early when the seeded snapshot has no entity IDs', async () => {
         const emptySubarea = { id: 'sa_empty', name: 'Veg', environment_config: {} };
         setSubareaEnvSnapshot('sa_empty', emptySubarea as any, { growspaceId: 'gs1' }, {});
-        mockDataService.getBatchHistory.mockClear();
+        mockGetBatchHistory.mockClear();
         await (element as any)._loadHistory(emptySubarea);
-        expect(mockDataService.getBatchHistory).not.toHaveBeenCalled();
+        expect(mockGetBatchHistory).not.toHaveBeenCalled();
     });
 
     test('_loadHistory returns early when no snapshot exists for the subarea', async () => {
@@ -369,9 +358,9 @@ describe('GrowspaceSubareaCard', () => {
             name: 'Veg',
             environment_config: { temperature_sensors: ['sensor.veg_temp'] }
         };
-        mockDataService.getBatchHistory.mockClear();
+        mockGetBatchHistory.mockClear();
         await (element as any)._loadHistory(unseededSubarea);
-        expect(mockDataService.getBatchHistory).not.toHaveBeenCalled();
+        expect(mockGetBatchHistory).not.toHaveBeenCalled();
     });
 
     test('toggles device chip metric graph on click', async () => {
@@ -406,7 +395,7 @@ describe('GrowspaceSubareaCard', () => {
 
     test('multi-sensor hero card renders without sparkline when path is null', async () => {
         vi.mocked(ChartUtils.generateSparklinePath).mockReturnValue(null as any);
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -424,7 +413,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('hero sensor chip is not rendered when entity not in hass states', async () => {
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -445,7 +434,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('device chip normalizes a non-standard fan state per Fan Entity Mode (ADR-0008)', async () => {
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -466,7 +455,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('device chip shows a "-" placeholder when entity not in hass states', async () => {
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -486,7 +475,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('secondary sensor chip is not rendered when entity not in hass states', async () => {
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -529,17 +518,11 @@ describe('GrowspaceSubareaCard', () => {
         expect(loadSpy).toHaveBeenCalled();
     });
 
-    test('updated creates DataService when hass changes and _dataService is null', async () => {
-        (element as any)._dataService = null;
-        element.hass = { ...mockHass };
+    test('updated calls _loadSubarea when config changes', async () => {
+        const loadSpy = vi.spyOn(element as any, '_loadSubarea').mockResolvedValue(undefined);
+        element.setConfig({ type: 'custom:growspace-subarea-card', growspace_id: 'gs2', subarea_id: 'sa2' } as any);
         await element.updateComplete;
-        expect((element as any)._dataService).not.toBeNull();
-    });
-
-    test('_loadSubarea creates DataService when _dataService is null', async () => {
-        (element as any)._dataService = null;
-        await (element as any)._loadSubarea();
-        expect((element as any)._dataService).not.toBeNull();
+        expect(loadSpy).toHaveBeenCalled();
     });
 
     test('updated sets _parentGrowspaceName when matching device found in store', async () => {
@@ -551,7 +534,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('renders error state when getSubareas throws', async () => {
-        mockDataService.getSubareas.mockRejectedValue(new Error('Network error'));
+        mockGetSubareas.mockRejectedValue(new Error('Network error'));
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
         await (element as any)._loadSubarea();
         await element.updateComplete;
@@ -584,7 +567,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('renders legacy single sensor fields (temperature_sensor, humidity_sensor, vpd_sensor)', async () => {
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -605,7 +588,7 @@ describe('GrowspaceSubareaCard', () => {
     test('resolves Name-based calculated VPD fallback sensor when explicit VPD is missing', async () => {
         const fakeDevice = { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {} };
         (element as any)._viewController = { value: { grid: { devices: [fakeDevice] } } };
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -630,7 +613,7 @@ describe('GrowspaceSubareaCard', () => {
     test('resolves UUID-based calculated VPD fallback sensor when explicit VPD is missing', async () => {
         const fakeDevice = { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {} };
         (element as any)._viewController = { value: { grid: { devices: [fakeDevice] } } };
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -655,7 +638,7 @@ describe('GrowspaceSubareaCard', () => {
     test('_loadHistory fetches history for UUID-based calculated VPD when no explicit VPD sensor is configured', async () => {
         const fakeDevice = { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {} };
         (element as any)._viewController = { value: { grid: { devices: [fakeDevice] } } };
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -673,7 +656,7 @@ describe('GrowspaceSubareaCard', () => {
             { entity_id: calcVpdId, state: '1.0', last_changed: '2024-01-01T10:00:00Z', attributes: {} },
             { entity_id: calcVpdId, state: '1.1', last_changed: '2024-01-01T11:00:00Z', attributes: {} },
         ];
-        mockDataService.getBatchHistory.mockResolvedValue({
+        mockGetBatchHistory.mockResolvedValue({
             'sensor.veg_temp': [
                 { entity_id: 'sensor.veg_temp', state: '22.5', last_changed: '2024-01-01T10:00:00Z', attributes: {} },
                 { entity_id: 'sensor.veg_temp', state: '23.0', last_changed: '2024-01-01T11:00:00Z', attributes: {} },
@@ -684,7 +667,7 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        expect(mockDataService.getBatchHistory).toHaveBeenCalledWith(
+        expect(mockGetBatchHistory).toHaveBeenCalledWith(
             expect.arrayContaining([calcVpdId]),
             expect.any(Date),
             expect.any(Date)
@@ -695,7 +678,7 @@ describe('GrowspaceSubareaCard', () => {
     test('_loadHistory fetches history for name-based calculated VPD when no explicit VPD sensor is configured', async () => {
         const fakeDevice = { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {} };
         (element as any)._viewController = { value: { grid: { devices: [fakeDevice] } } };
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -713,7 +696,7 @@ describe('GrowspaceSubareaCard', () => {
             { entity_id: nameVpdId, state: '1.2', last_changed: '2024-01-01T10:00:00Z', attributes: {} },
             { entity_id: nameVpdId, state: '1.3', last_changed: '2024-01-01T11:00:00Z', attributes: {} },
         ];
-        mockDataService.getBatchHistory.mockResolvedValue({
+        mockGetBatchHistory.mockResolvedValue({
             'sensor.veg_temp': [
                 { entity_id: 'sensor.veg_temp', state: '22.5', last_changed: '2024-01-01T10:00:00Z', attributes: {} },
                 { entity_id: 'sensor.veg_temp', state: '23.0', last_changed: '2024-01-01T11:00:00Z', attributes: {} },
@@ -724,7 +707,7 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        expect(mockDataService.getBatchHistory).toHaveBeenCalledWith(
+        expect(mockGetBatchHistory).toHaveBeenCalledWith(
             expect.arrayContaining([nameVpdId]),
             expect.any(Date),
             expect.any(Date)
@@ -746,7 +729,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('desktop secondary chips fire toggle-graph on growspace-header-secondary-ui', async () => {
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -769,7 +752,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('mobile secondary chips render via growspace-header-hero-ui and fire toggle-graph', async () => {
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {
@@ -831,20 +814,11 @@ describe('GrowspaceSubareaCard', () => {
         expect(tempChip?.active).toBe(true);
     });
 
-    test('firstUpdated skips store and dataService init when hass is not yet set', async () => {
+    test('firstUpdated skips store init when hass is not yet set', async () => {
         (element as any).hass = undefined;
-        (element as any)._dataService = null;
         const updateSpy = vi.spyOn(element.store, 'updateHass');
         await (element as any).firstUpdated();
         expect(updateSpy).not.toHaveBeenCalled();
-        expect((element as any)._dataService).toBeNull();
-    });
-
-    test('_loadHistory returns early when _dataService is null', async () => {
-        (element as any)._dataService = null;
-        mockDataService.getBatchHistory.mockClear();
-        await (element as any)._loadHistory(mockSubarea);
-        expect(mockDataService.getBatchHistory).not.toHaveBeenCalled();
     });
 
     test('_handleSubareaRangeChange does not call _loadHistory when subarea is null', async () => {
@@ -869,7 +843,7 @@ describe('GrowspaceSubareaCard', () => {
     test('resolves multiple calculated VPD fallback sensors when multiple T/H pairs are configured', async () => {
         const fakeDevice = { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {} };
         (element as any)._viewController = { value: { grid: { devices: [fakeDevice] } } };
-        mockDataService.getSubareas.mockResolvedValue([{
+        mockGetSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
             environment_config: {

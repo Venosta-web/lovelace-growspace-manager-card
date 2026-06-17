@@ -9,7 +9,9 @@ import { strainLibraryContext, storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { SceneManager } from '../../../utils/three/scene-manager';
 import { InteractionManager } from '../../../utils/three/interaction-manager';
-import { DataService } from '../../../services/data-service';
+import { callService, setHass } from '../../../services/hass-call';
+import { updateSensorCoordinates } from '../../../slices/growspace';
+import { getHistoryStats } from '../../../store/history/history-store';
 import { SensorTypeUtils } from '../../../utils/sensor-type-utils';
 
 @customElement('heatmap-3d')
@@ -53,7 +55,6 @@ export class Heatmap3D extends LitElement {
   // Managers
   private sceneManager?: SceneManager;
   private interactionManager?: InteractionManager;
-  private dataService?: DataService;
 
   private resizeObserver?: ResizeObserver;
 
@@ -497,7 +498,7 @@ export class Heatmap3D extends LitElement {
   protected firstUpdated() {
     if (!this.container || !this.hass) return;
 
-    this.dataService = new DataService(this.hass);
+    setHass(this.hass);
 
     // Initialize Scene Manager
     if (this.device) {
@@ -674,7 +675,7 @@ export class Heatmap3D extends LitElement {
 
   private _updatePumpTankLinks() {
     if (!this.device) return;
-    this.dataService?.callService('growspace_manager', 'update_environment_attributes', {
+    callService('growspace_manager', 'update_environment_attributes', {
       growspace_id: this.device.deviceId,
       pump_tank_links: this.device.environmentAttributes.pump_tank_links,
     });
@@ -740,14 +741,14 @@ export class Heatmap3D extends LitElement {
           if (obj && (obj as any).userData) rotation = (obj as any).userData.baseRotation;
         }
 
-        this.dataService?.updateSensorCoordinates(this.device.deviceId, id, x, y, z, rotation);
+        updateSensorCoordinates(this.device.deviceId, id, x, y, z, rotation);
         break;
       }
     }
   }
 
   private async fetchHistory() {
-    if (!this.dataService || !this.device) return;
+    if (!this.device) return;
     const env = this.device.environmentAttributes;
     const sensorCoords = env?.sensorCoordinates || {};
     const sensorGroups = env?.sensorGroups || [];
@@ -763,7 +764,7 @@ export class Heatmap3D extends LitElement {
 
     try {
       const start = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      this.historyData = await this.dataService.getHistoryStats(Array.from(entityIds), start);
+      this.historyData = await getHistoryStats(Array.from(entityIds), start);
     } catch (e) {
       console.error('Failed to fetch history:', e);
     }
