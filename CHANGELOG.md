@@ -1,3 +1,10 @@
+# [1.1.0-next.59](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.58...v1.1.0-next.59) (2026-06-17)
+
+
+### Bug Fixes
+
+* guard fire-and-forget service calls against unhandled rejections ([a3945b7](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/a3945b734e5c364bb9c0ab596f6ac977271b4dfa))
+
 # [1.1.0-next.58](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.57...v1.1.0-next.58) (2026-06-17)
 
 
