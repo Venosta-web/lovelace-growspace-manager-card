@@ -29,3 +29,19 @@ Caching follows ADR-0005 unchanged: the Growspace slice's `fetchGrowspaceData` a
 - The `*API extends BaseAPI` classes and `base-api.ts` become deletable once the read gaps (`getIrrigationAnalytics`, `getStrainRecommendation`, the `getHistory*` family in `history-store`) move onto the seam.
 - The payload transform (`GrowspaceAdapter.transformGrowspace`) is **not** orphaned by the retirement — it lives in the adapter and survives; `GrowspaceAPI.getGrowspaceDevices` is a duplicate of it that dies with the class. The orchestrator calls the adapter directly.
 - The migration exposes a pre-existing duplication to reconcile: the device list is held in **two atoms** — `growspaceDevices$` (Growspace slice, written by the slice's `fetchGrowspaceData`) and `devices$` (Grid slice, written by `sync-service` via `setDevices`). Making the orchestrator the single writer is the moment to collapse these to one (or have it feed both during migration); this ADR does not mandate which atom wins, only that one writer owns the fan-out.
+
+## Implementation decisions (resolved in #327)
+
+These were left open by the ADR and settled during the Step 2 build:
+
+**Device atom reconciliation:** `devices$` (Grid slice, `GrowspaceDevice[]`) is the canonical atom. `growspaceDevices$` (Growspace slice, `GrowspaceDevice[] | null`) is retired. The `null` loading sentinel is never read outside the Growspace slice itself — the Bootstrap controller's `loading` property covers that signal. The Growspace slice's optimistic mutators still write `growspaceDevices$` temporarily; their migration to `devices$` is a follow-up, not part of this step. The `hydrate()` orchestrator writes only `devices$`.
+
+**`hydrate()` signature:** `hydrate(collection: Record<string, GrowspaceAPIResponse>, hassStates: HassEntities): Set<string>`. Returns the watched-entity ID set as a byproduct of the fan-out (discovered while iterating devices/subareas). The Bootstrap controller stores and uses this set for the entity-change optimization. Pure of Lit and `hass` injection; `hassStates` is passed as a snapshot argument. Reads `subareasGrowspaceId$` / `subareas$` atoms internally to resolve the subarea list (the "prefer hydrated subareas over payload subareas" invariant belongs in the fan-out, not in callers).
+
+**Fetch transport:** A new `fetchRawCollection(): Promise<Record<string, GrowspaceAPIResponse>>` export on the Growspace slice wraps `hassCall('growspace_manager/get_data', …)` and returns the raw payload without transforming or writing atoms. The Bootstrap controller calls this; no direct `hassCall` in controller code.
+
+**Bootstrap controller shape:** Lit `ReactiveController` (`src/controllers/bootstrap.controller.ts`). Constructor takes `(host, gridSliceRef, cardConfig)`. Owns: `_lastHassRef`, `_isFetching`, `_lastCollection`, `_watchedEntities`, `_defaultApplied`, `loading: boolean` (plain property, calls `host.requestUpdate()`). Two internal paths on `updateHass(hass)`: (1) no collection yet → `fetchRawCollection()` → `hydrate(collection, hass.states)` → cache collection; (2) collection cached, watched entity changed → `hydrate(_lastCollection, hass.states)` without re-fetching.
+
+**First card wired:** `growspace-grid-card`. Parallel-run is a card-level bypass: replace `this.store.updateHass(this.hass)` call sites with `this._bootstrapController.updateHass(this.hass)`. `GrowspaceStore` and `SyncService` remain unchanged for all other cards.
+
+**Test placement (ADR-0004):** `src/services/hydrate.test.ts` — pure unit test, fake collection + fake `hassStates`, no host. `tests/controllers/bootstrap.controller.test.ts` — host-driven, covers auto-select and loading flag.
