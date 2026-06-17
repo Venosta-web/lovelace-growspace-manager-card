@@ -2676,10 +2676,12 @@ export class ConfigDialog extends LitElement {
               <input
                 type="checkbox"
                 .checked=${this._humidifierControlEnabled}
-                @change=${async (e: Event) => {
+                @change=${(e: Event) => {
                   const enabled = (e.target as HTMLInputElement).checked;
                   this._humidifierControlEnabled = enabled;
-                  setHumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled);
+                  setHumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled).catch(
+                    (err: unknown) => console.error('[setHumidifierControl failed]', err)
+                  );
                 }}
               />
               Enable Humidifier Control
@@ -2691,7 +2693,10 @@ export class ConfigDialog extends LitElement {
                 @change=${(e: Event) => {
                   const enabled = (e.target as HTMLInputElement).checked;
                   this._dehumidifierControlEnabled = enabled;
-                  setDehumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled);
+                  setDehumidifierControl(
+                    this._sm.environmentDraft.selectedGrowspaceId,
+                    enabled
+                  ).catch((err: unknown) => console.error('[setDehumidifierControl failed]', err));
                 }}
               />
               Enable Dehumidifier Control

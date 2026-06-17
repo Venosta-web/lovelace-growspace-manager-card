@@ -21066,10 +21066,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
               <input
                 type="checkbox"
                 .checked=${this._humidifierControlEnabled}
-                @change=${async (e) => {
+                @change=${(e) => {
             const enabled = e.target.checked;
             this._humidifierControlEnabled = enabled;
-            setHumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled);
+            setHumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled).catch((err) => console.error('[setHumidifierControl failed]', err));
         }}
               />
               Enable Humidifier Control
@@ -21081,7 +21081,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 @change=${(e) => {
             const enabled = e.target.checked;
             this._dehumidifierControlEnabled = enabled;
-            setDehumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled);
+            setDehumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled).catch((err) => console.error('[setDehumidifierControl failed]', err));
         }}
               />
               Enable Dehumidifier Control
@@ -136833,7 +136833,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (this.hass) {
             setHass(this.hass);
             this.store.updateHass(this.hass);
-            this._bootstrapCtrl?.updateHass(this.hass);
+            this._bootstrapCtrl
+                ?.updateHass(this.hass)
+                .catch((err) => console.error('[bootstrap updateHass failed]', err));
             fetchAiStatus();
         }
         this.store.actions.library.fetchStrains();
@@ -136901,7 +136903,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (changedProps.has('hass')) {
             setHass(this.hass);
             this.store.updateHass(this.hass);
-            this._bootstrapCtrl?.updateHass(this.hass);
+            this._bootstrapCtrl
+                ?.updateHass(this.hass)
+                .catch((err) => console.error('[bootstrap updateHass failed]', err));
             if (this._dialogPortal) {
                 this._dialogPortal.hass = this.hass;
             }
@@ -139279,7 +139283,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.55"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.58"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',
