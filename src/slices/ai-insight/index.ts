@@ -39,6 +39,7 @@ import {
   AIBriefingSchema,
   MAX_PINNED_THREADS,
   MAX_RECENT_THREADS,
+  type GrowAdviceResponsePayload,
   type ConversationThread,
   type TriageAlert,
   type AIBriefing,
@@ -476,4 +477,22 @@ export async function fetchAiSettings(): Promise<AiSettingsDraft> {
     z.record(z.string(), z.unknown())
   );
   return result as AiSettingsDraft;
+}
+
+/**
+ * Get an AI-powered strain recommendation based on a user query.
+ *
+ * Returns the raw validated GrowAdviceResponsePayload — identical shape to
+ * what AIAPI.getStrainRecommendation returned, so the deferred caller cutover
+ * is a drop-in replacement.
+ */
+export async function getStrainRecommendation(
+  userQuery: string
+): Promise<GrowAdviceResponsePayload> {
+  return callServiceReturning(
+    'growspace_manager',
+    'strain_recommendation',
+    { user_query: userQuery },
+    GrowAdviceResponseSchema
+  );
 }

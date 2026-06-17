@@ -47,6 +47,7 @@ import {
   fetchBriefing,
   fetchConversationThreads,
   fetchAiStatus,
+  getStrainRecommendation,
 } from './index';
 
 vi.mock('../../services/hass-call', () => ({
@@ -1172,5 +1173,39 @@ describe('fetchAiSettings', () => {
       expect.anything()
     );
     expect(result).toEqual(settings);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getStrainRecommendation
+// ---------------------------------------------------------------------------
+
+describe('getStrainRecommendation', () => {
+  it('calls callServiceReturning with strain_recommendation and user_query', async () => {
+    vi.mocked(hassCall.callServiceReturning).mockResolvedValueOnce('Blue Dream for beginners');
+
+    await getStrainRecommendation('best for beginners');
+
+    expect(hassCall.callServiceReturning).toHaveBeenCalledWith(
+      'growspace_manager',
+      'strain_recommendation',
+      { user_query: 'best for beginners' },
+      expect.anything()
+    );
+  });
+
+  it('returns the raw validated response payload', async () => {
+    const payload = { response: 'Blue Dream' };
+    vi.mocked(hassCall.callServiceReturning).mockResolvedValueOnce(payload);
+
+    const result = await getStrainRecommendation('beginner strain');
+
+    expect(result).toEqual(payload);
+  });
+
+  it('re-throws when callServiceReturning fails', async () => {
+    vi.mocked(hassCall.callServiceReturning).mockRejectedValueOnce(new Error('rate limited'));
+
+    await expect(getStrainRecommendation('query')).rejects.toThrow('rate limited');
   });
 });

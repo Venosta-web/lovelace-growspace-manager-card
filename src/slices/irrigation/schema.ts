@@ -177,3 +177,14 @@ export const PhaseWindowsSchema = z.object({
 });
 
 export type PhaseWindows = z.infer<typeof PhaseWindowsSchema>;
+
+// ---------------------------------------------------------------------------
+// Irrigation analytics (read — not a service payload)
+// ---------------------------------------------------------------------------
+
+export const IrrigationAnalyticsSchema = z.object({
+  growspace_id: z.string(),
+  stage_aggregates: z.record(z.number()),
+});
+
+export type IrrigationAnalytics = z.infer<typeof IrrigationAnalyticsSchema>;
