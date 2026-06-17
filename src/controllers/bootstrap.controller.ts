@@ -5,6 +5,7 @@ import { devices$ } from '../slices/grid';
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import { fetchRawCollection } from '../slices/growspace';
 import { hydrate } from '../services/hydrate';
+import { setIsLoading } from '../slices/ui';
 import { setHass } from '../services/hass-call';
 import type { GrowspaceAPIResponse } from '../types';
 
@@ -15,7 +16,7 @@ import type { GrowspaceAPIResponse } from '../types';
  *   - in-flight fetch guard (_isFetching)
  *   - watched-entity optimization (_watchedEntities)
  *   - default-growspace auto-select (_defaultApplied)
- *   - loading flag (triggers host.requestUpdate)
+ *   - loading flag (isLoading$ store atom — cards gate their spinner on it)
  *
  * Two updateHass() paths:
  *   1. No collection cached → fetchRawCollection() → hydrate → cache collection
@@ -31,8 +32,6 @@ export class BootstrapController implements ReactiveController {
   private _lastCollection: Record<string, GrowspaceAPIResponse> | null = null;
   private _watchedEntities = new Set<string>();
   private _defaultApplied = false;
-
-  loading = false;
 
   constructor(
     host: ReactiveControllerHost,
@@ -59,7 +58,7 @@ export class BootstrapController implements ReactiveController {
     if (this._isFetching) return;
     this._isFetching = true;
     if (devices$.get().length === 0) {
-      this.loading = true;
+      setIsLoading(true);
       this._host.requestUpdate();
     }
     try {
@@ -70,7 +69,7 @@ export class BootstrapController implements ReactiveController {
       this._autoSelect();
     } finally {
       this._isFetching = false;
-      this.loading = false;
+      setIsLoading(false);
       this._host.requestUpdate();
     }
   }

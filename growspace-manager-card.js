@@ -136678,7 +136678,7 @@ function hydrate(collection, hassStates) {
  *   - in-flight fetch guard (_isFetching)
  *   - watched-entity optimization (_watchedEntities)
  *   - default-growspace auto-select (_defaultApplied)
- *   - loading flag (triggers host.requestUpdate)
+ *   - loading flag (isLoading$ store atom — cards gate their spinner on it)
  *
  * Two updateHass() paths:
  *   1. No collection cached → fetchRawCollection() → hydrate → cache collection
@@ -136690,7 +136690,6 @@ class BootstrapController {
         this._lastCollection = null;
         this._watchedEntities = new Set();
         this._defaultApplied = false;
-        this.loading = false;
         this._host = host;
         this._grid = grid;
         this._config = config;
@@ -136709,7 +136708,7 @@ class BootstrapController {
             return;
         this._isFetching = true;
         if (devices$.get().length === 0) {
-            this.loading = true;
+            setIsLoading(true);
             this._host.requestUpdate();
         }
         try {
@@ -136721,7 +136720,7 @@ class BootstrapController {
         }
         finally {
             this._isFetching = false;
-            this.loading = false;
+            setIsLoading(false);
             this._host.requestUpdate();
         }
     }
