@@ -1,3 +1,11 @@
+# [1.1.0-next.55](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.54...v1.1.0-next.55) (2026-06-17)
+
+
+### Features
+
+* add lungroomTempSensors support and implement IrrigationAnalytics schema and test coverage ([de1b634](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/de1b634278b9abfb6d5e08cc7471363656693b9b))
+* **adr-0022-step1:** fill read gaps via hassCall seam ([5319a31](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/5319a3141077c3dc2284343f0a3e272eeee6a9db))
+
 # [1.1.0-next.54](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.53...v1.1.0-next.54) (2026-06-16)
 
 
