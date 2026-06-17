@@ -2,16 +2,6 @@ import { fixture, html } from '@open-wc/testing-helpers';
 import { expect, test, describe, beforeEach, vi, afterEach } from 'vitest';
 import '../../../src/cards/editors/growspace-subarea-card-editor';
 import { GrowspaceSubareaCardEditor } from '../../../src/cards/editors/growspace-subarea-card-editor';
-import { DataService } from '../../../src/services/data-service';
-
-// Mock DataService (still used by GrowspaceOptionsController)
-vi.mock('../../../src/services/data-service', () => {
-    return {
-        DataService: class {
-            updateHass = vi.fn();
-        },
-    };
-});
 
 // Mock subarea slice
 vi.mock('../../../src/slices/subarea', () => ({

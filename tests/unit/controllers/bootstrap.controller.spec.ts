@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ReactiveControllerHost } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BootstrapController } from '../../../src/controllers/bootstrap.controller';
-import { setDevices, devices$ } from '../../../src/slices/grid';
+import { setDevices } from '../../../src/slices/grid';
+import { isLoading$, setIsLoading } from '../../../src/slices/ui';
 import type { GridSliceRef } from '../../../src/slices/grid';
 import type { GrowspaceManagerCardConfig } from '../../../src/lib/types/config';
 
@@ -40,6 +41,7 @@ function makeHass(states: Record<string, unknown> = {}): HomeAssistant {
 
 beforeEach(() => {
   setDevices([]);
+  setIsLoading(true);
   vi.clearAllMocks();
 });
 
@@ -56,21 +58,22 @@ describe('BootstrapController', () => {
       expect(hydrate).toHaveBeenCalledOnce();
     });
 
-    it('sets loading=true before fetch when devices$ is empty, then false after', async () => {
+    it('drives the isLoading$ store atom: true during fetch, false after', async () => {
       const host = makeHost();
       const grid = makeGrid();
       const ctrl = new BootstrapController(host, grid, {} as GrowspaceManagerCardConfig);
 
       let loadingDuringFetch = false;
       vi.mocked(fetchRawCollection).mockImplementationOnce(async () => {
-        loadingDuringFetch = ctrl.loading;
+        loadingDuringFetch = isLoading$.get();
         return { 'gs-1': { identity: { growspace_id: 'gs-1', name: 'Tent A', type: 'flower' } } };
       });
 
       await ctrl.updateHass(makeHass());
 
       expect(loadingDuringFetch).toBe(true);
-      expect(ctrl.loading).toBe(false);
+      // The cards gate their spinner on this atom; it must clear once hydrated.
+      expect(isLoading$.get()).toBe(false);
     });
 
     it('auto-selects the first device when no device is selected', async () => {
