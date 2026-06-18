@@ -266,6 +266,21 @@ function toUserMessage(e: unknown): string {
 }
 
 /**
+ * Surface a failed operation as an error toast.
+ *
+ * Carries the WSError-code→friendly-message table and `toUserMessage` fallback
+ * extracted from the retired `withAction` wrapper, so an inlined `catch` can do
+ * `showError(e, 'Failed to remove growspace')` without making the plain
+ * `showToast` secretly error-aware. Maps the error to a user message, logs it,
+ * and shows `${errorPrefix}: ${message}`.
+ */
+export function showError(e: unknown, errorPrefix: string): void {
+  const message = toUserMessage(e);
+  console.error(errorPrefix, e);
+  showToast(`${errorPrefix}: ${message}`, 'error');
+}
+
+/**
  * Run an async operation and surface its outcome as a toast.
  *
  * The ctx-free successor to the old `withAction(ctx, …)` helper: call sites
@@ -286,9 +301,7 @@ export async function withToast<T>(
     if (opts.success) showToast(opts.success, 'success');
     return result;
   } catch (e: unknown) {
-    const message = toUserMessage(e);
-    console.error(opts.errorPrefix, e);
-    showToast(`${opts.errorPrefix}: ${message}`, 'error');
+    showError(e, opts.errorPrefix);
     if (opts.rethrow) throw e;
     return undefined;
   }

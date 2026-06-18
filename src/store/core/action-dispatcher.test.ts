@@ -458,31 +458,6 @@ describe('plant delegation smoke tests', () => {
 // ─── growspace delegation ─────────────────────────────────────────────────────
 
 describe('growspace delegation', () => {
-  it('add calls callService for ADD_GROWSPACE', async () => {
-    const { dispatcher } = makeStore();
-    await dispatcher.growspace.add({ name: 'Veg Room', rows: 4, plantsPerRow: 4, notificationService: 'notify' });
-    expect(callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      expect.stringContaining('growspace'),
-      expect.objectContaining({ name: 'Veg Room' })
-    );
-  });
-
-  it('update covers delegation line', async () => {
-    const { dispatcher } = makeStore();
-    await expect(dispatcher.growspace.update({ growspaceId: 'gs-1', name: 'Flower Room', rows: 6, plantsPerRow: 4 })).resolves.not.toThrow();
-  });
-
-  it('remove calls callService with growspace_id', async () => {
-    const { dispatcher } = makeStore();
-    await dispatcher.growspace.remove('gs-1');
-    expect(callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      expect.any(String),
-      expect.objectContaining({ growspace_id: 'gs-1' })
-    );
-  });
-
   it('removeEnvironment covers delegation line', async () => {
     const { dispatcher } = makeStore();
     await expect(dispatcher.growspace.removeEnvironment('gs-1')).resolves.not.toThrow();

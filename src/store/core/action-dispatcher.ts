@@ -4,7 +4,6 @@ import * as uiActions from '../ui/ui-actions';
 import * as libraryActions from '../plant/library-actions';
 import * as aiActions from '../system/ai-actions';
 import * as environmentActions from '../growspace/environment-actions';
-import * as growspaceActions from '../growspace/growspace-actions';
 import * as geneticsActions from '../plant/genetics-actions';
 import * as dryingActions from '../plant/drying-actions';
 import * as keyboardActions from '../system/keyboard-actions';
@@ -136,28 +135,6 @@ export class ActionDispatcher {
   };
 
   public readonly growspace = {
-    add: (detail: {
-      name: string;
-      rows: number;
-      plantsPerRow: number;
-      notificationService: string;
-    }) =>
-      growspaceActions.addGrowspace(
-        this.ctx,
-        detail.name,
-        detail.rows,
-        detail.plantsPerRow,
-        detail.notificationService
-      ),
-    update: (detail: { growspaceId: string; name: string; rows: number; plantsPerRow: number }) =>
-      growspaceActions.updateGrowspace(
-        this.ctx,
-        detail.growspaceId,
-        detail.name,
-        detail.rows,
-        detail.plantsPerRow
-      ),
-    remove: (id: string) => growspaceActions.removeGrowspace(this.ctx, id),
     removeEnvironment: (id: string) => removeEnvironment(id),
     resetWaterTracking: (id: string) => resetWaterTracking(id),
   };
