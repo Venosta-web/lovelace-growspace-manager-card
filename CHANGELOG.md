@@ -1,3 +1,10 @@
+# [1.1.0-next.60](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.59...v1.1.0-next.60) (2026-06-18)
+
+
+### Features
+
+* **dialogs:** self-fetch on open for the 3 fetch-coupled dialogs ([#339](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/339)) ([a8cbfe3](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/a8cbfe397df589172a67d5d9fe5ef6e73500d6cb))
+
 # [1.1.0-next.59](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.58...v1.1.0-next.59) (2026-06-17)
 
 
