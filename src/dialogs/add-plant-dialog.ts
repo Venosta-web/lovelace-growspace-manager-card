@@ -6,6 +6,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { mdiClose, mdiSprout, mdiDna, mdiContentCopy, mdiCheck, mdiChevronRight } from '@mdi/js';
 import { StrainEntry, PlantEntity } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
+import { fetchStrainLibrary } from '../slices/strain';
 import '../features/shared/ui/md3-text-input';
 import '../features/shared/ui/md3-number-input';
 import '../features/shared/ui/md3-select';
@@ -67,6 +68,19 @@ export class AddPlantDialog extends LitElement {
   @property({ type: Array }) siblingPlants: PlantEntity[] = [];
 
   @state() private _sm: SM = createInitialSM({ row: 0, col: 0 });
+  @state() private _loadingLibrary = true;
+
+  // Self-fetch the strain library on open (see "Dialog self-fetch on open" in
+  // CONTEXT.md); the populated atom flows back in via the `strainLibrary` prop.
+  connectedCallback(): void {
+    super.connectedCallback();
+    this._loadingLibrary = true;
+    fetchStrainLibrary()
+      .finally(() => {
+        this._loadingLibrary = false;
+      })
+      .catch((err: unknown) => console.error('[add-plant-dialog] failed to fetch strains', err));
+  }
 
   static styles = [
     dialogStyles,
@@ -524,7 +538,9 @@ export class AddPlantDialog extends LitElement {
 
           <div class="overview-grid">
             ${activeTab === 'add'
-              ? this._renderWizardStep(addSub, uniqueStrains, relevantPhenotypes)
+              ? this._loadingLibrary && this.strainLibrary.length === 0
+                ? html`<div class="empty-state" role="status">Loading strain library…</div>`
+                : this._renderWizardStep(addSub, uniqueStrains, relevantPhenotypes)
               : this._renderTransplantForm(activeTab as 'clone' | 'seedling')}
           </div>
 

@@ -455,7 +455,7 @@ describe('openBatchTrainingDialog', () => {
 // ---------------------------------------------------------------------------
 
 describe('openAddPlantDialog', () => {
-  it('opens ADD_PLANT dialog at explicit row/col', () => {
+  it('opens ADD_PLANT dialog at explicit row/col without fetching (the dialog self-fetches)', () => {
     const ctx = makeCtx();
     openAddPlantDialog(ctx, 2, 3);
     const dialog = ctx.ui.$activeDialog.get();
@@ -464,7 +464,7 @@ describe('openAddPlantDialog', () => {
       expect(dialog.payload.row).toBe(2);
       expect(dialog.payload.col).toBe(3);
     }
-    expect(libraryActions.fetchStrainLibrary).toHaveBeenCalledWith(ctx, true);
+    expect(libraryActions.fetchStrainLibrary).not.toHaveBeenCalled();
   });
 
   it('does nothing when no device is selected and no row/col given', () => {
@@ -508,6 +508,15 @@ describe('openStrainRecommendationDialog', () => {
       expect(dialog.payload.response).toBeNull();
     }
   });
+
+  it('is a pure UI op — opening it triggers no library fetch', () => {
+    const ctx = makeCtx();
+    openStrainRecommendationDialog(ctx);
+    // The recommendation is AI-on-submit; there is no data fetch glued to open.
+    expect(libraryActions.fetchStrainLibrary).not.toHaveBeenCalled();
+    expect(libraryActions.fetchNutrientPresets).not.toHaveBeenCalled();
+    expect(libraryActions.fetchIPMPresets).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -515,11 +524,11 @@ describe('openStrainRecommendationDialog', () => {
 // ---------------------------------------------------------------------------
 
 describe('openNutrientPresetsDialog', () => {
-  it('opens NUTRIENT_PRESETS dialog and fetches presets', () => {
+  it('opens NUTRIENT_PRESETS dialog without fetching (the dialog self-fetches)', () => {
     const ctx = makeCtx();
     openNutrientPresetsDialog(ctx);
-    expect(libraryActions.fetchNutrientPresets).toHaveBeenCalledWith(ctx);
     expect(ctx.ui.$activeDialog.get().type).toBe('NUTRIENT_PRESETS');
+    expect(libraryActions.fetchNutrientPresets).not.toHaveBeenCalled();
   });
 });
 
@@ -528,11 +537,11 @@ describe('openNutrientPresetsDialog', () => {
 // ---------------------------------------------------------------------------
 
 describe('openIPMDialog', () => {
-  it('opens IPM dialog and fetches presets', () => {
+  it('opens IPM dialog without fetching (the dialog self-fetches)', () => {
     const ctx = makeCtx();
     openIPMDialog(ctx);
-    expect(libraryActions.fetchIPMPresets).toHaveBeenCalledWith(ctx);
     expect(ctx.ui.$activeDialog.get().type).toBe('IPM');
+    expect(libraryActions.fetchIPMPresets).not.toHaveBeenCalled();
   });
 
   it('uses provided growspaceId', () => {

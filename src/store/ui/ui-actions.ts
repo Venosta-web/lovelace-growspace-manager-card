@@ -1,7 +1,6 @@
 import { ActionContext } from '../core/action-context';
 import { ViewMode, ConfigTab } from '../../constants';
 import { PlantEntity, GrowspaceDevice, EnvironmentConfigData } from '../../types';
-import * as libraryActions from '../plant/library-actions';
 import { devices$, optimisticDeletedPlantIds$, plantToDeviceMap$ } from '../../slices/grid';
 import { fetchStrainLibrary as strainSliceFetchLibrary } from '../../slices/strain';
 
@@ -191,8 +190,9 @@ export function openBatchTrainingDialog(ctx: ActionContext, growspaceId?: string
 }
 
 export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: number) {
+  // The ADD_PLANT dialog self-fetches the strain library on open
+  // (see "Dialog self-fetch on open" in CONTEXT.md), so this is a pure UI op.
   if (row !== undefined && col !== undefined) {
-    libraryActions.fetchStrainLibrary(ctx, true);
     ctx.ui.setActiveDialog({
       type: 'ADD_PLANT',
       payload: { row, col },
@@ -241,7 +241,6 @@ export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: numbe
     }
   }
 
-  libraryActions.fetchStrainLibrary(ctx, true);
   ctx.ui.setActiveDialog({
     type: 'ADD_PLANT',
     payload: { row: targetRow, col: targetCol },
@@ -256,7 +255,8 @@ export function openStrainRecommendationDialog(ctx: ActionContext) {
 }
 
 export function openNutrientPresetsDialog(ctx: ActionContext) {
-  libraryActions.fetchNutrientPresets(ctx);
+  // The NUTRIENT_PRESETS dialog self-fetches its presets on open
+  // (see "Dialog self-fetch on open" in CONTEXT.md), so this is a pure UI op.
   ctx.ui.setActiveDialog({
     type: 'NUTRIENT_PRESETS',
     payload: {},
@@ -267,7 +267,8 @@ export function openIPMDialog(
   ctx: ActionContext,
   context?: { growspaceId?: string; plantIds?: string[] }
 ) {
-  libraryActions.fetchIPMPresets(ctx);
+  // The IPM dialog self-fetches its presets on open
+  // (see "Dialog self-fetch on open" in CONTEXT.md), so this is a pure UI op.
   const growspaceId =
     context?.growspaceId ||
     (!context?.plantIds?.length ? ctx.grid.$selectedDevice.get() || undefined : undefined);
