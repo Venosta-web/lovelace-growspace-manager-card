@@ -11,6 +11,7 @@ import { SceneManager } from '../../../utils/three/scene-manager';
 import { InteractionManager } from '../../../utils/three/interaction-manager';
 import { callService, setHass } from '../../../services/hass-call';
 import { updateSensorCoordinates } from '../../../slices/growspace';
+import { openPlantOverviewDialog } from '../../../slices/ui';
 import { getHistoryStats } from '../../../store/history/history-store';
 import { SensorTypeUtils } from '../../../utils/sensor-type-utils';
 
@@ -622,7 +623,7 @@ export class Heatmap3D extends LitElement {
     if (event === 'click' && data.plant) {
       if (data.plant.entity_id) {
         // Existing plant
-        this.store?.actions.ui.openPlantOverviewDialog(data.plant);
+        openPlantOverviewDialog(data.plant);
       } else if (data.plant.row !== undefined && data.plant.col !== undefined) {
         // Empty slot
         this.store?.actions.ui.openAddPlantDialog(data.plant.row, data.plant.col);

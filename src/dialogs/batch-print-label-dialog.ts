@@ -9,6 +9,7 @@ import '../features/shared/ui/printer-status-strip';
 import type { BatchPrintLabelsDialogState, LabelSizeId, PrintDensity } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
+import { showToast } from '../slices/ui';
 
 const LABEL_SIZES: { id: LabelSizeId; label: string }[] = [
   { id: '50x30', label: '50×30' },
@@ -195,9 +196,9 @@ export class BatchPrintLabelDialog extends LitElement {
     this._isSubmitting = false;
 
     if (errors.length === 0) {
-      this.store.actions.ui.toast(`Printed ${total} label(s) successfully`, 'success');
+      showToast(`Printed ${total} label(s) successfully`, 'success');
     } else {
-      this.store.actions.ui.toast(`Printed with ${errors.length} error(s)`, 'error');
+      showToast(`Printed with ${errors.length} error(s)`, 'error');
     }
 
     this._close();

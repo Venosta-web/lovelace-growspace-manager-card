@@ -7,6 +7,7 @@ import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../../
 import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { gridInteraction$ } from '../../../slices/grid-interaction';
+import { showToast } from '../../../slices/ui';
 import '../../ui/containers/growspace-header.container';
 import '../../ui/containers/growspace-analytics.container';
 import '../../ui/components/growspace-edit-mode-banner-ui';
@@ -86,14 +87,14 @@ export class GrowspaceViewStandard extends LitElement {
         veg_start: today,
       });
 
-      this.store.actions.ui.toast('Plant transplanted successfully', 'success');
+      showToast('Plant transplanted successfully', 'success');
 
       // Refresh data after a small delay
       await new Promise((resolve) => setTimeout(resolve, 500));
       await this.store.refreshData();
     } catch (error) {
       console.error('[GrowspaceViewStandard] Transplant failed:', error);
-      this.store.actions.ui.toast('Failed to transplant plant', 'error');
+      showToast('Failed to transplant plant', 'error');
     }
   }
 

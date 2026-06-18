@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { waterPlant as mockWaterPlant } from '../../../slices/plant';
 import { applyIPM as mockApplyIPM } from '../../../slices/nutrient';
-import { notification$ } from '../../../slices/ui';
+import { notification$, activeDialog$ } from '../../../slices/ui';
 import './growspace-dialog-host.container';
 import type { GrowspaceDialogHost } from './growspace-dialog-host.container';
 
@@ -124,7 +124,7 @@ describe('GrowspaceDialogHost – _handleWateringSubmit', () => {
 
     await (el as any)._handleWateringSubmit(event, payload);
 
-    expect(store.actions.ui.showToast).toHaveBeenCalledWith('Watering recorded', 'success');
+    expect(notification$.get()).toEqual({ message: 'Watering recorded', type: 'success' });
   });
 
   it('calls waterPlant for each plant id in plant mode', async () => {
@@ -142,7 +142,7 @@ describe('GrowspaceDialogHost – _handleWateringSubmit', () => {
 
     await (el as any)._handleWateringSubmit(event, payload, 'gs-1');
 
-    expect(store.actions.ui.showToast).toHaveBeenCalledWith('Watering recorded', 'success');
+    expect(notification$.get()).toEqual({ message: 'Watering recorded', type: 'success' });
     expect(store.ui.closeDialog).toHaveBeenCalledOnce();
   });
 
@@ -155,10 +155,8 @@ describe('GrowspaceDialogHost – _handleWateringSubmit', () => {
 
     await (el as any)._handleWateringSubmit(event, payload);
 
-    expect(store.actions.ui.showToast).toHaveBeenCalledWith(
-      expect.stringContaining('Network timeout'),
-      'error'
-    );
+    expect(notification$.get()?.type).toBe('error');
+    expect(notification$.get()?.message).toContain('Network timeout');
   });
 
   it('does not close the dialog when watering fails', async () => {
@@ -310,7 +308,7 @@ describe('GrowspaceDialogHost – _handleOpenLogPollination', () => {
 
     (el as any)._handleOpenLogPollination(event);
 
-    expect(store.actions.ui.setActiveDialog).toHaveBeenCalledWith({
+    expect(activeDialog$.get()).toEqual({
       type: 'STRAIN_LIBRARY',
       payload: {
         initialTab: 'seeds',
@@ -327,7 +325,7 @@ describe('GrowspaceDialogHost – _handleOpenLogPollination', () => {
 
     (el as any)._handleOpenLogPollination(event);
 
-    expect(store.actions.ui.setActiveDialog).toHaveBeenCalledWith({
+    expect(activeDialog$.get()).toEqual({
       type: 'STRAIN_LIBRARY',
       payload: {
         initialTab: 'seeds',
@@ -556,10 +554,8 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
       humiditySensors: [],
     });
 
-    expect(store.actions.ui.showToast).toHaveBeenCalledWith(
-      expect.stringContaining('mandatory'),
-      'error'
-    );
+    expect(notification$.get()?.type).toBe('error');
+    expect(notification$.get()?.message).toContain('mandatory');
     expect(store.actions.environment.configure).not.toHaveBeenCalled();
   });
 });

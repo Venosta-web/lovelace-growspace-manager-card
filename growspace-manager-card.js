@@ -6793,6 +6793,384 @@ function completeTransplant() {
 }
 
 /**
+ * Grid slice — atoms, computed state, and sibling setters for the Grid domain.
+ *
+ * Public API (atoms):
+ *   devices$                  — read: all growspace devices (bootstrapped by SyncService)
+ *   selectedDeviceId$         — read/write: the currently selected device ID
+ *   optimisticDeletedPlantIds$ — read: plant IDs optimistically removed from the grid
+ *   activeDevices$            — read: devices with optimistically deleted plants filtered out
+ *   growspaceOptions$         — read: device_id → device name map for selectors
+ *   gridLayout$               — read: computed grid layout for the selected device
+ *
+ * Public API (bootstrap writes):
+ *   setDevices()              — replace the devices array (called by SyncService)
+ *   setSelectedDeviceId()     — set the active device (called by cards / handleDeviceChange)
+ *
+ * Public API (sibling setters — called by Plant slice cross-slice mutations):
+ *   addOptimisticDeletedPlantId()    — mark a plant as optimistically removed from the grid
+ *   removeOptimisticDeletedPlantId() — restore a plant after a failed mutation inverse
+ *   clearOptimisticDeletedPlantIds() — reset all optimistic deletes (called after a sync)
+ *
+ * GridSliceRef / gridSlice:
+ *   A stable facade object compatible with the legacy ActionContext.grid interface.
+ *   Cards and action modules may use `ctx.grid.$selectedDevice` / `ctx.grid.setSelectedDevice()`
+ *   through this facade without knowing about the underlying atoms.
+ *
+ * Action type, payload shapes, and zod schemas are private to this module.
+ * Cross-slice side-effects from the Plant slice are accepted via the sibling setters above.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+/** All growspace devices — bootstrapped by SyncService on every data refresh. */
+const devices$ = atom([]);
+/**
+ * The currently selected growspace device ID.
+ *
+ * NOTE: this is a module-level singleton.  Multiple card instances on the same
+ * dashboard share this state.  Per-card selection isolation is deferred to a
+ * later refactor step.
+ */
+const selectedDeviceId$ = atom(null);
+/**
+ * Plant IDs that have been optimistically removed from the grid by the Plant
+ * slice before the backend confirms the mutation.  The Grid slice filters these
+ * out of `activeDevices$` so the UI reflects the change immediately.
+ */
+const optimisticDeletedPlantIds$ = atom(new Set());
+// ---------------------------------------------------------------------------
+// Computed atoms (public)
+// ---------------------------------------------------------------------------
+/** Devices with optimistically deleted plants stripped out. */
+const activeDevices$ = computed([devices$, optimisticDeletedPlantIds$], (devices, deletedIds) => devices.map((d) => ({
+    ...d,
+    plants: d.plants.filter((p) => {
+        const pid = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+        return !deletedIds.has(pid);
+    }),
+})));
+/** plantId → deviceId map for O(1) lookups. Derived from raw devices$ (not filtered). */
+const plantToDeviceMap$ = computed(devices$, (devices) => {
+    const map = new Map();
+    for (const device of devices) {
+        for (const plant of device.plants) {
+            const pid = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
+            map.set(pid, device.deviceId);
+        }
+    }
+    return map;
+});
+// ---------------------------------------------------------------------------
+// Bootstrap writes (public)
+// ---------------------------------------------------------------------------
+/** Replace the full device list. Called by SyncService after every data refresh. */
+function setDevices(devices) {
+    devices$.set(devices);
+}
+// ---------------------------------------------------------------------------
+// Sibling setters — called by Plant slice during cross-slice mutations
+// ---------------------------------------------------------------------------
+/**
+ * Optimistically hide a plant from the grid.
+ * Call this from Plant slice mutators (deletePlant, movePlantToGrowspace) before
+ * the backend confirms the change so the cell clears immediately.
+ */
+function addOptimisticDeletedPlantId(plantId) {
+    const ids = new Set(optimisticDeletedPlantIds$.get());
+    ids.add(plantId);
+    optimisticDeletedPlantIds$.set(ids);
+}
+/**
+ * Restore a plant to the grid (called from the mutation's `inverse` on failure).
+ */
+function removeOptimisticDeletedPlantId(plantId) {
+    const ids = new Set(optimisticDeletedPlantIds$.get());
+    ids.delete(plantId);
+    optimisticDeletedPlantIds$.set(ids);
+}
+/**
+ * Patch a single device's irrigationConfig in place.
+ * Called by irrigation action handlers that previously called GrowspaceDataStore.patchDeviceIrrigationConfig().
+ */
+function patchDeviceIrrigationConfig(growspaceId, patch) {
+    const current = devices$.get();
+    const idx = current.findIndex((d) => d.deviceId === growspaceId);
+    if (idx === -1)
+        return;
+    devices$.set(current.map((d, i) => i === idx ? { ...d, irrigationConfig: { ...d.irrigationConfig, ...patch } } : d));
+}
+/**
+ * Patch a single device's irrigationStrategy in place, mirroring
+ * patchDeviceIrrigationConfig. Lets immediate-persist strategy writes (Shot
+ * Sizing Mode, Substrate Profile, EC Modulation — ADR-0017) reflect on the
+ * device the dialog reads, so the Steering tab relabel and the toggles update
+ * optimistically rather than waiting for a full device sync.
+ */
+function patchDeviceStrategy(growspaceId, patch) {
+    const current = devices$.get();
+    const idx = current.findIndex((d) => d.deviceId === growspaceId);
+    if (idx === -1)
+        return;
+    devices$.set(current.map((d, i) => i === idx
+        ? {
+            ...d,
+            irrigationStrategy: { ...(d.irrigationStrategy ?? {}), ...patch },
+        }
+        : d));
+}
+/**
+ * Create a per-card GridSliceRef with an isolated $selectedDevice atom.
+ *
+ * Shared module atoms (devices$, optimisticDeletedPlantIds$) are the data
+ * source, so all cards see the same device list. Only selectedDevice is
+ * per-card, so carousel and standalone cards don't interfere with each other.
+ */
+function makePerCardGridSlice() {
+    const selectedDevice$ = atom(null);
+    const perCardActiveDevices$ = computed([devices$, optimisticDeletedPlantIds$], (devices, deletedIds) => devices.map((d) => ({
+        ...d,
+        plants: d.plants.filter((p) => {
+            const pid = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+            return !deletedIds.has(pid);
+        }),
+    })));
+    const perCardGrowspaceOptions$ = computed(perCardActiveDevices$, (devices) => Object.fromEntries(devices.map((d) => [d.deviceId, d.name])));
+    const perCardGridLayout$ = computed([perCardActiveDevices$, selectedDevice$], (devices, selectedId) => {
+        if (!selectedId)
+            return { effectiveRows: 0, grid: [] };
+        const device = devices.find((d) => d.deviceId === selectedId);
+        if (!device)
+            return { effectiveRows: 0, grid: [] };
+        const effectiveRows = PlantUtils.calculateEffectiveRows(device);
+        const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plantsPerRow);
+        return { effectiveRows, grid };
+    });
+    const perCardGridViewState$ = computed([perCardActiveDevices$, selectedDevice$, perCardGridLayout$, perCardGrowspaceOptions$], (devices, selectedDevice, gridLayout, growspaceOptions) => ({
+        devices,
+        selectedDevice,
+        gridLayout,
+        growspaceOptions,
+    }));
+    return {
+        $selectedDevice: selectedDevice$,
+        $growspaceOptions: perCardGrowspaceOptions$,
+        $activeDevices: perCardActiveDevices$,
+        $gridLayout: perCardGridLayout$,
+        $gridViewState: perCardGridViewState$,
+        setSelectedDevice: (id) => selectedDevice$.set(id),
+    };
+}
+
+/**
+ * Pure dialog-open helpers: each builds an `ActiveDialogState` payload and calls
+ * the UI slice `openDialog` setter. No data fetching and no domain mutation — the
+ * fetch-coupled `open*` helpers (add-plant, nutrient-presets, IPM) stay on the
+ * legacy ActionDispatcher until their own retirement step.
+ */
+/** Resolve the single growspace shared by a set of plants, or undefined if mixed. */
+function getCommonGrowspaceId(plantIds) {
+    const plantToDevice = plantToDeviceMap$.get();
+    let commonGrowspaceId;
+    for (const plantId of plantIds) {
+        const plantGrowspaceId = plantToDevice.get(plantId);
+        if (!plantGrowspaceId)
+            continue;
+        if (commonGrowspaceId === undefined) {
+            commonGrowspaceId = plantGrowspaceId;
+        }
+        else if (commonGrowspaceId !== plantGrowspaceId) {
+            return undefined; // Mixed growspaces
+        }
+    }
+    return commonGrowspaceId;
+}
+function openPlantOverviewDialog$1(plant, selectedIds) {
+    openDialog({
+        type: 'PLANT_OVERVIEW',
+        payload: {
+            plant,
+            editedAttributes: { ...plant.attributes },
+            activeTab: 'dashboard',
+            selectedPlantIds: selectedIds,
+        },
+    });
+}
+function openBatchPrintLabelsDialog() {
+    const selectedIds = Array.from(selectedPlants$.get());
+    if (selectedIds.length === 0)
+        return;
+    openDialog({
+        type: 'BATCH_PRINT_LABELS',
+        payload: { plantIds: selectedIds },
+    });
+}
+function openBatchCloneDialog() {
+    const selectedIds = Array.from(selectedPlants$.get());
+    if (selectedIds.length === 0)
+        return;
+    openDialog({
+        type: 'BATCH_CLONE',
+        payload: { plantIds: selectedIds },
+    });
+}
+function openBatchWateringDialog(growspaceId) {
+    const selectedIds = Array.from(selectedPlants$.get());
+    if (selectedIds.length === 0 && !growspaceId)
+        return;
+    let targetGrowspaceId = growspaceId;
+    if (!targetGrowspaceId && selectedIds.length > 0) {
+        targetGrowspaceId = getCommonGrowspaceId(selectedIds);
+    }
+    openDialog({
+        type: 'WATERING',
+        payload: {
+            mode: 'plant',
+            plantIds: selectedIds,
+            growspaceId: targetGrowspaceId,
+        },
+    });
+}
+function openBatchTrainingDialog(growspaceId) {
+    const selectedIds = Array.from(selectedPlants$.get());
+    if (selectedIds.length === 0 && !growspaceId)
+        return;
+    let targetGrowspaceId = growspaceId;
+    if (!targetGrowspaceId && selectedIds.length > 0) {
+        targetGrowspaceId = getCommonGrowspaceId(selectedIds);
+    }
+    openDialog({
+        type: 'TRAINING',
+        payload: {
+            isOpen: true,
+            plantIds: selectedIds,
+            growspaceId: targetGrowspaceId,
+        },
+    });
+}
+function openStrainRecommendationDialog() {
+    openDialog({
+        type: 'STRAIN_RECOMMENDATION',
+        payload: { isLoading: false, response: null },
+    });
+}
+function openLogbookDialog() {
+    const growspaceId = selectedDeviceId$.get();
+    if (growspaceId) {
+        openDialog({
+            type: 'LOGBOOK',
+            payload: { growspaceId },
+        });
+    }
+}
+function openConfigDialog(device) {
+    openDialog({
+        type: 'CONFIG',
+        payload: {
+            currentTab: ConfigTab.SENSORS,
+            environmentData: {
+                selectedGrowspaceId: device?.deviceId || '',
+                // Multi sensors (preferred)
+                temperatureSensors: device?.environmentAttributes?.temperatureSensors || [],
+                humiditySensors: device?.environmentAttributes?.humiditySensors || [],
+                vpdSensors: device?.environmentAttributes?.vpdSensors || [],
+                // Legacy singular (backward compat)
+                temperatureSensor: device?.environmentAttributes?.temperatureSensor || '',
+                humiditySensor: device?.environmentAttributes?.humiditySensor || '',
+                vpdSensor: device?.environmentAttributes?.vpdSensor || '',
+                co2Sensor: device?.environmentAttributes?.co2Sensor || '',
+                circulationFanEntity: device?.environmentAttributes?.circulationFanEntity || '',
+                circulationFanEntities: device?.environmentAttributes?.circulationFanEntities || [],
+                stressThreshold: 0.8,
+                moldThreshold: 0.8,
+                lightSensor: device?.environmentAttributes?.lightSensor || '',
+                lightSensors: device?.environmentAttributes?.lightSensors || [],
+                exhaustEntity: device?.environmentAttributes?.exhaustEntity || '',
+                exhaustFanEntities: device?.environmentAttributes?.exhaustFanEntities || [],
+                humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
+                humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
+                humidifierControlEnabled: device?.environmentAttributes?.humidifierControlEnabled || false,
+                dehumidifierEntity: device?.environmentAttributes?.dehumidifierEntity || '',
+                dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
+                dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
+                soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
+                dehumidifierControlEnabled: device?.environmentAttributes?.dehumidifierControlEnabled || false,
+                sensorGroups: device?.environmentAttributes?.sensorGroups || [],
+                sensorCoordinates: device?.environmentAttributes?.sensorCoordinates || {},
+                irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
+                cameraEntities: device?.environmentAttributes?.cameraEntities || [],
+                lungroomTempSensors: device?.environmentAttributes?.lungroomTempSensors || [],
+                visionCheckupConfig: device?.environmentAttributes?.visionCheckupConfig,
+                substrateTemperatureSensors: device?.environmentAttributes?.substrateTemperatureSensors || [],
+                phSensors: device?.environmentAttributes?.phSensors || [],
+                feedEcSensors: device?.environmentAttributes?.feedEcSensors || [],
+                bulkEcSensors: device?.environmentAttributes?.bulkEcSensors || [],
+                poreEcSensors: device?.environmentAttributes?.poreEcSensors || [],
+                runoffEcSensors: device?.environmentAttributes?.runoffEcSensors || [],
+                drainVolumeSensors: device?.environmentAttributes?.drainVolumeSensors || [],
+                irrigationFlowSensors: device?.environmentAttributes?.irrigationFlowSensors || [],
+                powerSensors: device?.environmentAttributes?.powerSensors || [],
+                energySensors: device?.environmentAttributes?.energySensors || [],
+                circulationFanConfig: device?.environmentAttributes?.circulationFanConfig,
+                exhaustFanConfig: device?.environmentAttributes?.exhaustFanConfig,
+                vpdOptimalOverrides: device?.environmentAttributes?.vpdOptimalOverrides || {},
+            },
+        },
+    });
+}
+function openStrainLibraryDialog(initialTab) {
+    openDialog({
+        type: 'STRAIN_LIBRARY',
+        payload: { initialTab },
+    });
+}
+function openIrrigationDialog$1(options) {
+    openDialog({ type: 'IRRIGATION', payload: options ?? {} });
+}
+function openGrowMasterDialog(growspaceId) {
+    openDialog({
+        type: 'GROW_MASTER',
+        payload: {
+            growspaceId,
+            isLoading: false,
+            response: '',
+            mode: 'single',
+        },
+    });
+}
+function openWateringDialog(options) {
+    openDialog({
+        type: 'WATERING',
+        payload: {
+            plantIds: options.plantIds,
+            growspaceId: options.growspaceId,
+            mode: options.mode || (options.plantIds?.length ? 'plant' : 'growspace'),
+        },
+    });
+}
+function openTrainingDialog(plantIds, growspaceId) {
+    openDialog({
+        type: 'TRAINING',
+        payload: {
+            isOpen: true,
+            plantIds,
+            growspaceId,
+        },
+    });
+}
+function openNutrientsDialog() {
+    openDialog({ type: 'NUTRIENTS', payload: {} });
+}
+function openSnapshotsDialog(growspaceId) {
+    openDialog({
+        type: 'SNAPSHOTS',
+        payload: {
+            growspaceId: growspaceId || '',
+        },
+    });
+}
+
+/**
  * UI slice — atoms and mutators for global UI state.
  *
  * Public API (atoms):
@@ -6906,6 +7284,10 @@ function setViewMode(mode) {
 function setGridOverlayMode(mode) {
     gridOverlayMode$.set(mode);
 }
+/** Toggle the header-expanded view: HEADER ⇄ STANDARD. */
+function toggleHeaderExpansion() {
+    viewMode$.set(viewMode$.get() === ViewMode.HEADER ? ViewMode.STANDARD : ViewMode.HEADER);
+}
 /** Toggle the loading state. */
 function setIsLoading(loading) {
     isLoading$.set(loading);
@@ -6915,7 +7297,7 @@ function openDialog(dialog) {
     activeDialog$.set(dialog);
 }
 /** Close the currently open dialog. */
-function closeDialog$1() {
+function closeDialog() {
     activeDialog$.set({ type: 'NONE' });
 }
 /**
@@ -6932,7 +7314,7 @@ function setEditMode(isEdit) {
     }
 }
 /** Add a plant to the selection, or remove it if already selected. */
-function togglePlantSelection$1(plantId) {
+function togglePlantSelection(plantId) {
     const current = new Set(selectedPlants$.get());
     if (current.has(plantId)) {
         current.delete(plantId);
@@ -6943,12 +7325,29 @@ function togglePlantSelection$1(plantId) {
     selectedPlants$.set(current);
 }
 /** Replace the entire selection with the provided plant IDs. */
-function selectAllPlants$1(plantIds) {
+function selectAllPlants(plantIds) {
     selectedPlants$.set(new Set(plantIds));
 }
 /** Clear the plant selection. */
-function clearPlantSelection$1() {
+function clearPlantSelection() {
     selectedPlants$.set(new Set());
+}
+/**
+ * Select every (non-optimistically-deleted) plant in the currently selected
+ * device. No-op when no device is selected.
+ */
+function selectAllPlantsInSelectedDevice() {
+    const selectedDevice = selectedDeviceId$.get();
+    if (!selectedDevice)
+        return;
+    const device = devices$.get().find((d) => d.deviceId === selectedDevice);
+    if (!device?.plants)
+        return;
+    const deleted = optimisticDeletedPlantIds$.get();
+    const allIds = device.plants
+        .map((plant) => plant.attributes.plant_id)
+        .filter((pId) => Boolean(pId) && !deleted.has(pId));
+    selectAllPlants(allIds);
 }
 /** Remove specific plant IDs from the selection. */
 function deselectPlants(plantIds) {
@@ -6965,7 +7364,7 @@ function setMenuOpen(isOpen) {
     menuOpen$.set(isOpen);
 }
 /** Display a toast notification. Defaults to type 'info'. */
-function showToast$1(message, type = 'info', action) {
+function showToast(message, type = 'info', action) {
     notification$.set({ message, type, ...(action ? { action } : {}) });
 }
 /** Dismiss the current toast notification. */
@@ -7001,13 +7400,13 @@ async function withToast(fn, opts) {
     try {
         const result = await fn();
         if (opts.success)
-            showToast$1(opts.success, 'success');
+            showToast(opts.success, 'success');
         return result;
     }
     catch (e) {
         const message = toUserMessage$1(e);
         console.error(opts.errorPrefix, e);
-        showToast$1(`${opts.errorPrefix}: ${message}`, 'error');
+        showToast(`${opts.errorPrefix}: ${message}`, 'error');
         if (opts.rethrow)
             throw e;
         return undefined;
@@ -7257,7 +7656,7 @@ async function askGrowAdvice(growspaceId, userQuery) {
     }
     catch (err) {
         if (err instanceof WSError && err.code === 'rate_limited') {
-            showToast$1('AI rate limit reached — please wait a moment before trying again', 'error');
+            showToast('AI rate limit reached — please wait a moment before trying again', 'error');
             return;
         }
         const message = err instanceof Error ? err.message : String(err);
@@ -7284,7 +7683,7 @@ async function analyzeAllGrowspaces() {
     }
     catch (err) {
         if (err instanceof WSError && err.code === 'rate_limited') {
-            showToast$1('AI rate limit reached — please wait a moment before trying again', 'error');
+            showToast('AI rate limit reached — please wait a moment before trying again', 'error');
             return;
         }
         const message = err instanceof Error ? err.message : String(err);
@@ -7379,7 +7778,7 @@ async function startConversation(growspaceId, text, imageEntityId) {
     }
     catch (err) {
         if (err instanceof WSError && err.code === 'rate_limited') {
-            showToast$1('AI rate limit reached — please wait a moment before trying again', 'error');
+            showToast('AI rate limit reached — please wait a moment before trying again', 'error');
             return undefined;
         }
         throw err;
@@ -7415,7 +7814,7 @@ async function sendMessage(threadId, text, imageEntityId) {
     }
     catch (err) {
         if (err instanceof WSError && err.code === 'rate_limited') {
-            showToast$1('AI rate limit reached — please wait a moment before trying again', 'error');
+            showToast('AI rate limit reached — please wait a moment before trying again', 'error');
             return;
         }
         throw err;
@@ -7429,7 +7828,7 @@ async function togglePin(threadId) {
     if (!thread.pinned) {
         const pinnedCount = [...threads.values()].filter((t) => t.growspace_id === thread.growspace_id && t.pinned).length;
         if (pinnedCount >= MAX_PINNED_THREADS) {
-            showToast$1(`Pinned limit reached (${MAX_PINNED_THREADS}). Unpin a conversation to pin this one.`, 'info');
+            showToast(`Pinned limit reached (${MAX_PINNED_THREADS}). Unpin a conversation to pin this one.`, 'info');
             return;
         }
     }
@@ -7501,7 +7900,7 @@ async function fetchBriefing(growspaceId, forceRefresh) {
     }
     catch (err) {
         if (aiBriefing$.get().has(growspaceId)) {
-            showToast$1('Failed to regenerate briefing — please try again', 'error');
+            showToast('Failed to regenerate briefing — please try again', 'error');
         }
         else {
             briefingError$.set(err instanceof Error ? err.message : String(err));
@@ -7616,176 +8015,6 @@ async function undo(growspaceId) {
     if (!entry)
         return;
     entry.inverse();
-}
-
-/**
- * Grid slice — atoms, computed state, and sibling setters for the Grid domain.
- *
- * Public API (atoms):
- *   devices$                  — read: all growspace devices (bootstrapped by SyncService)
- *   selectedDeviceId$         — read/write: the currently selected device ID
- *   optimisticDeletedPlantIds$ — read: plant IDs optimistically removed from the grid
- *   activeDevices$            — read: devices with optimistically deleted plants filtered out
- *   growspaceOptions$         — read: device_id → device name map for selectors
- *   gridLayout$               — read: computed grid layout for the selected device
- *
- * Public API (bootstrap writes):
- *   setDevices()              — replace the devices array (called by SyncService)
- *   setSelectedDeviceId()     — set the active device (called by cards / handleDeviceChange)
- *
- * Public API (sibling setters — called by Plant slice cross-slice mutations):
- *   addOptimisticDeletedPlantId()    — mark a plant as optimistically removed from the grid
- *   removeOptimisticDeletedPlantId() — restore a plant after a failed mutation inverse
- *   clearOptimisticDeletedPlantIds() — reset all optimistic deletes (called after a sync)
- *
- * GridSliceRef / gridSlice:
- *   A stable facade object compatible with the legacy ActionContext.grid interface.
- *   Cards and action modules may use `ctx.grid.$selectedDevice` / `ctx.grid.setSelectedDevice()`
- *   through this facade without knowing about the underlying atoms.
- *
- * Action type, payload shapes, and zod schemas are private to this module.
- * Cross-slice side-effects from the Plant slice are accepted via the sibling setters above.
- */
-// ---------------------------------------------------------------------------
-// Atoms (public)
-// ---------------------------------------------------------------------------
-/** All growspace devices — bootstrapped by SyncService on every data refresh. */
-const devices$ = atom([]);
-/**
- * The currently selected growspace device ID.
- *
- * NOTE: this is a module-level singleton.  Multiple card instances on the same
- * dashboard share this state.  Per-card selection isolation is deferred to a
- * later refactor step.
- */
-const selectedDeviceId$ = atom(null);
-/**
- * Plant IDs that have been optimistically removed from the grid by the Plant
- * slice before the backend confirms the mutation.  The Grid slice filters these
- * out of `activeDevices$` so the UI reflects the change immediately.
- */
-const optimisticDeletedPlantIds$ = atom(new Set());
-// ---------------------------------------------------------------------------
-// Computed atoms (public)
-// ---------------------------------------------------------------------------
-/** Devices with optimistically deleted plants stripped out. */
-const activeDevices$ = computed([devices$, optimisticDeletedPlantIds$], (devices, deletedIds) => devices.map((d) => ({
-    ...d,
-    plants: d.plants.filter((p) => {
-        const pid = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
-        return !deletedIds.has(pid);
-    }),
-})));
-/** plantId → deviceId map for O(1) lookups. Derived from raw devices$ (not filtered). */
-const plantToDeviceMap$ = computed(devices$, (devices) => {
-    const map = new Map();
-    for (const device of devices) {
-        for (const plant of device.plants) {
-            const pid = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-            map.set(pid, device.deviceId);
-        }
-    }
-    return map;
-});
-// ---------------------------------------------------------------------------
-// Bootstrap writes (public)
-// ---------------------------------------------------------------------------
-/** Replace the full device list. Called by SyncService after every data refresh. */
-function setDevices(devices) {
-    devices$.set(devices);
-}
-// ---------------------------------------------------------------------------
-// Sibling setters — called by Plant slice during cross-slice mutations
-// ---------------------------------------------------------------------------
-/**
- * Optimistically hide a plant from the grid.
- * Call this from Plant slice mutators (deletePlant, movePlantToGrowspace) before
- * the backend confirms the change so the cell clears immediately.
- */
-function addOptimisticDeletedPlantId(plantId) {
-    const ids = new Set(optimisticDeletedPlantIds$.get());
-    ids.add(plantId);
-    optimisticDeletedPlantIds$.set(ids);
-}
-/**
- * Restore a plant to the grid (called from the mutation's `inverse` on failure).
- */
-function removeOptimisticDeletedPlantId(plantId) {
-    const ids = new Set(optimisticDeletedPlantIds$.get());
-    ids.delete(plantId);
-    optimisticDeletedPlantIds$.set(ids);
-}
-/**
- * Patch a single device's irrigationConfig in place.
- * Called by irrigation action handlers that previously called GrowspaceDataStore.patchDeviceIrrigationConfig().
- */
-function patchDeviceIrrigationConfig(growspaceId, patch) {
-    const current = devices$.get();
-    const idx = current.findIndex((d) => d.deviceId === growspaceId);
-    if (idx === -1)
-        return;
-    devices$.set(current.map((d, i) => i === idx ? { ...d, irrigationConfig: { ...d.irrigationConfig, ...patch } } : d));
-}
-/**
- * Patch a single device's irrigationStrategy in place, mirroring
- * patchDeviceIrrigationConfig. Lets immediate-persist strategy writes (Shot
- * Sizing Mode, Substrate Profile, EC Modulation — ADR-0017) reflect on the
- * device the dialog reads, so the Steering tab relabel and the toggles update
- * optimistically rather than waiting for a full device sync.
- */
-function patchDeviceStrategy(growspaceId, patch) {
-    const current = devices$.get();
-    const idx = current.findIndex((d) => d.deviceId === growspaceId);
-    if (idx === -1)
-        return;
-    devices$.set(current.map((d, i) => i === idx
-        ? {
-            ...d,
-            irrigationStrategy: { ...(d.irrigationStrategy ?? {}), ...patch },
-        }
-        : d));
-}
-/**
- * Create a per-card GridSliceRef with an isolated $selectedDevice atom.
- *
- * Shared module atoms (devices$, optimisticDeletedPlantIds$) are the data
- * source, so all cards see the same device list. Only selectedDevice is
- * per-card, so carousel and standalone cards don't interfere with each other.
- */
-function makePerCardGridSlice() {
-    const selectedDevice$ = atom(null);
-    const perCardActiveDevices$ = computed([devices$, optimisticDeletedPlantIds$], (devices, deletedIds) => devices.map((d) => ({
-        ...d,
-        plants: d.plants.filter((p) => {
-            const pid = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
-            return !deletedIds.has(pid);
-        }),
-    })));
-    const perCardGrowspaceOptions$ = computed(perCardActiveDevices$, (devices) => Object.fromEntries(devices.map((d) => [d.deviceId, d.name])));
-    const perCardGridLayout$ = computed([perCardActiveDevices$, selectedDevice$], (devices, selectedId) => {
-        if (!selectedId)
-            return { effectiveRows: 0, grid: [] };
-        const device = devices.find((d) => d.deviceId === selectedId);
-        if (!device)
-            return { effectiveRows: 0, grid: [] };
-        const effectiveRows = PlantUtils.calculateEffectiveRows(device);
-        const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plantsPerRow);
-        return { effectiveRows, grid };
-    });
-    const perCardGridViewState$ = computed([perCardActiveDevices$, selectedDevice$, perCardGridLayout$, perCardGrowspaceOptions$], (devices, selectedDevice, gridLayout, growspaceOptions) => ({
-        devices,
-        selectedDevice,
-        gridLayout,
-        growspaceOptions,
-    }));
-    return {
-        $selectedDevice: selectedDevice$,
-        $growspaceOptions: perCardGrowspaceOptions$,
-        $activeDevices: perCardActiveDevices$,
-        $gridLayout: perCardGridLayout$,
-        $gridViewState: perCardGridViewState$,
-        setSelectedDevice: (id) => selectedDevice$.set(id),
-    };
 }
 
 /**
@@ -40703,10 +40932,10 @@ let BatchPrintLabelDialog = class BatchPrintLabelDialog extends i$3 {
         }
         this._isSubmitting = false;
         if (errors.length === 0) {
-            this.store.actions.ui.toast(`Printed ${total} label(s) successfully`, 'success');
+            showToast(`Printed ${total} label(s) successfully`, 'success');
         }
         else {
-            this.store.actions.ui.toast(`Printed with ${errors.length} error(s)`, 'error');
+            showToast(`Printed with ${errors.length} error(s)`, 'error');
         }
         this._close();
     }
@@ -40994,10 +41223,10 @@ let BatchCloneDialog = class BatchCloneDialog extends i$3 {
         this._isSubmitting = false;
         const totalClones = plantIds.length * this._numClones;
         if (errors.length === 0) {
-            this.store.actions.ui.toast(`Created ${totalClones} clone(s) successfully`, 'success');
+            showToast(`Created ${totalClones} clone(s) successfully`, 'success');
         }
         else {
-            this.store.actions.ui.toast(`Completed with ${errors.length} error(s)`, 'error');
+            showToast(`Completed with ${errors.length} error(s)`, 'error');
         }
         this._close();
     }
@@ -57836,7 +58065,7 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
     _handleHarvest() {
         const stage = (this.plant.state || this.plant.attributes?.stage || '').toLowerCase();
         if (stage === PlantStage.FLOWER || stage === 'flowering') {
-            this.store.actions.ui.setActiveDialog({
+            openDialog({
                 type: 'HARVEST_SCORING',
                 payload: { plant: this.plant },
             });
@@ -58401,7 +58630,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 indica_percentage: 50,
             };
         }
-        this.store?.actions.ui.setActiveDialog({
+        openDialog({
             type: 'STRAIN_LIBRARY',
             payload: {
                 view: 'editor',
@@ -58411,7 +58640,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         });
     }
     _handleStrainCreatedAtSource(e) {
-        this.store?.actions.ui.setActiveDialog({
+        openDialog({
             type: 'STRAIN_LIBRARY',
             payload: {
                 source: e.detail.source,
@@ -58452,7 +58681,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .cure_start=${active.payload?.cure_start || ''}
         .libraryError=${this._addPlantsLibraryError}
         @close=${() => { this._addPlantsLibraryError = ''; this._closeDialogIfActive('ADD_PLANTS'); }}
-        @show-toast=${(e) => this.store?.actions.ui.showToast(e.detail.message, e.detail.type)}
+        @show-toast=${(e) => showToast(e.detail.message, e.detail.type)}
         @add-plants-submit=${async (e) => {
             this._addPlantsLibraryError = '';
             try {
@@ -58490,7 +58719,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         })}
         @delete-plant=${(e) => this.store?.actions.plant.delete(e.detail.plantId)}
         @harvest-plant=${(e) => {
-            this.store?.actions.ui.setActiveDialog({
+            openDialog({
                 type: 'HARVEST_SCORING',
                 payload: { plant: e.detail.plant },
             });
@@ -58498,18 +58727,18 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         @finish-drying=${(e) => this.store?.actions.plant.finishDrying(e.detail.plant)}
         @take-clone=${(e) => this.store?.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
         @move-clone=${(e) => this.store?.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
-        @open-watering=${(e) => this.store?.actions.ui.setActiveDialog({
+        @open-watering=${(e) => openDialog({
             type: 'WATERING',
             payload: e.detail,
         })}
         @open-training=${(e) => {
-            this.store?.actions.ui.openTrainingDialog(e.detail.plantIds, e.detail.growspaceId);
+            openTrainingDialog(e.detail.plantIds, e.detail.growspaceId);
         }}
-        @open-ipm=${(e) => this.store?.actions.ui.setActiveDialog({
+        @open-ipm=${(e) => openDialog({
             type: 'IPM',
             payload: e.detail,
         })}
-        @open-clone=${(e) => this.store?.actions.ui.setActiveDialog({
+        @open-clone=${(e) => openDialog({
             type: 'TAKE_CLONE',
             payload: e.detail,
         })}
@@ -58591,7 +58820,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         @strain-created-at-source=${(e) => {
             const { source, returnPayload } = e.detail;
             if (source === 'ADD_PLANT' || source === 'ADD_PLANTS') {
-                this.store?.actions.ui.setActiveDialog({
+                openDialog({
                     type: source,
                     payload: returnPayload,
                 });
@@ -58617,9 +58846,9 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         @delete-breeder=${(e) => this._handleDeleteBreeder(e.detail)}
         @import-library=${(e) => this._performImport(e.detail)}
         @export-library=${() => this.store?.actions.ui.exportStrainLibrary()}
-        @get-recommendation=${() => this.store?.actions.ui.openStrainRecommendationDialog()}
+        @get-recommendation=${() => openStrainRecommendationDialog()}
         @open-print-label=${(e) => {
-            this.store?.actions.ui.setActiveDialog({
+            openDialog({
                 type: 'PRINT_LABEL',
                 payload: e.detail,
             });
@@ -58634,11 +58863,11 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         try {
             await this.store?.actions.library.import(detail.file, detail.replace);
             await this._handleDataChanged();
-            this.store?.actions.ui.showToast('Strain library imported successfully', 'success');
+            showToast('Strain library imported successfully', 'success');
             this.store?.actions.library.fetchStrains(true);
         }
         catch (e) {
-            this.store?.actions.ui.showToast(`Import failed: ${e.message || e}`, 'error');
+            showToast(`Import failed: ${e.message || e}`, 'error');
         }
     }
     async _handleUpdateBreeder(detail) {
@@ -58746,7 +58975,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         const temperatureSensors = detail.temperatureSensors || [];
         const humiditySensors = detail.humiditySensors || [];
         if (!detail.selectedGrowspaceId || !temperatureSensors.length || !humiditySensors.length) {
-            this.store?.actions.ui.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
+            showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
             return;
         }
         try {
@@ -58796,7 +59025,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                     fanConfig: detail.exhaustFanConfig,
                 });
             }
-            this.store?.actions.ui.closeDialog();
+            closeDialog();
         }
         catch (e) {
             console.error('[DialogHost] configureEnvironment failed:', e);
@@ -58808,7 +59037,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 await updateVisionCheckupConfig(detail.growspaceId, detail.visionCheckupConfig);
                 await this.store?.refreshData();
             }, { success: 'Vision config saved', errorPrefix: 'Failed to save vision config', rethrow: true });
-            this.store?.actions.ui.closeDialog();
+            closeDialog();
         }
         catch (e) {
             console.error('[DialogHost] updateCheckupConfig failed:', e);
@@ -58953,11 +59182,11 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 }
             }
             this.store?.ui.closeDialog();
-            this.store?.actions.ui.showToast('Watering recorded', 'success');
+            showToast('Watering recorded', 'success');
             await this._handleDataChanged();
         }
         catch (err) {
-            this.store?.actions.ui.showToast(`Watering failed: ${err.message || err}`, 'error');
+            showToast(`Watering failed: ${err.message || err}`, 'error');
         }
     }
     _renderNutrientPresetsDialog(active, selectedDeviceData) {
@@ -59105,7 +59334,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
             }
             catch (e) {
                 console.error('[DialogHost] Take clone failed:', e);
-                this.store?.actions.ui.showToast(`Error: ${e.message || e}`, 'error');
+                showToast(`Error: ${e.message || e}`, 'error');
             }
         }}
         @close=${() => this._closeDialogIfActive('TAKE_CLONE')}
@@ -59179,7 +59408,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
       <growspace-environment-config-dialog
         .open=${true}
         .deviceId=${active.payload?.deviceId}
-        @close=${() => this.store?.actions.ui.closeDialog()}
+        @close=${() => closeDialog()}
         @save-config=${(e) => this._handleEnvironmentConfigSubmit(e)}
       ></growspace-environment-config-dialog>
     `;
@@ -59187,7 +59416,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
     async _handleEnvironmentConfigSubmit(e) {
         try {
             await this.store?.actions.environment.configure(e.detail);
-            this.store?.actions.ui.closeDialog();
+            closeDialog();
         }
         catch (err) {
             console.error('[DialogHost] configureEnvironment failed:', err);
@@ -59195,7 +59424,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
     }
     _handleOpenLogPollination(e) {
         const plantId = e.detail?.plantId ?? '';
-        this.store?.actions.ui.setActiveDialog({
+        openDialog({
             type: 'STRAIN_LIBRARY',
             payload: {
                 initialTab: 'seeds',
@@ -71372,7 +71601,7 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         }
     }
     _handleOpenNutrients() {
-        this.store?.actions.ui.openNutrientsDialog();
+        openNutrientsDialog();
     }
     _handleActionTriggered(e) {
         const { action } = e.detail;
@@ -71385,28 +71614,28 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
                 break;
             case 'config': {
                 if (this.device)
-                    this.store.actions.ui.openConfigDialog(this.device);
+                    openConfigDialog(this.device);
                 break;
             }
             case 'strains':
-                this.store.actions.ui.openStrainLibraryDialog();
+                openStrainLibraryDialog();
                 break;
             case 'irrigation':
                 if (this.device?.deviceId)
-                    this.store.actions.ui.openIrrigationDialog({ growspaceId: this.device.deviceId });
+                    openIrrigationDialog$1({ growspaceId: this.device.deviceId });
                 break;
             case 'ai':
-                this.store.actions.ui.openGrowMasterDialog(this.device?.deviceId || '');
+                openGrowMasterDialog(this.device?.deviceId || '');
                 break;
             case 'logbook':
-                this.store.actions.ui.openLogbookDialog();
+                openLogbookDialog();
                 break;
             case 'snapshots':
-                this.store.actions.ui.openSnapshotsDialog(this.device?.deviceId || undefined);
+                openSnapshotsDialog(this.device?.deviceId || undefined);
                 break;
             case 'water': {
                 const selectedPlants = this.store.ui.$selectedPlants.get();
-                this.store.actions.ui.openWateringDialog({
+                openWateringDialog({
                     plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
                     growspaceId: this.device?.deviceId || undefined,
                     mode: selectedPlants.size > 0 ? 'plant' : 'growspace',
@@ -71423,11 +71652,11 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
             }
             case 'training': {
                 const selectedPlants = this.store.ui.$selectedPlants.get();
-                this.store.actions.ui.openTrainingDialog(selectedPlants.size > 0 ? Array.from(selectedPlants) : [], this.device?.deviceId || undefined);
+                openTrainingDialog(selectedPlants.size > 0 ? Array.from(selectedPlants) : [], this.device?.deviceId || undefined);
                 break;
             }
             case 'nutrients':
-                this.store.actions.ui.openNutrientsDialog();
+                openNutrientsDialog();
                 break;
             case 'edit': {
                 const newEditMode = !this.store.ui.$isEditMode.get();
@@ -71464,7 +71693,7 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
     _handleFlowerFlipClick(e) {
         const { growspaceId, flowerStart } = e.detail;
         this.store?.ui.dismissFlowerFlip(growspaceId, flowerStart);
-        this.store?.actions.ui.openIrrigationDialog({
+        openIrrigationDialog$1({
             growspaceId,
             initialTab: 'steering',
             scrollToField: 'lightsOnTime',
@@ -75513,12 +75742,12 @@ let GrowspaceGridContainer = class GrowspaceGridContainer extends i$3 {
             return;
         if (this.store.ui.$isEditMode.get() && this.store.ui.$selectedPlants.get().size > 0) {
             if (plantId && !this.store.ui.$selectedPlants.get().has(plantId)) {
-                this.store.actions.ui.togglePlantSelection(plantId);
+                togglePlantSelection(plantId);
             }
-            this.store.actions.ui.openPlantOverviewDialog(plant, Array.from(this.store.ui.$selectedPlants.get()));
+            openPlantOverviewDialog$1(plant, Array.from(this.store.ui.$selectedPlants.get()));
         }
         else {
-            this.store.actions.ui.openPlantOverviewDialog(plant);
+            openPlantOverviewDialog$1(plant);
         }
     }
     /**
@@ -132777,7 +133006,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         if (event === 'click' && data.plant) {
             if (data.plant.entity_id) {
                 // Existing plant
-                this.store?.actions.ui.openPlantOverviewDialog(data.plant);
+                openPlantOverviewDialog$1(data.plant);
             }
             else if (data.plant.row !== undefined && data.plant.col !== undefined) {
                 // Empty slot
@@ -134145,13 +134374,13 @@ let GrowspaceView = class GrowspaceView extends i$3 {
                 col: detail.target_col,
                 veg_start: today,
             });
-            this.store.actions.ui.toast('Plant transplanted successfully', 'success');
+            showToast('Plant transplanted successfully', 'success');
             await new Promise((resolve) => setTimeout(resolve, 500));
             await this.store.refreshData();
         }
         catch (error) {
             console.error('[GrowspaceView] Transplant failed:', error);
-            this.store.actions.ui.toast('Failed to transplant plant', 'error');
+            showToast('Failed to transplant plant', 'error');
         }
     }
     _redispatch(e, type) {
@@ -134374,19 +134603,19 @@ class GrowspaceUIStore {
         openDialog(dialog);
     }
     closeDialog() {
-        closeDialog$1();
+        closeDialog();
     }
     setEditMode(isEdit) {
         setEditMode(isEdit);
     }
     togglePlantSelection(plantId) {
-        togglePlantSelection$1(plantId);
+        togglePlantSelection(plantId);
     }
     selectAllPlants(plantIds) {
-        selectAllPlants$1(plantIds);
+        selectAllPlants(plantIds);
     }
     clearPlantSelection() {
-        clearPlantSelection$1();
+        clearPlantSelection();
     }
     deselectPlants(plantIds) {
         deselectPlants(plantIds);
@@ -134398,7 +134627,7 @@ class GrowspaceUIStore {
         setMenuOpen(isOpen);
     }
     showToast(message, type = 'info', action) {
-        showToast$1(message, type, action);
+        showToast(message, type, action);
     }
     clearToast() {
         clearToast();
@@ -135219,49 +135448,6 @@ function setIsCompactView(ctx, value) {
         ctx.ui.setViewMode(ViewMode.STANDARD);
     }
 }
-function showToast(ctx, message, type = 'info') {
-    ctx.ui.showToast(message, type);
-}
-function setActiveDialog(ctx, dialog) {
-    ctx.ui.setActiveDialog(dialog);
-}
-function closeDialog(ctx) {
-    ctx.ui.closeDialog();
-}
-function toggleHeaderExpansion(ctx) {
-    if (ctx.ui.$viewMode.get() === ViewMode.HEADER) {
-        ctx.ui.setViewMode(ViewMode.STANDARD);
-    }
-    else {
-        ctx.ui.setViewMode(ViewMode.HEADER);
-    }
-}
-function togglePlantSelection(ctx, plantOrId) {
-    const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
-    if (!plantId)
-        return;
-    ctx.ui.togglePlantSelection(plantId);
-}
-function selectAllPlants(ctx) {
-    const selectedDevice = ctx.grid.$selectedDevice.get();
-    if (!selectedDevice)
-        return;
-    const devices = devices$.get();
-    const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
-    const allIds = [];
-    if (selectedDeviceData && selectedDeviceData.plants) {
-        selectedDeviceData.plants.forEach((plant) => {
-            const pId = plant.attributes.plant_id;
-            if (pId && !optimisticDeletedPlantIds$.get().has(pId)) {
-                allIds.push(pId);
-            }
-        });
-        ctx.ui.selectAllPlants(allIds);
-    }
-}
-function clearPlantSelection(ctx) {
-    ctx.ui.clearPlantSelection();
-}
 function exitEditMode(ctx) {
     ctx.ui.setEditMode(false);
     ctx.ui.clearPlantSelection();
@@ -135310,58 +135496,6 @@ function handleDeepLink(ctx, plantId) {
         // Still clear pending state to avoid infinite retries if the ID is just wrong
         ctx.ui.setPendingDeepLink(null);
     }
-}
-function openBatchPrintLabelsDialog(ctx) {
-    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
-    if (selectedIds.length === 0)
-        return;
-    ctx.ui.setActiveDialog({
-        type: 'BATCH_PRINT_LABELS',
-        payload: { plantIds: selectedIds },
-    });
-}
-function openBatchCloneDialog(ctx) {
-    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
-    if (selectedIds.length === 0)
-        return;
-    ctx.ui.setActiveDialog({
-        type: 'BATCH_CLONE',
-        payload: { plantIds: selectedIds },
-    });
-}
-function openBatchWateringDialog(ctx, growspaceId) {
-    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
-    if (selectedIds.length === 0 && !growspaceId)
-        return;
-    let targetGrowspaceId = growspaceId;
-    if (!targetGrowspaceId && selectedIds.length > 0) {
-        targetGrowspaceId = getCommonGrowspaceId(ctx, selectedIds);
-    }
-    ctx.ui.setActiveDialog({
-        type: 'WATERING',
-        payload: {
-            mode: 'plant',
-            plantIds: selectedIds,
-            growspaceId: targetGrowspaceId,
-        },
-    });
-}
-function openBatchTrainingDialog(ctx, growspaceId) {
-    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
-    if (selectedIds.length === 0 && !growspaceId)
-        return;
-    let targetGrowspaceId = growspaceId;
-    if (!targetGrowspaceId && selectedIds.length > 0) {
-        targetGrowspaceId = getCommonGrowspaceId(ctx, selectedIds);
-    }
-    ctx.ui.setActiveDialog({
-        type: 'TRAINING',
-        payload: {
-            isOpen: true,
-            plantIds: selectedIds,
-            growspaceId: targetGrowspaceId,
-        },
-    });
 }
 function openAddPlantDialog(ctx, row, col) {
     if (row !== undefined && col !== undefined) {
@@ -135413,12 +135547,6 @@ function openAddPlantDialog(ctx, row, col) {
         payload: { row: targetRow, col: targetCol },
     });
 }
-function openStrainRecommendationDialog(ctx) {
-    ctx.ui.setActiveDialog({
-        type: 'STRAIN_RECOMMENDATION',
-        payload: { isLoading: false, response: null },
-    });
-}
 function openNutrientPresetsDialog(ctx) {
     fetchNutrientPresets();
     ctx.ui.setActiveDialog({
@@ -135438,15 +135566,6 @@ function openIPMDialog(ctx, context) {
         },
     });
 }
-function openLogbookDialog(ctx) {
-    const growspaceId = ctx.grid.$selectedDevice.get();
-    if (growspaceId) {
-        ctx.ui.setActiveDialog({
-            type: 'LOGBOOK',
-            payload: { growspaceId },
-        });
-    }
-}
 async function exportStrainLibrary(ctx) {
     try {
         const library = await fetchStrainLibrary$1();
@@ -135463,129 +135582,8 @@ async function exportStrainLibrary(ctx) {
         ctx.ui.showToast('Failed to export library', 'error');
     }
 }
-/** HELPER: Get common growspace ID for multiple plants */
-function getCommonGrowspaceId(ctx, plantIds) {
-    const plantToDevice = plantToDeviceMap$.get();
-    let commonGrowspaceId;
-    for (const plantId of plantIds) {
-        const plantGrowspaceId = plantToDevice.get(plantId);
-        if (!plantGrowspaceId)
-            continue;
-        if (commonGrowspaceId === undefined) {
-            commonGrowspaceId = plantGrowspaceId;
-        }
-        else if (commonGrowspaceId !== plantGrowspaceId) {
-            return undefined; // Mixed growspaces
-        }
-    }
-    return commonGrowspaceId;
-}
-// ===== Standardized Dialog Opening Functions =====
-function openConfigDialog(ctx, device) {
-    ctx.ui.setActiveDialog({
-        type: 'CONFIG',
-        payload: {
-            currentTab: ConfigTab.SENSORS,
-            environmentData: {
-                selectedGrowspaceId: device?.deviceId || '',
-                // Multi sensors (preferred)
-                temperatureSensors: device?.environmentAttributes?.temperatureSensors || [],
-                humiditySensors: device?.environmentAttributes?.humiditySensors || [],
-                vpdSensors: device?.environmentAttributes?.vpdSensors || [],
-                // Legacy singular (backward compat)
-                temperatureSensor: device?.environmentAttributes?.temperatureSensor || '',
-                humiditySensor: device?.environmentAttributes?.humiditySensor || '',
-                vpdSensor: device?.environmentAttributes?.vpdSensor || '',
-                co2Sensor: device?.environmentAttributes?.co2Sensor || '',
-                circulationFanEntity: device?.environmentAttributes?.circulationFanEntity || '',
-                circulationFanEntities: device?.environmentAttributes?.circulationFanEntities || [],
-                stressThreshold: 0.8,
-                moldThreshold: 0.8,
-                lightSensor: device?.environmentAttributes?.lightSensor || '',
-                lightSensors: device?.environmentAttributes?.lightSensors || [],
-                exhaustEntity: device?.environmentAttributes?.exhaustEntity || '',
-                exhaustFanEntities: device?.environmentAttributes?.exhaustFanEntities || [],
-                humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
-                humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
-                humidifierControlEnabled: device?.environmentAttributes?.humidifierControlEnabled || false,
-                dehumidifierEntity: device?.environmentAttributes?.dehumidifierEntity || '',
-                dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
-                dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
-                soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
-                dehumidifierControlEnabled: device?.environmentAttributes?.dehumidifierControlEnabled || false,
-                sensorGroups: device?.environmentAttributes?.sensorGroups || [],
-                sensorCoordinates: device?.environmentAttributes?.sensorCoordinates || {},
-                irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
-                cameraEntities: device?.environmentAttributes?.cameraEntities || [],
-                lungroomTempSensors: device?.environmentAttributes?.lungroomTempSensors || [],
-                visionCheckupConfig: device?.environmentAttributes?.visionCheckupConfig,
-                substrateTemperatureSensors: device?.environmentAttributes?.substrateTemperatureSensors || [],
-                phSensors: device?.environmentAttributes?.phSensors || [],
-                feedEcSensors: device?.environmentAttributes?.feedEcSensors || [],
-                bulkEcSensors: device?.environmentAttributes?.bulkEcSensors || [],
-                poreEcSensors: device?.environmentAttributes?.poreEcSensors || [],
-                runoffEcSensors: device?.environmentAttributes?.runoffEcSensors || [],
-                drainVolumeSensors: device?.environmentAttributes?.drainVolumeSensors || [],
-                irrigationFlowSensors: device?.environmentAttributes?.irrigationFlowSensors || [],
-                powerSensors: device?.environmentAttributes?.powerSensors || [],
-                energySensors: device?.environmentAttributes?.energySensors || [],
-                circulationFanConfig: device?.environmentAttributes?.circulationFanConfig,
-                exhaustFanConfig: device?.environmentAttributes?.exhaustFanConfig,
-                vpdOptimalOverrides: device?.environmentAttributes?.vpdOptimalOverrides || {},
-            },
-        },
-    });
-}
-function openStrainLibraryDialog(ctx, initialTab) {
-    ctx.ui.setActiveDialog({
-        type: 'STRAIN_LIBRARY',
-        payload: { initialTab },
-    });
-}
 function openIrrigationDialog(ctx, options) {
     ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: options ?? {} });
-}
-function openGrowMasterDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'GROW_MASTER',
-        payload: {
-            growspaceId,
-            isLoading: false,
-            response: '',
-            mode: 'single',
-        },
-    });
-}
-function openWateringDialog(ctx, options) {
-    ctx.ui.setActiveDialog({
-        type: 'WATERING',
-        payload: {
-            plantIds: options.plantIds,
-            growspaceId: options.growspaceId,
-            mode: options.mode || (options.plantIds?.length ? 'plant' : 'growspace'),
-        },
-    });
-}
-function openTrainingDialog(ctx, plantIds, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'TRAINING',
-        payload: {
-            isOpen: true,
-            plantIds,
-            growspaceId,
-        },
-    });
-}
-function openNutrientsDialog(ctx) {
-    ctx.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
-}
-function openSnapshotsDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'SNAPSHOTS',
-        payload: {
-            growspaceId: growspaceId || '',
-        },
-    });
 }
 
 async function analyzeGrowspace(ctx, query, all) {
@@ -136108,45 +136106,20 @@ class ActionDispatcher {
             update: (data) => updateStrain(this.ctx, data),
             remove: (key) => removeStrain(this.ctx, key),
         };
+        // Pure UI-state leaf ops have been repointed to `slices/ui` setters and the
+        // `slices/ui/dialogs` open* helpers — call them directly instead of through
+        // this dispatcher. What remains here are the fetch-coupled / domain / history
+        // ops that still carry orchestration (retired in later steps).
         this.ui = {
-            /** Toggle plant selection state */
-            togglePlantSelection: (plantOrId) => togglePlantSelection(this.ctx, plantOrId),
-            /** Open add plant dialog at specific position */
+            /** Open add plant dialog at specific position (fetches the strain library) */
             openAddPlantDialog: (row, col) => openAddPlantDialog(this.ctx, row, col),
-            /** Open plant overview dialog */
-            openPlantOverviewDialog: (plant, selectedIds) => openPlantOverviewDialog(this.ctx, plant, selectedIds),
-            /** Select all plants in current growspace */
-            selectAllPlants: () => selectAllPlants(this.ctx),
-            /** Open strain recommendation dialog */
-            openStrainRecommendationDialog: () => openStrainRecommendationDialog(this.ctx),
             /** Export strain library as JSON */
             exportStrainLibrary: () => exportStrainLibrary(this.ctx),
             setIsCompactView: (value) => setIsCompactView(this.ctx, value),
-            toggleHeaderExpansion: () => toggleHeaderExpansion(this.ctx),
-            showToast: (message, type = 'info') => showToast(this.ctx, message, type),
             /** Refresh all data */
             refreshData: () => this.store.refreshData(),
-            /** Set the active dialog */
-            setActiveDialog: (dialog) => setActiveDialog(this.ctx, dialog),
-            /** Close the current dialog */
-            closeDialog: () => closeDialog(this.ctx),
-            toast: (message, type = 'info') => showToast(this.ctx, message, type),
             openNutrientPresetsDialog: () => openNutrientPresetsDialog(this.ctx),
             openIPMDialog: (context) => openIPMDialog(this.ctx, context),
-            openLogbookDialog: () => openLogbookDialog(this.ctx),
-            openConfigDialog: (device) => openConfigDialog(this.ctx, device),
-            openStrainLibraryDialog: () => openStrainLibraryDialog(this.ctx),
-            openIrrigationDialog: (options) => openIrrigationDialog(this.ctx, options),
-            openGrowMasterDialog: (growspaceId) => openGrowMasterDialog(this.ctx, growspaceId),
-            openWateringDialog: (options) => openWateringDialog(this.ctx, options),
-            openTrainingDialog: (plantIds, growspaceId) => openTrainingDialog(this.ctx, plantIds, growspaceId),
-            openNutrientsDialog: () => openNutrientsDialog(this.ctx),
-            openSnapshotsDialog: (growspaceId) => openSnapshotsDialog(this.ctx, growspaceId),
-            openBatchWateringDialog: (growspaceId) => openBatchWateringDialog(this.ctx, growspaceId),
-            openBatchTrainingDialog: (growspaceId) => openBatchTrainingDialog(this.ctx, growspaceId),
-            openBatchCloneDialog: () => openBatchCloneDialog(this.ctx),
-            openBatchPrintLabelsDialog: () => openBatchPrintLabelsDialog(this.ctx),
-            clearPlantSelection: () => clearPlantSelection(this.ctx),
             exitEditMode: () => exitEditMode(this.ctx),
             handleDeepLink: (plantId) => handleDeepLink(this.ctx, plantId),
             handleKeyboardNavigation: (key) => handleKeyboardNavigation(this.ctx, key),
@@ -136981,13 +136954,13 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this.store.handleDeviceChange(e.detail);
     }
     _handleSelectAll() {
-        this.store.actions.ui.selectAllPlants();
+        selectAllPlantsInSelectedDevice();
     }
     _handleClearSelection() {
-        this.store.actions.ui.clearPlantSelection();
+        clearPlantSelection();
     }
     _handleWaterSelected() {
-        this.store.actions.ui.openBatchWateringDialog();
+        openBatchWateringDialog();
     }
     _handleExitEditMode() {
         this.store.ui.setEditMode(false);
@@ -136996,19 +136969,19 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this.store.actions.ui.openIPMDialog();
     }
     _handleToggleExpansion() {
-        this.store.actions.ui.toggleHeaderExpansion();
+        toggleHeaderExpansion();
     }
     _handleTrainingSelected() {
-        this.store.actions.ui.openBatchTrainingDialog();
+        openBatchTrainingDialog();
     }
     _handleBatchAddPlants() {
         this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
     }
     _handlePrintLabelsSelected() {
-        this.store.actions.ui.openBatchPrintLabelsDialog();
+        openBatchPrintLabelsDialog();
     }
     _handleCloneSelected() {
-        this.store.actions.ui.openBatchCloneDialog();
+        openBatchCloneDialog();
     }
     render() {
         if (!this.hass) {
@@ -137109,12 +137082,12 @@ let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
         this._sharedStore = growspaceStoreRegistry.acquire();
         this.store = new GrowspaceStore(this._sharedStore);
         this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
-        this._handleSelectAll = () => this.store.actions.ui.selectAllPlants();
-        this._handleClearSelection = () => this.store.actions.ui.clearPlantSelection();
-        this._handleWaterSelected = () => this.store.actions.ui.openBatchWateringDialog();
+        this._handleSelectAll = () => selectAllPlantsInSelectedDevice();
+        this._handleClearSelection = () => clearPlantSelection();
+        this._handleWaterSelected = () => openBatchWateringDialog();
         this._handleExitEditMode = () => this.store.ui.setEditMode(false);
         this._handleIPMSelected = () => this.store.actions.ui.openIPMDialog();
-        this._handleTrainingSelected = () => this.store.actions.ui.openBatchTrainingDialog();
+        this._handleTrainingSelected = () => openBatchTrainingDialog();
         this._handleBatchAddPlants = () => this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
         this._handleDeleteSelected = () => void this.store.actions.ui.deleteSelectedPlants();
         this._handleTransplantMode = () => {
@@ -139283,7 +139256,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.58"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.59"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

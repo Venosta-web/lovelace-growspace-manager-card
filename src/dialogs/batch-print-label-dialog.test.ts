@@ -6,7 +6,11 @@ import { openBatchPrintLabelsDialog } from '../store/ui/ui-actions';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
 import { BatchPrintLabelDialog } from './batch-print-label-dialog';
 import './batch-print-label-dialog';
-import { __resetUiSliceForTests } from '../slices/ui';
+import {
+  __resetUiSliceForTests,
+  notification$,
+  openBatchPrintLabelsDialog as openBatchPrintLabelsDialogSlice,
+} from '../slices/ui';
 
 // ---------------------------------------------------------------------------
 // openBatchPrintLabelsDialog action
@@ -73,7 +77,7 @@ describe('GrowspaceStore.openBatchPrintLabelsDialog', () => {
   it('opens BATCH_PRINT_LABELS dialog via store method', () => {
     store.ui.$selectedPlants.set(new Set(['p1', 'p2']));
 
-    store.actions.ui.openBatchPrintLabelsDialog();
+    openBatchPrintLabelsDialogSlice();
 
     const active = store.ui.$activeDialog.get();
     expect(active.type).toBe('BATCH_PRINT_LABELS');
@@ -84,7 +88,7 @@ describe('GrowspaceStore.openBatchPrintLabelsDialog', () => {
   });
 
   it('does not open dialog when no plants are selected', () => {
-    store.actions.ui.openBatchPrintLabelsDialog();
+    openBatchPrintLabelsDialogSlice();
 
     expect(store.ui.$activeDialog.get().type).toBe('NONE');
   });
@@ -93,7 +97,7 @@ describe('GrowspaceStore.openBatchPrintLabelsDialog', () => {
     const ids = ['alpha', 'beta', 'gamma', 'delta'];
     store.ui.$selectedPlants.set(new Set(ids));
 
-    store.actions.ui.openBatchPrintLabelsDialog();
+    openBatchPrintLabelsDialogSlice();
 
     const active = store.ui.$activeDialog.get();
     if (active.type === 'BATCH_PRINT_LABELS') {
@@ -107,7 +111,7 @@ describe('GrowspaceStore.openBatchPrintLabelsDialog', () => {
   it('reflects dialogHostState after opening', () => {
     store.ui.$selectedPlants.set(new Set(['p1']));
 
-    store.actions.ui.openBatchPrintLabelsDialog();
+    openBatchPrintLabelsDialogSlice();
 
     expect(store.$dialogHostState.get().activeDialog.type).toBe('BATCH_PRINT_LABELS');
   });
@@ -333,10 +337,8 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     // warm-up + 1 batch call
     expect(mockStore.actions.plant.printLabel).toHaveBeenCalledTimes(2);
-    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(
-      expect.stringContaining('1 label'),
-      'success'
-    );
+    expect(notification$.get()?.type).toBe('success');
+    expect(notification$.get()?.message).toContain('1 label');
   });
 
   it('prints each plant for each copy', async () => {
@@ -359,10 +361,10 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(
-      'Printed 4 label(s) successfully',
-      'success'
-    );
+    expect(notification$.get()).toEqual({
+      message: 'Printed 4 label(s) successfully',
+      type: 'success',
+    });
   });
 
   it('shows error toast when some prints fail', async () => {
@@ -385,10 +387,8 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(
-      expect.stringContaining('1 error'),
-      'error'
-    );
+    expect(notification$.get()?.type).toBe('error');
+    expect(notification$.get()?.message).toContain('1 error');
   });
 
   it('reaches 100% progress after all labels are printed', async () => {

@@ -25,6 +25,7 @@ import { ViewMode } from '../../../constants';
 import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { layoutSpec$ } from '../../../slices/ui/layout-spec';
+import { showToast } from '../../../slices/ui';
 import { gridInteraction$ } from '../../../slices/grid-interaction';
 
 // Side-effect imports register child custom elements
@@ -258,12 +259,12 @@ export class GrowspaceView extends LitElement {
         col: detail.target_col,
         veg_start: today,
       });
-      this.store.actions.ui.toast('Plant transplanted successfully', 'success');
+      showToast('Plant transplanted successfully', 'success');
       await new Promise((resolve) => setTimeout(resolve, 500));
       await this.store.refreshData();
     } catch (error) {
       console.error('[GrowspaceView] Transplant failed:', error);
-      this.store.actions.ui.toast('Failed to transplant plant', 'error');
+      showToast('Failed to transplant plant', 'error');
     }
   }
 

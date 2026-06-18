@@ -7,6 +7,7 @@ import { seedBatches$, pollinationEvents$ } from '../../../slices/genetics';
 import { updateVisionCheckupConfig } from '../../../slices/camera';
 import { updateBreeder, deleteBreeder } from '../../../slices/strain';
 import { withToast } from '../../../slices/ui';
+import * as uiSlice from '../../../slices/ui';
 import { setHass } from '../../../services/hass-call';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
@@ -364,7 +365,7 @@ export class GrowspaceDialogHost extends LitElement {
       } as StrainEntry;
     }
 
-    this.store?.actions.ui.setActiveDialog({
+    uiSlice.openDialog({
       type: 'STRAIN_LIBRARY',
       payload: {
         view: 'editor',
@@ -375,7 +376,7 @@ export class GrowspaceDialogHost extends LitElement {
   }
 
   protected _handleStrainCreatedAtSource(e: CustomEvent) {
-    this.store?.actions.ui.setActiveDialog({
+    uiSlice.openDialog({
       type: 'STRAIN_LIBRARY',
       payload: {
         source: e.detail.source,
@@ -421,7 +422,7 @@ export class GrowspaceDialogHost extends LitElement {
         .libraryError=${this._addPlantsLibraryError}
         @close=${() => { this._addPlantsLibraryError = ''; this._closeDialogIfActive('ADD_PLANTS'); }}
         @show-toast=${(e: CustomEvent) =>
-        this.store?.actions.ui.showToast(e.detail.message, e.detail.type)}
+        uiSlice.showToast(e.detail.message, e.detail.type)}
         @add-plants-submit=${async (e: CustomEvent) => {
           this._addPlantsLibraryError = '';
           try {
@@ -469,7 +470,7 @@ export class GrowspaceDialogHost extends LitElement {
         })}
         @delete-plant=${(e: CustomEvent) => this.store?.actions.plant.delete(e.detail.plantId)}
         @harvest-plant=${(e: CustomEvent) => {
-        this.store?.actions.ui.setActiveDialog({
+        uiSlice.openDialog({
           type: 'HARVEST_SCORING',
           payload: { plant: e.detail.plant },
         });
@@ -480,20 +481,20 @@ export class GrowspaceDialogHost extends LitElement {
         @move-clone=${(e: CustomEvent) =>
         this.store?.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
         @open-watering=${(e: CustomEvent) =>
-        this.store?.actions.ui.setActiveDialog({
+        uiSlice.openDialog({
           type: 'WATERING',
           payload: e.detail,
         })}
         @open-training=${(e: CustomEvent) => {
-        this.store?.actions.ui.openTrainingDialog(e.detail.plantIds, e.detail.growspaceId);
+        uiSlice.openTrainingDialog(e.detail.plantIds, e.detail.growspaceId);
       }}
         @open-ipm=${(e: CustomEvent) =>
-        this.store?.actions.ui.setActiveDialog({
+        uiSlice.openDialog({
           type: 'IPM',
           payload: e.detail,
         })}
         @open-clone=${(e: CustomEvent) =>
-        this.store?.actions.ui.setActiveDialog({
+        uiSlice.openDialog({
           type: 'TAKE_CLONE',
           payload: e.detail,
         })}
@@ -599,7 +600,7 @@ export class GrowspaceDialogHost extends LitElement {
         @strain-created-at-source=${(e: CustomEvent) => {
         const { source, returnPayload } = e.detail;
         if (source === 'ADD_PLANT' || source === 'ADD_PLANTS') {
-          this.store?.actions.ui.setActiveDialog({
+          uiSlice.openDialog({
             type: source,
             payload: returnPayload,
           });
@@ -623,9 +624,9 @@ export class GrowspaceDialogHost extends LitElement {
         @delete-breeder=${(e: CustomEvent) => this._handleDeleteBreeder(e.detail)}
         @import-library=${(e: CustomEvent) => this._performImport(e.detail)}
         @export-library=${() => this.store?.actions.ui.exportStrainLibrary()}
-        @get-recommendation=${() => this.store?.actions.ui.openStrainRecommendationDialog()}
+        @get-recommendation=${() => uiSlice.openStrainRecommendationDialog()}
         @open-print-label=${(e: CustomEvent) => {
-        this.store?.actions.ui.setActiveDialog({
+        uiSlice.openDialog({
           type: 'PRINT_LABEL',
           payload: e.detail,
         });
@@ -641,10 +642,10 @@ export class GrowspaceDialogHost extends LitElement {
     try {
       await this.store?.actions.library.import(detail.file, detail.replace);
       await this._handleDataChanged();
-      this.store?.actions.ui.showToast('Strain library imported successfully', 'success');
+      uiSlice.showToast('Strain library imported successfully', 'success');
       this.store?.actions.library.fetchStrains(true);
     } catch (e: any) {
-      this.store?.actions.ui.showToast(`Import failed: ${e.message || e}`, 'error');
+      uiSlice.showToast(`Import failed: ${e.message || e}`, 'error');
     }
   }
 
@@ -765,7 +766,7 @@ export class GrowspaceDialogHost extends LitElement {
     const humiditySensors: string[] = detail.humiditySensors || [];
 
     if (!detail.selectedGrowspaceId || !temperatureSensors.length || !humiditySensors.length) {
-      this.store?.actions.ui.showToast(
+      uiSlice.showToast(
         'Growspace, Temperature, and Humidity sensors are mandatory',
         'error'
       );
@@ -819,7 +820,7 @@ export class GrowspaceDialogHost extends LitElement {
           fanConfig: detail.exhaustFanConfig,
         });
       }
-      this.store?.actions.ui.closeDialog();
+      uiSlice.closeDialog();
     } catch (e: unknown) {
       console.error('[DialogHost] configureEnvironment failed:', e);
     }
@@ -834,7 +835,7 @@ export class GrowspaceDialogHost extends LitElement {
         },
         { success: 'Vision config saved', errorPrefix: 'Failed to save vision config', rethrow: true }
       );
-      this.store?.actions.ui.closeDialog();
+      uiSlice.closeDialog();
     } catch (e: unknown) {
       console.error('[DialogHost] updateCheckupConfig failed:', e);
     }
@@ -1015,10 +1016,10 @@ export class GrowspaceDialogHost extends LitElement {
         }
       }
       this.store?.ui.closeDialog();
-      this.store?.actions.ui.showToast('Watering recorded', 'success');
+      uiSlice.showToast('Watering recorded', 'success');
       await this._handleDataChanged();
     } catch (err: any) {
-      this.store?.actions.ui.showToast(`Watering failed: ${err.message || err}`, 'error');
+      uiSlice.showToast(`Watering failed: ${err.message || err}`, 'error');
     }
   }
 
@@ -1214,7 +1215,7 @@ export class GrowspaceDialogHost extends LitElement {
           await this._handleDataChanged();
         } catch (e: any) {
           console.error('[DialogHost] Take clone failed:', e);
-          this.store?.actions.ui.showToast(`Error: ${e.message || e}`, 'error');
+          uiSlice.showToast(`Error: ${e.message || e}`, 'error');
         }
       }}
         @close=${() => this._closeDialogIfActive('TAKE_CLONE')}
@@ -1298,7 +1299,7 @@ export class GrowspaceDialogHost extends LitElement {
       <growspace-environment-config-dialog
         .open=${true}
         .deviceId=${active.payload?.deviceId}
-        @close=${() => this.store?.actions.ui.closeDialog()}
+        @close=${() => uiSlice.closeDialog()}
         @save-config=${(e: CustomEvent) => this._handleEnvironmentConfigSubmit(e)}
       ></growspace-environment-config-dialog>
     `;
@@ -1307,7 +1308,7 @@ export class GrowspaceDialogHost extends LitElement {
   private async _handleEnvironmentConfigSubmit(e: CustomEvent) {
     try {
       await this.store?.actions.environment.configure(e.detail);
-      this.store?.actions.ui.closeDialog();
+      uiSlice.closeDialog();
     } catch (err: any) {
       console.error('[DialogHost] configureEnvironment failed:', err);
     }
@@ -1315,7 +1316,7 @@ export class GrowspaceDialogHost extends LitElement {
 
   private _handleOpenLogPollination(e: CustomEvent): void {
     const plantId: string = (e.detail as { plantId?: string })?.plantId ?? '';
-    this.store?.actions.ui.setActiveDialog({
+    uiSlice.openDialog({
       type: 'STRAIN_LIBRARY',
       payload: {
         initialTab: 'seeds',

@@ -27,6 +27,7 @@ import type {
 } from '../components/growspace-grid-ui';
 import { GrowspaceGridUI } from '../components/growspace-grid-ui';
 import { gridInteraction$, select } from '../../../slices/grid-interaction';
+import * as uiSlice from '../../../slices/ui';
 import '../components/growspace-grid-ui';
 import '../containers/plant-card.container';
 
@@ -138,14 +139,11 @@ export class GrowspaceGridContainer extends LitElement {
     if (!plant) return;
     if (this.store.ui.$isEditMode.get() && this.store.ui.$selectedPlants.get().size > 0) {
       if (plantId && !this.store.ui.$selectedPlants.get().has(plantId)) {
-        this.store.actions.ui.togglePlantSelection(plantId);
+        uiSlice.togglePlantSelection(plantId);
       }
-      this.store.actions.ui.openPlantOverviewDialog(
-        plant,
-        Array.from(this.store.ui.$selectedPlants.get())
-      );
+      uiSlice.openPlantOverviewDialog(plant, Array.from(this.store.ui.$selectedPlants.get()));
     } else {
-      this.store.actions.ui.openPlantOverviewDialog(plant);
+      uiSlice.openPlantOverviewDialog(plant);
     }
   }
 
