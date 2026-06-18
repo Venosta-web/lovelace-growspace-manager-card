@@ -34,6 +34,7 @@ import {
   clearPlantSelection,
   deselectPlants,
   showToast,
+  showError,
   clearToast,
   setError,
   setLanguage,
@@ -41,6 +42,7 @@ import {
   dismissFlowerFlip,
 } from './index';
 import { gridInteraction$, cancel } from '../grid-interaction';
+import { WSError } from '../../services/errors';
 import type { ActiveDialogState } from '../../store/ui/dialog-types';
 
 // ---------------------------------------------------------------------------
@@ -236,6 +238,44 @@ describe('clearToast', () => {
     showToast('msg');
     clearToast();
     expect(notification$.get()).toBeNull();
+  });
+});
+
+describe('showError', () => {
+  it('maps a known WSError code to its friendly message behind the prefix', () => {
+    showError(new WSError('coordinator_not_ready', 'raw'), 'Failed to remove growspace');
+    expect(notification$.get()).toEqual({
+      message: 'Failed to remove growspace: Integration not loaded — try reloading the page',
+      type: 'error',
+    });
+  });
+
+  it.each([
+    ['coordinator_not_ready', 'Integration not loaded — try reloading the page'],
+    ['entity_not_found', 'Item not found — it may have been removed'],
+    ['validation_failed', 'Invalid input'],
+    ['internal_error', 'Internal error'],
+  ] as const)('maps WSError code %s to its friendly message', (code, friendly) => {
+    showError(new WSError(code, 'raw backend text'), 'Prefix');
+    expect(notification$.get()).toEqual({ message: `Prefix: ${friendly}`, type: 'error' });
+  });
+
+  it('falls back to the raw WSError message for an unmapped code', () => {
+    showError(new WSError('rate_limited', 'Slow down'), 'Prefix');
+    expect(notification$.get()).toEqual({ message: 'Prefix: Slow down', type: 'error' });
+  });
+
+  it('uses a plain Error message for non-WSError errors', () => {
+    showError(new Error('boom'), 'Failed to update growspace');
+    expect(notification$.get()).toEqual({
+      message: 'Failed to update growspace: boom',
+      type: 'error',
+    });
+  });
+
+  it('falls back to "Unknown error" for a non-Error throwable', () => {
+    showError('just a string', 'Prefix');
+    expect(notification$.get()).toEqual({ message: 'Prefix: Unknown error', type: 'error' });
   });
 });
 

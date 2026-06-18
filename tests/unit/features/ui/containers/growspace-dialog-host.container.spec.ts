@@ -846,12 +846,16 @@ describe('GrowspaceDialogHostContainer', () => {
         }));
 
         await new Promise(resolve => setTimeout(resolve, 50));
-        expect(mockStore.actions.growspace.add).toHaveBeenCalledWith({
-            name: 'Veg Room',
-            rows: 4,
-            plantsPerRow: 6,
-            notificationService: 'mobile_app_phone',
-        });
+        expect(callService).toHaveBeenCalledWith(
+            'growspace_manager',
+            'add_growspace',
+            expect.objectContaining({
+                name: 'Veg Room',
+                rows: 4,
+                plants_per_row: 6,
+                notification_target: 'mobile_app_phone',
+            })
+        );
     });
 
     it('should handle @strain-created-at-source from add-plants source on strain-library-dialog', async () => {
@@ -1635,22 +1639,25 @@ describe('GrowspaceDialogHostContainer', () => {
             });
             mockStore.actions.ui.showToast.mockClear();
 
-            // Test L673: handleAddGrowspace failure in CONFIG (Action handles toast)
+            // handleAddGrowspace failure in CONFIG — the slice mutator (via callService)
+            // rejects; the inlined catch surfaces it through showError → notification atom.
             mockStore.ui.$activeDialog.set({ type: 'CONFIG', payload: {} });
             await element.updateComplete;
             const configDialog = element.shadowRoot?.querySelector('config-dialog');
-            
-            mockStore.actions.growspace.add.mockImplementation(async () => {
-                mockStore.actions.ui.showToast('Error: Config Error', 'error');
-                throw new Error('Config Error');
-            });
+
+            (callService as any).mockRejectedValueOnce(new Error('Config Error'));
 
             configDialog?.dispatchEvent(new CustomEvent('add-growspace-submit', {
                 detail: { name: 'New Room' },
                 bubbles: true, composed: true
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith('Error: Config Error', 'error');
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({
+                        message: expect.stringContaining('Failed to add growspace'),
+                        type: 'error',
+                    })
+                );
             });
             mockStore.actions.ui.showToast.mockClear();
         });
@@ -1876,9 +1883,11 @@ describe('GrowspaceDialogHostContainer', () => {
                 detail: { growspaceId: 'g1', name: 'New Name', rows: 3, plantsPerRow: 4 }
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.growspace.update).toHaveBeenCalledWith(expect.objectContaining({
-                    growspaceId: 'g1', name: 'New Name', rows: 3
-                }));
+                expect(callService).toHaveBeenCalledWith(
+                    'growspace_manager',
+                    'update_growspace',
+                    expect.objectContaining({ growspace_id: 'g1', name: 'New Name', rows: 3 })
+                );
             });
         });
 
@@ -1889,7 +1898,11 @@ describe('GrowspaceDialogHostContainer', () => {
                 detail: { growspace_id: 'g1' }
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.growspace.remove).toHaveBeenCalledWith('g1');
+                expect(callService).toHaveBeenCalledWith(
+                    'growspace_manager',
+                    'remove_growspace',
+                    expect.objectContaining({ growspace_id: 'g1' })
+                );
             });
         });
 
@@ -2177,25 +2190,39 @@ describe('GrowspaceDialogHostContainer', () => {
 
         it('should handle @edit-growspace-submit failure on CONFIG dialog', async () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            mockStore.actions.growspace.update.mockRejectedValue(new Error('Update failed'));
+            (callService as any).mockRejectedValueOnce(new Error('Update failed'));
             await openDialog('CONFIG', {});
             const dialog = element.shadowRoot?.querySelector('config-dialog');
             dialog?.dispatchEvent(new CustomEvent('edit-growspace-submit', {
                 detail: { growspaceId: 'g1', name: 'X', rows: 1, plantsPerRow: 1 }
             }));
-            await vi.waitFor(() => expect(consoleSpy).toHaveBeenCalled());
+            await vi.waitFor(() => {
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({
+                        message: expect.stringContaining('Failed to update growspace'),
+                        type: 'error',
+                    })
+                );
+            });
             consoleSpy.mockRestore();
         });
 
         it('should handle @delete-growspace-submit failure on CONFIG dialog', async () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            mockStore.actions.growspace.remove.mockRejectedValue(new Error('Remove failed'));
+            (callService as any).mockRejectedValueOnce(new Error('Remove failed'));
             await openDialog('CONFIG', {});
             const dialog = element.shadowRoot?.querySelector('config-dialog');
             dialog?.dispatchEvent(new CustomEvent('delete-growspace-submit', {
                 detail: { growspace_id: 'g1' }
             }));
-            await vi.waitFor(() => expect(consoleSpy).toHaveBeenCalled());
+            await vi.waitFor(() => {
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({
+                        message: expect.stringContaining('Failed to remove growspace'),
+                        type: 'error',
+                    })
+                );
+            });
             consoleSpy.mockRestore();
         });
 
@@ -2277,11 +2304,27 @@ describe('GrowspaceDialogHostContainer', () => {
             const dialog = element.shadowRoot?.querySelector('config-dialog');
             dialog?.dispatchEvent(new CustomEvent('add-growspace-submit', { detail: { name: 'New Room', rows: 3, plantsPerRow: 4 } }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.growspace.add).toHaveBeenCalledWith(
+                expect(callService).toHaveBeenCalledWith(
+                    'growspace_manager',
+                    'add_growspace',
                     expect.objectContaining({ name: 'New Room' })
                 );
-                expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled();
+                expect(notification$.get()).toEqual({
+                    message: 'Growspace added successfully!',
+                    type: 'success',
+                });
             });
+        });
+
+        it('should reject @add-growspace-submit with an empty name and not call the service', async () => {
+            await openDialog('CONFIG', {});
+            const dialog = element.shadowRoot?.querySelector('config-dialog');
+            (callService as any).mockClear();
+            dialog?.dispatchEvent(new CustomEvent('add-growspace-submit', { detail: { name: '' } }));
+            await vi.waitFor(() => {
+                expect(notification$.get()).toEqual({ message: 'Name is required', type: 'error' });
+            });
+            expect(callService).not.toHaveBeenCalled();
         });
 
         it('should handle @add-growspace-submit on CONFIG with missing store (no-op guard)', async () => {
@@ -2698,13 +2741,14 @@ describe('GrowspaceDialogHostContainer', () => {
                 // @ts-ignore
                 element.store = undefined;
                 
+                (callService as any).mockClear();
                 dialog?.dispatchEvent(new CustomEvent('edit-growspace-submit', {
                     detail: { growspaceId: 'g1', name: 'New Name' }
                 }));
-                
+
                 await element.updateComplete;
-                expect(mockStore.actions.growspace.update).not.toHaveBeenCalled();
-                
+                expect(callService).not.toHaveBeenCalled();
+
                 // Restore
                 element.store = originalStore;
             });

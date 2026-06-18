@@ -6,7 +6,8 @@ import { waterPlant as sliceWaterPlant, addPlants } from '../../../slices/plant'
 import { seedBatches$, pollinationEvents$ } from '../../../slices/genetics';
 import { updateVisionCheckupConfig } from '../../../slices/camera';
 import { updateBreeder, deleteBreeder } from '../../../slices/strain';
-import { withToast } from '../../../slices/ui';
+import { addGrowspace, updateGrowspace, removeGrowspace } from '../../../slices/growspace';
+import { withToast, showError, showToast, closeDialog } from '../../../slices/ui';
 import { setHass } from '../../../services/hass-call';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
@@ -711,26 +712,33 @@ export class GrowspaceDialogHost extends LitElement {
         @close=${() => this._closeDialogIfActive('CONFIG')}
         @add-growspace-submit=${async (e: CustomEvent) => {
         if (!this.store) return;
+        if (!e.detail.name) {
+          showToast('Name is required', 'error');
+          return;
+        }
         try {
-          await this.store.actions.growspace.add(e.detail);
-          this.store.ui.closeDialog();
+          await addGrowspace(e.detail);
+          showToast('Growspace added successfully!', 'success');
+          closeDialog();
           await this._handleDataChanged();
-        } catch (e) {
-          console.error(e);
+        } catch (err) {
+          showError(err, 'Failed to add growspace');
         }
       }}
         @edit-growspace-submit=${async (e: CustomEvent) => {
         if (!this.store) return;
         try {
-          await this.store.actions.growspace.update({
+          await updateGrowspace({
             growspaceId: e.detail.growspaceId,
             name: e.detail.name,
             rows: e.detail.rows,
             plantsPerRow: e.detail.plantsPerRow,
           });
+          showToast('Growspace updated successfully', 'success');
+          closeDialog();
           await this._handleDataChanged();
-        } catch (e) {
-          console.error(e);
+        } catch (err) {
+          showError(err, 'Failed to update growspace');
         }
       }}
         @delete-growspace-submit=${(e: CustomEvent) => this._handleRemoveGrowspace(e.detail)}
@@ -744,10 +752,12 @@ export class GrowspaceDialogHost extends LitElement {
 
   private async _handleRemoveGrowspace(detail: { growspace_id: string }) {
     try {
-      await this.store?.actions.growspace.remove(detail.growspace_id);
+      await removeGrowspace(detail.growspace_id);
+      showToast('Growspace removed successfully', 'success');
+      closeDialog();
       await this._handleDataChanged();
     } catch (e) {
-      console.error(e);
+      showError(e, 'Failed to remove growspace');
     }
   }
 
