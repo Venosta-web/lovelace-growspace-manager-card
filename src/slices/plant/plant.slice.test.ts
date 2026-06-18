@@ -32,10 +32,12 @@ import {
   logMoistureReading,
   setVisualTag,
   waterPlant,
+  waterGrowspace,
 } from './index';
 
 vi.mock('../../services/hass-call', () => ({
   hassCall: vi.fn().mockResolvedValue(undefined),
+  callService: vi.fn().mockResolvedValue(undefined),
   setHass: vi.fn(),
 }));
 
@@ -632,6 +634,71 @@ describe('waterPlant (pilot regression)', () => {
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/water_plant',
       expect.objectContaining({ preset_id: 'feed-week-4' }),
+      expect.anything()
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// waterGrowspace (mutator + cross-slice nutrient refetch)
+// ---------------------------------------------------------------------------
+
+describe('waterGrowspace', () => {
+  it('calls water_growspace WS command with growspace_id and amount', async () => {
+    await waterGrowspace('gs1', 500);
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/water_growspace',
+      expect.objectContaining({ growspace_id: 'gs1', amount: 500 }),
+      expect.anything()
+    );
+  });
+
+  it('includes nutrients and preset_id in the payload when provided', async () => {
+    await waterGrowspace('gs1', 500, { 'cal-mag': 2.5 }, 'feed-week-4');
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/water_growspace',
+      expect.objectContaining({ nutrients: { 'cal-mag': 2.5 }, preset_id: 'feed-week-4' }),
+      expect.anything()
+    );
+  });
+
+  it('omits nutrients from the payload when the nutrients map is empty', async () => {
+    await waterGrowspace('gs1', 500, {});
+
+    const waterCall = vi
+      .mocked(hassCallModule.hassCall)
+      .mock.calls.find((c) => c[0] === 'growspace_manager/water_growspace');
+    expect(waterCall?.[1]).not.toHaveProperty('nutrients');
+  });
+
+  it('refetches nutrient inventory after the watering commits when nutrients applied', async () => {
+    await waterGrowspace('gs1', 500, { 'cal-mag': 2.5 });
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_nutrient_inventory',
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  it('does not refetch nutrient inventory when no nutrients applied', async () => {
+    await waterGrowspace('gs1', 500);
+
+    expect(hassCallModule.hassCall).not.toHaveBeenCalledWith(
+      'growspace_manager/get_nutrient_inventory',
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  it('does not refetch nutrient inventory for an empty nutrients map', async () => {
+    await waterGrowspace('gs1', 500, {});
+
+    expect(hassCallModule.hassCall).not.toHaveBeenCalledWith(
+      'growspace_manager/get_nutrient_inventory',
+      expect.anything(),
       expect.anything()
     );
   });

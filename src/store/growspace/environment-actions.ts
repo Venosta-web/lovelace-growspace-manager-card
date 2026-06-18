@@ -16,9 +16,10 @@ import {
   removeEnvironment as growspaceSliceRemoveEnvironment,
   resetWaterTracking as growspaceSliceResetWaterTracking,
 } from '../../slices/growspace';
-import { waterPlant as plantSliceWaterPlant } from '../../slices/plant';
-import { callService } from '../../services/hass-call';
-import { DOMAIN, SERVICES } from '../../lib/constants';
+import {
+  waterPlant as plantSliceWaterPlant,
+  waterGrowspace as plantSliceWaterGrowspace,
+} from '../../slices/plant';
 
 type ConfigureEnvironmentData = Parameters<typeof growspaceSliceConfigureEnvironment>[0];
 
@@ -92,7 +93,13 @@ export async function waterPlant(
   );
 }
 
-/** Water an entire growspace and refresh nutrient inventory if nutrients were applied */
+/**
+ * Water an entire growspace.
+ *
+ * The nutrient-inventory refetch (when nutrients were applied) lives inside the
+ * plant-slice mutator, so every caller gets correct inventory — see CONTEXT.md
+ * "Cross-slice mutation".
+ */
 export async function waterGrowspace(
   ctx: ActionContext,
   growspaceId: string,
@@ -103,12 +110,7 @@ export async function waterGrowspace(
   await withAction(
     ctx,
     async () => {
-      const payload: Record<string, unknown> = { growspace_id: growspaceId, amount };
-      if (nutrients && Object.keys(nutrients).length > 0) payload.nutrients = nutrients;
-      if (presetId) payload.preset_id = presetId;
-      await callService(DOMAIN, SERVICES.WATER_GROWSPACE, payload);
-      if (nutrients && Object.keys(nutrients).length > 0)
-        await libraryActions.fetchNutrientInventory(ctx, true);
+      await plantSliceWaterGrowspace(growspaceId, amount, nutrients, presetId);
     },
     { errorPrefix: 'Failed to water growspace', rethrow: true }
   );
