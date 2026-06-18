@@ -7,20 +7,17 @@ import { hassCall, callService } from '../../../../../src/services/hass-call';
 import { notification$ } from '../../../../../src/slices/ui';
 import * as uiSlice from '../../../../../src/slices/ui';
 
-// The dialog host now drives pure UI ops through the slice. Replace those leaf
-// helpers with call-through spies so assertions that the host opened a dialog /
-// toasted still work, then alias them onto the mock store's `ui` namespace below.
-vi.mock('../../../../../src/slices/ui', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../../../../../src/slices/ui')>();
-    return {
-        ...actual,
-        showToast: vi.fn(actual.showToast),
-        openDialog: vi.fn(actual.openDialog),
-        closeDialog: vi.fn(actual.closeDialog),
-        openStrainRecommendationDialog: vi.fn(actual.openStrainRecommendationDialog),
-        openTrainingDialog: vi.fn(actual.openTrainingDialog),
-    };
-});
+// The dialog host now drives pure UI ops through the slice. `{ spy: true }`
+// wraps every export in a call-through spy so assertions that the host opened a
+// dialog / toasted still work, then aliases the relevant ones onto the mock
+// store's `ui` namespace below.
+//
+// We must NOT use an `importOriginal()` factory here: `slices/ui` has an internal
+// `index ↔ dialogs` import cycle, and `importOriginal()` re-enters it during
+// vitest browser-mode collection and deadlocks the entire run. `{ spy: true }`
+// evaluates the module once without the re-entrant import. (It also requires the
+// barrel to avoid `export *`, which `slices/ui/index.ts` now does.)
+vi.mock('../../../../../src/slices/ui', { spy: true });
 
 // Import side-effects for element registration
 import '../../../../../src/features/ui/containers/growspace-dialog-host.container';

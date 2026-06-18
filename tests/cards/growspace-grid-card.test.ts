@@ -8,15 +8,12 @@ import { setDevices } from '../../src/slices/grid';
 import { gridInteraction$ } from '../../src/slices/grid-interaction';
 import * as uiSlice from '../../src/slices/ui';
 
-// The card calls these leaf ops on the UI slice directly; replace just those
-// helpers with spies while keeping every real atom/util intact.
-vi.mock('../../src/slices/ui', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../src/slices/ui')>()),
-  selectAllPlantsInSelectedDevice: vi.fn(),
-  clearPlantSelection: vi.fn(),
-  openBatchWateringDialog: vi.fn(),
-  openBatchTrainingDialog: vi.fn(),
-}));
+// The card calls these leaf ops on the UI slice directly; `{ spy: true }` wraps
+// every export in a call-through spy while keeping every real atom/util intact.
+// Do NOT use an `importOriginal()` factory: `slices/ui` has an internal
+// `index ↔ dialogs` cycle and `importOriginal()` re-enters it during browser-mode
+// collection and deadlocks the run.
+vi.mock('../../src/slices/ui', { spy: true });
 
 vi.mock('../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
 vi.mock('../../src/features/ui/containers/growspace-toast.container', () => ({}));

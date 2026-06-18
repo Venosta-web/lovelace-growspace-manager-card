@@ -372,4 +372,26 @@ export function __resetUiSliceForTests(): void {
 
 // Pure dialog-open helpers (ctx-free) — re-exported so call sites can import the
 // full UI-slice surface from one place.
-export * from './dialogs';
+//
+// Explicit named re-exports (not `export *`): a star re-export of a module that
+// imports back from this barrel (`dialogs.ts` → `./index`) cannot be statically
+// analysed, which (a) breaks `vi.mock(..., { spy: true })` automocking and
+// (b) makes `importOriginal()` deadlock the cyclic barrel during vitest
+// browser-mode collection. Listing the names keeps the graph statically resolvable.
+export {
+  openPlantOverviewDialog,
+  openBatchPrintLabelsDialog,
+  openBatchCloneDialog,
+  openBatchWateringDialog,
+  openBatchTrainingDialog,
+  openStrainRecommendationDialog,
+  openLogbookDialog,
+  openConfigDialog,
+  openStrainLibraryDialog,
+  openIrrigationDialog,
+  openGrowMasterDialog,
+  openWateringDialog,
+  openTrainingDialog,
+  openNutrientsDialog,
+  openSnapshotsDialog,
+} from './dialogs';

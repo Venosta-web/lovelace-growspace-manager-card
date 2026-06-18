@@ -12,23 +12,13 @@ import '../../../../../src/features/ui/containers/growspace-header.container';
 import type { GrowspaceHeaderContainer } from '../../../../../src/features/ui/containers/growspace-header.container';
 
 // Dialog opens are now slice ops the header calls directly (`uiSlice.openX`).
-// ESM exports can't be spied in browser mode, so replace just those helpers
-// with vi.fn()s while keeping every real atom/util the component depends on.
-vi.mock('../../../../../src/slices/ui', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../../../../../src/slices/ui')>();
-    return {
-        ...actual,
-        openConfigDialog: vi.fn(),
-        openStrainLibraryDialog: vi.fn(),
-        openIrrigationDialog: vi.fn(),
-        openGrowMasterDialog: vi.fn(),
-        openLogbookDialog: vi.fn(),
-        openSnapshotsDialog: vi.fn(),
-        openWateringDialog: vi.fn(),
-        openTrainingDialog: vi.fn(),
-        openNutrientsDialog: vi.fn(),
-    };
-});
+// ESM exports can't be spied in browser mode, so `{ spy: true }` wraps every
+// export in a call-through spy while keeping every real atom/util the component
+// depends on. Do NOT use an `importOriginal()` factory: `slices/ui` has an
+// internal `index ↔ dialogs` cycle and `importOriginal()` re-enters it during
+// browser-mode collection and deadlocks the run. `{ spy: true }` evaluates the
+// module once without that re-entrant import.
+vi.mock('../../../../../src/slices/ui', { spy: true });
 
 vi.mock('../../../../../src/features/ui/components/growspace-header-ui', () => {
     if (!customElements.get('growspace-header-ui')) {
