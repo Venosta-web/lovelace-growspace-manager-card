@@ -13404,8 +13404,9 @@ GrowspaceNutrientPresetsEditorUI = __decorate([
 /**
  * Thin wiring layer that subscribes to the nutrient atoms and passes live
  * inventory + preset data to the presets editor UI for dropdown population
- * and orphan detection. The shell (nutrient-dialog) owns the SM and all
- * fetch calls; this container is a pure pass-through.
+ * and orphan detection. Self-fetches its preset data on open (see the
+ * "Dialog self-fetch on open" entry in CONTEXT.md), rendering a loading
+ * state until the atom resolves.
  */
 let GrowspaceNutrientPresetsEditorContainer = class GrowspaceNutrientPresetsEditorContainer extends i$3 {
     constructor() {
@@ -13415,11 +13416,16 @@ let GrowspaceNutrientPresetsEditorContainer = class GrowspaceNutrientPresetsEdit
         this._presets = new libExports.StoreController(this, nutrientPresets$);
         this._inventory = new libExports.StoreController(this, nutrientInventory$);
     }
+    connectedCallback() {
+        super.connectedCallback();
+        fetchNutrientPresets$1().catch((err) => console.error('[nutrient-presets-editor] failed to fetch presets', err));
+    }
     render() {
         const presets = this._presets.value;
         const inventory = this._inventory.value;
-        if (presets === null)
-            return E;
+        if (presets === null) {
+            return x `<div class="presets-loading" role="status">Loading presets…</div>`;
+        }
         return x `
       <growspace-nutrient-presets-editor-ui
         .presets=${presets}
@@ -14197,6 +14203,18 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         this.targetGrowspaceId = '';
         this.siblingPlants = [];
         this._sm = createInitialSM$9({ row: 0, col: 0 });
+        this._loadingLibrary = true;
+    }
+    // Self-fetch the strain library on open (see "Dialog self-fetch on open" in
+    // CONTEXT.md); the populated atom flows back in via the `strainLibrary` prop.
+    connectedCallback() {
+        super.connectedCallback();
+        this._loadingLibrary = true;
+        fetchStrainLibrary$1()
+            .finally(() => {
+            this._loadingLibrary = false;
+        })
+            .catch((err) => console.error('[add-plant-dialog] failed to fetch strains', err));
     }
     setInitialState(row, col, strain = '', phenotype = '') {
         this._sm = createInitialSM$9({ row, col });
@@ -14385,7 +14403,9 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
 
           <div class="overview-grid">
             ${activeTab === 'add'
-            ? this._renderWizardStep(addSub, uniqueStrains, relevantPhenotypes)
+            ? this._loadingLibrary && this.strainLibrary.length === 0
+                ? x `<div class="empty-state" role="status">Loading strain library…</div>`
+                : this._renderWizardStep(addSub, uniqueStrains, relevantPhenotypes)
             : this._renderTransplantForm(activeTab)}
           </div>
 
@@ -15106,6 +15126,9 @@ __decorate([
 __decorate([
     r$3()
 ], AddPlantDialog.prototype, "_sm", void 0);
+__decorate([
+    r$3()
+], AddPlantDialog.prototype, "_loadingLibrary", void 0);
 AddPlantDialog = __decorate([
     t$2('add-plant-dialog')
 ], AddPlantDialog);
@@ -52144,8 +52167,20 @@ let GrowspaceIPMDialogUI = class GrowspaceIPMDialogUI extends i$3 {
         this._view = 'APPLY';
         this._selectedPresetId = null;
         this._notes = '';
+        this._loadingPresets = true;
         // Edit mode state
         this._editingPreset = null;
+    }
+    // Self-fetch presets on open (see "Dialog self-fetch on open" in CONTEXT.md);
+    // the populated atom flows back in via the `presets` prop from the host.
+    connectedCallback() {
+        super.connectedCallback();
+        this._loadingPresets = true;
+        fetchIPMPresets$1()
+            .finally(() => {
+            this._loadingPresets = false;
+        })
+            .catch((err) => console.error('[ipm-dialog] failed to fetch presets', err));
     }
     updated(changedProps) {
         if (changedProps.has('open') && this.open) {
@@ -52239,11 +52274,13 @@ let GrowspaceIPMDialogUI = class GrowspaceIPMDialogUI extends i$3 {
       >
         <div class="dialog-content-grid">
           ${this.error ? x `<div class="error-bar">${this.error}</div>` : E}
-          ${this._view === 'APPLY'
-            ? this._renderApply()
-            : this._view === 'LIST'
-                ? this._renderList()
-                : this._renderEdit()}
+          ${this._loadingPresets && Object.keys(this.presets || {}).length === 0
+            ? x `<div class="empty-state" role="status">Loading presets…</div>`
+            : this._view === 'APPLY'
+                ? this._renderApply()
+                : this._view === 'LIST'
+                    ? this._renderList()
+                    : this._renderEdit()}
         </div>
 
         <div class="button-group">${this._renderFooterButtons()}</div>
@@ -52603,6 +52640,9 @@ __decorate([
 __decorate([
     r$3()
 ], GrowspaceIPMDialogUI.prototype, "_notes", void 0);
+__decorate([
+    r$3()
+], GrowspaceIPMDialogUI.prototype, "_loadingPresets", void 0);
 __decorate([
     r$3()
 ], GrowspaceIPMDialogUI.prototype, "_editingPreset", void 0);
@@ -135563,8 +135603,9 @@ function handleDeepLink(ctx, plantId) {
     }
 }
 function openAddPlantDialog(ctx, row, col) {
+    // The ADD_PLANT dialog self-fetches the strain library on open
+    // (see "Dialog self-fetch on open" in CONTEXT.md), so this is a pure UI op.
     if (row !== undefined && col !== undefined) {
-        fetchStrainLibrary(ctx, true);
         ctx.ui.setActiveDialog({
             type: 'ADD_PLANT',
             payload: { row, col },
@@ -135606,21 +135647,22 @@ function openAddPlantDialog(ctx, row, col) {
                 break;
         }
     }
-    fetchStrainLibrary(ctx, true);
     ctx.ui.setActiveDialog({
         type: 'ADD_PLANT',
         payload: { row: targetRow, col: targetCol },
     });
 }
 function openNutrientPresetsDialog(ctx) {
-    fetchNutrientPresets();
+    // The NUTRIENT_PRESETS dialog self-fetches its presets on open
+    // (see "Dialog self-fetch on open" in CONTEXT.md), so this is a pure UI op.
     ctx.ui.setActiveDialog({
         type: 'NUTRIENT_PRESETS',
         payload: {},
     });
 }
 function openIPMDialog(ctx, context) {
-    fetchIPMPresets();
+    // The IPM dialog self-fetches its presets on open
+    // (see "Dialog self-fetch on open" in CONTEXT.md), so this is a pure UI op.
     const growspaceId = context?.growspaceId ||
         (!context?.plantIds?.length ? ctx.grid.$selectedDevice.get() || undefined : undefined);
     ctx.ui.setActiveDialog({
