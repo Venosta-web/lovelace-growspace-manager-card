@@ -1,3 +1,15 @@
+# [1.1.0-next.61](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.60...v1.1.0-next.61) (2026-06-18)
+
+
+### Bug Fixes
+
+* **test:** stop vitest browser-mode deadlock from importOriginal on cyclic ui barrel ([7b47ff0](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7b47ff0ba5ca1f686c1b9dc90ce2b9163fa17316))
+
+
+### Features
+
+* **plant:** add waterGrowspace mutator with cross-slice nutrient refetch ([#341](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/341)) ([29b69d8](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/29b69d89485d3ac3bce1f3968ad9c0c905ccc598))
+
 # [1.1.0-next.60](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.59...v1.1.0-next.60) (2026-06-18)
 
 
