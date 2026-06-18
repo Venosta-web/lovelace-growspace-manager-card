@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { atom, computed } from 'nanostores';
-import { viewMode$ } from '../../../../src/slices/ui';
+import { viewMode$, notification$ } from '../../../../src/slices/ui';
 import { ViewMode } from '../../../../src/constants';
 import { gridInteraction$, cancel } from '../../../../src/slices/grid-interaction';
 
@@ -424,10 +424,10 @@ describe('GrowspaceView', () => {
       'update_plant',
       expect.objectContaining({ plant_id: 'p1', growspace_id: 'gs1', row: 1, col: 2 })
     );
-    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(
-      'Plant transplanted successfully',
-      'success'
-    );
+    expect(notification$.get()).toEqual({
+      message: 'Plant transplanted successfully',
+      type: 'success',
+    });
     vi.useRealTimers();
   });
 
@@ -444,7 +444,7 @@ describe('GrowspaceView', () => {
 
     await new Promise((r) => setTimeout(r, 0));
 
-    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith('Failed to transplant plant', 'error');
+    expect(notification$.get()).toEqual({ message: 'Failed to transplant plant', type: 'error' });
     expect(consoleSpy).toHaveBeenCalled();
   });
 

@@ -7,6 +7,20 @@ import { ViewMode } from '../../src/features/environment/constants';
 import { atom, computed } from 'nanostores';
 import { setMutateListener, undo, canUndo } from '../../src/services/mutate';
 import { selectedDeviceId$ } from '../../src/slices/grid';
+import * as uiSlice from '../../src/slices/ui';
+
+// The card now calls the UI slice directly for these leaf ops; replace just
+// those helpers with spies while keeping every real atom/util intact.
+vi.mock('../../src/slices/ui', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../src/slices/ui')>()),
+    selectAllPlantsInSelectedDevice: vi.fn(),
+    clearPlantSelection: vi.fn(),
+    toggleHeaderExpansion: vi.fn(),
+    openBatchWateringDialog: vi.fn(),
+    openBatchTrainingDialog: vi.fn(),
+    openBatchPrintLabelsDialog: vi.fn(),
+    openBatchCloneDialog: vi.fn(),
+}));
 
 vi.mock('../../src/services/mutate', () => ({
     setMutateListener: vi.fn(),
@@ -468,9 +482,8 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle select all', () => {
-            const spy = vi.spyOn(element.store.actions.ui, 'selectAllPlants');
             (element as any)._handleSelectAll();
-            expect(spy).toHaveBeenCalled();
+            expect(uiSlice.selectAllPlantsInSelectedDevice).toHaveBeenCalled();
         });
 
         it('should handle delete selected', () => {
@@ -569,14 +582,12 @@ describe('GrowspaceManagerCard', () => {
 
         it('should handle private event handlers', () => {
             // Clear selection
-            const clearSpy = vi.spyOn(element.store.actions.ui, 'clearPlantSelection');
             (element as any)._handleClearSelection();
-            expect(clearSpy).toHaveBeenCalled();
+            expect(uiSlice.clearPlantSelection).toHaveBeenCalled();
 
             // Water selected
-            const waterSpy = vi.spyOn(element.store.actions.ui, 'openBatchWateringDialog');
             (element as any)._handleWaterSelected();
-            expect(waterSpy).toHaveBeenCalled();
+            expect(uiSlice.openBatchWateringDialog).toHaveBeenCalled();
 
             // Exit edit mode
             const editSpy = vi.spyOn(element.store.ui, 'setEditMode');
@@ -590,15 +601,13 @@ describe('GrowspaceManagerCard', () => {
 
             // Toggle expansion (if available)
             if (typeof (element as any)._handleToggleExpansion === 'function') {
-                const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleHeaderExpansion');
                 (element as any)._handleToggleExpansion();
-                expect(toggleSpy).toHaveBeenCalled();
+                expect(uiSlice.toggleHeaderExpansion).toHaveBeenCalled();
             }
 
             // Training selected
-            const trainingSpy = vi.spyOn(element.store.actions.ui, 'openBatchTrainingDialog');
             (element as any)._handleTrainingSelected();
-            expect(trainingSpy).toHaveBeenCalled();
+            expect(uiSlice.openBatchTrainingDialog).toHaveBeenCalled();
 
             // Batch Add
             const dialogSpy = vi.spyOn(element.store.ui, 'setActiveDialog');
@@ -607,15 +616,13 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle print labels selected', () => {
-            const spy = vi.spyOn(element.store.actions.ui, 'openBatchPrintLabelsDialog');
             (element as any)._handlePrintLabelsSelected();
-            expect(spy).toHaveBeenCalled();
+            expect(uiSlice.openBatchPrintLabelsDialog).toHaveBeenCalled();
         });
 
         it('should handle clone selected', () => {
-            const spy = vi.spyOn(element.store.actions.ui, 'openBatchCloneDialog');
             (element as any)._handleCloneSelected();
-            expect(spy).toHaveBeenCalled();
+            expect(uiSlice.openBatchCloneDialog).toHaveBeenCalled();
         });
     });
 

@@ -10,6 +10,7 @@ import {
   gridInteraction$,
   cancel,
 } from '../../../../../src/slices/grid-interaction';
+import { activeDialog$ } from '../../../../../src/slices/ui';
 
 describe('GrowspaceGridContainer', () => {
   let element: GrowspaceGridContainer;
@@ -92,7 +93,8 @@ describe('GrowspaceGridContainer', () => {
     }));
 
     await element.updateComplete;
-    expect(mockStore.actions.ui.openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
+    expect(activeDialog$.get()).toEqual(expect.objectContaining({ type: 'PLANT_OVERVIEW' }));
+    expect((activeDialog$.get() as { payload: { plant: unknown } }).payload.plant).toBe(mockPlant);
   });
 
   it('delegates empty slot click to store action (0-based indexing)', async () => {

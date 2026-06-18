@@ -48,6 +48,7 @@ import type { GrowspaceViewMode, GridOverlayMode } from '../../types';
 import { ViewMode, GridOverlayMode as GridOverlayModeEnum } from '../../constants';
 import type { ActiveDialogState } from '../../store/ui/dialog-types';
 import { cancel } from '../grid-interaction';
+import { devices$, optimisticDeletedPlantIds$, selectedDeviceId$ } from '../grid';
 import { WSError } from '../../services/errors';
 
 // ---------------------------------------------------------------------------
@@ -146,6 +147,11 @@ export function setGridOverlayMode(mode: GridOverlayMode): void {
   gridOverlayMode$.set(mode);
 }
 
+/** Toggle the header-expanded view: HEADER ⇄ STANDARD. */
+export function toggleHeaderExpansion(): void {
+  viewMode$.set(viewMode$.get() === ViewMode.HEADER ? ViewMode.STANDARD : ViewMode.HEADER);
+}
+
 /** Toggle the loading state. */
 export function setIsLoading(loading: boolean): void {
   isLoading$.set(loading);
@@ -194,6 +200,25 @@ export function selectAllPlants(plantIds: string[]): void {
 /** Clear the plant selection. */
 export function clearPlantSelection(): void {
   selectedPlants$.set(new Set());
+}
+
+/**
+ * Select every (non-optimistically-deleted) plant in the currently selected
+ * device. No-op when no device is selected.
+ */
+export function selectAllPlantsInSelectedDevice(): void {
+  const selectedDevice = selectedDeviceId$.get();
+  if (!selectedDevice) return;
+
+  const device = devices$.get().find((d) => d.deviceId === selectedDevice);
+  if (!device?.plants) return;
+
+  const deleted = optimisticDeletedPlantIds$.get();
+  const allIds = device.plants
+    .map((plant) => plant.attributes.plant_id)
+    .filter((pId): pId is string => Boolean(pId) && !deleted.has(pId));
+
+  selectAllPlants(allIds);
 }
 
 /** Remove specific plant IDs from the selection. */
@@ -344,3 +369,7 @@ export function __resetUiSliceForTests(): void {
   pendingDeepLinkPlantId$.set(null);
   flowerFlipDismissed$.set({});
 }
+
+// Pure dialog-open helpers (ctx-free) — re-exported so call sites can import the
+// full UI-slice surface from one place.
+export * from './dialogs';

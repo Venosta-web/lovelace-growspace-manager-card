@@ -8,6 +8,7 @@ import { setHass } from './services/hass-call';
 import { fetchAiStatus } from './slices/ai-insight';
 import { setMutateListener, undo, canUndo } from './services/mutate';
 import { selectedDeviceId$ } from './slices/grid';
+import * as uiSlice from './slices/ui';
 
 import type { GrowspaceManagerCardConfig } from './lib/types/config';
 import type { StrainEntry } from './features/plants/types';
@@ -260,15 +261,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleSelectAll() {
-    this.store.actions.ui.selectAllPlants();
+    uiSlice.selectAllPlantsInSelectedDevice();
   }
 
   private _handleClearSelection() {
-    this.store.actions.ui.clearPlantSelection();
+    uiSlice.clearPlantSelection();
   }
 
   private _handleWaterSelected() {
-    this.store.actions.ui.openBatchWateringDialog();
+    uiSlice.openBatchWateringDialog();
   }
 
   private _handleExitEditMode() {
@@ -280,11 +281,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleToggleExpansion() {
-    this.store.actions.ui.toggleHeaderExpansion();
+    uiSlice.toggleHeaderExpansion();
   }
 
   private _handleTrainingSelected() {
-    this.store.actions.ui.openBatchTrainingDialog();
+    uiSlice.openBatchTrainingDialog();
   }
 
   private _handleBatchAddPlants() {
@@ -292,11 +293,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handlePrintLabelsSelected() {
-    this.store.actions.ui.openBatchPrintLabelsDialog();
+    uiSlice.openBatchPrintLabelsDialog();
   }
 
   private _handleCloneSelected() {
-    this.store.actions.ui.openBatchCloneDialog();
+    uiSlice.openBatchCloneDialog();
   }
 
   private _handleDeleteSelected = () => {

@@ -5,6 +5,22 @@ import { atom } from 'nanostores';
 import { waterPlant as sliceWaterPlant, addPlants as sliceAddPlants } from '../../../../../src/slices/plant';
 import { hassCall, callService } from '../../../../../src/services/hass-call';
 import { notification$ } from '../../../../../src/slices/ui';
+import * as uiSlice from '../../../../../src/slices/ui';
+
+// The dialog host now drives pure UI ops through the slice. Replace those leaf
+// helpers with call-through spies so assertions that the host opened a dialog /
+// toasted still work, then alias them onto the mock store's `ui` namespace below.
+vi.mock('../../../../../src/slices/ui', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../../../src/slices/ui')>();
+    return {
+        ...actual,
+        showToast: vi.fn(actual.showToast),
+        openDialog: vi.fn(actual.openDialog),
+        closeDialog: vi.fn(actual.closeDialog),
+        openStrainRecommendationDialog: vi.fn(actual.openStrainRecommendationDialog),
+        openTrainingDialog: vi.fn(actual.openTrainingDialog),
+    };
+});
 
 // Import side-effects for element registration
 import '../../../../../src/features/ui/containers/growspace-dialog-host.container';
@@ -90,6 +106,7 @@ describe('GrowspaceDialogHostContainer', () => {
 
     beforeEach(async () => {
         vi.useRealTimers();
+        vi.clearAllMocks();
         mockHass = {
             states: {},
             callService: vi.fn().mockResolvedValue(true)
@@ -245,6 +262,13 @@ describe('GrowspaceDialogHostContainer', () => {
         
         // Unify UI actions
         mockStore.actions.ui = mockStore.ui;
+        // Pure UI leaf ops now live on the slice; point the mock store's `ui`
+        // namespace at the slice spies so legacy `actions.ui.*` assertions hold.
+        mockStore.ui.showToast = uiSlice.showToast as any;
+        mockStore.ui.closeDialog = uiSlice.closeDialog as any;
+        mockStore.ui.setActiveDialog = uiSlice.openDialog as any;
+        mockStore.ui.openStrainRecommendationDialog = uiSlice.openStrainRecommendationDialog as any;
+        mockStore.ui.openTrainingDialog = uiSlice.openTrainingDialog as any;
         // Map legacy methods to new locations
         mockStore.confirmAddPlant = (...args: any[]) => mockStore.actions.plant.add(...args);
         mockStore.confirmAddPlants = (...args: any[]) => mockStore.actions.plant.addBatch(...args);

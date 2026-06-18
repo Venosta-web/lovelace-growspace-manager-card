@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import '../../../src/features/environment/components/heatmap-3d';
 import { Heatmap3D } from '../../../src/features/environment/components/heatmap-3d';
 import { GrowspaceType } from '../../../src/constants';
+import { activeDialog$, __resetUiSliceForTests } from '../../../src/slices/ui';
 
 vi.mock('../../../src/store/history/history-store', async () => {
     const actual = await vi.importActual('../../../src/store/history/history-store') as any;
@@ -946,15 +947,18 @@ describe('Heatmap3D Logic', () => {
 
     describe('Interactions', () => {
         it('should handle plant or empty slot click via handleInteraction', () => {
-            const openPlantOverviewDialog = vi.fn();
+            __resetUiSliceForTests();
             const openAddPlantDialog = vi.fn();
             const storeSpy = {
-                actions: { ui: { openPlantOverviewDialog, openAddPlantDialog } },
+                actions: { ui: { openAddPlantDialog } },
             };
             (element as any).store = storeSpy;
             const mockPlant = { entity_id: 'sensor.plant1', id: 'p1' };
             (element as any).handleInteraction('click', { plant: mockPlant });
-            expect(openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
+            expect(activeDialog$.get()).toEqual(expect.objectContaining({ type: 'PLANT_OVERVIEW' }));
+            expect((activeDialog$.get() as { payload: { plant: unknown } }).payload.plant).toBe(
+                mockPlant
+            );
             const mockEmpty = { row: 3, col: 4 };
             (element as any).handleInteraction('click', { plant: mockEmpty });
             expect(openAddPlantDialog).toHaveBeenCalledWith(3, 4);

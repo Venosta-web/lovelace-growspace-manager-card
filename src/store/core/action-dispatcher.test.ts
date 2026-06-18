@@ -296,68 +296,12 @@ describe('delegation smoke tests', () => {
 // ─── ui dialog delegation ────────────────────────────────────────────────────
 
 describe('ui dialog delegation', () => {
-  it('openGrowMasterDialog sets GROW_MASTER dialog', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.openGrowMasterDialog('gs-1');
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'GROW_MASTER', payload: expect.objectContaining({ growspaceId: 'gs-1' }) })
-    );
-  });
-
-  it('openWateringDialog sets WATERING dialog', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.openWateringDialog({ plantIds: ['p1'], growspaceId: 'gs-1', mode: 'plant' });
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'WATERING' })
-    );
-  });
-
-  it('openTrainingDialog sets TRAINING dialog', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.openTrainingDialog(['p1'], 'gs-1');
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'TRAINING', payload: expect.objectContaining({ plantIds: ['p1'], growspaceId: 'gs-1' }) })
-    );
-  });
-
-  it('openNutrientsDialog sets NUTRIENTS dialog', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.openNutrientsDialog();
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'NUTRIENTS' }));
-  });
-
-  it('openSnapshotsDialog sets SNAPSHOTS dialog', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.openSnapshotsDialog('gs-2');
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'SNAPSHOTS', payload: expect.objectContaining({ growspaceId: 'gs-2' }) })
-    );
-  });
-
-  it('togglePlantSelection delegates to ui.togglePlantSelection with plant id string', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.togglePlantSelection('p1');
-    expect(ui.togglePlantSelection).toHaveBeenCalledWith('p1');
-  });
-
   it('openAddPlantDialog sets ADD_PLANT dialog with row and col', () => {
     const { dispatcher, ui } = makeStore();
     dispatcher.ui.openAddPlantDialog(2, 3);
     expect(ui.setActiveDialog).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'ADD_PLANT', payload: expect.objectContaining({ row: 2, col: 3 }) })
     );
-  });
-
-  it('openPlantOverviewDialog sets PLANT_OVERVIEW dialog', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.openPlantOverviewDialog({ attributes: { plant_id: 'p1' } } as never);
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'PLANT_OVERVIEW' }));
-  });
-
-  it('openStrainRecommendationDialog sets STRAIN_RECOMMENDATION dialog', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.openStrainRecommendationDialog();
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'STRAIN_RECOMMENDATION' }));
   });
 
   it('exportStrainLibrary covers the delegation line', async () => {
@@ -371,101 +315,10 @@ describe('ui dialog delegation', () => {
     expect(ui.setViewMode).toHaveBeenCalledWith(expect.any(String));
   });
 
-  it('showToast delegates to ui.showToast', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.showToast('hello', 'info');
-    expect(ui.showToast).toHaveBeenCalledWith('hello', 'info');
-  });
-
-  it('toast delegates to ui.showToast', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.toast('world', 'success');
-    expect(ui.showToast).toHaveBeenCalledWith('world', 'success');
-  });
-
-  it('setActiveDialog delegates to ui.setActiveDialog', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.setActiveDialog({ type: 'NONE' } as never);
-    expect(ui.setActiveDialog).toHaveBeenCalledWith({ type: 'NONE' });
-  });
-
-  it('closeDialog delegates to ui.closeDialog', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.closeDialog();
-    expect(ui.closeDialog).toHaveBeenCalled();
-  });
-
   it('openNutrientPresetsDialog sets NUTRIENT_PRESETS dialog', () => {
     const { dispatcher, ui } = makeStore();
     dispatcher.ui.openNutrientPresetsDialog();
     expect(ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'NUTRIENT_PRESETS' }));
-  });
-
-  it('openLogbookDialog sets LOGBOOK dialog when device is selected', () => {
-    const { dispatcher, grid, ui } = makeStore();
-    grid.$selectedDevice.set('gs-1');
-    dispatcher.ui.openLogbookDialog();
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'LOGBOOK', payload: expect.objectContaining({ growspaceId: 'gs-1' }) })
-    );
-  });
-
-  it('openConfigDialog sets CONFIG dialog', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.openConfigDialog();
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'CONFIG' }));
-  });
-
-  it('openStrainLibraryDialog sets STRAIN_LIBRARY dialog', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.openStrainLibraryDialog();
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'STRAIN_LIBRARY' }));
-  });
-
-  it('openIrrigationDialog sets IRRIGATION dialog', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.openIrrigationDialog();
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'IRRIGATION' }));
-  });
-
-  it('openBatchWateringDialog sets WATERING dialog when growspaceId provided', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.openBatchWateringDialog('gs-1');
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'WATERING' })
-    );
-  });
-
-  it('openBatchTrainingDialog sets TRAINING dialog when growspaceId provided', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.openBatchTrainingDialog('gs-1');
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'TRAINING' })
-    );
-  });
-
-  it('openBatchCloneDialog sets BATCH_CLONE dialog when plants selected', () => {
-    const { dispatcher, ui } = makeStore();
-    ui.$selectedPlants.set(new Set(['p1']));
-    dispatcher.ui.openBatchCloneDialog();
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'BATCH_CLONE' })
-    );
-  });
-
-  it('openBatchPrintLabelsDialog sets BATCH_PRINT_LABELS dialog when plants selected', () => {
-    const { dispatcher, ui } = makeStore();
-    ui.$selectedPlants.set(new Set(['p1']));
-    dispatcher.ui.openBatchPrintLabelsDialog();
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'BATCH_PRINT_LABELS' })
-    );
-  });
-
-  it('clearPlantSelection calls ui.clearPlantSelection', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.clearPlantSelection();
-    expect(ui.clearPlantSelection).toHaveBeenCalled();
   });
 
   it('exitEditMode calls setEditMode(false) and clearPlantSelection', () => {

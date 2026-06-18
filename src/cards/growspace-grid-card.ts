@@ -24,6 +24,7 @@ import { variables } from '../styles/variables';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
 import { startTransplant, completeTransplant, gridInteraction$ } from '../slices/grid-interaction';
+import * as uiSlice from '../slices/ui';
 
 @customElement('growspace-grid-card')
 export class GrowspaceGridCard extends LitElement implements LovelaceCard {
@@ -139,12 +140,12 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
     this.store.actions.ui.handleKeyboardNavigation(e.key);
   }
 
-  private _handleSelectAll = () => this.store.actions.ui.selectAllPlants();
-  private _handleClearSelection = () => this.store.actions.ui.clearPlantSelection();
-  private _handleWaterSelected = () => this.store.actions.ui.openBatchWateringDialog();
+  private _handleSelectAll = () => uiSlice.selectAllPlantsInSelectedDevice();
+  private _handleClearSelection = () => uiSlice.clearPlantSelection();
+  private _handleWaterSelected = () => uiSlice.openBatchWateringDialog();
   private _handleExitEditMode = () => this.store.ui.setEditMode(false);
   private _handleIPMSelected = () => this.store.actions.ui.openIPMDialog();
-  private _handleTrainingSelected = () => this.store.actions.ui.openBatchTrainingDialog();
+  private _handleTrainingSelected = () => uiSlice.openBatchTrainingDialog();
   private _handleBatchAddPlants = () =>
     this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
   private _handleDeleteSelected = () => void this.store.actions.ui.deleteSelectedPlants();
