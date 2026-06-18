@@ -9918,6 +9918,187 @@ GrowspaceEnvChart = __decorate([
     t$2('growspace-env-chart')
 ], GrowspaceEnvChart);
 
+// ---------------------------------------------------------------------------
+// Nutrient Presets
+// ---------------------------------------------------------------------------
+const NutrientPresetsSchema = record(string(), object({
+    id: string(),
+    name: string(),
+    nutrients: array(object({
+        nutrient_id: string(),
+        dose_ml_l: number(),
+        name: string().optional(),
+    })),
+    stage: string()
+        .nullish()
+        .transform((v) => v || undefined),
+    min_days_in_stage: number()
+        .nullish()
+        .transform((v) => v || undefined),
+    week: number().int().min(1).optional().default(1),
+    ec_target: number().min(0).nullish().transform((v) => v ?? undefined),
+    ph_target: number().min(0).max(14).nullish().transform((v) => v ?? undefined),
+})
+    .passthrough());
+// ---------------------------------------------------------------------------
+// IPM Presets
+// ---------------------------------------------------------------------------
+const IPMPresetSchema = object({
+    id: string(),
+    name: string(),
+    type: _enum(['foliar', 'drench', 'beneficials']),
+    items: array(object({
+        name: string(),
+        dose_amount: number(),
+        dose_unit: string(),
+        phi_days: number().optional().default(0),
+    })),
+    stage: string()
+        .nullish()
+        .transform((v) => v || undefined),
+    min_days_in_stage: number()
+        .nullish()
+        .transform((v) => v || undefined),
+})
+    .passthrough();
+const IPMPresetsSchema = record(string(), IPMPresetSchema);
+// ---------------------------------------------------------------------------
+// EC Ramp Curves
+// ---------------------------------------------------------------------------
+const ECRampPointSchema = object({
+    week: number().optional(),
+    ec_min: number().optional(),
+    ec_max: number().optional(),
+    day: number().optional(),
+    target_ec: number().optional(),
+})
+    .transform((data) => ({
+    day: data.day ?? ((data.week ?? 1) - 1) * 7 + 1,
+    target_ec: data.target_ec ?? data.ec_min ?? 0,
+}));
+const ECRampCurveSchema = object({
+    id: string(),
+    name: string(),
+    stage: string().optional().default('flower'),
+    points: array(ECRampPointSchema),
+});
+const ECRampCurvesSchema = union([
+    record(string(), ECRampCurveSchema),
+    array(any()).transform(() => ({})),
+]);
+// ---------------------------------------------------------------------------
+// Nutrient Inventory
+// ---------------------------------------------------------------------------
+const NUTRIENT_STOCK_TYPES = [
+    'base',
+    'bloom',
+    'calmag',
+    'root',
+    'additive',
+    'microbe',
+];
+const NutrientStockSchema = object({
+    nutrient_id: string(),
+    name: string(),
+    current_ml: number(),
+    initial_ml: number(),
+    last_updated: string(),
+    brand: string().optional().default(''),
+    type: _enum(NUTRIENT_STOCK_TYPES).optional().default('base'),
+    npk: string().optional().default(''),
+    dose_ml_l: number().optional().default(0),
+    notes: string().optional().default(''),
+});
+const NutrientInventorySchema = object({
+    stocks: record(string(), NutrientStockSchema),
+});
+
+// ---------------------------------------------------------------------------
+// Atoms
+// ---------------------------------------------------------------------------
+const nutrientPresets$ = atom(null);
+const ipmPresets$ = atom(null);
+const nutrientInventory$ = atom(null);
+const ecRampCurves$ = atom(null);
+// ---------------------------------------------------------------------------
+// Fetch mutators
+// ---------------------------------------------------------------------------
+async function fetchNutrientPresets$1() {
+    const result = await hassCall('growspace_manager/get_nutrient_presets', {}, NutrientPresetsSchema);
+    nutrientPresets$.set(result);
+}
+async function fetchIPMPresets$1() {
+    const result = await hassCall('growspace_manager/get_ipm_presets', {}, IPMPresetsSchema);
+    ipmPresets$.set(result);
+}
+async function fetchNutrientInventory$1() {
+    const result = await hassCall('growspace_manager/get_nutrient_inventory', {}, NutrientInventorySchema);
+    nutrientInventory$.set(result);
+}
+async function fetchECRampCurves$1() {
+    const result = await hassCall('growspace_manager/get_ec_ramp_curves', {}, ECRampCurvesSchema);
+    ecRampCurves$.set(result);
+}
+// ---------------------------------------------------------------------------
+// Write mutators — nutrient presets
+// ---------------------------------------------------------------------------
+async function saveNutrientPreset(data) {
+    await callService('growspace_manager', 'save_nutrient_preset', data);
+}
+async function removeNutrientPreset(presetId) {
+    await callService('growspace_manager', 'remove_nutrient_preset', { preset_id: presetId });
+}
+// ---------------------------------------------------------------------------
+// Write mutators — IPM presets
+// ---------------------------------------------------------------------------
+async function saveIPMPreset(data) {
+    await callService('growspace_manager', 'save_ipm_preset', data);
+}
+async function removeIPMPreset(presetId) {
+    await callService('growspace_manager', 'remove_ipm_preset', { preset_id: presetId });
+}
+async function applyIPM(data) {
+    await callService('growspace_manager', 'apply_ipm', data);
+}
+// ---------------------------------------------------------------------------
+// Write mutators — nutrient inventory
+// ---------------------------------------------------------------------------
+async function updateNutrientStock$1(nutrientId, name, currentMl, initialMl, brand = '', stockType = 'base', npk = '', doseMlL = 0, notes = '') {
+    await hassCall('growspace_manager/update_nutrient_stock', {
+        nutrient_id: nutrientId,
+        name,
+        current_ml: currentMl,
+        initial_ml: initialMl,
+        brand,
+        stock_type: stockType,
+        npk,
+        dose_ml_l: doseMlL,
+        notes,
+    }, unknown());
+}
+async function removeNutrientStock$1(nutrientId) {
+    await hassCall('growspace_manager/remove_nutrient_stock', { nutrient_id: nutrientId }, unknown());
+}
+// ---------------------------------------------------------------------------
+// Write mutators — EC Ramp Curves
+// ---------------------------------------------------------------------------
+async function saveECRampCurve$1(data) {
+    const backendData = {
+        curve_id: data.curve_id,
+        name: data.name,
+        stage: data.stage ?? 'flower',
+        points: data.points.map((p) => ({
+            week: Math.floor((p.day - 1) / 7) + 1,
+            ec_min: p.target_ec,
+            ec_max: p.target_ec + 0.4,
+        })),
+    };
+    await callService('growspace_manager', 'save_ec_ramp_curve', backendData);
+}
+async function removeECRampCurve$1(curveId) {
+    await callService('growspace_manager', 'remove_ec_ramp_curve', { curve_id: curveId });
+}
+
 /**
  * Plant slice — atoms and mutators for Plant domain data.
  *
@@ -9928,6 +10109,8 @@ GrowspaceEnvChart = __decorate([
  *
  * Public API (mutators):
  *   waterPlant()          — water a plant (pilot mutator)
+ *   waterGrowspace()      — water a whole growspace; refetches nutrient inventory
+ *                           when the watering consumed nutrients (cross-slice)
  *   addPlant()            — add a single plant to a growspace
  *   addPlants()           — batch-add plants to a growspace
  *   updatePlant()         — update attributes on a plant (optimistic)
@@ -10022,6 +10205,40 @@ async function waterPlant$1(plantId, amountMl, nutrients, presetId) {
         inverse: () => { },
         apply: () => wsVoid('growspace_manager/water_plant', payload),
     }, _growspaceIdFor(plantId));
+}
+/**
+ * Water a whole growspace.
+ *
+ * Optimistic: none (backend is authoritative for watering state).
+ * Apply: calls growspace_manager.water_growspace, then — when the watering
+ *   consumed nutrients — awaits the Nutrient slice's fetchNutrientInventory()
+ *   so the server-decremented stock is reflected. This cross-slice refetch
+ *   stays in the mutator (locality: every watering caller gets correct
+ *   inventory), not at the call site.
+ * Inverse: no-op.
+ */
+async function waterGrowspace$1(growspaceId, amountMl, nutrients, presetId) {
+    const hasNutrients = Boolean(nutrients && Object.keys(nutrients).length > 0);
+    const payload = {
+        growspace_id: growspaceId,
+        amount: amountMl,
+    };
+    if (hasNutrients) {
+        payload.nutrients = nutrients;
+    }
+    if (presetId) {
+        payload.preset_id = presetId;
+    }
+    await mutate({
+        type: 'waterGrowspace',
+        optimistic: () => { },
+        inverse: () => { },
+        apply: async () => {
+            await wsVoid('growspace_manager/water_growspace', payload);
+            if (hasNutrients)
+                await fetchNutrientInventory$1();
+        },
+    }, growspaceId);
 }
 /**
  * Add a single plant to a growspace.
@@ -11984,187 +12201,6 @@ function requireLib () {
 }
 
 var libExports = requireLib();
-
-// ---------------------------------------------------------------------------
-// Nutrient Presets
-// ---------------------------------------------------------------------------
-const NutrientPresetsSchema = record(string(), object({
-    id: string(),
-    name: string(),
-    nutrients: array(object({
-        nutrient_id: string(),
-        dose_ml_l: number(),
-        name: string().optional(),
-    })),
-    stage: string()
-        .nullish()
-        .transform((v) => v || undefined),
-    min_days_in_stage: number()
-        .nullish()
-        .transform((v) => v || undefined),
-    week: number().int().min(1).optional().default(1),
-    ec_target: number().min(0).nullish().transform((v) => v ?? undefined),
-    ph_target: number().min(0).max(14).nullish().transform((v) => v ?? undefined),
-})
-    .passthrough());
-// ---------------------------------------------------------------------------
-// IPM Presets
-// ---------------------------------------------------------------------------
-const IPMPresetSchema = object({
-    id: string(),
-    name: string(),
-    type: _enum(['foliar', 'drench', 'beneficials']),
-    items: array(object({
-        name: string(),
-        dose_amount: number(),
-        dose_unit: string(),
-        phi_days: number().optional().default(0),
-    })),
-    stage: string()
-        .nullish()
-        .transform((v) => v || undefined),
-    min_days_in_stage: number()
-        .nullish()
-        .transform((v) => v || undefined),
-})
-    .passthrough();
-const IPMPresetsSchema = record(string(), IPMPresetSchema);
-// ---------------------------------------------------------------------------
-// EC Ramp Curves
-// ---------------------------------------------------------------------------
-const ECRampPointSchema = object({
-    week: number().optional(),
-    ec_min: number().optional(),
-    ec_max: number().optional(),
-    day: number().optional(),
-    target_ec: number().optional(),
-})
-    .transform((data) => ({
-    day: data.day ?? ((data.week ?? 1) - 1) * 7 + 1,
-    target_ec: data.target_ec ?? data.ec_min ?? 0,
-}));
-const ECRampCurveSchema = object({
-    id: string(),
-    name: string(),
-    stage: string().optional().default('flower'),
-    points: array(ECRampPointSchema),
-});
-const ECRampCurvesSchema = union([
-    record(string(), ECRampCurveSchema),
-    array(any()).transform(() => ({})),
-]);
-// ---------------------------------------------------------------------------
-// Nutrient Inventory
-// ---------------------------------------------------------------------------
-const NUTRIENT_STOCK_TYPES = [
-    'base',
-    'bloom',
-    'calmag',
-    'root',
-    'additive',
-    'microbe',
-];
-const NutrientStockSchema = object({
-    nutrient_id: string(),
-    name: string(),
-    current_ml: number(),
-    initial_ml: number(),
-    last_updated: string(),
-    brand: string().optional().default(''),
-    type: _enum(NUTRIENT_STOCK_TYPES).optional().default('base'),
-    npk: string().optional().default(''),
-    dose_ml_l: number().optional().default(0),
-    notes: string().optional().default(''),
-});
-const NutrientInventorySchema = object({
-    stocks: record(string(), NutrientStockSchema),
-});
-
-// ---------------------------------------------------------------------------
-// Atoms
-// ---------------------------------------------------------------------------
-const nutrientPresets$ = atom(null);
-const ipmPresets$ = atom(null);
-const nutrientInventory$ = atom(null);
-const ecRampCurves$ = atom(null);
-// ---------------------------------------------------------------------------
-// Fetch mutators
-// ---------------------------------------------------------------------------
-async function fetchNutrientPresets$1() {
-    const result = await hassCall('growspace_manager/get_nutrient_presets', {}, NutrientPresetsSchema);
-    nutrientPresets$.set(result);
-}
-async function fetchIPMPresets$1() {
-    const result = await hassCall('growspace_manager/get_ipm_presets', {}, IPMPresetsSchema);
-    ipmPresets$.set(result);
-}
-async function fetchNutrientInventory$1() {
-    const result = await hassCall('growspace_manager/get_nutrient_inventory', {}, NutrientInventorySchema);
-    nutrientInventory$.set(result);
-}
-async function fetchECRampCurves$1() {
-    const result = await hassCall('growspace_manager/get_ec_ramp_curves', {}, ECRampCurvesSchema);
-    ecRampCurves$.set(result);
-}
-// ---------------------------------------------------------------------------
-// Write mutators — nutrient presets
-// ---------------------------------------------------------------------------
-async function saveNutrientPreset(data) {
-    await callService('growspace_manager', 'save_nutrient_preset', data);
-}
-async function removeNutrientPreset(presetId) {
-    await callService('growspace_manager', 'remove_nutrient_preset', { preset_id: presetId });
-}
-// ---------------------------------------------------------------------------
-// Write mutators — IPM presets
-// ---------------------------------------------------------------------------
-async function saveIPMPreset(data) {
-    await callService('growspace_manager', 'save_ipm_preset', data);
-}
-async function removeIPMPreset(presetId) {
-    await callService('growspace_manager', 'remove_ipm_preset', { preset_id: presetId });
-}
-async function applyIPM(data) {
-    await callService('growspace_manager', 'apply_ipm', data);
-}
-// ---------------------------------------------------------------------------
-// Write mutators — nutrient inventory
-// ---------------------------------------------------------------------------
-async function updateNutrientStock$1(nutrientId, name, currentMl, initialMl, brand = '', stockType = 'base', npk = '', doseMlL = 0, notes = '') {
-    await hassCall('growspace_manager/update_nutrient_stock', {
-        nutrient_id: nutrientId,
-        name,
-        current_ml: currentMl,
-        initial_ml: initialMl,
-        brand,
-        stock_type: stockType,
-        npk,
-        dose_ml_l: doseMlL,
-        notes,
-    }, unknown());
-}
-async function removeNutrientStock$1(nutrientId) {
-    await hassCall('growspace_manager/remove_nutrient_stock', { nutrient_id: nutrientId }, unknown());
-}
-// ---------------------------------------------------------------------------
-// Write mutators — EC Ramp Curves
-// ---------------------------------------------------------------------------
-async function saveECRampCurve$1(data) {
-    const backendData = {
-        curve_id: data.curve_id,
-        name: data.name,
-        stage: data.stage ?? 'flower',
-        points: data.points.map((p) => ({
-            week: Math.floor((p.day - 1) / 7) + 1,
-            ec_min: p.target_ec,
-            ec_max: p.target_ec + 0.4,
-        })),
-    };
-    await callService('growspace_manager', 'save_ec_ramp_curve', backendData);
-}
-async function removeECRampCurve$1(curveId) {
-    await callService('growspace_manager', 'remove_ec_ramp_curve', { curve_id: curveId });
-}
 
 const sharedStyles = i$6 `
   /* --- Glassmorphism Surfaces --- */
@@ -135816,17 +135852,16 @@ async function waterPlant(ctx, plantId, amount, nutrients, presetId) {
             await fetchNutrientInventory(ctx, true);
     }, { errorPrefix: 'Failed to water plant', rethrow: true });
 }
-/** Water an entire growspace and refresh nutrient inventory if nutrients were applied */
+/**
+ * Water an entire growspace.
+ *
+ * The nutrient-inventory refetch (when nutrients were applied) lives inside the
+ * plant-slice mutator, so every caller gets correct inventory — see CONTEXT.md
+ * "Cross-slice mutation".
+ */
 async function waterGrowspace(ctx, growspaceId, amount, nutrients, presetId) {
     await withAction(ctx, async () => {
-        const payload = { growspace_id: growspaceId, amount };
-        if (nutrients && Object.keys(nutrients).length > 0)
-            payload.nutrients = nutrients;
-        if (presetId)
-            payload.preset_id = presetId;
-        await callService(DOMAIN, SERVICES.WATER_GROWSPACE, payload);
-        if (nutrients && Object.keys(nutrients).length > 0)
-            await fetchNutrientInventory(ctx, true);
+        await waterGrowspace$1(growspaceId, amount, nutrients, presetId);
     }, { errorPrefix: 'Failed to water growspace', rethrow: true });
 }
 /** Configure the circulation fan controller for a growspace */
@@ -139306,7 +139341,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.59"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.60"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

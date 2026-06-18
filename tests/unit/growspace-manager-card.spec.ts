@@ -9,18 +9,12 @@ import { setMutateListener, undo, canUndo } from '../../src/services/mutate';
 import { selectedDeviceId$ } from '../../src/slices/grid';
 import * as uiSlice from '../../src/slices/ui';
 
-// The card now calls the UI slice directly for these leaf ops; replace just
-// those helpers with spies while keeping every real atom/util intact.
-vi.mock('../../src/slices/ui', async (importOriginal) => ({
-    ...(await importOriginal<typeof import('../../src/slices/ui')>()),
-    selectAllPlantsInSelectedDevice: vi.fn(),
-    clearPlantSelection: vi.fn(),
-    toggleHeaderExpansion: vi.fn(),
-    openBatchWateringDialog: vi.fn(),
-    openBatchTrainingDialog: vi.fn(),
-    openBatchPrintLabelsDialog: vi.fn(),
-    openBatchCloneDialog: vi.fn(),
-}));
+// The card now calls the UI slice directly for these leaf ops; `{ spy: true }`
+// wraps every export in a call-through spy while keeping every real atom/util
+// intact. Do NOT use an `importOriginal()` factory: `slices/ui` has an internal
+// `index ↔ dialogs` cycle and `importOriginal()` re-enters it during browser-mode
+// collection and deadlocks the run.
+vi.mock('../../src/slices/ui', { spy: true });
 
 vi.mock('../../src/services/mutate', () => ({
     setMutateListener: vi.fn(),

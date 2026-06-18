@@ -28,6 +28,7 @@ vi.mock('../../slices/growspace', async (importOriginal) => ({
 vi.mock('../../slices/plant', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../slices/plant')>()),
   waterPlant: vi.fn().mockResolvedValue(undefined),
+  waterGrowspace: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../services/hass-call', () => ({
@@ -42,7 +43,6 @@ vi.mock('../../services/hass-call', () => ({
 
 import * as growspaceSlice from '../../slices/growspace';
 import * as plantSlice from '../../slices/plant';
-import { callService } from '../../services/hass-call';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -168,45 +168,23 @@ describe('waterGrowspace', () => {
 
   beforeEach(() => {
     ctx = makeContext();
-    vi.mocked(libraryActions.fetchNutrientInventory).mockClear();
   });
 
-  it('calls callService without nutrient refresh when no nutrients given', async () => {
+  it('delegates to the plant-slice mutator with no nutrients', async () => {
     await waterGrowspace(ctx, 'gs-1', 500);
 
-    expect(callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      expect.stringContaining('water'),
-      expect.objectContaining({ growspace_id: 'gs-1', amount: 500 })
-    );
-    expect(libraryActions.fetchNutrientInventory).not.toHaveBeenCalled();
+    expect(plantSlice.waterGrowspace).toHaveBeenCalledWith('gs-1', 500, undefined, undefined);
   });
 
-  it('calls callService and refreshes nutrient inventory when nutrients applied', async () => {
+  it('delegates to the plant-slice mutator with nutrients and preset', async () => {
     const nutrients = { 'nutrient-b': 10 };
     await waterGrowspace(ctx, 'gs-1', 500, nutrients, 'preset-2');
 
-    expect(callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      expect.stringContaining('water'),
-      expect.objectContaining({ growspace_id: 'gs-1', amount: 500, nutrients })
-    );
-    expect(libraryActions.fetchNutrientInventory).toHaveBeenCalledWith(ctx, true);
-  });
-
-  it('skips nutrient refresh for empty nutrients object', async () => {
-    await waterGrowspace(ctx, 'gs-1', 500, {});
-
-    expect(callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      expect.stringContaining('water'),
-      expect.objectContaining({ growspace_id: 'gs-1', amount: 500 })
-    );
-    expect(libraryActions.fetchNutrientInventory).not.toHaveBeenCalled();
+    expect(plantSlice.waterGrowspace).toHaveBeenCalledWith('gs-1', 500, nutrients, 'preset-2');
   });
 
   it('shows error toast and rethrows on failure', async () => {
-    vi.mocked(callService).mockRejectedValueOnce(new Error('growspace-water-err'));
+    vi.mocked(plantSlice.waterGrowspace).mockRejectedValueOnce(new Error('growspace-water-err'));
 
     await expect(waterGrowspace(ctx, 'gs-1', 500)).rejects.toThrow('growspace-water-err');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('growspace-water-err'), 'error');

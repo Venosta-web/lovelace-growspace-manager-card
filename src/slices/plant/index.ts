@@ -8,6 +8,8 @@
  *
  * Public API (mutators):
  *   waterPlant()          — water a plant (pilot mutator)
+ *   waterGrowspace()      — water a whole growspace; refetches nutrient inventory
+ *                           when the watering consumed nutrients (cross-slice)
  *   addPlant()            — add a single plant to a growspace
  *   addPlants()           — batch-add plants to a growspace
  *   updatePlant()         — update attributes on a plant (optimistic)
@@ -38,6 +40,7 @@ import { hassCall } from '../../services/hass-call';
 const wsVoid = (cmd: string, params: Record<string, unknown>): Promise<void> =>
   hassCall(cmd, params, z.unknown()).then(() => undefined);
 import { addOptimisticDeletedPlantId, removeOptimisticDeletedPlantId } from '../grid';
+import { fetchNutrientInventory } from '../nutrient';
 
 // ---------------------------------------------------------------------------
 // Atoms (public read)
@@ -131,6 +134,49 @@ export async function waterPlant(
       apply: () => wsVoid('growspace_manager/water_plant', payload),
     },
     _growspaceIdFor(plantId)
+  );
+}
+
+/**
+ * Water a whole growspace.
+ *
+ * Optimistic: none (backend is authoritative for watering state).
+ * Apply: calls growspace_manager.water_growspace, then — when the watering
+ *   consumed nutrients — awaits the Nutrient slice's fetchNutrientInventory()
+ *   so the server-decremented stock is reflected. This cross-slice refetch
+ *   stays in the mutator (locality: every watering caller gets correct
+ *   inventory), not at the call site.
+ * Inverse: no-op.
+ */
+export async function waterGrowspace(
+  growspaceId: string,
+  amountMl: number,
+  nutrients?: Record<string, number>,
+  presetId?: string
+): Promise<void> {
+  const hasNutrients = Boolean(nutrients && Object.keys(nutrients).length > 0);
+  const payload: Record<string, unknown> = {
+    growspace_id: growspaceId,
+    amount: amountMl,
+  };
+  if (hasNutrients) {
+    payload.nutrients = nutrients;
+  }
+  if (presetId) {
+    payload.preset_id = presetId;
+  }
+
+  await mutate(
+    {
+      type: 'waterGrowspace',
+      optimistic: () => {},
+      inverse: () => {},
+      apply: async () => {
+        await wsVoid('growspace_manager/water_growspace', payload);
+        if (hasNutrients) await fetchNutrientInventory();
+      },
+    },
+    growspaceId
   );
 }
 
