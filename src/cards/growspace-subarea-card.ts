@@ -44,6 +44,7 @@ import { growspaceCardStyles } from '../styles/growspace-card.styles';
 import { variables } from '../styles/variables';
 
 import { GrowspaceStore } from '../store/core/growspace-store';
+import { toggleEnvGraph } from '../slices/ui';
 import { BootstrapController } from '../controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
@@ -419,7 +420,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     }
 
     private _toggleMetricGraph(metric: string): void {
-        this.store?.actions.ui.toggleEnvGraph(metric);
+        toggleEnvGraph(metric, this.store?.history);
     }
 
     protected render(): TemplateResult {

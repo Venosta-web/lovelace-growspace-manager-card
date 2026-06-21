@@ -9,6 +9,12 @@ import { fetchAiStatus } from './slices/ai-insight';
 import { setMutateListener, undo, canUndo } from './services/mutate';
 import { selectedDeviceId$ } from './slices/grid';
 import * as uiSlice from './slices/ui';
+import { fetchStrainLibrary } from './slices/strain';
+import {
+  fetchNutrientPresets,
+  fetchIPMPresets,
+  fetchNutrientInventory,
+} from './slices/nutrient';
 
 import type { GrowspaceManagerCardConfig } from './lib/types/config';
 import type { StrainEntry } from './features/plants/types';
@@ -33,6 +39,7 @@ import { growspaceStoreRegistry } from './store/core/growspace-store-registry';
 import { BootstrapController } from './controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 import { startTransplant, completeTransplant, gridInteraction$ } from './slices/grid-interaction';
+import { handleKeyboardNavigation, deleteSelectedPlants } from './lib/keyboard-navigation';
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
@@ -78,10 +85,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         .catch((err: unknown) => console.error('[bootstrap updateHass failed]', err));
       fetchAiStatus();
     }
-    this.store.actions.library.fetchStrains();
-    this.store.actions.library.fetchNutrientPresets();
-    this.store.actions.library.fetchIPMPresets();
-    this.store.actions.library.fetchNutrientInventory();
+    void fetchStrainLibrary({ cache: true });
+    void fetchNutrientPresets({ cache: true });
+    void fetchIPMPresets({ cache: true });
+    void fetchNutrientInventory({ cache: true });
 
     // Check for deep link
     this._checkDeepLink();
@@ -103,7 +110,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       url.searchParams.delete('plantId');
       window.history.replaceState({}, '', url.toString());
 
-      this.store.actions.ui.handleDeepLink(plantId);
+      uiSlice.handleDeepLink(plantId);
     }
   }
 
@@ -166,7 +173,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       // Re-check for pending deep link when hass (and thus devices) updates
       const pendingId = this.store.ui.$pendingDeepLinkPlantId.get();
       if (pendingId) {
-        this.store.actions.ui.handleDeepLink(pendingId);
+        uiSlice.handleDeepLink(pendingId);
       }
     }
 
@@ -226,7 +233,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   // Event handlers
   private _handleKeyboardNav(e: KeyboardEvent) {
-    this.store.actions.ui.handleKeyboardNavigation(e.key);
+    handleKeyboardNavigation(e.key);
   }
 
   private _handleGlobalKeydown = (e: KeyboardEvent) => {
@@ -277,7 +284,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleIPMSelected() {
-    this.store.actions.ui.openIPMDialog();
+    uiSlice.openIPMDialog();
   }
 
   private _handleToggleExpansion() {
@@ -301,7 +308,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleDeleteSelected = () => {
-    void this.store.actions.ui.deleteSelectedPlants();
+    deleteSelectedPlants();
   };
 
   private _handleTransplantMode = () => {

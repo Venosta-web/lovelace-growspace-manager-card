@@ -6,6 +6,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { waterPlant as mockWaterPlant } from '../../../slices/plant';
+import { configureEnvironment as mockConfigureEnvironment } from '../../../slices/growspace';
 import { applyIPM as mockApplyIPM } from '../../../slices/nutrient';
 import { notification$, activeDialog$ } from '../../../slices/ui';
 import './growspace-dialog-host.container';
@@ -20,6 +21,16 @@ vi.mock('../../../slices/plant', () => ({
   printLabel: vi.fn(), scorePlant: vi.fn(), saveHarvestMetrics: vi.fn(),
   logDryingWeight: vi.fn(), logMoistureReading: vi.fn(), setVisualTag: vi.fn(),
   movePlantToGrowspace: vi.fn(),
+  advancePlantStage: vi.fn().mockResolvedValue('dry'),
+  movePlantPosition: vi.fn(),
+    waterGrowspace: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../../slices/growspace', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../slices/growspace')>()),
+  configureEnvironment: vi.fn().mockResolvedValue(undefined),
+  configureExhaustFan: vi.fn().mockResolvedValue(undefined),
+  removeEnvironment: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../slices/genetics', () => ({
@@ -521,7 +532,7 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
   it('calls environment.configure with the mapped payload', async () => {
     await (el as any)._handleEnvironmentConfig(minimalValidDetail);
 
-    expect(store.actions.environment.configure).toHaveBeenCalledWith(
+    expect(mockConfigureEnvironment).toHaveBeenCalledWith(
       expect.objectContaining({ growspaceId: 'gs-1' })
     );
   });
@@ -532,19 +543,17 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
       circulationFanConfig: fanConfig,
     });
 
-    expect(store.actions.environment.configure).toHaveBeenCalledWith(
+    expect(mockConfigureEnvironment).toHaveBeenCalledWith(
       expect.objectContaining({ circulationFanConfig: fanConfig })
     );
-    expect(store.actions.environment.configureFanController).not.toHaveBeenCalled();
   });
 
   it('does not pass circulationFanConfig to configure when absent', async () => {
     await (el as any)._handleEnvironmentConfig(minimalValidDetail);
 
-    expect(store.actions.environment.configure).toHaveBeenCalledWith(
+    expect(mockConfigureEnvironment).toHaveBeenCalledWith(
       expect.not.objectContaining({ circulationFanConfig: expect.anything() })
     );
-    expect(store.actions.environment.configureFanController).not.toHaveBeenCalled();
   });
 
   it('shows a toast and returns early when mandatory sensors are missing', async () => {
@@ -556,6 +565,6 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
 
     expect(notification$.get()?.type).toBe('error');
     expect(notification$.get()?.message).toContain('mandatory');
-    expect(store.actions.environment.configure).not.toHaveBeenCalled();
+    expect(mockConfigureEnvironment).not.toHaveBeenCalled();
   });
 });

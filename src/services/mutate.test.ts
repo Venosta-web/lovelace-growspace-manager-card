@@ -131,6 +131,21 @@ describe('mutate failure', () => {
 
     await expect(mutate(action, gsId)).rejects.toThrow('original');
   });
+
+  it('uses inverse (not undoInverse) for failure rollback', async () => {
+    const gsId = uniqueGsId();
+    const inverse = vi.fn();
+    const undoInverse = vi.fn();
+    const action = makeAction({
+      inverse,
+      undoInverse,
+      apply: vi.fn().mockRejectedValue(new Error('fail')),
+    });
+
+    await expect(mutate(action, gsId)).rejects.toThrow('fail');
+    expect(inverse).toHaveBeenCalledOnce();
+    expect(undoInverse).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -173,6 +188,18 @@ describe('undo', () => {
 
     expect(secondInverse).toHaveBeenCalledOnce();
     expect(firstInverse).not.toHaveBeenCalled();
+  });
+
+  it('uses undoInverse (not inverse) for undo after a successful commit', async () => {
+    const gsId = uniqueGsId();
+    const inverse = vi.fn();
+    const undoInverse = vi.fn();
+    await mutate(makeAction({ inverse, undoInverse }), gsId);
+
+    await undo(gsId);
+
+    expect(undoInverse).toHaveBeenCalledOnce();
+    expect(inverse).not.toHaveBeenCalled();
   });
 });
 

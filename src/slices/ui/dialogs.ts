@@ -1,13 +1,13 @@
-import { ConfigTab } from '../../constants';
+import { ConfigTab, ViewMode } from '../../constants';
 import { PlantEntity, GrowspaceDevice, EnvironmentConfigData } from '../../types';
-import { plantToDeviceMap$, selectedDeviceId$ } from '../grid';
-import { openDialog, selectedPlants$ } from './index';
+import { plantToDeviceMap$, selectedDeviceId$, devices$, optimisticDeletedPlantIds$ } from '../grid';
+import { openDialog, selectedPlants$, setPendingDeepLink, viewMode$, setViewMode } from './index';
 
 /**
  * Pure dialog-open helpers: each builds an `ActiveDialogState` payload and calls
- * the UI slice `openDialog` setter. No data fetching and no domain mutation — the
- * fetch-coupled `open*` helpers (add-plant, nutrient-presets, IPM) stay on the
- * legacy ActionDispatcher until their own retirement step.
+ * the UI slice `openDialog` setter. The add-plant / IPM helpers are "fetch-coupled"
+ * only by name — the dialogs self-fetch on open (CONTEXT.md "Dialog self-fetch on
+ * open"), so these are pure UI-state ops too.
  */
 
 /** Resolve the single growspace shared by a set of plants, or undefined if mixed. */
@@ -39,6 +39,114 @@ export function openPlantOverviewDialog(plant: PlantEntity, selectedIds?: string
       selectedPlantIds: selectedIds,
     },
   });
+}
+
+/**
+ * Open the add-plant dialog. With an explicit row/col, open there; otherwise pick
+ * the first empty cell of the selected growspace. The dialog self-fetches its
+ * strain library on open.
+ */
+export function openAddPlantDialog(row?: number, col?: number): void {
+  if (row !== undefined && col !== undefined) {
+    openDialog({ type: 'ADD_PLANT', payload: { row, col } });
+    return;
+  }
+
+  const selectedDeviceId = selectedDeviceId$.get();
+  if (!selectedDeviceId) return;
+
+  const device = devices$.get().find((d) => d.deviceId === selectedDeviceId);
+  let targetRow = 0;
+  let targetCol = 0;
+
+  if (device) {
+    const deleted = optimisticDeletedPlantIds$.get();
+    const occupied = new Set<string>();
+    device.plants.forEach((p) => {
+      const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+      if (deleted.has(pId)) return;
+      const r = (p.attributes.row ?? 1) - 1;
+      const c = (p.attributes.col ?? 1) - 1;
+      occupied.add(`${r},${c}`);
+    });
+
+    const rows = device.rows || 4;
+    const cols = device.plantsPerRow || 4;
+    let found = false;
+    for (let r = 0; r < rows && !found; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (!occupied.has(`${r},${c}`)) {
+          targetRow = r;
+          targetCol = c;
+          found = true;
+          break;
+        }
+      }
+    }
+  }
+
+  openDialog({ type: 'ADD_PLANT', payload: { row: targetRow, col: targetCol } });
+}
+
+/**
+ * Toggle an environment metric graph. `crop_steering` opens the irrigation dialog
+ * instead of a graph; other metrics toggle the per-card history graph (passed in,
+ * since it's per-card state) and drop HEADER view back to STANDARD when activated.
+ */
+export function toggleEnvGraph(
+  metric: string,
+  history?: { toggleEnvGraph(metric: string): boolean }
+): void {
+  if (metric === 'crop_steering') {
+    const gsId = selectedDeviceId$.get();
+    if (gsId) openIrrigationDialog({ growspaceId: gsId, initialTab: 'overview' });
+    return;
+  }
+  if (!history) return;
+  const isNowActive = history.toggleEnvGraph(metric);
+  if (isNowActive && viewMode$.get() === ViewMode.HEADER) {
+    setViewMode(ViewMode.STANDARD);
+  }
+}
+
+/** Open the IPM dialog for a growspace or a set of plants (self-fetches presets). */
+export function openIPMDialog(context?: { growspaceId?: string; plantIds?: string[] }): void {
+  const growspaceId =
+    context?.growspaceId ||
+    (!context?.plantIds?.length ? selectedDeviceId$.get() || undefined : undefined);
+  openDialog({ type: 'IPM', payload: { growspaceId, plantIds: context?.plantIds } });
+}
+
+/**
+ * Resolve a deep link (`?plantId=`) to the plant overview dialog. When devices
+ * aren't loaded yet, stash the id as pending so a later hydration can retry.
+ */
+export function handleDeepLink(plantId: string): void {
+  const devices = devices$.get();
+  if (!devices || devices.length === 0) {
+    setPendingDeepLink(plantId);
+    return;
+  }
+
+  let foundPlant: PlantEntity | undefined;
+  for (const device of devices) {
+    if (!device.plants) continue;
+    foundPlant = device.plants.find(
+      (p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId
+    );
+    if (foundPlant) break;
+  }
+
+  if (foundPlant) {
+    openPlantOverviewDialog(foundPlant);
+    setPendingDeepLink(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('plantId');
+    window.history.replaceState({}, '', url.toString());
+  } else {
+    console.warn(`[DeepLink] Plant ${plantId} not found in current devices.`);
+    setPendingDeepLink(null);
+  }
 }
 
 export function openBatchPrintLabelsDialog(): void {

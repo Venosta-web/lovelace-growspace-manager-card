@@ -2,9 +2,35 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceDialogHost } from '../../../../../src/features/ui/containers/growspace-dialog-host.container';
 import { atom } from 'nanostores';
-import { waterPlant as sliceWaterPlant, addPlants as sliceAddPlants } from '../../../../../src/slices/plant';
-import { hassCall, callService } from '../../../../../src/services/hass-call';
+import {
+  waterPlant as sliceWaterPlant,
+  addPlants as sliceAddPlants,
+  addPlant as sliceAddPlant,
+  deletePlant as sliceDeletePlant,
+  updatePlant as sliceUpdatePlant,
+  takeClone as sliceTakeClone,
+  movePlantToGrowspace as sliceMovePlantToGrowspace,
+  advancePlantStage as sliceAdvancePlantStage,
+  waterGrowspace as sliceWaterGrowspace,
+} from '../../../../../src/slices/plant';
+import {
+  configureEnvironment as sliceConfigureEnvironment,
+  removeEnvironment as sliceRemoveEnvironment,
+} from '../../../../../src/slices/growspace';
+import { fetchStrainLibrary as sliceFetchStrainLibrary } from '../../../../../src/slices/strain';
+import { selectedDeviceId$ } from '../../../../../src/slices/grid';
+import { hassCall, callService, callServiceReturning } from '../../../../../src/services/hass-call';
 import { notification$ } from '../../../../../src/slices/ui';
+import {
+    fetchGeneticsData,
+    addSeedBatch,
+    updateSeedBatch,
+    removeSeedBatch,
+    logPollinationEvent,
+    updatePollinationEvent,
+    deletePollinationEvent,
+    harvestSeeds,
+} from '../../../../../src/slices/genetics';
 import * as uiSlice from '../../../../../src/slices/ui';
 
 // The dialog host now drives pure UI ops through the slice. `{ spy: true }`
@@ -38,16 +64,35 @@ vi.mock('../../../../../src/features/genetics/state/genetics.actions', () => ({
     loadAllGenetics: vi.fn().mockResolvedValue(true)
 }));
 
+// Override only the environment ops; keep growspace CRUD (add/update/remove) real
+// so the #340 callService assertions still hold.
+vi.mock('../../../../../src/slices/growspace', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../../../../src/slices/growspace')>()),
+    configureEnvironment: vi.fn().mockResolvedValue(undefined),
+    configureExhaustFan: vi.fn().mockResolvedValue(undefined),
+    removeEnvironment: vi.fn().mockResolvedValue(undefined),
+}));
+
+// The host's _exportStrainLibrary now reads the library via the strain slice
+// directly; stub the fetch so it resolves without a real backend call.
+vi.mock('../../../../../src/slices/strain', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../../../../src/slices/strain')>()),
+    fetchStrainLibrary: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock('../../../../../src/slices/plant', () => ({
     waterPlant: vi.fn().mockResolvedValue(undefined),
     plants$: { get: vi.fn().mockReturnValue([]), set: vi.fn(), subscribe: vi.fn().mockReturnValue(() => {}) },
     selectedPlant$: { get: vi.fn().mockReturnValue(null), set: vi.fn(), subscribe: vi.fn().mockReturnValue(() => {}) },
     setPlants: vi.fn(),
     addPlant: vi.fn(), addPlants: vi.fn(), updatePlant: vi.fn(), deletePlant: vi.fn(),
-    harvestPlant: vi.fn(), takeClone: vi.fn(), moveClone: vi.fn(), swapPlants: vi.fn(),
+    harvestPlant: vi.fn(), takeClone: vi.fn().mockResolvedValue(undefined), moveClone: vi.fn(), swapPlants: vi.fn(),
     printLabel: vi.fn(), scorePlant: vi.fn(), saveHarvestMetrics: vi.fn(),
     logDryingWeight: vi.fn(), logMoistureReading: vi.fn(), setVisualTag: vi.fn(),
-    movePlantToGrowspace: vi.fn(),
+    waterGrowspace: vi.fn().mockResolvedValue(undefined),
+    movePlantToGrowspace: vi.fn().mockResolvedValue(undefined),
+    advancePlantStage: vi.fn().mockResolvedValue('dry'),
+    movePlantPosition: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../../../src/slices/genetics', () => ({
@@ -380,15 +425,8 @@ describe('GrowspaceDialogHostContainer', () => {
     });
 
     it('should handle transplant failure branch', async () => {
-        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-        const error = new Error('Transplant Error');
-        // The real action handles the pulse and toast, container just awaits.
-        // We mock the action to simulate the failure side-effects.
-        mockStore.actions.plant.takeClone.mockImplementation(async () => {
-            mockStore.actions.ui.showToast('Error: Transplant Error', 'error');
-            console.error('[DialogHost] Transplant failed:', error);
-            return false;
-        });
+        // The Plant slice takeClone mutator rejects; the inlined catch surfaces it via showError.
+        vi.mocked(sliceTakeClone).mockRejectedValueOnce(new Error('Transplant Error'));
 
         const activeState = {
             type: 'TAKE_CLONE',
@@ -406,10 +444,11 @@ describe('GrowspaceDialogHostContainer', () => {
             detail: { numClones: 1, targetGrowspaceId: 'g2' }
         }));
 
-        await new Promise(resolve => setTimeout(resolve, 100)); // Wait for async handler
-        expect(consoleErrorSpy).toHaveBeenCalledWith('[DialogHost] Transplant failed:', error);
-        expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Error:'), 'error');
-        consoleErrorSpy.mockRestore();
+        await vi.waitFor(() => {
+            expect(notification$.get()).toEqual(
+                expect.objectContaining({ message: expect.stringContaining('Failed to take clone'), type: 'error' })
+            );
+        });
     });
 
     it('should handle environment config with all optional fields populated', async () => {
@@ -430,7 +469,7 @@ describe('GrowspaceDialogHostContainer', () => {
             }
         }));
 
-        expect(mockStore.actions.environment.configure).toHaveBeenCalledWith(expect.objectContaining({
+        expect(sliceConfigureEnvironment).toHaveBeenCalledWith(expect.objectContaining({
             vpdSettings: { target: 1.2 },
             co2Settings: { target: 800 }
         }));
@@ -537,7 +576,7 @@ describe('GrowspaceDialogHostContainer', () => {
         }));
 
         await vi.waitFor(() => {
-            expect(mockStore.actions.environment.waterGrowspace).toHaveBeenCalledWith('gs1', 500, {}, 'preset1');
+            expect(sliceWaterGrowspace).toHaveBeenCalledWith('gs1', 500, {}, 'preset1');
         });
     });
 
@@ -583,12 +622,6 @@ describe('GrowspaceDialogHostContainer', () => {
             payload: { sourcePlant: 'p1', defaultGrowspaceId: 'g1' }
         };
         
-        // Mock the action to simulate successful side-effect
-        mockStore.actions.plant.takeClone.mockImplementation(async () => {
-            mockStore.showToast('Generated 2 clones successfully', 'success');
-            return true;
-        });
-
         mockStore.ui.$activeDialog.set(activeState);
         await element.updateComplete;
         await element.updateComplete;
@@ -598,10 +631,9 @@ describe('GrowspaceDialogHostContainer', () => {
             detail: { numClones: 2, targetGrowspaceId: 'g2' }
         }));
 
-        await new Promise(resolve => setTimeout(resolve, 100));
-        expect(mockStore.actions.plant.takeClone).toHaveBeenCalled();
-        expect(mockStore.showToast).toHaveBeenCalledWith(
-            expect.stringContaining('clone'), 'success'
+        await vi.waitFor(() => expect(sliceTakeClone).toHaveBeenCalledWith('p1', 2, 'g2'));
+        expect(notification$.get()).toEqual(
+            expect.objectContaining({ message: expect.stringContaining('clone'), type: 'success' })
         );
     });
 
@@ -622,7 +654,12 @@ describe('GrowspaceDialogHostContainer', () => {
         dialog?.dispatchEvent(new CustomEvent('update-stock', {
             detail: { id: 'n1', name: 'Nitrogen', current_ml: 200, initial_ml: 500 }
         }));
-        expect(mockStore.actions.library.updateNutrientStock).toHaveBeenCalledWith('n1', 'Nitrogen', 200, 500);
+        // Handler now calls the Nutrient slice directly, which persists via hassCall.
+        expect(hassCall).toHaveBeenCalledWith(
+            'growspace_manager/update_nutrient_stock',
+            expect.objectContaining({ nutrient_id: 'n1', name: 'Nitrogen', current_ml: 200, initial_ml: 500 }),
+            expect.anything()
+        );
     });
 
     it('should handle @add-stock on nutrient-inventory dialog', async () => {
@@ -634,8 +671,15 @@ describe('GrowspaceDialogHostContainer', () => {
         dialog?.dispatchEvent(new CustomEvent('add-stock', {
             detail: { id: '', name: 'NewNutrient', current_ml: 300, initial_ml: 1000 }
         }));
-        expect(mockStore.actions.library.updateNutrientStock).toHaveBeenCalledWith(
-            expect.stringContaining('nutrient_'), 'NewNutrient', 300, 1000
+        expect(hassCall).toHaveBeenCalledWith(
+            'growspace_manager/update_nutrient_stock',
+            expect.objectContaining({
+                nutrient_id: expect.stringContaining('nutrient_'),
+                name: 'NewNutrient',
+                current_ml: 300,
+                initial_ml: 1000,
+            }),
+            expect.anything()
         );
     });
 
@@ -690,7 +734,14 @@ describe('GrowspaceDialogHostContainer', () => {
 
         const dialog = element.shadowRoot?.querySelector('strain-library-dialog');
         dialog?.dispatchEvent(new CustomEvent('delete-strain', { detail: { key: 'OG_Kush' } }));
-        expect(mockStore.actions.strain.remove).toHaveBeenCalledWith('OG_Kush');
+        // Handler now calls the Strain slice directly, which persists via callService.
+        await vi.waitFor(() =>
+            expect(callService).toHaveBeenCalledWith(
+                'growspace_manager',
+                'remove_strain',
+                expect.objectContaining({ strain: 'OG_Kush' })
+            )
+        );
     });
 
     it('should handle @export-library on strain-library-dialog', async () => {
@@ -700,7 +751,7 @@ describe('GrowspaceDialogHostContainer', () => {
 
         const dialog = element.shadowRoot?.querySelector('strain-library-dialog');
         dialog?.dispatchEvent(new CustomEvent('export-library'));
-        expect(mockStore.actions.ui.exportStrainLibrary).toHaveBeenCalled();
+        expect(sliceFetchStrainLibrary).toHaveBeenCalled();
     });
 
     it('should handle @get-recommendation on strain-library-dialog', async () => {
@@ -731,27 +782,36 @@ describe('GrowspaceDialogHostContainer', () => {
         const dialog = element.shadowRoot?.querySelector('strain-library-dialog');
         dialog?.dispatchEvent(new CustomEvent('save-strain', { detail: { strain: 'Test', key: 'Test' } }));
 
-        await new Promise(resolve => setTimeout(resolve, 0));
-        expect(mockStore.actions.strain.update).toHaveBeenCalledWith({ strain: 'Test', key: 'Test' });
+        await vi.waitFor(() =>
+            expect(callService).toHaveBeenCalledWith(
+                'growspace_manager',
+                'update_strain_meta',
+                expect.objectContaining({ strain: 'Test' })
+            )
+        );
     });
 
     it('should handle @save-strain failure on strain-library-dialog', async () => {
-        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
         mockStore.ui.$activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
         await element.updateComplete;
         await element.updateComplete;
 
-        mockStore.actions.strain.update.mockRejectedValue(new Error('Save failed'));
+        // Strain slice (via callService) rejects; the inlined catch surfaces it through showError.
+        (callService as any).mockRejectedValueOnce(new Error('Save failed'));
 
         const dialog = element.shadowRoot?.querySelector('strain-library-dialog');
         expect(dialog).not.toBeNull();
-        
+
         dialog?.dispatchEvent(new CustomEvent('save-strain', { detail: { strainId: 's1', name: 'New Name' } }));
 
         await vi.waitFor(() => {
-            expect(mockStore.actions.strain.update).toHaveBeenCalled();
+            expect(notification$.get()).toEqual(
+                expect.objectContaining({
+                    message: expect.stringContaining('Failed to update strain'),
+                    type: 'error',
+                })
+            );
         });
-        consoleErrorSpy.mockRestore();
     });
 
     it('should handle @update-breeder on strain-library-dialog', async () => {
@@ -807,20 +867,24 @@ describe('GrowspaceDialogHostContainer', () => {
         await element.updateComplete;
         await element.updateComplete;
 
-        const fakeFile = new File(['{}'], 'library.json', { type: 'application/json' });
+        const fakeFile = new File([JSON.stringify([{ strain: 'Blue Dream' }])], 'library.json', {
+            type: 'application/json',
+        });
         const dialog = element.shadowRoot?.querySelector('strain-library-dialog');
         dialog?.dispatchEvent(new CustomEvent('import-library', { detail: { file: fakeFile, replace: false } }));
 
-        await new Promise(resolve => setTimeout(resolve, 0));
-        expect(mockStore.actions.library.import).toHaveBeenCalledWith(fakeFile, false);
+        // Import now inlines: parse JSON → add each strain via the slice (callService) → refetch.
+        await vi.waitFor(() =>
+            expect(callService).toHaveBeenCalledWith(
+                'growspace_manager',
+                'add_strain',
+                expect.objectContaining({ strain: 'Blue Dream' })
+            )
+        );
     });
 
     it('should handle environment config submit failure', async () => {
-        const error = new Error('Network error');
-        mockStore.actions.environment.configure.mockImplementation(async () => {
-            mockStore.actions.ui.showToast('Error: Network error', 'error');
-            throw error;
-        });
+        vi.mocked(sliceConfigureEnvironment).mockRejectedValueOnce(new Error('Network error'));
 
         mockStore.ui.$activeDialog.set({ type: 'ENVIRONMENT_CONFIG', payload: { deviceId: 'g1' } });
         await element.updateComplete;
@@ -829,10 +893,11 @@ describe('GrowspaceDialogHostContainer', () => {
         const dialog = element.shadowRoot?.querySelector('growspace-environment-config-dialog');
         dialog?.dispatchEvent(new CustomEvent('save-config', { detail: { growspaceId: 'g1' } }));
 
-        await new Promise(resolve => setTimeout(resolve, 100));
-        expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
-            expect.stringContaining('Network error'), 'error'
-        );
+        await vi.waitFor(() => {
+            expect(notification$.get()).toEqual(
+                expect.objectContaining({ message: expect.stringContaining('Failed to configure environment'), type: 'error' })
+            );
+        });
     });
 
     it('should handle @vision-checkup-config-submit on config-dialog', async () => {
@@ -893,7 +958,8 @@ describe('GrowspaceDialogHostContainer', () => {
 
     it('should handle _refreshGeneticsData failure gracefully', async () => {
         const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        mockStore.actions.genetics.fetchData.mockRejectedValue(new Error('Network'));
+        // _refreshGeneticsData now calls the Genetics slice fetch directly.
+        vi.mocked(fetchGeneticsData).mockRejectedValueOnce(new Error('Network'));
 
         mockStore.ui.$activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
         await element.updateComplete;
@@ -907,24 +973,16 @@ describe('GrowspaceDialogHostContainer', () => {
     });
 
     it('should handle _handleEnvironmentConfig failure', async () => {
-        const error = new Error('Config failed');
-        mockStore.actions.environment.configure.mockImplementation(async () => {
-            mockStore.actions.ui.showToast('Error: Config failed', 'error');
-            throw error;
-        });
+        vi.mocked(sliceConfigureEnvironment).mockRejectedValueOnce(new Error('Config failed'));
 
-        try {
-            await (element as any)._handleEnvironmentConfig({
-                selectedGrowspaceId: 'g1',
-                temperatureSensors: ['t1'],
-                humiditySensors: ['h1']
-            } as any);
-        } catch (_e) {
-            // Error is expected to be rethrown by action but handled by action's toast
-        }
+        await (element as any)._handleEnvironmentConfig({
+            selectedGrowspaceId: 'g1',
+            temperatureSensors: ['t1'],
+            humiditySensors: ['h1']
+        } as any);
 
-        expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
-            expect.stringContaining('Config failed'), 'error'
+        expect(notification$.get()).toEqual(
+            expect.objectContaining({ message: expect.stringContaining('Failed to configure environment'), type: 'error' })
         );
     });
 
@@ -1171,11 +1229,12 @@ describe('GrowspaceDialogHostContainer', () => {
     });
 
     it('should lazily load genetics data only once', async () => {
+        // _refreshGeneticsData now fetches via the Genetics slice fetch mutator.
         mockStore.ui.$activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
         await element.updateComplete;
         await element.updateComplete;
 
-        expect(mockStore.actions.genetics.fetchData).toHaveBeenCalledTimes(1);
+        expect(fetchGeneticsData).toHaveBeenCalledTimes(1);
 
         // Close and reopen
         mockStore.ui.$activeDialog.set({ type: 'NONE', payload: {} });
@@ -1185,7 +1244,7 @@ describe('GrowspaceDialogHostContainer', () => {
         await element.updateComplete;
 
         // Should still be 1
-        expect(mockStore.actions.genetics.fetchData).toHaveBeenCalledTimes(1);
+        expect(fetchGeneticsData).toHaveBeenCalledTimes(1);
     });
 
     describe('Coverage Gap Fillers', () => {
@@ -1208,19 +1267,19 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should handle transplant failure', async () => {
-            mockStore.actions.plant.update.mockRejectedValue(new Error('Service failed'));
+            vi.mocked(sliceUpdatePlant).mockRejectedValueOnce(new Error('Service failed'));
             mockStore.ui.$activeDialog.set({ type: 'ADD_PLANT', payload: {} });
             await element.updateComplete;
-            
+
             const addPlantDialog = element.shadowRoot?.querySelector('add-plant-dialog');
             addPlantDialog?.dispatchEvent(new CustomEvent('transplant-plant-submit', {
                 detail: { plant_id: 'p1' },
                 bubbles: true,
                 composed: true
             }));
-            
+
             await vi.waitFor(() => {
-                expect(mockStore.actions.plant.update).toHaveBeenCalled();
+                expect(sliceUpdatePlant).toHaveBeenCalled();
             });
         });
 
@@ -1256,14 +1315,14 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should surface library error inline when addBatch rejects and keep dialog open', async () => {
-            const libraryError = new Error('Strain name is required');
-            mockStore.actions.plant.addBatch = vi.fn().mockRejectedValue(libraryError);
+            selectedDeviceId$.set('gs-1');
+            vi.mocked(sliceAddPlants).mockRejectedValueOnce(new Error('Strain name is required'));
             mockStore.ui.$activeDialog.set({ type: 'ADD_PLANTS', payload: {} });
             await element.updateComplete;
 
             const addPlantsDialog = element.shadowRoot?.querySelector('add-plants-dialog') as any;
             addPlantsDialog?.dispatchEvent(new CustomEvent('add-plants-submit', {
-                detail: { strain: '', amount: 1, addToLibrary: true },
+                detail: { strain: 'Blue Dream', amount: 1, addToLibrary: false },
                 bubbles: true,
                 composed: true,
             }));
@@ -1277,7 +1336,8 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should clear library error on subsequent successful addBatch', async () => {
-            mockStore.actions.plant.addBatch = vi.fn()
+            selectedDeviceId$.set('gs-1');
+            vi.mocked(sliceAddPlants)
                 .mockRejectedValueOnce(new Error('First attempt failed'))
                 .mockResolvedValueOnce(undefined);
             mockStore.ui.$activeDialog.set({ type: 'ADD_PLANTS', payload: {} });
@@ -1285,7 +1345,7 @@ describe('GrowspaceDialogHostContainer', () => {
 
             const addPlantsDialog = element.shadowRoot?.querySelector('add-plants-dialog') as any;
             const submitEvent = () => addPlantsDialog?.dispatchEvent(new CustomEvent('add-plants-submit', {
-                detail: { strain: 'Blue Dream', amount: 1, addToLibrary: true },
+                detail: { strain: 'Blue Dream', amount: 1, addToLibrary: false },
                 bubbles: true,
                 composed: true,
             }));
@@ -1316,14 +1376,14 @@ describe('GrowspaceDialogHostContainer', () => {
             // Trigger addSeedBatch
             if (dialog && (dialog as any).onAddSeedBatch) {
                 (dialog as any).onAddSeedBatch({ s: 1 });
-                expect(mockStore.actions.genetics.addSeedBatch).toHaveBeenCalledWith({ s: 1 });
+                expect(addSeedBatch).toHaveBeenCalledWith({ s: 1 });
             }
 
             // Trigger pollination
             const pollData = { strain: 'S1' };
             if (dialog && (dialog as any).onLogPollination) {
                 (dialog as any).onLogPollination(pollData);
-                expect(mockStore.actions.genetics.logPollination).toHaveBeenCalledWith(pollData);
+                expect(logPollinationEvent).toHaveBeenCalledWith(pollData);
             }
         });
 
@@ -1332,18 +1392,20 @@ describe('GrowspaceDialogHostContainer', () => {
             await element.updateComplete;
 
             const dialog = element.shadowRoot?.querySelector('strain-library-dialog');
-            mockStore.actions.library.import.mockRejectedValue(new Error('Import Error'));
-            
-            const mockFile = new File([''], 'test.json', { type: 'application/json' });
+
+            // Malformed JSON → the inlined import's catch surfaces an error toast.
+            const mockFile = new File(['not json'], 'test.json', { type: 'application/json' });
             dialog?.dispatchEvent(new CustomEvent('import-library', {
                 detail: { file: mockFile, replace: false }
             }));
 
             await vi.waitFor(() => {
-                expect(mockStore.actions.ui.showToast).toHaveBeenCalled();
-                const lastCall = mockStore.actions.ui.showToast.mock.calls[mockStore.actions.ui.showToast.mock.calls.length - 1];
-                expect(lastCall[0]).toContain('Import failed: Import Error');
-                expect(lastCall[1]).toBe('error');
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({
+                        message: expect.stringContaining('Import failed'),
+                        type: 'error',
+                    })
+                );
             });
         });
 
@@ -1405,13 +1467,9 @@ describe('GrowspaceDialogHostContainer', () => {
             expect(dialog).toBeTruthy();
             
             const pollData = { strain: 'S1' };
-            if ((dialog as any).onLogPollination) {
-                (dialog as any).onLogPollination(pollData);
-            } else {
-                mockStore.actions.genetics.logPollination(pollData);
-            }
+            (dialog as any).onLogPollination?.(pollData);
 
-            expect(mockStore.actions.genetics.logPollination).toHaveBeenCalledWith(pollData);
+            expect(logPollinationEvent).toHaveBeenCalledWith(pollData);
         });
 
         it('should render all remaining dialog types to maximize coverage', async () => {
@@ -1516,7 +1574,7 @@ describe('GrowspaceDialogHostContainer', () => {
             }));
 
             await vi.waitFor(() => {
-                expect(mockStore.actions.plant.update).toHaveBeenCalledWith(
+                expect(sliceUpdatePlant).toHaveBeenCalledWith(
                     'p1',
                     expect.objectContaining({
                         row: 1,
@@ -1535,26 +1593,20 @@ describe('GrowspaceDialogHostContainer', () => {
             const dialog = element.shadowRoot?.querySelector('strain-library-dialog') as any;
             expect(dialog).toBeTruthy();
 
-            // L549: onSeedDataChanged
+            // Genetics callbacks now call the Genetics slice mutators directly.
             dialog.onSeedDataChanged();
-            // L550: onAddSeedBatch
             dialog.onAddSeedBatch({});
-            expect(mockStore.actions.genetics.addSeedBatch).toHaveBeenCalled();
-            // L551: onUpdateSeedBatch
+            expect(addSeedBatch).toHaveBeenCalledWith({});
             dialog.onUpdateSeedBatch({});
-            expect(mockStore.actions.genetics.updateSeedBatch).toHaveBeenCalled();
-            // L552: onLogPollination
+            expect(updateSeedBatch).toHaveBeenCalledWith({});
             dialog.onLogPollination({});
-            expect(mockStore.actions.genetics.logPollination).toHaveBeenCalled();
-            // L553: onHarvestSeeds
+            expect(logPollinationEvent).toHaveBeenCalledWith({});
             dialog.onHarvestSeeds({});
-            expect(mockStore.actions.genetics.harvestSeeds).toHaveBeenCalled();
-            // L554: onUpdatePollination
+            expect(harvestSeeds).toHaveBeenCalledWith({});
             dialog.onUpdatePollination({});
-            expect(mockStore.actions.genetics.updatePollination).toHaveBeenCalled();
-            // L555: onDeletePollination
+            expect(updatePollinationEvent).toHaveBeenCalledWith({});
             dialog.onDeletePollination('id1');
-            expect(mockStore.actions.genetics.deletePollination).toHaveBeenCalledWith('id1');
+            expect(deletePollinationEvent).toHaveBeenCalledWith('id1');
         });
 
         it('should handle transplant-plant-submit failure', async () => {
@@ -1571,7 +1623,7 @@ describe('GrowspaceDialogHostContainer', () => {
             }));
 
             await vi.waitFor(() => {
-                expect(mockStore.actions.plant.update).toHaveBeenCalled();
+                expect(sliceUpdatePlant).toHaveBeenCalled();
             });
         });
 
@@ -1580,7 +1632,7 @@ describe('GrowspaceDialogHostContainer', () => {
             await element.updateComplete;
 
             const dialog = element.shadowRoot?.querySelector('strain-library-dialog');
-            mockStore.actions.strain.update.mockRejectedValue(new Error('Save Failed'));
+            (callService as any).mockRejectedValueOnce(new Error('Save Failed'));
 
             dialog?.dispatchEvent(new CustomEvent('save-strain', {
                 detail: { strain: 'S1' },
@@ -1589,7 +1641,12 @@ describe('GrowspaceDialogHostContainer', () => {
             }));
 
             await vi.waitFor(() => {
-                expect(mockStore.actions.strain.update).toHaveBeenCalled();
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({
+                        message: expect.stringContaining('Failed to update strain'),
+                        type: 'error',
+                    })
+                );
             });
         });
 
@@ -1614,19 +1671,20 @@ describe('GrowspaceDialogHostContainer', () => {
             mockStore.ui.$activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
             await element.updateComplete;
             const strainDialog = element.shadowRoot?.querySelector('strain-library-dialog');
-                        // Test L614: _performImport failure (uses store.showToast)
-            mockStore.actions.library.import.mockImplementation(async () => {
-                mockStore.actions.ui.showToast('Import failed: Import Error', 'error');
-                throw new Error('Import Error');
-            });
+            // _performImport failure — an empty file is invalid JSON; the inlined
+            // catch surfaces the error through the real UI slice notification atom.
             element.shadowRoot?.querySelector('strain-library-dialog')?.dispatchEvent(new CustomEvent('import-library', {
                 detail: { file: new File([], 'test.json'), replace: false },
                 bubbles: true, composed: true
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith('Import failed: Import Error', 'error');
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({
+                        message: expect.stringContaining('Import failed'),
+                        type: 'error',
+                    })
+                );
             });
-            mockStore.actions.ui.showToast.mockClear();
 
             // _handleUpdateBreeder failure — Strain slice (via hassCall) rejects;
             // withToast surfaces it through the real UI slice notification atom.
@@ -1733,9 +1791,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 bubbles: true, composed: true
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.plant.updateFromDialog).toHaveBeenCalledWith(expect.objectContaining({
-                    editedAttributes: { attributes: { name: 'New Name' } }
-                }));
+                expect(sliceUpdatePlant).toHaveBeenCalled();
             });
 
             // delete-plant (Line 422)
@@ -1744,7 +1800,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 bubbles: true, composed: true
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.plant.delete).toHaveBeenCalledWith('p1');
+                expect(sliceDeletePlant).toHaveBeenCalledWith('p1');
             });
         });
 
@@ -1780,7 +1836,7 @@ describe('GrowspaceDialogHostContainer', () => {
             }));
 
             await vi.waitFor(() => {
-                expect(mockStore.actions.plant.update).toHaveBeenCalledWith(
+                expect(sliceUpdatePlant).toHaveBeenCalledWith(
                     'p1', 
                     expect.objectContaining({
                         row: 1,
@@ -1797,29 +1853,23 @@ describe('GrowspaceDialogHostContainer', () => {
              await element.updateComplete;
              const dialog = element.shadowRoot?.querySelector('strain-library-dialog') as any;
 
-             // onAddSeedBatch (Line 550)
              dialog.onAddSeedBatch({ strain_id: 'st1' });
-             expect(mockStore.actions.genetics.addSeedBatch).toHaveBeenCalled();
+             expect(addSeedBatch).toHaveBeenCalledWith({ strain_id: 'st1' });
 
-             // onUpdateSeedBatch (Line 551)
              dialog.onUpdateSeedBatch({ seed_id: 's1' });
-             expect(mockStore.actions.genetics.updateSeedBatch).toHaveBeenCalled();
-             
-             // onLogPollination (Line 552)
+             expect(updateSeedBatch).toHaveBeenCalledWith({ seed_id: 's1' });
+
              dialog.onLogPollination({});
-             expect(mockStore.actions.genetics.logPollination).toHaveBeenCalled();
+             expect(logPollinationEvent).toHaveBeenCalledWith({});
 
-             // onHarvestSeeds (Line 553)
              dialog.onHarvestSeeds({});
-             expect(mockStore.actions.genetics.harvestSeeds).toHaveBeenCalled();
+             expect(harvestSeeds).toHaveBeenCalledWith({});
 
-             // onUpdatePollination (Line 554)
              dialog.onUpdatePollination({ event_id: 'ep1' });
-             expect(mockStore.actions.genetics.updatePollination).toHaveBeenCalled();
+             expect(updatePollinationEvent).toHaveBeenCalledWith({ event_id: 'ep1' });
 
-             // onDeletePollination (Line 555)
              dialog.onDeletePollination('ep1');
-             expect(mockStore.actions.genetics.deletePollination).toHaveBeenCalledWith('ep1');
+             expect(deletePollinationEvent).toHaveBeenCalledWith('ep1');
         });
     });
 
@@ -1863,10 +1913,13 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should handle @add-plant-submit on ADD_PLANT dialog', async () => {
+            selectedDeviceId$.set('gs-1');
             await openDialog('ADD_PLANT', { row: 0, col: 0 });
             const dialog = element.shadowRoot?.querySelector('add-plant-dialog');
-            dialog?.dispatchEvent(new CustomEvent('add-plant-submit', { detail: { strain: 'Test' } }));
-            expect(mockStore.actions.plant.confirmAdd).toHaveBeenCalledWith({ strain: 'Test' });
+            dialog?.dispatchEvent(new CustomEvent('add-plant-submit', { detail: { strain: 'Test', row: 0, col: 0 } }));
+            await vi.waitFor(() =>
+                expect(sliceAddPlant).toHaveBeenCalledWith(expect.objectContaining({ strain: 'Test', growspace_id: 'gs-1' }))
+            );
         });
 
         it('should handle @close on ADD_PLANTS dialog', async () => {
@@ -1877,10 +1930,13 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should handle @add-plants-submit on ADD_PLANTS dialog', async () => {
+            selectedDeviceId$.set('gs-1');
             await openDialog('ADD_PLANTS', {});
             const dialog = element.shadowRoot?.querySelector('add-plants-dialog');
             dialog?.dispatchEvent(new CustomEvent('add-plants-submit', { detail: { amount: 3 } }));
-            expect(mockStore.actions.plant.addBatch).toHaveBeenCalledWith({ amount: 3 });
+            await vi.waitFor(() =>
+                expect(sliceAddPlants).toHaveBeenCalledWith(expect.objectContaining({ amount: 3, growspace_id: 'gs-1' }))
+            );
         });
 
         it('should handle @show-toast on ADD_PLANTS dialog', async () => {
@@ -1934,7 +1990,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 detail: { growspace_id: 'g1' }
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.environment.remove).toHaveBeenCalledWith('g1');
+                expect(sliceRemoveEnvironment).toHaveBeenCalledWith('g1');
             });
         });
 
@@ -1949,7 +2005,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 }
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.environment.configure).toHaveBeenCalled();
+                expect(sliceConfigureEnvironment).toHaveBeenCalled();
             });
         });
 
@@ -1967,25 +2023,21 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
 
-        it('should handle @analyze-growspace on GROW_MASTER dialog', async () => {
-            await openDialog('GROW_MASTER', {});
-            const dialog = element.shadowRoot?.querySelector('grow-master-dialog');
-            dialog?.dispatchEvent(new CustomEvent('analyze-growspace', { detail: { query: 'How is the plant?' } }));
-            expect(mockStore.actions.ai.askAdvice).toHaveBeenCalledWith('How is the plant?');
-        });
-
-        it('should handle @analyze-all-growspaces on GROW_MASTER dialog', async () => {
-            await openDialog('GROW_MASTER', {});
-            const dialog = element.shadowRoot?.querySelector('grow-master-dialog');
-            dialog?.dispatchEvent(new CustomEvent('analyze-all-growspaces', { detail: {} }));
-            expect(mockStore.actions.ai.analyzeAll).toHaveBeenCalled();
-        });
+        // The Growmaster ask flow lives in chat-panel (ai-insight atoms via sendMessage);
+        // the legacy @analyze-growspace / @analyze-all-growspaces host wiring was removed.
 
         it('should handle @get-recommendation on STRAIN_RECOMMENDATION dialog', async () => {
             await openDialog('STRAIN_RECOMMENDATION', {});
             const dialog = element.shadowRoot?.querySelector('strain-recommendation-dialog');
             dialog?.dispatchEvent(new CustomEvent('get-recommendation', { detail: { query: 'best strain for cold' } }));
-            expect(mockStore.actions.ai.strainRecommendation).toHaveBeenCalledWith('best strain for cold');
+            await vi.waitFor(() =>
+                expect(callServiceReturning).toHaveBeenCalledWith(
+                    'growspace_manager',
+                    'strain_recommendation',
+                    expect.objectContaining({ user_query: 'best strain for cold' }),
+                    expect.anything()
+                )
+            );
         });
 
         it('should handle @close on PLANT_OVERVIEW dialog', async () => {
@@ -2008,21 +2060,21 @@ describe('GrowspaceDialogHostContainer', () => {
             await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
             const dialog = element.shadowRoot?.querySelector('plant-overview-container');
             dialog?.dispatchEvent(new CustomEvent('finish-drying', { detail: { plant: { entity_id: 'p1' } } }));
-            expect(mockStore.actions.plant.finishDrying).toHaveBeenCalled();
+            expect(sliceAdvancePlantStage).toHaveBeenCalled();
         });
 
         it('should handle @take-clone on PLANT_OVERVIEW dialog', async () => {
             await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
             const dialog = element.shadowRoot?.querySelector('plant-overview-container');
             dialog?.dispatchEvent(new CustomEvent('take-clone', { detail: { plant: { entity_id: 'p1' }, numClones: 2 } }));
-            expect(mockStore.actions.plant.takeClone).toHaveBeenCalled();
+            expect(sliceTakeClone).toHaveBeenCalled();
         });
 
         it('should handle @move-clone on PLANT_OVERVIEW dialog', async () => {
             await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
             const dialog = element.shadowRoot?.querySelector('plant-overview-container');
             dialog?.dispatchEvent(new CustomEvent('move-clone', { detail: { plant: { entity_id: 'p1' }, targetGrowspace: 'g2' } }));
-            expect(mockStore.actions.plant.move).toHaveBeenCalled();
+            expect(sliceMovePlantToGrowspace).toHaveBeenCalled();
         });
 
         it('should handle @open-watering on PLANT_OVERVIEW dialog', async () => {
@@ -2178,33 +2230,33 @@ describe('GrowspaceDialogHostContainer', () => {
                 detail: { volume: 100, presetId: null }
             }));
             await new Promise(r => setTimeout(r, 50));
-            expect(mockStore.actions.environment.waterGrowspace).not.toHaveBeenCalled();
+            expect(sliceWaterGrowspace).not.toHaveBeenCalled();
         });
 
         it('should handle @take-clone-submit failure with toast', async () => {
-            mockStore.actions.plant.takeClone.mockRejectedValue(new Error('Clone error'));
+            vi.mocked(sliceTakeClone).mockRejectedValueOnce(new Error('Clone error'));
             await openDialog('TAKE_CLONE', { sourcePlant: 'p1', defaultGrowspaceId: 'g1' });
             const dialog = element.shadowRoot?.querySelector('clone-dialog');
             dialog?.dispatchEvent(new CustomEvent('take-clone-submit', {
                 detail: { numClones: 1, targetGrowspaceId: 'g2' }
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
-                    expect.stringContaining('Clone error'), 'error'
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({ message: expect.stringContaining('Clone error'), type: 'error' })
                 );
             });
         });
 
         it('should handle @take-clone-submit failure with string error', async () => {
-            mockStore.actions.plant.takeClone.mockRejectedValue('Clone error string');
+            vi.mocked(sliceTakeClone).mockRejectedValueOnce('Clone error string');
             await openDialog('TAKE_CLONE', { sourcePlant: 'p1', defaultGrowspaceId: 'g1' });
             const dialog = element.shadowRoot?.querySelector('clone-dialog');
             dialog?.dispatchEvent(new CustomEvent('take-clone-submit', {
                 detail: { numClones: 1, targetGrowspaceId: 'g2' }
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
-                    expect.stringContaining('Clone error string'), 'error'
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({ message: expect.stringContaining('Failed to take clone'), type: 'error' })
                 );
             });
         });
@@ -2249,7 +2301,7 @@ describe('GrowspaceDialogHostContainer', () => {
 
         it('should handle @remove-environment-submit failure on CONFIG dialog', async () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            mockStore.actions.environment.remove.mockRejectedValue(new Error('Remove env failed'));
+            vi.mocked(sliceRemoveEnvironment).mockRejectedValue(new Error('Remove env failed'));
             await openDialog('CONFIG', {});
             const dialog = element.shadowRoot?.querySelector('config-dialog');
             dialog?.dispatchEvent(new CustomEvent('remove-environment-submit', {
@@ -2313,11 +2365,11 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should handle _refreshGeneticsData when fetchData resolves', async () => {
-            mockStore.actions.genetics.fetchData.mockResolvedValue(undefined);
+            vi.mocked(fetchGeneticsData).mockClear();
             // @ts-ignore
             await (element as any)._refreshGeneticsData();
-            // Should not crash — genetics data now flows through atoms
-            expect(mockStore.actions.genetics.fetchData).toHaveBeenCalled();
+            // Should not crash — genetics data now flows through the slice atoms.
+            expect(fetchGeneticsData).toHaveBeenCalled();
         });
 
         it('should handle @add-growspace-submit on CONFIG dialog (add growspace success)', async () => {
@@ -2480,9 +2532,10 @@ describe('GrowspaceDialogHostContainer', () => {
             expect(dialog).toBeTruthy();
 
             // Trigger onDeleteSeedBatch
+            vi.mocked(fetchGeneticsData).mockClear();
             await dialog.onDeleteSeedBatch('batch123');
-            expect(mockStore.actions.genetics.deleteSeedBatch).toHaveBeenCalledWith('batch123');
-            expect(mockStore.actions.genetics.fetchData).toHaveBeenCalled();
+            expect(removeSeedBatch).toHaveBeenCalledWith('batch123');
+            expect(fetchGeneticsData).toHaveBeenCalled();
 
             // Trigger onSowSeeds
             const sowData = {
@@ -2590,20 +2643,20 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should handle @save-config failure on ENVIRONMENT_CONFIG dialog', async () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            mockStore.actions.environment.configure.mockRejectedValueOnce(new Error('Config failed'));
+            vi.mocked(sliceConfigureEnvironment).mockRejectedValueOnce(new Error('Config failed'));
             await openDialog('ENVIRONMENT_CONFIG', { deviceId: 'g1' });
             const dialog = element.shadowRoot?.querySelector('growspace-environment-config-dialog');
             expect(dialog).toBeTruthy();
-            
+
             dialog?.dispatchEvent(new CustomEvent('save-config', {
                 detail: { deviceId: 'g1', temp: 75 }
             }));
-            
+
             await vi.waitFor(() => {
-                expect(consoleSpy).toHaveBeenCalledWith('[DialogHost] configureEnvironment failed:', expect.any(Error));
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({ message: expect.stringContaining('Failed to configure environment'), type: 'error' })
+                );
             });
-            consoleSpy.mockRestore();
         });
 
         describe('100% Branch Coverage Gaps', () => {
@@ -2740,17 +2793,21 @@ describe('GrowspaceDialogHostContainer', () => {
             });
 
             it('should exit early in _performImport when detail.file is falsy', async () => {
+                (callService as any).mockClear();
                 // @ts-ignore
                 const result = await element._performImport({ file: undefined as any, replace: false });
                 expect(result).toBeUndefined();
-                expect(mockStore.actions.library.import).not.toHaveBeenCalled();
+                expect(callService).not.toHaveBeenCalledWith('growspace_manager', 'add_strain', expect.anything());
             });
 
             it('should handle non-Error catch block in _performImport', async () => {
-                mockStore.actions.library.import.mockRejectedValueOnce('Raw string error');
+                // A file whose text() rejects with a non-Error exercises the `e.message || e` fallback.
+                const badFile = { text: () => Promise.reject('Raw string error') } as unknown as File;
                 // @ts-ignore
-                await element._performImport({ file: new File([], 'test.json'), replace: false });
-                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith('Import failed: Raw string error', 'error');
+                await element._performImport({ file: badFile, replace: false });
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({ message: 'Import failed: Raw string error', type: 'error' })
+                );
             });
 
             it('should exit early in @edit-growspace-submit handler when store is falsy', async () => {
@@ -2837,7 +2894,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 });
                 // @ts-ignore
                 await element._handleWateringSubmit(event, { mode: 'growspace', growspace_id: 'g1' });
-                expect(mockStore.actions.environment.waterGrowspace).toHaveBeenCalledWith(
+                expect(sliceWaterGrowspace).toHaveBeenCalledWith(
                     'g1',
                     500,
                     {},
@@ -2851,7 +2908,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 });
                 // @ts-ignore
                 await element._handleWateringSubmit(event, { mode: 'plant', plantIds: undefined, plant_id: undefined });
-                expect(mockStore.actions.environment.waterGrowspace).not.toHaveBeenCalled();
+                expect(sliceWaterGrowspace).not.toHaveBeenCalled();
             });
         });
     });

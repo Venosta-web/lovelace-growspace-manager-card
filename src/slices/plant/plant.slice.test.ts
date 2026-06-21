@@ -34,6 +34,8 @@ import {
   waterPlant,
   waterGrowspace,
 } from './index';
+import { undo } from '../../services/mutate';
+import { devices$, setDevices } from '../grid';
 
 vi.mock('../../services/hass-call', () => ({
   hassCall: vi.fn().mockResolvedValue(undefined),
@@ -238,6 +240,37 @@ describe('deletePlant', () => {
 
     expect(plants$.get().map((p) => p.attributes.plant_id)).toContain('abc');
   });
+
+  it('failure rollback is local-only — it does NOT re-create via the backend', async () => {
+    setPlants([makePlant({ plant_id: 'abc' })]);
+    vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('fail'));
+
+    await expect(deletePlant('abc')).rejects.toThrow('fail');
+
+    expect(hassCallModule.hassCall).not.toHaveBeenCalledWith(
+      'growspace_manager/add_plant',
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  it('undo of a committed delete re-creates the plant via add_plant', async () => {
+    setPlants([
+      makePlant({ plant_id: 'abc', growspace_id: 'gs1', strain: 'AK47', row: 1, col: 2 }),
+    ]);
+    await deletePlant('abc');
+    vi.mocked(hassCallModule.hassCall).mockClear();
+
+    await undo('gs1');
+
+    await vi.waitFor(() =>
+      expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+        'growspace_manager/add_plant',
+        expect.objectContaining({ growspace_id: 'gs1', strain: 'AK47', row: 1, col: 2 }),
+        expect.anything()
+      )
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -294,6 +327,23 @@ describe('movePlantToGrowspace', () => {
       expect.anything()
     );
   });
+
+  it('undo of a committed move moves the plant back to its origin growspace', async () => {
+    const plant = makePlant({ plant_id: 'abc', stage: 'flower', growspace_id: 'veg' });
+    setPlants([plant]);
+    await movePlantToGrowspace(plant, 'dry');
+    vi.mocked(hassCallModule.hassCall).mockClear();
+
+    await undo('veg');
+
+    await vi.waitFor(() =>
+      expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+        'growspace_manager/move_plant',
+        expect.objectContaining({ plant_id: 'abc', target_growspace_id: 'veg' }),
+        expect.anything()
+      )
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -330,6 +380,27 @@ describe('swapPlants', () => {
     expect(pAbc.attributes.col).toBe(2);
     expect(pXyz.attributes.row).toBe(0);
     expect(pXyz.attributes.col).toBe(0);
+  });
+
+  it('optimistically swaps plant positions in devices$ so the grid reflects the swap', async () => {
+    const p1 = makePlant({ plant_id: 'abc', row: 0, col: 0, growspace_id: 'gs1' });
+    const p2 = makePlant({ plant_id: 'xyz', row: 1, col: 2, growspace_id: 'gs1' });
+    setPlants([p1, p2]);
+    setDevices([
+      { deviceId: 'gs1', plants: [{ ...p1 }, { ...p2 }] } as any,
+    ]);
+
+    await swapPlants('abc', 'xyz');
+
+    const dev = devices$.get()[0];
+    const dAbc = dev.plants!.find((p) => p.attributes.plant_id === 'abc')!;
+    const dXyz = dev.plants!.find((p) => p.attributes.plant_id === 'xyz')!;
+    expect(dAbc.attributes.row).toBe(1);
+    expect(dAbc.attributes.col).toBe(2);
+    expect(dXyz.attributes.row).toBe(0);
+    expect(dXyz.attributes.col).toBe(0);
+
+    setDevices([]);
   });
 
   it('rolls back the swap when the WS command fails', async () => {

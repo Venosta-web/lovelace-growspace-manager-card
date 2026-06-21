@@ -39,7 +39,12 @@ import { hassCall } from '../../services/hass-call';
 
 const wsVoid = (cmd: string, params: Record<string, unknown>): Promise<void> =>
   hassCall(cmd, params, z.unknown()).then(() => undefined);
-import { addOptimisticDeletedPlantId, removeOptimisticDeletedPlantId } from '../grid';
+import {
+  addOptimisticDeletedPlantId,
+  removeOptimisticDeletedPlantId,
+  devices$,
+  setDevices,
+} from '../grid';
 import { fetchNutrientInventory } from '../nutrient';
 
 // ---------------------------------------------------------------------------
@@ -69,6 +74,32 @@ function _growspaceIdFor(plantId: string): string {
   return plant?.attributes.growspace_id ?? '';
 }
 
+/**
+ * Build an add_plant payload that restores a removed plant — used by the undo
+ * path of `deletePlant` (re-creating a committed delete needs a backend re-add,
+ * not just a local atom restore).
+ */
+function _restorablePlantPayload(
+  plant: PlantEntity,
+  fallbackGrowspaceId: string
+): Parameters<typeof addPlant>[0] {
+  const a = plant.attributes;
+  return {
+    growspace_id: a.growspace_id || fallbackGrowspaceId,
+    row: a.row,
+    col: a.col,
+    strain: a.strain,
+    phenotype: a.phenotype ?? undefined,
+    veg_start: a.veg_start ?? undefined,
+    flower_start: a.flower_start ?? undefined,
+    seedling_start: a.seedling_start ?? undefined,
+    mother_start: a.mother_start ?? undefined,
+    clone_start: a.clone_start ?? undefined,
+    dry_start: a.dry_start ?? undefined,
+    cure_start: a.cure_start ?? undefined,
+  };
+}
+
 /** Replace a single plant in plants$ by plant_id, merging attribute updates. */
 function _patchPlant(id: string, updates: Partial<PlantEntity['attributes']>): PlantEntity[] {
   return plants$.get().map((p) => {
@@ -76,6 +107,41 @@ function _patchPlant(id: string, updates: Partial<PlantEntity['attributes']>): P
     if (pid !== id) return p;
     return { ...p, attributes: { ...p.attributes, ...updates } };
   });
+}
+
+/** plant_id, falling back to the entity_id without its "sensor." prefix. */
+function _idOf(p: PlantEntity): string {
+  return p.attributes.plant_id ?? p.entity_id.replace('sensor.', '');
+}
+
+/**
+ * Swap the row/col of two plants in the Grid slice's `devices$` so the grid
+ * (which renders from `device.plants`) reflects a swap optimistically. Involutive
+ * — calling it again restores the original positions, so it doubles as its own
+ * rollback. Owned here because `swapPlants` is the primary write (cross-slice
+ * mutation pattern).
+ */
+function _swapDevicesPlantPositions(id1: string, id2: string): void {
+  const devices = devices$.get();
+  let changed = false;
+  const next = devices.map((d) => {
+    const plants = d.plants ?? [];
+    const p1 = plants.find((p) => _idOf(p) === id1);
+    const p2 = plants.find((p) => _idOf(p) === id2);
+    if (!p1 || !p2) return d;
+    changed = true;
+    const r1 = p1.attributes.row;
+    const c1 = p1.attributes.col;
+    const r2 = p2.attributes.row;
+    const c2 = p2.attributes.col;
+    const newPlants = plants.map((p) => {
+      if (_idOf(p) === id1) return { ...p, attributes: { ...p.attributes, row: r2, col: c2 } };
+      if (_idOf(p) === id2) return { ...p, attributes: { ...p.attributes, row: r1, col: c1 } };
+      return p;
+    });
+    return { ...d, plants: newPlants };
+  });
+  if (changed) setDevices(next);
 }
 
 /** Swap the row/col of two plants in plants$ by their IDs. */
@@ -285,6 +351,10 @@ export async function updatePlant(
  */
 export async function deletePlant(plantId: string): Promise<void> {
   const originalList = plants$.get();
+  const growspaceId = _growspaceIdFor(plantId);
+  const deleted = originalList.find(
+    (p) => (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) === plantId
+  );
   const filtered = originalList.filter(
     (p) => (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) !== plantId
   );
@@ -296,13 +366,22 @@ export async function deletePlant(plantId: string): Promise<void> {
         plants$.set(filtered);
         addOptimisticDeletedPlantId(plantId);
       },
+      // Failure rollback: the delete never committed → restore local atom only.
       inverse: () => {
         plants$.set(originalList);
         removeOptimisticDeletedPlantId(plantId);
       },
+      // Undo after a committed delete: re-create the plant through the backend;
+      // the next hydration reflects it in the grid.
+      undoInverse: () => {
+        if (!deleted) return;
+        void addPlant(_restorablePlantPayload(deleted, growspaceId)).catch((e) =>
+          console.error('[Undo delete failed]', e)
+        );
+      },
       apply: () => wsVoid('growspace_manager/remove_plant', { plant_id: plantId }),
     },
-    _growspaceIdFor(plantId)
+    growspaceId
   );
 }
 
@@ -351,6 +430,33 @@ export async function harvestPlant(
   );
 }
 
+/** Stage → next-stage growspace for {@link advancePlantStage}. */
+const NEXT_STAGE_TARGET: Record<string, string> = {
+  flower: 'dry',
+  dry: 'cure',
+  mother: 'clone',
+};
+
+/**
+ * Advance a plant to its next stage growspace (flower→dry, dry→cure,
+ * mother→clone) via `harvestPlant`. Returns the target growspace so the caller
+ * can toast it. Throws if the plant is not in an advanceable stage — the calling
+ * UI surfaces that via `showError`.
+ */
+export async function advancePlantStage(
+  plant: PlantEntity,
+  metrics?: Parameters<typeof harvestPlant>[2]
+): Promise<string> {
+  const stage = plant.attributes?.stage;
+  const target = stage ? NEXT_STAGE_TARGET[stage] : undefined;
+  if (!target) {
+    throw new Error(`Plant must be in mother, flower or dry stage to move (stage: ${stage})`);
+  }
+  const plantId = plant.attributes?.plant_id ?? plant.entity_id.replace('sensor.', '');
+  await harvestPlant(plantId, target, metrics);
+  return target;
+}
+
 /**
  * Move or transplant a plant to a specific growspace.
  *
@@ -378,6 +484,7 @@ export async function movePlantToGrowspace(
   }
 
   const sourceGrowspaceId = _growspaceIdFor(plantId);
+  const originalGrowspace = plant.attributes.growspace_id || sourceGrowspaceId;
 
   await mutate(
     {
@@ -385,12 +492,59 @@ export async function movePlantToGrowspace(
       optimistic: () => {
         addOptimisticDeletedPlantId(plantId);
       },
+      // Failure rollback: the move never committed → just restore the source cell.
       inverse: () => {
         removeOptimisticDeletedPlantId(plantId);
+      },
+      // Undo after a committed move: move the plant back to its origin growspace.
+      undoInverse: () => {
+        if (!originalGrowspace || originalGrowspace === targetGrowspaceId) return;
+        void movePlantToGrowspace(plant, originalGrowspace).catch((e) =>
+          console.error('[Undo move failed]', e)
+        );
       },
       apply: () => wsVoid(`growspace_manager/${service}`, payload),
     },
     sourceGrowspaceId
+  );
+}
+
+/**
+ * Move a plant to a new grid cell (drag-drop onto an empty cell).
+ *
+ * Optimistic: patches the plant's row/col in plants$.
+ * Apply: update_plant with the new row/col.
+ * Inverse (failure rollback): restore plants$ locally.
+ * Undo after commit: move the plant back to its original cell via the backend.
+ */
+export async function movePlantPosition(
+  plantId: string,
+  newRow: number,
+  newCol: number
+): Promise<void> {
+  const originalList = plants$.get();
+  const orig = originalList.find(
+    (p) => (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) === plantId
+  );
+  const origRow = orig?.attributes.row;
+  const origCol = orig?.attributes.col;
+  const patched = _patchPlant(plantId, { row: newRow, col: newCol });
+
+  await mutate(
+    {
+      type: 'movePlantPosition',
+      optimistic: () => plants$.set(patched),
+      inverse: () => plants$.set(originalList),
+      undoInverse: () => {
+        if (origRow === undefined || origCol === undefined) return;
+        void updatePlant(plantId, { row: origRow, col: origCol }).catch((e) =>
+          console.error('[Undo move failed]', e)
+        );
+      },
+      apply: () =>
+        wsVoid('growspace_manager/update_plant', { plant_id: plantId, row: newRow, col: newCol }),
+    },
+    _growspaceIdFor(plantId)
   );
 }
 
@@ -411,8 +565,16 @@ export async function swapPlants(plantId1: string, plantId2: string): Promise<vo
   await mutate(
     {
       type: 'swapPlants',
-      optimistic: () => plants$.set(swapped),
-      inverse: () => plants$.set(originalList),
+      optimistic: () => {
+        plants$.set(swapped);
+        _swapDevicesPlantPositions(plantId1, plantId2);
+      },
+      // Involutive: re-swapping restores both atoms (works as failure rollback
+      // and as local undo — a committed swap is reverted by swapping back).
+      inverse: () => {
+        plants$.set(originalList);
+        _swapDevicesPlantPositions(plantId1, plantId2);
+      },
       apply: () =>
         wsVoid('growspace_manager/switch_plants', { plant1_id: plantId1, plant2_id: plantId2 }),
     },

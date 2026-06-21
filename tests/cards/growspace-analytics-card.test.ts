@@ -4,6 +4,11 @@ import { ViewMode } from '../../src/features/environment/constants';
 import { aHass, aGrowspace } from '../fixtures';
 import { renderCard } from '../harness';
 import { setDevices } from '../../src/slices/grid';
+import * as uiSlice from '../../src/slices/ui';
+
+// Chip clicks toggle env graphs through the slice op the card calls directly.
+// `{ spy: true }` keeps every real atom/mutator while recording calls.
+vi.mock('../../src/slices/ui', { spy: true });
 
 if (!customElements.get('growspace-analytics-card')) {
   customElements.define('growspace-analytics-card', GrowspaceAnalyticsCard);
@@ -117,9 +122,9 @@ describe('GrowspaceAnalyticsCard', () => {
       handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
       await handle.element.updateComplete;
 
-      const spy = vi.spyOn(handle.element.store.actions.ui, 'toggleEnvGraph');
+      vi.mocked(uiSlice.toggleEnvGraph).mockClear();
       handle.clickChip('vpd');
-      expect(spy).toHaveBeenCalledWith('vpd');
+      expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('vpd', handle.element.store.history);
       handle.unmount();
     });
   });
@@ -187,7 +192,7 @@ describe('GrowspaceAnalyticsCard', () => {
     const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
     // After first render, graphs are already set by firstUpdated (truthy-branch covered elsewhere).
     // Now manually add an extra graph and call firstUpdated again to exercise the falsy branch.
-    handle.element.store.actions.ui.toggleEnvGraph('co2');
+    handle.element.store.history.toggleEnvGraph('co2');
     const sizeBefore = handle.element.store.history.$activeEnvGraphs.get().size;
     // Trigger firstUpdated-equivalent: call it directly — the store already has graphs so
     // the inner if is false and no reset happens.

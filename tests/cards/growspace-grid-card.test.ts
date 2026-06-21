@@ -7,6 +7,7 @@ import { renderCard } from '../harness';
 import { setDevices } from '../../src/slices/grid';
 import { gridInteraction$ } from '../../src/slices/grid-interaction';
 import * as uiSlice from '../../src/slices/ui';
+import { handleKeyboardNavigation, deleteSelectedPlants } from '../../src/lib/keyboard-navigation';
 
 // The card calls these leaf ops on the UI slice directly; `{ spy: true }` wraps
 // every export in a call-through spy while keeping every real atom/util intact.
@@ -14,6 +15,12 @@ import * as uiSlice from '../../src/slices/ui';
 // `index ↔ dialogs` cycle and `importOriginal()` re-enters it during browser-mode
 // collection and deadlocks the run.
 vi.mock('../../src/slices/ui', { spy: true });
+
+// Keyboard nav + delete-selected route through lib/keyboard-navigation.
+vi.mock('../../src/lib/keyboard-navigation', () => ({
+  handleKeyboardNavigation: vi.fn(),
+  deleteSelectedPlants: vi.fn(),
+}));
 
 vi.mock('../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
 vi.mock('../../src/features/ui/containers/growspace-toast.container', () => ({}));
@@ -108,8 +115,8 @@ describe('GrowspaceGridCard', () => {
       { event: 'clear-selection', spy: vi.mocked(uiSlice.clearPlantSelection) },
       { event: 'water-selected', spy: vi.mocked(uiSlice.openBatchWateringDialog) },
       { event: 'training-selected', spy: vi.mocked(uiSlice.openBatchTrainingDialog) },
-      { event: 'ipm-selected', spy: vi.spyOn(element.store.actions.ui, 'openIPMDialog') },
-      { event: 'delete-selected', spy: vi.spyOn(element.store.actions.ui, 'deleteSelectedPlants') },
+      { event: 'ipm-selected', spy: vi.mocked(uiSlice.openIPMDialog) },
+      { event: 'delete-selected', spy: vi.mocked(deleteSelectedPlants) },
     ];
 
     for (const { event, spy } of handlers) {
@@ -218,19 +225,13 @@ describe('GrowspaceGridCard', () => {
     const haCard = element.shadowRoot?.querySelector('ha-card');
     expect(haCard?.classList.contains('wide-growspace')).toBe(true);
 
-    const keyboardSpy = vi
-      .spyOn(element.store.actions.ui, 'handleKeyboardNavigation')
-      .mockImplementation(() => {});
+    const keyboardSpy = vi.mocked(handleKeyboardNavigation);
     const selectAllSpy = vi.mocked(uiSlice.selectAllPlantsInSelectedDevice);
     const clearSpy = vi.mocked(uiSlice.clearPlantSelection);
     const waterSpy = vi.mocked(uiSlice.openBatchWateringDialog);
-    const ipmSpy = vi
-      .spyOn(element.store.actions.ui, 'openIPMDialog')
-      .mockImplementation(() => {});
+    const ipmSpy = vi.mocked(uiSlice.openIPMDialog);
     const trainingSpy = vi.mocked(uiSlice.openBatchTrainingDialog);
-    const deleteSpy = vi
-      .spyOn(element.store.actions.ui, 'deleteSelectedPlants')
-      .mockResolvedValue(undefined as any);
+    const deleteSpy = vi.mocked(deleteSelectedPlants);
     const deviceChangeSpy = vi
       .spyOn(element.store, 'handleDeviceChange')
       .mockImplementation(() => {});

@@ -11,6 +11,16 @@ import './plant-overview.container';
 import type { PlantEntity } from '../../../types';
 import { strainLibrary$ } from '../../../slices/strain';
 import { activeDialog$ } from '../../../slices/ui';
+import { deletePlant, advancePlantStage, movePlantToGrowspace } from '../../../slices/plant';
+
+// The container now calls the Plant slice mutators directly. Spread the real
+// module so child components that import other Plant-slice exports still load.
+vi.mock('../../../slices/plant', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../slices/plant')>()),
+  deletePlant: vi.fn().mockResolvedValue(undefined),
+  advancePlantStage: vi.fn().mockResolvedValue('dry'),
+  movePlantToGrowspace: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('../../../slices/logbook', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../slices/logbook')>();
@@ -211,15 +221,15 @@ describe('PlantOverviewContainer – private method logic', () => {
   });
 
   // ── _handleHarvest ────────────────────────────────────────────────────────
-  it('_handleHarvest calls store.actions.plant.harvest', () => {
+  it('_handleHarvest calls advancePlantStage', () => {
     (el as any)._handleHarvest();
-    expect(store.actions.plant.harvest).toHaveBeenCalledWith(plant);
+    expect(advancePlantStage).toHaveBeenCalledWith(plant);
   });
 
   // ── _handleFinishDrying ───────────────────────────────────────────────────
-  it('_handleFinishDrying calls store.actions.plant.finishDrying', () => {
+  it('_handleFinishDrying calls advancePlantStage', () => {
     (el as any)._handleFinishDrying();
-    expect(store.actions.plant.finishDrying).toHaveBeenCalledWith(plant);
+    expect(advancePlantStage).toHaveBeenCalledWith(plant);
   });
 
   // ── _handleMovePlantEvent ─────────────────────────────────────────────
@@ -227,7 +237,7 @@ describe('PlantOverviewContainer – private method logic', () => {
     (el as any)._handleMovePlantEvent(
       new CustomEvent('move-plant', { detail: { targetId: 'gs-2' } })
     );
-    expect(store.actions.plant.move).toHaveBeenCalledWith(plant, 'gs-2');
+    expect(movePlantToGrowspace).toHaveBeenCalledWith(plant, 'gs-2');
     expect(store.ui.closeDialog).toHaveBeenCalled();
   });
 
@@ -304,14 +314,14 @@ describe('PlantOverviewContainer – private method logic', () => {
     (el as any)._handleHarvestAdvance(
       new CustomEvent('harvest-advance', { detail: { action: 'finish-drying' } })
     );
-    expect(store.actions.plant.finishDrying).toHaveBeenCalledWith(el.plant);
+    expect(advancePlantStage).toHaveBeenCalledWith(el.plant);
   });
 
   it('_handleHarvestAdvance calls harvest for harvest action', () => {
     (el as any)._handleHarvestAdvance(
       new CustomEvent('harvest-advance', { detail: { action: 'harvest' } })
     );
-    expect(store.actions.plant.harvest).toHaveBeenCalledWith(el.plant);
+    expect(advancePlantStage).toHaveBeenCalledWith(el.plant);
   });
 
   // ── _fetchLogbookEvents success path ──────────────────────────────────────
@@ -459,7 +469,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
       b.textContent?.includes('Finish Drying')
     ) as HTMLButtonElement | undefined;
     btn?.click();
-    expect(store.actions.plant.finishDrying).toHaveBeenCalled();
+    expect(advancePlantStage).toHaveBeenCalled();
   });
 
   // ── Harvest tab renders plant-harvest-tab component ─────────────────────
@@ -499,7 +509,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
       })
     );
 
-    expect(store.actions.plant.move).toHaveBeenCalledWith(plant, 'gs-2');
+    expect(movePlantToGrowspace).toHaveBeenCalledWith(plant, 'gs-2');
   });
 
   // ── harvest-saved event from harvest tab switches to dashboard ───────────

@@ -1,9 +1,19 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { PrintLabelDialog } from './print-label-dialog';
 import './print-label-dialog';
 import type { LabelFieldVisibility } from '../lib/types/dialog';
 import { setDevices } from '../slices/grid';
+import { printLabel } from '../slices/plant';
+
+// The dialog now calls the Plant slice `printLabel` mutator directly.
+vi.mock('../slices/plant', () => ({
+  printLabel: vi.fn().mockResolvedValue(undefined),
+}));
+
+beforeEach(() => {
+  vi.mocked(printLabel).mockReset().mockResolvedValue(undefined);
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -20,7 +30,6 @@ function makeMockStore(overrides: Record<string, unknown> = {}) {
   return {
     actions: {
       ui: { toast: vi.fn() },
-      plant: { printLabel: vi.fn().mockResolvedValue(undefined) },
     },
     ...overrides,
   };
@@ -198,18 +207,12 @@ describe('PrintLabelDialog – _submit print flow', () => {
   });
 
   it('sets _printState to printing during submit and done after', async () => {
-    let statesDuringPrint: string[] = [];
-    const mockStore = makeMockStore({
-      actions: {
-        ui: { toast: vi.fn() },
-        plant: {
-          printLabel: vi.fn().mockImplementation(async () => {
-            statesDuringPrint.push((el as any)._printState);
-          }),
-        },
-      },
-    });
+    const statesDuringPrint: string[] = [];
+    const mockStore = makeMockStore();
     const el = createElement(mockStore);
+    vi.mocked(printLabel).mockImplementation(async () => {
+      statesDuringPrint.push((el as any)._printState);
+    });
     (el as any).dialogState = { plantId: 'p1' };
     (el as any)._copies = 1;
 
@@ -227,7 +230,7 @@ describe('PrintLabelDialog – _submit print flow', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.plant.printLabel).toHaveBeenCalledTimes(3);
+    expect(printLabel).toHaveBeenCalledTimes(3);
   });
 
   it('passes fields, sizeId, density, qrTarget, deviceId to printLabel', async () => {
@@ -244,14 +247,16 @@ describe('PrintLabelDialog – _submit print flow', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.plant.printLabel).toHaveBeenCalledWith({
-      plantId: 'p1',
-      fields,
-      sizeId: '40x30',
-      density: 'high',
-      qrTarget: 'deeplink',
-      deviceId: 'image.printer_a_last_label_made',
-    });
+    expect(printLabel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        plantId: 'p1',
+        fields,
+        sizeId: '40x30',
+        density: 'high',
+        qrTarget: 'deeplink',
+        deviceId: 'image.printer_a_last_label_made',
+      })
+    );
   });
 
   it('passes undefined deviceId when none selected', async () => {
@@ -263,17 +268,13 @@ describe('PrintLabelDialog – _submit print flow', () => {
 
     await (el as any)._submit();
 
-    const call = mockStore.actions.plant.printLabel.mock.calls[0][0];
+    const call = vi.mocked(printLabel).mock.calls[0][0];
     expect(call.deviceId).toBeUndefined();
   });
 
   it('sets _printState to error when printLabel rejects', async () => {
-    const mockStore = makeMockStore({
-      actions: {
-        ui: { toast: vi.fn() },
-        plant: { printLabel: vi.fn().mockRejectedValue(new Error('printer offline')) },
-      },
-    });
+    const mockStore = makeMockStore();
+    vi.mocked(printLabel).mockRejectedValue(new Error('printer offline'));
     const el = createElement(mockStore);
     (el as any).dialogState = { plantId: 'p1' };
     (el as any)._copies = 1;
@@ -310,8 +311,8 @@ describe('PrintLabelDialog – no preview backend call', () => {
 
     await (el as any)._submit();
 
-    const calls = mockStore.actions.plant.printLabel.mock.calls;
-    expect(calls.every((c: any[]) => !c[0].preview)).toBe(true);
+    const calls = vi.mocked(printLabel).mock.calls;
+    expect(calls.every((c) => !c[0].preview)).toBe(true);
   });
 });
 

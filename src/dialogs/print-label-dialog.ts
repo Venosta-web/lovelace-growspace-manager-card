@@ -8,6 +8,7 @@ import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/label-preview';
 import '../features/shared/ui/printer-status-strip';
 import type { PrintLabelDialogState, LabelFieldVisibility, LabelSizeId, PrintDensity, QrTarget } from '../lib/types/dialog';
+import { printLabel } from '../slices/plant';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { activeDevices$ } from '../slices/grid';
@@ -404,13 +405,14 @@ export class PrintLabelDialog extends LitElement {
 
     try {
       for (let i = 0; i < this._copies; i++) {
-        await this.store.actions.plant.printLabel({
+        await printLabel({
           plantId: this.dialogState.plantId,
           fields: this._fields,
           sizeId: this._sizeId,
           density: this._density,
           qrTarget: this._qrTarget,
           deviceId: this._selectedDeviceId || undefined,
+          baseUrl: window.location.origin + window.location.pathname,
         });
         this._printProgress = Math.round(((i + 1) / this._copies) * 100);
       }

@@ -18,6 +18,7 @@ import { growspaceCardStyles } from '../styles/growspace-card.styles';
 import { variables } from '../styles/variables';
 
 import { GrowspaceStore } from '../store/core/growspace-store';
+import { toggleEnvGraph } from '../slices/ui';
 import { BootstrapController } from '../controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 
@@ -71,7 +72,7 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
     // so default to the primary env metrics if none are active yet.
     if (this.store.history.$activeEnvGraphs.get().size === 0) {
       ['temperature', 'humidity', 'vpd', 'co2'].forEach((m) =>
-        this.store.actions.ui.toggleEnvGraph(m)
+        toggleEnvGraph(m, this.store.history)
       );
     }
   }

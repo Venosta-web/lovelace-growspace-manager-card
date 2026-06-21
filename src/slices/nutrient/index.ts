@@ -1,6 +1,7 @@
-import { atom } from 'nanostores';
+import { atom, type WritableAtom } from 'nanostores';
 import { z } from 'zod';
 import { hassCall, callService } from '../../services/hass-call';
+import { readCache, writeCache, type CacheOptions } from '../../lib/local-cache';
 import {
   NutrientPresetsSchema,
   IPMPresetsSchema,
@@ -31,24 +32,86 @@ export const ecRampCurves$ = atom<ECRampCurvesResponse | null>(null);
 // Fetch mutators
 // ---------------------------------------------------------------------------
 
-export async function fetchNutrientPresets(): Promise<void> {
-  const result = await hassCall('growspace_manager/get_nutrient_presets', {}, NutrientPresetsSchema);
-  nutrientPresets$.set(result);
+/**
+ * Shared read-through cache wrapper for the fetch mutators.
+ *
+ * Default (no `opts.cache`): a plain fresh fetch that sets the atom and rethrows
+ * on failure — the contract the cross-slice refetch / dialog self-fetch callers
+ * rely on. With `opts.cache`: serve a fresh-enough cached value, otherwise fetch,
+ * cache, and (matching the retired library-actions wrapper) swallow fetch errors.
+ */
+async function _fetchWithOptionalCache<T>(
+  opts: CacheOptions | undefined,
+  cacheKey: string,
+  ttlMs: number,
+  store: WritableAtom<T | null>,
+  fetcher: () => Promise<T>,
+  errorLabel: string
+): Promise<void> {
+  if (!opts?.cache) {
+    store.set(await fetcher());
+    return;
+  }
+  if (!opts.force) {
+    const cached = readCache<T>(cacheKey, ttlMs);
+    if (cached) {
+      store.set(cached);
+      return;
+    }
+  }
+  try {
+    const result = await fetcher();
+    store.set(result);
+    writeCache(cacheKey, result);
+  } catch (e) {
+    console.error(errorLabel, e);
+  }
 }
 
-export async function fetchIPMPresets(): Promise<void> {
-  const result = await hassCall('growspace_manager/get_ipm_presets', {}, IPMPresetsSchema);
-  ipmPresets$.set(result);
+const MINUTE = 60 * 1000;
+
+export function fetchNutrientPresets(opts?: CacheOptions): Promise<void> {
+  return _fetchWithOptionalCache(
+    opts,
+    'growspace_nutrient_presets',
+    30 * MINUTE,
+    nutrientPresets$,
+    () => hassCall('growspace_manager/get_nutrient_presets', {}, NutrientPresetsSchema),
+    'Failed to fetch nutrient presets:'
+  );
 }
 
-export async function fetchNutrientInventory(): Promise<void> {
-  const result = await hassCall('growspace_manager/get_nutrient_inventory', {}, NutrientInventorySchema);
-  nutrientInventory$.set(result);
+export function fetchIPMPresets(opts?: CacheOptions): Promise<void> {
+  return _fetchWithOptionalCache(
+    opts,
+    'growspace_ipm_presets',
+    30 * MINUTE,
+    ipmPresets$,
+    () => hassCall('growspace_manager/get_ipm_presets', {}, IPMPresetsSchema),
+    'Failed to fetch IPM presets:'
+  );
 }
 
-export async function fetchECRampCurves(): Promise<void> {
-  const result = await hassCall('growspace_manager/get_ec_ramp_curves', {}, ECRampCurvesSchema);
-  ecRampCurves$.set(result);
+export function fetchNutrientInventory(opts?: CacheOptions): Promise<void> {
+  return _fetchWithOptionalCache(
+    opts,
+    'growspace_nutrient_inventory',
+    5 * MINUTE,
+    nutrientInventory$,
+    () => hassCall('growspace_manager/get_nutrient_inventory', {}, NutrientInventorySchema),
+    'Failed to fetch nutrient inventory:'
+  );
+}
+
+export function fetchECRampCurves(opts?: CacheOptions): Promise<void> {
+  return _fetchWithOptionalCache(
+    opts,
+    'growspace_ec_ramp_curves',
+    30 * MINUTE,
+    ecRampCurves$,
+    () => hassCall('growspace_manager/get_ec_ramp_curves', {}, ECRampCurvesSchema),
+    'Failed to fetch EC ramp curves:'
+  );
 }
 
 // ---------------------------------------------------------------------------

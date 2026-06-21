@@ -8,6 +8,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HarvestScoringDialog } from '../../../src/dialogs/harvest-scoring-dialog';
+import { scorePlant, advancePlantStage } from '../../../src/slices/plant';
 import '../../../src/dialogs/harvest-scoring-dialog';
 import { aPlant, aHass } from '../../fixtures';
 
@@ -22,15 +23,13 @@ if (!customElements.get('ha-dialog')) {
   customElements.define('ha-dialog', HaDialogMock);
 }
 
+vi.mock('../../../src/slices/plant', () => ({
+  scorePlant: vi.fn().mockResolvedValue({}),
+  advancePlantStage: vi.fn().mockResolvedValue('dry'),
+}));
+
 function makeMockStore() {
-  return {
-    actions: {
-      plant: {
-        scorePhenotype: vi.fn().mockResolvedValue({}),
-        harvest: vi.fn().mockResolvedValue({}),
-      },
-    },
-  };
+  return { actions: {} };
 }
 
 describe('HarvestScoringDialog', () => {
@@ -158,7 +157,7 @@ describe('HarvestScoringDialog', () => {
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 20));
 
-    expect(mockStore.actions.plant.harvest).toHaveBeenCalled();
+    expect(advancePlantStage).toHaveBeenCalled();
   });
 
   it('calls store harvest on confirmed skip flow', async () => {
@@ -177,12 +176,12 @@ describe('HarvestScoringDialog', () => {
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 20));
 
-    expect(mockStore.actions.plant.harvest).toHaveBeenCalled();
-    expect(mockStore.actions.plant.scorePhenotype).not.toHaveBeenCalled();
+    expect(advancePlantStage).toHaveBeenCalled();
+    expect(scorePlant).not.toHaveBeenCalled();
   });
 
   it('shows error banner when harvest fails', async () => {
-    mockStore.actions.plant.harvest.mockRejectedValueOnce(new Error('Network error'));
+    vi.mocked(advancePlantStage).mockRejectedValueOnce(new Error('Network error'));
     element.dialogState = { plant: aPlant() };
     element.open = true;
     await element.updateComplete;
@@ -313,8 +312,8 @@ describe('HarvestScoringDialog', () => {
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 20));
 
-    expect(mockStore.actions.plant.scorePhenotype).toHaveBeenCalled();
-    expect(mockStore.actions.plant.harvest).toHaveBeenCalled();
+    expect(scorePlant).toHaveBeenCalled();
+    expect(advancePlantStage).toHaveBeenCalled();
   });
 });
 

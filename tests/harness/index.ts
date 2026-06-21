@@ -2,7 +2,7 @@ import { fixture } from '@open-wc/testing-helpers';
 import { expect } from 'vitest';
 import { setHass } from '../../src/services/hass-call';
 import { select, gridInteraction$ } from '../../src/slices/grid-interaction';
-import { openGrowMasterDialog } from '../../src/slices/ui';
+import { openGrowMasterDialog, toggleEnvGraph } from '../../src/slices/ui';
 import type { GridInteractionState } from '../../src/slices/grid-interaction';
 import type { ViewMode } from '../../src/features/environment/constants';
 import type { GrowspaceSeed } from '../fixtures';
@@ -60,11 +60,11 @@ export async function renderCard<T extends HTMLElement = HTMLElement>(
     element,
 
     clickChip(metric: string) {
-      (element as any).store?.actions.ui.toggleEnvGraph(metric);
+      toggleEnvGraph(metric, (element as any).store?.history);
     },
 
     clickHero(metric: string) {
-      (element as any).store?.actions.ui.toggleEnvGraph(metric);
+      toggleEnvGraph(metric, (element as any).store?.history);
     },
 
     expectEnvGraph(metric: string) {

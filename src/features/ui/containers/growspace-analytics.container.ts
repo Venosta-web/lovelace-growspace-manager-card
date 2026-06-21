@@ -5,6 +5,7 @@ import { StoreController } from '@nanostores/lit';
 import { hassContext, storeContext } from '../../../context';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
+import { toggleEnvGraph } from '../../../slices/ui';
 import type { GrowspaceDevice } from '../../../types';
 import { METRIC_CONFIG, METRIC_SORT_ORDER, type MetricKey } from '../../../constants';
 import type { AnalyticsItem } from '../components/growspace-analytics-ui';
@@ -124,7 +125,7 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   private _handleToggleGraph(e: CustomEvent) {
     const metric = typeof e.detail === 'string' ? e.detail : e.detail.metric;
     if (metric) {
-      this.store?.actions.ui.toggleEnvGraph(metric);
+      toggleEnvGraph(metric, this.store?.history);
     }
   }
 

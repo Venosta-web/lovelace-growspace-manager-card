@@ -22,8 +22,21 @@ export interface Action {
   label?: string;
   /** Apply the optimistic update to local atoms immediately. */
   optimistic: () => void;
-  /** Reverse the optimistic update — called on failure or undo. */
+  /**
+   * Reverse the optimistic update — called as the **failure rollback** when
+   * `apply` throws (the change never committed, so this restores local atoms).
+   */
   inverse: () => void;
+  /**
+   * Optional **undo** behavior for Ctrl+Z after a *successful* commit. When the
+   * backend change committed, restoring a local atom is not enough — the undo
+   * must re-issue the inverse operation through the backend (e.g. re-create a
+   * deleted plant). When omitted, `inverse` is used for undo too (correct for
+   * optimistic edits whose local restore is the whole undo). Distinct from
+   * `inverse` precisely because failure-rollback and post-commit-undo need
+   * opposite things for backend-committing writes.
+   */
+  undoInverse?: () => void;
   /** Persist the change to Home Assistant via hassCall. */
   apply: () => Promise<void>;
 }
@@ -77,7 +90,7 @@ export async function mutate(action: Action, growspaceId: string): Promise<void>
     action.inverse();
     throw err;
   }
-  const entry: UndoEntry = { type: action.type, inverse: action.inverse };
+  const entry: UndoEntry = { type: action.type, inverse: action.undoInverse ?? action.inverse };
   const stack = _stackFor(growspaceId);
   stack.push(entry);
   if (stack.length > MAX_UNDO) {

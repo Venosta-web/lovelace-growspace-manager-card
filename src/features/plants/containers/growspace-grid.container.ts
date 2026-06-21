@@ -28,6 +28,8 @@ import type {
 import { GrowspaceGridUI } from '../components/growspace-grid-ui';
 import { gridInteraction$, select } from '../../../slices/grid-interaction';
 import * as uiSlice from '../../../slices/ui';
+import { showError } from '../../../slices/ui';
+import { swapPlants, movePlantPosition } from '../../../slices/plant';
 import '../components/growspace-grid-ui';
 import '../containers/plant-card.container';
 
@@ -153,7 +155,7 @@ export class GrowspaceGridContainer extends LitElement {
   private _handleEmptySlotClick(e: CustomEvent<{ row: number; col: number }>) {
     const { row, col } = e.detail;
     // Convert from 1-based (display) to 0-based (API)
-    this.store.actions.ui.openAddPlantDialog(row - 1, col - 1);
+    uiSlice.openAddPlantDialog(row - 1, col - 1);
   }
 
   /**
@@ -192,7 +194,7 @@ export class GrowspaceGridContainer extends LitElement {
 
     // Regular internal drag-drop - use the dragged plant from the event
     if (draggedPlant) {
-      await this.store.actions.plant.drop(targetRow, targetCol, targetPlant, draggedPlant);
+      await this._handlePlantDrop(targetRow, targetCol, targetPlant, draggedPlant);
     }
   }
 
@@ -225,7 +227,39 @@ export class GrowspaceGridContainer extends LitElement {
     }
 
     if (targetRow !== undefined && targetCol !== undefined) {
-      await this.store.actions.plant.drop(targetRow, targetCol, targetPlant, sourcePlant);
+      await this._handlePlantDrop(targetRow, targetCol, targetPlant, sourcePlant);
+    }
+  }
+
+  /**
+   * Drag-drop between grid cells: swap two plants, or move one to an empty cell.
+   * The optimistic grid update + undo now live in the Plant slice mutators
+   * (`swapPlants` / `movePlantPosition`); this just routes and refreshes.
+   */
+  private async _handlePlantDrop(
+    targetRow: number,
+    targetCol: number,
+    targetPlant: PlantEntity | null,
+    sourcePlant: PlantEntity | null
+  ): Promise<void> {
+    if (!sourcePlant?.attributes) return;
+    const sourceId =
+      sourcePlant.attributes.plant_id || sourcePlant.entity_id?.replace('sensor.', '') || '';
+    const targetId =
+      targetPlant?.attributes.plant_id || targetPlant?.entity_id?.replace('sensor.', '') || '';
+    if (sourceId === targetId) return;
+    if (!sourcePlant.attributes.growspace_id) return;
+
+    try {
+      if (targetPlant) {
+        await swapPlants(sourceId, targetId);
+      } else {
+        await movePlantPosition(sourceId, targetRow, targetCol);
+      }
+      await this.store?.refreshData();
+    } catch (err) {
+      showError(err, 'Failed to move plant');
+      await this.store?.refreshData();
     }
   }
 
