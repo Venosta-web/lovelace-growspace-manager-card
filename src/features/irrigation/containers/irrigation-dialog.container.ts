@@ -37,7 +37,12 @@ import {
 } from '../../../dialogs/mutation-run-controller';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
-import { ecRampCurves$ } from '../../../slices/nutrient';
+import {
+  ecRampCurves$,
+  fetchECRampCurves,
+  saveECRampCurve as sliceSaveECRampCurve,
+  removeECRampCurve as sliceRemoveECRampCurve,
+} from '../../../slices/nutrient';
 import {
   cropSteeringHistory$,
   irrigationConfigs$,
@@ -53,6 +58,8 @@ import {
   setEcTargetRanges,
   getIrrigationAnalytics,
   logDrainReading,
+  applySteeringMode,
+  fetchCropSteeringHistory,
 } from '../../../slices/irrigation';
 import { configureEnvironment, resetWaterTracking } from '../../../slices/growspace';
 import type {
@@ -831,34 +838,26 @@ export class IrrigationDialog extends LitElement {
       if (nextTab === 'ec_ramp' && prevTab !== 'ec_ramp') {
         if (!this._ecRampFetched && this.store) {
           this._ecRampFetched = true;
-          this.store.actions.library.fetchECRampCurves().catch(() => undefined);
+          fetchECRampCurves({ cache: true }).catch(() => undefined);
         }
       }
 
       // Crop Steering History: lazy fetch + polling when Schedules tab is active.
       if (nextTab === 'schedules' && prevTab !== 'schedules') {
-        if (
-          !this._cropSteeringHistoryFetched &&
-          this.store?.actions?.irrigation &&
-          this.device?.deviceId
-        ) {
+        if (!this._cropSteeringHistoryFetched && this.device?.deviceId) {
           this._cropSteeringHistoryFetched = true;
           if (!this._cropSteeringHistoryController) {
             this._cropSteeringHistoryController = new StoreController(this, cropSteeringHistory$);
           }
-          this.store.actions.irrigation
-            .fetchCropSteeringHistory(this.device.deviceId)
-            .catch(() => undefined);
+          fetchCropSteeringHistory(this.device.deviceId).catch(() => undefined);
         }
-        if (!this._cropSteeringPoller && this.store?.actions?.irrigation && this.device?.deviceId) {
+        if (!this._cropSteeringPoller && this.device?.deviceId) {
           this._cropSteeringPoller = new PollingController(
             this,
             () => {
               const deviceId = this.device?.deviceId;
               return deviceId
-                ? this.store!.actions.irrigation.fetchCropSteeringHistory(deviceId).catch(
-                    () => undefined
-                  )
+                ? fetchCropSteeringHistory(deviceId).catch(() => undefined)
                 : Promise.resolve(undefined);
             },
             { interval: 5 * 60 * 1000, autoStart: false }
@@ -1616,7 +1615,7 @@ export class IrrigationDialog extends LitElement {
     const id = this.device?.deviceId;
     this._sm = transition(this._sm, { type: 'CANCEL_STEERING_MODE' });
     if (!id) return;
-    await this.store?.actions.irrigation.applySteeringMode(id, sub.pending);
+    await applySteeringMode(id, sub.pending);
   }
 
   /** Open the phase-change confirm overlay (ADR-0012). */
@@ -1778,16 +1777,19 @@ export class IrrigationDialog extends LitElement {
   }
 
   /**
-   * Effects read only `params`. They route through the store's library actions
-   * (not the bare Nutrient mutators) because those save *and* refetch
-   * `ecRampCurves$` — the atom the VM reads — so the list reflects the change.
+   * Effects read only `params`. They save via the Nutrient slice mutator and
+   * then refetch `ecRampCurves$` — the atom the VM reads — so the list reflects
+   * the change. Errors propagate to the MutationRunController, which surfaces the
+   * per-action SM toast (`actionErrorMessage`) on `SaveFailed`.
    */
   private async _effectSaveEcRampCurve(params: EcRampSaveParams) {
-    await this.store.actions.library.saveECRampCurve(params);
+    await sliceSaveECRampCurve(params);
+    await fetchECRampCurves({ cache: true, force: true });
   }
 
   private async _effectRemoveEcRampCurve(params: { curveId: string }) {
-    await this.store.actions.library.removeECRampCurve(params.curveId);
+    await sliceRemoveECRampCurve(params.curveId);
+    await fetchECRampCurves({ cache: true, force: true });
   }
 
   // ─── Drain EC tab intents (ADR-0019) ───────────────────────────────────────

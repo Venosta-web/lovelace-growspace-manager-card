@@ -76,6 +76,7 @@ const buildMockStore = () => {
             loadHistoryOnDemand: vi.fn(),
             startAutoRefresh: vi.fn(),
             getRange: vi.fn().mockReturnValue('24h'),
+            toggleEnvGraph: vi.fn().mockReturnValue(false),
         },
         ui: {
             setEditMode: vi.fn(),
@@ -301,17 +302,17 @@ describe('GrowspaceHeaderContainer', () => {
 
     it('_handleToggleGraph with string detail calls store.actions.ui.toggleEnvGraph', () => {
         (element as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: 'temperature' }));
-        expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('temperature');
+        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('temperature', mockStore.history);
     });
 
     it('_handleToggleGraph with object detail calls store.actions.ui.toggleEnvGraph with metric', () => {
         (element as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: { metric: 'humidity' } }));
-        expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('humidity');
+        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('humidity', mockStore.history);
     });
 
     it('_handleToggleGraph with empty metric does not call toggleEnvGraph', () => {
         (element as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: { metric: '' } }));
-        expect(mockStore.toggleEnvGraph).not.toHaveBeenCalled();
+        expect(uiSlice.toggleEnvGraph).not.toHaveBeenCalled();
     });
 
     // --- _handleOpenNutrients ---
@@ -345,7 +346,7 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'add_plant' } })
         );
-        expect(mockStore.openAddPlantDialog).toHaveBeenCalledOnce();
+        expect(uiSlice.openAddPlantDialog).toHaveBeenCalledOnce();
     });
 
     it('config action calls store.openConfigDialog when device is set', () => {
@@ -434,7 +435,7 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'ipm' } })
         );
-        expect(mockStore.openIPMDialog).toHaveBeenCalledWith(
+        expect(uiSlice.openIPMDialog).toHaveBeenCalledWith(
             expect.objectContaining({ growspaceId: 'grow1', plantIds: undefined })
         );
     });
@@ -444,7 +445,7 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'ipm' } })
         );
-        expect(mockStore.openIPMDialog).toHaveBeenCalledWith(
+        expect(uiSlice.openIPMDialog).toHaveBeenCalledWith(
             expect.objectContaining({ plantIds: ['p3'] })
         );
     });
@@ -545,7 +546,7 @@ describe('GrowspaceHeaderContainer', () => {
     it('ipm action with no deviceId falls back to empty string', () => {
         element.device = {} as any;
         (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ipm' } }));
-        expect(mockStore.openIPMDialog).toHaveBeenCalledWith(expect.objectContaining({
+        expect(uiSlice.openIPMDialog).toHaveBeenCalledWith(expect.objectContaining({
             growspaceId: ''
         }));
     });
@@ -560,7 +561,7 @@ describe('GrowspaceHeaderContainer', () => {
     it('action does nothing when store is not set', () => {
         (element as any).store = undefined;
         (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'add_plant' } }));
-        expect(mockStore.openAddPlantDialog).not.toHaveBeenCalled();
+        expect(uiSlice.openAddPlantDialog).not.toHaveBeenCalled();
     });
 
     describe('Getters Null Safety', () => {

@@ -5,6 +5,11 @@ import { storeContext } from '../../../../../src/context';
 import { PlantActionsTab } from '../../../../../src/features/plants/components/plant-actions-tab';
 import type { ActionConfig } from '../../../../../src/features/plants/viewmodels/plant-overview.viewmodel';
 import type { PlantEntity } from '../../../../../src/types';
+import { scorePlant } from '../../../../../src/slices/plant';
+
+vi.mock('../../../../../src/slices/plant', () => ({
+  scorePlant: vi.fn().mockResolvedValue(undefined),
+}));
 
 if (!customElements.get('plant-actions-tab')) {
   customElements.define('plant-actions-tab', PlantActionsTab);
@@ -32,12 +37,9 @@ describe('plant-actions-tab', () => {
   ];
 
   beforeEach(() => {
+    vi.mocked(scorePlant).mockClear().mockResolvedValue(undefined);
     mockStore = {
-      actions: {
-        plant: {
-          scorePhenotype: vi.fn().mockResolvedValue(undefined),
-        },
-      },
+      refreshData: vi.fn().mockResolvedValue(undefined),
     };
 
     mockPlant = {
@@ -264,10 +266,10 @@ describe('plant-actions-tab', () => {
     // We need to wait for the async save to complete. 
     // Since we can't easily await the click's internal promise, 
     // we can wait until _savingScore becomes false.
-    await vi.waitFor(() => !(el as any)._savingScore);
-    
-    expect((el as any)._showScoringForm).to.be.false;
-    expect(mockStore.actions.plant.scorePhenotype).toHaveBeenCalledWith('p123', {
+    await vi.waitFor(() => expect((el as any)._showScoringForm).to.be.false);
+
+    expect((el as any)._savingScore).to.be.false;
+    expect(scorePlant).toHaveBeenCalledWith('p123', {
       vigor: 5,
       structure: 3,
       aroma: null,
@@ -278,7 +280,7 @@ describe('plant-actions-tab', () => {
 
   it('handles error during score saving', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockStore.actions.plant.scorePhenotype.mockRejectedValue(new Error('API Error'));
+    vi.mocked(scorePlant).mockRejectedValue(new Error('API Error'));
 
     const el = await fixture<PlantActionsTab>(html`
       <plant-actions-tab .availableActions=${mockActions} .plant=${mockPlant}></plant-actions-tab>
@@ -289,7 +291,7 @@ describe('plant-actions-tab', () => {
     await (el as any)._savePhenotypeScore();
     
     expect((el as any)._savingScore).to.be.false;
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to save phenotype scores', expect.any(Error));
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to save scores', expect.any(Error));
     
     consoleSpy.mockRestore();
   });
@@ -302,7 +304,7 @@ describe('plant-actions-tab', () => {
     await el.updateComplete;
     
     await (el as any)._savePhenotypeScore();
-    expect(mockStore.actions.plant.scorePhenotype).not.toHaveBeenCalled();
+    expect(scorePlant).not.toHaveBeenCalled();
   });
 
   it('initializes scores with null if scores attribute is missing', async () => {

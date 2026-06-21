@@ -185,7 +185,7 @@ export class GrowspaceHeaderContainer extends LitElement {
   private _handleToggleGraph(e: CustomEvent) {
     const metric = typeof e.detail === 'string' ? e.detail : e.detail.metric;
     if (metric) {
-      this.store?.actions.ui.toggleEnvGraph(metric);
+      uiSlice.toggleEnvGraph(metric, this.store?.history);
     }
   }
 
@@ -218,7 +218,7 @@ export class GrowspaceHeaderContainer extends LitElement {
 
     switch (action) {
       case 'add_plant':
-        this.store.actions.ui.openAddPlantDialog();
+        uiSlice.openAddPlantDialog();
         break;
       case 'config': {
         if (this.device) uiSlice.openConfigDialog(this.device);
@@ -251,7 +251,7 @@ export class GrowspaceHeaderContainer extends LitElement {
       }
       case 'ipm': {
         const selectedPlants = this.store.ui.$selectedPlants.get();
-        this.store.actions.ui.openIPMDialog({
+        uiSlice.openIPMDialog({
           growspaceId: this.device?.deviceId || '',
           plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
         });

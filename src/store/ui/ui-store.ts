@@ -8,9 +8,9 @@ import * as ui from '../../slices/ui';
  *
  * Every atom field below points at the *same* atom instance owned by
  * `slices/ui` — there is no second atom and no second computed anywhere. The
- * class exists only so legacy action-context consumers (`ctx.ui`) keep working;
- * all state and behaviour live in the slice. Mutators delegate to the slice's
- * mutator functions so there is a single definition of each operation.
+ * class exists only so remaining `store.ui.*` consumers keep working; all state
+ * and behaviour live in the slice. Mutators delegate to the slice's mutator
+ * functions so there is a single definition of each operation.
  *
  * New code should import from `slices/ui` directly rather than reaching through
  * this class.

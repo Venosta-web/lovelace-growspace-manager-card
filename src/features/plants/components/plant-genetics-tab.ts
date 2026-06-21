@@ -6,6 +6,8 @@ import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { PlantEntity } from '../../../types';
 import type { LineageNode } from '../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import { setPlantSex, unlinkSeedBatch, getLineageTree } from '../../../slices/genetics';
+import { showToast, showError } from '../../../slices/ui';
 import '../../shared/ui/lineage-tree';
 
 @customElement('plant-genetics-tab')
@@ -70,7 +72,13 @@ export class PlantGeneticsTab extends LitElement {
                     style="font-size: 12px; color: var(--secondary-text-color);"
                     @click=${async () => {
                       const plantId = attrs.plant_id as string;
-                      await this.store?.actions.genetics.unlinkSeedBatch(plantId);
+                      try {
+                        await unlinkSeedBatch(plantId);
+                        showToast('Seed batch unlinked', 'success');
+                        await this.store?.refreshData();
+                      } catch (e) {
+                        showError(e, 'Failed to unlink seed batch');
+                      }
                     }}
                   >
                     Unlink
@@ -129,10 +137,11 @@ export class PlantGeneticsTab extends LitElement {
                     if (sex === opt.value) return;
                     this._sexSaving = true;
                     try {
-                      await this.store?.actions.genetics.setPlantSex(
-                        attrs.plant_id as string,
-                        opt.value
-                      );
+                      await setPlantSex(attrs.plant_id as string, opt.value);
+                      showToast('Plant sex updated', 'success');
+                      await this.store?.refreshData();
+                    } catch (e) {
+                      showError(e, 'Failed to set plant sex');
                     } finally {
                       this._sexSaving = false;
                     }
@@ -183,7 +192,7 @@ export class PlantGeneticsTab extends LitElement {
     this._lineageLoading = true;
     this._lineageTree = null;
     try {
-      const tree = await this.store.actions.genetics.getLineageTree(plantId);
+      const tree = await getLineageTree(plantId);
       this._lineageTree = tree;
     } catch {
       this._lineageTree = null;

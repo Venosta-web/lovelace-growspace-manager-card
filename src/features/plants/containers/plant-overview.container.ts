@@ -36,7 +36,8 @@ import {
 } from '../../../types';
 import { fetchPlantEvents, fetchGrowspaceEvents } from '../../../slices/logbook';
 import { strainLibrary$ } from '../../../slices/strain';
-import { openDialog } from '../../../slices/ui';
+import { openDialog, showToast, showError } from '../../../slices/ui';
+import { deletePlant, advancePlantStage, movePlantToGrowspace } from '../../../slices/plant';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import {
   createStablePlantOverviewViewModel,
@@ -999,8 +1000,23 @@ export class PlantOverviewContainer extends LitElement {
 
   private _confirmDelete(): void {
     const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-    this.store.actions.plant.delete(plantId);
+    // Optimistic delete + undo are owned by the slice mutator; close the dialog
+    // immediately and surface any backend failure via showError.
+    void deletePlant(plantId).catch((e) => showError(e, 'Failed to delete plant'));
     this._handleClose();
+  }
+
+  /** Advance the plant to its next stage (flower→dry, dry→cure, mother→clone). */
+  private async _advanceStage(plant: PlantEntity): Promise<void> {
+    try {
+      const target = await advancePlantStage(plant);
+      showToast(`Plant moved to ${target}`, 'success');
+      // Brief delay so the backend commit lands before the data refresh.
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await this.store?.refreshData();
+    } catch (e) {
+      showError(e, 'Failed to move plant');
+    }
   }
 
   private _cancelDelete(): void {
@@ -1043,12 +1059,12 @@ export class PlantOverviewContainer extends LitElement {
       // Close the overview when opening the scoring dialog to keep flow clean
       this._handleClose();
     } else {
-      this.store.actions.plant.harvest(this.plant);
+      void this._advanceStage(this.plant);
     }
   }
 
   private _handleFinishDrying(): void {
-    this.store.actions.plant.finishDrying(this.plant);
+    void this._advanceStage(this.plant);
   }
 
   private _handleHarvestAdvance(e: CustomEvent): void {
@@ -1062,7 +1078,16 @@ export class PlantOverviewContainer extends LitElement {
   private _handleMovePlantEvent(e: CustomEvent): void {
     const { targetId } = e.detail;
     if (!targetId) return;
-    this.store.actions.plant.move(this.plant, targetId);
+    const plant = this.plant;
+    void (async () => {
+      try {
+        await movePlantToGrowspace(plant, targetId);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await this.store?.refreshData();
+      } catch (err) {
+        showError(err, 'Failed to move plant');
+      }
+    })();
     this._handleClose();
   }
 

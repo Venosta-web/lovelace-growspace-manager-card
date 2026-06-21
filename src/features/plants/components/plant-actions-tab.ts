@@ -7,6 +7,8 @@ import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { ActionConfig } from '../viewmodels/plant-overview.viewmodel';
 import type { PlantEntity } from '../../../types';
 import { sharedStyles } from '../../../styles/shared.styles';
+import { scorePlant } from '../../../slices/plant';
+import { showToast, showError } from '../../../slices/ui';
 
 @customElement('plant-actions-tab')
 export class PlantActionsTab extends LitElement {
@@ -318,10 +320,15 @@ export class PlantActionsTab extends LitElement {
     this._savingScore = true;
     try {
       const plantId = this.plant.attributes.plant_id as string;
-      await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
+      const hasValue = Object.values(this._scoresEdit).some((v) => v !== null && v !== undefined);
+      if (hasValue) {
+        await scorePlant(plantId, this._scoresEdit);
+        showToast('Scores saved', 'success');
+        await this.store?.refreshData(true);
+      }
       this._showScoringForm = false;
     } catch (e) {
-      console.error('Failed to save phenotype scores', e);
+      showError(e, 'Failed to save scores');
     } finally {
       this._savingScore = false;
     }

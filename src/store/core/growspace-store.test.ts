@@ -4,16 +4,11 @@ import { GrowspaceSharedStore } from './growspace-shared-store';
 import { devices$, setDevices, optimisticDeletedPlantIds$ } from '../../slices/grid';
 import { nutrientPresets$, ipmPresets$, nutrientInventory$ } from '../../slices/nutrient';
 import * as plantSlice from '../../slices/plant';
-import * as aiActions from '../system/ai-actions';
 
 vi.mock('../../slices/plant', async (importOriginal) => {
   const mod = await importOriginal<typeof import('../../slices/plant')>();
   return { ...mod, updatePlant: vi.fn() };
 });
-
-vi.mock('../system/ai-actions', () => ({
-  getStrainRecommendation: vi.fn(),
-}));
 
 function makeStore() {
   const shared = new GrowspaceSharedStore();
@@ -268,73 +263,5 @@ describe('GrowspaceStore – movePlant', () => {
     await store.movePlant(plant, 0, 0);
     expect(consoleSpy).toHaveBeenCalled();
     expect(gridSpy).not.toHaveBeenCalled();
-  });
-});
-
-describe('GrowspaceStore – getStrainRecommendation', () => {
-  let store: GrowspaceStore;
-
-  beforeEach(() => {
-    ({ store } = makeStore());
-  });
-
-  it('returns result and updates dialog when type matches', async () => {
-    store.ui.setActiveDialog({ type: 'STRAIN_RECOMMENDATION', payload: { isLoading: false, response: '' } });
-    vi.mocked(aiActions.getStrainRecommendation).mockResolvedValue('Great strain!');
-    const result = await store.getStrainRecommendation('best indica');
-    expect(result).toBe('Great strain!');
-    const dialog = store.ui.$activeDialog.get() as any;
-    expect(dialog.payload.isLoading).toBe(false);
-    expect(dialog.payload.response).toBe('Great strain!');
-  });
-
-  it('stringifies non-string result', async () => {
-    store.ui.setActiveDialog({ type: 'STRAIN_RECOMMENDATION', payload: { isLoading: false, response: '' } });
-    vi.mocked(aiActions.getStrainRecommendation).mockResolvedValue({ text: 'hi' } as any);
-    await store.getStrainRecommendation('query');
-    const dialog = store.ui.$activeDialog.get() as any;
-    expect(dialog.payload.response).toBe(JSON.stringify({ text: 'hi' }));
-  });
-
-  it('updates dialog with error response and rethrows on failure', async () => {
-    store.ui.setActiveDialog({ type: 'STRAIN_RECOMMENDATION', payload: { isLoading: false, response: '' } });
-    vi.mocked(aiActions.getStrainRecommendation).mockRejectedValue(new Error('AI down'));
-    vi.spyOn(console, 'error').mockImplementation(() => { });
-    await expect(store.getStrainRecommendation('query')).rejects.toThrow('AI down');
-    const dialog = store.ui.$activeDialog.get() as any;
-    expect(dialog.payload.response).toContain('Error: AI down');
-    expect(dialog.payload.isLoading).toBe(false);
-  });
-
-  it('does not update dialog when dialog type does not match', async () => {
-    store.ui.setActiveDialog({ type: 'NONE' });
-    vi.mocked(aiActions.getStrainRecommendation).mockResolvedValue('result');
-    await store.getStrainRecommendation('query');
-    expect(store.ui.$activeDialog.get().type).toBe('NONE');
-  });
-});
-
-describe('GrowspaceStore – context getter', () => {
-  let store: GrowspaceStore;
-
-  beforeEach(() => {
-    ({ store } = makeStore());
-  });
-
-  it('returns ActionContext with expected keys', () => {
-    const ctx = store.context;
-    expect(ctx).toHaveProperty('ui');
-    expect(ctx).toHaveProperty('grid');
-    expect(ctx).toHaveProperty('closeDialog');
-    expect(ctx).toHaveProperty('refreshData');
-    expect(ctx).not.toHaveProperty('undoRedoManager');
-    expect(ctx).not.toHaveProperty('optimisticManager');
-    expect(ctx).not.toHaveProperty('dataService');
-  });
-
-  it('closeDialog in context calls ui.closeDialog', () => {
-    const spy = vi.spyOn(store.ui, 'closeDialog');
-    store.context.closeDialog();
-    expect(spy).toHaveBeenCalledOnce();
   });
 });

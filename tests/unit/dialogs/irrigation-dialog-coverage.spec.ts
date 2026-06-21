@@ -39,6 +39,9 @@ const sliceMocks = vi.hoisted(() => ({
     .mockResolvedValue({ growspace_id: 'gs1', stage_aggregates: { veg: 12.5, flower: 30.0 } }),
   resetWaterTracking: vi.fn().mockResolvedValue(undefined),
   configureEnvironment: vi.fn().mockResolvedValue(undefined),
+  saveECRampCurve: vi.fn().mockResolvedValue(undefined),
+  removeECRampCurve: vi.fn().mockResolvedValue(undefined),
+  fetchECRampCurves: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
@@ -58,6 +61,16 @@ vi.mock('../../../src/slices/growspace', async (importOriginal) => {
     ...actual,
     resetWaterTracking: sliceMocks.resetWaterTracking,
     configureEnvironment: sliceMocks.configureEnvironment,
+  };
+});
+
+vi.mock('../../../src/slices/nutrient', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/slices/nutrient')>();
+  return {
+    ...actual,
+    saveECRampCurve: sliceMocks.saveECRampCurve,
+    removeECRampCurve: sliceMocks.removeECRampCurve,
+    fetchECRampCurves: sliceMocks.fetchECRampCurves,
   };
 });
 
@@ -123,13 +136,7 @@ function makeMockStore(device: GrowspaceDevice) {
       history: {}, grid: {}, hass: {}, syncService: {},
     },
     data: dataStore,
-    actions: {
-      library: {
-        fetchECRampCurves: vi.fn().mockResolvedValue(undefined),
-        saveECRampCurve: vi.fn().mockResolvedValue(undefined),
-        removeECRampCurve: vi.fn().mockResolvedValue(undefined),
-      },
-    },
+    actions: {},
     ui: { showToast: vi.fn() },
   };
 }
@@ -412,7 +419,7 @@ describe('IrrigationDialog - Coverage', () => {
       (tab.shadowRoot.querySelector('button[title="Delete"]') as HTMLElement).click();
       await new Promise((resolve) => setTimeout(resolve, 0));
       await element.updateComplete;
-      expect(mockStore.actions.library.removeECRampCurve).toHaveBeenCalledWith('curve-1');
+      expect(sliceMocks.removeECRampCurve).toHaveBeenCalledWith('curve-1');
     });
 
     it('cancelled delete does not call removeECRampCurve', async () => {
@@ -420,12 +427,12 @@ describe('IrrigationDialog - Coverage', () => {
       const tab = await openEcRampTab();
       (tab.shadowRoot.querySelector('button[title="Delete"]') as HTMLElement).click();
       await new Promise((resolve) => setTimeout(resolve, 0));
-      expect(mockStore.actions.library.removeECRampCurve).not.toHaveBeenCalled();
+      expect(sliceMocks.removeECRampCurve).not.toHaveBeenCalled();
     });
 
     it('a failing delete surfaces an error toast (MutationRunController)', async () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
-      mockStore.actions.library.removeECRampCurve.mockRejectedValueOnce(new Error('boom'));
+      sliceMocks.removeECRampCurve.mockRejectedValueOnce(new Error('boom'));
       const tab = await openEcRampTab();
       (tab.shadowRoot.querySelector('button[title="Delete"]') as HTMLElement).click();
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -444,8 +451,8 @@ describe('IrrigationDialog - Coverage', () => {
       saveBtn.click();
       await new Promise((resolve) => setTimeout(resolve, 0));
       await element.updateComplete;
-      expect(mockStore.actions.library.saveECRampCurve).toHaveBeenCalledOnce();
-      const [arg] = mockStore.actions.library.saveECRampCurve.mock.calls[0];
+      expect(sliceMocks.saveECRampCurve).toHaveBeenCalledOnce();
+      const [arg] = sliceMocks.saveECRampCurve.mock.calls[0];
       expect(arg.name).toBe('Veg Ramp');
       expect(arg.curve_id).toBe('curve-1');
       // editor closed after save

@@ -9,6 +9,7 @@ import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { activeDevices$ } from '../slices/grid';
 import { showToast } from '../slices/ui';
+import { takeClone } from '../slices/plant';
 
 @customElement('batch-clone-dialog')
 export class BatchCloneDialog extends LitElement {
@@ -114,11 +115,7 @@ export class BatchCloneDialog extends LitElement {
       }
 
       try {
-        await this.store.actions.plant.takeClone(
-          motherPlant,
-          this._numClones,
-          this._targetGrowspaceId
-        );
+        await takeClone(motherPlant, this._numClones, this._targetGrowspaceId);
       } catch (_e) {
         errors.push(plantId);
       }

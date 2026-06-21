@@ -5,6 +5,11 @@ import { ChartUtils } from '../../src/utils/chart-utils';
 import { ViewMode } from '../../src/features/environment/constants';
 import { aHass, aGrowspace } from '../fixtures';
 import { renderCard } from '../harness';
+import * as uiSlice from '../../src/slices/ui';
+
+// Metric chip/hero clicks toggle env graphs through the slice op the card calls
+// directly. `{ spy: true }` keeps every real atom/mutator while recording calls.
+vi.mock('../../src/slices/ui', { spy: true });
 
 const { mockGetBatchHistory, mockGetSubareas } = vi.hoisted(() => {
     const mockGetSubareas = vi.fn();
@@ -154,10 +159,10 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('toggles metric graph on hero sensor click', async () => {
-        const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleEnvGraph');
+        const toggleSpy = vi.mocked(uiSlice.toggleEnvGraph);
         const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as HTMLElement;
         heroUI.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'temperature' }, bubbles: true, composed: true }));
-        expect(toggleSpy).toHaveBeenCalledWith('temperature');
+        expect(toggleSpy).toHaveBeenCalledWith('temperature', element.store.history);
     });
 
     test('opens config dialog on gear icon click', async () => {
@@ -368,10 +373,10 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('toggles device chip metric graph on click', async () => {
-        const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleEnvGraph');
+        const toggleSpy = vi.mocked(uiSlice.toggleEnvGraph);
         const chip = element.shadowRoot?.querySelector('growspace-chip') as HTMLElement;
         chip.dispatchEvent(new CustomEvent('click'));
-        expect(toggleSpy).toHaveBeenCalledWith('light'); // MetricKey.LIGHT = 'light'
+        expect(toggleSpy).toHaveBeenCalledWith('light', element.store.history); // MetricKey.LIGHT = 'light'
     });
 
     test('renders active state class on metric chip when active', async () => {
@@ -744,13 +749,13 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleEnvGraph');
+        const toggleSpy = vi.mocked(uiSlice.toggleEnvGraph);
         const secondaryUI = element.shadowRoot?.querySelector('growspace-header-secondary-ui') as HTMLElement;
         expect(secondaryUI).not.toBeNull();
         secondaryUI.dispatchEvent(
             new CustomEvent('toggle-graph', { detail: { metric: 'substrate_temperature' }, bubbles: true, composed: true })
         );
-        expect(toggleSpy).toHaveBeenCalledWith('substrate_temperature');
+        expect(toggleSpy).toHaveBeenCalledWith('substrate_temperature', element.store.history);
     });
 
     test('mobile secondary chips render via growspace-header-hero-ui and fire toggle-graph', async () => {
@@ -772,14 +777,14 @@ describe('GrowspaceSubareaCard', () => {
         // On mobile, secondary chips use growspace-header-hero-ui, not growspace-header-secondary-ui
         expect(element.shadowRoot?.querySelector('growspace-header-secondary-ui')).toBeNull();
 
-        const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleEnvGraph');
+        const toggleSpy = vi.mocked(uiSlice.toggleEnvGraph);
         const heroUIs = element.shadowRoot?.querySelectorAll('growspace-header-hero-ui');
         // Last hero UI is the secondary chips (mobile renders hero for secondary chips)
         const lastHeroUI = heroUIs![heroUIs!.length - 1] as HTMLElement;
         lastHeroUI.dispatchEvent(
             new CustomEvent('toggle-graph', { detail: { metric: 'substrate_temperature' }, bubbles: true, composed: true })
         );
-        expect(toggleSpy).toHaveBeenCalledWith('substrate_temperature');
+        expect(toggleSpy).toHaveBeenCalledWith('substrate_temperature', element.store.history);
     });
 
     test('mobile device chips render via growspace-header-hero-ui and fire toggle-graph', async () => {
@@ -787,14 +792,14 @@ describe('GrowspaceSubareaCard', () => {
         element.requestUpdate();
         await element.updateComplete;
 
-        const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleEnvGraph');
+        const toggleSpy = vi.mocked(uiSlice.toggleEnvGraph);
         // The first growspace-header-hero-ui rendered at the top is for device chips (mobile path)
         const heroUIs = element.shadowRoot?.querySelectorAll('growspace-header-hero-ui');
         expect(heroUIs?.length).toBeGreaterThan(0);
         (heroUIs![0] as HTMLElement).dispatchEvent(
             new CustomEvent('toggle-graph', { detail: { metric: 'light' }, bubbles: true, composed: true })
         );
-        expect(toggleSpy).toHaveBeenCalledWith('light');
+        expect(toggleSpy).toHaveBeenCalledWith('light', element.store.history);
     });
 
     test('updated handles undefined devices via the ?? [] fallback without throwing', () => {
@@ -885,12 +890,12 @@ describe('GrowspaceSubareaCard', () => {
         });
 
         test('hero-metric routing: toggle-graph on hero sensor routes through store', () => {
-            const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleEnvGraph');
+            const toggleSpy = vi.mocked(uiSlice.toggleEnvGraph);
             const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as HTMLElement;
             heroUI.dispatchEvent(
                 new CustomEvent('toggle-graph', { detail: { metric: 'temperature' }, bubbles: true, composed: true })
             );
-            expect(toggleSpy).toHaveBeenCalledWith('temperature');
+            expect(toggleSpy).toHaveBeenCalledWith('temperature', element.store.history);
         });
 
         test('ViewMode.COMPACT hides secondary panel (view-mode aware rendering)', async () => {

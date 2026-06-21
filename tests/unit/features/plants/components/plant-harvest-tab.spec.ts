@@ -4,6 +4,14 @@ import { ContextProvider } from '@lit/context';
 import { storeContext } from '../../../../../src/context';
 import { PlantHarvestTab } from '../../../../../src/features/plants/components/plant-harvest-tab';
 import type { PlantEntity } from '../../../../../src/types';
+import { saveHarvestMetrics, scorePlant } from '../../../../../src/slices/plant';
+
+// The tab now calls the Plant slice mutators directly (the dispatcher's `plant`
+// domain is retired).
+vi.mock('../../../../../src/slices/plant', () => ({
+  saveHarvestMetrics: vi.fn().mockResolvedValue(undefined),
+  scorePlant: vi.fn().mockResolvedValue(undefined),
+}));
 
 if (!customElements.get('plant-harvest-tab')) {
   customElements.define('plant-harvest-tab', PlantHarvestTab);
@@ -15,13 +23,10 @@ describe('PlantHarvestTab', () => {
   let mockPlant: PlantEntity;
 
   beforeEach(async () => {
+    vi.mocked(saveHarvestMetrics).mockClear().mockResolvedValue(undefined);
+    vi.mocked(scorePlant).mockClear().mockResolvedValue(undefined);
     mockStore = {
-      actions: {
-        plant: {
-          saveHarvestMetrics: vi.fn().mockResolvedValue(undefined),
-          scorePhenotype: vi.fn().mockResolvedValue(undefined),
-        },
-      },
+      refreshData: vi.fn().mockResolvedValue(undefined),
     };
 
     mockPlant = {
@@ -176,14 +181,14 @@ describe('PlantHarvestTab', () => {
     // Directly calling the private method to await it, as click() won't wait for the async handler
     await (element as any)._saveHarvestMetrics();
     
-    expect(mockStore.actions.plant.saveHarvestMetrics).toHaveBeenCalledWith('p123', expect.any(Object));
-    expect(mockStore.actions.plant.scorePhenotype).toHaveBeenCalledWith('p123', expect.any(Object));
+    expect(saveHarvestMetrics).toHaveBeenCalledWith('p123', expect.any(Object));
+    expect(scorePlant).toHaveBeenCalledWith('p123', expect.any(Object));
     expect(savedCalled).toBe(true);
     expect((element as any)._savingHarvest).toBe(false);
   });
 
   it('handles error during save', async () => {
-    mockStore.actions.plant.saveHarvestMetrics.mockRejectedValue(new Error('Failed'));
+    vi.mocked(saveHarvestMetrics).mockRejectedValue(new Error('Failed'));
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     
     (element as any).store = mockStore;

@@ -380,6 +380,10 @@ export function __resetUiSliceForTests(): void {
 // browser-mode collection. Listing the names keeps the graph statically resolvable.
 export {
   openPlantOverviewDialog,
+  openAddPlantDialog,
+  openIPMDialog,
+  handleDeepLink,
+  toggleEnvGraph,
   openBatchPrintLabelsDialog,
   openBatchCloneDialog,
   openBatchWateringDialog,

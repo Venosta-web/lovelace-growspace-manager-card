@@ -8,6 +8,8 @@ import { atom, computed } from 'nanostores';
 import { setMutateListener, undo, canUndo } from '../../src/services/mutate';
 import { selectedDeviceId$ } from '../../src/slices/grid';
 import * as uiSlice from '../../src/slices/ui';
+import { fetchStrainLibrary } from '../../src/slices/strain';
+import { handleKeyboardNavigation, deleteSelectedPlants } from '../../src/lib/keyboard-navigation';
 
 // The card now calls the UI slice directly for these leaf ops; `{ spy: true }`
 // wraps every export in a call-through spy while keeping every real atom/util
@@ -15,6 +17,23 @@ import * as uiSlice from '../../src/slices/ui';
 // `index ↔ dialogs` cycle and `importOriginal()` re-enters it during browser-mode
 // collection and deadlocks the run.
 vi.mock('../../src/slices/ui', { spy: true });
+
+// Keyboard navigation + delete-selected now route through lib/keyboard-navigation.
+vi.mock('../../src/lib/keyboard-navigation', () => ({
+    handleKeyboardNavigation: vi.fn(),
+    deleteSelectedPlants: vi.fn(),
+}));
+
+// The card self-fetches the library/nutrient data on first update via the slice
+// fetch mutators directly (the dispatcher's `library` domain is retired).
+vi.mock('../../src/slices/strain', () => ({
+    fetchStrainLibrary: vi.fn().mockResolvedValue([]),
+}));
+vi.mock('../../src/slices/nutrient', () => ({
+    fetchNutrientPresets: vi.fn().mockResolvedValue(undefined),
+    fetchIPMPresets: vi.fn().mockResolvedValue(undefined),
+    fetchNutrientInventory: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('../../src/services/mutate', () => ({
     setMutateListener: vi.fn(),
@@ -300,13 +319,13 @@ describe('GrowspaceManagerCard', () => {
     describe('Lifecycle & Rendering', () => {
         it('should initialize store on first update', () => {
             const spyUpdateHass = vi.spyOn(element.store, 'updateHass');
-            const spyFetchStrain = vi.spyOn(element.store.actions.library, 'fetchStrains');
+            vi.mocked(fetchStrainLibrary).mockClear();
 
             element.setConfig({ type: 'custom:growspace-manager-card' });
             (element as any).firstUpdated();
 
             expect(spyUpdateHass).toHaveBeenCalledWith(mockHass);
-            expect(spyFetchStrain).toHaveBeenCalled();
+            expect(fetchStrainLibrary).toHaveBeenCalledWith({ cache: true });
         });
 
         it('should update store when hass updates', () => {
@@ -316,12 +335,11 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should process pending deep link when hass updates', () => {
-            const handleDeepLinkSpy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
             atomMocks.$pendingDeepLinkPlantId.set('plant123');
 
             (element as any).updated(new Map([['hass', 'oldValues']]));
 
-            expect(handleDeepLinkSpy).toHaveBeenCalledWith('plant123');
+            expect(uiSlice.handleDeepLink).toHaveBeenCalledWith('plant123');
         });
 
         it('should expose public getters', () => {
@@ -352,11 +370,10 @@ describe('GrowspaceManagerCard', () => {
     describe('Deep Linking', () => {
         it('should handle deep link on firstUpdated', () => {
             window.history.pushState({}, '', '?plantId=p1');
-            const spy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
 
             (element as any).firstUpdated();
 
-            expect(spy).toHaveBeenCalledWith('p1');
+            expect(uiSlice.handleDeepLink).toHaveBeenCalledWith('p1');
             expect(window.history.replaceState).toHaveBeenCalled();
             expect((window as any).GROWSPACE_DEEP_LINK_TRACKED).toBe('p1');
         });
@@ -364,20 +381,18 @@ describe('GrowspaceManagerCard', () => {
         it('should ignore if global tracker already matched', () => {
             window.history.pushState({}, '', '?plantId=p1');
             (window as any).GROWSPACE_DEEP_LINK_TRACKED = 'p1';
-            const spy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
 
             (element as any).firstUpdated();
 
-            expect(spy).not.toHaveBeenCalled();
+            expect(uiSlice.handleDeepLink).not.toHaveBeenCalled();
         });
 
         it('should do nothing if no plantId param', () => {
             window.history.pushState({}, '', '/');
-            const spy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
 
             (element as any).firstUpdated();
 
-            expect(spy).not.toHaveBeenCalled();
+            expect(uiSlice.handleDeepLink).not.toHaveBeenCalled();
         });
     });
 
@@ -481,9 +496,9 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle delete selected', () => {
-            const spy = vi.spyOn(element.store.actions.ui, 'deleteSelectedPlants');
+            vi.mocked(deleteSelectedPlants).mockClear();
             (element as any)._handleDeleteSelected();
-            expect(spy).toHaveBeenCalled();
+            expect(deleteSelectedPlants).toHaveBeenCalled();
         });
 
         it('should handle transplant mode', async () => {
@@ -520,9 +535,9 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle keyboard nav', () => {
-            const spy = vi.spyOn(element.store.actions.ui, 'handleKeyboardNavigation');
+            vi.mocked(handleKeyboardNavigation).mockClear();
             (element as any)._handleKeyboardNav(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
-            expect(spy).toHaveBeenCalledWith('ArrowRight');
+            expect(handleKeyboardNavigation).toHaveBeenCalledWith('ArrowRight');
         });
 
         it('should trigger download when _downloadFile is called', () => {
@@ -589,9 +604,8 @@ describe('GrowspaceManagerCard', () => {
             expect(editSpy).toHaveBeenCalledWith(false);
 
             // IPM selected
-            const ipmSpy = vi.spyOn(element.store.actions.ui, 'openIPMDialog');
             (element as any)._handleIPMSelected();
-            expect(ipmSpy).toHaveBeenCalled();
+            expect(uiSlice.openIPMDialog).toHaveBeenCalled();
 
             // Toggle expansion (if available)
             if (typeof (element as any)._handleToggleExpansion === 'function') {

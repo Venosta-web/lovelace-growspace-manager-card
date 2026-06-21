@@ -28,6 +28,8 @@ import type { LineageNode } from '../features/plants/types';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
+import { getStrainLineageTree, updateStrainLineageTree } from '../slices/genetics';
+import { showError } from '../slices/ui';
 import '../features/shared/ui/lineage-tree';
 import '../features/shared/ui/gs-help-tooltip';
 import '../features/shared/ui/camera-capture';
@@ -217,7 +219,7 @@ export class StrainEditorView extends LitElement {
   private async _loadStrainLineageTree(strainName: string) {
     if (!this.store) return;
     try {
-      this._lineageTree = await this.store.actions.genetics.getStrainLineageTree(strainName);
+      this._lineageTree = await getStrainLineageTree(strainName);
     } catch {
       this._lineageTree = null;
     }
@@ -864,12 +866,13 @@ export class StrainEditorView extends LitElement {
                     @lineage-change=${async (e: CustomEvent) => {
                       const { parents } = e.detail;
                       if (!s.strain || !this.store) return;
-                      const result = await this.store.actions.genetics.updateStrainLineageTree(
-                        s.strain,
-                        parents
-                      );
-                      this._handleEditorChange('lineage', result.lineage);
-                      await this._loadStrainLineageTree(s.strain);
+                      try {
+                        const result = await updateStrainLineageTree(s.strain, parents);
+                        this._handleEditorChange('lineage', result.lineage);
+                        await this._loadStrainLineageTree(s.strain);
+                      } catch (err) {
+                        showError(err, 'Failed to update strain lineage tree');
+                      }
                     }}
                   ></lineage-tree-editor>`
                 : html`

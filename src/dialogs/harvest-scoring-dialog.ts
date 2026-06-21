@@ -7,6 +7,7 @@ import type { GrowspaceStore } from '../store/core/growspace-store';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { HarvestScoringDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
+import { scorePlant, advancePlantStage } from '../slices/plant';
 import '../features/shared/ui/gs-help-tooltip';
 import {
   createInitialSM,
@@ -333,18 +334,20 @@ export class HarvestScoringDialog extends LitElement {
     try {
       if (mode === 'save') {
         if (!isScoringEmpty(this._sm)) {
-          await this.store.actions.plant.scorePhenotype(
+          await scorePlant(
             plantId,
             this._sm.tabs.scoring.draft as unknown as Record<string, number | null>
           );
         }
         const metrics = parseMetrics(this._sm.tabs.metrics.draft);
-        await this.store.actions.plant.harvest(
+        await advancePlantStage(
           plant,
-          Object.keys(metrics).length > 0 ? (metrics as Record<string, unknown>) : undefined
+          Object.keys(metrics).length > 0
+            ? (metrics as Parameters<typeof advancePlantStage>[1])
+            : undefined
         );
       } else {
-        await this.store.actions.plant.harvest(plant);
+        await advancePlantStage(plant);
       }
       this._transition({ type: 'SaveResolved' });
       this._dispatchClose();

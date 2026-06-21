@@ -6,6 +6,12 @@ import '../../../src/features/environment/components/heatmap-3d';
 import { Heatmap3D } from '../../../src/features/environment/components/heatmap-3d';
 import { GrowspaceType } from '../../../src/constants';
 import { activeDialog$, __resetUiSliceForTests } from '../../../src/slices/ui';
+import * as uiSlice from '../../../src/slices/ui';
+
+// Empty-slot clicks now open the Add-Plant dialog through the slice op the
+// heatmap calls directly. `{ spy: true }` keeps every real atom/mutator
+// (activeDialog$, openPlantOverviewDialog) while recording calls.
+vi.mock('../../../src/slices/ui', { spy: true });
 
 vi.mock('../../../src/store/history/history-store', async () => {
     const actual = await vi.importActual('../../../src/store/history/history-store') as any;
@@ -948,11 +954,7 @@ describe('Heatmap3D Logic', () => {
     describe('Interactions', () => {
         it('should handle plant or empty slot click via handleInteraction', () => {
             __resetUiSliceForTests();
-            const openAddPlantDialog = vi.fn();
-            const storeSpy = {
-                actions: { ui: { openAddPlantDialog } },
-            };
-            (element as any).store = storeSpy;
+            vi.mocked(uiSlice.openAddPlantDialog).mockClear();
             const mockPlant = { entity_id: 'sensor.plant1', id: 'p1' };
             (element as any).handleInteraction('click', { plant: mockPlant });
             expect(activeDialog$.get()).toEqual(expect.objectContaining({ type: 'PLANT_OVERVIEW' }));
@@ -961,7 +963,7 @@ describe('Heatmap3D Logic', () => {
             );
             const mockEmpty = { row: 3, col: 4 };
             (element as any).handleInteraction('click', { plant: mockEmpty });
-            expect(openAddPlantDialog).toHaveBeenCalledWith(3, 4);
+            expect(uiSlice.openAddPlantDialog).toHaveBeenCalledWith(3, 4);
         });
 
         it('should handle drag and dragend via handleInteraction', () => {
