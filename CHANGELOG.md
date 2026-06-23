@@ -1,3 +1,10 @@
+# [1.1.0-next.62](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.61...v1.1.0-next.62) (2026-06-23)
+
+
+### Features
+
+* **config-dialog:** add LST offset input with live VPD preview ([779fbb4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/779fbb4981c801bc574642e05e71edf5e9dbd774))
+
 # [1.1.0-next.61](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.60...v1.1.0-next.61) (2026-06-18)
 
 
