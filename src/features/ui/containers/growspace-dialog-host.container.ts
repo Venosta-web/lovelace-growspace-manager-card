@@ -1107,6 +1107,7 @@ export class GrowspaceDialogHost extends LitElement {
         energySensors: detail.energySensors,
         circulationFanConfig: detail.circulationFanConfig,
         vpdOptimalOverrides: detail.vpdOptimalOverrides,
+        lstOffset: detail.lstOffset,
       });
       // Exhaust config can't ride the configure_environment payload (the backend
       // service doesn't accept it), so persist it via its dedicated service.

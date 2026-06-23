@@ -23,6 +23,7 @@ import {
   mdiTune,
 } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
+import { calculateVpdWithLstOffset } from '../utils/vpd-calc';
 import { HomeAssistant } from 'custom-card-helpers';
 
 import '../features/shared/ui/md3-text-input';
@@ -1127,6 +1128,7 @@ export class ConfigDialog extends LitElement {
           circulationFanConfig: d.circulationFanConfig,
           exhaustFanConfig: d.exhaustFanConfig,
           vpdOptimalOverrides: d.vpdOptimalOverrides,
+          lstOffset: d.lstOffset,
         } satisfies EnvironmentConfigEventDetail,
         bubbles: true,
         composed: true,
@@ -2110,9 +2112,59 @@ export class ConfigDialog extends LitElement {
             'temperature',
             (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { substrateTemperatureSensors: v } })
           )}
+          ${this._renderLstOffsetSection()}
         </div>
       </div>
     `;
+  }
+
+  private _renderLstOffsetSection() {
+    const d = this._sm.environmentDraft;
+    const hasTemp = d.temperatureSensors.length > 0;
+    const hasHumidity = d.humiditySensors.length > 0;
+    const hasHardwareVpd = d.vpdSensors.some((id) => !id.includes('calculated_vpd'));
+
+    if (!hasTemp || !hasHumidity || hasHardwareVpd) return nothing;
+
+    const avgTemp = this._averageSensorValue(d.temperatureSensors);
+    const avgHumidity = this._averageSensorValue(d.humiditySensors);
+    const vpd = avgTemp != null && avgHumidity != null
+      ? calculateVpdWithLstOffset(avgTemp, avgHumidity, d.lstOffset)
+      : null;
+    const vpdDisplay = vpd != null ? `${vpd} kPa` : '—';
+
+    return html`
+      <div style="margin-top:12px;">
+        <md3-number-input
+          label="Leaf Surface Temperature Offset"
+          .value=${d.lstOffset}
+          @change=${(e: CustomEvent) =>
+            this._t({ type: 'UPDATE_ENV_DRAFT', partial: { lstOffset: parseFloat(e.detail) } })}
+          min="-10"
+          max="10"
+          step="0.5"
+          suffix="°C"
+        ></md3-number-input>
+        <div style="margin-top:4px;font-size:0.85em;color:var(--secondary-text-color,rgba(255,255,255,0.5));">
+          Current VPD: ${vpdDisplay}
+        </div>
+      </div>
+    `;
+  }
+
+  private _averageSensorValue(entityIds: string[]): number | null {
+    if (!entityIds.length || !this.hass) return null;
+    let sum = 0;
+    let count = 0;
+    for (const id of entityIds) {
+      const state = this.hass.states[id];
+      if (!state || state.state === 'unavailable' || state.state === 'unknown') continue;
+      const val = parseFloat(state.state);
+      if (!Number.isFinite(val)) continue;
+      sum += val;
+      count++;
+    }
+    return count > 0 ? sum / count : null;
   }
 
   private _renderClimateSection() {

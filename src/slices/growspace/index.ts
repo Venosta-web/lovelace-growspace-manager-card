@@ -182,6 +182,7 @@ export async function configureEnvironment(data: {
   energySensors?: string[];
   circulationFanConfig?: CirculationFanConfig;
   vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
+  lstOffset?: number;
 }): Promise<void> {
   const payload: Record<string, unknown> = { growspace_id: data.growspaceId };
 
@@ -235,6 +236,7 @@ export async function configureEnvironment(data: {
   if (data.energySensors?.length) payload.energy_sensors = data.energySensors;
   if (data.circulationFanConfig) payload.circulation_fan_config = data.circulationFanConfig;
   if (data.vpdOptimalOverrides) payload.vpd_optimal_overrides = data.vpdOptimalOverrides;
+  if (data.lstOffset != null) payload.lst_offset = data.lstOffset;
 
   await callService('growspace_manager', 'configure_environment', payload);
 }

@@ -98,6 +98,9 @@ export interface EnvironmentDraft {
 
   // VPD optimal overrides
   vpdOptimalOverrides: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
+
+  // LST offset for VPD calculation
+  lstOffset: number;
 }
 
 // ─── Growspaces tab ───────────────────────────────────────────────────────────
@@ -400,6 +403,7 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
       stage_vpd_overrides: {},
     },
     vpdOptimalOverrides: {},
+    lstOffset: -2.0,
   };
 }
 
@@ -525,6 +529,7 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
     circulationFanConfig: attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
     exhaustFanConfig: attrs.exhaustFanConfig ?? defaultEnvironmentDraft().exhaustFanConfig,
     vpdOptimalOverrides: attrs.vpdOptimalOverrides ?? {},
+    lstOffset: attrs.lstOffset ?? -2.0,
   };
 }
 
