@@ -186,6 +186,7 @@ export interface EnvironmentConfigEventDetail {
   circulationFanConfig?: CirculationFanConfig;
   exhaustFanConfig?: ExhaustFanConfig;
   vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
+  lstOffset?: number;
 }
 
 export interface ConfigDialogState {

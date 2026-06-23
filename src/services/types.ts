@@ -533,6 +533,9 @@ export interface EnvironmentAttributes {
 
   // VPD optimal overrides
   vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
+
+  // LST offset for VPD calculation
+  lstOffset?: number;
 }
 
 export interface GrowspaceStats {

@@ -1249,3 +1249,47 @@ describe('RESET_FROM_DEVICE re-seeds notifications', () => {
     expect(sm.tabs.notifications.timedNotifications[0].message).toBe('New');
   });
 });
+
+// ─── LST Offset on EnvironmentDraft ──────────────────────────────────────────
+
+describe('lstOffset on EnvironmentDraft', () => {
+  it('defaults to -2.0 in a fresh SM', () => {
+    const sm = createInitialSM();
+    expect(sm.environmentDraft.lstOffset).toBe(-2.0);
+  });
+
+  it('seeds lstOffset from device environmentAttributes', () => {
+    const device = makeDevice({
+      environmentAttributes: { lstOffset: -3.5 } as any,
+    });
+    const sm = createInitialSM(device);
+    expect(sm.environmentDraft.lstOffset).toBe(-3.5);
+  });
+
+  it('falls back to -2.0 when device has no lstOffset', () => {
+    const device = makeDevice({
+      environmentAttributes: {} as any,
+    });
+    const sm = createInitialSM(device);
+    expect(sm.environmentDraft.lstOffset).toBe(-2.0);
+  });
+
+  it('updates lstOffset via UPDATE_ENV_DRAFT', () => {
+    const sm = createInitialSM();
+    const updated = transition(sm, { type: 'UPDATE_ENV_DRAFT', partial: { lstOffset: -5.0 } });
+    expect(updated.environmentDraft.lstOffset).toBe(-5.0);
+  });
+
+  it('RESET_FROM_DEVICE re-seeds lstOffset', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'UPDATE_ENV_DRAFT', partial: { lstOffset: -8.0 },
+    });
+    expect(sm.environmentDraft.lstOffset).toBe(-8.0);
+
+    const reset = transition(sm, {
+      type: 'RESET_FROM_DEVICE',
+      device: makeDevice({ environmentAttributes: { lstOffset: -1.0 } as any }),
+    });
+    expect(reset.environmentDraft.lstOffset).toBe(-1.0);
+  });
+});

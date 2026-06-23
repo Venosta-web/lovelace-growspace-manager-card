@@ -205,3 +205,30 @@ describe('GrowspaceAdapter substrate steering metrics', () => {
     expect(device?.steeringMetrics).toBeUndefined();
   });
 });
+
+// ─── LST Offset ──────────────────────────────────────────────────────────────
+
+describe('GrowspaceAdapter lst_offset', () => {
+  function wsWithEnvironment(env: Record<string, unknown>): GrowspaceAPIResponse {
+    return {
+      identity: { growspace_id: 'gs1', name: 'Tent', overview_entity_id: 'sensor.gs1' },
+      environment: env,
+    } as unknown as GrowspaceAPIResponse;
+  }
+
+  it('maps environment.lst_offset to environmentAttributes.lstOffset', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithEnvironment({ lst_offset: -3.5 }),
+    );
+    expect(device?.environmentAttributes?.lstOffset).toBe(-3.5);
+  });
+
+  it('leaves lstOffset undefined when backend omits it', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithEnvironment({}),
+    );
+    expect(device?.environmentAttributes?.lstOffset).toBeUndefined();
+  });
+});

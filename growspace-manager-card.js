@@ -11429,6 +11429,7 @@ class GrowspaceAdapter {
             drainVolumeSensors: environment?.drain_volume_sensors,
             irrigationFlowSensors: environment?.irrigation_flow_sensors,
             vpdOptimalOverrides: environment?.vpd_optimal_overrides ?? {},
+            lstOffset: environment?.lst_offset,
         };
         // 5. Stats from metrics sub-object
         const stats = {
@@ -12244,6 +12245,8 @@ async function configureEnvironment(data) {
         payload.circulation_fan_config = data.circulationFanConfig;
     if (data.vpdOptimalOverrides)
         payload.vpd_optimal_overrides = data.vpdOptimalOverrides;
+    if (data.lstOffset != null)
+        payload.lst_offset = data.lstOffset;
     await callService('growspace_manager', 'configure_environment', payload);
 }
 async function configureExhaustFan({ growspaceId, fanConfig, }) {
@@ -18306,6 +18309,20 @@ CloneDialog = __decorate([
     t$2('clone-dialog')
 ], CloneDialog);
 
+function calculateSvp(temperatureC) {
+    return 0.61094 * Math.exp((17.625 * temperatureC) / (243.04 + temperatureC));
+}
+function calculateVpdWithLstOffset(airTempC, humidityRh, lstOffset) {
+    if (!Number.isFinite(airTempC) || !Number.isFinite(humidityRh) || !Number.isFinite(lstOffset)) {
+        return null;
+    }
+    const leafTempC = airTempC + lstOffset;
+    const leafSvp = calculateSvp(leafTempC);
+    const airSvp = calculateSvp(airTempC);
+    const airAvp = airSvp * (humidityRh / 100);
+    return Math.round((leafSvp - airAvp) * 100) / 100;
+}
+
 let SensorGroupDialog = class SensorGroupDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -19381,6 +19398,7 @@ function defaultEnvironmentDraft() {
             stage_vpd_overrides: {},
         },
         vpdOptimalOverrides: {},
+        lstOffset: -2,
     };
 }
 function defaultTabs$1() {
@@ -19503,6 +19521,7 @@ function envDraftFromDevice(device) {
         circulationFanConfig: attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
         exhaustFanConfig: attrs.exhaustFanConfig ?? defaultEnvironmentDraft().exhaustFanConfig,
         vpdOptimalOverrides: attrs.vpdOptimalOverrides ?? {},
+        lstOffset: attrs.lstOffset ?? -2,
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
@@ -20361,6 +20380,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 circulationFanConfig: d.circulationFanConfig,
                 exhaustFanConfig: d.exhaustFanConfig,
                 vpdOptimalOverrides: d.vpdOptimalOverrides,
+                lstOffset: d.lstOffset,
             },
             bubbles: true,
             composed: true,
@@ -21197,9 +21217,57 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             ${this._renderMultiEntitySelect('Light Source / Sensor', d.lightSensors, ['switch', 'light', 'input_boolean', 'sensor'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { lightSensors: v } }))}
           </div>
           ${this._renderMultiEntitySelect('Substrate Temperature Sensors', d.substrateTemperatureSensors, ['sensor', 'input_number'], 'temperature', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { substrateTemperatureSensors: v } }))}
+          ${this._renderLstOffsetSection()}
         </div>
       </div>
     `;
+    }
+    _renderLstOffsetSection() {
+        const d = this._sm.environmentDraft;
+        const hasTemp = d.temperatureSensors.length > 0;
+        const hasHumidity = d.humiditySensors.length > 0;
+        const hasHardwareVpd = d.vpdSensors.some((id) => !id.includes('calculated_vpd'));
+        if (!hasTemp || !hasHumidity || hasHardwareVpd)
+            return E;
+        const avgTemp = this._averageSensorValue(d.temperatureSensors);
+        const avgHumidity = this._averageSensorValue(d.humiditySensors);
+        const vpd = avgTemp != null && avgHumidity != null
+            ? calculateVpdWithLstOffset(avgTemp, avgHumidity, d.lstOffset)
+            : null;
+        const vpdDisplay = vpd != null ? `${vpd} kPa` : '—';
+        return x `
+      <div style="margin-top:12px;">
+        <md3-number-input
+          label="Leaf Surface Temperature Offset"
+          .value=${d.lstOffset}
+          @change=${(e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { lstOffset: parseFloat(e.detail) } })}
+          min="-10"
+          max="10"
+          step="0.5"
+          suffix="°C"
+        ></md3-number-input>
+        <div style="margin-top:4px;font-size:0.85em;color:var(--secondary-text-color,rgba(255,255,255,0.5));">
+          Current VPD: ${vpdDisplay}
+        </div>
+      </div>
+    `;
+    }
+    _averageSensorValue(entityIds) {
+        if (!entityIds.length || !this.hass)
+            return null;
+        let sum = 0;
+        let count = 0;
+        for (const id of entityIds) {
+            const state = this.hass.states[id];
+            if (!state || state.state === 'unavailable' || state.state === 'unknown')
+                continue;
+            const val = parseFloat(state.state);
+            if (!Number.isFinite(val))
+                continue;
+            sum += val;
+            count++;
+        }
+        return count > 0 ? sum / count : null;
     }
     _renderClimateSection() {
         const d = this._sm.environmentDraft;
@@ -59709,6 +59777,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 energySensors: detail.energySensors,
                 circulationFanConfig: detail.circulationFanConfig,
                 vpdOptimalOverrides: detail.vpdOptimalOverrides,
+                lstOffset: detail.lstOffset,
             });
             // Exhaust config can't ride the configure_environment payload (the backend
             // service doesn't accept it), so persist it via its dedicated service.
@@ -138468,7 +138537,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.60"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.61"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',
