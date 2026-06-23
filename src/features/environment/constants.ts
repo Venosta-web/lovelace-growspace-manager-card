@@ -393,6 +393,11 @@ export const FAN_VPD_STAGE_DEFAULTS: Record<FanVpdStageKey, { day: number; night
   cure: { day: 0.75, night: 0.75 },
 };
 
+export type VpdOptimalOverrides = Record<
+  string,
+  { day: { low: number; high: number }; night: { low: number; high: number } }
+>;
+
 export const VPD_OPTIMAL_STAGE_DEFAULTS: Record<
   FanVpdStageKey,
   { day: { low: number; high: number }; night: { low: number; high: number } }

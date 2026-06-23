@@ -6,6 +6,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import './config-dialog';
 import { ConfigDialog } from './config-dialog';
 import { ConfigTab } from '../constants';
+import { VPD_OPTIMAL_STAGE_DEFAULTS } from '../features/environment/constants';
 
 vi.mock('../slices/subarea', () => ({
   getSubareas: vi.fn(),
@@ -216,5 +217,86 @@ describe('_updateFanConfig', () => {
     el.envTemperatureSensors = ['sensor.temp'];
     (el as any)._updateFanConfig({ enabled: true });
     expect(el.envTemperatureSensors).toEqual(['sensor.temp']);
+  });
+});
+
+// ─── VPD optimal targets (inlined from vpd-optimal-overrides-table) ───────────
+
+describe('_getVpdOptimalValue', () => {
+  it('returns the built-in default when the stage has no override', () => {
+    const el = makeEl();
+    expect((el as any)._getVpdOptimalValue('seedling', 'day', 'low')).toBe(
+      VPD_OPTIMAL_STAGE_DEFAULTS.seedling.day.low
+    );
+  });
+
+  it('returns the override value when the stage is overridden', () => {
+    const el = makeEl();
+    (el as any)._t({
+      type: 'UPDATE_ENV_DRAFT',
+      partial: {
+        vpdOptimalOverrides: { veg: { day: { low: 0.6, high: 1.0 }, night: { low: 0.5, high: 0.9 } } },
+      },
+    });
+    expect((el as any)._getVpdOptimalValue('veg', 'day', 'low')).toBe(0.6);
+    expect((el as any)._getVpdOptimalValue('veg', 'night', 'high')).toBe(0.9);
+  });
+});
+
+describe('_updateVpdOptimal', () => {
+  it('writes the edited slot into the draft as a full stage entry', () => {
+    const el = makeEl();
+    (el as any)._updateVpdOptimal('seedling', 'day', 'low', '0.5');
+    const overrides = (el as any)._sm.environmentDraft.vpdOptimalOverrides;
+    expect(overrides.seedling.day.low).toBe(0.5);
+    // the rest of the stage is seeded from defaults
+    expect(overrides.seedling.day.high).toBe(VPD_OPTIMAL_STAGE_DEFAULTS.seedling.day.high);
+    expect(overrides.seedling.night).toEqual(VPD_OPTIMAL_STAGE_DEFAULTS.seedling.night);
+  });
+
+  it('preserves existing overrides for other stages', () => {
+    const el = makeEl();
+    (el as any)._t({
+      type: 'UPDATE_ENV_DRAFT',
+      partial: {
+        vpdOptimalOverrides: { veg: { day: { low: 0.6, high: 1.0 }, night: { low: 0.5, high: 0.9 } } },
+      },
+    });
+    (el as any)._updateVpdOptimal('seedling', 'day', 'low', '0.5');
+    const overrides = (el as any)._sm.environmentDraft.vpdOptimalOverrides;
+    expect(overrides.veg).toEqual({ day: { low: 0.6, high: 1.0 }, night: { low: 0.5, high: 0.9 } });
+    expect(overrides.seedling.day.low).toBe(0.5);
+  });
+
+  it('snaps a cleared slot to its default while preserving sibling slots', () => {
+    const el = makeEl();
+    (el as any)._t({
+      type: 'UPDATE_ENV_DRAFT',
+      partial: {
+        vpdOptimalOverrides: { veg: { day: { low: 0.6, high: 1.0 }, night: { low: 0.5, high: 0.9 } } },
+      },
+    });
+    (el as any)._updateVpdOptimal('veg', 'day', 'low', '');
+    const veg = (el as any)._sm.environmentDraft.vpdOptimalOverrides.veg;
+    expect(veg.day.low).toBe(VPD_OPTIMAL_STAGE_DEFAULTS.veg.day.low);
+    expect(veg.day.high).toBe(1.0);
+    expect(veg.night).toEqual({ low: 0.5, high: 0.9 });
+  });
+});
+
+describe('_resetVpdOptimal', () => {
+  it('clears all VPD optimal overrides back to an empty dict', () => {
+    const el = makeEl();
+    (el as any)._t({
+      type: 'UPDATE_ENV_DRAFT',
+      partial: {
+        vpdOptimalOverrides: {
+          veg: { day: { low: 0.6, high: 1.0 }, night: { low: 0.5, high: 0.9 } },
+          seedling: { day: { low: 0.5, high: 0.9 }, night: { low: 0.5, high: 0.9 } },
+        },
+      },
+    });
+    (el as any)._resetVpdOptimal();
+    expect((el as any)._sm.environmentDraft.vpdOptimalOverrides).toEqual({});
   });
 });
