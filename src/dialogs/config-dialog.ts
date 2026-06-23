@@ -34,8 +34,13 @@ import './sensor-group-dialog';
 import './subarea-config-dialog';
 import '../features/environment/components/stage-vpd-overrides-table';
 import type { StageVpdOverrides } from '../features/environment/components/stage-vpd-overrides-table';
-import '../features/environment/components/vpd-optimal-overrides-table';
-import type { VpdOptimalOverrides } from '../features/environment/components/vpd-optimal-overrides-table';
+import {
+  FAN_VPD_STAGE_KEYS,
+  FAN_VPD_STAGE_LABELS,
+  VPD_OPTIMAL_STAGE_DEFAULTS,
+  type FanVpdStageKey,
+  type VpdOptimalOverrides,
+} from '../features/environment/constants';
 import {
   GrowspaceDevice,
   DehumidifierStage,
@@ -117,6 +122,20 @@ const HUMIDITY_STAGES = [
 
 type HumidityStageId = (typeof HUMIDITY_STAGES)[number]['id'];
 
+// Stage-dot colours for the VPD targets accordion. Reuses the humidity stage
+// hues for matching stages; `clone` (VPD-only) gets its own cyan.
+const VPD_STAGE_COLORS: Record<FanVpdStageKey, string> = {
+  seedling: '#8bc34a',
+  clone: '#26c6da',
+  mother: '#e91e63',
+  veg: '#4caf50',
+  flower_early: '#ff9800',
+  flower_mid: '#ff7043',
+  flower_late: '#f44336',
+  dry: '#9c27b0',
+  cure: '#2196f3',
+};
+
 @customElement('config-dialog')
 export class ConfigDialog extends LitElement {
   @property({ type: Boolean, reflect: true }) open = false;
@@ -149,6 +168,9 @@ export class ConfigDialog extends LitElement {
   @state() private _openHumidityStageId: HumidityStageId | '' = '';
   @state() private _dehumidifierControlEnabled = false;
   @state() private _humidifierControlEnabled = false;
+
+  // ── VPD targets accordion (pure UI ephemeral state) ───────────────────────
+  @state() private _openVpdStageId: FanVpdStageKey | '' = '';
 
   private _initialStateApplied = false;
 
@@ -3550,6 +3572,42 @@ export class ConfigDialog extends LitElement {
     `;
   }
 
+  private _getVpdOptimalValue(
+    key: FanVpdStageKey,
+    period: 'day' | 'night',
+    slot: 'low' | 'high'
+  ): number {
+    const overrides = this._sm.environmentDraft.vpdOptimalOverrides as VpdOptimalOverrides;
+    return overrides[key]?.[period]?.[slot] ?? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot];
+  }
+
+  private _updateVpdOptimal(
+    key: FanVpdStageKey,
+    period: 'day' | 'night',
+    slot: 'low' | 'high',
+    raw: string
+  ) {
+    const overrides = this._sm.environmentDraft.vpdOptimalOverrides as VpdOptimalOverrides;
+    const parsed = parseFloat(raw);
+    const value = isNaN(parsed) ? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot] : parsed;
+    const existingStage = overrides[key] ?? { ...VPD_OPTIMAL_STAGE_DEFAULTS[key] };
+    const existingPeriod = overrides[key]?.[period] ?? {
+      ...VPD_OPTIMAL_STAGE_DEFAULTS[key][period],
+    };
+    const updated: VpdOptimalOverrides = {
+      ...overrides,
+      [key]: {
+        ...existingStage,
+        [period]: { ...existingPeriod, [slot]: value },
+      },
+    };
+    this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdOptimalOverrides: updated } });
+  }
+
+  private _resetVpdOptimal() {
+    this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdOptimalOverrides: {} } });
+  }
+
   private _renderVpdTargetsSection() {
     return html`
       <div class="detail-card">
@@ -3564,11 +3622,97 @@ export class ConfigDialog extends LitElement {
           </svg>
           <h3 style="margin:0;border:none;padding:0;">VPD Optimal Targets</h3>
         </div>
-        <vpd-optimal-overrides-table
-          .overrides=${this._sm.environmentDraft.vpdOptimalOverrides as VpdOptimalOverrides}
-          @overrides-change=${(e: CustomEvent<VpdOptimalOverrides>) =>
-            this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdOptimalOverrides: e.detail } })}
-        ></vpd-optimal-overrides-table>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${FAN_VPD_STAGE_KEYS.map((key) => {
+            const isOpen = this._openVpdStageId === key;
+            const color = VPD_STAGE_COLORS[key];
+            const dayLow = this._getVpdOptimalValue(key, 'day', 'low');
+            const dayHigh = this._getVpdOptimalValue(key, 'day', 'high');
+            const nightLow = this._getVpdOptimalValue(key, 'night', 'low');
+            const nightHigh = this._getVpdOptimalValue(key, 'night', 'high');
+            return html`
+              <div class="acc-card">
+                <div
+                  class="acc-head"
+                  @click=${() => {
+                    this._openVpdStageId = isOpen ? '' : key;
+                  }}
+                >
+                  <div class="acc-stage-dot" style="background:${color};"></div>
+                  <div class="acc-head-title">${FAN_VPD_STAGE_LABELS[key]}</div>
+                  ${!isOpen
+                    ? html`
+                        <div class="acc-head-desc">
+                          Day ${dayLow.toFixed(2)}–${dayHigh.toFixed(2)} &nbsp;·&nbsp; Night
+                          ${nightLow.toFixed(2)}–${nightHigh.toFixed(2)} kPa
+                        </div>
+                      `
+                    : nothing}
+                  <svg class="acc-chev ${isOpen ? 'open' : ''}" viewBox="0 0 24 24">
+                    <path d="${mdiChevronDown}"></path>
+                  </svg>
+                </div>
+                ${isOpen
+                  ? html`
+                      <div class="acc-body">
+                        <div class="acc-cycle-grid">
+                          <div>
+                            <div class="acc-cycle-row" style="color:#ff9800;">
+                              <svg viewBox="0 0 24 24">
+                                <path d="${mdiWhiteBalanceSunny}"></path>
+                              </svg>
+                              Day
+                            </div>
+                            <div
+                              style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
+                            >
+                              <md3-number-input
+                                label="Low (kPa)"
+                                .value=${dayLow}
+                                @change=${(e: CustomEvent) =>
+                                  this._updateVpdOptimal(key, 'day', 'low', e.detail)}
+                              ></md3-number-input>
+                              <md3-number-input
+                                label="High (kPa)"
+                                .value=${dayHigh}
+                                @change=${(e: CustomEvent) =>
+                                  this._updateVpdOptimal(key, 'day', 'high', e.detail)}
+                              ></md3-number-input>
+                            </div>
+                          </div>
+                          <div>
+                            <div class="acc-cycle-row" style="color:#7986cb;">
+                              <svg viewBox="0 0 24 24"><path d="${mdiWeatherNight}"></path></svg>
+                              Night
+                            </div>
+                            <div
+                              style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
+                            >
+                              <md3-number-input
+                                label="Low (kPa)"
+                                .value=${nightLow}
+                                @change=${(e: CustomEvent) =>
+                                  this._updateVpdOptimal(key, 'night', 'low', e.detail)}
+                              ></md3-number-input>
+                              <md3-number-input
+                                label="High (kPa)"
+                                .value=${nightHigh}
+                                @change=${(e: CustomEvent) =>
+                                  this._updateVpdOptimal(key, 'night', 'high', e.detail)}
+                              ></md3-number-input>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    `
+                  : nothing}
+              </div>
+            `;
+          })}
+        </div>
+        <button class="md3-button text" @click=${this._resetVpdOptimal} style="margin-top:12px;">
+          Reset all to defaults
+        </button>
       </div>
     `;
   }

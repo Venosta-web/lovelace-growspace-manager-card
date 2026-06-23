@@ -19158,141 +19158,6 @@ StageVpdOverridesTable = __decorate([
     t$2('stage-vpd-overrides-table')
 ], StageVpdOverridesTable);
 
-let VpdOptimalOverridesTable = class VpdOptimalOverridesTable extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.overrides = {};
-    }
-    _getDisplayValue(key, period, slot) {
-        return this.overrides[key]?.[period]?.[slot] ?? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot];
-    }
-    _handleChange(key, period, slot, raw) {
-        const parsed = parseFloat(raw);
-        const value = isNaN(parsed) ? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot] : parsed;
-        const existingPeriod = this.overrides[key]?.[period] ?? {
-            ...VPD_OPTIMAL_STAGE_DEFAULTS[key][period],
-        };
-        const existingStage = this.overrides[key] ?? { ...VPD_OPTIMAL_STAGE_DEFAULTS[key] };
-        const updated = {
-            ...this.overrides,
-            [key]: {
-                ...existingStage,
-                [period]: { ...existingPeriod, [slot]: value },
-            },
-        };
-        this.dispatchEvent(new CustomEvent('overrides-change', { detail: updated, bubbles: true, composed: true }));
-    }
-    _handleReset() {
-        this.dispatchEvent(new CustomEvent('overrides-change', { detail: {}, bubbles: true, composed: true }));
-    }
-    render() {
-        return x `
-      <div class="header-group-row">
-        <span></span>
-        <span class="group-label">Day (kPa)</span>
-        <span class="group-label">Night (kPa)</span>
-      </div>
-      <div class="header-sub-row">
-        <span>Stage</span>
-        <span>Low</span>
-        <span>High</span>
-        <span>Low</span>
-        <span>High</span>
-      </div>
-      ${FAN_VPD_STAGE_KEYS.map((key) => x `
-          <div class="stage-row">
-            <span class="stage-label">${FAN_VPD_STAGE_LABELS[key]}</span>
-            ${['day', 'night'].map((period) => x `${['low', 'high'].map((slot) => x `
-                    <input
-                      type="number"
-                      min="0.1"
-                      max="3.0"
-                      step="0.01"
-                      .value=${String(this._getDisplayValue(key, period, slot))}
-                      @change=${(e) => this._handleChange(key, period, slot, e.target.value)}
-                    />
-                  `)}`)}
-          </div>
-        `)}
-      <button class="reset-button" @click=${this._handleReset}>Reset all to defaults</button>
-    `;
-    }
-};
-VpdOptimalOverridesTable.styles = i$6 `
-    :host {
-      display: block;
-    }
-    .header-group-row {
-      display: grid;
-      grid-template-columns: 1fr repeat(2, 90px) repeat(2, 90px);
-      gap: 8px;
-      padding: 0 4px 2px;
-      font-size: 0.75rem;
-      color: var(--secondary-text-color);
-    }
-    .header-group-row .group-label {
-      grid-column: span 2;
-      text-align: center;
-      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      padding-bottom: 2px;
-    }
-    .header-sub-row {
-      display: grid;
-      grid-template-columns: 1fr repeat(2, 90px) repeat(2, 90px);
-      gap: 8px;
-      padding: 0 4px 4px;
-      font-size: 0.75rem;
-      color: var(--secondary-text-color);
-      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      margin-bottom: 4px;
-    }
-    .stage-row {
-      display: grid;
-      grid-template-columns: 1fr repeat(2, 90px) repeat(2, 90px);
-      gap: 8px;
-      align-items: center;
-      padding: 4px;
-    }
-    .stage-label {
-      font-size: 0.875rem;
-      color: var(--primary-text-color);
-    }
-    input[type='number'] {
-      width: 100%;
-      box-sizing: border-box;
-      background: rgba(255, 255, 255, 0.05);
-      border: none;
-      border-bottom: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
-      color: var(--primary-text-color);
-      font-size: 0.875rem;
-      padding: 4px 6px;
-      border-radius: 4px 4px 0 0;
-      outline: none;
-    }
-    input[type='number']:focus {
-      border-bottom: 2px solid var(--primary-color, #6200ee);
-    }
-    .reset-button {
-      margin-top: 12px;
-      background: transparent;
-      border: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
-      border-radius: 4px;
-      color: var(--primary-text-color);
-      cursor: pointer;
-      font-size: 0.75rem;
-      padding: 4px 12px;
-    }
-    .reset-button:hover {
-      background: rgba(255, 255, 255, 0.05);
-    }
-  `;
-__decorate([
-    n$5({ attribute: false })
-], VpdOptimalOverridesTable.prototype, "overrides", void 0);
-VpdOptimalOverridesTable = __decorate([
-    t$2('vpd-optimal-overrides-table')
-], VpdOptimalOverridesTable);
-
 /**
  * Config Dialog State Machine
  *
@@ -19933,6 +19798,19 @@ const HUMIDITY_STAGES = [
     { id: 'drying', label: 'Drying', dehum: DehumidifierStage.DRY, hum: HumidifierStage.DRY },
     { id: 'curing', label: 'Curing', dehum: DehumidifierStage.CURE, hum: HumidifierStage.CURE },
 ];
+// Stage-dot colours for the VPD targets accordion. Reuses the humidity stage
+// hues for matching stages; `clone` (VPD-only) gets its own cyan.
+const VPD_STAGE_COLORS = {
+    seedling: '#8bc34a',
+    clone: '#26c6da',
+    mother: '#e91e63',
+    veg: '#4caf50',
+    flower_early: '#ff9800',
+    flower_mid: '#ff7043',
+    flower_late: '#f44336',
+    dry: '#9c27b0',
+    cure: '#2196f3',
+};
 let ConfigDialog = class ConfigDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -19950,6 +19828,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this._openHumidityStageId = '';
         this._dehumidifierControlEnabled = false;
         this._humidifierControlEnabled = false;
+        // ── VPD targets accordion (pure UI ephemeral state) ───────────────────────
+        this._openVpdStageId = '';
         this._initialStateApplied = false;
         this._fanTempOverrideExpanded = false;
         this._exhaustCriticalTempExpanded = false;
@@ -22447,6 +22327,30 @@ let ConfigDialog = class ConfigDialog extends i$3 {
       </div>
     `;
     }
+    _getVpdOptimalValue(key, period, slot) {
+        const overrides = this._sm.environmentDraft.vpdOptimalOverrides;
+        return overrides[key]?.[period]?.[slot] ?? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot];
+    }
+    _updateVpdOptimal(key, period, slot, raw) {
+        const overrides = this._sm.environmentDraft.vpdOptimalOverrides;
+        const parsed = parseFloat(raw);
+        const value = isNaN(parsed) ? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot] : parsed;
+        const existingStage = overrides[key] ?? { ...VPD_OPTIMAL_STAGE_DEFAULTS[key] };
+        const existingPeriod = overrides[key]?.[period] ?? {
+            ...VPD_OPTIMAL_STAGE_DEFAULTS[key][period],
+        };
+        const updated = {
+            ...overrides,
+            [key]: {
+                ...existingStage,
+                [period]: { ...existingPeriod, [slot]: value },
+            },
+        };
+        this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdOptimalOverrides: updated } });
+    }
+    _resetVpdOptimal() {
+        this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdOptimalOverrides: {} } });
+    }
     _renderVpdTargetsSection() {
         return x `
       <div class="detail-card">
@@ -22461,10 +22365,93 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           </svg>
           <h3 style="margin:0;border:none;padding:0;">VPD Optimal Targets</h3>
         </div>
-        <vpd-optimal-overrides-table
-          .overrides=${this._sm.environmentDraft.vpdOptimalOverrides}
-          @overrides-change=${(e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdOptimalOverrides: e.detail } })}
-        ></vpd-optimal-overrides-table>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${FAN_VPD_STAGE_KEYS.map((key) => {
+            const isOpen = this._openVpdStageId === key;
+            const color = VPD_STAGE_COLORS[key];
+            const dayLow = this._getVpdOptimalValue(key, 'day', 'low');
+            const dayHigh = this._getVpdOptimalValue(key, 'day', 'high');
+            const nightLow = this._getVpdOptimalValue(key, 'night', 'low');
+            const nightHigh = this._getVpdOptimalValue(key, 'night', 'high');
+            return x `
+              <div class="acc-card">
+                <div
+                  class="acc-head"
+                  @click=${() => {
+                this._openVpdStageId = isOpen ? '' : key;
+            }}
+                >
+                  <div class="acc-stage-dot" style="background:${color};"></div>
+                  <div class="acc-head-title">${FAN_VPD_STAGE_LABELS[key]}</div>
+                  ${!isOpen
+                ? x `
+                        <div class="acc-head-desc">
+                          Day ${dayLow.toFixed(2)}–${dayHigh.toFixed(2)} &nbsp;·&nbsp; Night
+                          ${nightLow.toFixed(2)}–${nightHigh.toFixed(2)} kPa
+                        </div>
+                      `
+                : E}
+                  <svg class="acc-chev ${isOpen ? 'open' : ''}" viewBox="0 0 24 24">
+                    <path d="${mdiChevronDown}"></path>
+                  </svg>
+                </div>
+                ${isOpen
+                ? x `
+                      <div class="acc-body">
+                        <div class="acc-cycle-grid">
+                          <div>
+                            <div class="acc-cycle-row" style="color:#ff9800;">
+                              <svg viewBox="0 0 24 24">
+                                <path d="${mdiWhiteBalanceSunny}"></path>
+                              </svg>
+                              Day
+                            </div>
+                            <div
+                              style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
+                            >
+                              <md3-number-input
+                                label="Low (kPa)"
+                                .value=${dayLow}
+                                @change=${(e) => this._updateVpdOptimal(key, 'day', 'low', e.detail)}
+                              ></md3-number-input>
+                              <md3-number-input
+                                label="High (kPa)"
+                                .value=${dayHigh}
+                                @change=${(e) => this._updateVpdOptimal(key, 'day', 'high', e.detail)}
+                              ></md3-number-input>
+                            </div>
+                          </div>
+                          <div>
+                            <div class="acc-cycle-row" style="color:#7986cb;">
+                              <svg viewBox="0 0 24 24"><path d="${mdiWeatherNight}"></path></svg>
+                              Night
+                            </div>
+                            <div
+                              style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
+                            >
+                              <md3-number-input
+                                label="Low (kPa)"
+                                .value=${nightLow}
+                                @change=${(e) => this._updateVpdOptimal(key, 'night', 'low', e.detail)}
+                              ></md3-number-input>
+                              <md3-number-input
+                                label="High (kPa)"
+                                .value=${nightHigh}
+                                @change=${(e) => this._updateVpdOptimal(key, 'night', 'high', e.detail)}
+                              ></md3-number-input>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    `
+                : E}
+              </div>
+            `;
+        })}
+        </div>
+        <button class="md3-button text" @click=${this._resetVpdOptimal} style="margin-top:12px;">
+          Reset all to defaults
+        </button>
       </div>
     `;
     }
@@ -23234,6 +23221,9 @@ __decorate([
 __decorate([
     r$3()
 ], ConfigDialog.prototype, "_humidifierControlEnabled", void 0);
+__decorate([
+    r$3()
+], ConfigDialog.prototype, "_openVpdStageId", void 0);
 __decorate([
     r$3()
 ], ConfigDialog.prototype, "_fanTempOverrideExpanded", void 0);
