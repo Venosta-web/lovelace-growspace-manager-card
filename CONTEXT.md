@@ -153,7 +153,18 @@ The display and graph scale behaviour for a fan chip, determined by the entity d
 - **HA fan entity** (`fan.*` domain): chip shows `percentage` attribute as `"70%"` (or `"Off"` when state is `off`); graph Y-axis is 0–100, unit `%`.
 - **Speed sensor** (numeric state, domain not `fan.*`): chip shows raw integer (e.g. `"5"`); graph Y-axis is 0–10, no unit suffix.
 - **Binary fan** (switch / input_boolean / other non-numeric): chip shows `"On"` / `"Off"`; graph is binary 0/1.
-Detection runs in `computeDeviceSnapshot` (chip) and `env-chart.ts` series builder (graph) by inspecting `hass.states[entityId].domain` and `attributes.percentage`. See ADR-0008.
+
+Fan Entity Mode has **two facets**, derived differently and consumed by different sites:
+- **Type facet** — id-domain-derivable (`fan.*` → ha-fan; `switch`/`input_boolean`/`binary_sensor` → binary; else → speed-sensor). Stable and availability-independent. The graph **Y-axis** depends only on this (it never reads entity state — it splits the configured `entityId`).
+- **Reading facet** — state-derived (`on` / `percentage` / `value`), varies per history point. The **chip display** and the **per-point normalized graph value** depend on this.
+
+**`classifyFanEntity`** *(device-state slice)*
+The single classifier for both facets: `classifyFanEntity(entityId, entity) → FanReading`. It is the one place that inspects a fan entity; the three render sites are pure mappers over its output (`→ chip display string`, `→ axis scale`, `→ normalized value`) and never re-touch the entity. Lives in `slices/device-state/` (the domain owner of `_normalizeFanDevice`); `env-chart.ts` and `chart-utils.ts` import it (a `util → slice` direction already established by `chip-filter.ts`). Replaces the previous split where the full three-way classification lived only in `computeDeviceSnapshot` (chip) while `env-chart.ts` *approximated* it with an ad-hoc `_resolveFanEntityDomain`/`_resolveFanScale` id-check (now deleted — the axis consumes `FanReading.kind`).
+
+**`FanReading`**
+The discriminated union `classifyFanEntity` returns: `{ kind: 'ha-fan'; available; on; percentage: number | null } | { kind: 'speed-sensor'; available; value } | { kind: 'binary'; available; on }`. `percentage` is raw/unrounded (`null` when an HA fan is on but reports no `percentage` attribute, so the chip mapper falls back to `"On"` and the graph value to `100`); the chip mapper rounds for display. `kind` is the **type facet** (always present, id-derived, type-stable); `available` + the payload are the **reading facet** (`available: false` when the entity is missing/unavailable). There is deliberately **no** `kind: 'unavailable'` variant — an unavailable fan still has a known type, which the axis needs, so unavailability is a flag on the reading, not a loss of kind. `FanReading` is the test surface for all fan-mode behaviour: classify once from `(entityId, state)`, assert the three trivial mappers against the union.
+
+Detection (the type facet) keys off the entity domain; the reading facet reads `attributes.percentage` and the parsed state. See ADR-0008.
 
 ## Architecture
 
