@@ -56,5 +56,15 @@ export default [
       ],
     },
   },
+  {
+    // Tests legitimately use `any` to reach into component internals
+    // (`(el as any)._privateField`) and to build partial mocks of large HA
+    // objects. The "avoid any in shipped code" intent does not apply here, and
+    // tsc still type-checks the specs.
+    files: ['**/*.{test,spec}.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
   prettierConfig,
 ];

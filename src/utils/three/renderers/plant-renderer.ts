@@ -14,7 +14,7 @@ export class PlantRenderer extends BaseRenderer {
     this._plantHitBoxes = [];
     const { device, volatileGroup, visibility } = this.context;
     const width = device.dimensions?.width ?? 120;
-    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+    const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
 
     if (!visibility.plants) {
       this.dispose();

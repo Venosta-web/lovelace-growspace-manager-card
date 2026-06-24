@@ -21,7 +21,7 @@ export class EquipmentRenderer extends BaseRenderer {
   public render() {
     const { device, volatileGroup, hass } = this.context;
     const width = device.dimensions?.width ?? 120;
-    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+    const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
     const height = device.dimensions?.height ?? 200;
     const env = device.environmentAttributes;
     const sensorCoords = env?.sensorCoordinates || {};

@@ -695,7 +695,7 @@ export class Heatmap3D extends LitElement {
     if (!this.sceneManager || !this.device) return;
 
     const width = this.device.dimensions?.width ?? 120;
-    const depth = this.device.dimensions?.length ?? (this.device.dimensions as any)?.depth ?? 120;
+    const depth = this.device.dimensions?.length ?? this.device.dimensions?.depth ?? 120;
 
     for (const [id, m] of this.sceneManager.sensorMeshes.entries()) {
       if (m === mesh) {
@@ -726,7 +726,7 @@ export class Heatmap3D extends LitElement {
     if (!this.sceneManager || !this.device) return;
 
     const width = this.device.dimensions?.width ?? 120;
-    const depth = this.device.dimensions?.length ?? (this.device.dimensions as any)?.depth ?? 120;
+    const depth = this.device.dimensions?.length ?? this.device.dimensions?.depth ?? 120;
 
     for (const [id, m] of this.sceneManager.sensorMeshes.entries()) {
       if (m === mesh) {
@@ -865,7 +865,7 @@ export class Heatmap3D extends LitElement {
     if (!mesh) return;
 
     const width = this.device.dimensions?.width ?? 120;
-    const depth = this.device.dimensions?.length ?? (this.device.dimensions as any)?.depth ?? 120;
+    const depth = this.device.dimensions?.length ?? this.device.dimensions?.depth ?? 120;
 
     // Note: SceneManager meshes are positioned:
     // x = coords.x - width/2
@@ -1290,7 +1290,7 @@ export class Heatmap3D extends LitElement {
             const width = this.device?.dimensions?.width ?? 120;
             const height = this.device?.dimensions?.height ?? 200;
             const depth =
-              this.device?.dimensions?.length ?? (this.device?.dimensions as any)?.depth ?? 120;
+              this.device?.dimensions?.length ?? this.device?.dimensions?.depth ?? 120;
 
             const xMin = isAllowedOutside ? -100 : 0;
             const xMax = isAllowedOutside ? width + 100 : width;
