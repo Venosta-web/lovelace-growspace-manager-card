@@ -739,7 +739,7 @@ export class Heatmap3D extends LitElement {
         // Rotation usually stored in userData or traverse
         if (this.sceneManager.volatileGroup) {
           const obj = this.sceneManager.volatileGroup.children.find(
-            (c: any) => c.userData?.entityId === id
+            (c) => c.userData?.entityId === id
           );
           if (obj && (obj as any).userData) rotation = (obj as any).userData.baseRotation;
         }

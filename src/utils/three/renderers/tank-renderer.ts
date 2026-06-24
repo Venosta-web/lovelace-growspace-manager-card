@@ -51,7 +51,7 @@ export class TankRenderer extends BaseRenderer {
       () => new THREE.PlaneGeometry(30 * 0.94, 30 * 0.94, 20, 20)
     );
 
-    tanks.forEach((tank: any) => {
+    tanks.forEach((tank) => {
       const entityId = tank.sensorEntity;
       currentTankIds.add(entityId);
       const coords = sensorCoords[entityId] || { x: 0, y: depth / 2, z: 0 };
