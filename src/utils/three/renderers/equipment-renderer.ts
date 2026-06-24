@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { BaseRenderer } from './base-renderer';
 
+type SensorCoord = { x: number; y: number; z: number; rotation?: number };
+
 export class EquipmentRenderer extends BaseRenderer {
   private _humidifierParticles?: THREE.Points;
   private _dryAirParticles?: THREE.Points;
@@ -310,7 +312,7 @@ export class EquipmentRenderer extends BaseRenderer {
     group: THREE.Group,
     intensity: number,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     w: number,
     d: number,
     h: number,
@@ -383,7 +385,7 @@ export class EquipmentRenderer extends BaseRenderer {
     group: THREE.Group,
     isDrain: boolean,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     w: number,
     d: number,
     h: number,
@@ -479,7 +481,7 @@ export class EquipmentRenderer extends BaseRenderer {
   private createHumidifierModel(
     intensity: number,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     w: number,
     d: number,
     h: number,
@@ -588,7 +590,7 @@ export class EquipmentRenderer extends BaseRenderer {
   private createDehumidifierModel(
     intensity: number,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     w: number,
     d: number,
     h: number,
@@ -660,7 +662,7 @@ export class EquipmentRenderer extends BaseRenderer {
   private createPumpModel(
     isDrain: boolean,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     frameWidth: number,
     frameDepth: number,
     frameHeight: number,

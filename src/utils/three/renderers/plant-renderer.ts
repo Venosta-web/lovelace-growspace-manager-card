@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { BaseRenderer } from './base-renderer';
 import { PlantUtils } from '../../plant-utils';
+import type { PlantEntity } from '../../../features/plants/types';
 
 export class PlantRenderer extends BaseRenderer {
   private _strainColorCache: Map<string, string[]> = new Map();
@@ -28,8 +29,8 @@ export class PlantRenderer extends BaseRenderer {
     const cellWidth = width / plantsPerRow;
     const cellDepth = depth / effectiveRows;
 
-    const gridMap = new Map<string, any>();
-    plants.forEach((p: any) => {
+    const gridMap = new Map<string, PlantEntity>();
+    plants.forEach((p) => {
       const r = p.attributes?.row ?? 1;
       const c = p.attributes?.col ?? 1;
       gridMap.set(`${r},${c}`, p);
@@ -92,7 +93,7 @@ export class PlantRenderer extends BaseRenderer {
     col: number,
     cellWidth: number,
     cellDepth: number,
-    plant: any,
+    plant: PlantEntity | undefined,
     stage: string
   ): THREE.Group {
     const group = new THREE.Group();
@@ -207,7 +208,7 @@ export class PlantRenderer extends BaseRenderer {
   private createPlantModel(
     stage: string,
     potHeight: number,
-    plant: any,
+    plant: PlantEntity,
     requestUpdate?: () => void
   ): THREE.Group {
     const group = new THREE.Group();
@@ -328,7 +329,7 @@ export class PlantRenderer extends BaseRenderer {
     scale: number,
     potHeight: number,
     stemHeight: number,
-    plant: any,
+    plant: PlantEntity,
     requestUpdate?: () => void
   ) {
     let strainColors: string[] = [];
