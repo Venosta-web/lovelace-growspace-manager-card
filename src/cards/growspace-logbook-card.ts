@@ -110,7 +110,7 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
       return html`<ha-card class="loading">Loading...</ha-card>`;
     }
 
-    const device = devices.find((d: any) => d.deviceId === selectedDevice);
+    const device = devices.find((d) => d.deviceId === selectedDevice);
     if (!device) {
       return html`
         <ha-card class="error">

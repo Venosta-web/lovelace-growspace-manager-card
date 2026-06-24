@@ -514,7 +514,7 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
     energySensors: attrs.energySensors ?? [],
     sensorGroups: attrs.sensorGroups ?? [],
     sensorCoordinates: attrs.sensorCoordinates ?? {},
-    irrigationTanks: (attrs.irrigationTanks ?? []).map((t: any) => ({
+    irrigationTanks: (attrs.irrigationTanks ?? []).map((t) => ({
       sensorEntity: t.sensorEntity ?? '',
       name: t.name ?? 'Tank',
       volumeLiters: t.volumeLiters ?? null,

@@ -22,7 +22,7 @@ export class GrowspaceTankCardEditor extends LitElement implements LovelaceCardE
     if (growspaceListSensor?.attributes.growspaces) {
       const raw = growspaceListSensor.attributes.growspaces;
       if (Array.isArray(raw)) {
-        this._sensorGrowspaces = raw.map((g: any) => ({ id: g.id, name: g.name || g.id }));
+        this._sensorGrowspaces = raw.map((g) => ({ id: g.id, name: g.name || g.id }));
       } else {
         this._sensorGrowspaces = Object.entries(raw).map(([id, name]) => ({
           id,
@@ -100,7 +100,7 @@ export class GrowspaceTankCardEditor extends LitElement implements LovelaceCardE
           .hass=${this.hass}
           .data=${this._config}
           .schema=${this._computeSchema()}
-          .computeLabel=${(s: any) =>
+          .computeLabel=${(s: { name: string }) =>
             s.name === 'default_growspace' ? 'Target Growspace' : s.name}
           @value-changed=${this._valueChanged}
         ></ha-form>

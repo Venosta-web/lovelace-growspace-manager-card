@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, type PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { sharedStyles } from '../../../styles/shared.styles';
@@ -93,7 +93,7 @@ export class VPDHeatmap extends LitElement {
     this._drawHeatmap();
   }
 
-  protected updated(changedProps: Map<string, any>) {
+  protected updated(changedProps: PropertyValues) {
     if (
       changedProps.has('stage') ||
       changedProps.has('temperature') ||
