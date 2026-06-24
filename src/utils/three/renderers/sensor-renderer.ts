@@ -8,7 +8,6 @@ export class SensorRenderer extends BaseRenderer {
     const { device, volatileGroup, hass, selectedMetric, visibility } = this.context;
     const sensorCoords = device.environmentAttributes?.sensorCoordinates || {};
     const width = device.dimensions?.width ?? 120;
-    const height = device.dimensions?.height ?? 200;
     const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
 
     const allSensorEntities = Object.keys(sensorCoords);

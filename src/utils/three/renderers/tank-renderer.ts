@@ -7,7 +7,7 @@ export class TankRenderer extends BaseRenderer {
 
   public render() {
     this._tankWaves = [];
-    const { device, volatileGroup, hass, visibility } = this.context;
+    const { device, volatileGroup, visibility } = this.context;
     const width = device.dimensions?.width ?? 120;
     const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
     const env = device.environmentAttributes;
@@ -170,7 +170,7 @@ export class TankRenderer extends BaseRenderer {
     });
   }
 
-  public animate(deltaTime: number) {
+  public animate(_deltaTime: number) {
     if (this._tankWaves.length > 0) {
       const time = Date.now() * 0.003;
       this._tankWaves.forEach((wave) => {

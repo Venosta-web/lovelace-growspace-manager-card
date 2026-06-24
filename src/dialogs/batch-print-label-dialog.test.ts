@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceSharedStore } from '../store/core/growspace-shared-store';
 import { GrowspaceStore } from '../store/core/growspace-store';
-import { GrowspaceUIStore } from '../store/ui/ui-store';
 import { BatchPrintLabelDialog } from './batch-print-label-dialog';
 import './batch-print-label-dialog';
 import {

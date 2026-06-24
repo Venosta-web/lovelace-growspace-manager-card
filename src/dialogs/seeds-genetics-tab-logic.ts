@@ -1,4 +1,4 @@
-import type { GrowspaceDevice, PlantEntity } from '../types';
+import type { GrowspaceDevice } from '../types';
 
 const ELIGIBLE_STAGES = ['flower', 'veg'];
 

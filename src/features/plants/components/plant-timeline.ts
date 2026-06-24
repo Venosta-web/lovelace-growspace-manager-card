@@ -11,7 +11,6 @@ import '../../shared/ui/confirm-delete-dialog';
 import {
   mdiAlertCircle,
   mdiDelete,
-  mdiNote,
   mdiTag,
   mdiThermometer,
   mdiWaterPercent,

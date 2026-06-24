@@ -7,7 +7,7 @@ import type { HomeAssistant } from 'custom-card-helpers';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { toggleEnvGraph } from '../../../slices/ui';
 import type { GrowspaceDevice } from '../../../types';
-import { METRIC_CONFIG, METRIC_SORT_ORDER, type MetricKey } from '../../../constants';
+import { METRIC_SORT_ORDER, type MetricKey } from '../../../constants';
 import type { AnalyticsItem } from '../components/growspace-analytics-ui';
 import '../components/growspace-analytics-ui';
 

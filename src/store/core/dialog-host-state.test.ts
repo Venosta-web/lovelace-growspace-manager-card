@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { GrowspaceSharedStore } from './growspace-shared-store';
 import { GrowspaceStore } from './growspace-store';
 import { strainLibrary$, setStrainLibrary } from '../../slices/strain';
-import { devices$, setDevices } from '../../slices/grid';
+import { setDevices } from '../../slices/grid';
 
 describe('GrowspaceStore.$dialogHostState', () => {
   let store: GrowspaceStore;

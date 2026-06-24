@@ -11,10 +11,8 @@ import {
   aiAlerts$,
   aiInsight$,
 } from '../slices/ai-insight';
-/* eslint-disable import/no-duplicates */
 import './briefing-panel'; // side-effect import required for custom element registration
 import { GmBriefingPanel } from './briefing-panel';
-/* eslint-enable import/no-duplicates */
 
 vi.mock('../services/hass-call', () => ({
   callService: vi.fn().mockResolvedValue(undefined),
@@ -329,7 +327,7 @@ describe('GmBriefingPanel — Apply button', () => {
 
     const applyBtn = el.shadowRoot!.querySelector<HTMLElement>('.reco-apply');
     applyBtn!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.callService).toHaveBeenCalledWith(
       'climate.set_temperature',
@@ -364,7 +362,7 @@ describe('GmBriefingPanel — Regenerate button', () => {
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.briefing-regenerate')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_briefing',
@@ -408,7 +406,7 @@ describe('GmBriefingPanel — follow-up input', () => {
     await el.updateComplete;
 
     input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    await new Promise((r) => setTimeout(r, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/start_conversation',
@@ -433,7 +431,7 @@ describe('GmBriefingPanel — follow-up input', () => {
     await el.updateComplete;
 
     input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    await new Promise((r) => setTimeout(r, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(aiMode$.get()).toBe('chat');
   });
@@ -476,7 +474,7 @@ describe('GmBriefingPanel — error state', () => {
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.briefing-error-retry')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_briefing',

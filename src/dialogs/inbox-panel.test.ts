@@ -3,10 +3,8 @@ import { fixture, html } from '@open-wc/testing-helpers';
 import { aiAlerts$, aiEnabled$ } from '../slices/ai-insight';
 import type { TriageAlert } from '../slices/ai-insight/schema';
 import { aGrowspace } from '../../tests/fixtures';
-/* eslint-disable import/no-duplicates */
 import './inbox-panel';
 import { GmInboxPanel } from './inbox-panel';
-/* eslint-enable import/no-duplicates */
 
 vi.mock('../slices/ai-insight', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../slices/ai-insight')>();
@@ -560,7 +558,7 @@ describe('GmInboxPanel — detail pane suggested actions', () => {
     expect(el.shadowRoot!.querySelector('.confirm-overlay')).not.toBeNull();
 
     el.shadowRoot!.querySelector<HTMLElement>('.confirm-apply-btn')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(aiInsightMod.applyAction).toHaveBeenCalledWith(ALERT_DANGER.suggested_actions![0]);
   });
@@ -595,7 +593,7 @@ describe('GmInboxPanel — action ribbon: resolve', () => {
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.resolve-btn')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(aiInsightMod.resolveAlert).toHaveBeenCalledWith('a1', undefined);
   });
@@ -612,7 +610,7 @@ describe('GmInboxPanel — action ribbon: resolve', () => {
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.resolve-btn')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.inbox-no-selection')).not.toBeNull();
@@ -659,7 +657,7 @@ describe('GmInboxPanel — action ribbon: add note', () => {
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.note-submit-btn')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(aiInsightMod.resolveAlert).toHaveBeenCalledWith('a1', 'Fixed manually');
   });

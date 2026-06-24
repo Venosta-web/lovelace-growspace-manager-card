@@ -120,7 +120,6 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
     this._wrapper.classList.remove('slide-out');
     this._wrapper.classList.add('slide-in-prepare');
 
-    // eslint-disable-next-line no-void
     void this._wrapper.offsetWidth;
 
     // Slide in from the right

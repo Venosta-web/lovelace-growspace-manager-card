@@ -18,7 +18,7 @@
  * the module-level undo stack does not bleed between test groups.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { mutate, canUndo, undo, setMutateListener } from './mutate';
 import type { Action } from './mutate';
 
