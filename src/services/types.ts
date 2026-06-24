@@ -196,8 +196,9 @@ export interface SerializedIrrigationConfig {
   auto_advance_p1_to_p2?: boolean;
   auto_advance_p2_to_p3?: boolean;
   halt_on_runoff_ec_threshold?: number | null;
-  ec_target_ranges?: Array<{ stage: string; min_ec: number; max_ec: number }>;
+  ec_target_ranges?: Array<{ stage: string; feed_ec_min: number; feed_ec_max: number }>;
   active_steering_phase?: 'p1' | 'p2' | 'p3';
+  phase_changed_at?: string | null;
 }
 
 export interface TankWaterEvent {
@@ -392,6 +393,16 @@ export interface SerializedEnvironmentAttributes {
   runoff_ec_sensors?: string[];
   drain_volume_sensors?: string[];
   irrigation_flow_sensors?: string[];
+
+  // Fan / vision / VPD-override configs (passed through to the internal model unchanged)
+  circulation_fan_config?: CirculationFanConfig;
+  exhaust_fan_config?: ExhaustFanConfig;
+  vision_checkup_config?: VisionCheckupConfig;
+  vpd_optimal_overrides?: Record<
+    string,
+    { day: { low: number; high: number }; night: { low: number; high: number } }
+  >;
+  lst_offset?: number;
 }
 
 export interface SerializedStats {
@@ -416,7 +427,7 @@ export interface GrowspaceAPIResponse {
     rows: number;
     plants_per_row: number;
     total_plants: number;
-    dimensions?: { length: number; width: number; height: number; unit: string };
+    dimensions?: { length: number; width: number; height: number; depth?: number; unit: string };
     grid: Record<string, RawPlantData | null>;
   };
   /** Environment attributes with sensor_types/coordinates/groups extracted into `sensors`. */
@@ -621,7 +632,7 @@ export interface GrowspaceDevice {
   overviewEntityId?: string;
   name: string;
   type: GrowspaceType;
-  dimensions?: { length: number; width: number; height: number; unit: string };
+  dimensions?: { length: number; width: number; height: number; depth?: number; unit: string };
 
   plants: PlantEntity[];
   grid: Record<string, RawPlantData | null>;

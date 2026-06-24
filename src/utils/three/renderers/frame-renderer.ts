@@ -8,7 +8,7 @@ export class FrameRenderer extends BaseRenderer {
     const { device, volatileGroup } = this.context;
     const width = device.dimensions?.width ?? 120;
     const height = device.dimensions?.height ?? 200;
-    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+    const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
 
     const cacheKey = `${width}_${height}_${depth}`;
     let frameGroup = this.cache.get('frame') as THREE.Group;

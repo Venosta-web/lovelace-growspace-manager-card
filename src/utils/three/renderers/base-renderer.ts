@@ -6,7 +6,7 @@ export interface RendererContext {
   scene: THREE.Scene;
   volatileGroup: THREE.Group;
   device: GrowspaceDevice;
-  hass: HomeAssistant;
+  hass: HomeAssistant | undefined;
   selectedMetric: string;
   timelineIndex: number;
   historyData: Record<string, unknown[]>;

@@ -130,7 +130,7 @@ export class SceneManager {
 
   public update(
     device: GrowspaceDevice,
-    hass: HomeAssistant,
+    hass: HomeAssistant | undefined,
     selectedMetric: string,
     historyData: Record<string, unknown[]>,
     timelineIndex: number,
