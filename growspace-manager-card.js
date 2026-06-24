@@ -8702,6 +8702,281 @@ const t={ATTRIBUTE:1,CHILD:2},e$3=t=>(...e)=>({_$litDirective$:t,values:e});let 
  * SPDX-License-Identifier: BSD-3-Clause
  */const n$1="important",i=" !"+n$1,o$1=e$3(class extends i$1{constructor(t$1){if(super(t$1),t$1.type!==t.ATTRIBUTE||"style"!==t$1.name||t$1.strings?.length>2)throw Error("The `styleMap` directive must be used in the `style` attribute and must be the only part in the attribute.")}render(t){return Object.keys(t).reduce(((e,r)=>{const s=t[r];return null==s?e:e+`${r=r.includes("-")?r:r.replace(/(?:^(webkit|moz|ms|o)|)(?=[A-Z])/g,"-$&").toLowerCase()}:${s};`}),"")}update(e,[r]){const{style:s}=e.element;if(void 0===this.ft)return this.ft=new Set(Object.keys(r)),this.render(r);for(const t of this.ft)null==r[t]&&(this.ft.delete(t),t.includes("-")?s.removeProperty(t):s[t]=null);for(const t in r){const e=r[t];if(null!=e){this.ft.add(t);const r="string"==typeof e&&e.endsWith(i);t.includes("-")||r?s.setProperty(t,r?e.slice(0,-11):e,r?n$1:""):s[t]=e;}}return T}});
 
+/**
+ * DeviceState slice — the single place in the codebase that reads hass.states
+ * for device-controlled entities and exposes normalized DeviceSnapshot atoms.
+ *
+ * Public API (atoms):
+ *   deviceSnapshots$        — read: Map<growspaceId, DeviceSnapshot> (one entry per growspace)
+ *   subareaDeviceSnapshots$ — read: Map<subareaId, DeviceSnapshot> (one entry per subarea)
+ *
+ * Public API (bootstrap writes):
+ *   setDeviceSnapshot()        — compute + store snapshot for a growspace (called by
+ *                                SyncService on every hass update)
+ *   setSubareaDeviceSnapshot() — compute + store snapshot for a subarea (called by
+ *                                SyncService alongside the growspace snapshots)
+ *
+ * Public API (pure computation):
+ *   computeDeviceSnapshot()        — derive a DeviceSnapshot from a device + hass states
+ *                                    snapshot. Exported so HeaderMetrics and tests can
+ *                                    call it directly.
+ *   computeSubareaDeviceSnapshot() — derive a DeviceSnapshot from a subarea's
+ *                                    environment_config device lists + hass states.
+ *
+ * Internally the two compute functions are thin entity-resolution adapters over a
+ * shared snapshot-building core (ADR-0018): the growspace adapter resolves entity
+ * IDs from the device's environmentAttributes (with the singular-field fallbacks),
+ * while the subarea adapter resolves directly from the subarea's environment_config
+ * device lists. Fan Entity Mode detection (ADR-0008) lives in the shared normalizers.
+ */
+// ---------------------------------------------------------------------------
+// Internal constants
+// ---------------------------------------------------------------------------
+const UNAVAILABLE_STATES$1 = new Set(['unavailable', 'unknown']);
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+/**
+ * Normalize a light sensor entity state.
+ * - If `unit_of_measurement` is `%`: return a rounded percentage string.
+ * - Otherwise: return "On" / "Off" for binary states.
+ */
+function _normalizeLightSensor(entity) {
+    if (!entity)
+        return undefined;
+    if (UNAVAILABLE_STATES$1.has(entity.state))
+        return undefined;
+    const unit = entity.attributes?.unit_of_measurement;
+    if (unit === '%') {
+        const n = parseFloat(entity.state);
+        return isNaN(n) ? undefined : `${Math.round(n)}%`;
+    }
+    if (entity.state === 'on')
+        return 'On';
+    if (entity.state === 'off')
+        return 'Off';
+    const n = parseFloat(entity.state);
+    if (!isNaN(n))
+        return String(Math.round(n));
+    return undefined;
+}
+/** Normalize an on/off device entity state to "On", "Off", or undefined. */
+function _normalizeOnOff(entity) {
+    if (!entity)
+        return undefined;
+    if (UNAVAILABLE_STATES$1.has(entity.state))
+        return undefined;
+    if (entity.state === 'on')
+        return 'On';
+    if (entity.state === 'off')
+        return 'Off';
+    const n = parseFloat(entity.state);
+    if (!isNaN(n))
+        return n > 0 ? 'On' : 'Off';
+    return undefined;
+}
+const BINARY_FAN_DOMAINS = new Set(['switch', 'input_boolean', 'binary_sensor']);
+/**
+ * Classify a fan-slot entity into a {@link FanReading}. The single place in the
+ * codebase that inspects a fan entity; chip display, graph axis, and per-point
+ * graph value are pure mappers over the result and never re-touch the entity.
+ *
+ * `kind` is derived from the entity-id domain (the type facet), so it is known
+ * even when the entity is missing or unavailable; in that case `available` is
+ * false and the mappers degrade to "no value" / a default axis.
+ */
+function classifyFanEntity(entityId, entity) {
+    const domain = entityId.split('.')[0];
+    const state = entity?.state;
+    const available = !!state && !UNAVAILABLE_STATES$1.has(state);
+    if (domain === 'fan') {
+        if (!available)
+            return { kind: 'ha-fan', available: false, on: false, percentage: null };
+        const on = state !== 'off';
+        const pct = entity.attributes?.percentage;
+        return { kind: 'ha-fan', available: true, on, percentage: pct != null ? Number(pct) : null };
+    }
+    const isBinaryDomain = BINARY_FAN_DOMAINS.has(domain);
+    const numVal = available ? parseFloat(state) : NaN;
+    // Numeric state on a non-binary domain is a speed sensor (raw 0–10 index).
+    if (!isNaN(numVal) && !isBinaryDomain) {
+        return { kind: 'speed-sensor', available: true, value: Math.round(numVal) };
+    }
+    // Binary: numeric on a binary domain, or a recognized on/off string (any domain).
+    if (available) {
+        if (!isNaN(numVal))
+            return { kind: 'binary', available: true, on: numVal > 0 };
+        if (state === 'on')
+            return { kind: 'binary', available: true, on: true };
+        if (state === 'off')
+            return { kind: 'binary', available: true, on: false };
+    }
+    // Unavailable or unrecognized state: keep the id-derived type, mark not-available.
+    return isBinaryDomain
+        ? { kind: 'binary', available: false, on: false }
+        : { kind: 'speed-sensor', available: false, value: 0 };
+}
+/** Map a {@link FanReading} to the chip display string, or undefined when unreadable. */
+function fanReadingToChipDisplay(reading) {
+    if (!reading.available)
+        return undefined;
+    switch (reading.kind) {
+        case 'ha-fan':
+            return reading.on
+                ? reading.percentage != null
+                    ? `${Math.round(reading.percentage)}%`
+                    : 'On'
+                : 'Off';
+        case 'speed-sensor':
+            return String(reading.value);
+        case 'binary':
+            return reading.on ? 'On' : 'Off';
+    }
+}
+/** Map a {@link FanReading} kind to the graph Y-axis scale (the type facet only). */
+function fanReadingToAxisScale(kind) {
+    return kind === 'ha-fan' ? { min: 0, max: 100 } : { min: 0, max: 10 };
+}
+/** Map a {@link FanReading} to a normalized graph value, or undefined when unreadable. */
+function fanReadingToNormalizedValue(reading) {
+    if (!reading.available)
+        return undefined;
+    switch (reading.kind) {
+        case 'ha-fan':
+            return reading.on ? (reading.percentage ?? 100) : 0;
+        case 'speed-sensor':
+            return reading.value;
+        case 'binary':
+            return reading.on ? 1 : 0;
+    }
+}
+/** Normalize a fan entity state for chip display (ADR-0008). */
+function _normalizeFanDevice(entity, entityId) {
+    return fanReadingToChipDisplay(classifyFanEntity(entityId, entity));
+}
+/**
+ * Build a DeviceEntry for a list of entity IDs using the given normalizer.
+ * Returns null when the entity list is empty (device category not configured).
+ */
+function _buildEntry(entityIds, hassStates, icon, normalizer) {
+    if (entityIds.length === 0)
+        return null;
+    if (entityIds.length === 1) {
+        const value = normalizer(hassStates[entityIds[0]], entityIds[0]);
+        return { entityIds, value, icon };
+    }
+    // Multiple entities: collect individual values; surface "Multiple" as the aggregate.
+    const multiValues = entityIds
+        .map((id) => normalizer(hassStates[id], id))
+        .filter((v) => v !== undefined);
+    return {
+        entityIds,
+        value: 'Multiple',
+        multiValues: multiValues.length > 0 ? multiValues : undefined,
+        icon,
+    };
+}
+/**
+ * Shared snapshot-building core (ADR-0018): explicit device entity ID lists →
+ * DeviceSnapshot. Both the growspace and subarea adapters resolve their own
+ * entity IDs and feed them through here.
+ */
+function _buildSnapshot(ids, hassStates) {
+    return {
+        lightSensors: _buildEntry(ids.lightIds, hassStates, mdiLightbulbOn, _normalizeLightSensor),
+        exhaustFans: _buildEntry(ids.exhaustIds, hassStates, mdiFan, _normalizeFanDevice),
+        circulationFans: _buildEntry(ids.circulationIds, hassStates, mdiFan, _normalizeFanDevice),
+        humidifiers: _buildEntry(ids.humidifierIds, hassStates, mdiAirHumidifier, _normalizeOnOff),
+        dehumidifiers: _buildEntry(ids.dehumidifierIds, hassStates, mdiAirHumidifierOff, _normalizeOnOff),
+    };
+}
+// ---------------------------------------------------------------------------
+// Pure computation (exported — used by HeaderMetrics and tests)
+// ---------------------------------------------------------------------------
+/**
+ * Derive a normalized DeviceSnapshot for a growspace from the current hass states.
+ *
+ * Thin entity-resolution adapter over the shared snapshot core: entity IDs come
+ * from the device's environmentAttributes, preferring the plural list fields
+ * with the legacy singular fields as fallback.
+ *
+ * This is the canonical place to read device-controlled entity states from hass.states.
+ * All downstream consumers (HeaderMetrics, cards) should subscribe to the atom
+ * instead of calling this directly.
+ */
+function computeDeviceSnapshot(device, hassStates) {
+    const env = device.environmentAttributes ?? {};
+    return _buildSnapshot({
+        lightIds: env.lightSensors ?? (env.lightSensor ? [env.lightSensor] : []),
+        exhaustIds: env.exhaustFanEntities ?? (env.exhaustEntity ? [env.exhaustEntity] : []),
+        circulationIds: env.circulationFanEntities ?? (env.circulationFanEntity ? [env.circulationFanEntity] : []),
+        humidifierIds: env.humidifierEntities ?? (env.humidifierEntity ? [env.humidifierEntity] : []),
+        dehumidifierIds: env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : []),
+    }, hassStates);
+}
+/**
+ * Derive a normalized DeviceSnapshot for a subarea from the current hass states.
+ *
+ * Thin entity-resolution adapter over the shared snapshot core: entity IDs come
+ * directly from the subarea's environment_config device lists. Categories
+ * without configured entities are null, exactly like the growspace adapter.
+ */
+function computeSubareaDeviceSnapshot(subarea, hassStates) {
+    const ec = subarea.environment_config;
+    return _buildSnapshot({
+        lightIds: ec.light_sensors ?? [],
+        exhaustIds: ec.exhaust_fan_entities ?? [],
+        circulationIds: ec.circulation_fan_entities ?? [],
+        humidifierIds: ec.humidifier_entities ?? [],
+        dehumidifierIds: ec.dehumidifier_entities ?? [],
+    }, hassStates);
+}
+/**
+ * All entity IDs referenced by a snapshot's DeviceEntry fields.
+ * Used by SyncService to register watched entities for subarea snapshots.
+ */
+function deviceSnapshotEntityIds(snapshot) {
+    const entries = [
+        snapshot.lightSensors,
+        snapshot.exhaustFans,
+        snapshot.circulationFans,
+        snapshot.humidifiers,
+        snapshot.dehumidifiers,
+    ];
+    return entries.flatMap((e) => e?.entityIds ?? []);
+}
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+/** Per-growspace device state snapshots — keyed by growspaceId. */
+const deviceSnapshots$ = atom(new Map());
+/** Per-subarea device state snapshots — keyed by subareaId. */
+const subareaDeviceSnapshots$ = atom(new Map());
+// ---------------------------------------------------------------------------
+// Bootstrap writes (public)
+// ---------------------------------------------------------------------------
+/**
+ * Compute and store the DeviceSnapshot for a growspace.
+ * Called by SyncService after each hass update.
+ */
+function setDeviceSnapshot(growspaceId, device, hassStates) {
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+    const updated = new Map(deviceSnapshots$.get());
+    updated.set(growspaceId, snapshot);
+    deviceSnapshots$.set(updated);
+}
+/**
+ * Compute and store the DeviceSnapshot for a subarea.
+ * Called by SyncService alongside the growspace snapshots, and by the subarea
+ * card once after it has loaded its subarea (bootstrap seed).
+ */
+function setSubareaDeviceSnapshot(subareaId, subarea, hassStates) {
+    const snapshot = computeSubareaDeviceSnapshot(subarea, hassStates);
+    const updated = new Map(subareaDeviceSnapshots$.get());
+    updated.set(subareaId, snapshot);
+    subareaDeviceSnapshots$.set(updated);
+}
+
 class ChartUtils {
     /**
      * Generates an SVG path string for a mini sparkline from history data.
@@ -9106,7 +9381,7 @@ class ChartUtils {
      * (ADR-0008: fan domain → attributes.percentage; speed sensor → raw float).
      * Returns undefined for unavailable/unknown/unparseable states.
      */
-    static normalizeSensorValue(ent, key, entityDomain, entityUnit) {
+    static normalizeSensorValue(ent, key, fanEntityId, entityUnit) {
         const s = ent.state;
         if (s === EntityState.UNAVAILABLE || s === EntityState.UNKNOWN)
             return undefined;
@@ -9127,11 +9402,8 @@ class ChartUtils {
                 return val > 0 ? 1 : 0;
             return undefined;
         }
-        if (entityDomain === 'fan') {
-            if (s === 'off')
-                return 0;
-            const pct = ent.attributes?.percentage;
-            return pct != null ? Number(pct) : 100;
+        if (fanEntityId && fanEntityId.split('.')[0] === 'fan') {
+            return fanReadingToNormalizedValue(classifyFanEntity(fanEntityId, ent));
         }
         const val = parseFloat(s);
         if (isNaN(val)) {
@@ -9148,13 +9420,13 @@ class ChartUtils {
      * Delegates per-point conversion to normalizeSensorValue so all metric-specific
      * logic lives in one place.
      */
-    static normalizeHistory(historyData, metricKey, entityDomain, entityUnit) {
+    static normalizeHistory(historyData, metricKey, fanEntityId, entityUnit) {
         if (!historyData || historyData.length === 0)
             return [];
         const sorted = [...historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
         const points = [];
         for (const h of sorted) {
-            const val = ChartUtils.normalizeSensorValue(h, metricKey, entityDomain, entityUnit);
+            const val = ChartUtils.normalizeSensorValue(h, metricKey, fanEntityId, entityUnit);
             if (val === undefined)
                 continue;
             const point = {
@@ -9605,31 +9877,17 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
      * configured for a fan metric key (EXHAUST or CIRCULATION_FAN).
      * Returns undefined when no entity is configured or hass is unavailable.
      */
-    _resolveFanEntityDomain(key) {
+    _resolveFanEntityId(key) {
         if (!this.device || !this.hass)
             return undefined;
         const env = this.device.environmentAttributes ?? {};
-        let entityId;
         if (key === MetricKey.EXHAUST) {
-            entityId = (env.exhaustFanEntities ?? [])[0] ?? env.exhaustEntity;
+            return (env.exhaustFanEntities ?? [])[0] ?? env.exhaustEntity;
         }
-        else if (key === MetricKey.CIRCULATION_FAN) {
-            entityId = (env.circulationFanEntities ?? [])[0] ?? env.circulationFanEntity;
+        if (key === MetricKey.CIRCULATION_FAN) {
+            return (env.circulationFanEntities ?? [])[0] ?? env.circulationFanEntity;
         }
-        if (!entityId)
-            return undefined;
-        return entityId.split('.')[0];
-    }
-    /**
-     * Return the Y-axis scale for a fan metric series based on the configured entity type.
-     * - HA fan entity (fan.* domain): 0–100
-     * - Speed sensor or binary: 0–10 (existing default)
-     */
-    _resolveFanScale(key) {
-        const domain = this._resolveFanEntityDomain(key);
-        if (domain === 'fan')
-            return { min: 0, max: 100 };
-        return { min: 0, max: 10 };
+        return undefined;
     }
     _resolveLightEntityUnit() {
         if (!this.device || !this.hass)
@@ -9773,10 +10031,13 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     break;
                 initialState = h;
             }
-            const fanEntityDomain = key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN
-                ? this._resolveFanEntityDomain(key)
+            const fanEntityId = key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN
+                ? this._resolveFanEntityId(key)
                 : undefined;
-            if (fanEntityDomain === 'fan') {
+            const fanKind = fanEntityId
+                ? classifyFanEntity(fanEntityId, this.hass?.states[fanEntityId]).kind
+                : undefined;
+            if (fanKind === 'ha-fan') {
                 config.unit = '%';
             }
             const lightEntityUnit = key === MetricKey.LIGHT ? this._resolveLightEntityUnit() : undefined;
@@ -9788,7 +10049,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     ? BINARY_ON_STATES.includes(initialState.state)
                         ? 1
                         : 0
-                    : ChartUtils.normalizeSensorValue(initialState, key, fanEntityDomain, lightEntityUnit);
+                    : ChartUtils.normalizeSensorValue(initialState, key, fanEntityId, lightEntityUnit);
                 if (val !== undefined)
                     dataPoints.push({ time: startTimeMs, value: val });
             }
@@ -9807,7 +10068,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                         dataPoints.push({ time: t, value: val });
                 }
                 else {
-                    val = ChartUtils.normalizeSensorValue(h, key, fanEntityDomain, lightEntityUnit);
+                    val = ChartUtils.normalizeSensorValue(h, key, fanEntityId, lightEntityUnit);
                     if (val !== undefined)
                         dataPoints.push({ time: t, value: val });
                 }
@@ -9839,7 +10100,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     key === MetricKey.IRRIGATION ||
                     key === MetricKey.DRAIN;
                 if (key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN) {
-                    const fanScale = this._resolveFanScale(key);
+                    const fanScale = fanReadingToAxisScale(fanKind ?? 'speed-sensor');
                     min = fanScale.min;
                     max = fanScale.max;
                 }
@@ -69289,7 +69550,7 @@ function filterChips(chips, hiddenKeys) {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-const UNAVAILABLE_STATES$1 = new Set(['unavailable', 'unknown']);
+const UNAVAILABLE_STATES = new Set(['unavailable', 'unknown']);
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -69332,7 +69593,7 @@ function _numAttr(entity, key) {
 function _parseState(entity) {
     if (!entity)
         return null;
-    if (UNAVAILABLE_STATES$1.has(entity.state))
+    if (UNAVAILABLE_STATES.has(entity.state))
         return null;
     const n = parseFloat(entity.state);
     return isNaN(n) ? null : n;
@@ -69537,7 +69798,7 @@ function _resolveSubareaVpdIds(subarea, parent, tempIds, humIds, hassStates) {
         return explicit;
     const isAvailable = (id) => {
         const entity = hassStates[id];
-        return entity !== undefined && !UNAVAILABLE_STATES$1.has(entity.state);
+        return entity !== undefined && !UNAVAILABLE_STATES.has(entity.state);
     };
     const resolved = [];
     for (let i = 0; i < numPairs; i++) {
@@ -69663,236 +69924,6 @@ function setSubareaEnvSnapshot(subareaId, subarea, parent, hassStates) {
     const updated = new Map(subareaEnvSnapshots$.get());
     updated.set(subareaId, snapshot);
     subareaEnvSnapshots$.set(updated);
-}
-
-/**
- * DeviceState slice — the single place in the codebase that reads hass.states
- * for device-controlled entities and exposes normalized DeviceSnapshot atoms.
- *
- * Public API (atoms):
- *   deviceSnapshots$        — read: Map<growspaceId, DeviceSnapshot> (one entry per growspace)
- *   subareaDeviceSnapshots$ — read: Map<subareaId, DeviceSnapshot> (one entry per subarea)
- *
- * Public API (bootstrap writes):
- *   setDeviceSnapshot()        — compute + store snapshot for a growspace (called by
- *                                SyncService on every hass update)
- *   setSubareaDeviceSnapshot() — compute + store snapshot for a subarea (called by
- *                                SyncService alongside the growspace snapshots)
- *
- * Public API (pure computation):
- *   computeDeviceSnapshot()        — derive a DeviceSnapshot from a device + hass states
- *                                    snapshot. Exported so HeaderMetrics and tests can
- *                                    call it directly.
- *   computeSubareaDeviceSnapshot() — derive a DeviceSnapshot from a subarea's
- *                                    environment_config device lists + hass states.
- *
- * Internally the two compute functions are thin entity-resolution adapters over a
- * shared snapshot-building core (ADR-0018): the growspace adapter resolves entity
- * IDs from the device's environmentAttributes (with the singular-field fallbacks),
- * while the subarea adapter resolves directly from the subarea's environment_config
- * device lists. Fan Entity Mode detection (ADR-0008) lives in the shared normalizers.
- */
-// ---------------------------------------------------------------------------
-// Internal constants
-// ---------------------------------------------------------------------------
-const UNAVAILABLE_STATES = new Set(['unavailable', 'unknown']);
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-/**
- * Normalize a light sensor entity state.
- * - If `unit_of_measurement` is `%`: return a rounded percentage string.
- * - Otherwise: return "On" / "Off" for binary states.
- */
-function _normalizeLightSensor(entity) {
-    if (!entity)
-        return undefined;
-    if (UNAVAILABLE_STATES.has(entity.state))
-        return undefined;
-    const unit = entity.attributes?.unit_of_measurement;
-    if (unit === '%') {
-        const n = parseFloat(entity.state);
-        return isNaN(n) ? undefined : `${Math.round(n)}%`;
-    }
-    if (entity.state === 'on')
-        return 'On';
-    if (entity.state === 'off')
-        return 'Off';
-    const n = parseFloat(entity.state);
-    if (!isNaN(n))
-        return String(Math.round(n));
-    return undefined;
-}
-/** Normalize an on/off device entity state to "On", "Off", or undefined. */
-function _normalizeOnOff(entity) {
-    if (!entity)
-        return undefined;
-    if (UNAVAILABLE_STATES.has(entity.state))
-        return undefined;
-    if (entity.state === 'on')
-        return 'On';
-    if (entity.state === 'off')
-        return 'Off';
-    const n = parseFloat(entity.state);
-    if (!isNaN(n))
-        return n > 0 ? 'On' : 'Off';
-    return undefined;
-}
-/**
- * Normalize a fan entity state for chip display.
- *
- * Three Fan Entity Modes (see ADR-0008):
- *   - HA fan entity (fan.* domain): read attributes.percentage → "70%" or "Off"
- *   - Speed sensor (numeric state, non-fan domain): show raw integer string "5"
- *   - Binary (switch / input_boolean): "On" / "Off"
- */
-function _normalizeFanDevice(entity, entityId) {
-    if (!entity)
-        return undefined;
-    if (UNAVAILABLE_STATES.has(entity.state))
-        return undefined;
-    const isFanDomain = entityId.startsWith('fan.');
-    if (isFanDomain) {
-        if (entity.state === 'off')
-            return 'Off';
-        const pct = entity.attributes?.percentage;
-        return pct != null ? `${Math.round(Number(pct))}%` : 'On';
-    }
-    const numVal = parseFloat(entity.state);
-    if (!isNaN(numVal)) {
-        const domain = entityId.split('.')[0];
-        const isBinaryDomain = ['switch', 'input_boolean', 'binary_sensor'].includes(domain);
-        if (!isBinaryDomain)
-            return String(Math.round(numVal));
-        return numVal > 0 ? 'On' : 'Off';
-    }
-    if (entity.state === 'on')
-        return 'On';
-    if (entity.state === 'off')
-        return 'Off';
-    return undefined;
-}
-/**
- * Build a DeviceEntry for a list of entity IDs using the given normalizer.
- * Returns null when the entity list is empty (device category not configured).
- */
-function _buildEntry(entityIds, hassStates, icon, normalizer) {
-    if (entityIds.length === 0)
-        return null;
-    if (entityIds.length === 1) {
-        const value = normalizer(hassStates[entityIds[0]], entityIds[0]);
-        return { entityIds, value, icon };
-    }
-    // Multiple entities: collect individual values; surface "Multiple" as the aggregate.
-    const multiValues = entityIds
-        .map((id) => normalizer(hassStates[id], id))
-        .filter((v) => v !== undefined);
-    return {
-        entityIds,
-        value: 'Multiple',
-        multiValues: multiValues.length > 0 ? multiValues : undefined,
-        icon,
-    };
-}
-/**
- * Shared snapshot-building core (ADR-0018): explicit device entity ID lists →
- * DeviceSnapshot. Both the growspace and subarea adapters resolve their own
- * entity IDs and feed them through here.
- */
-function _buildSnapshot(ids, hassStates) {
-    return {
-        lightSensors: _buildEntry(ids.lightIds, hassStates, mdiLightbulbOn, _normalizeLightSensor),
-        exhaustFans: _buildEntry(ids.exhaustIds, hassStates, mdiFan, _normalizeFanDevice),
-        circulationFans: _buildEntry(ids.circulationIds, hassStates, mdiFan, _normalizeFanDevice),
-        humidifiers: _buildEntry(ids.humidifierIds, hassStates, mdiAirHumidifier, _normalizeOnOff),
-        dehumidifiers: _buildEntry(ids.dehumidifierIds, hassStates, mdiAirHumidifierOff, _normalizeOnOff),
-    };
-}
-// ---------------------------------------------------------------------------
-// Pure computation (exported — used by HeaderMetrics and tests)
-// ---------------------------------------------------------------------------
-/**
- * Derive a normalized DeviceSnapshot for a growspace from the current hass states.
- *
- * Thin entity-resolution adapter over the shared snapshot core: entity IDs come
- * from the device's environmentAttributes, preferring the plural list fields
- * with the legacy singular fields as fallback.
- *
- * This is the canonical place to read device-controlled entity states from hass.states.
- * All downstream consumers (HeaderMetrics, cards) should subscribe to the atom
- * instead of calling this directly.
- */
-function computeDeviceSnapshot(device, hassStates) {
-    const env = device.environmentAttributes ?? {};
-    return _buildSnapshot({
-        lightIds: env.lightSensors ?? (env.lightSensor ? [env.lightSensor] : []),
-        exhaustIds: env.exhaustFanEntities ?? (env.exhaustEntity ? [env.exhaustEntity] : []),
-        circulationIds: env.circulationFanEntities ?? (env.circulationFanEntity ? [env.circulationFanEntity] : []),
-        humidifierIds: env.humidifierEntities ?? (env.humidifierEntity ? [env.humidifierEntity] : []),
-        dehumidifierIds: env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : []),
-    }, hassStates);
-}
-/**
- * Derive a normalized DeviceSnapshot for a subarea from the current hass states.
- *
- * Thin entity-resolution adapter over the shared snapshot core: entity IDs come
- * directly from the subarea's environment_config device lists. Categories
- * without configured entities are null, exactly like the growspace adapter.
- */
-function computeSubareaDeviceSnapshot(subarea, hassStates) {
-    const ec = subarea.environment_config;
-    return _buildSnapshot({
-        lightIds: ec.light_sensors ?? [],
-        exhaustIds: ec.exhaust_fan_entities ?? [],
-        circulationIds: ec.circulation_fan_entities ?? [],
-        humidifierIds: ec.humidifier_entities ?? [],
-        dehumidifierIds: ec.dehumidifier_entities ?? [],
-    }, hassStates);
-}
-/**
- * All entity IDs referenced by a snapshot's DeviceEntry fields.
- * Used by SyncService to register watched entities for subarea snapshots.
- */
-function deviceSnapshotEntityIds(snapshot) {
-    const entries = [
-        snapshot.lightSensors,
-        snapshot.exhaustFans,
-        snapshot.circulationFans,
-        snapshot.humidifiers,
-        snapshot.dehumidifiers,
-    ];
-    return entries.flatMap((e) => e?.entityIds ?? []);
-}
-// ---------------------------------------------------------------------------
-// Atoms (public)
-// ---------------------------------------------------------------------------
-/** Per-growspace device state snapshots — keyed by growspaceId. */
-const deviceSnapshots$ = atom(new Map());
-/** Per-subarea device state snapshots — keyed by subareaId. */
-const subareaDeviceSnapshots$ = atom(new Map());
-// ---------------------------------------------------------------------------
-// Bootstrap writes (public)
-// ---------------------------------------------------------------------------
-/**
- * Compute and store the DeviceSnapshot for a growspace.
- * Called by SyncService after each hass update.
- */
-function setDeviceSnapshot(growspaceId, device, hassStates) {
-    const snapshot = computeDeviceSnapshot(device, hassStates);
-    const updated = new Map(deviceSnapshots$.get());
-    updated.set(growspaceId, snapshot);
-    deviceSnapshots$.set(updated);
-}
-/**
- * Compute and store the DeviceSnapshot for a subarea.
- * Called by SyncService alongside the growspace snapshots, and by the subarea
- * card once after it has loaded its subarea (bootstrap seed).
- */
-function setSubareaDeviceSnapshot(subareaId, subarea, hassStates) {
-    const snapshot = computeSubareaDeviceSnapshot(subarea, hassStates);
-    const updated = new Map(subareaDeviceSnapshots$.get());
-    updated.set(subareaId, snapshot);
-    subareaDeviceSnapshots$.set(updated);
 }
 
 function toDateString(value) {
@@ -138527,7 +138558,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.61"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.62"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

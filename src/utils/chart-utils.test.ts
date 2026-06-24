@@ -10,7 +10,7 @@ describe('ChartUtils.normalizeSensorValue — fan domain (issue #225)', () => {
     const result = ChartUtils.normalizeSensorValue(
       { state: 'on', attributes: { percentage: 70 } },
       'exhaust',
-      'fan',
+      'fan.exhaust',
     );
     expect(result).toBe(70);
   });
@@ -19,7 +19,7 @@ describe('ChartUtils.normalizeSensorValue — fan domain (issue #225)', () => {
     const result = ChartUtils.normalizeSensorValue(
       { state: 'off', attributes: { percentage: 0 } },
       'exhaust',
-      'fan',
+      'fan.exhaust',
     );
     expect(result).toBe(0);
   });
@@ -28,7 +28,7 @@ describe('ChartUtils.normalizeSensorValue — fan domain (issue #225)', () => {
     const result = ChartUtils.normalizeSensorValue(
       { state: 'on' },
       'exhaust',
-      'fan',
+      'fan.exhaust',
     );
     expect(result).toBe(100);
   });

@@ -104,36 +104,110 @@ function _normalizeOnOff(entity: HassEntity | undefined): string | undefined {
   return undefined;
 }
 
+// ---------------------------------------------------------------------------
+// Fan Entity Mode (ADR-0008) — one classifier, three pure mappers.
+// See CONTEXT.md "Fan Entity Mode" / "classifyFanEntity" / "FanReading".
+// ---------------------------------------------------------------------------
+
 /**
- * Normalize a fan entity state for chip display.
- *
- * Three Fan Entity Modes (see ADR-0008):
- *   - HA fan entity (fan.* domain): read attributes.percentage → "70%" or "Off"
- *   - Speed sensor (numeric state, non-fan domain): show raw integer string "5"
- *   - Binary (switch / input_boolean): "On" / "Off"
+ * A classified reading of a fan-slot entity. `kind` is the *type facet*
+ * (id-derived, stable even when the entity is unavailable); `available` plus the
+ * payload are the *reading facet*. There is deliberately no `unavailable` kind —
+ * an unavailable fan still has a known type, which the graph axis depends on.
  */
+export type FanReading =
+  | { kind: 'ha-fan'; available: boolean; on: boolean; percentage: number | null }
+  | { kind: 'speed-sensor'; available: boolean; value: number }
+  | { kind: 'binary'; available: boolean; on: boolean };
+
+/** Minimal entity shape the classifier reads — full HassEntity and raw history points both satisfy it. */
+type FanEntityStateLike = { state: string; attributes?: Record<string, unknown> };
+
+const BINARY_FAN_DOMAINS = new Set(['switch', 'input_boolean', 'binary_sensor']);
+
+/**
+ * Classify a fan-slot entity into a {@link FanReading}. The single place in the
+ * codebase that inspects a fan entity; chip display, graph axis, and per-point
+ * graph value are pure mappers over the result and never re-touch the entity.
+ *
+ * `kind` is derived from the entity-id domain (the type facet), so it is known
+ * even when the entity is missing or unavailable; in that case `available` is
+ * false and the mappers degrade to "no value" / a default axis.
+ */
+export function classifyFanEntity(
+  entityId: string,
+  entity: FanEntityStateLike | undefined
+): FanReading {
+  const domain = entityId.split('.')[0];
+  const state = entity?.state;
+  const available = !!state && !UNAVAILABLE_STATES.has(state);
+
+  if (domain === 'fan') {
+    if (!available) return { kind: 'ha-fan', available: false, on: false, percentage: null };
+    const on = state !== 'off';
+    const pct = entity!.attributes?.percentage;
+    return { kind: 'ha-fan', available: true, on, percentage: pct != null ? Number(pct) : null };
+  }
+
+  const isBinaryDomain = BINARY_FAN_DOMAINS.has(domain);
+  const numVal = available ? parseFloat(state!) : NaN;
+
+  // Numeric state on a non-binary domain is a speed sensor (raw 0–10 index).
+  if (!isNaN(numVal) && !isBinaryDomain) {
+    return { kind: 'speed-sensor', available: true, value: Math.round(numVal) };
+  }
+
+  // Binary: numeric on a binary domain, or a recognized on/off string (any domain).
+  if (available) {
+    if (!isNaN(numVal)) return { kind: 'binary', available: true, on: numVal > 0 };
+    if (state === 'on') return { kind: 'binary', available: true, on: true };
+    if (state === 'off') return { kind: 'binary', available: true, on: false };
+  }
+
+  // Unavailable or unrecognized state: keep the id-derived type, mark not-available.
+  return isBinaryDomain
+    ? { kind: 'binary', available: false, on: false }
+    : { kind: 'speed-sensor', available: false, value: 0 };
+}
+
+/** Map a {@link FanReading} to the chip display string, or undefined when unreadable. */
+export function fanReadingToChipDisplay(reading: FanReading): string | undefined {
+  if (!reading.available) return undefined;
+  switch (reading.kind) {
+    case 'ha-fan':
+      return reading.on
+        ? reading.percentage != null
+          ? `${Math.round(reading.percentage)}%`
+          : 'On'
+        : 'Off';
+    case 'speed-sensor':
+      return String(reading.value);
+    case 'binary':
+      return reading.on ? 'On' : 'Off';
+  }
+}
+
+/** Map a {@link FanReading} kind to the graph Y-axis scale (the type facet only). */
+export function fanReadingToAxisScale(kind: FanReading['kind']): { min: number; max: number } {
+  return kind === 'ha-fan' ? { min: 0, max: 100 } : { min: 0, max: 10 };
+}
+
+/** Map a {@link FanReading} to a normalized graph value, or undefined when unreadable. */
+export function fanReadingToNormalizedValue(reading: FanReading): number | undefined {
+  if (!reading.available) return undefined;
+  switch (reading.kind) {
+    case 'ha-fan':
+      return reading.on ? (reading.percentage ?? 100) : 0;
+    case 'speed-sensor':
+      return reading.value;
+    case 'binary':
+      return reading.on ? 1 : 0;
+  }
+}
+
+/** Normalize a fan entity state for chip display (ADR-0008). */
 function _normalizeFanDevice(entity: HassEntity | undefined, entityId: string): string | undefined {
-  if (!entity) return undefined;
-  if (UNAVAILABLE_STATES.has(entity.state)) return undefined;
-
-  const isFanDomain = entityId.startsWith('fan.');
-  if (isFanDomain) {
-    if (entity.state === 'off') return 'Off';
-    const pct = entity.attributes?.percentage;
-    return pct != null ? `${Math.round(Number(pct))}%` : 'On';
-  }
-
-  const numVal = parseFloat(entity.state);
-  if (!isNaN(numVal)) {
-    const domain = entityId.split('.')[0];
-    const isBinaryDomain = ['switch', 'input_boolean', 'binary_sensor'].includes(domain);
-    if (!isBinaryDomain) return String(Math.round(numVal));
-    return numVal > 0 ? 'On' : 'Off';
-  }
-
-  if (entity.state === 'on') return 'On';
-  if (entity.state === 'off') return 'Off';
-  return undefined;
+  return fanReadingToChipDisplay(classifyFanEntity(entityId, entity));
 }
 
 /**

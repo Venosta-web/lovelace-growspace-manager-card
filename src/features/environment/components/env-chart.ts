@@ -8,6 +8,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 import type { GrowspaceDevice } from '../../../services/types';
 import type { GraphSeries, TooltipData, GraphDataPoint, SensorHistories } from '../types';
 import { ChartUtils } from '../../../utils/chart-utils';
+import { classifyFanEntity, fanReadingToAxisScale } from '../../../slices/device-state';
 import {
   METRIC_CONFIG,
   MetricKey,
@@ -160,28 +161,16 @@ export class GrowspaceEnvChart extends LitElement {
    * configured for a fan metric key (EXHAUST or CIRCULATION_FAN).
    * Returns undefined when no entity is configured or hass is unavailable.
    */
-  private _resolveFanEntityDomain(key: string): string | undefined {
+  private _resolveFanEntityId(key: string): string | undefined {
     if (!this.device || !this.hass) return undefined;
     const env = this.device.environmentAttributes ?? {};
-    let entityId: string | undefined;
     if (key === MetricKey.EXHAUST) {
-      entityId = (env.exhaustFanEntities ?? [])[0] ?? env.exhaustEntity;
-    } else if (key === MetricKey.CIRCULATION_FAN) {
-      entityId = (env.circulationFanEntities ?? [])[0] ?? env.circulationFanEntity;
+      return (env.exhaustFanEntities ?? [])[0] ?? env.exhaustEntity;
     }
-    if (!entityId) return undefined;
-    return entityId.split('.')[0];
-  }
-
-  /**
-   * Return the Y-axis scale for a fan metric series based on the configured entity type.
-   * - HA fan entity (fan.* domain): 0–100
-   * - Speed sensor or binary: 0–10 (existing default)
-   */
-  private _resolveFanScale(key: string): { min: number; max: number } {
-    const domain = this._resolveFanEntityDomain(key);
-    if (domain === 'fan') return { min: 0, max: 100 };
-    return { min: 0, max: 10 };
+    if (key === MetricKey.CIRCULATION_FAN) {
+      return (env.circulationFanEntities ?? [])[0] ?? env.circulationFanEntity;
+    }
+    return undefined;
   }
 
   private _resolveLightEntityUnit(): string | undefined {
@@ -365,12 +354,15 @@ export class GrowspaceEnvChart extends LitElement {
         initialState = h;
       }
 
-      const fanEntityDomain =
+      const fanEntityId =
         key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN
-          ? this._resolveFanEntityDomain(key)
+          ? this._resolveFanEntityId(key)
           : undefined;
+      const fanKind = fanEntityId
+        ? classifyFanEntity(fanEntityId, this.hass?.states[fanEntityId]).kind
+        : undefined;
 
-      if (fanEntityDomain === 'fan') {
+      if (fanKind === 'ha-fan') {
         config.unit = '%';
       }
 
@@ -386,7 +378,7 @@ export class GrowspaceEnvChart extends LitElement {
             ? BINARY_ON_STATES.includes(initialState.state)
               ? 1
               : 0
-            : ChartUtils.normalizeSensorValue(initialState, key, fanEntityDomain, lightEntityUnit);
+            : ChartUtils.normalizeSensorValue(initialState, key, fanEntityId, lightEntityUnit);
         if (val !== undefined) dataPoints.push({ time: startTimeMs, value: val });
       }
 
@@ -403,7 +395,7 @@ export class GrowspaceEnvChart extends LitElement {
             dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
           else dataPoints.push({ time: t, value: val });
         } else {
-          val = ChartUtils.normalizeSensorValue(h, key, fanEntityDomain, lightEntityUnit);
+          val = ChartUtils.normalizeSensorValue(h, key, fanEntityId, lightEntityUnit);
           if (val !== undefined) dataPoints.push({ time: t, value: val });
         }
       }
@@ -436,7 +428,7 @@ export class GrowspaceEnvChart extends LitElement {
           key === MetricKey.IRRIGATION ||
           key === MetricKey.DRAIN;
         if (key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN) {
-          const fanScale = this._resolveFanScale(key);
+          const fanScale = fanReadingToAxisScale(fanKind ?? 'speed-sensor');
           min = fanScale.min;
           max = fanScale.max;
         } else if (key === MetricKey.LIGHT && lightEntityUnit === '%') {
