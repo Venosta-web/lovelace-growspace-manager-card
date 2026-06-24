@@ -3,6 +3,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 
+import type { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, PlantEntity, StrainEntry } from '../../../types';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { strainLibraryContext, storeContext } from '../../../context';
@@ -18,7 +19,7 @@ import { SensorTypeUtils } from '../../../utils/sensor-type-utils';
 @customElement('heatmap-3d')
 export class Heatmap3D extends LitElement {
   @property({ attribute: false }) device?: GrowspaceDevice;
-  @property({ attribute: false }) hass?: any;
+  @property({ attribute: false }) hass?: HomeAssistant;
   @property({ type: Boolean }) editMode3DCords = false;
   @state() private selectedMetric: 'temperature' | 'humidity' | 'vpd' = 'temperature';
   @state() private historyData: Record<string, any[]> = {};
