@@ -1,5 +1,4 @@
 import { HassEntity } from 'home-assistant-js-websocket';
-import { GrowspaceType } from '../../features/plants/types';
 
 export interface GrowspaceOverviewEntity extends HassEntity {
   attributes: {

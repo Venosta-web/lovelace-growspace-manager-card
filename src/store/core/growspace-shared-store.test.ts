@@ -50,7 +50,7 @@ describe('GrowspaceSharedStore.updateHass', () => {
       return vi.fn() as () => void;
     });
     store.updateHass(hass);
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     const handleSpy = vi.spyOn(store as any, '_handleEvent');
     capturedCb!({ type: 'growspace_manager_updated' });

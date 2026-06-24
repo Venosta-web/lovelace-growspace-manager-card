@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing, type TemplateResult, type PropertyValues } from 'lit';
+import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';

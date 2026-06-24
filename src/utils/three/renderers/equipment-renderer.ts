@@ -666,7 +666,7 @@ export class EquipmentRenderer extends BaseRenderer {
     frameHeight: number,
     hoseTargetHeight: number,
     isActive: boolean,
-    tankMesh?: THREE.Object3D | null
+    _tankMesh?: THREE.Object3D | null
   ): THREE.Group {
     const deviceHeight = isOutside ? 0 : coords.z !== undefined ? coords.z : 0;
 
@@ -702,7 +702,6 @@ export class EquipmentRenderer extends BaseRenderer {
     body.position.y = bodyRadius + baseHeight;
     group.add(body);
 
-    const headRadius = bodyRadius * 1.1;
     const headLength = 5;
     const headGeo = this.getSharedGeometry('pumpHead', () => {
       const g = new THREE.CylinderGeometry(8.8, 8.8, 5, 32);
@@ -713,7 +712,6 @@ export class EquipmentRenderer extends BaseRenderer {
     head.position.set(-bodyLength / 2 - headLength / 2, bodyRadius + baseHeight, 0);
     group.add(head);
 
-    const portRadius = 2.5;
     const portLength = 5;
     const portGeo = this.getSharedGeometry(
       'pumpPort',

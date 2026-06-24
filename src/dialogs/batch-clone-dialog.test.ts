@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceSharedStore } from '../store/core/growspace-shared-store';
 import { GrowspaceStore } from '../store/core/growspace-store';
-import { GrowspaceUIStore } from '../store/ui/ui-store';
 import { BatchCloneDialog } from './batch-clone-dialog';
 import './batch-clone-dialog';
 import { setDevices } from '../slices/grid';

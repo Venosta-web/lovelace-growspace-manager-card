@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowspaceStore } from './growspace-store';
 import { GrowspaceSharedStore } from './growspace-shared-store';
-import { devices$, setDevices, optimisticDeletedPlantIds$ } from '../../slices/grid';
+import { setDevices, optimisticDeletedPlantIds$ } from '../../slices/grid';
 import { nutrientPresets$, ipmPresets$, nutrientInventory$ } from '../../slices/nutrient';
 import * as plantSlice from '../../slices/plant';
 

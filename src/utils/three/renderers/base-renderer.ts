@@ -40,7 +40,7 @@ export abstract class BaseRenderer {
   public abstract render(): void;
 
   // Called on every frame for animations
-  public animate(deltaTime: number): void {
+  public animate(_deltaTime: number): void {
     // Optional override
   }
 

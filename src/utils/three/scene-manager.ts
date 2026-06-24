@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { DragControls } from 'three/examples/jsm/controls/DragControls.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 
 import { BaseRenderer, RendererContext } from './renderers/base-renderer';

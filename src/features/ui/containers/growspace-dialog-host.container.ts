@@ -1,6 +1,6 @@
-import { LitElement, html, TemplateResult, PropertyValues, css } from 'lit';
+import { LitElement, html, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { consume, provide } from '@lit/context';
+import { provide } from '@lit/context';
 import { hassContext, storeContext, configContext } from '../../../lib/context';
 import {
   waterPlant as sliceWaterPlant,
@@ -57,11 +57,9 @@ import {
   GrowspaceDevice,
   PlantEntity,
   StrainEntry,
-  EnvironmentConfigEventDetail,
   SeedBatch,
   PollinationEvent,
   IPMPreset,
-  NutrientPreset,
   NutrientInventory,
   GrowspaceManagerCardConfig,
   AddPlantsDialogState,

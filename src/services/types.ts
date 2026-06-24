@@ -1,6 +1,5 @@
 import type {
   PlantEntity,
-  PlantTimelineEvent,
   RawPlantData,
   GrowspaceType,
 } from '../features/plants/types';

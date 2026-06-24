@@ -10,7 +10,6 @@ import type {
   PlantEntity,
   PlantDisplayData,
   StrainEntry,
-  NutrientPreset,
   GrowspaceDevice,
 } from '../../../types';
 import { PlantUtils } from '../../../utils/plant-utils';

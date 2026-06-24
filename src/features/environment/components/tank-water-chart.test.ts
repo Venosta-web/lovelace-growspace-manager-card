@@ -97,7 +97,7 @@ describe('TankWaterChart – _fetch', () => {
 describe('TankWaterChart – loading state', () => {
   it('shows loading indicator while fetch is in progress', async () => {
     let resolve!: (v: unknown) => void;
-    mockHassCall.mockReturnValue(new Promise((r) => (resolve = r)));
+    mockHassCall.mockReturnValue(new Promise((_resolve) => (resolve = _resolve)));
     const el = createElement();
     el.device = { deviceId: 'gs-1' } as any;
     await el.updateComplete;

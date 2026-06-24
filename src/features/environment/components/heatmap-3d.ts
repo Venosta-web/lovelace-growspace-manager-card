@@ -534,7 +534,9 @@ export class Heatmap3D extends LitElement {
     // Initial Scene Update & Render Trigger
     this.updateScene();
     // Defer so the second render is scheduled outside the completed update cycle (avoids Lit change-in-update warning).
-    Promise.resolve().then(() => this.requestUpdate());
+    Promise.resolve()
+      .then(() => this.requestUpdate())
+      .catch(() => {});
   }
 
   private updateScene() {
@@ -556,7 +558,7 @@ export class Heatmap3D extends LitElement {
     );
   }
 
-  protected willUpdate(changedProps: PropertyValues) {
+  protected willUpdate(_changedProps: PropertyValues) {
     if (this.sceneManager) {
       this.updateScene();
     }
@@ -699,7 +701,6 @@ export class Heatmap3D extends LitElement {
       if (m === mesh) {
         const x = mesh.position.x + width / 2;
         const y = mesh.position.z + depth / 2;
-        const z = mesh.userData.logicalZ !== undefined ? mesh.userData.logicalZ : mesh.position.y;
 
         if (!this.device.environmentAttributes) this.device.environmentAttributes = {};
         if (!this.device.environmentAttributes.sensorCoordinates)
@@ -773,7 +774,7 @@ export class Heatmap3D extends LitElement {
 
   // UI Helpers
 
-  private getSensorValue(entityId: string, metric: string): number | null {
+  private getSensorValue(entityId: string, _metric: string): number | null {
     // Used by renderers
     if (this.timelineIndex >= 0) {
       const history = this.historyData[entityId];
@@ -864,7 +865,6 @@ export class Heatmap3D extends LitElement {
     if (!mesh) return;
 
     const width = this.device.dimensions?.width ?? 120;
-    const height = this.device.dimensions?.height ?? 200;
     const depth = this.device.dimensions?.length ?? (this.device.dimensions as any)?.depth ?? 120;
 
     // Note: SceneManager meshes are positioned:
@@ -1304,9 +1304,6 @@ export class Heatmap3D extends LitElement {
             const z = Math.round(
               mesh.userData.logicalZ !== undefined ? mesh.userData.logicalZ : mesh.position.y
             );
-
-            // Rotation?
-            let rotation = 0;
 
             if (!id) return nothing;
             const friendlyName = this.hass?.states[id]?.attributes?.friendly_name;

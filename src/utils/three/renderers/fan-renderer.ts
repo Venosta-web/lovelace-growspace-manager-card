@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { BaseRenderer } from './base-renderer';
-import { SensorTypeUtils } from '../../sensor-type-utils';
 
 export class FanRenderer extends BaseRenderer {
   private fanHeads: THREE.Object3D[] = [];
@@ -132,7 +131,7 @@ export class FanRenderer extends BaseRenderer {
     this.context.volatileGroup.add(this._windParticles);
   }
 
-  private animateParticles(deltaTime: number) {
+  private animateParticles(_deltaTime: number) {
     if (this._windParticles) {
       const pos = this._windParticles.geometry.attributes.position.array as Float32Array;
       const vel = this._windParticles.geometry.attributes.velocity.array as Float32Array;
