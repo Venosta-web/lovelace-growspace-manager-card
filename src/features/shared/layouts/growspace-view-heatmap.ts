@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import type { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice } from '../../../types';
 import '../../ui/containers/growspace-header.container';
 import '../../environment/components/heatmap-3d';
@@ -11,7 +12,7 @@ import '../../environment/components/heatmap-3d';
 @customElement('growspace-view-heatmap')
 export class GrowspaceViewHeatmap extends LitElement {
   @property({ attribute: false }) device?: GrowspaceDevice;
-  @property({ attribute: false }) hass?: any;
+  @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
   @property({ type: Boolean }) editMode3DCords = false;
 

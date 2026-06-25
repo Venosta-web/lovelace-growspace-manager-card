@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { BaseRenderer } from './base-renderer';
-import { SensorTypeUtils } from '../../sensor-type-utils';
 import { defaultFanCoords } from '../default-placement';
 
 export class FanRenderer extends BaseRenderer {
@@ -19,7 +18,7 @@ export class FanRenderer extends BaseRenderer {
 
     const { device, volatileGroup, hass } = this.context;
     const width = device.dimensions?.width ?? 120;
-    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+    const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
     const height = device.dimensions?.height ?? 200;
 
     const env = device.environmentAttributes;
@@ -131,7 +130,7 @@ export class FanRenderer extends BaseRenderer {
     this.context.volatileGroup.add(this._windParticles);
   }
 
-  private animateParticles(deltaTime: number) {
+  private animateParticles(_deltaTime: number) {
     if (this._windParticles) {
       const pos = this._windParticles.geometry.attributes.position.array as Float32Array;
       const vel = this._windParticles.geometry.attributes.velocity.array as Float32Array;

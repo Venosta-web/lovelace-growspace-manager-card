@@ -14,7 +14,6 @@ import {
   isActiveTabDirty,
   isNotificationsDirty,
   type ConfigDialogSM,
-  type ConfigTabId,
 } from './config-dialog-sm';
 import { createGrowspaceDevice } from '../services/types';
 import type { CirculationFanConfig, ExhaustFanConfig } from '../slices/growspace/schema';
@@ -244,7 +243,6 @@ describe('isNotificationsDirty', () => {
   it('returns true when timed notifications list differs from device', () => {
     const device = makeDevice({ timedNotifications: [] });
     const sm = createInitialSM(device);
-    const withItem = transition(sm, { type: 'ADD_TIMED_NOTIFICATION', id: 'n1' });
     // no adding sub — ADD_TIMED_NOTIFICATION is a no-op without prior START_ADD; seed one manually
     const smWithAdd = transition(
       transition(sm, { type: 'START_ADD_TIMED_NOTIFICATION' }),

@@ -1,4 +1,3 @@
-import { MetricKey } from './constants';
 
 export interface GraphDataPoint {
   time: number;

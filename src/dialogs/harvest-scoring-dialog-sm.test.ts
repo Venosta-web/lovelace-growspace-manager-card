@@ -12,7 +12,6 @@ import {
   isScoringEmpty,
   parseMetrics,
   type SM,
-  type TabId,
   type ScoringDraft,
   type MetricsDraft,
 } from './harvest-scoring-dialog-sm';

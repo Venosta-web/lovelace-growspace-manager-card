@@ -17,7 +17,7 @@ export class VpdCloudRenderer extends BaseRenderer {
 
     const width = device.dimensions?.width ?? 120;
     const height = device.dimensions?.height ?? 200;
-    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+    const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
 
     let volMesh = this.cache.get('vpdCloud') as THREE.Mesh;
     const dimensionsKey = `${width}_${height}_${depth}`;
@@ -298,7 +298,7 @@ export class VpdCloudRenderer extends BaseRenderer {
 
     const width = device.dimensions?.width ?? 120;
     const height = device.dimensions?.height ?? 200;
-    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+    const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
 
     // Update box size if changed
     if (material.uniforms.u_boxSize) {

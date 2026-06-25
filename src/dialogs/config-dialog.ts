@@ -1029,7 +1029,7 @@ export class ConfigDialog extends LitElement {
           humidifierThresholds: environmentData.humidifierThresholds || {},
           sensorGroups: environmentData.sensorGroups || [],
           sensorCoordinates: environmentData.sensorCoordinates || {},
-          irrigationTanks: (environmentData.irrigationTanks || []).map((t: any) => ({
+          irrigationTanks: (environmentData.irrigationTanks || []).map((t) => ({
             sensorEntity: t.sensorEntity || '',
             name: t.name || 'Tank',
             volumeLiters: t.volumeLiters ?? null,

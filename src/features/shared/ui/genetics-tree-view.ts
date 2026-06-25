@@ -93,17 +93,19 @@ export class GeneticsTreeView extends LitElement {
     });
     this._resizeObs.observe(this);
 
-    this.updateComplete.then(() => {
-      if (this._viewW === 0) {
-        const rect = this.getBoundingClientRect();
-        if (rect.width > 0) {
-          this._viewW = rect.width;
-          this._viewH = rect.height;
-          this._fitToScreen();
-          this.requestUpdate();
+    this.updateComplete
+      .then(() => {
+        if (this._viewW === 0) {
+          const rect = this.getBoundingClientRect();
+          if (rect.width > 0) {
+            this._viewW = rect.width;
+            this._viewH = rect.height;
+            this._fitToScreen();
+            this.requestUpdate();
+          }
         }
-      }
-    });
+      })
+      .catch(() => {});
   }
 
   override disconnectedCallback(): void {

@@ -3,6 +3,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 
+import type { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, PlantEntity, StrainEntry } from '../../../types';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { strainLibraryContext, storeContext } from '../../../context';
@@ -18,7 +19,7 @@ import { SensorTypeUtils } from '../../../utils/sensor-type-utils';
 @customElement('heatmap-3d')
 export class Heatmap3D extends LitElement {
   @property({ attribute: false }) device?: GrowspaceDevice;
-  @property({ attribute: false }) hass?: any;
+  @property({ attribute: false }) hass?: HomeAssistant;
   @property({ type: Boolean }) editMode3DCords = false;
   @state() private selectedMetric: 'temperature' | 'humidity' | 'vpd' = 'temperature';
   @state() private historyData: Record<string, any[]> = {};
@@ -534,7 +535,9 @@ export class Heatmap3D extends LitElement {
     // Initial Scene Update & Render Trigger
     this.updateScene();
     // Defer so the second render is scheduled outside the completed update cycle (avoids Lit change-in-update warning).
-    Promise.resolve().then(() => this.requestUpdate());
+    Promise.resolve()
+      .then(() => this.requestUpdate())
+      .catch(() => {});
   }
 
   private updateScene() {
@@ -556,7 +559,7 @@ export class Heatmap3D extends LitElement {
     );
   }
 
-  protected willUpdate(changedProps: PropertyValues) {
+  protected willUpdate(_changedProps: PropertyValues) {
     if (this.sceneManager) {
       this.updateScene();
     }
@@ -693,13 +696,12 @@ export class Heatmap3D extends LitElement {
     if (!this.sceneManager || !this.device) return;
 
     const width = this.device.dimensions?.width ?? 120;
-    const depth = this.device.dimensions?.length ?? (this.device.dimensions as any)?.depth ?? 120;
+    const depth = this.device.dimensions?.length ?? this.device.dimensions?.depth ?? 120;
 
     for (const [id, m] of this.sceneManager.sensorMeshes.entries()) {
       if (m === mesh) {
         const x = mesh.position.x + width / 2;
         const y = mesh.position.z + depth / 2;
-        const z = mesh.userData.logicalZ !== undefined ? mesh.userData.logicalZ : mesh.position.y;
 
         if (!this.device.environmentAttributes) this.device.environmentAttributes = {};
         if (!this.device.environmentAttributes.sensorCoordinates)
@@ -725,7 +727,7 @@ export class Heatmap3D extends LitElement {
     if (!this.sceneManager || !this.device) return;
 
     const width = this.device.dimensions?.width ?? 120;
-    const depth = this.device.dimensions?.length ?? (this.device.dimensions as any)?.depth ?? 120;
+    const depth = this.device.dimensions?.length ?? this.device.dimensions?.depth ?? 120;
 
     for (const [id, m] of this.sceneManager.sensorMeshes.entries()) {
       if (m === mesh) {
@@ -737,7 +739,7 @@ export class Heatmap3D extends LitElement {
         // Rotation usually stored in userData or traverse
         if (this.sceneManager.volatileGroup) {
           const obj = this.sceneManager.volatileGroup.children.find(
-            (c: any) => c.userData?.entityId === id
+            (c) => c.userData?.entityId === id
           );
           if (obj && (obj as any).userData) rotation = (obj as any).userData.baseRotation;
         }
@@ -773,7 +775,7 @@ export class Heatmap3D extends LitElement {
 
   // UI Helpers
 
-  private getSensorValue(entityId: string, metric: string): number | null {
+  private getSensorValue(entityId: string, _metric: string): number | null {
     // Used by renderers
     if (this.timelineIndex >= 0) {
       const history = this.historyData[entityId];
@@ -864,8 +866,7 @@ export class Heatmap3D extends LitElement {
     if (!mesh) return;
 
     const width = this.device.dimensions?.width ?? 120;
-    const height = this.device.dimensions?.height ?? 200;
-    const depth = this.device.dimensions?.length ?? (this.device.dimensions as any)?.depth ?? 120;
+    const depth = this.device.dimensions?.length ?? this.device.dimensions?.depth ?? 120;
 
     // Note: SceneManager meshes are positioned:
     // x = coords.x - width/2
@@ -1290,7 +1291,7 @@ export class Heatmap3D extends LitElement {
             const width = this.device?.dimensions?.width ?? 120;
             const height = this.device?.dimensions?.height ?? 200;
             const depth =
-              this.device?.dimensions?.length ?? (this.device?.dimensions as any)?.depth ?? 120;
+              this.device?.dimensions?.length ?? this.device?.dimensions?.depth ?? 120;
 
             const xMin = isAllowedOutside ? -100 : 0;
             const xMax = isAllowedOutside ? width + 100 : width;
@@ -1304,9 +1305,6 @@ export class Heatmap3D extends LitElement {
             const z = Math.round(
               mesh.userData.logicalZ !== undefined ? mesh.userData.logicalZ : mesh.position.y
             );
-
-            // Rotation?
-            let rotation = 0;
 
             if (!id) return nothing;
             const friendlyName = this.hass?.states[id]?.attributes?.friendly_name;

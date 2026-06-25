@@ -1,9 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
-/* eslint-disable import/no-duplicates */
 import './gm-settings-panel';
 import { GmSettingsPanel } from './gm-settings-panel';
-/* eslint-enable import/no-duplicates */
 
 vi.mock('../services/hass-call', () => ({
   callService: vi.fn().mockResolvedValue(undefined),

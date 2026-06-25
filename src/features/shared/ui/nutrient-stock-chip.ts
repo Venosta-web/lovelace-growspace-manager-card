@@ -20,8 +20,6 @@ export class NutrientStockChip extends LitElement {
       return html``;
     }
 
-    // eslint-disable-next-line camelcase
-    // eslint-disable-next-line camelcase
     const { current_ml: currentMl, initial_ml: initialMl, name } = this.stock;
     const ratio = initialMl > 0 ? currentMl / initialMl : 0;
 

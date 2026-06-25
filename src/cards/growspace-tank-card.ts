@@ -460,7 +460,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
     }
 
-    const device = devices.find((d: any) => d.deviceId === selectedDevice);
+    const device = devices.find((d) => d.deviceId === selectedDevice);
     if (!device) {
       return html`<ha-card
         ><div class="error">No valid growspace selected. Please configure the card.</div></ha-card

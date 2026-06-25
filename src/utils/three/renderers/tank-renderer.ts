@@ -8,9 +8,9 @@ export class TankRenderer extends BaseRenderer {
 
   public render() {
     this._tankWaves = [];
-    const { device, volatileGroup, hass, visibility } = this.context;
+    const { device, volatileGroup, visibility } = this.context;
     const width = device.dimensions?.width ?? 120;
-    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+    const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
     const height = device.dimensions?.height ?? 200;
     const env = device.environmentAttributes;
     const tanks = env?.irrigationTanks || [];
@@ -53,7 +53,7 @@ export class TankRenderer extends BaseRenderer {
       () => new THREE.PlaneGeometry(30 * 0.94, 30 * 0.94, 20, 20)
     );
 
-    tanks.forEach((tank: any, index: number) => {
+    tanks.forEach((tank, index) => {
       const entityId = tank.sensorEntity;
       currentTankIds.add(entityId);
       const coords =
@@ -174,7 +174,7 @@ export class TankRenderer extends BaseRenderer {
     });
   }
 
-  public animate(deltaTime: number) {
+  public animate(_deltaTime: number) {
     if (this._tankWaves.length > 0) {
       const time = Date.now() * 0.003;
       this._tankWaves.forEach((wave) => {

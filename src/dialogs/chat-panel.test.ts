@@ -9,10 +9,8 @@ import {
   aiEnabled$,
 } from '../slices/ai-insight';
 import type { ConversationMessage } from '../slices/ai-insight/schema';
-/* eslint-disable import/no-duplicates */
 import './chat-panel';
 import { GmChatPanel } from './chat-panel';
-/* eslint-enable import/no-duplicates */
 
 vi.mock('../services/hass-call', () => ({
   callService: vi.fn().mockResolvedValue(undefined),
@@ -72,7 +70,9 @@ function stubFileReader(dataUrl: string): void {
       onload: (() => void) | null = null;
       result: string = dataUrl;
       readAsDataURL(_file: File) {
-        Promise.resolve().then(() => this.onload?.());
+        Promise.resolve()
+          .then(() => this.onload?.())
+          .catch(() => {});
       }
     },
   );
@@ -127,7 +127,7 @@ describe('GmChatPanel — welcome state', () => {
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.prompt-card')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/start_conversation',
@@ -171,7 +171,7 @@ describe('GmChatPanel — composer', () => {
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.send')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/start_conversation',
@@ -192,7 +192,7 @@ describe('GmChatPanel — composer', () => {
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.send')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/send_message',
@@ -226,7 +226,7 @@ describe('GmChatPanel — composer', () => {
     await el.updateComplete;
 
     textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/start_conversation',
@@ -245,7 +245,7 @@ describe('GmChatPanel — composer', () => {
     await el.updateComplete;
 
     textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }));
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).not.toHaveBeenCalled();
   });
@@ -333,7 +333,7 @@ describe('GmChatPanel — attachment preview', () => {
     const fakeFile = new File(['img'], 'photo.png', { type: 'image/png' });
     Object.defineProperty(input, 'files', { value: [fakeFile], configurable: true });
     input.dispatchEvent(new Event('change'));
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
     await el.updateComplete;
   }
 
@@ -386,7 +386,7 @@ describe('GmChatPanel — imageEntityId wire-up', () => {
       configurable: true,
     });
     input.dispatchEvent(new Event('change'));
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
     await el.updateComplete;
 
     const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea')!;
@@ -407,7 +407,7 @@ describe('GmChatPanel — imageEntityId wire-up', () => {
 
     await attachAndType(el, 'Check this image');
     el.shadowRoot!.querySelector<HTMLElement>('.send')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/start_conversation',
@@ -429,7 +429,7 @@ describe('GmChatPanel — imageEntityId wire-up', () => {
 
     await attachAndType(el, 'See this');
     el.shadowRoot!.querySelector<HTMLElement>('.send')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/send_message',
@@ -570,7 +570,7 @@ describe('GmChatPanel — thread rail', () => {
     const railPinBtn = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.pin-btn')]
       .find((b) => !b.closest('.thread-header'))!;
     railPinBtn.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/save_conversation_threads',
@@ -649,7 +649,7 @@ describe('GmChatPanel — thread view', () => {
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.thread-header .pin-btn')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/save_conversation_threads',
@@ -806,7 +806,7 @@ describe('GmChatPanel — action card', () => {
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.apply-btn')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.callService).toHaveBeenCalledWith(
       ACTION.service,
@@ -944,7 +944,7 @@ describe('GmChatPanel — agent setup', () => {
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.agent-save-btn')!.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/save_ai_agent',
@@ -965,7 +965,7 @@ describe('GmChatPanel — agent setup', () => {
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.agent-save-btn')!.click();
-    await new Promise((r) => setTimeout(r, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     await el.updateComplete;
 
     const errEl = el.shadowRoot!.querySelector('.agent-setup-error');

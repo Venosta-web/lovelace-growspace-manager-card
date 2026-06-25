@@ -268,7 +268,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
 
         const devices = this._viewController.value?.grid?.devices ?? [];
         if (devices.length && this._config?.growspace_id) {
-            const parent = devices.find((d: any) => d.deviceId === this._config.growspace_id);
+            const parent = devices.find((d) => d.deviceId === this._config.growspace_id);
             if (parent && parent.name !== this._parentGrowspaceName) {
                 this._parentGrowspaceName = parent.name;
             }
@@ -309,7 +309,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     private _seedSnapshots(subarea: Subarea): void {
         if (!this.hass) return;
         const devices = this._viewController.value?.grid?.devices ?? [];
-        const parent = devices.find((d: any) => d.deviceId === this._config.growspace_id);
+        const parent = devices.find((d) => d.deviceId === this._config.growspace_id);
         setSubareaEnvSnapshot(
             subarea.id,
             subarea,
@@ -439,9 +439,9 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         // Compute these outside the loading guard so the config-dialog stays alive
         // even while the card body is reloading (DATA_STALE_EVENT).
         const devices = this._viewController.value?.grid?.devices ?? [];
-        const parentDevice = devices.find((d: any) => d.deviceId === this._config.growspace_id);
+        const parentDevice = devices.find((d) => d.deviceId === this._config.growspace_id);
         const growspaceOptions: Record<string, string> = Object.fromEntries(
-            devices.map((d: any) => [d.deviceId, d.name])
+            devices.map((d) => [d.deviceId, d.name])
         );
         const parentEnvAttrs = parentDevice?.environmentAttributes;
         const configEnvData = {

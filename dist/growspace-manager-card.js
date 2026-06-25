@@ -11744,7 +11744,7 @@ class GrowspaceAdapter {
             autoAdvanceP2ToP3: irrigationConfigRaw.auto_advance_p2_to_p3,
             haltOnRunoffEcThreshold: irrigationConfigRaw.halt_on_runoff_ec_threshold,
             activeSteeringPhase: irrigationConfigRaw.active_steering_phase,
-            phaseChangedAt: irrigationConfigRaw.phase_changed_at,
+            phaseChangedAt: irrigationConfigRaw.phase_changed_at ?? undefined,
             ecTargetRanges: (irrigationConfigRaw.ec_target_ranges ?? []).map((r) => ({
                 stage: r.stage,
                 minEc: r.feed_ec_min,
@@ -16299,8 +16299,6 @@ let NutrientStockChip = class NutrientStockChip extends i$3 {
         if (!this.stock) {
             return x ``;
         }
-        // eslint-disable-next-line camelcase
-        // eslint-disable-next-line camelcase
         const { current_ml: currentMl, initial_ml: initialMl, name } = this.stock;
         const ratio = initialMl > 0 ? currentMl / initialMl : 0;
         let status = 'optimal';
@@ -26690,9 +26688,11 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
                 fetchBriefing(this._growspaceId);
             }
             if (aiMode$.get() === 'settings') {
-                fetchAiSettings().then((settings) => {
+                fetchAiSettings()
+                    .then((settings) => {
                     this._settingsDraft = { ...settings };
-                });
+                })
+                    .catch((err) => console.error('[GrowMaster] failed to load AI settings', err));
             }
         }
     }
@@ -26705,9 +26705,11 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
             fetchBriefing(this._growspaceId);
         }
         if (mode === 'settings') {
-            fetchAiSettings().then((settings) => {
+            fetchAiSettings()
+                .then((settings) => {
                 this._settingsDraft = { ...settings };
-            });
+            })
+                .catch((err) => console.error('[GrowMaster] failed to load AI settings', err));
         }
     }
     _renderNavItem(m, mode) {
@@ -48682,7 +48684,7 @@ function buildStrainTreeNodes(allStrains, seedBatches, primaryStrains) {
     const resolve = (name) => {
         if (!name)
             return null;
-        const clean = name.replace(/^["'\[\(]|["'\]\)]$/g, '').trim();
+        const clean = name.replace(/^["'[(]|["'\])]$/g, '').trim();
         const lower = clean.toLowerCase();
         return strainNameToKey.get(lower) || clean;
     };
@@ -49260,7 +49262,8 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
             }
         });
         this._resizeObs.observe(this);
-        this.updateComplete.then(() => {
+        this.updateComplete
+            .then(() => {
             if (this._viewW === 0) {
                 const rect = this.getBoundingClientRect();
                 if (rect.width > 0) {
@@ -49270,7 +49273,8 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
                     this.requestUpdate();
                 }
             }
-        });
+        })
+            .catch(() => { });
     }
     disconnectedCallback() {
         super.disconnectedCallback();
@@ -51049,7 +51053,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                         this._editingStrain = undefined;
                         this.dispatchEvent(new CustomEvent('data-changed'));
                     }}
-                      @view-lineage=${(e) => {
+                      @view-lineage=${(_e) => {
                         this.focusLineage = true;
                         this._cameFromEditor = true;
                         this._activeMainTab = 'tree';
@@ -129722,7 +129726,7 @@ class BaseRenderer {
         this.context = { ...this.context, ...newContext };
     }
     // Called on every frame for animations
-    animate(deltaTime) {
+    animate(_deltaTime) {
         // Optional override
     }
     // Cleanup resources
@@ -130069,7 +130073,6 @@ class SensorRenderer extends BaseRenderer {
         const { device, volatileGroup, hass, selectedMetric, visibility } = this.context;
         const sensorCoords = device.environmentAttributes?.sensorCoordinates || {};
         const width = device.dimensions?.width ?? 120;
-        device.dimensions?.height ?? 200;
         const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
         const allSensorEntities = Object.keys(sensorCoords);
         const currentSensorIds = new Set();
@@ -130467,7 +130470,7 @@ class FanRenderer extends BaseRenderer {
         this._windParticles.frustumCulled = false;
         this.context.volatileGroup.add(this._windParticles);
     }
-    animateParticles(deltaTime) {
+    animateParticles(_deltaTime) {
         if (this._windParticles) {
             const pos = this._windParticles.geometry.attributes.position.array;
             const vel = this._windParticles.geometry.attributes.velocity.array;
@@ -130694,7 +130697,7 @@ class PlantRenderer extends BaseRenderer {
     }
     render() {
         this._plantHitBoxes = [];
-        const { device, volatileGroup, requestUpdate, visibility } = this.context;
+        const { device, volatileGroup, visibility } = this.context;
         const width = device.dimensions?.width ?? 120;
         const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
         if (!visibility.plants) {
@@ -130930,11 +130933,13 @@ class PlantRenderer extends BaseRenderer {
                     strainColors = this._strainColorCache.get(plantData.imageUrl);
                 }
                 else {
-                    this.extractStrainColors(plantData.imageUrl).then((colors) => {
+                    this.extractStrainColors(plantData.imageUrl)
+                        .then((colors) => {
                         if (colors && colors.length > 0 && requestUpdate) {
                             requestUpdate();
                         }
-                    });
+                    })
+                        .catch((err) => console.error('[PlantRenderer] failed to extract strain colors', err));
                 }
             }
         }
@@ -131034,23 +131039,13 @@ class PlantRenderer extends BaseRenderer {
             canvas.width = 100;
             canvas.height = 100;
             ctx.drawImage(img, 0, 0, 100, 100);
-            const data = ctx.getImageData(0, 0, 100, 100).data;
-            // Allow basic simplified color extraction or mocked
-            // For brevity, using simplified logic or just returning empty if too complex to port
-            // But let's try a simple average of center
-            const colors = [];
-            // Simplified: return dominant green/orange/purple if detected
-            // Real implementation requires complex histogram logic from original file
-            // I will retain the cache mechanism but maybe skip full logic to save token space if acceptable,
-            // OR copy the loop. The loop is efficient enough.
-            // ... (Insert Histogram Logic if needed, or placeholder)
-            // For now, I'll return empty to avoid bloat,
-            // relying on defaults, as this is visually "extra"
-            // Re-implementing the full color extraction might be too large for this file chunk.
-            this._strainColorCache.set(imageUrl, []); // Placeholder
+            // TODO: strain colour extraction (histogram of the drawn image) is not
+            // implemented yet. Cache and return an empty palette so callers fall back
+            // to default colours.
+            this._strainColorCache.set(imageUrl, []);
             return [];
         }
-        catch (e) {
+        catch {
             return [];
         }
     }
@@ -131497,7 +131492,7 @@ class EquipmentRenderer extends BaseRenderer {
         group.userData = { ...group.userData, intensity, isOutside, targetH, logicalZ: targetH };
         return group;
     }
-    createPumpModel(isDrain, isOutside, coords, frameWidth, frameDepth, frameHeight, hoseTargetHeight, isActive, tankMesh) {
+    createPumpModel(isDrain, isOutside, coords, frameWidth, frameDepth, frameHeight, hoseTargetHeight, isActive, _tankMesh) {
         const deviceHeight = isOutside ? 0 : coords.z !== undefined ? coords.z : 0;
         const group = new Group();
         const bodyRadius = 8;
@@ -131872,7 +131867,7 @@ class TankRenderer extends BaseRenderer {
     }
     render() {
         this._tankWaves = [];
-        const { device, volatileGroup, hass, visibility } = this.context;
+        const { device, volatileGroup, visibility } = this.context;
         const width = device.dimensions?.width ?? 120;
         const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
         device.dimensions?.height ?? 200;
@@ -131998,7 +131993,7 @@ class TankRenderer extends BaseRenderer {
             }
         });
     }
-    animate(deltaTime) {
+    animate(_deltaTime) {
         if (this._tankWaves.length > 0) {
             const time = Date.now() * 0.003;
             this._tankWaves.forEach((wave) => {
@@ -133859,7 +133854,9 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         // Initial Scene Update & Render Trigger
         this.updateScene();
         // Defer so the second render is scheduled outside the completed update cycle (avoids Lit change-in-update warning).
-        Promise.resolve().then(() => this.requestUpdate());
+        Promise.resolve()
+            .then(() => this.requestUpdate())
+            .catch(() => { });
     }
     updateScene() {
         if (!this.device || !this.sceneManager)
@@ -133872,7 +133869,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             tooltips: this.showTooltips,
         });
     }
-    willUpdate(changedProps) {
+    willUpdate(_changedProps) {
         if (this.sceneManager) {
             this.updateScene();
         }
@@ -133991,7 +133988,6 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             if (m === mesh) {
                 const x = mesh.position.x + width / 2;
                 const y = mesh.position.z + depth / 2;
-                mesh.userData.logicalZ !== undefined ? mesh.userData.logicalZ : mesh.position.y;
                 if (!this.device.environmentAttributes)
                     this.device.environmentAttributes = {};
                 if (!this.device.environmentAttributes.sensorCoordinates)
@@ -134055,7 +134051,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         }
     }
     // UI Helpers
-    getSensorValue(entityId, metric) {
+    getSensorValue(entityId, _metric) {
         // Used by renderers
         if (this.timelineIndex >= 0) {
             const history = this.historyData[entityId];
@@ -134141,7 +134137,6 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         if (!mesh)
             return;
         const width = this.device.dimensions?.width ?? 120;
-        this.device.dimensions?.height ?? 200;
         const depth = this.device.dimensions?.length ?? this.device.dimensions?.depth ?? 120;
         // Note: SceneManager meshes are positioned:
         // x = coords.x - width/2
@@ -138565,7 +138560,6 @@ let GrowspaceCarouselCard = class GrowspaceCarouselCard extends i$3 {
         // Jump to the right side seamlessly (prepare for slide in)
         this._wrapper.classList.remove('slide-out');
         this._wrapper.classList.add('slide-in-prepare');
-        // eslint-disable-next-line no-void
         void this._wrapper.offsetWidth;
         // Slide in from the right
         this._wrapper.classList.remove('slide-in-prepare');

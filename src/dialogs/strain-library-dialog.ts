@@ -1234,7 +1234,7 @@ export class StrainLibraryDialog extends LitElement {
                         this._editingStrain = undefined;
                         this.dispatchEvent(new CustomEvent('data-changed'));
                       }}
-                      @view-lineage=${(e: CustomEvent) => {
+                      @view-lineage=${(_e: CustomEvent) => {
                         this.focusLineage = true;
                         this._cameFromEditor = true;
                         this._activeMainTab = 'tree';

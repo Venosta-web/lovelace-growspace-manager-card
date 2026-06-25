@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { hydrate } from './hydrate';
 import { devices$, setDevices } from '../slices/grid';
 import { setPlants } from '../slices/plant';
-import { setIrrigationConfig, setIrrigationStrategy, setTankLevels } from '../slices/irrigation';
+import { setIrrigationConfig, setTankLevels } from '../slices/irrigation';
 
 vi.mock('../slices/device-state', () => ({
   setDeviceSnapshot: vi.fn(),

@@ -281,9 +281,11 @@ export class GrowMasterDialog extends LitElement {
         fetchBriefing(this._growspaceId);
       }
       if (aiMode$.get() === 'settings') {
-        fetchAiSettings().then((settings) => {
-          this._settingsDraft = { ...settings };
-        });
+        fetchAiSettings()
+          .then((settings) => {
+            this._settingsDraft = { ...settings };
+          })
+          .catch((err: unknown) => console.error('[GrowMaster] failed to load AI settings', err));
       }
     }
   }
@@ -298,9 +300,11 @@ export class GrowMasterDialog extends LitElement {
       fetchBriefing(this._growspaceId);
     }
     if (mode === 'settings') {
-      fetchAiSettings().then((settings) => {
-        this._settingsDraft = { ...settings };
-      });
+      fetchAiSettings()
+        .then((settings) => {
+          this._settingsDraft = { ...settings };
+        })
+        .catch((err: unknown) => console.error('[GrowMaster] failed to load AI settings', err));
     }
   }
 

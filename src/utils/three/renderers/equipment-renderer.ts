@@ -7,6 +7,8 @@ import {
   defaultPumpCoords,
 } from '../default-placement';
 
+type SensorCoord = { x: number; y: number; z: number; rotation?: number };
+
 export class EquipmentRenderer extends BaseRenderer {
   private _humidifierParticles?: THREE.Points;
   private _dryAirParticles?: THREE.Points;
@@ -26,7 +28,7 @@ export class EquipmentRenderer extends BaseRenderer {
   public render() {
     const { device, volatileGroup, hass } = this.context;
     const width = device.dimensions?.width ?? 120;
-    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+    const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
     const height = device.dimensions?.height ?? 200;
     const env = device.environmentAttributes;
     const sensorCoords = env?.sensorCoordinates || {};
@@ -320,7 +322,7 @@ export class EquipmentRenderer extends BaseRenderer {
     group: THREE.Group,
     intensity: number,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     w: number,
     d: number,
     h: number,
@@ -393,7 +395,7 @@ export class EquipmentRenderer extends BaseRenderer {
     group: THREE.Group,
     isDrain: boolean,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     w: number,
     d: number,
     h: number,
@@ -489,7 +491,7 @@ export class EquipmentRenderer extends BaseRenderer {
   private createHumidifierModel(
     intensity: number,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     w: number,
     d: number,
     h: number,
@@ -598,7 +600,7 @@ export class EquipmentRenderer extends BaseRenderer {
   private createDehumidifierModel(
     intensity: number,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     w: number,
     d: number,
     h: number,
@@ -670,13 +672,13 @@ export class EquipmentRenderer extends BaseRenderer {
   private createPumpModel(
     isDrain: boolean,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     frameWidth: number,
     frameDepth: number,
     frameHeight: number,
     hoseTargetHeight: number,
     isActive: boolean,
-    tankMesh?: THREE.Object3D | null
+    _tankMesh?: THREE.Object3D | null
   ): THREE.Group {
     const deviceHeight = isOutside ? 0 : coords.z !== undefined ? coords.z : 0;
 
@@ -712,7 +714,6 @@ export class EquipmentRenderer extends BaseRenderer {
     body.position.y = bodyRadius + baseHeight;
     group.add(body);
 
-    const headRadius = bodyRadius * 1.1;
     const headLength = 5;
     const headGeo = this.getSharedGeometry('pumpHead', () => {
       const g = new THREE.CylinderGeometry(8.8, 8.8, 5, 32);
@@ -723,7 +724,6 @@ export class EquipmentRenderer extends BaseRenderer {
     head.position.set(-bodyLength / 2 - headLength / 2, bodyRadius + baseHeight, 0);
     group.add(head);
 
-    const portRadius = 2.5;
     const portLength = 5;
     const portGeo = this.getSharedGeometry(
       'pumpPort',

@@ -8,7 +8,7 @@
  * - Handles events from UI component
  */
 
-import { LitElement, html } from 'lit';
+import { LitElement, html, type PropertyValues } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
@@ -72,7 +72,7 @@ export class GrowspaceGridContainer extends LitElement {
     this._gridInteractionUnsub?.();
   }
 
-  updated(changedProps: Map<string, any>) {
+  updated(changedProps: PropertyValues) {
     super.updated(changedProps);
 
     // Recreate ViewModel if grid layout or plants change

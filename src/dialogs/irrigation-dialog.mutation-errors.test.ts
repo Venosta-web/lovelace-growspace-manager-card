@@ -18,13 +18,9 @@ vi.mock('../services/hass-call', () => ({
   setHass: vi.fn(),
 }));
 
-// eslint-disable-next-line import/first
 import * as hassCallModule from '../services/hass-call';
-// eslint-disable-next-line import/first
 import { createGrowspaceDevice } from '../services/types';
-// eslint-disable-next-line import/first
 import type { IrrigationDialog } from './irrigation-dialog';
-// eslint-disable-next-line import/first
 import './irrigation-dialog';
 
 const stubTags = ['ha-dialog', 'ha-svg-icon', 'ha-icon', 'gs-dialog'];

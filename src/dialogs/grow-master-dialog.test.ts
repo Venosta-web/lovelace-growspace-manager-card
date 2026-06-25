@@ -1,10 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { aiMode$ } from '../slices/ai-insight';
-/* eslint-disable import/no-duplicates */
 import './grow-master-dialog';
 import { GrowMasterDialog } from './grow-master-dialog';
-/* eslint-enable import/no-duplicates */
 
 vi.mock('../services/hass-call', () => ({
   callService: vi.fn().mockResolvedValue(undefined),

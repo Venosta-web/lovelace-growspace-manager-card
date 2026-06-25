@@ -87,5 +87,7 @@ This card is the frontend for the **`growspace_manager`** integration (sibling v
 
 - **Prettier**: single quotes, semicolons, 2-space indent, width 100, ES5 trailing commas.
 - **ESLint**: `standard` + `@typescript-eslint/recommended` + prettier. Unused vars are an
-  error — prefix with `_` to intentionally ignore. `no-explicit-any` is a warning; avoid `any`.
+  error — prefix with `_` to intentionally ignore. `no-explicit-any` is a warning; avoid `any`
+  in shipped code. Test files (`*.{test,spec}.ts`) are exempt from `no-explicit-any` — they may
+  use `any` to reach component internals (`(el as any)._private`) and build partial mocks.
 - TypeScript `strict` mode, Lit decorators (`experimentalDecorators`, `useDefineForClassFields: false`).

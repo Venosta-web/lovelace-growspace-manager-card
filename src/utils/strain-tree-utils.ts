@@ -23,7 +23,7 @@ export function buildStrainTreeNodes(
 
   const resolve = (name: string | undefined | null): string | null => {
     if (!name) return null;
-    const clean = name.replace(/^["'\[\(]|["'\]\)]$/g, '').trim();
+    const clean = name.replace(/^["'[(]|["'\])]$/g, '').trim();
     const lower = clean.toLowerCase();
     return strainNameToKey.get(lower) || clean;
   };

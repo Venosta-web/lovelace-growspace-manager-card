@@ -11,7 +11,7 @@ import './plant-overview.container';
 import type { PlantEntity } from '../../../types';
 import { strainLibrary$ } from '../../../slices/strain';
 import { activeDialog$ } from '../../../slices/ui';
-import { deletePlant, advancePlantStage, movePlantToGrowspace } from '../../../slices/plant';
+import { advancePlantStage, movePlantToGrowspace } from '../../../slices/plant';
 
 // The container now calls the Plant slice mutators directly. Spread the real
 // module so child components that import other Plant-slice exports still load.
