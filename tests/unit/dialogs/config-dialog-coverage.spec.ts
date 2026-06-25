@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
 
-// The Sensors tab is a nested dumb component behind its own shadow root
-// (ADR-0019, "Applied to Config Dialog"); pierce it to reach the pickers.
+// Env tabs (Sensors, Climate) are nested dumb components behind their own shadow
+// roots (ADR-0019, "Applied to Config Dialog"); pierce whichever is active.
 async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     await element.updateComplete;
-    const tab = element.shadowRoot!.querySelector('config-sensors-tab') as HTMLElement & {
-        updateComplete: Promise<boolean>;
-    };
+    const tab = element.shadowRoot!.querySelector(
+        'config-sensors-tab, config-climate-tab'
+    ) as HTMLElement & { updateComplete: Promise<boolean> };
     await tab.updateComplete;
     return tab.shadowRoot!;
 }
@@ -896,12 +896,13 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
 describe('ConfigDialog - Fan Controller Panel coverage', () => {
     let element: ConfigDialog;
 
-    function allInputs() {
-        return Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') ?? []);
+    // The Climate tab is now a nested dumb component (ADR-0019); pierce it.
+    function allInputs(root: ShadowRoot) {
+        return Array.from(root.querySelectorAll('md3-number-input'));
     }
 
-    function dispatchAllInputs(value: string) {
-        for (const input of allInputs()) {
+    function dispatchAllInputs(root: ShadowRoot, value: string) {
+        for (const input of allInputs(root)) {
             input.dispatchEvent(new CustomEvent('change', { detail: value }));
         }
     }
@@ -931,8 +932,9 @@ describe('ConfigDialog - Fan Controller Panel coverage', () => {
     });
 
     it('enabled toggle (line 1862) sets circulationFanConfig.enabled', async () => {
+        const root = await sensorsShadow(element);
         const checkboxes = Array.from(
-            element.shadowRoot?.querySelectorAll('input[type="checkbox"]') ?? []
+            root.querySelectorAll('input[type="checkbox"]')
         ) as HTMLInputElement[];
         const enabledCb = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes('Enabled'));
         expect(enabledCb).toBeDefined();
@@ -942,15 +944,17 @@ describe('ConfigDialog - Fan Controller Panel coverage', () => {
     });
 
     it('regulation_mode change handler (line 1879) updates regulation_mode', async () => {
-        const select = element.shadowRoot?.querySelector('md3-select');
+        const root = await sensorsShadow(element);
+        const select = root.querySelector('md3-select');
         expect(select).toBeDefined();
         select!.dispatchEvent(new CustomEvent('change', { detail: 'humidity' }));
         expect(fanCfg().regulation_mode).toBe('humidity');
     });
 
     it('VPD mode (default) — vpd_target, vpd_tolerance, min_speed, max_speed handlers fire (lines 1889–2004)', async () => {
-        expect(allInputs().length).toBeGreaterThanOrEqual(4);
-        dispatchAllInputs('1.5');
+        const root = await sensorsShadow(element);
+        expect(allInputs(root).length).toBeGreaterThanOrEqual(4);
+        dispatchAllInputs(root, '1.5');
         expect(fanCfg().vpd_target).toBeCloseTo(1.5);
         expect(fanCfg().vpd_tolerance).toBeCloseTo(1.5);
         expect(fanCfg().min_speed).toBeCloseTo(1.5);
@@ -959,33 +963,34 @@ describe('ConfigDialog - Fan Controller Panel coverage', () => {
 
     it('humidity mode — humidity_target / humidity_tolerance handlers fire (lines 1905–1911)', async () => {
         (element as any)._updateFanConfig({ regulation_mode: 'humidity' });
-        await element.updateComplete;
-        dispatchAllInputs('65');
+        const root = await sensorsShadow(element);
+        dispatchAllInputs(root, '65');
         expect(fanCfg().humidity_target).toBeCloseTo(65);
         expect(fanCfg().humidity_tolerance).toBeCloseTo(65);
     });
 
     it('temperature mode — temperature_target / temperature_tolerance handlers fire (lines 1921–1929)', async () => {
         (element as any)._updateFanConfig({ regulation_mode: 'temperature' });
-        await element.updateComplete;
-        dispatchAllInputs('26');
+        const root = await sensorsShadow(element);
+        dispatchAllInputs(root, '26');
         expect(fanCfg().temperature_target).toBeCloseTo(26);
         expect(fanCfg().temperature_tolerance).toBeCloseTo(26);
     });
 
     it('temperature override toggle expands section (line 1944) and wires critical temp handlers with null branch (lines 1961–1984)', async () => {
         // VPD mode (default) — override button present
-        const overrideBtn = Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.tonal') ?? [])
+        let root = await sensorsShadow(element);
+        const overrideBtn = Array.from(root.querySelectorAll('button.md3-button.tonal'))
             .find((b) => b.textContent?.includes('Temperature Override')) as HTMLElement | undefined;
         expect(overrideBtn).toBeDefined();
 
         overrideBtn!.click();
-        await element.updateComplete;
+        root = await sensorsShadow(element);
         expect((element as any)._fanTempOverrideExpanded).toBe(true);
 
         // Find the override row-col-grid: first `.row-col-grid` with margin-top style
         const overrideGrids = Array.from(
-            element.shadowRoot?.querySelectorAll('.row-col-grid[style*="margin-top"]') ?? []
+            root.querySelectorAll('.row-col-grid[style*="margin-top"]')
         );
         expect(overrideGrids.length).toBeGreaterThanOrEqual(1);
         const overrideInputs = Array.from(overrideGrids[0].querySelectorAll('md3-number-input'));
@@ -1012,22 +1017,22 @@ describe('ConfigDialog - Fan Controller Panel coverage', () => {
     });
 
     it('wind_enabled toggle (lines 2014–2015) expands wind settings; period/amplitude handlers fire (lines 2025–2033)', async () => {
+        let root = await sensorsShadow(element);
         const checkboxes = Array.from(
-            element.shadowRoot?.querySelectorAll('input[type="checkbox"]') ?? []
+            root.querySelectorAll('input[type="checkbox"]')
         ) as HTMLInputElement[];
         const windCb = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes('Dynamic Wind'));
         expect(windCb).toBeDefined();
         windCb!.checked = true;
         windCb!.dispatchEvent(new Event('change'));
-        await element.updateComplete;
+        root = await sensorsShadow(element);
         expect(fanCfg().wind_enabled).toBe(true);
 
         // Wind inputs are the last margin-top row-col-grid *within the circulation
         // Fan Controller panel* — scope to that card so the sibling Exhaust Fan
         // Controller panel (rendered below it) doesn't shadow the global selector.
-        const fanCard = Array.from(
-            element.shadowRoot?.querySelectorAll('.detail-card') ?? []
-        ).find((c) => c.querySelector('h3')?.textContent?.trim() === 'Fan Controller');
+        const fanCard = Array.from(root.querySelectorAll('.detail-card'))
+            .find((c) => c.querySelector('h3')?.textContent?.trim() === 'Fan Controller');
         expect(fanCard).toBeDefined();
         const marginGrids = Array.from(
             fanCard!.querySelectorAll('.row-col-grid[style*="margin-top"]')

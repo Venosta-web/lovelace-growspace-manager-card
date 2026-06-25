@@ -2,16 +2,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
+import { needsExhaustCall } from '../../../src/features/config/environment-save';
 import { html } from 'lit';
 
-// The Sensors tab is a nested dumb component behind its own shadow root
-// (ADR-0019, "Applied to Config Dialog"); pierce it when present. Climate/
-// Humidity pickers are still inline, so fall back to the dialog's own shadow.
+// Env tabs are nested dumb components behind their own shadow roots (ADR-0019,
+// "Applied to Config Dialog"); pierce whichever is active. Still-inline env tabs
+// (Humidity, etc.) fall back to the dialog's own shadow.
 async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     await element.updateComplete;
-    const tab = element.shadowRoot!.querySelector('config-sensors-tab') as
-        | (HTMLElement & { updateComplete: Promise<boolean> })
-        | null;
+    const tab = element.shadowRoot!.querySelector(
+        'config-sensors-tab, config-climate-tab'
+    ) as (HTMLElement & { updateComplete: Promise<boolean> }) | null;
     if (tab) {
         await tab.updateComplete;
         return tab.shadowRoot!;
@@ -1300,6 +1301,33 @@ describe('ConfigDialog', () => {
 
         expect(submitSpy).not.toHaveBeenCalled();
       });
+    });
+
+    describe('Climate save (env→host two-call path)', () => {
+        it('carries the edited exhaust config into the submit event so needsExhaustCall is true', async () => {
+            element.currentTab = ConfigTab.CLIMATE;
+            (element as any).envSelectedId = 'gs1';
+            await element.updateComplete;
+
+            // Toggle the exhaust panel's Enabled in the nested Climate component.
+            const root = await sensorsShadow(element);
+            const exhaustEnabled = Array.from(root.querySelectorAll('label.checkbox-label'))
+                .filter((l) => l.textContent?.includes('Enabled'))[1]
+                .querySelector('input[type="checkbox"]') as HTMLInputElement;
+            exhaustEnabled.checked = true;
+            exhaustEnabled.dispatchEvent(new Event('change'));
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('configure-environment-submit', listener);
+            const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary') as HTMLElement;
+            saveBtn?.click();
+
+            expect(listener).toHaveBeenCalled();
+            const detail = listener.mock.calls[0][0].detail;
+            expect(detail.exhaustFanConfig.enabled).toBe(true);
+            expect(needsExhaustCall(detail)).toBe(true);
+        });
     });
 });
 
