@@ -7,6 +7,7 @@ import './config-dialog';
 import { ConfigDialog } from './config-dialog';
 import { ConfigTab } from '../constants';
 import { VPD_OPTIMAL_STAGE_DEFAULTS } from '../features/environment/constants';
+import { getVpdOptimal } from '../features/config/viewmodels/vpd-targets-tab.viewmodel';
 
 vi.mock('../slices/subarea', () => ({
   getSubareas: vi.fn(),
@@ -223,9 +224,12 @@ describe('_updateFanConfig', () => {
 // ─── VPD optimal targets (inlined from vpd-optimal-overrides-table) ───────────
 
 describe('_getVpdOptimalValue', () => {
+  // The read logic moved to the VPD Targets VM (ADR-0019); assert it at its new
+  // home (getVpdOptimal) against the dialog's live draft.
   it('returns the built-in default when the stage has no override', () => {
     const el = makeEl();
-    expect((el as any)._getVpdOptimalValue('seedling', 'day', 'low')).toBe(
+    const overrides = (el as any)._sm.environmentDraft.vpdOptimalOverrides;
+    expect(getVpdOptimal(overrides, 'seedling', 'day', 'low')).toBe(
       VPD_OPTIMAL_STAGE_DEFAULTS.seedling.day.low
     );
   });
@@ -238,8 +242,9 @@ describe('_getVpdOptimalValue', () => {
         vpdOptimalOverrides: { veg: { day: { low: 0.6, high: 1.0 }, night: { low: 0.5, high: 0.9 } } },
       },
     });
-    expect((el as any)._getVpdOptimalValue('veg', 'day', 'low')).toBe(0.6);
-    expect((el as any)._getVpdOptimalValue('veg', 'night', 'high')).toBe(0.9);
+    const overrides = (el as any)._sm.environmentDraft.vpdOptimalOverrides;
+    expect(getVpdOptimal(overrides, 'veg', 'day', 'low')).toBe(0.6);
+    expect(getVpdOptimal(overrides, 'veg', 'night', 'high')).toBe(0.9);
   });
 });
 
