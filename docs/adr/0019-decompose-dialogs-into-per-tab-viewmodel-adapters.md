@@ -39,3 +39,16 @@ Migration is strictly tab-by-tab: the [[Dialog Shell]] renders extracted `<irrig
 - The test surface splits three ways: the existing pure `irrigation-dialog-sm.test.ts` keeps testing transitions (now also holding tank/ec-ramp drafts); each Tab Component gets a mount-and-assert-intent test with a hand-built VM (no SM, no slices); each Tab ViewModel factory gets a pure input-atoms → VM-output test. The monolith stops being the only place to test a tab.
 - `overview` is one adapter (hypothetical seam) until `tanks` lands; the tanks migration validates the `{vm-in, intents-out}` + `$caps` shape, and folds in the leaked-sub-state fix (candidate 3 of the architecture review).
 - Config Dialog and the other large dialogs adopt the same shape incrementally afterward, reusing the Tab ViewModel / Tab Component / Tab Intent / Dialog Shell / Dialog Capabilities vocabulary.
+
+## Applied to Config Dialog
+
+The Config Dialog (`dialogs/config-dialog.ts`, ~3,959 lines, 13 tabs) is the second dialog decomposed with this shape. Its [[DialogStateMachine]] half already exists (`config-dialog-sm.ts` extends `DialogStateMachine<ConfigTabId, ConfigTabStates>`); the work is the per-tab [[Tab ViewModel]] factories, the dumb `<config-x-tab>` [[Tab Component]]s, and reducing the host to a [[Config Dialog Shell]].
+
+One structural difference from the Irrigation Dialog drives the sequencing — the **[[Shared Environment Draft]]**. Six of the thirteen tabs (`sensors`, `climate`, `humidity`, `irrigation`, `vision`, `vpd_targets`) do not own independent sub-state; they all project and mutate one `environmentDraft` field on the SM. Per this ADR's "one factory per tab" rule this stays six per-tab VMs (each `computed`s its own slice of the shared draft), **not** a merged environment mega-VM (the same rejection as the dialog-wide mega-ViewModel above).
+
+The shared draft bites at **save**, not at derivation:
+
+- `configure_environment` is a **full replace** — it rebuilds `EnvironmentConfig` and silently resets any field absent from the payload. Because the draft is seeded complete by `envDraftFromDevice`, the **[[Environment Save Composer]]** (`composeEnvironmentConfig(draft)`, pure) re-sends the whole config on any env-tab save, so a sensor-only edit no longer clobbers fan/irrigation fields. The full-replace clobber bug class becomes a unit assertion on the composer.
+- The Climate tab additionally fires a **second** service call, `configure_exhaust_fan`, which `configure_environment` cannot carry. `needsExhaustCall(draft)` gates it; the [[Config Dialog Shell]] owns the one-or-two-call orchestration via [[MutationRunController]] — mirroring `mergeTankDraft` + ADR-0015.
+
+Reference sequencing (vs. Irrigation's overview-then-tanks): land an **independent-draft** tab first — **Notifications** (its own `NotificationsDraft` / `SAVE_NOTIFICATIONS` / `isNotificationsDirty`) — to prove the gesture→intent→effect loop *before* the env-save knot; then **Sensors** (first env tab, proves shared-draft projection + the composer); then **Climate** (proves the conditional second call). The tab-switch dirty guard (`requestTabSwitch` / `discardAndSwitch` / `isActiveTabDirty`) is Config Dialog Shell wiring, not per-tab state.

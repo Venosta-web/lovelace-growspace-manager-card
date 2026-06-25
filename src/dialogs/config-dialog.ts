@@ -60,9 +60,9 @@ import {
   type ConfigDialogEvent,
   type ConfigTabId,
   type TimedNotificationDraft,
-  type TimedNotificationTrigger,
-  type NotificationsTabSub,
 } from './config-dialog-sm';
+import '../features/config/components/config-notifications-tab';
+import { createNotificationsTabViewModel } from '../features/config/viewmodels/notifications-tab.viewmodel';
 
 type StageThresholds = Record<string, Record<string, { on: number; off: number }>>;
 
@@ -1642,255 +1642,24 @@ export class ConfigDialog extends LitElement {
 
   // ── Section renderers ────────────────────────────────────────────────────
 
-  private _renderNotificationsSection() {
-    const draft = this._sm.tabs.notifications.draft;
+  private _renderNotificationsTab() {
     return html`
-      <div class="form-section">
-        <md3-number-input
-          data-notif="criticalCooldownMinutes"
-          label="Critical Cooldown (min)"
-          .value=${draft.criticalCooldownMinutes}
-          @change=${(e: CustomEvent) =>
-            this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { criticalCooldownMinutes: Number(e.detail) } })}
-        ></md3-number-input>
-        <md3-number-input
-          data-notif="warningCooldownMinutes"
-          label="Warning Cooldown (min)"
-          .value=${draft.warningCooldownMinutes}
-          @change=${(e: CustomEvent) =>
-            this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { warningCooldownMinutes: Number(e.detail) } })}
-        ></md3-number-input>
-        <md3-number-input
-          data-notif="recoveryCooldownMinutes"
-          label="Recovery Cooldown (min)"
-          .value=${draft.recoveryCooldownMinutes}
-          @change=${(e: CustomEvent) =>
-            this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { recoveryCooldownMinutes: Number(e.detail) } })}
-        ></md3-number-input>
-        <md3-number-input
-          data-notif="escalationDelayMinutes"
-          label="Escalation Delay (min)"
-          .value=${draft.escalationDelayMinutes}
-          @change=${(e: CustomEvent) =>
-            this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { escalationDelayMinutes: Number(e.detail) } })}
-        ></md3-number-input>
-        <md3-number-input
-          data-notif="minStressDurationSeconds"
-          label="Min Stress Duration (sec)"
-          .value=${draft.minStressDurationSeconds}
-          @change=${(e: CustomEvent) =>
-            this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { minStressDurationSeconds: Number(e.detail) } })}
-        ></md3-number-input>
-        <md3-number-input
-          data-notif="warningPersistenceMinutes"
-          label="Warning Persistence (min)"
-          .value=${draft.warningPersistenceMinutes}
-          @change=${(e: CustomEvent) =>
-            this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { warningPersistenceMinutes: Number(e.detail) } })}
-        ></md3-number-input>
-        <label class="checkbox-label">
-          <input
-            type="checkbox"
-            data-notif="aiAutoAlerts"
-            .checked=${draft.aiAutoAlerts}
-            @change=${(e: Event) =>
-              this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { aiAutoAlerts: (e.target as HTMLInputElement).checked } })}
-          />
-          <span>AI Auto-Alerts</span>
-        </label>
-      </div>
-      ${this._renderTimedNotificationsSection()}
-    `;
-  }
-
-  private _renderTimedNotificationsSection() {
-    const tab = this._sm.tabs.notifications;
-    const sub = tab.sub;
-    const notifications = tab.timedNotifications;
-
-    return html`
-      <div class="form-section">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <h3 style="margin:0;font-size:1rem;font-weight:600;">Timed Notifications</h3>
-          ${sub.kind === 'idle'
-            ? html`
-                <button class="md3-button outlined" style="padding:4px 12px;" @click=${this._startAddTimedNotification}>
-                  Add
-                </button>
-              `
-            : nothing}
-        </div>
-
-        ${sub.kind === 'confirm-delete'
-          ? html`
-              <div class="detail-card" style="text-align:center;padding:24px 16px;">
-                <p style="margin:0 0 16px;color:var(--secondary-text-color);">
-                  Delete this timed notification?
-                </p>
-                <div style="display:flex;gap:8px;justify-content:center;">
-                  <button class="md3-button outlined" @click=${this._cancelTimedNotification}>Cancel</button>
-                  <button class="md3-button primary" style="background:var(--error-color,#ff5252);" @click=${this._confirmDeleteTimedNotification}>
-                    Delete
-                  </button>
-                </div>
-              </div>
-            `
-          : nothing}
-
-        ${sub.kind === 'adding' || sub.kind === 'editing'
-          ? this._renderTimedNotificationForm(sub)
-          : nothing}
-
-        ${notifications.length === 0 && sub.kind === 'idle'
-          ? html`
-              <div
-                data-timed="empty-state"
-                style="text-align:center;padding:24px;color:var(--secondary-text-color);"
-              >
-                No timed notifications configured
-              </div>
-            `
-          : nothing}
-
-        ${sub.kind === 'idle' || sub.kind === 'confirm-delete'
-          ? notifications.map(
-              (n) => html`
-                <div
-                  class="cfg-gs-row"
-                  data-timed-id=${n.id}
-                  style="display:flex;align-items:center;justify-content:space-between;"
-                >
-                  <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                    ${n.message} · ${n.triggerType} · Day ${n.day}
-                  </span>
-                  <div style="display:flex;gap:4px;flex-shrink:0;">
-                    <button
-                      class="md3-button text"
-                      style="padding:4px 8px;"
-                      data-timed-edit=${n.id}
-                      @click=${() =>
-                        this._startEditTimedNotification(n.id, {
-                          message: n.message,
-                          triggerType: n.triggerType,
-                          day: n.day,
-                          growspaceIds: n.growspaceIds,
-                        })}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      class="md3-button text"
-                      style="padding:4px 8px;color:var(--error-color,#ff5252);"
-                      data-timed-delete=${n.id}
-                      @click=${() => this._requestDeleteTimedNotification(n.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              `
-            )
-          : nothing}
-      </div>
-    `;
-  }
-
-  private _renderTimedNotificationForm(sub: NotificationsTabSub & { kind: 'adding' | 'editing' }) {
-    const isAdding = sub.kind === 'adding';
-    const draft = sub.draft;
-    const triggerOptions: Array<{ value: TimedNotificationTrigger; label: string }> = [
-      { value: 'clone_start', label: 'Clone Start' },
-      { value: 'veg_start', label: 'Veg Start' },
-      { value: 'flower_start', label: 'Flower Start' },
-      { value: 'dry_start', label: 'Dry Start' },
-    ];
-
-    return html`
-      <div class="detail-card" style="margin-bottom:12px;">
-        <h4 style="margin:0 0 12px;font-size:0.9rem;font-weight:600;">
-          ${isAdding ? 'Add Timed Notification' : 'Edit Timed Notification'}
-        </h4>
-
-        <div class="md3-input-group">
-          <label class="md3-label">Message</label>
-          <input
-            class="md3-input"
-            type="text"
-            data-timed-field="message"
-            .value=${draft.message}
-            @input=${(e: Event) =>
-              this._t({ type: 'UPDATE_TIMED_DRAFT', partial: { message: (e.target as HTMLInputElement).value } })}
-          />
-        </div>
-
-        <div class="md3-input-group">
-          <label class="md3-label">Trigger</label>
-          <select
-            class="md3-input"
-            data-timed-field="triggerType"
-            .value=${draft.triggerType}
-            @change=${(e: Event) =>
-              this._t({
-                type: 'UPDATE_TIMED_DRAFT',
-                partial: { triggerType: (e.target as HTMLSelectElement).value as TimedNotificationTrigger },
-              })}
-          >
-            ${triggerOptions.map(
-              (o) => html`
-                <option value="${o.value}" ?selected=${draft.triggerType === o.value}>${o.label}</option>
-              `
-            )}
-          </select>
-        </div>
-
-        <div class="md3-input-group">
-          <label class="md3-label">Day</label>
-          <input
-            class="md3-input"
-            type="number"
-            min="1"
-            data-timed-field="day"
-            .value=${String(draft.day)}
-            @change=${(e: Event) =>
-              this._t({ type: 'UPDATE_TIMED_DRAFT', partial: { day: Number((e.target as HTMLInputElement).value) } })}
-          />
-        </div>
-
-        <div class="md3-input-group">
-          <label class="md3-label">Growspaces</label>
-          <div style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;padding:4px 0;">
-            ${Object.entries(this.growspaceOptions).map(
-              ([id, name]) => html`
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                  <input
-                    type="checkbox"
-                    data-timed-gs=${id}
-                    .checked=${draft.growspaceIds.includes(id)}
-                    @change=${(e: Event) => {
-                      const checked = (e.target as HTMLInputElement).checked;
-                      const next = checked
-                        ? [...draft.growspaceIds, id]
-                        : draft.growspaceIds.filter((g) => g !== id);
-                      this._t({ type: 'UPDATE_TIMED_DRAFT', partial: { growspaceIds: next } });
-                    }}
-                  />
-                  ${name}
-                </label>
-              `
-            )}
-          </div>
-        </div>
-
-        <div style="display:flex;gap:8px;margin-top:12px;">
-          <button class="md3-button outlined" @click=${this._cancelTimedNotification}>Cancel</button>
-          <button
-            class="md3-button primary"
-            @click=${isAdding ? this._commitAddTimedNotification : this._commitEditTimedNotification}
-          >
-            ${isAdding ? 'Add' : 'Save'}
-          </button>
-        </div>
-      </div>
+      <config-notifications-tab
+        .vm=${createNotificationsTabViewModel(this._sm, this.growspaceOptions)}
+        @notif-draft-changed=${(e: CustomEvent) =>
+          this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: e.detail.partial })}
+        @add-timed-requested=${this._startAddTimedNotification}
+        @edit-timed-requested=${(e: CustomEvent) =>
+          this._startEditTimedNotification(e.detail.id, e.detail.draft)}
+        @timed-draft-changed=${(e: CustomEvent) =>
+          this._t({ type: 'UPDATE_TIMED_DRAFT', partial: e.detail.partial })}
+        @cancel-timed=${this._cancelTimedNotification}
+        @commit-add-timed=${this._commitAddTimedNotification}
+        @commit-edit-timed=${this._commitEditTimedNotification}
+        @request-delete-timed=${(e: CustomEvent) =>
+          this._requestDeleteTimedNotification(e.detail.id)}
+        @confirm-delete-timed=${this._confirmDeleteTimedNotification}
+      ></config-notifications-tab>
     `;
   }
 
@@ -3854,7 +3623,7 @@ export class ConfigDialog extends LitElement {
                   ? this._renderGrowspacesSection()
                   : nothing}
                 ${this.currentTab === ConfigTab.NOTIFICATIONS
-                  ? this._renderNotificationsSection()
+                  ? this._renderNotificationsTab()
                   : nothing}
                 ${this.currentTab === ConfigTab.SENSORS ? this._renderSensorsSection() : nothing}
                 ${this.currentTab === ConfigTab.CLIMATE ? this._renderClimateSection() : nothing}
