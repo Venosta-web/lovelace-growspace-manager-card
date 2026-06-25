@@ -62,6 +62,8 @@ import {
 } from '../features/config/viewmodels/humidity-tab.viewmodel';
 import '../features/config/components/config-irrigation-tab';
 import { createIrrigationTabViewModel } from '../features/config/viewmodels/irrigation-tab.viewmodel';
+import '../features/config/components/config-vision-tab';
+import { createVisionTabViewModel } from '../features/config/viewmodels/vision-tab.viewmodel';
 import { composeEnvironmentConfig } from '../features/config/environment-save';
 
 // Stage-dot colours for the VPD targets accordion. Reuses the humidity stage
@@ -2017,73 +2019,16 @@ export class ConfigDialog extends LitElement {
     `;
   }
 
-  private _renderVisionSection() {
+  private _renderVisionTab() {
+    const deps = {
+      entityOptions: (domains: string[], deviceClass: string | null) =>
+        this._getEntities(domains, deviceClass),
+    };
     return html`
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiCamera}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Vision Checkup</h3>
-        </div>
-        ${this._renderMultiEntitySelect(
-          'Camera Entities',
-          this._sm.environmentDraft.cameraEntities,
-          ['camera'],
-          null,
-          (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { cameraEntities: v } })
-        )}
-        ${this._sm.environmentDraft.cameraEntities.length === 0
-          ? html`<p style="opacity:0.6;font-size:0.85rem;margin:8px 0 0;">
-              Add camera entities above to enable vision checkups.
-            </p>`
-          : html`
-              <div class="form-section" style="margin-top:12px;">
-                <label class="checkbox-label">
-                  <input
-                    type="checkbox"
-                    .checked=${this._sm.environmentDraft.visionEnabled}
-                    @change=${(e: Event) => {
-                      this._t({ type: 'UPDATE_ENV_DRAFT', partial: { visionEnabled: (e.target as HTMLInputElement).checked } });
-                    }}
-                  />
-                  Enable automatic vision checkups
-                </label>
-                <md3-number-input
-                  label="Early check offset (min after lights on)"
-                  .value=${this._sm.environmentDraft.visionEarlyOffset}
-                  @change=${(e: CustomEvent) => {
-                    this._t({ type: 'UPDATE_ENV_DRAFT', partial: { visionEarlyOffset: Number(e.detail) } });
-                  }}
-                  min="1"
-                >
-                </md3-number-input>
-                <md3-number-input
-                  label="Mid check (hours into light cycle)"
-                  .value=${this._sm.environmentDraft.visionMidHours}
-                  @change=${(e: CustomEvent) => {
-                    this._t({ type: 'UPDATE_ENV_DRAFT', partial: { visionMidHours: Number(e.detail) } });
-                  }}
-                  min="1"
-                >
-                </md3-number-input>
-                <md3-number-input
-                  label="Late check offset (min before lights off)"
-                  .value=${this._sm.environmentDraft.visionLateOffset}
-                  @change=${(e: CustomEvent) => {
-                    this._t({ type: 'UPDATE_ENV_DRAFT', partial: { visionLateOffset: Number(e.detail) } });
-                  }}
-                  min="1"
-                >
-                </md3-number-input>
-              </div>
-            `}
-      </div>
+      <config-vision-tab
+        .vm=${createVisionTabViewModel(this._sm, deps)}
+        @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
+      ></config-vision-tab>
     `;
   }
 
@@ -2604,7 +2549,7 @@ export class ConfigDialog extends LitElement {
                 ${this.currentTab === ConfigTab.HUMIDITY ? this._renderHumidityTab() : nothing}
                 ${this.currentTab === ConfigTab.IRRIGATION ? this._renderIrrigationTab() : nothing}
                 ${this.currentTab === ConfigTab.TANKS ? this._renderTanksSection() : nothing}
-                ${this.currentTab === ConfigTab.VISION ? this._renderVisionSection() : nothing}
+                ${this.currentTab === ConfigTab.VISION ? this._renderVisionTab() : nothing}
                 ${this.currentTab === ConfigTab.HEATMAP ? this._renderHeatmapSection() : nothing}
                 ${this.currentTab === ConfigTab.SUBAREAS ? this._renderSubareasSection() : nothing}
                 ${this.currentTab === ConfigTab.VPD_TARGETS ? this._renderVpdTargetsSection() : nothing}

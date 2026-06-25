@@ -15,7 +15,7 @@ import { html } from 'lit';
 async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     await element.updateComplete;
     const tab = element.shadowRoot!.querySelector(
-        'config-sensors-tab, config-climate-tab, config-humidity-tab'
+        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-vision-tab'
     ) as (HTMLElement & { updateComplete: Promise<boolean> }) | null;
     if (tab) {
         await tab.updateComplete;
@@ -1252,7 +1252,7 @@ describe('ConfigDialog', () => {
         (element as any).envVisionCameraEntities = ['camera.tent1'];
         await element.updateComplete;
 
-        const toggle = element.shadowRoot?.querySelector('input[type="checkbox"]');
+        const toggle = (await sensorsShadow(element)).querySelector('input[type="checkbox"]');
         expect(toggle).toBeTruthy();
         const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary');
         expect(saveBtn).toBeTruthy();
