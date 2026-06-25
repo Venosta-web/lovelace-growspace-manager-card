@@ -1,0 +1,190 @@
+import { describe, it, expect, afterEach } from 'vitest';
+import './config-notifications-tab';
+import type { ConfigNotificationsTab } from './config-notifications-tab';
+import {
+  TRIGGER_OPTIONS,
+  type NotificationsTabViewModel,
+} from '../viewmodels/notifications-tab.viewmodel';
+import type {
+  NotificationsDraft,
+  NotificationsTabSub,
+  TimedNotification,
+  TimedNotificationDraft,
+} from '../../../dialogs/config-dialog-sm';
+
+const baseDraft: NotificationsDraft = {
+  criticalCooldownMinutes: 90,
+  warningCooldownMinutes: 45,
+  recoveryCooldownMinutes: 10,
+  escalationDelayMinutes: 20,
+  minStressDurationSeconds: 120,
+  warningPersistenceMinutes: 30,
+  aiAutoAlerts: false,
+};
+
+const timedDraft: TimedNotificationDraft = {
+  message: 'Lights on',
+  triggerType: 'veg_start',
+  day: 3,
+  growspaceIds: ['gs1'],
+};
+
+function makeVm(over: Partial<NotificationsTabViewModel> = {}): NotificationsTabViewModel {
+  return {
+    draft: baseDraft,
+    timedNotifications: [],
+    sub: { kind: 'idle' },
+    growspaceOptions: [{ id: 'gs1', name: 'Tent 1' }],
+    triggerOptions: [...TRIGGER_OPTIONS],
+    ...over,
+  };
+}
+
+async function mount(vm: NotificationsTabViewModel): Promise<ConfigNotificationsTab> {
+  const el = document.createElement('config-notifications-tab') as ConfigNotificationsTab;
+  el.vm = vm;
+  document.body.appendChild(el);
+  await el.updateComplete;
+  return el;
+}
+
+function listen<T = unknown>(el: HTMLElement, type: string): T[] {
+  const received: T[] = [];
+  el.addEventListener(type, (e: Event) => received.push((e as CustomEvent).detail as T));
+  return received;
+}
+
+afterEach(() => {
+  document.body.innerHTML = '';
+});
+
+describe('ConfigNotificationsTab — render', () => {
+  it('renders 6 cooldown inputs and the AI auto-alerts toggle from the draft', async () => {
+    const el = await mount(makeVm());
+    expect(el.shadowRoot!.querySelectorAll('md3-number-input[data-notif]').length).toBe(6);
+    const toggle = el.shadowRoot!.querySelector<HTMLInputElement>(
+      'input[type="checkbox"][data-notif="aiAutoAlerts"]'
+    )!;
+    expect(toggle.checked).toBe(false);
+  });
+
+  it('shows the empty state and Add button when no timed notifications and idle', async () => {
+    const el = await mount(makeVm());
+    expect(el.shadowRoot!.querySelector('[data-timed="empty-state"]')).not.toBeNull();
+  });
+
+  it('renders a row per timed notification', async () => {
+    const items: TimedNotification[] = [
+      { id: 'n1', message: 'A', triggerType: 'veg_start', day: 1, growspaceIds: [] },
+      { id: 'n2', message: 'B', triggerType: 'dry_start', day: 9, growspaceIds: [] },
+    ];
+    const el = await mount(makeVm({ timedNotifications: items }));
+    expect(el.shadowRoot!.querySelectorAll('[data-timed-id]').length).toBe(2);
+  });
+});
+
+describe('ConfigNotificationsTab — intents out', () => {
+  it('emits notif-draft-changed when a cooldown input changes', async () => {
+    const el = await mount(makeVm());
+    const received = listen<{ partial: Partial<NotificationsDraft> }>(el, 'notif-draft-changed');
+    const input = el.shadowRoot!.querySelector(
+      'md3-number-input[data-notif="criticalCooldownMinutes"]'
+    )!;
+    input.dispatchEvent(new CustomEvent('change', { detail: 120, bubbles: true, composed: true }));
+    expect(received).toEqual([{ partial: { criticalCooldownMinutes: 120 } }]);
+  });
+
+  it('emits notif-draft-changed when the AI toggle changes', async () => {
+    const el = await mount(makeVm());
+    const received = listen<{ partial: Partial<NotificationsDraft> }>(el, 'notif-draft-changed');
+    const toggle = el.shadowRoot!.querySelector<HTMLInputElement>(
+      'input[type="checkbox"][data-notif="aiAutoAlerts"]'
+    )!;
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    expect(received).toEqual([{ partial: { aiAutoAlerts: true } }]);
+  });
+
+  it('emits add-timed-requested on the Add button', async () => {
+    const el = await mount(makeVm());
+    let fired = 0;
+    el.addEventListener('add-timed-requested', () => fired++);
+    const addBtn = [...el.shadowRoot!.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Add'
+    )!;
+    addBtn.click();
+    expect(fired).toBe(1);
+  });
+
+  it('emits edit-timed-requested with id + seeded draft from a row', async () => {
+    const item: TimedNotification = {
+      id: 'n1',
+      message: 'A',
+      triggerType: 'veg_start',
+      day: 1,
+      growspaceIds: ['gs1'],
+    };
+    const el = await mount(makeVm({ timedNotifications: [item] }));
+    const received = listen<{ id: string; draft: TimedNotificationDraft }>(
+      el,
+      'edit-timed-requested'
+    );
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[data-timed-edit="n1"]')!.click();
+    expect(received).toHaveLength(1);
+    expect(received[0].id).toBe('n1');
+    expect(received[0].draft).toEqual({
+      message: 'A',
+      triggerType: 'veg_start',
+      day: 1,
+      growspaceIds: ['gs1'],
+    });
+  });
+
+  it('emits request-delete-timed from a row Delete button', async () => {
+    const item: TimedNotification = {
+      id: 'n1',
+      message: 'A',
+      triggerType: 'veg_start',
+      day: 1,
+      growspaceIds: [],
+    };
+    const el = await mount(makeVm({ timedNotifications: [item] }));
+    const received = listen<{ id: string }>(el, 'request-delete-timed');
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[data-timed-delete="n1"]')!.click();
+    expect(received).toEqual([{ id: 'n1' }]);
+  });
+
+  it('emits confirm-delete-timed and cancel-timed from the confirm-delete card', async () => {
+    const sub: NotificationsTabSub = { kind: 'confirm-delete', id: 'n1' };
+    const el = await mount(makeVm({ sub }));
+    let confirmed = 0;
+    let cancelled = 0;
+    el.addEventListener('confirm-delete-timed', () => confirmed++);
+    el.addEventListener('cancel-timed', () => cancelled++);
+    const buttons = [...el.shadowRoot!.querySelectorAll('button')];
+    buttons.find((b) => b.textContent?.trim() === 'Delete')!.click();
+    buttons.find((b) => b.textContent?.trim() === 'Cancel')!.click();
+    expect(confirmed).toBe(1);
+    expect(cancelled).toBe(1);
+  });
+
+  it('emits timed-draft-changed and commit-add-timed from the add form', async () => {
+    const sub: NotificationsTabSub = { kind: 'adding', draft: timedDraft };
+    const el = await mount(makeVm({ sub }));
+    const drafts = listen<{ partial: Partial<TimedNotificationDraft> }>(el, 'timed-draft-changed');
+    let committed = 0;
+    el.addEventListener('commit-add-timed', () => committed++);
+
+    const messageInput = el.shadowRoot!.querySelector<HTMLInputElement>(
+      'input[data-timed-field="message"]'
+    )!;
+    messageInput.value = 'Updated';
+    messageInput.dispatchEvent(new Event('input'));
+    expect(drafts).toEqual([{ partial: { message: 'Updated' } }]);
+
+    [...el.shadowRoot!.querySelectorAll('button')]
+      .find((b) => b.textContent?.trim() === 'Add')!
+      .click();
+    expect(committed).toBe(1);
+  });
+});
