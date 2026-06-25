@@ -116,7 +116,12 @@ describe('ConfigDialog Interactions', () => {
         element.setInitialState(ConfigTab.HUMIDITY, { selectedGrowspaceId: 'gs1' } as any);
         await element.updateComplete;
 
-        const checkbox = Array.from(element.shadowRoot?.querySelectorAll('input[type="checkbox"]') ?? [])
+        // Humidity tab is a nested dumb component (ADR-0019); pierce its shadow.
+        const tab = element.shadowRoot?.querySelector('config-humidity-tab') as HTMLElement & {
+            updateComplete: Promise<boolean>;
+        };
+        await tab.updateComplete;
+        const checkbox = Array.from(tab.shadowRoot!.querySelectorAll('input[type="checkbox"]'))
             .find((el) => el.closest('label')?.textContent?.includes('Dehumidifier Control')) as HTMLInputElement | undefined;
 
         expect(checkbox).toBeDefined();

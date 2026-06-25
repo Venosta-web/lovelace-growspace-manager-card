@@ -3,6 +3,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
 import { needsExhaustCall } from '../../../src/features/config/environment-save';
+import {
+    readThreshold,
+    DEFAULT_DEHUM_THRESHOLDS,
+} from '../../../src/features/config/viewmodels/humidity-tab.viewmodel';
 import { html } from 'lit';
 
 // Env tabs are nested dumb components behind their own shadow roots (ADR-0019,
@@ -11,7 +15,7 @@ import { html } from 'lit';
 async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     await element.updateComplete;
     const tab = element.shadowRoot!.querySelector(
-        'config-sensors-tab, config-climate-tab'
+        'config-sensors-tab, config-climate-tab, config-humidity-tab'
     ) as (HTMLElement & { updateComplete: Promise<boolean> }) | null;
     if (tab) {
         await tab.updateComplete;
@@ -405,7 +409,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should update control dehumidifier checkbox', async () => {
-            const checks = element.shadowRoot?.querySelectorAll('input[type="checkbox"]');
+            const checks = (await sensorsShadow(element)).querySelectorAll('input[type="checkbox"]');
             const dehumCheck = Array.from(checks || []).find(c => {
                 const label = c.closest('label');
                 return label?.textContent?.includes('Dehumidifier Control');
@@ -419,7 +423,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should switch stages via accordion', async () => {
-            const accHeads = element.shadowRoot?.querySelectorAll('.acc-head');
+            const accHeads = (await sensorsShadow(element)).querySelectorAll('.acc-head');
             const vegHead = Array.from(accHeads || []).find(h => h.textContent?.includes('Vegetative'));
             (vegHead as HTMLElement)?.click();
             await element.updateComplete;
@@ -437,7 +441,7 @@ describe('ConfigDialog', () => {
             //   - On Input
             //   - Off Input
 
-            const inputs = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || []);
+            const inputs = Array.from((await sensorsShadow(element)).querySelectorAll('md3-number-input'));
             // Order: Day On, Day Off, Night On, Night Off
 
             // Update Day Off (Index 1)
@@ -452,7 +456,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle invalid inputs gracefully', async () => {
-            const inputs = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || []);
+            const inputs = Array.from((await sensorsShadow(element)).querySelectorAll('md3-number-input'));
             const dayOn = inputs[0];
 
             // Initial value
@@ -468,7 +472,7 @@ describe('ConfigDialog', () => {
             (element as any)._openHumidityStageId = 'drying';
             await element.updateComplete;
 
-            const inputs = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || []);
+            const inputs = Array.from((await sensorsShadow(element)).querySelectorAll('md3-number-input'));
             // Write to Day On (first input in drying accordion)
             inputs[0]?.dispatchEvent(new CustomEvent('change', { detail: '0.5' }));
             await element.updateComplete;
@@ -600,8 +604,7 @@ describe('ConfigDialog', () => {
             expect(element.shadowRoot?.querySelector('.cfg-master-list')).toBeTruthy();
 
             element.currentTab = ConfigTab.HUMIDITY;
-            await element.updateComplete;
-            expect(element.shadowRoot?.querySelector('.acc-card')).toBeTruthy();
+            expect((await sensorsShadow(element)).querySelector('.acc-card')).toBeTruthy();
         });
     });
 
@@ -624,22 +627,16 @@ describe('ConfigDialog', () => {
             expect((element as any).currentTab).toBe(ConfigTab.HUMIDITY);
         });
 
-        it('should return 0 for unknown stage threshold value', async () => {
-            (element as any).envDehumidifierThresholds = undefined;
-            await element.updateComplete;
-
-            const result = (element as any)._getThresholdValue('unknown_stage', 'day', 'on');
-            expect(result).toBe(0);
+        // The threshold-read logic moved to the Humidity VM (ADR-0019); these
+        // assert it at its new home (readThreshold) instead of the removed
+        // inline `_getThresholdValue` shell helper.
+        it('should return 0 for unknown stage threshold value', () => {
+            expect(readThreshold({}, DEFAULT_DEHUM_THRESHOLDS, 'unknown_stage', 'day', 'on')).toBe(0);
         });
 
-        it('should return correct threshold value when present', async () => {
-            (element as any).envDehumidifierThresholds = {
-                veg: { day: { on: 1.5, off: 1.2 } }
-            };
-            await element.updateComplete;
-
-            const result = (element as any)._getThresholdValue('veg', 'day', 'on');
-            expect(result).toBe(1.5);
+        it('should return correct threshold value when present', () => {
+            const thresholds = { veg: { day: { on: 1.5, off: 1.2 } } };
+            expect(readThreshold(thresholds, DEFAULT_DEHUM_THRESHOLDS, 'veg', 'day', 'on')).toBe(1.5);
         });
 
         it('should handle notification service change event', async () => {
@@ -688,7 +685,7 @@ describe('ConfigDialog', () => {
             element.currentTab = ConfigTab.HUMIDITY;
             (element as any)._openHumidityStageId = 'seedling';
             await element.updateComplete;
-            const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
+            const inputs = (await sensorsShadow(element)).querySelectorAll('md3-number-input');
             // Labels are "On Above %" and "Off Below %" in the new accordion
             const offInputs = Array.from(inputs || []).filter(i => i.getAttribute('label')?.includes('Below'));
             const onInputs = Array.from(inputs || []).filter(i => i.getAttribute('label')?.includes('Above'));
@@ -712,11 +709,11 @@ describe('ConfigDialog', () => {
         it('should trigger dehumidifier stage switch via accordion', async () => {
             element.currentTab = ConfigTab.HUMIDITY;
             await element.updateComplete;
-            const accHeads = element.shadowRoot?.querySelectorAll('.acc-head');
+            const accHeads = (await sensorsShadow(element)).querySelectorAll('.acc-head');
             const vegHead = Array.from(accHeads || []).find(h => h.textContent?.includes('Vegetative'));
             (vegHead as HTMLElement)?.click();
             await element.updateComplete;
-            const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
+            const inputs = (await sensorsShadow(element)).querySelectorAll('md3-number-input');
             inputs?.[0]?.dispatchEvent(new CustomEvent('change', { detail: '2.0' }));
             expect((element as any).envDehumidifierThresholds.veg.day.on).toBe(2.0);
         });
@@ -738,8 +735,7 @@ describe('ConfigDialog', () => {
 
         it('should render humidity accordion with all stages', async () => {
             element.currentTab = ConfigTab.HUMIDITY;
-            await element.updateComplete;
-            const accCards = element.shadowRoot?.querySelectorAll('.acc-card');
+            const accCards = (await sensorsShadow(element)).querySelectorAll('.acc-card');
             // All 8 stages rendered as accordion items
             expect(accCards?.length).toBe(8);
         });

@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
 
-// Env tabs (Sensors, Climate) are nested dumb components behind their own shadow
-// roots (ADR-0019, "Applied to Config Dialog"); pierce whichever is active.
+// Env tabs (Sensors, Climate, Humidity) are nested dumb components behind their
+// own shadow roots (ADR-0019, "Applied to Config Dialog"); pierce whichever is active.
 async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     await element.updateComplete;
     const tab = element.shadowRoot!.querySelector(
-        'config-sensors-tab, config-climate-tab'
+        'config-sensors-tab, config-climate-tab, config-humidity-tab'
     ) as HTMLElement & { updateComplete: Promise<boolean> };
     await tab.updateComplete;
     return tab.shadowRoot!;
@@ -217,24 +217,25 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         };
         await element.updateComplete;
 
-        // Verify it's rendering
-        const humidifierHeader = Array.from(element.shadowRoot?.querySelectorAll('h3') || [])
+        // Verify it's rendering (humidity tab is now a nested dumb component).
+        const root = await sensorsShadow(element);
+        const humidifierHeader = Array.from(root.querySelectorAll('h3'))
             .find(h => h.textContent?.includes('Humidity'));
         expect(humidifierHeader).to.exist;
 
-        // Exercise inline handlers
-        const checkbox = element.shadowRoot?.querySelector('input[type="checkbox"]');
+        // Exercise the component's intent handlers through to the shell.
+        const checkbox = root.querySelector('input[type="checkbox"]');
         if (checkbox) {
             (checkbox as HTMLInputElement).checked = true;
             checkbox.dispatchEvent(new Event('change'));
         }
 
-        const accHead = element.shadowRoot?.querySelector('.acc-head');
+        const accHead = root.querySelector('.acc-head');
         if (accHead) {
             (accHead as HTMLElement).click();
         }
 
-        const numberInput = element.shadowRoot?.querySelector('md3-number-input');
+        const numberInput = (await sensorsShadow(element)).querySelector('md3-number-input');
         if (numberInput) {
             numberInput.dispatchEvent(new CustomEvent('change', { detail: '0.5' }));
         }
