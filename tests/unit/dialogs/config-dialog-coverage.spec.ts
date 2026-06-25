@@ -2,6 +2,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
 
+// The Sensors tab is a nested dumb component behind its own shadow root
+// (ADR-0019, "Applied to Config Dialog"); pierce it to reach the pickers.
+async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
+    await element.updateComplete;
+    const tab = element.shadowRoot!.querySelector('config-sensors-tab') as HTMLElement & {
+        updateComplete: Promise<boolean>;
+    };
+    await tab.updateComplete;
+    return tab.shadowRoot!;
+}
+
 vi.mock('../../../src/slices/subarea', () => ({
     getSubareas: vi.fn().mockResolvedValue([]),
     addSubarea: vi.fn().mockResolvedValue({ id: 'sa-new', name: '', environment_config: {} }),
@@ -423,7 +434,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envSubstrateTemperatureSensors = ['sensor.substrate_temp'];
         await element.updateComplete;
 
-        const labels = Array.from(element.shadowRoot?.querySelectorAll('.md3-label-multi') ?? []);
+        const labels = Array.from((await sensorsShadow(element)).querySelectorAll('.md3-label-multi'));
         const substrateLabel = labels.find((l) => l.textContent?.includes('Substrate'));
         expect(substrateLabel).toBeDefined();
     });
@@ -872,7 +883,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envSubstrateTemperatureSensors = ['sensor.substrate'];
         await element.updateComplete;
 
-        const chipRemove = element.shadowRoot?.querySelector('.chip-remove') as HTMLElement | null;
+        const chipRemove = (await sensorsShadow(element)).querySelector('.chip-remove') as HTMLElement | null;
         chipRemove?.click();
         await element.updateComplete;
 

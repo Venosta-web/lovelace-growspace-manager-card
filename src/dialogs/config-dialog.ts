@@ -23,7 +23,6 @@ import {
   mdiTune,
 } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
-import { calculateVpdWithLstOffset } from '../utils/vpd-calc';
 import { HomeAssistant } from 'custom-card-helpers';
 
 import '../features/shared/ui/md3-text-input';
@@ -46,7 +45,6 @@ import {
   DehumidifierStage,
   HumidifierStage,
   EnvironmentConfigData,
-  EnvironmentConfigEventDetail,
 } from '../types';
 import type { VisionCheckupConfigEventDetail } from '../lib/types/dialog';
 import { ConfigTab } from '../constants';
@@ -63,6 +61,9 @@ import {
 } from './config-dialog-sm';
 import '../features/config/components/config-notifications-tab';
 import { createNotificationsTabViewModel } from '../features/config/viewmodels/notifications-tab.viewmodel';
+import '../features/config/components/config-sensors-tab';
+import { createSensorsTabViewModel } from '../features/config/viewmodels/sensors-tab.viewmodel';
+import { composeEnvironmentConfig } from '../features/config/environment-save';
 
 type StageThresholds = Record<string, Record<string, { on: number; off: number }>>;
 
@@ -1111,47 +1112,12 @@ export class ConfigDialog extends LitElement {
   }
 
   private _submitEnvironment() {
-    const d = this._sm.environmentDraft;
     this.dispatchEvent(
       new CustomEvent('configure-environment-submit', {
-        detail: {
-          selectedGrowspaceId: d.selectedGrowspaceId,
-          temperatureSensors: d.temperatureSensors,
-          humiditySensors: d.humiditySensors,
-          vpdSensors: d.vpdSensors,
-          co2Sensor: d.co2Sensor,
-          circulationFanEntities: d.circulationFanEntities,
-          stressThreshold: d.stressThreshold,
-          moldThreshold: d.moldThreshold,
-          lightSensors: d.lightSensors,
-          exhaustFanEntities: d.exhaustFanEntities,
-          humidifierEntities: d.humidifierEntities,
-          humidifierThresholds: d.humidifierThresholds,
+        detail: composeEnvironmentConfig(this._sm.environmentDraft, {
           humidifierControlEnabled: this._humidifierControlEnabled,
-          dehumidifierEntities: d.dehumidifierEntities,
-          dehumidifierThresholds: d.dehumidifierThresholds,
           dehumidifierControlEnabled: this._dehumidifierControlEnabled,
-          soilMoistureSensor: d.soilMoistureSensor,
-          sensorGroups: d.sensorGroups,
-          sensorCoordinates: d.sensorCoordinates,
-          irrigationTanks: d.irrigationTanks,
-          cameraEntities: d.cameraEntities,
-          lungroomTempSensors: d.lungroomTempSensors,
-          substrateTemperatureSensors: d.substrateTemperatureSensors,
-          phSensors: d.phSensors,
-          feedEcSensors: d.feedEcSensors,
-          bulkEcSensors: d.bulkEcSensors,
-          poreEcSensors: d.poreEcSensors,
-          runoffEcSensors: d.runoffEcSensors,
-          drainVolumeSensors: d.drainVolumeSensors,
-          irrigationFlowSensors: d.irrigationFlowSensors,
-          powerSensors: d.powerSensors,
-          energySensors: d.energySensors,
-          circulationFanConfig: d.circulationFanConfig,
-          exhaustFanConfig: d.exhaustFanConfig,
-          vpdOptimalOverrides: d.vpdOptimalOverrides,
-          lstOffset: d.lstOffset,
-        } satisfies EnvironmentConfigEventDetail,
+        }),
         bubbles: true,
         composed: true,
       })
@@ -1832,114 +1798,17 @@ export class ConfigDialog extends LitElement {
     `;
   }
 
-  private _renderSensorsSection() {
-    const d = this._sm.environmentDraft;
+  private _renderSensorsTab() {
+    const deps = {
+      entityOptions: (domains: string[], deviceClass: string | null) =>
+        this._getEntities(domains, deviceClass),
+      averageSensorValue: (ids: string[]) => this._averageSensorValue(ids),
+    };
     return html`
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiThermometer}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Monitoring Sensors</h3>
-        </div>
-        <div class="form-section">
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect(
-              'Temperature Sensors',
-              d.temperatureSensors,
-              ['sensor', 'input_number'],
-              'temperature',
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { temperatureSensors: v } })
-            )}
-            ${this._renderMultiEntitySelect(
-              'Humidity Sensors',
-              d.humiditySensors,
-              ['sensor', 'input_number'],
-              'humidity',
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { humiditySensors: v } })
-            )}
-          </div>
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect(
-              'VPD Sensors (Optional)',
-              d.vpdSensors,
-              ['sensor', 'input_number'],
-              'pressure',
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdSensors: v } })
-            )}
-            ${this._renderEntitySelect(
-              'Soil Moisture Sensor',
-              d.soilMoistureSensor,
-              ['sensor', 'input_number'],
-              'moisture',
-              (e: CustomEvent) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { soilMoistureSensor: e.detail.value } })
-            )}
-          </div>
-          <div class="row-col-grid">
-            ${this._renderEntitySelect(
-              'CO₂ Sensor',
-              d.co2Sensor,
-              ['sensor', 'input_number'],
-              'carbon_dioxide',
-              (e: CustomEvent) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { co2Sensor: e.detail.value } })
-            )}
-            ${this._renderMultiEntitySelect(
-              'Light Source / Sensor',
-              d.lightSensors,
-              ['switch', 'light', 'input_boolean', 'sensor'],
-              null,
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { lightSensors: v } })
-            )}
-          </div>
-          ${this._renderMultiEntitySelect(
-            'Substrate Temperature Sensors',
-            d.substrateTemperatureSensors,
-            ['sensor', 'input_number'],
-            'temperature',
-            (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { substrateTemperatureSensors: v } })
-          )}
-          ${this._renderLstOffsetSection()}
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderLstOffsetSection() {
-    const d = this._sm.environmentDraft;
-    const hasTemp = d.temperatureSensors.length > 0;
-    const hasHumidity = d.humiditySensors.length > 0;
-    const hasHardwareVpd = d.vpdSensors.some((id) => !id.includes('calculated_vpd'));
-
-    if (!hasTemp || !hasHumidity || hasHardwareVpd) return nothing;
-
-    const avgTemp = this._averageSensorValue(d.temperatureSensors);
-    const avgHumidity = this._averageSensorValue(d.humiditySensors);
-    const vpd = avgTemp != null && avgHumidity != null
-      ? calculateVpdWithLstOffset(avgTemp, avgHumidity, d.lstOffset)
-      : null;
-    const vpdDisplay = vpd != null ? `${vpd} kPa` : '—';
-
-    return html`
-      <div style="margin-top:12px;">
-        <md3-number-input
-          label="Leaf Surface Temperature Offset"
-          .value=${d.lstOffset}
-          @change=${(e: CustomEvent) =>
-            this._t({ type: 'UPDATE_ENV_DRAFT', partial: { lstOffset: parseFloat(e.detail) } })}
-          min="-10"
-          max="10"
-          step="0.5"
-          suffix="°C"
-        ></md3-number-input>
-        <div style="margin-top:4px;font-size:0.85em;color:var(--secondary-text-color,rgba(255,255,255,0.5));">
-          Current VPD: ${vpdDisplay}
-        </div>
-      </div>
+      <config-sensors-tab
+        .vm=${createSensorsTabViewModel(this._sm, deps)}
+        @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
+      ></config-sensors-tab>
     `;
   }
 
@@ -3625,7 +3494,7 @@ export class ConfigDialog extends LitElement {
                 ${this.currentTab === ConfigTab.NOTIFICATIONS
                   ? this._renderNotificationsTab()
                   : nothing}
-                ${this.currentTab === ConfigTab.SENSORS ? this._renderSensorsSection() : nothing}
+                ${this.currentTab === ConfigTab.SENSORS ? this._renderSensorsTab() : nothing}
                 ${this.currentTab === ConfigTab.CLIMATE ? this._renderClimateSection() : nothing}
                 ${this.currentTab === ConfigTab.CLIMATE
                   ? this._renderFanControllerPanel()
