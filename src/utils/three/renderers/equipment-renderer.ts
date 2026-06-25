@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { BaseRenderer } from './base-renderer';
+import {
+  defaultClimateUnitCoords,
+  defaultExhaustCoords,
+  defaultPumpCoords,
+} from '../default-placement';
 
 type SensorCoord = { x: number; y: number; z: number; rotation?: number };
 
@@ -40,9 +45,11 @@ export class EquipmentRenderer extends BaseRenderer {
     const hums = env?.humidifierEntities || (env?.humidifierEntity ? [env.humidifierEntity] : []);
     const dehums =
       env?.dehumidifierEntities || (env?.dehumidifierEntity ? [env.dehumidifierEntity] : []);
-    [...hums, ...dehums].forEach((entityId) => {
-      const coords = sensorCoords[entityId];
-      if (!coords) return;
+    const climateUnits = [...hums, ...dehums];
+    climateUnits.forEach((entityId, index) => {
+      const coords =
+        sensorCoords[entityId] ??
+        defaultClimateUnitCoords(index, climateUnits.length, { width, depth, height });
       currentEntityIds.add(entityId);
 
       const isOutside = coords.x < 0 || coords.x > width || coords.y < 0 || coords.y > depth;
@@ -129,14 +136,16 @@ export class EquipmentRenderer extends BaseRenderer {
 
     pumps.forEach((entityId) => {
       if (!entityId) return;
-      let coords = sensorCoords[entityId];
-      if (!coords) coords = { x: 0, y: 0, z: 0, rotation: 0 };
       currentEntityIds.add(entityId);
 
-      const isOutside = coords.x < 0 || coords.x > width || coords.y < 0 || coords.y > depth;
       const isDrain =
         entityId === irrigationConfig?.drainPumpEntity ||
         env?.sensorTypes?.[entityId] === this.SENSOR_TYPES.DRAIN_PUMP;
+
+      const coords =
+        sensorCoords[entityId] ?? defaultPumpCoords(isDrain, { width, depth, height });
+
+      const isOutside = coords.x < 0 || coords.x > width || coords.y < 0 || coords.y > depth;
 
       let isActive = false;
       const state = hass?.states[entityId];
@@ -244,9 +253,10 @@ export class EquipmentRenderer extends BaseRenderer {
     // 3. Exhaust Fans
     const exhaustEntities =
       env?.exhaustFanEntities || (env?.exhaustEntity ? [env.exhaustEntity] : []);
-    exhaustEntities.forEach((entityId) => {
-      let coords = sensorCoords[entityId];
-      if (!coords) coords = { x: width / 2, y: depth / 2, z: height, rotation: 0 };
+    exhaustEntities.forEach((entityId, index) => {
+      const coords =
+        sensorCoords[entityId] ??
+        defaultExhaustCoords(index, exhaustEntities.length, { width, depth, height });
       currentEntityIds.add(entityId);
 
       let speed = 0;

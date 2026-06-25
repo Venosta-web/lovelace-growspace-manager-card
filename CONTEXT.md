@@ -83,6 +83,9 @@ When `ViewMode.HEATMAP` is active, overlays the grid cells with a colour gradien
 **LayoutSpec**
 Declarative description of a ViewMode: `{ slots: ('header' | 'grid' | 'chart')[], overlay?: GridOverlayMode }`. A single `<growspace-view>` component reads the spec for the current ViewMode and renders the slots. HEATMAP is `{ slots: ['grid'], overlay: 'temperature' }` — a composition, not a sibling file. Adding a view mode is a config entry. Lives in the UI slice alongside ViewMode.
 
+**Default Equipment Placement**
+The 3D heatmap's behaviour of showing equipment at a sensible type-aware position when the grower has not yet placed it. Computed at render time from the equipment type, its index among its peers, and the tent dimensions — never persisted until the grower drags the item, which writes a real coordinate that overrides the default. Applies to lights, exhaust, circulation fans, humidifiers, dehumidifiers, pumps, and tanks. **Sensors are deliberately excluded** — their position is the heatmap's interpolation sample point, so a guessed position would produce a misleading field; sensors stay opt-in (invisible until placed). The concrete per-type coordinates live in ADR-0024, not here.
+
 ## AI / Growmaster
 
 **Growmaster Dialog** (`grow-master-dialog`)

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BaseRenderer } from './base-renderer';
+import { defaultFanCoords } from '../default-placement';
 
 export class FanRenderer extends BaseRenderer {
   private fanHeads: THREE.Object3D[] = [];
@@ -27,12 +28,10 @@ export class FanRenderer extends BaseRenderer {
 
     const currentFanIds = new Set<string>();
 
-    fanEntities.forEach((entityId) => {
+    fanEntities.forEach((entityId, index) => {
       currentFanIds.add(entityId);
-      let coords = sensorCoords[entityId];
-      if (!coords) {
-        coords = { x: 0, y: 0, z: height * 0.8, rotation: 0 };
-      }
+      const coords =
+        sensorCoords[entityId] ?? defaultFanCoords(index, { width, depth, height });
 
       // Determine Fan Speed
       const stateObj = hass?.states[entityId];

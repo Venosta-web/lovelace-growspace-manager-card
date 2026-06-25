@@ -11744,7 +11744,7 @@ class GrowspaceAdapter {
             autoAdvanceP2ToP3: irrigationConfigRaw.auto_advance_p2_to_p3,
             haltOnRunoffEcThreshold: irrigationConfigRaw.halt_on_runoff_ec_threshold,
             activeSteeringPhase: irrigationConfigRaw.active_steering_phase,
-            phaseChangedAt: irrigationConfigRaw.phase_changed_at,
+            phaseChangedAt: irrigationConfigRaw.phase_changed_at ?? undefined,
             ecTargetRanges: (irrigationConfigRaw.ec_target_ranges ?? []).map((r) => ({
                 stage: r.stage,
                 minEc: r.feed_ec_min,
@@ -16299,8 +16299,6 @@ let NutrientStockChip = class NutrientStockChip extends i$3 {
         if (!this.stock) {
             return x ``;
         }
-        // eslint-disable-next-line camelcase
-        // eslint-disable-next-line camelcase
         const { current_ml: currentMl, initial_ml: initialMl, name } = this.stock;
         const ratio = initialMl > 0 ? currentMl / initialMl : 0;
         let status = 'optimal';
@@ -26690,9 +26688,11 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
                 fetchBriefing(this._growspaceId);
             }
             if (aiMode$.get() === 'settings') {
-                fetchAiSettings().then((settings) => {
+                fetchAiSettings()
+                    .then((settings) => {
                     this._settingsDraft = { ...settings };
-                });
+                })
+                    .catch((err) => console.error('[GrowMaster] failed to load AI settings', err));
             }
         }
     }
@@ -26705,9 +26705,11 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
             fetchBriefing(this._growspaceId);
         }
         if (mode === 'settings') {
-            fetchAiSettings().then((settings) => {
+            fetchAiSettings()
+                .then((settings) => {
                 this._settingsDraft = { ...settings };
-            });
+            })
+                .catch((err) => console.error('[GrowMaster] failed to load AI settings', err));
         }
     }
     _renderNavItem(m, mode) {
@@ -48682,7 +48684,7 @@ function buildStrainTreeNodes(allStrains, seedBatches, primaryStrains) {
     const resolve = (name) => {
         if (!name)
             return null;
-        const clean = name.replace(/^["'\[\(]|["'\]\)]$/g, '').trim();
+        const clean = name.replace(/^["'[(]|["'\])]$/g, '').trim();
         const lower = clean.toLowerCase();
         return strainNameToKey.get(lower) || clean;
     };
@@ -49260,7 +49262,8 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
             }
         });
         this._resizeObs.observe(this);
-        this.updateComplete.then(() => {
+        this.updateComplete
+            .then(() => {
             if (this._viewW === 0) {
                 const rect = this.getBoundingClientRect();
                 if (rect.width > 0) {
@@ -49270,7 +49273,8 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
                     this.requestUpdate();
                 }
             }
-        });
+        })
+            .catch(() => { });
     }
     disconnectedCallback() {
         super.disconnectedCallback();
@@ -51049,7 +51053,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                         this._editingStrain = undefined;
                         this.dispatchEvent(new CustomEvent('data-changed'));
                     }}
-                      @view-lineage=${(e) => {
+                      @view-lineage=${(_e) => {
                         this.focusLineage = true;
                         this._cameFromEditor = true;
                         this._activeMainTab = 'tree';
@@ -129722,7 +129726,7 @@ class BaseRenderer {
         this.context = { ...this.context, ...newContext };
     }
     // Called on every frame for animations
-    animate(deltaTime) {
+    animate(_deltaTime) {
         // Optional override
     }
     // Cleanup resources
@@ -130069,7 +130073,6 @@ class SensorRenderer extends BaseRenderer {
         const { device, volatileGroup, hass, selectedMetric, visibility } = this.context;
         const sensorCoords = device.environmentAttributes?.sensorCoordinates || {};
         const width = device.dimensions?.width ?? 120;
-        device.dimensions?.height ?? 200;
         const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
         const allSensorEntities = Object.keys(sensorCoords);
         const currentSensorIds = new Set();
@@ -130274,6 +130277,94 @@ class SensorRenderer extends BaseRenderer {
     }
 }
 
+/**
+ * Render-time default placement for 3D-heatmap equipment.
+ *
+ * When a device has no entry in `sensorCoordinates`, its renderer falls back to one of
+ * these functions instead of bailing out. Positions are in HA coords (X = width 0→w,
+ * Y = depth 0→d, Z = height 0→h); the renderer maps them to scene space. Nothing here is
+ * persisted — dragging the item writes a real coordinate that overrides the default.
+ *
+ * Sensors (temperature/humidity/vpd) are intentionally absent: their position is the
+ * heatmap's interpolation sample point, so a guessed default would produce a misleading
+ * field. See ADR-0024.
+ */
+/** Even fractional split that never lands on the walls: (i+1)/(count+1). */
+function spread(index, count, span) {
+    return ((index + 1) / (count + 1)) * span;
+}
+/**
+ * Lights hang just below the ceiling, centred over the canopy. A single light sits dead
+ * centre; multiples spread across a `cols`×`rows` grid. The caller passes the same
+ * `cols`/`rows` it computes for bar sizing so position and size agree.
+ */
+function defaultLightCoords(index, cols, rows, dims) {
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    return {
+        x: ((col + 0.5) / cols) * dims.width,
+        y: ((row + 0.5) / rows) * dims.depth,
+        z: dims.height * 0.9,
+        rotation: 0,
+    };
+}
+/** Exhaust mounts on the top edge of the back wall (y = depth), spread along the width. */
+function defaultExhaustCoords(index, count, dims) {
+    return {
+        x: spread(index, count, dims.width),
+        y: dims.depth,
+        z: dims.height,
+        rotation: 0,
+    };
+}
+/**
+ * Circulation fans cycle the four corners (the renderer snaps x/y to the nearest wall, so
+ * only corners are reachable) at upper-canopy height. Rotation 0 lets the renderer aim each
+ * fan at the centre.
+ */
+function defaultFanCoords(index, dims) {
+    const corners = [
+        [0, 0],
+        [dims.width, dims.depth],
+        [dims.width, 0],
+        [0, dims.depth],
+    ];
+    const [x, y] = corners[index % corners.length];
+    return { x, y, z: dims.height * 0.7, rotation: 0 };
+}
+/**
+ * Humidifiers and dehumidifiers stand just outside the front wall (y < 0), which makes the
+ * renderer draw a supply hose into the tent ending at canopy height (z = 0.5·h). Callers
+ * pass a combined index/count across both lists so the units spread along the front without
+ * overlapping (one hum + one dehum → w/3 and 2w/3).
+ */
+function defaultClimateUnitCoords(combinedIndex, combinedCount, dims) {
+    return {
+        x: spread(combinedIndex, combinedCount, dims.width),
+        y: -40,
+        z: dims.height * 0.5,
+        rotation: 0,
+    };
+}
+/** Pumps sit on the floor against the left wall (x = 0), beside the tanks that feed them. */
+function defaultPumpCoords(isDrain, dims) {
+    return {
+        x: 0,
+        y: isDrain ? (2 * dims.depth) / 3 : dims.depth / 3,
+        z: 0,
+        rotation: 0,
+    };
+}
+/** Tanks line the left wall (x = 0) on the floor, spread along its depth. */
+function defaultTankCoords(index, count, dims) {
+    return {
+        x: 0,
+        y: spread(index, count, dims.depth),
+        z: 0,
+        rotation: 0,
+    };
+}
+
 class FanRenderer extends BaseRenderer {
     constructor() {
         super(...arguments);
@@ -130296,12 +130387,9 @@ class FanRenderer extends BaseRenderer {
         const fanEntities = env?.circulationFanEntities || (env?.circulationFanEntity ? [env.circulationFanEntity] : []);
         const sensorCoords = env?.sensorCoordinates || {};
         const currentFanIds = new Set();
-        fanEntities.forEach((entityId) => {
+        fanEntities.forEach((entityId, index) => {
             currentFanIds.add(entityId);
-            let coords = sensorCoords[entityId];
-            if (!coords) {
-                coords = { x: 0, y: 0, z: height * 0.8, rotation: 0 };
-            }
+            const coords = sensorCoords[entityId] ?? defaultFanCoords(index, { width, depth, height });
             // Determine Fan Speed
             const stateObj = hass?.states[entityId];
             let fanSpeed = 0;
@@ -130382,7 +130470,7 @@ class FanRenderer extends BaseRenderer {
         this._windParticles.frustumCulled = false;
         this.context.volatileGroup.add(this._windParticles);
     }
-    animateParticles(deltaTime) {
+    animateParticles(_deltaTime) {
         if (this._windParticles) {
             const pos = this._windParticles.geometry.attributes.position.array;
             const vel = this._windParticles.geometry.attributes.velocity.array;
@@ -130487,6 +130575,7 @@ class LightRenderer extends BaseRenderer {
         const { device, volatileGroup, visibility } = this.context;
         const width = device.dimensions?.width ?? 120;
         const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
+        const height = device.dimensions?.height ?? 200;
         if (!visibility.lights) {
             this.dispose();
             return;
@@ -130510,11 +130599,9 @@ class LightRenderer extends BaseRenderer {
         const scaleX = 1 / cols;
         const scaleZ = 1 / rows;
         const currentLightIds = new Set();
-        lightSensors.forEach((entityId) => {
+        lightSensors.forEach((entityId, index) => {
             currentLightIds.add(entityId);
-            const coords = sensorCoords[entityId];
-            if (!coords)
-                return;
+            const coords = sensorCoords[entityId] ?? defaultLightCoords(index, cols, rows, { width, depth, height });
             let lightGroup = this.cache.get(entityId);
             const modelWidth = width * scaleX;
             const modelDepth = depth * scaleZ;
@@ -130610,7 +130697,7 @@ class PlantRenderer extends BaseRenderer {
     }
     render() {
         this._plantHitBoxes = [];
-        const { device, volatileGroup, requestUpdate, visibility } = this.context;
+        const { device, volatileGroup, visibility } = this.context;
         const width = device.dimensions?.width ?? 120;
         const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
         if (!visibility.plants) {
@@ -130846,11 +130933,13 @@ class PlantRenderer extends BaseRenderer {
                     strainColors = this._strainColorCache.get(plantData.imageUrl);
                 }
                 else {
-                    this.extractStrainColors(plantData.imageUrl).then((colors) => {
+                    this.extractStrainColors(plantData.imageUrl)
+                        .then((colors) => {
                         if (colors && colors.length > 0 && requestUpdate) {
                             requestUpdate();
                         }
-                    });
+                    })
+                        .catch((err) => console.error('[PlantRenderer] failed to extract strain colors', err));
                 }
             }
         }
@@ -130950,23 +131039,13 @@ class PlantRenderer extends BaseRenderer {
             canvas.width = 100;
             canvas.height = 100;
             ctx.drawImage(img, 0, 0, 100, 100);
-            const data = ctx.getImageData(0, 0, 100, 100).data;
-            // Allow basic simplified color extraction or mocked
-            // For brevity, using simplified logic or just returning empty if too complex to port
-            // But let's try a simple average of center
-            const colors = [];
-            // Simplified: return dominant green/orange/purple if detected
-            // Real implementation requires complex histogram logic from original file
-            // I will retain the cache mechanism but maybe skip full logic to save token space if acceptable,
-            // OR copy the loop. The loop is efficient enough.
-            // ... (Insert Histogram Logic if needed, or placeholder)
-            // For now, I'll return empty to avoid bloat,
-            // relying on defaults, as this is visually "extra"
-            // Re-implementing the full color extraction might be too large for this file chunk.
-            this._strainColorCache.set(imageUrl, []); // Placeholder
+            // TODO: strain colour extraction (histogram of the drawn image) is not
+            // implemented yet. Cache and return an empty palette so callers fall back
+            // to default colours.
+            this._strainColorCache.set(imageUrl, []);
             return [];
         }
-        catch (e) {
+        catch {
             return [];
         }
     }
@@ -131004,10 +131083,10 @@ class EquipmentRenderer extends BaseRenderer {
         // 1. Humidifiers / Dehumidifiers
         const hums = env?.humidifierEntities || (env?.humidifierEntity ? [env.humidifierEntity] : []);
         const dehums = env?.dehumidifierEntities || (env?.dehumidifierEntity ? [env.dehumidifierEntity] : []);
-        [...hums, ...dehums].forEach((entityId) => {
-            const coords = sensorCoords[entityId];
-            if (!coords)
-                return;
+        const climateUnits = [...hums, ...dehums];
+        climateUnits.forEach((entityId, index) => {
+            const coords = sensorCoords[entityId] ??
+                defaultClimateUnitCoords(index, climateUnits.length, { width, height });
             currentEntityIds.add(entityId);
             const isOutside = coords.x < 0 || coords.x > width || coords.y < 0 || coords.y > depth;
             const isDehum = dehums.includes(entityId) || env?.dehumidifierEntity === entityId;
@@ -131060,13 +131139,11 @@ class EquipmentRenderer extends BaseRenderer {
         pumps.forEach((entityId) => {
             if (!entityId)
                 return;
-            let coords = sensorCoords[entityId];
-            if (!coords)
-                coords = { x: 0, y: 0, z: 0, rotation: 0 };
             currentEntityIds.add(entityId);
-            const isOutside = coords.x < 0 || coords.x > width || coords.y < 0 || coords.y > depth;
             const isDrain = entityId === irrigationConfig?.drainPumpEntity ||
                 env?.sensorTypes?.[entityId] === this.SENSOR_TYPES.DRAIN_PUMP;
+            const coords = sensorCoords[entityId] ?? defaultPumpCoords(isDrain, { depth});
+            const isOutside = coords.x < 0 || coords.x > width || coords.y < 0 || coords.y > depth;
             let isActive = false;
             const state = hass?.states[entityId];
             if (state)
@@ -131145,10 +131222,9 @@ class EquipmentRenderer extends BaseRenderer {
         });
         // 3. Exhaust Fans
         const exhaustEntities = env?.exhaustFanEntities || (env?.exhaustEntity ? [env.exhaustEntity] : []);
-        exhaustEntities.forEach((entityId) => {
-            let coords = sensorCoords[entityId];
-            if (!coords)
-                coords = { x: width / 2, y: depth / 2, z: height, rotation: 0 };
+        exhaustEntities.forEach((entityId, index) => {
+            const coords = sensorCoords[entityId] ??
+                defaultExhaustCoords(index, exhaustEntities.length, { width, depth, height });
             currentEntityIds.add(entityId);
             let speed = 0;
             const state = hass?.states[entityId];
@@ -131416,7 +131492,7 @@ class EquipmentRenderer extends BaseRenderer {
         group.userData = { ...group.userData, intensity, isOutside, targetH, logicalZ: targetH };
         return group;
     }
-    createPumpModel(isDrain, isOutside, coords, frameWidth, frameDepth, frameHeight, hoseTargetHeight, isActive, tankMesh) {
+    createPumpModel(isDrain, isOutside, coords, frameWidth, frameDepth, frameHeight, hoseTargetHeight, isActive, _tankMesh) {
         const deviceHeight = isOutside ? 0 : coords.z !== undefined ? coords.z : 0;
         const group = new Group();
         const bodyRadius = 8;
@@ -131791,9 +131867,10 @@ class TankRenderer extends BaseRenderer {
     }
     render() {
         this._tankWaves = [];
-        const { device, volatileGroup, hass, visibility } = this.context;
+        const { device, volatileGroup, visibility } = this.context;
         const width = device.dimensions?.width ?? 120;
         const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
+        device.dimensions?.height ?? 200;
         const env = device.environmentAttributes;
         const tanks = env?.irrigationTanks || [];
         const sensorCoords = env?.sensorCoordinates || {};
@@ -131812,10 +131889,11 @@ class TankRenderer extends BaseRenderer {
         const capGeo = this.getSharedGeometry('tankCapGeo', () => new CylinderGeometry(5, 5, 4, 16));
         const liquidGeo = this.getSharedGeometry('tankLiquidGeo', () => new BoxGeometry(1, 1, 1));
         const waveGeo = this.getSharedGeometry('tankWaveGeo', () => new PlaneGeometry(30 * 0.94, 30 * 0.94, 20, 20));
-        tanks.forEach((tank) => {
+        tanks.forEach((tank, index) => {
             const entityId = tank.sensorEntity;
             currentTankIds.add(entityId);
-            const coords = sensorCoords[entityId] || { x: 0, y: depth / 2};
+            const coords = sensorCoords[entityId] ??
+                defaultTankCoords(index, tanks.length, { depth});
             const isWarning = tank.isWarning;
             const fill = tank.fillLevel || 0;
             const liquidColor = isWarning ? 0xff4422 : 0x00aaff;
@@ -131915,7 +131993,7 @@ class TankRenderer extends BaseRenderer {
             }
         });
     }
-    animate(deltaTime) {
+    animate(_deltaTime) {
         if (this._tankWaves.length > 0) {
             const time = Date.now() * 0.003;
             this._tankWaves.forEach((wave) => {
@@ -133776,7 +133854,9 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         // Initial Scene Update & Render Trigger
         this.updateScene();
         // Defer so the second render is scheduled outside the completed update cycle (avoids Lit change-in-update warning).
-        Promise.resolve().then(() => this.requestUpdate());
+        Promise.resolve()
+            .then(() => this.requestUpdate())
+            .catch(() => { });
     }
     updateScene() {
         if (!this.device || !this.sceneManager)
@@ -133789,7 +133869,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             tooltips: this.showTooltips,
         });
     }
-    willUpdate(changedProps) {
+    willUpdate(_changedProps) {
         if (this.sceneManager) {
             this.updateScene();
         }
@@ -133908,7 +133988,6 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             if (m === mesh) {
                 const x = mesh.position.x + width / 2;
                 const y = mesh.position.z + depth / 2;
-                mesh.userData.logicalZ !== undefined ? mesh.userData.logicalZ : mesh.position.y;
                 if (!this.device.environmentAttributes)
                     this.device.environmentAttributes = {};
                 if (!this.device.environmentAttributes.sensorCoordinates)
@@ -133972,7 +134051,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         }
     }
     // UI Helpers
-    getSensorValue(entityId, metric) {
+    getSensorValue(entityId, _metric) {
         // Used by renderers
         if (this.timelineIndex >= 0) {
             const history = this.historyData[entityId];
@@ -134058,7 +134137,6 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         if (!mesh)
             return;
         const width = this.device.dimensions?.width ?? 120;
-        this.device.dimensions?.height ?? 200;
         const depth = this.device.dimensions?.length ?? this.device.dimensions?.depth ?? 120;
         // Note: SceneManager meshes are positioned:
         // x = coords.x - width/2
@@ -138482,7 +138560,6 @@ let GrowspaceCarouselCard = class GrowspaceCarouselCard extends i$3 {
         // Jump to the right side seamlessly (prepare for slide in)
         this._wrapper.classList.remove('slide-out');
         this._wrapper.classList.add('slide-in-prepare');
-        // eslint-disable-next-line no-void
         void this._wrapper.offsetWidth;
         // Slide in from the right
         this._wrapper.classList.remove('slide-in-prepare');

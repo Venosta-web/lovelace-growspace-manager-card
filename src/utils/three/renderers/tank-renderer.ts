@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { BaseRenderer } from './base-renderer';
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { defaultTankCoords } from '../default-placement';
 
 export class TankRenderer extends BaseRenderer {
   private _tankWaves: THREE.Mesh[] = [];
@@ -10,6 +11,7 @@ export class TankRenderer extends BaseRenderer {
     const { device, volatileGroup, visibility } = this.context;
     const width = device.dimensions?.width ?? 120;
     const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
+    const height = device.dimensions?.height ?? 200;
     const env = device.environmentAttributes;
     const tanks = env?.irrigationTanks || [];
     const sensorCoords = env?.sensorCoordinates || {};
@@ -51,10 +53,12 @@ export class TankRenderer extends BaseRenderer {
       () => new THREE.PlaneGeometry(30 * 0.94, 30 * 0.94, 20, 20)
     );
 
-    tanks.forEach((tank) => {
+    tanks.forEach((tank, index) => {
       const entityId = tank.sensorEntity;
       currentTankIds.add(entityId);
-      const coords = sensorCoords[entityId] || { x: 0, y: depth / 2, z: 0 };
+      const coords =
+        sensorCoords[entityId] ??
+        defaultTankCoords(index, tanks.length, { width, depth, height });
 
       const isWarning = tank.isWarning;
       const fill = tank.fillLevel || 0;
