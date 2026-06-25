@@ -29,6 +29,7 @@ import { updateVisionCheckupConfig } from '../../../slices/camera';
 import { getStrainRecommendation } from '../../../slices/ai-insight';
 import { selectedDeviceId$ } from '../../../slices/grid';
 import { PlantUtils } from '../../../utils/plant-utils';
+import { needsExhaustCall } from '../../config/environment-save';
 import {
   updateBreeder,
   deleteBreeder,
@@ -1111,7 +1112,7 @@ export class GrowspaceDialogHost extends LitElement {
       // service doesn't accept it), so persist it via its dedicated service.
       // Dispatched last: configure_environment rebuilds EnvironmentConfig and
       // resets exhaust_fan_config to default, so this must run after it.
-      if (detail.exhaustFanConfig) {
+      if (needsExhaustCall(detail)) {
         await configureExhaustFan({
           growspaceId: detail.selectedGrowspaceId,
           fanConfig: detail.exhaustFanConfig,

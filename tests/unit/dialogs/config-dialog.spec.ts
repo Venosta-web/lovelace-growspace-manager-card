@@ -4,6 +4,21 @@ import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
 import { html } from 'lit';
 
+// The Sensors tab is a nested dumb component behind its own shadow root
+// (ADR-0019, "Applied to Config Dialog"); pierce it when present. Climate/
+// Humidity pickers are still inline, so fall back to the dialog's own shadow.
+async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
+    await element.updateComplete;
+    const tab = element.shadowRoot!.querySelector('config-sensors-tab') as
+        | (HTMLElement & { updateComplete: Promise<boolean> })
+        | null;
+    if (tab) {
+        await tab.updateComplete;
+        return tab.shadowRoot!;
+    }
+    return element.shadowRoot!;
+}
+
 class HaEntityPickerMock extends HTMLElement {
     get value() { return this.getAttribute('value') || ''; }
     set value(v) { this.setAttribute('value', v); }
@@ -260,7 +275,7 @@ describe('ConfigDialog', () => {
 
         it('should render native input with datalist', async () => {
             // Temperature is now a multi-select with datalist
-            const containers = Array.from(element.shadowRoot?.querySelectorAll('.multi-select-container') || []);
+            const containers = Array.from((await sensorsShadow(element)).querySelectorAll('.multi-select-container'));
             const container = containers.find(c => c.querySelector('label')?.textContent?.trim() === 'Temperature Sensors');
             const input = container?.querySelector('input');
             const datalist = container?.querySelector('datalist');
@@ -298,7 +313,7 @@ describe('ConfigDialog', () => {
 
         it('should update all environment sensors', async () => {
             const updateMultiPicker = async (label: string, value: string) => {
-                const containers = Array.from(element.shadowRoot?.querySelectorAll('.multi-select-container') || []);
+                const containers = Array.from((await sensorsShadow(element)).querySelectorAll('.multi-select-container'));
                 const container = containers.find(c => c.querySelector('label')?.textContent?.trim() === label);
                 const input = container?.querySelector('input');
 
@@ -310,7 +325,7 @@ describe('ConfigDialog', () => {
             };
 
             const updateSinglePicker = async (label: string, value: string) => {
-                const groups = Array.from(element.shadowRoot?.querySelectorAll('.md3-input-group') || []);
+                const groups = Array.from((await sensorsShadow(element)).querySelectorAll('.md3-input-group'));
                 const group = groups.find(g => g.querySelector('label')?.textContent?.trim() === label);
                 const input = group?.querySelector('input');
                 if (input) {
@@ -962,7 +977,7 @@ describe('ConfigDialog', () => {
             (element as any).envLightSensors = ['sensor.1', 'sensor.2'];
             await element.updateComplete;
 
-            const removeBtn = element.shadowRoot?.querySelector('.chip-remove');
+            const removeBtn = (await sensorsShadow(element)).querySelector('.chip-remove');
             (removeBtn as HTMLElement)?.click();
             await element.updateComplete;
 
@@ -974,7 +989,7 @@ describe('ConfigDialog', () => {
             (element as any).envLightSensors = ['sensor.1'];
             await element.updateComplete;
 
-            const input = element.shadowRoot?.querySelector('.search-input-inner') as HTMLInputElement;
+            const input = (await sensorsShadow(element)).querySelector('.search-input-inner') as HTMLInputElement;
             input.value = ''; // Empty string
             input.dispatchEvent(new Event('change'));
             await element.updateComplete;
