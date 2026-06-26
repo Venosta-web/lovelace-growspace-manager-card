@@ -7,7 +7,7 @@ import { ConfigTab } from '../../../src/constants';
 async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     await element.updateComplete;
     const tab = element.shadowRoot!.querySelector(
-        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-irrigation-tab, config-vision-tab, config-tanks-tab, config-growspaces-tab, config-heatmap-tab'
+        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-irrigation-tab, config-vision-tab, config-tanks-tab, config-growspaces-tab, config-heatmap-tab, config-subareas-tab'
     ) as HTMLElement & { updateComplete: Promise<boolean> };
     await tab.updateComplete;
     return tab.shadowRoot!;
@@ -658,30 +658,30 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         element.currentTab = ConfigTab.SUBAREAS;
         await element.updateComplete;
 
-        // Click the "Add Subarea" button to cover the arrow fn at line 1811
-        const allButtons = Array.from(element.shadowRoot?.querySelectorAll('button') ?? []);
-        const addSubareaBtn = allButtons.find((b) => b.textContent?.includes('Add Subarea'));
+        // Click the "Add Subarea" button (now in the nested component)
+        const addSubareaBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
+            .find((b) => b.textContent?.includes('Add Subarea'));
         expect(addSubareaBtn).toBeDefined();
         addSubareaBtn!.click();
         await element.updateComplete;
         expect((element as any)._showAddSubarea).toBe(true);
         expect((element as any)._newSubareaName).toBe('');
 
-        // Trigger @input on the name field to cover the input arrow fn (line 1820)
-        const nameInput = element.shadowRoot?.querySelector('input.md3-input') as HTMLInputElement;
+        // Trigger @input on the name field
+        const nameInput = (await sensorsShadow(element)).querySelector('input.md3-input') as HTMLInputElement;
         expect(nameInput).toBeDefined();
         nameInput.value = 'Zone A';
         nameInput.dispatchEvent(new Event('input'));
         await element.updateComplete;
         expect((element as any)._newSubareaName).toBe('Zone A');
 
-        // Trigger @keydown Enter to cover the keydown arrow fn (line 1821)
+        // Trigger @keydown Enter (commit-add-subarea → _handleAddSubarea)
         vi.spyOn(element as any, '_handleAddSubarea').mockResolvedValue(undefined);
         nameInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
         expect((element as any)._handleAddSubarea).toHaveBeenCalled();
 
-        // Click Cancel to cover its arrow fn (line 1824)
-        const cancelBtn = Array.from(element.shadowRoot?.querySelectorAll('button') ?? [])
+        // Click Cancel
+        const cancelBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
             .find((b) => b.textContent?.trim() === 'Cancel');
         expect(cancelBtn).toBeDefined();
         cancelBtn!.click();
@@ -701,16 +701,16 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         vi.spyOn(element as any, '_loadSubareas').mockResolvedValue(undefined);
         await element.updateComplete;
 
-        // Normal state: click the delete button (arrow fn at line 1849 → _handleDeleteSubarea)
-        const allButtons = Array.from(element.shadowRoot?.querySelectorAll('button') ?? []);
-        const deleteBtn = allButtons.find((b) => b.title === 'Delete subarea');
+        // Normal state: click the delete button (→ _handleDeleteSubarea)
+        const deleteBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
+            .find((b) => b.title === 'Delete subarea');
         expect(deleteBtn).toBeDefined();
         deleteBtn!.click();
         await element.updateComplete;
         expect((element as any)._deleteConfirmSubareaId).toBe('sa1');
 
-        // Confirm state: click "No" (arrow fn at line 1844 → resets _deleteConfirmSubareaId)
-        const noBtn = Array.from(element.shadowRoot?.querySelectorAll('button') ?? [])
+        // Confirm state: click "No" (→ resets _deleteConfirmSubareaId)
+        const noBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
             .find((b) => b.textContent?.trim() === 'No');
         expect(noBtn).toBeDefined();
         noBtn!.click();
@@ -720,7 +720,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         // Re-enter confirm state for Yes click (arrow fn at line 1843 → _confirmDeleteSubarea)
         (element as any)._handleDeleteSubarea('sa1');
         await element.updateComplete;
-        const yesBtn = Array.from(element.shadowRoot?.querySelectorAll('button') ?? [])
+        const yesBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
             .find((b) => b.textContent?.trim() === 'Yes');
         expect(yesBtn).toBeDefined();
         yesBtn!.click();
@@ -730,7 +730,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any)._subareas = [{ id: 'sa1', name: 'Zone A', environment_config: {} }];
         (element as any)._deleteConfirmSubareaId = '';
         await element.updateComplete;
-        const editBtn = Array.from(element.shadowRoot?.querySelectorAll('button') ?? [])
+        const editBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
             .find((b) => b.title === 'Edit sensors');
         expect(editBtn).toBeDefined();
         editBtn!.click();
@@ -1071,9 +1071,8 @@ describe('ConfigDialog - remaining branch coverage (lines 2725, 2770, 2969)', ()
         // envSelectedId = '' and growspaces sub = idle → growspaceId = '' → guard fires
         (element as any).envSelectedId = '';
         element.currentTab = ConfigTab.SUBAREAS;
-        await element.updateComplete;
 
-        expect(element.shadowRoot?.textContent).toContain('Select a growspace');
+        expect((await sensorsShadow(element)).textContent).toContain('Select a growspace');
     });
 
     it('line 2725 true-branch: falls back to gsSub.growspaceId when envId empty and gsSub is editing', async () => {
@@ -1084,7 +1083,7 @@ describe('ConfigDialog - remaining branch coverage (lines 2725, 2770, 2969)', ()
         await element.updateComplete;
 
         // growspaceId resolves to gsSub.growspaceId ('gs1') → subareas section renders (not placeholder)
-        expect(element.shadowRoot?.textContent).not.toContain('Select a growspace');
+        expect((await sensorsShadow(element)).textContent).not.toContain('Select a growspace');
     });
 
     it('line 2770 false-branch: non-Enter keydown on subarea name input does not call _handleAddSubarea', async () => {
@@ -1095,7 +1094,7 @@ describe('ConfigDialog - remaining branch coverage (lines 2725, 2770, 2969)', ()
 
         const spy = vi.spyOn(element as any, '_handleAddSubarea').mockResolvedValue(undefined);
 
-        const nameInput = element.shadowRoot?.querySelector('input.md3-input') as HTMLInputElement | null;
+        const nameInput = (await sensorsShadow(element)).querySelector('input.md3-input') as HTMLInputElement | null;
         expect(nameInput).toBeDefined();
         nameInput!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
 
