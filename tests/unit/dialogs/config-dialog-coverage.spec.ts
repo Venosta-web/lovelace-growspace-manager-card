@@ -7,7 +7,7 @@ import { ConfigTab } from '../../../src/constants';
 async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     await element.updateComplete;
     const tab = element.shadowRoot!.querySelector(
-        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-irrigation-tab, config-vision-tab, config-tanks-tab'
+        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-irrigation-tab, config-vision-tab, config-tanks-tab, config-growspaces-tab'
     ) as HTMLElement & { updateComplete: Promise<boolean> };
     await tab.updateComplete;
     return tab.shadowRoot!;
@@ -424,9 +424,8 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         await element.updateComplete;
 
         // The edit form is rendered; both multi-select containers should be present
-        const containers = element.shadowRoot?.querySelectorAll('.multi-select-container');
-        expect(containers).toBeDefined();
-        expect(containers!.length).toBeGreaterThanOrEqual(2);
+        const containers = (await sensorsShadow(element)).querySelectorAll('.multi-select-container');
+        expect(containers.length).toBeGreaterThanOrEqual(2);
     });
 
     it('renders substrate temp sensors in the SENSORS tab', async () => {
@@ -870,7 +869,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envVisionCameraEntities = ['camera.tent'];
         await element.updateComplete;
 
-        const chipRemoves = Array.from(element.shadowRoot?.querySelectorAll('.chip-remove') ?? []) as HTMLElement[];
+        const chipRemoves = Array.from((await sensorsShadow(element)).querySelectorAll('.chip-remove')) as HTMLElement[];
         for (const cr of chipRemoves) cr.click();
         await element.updateComplete;
 

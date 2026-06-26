@@ -3,6 +3,16 @@ import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
 import { aHass, aGrowspaceDevice } from '../../fixtures/index';
 
+// The Growspaces tab is now a nested dumb component (ADR-0019); pierce it.
+async function gsShadow(el: ConfigDialog): Promise<ShadowRoot> {
+    await el.updateComplete;
+    const tab = el.shadowRoot!.querySelector('config-growspaces-tab') as HTMLElement & {
+        updateComplete: Promise<boolean>;
+    };
+    await tab.updateComplete;
+    return tab.shadowRoot!;
+}
+
 vi.mock('../../../src/slices/subarea', () => ({
     getSubareas: vi.fn().mockResolvedValue([]),
     addSubarea: vi.fn().mockResolvedValue({ id: 'sa-new', name: '', environment_config: {} }),
@@ -72,8 +82,7 @@ describe('ConfigDialog — SM smoke test', () => {
 
     it('shows the growspace tab nav by default', async () => {
         element.currentTab = ConfigTab.GROWSPACES;
-        await element.updateComplete;
-        const addBtn = element.shadowRoot?.querySelector('.cfg-master-add-btn');
+        const addBtn = (await gsShadow(element)).querySelector('.cfg-master-add-btn');
         expect(addBtn).to.exist;
     });
 
@@ -84,7 +93,7 @@ describe('ConfigDialog — SM smoke test', () => {
 
         expect((element as any)._isAddingGrowspace).to.be.true;
         // Add form contains an h3 heading "New Growspace"
-        const headings = Array.from(element.shadowRoot?.querySelectorAll('h3') ?? []) as HTMLElement[];
+        const headings = Array.from((await gsShadow(element)).querySelectorAll('h3')) as HTMLElement[];
         const addHeading = headings.find((h) => h.textContent?.includes('New Growspace'));
         expect(addHeading).to.exist;
     });
@@ -97,7 +106,7 @@ describe('ConfigDialog — SM smoke test', () => {
         expect((element as any).editSelectedId).to.equal('gs1');
         expect((element as any).editName).to.equal('Growspace 1');
         // Edit form contains multi-select containers for lungroom / camera rows
-        const containers = element.shadowRoot?.querySelectorAll('.multi-select-container');
+        const containers = (await gsShadow(element)).querySelectorAll('.multi-select-container');
         expect(containers?.length).to.be.greaterThan(0);
     });
 
@@ -109,7 +118,7 @@ describe('ConfigDialog — SM smoke test', () => {
         await element.updateComplete;
 
         expect((element as any)._isAddingGrowspace).to.be.false;
-        const headings = Array.from(element.shadowRoot?.querySelectorAll('h3') ?? []) as HTMLElement[];
+        const headings = Array.from((await gsShadow(element)).querySelectorAll('h3')) as HTMLElement[];
         const addHeading = headings.find((h) => h.textContent?.includes('New Growspace'));
         expect(addHeading).to.be.undefined;
     });

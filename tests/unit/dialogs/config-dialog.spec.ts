@@ -15,7 +15,7 @@ import { html } from 'lit';
 async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     await element.updateComplete;
     const tab = element.shadowRoot!.querySelector(
-        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-vision-tab'
+        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-vision-tab, config-growspaces-tab'
     ) as (HTMLElement & { updateComplete: Promise<boolean> }) | null;
     if (tab) {
         await tab.updateComplete;
@@ -149,8 +149,8 @@ describe('ConfigDialog', () => {
             await element.updateComplete;
         });
 
-        it('should render inputs', () => {
-            const nameInput = element.shadowRoot?.querySelector('md3-text-input[label="Growspace Name"]');
+        it('should render inputs', async () => {
+            const nameInput = (await sensorsShadow(element)).querySelector('md3-text-input[label="Growspace Name"]');
             expect(nameInput).toBeTruthy();
         });
 
@@ -172,8 +172,8 @@ describe('ConfigDialog', () => {
             expect(detail.rows).toBe(5);
         });
 
-        it('should list mobile app services', () => {
-            const select = element.shadowRoot?.querySelector('select');
+        it('should list mobile app services', async () => {
+            const select = (await sensorsShadow(element)).querySelector('select');
             const options = select?.querySelectorAll('option');
             // None + mobile_app_phone = 2
             expect(options?.length).toBeGreaterThanOrEqual(2);
@@ -188,14 +188,14 @@ describe('ConfigDialog', () => {
         });
 
         it('should populate fields when growspace selected', async () => {
-            const gsRow = element.shadowRoot?.querySelector('.cfg-gs-row') as HTMLElement;
+            const gsRow = (await sensorsShadow(element)).querySelector('.cfg-gs-row') as HTMLElement;
             gsRow?.click();
             await element.updateComplete;
 
             expect((element as any).editName).toBe('Growspace 1');
             expect((element as any).editRows).toBe(4);
 
-            const nameInput = element.shadowRoot?.querySelector('md3-text-input[label="Growspace Name"]');
+            const nameInput = (await sensorsShadow(element)).querySelector('md3-text-input[label="Growspace Name"]');
             expect((nameInput as any).value).toBe('Growspace 1');
         });
 
@@ -226,8 +226,8 @@ describe('ConfigDialog', () => {
             (delBtn as HTMLElement)?.click();
             await element.updateComplete;
 
-            // Should show confirmation
-            expect(element.shadowRoot?.querySelector('h3')?.textContent).toContain('Delete Growspace?');
+            // Should show confirmation (now in the nested component)
+            expect((await sensorsShadow(element)).querySelector('h3')?.textContent).toContain('Delete Growspace?');
 
             // Click Confirm
             const listener = vi.fn();
@@ -494,22 +494,22 @@ describe('ConfigDialog', () => {
         it('should update Add Growspace inputs', async () => {
             element.currentTab = ConfigTab.GROWSPACES;
             (element as any)._isAddingGrowspace = true;
-            await element.updateComplete;
+            const root = await sensorsShadow(element);
 
             // Name
-            const nameInput = element.shadowRoot?.querySelector('md3-text-input[label="Growspace Name"]');
+            const nameInput = root.querySelector('md3-text-input[label="Growspace Name"]');
             nameInput?.dispatchEvent(new CustomEvent('change', { detail: 'New Name' }));
 
             // Rows
-            const rowsInput = element.shadowRoot?.querySelector('md3-number-input[label="Rows"]');
+            const rowsInput = root.querySelector('md3-number-input[label="Rows"]');
             rowsInput?.dispatchEvent(new CustomEvent('change', { detail: '8' }));
 
             // Plants Per Row
-            const pprInput = element.shadowRoot?.querySelector('md3-number-input[label="Plants per Row"]');
+            const pprInput = root.querySelector('md3-number-input[label="Plants per Row"]');
             pprInput?.dispatchEvent(new CustomEvent('change', { detail: '8' }));
 
             // Notification Service (Select)
-            const select = element.shadowRoot?.querySelector('select');
+            const select = root.querySelector('select');
             if (select) {
                 select.value = 'mobile_app_test';
                 select.dispatchEvent(new Event('change'));
@@ -526,24 +526,22 @@ describe('ConfigDialog', () => {
         it('should update Edit Growspace inputs', async () => {
             element.currentTab = ConfigTab.GROWSPACES;
             (element as any).editSelectedId = 'gs1'; // Select one to show fields
-            await element.updateComplete;
+            const root = await sensorsShadow(element);
 
             // Name
-            const nameInput = element.shadowRoot?.querySelector('md3-text-input[label="Growspace Name"]');
+            const nameInput = root.querySelector('md3-text-input[label="Growspace Name"]');
             nameInput?.dispatchEvent(new CustomEvent('change', { detail: 'Edited Name' }));
 
             // Rows
-            const rowsInput = element.shadowRoot?.querySelector('md3-number-input[label="Rows"]');
+            const rowsInput = root.querySelector('md3-number-input[label="Rows"]');
             rowsInput?.dispatchEvent(new CustomEvent('change', { detail: '6' }));
 
             // Plants Per Row
-            const pprInput = element.shadowRoot?.querySelector('md3-number-input[label="Plants per Row"]');
+            const pprInput = root.querySelector('md3-number-input[label="Plants per Row"]');
             pprInput?.dispatchEvent(new CustomEvent('change', { detail: '6' }));
 
             // Notification Service (Select)
-            // In new GROWSPACES tab there is no separate growspace dropdown, only notification service select
-            const selects = element.shadowRoot?.querySelectorAll('select');
-            const notifySelect = selects?.[0];
+            const notifySelect = root.querySelectorAll('select')?.[0];
 
             if (notifySelect) {
                 notifySelect.value = 'mobile_app_test';
@@ -600,8 +598,7 @@ describe('ConfigDialog', () => {
 
         it('should render correct tab content based on property', async () => {
             element.currentTab = ConfigTab.GROWSPACES;
-            await element.updateComplete;
-            expect(element.shadowRoot?.querySelector('.cfg-master-list')).toBeTruthy();
+            expect((await sensorsShadow(element)).querySelector('.cfg-master-list')).toBeTruthy();
 
             element.currentTab = ConfigTab.HUMIDITY;
             expect((await sensorsShadow(element)).querySelector('.acc-card')).toBeTruthy();
@@ -644,8 +641,8 @@ describe('ConfigDialog', () => {
             (element as any)._isAddingGrowspace = true;
             await element.updateComplete;
 
-            // Notification service is a select in the new add form - use a valid option
-            const notifSelect = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
+            // Notification service is a select in the new add form (nested component)
+            const notifSelect = (await sensorsShadow(element)).querySelector('select') as HTMLSelectElement;
             if (notifSelect) {
                 notifSelect.value = 'mobile_app_phone';
                 notifSelect.dispatchEvent(new Event('change'));
@@ -699,8 +696,7 @@ describe('ConfigDialog', () => {
 
         it('should trigger add growspace button click handler', async () => {
             element.currentTab = ConfigTab.GROWSPACES;
-            await element.updateComplete;
-            const addBtn = element.shadowRoot?.querySelector('.cfg-master-add-btn') as HTMLElement;
+            const addBtn = (await sensorsShadow(element)).querySelector('.cfg-master-add-btn') as HTMLElement;
             addBtn?.click();
             await element.updateComplete;
             expect((element as any)._isAddingGrowspace).toBe(true);
