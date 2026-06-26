@@ -54,10 +54,10 @@ export interface NotificationsTabViewModel {
 
 /** The trigger choices, in display order. Static — derived render input. */
 export const TRIGGER_OPTIONS: readonly TriggerOption[] = [
-  { value: 'clone_start', label: 'Clone Start' },
-  { value: 'veg_start', label: 'Veg Start' },
-  { value: 'flower_start', label: 'Flower Start' },
-  { value: 'dry_start', label: 'Dry Start' },
+  { value: 'clone', label: 'Clone Start' },
+  { value: 'veg', label: 'Veg Start' },
+  { value: 'flower', label: 'Flower Start' },
+  { value: 'dry', label: 'Dry Start' },
 ];
 
 /**

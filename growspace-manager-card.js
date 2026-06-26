@@ -11551,6 +11551,82 @@ async function updateVisionCheckupConfig(growspaceId, config) {
     return hassCall('growspace_manager/update_vision_checkup_config', { growspace_id: growspaceId, ...config }, UpdateVisionCheckupConfigResponseSchema);
 }
 
+/**
+ * Environment Save Composer (ADR-0019, "Applied to Config Dialog")
+ *
+ * The single pure place that turns the Config Dialog's [[Shared Environment
+ * Draft]] into the outbound `configure-environment-submit` event detail. It
+ * exists because `configure_environment` is a **full replace** — the backend
+ * rebuilds `EnvironmentConfig` and silently resets any field absent from the
+ * payload. The Shared Environment Draft is seeded complete by `envDraftFromDevice`,
+ * so composing the *whole* draft on every env-tab save re-sends a complete
+ * config; a sensor-only edit never clobbers fan/irrigation/exhaust fields. That
+ * full-replace safety is the property the unit test pins down.
+ *
+ * Architecture note: the Config Dialog persists the environment by dispatching
+ * `configure-environment-submit`, which the Growspace Dialog Host fulfils as
+ * `configure_environment` + a conditional, last-dispatched `configure_exhaust_fan`
+ * (the host owns the detail→service mapping and the two-call orchestration — the
+ * dialog does not call the service directly). So this composer produces the
+ * **event detail**, not the `configure_environment` service payload. `needsExhaustCall`
+ * is the shared predicate gating that second call; the host is its caller.
+ */
+/**
+ * Pure composer: the whole Shared Environment Draft (+ the dialog's two control
+ * toggles) → the `configure-environment-submit` event detail. Every field is
+ * copied so the full-replace save never drops one.
+ */
+function composeEnvironmentConfig(draft, flags) {
+    return {
+        selectedGrowspaceId: draft.selectedGrowspaceId,
+        temperatureSensors: draft.temperatureSensors,
+        humiditySensors: draft.humiditySensors,
+        vpdSensors: draft.vpdSensors,
+        co2Sensor: draft.co2Sensor,
+        circulationFanEntities: draft.circulationFanEntities,
+        stressThreshold: draft.stressThreshold,
+        moldThreshold: draft.moldThreshold,
+        lightSensors: draft.lightSensors,
+        exhaustFanEntities: draft.exhaustFanEntities,
+        humidifierEntities: draft.humidifierEntities,
+        humidifierThresholds: draft.humidifierThresholds,
+        humidifierControlEnabled: flags.humidifierControlEnabled,
+        dehumidifierEntities: draft.dehumidifierEntities,
+        dehumidifierThresholds: draft.dehumidifierThresholds,
+        dehumidifierControlEnabled: flags.dehumidifierControlEnabled,
+        soilMoistureSensor: draft.soilMoistureSensor,
+        sensorGroups: draft.sensorGroups,
+        sensorCoordinates: draft.sensorCoordinates,
+        irrigationTanks: draft.irrigationTanks,
+        cameraEntities: draft.cameraEntities,
+        lungroomTempSensors: draft.lungroomTempSensors,
+        substrateTemperatureSensors: draft.substrateTemperatureSensors,
+        phSensors: draft.phSensors,
+        feedEcSensors: draft.feedEcSensors,
+        bulkEcSensors: draft.bulkEcSensors,
+        poreEcSensors: draft.poreEcSensors,
+        runoffEcSensors: draft.runoffEcSensors,
+        drainVolumeSensors: draft.drainVolumeSensors,
+        irrigationFlowSensors: draft.irrigationFlowSensors,
+        powerSensors: draft.powerSensors,
+        energySensors: draft.energySensors,
+        circulationFanConfig: draft.circulationFanConfig,
+        exhaustFanConfig: draft.exhaustFanConfig,
+        vpdOptimalOverrides: draft.vpdOptimalOverrides,
+        lstOffset: draft.lstOffset,
+    };
+}
+/**
+ * Whether a composed env payload needs the dedicated `configure_exhaust_fan`
+ * second call — true exactly when it carries an exhaust fan config (the backend
+ * `configure_environment` cannot persist `exhaust_fan_config`). The Growspace
+ * Dialog Host is the caller; the Climate tab (#359) is the primary producer of
+ * a non-default exhaust config.
+ */
+function needsExhaustCall(payload) {
+    return Boolean(payload.exhaustFanConfig);
+}
+
 class GrowspaceAdapter {
     static transformGrowspace(overview, wsData = null) {
         if (!wsData && !overview)
@@ -11851,6 +11927,23 @@ class GrowspaceAdapter {
                 ...(waterUsageRaw.liters_today != null ? { litersToday: waterUsageRaw.liters_today } : {}),
             }
             : null;
+        // Global notification settings ride every growspace payload (camelCase keys
+        // + a separate ai_auto_alerts flag); fold the flag into the settings object
+        // the Config Dialog seeds from. Undefined when the backend omits them.
+        const notificationSettings = wsData?.notification_settings
+            ? { ...wsData.notification_settings, aiAutoAlerts: wsData.ai_auto_alerts ?? true }
+            : undefined;
+        // Timed notifications are stored snake_case (backend consumers require it);
+        // map to the camelCase shape the Config Dialog seeds from. Legacy entries
+        // saved with the old '*_start' trigger values are normalised to the bare
+        // stage names the firing path (calculate_days_in_stage) resolves.
+        const timedNotifications = (wsData?.timed_notifications ?? []).map((n) => ({
+            id: n.id,
+            message: n.message,
+            triggerType: n.trigger_type.replace(/_start$/, ''),
+            day: n.day,
+            growspaceIds: n.growspace_ids,
+        }));
         // 8. Construct Device
         return createGrowspaceDevice({
             deviceId: growspaceId,
@@ -11860,6 +11953,8 @@ class GrowspaceAdapter {
             rows: gridData?.rows ?? 3,
             plantsPerRow: gridData?.plants_per_row ?? 3,
             notificationTarget: identity?.notification_target,
+            notificationSettings,
+            timedNotifications,
             dimensions: gridData?.dimensions
                 ? {
                     width: gridData.dimensions.width ?? 120,
@@ -12308,6 +12403,18 @@ const GrowspaceAPIResponseSchema = object({
         .passthrough()
         .optional()
         .prefault({}),
+    // Global notification settings duplicated onto every growspace payload so
+    // the Config Dialog can seed/round-trip saved values.
+    notification_settings: record(string(), number()).optional(),
+    ai_auto_alerts: boolean().optional(),
+    timed_notifications: array(object({
+        id: string(),
+        message: string(),
+        trigger_type: string(),
+        day: number(),
+        growspace_ids: array(string()),
+    }))
+        .optional(),
     _ts: number().optional(),
 })
     .passthrough();
@@ -12518,6 +12625,37 @@ async function configureExhaustFan({ growspaceId, fanConfig, }) {
 }
 async function fetchRawCollection() {
     return hassCall('growspace_manager/get_data', {}, GrowspaceAPICollectionSchema);
+}
+
+/**
+ * Zod schemas for the notification slice.
+ *
+ * The backend `growspace_manager/save_notification_settings` WebSocket command
+ * persists notification timing settings + ai_auto_alerts atomically and replies
+ * with `{ success: true }`.
+ */
+const SaveNotificationSettingsResponseSchema = object({
+    success: boolean(),
+});
+
+/**
+ * Notification slice — mutators for global notification settings.
+ *
+ * Public API (mutators):
+ *   saveNotificationSettings(payload)  — persist notification timing settings +
+ *                                        ai_auto_alerts via the backend WS command
+ *
+ * Notification settings are global (not growspace-scoped), so this slice holds
+ * no atoms — it is a thin write path over the
+ * `growspace_manager/save_notification_settings` WebSocket command.
+ */
+/**
+ * Persist notification timing settings and the ai_auto_alerts toggle atomically.
+ *
+ * @param payload - The full notification_settings dict + ai_auto_alerts flag
+ */
+async function saveNotificationSettings(payload) {
+    return hassCall('growspace_manager/save_notification_settings', { ...payload }, SaveNotificationSettingsResponseSchema);
 }
 
 var lib = {};
@@ -18568,20 +18706,6 @@ CloneDialog = __decorate([
     t$2('clone-dialog')
 ], CloneDialog);
 
-function calculateSvp(temperatureC) {
-    return 0.61094 * Math.exp((17.625 * temperatureC) / (243.04 + temperatureC));
-}
-function calculateVpdWithLstOffset(airTempC, humidityRh, lstOffset) {
-    if (!Number.isFinite(airTempC) || !Number.isFinite(humidityRh) || !Number.isFinite(lstOffset)) {
-        return null;
-    }
-    const leafTempC = airTempC + lstOffset;
-    const leafSvp = calculateSvp(leafTempC);
-    const airSvp = calculateSvp(airTempC);
-    const airAvp = airSvp * (humidityRh / 100);
-    return Math.round((leafSvp - airAvp) * 100) / 100;
-}
-
 let SensorGroupDialog = class SensorGroupDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -19306,117 +19430,6 @@ SubareaConfigDialog = __decorate([
     t$2('subarea-config-dialog')
 ], SubareaConfigDialog);
 
-let StageVpdOverridesTable = class StageVpdOverridesTable extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.overrides = {};
-    }
-    _getDisplayValue(key, slot) {
-        return this.overrides[key]?.[slot] ?? FAN_VPD_STAGE_DEFAULTS[key][slot];
-    }
-    _handleChange(key, slot, raw) {
-        const parsed = parseFloat(raw);
-        const value = isNaN(parsed) ? FAN_VPD_STAGE_DEFAULTS[key][slot] : parsed;
-        const existing = this.overrides[key] ?? { ...FAN_VPD_STAGE_DEFAULTS[key] };
-        const updated = { ...this.overrides, [key]: { ...existing, [slot]: value } };
-        this.dispatchEvent(new CustomEvent('overrides-change', { detail: updated, bubbles: true, composed: true }));
-    }
-    _handleReset() {
-        this.dispatchEvent(new CustomEvent('overrides-change', { detail: {}, bubbles: true, composed: true }));
-    }
-    render() {
-        return x `
-      <div class="header-row">
-        <span>Stage</span>
-        <span>Day (kPa)</span>
-        <span>Night (kPa)</span>
-      </div>
-      ${FAN_VPD_STAGE_KEYS.map((key) => x `
-          <div class="stage-row">
-            <span class="stage-label">${FAN_VPD_STAGE_LABELS[key]}</span>
-            <input
-              type="number"
-              min="0.1"
-              max="3.0"
-              step="0.01"
-              .value=${String(this._getDisplayValue(key, 'day'))}
-              @change=${(e) => this._handleChange(key, 'day', e.target.value)}
-            />
-            <input
-              type="number"
-              min="0.1"
-              max="3.0"
-              step="0.01"
-              .value=${String(this._getDisplayValue(key, 'night'))}
-              @change=${(e) => this._handleChange(key, 'night', e.target.value)}
-            />
-          </div>
-        `)}
-      <button class="reset-button" @click=${this._handleReset}>Reset all to defaults</button>
-    `;
-    }
-};
-StageVpdOverridesTable.styles = i$6 `
-    :host {
-      display: block;
-    }
-    .header-row {
-      display: grid;
-      grid-template-columns: 1fr 90px 90px;
-      gap: 8px;
-      padding: 0 4px 4px;
-      font-size: 0.75rem;
-      color: var(--secondary-text-color);
-      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      margin-bottom: 4px;
-    }
-    .stage-row {
-      display: grid;
-      grid-template-columns: 1fr 90px 90px;
-      gap: 8px;
-      align-items: center;
-      padding: 4px;
-    }
-    .stage-label {
-      font-size: 0.875rem;
-      color: var(--primary-text-color);
-    }
-    input[type='number'] {
-      width: 100%;
-      box-sizing: border-box;
-      background: rgba(255, 255, 255, 0.05);
-      border: none;
-      border-bottom: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
-      color: var(--primary-text-color);
-      font-size: 0.875rem;
-      padding: 4px 6px;
-      border-radius: 4px 4px 0 0;
-      outline: none;
-    }
-    input[type='number']:focus {
-      border-bottom: 2px solid var(--primary-color, #6200ee);
-    }
-    .reset-button {
-      margin-top: 12px;
-      background: transparent;
-      border: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
-      border-radius: 4px;
-      color: var(--primary-text-color);
-      cursor: pointer;
-      font-size: 0.75rem;
-      padding: 4px 12px;
-    }
-    .reset-button:hover {
-      background: rgba(255, 255, 255, 0.05);
-    }
-  `;
-__decorate([
-    n$5({ attribute: false })
-], StageVpdOverridesTable.prototype, "overrides", void 0);
-StageVpdOverridesTable = __decorate([
-    t$2('stage-vpd-overrides-table')
-], StageVpdOverridesTable);
-
 /**
  * Config Dialog State Machine
  *
@@ -19444,7 +19457,7 @@ function defaultNotificationsDraft() {
     };
 }
 function defaultTimedNotificationDraft() {
-    return { message: '', triggerType: 'clone_start', day: 1, growspaceIds: [] };
+    return { message: '', triggerType: 'clone', day: 1, growspaceIds: [] };
 }
 function defaultNotificationsTabState() {
     return { draft: defaultNotificationsDraft(), timedNotifications: [], sub: { kind: 'idle' } };
@@ -20006,6 +20019,1770 @@ function transition$8(sm, event) {
     }
 }
 
+/**
+ * Config Notifications Tab Component (ADR-0019, "Applied to Config Dialog")
+ *
+ * The dumb presentational element for the Config Dialog's Notifications tab.
+ * `@property .vm: NotificationsTabViewModel` in, semantic Tab Intents out, **no
+ * `@state()` of its own** — all draft/edit state lives in the ConfigDialogSM and
+ * is projected into the VM. Markup is transcribed verbatim from the former
+ * inline `_renderNotificationsSection` / `_renderTimedNotificationsSection` /
+ * `_renderTimedNotificationForm` helpers so the rendered output stays
+ * byte-identical; `md3-*`, `detail-card`, `row-col-grid` come from the shared
+ * `dialogStyles`, while the config-specific `.form-section` / `.checkbox-label`
+ * / `.cfg-gs-row` styles moved here with the markup.
+ *
+ * Tab Intents (the Config Dialog Shell owns their translation to SM events):
+ *   - `notif-draft-changed`   detail: { partial: Partial<NotificationsDraft> }
+ *   - `add-timed-requested`   (no detail)
+ *   - `edit-timed-requested`  detail: { id, draft: TimedNotificationDraft }
+ *   - `timed-draft-changed`   detail: { partial: Partial<TimedNotificationDraft> }
+ *   - `cancel-timed`          (no detail)
+ *   - `commit-add-timed`      (no detail; the Shell generates the id)
+ *   - `commit-edit-timed`     (no detail)
+ *   - `request-delete-timed`  detail: { id }
+ *   - `confirm-delete-timed`  (no detail)
+ */
+let ConfigNotificationsTab = class ConfigNotificationsTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    _updateDraft(partial) {
+        this._emit('notif-draft-changed', { partial });
+    }
+    render() {
+        return x `${this._renderSettings()}${this._renderTimed()}`;
+    }
+    _renderSettings() {
+        const draft = this.vm.draft;
+        return x `
+      <div class="form-section">
+        <md3-number-input
+          data-notif="criticalCooldownMinutes"
+          label="Critical Cooldown (min)"
+          .value=${draft.criticalCooldownMinutes}
+          @change=${(e) => this._updateDraft({ criticalCooldownMinutes: Number(e.detail) })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="warningCooldownMinutes"
+          label="Warning Cooldown (min)"
+          .value=${draft.warningCooldownMinutes}
+          @change=${(e) => this._updateDraft({ warningCooldownMinutes: Number(e.detail) })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="recoveryCooldownMinutes"
+          label="Recovery Cooldown (min)"
+          .value=${draft.recoveryCooldownMinutes}
+          @change=${(e) => this._updateDraft({ recoveryCooldownMinutes: Number(e.detail) })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="escalationDelayMinutes"
+          label="Escalation Delay (min)"
+          .value=${draft.escalationDelayMinutes}
+          @change=${(e) => this._updateDraft({ escalationDelayMinutes: Number(e.detail) })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="minStressDurationSeconds"
+          label="Min Stress Duration (sec)"
+          .value=${draft.minStressDurationSeconds}
+          @change=${(e) => this._updateDraft({ minStressDurationSeconds: Number(e.detail) })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="warningPersistenceMinutes"
+          label="Warning Persistence (min)"
+          .value=${draft.warningPersistenceMinutes}
+          @change=${(e) => this._updateDraft({ warningPersistenceMinutes: Number(e.detail) })}
+        ></md3-number-input>
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            data-notif="aiAutoAlerts"
+            .checked=${draft.aiAutoAlerts}
+            @change=${(e) => this._updateDraft({ aiAutoAlerts: e.target.checked })}
+          />
+          <span>AI Auto-Alerts</span>
+        </label>
+      </div>
+    `;
+    }
+    _renderTimed() {
+        const sub = this.vm.sub;
+        const notifications = this.vm.timedNotifications;
+        return x `
+      <div class="form-section">
+        <div
+          style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"
+        >
+          <h3 style="margin:0;font-size:1rem;font-weight:600;">Timed Notifications</h3>
+          ${sub.kind === 'idle'
+            ? x `
+                <button
+                  class="md3-button outlined"
+                  style="padding:4px 12px;"
+                  @click=${() => this._emit('add-timed-requested')}
+                >
+                  Add
+                </button>
+              `
+            : E}
+        </div>
+
+        ${sub.kind === 'confirm-delete'
+            ? x `
+              <div class="detail-card" style="text-align:center;padding:24px 16px;">
+                <p style="margin:0 0 16px;color:var(--secondary-text-color);">
+                  Delete this timed notification?
+                </p>
+                <div style="display:flex;gap:8px;justify-content:center;">
+                  <button class="md3-button outlined" @click=${() => this._emit('cancel-timed')}>
+                    Cancel
+                  </button>
+                  <button
+                    class="md3-button primary"
+                    style="background:var(--error-color,#ff5252);"
+                    @click=${() => this._emit('confirm-delete-timed')}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            `
+            : E}
+
+        ${sub.kind === 'adding' || sub.kind === 'editing'
+            ? this._renderForm(sub)
+            : E}
+
+        ${notifications.length === 0 && sub.kind === 'idle'
+            ? x `
+              <div
+                data-timed="empty-state"
+                style="text-align:center;padding:24px;color:var(--secondary-text-color);"
+              >
+                No timed notifications configured
+              </div>
+            `
+            : E}
+
+        ${sub.kind === 'idle' || sub.kind === 'confirm-delete'
+            ? notifications.map((n) => x `
+                <div
+                  class="cfg-gs-row"
+                  data-timed-id=${n.id}
+                  style="display:flex;align-items:center;justify-content:space-between;"
+                >
+                  <span
+                    style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                  >
+                    ${n.message} · ${n.triggerType} · Day ${n.day}
+                  </span>
+                  <div style="display:flex;gap:4px;flex-shrink:0;">
+                    <button
+                      class="md3-button text"
+                      style="padding:4px 8px;"
+                      data-timed-edit=${n.id}
+                      @click=${() => this._emit('edit-timed-requested', {
+                id: n.id,
+                draft: {
+                    message: n.message,
+                    triggerType: n.triggerType,
+                    day: n.day,
+                    growspaceIds: n.growspaceIds,
+                },
+            })}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      class="md3-button text"
+                      style="padding:4px 8px;color:var(--error-color,#ff5252);"
+                      data-timed-delete=${n.id}
+                      @click=${() => this._emit('request-delete-timed', { id: n.id })}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              `)
+            : E}
+      </div>
+    `;
+    }
+    _renderForm(sub) {
+        const isAdding = sub.kind === 'adding';
+        const draft = sub.draft;
+        const update = (partial) => this._emit('timed-draft-changed', { partial });
+        return x `
+      <div class="detail-card" style="margin-bottom:12px;">
+        <h4 style="margin:0 0 12px;font-size:0.9rem;font-weight:600;">
+          ${isAdding ? 'Add Timed Notification' : 'Edit Timed Notification'}
+        </h4>
+
+        <div class="md3-input-group">
+          <label class="md3-label">Message</label>
+          <input
+            class="md3-input"
+            type="text"
+            data-timed-field="message"
+            .value=${draft.message}
+            @input=${(e) => update({ message: e.target.value })}
+          />
+        </div>
+
+        <div class="md3-input-group">
+          <label class="md3-label">Trigger</label>
+          <select
+            class="md3-input"
+            data-timed-field="triggerType"
+            .value=${draft.triggerType}
+            @change=${(e) => update({
+            triggerType: e.target.value,
+        })}
+          >
+            ${this.vm.triggerOptions.map((o) => x `
+                <option value="${o.value}" ?selected=${draft.triggerType === o.value}>
+                  ${o.label}
+                </option>
+              `)}
+          </select>
+        </div>
+
+        <div class="md3-input-group">
+          <label class="md3-label">Day</label>
+          <input
+            class="md3-input"
+            type="number"
+            min="1"
+            data-timed-field="day"
+            .value=${String(draft.day)}
+            @change=${(e) => update({ day: Number(e.target.value) })}
+          />
+        </div>
+
+        <div class="md3-input-group">
+          <label class="md3-label">Growspaces</label>
+          <div
+            style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;padding:4px 0;"
+          >
+            ${this.vm.growspaceOptions.map(({ id, name }) => x `
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input
+                    type="checkbox"
+                    data-timed-gs=${id}
+                    .checked=${draft.growspaceIds.includes(id)}
+                    @change=${(e) => {
+            const checked = e.target.checked;
+            const next = checked
+                ? [...draft.growspaceIds, id]
+                : draft.growspaceIds.filter((g) => g !== id);
+            update({ growspaceIds: next });
+        }}
+                  />
+                  ${name}
+                </label>
+              `)}
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="md3-button outlined" @click=${() => this._emit('cancel-timed')}>
+            Cancel
+          </button>
+          <button
+            class="md3-button primary"
+            @click=${() => this._emit(isAdding ? 'commit-add-timed' : 'commit-edit-timed')}
+          >
+            ${isAdding ? 'Add' : 'Save'}
+          </button>
+        </div>
+      </div>
+    `;
+    }
+};
+ConfigNotificationsTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      /* ── config-specific layout — copied from config-dialog ── */
+      .form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.875rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+      }
+      .checkbox-label input[type='checkbox'] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+      }
+      .cfg-gs-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.15s;
+        font-size: 0.875rem;
+      }
+      .cfg-gs-row:hover {
+        background: rgba(255, 255, 255, 0.04);
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], ConfigNotificationsTab.prototype, "vm", void 0);
+ConfigNotificationsTab = __decorate([
+    t$2('config-notifications-tab')
+], ConfigNotificationsTab);
+
+/**
+ * Notifications Tab ViewModel (ADR-0019, "Applied to Config Dialog")
+ *
+ * The pure derivation behind the Config Dialog's Notifications tab — the first
+ * Config Dialog tab decomposed, and the analog of the Irrigation Dialog's Tanks
+ * tab (an *independent-draft* tab: it owns `NotificationsTabState` on the SM and
+ * does not touch the Shared Environment Draft). It projects the tab's entire
+ * render input — the cooldown/persistence draft, the timed-notification list,
+ * the inline add/edit/confirm-delete sub-state, and the render-ready growspace +
+ * trigger option lists — from the SM and the dialog's `growspaceOptions`.
+ *
+ * Unlike the Irrigation reference factories (which return a `computed`
+ * `ReadableAtom` over an SM *atom*), the Config Dialog drives its SM as a Lit
+ * `@state()` reactive property transitioned by the pure `transition()` — there
+ * is no nanostores atom to wrap. So this is a pure `(sm, deps) → ViewModel`
+ * mapping the Config Dialog Shell calls in `render()`. The seam is unchanged: a
+ * pure per-tab factory feeding a dumb `<config-notifications-tab>`; only the
+ * subscription mechanism differs.
+ */
+/** The trigger choices, in display order. Static — derived render input. */
+const TRIGGER_OPTIONS = [
+    { value: 'clone', label: 'Clone Start' },
+    { value: 'veg', label: 'Veg Start' },
+    { value: 'flower', label: 'Flower Start' },
+    { value: 'dry', label: 'Dry Start' },
+];
+/**
+ * Pure factory: the Config Dialog SM + the dialog's `growspaceOptions` map →
+ * one Notifications tab ViewModel. Testable with no DOM and no host.
+ */
+function createNotificationsTabViewModel(sm, growspaceOptions) {
+    const tab = sm.tabs.notifications;
+    return {
+        draft: tab.draft,
+        timedNotifications: tab.timedNotifications,
+        sub: tab.sub,
+        growspaceOptions: Object.entries(growspaceOptions).map(([id, name]) => ({ id, name })),
+        triggerOptions: [...TRIGGER_OPTIONS],
+    };
+}
+
+/**
+ * Config Sensors Tab Component (ADR-0019, "Applied to Config Dialog")
+ *
+ * The dumb presentational element for the Config Dialog's Sensors tab — the
+ * first env-cluster tab. `@property .vm: SensorsTabViewModel` in, a single
+ * `env-draft-changed` Tab Intent out, **no `@state()` and no `hass`**: the entity
+ * option lists and the live VPD readout are pre-derived into the VM by the shell
+ * (see sensors-tab.viewmodel). Markup is transcribed verbatim from the former
+ * inline `_renderSensorsSection` / `_renderMultiEntitySelect` / `_renderEntitySelect`
+ * / `_renderLstOffsetSection`; the multi-select / chip / entity-select styles moved
+ * here with it, `md3-*` / `detail-card` / `row-col-grid` come from `dialogStyles`.
+ *
+ * Tab Intent (the Config Dialog Shell translates it to `UPDATE_ENV_DRAFT`):
+ *   - `env-draft-changed`  detail: { partial: Partial<EnvironmentDraft> }
+ */
+let ConfigSensorsTab = class ConfigSensorsTab extends i$3 {
+    _emit(partial) {
+        this.dispatchEvent(new CustomEvent('env-draft-changed', { detail: { partial }, bubbles: true, composed: true }));
+    }
+    render() {
+        const f = this.vm.fields;
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg style="width:20px;height:20px;fill:var(--primary-color,#4caf50);" viewBox="0 0 24 24">
+            <path d="${mdiThermometer}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">Monitoring Sensors</h3>
+        </div>
+        <div class="form-section">
+          <div class="row-col-grid">${this._field(f[0])}${this._field(f[1])}</div>
+          <div class="row-col-grid">${this._field(f[2])}${this._field(f[3])}</div>
+          <div class="row-col-grid">${this._field(f[4])}${this._field(f[5])}</div>
+          ${this._field(f[6])}
+          ${this.vm.lst ? this._renderLst(this.vm.lst) : E}
+        </div>
+      </div>
+    `;
+    }
+    _field(field) {
+        return field.multi ? this._multiSelect(field) : this._singleSelect(field);
+    }
+    _multiSelect(field) {
+        const values = field.value;
+        const listId = `list-multi-${field.key}`;
+        return x `
+      <div class="multi-select-container">
+        <label class="md3-label-multi">${field.label}</label>
+        <div class="multi-select-box">
+          ${values.map((val) => x `
+              <div class="chip">
+                ${val}
+                <span
+                  class="chip-remove"
+                  @click=${() => this._emit({ [field.key]: values.filter((v) => v !== val) })}
+                  >×</span
+                >
+              </div>
+            `)}
+          <input
+            class="search-input-inner"
+            list="${listId}"
+            placeholder=${values.length === 0 ? 'Add Entity...' : ''}
+            @change=${(e) => {
+            const input = e.target;
+            const val = input.value;
+            if (val && !values.includes(val))
+                this._emit({ [field.key]: [...values, val] });
+            input.value = '';
+        }}
+          />
+        </div>
+        <datalist id="${listId}">
+          ${field.options.map((eid) => x `<option value="${eid}"></option>`)}
+        </datalist>
+      </div>
+    `;
+    }
+    _singleSelect(field) {
+        const listId = `list-${field.key}`;
+        return x `
+      <div class="entity-select-container">
+        <div class="md3-input-group">
+          <label class="md3-label">${field.label}</label>
+          <input
+            class="md3-input"
+            list="${listId}"
+            .value=${field.value}
+            @change=${(e) => this._emit({ [field.key]: e.target.value })}
+            placeholder="Search entity..."
+          />
+          <datalist id="${listId}">
+            ${field.options.map((eid) => x `<option value="${eid}"></option>`)}
+          </datalist>
+        </div>
+      </div>
+    `;
+    }
+    _renderLst(lst) {
+        return x `
+      <div style="margin-top:12px;">
+        <md3-number-input
+          label="Leaf Surface Temperature Offset"
+          .value=${lst.offset}
+          @change=${(e) => this._emit({ lstOffset: parseFloat(e.detail) })}
+          min="-10"
+          max="10"
+          step="0.5"
+          suffix="°C"
+        ></md3-number-input>
+        <div
+          style="margin-top:4px;font-size:0.85em;color:var(--secondary-text-color,rgba(255,255,255,0.5));"
+        >
+          Current VPD: ${lst.vpdDisplay}
+        </div>
+      </div>
+    `;
+    }
+};
+ConfigSensorsTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      .form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      /* ── entity / multi-select pickers — copied from config-dialog ── */
+      .multi-select-container {
+        position: relative;
+        margin-bottom: 0;
+      }
+      .multi-select-box {
+        background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: 4px 4px 0 0;
+        border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 26px 16px 6px;
+        min-height: 56px;
+        box-sizing: border-box;
+        position: relative;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+      }
+      .md3-label-multi {
+        position: absolute;
+        top: 8px;
+        left: 16px;
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        pointer-events: none;
+        z-index: 10;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+        border-radius: 16px;
+        padding: 4px 12px;
+        font-size: 0.9rem;
+        height: 24px;
+      }
+      .chip-remove {
+        cursor: pointer;
+        margin-left: 6px;
+        font-weight: bold;
+        opacity: 0.7;
+      }
+      .chip-remove:hover {
+        opacity: 1;
+      }
+      .search-input-inner {
+        flex: 1;
+        min-width: 100px;
+        border: none;
+        background: transparent;
+        color: var(--primary-text-color);
+        font-family: inherit;
+        font-size: 1rem;
+        padding: 0;
+        margin: 0;
+        height: 24px;
+        outline: none;
+      }
+      .entity-select-container {
+        position: relative;
+        z-index: 5;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], ConfigSensorsTab.prototype, "vm", void 0);
+ConfigSensorsTab = __decorate([
+    t$2('config-sensors-tab')
+], ConfigSensorsTab);
+
+function calculateSvp(temperatureC) {
+    return 0.61094 * Math.exp((17.625 * temperatureC) / (243.04 + temperatureC));
+}
+function calculateVpdWithLstOffset(airTempC, humidityRh, lstOffset) {
+    if (!Number.isFinite(airTempC) || !Number.isFinite(humidityRh) || !Number.isFinite(lstOffset)) {
+        return null;
+    }
+    const leafTempC = airTempC + lstOffset;
+    const leafSvp = calculateSvp(leafTempC);
+    const airSvp = calculateSvp(airTempC);
+    const airAvp = airSvp * (humidityRh / 100);
+    return Math.round((leafSvp - airAvp) * 100) / 100;
+}
+
+/**
+ * Sensors Tab ViewModel (ADR-0019, "Applied to Config Dialog")
+ *
+ * The pure derivation behind the Config Dialog's Sensors tab — the first
+ * env-cluster tab. It projects its slice of the [[Shared Environment Draft]]
+ * (the air + monitoring sensor selections) and the live "Leaf Surface
+ * Temperature" VPD readout into one render input for `<config-sensors-tab>`.
+ *
+ * The Sensors tab is hass-dependent in two ways the dumb component must not
+ * touch: the entity pickers need entity-id option lists, and the LST section
+ * shows a live VPD computed from the selected sensors' current values. Both are
+ * injected as `SensorsTabDeps` adapters — the shell supplies `entityOptions`
+ * (its hass-reading `_getEntities`) and `averageSensorValue` (its
+ * `_averageSensorValue`). The factory does the per-field option lookup and the
+ * VPD derivation itself, so the derivation stays the test surface (inject fakes,
+ * assert the VM) and no `hass` enters the component.
+ */
+/** Field set + display order, transcribed verbatim from the former inline render. */
+const SENSOR_FIELDS = [
+    { key: 'temperatureSensors', label: 'Temperature Sensors', multi: true, domains: ['sensor', 'input_number'], deviceClass: 'temperature' },
+    { key: 'humiditySensors', label: 'Humidity Sensors', multi: true, domains: ['sensor', 'input_number'], deviceClass: 'humidity' },
+    { key: 'vpdSensors', label: 'VPD Sensors (Optional)', multi: true, domains: ['sensor', 'input_number'], deviceClass: 'pressure' },
+    { key: 'soilMoistureSensor', label: 'Soil Moisture Sensor', multi: false, domains: ['sensor', 'input_number'], deviceClass: 'moisture' },
+    { key: 'co2Sensor', label: 'CO₂ Sensor', multi: false, domains: ['sensor', 'input_number'], deviceClass: 'carbon_dioxide' },
+    { key: 'lightSensors', label: 'Light Source / Sensor', multi: true, domains: ['switch', 'light', 'input_boolean', 'sensor'], deviceClass: null },
+    { key: 'substrateTemperatureSensors', label: 'Substrate Temperature Sensors', multi: true, domains: ['sensor', 'input_number'], deviceClass: 'temperature' },
+];
+function deriveLst(draft, deps) {
+    const hasTemp = draft.temperatureSensors.length > 0;
+    const hasHumidity = draft.humiditySensors.length > 0;
+    const hasHardwareVpd = draft.vpdSensors.some((id) => !id.includes('calculated_vpd'));
+    if (!hasTemp || !hasHumidity || hasHardwareVpd)
+        return null;
+    const avgTemp = deps.averageSensorValue(draft.temperatureSensors);
+    const avgHumidity = deps.averageSensorValue(draft.humiditySensors);
+    const vpd = avgTemp != null && avgHumidity != null
+        ? calculateVpdWithLstOffset(avgTemp, avgHumidity, draft.lstOffset)
+        : null;
+    return { offset: draft.lstOffset, vpdDisplay: vpd != null ? `${vpd} kPa` : '—' };
+}
+/**
+ * Pure factory: the Config Dialog SM + the injected hass adapters → one Sensors
+ * tab ViewModel. Testable with no DOM and no host (inject fake adapters).
+ */
+function createSensorsTabViewModel(sm, deps) {
+    const draft = sm.environmentDraft;
+    const fields = SENSOR_FIELDS.map((def) => ({
+        key: def.key,
+        label: def.label,
+        multi: def.multi,
+        value: draft[def.key],
+        options: deps.entityOptions(def.domains, def.deviceClass),
+    }));
+    return { fields, lst: deriveLst(draft, deps) };
+}
+
+let StageVpdOverridesTable = class StageVpdOverridesTable extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.overrides = {};
+    }
+    _getDisplayValue(key, slot) {
+        return this.overrides[key]?.[slot] ?? FAN_VPD_STAGE_DEFAULTS[key][slot];
+    }
+    _handleChange(key, slot, raw) {
+        const parsed = parseFloat(raw);
+        const value = isNaN(parsed) ? FAN_VPD_STAGE_DEFAULTS[key][slot] : parsed;
+        const existing = this.overrides[key] ?? { ...FAN_VPD_STAGE_DEFAULTS[key] };
+        const updated = { ...this.overrides, [key]: { ...existing, [slot]: value } };
+        this.dispatchEvent(new CustomEvent('overrides-change', { detail: updated, bubbles: true, composed: true }));
+    }
+    _handleReset() {
+        this.dispatchEvent(new CustomEvent('overrides-change', { detail: {}, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="header-row">
+        <span>Stage</span>
+        <span>Day (kPa)</span>
+        <span>Night (kPa)</span>
+      </div>
+      ${FAN_VPD_STAGE_KEYS.map((key) => x `
+          <div class="stage-row">
+            <span class="stage-label">${FAN_VPD_STAGE_LABELS[key]}</span>
+            <input
+              type="number"
+              min="0.1"
+              max="3.0"
+              step="0.01"
+              .value=${String(this._getDisplayValue(key, 'day'))}
+              @change=${(e) => this._handleChange(key, 'day', e.target.value)}
+            />
+            <input
+              type="number"
+              min="0.1"
+              max="3.0"
+              step="0.01"
+              .value=${String(this._getDisplayValue(key, 'night'))}
+              @change=${(e) => this._handleChange(key, 'night', e.target.value)}
+            />
+          </div>
+        `)}
+      <button class="reset-button" @click=${this._handleReset}>Reset all to defaults</button>
+    `;
+    }
+};
+StageVpdOverridesTable.styles = i$6 `
+    :host {
+      display: block;
+    }
+    .header-row {
+      display: grid;
+      grid-template-columns: 1fr 90px 90px;
+      gap: 8px;
+      padding: 0 4px 4px;
+      font-size: 0.75rem;
+      color: var(--secondary-text-color);
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      margin-bottom: 4px;
+    }
+    .stage-row {
+      display: grid;
+      grid-template-columns: 1fr 90px 90px;
+      gap: 8px;
+      align-items: center;
+      padding: 4px;
+    }
+    .stage-label {
+      font-size: 0.875rem;
+      color: var(--primary-text-color);
+    }
+    input[type='number'] {
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(255, 255, 255, 0.05);
+      border: none;
+      border-bottom: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      color: var(--primary-text-color);
+      font-size: 0.875rem;
+      padding: 4px 6px;
+      border-radius: 4px 4px 0 0;
+      outline: none;
+    }
+    input[type='number']:focus {
+      border-bottom: 2px solid var(--primary-color, #6200ee);
+    }
+    .reset-button {
+      margin-top: 12px;
+      background: transparent;
+      border: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      border-radius: 4px;
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 4px 12px;
+    }
+    .reset-button:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], StageVpdOverridesTable.prototype, "overrides", void 0);
+StageVpdOverridesTable = __decorate([
+    t$2('stage-vpd-overrides-table')
+], StageVpdOverridesTable);
+
+/**
+ * Config Climate Tab Component (ADR-0019, "Applied to Config Dialog")
+ *
+ * The dumb presentational element for the Config Dialog's Climate tab — Climate
+ * Control + the circulation Fan Controller panel + the Exhaust Fan Controller
+ * panel. `@property .vm: ClimateTabViewModel` in, semantic Tab Intents out,
+ * **no `@state()` and no `hass`**: the fan-entity option lists and the two
+ * collapsible-section toggles are projected into the VM by the shell. Markup is
+ * transcribed verbatim from the former inline `_renderClimateSection` /
+ * `_renderFanControllerPanel` / `_renderExhaustFanControllerPanel`; the panels
+ * are private render methods here (one consumer each → no new custom element),
+ * while `<stage-vpd-overrides-table>` stays a shared sub-component.
+ *
+ * Fan-config edits merge against the VM's config (never the SM) and emit the
+ * whole merged config, so the shell's `UPDATE_ENV_DRAFT` replaces it wholesale.
+ *
+ * Tab Intents (the Shell translates them):
+ *   - `env-draft-changed`            detail: { partial: Partial<EnvironmentDraft> }   (top-level fields)
+ *   - `fan-config-changed`           detail: { partial: Partial<CirculationFanConfig> }
+ *   - `exhaust-config-changed`       detail: { partial: Partial<ExhaustFanConfig> }
+ *   - `toggle-fan-temp-override`     (no detail)
+ *   - `toggle-exhaust-critical-temp` (no detail)
+ *   - `remove-environment-requested` (no detail)
+ *
+ * Fan/exhaust edits forward only the changed field; the Shell merges it against
+ * the live draft (so synchronous multi-field edits accumulate). The component
+ * never reads the SM.
+ */
+let ConfigClimateTab = class ConfigClimateTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    _update(partial) {
+        this._emit('env-draft-changed', { partial });
+    }
+    _updateFan(partial) {
+        this._emit('fan-config-changed', { partial });
+    }
+    _updateExhaust(partial) {
+        this._emit('exhaust-config-changed', { partial });
+    }
+    render() {
+        return x `${this._renderControl(this.vm.control)}${this._renderFanPanel(this.vm.fan)}${this._renderExhaustPanel(this.vm.exhaust)}`;
+    }
+    _sectionHeader(title) {
+        return x `
+      <div
+        style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+      >
+        <svg style="width:20px;height:20px;fill:var(--primary-color,#4caf50);" viewBox="0 0 24 24">
+          <path d="${mdiFan}"></path>
+        </svg>
+        <h3 style="margin:0;border:none;padding:0;">${title}</h3>
+      </div>
+    `;
+    }
+    // ── Climate Control ─────────────────────────────────────────────────────────
+    _renderControl(c) {
+        return x `
+      <div class="detail-card">
+        ${this._sectionHeader('Climate Control')}
+        <div class="form-section">
+          <div class="row-col-grid">
+            ${this._multiSelect('Exhaust Fan / Switch', 'exhaustFanEntities', c.exhaustFanEntities, c.exhaustFanOptions)}
+            ${this._multiSelect('Circulation Fan / Switch', 'circulationFanEntities', c.circulationFanEntities, c.circulationFanOptions)}
+          </div>
+          <div class="row-col-grid">
+            <md3-number-input
+              label="Stress Threshold %"
+              .value=${c.stressThreshold}
+              @change=${(e) => this._update({ stressThreshold: parseFloat(e.detail) })}
+              step="0.01"
+            ></md3-number-input>
+            <md3-number-input
+              label="Mold Threshold %"
+              .value=${c.moldThreshold}
+              @change=${(e) => this._update({ moldThreshold: parseFloat(e.detail) })}
+              step="0.01"
+            ></md3-number-input>
+          </div>
+          <div class="control-row">
+            <button
+              class="md3-button tonal error"
+              @click=${() => this._emit('remove-environment-requested')}
+              ?disabled=${!c.canRemoveEnvironment}
+            >
+              Remove Environment
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _multiSelect(label, key, values, options) {
+        const listId = `list-multi-${key}`;
+        return x `
+      <div class="multi-select-container">
+        <label class="md3-label-multi">${label}</label>
+        <div class="multi-select-box">
+          ${values.map((val) => x `
+              <div class="chip">
+                ${val}
+                <span
+                  class="chip-remove"
+                  @click=${() => this._update({ [key]: values.filter((v) => v !== val) })}
+                  >×</span
+                >
+              </div>
+            `)}
+          <input
+            class="search-input-inner"
+            list="${listId}"
+            placeholder=${values.length === 0 ? 'Add Entity...' : ''}
+            @change=${(e) => {
+            const input = e.target;
+            const val = input.value;
+            if (val && !values.includes(val))
+                this._update({ [key]: [...values, val] });
+            input.value = '';
+        }}
+          />
+        </div>
+        <datalist id="${listId}">
+          ${options.map((eid) => x `<option value="${eid}"></option>`)}
+        </datalist>
+      </div>
+    `;
+    }
+    // ── Circulation Fan Controller ──────────────────────────────────────────────
+    _renderFanPanel(vm) {
+        const fan = vm.config;
+        return x `
+      <div class="detail-card">
+        ${this._sectionHeader('Fan Controller')}
+        <div class="form-section">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              .checked=${fan.enabled}
+              @change=${(e) => this._updateFan({ enabled: e.target.checked })}
+            />
+            <span>Enabled</span>
+          </label>
+        </div>
+
+        <div class="form-section" style="${vm.disabled ? 'opacity:0.5;pointer-events:none;' : ''}">
+          <md3-select
+            label="Regulation Mode"
+            .value=${vm.mode}
+            .options=${[
+            { value: 'vpd', label: 'VPD' },
+            { value: 'humidity', label: 'Humidity' },
+            { value: 'temperature', label: 'Temperature' },
+        ]}
+            @change=${(e) => this._updateFan({ regulation_mode: e.detail })}
+          ></md3-select>
+
+          ${vm.showStageVpd
+            ? x `
+                <div style="margin-top:8px;">
+                  <label class="checkbox-label">
+                    <input
+                      type="checkbox"
+                      .checked=${fan.stage_vpd_enabled}
+                      @change=${(e) => this._updateFan({ stage_vpd_enabled: e.target.checked })}
+                    />
+                    <span>Stage-Aware VPD</span>
+                  </label>
+                </div>
+                ${vm.showStageVpdTable
+                ? x `
+                      <div style="margin-top:12px;">
+                        <stage-vpd-overrides-table
+                          .overrides=${(fan.stage_vpd_overrides ?? {})}
+                          @overrides-change=${(e) => this._updateFan({ stage_vpd_overrides: e.detail })}
+                        ></stage-vpd-overrides-table>
+                      </div>
+                    `
+                : E}
+              `
+            : E}
+
+          <div class="row-col-grid">
+            ${vm.mode === 'vpd'
+            ? x `
+                  <md3-number-input
+                    label="${vm.vpdTargetLabel}"
+                    style="${vm.vpdTargetDimmed ? 'opacity:0.5;' : ''}"
+                    .value=${fan.vpd_target}
+                    @change=${(e) => this._updateFan({ vpd_target: parseFloat(e.detail) })}
+                    step="0.01"
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="VPD Tolerance (kPa)"
+                    .value=${fan.vpd_tolerance}
+                    @change=${(e) => this._updateFan({ vpd_tolerance: parseFloat(e.detail) })}
+                    step="0.01"
+                  ></md3-number-input>
+                `
+            : E}
+            ${vm.mode === 'humidity'
+            ? x `
+                  <md3-number-input
+                    label="Humidity Target (%)"
+                    .value=${fan.humidity_target}
+                    @change=${(e) => this._updateFan({ humidity_target: parseFloat(e.detail) })}
+                    step="0.1"
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="Humidity Tolerance (%)"
+                    .value=${fan.humidity_tolerance}
+                    @change=${(e) => this._updateFan({ humidity_tolerance: parseFloat(e.detail) })}
+                    step="0.1"
+                  ></md3-number-input>
+                `
+            : E}
+            ${vm.mode === 'temperature'
+            ? x `
+                  <md3-number-input
+                    label="Temperature Target (°C)"
+                    .value=${fan.temperature_target}
+                    @change=${(e) => this._updateFan({ temperature_target: parseFloat(e.detail) })}
+                    step="0.1"
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="Temperature Tolerance (°C)"
+                    .value=${fan.temperature_tolerance}
+                    @change=${(e) => this._updateFan({ temperature_tolerance: parseFloat(e.detail) })}
+                    step="0.1"
+                  ></md3-number-input>
+                `
+            : E}
+          </div>
+
+          ${vm.showTempOverride
+            ? x `
+                <div style="margin-top:8px;">
+                  <button
+                    class="md3-button tonal"
+                    style="display:flex;align-items:center;gap:4px;width:100%;justify-content:space-between;"
+                    @click=${() => this._emit('toggle-fan-temp-override')}
+                  >
+                    <span>Temperature Override</span>
+                    <svg
+                      style="width:18px;height:18px;transition:transform 0.2s;transform:rotate(${vm.tempOverrideExpanded ? '180deg' : '0deg'});"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="${mdiChevronDown}"></path>
+                    </svg>
+                  </button>
+                  ${vm.tempOverrideExpanded
+                ? x `<div class="row-col-grid" style="margin-top:8px;">${this._criticalTempInputs(fan, this._updateFan.bind(this))}</div>`
+                : E}
+                </div>
+              `
+            : E}
+
+          <div class="row-col-grid" style="margin-top:8px;">
+            <md3-number-input
+              label="Min Speed (%)"
+              .value=${fan.min_speed}
+              @change=${(e) => this._updateFan({ min_speed: parseFloat(e.detail) })}
+              step="1"
+            ></md3-number-input>
+            <md3-number-input
+              label="Max Speed (%)"
+              .value=${fan.max_speed}
+              @change=${(e) => this._updateFan({ max_speed: parseFloat(e.detail) })}
+              step="1"
+            ></md3-number-input>
+          </div>
+
+          <div style="margin-top:8px;">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                .checked=${fan.wind_enabled}
+                @change=${(e) => this._updateFan({ wind_enabled: e.target.checked })}
+              />
+              <span>Dynamic Wind</span>
+            </label>
+            ${vm.showWind
+            ? x `
+                  <div class="row-col-grid" style="margin-top:8px;">
+                    <md3-number-input
+                      label="Wind Period (s)"
+                      .value=${fan.wind_period_seconds}
+                      @change=${(e) => this._updateFan({ wind_period_seconds: parseFloat(e.detail) })}
+                      step="1"
+                    ></md3-number-input>
+                    <md3-number-input
+                      label="Wind Amplitude (%)"
+                      .value=${fan.wind_amplitude_pct}
+                      @change=${(e) => this._updateFan({ wind_amplitude_pct: parseFloat(e.detail) })}
+                      step="1"
+                    ></md3-number-input>
+                  </div>
+                `
+            : E}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    // ── Exhaust Fan Controller ──────────────────────────────────────────────────
+    _renderExhaustPanel(vm) {
+        const fan = vm.config;
+        return x `
+      <div class="detail-card">
+        ${this._sectionHeader('Exhaust Fan Controller')}
+        <div class="form-section">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              .checked=${fan.enabled}
+              @change=${(e) => this._updateExhaust({ enabled: e.target.checked })}
+            />
+            <span>Enabled</span>
+          </label>
+        </div>
+
+        <div class="form-section" style="${vm.disabled ? 'opacity:0.5;pointer-events:none;' : ''}">
+          <div>
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                .checked=${fan.stage_vpd_enabled}
+                @change=${(e) => this._updateExhaust({ stage_vpd_enabled: e.target.checked })}
+              />
+              <span>Stage-Aware VPD</span>
+            </label>
+          </div>
+          ${vm.showStageVpdTable
+            ? x `
+                <div style="margin-top:12px;">
+                  <stage-vpd-overrides-table
+                    .overrides=${(fan.stage_vpd_overrides ?? {})}
+                    @overrides-change=${(e) => this._updateExhaust({ stage_vpd_overrides: e.detail })}
+                  ></stage-vpd-overrides-table>
+                </div>
+              `
+            : E}
+
+          <div class="row-col-grid" style="margin-top:8px;">
+            <md3-number-input
+              label="Temperature Target (°C)"
+              .value=${fan.temperature_target}
+              @change=${(e) => this._updateExhaust({ temperature_target: parseFloat(e.detail) })}
+              step="0.1"
+            ></md3-number-input>
+            <md3-number-input
+              label="Temperature Tolerance (°C)"
+              .value=${fan.temperature_tolerance}
+              @change=${(e) => this._updateExhaust({ temperature_tolerance: parseFloat(e.detail) })}
+              step="0.1"
+            ></md3-number-input>
+          </div>
+
+          <div class="row-col-grid">
+            <md3-number-input
+              label="Humidity Target (%)"
+              .value=${fan.humidity_target}
+              @change=${(e) => this._updateExhaust({ humidity_target: parseFloat(e.detail) })}
+              step="0.1"
+            ></md3-number-input>
+            <md3-number-input
+              label="Humidity Tolerance (%)"
+              .value=${fan.humidity_tolerance}
+              @change=${(e) => this._updateExhaust({ humidity_tolerance: parseFloat(e.detail) })}
+              step="0.1"
+            ></md3-number-input>
+          </div>
+
+          <div class="row-col-grid">
+            <md3-number-input
+              label="${vm.vpdTargetLabel}"
+              style="${vm.vpdTargetDimmed ? 'opacity:0.5;' : ''}"
+              .value=${fan.vpd_target}
+              @change=${(e) => this._updateExhaust({ vpd_target: parseFloat(e.detail) })}
+              step="0.01"
+            ></md3-number-input>
+            <md3-number-input
+              label="VPD Tolerance (kPa)"
+              .value=${fan.vpd_tolerance}
+              @change=${(e) => this._updateExhaust({ vpd_tolerance: parseFloat(e.detail) })}
+              step="0.01"
+            ></md3-number-input>
+          </div>
+
+          <div class="row-col-grid" style="margin-top:8px;">
+            <md3-number-input
+              label="Min Speed (%)"
+              .value=${fan.min_speed}
+              @change=${(e) => this._updateExhaust({ min_speed: parseFloat(e.detail) })}
+              step="1"
+            ></md3-number-input>
+            <md3-number-input
+              label="Max Speed (%)"
+              .value=${fan.max_speed}
+              @change=${(e) => this._updateExhaust({ max_speed: parseFloat(e.detail) })}
+              step="1"
+            ></md3-number-input>
+          </div>
+
+          <div style="margin-top:8px;">
+            <button
+              class="md3-button tonal"
+              style="display:flex;align-items:center;gap:4px;width:100%;justify-content:space-between;"
+              @click=${() => this._emit('toggle-exhaust-critical-temp')}
+            >
+              <span>Critical Temperature</span>
+              <svg
+                style="width:18px;height:18px;transition:transform 0.2s;transform:rotate(${vm.criticalTempExpanded ? '180deg' : '0deg'});"
+                viewBox="0 0 24 24"
+              >
+                <path d="${mdiChevronDown}"></path>
+              </svg>
+            </button>
+            ${vm.criticalTempExpanded
+            ? x `<div class="row-col-grid" style="margin-top:8px;">${this._criticalTempInputs(fan, this._updateExhaust.bind(this))}</div>`
+            : E}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    /** Shared low/high/hysteresis inputs — `update` targets fan or exhaust. */
+    _criticalTempInputs(fan, update) {
+        return x `
+      <md3-number-input
+        label="Critical Temp Low (°C)"
+        .value=${fan.critical_temp_low ?? ''}
+        @change=${(e) => update({ critical_temp_low: e.detail !== '' ? parseFloat(e.detail) : null })}
+        step="0.1"
+      ></md3-number-input>
+      <md3-number-input
+        label="Critical Temp High (°C)"
+        .value=${fan.critical_temp_high ?? ''}
+        @change=${(e) => update({ critical_temp_high: e.detail !== '' ? parseFloat(e.detail) : null })}
+        step="0.1"
+      ></md3-number-input>
+      <md3-number-input
+        label="Critical Temp Hysteresis (°C)"
+        .value=${fan.critical_temp_hysteresis}
+        @change=${(e) => update({ critical_temp_hysteresis: parseFloat(e.detail) })}
+        step="0.1"
+      ></md3-number-input>
+    `;
+    }
+};
+ConfigClimateTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      .form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.875rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+      }
+      .checkbox-label input[type='checkbox'] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+      }
+      .control-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      /* ── multi-select pickers — copied from config-dialog ── */
+      .multi-select-container {
+        position: relative;
+        margin-bottom: 0;
+      }
+      .multi-select-box {
+        background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: 4px 4px 0 0;
+        border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 26px 16px 6px;
+        min-height: 56px;
+        box-sizing: border-box;
+        position: relative;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+      }
+      .md3-label-multi {
+        position: absolute;
+        top: 8px;
+        left: 16px;
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        pointer-events: none;
+        z-index: 10;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+        border-radius: 16px;
+        padding: 4px 12px;
+        font-size: 0.9rem;
+        height: 24px;
+      }
+      .chip-remove {
+        cursor: pointer;
+        margin-left: 6px;
+        font-weight: bold;
+        opacity: 0.7;
+      }
+      .chip-remove:hover {
+        opacity: 1;
+      }
+      .search-input-inner {
+        flex: 1;
+        min-width: 100px;
+        border: none;
+        background: transparent;
+        color: var(--primary-text-color);
+        font-family: inherit;
+        font-size: 1rem;
+        padding: 0;
+        margin: 0;
+        height: 24px;
+        outline: none;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], ConfigClimateTab.prototype, "vm", void 0);
+ConfigClimateTab = __decorate([
+    t$2('config-climate-tab')
+], ConfigClimateTab);
+
+/**
+ * Climate Tab ViewModel (ADR-0019, "Applied to Config Dialog")
+ *
+ * The pure derivation behind the Config Dialog's Climate tab — the heaviest
+ * env-cluster tab (Climate Control + the circulation Fan Controller panel + the
+ * Exhaust Fan Controller panel). It projects its slice of the [[Shared
+ * Environment Draft]] and folds in the mode/toggle-conditional view logic the
+ * panels need: which target+tolerance pair is live, the "Fallback VPD Target"
+ * relabel, disabled greying, and which collapsible sub-sections show.
+ *
+ * Two hass/shell dependencies are injected so the dumb component stays free of
+ * both: `entityOptions` (the shell's hass-reading `_getEntities`) supplies the
+ * fan-entity picker lists, and `expand` carries the two collapsible-section
+ * toggles. Those toggles are **Shell `@state`**, not SM state — ephemeral
+ * accordion/expander state stays on the shell and is projected in here, the
+ * same pattern the still-inline humidity/VPD accordions use
+ * (`_openHumidityStageId`); only draft/edit state goes to the SM. See ADR-0019.
+ */
+/** Entity domains for the two Climate-tab fan pickers (deviceClass is null). */
+const EXHAUST_FAN_DOMAINS = ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'];
+const CIRCULATION_FAN_DOMAINS = ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'];
+function vpdLabel(stageVpdEnabled) {
+    return stageVpdEnabled ? 'Fallback VPD Target (kPa)' : 'VPD Target (kPa)';
+}
+/**
+ * Pure factory: the Config Dialog SM + injected hass adapter + the Shell's two
+ * expander flags → one Climate tab ViewModel. Testable with no DOM and no host.
+ */
+function createClimateTabViewModel(sm, deps, expand) {
+    const d = sm.environmentDraft;
+    const fan = d.circulationFanConfig;
+    const exhaust = d.exhaustFanConfig;
+    const mode = fan.regulation_mode;
+    return {
+        control: {
+            exhaustFanEntities: d.exhaustFanEntities,
+            exhaustFanOptions: deps.entityOptions(EXHAUST_FAN_DOMAINS, null),
+            circulationFanEntities: d.circulationFanEntities,
+            circulationFanOptions: deps.entityOptions(CIRCULATION_FAN_DOMAINS, null),
+            stressThreshold: d.stressThreshold,
+            moldThreshold: d.moldThreshold,
+            canRemoveEnvironment: Boolean(d.selectedGrowspaceId),
+        },
+        fan: {
+            config: fan,
+            disabled: !fan.enabled,
+            mode,
+            showStageVpd: mode === 'vpd',
+            showStageVpdTable: mode === 'vpd' && fan.stage_vpd_enabled,
+            vpdTargetLabel: vpdLabel(fan.stage_vpd_enabled),
+            vpdTargetDimmed: fan.stage_vpd_enabled,
+            showTempOverride: mode === 'vpd',
+            tempOverrideExpanded: expand.fanTempOverrideExpanded,
+            showWind: fan.wind_enabled,
+        },
+        exhaust: {
+            config: exhaust,
+            disabled: !exhaust.enabled,
+            showStageVpdTable: exhaust.stage_vpd_enabled,
+            vpdTargetLabel: vpdLabel(exhaust.stage_vpd_enabled),
+            vpdTargetDimmed: exhaust.stage_vpd_enabled,
+            criticalTempExpanded: expand.exhaustCriticalTempExpanded,
+        },
+    };
+}
+
+/**
+ * Config Humidity Tab Component (ADR-0019, "Applied to Config Dialog")
+ *
+ * The dumb presentational element for the Config Dialog's Humidity tab — Humidity
+ * Devices (humidifier/dehumidifier pickers + the two control-enable toggles) and
+ * the per-stage Thresholds accordion. `@property .vm: HumidityTabViewModel` in,
+ * semantic Tab Intents out, **no `@state()` and no `hass`**. Markup transcribed
+ * verbatim from the former inline `_renderHumiditySection`; the `acc-*` accordion
+ * and multi-select styles moved here with it.
+ *
+ * Threshold edits forward `{ stage, cycle, point, value }` (with the enum-value
+ * Record key the VM supplies); the Shell merges against the live draft. The two
+ * control toggles fire an immediate backend service in the Shell, so they emit a
+ * dedicated intent rather than a draft change.
+ *
+ * Tab Intents (the Shell translates them):
+ *   - `env-draft-changed`        detail: { partial }   (device entity pickers)
+ *   - `set-humidifier-control`   detail: { enabled }
+ *   - `set-dehumidifier-control` detail: { enabled }
+ *   - `toggle-stage`             detail: { stageId }
+ *   - `update-dehum-threshold`   detail: { stage, cycle, point, value }
+ *   - `update-hum-threshold`     detail: { stage, cycle, point, value }
+ */
+let ConfigHumidityTab = class ConfigHumidityTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    _update(partial) {
+        this._emit('env-draft-changed', { partial });
+    }
+    render() {
+        return x `${this._renderDevices()}${this._renderThresholds()}`;
+    }
+    // ── Humidity Devices ────────────────────────────────────────────────────────
+    _renderDevices() {
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg style="width:20px;height:20px;fill:var(--primary-color,#4caf50);" viewBox="0 0 24 24">
+            <path d="${mdiAirHumidifier}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">Humidity Devices</h3>
+        </div>
+        <div class="form-section">
+          <div class="row-col-grid">
+            ${this._multiSelect('Humidifier', 'humidifierEntities', this.vm.humidifierEntities, this.vm.humidifierOptions)}
+            ${this._multiSelect('Dehumidifier', 'dehumidifierEntities', this.vm.dehumidifierEntities, this.vm.dehumidifierOptions)}
+          </div>
+          <div class="row-col-grid">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                .checked=${this.vm.humidifierControlEnabled}
+                @change=${(e) => this._emit('set-humidifier-control', { enabled: e.target.checked })}
+              />
+              Enable Humidifier Control
+            </label>
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                .checked=${this.vm.dehumidifierControlEnabled}
+                @change=${(e) => this._emit('set-dehumidifier-control', { enabled: e.target.checked })}
+              />
+              Enable Dehumidifier Control
+            </label>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _multiSelect(label, key, values, options) {
+        const listId = `list-multi-${key}`;
+        return x `
+      <div class="multi-select-container">
+        <label class="md3-label-multi">${label}</label>
+        <div class="multi-select-box">
+          ${values.map((val) => x `
+              <div class="chip">
+                ${val}
+                <span class="chip-remove" @click=${() => this._update({ [key]: values.filter((v) => v !== val) })}
+                  >×</span
+                >
+              </div>
+            `)}
+          <input
+            class="search-input-inner"
+            list="${listId}"
+            placeholder=${values.length === 0 ? 'Add Entity...' : ''}
+            @change=${(e) => {
+            const input = e.target;
+            const val = input.value;
+            if (val && !values.includes(val))
+                this._update({ [key]: [...values, val] });
+            input.value = '';
+        }}
+          />
+        </div>
+        <datalist id="${listId}">
+          ${options.map((eid) => x `<option value="${eid}"></option>`)}
+        </datalist>
+      </div>
+    `;
+    }
+    // ── Thresholds per Stage ────────────────────────────────────────────────────
+    _renderThresholds() {
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg style="width:20px;height:20px;fill:var(--primary-color,#4caf50);" viewBox="0 0 24 24">
+            <path d="${mdiWaterPercent}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">Thresholds per Stage</h3>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${this.vm.stages.map((stage) => this._renderStage(stage))}
+        </div>
+      </div>
+    `;
+    }
+    _renderStage(stage) {
+        return x `
+      <div class="acc-card">
+        <div class="acc-head" @click=${() => this._emit('toggle-stage', { stageId: stage.id })}>
+          <div class="acc-stage-dot" style="background:${stage.color};"></div>
+          <div class="acc-head-title">${stage.label}</div>
+          ${!stage.open
+            ? x `
+                <div class="acc-head-desc">
+                  Dehum on &gt; ${stage.dehum.day.on > 0 ? stage.dehum.day.on.toFixed(2) + ' kPa' : '—'}
+                  &nbsp;·&nbsp; Hum on &lt;
+                  ${stage.hum.day.on > 0 ? stage.hum.day.on.toFixed(2) + ' kPa' : '—'}
+                </div>
+              `
+            : E}
+          <svg class="acc-chev ${stage.open ? 'open' : ''}" viewBox="0 0 24 24">
+            <path d="${mdiChevronDown}"></path>
+          </svg>
+        </div>
+        ${stage.open
+            ? x `
+              <div class="acc-body">
+                ${this._deviceBlock('Dehumidifier', 'var(--secondary,#2196f3)', mdiWaterPercent, 'update-dehum-threshold', stage.dehumKey, stage.dehum, 'On Above (kPa)', 'Off Below (kPa)')}
+                ${this._deviceBlock('Humidifier', '#00bcd4', mdiAirHumidifier, 'update-hum-threshold', stage.humKey, stage.hum, 'On Below (kPa)', 'Off Above (kPa)')}
+              </div>
+            `
+            : E}
+      </div>
+    `;
+    }
+    _deviceBlock(title, headerColor, icon, intent, stageKey, values, onLabel, offLabel) {
+        const cycle = (cycleKey, cycleLabel, cycleColor, cycleIcon, pair) => x `
+      <div>
+        <div class="acc-cycle-row" style="color:${cycleColor};">
+          <svg viewBox="0 0 24 24"><path d="${cycleIcon}"></path></svg>
+          ${cycleLabel}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+          <md3-number-input
+            label="${onLabel}"
+            .value=${pair.on}
+            @change=${(e) => this._emit(intent, { stage: stageKey, cycle: cycleKey, point: 'on', value: parseFloat(e.detail) })}
+            step="0.05"
+          ></md3-number-input>
+          <md3-number-input
+            label="${offLabel}"
+            .value=${pair.off}
+            @change=${(e) => this._emit(intent, { stage: stageKey, cycle: cycleKey, point: 'off', value: parseFloat(e.detail) })}
+            step="0.05"
+          ></md3-number-input>
+        </div>
+      </div>
+    `;
+        return x `
+      <div class="acc-device-block">
+        <div class="acc-device-header" style="color:${headerColor};">
+          <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+          ${title}
+        </div>
+        <div class="acc-cycle-grid">
+          ${cycle('day', 'Day', '#ff9800', mdiWhiteBalanceSunny, values.day)}
+          ${cycle('night', 'Night', '#7986cb', mdiWeatherNight, values.night)}
+        </div>
+      </div>
+    `;
+    }
+};
+ConfigHumidityTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      .form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.875rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+      }
+      .checkbox-label input[type='checkbox'] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+      }
+      /* ── multi-select pickers ── */
+      .multi-select-container {
+        position: relative;
+        margin-bottom: 0;
+      }
+      .multi-select-box {
+        background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: 4px 4px 0 0;
+        border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 26px 16px 6px;
+        min-height: 56px;
+        box-sizing: border-box;
+        position: relative;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+      }
+      .md3-label-multi {
+        position: absolute;
+        top: 8px;
+        left: 16px;
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        pointer-events: none;
+        z-index: 10;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+        border-radius: 16px;
+        padding: 4px 12px;
+        font-size: 0.9rem;
+        height: 24px;
+      }
+      .chip-remove {
+        cursor: pointer;
+        margin-left: 6px;
+        font-weight: bold;
+        opacity: 0.7;
+      }
+      .chip-remove:hover {
+        opacity: 1;
+      }
+      .search-input-inner {
+        flex: 1;
+        min-width: 100px;
+        border: none;
+        background: transparent;
+        color: var(--primary-text-color);
+        font-family: inherit;
+        font-size: 1rem;
+        padding: 0;
+        margin: 0;
+        height: 24px;
+        outline: none;
+      }
+      /* ── thresholds accordion — copied from config-dialog ── */
+      .acc-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .acc-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 16px;
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.15s;
+      }
+      .acc-head:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .acc-stage-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .acc-head-title {
+        flex: 1;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+      .acc-head-desc {
+        font-size: 0.775rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
+      }
+      .acc-chev {
+        width: 20px;
+        height: 20px;
+        fill: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
+        transition: transform 0.2s;
+        flex-shrink: 0;
+      }
+      .acc-chev.open {
+        transform: rotate(180deg);
+      }
+      .acc-body {
+        padding: 16px;
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.06));
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .acc-cycle-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .acc-device-block {
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 10px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .acc-device-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.06));
+      }
+      .acc-device-header svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+        opacity: 0.8;
+      }
+      .acc-cycle-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+      }
+      .acc-cycle-row svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+        flex-shrink: 0;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], ConfigHumidityTab.prototype, "vm", void 0);
+ConfigHumidityTab = __decorate([
+    t$2('config-humidity-tab')
+], ConfigHumidityTab);
+
+/**
+ * Humidity Tab ViewModel (ADR-0019, "Applied to Config Dialog")
+ *
+ * The pure derivation behind the Config Dialog's Humidity tab — Humidity Devices
+ * (humidifier/dehumidifier pickers + the two control-enable toggles) and the
+ * per-stage Thresholds accordion. It owns the stage list and the threshold
+ * defaults (moved here from `config-dialog.ts` so the read logic is pure and
+ * unit-testable), and projects each stage's current day/night on/off thresholds
+ * for both devices, with the default fallback applied.
+ *
+ * Three Shell-`@state` inputs are projected in (not SM state, per the ADR-0019
+ * carve-out): the open accordion stage and the two control-enable flags
+ * (`_humidifierControlEnabled` / `_dehumidifierControlEnabled`, which are also
+ * the [[Environment Save Composer]]'s `controlFlags`). `entityOptions` is the
+ * injected hass adapter for the device pickers.
+ *
+ * The stage's `dehumKey` / `humKey` (the `DehumidifierStage` / `HumidifierStage`
+ * enum *values*) are the threshold-Record keys — distinct from `id` (the display
+ * id used for open/toggle); the component echoes the right key back on edit.
+ */
 const DEFAULT_DEHUM_THRESHOLDS = {
     seedling: { day: { on: 0.5, off: 0.6 }, night: { on: 0.55, off: 0.65 } },
     mother: { day: { on: 0.6, off: 0.7 }, night: { on: 0.65, off: 0.75 } },
@@ -20026,39 +21803,678 @@ const DEFAULT_HUM_THRESHOLDS = {
     dry: { day: { on: 1.2, off: 1.0 }, night: { on: 1.2, off: 1.0 } },
     cure: { day: { on: 1.2, off: 1.0 }, night: { on: 1.2, off: 1.0 } },
 };
-// Unified stage list for the accordion — maps display id → both stage enums
+/** Stage list for the accordion — maps display id → both stage enums + colour. */
 const HUMIDITY_STAGES = [
-    {
-        id: 'seedling',
-        label: 'Seedling',
-        dehum: DehumidifierStage.SEEDLING,
-        hum: HumidifierStage.SEEDLING,
-    },
-    { id: 'mother', label: 'Mother', dehum: DehumidifierStage.MOTHER, hum: HumidifierStage.MOTHER },
-    { id: 'veg', label: 'Vegetative', dehum: DehumidifierStage.VEG, hum: HumidifierStage.VEG },
-    {
-        id: 'early_flower',
-        label: 'Early Flower',
-        dehum: DehumidifierStage.EARLY_FLOWER,
-        hum: HumidifierStage.EARLY_FLOWER,
-    },
-    {
-        id: 'mid_flower',
-        label: 'Mid Flower',
-        dehum: DehumidifierStage.MID_FLOWER,
-        hum: HumidifierStage.MID_FLOWER,
-    },
-    {
-        id: 'late_flower',
-        label: 'Late Flower',
-        dehum: DehumidifierStage.LATE_FLOWER,
-        hum: HumidifierStage.LATE_FLOWER,
-    },
-    { id: 'drying', label: 'Drying', dehum: DehumidifierStage.DRY, hum: HumidifierStage.DRY },
-    { id: 'curing', label: 'Curing', dehum: DehumidifierStage.CURE, hum: HumidifierStage.CURE },
+    { id: 'seedling', label: 'Seedling', dehum: DehumidifierStage.SEEDLING, hum: HumidifierStage.SEEDLING, color: '#8bc34a' },
+    { id: 'mother', label: 'Mother', dehum: DehumidifierStage.MOTHER, hum: HumidifierStage.MOTHER, color: '#e91e63' },
+    { id: 'veg', label: 'Vegetative', dehum: DehumidifierStage.VEG, hum: HumidifierStage.VEG, color: '#4caf50' },
+    { id: 'early_flower', label: 'Early Flower', dehum: DehumidifierStage.EARLY_FLOWER, hum: HumidifierStage.EARLY_FLOWER, color: '#ff9800' },
+    { id: 'mid_flower', label: 'Mid Flower', dehum: DehumidifierStage.MID_FLOWER, hum: HumidifierStage.MID_FLOWER, color: '#ff7043' },
+    { id: 'late_flower', label: 'Late Flower', dehum: DehumidifierStage.LATE_FLOWER, hum: HumidifierStage.LATE_FLOWER, color: '#f44336' },
+    { id: 'drying', label: 'Drying', dehum: DehumidifierStage.DRY, hum: HumidifierStage.DRY, color: '#9c27b0' },
+    { id: 'curing', label: 'Curing', dehum: DehumidifierStage.CURE, hum: HumidifierStage.CURE, color: '#2196f3' },
 ];
-// Stage-dot colours for the VPD targets accordion. Reuses the humidity stage
-// hues for matching stages; `clone` (VPD-only) gets its own cyan.
+const HUMIDIFIER_DOMAINS = ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'];
+const DEHUMIDIFIER_DOMAINS = ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'];
+/**
+ * One threshold value: the draft's override if present, else the stage default,
+ * else 0 (an unknown stage key has no default). The single source of the read
+ * logic the inline `_getThresholdValue` / `_getHumidifierThresholdValue` helpers
+ * used to own.
+ */
+function readThreshold(thresholds, defaults, key, cycle, point) {
+    return thresholds?.[key]?.[cycle]?.[point] ?? defaults[key]?.[cycle]?.[point] ?? 0;
+}
+function read(thresholds, defaults, key) {
+    const at = (cycle, point) => readThreshold(thresholds, defaults, key, cycle, point);
+    return {
+        day: { on: at('day', 'on'), off: at('day', 'off') },
+        night: { on: at('night', 'on'), off: at('night', 'off') },
+    };
+}
+/**
+ * Pure factory: the Config Dialog SM + injected hass adapter + the Shell's three
+ * flags → one Humidity tab ViewModel. Testable with no DOM and no host.
+ */
+function createHumidityTabViewModel(sm, deps, expand) {
+    const d = sm.environmentDraft;
+    return {
+        humidifierEntities: d.humidifierEntities,
+        humidifierOptions: deps.entityOptions(HUMIDIFIER_DOMAINS, null),
+        dehumidifierEntities: d.dehumidifierEntities,
+        dehumidifierOptions: deps.entityOptions(DEHUMIDIFIER_DOMAINS, null),
+        humidifierControlEnabled: expand.humidifierControlEnabled,
+        dehumidifierControlEnabled: expand.dehumidifierControlEnabled,
+        stages: HUMIDITY_STAGES.map((s) => ({
+            id: s.id,
+            label: s.label,
+            color: s.color,
+            open: expand.openStageId === s.id,
+            dehumKey: s.dehum,
+            humKey: s.hum,
+            dehum: read(d.dehumidifierThresholds, DEFAULT_DEHUM_THRESHOLDS, s.dehum),
+            hum: read(d.humidifierThresholds, DEFAULT_HUM_THRESHOLDS, s.hum),
+        })),
+    };
+}
+
+/**
+ * Config Irrigation Tab Component (ADR-0019, "Applied to Config Dialog")
+ *
+ * The dumb presentational element for the Config Dialog's Irrigation tab —
+ * Irrigation Monitoring + Substrate EC, both just multi-entity-select pickers.
+ * `@property .vm: IrrigationTabViewModel` in, a single `env-draft-changed` Tab
+ * Intent out, **no `@state()` and no `hass`** (option lists are pre-derived into
+ * the VM). Markup + multi-select styles transcribed from the former inline
+ * `_renderIrrigationSection` / `_renderSubstrateEcSection`.
+ *
+ * Tab Intent (the Shell translates it to `UPDATE_ENV_DRAFT`):
+ *   - `env-draft-changed`  detail: { partial: Partial<EnvironmentDraft> }
+ */
+let ConfigIrrigationTab = class ConfigIrrigationTab extends i$3 {
+    _update(partial) {
+        this.dispatchEvent(new CustomEvent('env-draft-changed', { detail: { partial }, bubbles: true, composed: true }));
+    }
+    render() {
+        const m = this.vm.monitoring;
+        return x `
+      <div class="detail-card">
+        ${this._header(mdiGauge, 'Irrigation Monitoring')}
+        <div class="form-section">
+          <div class="row-col-grid">${this._field(m[0])}${this._field(m[1])}</div>
+          <div class="row-col-grid">${this._field(m[2])}</div>
+          <div class="row-col-grid">${this._field(m[3])}${this._field(m[4])}</div>
+          <div class="row-col-grid">${this._field(m[5])}${this._field(m[6])}</div>
+        </div>
+      </div>
+      <div class="detail-card">
+        ${this._header(mdiLightningBolt, 'Substrate EC')}
+        <div class="form-section">
+          <div class="row-col-grid">
+            ${this.vm.substrate.map((f) => this._field(f))}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _header(icon, title) {
+        return x `
+      <div
+        style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+      >
+        <svg style="width:20px;height:20px;fill:var(--primary-color,#4caf50);" viewBox="0 0 24 24">
+          <path d="${icon}"></path>
+        </svg>
+        <h3 style="margin:0;border:none;padding:0;">${title}</h3>
+      </div>
+    `;
+    }
+    _field(field) {
+        const values = field.value;
+        const listId = `list-multi-${field.key}`;
+        return x `
+      <div class="multi-select-container">
+        <label class="md3-label-multi">${field.label}</label>
+        <div class="multi-select-box">
+          ${values.map((val) => x `
+              <div class="chip">
+                ${val}
+                <span class="chip-remove" @click=${() => this._update({ [field.key]: values.filter((v) => v !== val) })}
+                  >×</span
+                >
+              </div>
+            `)}
+          <input
+            class="search-input-inner"
+            list="${listId}"
+            placeholder=${values.length === 0 ? 'Add Entity...' : ''}
+            @change=${(e) => {
+            const input = e.target;
+            const val = input.value;
+            if (val && !values.includes(val))
+                this._update({ [field.key]: [...values, val] });
+            input.value = '';
+        }}
+          />
+        </div>
+        <datalist id="${listId}">
+          ${field.options.map((eid) => x `<option value="${eid}"></option>`)}
+        </datalist>
+      </div>
+    `;
+    }
+};
+ConfigIrrigationTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      .form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .multi-select-container {
+        position: relative;
+        margin-bottom: 0;
+      }
+      .multi-select-box {
+        background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: 4px 4px 0 0;
+        border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 26px 16px 6px;
+        min-height: 56px;
+        box-sizing: border-box;
+        position: relative;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+      }
+      .md3-label-multi {
+        position: absolute;
+        top: 8px;
+        left: 16px;
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        pointer-events: none;
+        z-index: 10;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+        border-radius: 16px;
+        padding: 4px 12px;
+        font-size: 0.9rem;
+        height: 24px;
+      }
+      .chip-remove {
+        cursor: pointer;
+        margin-left: 6px;
+        font-weight: bold;
+        opacity: 0.7;
+      }
+      .chip-remove:hover {
+        opacity: 1;
+      }
+      .search-input-inner {
+        flex: 1;
+        min-width: 100px;
+        border: none;
+        background: transparent;
+        color: var(--primary-text-color);
+        font-family: inherit;
+        font-size: 1rem;
+        padding: 0;
+        margin: 0;
+        height: 24px;
+        outline: none;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], ConfigIrrigationTab.prototype, "vm", void 0);
+ConfigIrrigationTab = __decorate([
+    t$2('config-irrigation-tab')
+], ConfigIrrigationTab);
+
+/**
+ * Irrigation Tab ViewModel (ADR-0019, "Applied to Config Dialog")
+ *
+ * The pure derivation behind the Config Dialog's Irrigation tab — two sections
+ * of monitoring-sensor pickers (Irrigation Monitoring + Substrate EC). The
+ * simplest env-cluster tab: every field is a multi-entity select projecting its
+ * slice of the [[Shared Environment Draft]], so the VM just pairs each draft
+ * field with its injected option list (the same shape as the Sensors tab).
+ */
+const SENSOR_DOMAINS = ['sensor', 'input_number', 'number'];
+/** Irrigation Monitoring section fields, in display order. */
+const MONITORING_FIELDS = [
+    { key: 'phSensors', label: 'pH Sensors', deviceClass: null },
+    { key: 'feedEcSensors', label: 'Feed EC Sensors', deviceClass: null },
+    { key: 'runoffEcSensors', label: 'Runoff EC Sensors', deviceClass: null },
+    { key: 'drainVolumeSensors', label: 'Drain Volume Sensors', deviceClass: null },
+    { key: 'irrigationFlowSensors', label: 'Irrigation Flow Sensors', deviceClass: null },
+    { key: 'powerSensors', label: 'Power Sensors', deviceClass: 'power' },
+    { key: 'energySensors', label: 'Energy Sensors', deviceClass: 'energy' },
+];
+/** Substrate EC section fields, in display order. */
+const SUBSTRATE_FIELDS = [
+    { key: 'bulkEcSensors', label: 'Bulk EC Sensors', deviceClass: null },
+    { key: 'poreEcSensors', label: 'Pore EC Sensors', deviceClass: null },
+];
+function project(draft, deps, fields) {
+    return fields.map((f) => ({
+        key: f.key,
+        label: f.label,
+        value: draft[f.key],
+        options: deps.entityOptions(SENSOR_DOMAINS, f.deviceClass),
+    }));
+}
+/**
+ * Pure factory: the Config Dialog SM + injected hass adapter → one Irrigation
+ * tab ViewModel. Testable with no DOM and no host.
+ */
+function createIrrigationTabViewModel(sm, deps) {
+    const draft = sm.environmentDraft;
+    return {
+        monitoring: project(draft, deps, MONITORING_FIELDS),
+        substrate: project(draft, deps, SUBSTRATE_FIELDS),
+    };
+}
+
+/**
+ * Config Vision Tab Component (ADR-0019, "Applied to Config Dialog")
+ *
+ * The dumb presentational element for the Config Dialog's Vision AI tab — a
+ * camera-entity picker plus the vision-checkup schedule form (gated on
+ * `hasCameras`). `@property .vm: VisionTabViewModel` in, a single
+ * `env-draft-changed` Tab Intent out, **no `@state()` and no `hass`**. Markup +
+ * multi-select styles transcribed from the former inline `_renderVisionSection`.
+ *
+ * Tab Intent (the Shell translates it to `UPDATE_ENV_DRAFT`):
+ *   - `env-draft-changed`  detail: { partial: Partial<EnvironmentDraft> }
+ */
+let ConfigVisionTab = class ConfigVisionTab extends i$3 {
+    _update(partial) {
+        this.dispatchEvent(new CustomEvent('env-draft-changed', { detail: { partial }, bubbles: true, composed: true }));
+    }
+    render() {
+        const vm = this.vm;
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg style="width:20px;height:20px;fill:var(--primary-color,#4caf50);" viewBox="0 0 24 24">
+            <path d="${mdiCamera}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">Vision Checkup</h3>
+        </div>
+        ${this._cameraSelect(vm)}
+        ${!vm.hasCameras
+            ? x `<p style="opacity:0.6;font-size:0.85rem;margin:8px 0 0;">
+              Add camera entities above to enable vision checkups.
+            </p>`
+            : x `
+              <div class="form-section" style="margin-top:12px;">
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    .checked=${vm.visionEnabled}
+                    @change=${(e) => this._update({ visionEnabled: e.target.checked })}
+                  />
+                  Enable automatic vision checkups
+                </label>
+                <md3-number-input
+                  label="Early check offset (min after lights on)"
+                  .value=${vm.earlyOffset}
+                  @change=${(e) => this._update({ visionEarlyOffset: Number(e.detail) })}
+                  min="1"
+                ></md3-number-input>
+                <md3-number-input
+                  label="Mid check (hours into light cycle)"
+                  .value=${vm.midHours}
+                  @change=${(e) => this._update({ visionMidHours: Number(e.detail) })}
+                  min="1"
+                ></md3-number-input>
+                <md3-number-input
+                  label="Late check offset (min before lights off)"
+                  .value=${vm.lateOffset}
+                  @change=${(e) => this._update({ visionLateOffset: Number(e.detail) })}
+                  min="1"
+                ></md3-number-input>
+              </div>
+            `}
+      </div>
+    `;
+    }
+    _cameraSelect(vm) {
+        const values = vm.cameraEntities;
+        return x `
+      <div class="multi-select-container">
+        <label class="md3-label-multi">Camera Entities</label>
+        <div class="multi-select-box">
+          ${values.map((val) => x `
+              <div class="chip">
+                ${val}
+                <span class="chip-remove" @click=${() => this._update({ cameraEntities: values.filter((v) => v !== val) })}
+                  >×</span
+                >
+              </div>
+            `)}
+          <input
+            class="search-input-inner"
+            list="list-multi-cameraEntities"
+            placeholder=${values.length === 0 ? 'Add Entity...' : ''}
+            @change=${(e) => {
+            const input = e.target;
+            const val = input.value;
+            if (val && !values.includes(val))
+                this._update({ cameraEntities: [...values, val] });
+            input.value = '';
+        }}
+          />
+        </div>
+        <datalist id="list-multi-cameraEntities">
+          ${vm.cameraOptions.map((eid) => x `<option value="${eid}"></option>`)}
+        </datalist>
+      </div>
+    `;
+    }
+};
+ConfigVisionTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      .form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.875rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+      }
+      .checkbox-label input[type='checkbox'] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+      }
+      .multi-select-container {
+        position: relative;
+        margin-bottom: 0;
+      }
+      .multi-select-box {
+        background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: 4px 4px 0 0;
+        border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 26px 16px 6px;
+        min-height: 56px;
+        box-sizing: border-box;
+        position: relative;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+      }
+      .md3-label-multi {
+        position: absolute;
+        top: 8px;
+        left: 16px;
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        pointer-events: none;
+        z-index: 10;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+        border-radius: 16px;
+        padding: 4px 12px;
+        font-size: 0.9rem;
+        height: 24px;
+      }
+      .chip-remove {
+        cursor: pointer;
+        margin-left: 6px;
+        font-weight: bold;
+        opacity: 0.7;
+      }
+      .chip-remove:hover {
+        opacity: 1;
+      }
+      .search-input-inner {
+        flex: 1;
+        min-width: 100px;
+        border: none;
+        background: transparent;
+        color: var(--primary-text-color);
+        font-family: inherit;
+        font-size: 1rem;
+        padding: 0;
+        margin: 0;
+        height: 24px;
+        outline: none;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], ConfigVisionTab.prototype, "vm", void 0);
+ConfigVisionTab = __decorate([
+    t$2('config-vision-tab')
+], ConfigVisionTab);
+
+/**
+ * Vision Tab ViewModel (ADR-0019, "Applied to Config Dialog")
+ *
+ * The pure derivation behind the Config Dialog's Vision AI tab — a camera-entity
+ * picker plus the vision-checkup schedule form (shown only once a camera is
+ * configured). Projects its slice of the [[Shared Environment Draft]] and the
+ * `hasCameras` gate; `entityOptions` is the injected hass adapter for the picker.
+ */
+/**
+ * Pure factory: the Config Dialog SM + injected hass adapter → one Vision tab
+ * ViewModel. Testable with no DOM and no host.
+ */
+function createVisionTabViewModel(sm, deps) {
+    const d = sm.environmentDraft;
+    return {
+        cameraEntities: d.cameraEntities,
+        cameraOptions: deps.entityOptions(['camera'], null),
+        hasCameras: d.cameraEntities.length > 0,
+        visionEnabled: d.visionEnabled,
+        earlyOffset: d.visionEarlyOffset,
+        midHours: d.visionMidHours,
+        lateOffset: d.visionLateOffset,
+    };
+}
+
+/**
+ * Config VPD Targets Tab Component (ADR-0019, "Applied to Config Dialog")
+ *
+ * The dumb presentational element for the Config Dialog's VPD Targets tab — a
+ * per-stage accordion of day/night low/high VPD-optimal windows plus a
+ * "Reset all to defaults" button. `@property .vm: VpdTargetsTabViewModel` in,
+ * semantic Tab Intents out, **no `@state()` and no `hass`**. Markup + `acc-*`
+ * accordion styles transcribed from the former inline `_renderVpdTargetsSection`.
+ *
+ * Threshold edits forward `{ key, period, slot, value }` (value is the raw
+ * `md3-number-input` detail string); the Shell merges against the live draft.
+ *
+ * Tab Intents (the Shell translates them):
+ *   - `toggle-stage`        detail: { key }
+ *   - `update-vpd-optimal`  detail: { key, period, slot, value }
+ *   - `reset-vpd-optimal`   (no detail)
+ */
+let ConfigVpdTargetsTab = class ConfigVpdTargetsTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg style="width:20px;height:20px;fill:var(--primary-color,#4caf50);" viewBox="0 0 24 24">
+            <path d="${mdiTune}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">VPD Optimal Targets</h3>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${this.vm.stages.map((stage) => this._renderStage(stage))}
+        </div>
+        <button
+          class="md3-button text"
+          @click=${() => this._emit('reset-vpd-optimal')}
+          style="margin-top:12px;"
+        >
+          Reset all to defaults
+        </button>
+      </div>
+    `;
+    }
+    _renderStage(stage) {
+        return x `
+      <div class="acc-card">
+        <div class="acc-head" @click=${() => this._emit('toggle-stage', { key: stage.key })}>
+          <div class="acc-stage-dot" style="background:${stage.color};"></div>
+          <div class="acc-head-title">${stage.label}</div>
+          ${!stage.open
+            ? x `
+                <div class="acc-head-desc">
+                  Day ${stage.day.low.toFixed(2)}–${stage.day.high.toFixed(2)} &nbsp;·&nbsp; Night
+                  ${stage.night.low.toFixed(2)}–${stage.night.high.toFixed(2)} kPa
+                </div>
+              `
+            : E}
+          <svg class="acc-chev ${stage.open ? 'open' : ''}" viewBox="0 0 24 24">
+            <path d="${mdiChevronDown}"></path>
+          </svg>
+        </div>
+        ${stage.open
+            ? x `
+              <div class="acc-body">
+                <div class="acc-cycle-grid">
+                  ${this._cycle(stage.key, 'day', 'Day', '#ff9800', mdiWhiteBalanceSunny, stage.day)}
+                  ${this._cycle(stage.key, 'night', 'Night', '#7986cb', mdiWeatherNight, stage.night)}
+                </div>
+              </div>
+            `
+            : E}
+      </div>
+    `;
+    }
+    _cycle(key, period, label, color, icon, pair) {
+        const onChange = (slot) => (e) => this._emit('update-vpd-optimal', { key, period, slot, value: e.detail });
+        return x `
+      <div>
+        <div class="acc-cycle-row" style="color:${color};">
+          <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+          ${label}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+          <md3-number-input label="Low (kPa)" .value=${pair.low} @change=${onChange('low')}></md3-number-input>
+          <md3-number-input label="High (kPa)" .value=${pair.high} @change=${onChange('high')}></md3-number-input>
+        </div>
+      </div>
+    `;
+    }
+};
+ConfigVpdTargetsTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      .acc-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .acc-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 16px;
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.15s;
+      }
+      .acc-head:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .acc-stage-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .acc-head-title {
+        flex: 1;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+      .acc-head-desc {
+        font-size: 0.775rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
+      }
+      .acc-chev {
+        width: 20px;
+        height: 20px;
+        fill: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
+        transition: transform 0.2s;
+        flex-shrink: 0;
+      }
+      .acc-chev.open {
+        transform: rotate(180deg);
+      }
+      .acc-body {
+        padding: 16px;
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.06));
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .acc-cycle-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .acc-cycle-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+      }
+      .acc-cycle-row svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+        flex-shrink: 0;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], ConfigVpdTargetsTab.prototype, "vm", void 0);
+ConfigVpdTargetsTab = __decorate([
+    t$2('config-vpd-targets-tab')
+], ConfigVpdTargetsTab);
+
+/**
+ * VPD Targets Tab ViewModel (ADR-0019, "Applied to Config Dialog")
+ *
+ * The pure derivation behind the Config Dialog's VPD Targets tab — a per-stage
+ * accordion of day/night low/high VPD-optimal windows. Mirrors the Humidity
+ * tab's accordion shape: it projects each [[Fan VPD Stage]]'s current values
+ * (the `vpdOptimalOverrides` draft slice, with the shared `VPD_OPTIMAL_STAGE_DEFAULTS`
+ * fallback) plus the open-accordion flag (Shell `@state`, per the ADR-0019
+ * carve-out). No hass dependency — every field is a number input.
+ *
+ * The stage list, labels, and defaults live in `features/environment/constants`;
+ * the stage-dot colours moved here from `config-dialog.ts`.
+ */
+/** Stage-dot colours for the accordion, keyed by [[Fan VPD Stage]]. */
 const VPD_STAGE_COLORS = {
     seedling: '#8bc34a',
     clone: '#26c6da',
@@ -20070,6 +22486,946 @@ const VPD_STAGE_COLORS = {
     dry: '#9c27b0',
     cure: '#2196f3',
 };
+/**
+ * One VPD-optimal value: the draft override if present, else the stage default.
+ * The read logic the inline `_getVpdOptimalValue` helper used to own.
+ */
+function getVpdOptimal(overrides, key, period, slot) {
+    return overrides[key]?.[period]?.[slot] ?? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot];
+}
+/**
+ * Pure factory: the Config Dialog SM + the Shell's open-accordion flag → one VPD
+ * Targets ViewModel. No hass adapter (all number inputs). Testable with no DOM.
+ */
+function createVpdTargetsTabViewModel(sm, expand) {
+    const overrides = sm.environmentDraft.vpdOptimalOverrides;
+    return {
+        stages: FAN_VPD_STAGE_KEYS.map((key) => ({
+            key,
+            label: FAN_VPD_STAGE_LABELS[key],
+            color: VPD_STAGE_COLORS[key],
+            open: expand.openStageId === key,
+            day: {
+                low: getVpdOptimal(overrides, key, 'day', 'low'),
+                high: getVpdOptimal(overrides, key, 'day', 'high'),
+            },
+            night: {
+                low: getVpdOptimal(overrides, key, 'night', 'low'),
+                high: getVpdOptimal(overrides, key, 'night', 'high'),
+            },
+        })),
+    };
+}
+
+/**
+ * Config Tanks Tab Component (ADR-0019, "Applied to Config Dialog")
+ *
+ * The dumb presentational element for the Config Dialog's Tanks tab — the tank
+ * list plus the inline add/edit form. `@property .vm: TanksTabViewModel` in,
+ * semantic Tab Intents out, **no `@state()` and no `hass`**. Markup transcribed
+ * from the former inline `_renderTanksSection`; `md3-*` / `detail-card` /
+ * `row-col-grid` come from the shared `dialogStyles`.
+ *
+ * Tab Intents (the Shell translates them):
+ *   - `add-tank-requested`    (no detail)
+ *   - `edit-tank-requested`   detail: { index }
+ *   - `delete-tank-requested` detail: { index }
+ *   - `tank-draft-changed`    detail: { partial: Partial<TankDraftFields> }
+ *   - `cancel-tank`           (no detail)
+ *   - `save-tank-requested`   (no detail)
+ */
+const LIST_ID = 'list-tank-sensor-entity';
+let ConfigTanksTab = class ConfigTanksTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    _updateDraft(partial) {
+        this._emit('tank-draft-changed', { partial });
+    }
+    render() {
+        return x `
+      <div class="detail-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg style="width:20px;height:20px;fill:var(--primary-color,#4caf50);" viewBox="0 0 24 24">
+              <path d="${mdiWater}"></path>
+            </svg>
+            <h3 style="margin:0;border:none;padding:0;">Irrigation Tanks</h3>
+          </div>
+          <button
+            class="md3-button tonal"
+            @click=${() => this._emit('add-tank-requested')}
+            style="padding:6px 12px;"
+          >
+            <svg style="width:16px;height:16px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+              <path d="${mdiPlus}"></path>
+            </svg>
+            Add Tank
+          </button>
+        </div>
+
+        ${this.vm.showEmpty
+            ? x `<div style="font-size:0.85rem;color:var(--secondary-text-color);padding:8px 0;">
+              No tanks configured.
+            </div>`
+            : E}
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${this.vm.tanks.map((tank) => this._renderRow(tank))}
+        </div>
+
+        ${this.vm.editing ? this._renderForm(this.vm.editing) : E}
+      </div>
+    `;
+    }
+    _renderRow(tank) {
+        return x `
+      <div
+        style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:10px 12px;border-radius:8px;"
+      >
+        <div>
+          <div style="font-weight:500;">${tank.displayName}</div>
+          <div style="font-size:0.78rem;color:var(--secondary-text-color);">
+            ${tank.sensorEntity}
+            ${tank.volumeLiters != null ? x ` · ${tank.volumeLiters} L` : E} · warn at
+            ${tank.warningLevel}%
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button
+            class="md3-button text"
+            @click=${() => this._emit('edit-tank-requested', { index: tank.index })}
+            style="padding:6px;min-width:auto;"
+          >
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiPencil}"></path>
+            </svg>
+          </button>
+          <button
+            class="md3-button text error"
+            @click=${() => this._emit('delete-tank-requested', { index: tank.index })}
+            style="padding:6px;min-width:auto;"
+          >
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiDelete}"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    _renderForm(draft) {
+        return x `
+      <div
+        style="margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--divider-color,rgba(255,255,255,0.15));border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;"
+      >
+        <div class="md3-input-group">
+          <label class="md3-label">Sensor Entity *</label>
+          <input
+            class="md3-input"
+            list="${LIST_ID}"
+            .value=${draft.sensorEntity}
+            @input=${(e) => this._updateDraft({ sensorEntity: e.target.value })}
+            placeholder="Search entity..."
+          />
+          <datalist id="${LIST_ID}">
+            ${this.vm.sensorOptions.map((eid) => x `<option value="${eid}"></option>`)}
+          </datalist>
+        </div>
+        <div class="md3-input-group">
+          <label class="md3-label">Name</label>
+          <input
+            class="md3-input"
+            type="text"
+            .value=${draft.name}
+            @input=${(e) => this._updateDraft({ name: e.target.value })}
+            placeholder="e.g. Main Tank"
+          />
+        </div>
+        <div class="row-col-grid">
+          <div class="md3-input-group">
+            <label class="md3-label">Volume (L, optional)</label>
+            <input
+              class="md3-input"
+              type="number"
+              min="0"
+              step="0.1"
+              .value=${draft.volumeLiters != null ? String(draft.volumeLiters) : ''}
+              @input=${(e) => {
+            const v = e.target.value;
+            this._updateDraft({ volumeLiters: v === '' ? null : parseFloat(v) });
+        }}
+              placeholder="e.g. 100"
+            />
+          </div>
+          <div class="md3-input-group">
+            <label class="md3-label">Warning Level (%)</label>
+            <input
+              class="md3-input"
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              .value=${String(draft.warningLevel)}
+              @input=${(e) => this._updateDraft({
+            warningLevel: parseFloat(e.target.value) || 30,
+        })}
+            />
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px;">
+          <button class="md3-button tonal" @click=${() => this._emit('cancel-tank')}>Cancel</button>
+          <button class="md3-button primary" @click=${() => this._emit('save-tank-requested')}>
+            Save Tank
+          </button>
+        </div>
+      </div>
+    `;
+    }
+};
+ConfigTanksTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], ConfigTanksTab.prototype, "vm", void 0);
+ConfigTanksTab = __decorate([
+    t$2('config-tanks-tab')
+], ConfigTanksTab);
+
+/**
+ * Tanks Tab ViewModel (ADR-0019, "Applied to Config Dialog")
+ *
+ * The pure derivation behind the Config Dialog's Tanks tab — the list of
+ * configured irrigation tanks plus the inline add/edit form. This tab is a
+ * **hybrid**: the tank *list* lives in `environmentDraft.irrigationTanks` (so a
+ * saved tab rides the [[Environment Save Composer]] like the env-cluster tabs),
+ * while the inline-edit *draft* is its own `tabs.tanks.sub` SM sub-state
+ * (`idle | adding | editing`, like the Notifications tab). The VM projects both:
+ * the formatted rows from the env draft, and the open editor from the sub-state.
+ * `entityOptions` is the injected hass adapter for the sensor picker.
+ *
+ * (Distinct from the Irrigation *dialog*'s `<irrigation-tanks-tab>`, which edits
+ * live Tank Levels via the Irrigation slice — see CONTEXT.md "Tank Config vs
+ * Tank Levels". This one edits Tank Config in the config dialog's env draft.)
+ */
+/**
+ * Pure factory: the Config Dialog SM + injected hass adapter → one Tanks tab
+ * ViewModel. Testable with no DOM and no host.
+ */
+function createTanksTabViewModel$1(sm, deps) {
+    const tanks = sm.environmentDraft.irrigationTanks;
+    const sub = sm.tabs.tanks.sub;
+    const editing = sub.kind === 'adding' || sub.kind === 'editing'
+        ? {
+            sensorEntity: sub.sensorEntity,
+            name: sub.name,
+            volumeLiters: sub.volumeLiters,
+            warningLevel: sub.warningLevel,
+        }
+        : null;
+    return {
+        tanks: tanks.map((t, i) => ({
+            index: i,
+            displayName: t.name || `Tank ${i + 1}`,
+            sensorEntity: t.sensorEntity,
+            volumeLiters: t.volumeLiters ?? null,
+            warningLevel: t.warningLevel ?? 30,
+        })),
+        editing,
+        sensorOptions: deps.entityOptions(['sensor', 'input_number'], null),
+        showEmpty: tanks.length === 0 && sub.kind === 'idle',
+    };
+}
+
+/**
+ * Config Growspaces Tab Component (ADR-0019, "Applied to Config Dialog")
+ *
+ * The dumb presentational element for the Config Dialog's Growspaces tab — a
+ * master/detail collection-CRUD view. `@property .vm: GrowspacesTabViewModel` in,
+ * semantic Tab Intents out, **no `@state()` and no `hass`**. Markup + `cfg-*`
+ * master/detail styles transcribed from the former inline `_renderGrowspacesSection`
+ * / `_renderAddGrowspaceForm` / `_renderEditGrowspaceForm`.
+ *
+ * **No Save/Delete/Cancel here** — those buttons live in the Dialog Shell footer.
+ * The component emits only navigation + draft-edit intents.
+ *
+ * Tab Intents (the Shell translates them):
+ *   - `select-growspace`     detail: { id }   (master row click; '' clears)
+ *   - `start-add-growspace`  (no detail)
+ *   - `add-draft-changed`    detail: { partial: Partial<GrowspaceDraft> }
+ *   - `edit-draft-changed`   detail: { partial: Partial<GrowspaceDraft> }
+ *   - `env-draft-changed`    detail: { partial }   (edit-form lung-room/camera pickers)
+ */
+let ConfigGrowspacesTab = class ConfigGrowspacesTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    render() {
+        const state = this.vm.state;
+        if (state.mode === 'confirm-delete') {
+            return x `
+        <div class="cfg-master-detail" style="grid-template-columns:1fr;">
+          <div class="detail-card" style="text-align:center;padding:40px 20px;">
+            <h3 style="color:var(--error-color,#ff5252);">Delete Growspace?</h3>
+            <p style="margin-bottom:30px;color:var(--secondary-text-color);">
+              Are you sure you want to delete "<strong>${state.name}</strong>"?<br />
+              This will remove all associated plants and history.<br />
+              This action cannot be undone.
+            </p>
+          </div>
+        </div>
+      `;
+        }
+        return x `
+      <div class="cfg-master-detail">
+        <div class="cfg-master-list">
+          <div
+            style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--secondary-text-color,rgba(255,255,255,0.5));padding:0 4px 8px;"
+          >
+            All Growspaces
+          </div>
+          ${this.vm.growspaces.map((gs) => x `
+              <div
+                class="cfg-gs-row ${gs.active ? 'active' : ''}"
+                @click=${() => this._emit('select-growspace', { id: gs.id })}
+              >
+                <span class="gs-name">${gs.name}</span>
+              </div>
+            `)}
+          <button class="cfg-master-add-btn" @click=${() => this._emit('start-add-growspace')}>
+            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiPlus}"></path>
+            </svg>
+            Add Growspace
+          </button>
+        </div>
+
+        <div class="cfg-detail-pane">
+          ${state.mode === 'adding' ? this._renderForm('add', 'New Growspace', state.draft) : E}
+          ${state.mode === 'editing'
+            ? x `${this._renderForm('edit', 'Edit Details', state.draft, state.lungroom, state.camera)}`
+            : E}
+          ${state.mode === 'idle'
+            ? x `
+                <div style="text-align:center;padding:40px 20px;color:var(--secondary-text-color);">
+                  Select a growspace to edit, or click "Add Growspace" to create a new one.
+                </div>
+              `
+            : E}
+        </div>
+      </div>
+    `;
+    }
+    _renderForm(which, heading, draft, lungroom, camera) {
+        const intent = which === 'add' ? 'add-draft-changed' : 'edit-draft-changed';
+        const update = (partial) => this._emit(intent, { partial });
+        return x `
+      <div class="detail-card">
+        <h3>${heading}</h3>
+        <md3-text-input
+          label="Growspace Name"
+          .value=${draft.name}
+          @change=${(e) => update({ name: e.detail })}
+        ></md3-text-input>
+        <div class="row-col-grid">
+          <md3-number-input
+            label="Rows"
+            .value=${draft.rows}
+            @change=${(e) => update({ rows: parseInt(e.detail) })}
+          ></md3-number-input>
+          <md3-number-input
+            label="Plants per Row"
+            .value=${draft.plantsPerRow}
+            @change=${(e) => update({ plantsPerRow: parseInt(e.detail) })}
+          ></md3-number-input>
+        </div>
+        <div class="md3-input-group">
+          <label class="md3-label">Notification Service (Mobile App)</label>
+          <select
+            class="md3-input"
+            .value=${draft.notificationService}
+            @change=${(e) => update({ notificationService: e.target.value })}
+          >
+            <option value="">None</option>
+            ${this.vm.notifyServices.map((s) => x `
+                <option value="${s.value}" ?selected=${draft.notificationService === s.value}>
+                  ${s.label}
+                </option>
+              `)}
+          </select>
+        </div>
+        ${lungroom
+            ? this._multiSelect('Lung Room Temp Sensors', 'lungroomTempSensors', lungroom)
+            : E}
+        ${camera ? this._multiSelect('Area Camera', 'cameraEntities', camera) : E}
+      </div>
+    `;
+    }
+    _multiSelect(label, key, field) {
+        const values = field.value;
+        const listId = `list-multi-${key}`;
+        const emit = (partial) => this._emit('env-draft-changed', { partial });
+        return x `
+      <div class="multi-select-container">
+        <label class="md3-label-multi">${label}</label>
+        <div class="multi-select-box">
+          ${values.map((val) => x `
+              <div class="chip">
+                ${val}
+                <span class="chip-remove" @click=${() => emit({ [key]: values.filter((v) => v !== val) })}
+                  >×</span
+                >
+              </div>
+            `)}
+          <input
+            class="search-input-inner"
+            list="${listId}"
+            placeholder=${values.length === 0 ? 'Add Entity...' : ''}
+            @change=${(e) => {
+            const input = e.target;
+            const val = input.value;
+            if (val && !values.includes(val))
+                emit({ [key]: [...values, val] });
+            input.value = '';
+        }}
+          />
+        </div>
+        <datalist id="${listId}">
+          ${field.options.map((eid) => x `<option value="${eid}"></option>`)}
+        </datalist>
+      </div>
+    `;
+    }
+};
+ConfigGrowspacesTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      .cfg-master-detail {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 16px;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .cfg-master-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        overflow-y: auto;
+        padding-right: 2px;
+        scrollbar-width: thin;
+      }
+      .cfg-gs-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.15s;
+        font-size: 0.875rem;
+      }
+      .cfg-gs-row:hover {
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .cfg-gs-row.active {
+        background: rgba(76, 175, 80, 0.08);
+        border-color: rgba(76, 175, 80, 0.25);
+      }
+      .cfg-gs-row .gs-name {
+        flex: 1;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .cfg-master-add-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        height: 38px;
+        margin-top: 8px;
+        border: 1px dashed var(--divider-color, rgba(255, 255, 255, 0.2));
+        border-radius: 8px;
+        background: transparent;
+        color: var(--primary-color, #4caf50);
+        font-family: inherit;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+        width: 100%;
+      }
+      .cfg-master-add-btn:hover {
+        background: rgba(76, 175, 80, 0.06);
+        border-color: var(--primary-color, #4caf50);
+      }
+      .cfg-detail-pane {
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding-right: 2px;
+        scrollbar-width: thin;
+      }
+      @media (max-width: 600px) {
+        .cfg-master-detail {
+          grid-template-columns: 1fr;
+        }
+      }
+      /* ── multi-select pickers (edit form) ── */
+      .multi-select-container {
+        position: relative;
+        margin-bottom: 0;
+      }
+      .multi-select-box {
+        background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
+        border-radius: 4px 4px 0 0;
+        border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 26px 16px 6px;
+        min-height: 56px;
+        box-sizing: border-box;
+      }
+      .md3-label-multi {
+        position: absolute;
+        top: 8px;
+        left: 16px;
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        pointer-events: none;
+        z-index: 10;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+        border-radius: 16px;
+        padding: 4px 12px;
+        font-size: 0.9rem;
+        height: 24px;
+      }
+      .chip-remove {
+        cursor: pointer;
+        margin-left: 6px;
+        font-weight: bold;
+        opacity: 0.7;
+      }
+      .chip-remove:hover {
+        opacity: 1;
+      }
+      .search-input-inner {
+        flex: 1;
+        min-width: 100px;
+        border: none;
+        background: transparent;
+        color: var(--primary-text-color);
+        font-family: inherit;
+        font-size: 1rem;
+        padding: 0;
+        margin: 0;
+        height: 24px;
+        outline: none;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], ConfigGrowspacesTab.prototype, "vm", void 0);
+ConfigGrowspacesTab = __decorate([
+    t$2('config-growspaces-tab')
+], ConfigGrowspacesTab);
+
+/**
+ * Growspaces Tab ViewModel (ADR-0019, "Applied to Config Dialog")
+ *
+ * The pure derivation behind the Config Dialog's Growspaces tab — a master/detail
+ * collection-CRUD view: the list of growspaces (master) and an add/edit form or
+ * a confirm-delete message (detail), driven by the `tabs.growspaces.sub` SM
+ * sub-state (`idle | adding | editing | confirm-delete`). Like the Tanks tab this
+ * is a hybrid — the *editing* detail form also edits two env-draft multi-selects
+ * (lung-room temp + area camera) — but the growspace identity drafts live in the
+ * sub-state.
+ *
+ * **All action buttons (Save / Delete / Cancel / confirm Yes-No) live in the
+ * Dialog Shell footer, not here.** So the component emits only navigation +
+ * draft-edit intents; the footer (driven by `_submitGrowspaceAndEnv` /
+ * `_confirmDeleteGrowspace` / …) owns the writes.
+ *
+ * The master list (`growspaceOptions`) and the mobile-notify service list are
+ * hass/host-derived and injected; `entityOptions` backs the edit form's pickers.
+ */
+function draftOf(sub) {
+    return {
+        name: sub.name,
+        rows: sub.rows,
+        plantsPerRow: sub.plantsPerRow,
+        notificationService: sub.notificationService,
+    };
+}
+/**
+ * Pure factory: the Config Dialog SM + injected adapters → one Growspaces tab
+ * ViewModel. Testable with no DOM and no host.
+ */
+function createGrowspacesTabViewModel(sm, deps) {
+    const sub = sm.tabs.growspaces.sub;
+    const editingId = sub.kind === 'editing' ? sub.growspaceId : '';
+    const isAdding = sub.kind === 'adding';
+    const growspaces = Object.entries(deps.growspaceOptions).map(([id, name]) => ({
+        id,
+        name,
+        active: editingId === id && !isAdding,
+    }));
+    let state;
+    if (sub.kind === 'confirm-delete') {
+        state = { mode: 'confirm-delete', name: sub.name };
+    }
+    else if (sub.kind === 'adding') {
+        state = { mode: 'adding', draft: draftOf(sub) };
+    }
+    else if (sub.kind === 'editing') {
+        const d = sm.environmentDraft;
+        state = {
+            mode: 'editing',
+            id: sub.growspaceId,
+            draft: draftOf(sub),
+            lungroom: { value: d.lungroomTempSensors, options: deps.entityOptions(['sensor', 'input_number'], 'temperature') },
+            camera: { value: d.cameraEntities, options: deps.entityOptions(['camera'], null) },
+        };
+    }
+    else {
+        state = { mode: 'idle' };
+    }
+    return { growspaces, state, notifyServices: deps.notifyServices };
+}
+
+/**
+ * Config Heatmap Tab Component (ADR-0019, "Applied to Config Dialog")
+ *
+ * The dumb presentational element for the Config Dialog's 3D-Heatmap tab — the
+ * sensor-group list. `@property .vm: HeatmapTabViewModel` in, semantic Tab
+ * Intents out, **no `@state()` and no `hass`**. Markup transcribed from the
+ * former inline `_renderHeatmapSection`. The group editor itself is the Shell's
+ * `<sensor-group-dialog>` modal, not part of this tab.
+ *
+ * Tab Intents (the Shell translates them):
+ *   - `add-group-requested`    (no detail)
+ *   - `edit-group-requested`   detail: { group }
+ *   - `delete-group-requested` detail: { id }
+ */
+let ConfigHeatmapTab = class ConfigHeatmapTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="detail-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h3>Sensor Groups</h3>
+          <button class="md3-button tonal" @click=${() => this._emit('add-group-requested')}>
+            Add Group
+          </button>
+        </div>
+        ${this.vm.showEmpty
+            ? x `<div style="text-align:center;padding:20px;color:var(--secondary-text-color);">
+              No sensor groups configured.
+            </div>`
+            : x `
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                ${this.vm.groups.map((group) => this._renderGroup(group))}
+              </div>
+            `}
+      </div>
+    `;
+    }
+    _renderGroup(group) {
+        return x `
+      <div
+        style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
+      >
+        <div>
+          <div style="font-weight:500;">${group.name}</div>
+          <div style="font-size:0.8rem;color:var(--secondary-text-color);">
+            X: ${group.x}, Y: ${group.y}, Z: ${group.z}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button
+            class="md3-button text"
+            @click=${() => this._emit('edit-group-requested', { group })}
+            style="padding:8px;min-width:auto;"
+          >
+            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiPencil}"></path>
+            </svg>
+          </button>
+          <button
+            class="md3-button text error"
+            @click=${() => this._emit('delete-group-requested', { id: group.id })}
+            style="padding:8px;min-width:auto;"
+          >
+            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiDelete}"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+    }
+};
+ConfigHeatmapTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], ConfigHeatmapTab.prototype, "vm", void 0);
+ConfigHeatmapTab = __decorate([
+    t$2('config-heatmap-tab')
+], ConfigHeatmapTab);
+
+/**
+ * Heatmap Tab ViewModel (ADR-0019, "Applied to Config Dialog")
+ *
+ * The pure derivation behind the Config Dialog's 3D-Heatmap tab — the list of
+ * sensor groups for the spatial heatmap. The group *list* lives in
+ * `environmentDraft.sensorGroups` (so add/delete ride the [[Environment Save
+ * Composer]] via `UPDATE_ENV_DRAFT`); the actual group *editing* happens in the
+ * separate `<sensor-group-dialog>` modal the Dialog Shell renders on the
+ * `heatmap.sub` = `editing-group` SM sub-state — not in this tab. So this VM only
+ * projects the list, and the component only navigates (add/edit/delete intents).
+ */
+/**
+ * Pure factory: the Config Dialog SM → one Heatmap tab ViewModel. No hass
+ * dependency. Testable with no DOM and no host.
+ */
+function createHeatmapTabViewModel(sm) {
+    const groups = sm.environmentDraft.sensorGroups;
+    return { groups, showEmpty: groups.length === 0 };
+}
+
+/**
+ * Config Subareas Tab Component (ADR-0019, "Applied to Config Dialog")
+ *
+ * The dumb presentational element for the Config Dialog's Subareas tab — the
+ * subarea list, an inline add form, and a per-row confirm-delete.
+ * `@property .vm: SubareasTabViewModel` in, semantic Tab Intents out, **no
+ * `@state()` and no `hass`**. Markup transcribed from the former inline
+ * `_renderSubareasSection`. The sensor-assignment editor itself is the Shell's
+ * `<subarea-config-dialog>` modal, not part of this tab.
+ *
+ * Tab Intents (the Shell translates them):
+ *   - `add-subarea-requested`     (no detail)
+ *   - `subarea-name-changed`      detail: { name }
+ *   - `commit-add-subarea`        (no detail; Add button or Enter)
+ *   - `cancel-add-subarea`        (no detail)
+ *   - `edit-subarea-requested`    detail: { subarea }
+ *   - `delete-subarea-requested`  detail: { id }
+ *   - `confirm-delete-subarea`    detail: { id }
+ *   - `cancel-delete-subarea`     (no detail)
+ */
+let ConfigSubareasTab = class ConfigSubareasTab extends i$3 {
+    _emit(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+    render() {
+        if (!this.vm.hasGrowspace) {
+            return x `
+        <div class="detail-card">
+          <h3>Subareas</h3>
+          <div style="text-align:center;padding:20px;color:var(--secondary-text-color);">
+            Select a growspace in the Sensors tab first.
+          </div>
+        </div>
+      `;
+        }
+        return x `
+      <div class="detail-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h3 style="margin:0;">Subareas</h3>
+          <button class="md3-button tonal" @click=${() => this._emit('add-subarea-requested')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:6px;" viewBox="0 0 24 24">
+              <path d="${mdiPlus}"></path>
+            </svg>
+            Add Subarea
+          </button>
+        </div>
+
+        ${this.vm.adding ? this._renderAddForm(this.vm.adding.name) : E}
+        ${this.vm.loading
+            ? x `<div style="text-align:center;padding:20px;color:var(--secondary-text-color);">
+              Loading...
+            </div>`
+            : this.vm.showEmpty
+                ? x `<div style="text-align:center;padding:20px;color:var(--secondary-text-color);">
+                No subareas configured. Add one to get started.
+              </div>`
+                : x `
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  ${this.vm.subareas.map((row) => this._renderRow(row))}
+                </div>
+              `}
+      </div>
+    `;
+    }
+    _renderAddForm(name) {
+        return x `
+      <div
+        style="display:flex;gap:8px;align-items:center;margin-bottom:16px;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
+      >
+        <input
+          class="md3-input"
+          style="flex:1;"
+          placeholder="Subarea name..."
+          .value=${name}
+          @input=${(e) => this._emit('subarea-name-changed', { name: e.target.value })}
+          @keydown=${(e) => {
+            if (e.key === 'Enter')
+                this._emit('commit-add-subarea');
+        }}
+        />
+        <button
+          class="md3-button primary"
+          @click=${() => this._emit('commit-add-subarea')}
+          ?disabled=${!name.trim()}
+        >
+          Add
+        </button>
+        <button class="md3-button tonal" @click=${() => this._emit('cancel-add-subarea')}>
+          Cancel
+        </button>
+      </div>
+    `;
+    }
+    _renderRow(row) {
+        const subarea = row.subarea;
+        return x `
+      <div
+        style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
+      >
+        <div>
+          <div style="font-weight:500;">${subarea.name}</div>
+          <div style="font-size:0.8rem;color:var(--secondary-text-color);">ID: ${subarea.id}</div>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center;">
+          ${row.confirmingDelete
+            ? x `
+                <span style="font-size:0.85rem;color:var(--secondary-text-color);margin-right:4px;"
+                  >Remove ${subarea.name}?</span
+                >
+                <button
+                  class="md3-button primary error"
+                  @click=${() => this._emit('confirm-delete-subarea', { id: subarea.id })}
+                  style="padding:6px 10px;min-width:auto;font-size:0.8rem;"
+                >
+                  Yes
+                </button>
+                <button
+                  class="md3-button tonal"
+                  @click=${() => this._emit('cancel-delete-subarea')}
+                  style="padding:6px 10px;min-width:auto;font-size:0.8rem;"
+                >
+                  No
+                </button>
+              `
+            : x `
+                <button
+                  class="md3-button text"
+                  @click=${() => this._emit('edit-subarea-requested', { subarea })}
+                  style="padding:8px;min-width:auto;"
+                  title="Edit sensors"
+                >
+                  <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiPencil}"></path>
+                  </svg>
+                </button>
+                <button
+                  class="md3-button text error"
+                  @click=${() => this._emit('delete-subarea-requested', { id: subarea.id })}
+                  style="padding:8px;min-width:auto;"
+                  title="Delete subarea"
+                >
+                  <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiDelete}"></path>
+                  </svg>
+                </button>
+              `}
+        </div>
+      </div>
+    `;
+    }
+};
+ConfigSubareasTab.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], ConfigSubareasTab.prototype, "vm", void 0);
+ConfigSubareasTab = __decorate([
+    t$2('config-subareas-tab')
+], ConfigSubareasTab);
+
+/**
+ * Subareas Tab ViewModel (ADR-0019, "Applied to Config Dialog")
+ *
+ * The pure derivation behind the Config Dialog's Subareas tab — the list of a
+ * growspace's subareas with an inline add form and a per-row confirm-delete.
+ * Unlike the env tabs, the subarea *list* is not in the SM or the env draft: it
+ * is fetched (`getSubareas`) into the dialog's `_subareas` `@state`, so the list
+ * + loading flag are **injected** here. The add/delete navigation is the
+ * `tabs.subareas.sub` SM sub-state; the actual backend CRUD (`addSubarea` /
+ * `removeSubarea`) and the `<subarea-config-dialog>` edit modal stay in the Shell.
+ *
+ * The tab needs a selected growspace (env draft, or the Growspaces tab's editing
+ * id); when there is none it shows a "select a growspace first" hint.
+ */
+/**
+ * Pure factory: the Config Dialog SM + the injected list/loading → one Subareas
+ * tab ViewModel. Testable with no DOM and no host.
+ */
+function createSubareasTabViewModel(sm, deps) {
+    const envId = sm.environmentDraft.selectedGrowspaceId;
+    const gsSub = sm.tabs.growspaces.sub;
+    const growspaceId = envId || (gsSub.kind === 'editing' ? gsSub.growspaceId : '');
+    const sub = sm.tabs.subareas.sub;
+    const adding = sub.kind === 'adding' ? { name: sub.name } : null;
+    const confirmId = sub.kind === 'confirm-delete' ? sub.subareaId : null;
+    return {
+        hasGrowspace: Boolean(growspaceId),
+        adding,
+        loading: deps.loading,
+        subareas: deps.subareas.map((subarea) => ({
+            subarea,
+            confirmingDelete: confirmId === subarea.id,
+        })),
+        showEmpty: !deps.loading && deps.subareas.length === 0,
+    };
+}
+
 let ConfigDialog = class ConfigDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -20481,46 +23837,11 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         }));
     }
     _submitEnvironment() {
-        const d = this._sm.environmentDraft;
         this.dispatchEvent(new CustomEvent('configure-environment-submit', {
-            detail: {
-                selectedGrowspaceId: d.selectedGrowspaceId,
-                temperatureSensors: d.temperatureSensors,
-                humiditySensors: d.humiditySensors,
-                vpdSensors: d.vpdSensors,
-                co2Sensor: d.co2Sensor,
-                circulationFanEntities: d.circulationFanEntities,
-                stressThreshold: d.stressThreshold,
-                moldThreshold: d.moldThreshold,
-                lightSensors: d.lightSensors,
-                exhaustFanEntities: d.exhaustFanEntities,
-                humidifierEntities: d.humidifierEntities,
-                humidifierThresholds: d.humidifierThresholds,
+            detail: composeEnvironmentConfig(this._sm.environmentDraft, {
                 humidifierControlEnabled: this._humidifierControlEnabled,
-                dehumidifierEntities: d.dehumidifierEntities,
-                dehumidifierThresholds: d.dehumidifierThresholds,
                 dehumidifierControlEnabled: this._dehumidifierControlEnabled,
-                soilMoistureSensor: d.soilMoistureSensor,
-                sensorGroups: d.sensorGroups,
-                sensorCoordinates: d.sensorCoordinates,
-                irrigationTanks: d.irrigationTanks,
-                cameraEntities: d.cameraEntities,
-                lungroomTempSensors: d.lungroomTempSensors,
-                substrateTemperatureSensors: d.substrateTemperatureSensors,
-                phSensors: d.phSensors,
-                feedEcSensors: d.feedEcSensors,
-                bulkEcSensors: d.bulkEcSensors,
-                poreEcSensors: d.poreEcSensors,
-                runoffEcSensors: d.runoffEcSensors,
-                drainVolumeSensors: d.drainVolumeSensors,
-                irrigationFlowSensors: d.irrigationFlowSensors,
-                powerSensors: d.powerSensors,
-                energySensors: d.energySensors,
-                circulationFanConfig: d.circulationFanConfig,
-                exhaustFanConfig: d.exhaustFanConfig,
-                vpdOptimalOverrides: d.vpdOptimalOverrides,
-                lstOffset: d.lstOffset,
-            },
+            }),
             bubbles: true,
             composed: true,
         }));
@@ -20548,6 +23869,15 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     _submitNotifications() {
         const draft = this._sm.tabs.notifications.draft;
+        // Backend consumers (calendar, notification_manager) read timed notifications
+        // in snake_case, so convert the camelCase SM shape at this card→backend boundary.
+        const timedNotifications = this._sm.tabs.notifications.timedNotifications.map((n) => ({
+            id: n.id,
+            message: n.message,
+            trigger_type: n.triggerType,
+            day: n.day,
+            growspace_ids: n.growspaceIds,
+        }));
         this.dispatchEvent(new CustomEvent('save-notification-settings-submit', {
             detail: {
                 notification_settings: {
@@ -20559,6 +23889,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                     warningPersistenceMinutes: draft.warningPersistenceMinutes,
                 },
                 ai_auto_alerts: draft.aiAutoAlerts,
+                timed_notifications: timedNotifications,
             },
             bubbles: true,
             composed: true,
@@ -20703,72 +24034,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         })
             .sort();
     }
-    _renderMultiEntitySelect(label, values, domains, deviceClass, changeHandler) {
-        const listId = `list-multi-${label.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
-        const entities = this._getEntities(domains, deviceClass);
-        return x `
-      <div class="multi-select-container">
-        <label class="md3-label-multi">${label}</label>
-        <div class="multi-select-box">
-          ${values.map((val) => x `
-              <div class="chip">
-                ${val}
-                <span
-                  class="chip-remove"
-                  @click=${() => changeHandler(values.filter((v) => v !== val))}
-                  >×</span
-                >
-              </div>
-            `)}
-          <input
-            class="search-input-inner"
-            list="${listId}"
-            placeholder=${values.length === 0 ? 'Add Entity...' : ''}
-            @change=${(e) => {
-            const input = e.target;
-            const val = input.value;
-            if (val && !values.includes(val))
-                changeHandler([...values, val]);
-            input.value = '';
-        }}
-          />
-        </div>
-        <datalist id="${listId}">
-          ${entities.map((eid) => x `<option value="${eid}"></option>`)}
-        </datalist>
-      </div>
-    `;
-    }
-    _renderEntitySelect(label, value, domains, deviceClass, changeHandler) {
-        const listId = `list-${label.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
-        const entities = this._getEntities(domains, deviceClass);
-        return x `
-      <div class="entity-select-container">
-        <div class="md3-input-group">
-          <label class="md3-label">${label}</label>
-          <input
-            class="md3-input"
-            list="${listId}"
-            .value=${value}
-            @change=${(e) => {
-            const val = e.target.value;
-            changeHandler(new CustomEvent('change', { detail: { value: val } }));
-        }}
-            placeholder="Search entity..."
-          />
-          <datalist id="${listId}">
-            ${entities.map((eid) => x `<option value="${eid}"></option>`)}
-          </datalist>
-        </div>
-      </div>
-    `;
-    }
     // ── Threshold helpers ────────────────────────────────────────────────────
-    _getThresholdValue(stage, cycle, point) {
-        return (this._sm.environmentDraft.dehumidifierThresholds?.[stage]?.[cycle]?.[point] ??
-            DEFAULT_DEHUM_THRESHOLDS[stage]?.[cycle]?.[point] ??
-            0);
-    }
     _updateThreshold(stage, cycle, point, value) {
         if (isNaN(value))
             return;
@@ -20779,11 +24045,6 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             t[stage][cycle] = { on: 0, off: 0 };
         t[stage][cycle][point] = value;
         this._t({ type: 'UPDATE_ENV_DRAFT', partial: { dehumidifierThresholds: t } });
-    }
-    _getHumidifierThresholdValue(stage, cycle, point) {
-        return (this._sm.environmentDraft.humidifierThresholds?.[stage]?.[cycle]?.[point] ??
-            DEFAULT_HUM_THRESHOLDS[stage]?.[cycle]?.[point] ??
-            0);
     }
     _updateHumidifierThreshold(stage, cycle, point, value) {
         if (isNaN(value))
@@ -20952,443 +24213,49 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         }
     }
     // ── Section renderers ────────────────────────────────────────────────────
-    _renderNotificationsSection() {
-        const draft = this._sm.tabs.notifications.draft;
+    _renderNotificationsTab() {
         return x `
-      <div class="form-section">
-        <md3-number-input
-          data-notif="criticalCooldownMinutes"
-          label="Critical Cooldown (min)"
-          .value=${draft.criticalCooldownMinutes}
-          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { criticalCooldownMinutes: Number(e.detail) } })}
-        ></md3-number-input>
-        <md3-number-input
-          data-notif="warningCooldownMinutes"
-          label="Warning Cooldown (min)"
-          .value=${draft.warningCooldownMinutes}
-          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { warningCooldownMinutes: Number(e.detail) } })}
-        ></md3-number-input>
-        <md3-number-input
-          data-notif="recoveryCooldownMinutes"
-          label="Recovery Cooldown (min)"
-          .value=${draft.recoveryCooldownMinutes}
-          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { recoveryCooldownMinutes: Number(e.detail) } })}
-        ></md3-number-input>
-        <md3-number-input
-          data-notif="escalationDelayMinutes"
-          label="Escalation Delay (min)"
-          .value=${draft.escalationDelayMinutes}
-          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { escalationDelayMinutes: Number(e.detail) } })}
-        ></md3-number-input>
-        <md3-number-input
-          data-notif="minStressDurationSeconds"
-          label="Min Stress Duration (sec)"
-          .value=${draft.minStressDurationSeconds}
-          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { minStressDurationSeconds: Number(e.detail) } })}
-        ></md3-number-input>
-        <md3-number-input
-          data-notif="warningPersistenceMinutes"
-          label="Warning Persistence (min)"
-          .value=${draft.warningPersistenceMinutes}
-          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { warningPersistenceMinutes: Number(e.detail) } })}
-        ></md3-number-input>
-        <label class="checkbox-label">
-          <input
-            type="checkbox"
-            data-notif="aiAutoAlerts"
-            .checked=${draft.aiAutoAlerts}
-            @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { aiAutoAlerts: e.target.checked } })}
-          />
-          <span>AI Auto-Alerts</span>
-        </label>
-      </div>
-      ${this._renderTimedNotificationsSection()}
+      <config-notifications-tab
+        .vm=${createNotificationsTabViewModel(this._sm, this.growspaceOptions)}
+        @notif-draft-changed=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: e.detail.partial })}
+        @add-timed-requested=${this._startAddTimedNotification}
+        @edit-timed-requested=${(e) => this._startEditTimedNotification(e.detail.id, e.detail.draft)}
+        @timed-draft-changed=${(e) => this._t({ type: 'UPDATE_TIMED_DRAFT', partial: e.detail.partial })}
+        @cancel-timed=${this._cancelTimedNotification}
+        @commit-add-timed=${this._commitAddTimedNotification}
+        @commit-edit-timed=${this._commitEditTimedNotification}
+        @request-delete-timed=${(e) => this._requestDeleteTimedNotification(e.detail.id)}
+        @confirm-delete-timed=${this._confirmDeleteTimedNotification}
+      ></config-notifications-tab>
     `;
     }
-    _renderTimedNotificationsSection() {
-        const tab = this._sm.tabs.notifications;
-        const sub = tab.sub;
-        const notifications = tab.timedNotifications;
+    _renderGrowspacesTab() {
+        const deps = {
+            growspaceOptions: this.growspaceOptions,
+            notifyServices: this._getMobileAppNotifyServices(),
+            entityOptions: (domains, deviceClass) => this._getEntities(domains, deviceClass),
+        };
         return x `
-      <div class="form-section">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <h3 style="margin:0;font-size:1rem;font-weight:600;">Timed Notifications</h3>
-          ${sub.kind === 'idle'
-            ? x `
-                <button class="md3-button outlined" style="padding:4px 12px;" @click=${this._startAddTimedNotification}>
-                  Add
-                </button>
-              `
-            : E}
-        </div>
-
-        ${sub.kind === 'confirm-delete'
-            ? x `
-              <div class="detail-card" style="text-align:center;padding:24px 16px;">
-                <p style="margin:0 0 16px;color:var(--secondary-text-color);">
-                  Delete this timed notification?
-                </p>
-                <div style="display:flex;gap:8px;justify-content:center;">
-                  <button class="md3-button outlined" @click=${this._cancelTimedNotification}>Cancel</button>
-                  <button class="md3-button primary" style="background:var(--error-color,#ff5252);" @click=${this._confirmDeleteTimedNotification}>
-                    Delete
-                  </button>
-                </div>
-              </div>
-            `
-            : E}
-
-        ${sub.kind === 'adding' || sub.kind === 'editing'
-            ? this._renderTimedNotificationForm(sub)
-            : E}
-
-        ${notifications.length === 0 && sub.kind === 'idle'
-            ? x `
-              <div
-                data-timed="empty-state"
-                style="text-align:center;padding:24px;color:var(--secondary-text-color);"
-              >
-                No timed notifications configured
-              </div>
-            `
-            : E}
-
-        ${sub.kind === 'idle' || sub.kind === 'confirm-delete'
-            ? notifications.map((n) => x `
-                <div
-                  class="cfg-gs-row"
-                  data-timed-id=${n.id}
-                  style="display:flex;align-items:center;justify-content:space-between;"
-                >
-                  <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                    ${n.message} · ${n.triggerType} · Day ${n.day}
-                  </span>
-                  <div style="display:flex;gap:4px;flex-shrink:0;">
-                    <button
-                      class="md3-button text"
-                      style="padding:4px 8px;"
-                      data-timed-edit=${n.id}
-                      @click=${() => this._startEditTimedNotification(n.id, {
-                message: n.message,
-                triggerType: n.triggerType,
-                day: n.day,
-                growspaceIds: n.growspaceIds,
-            })}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      class="md3-button text"
-                      style="padding:4px 8px;color:var(--error-color,#ff5252);"
-                      data-timed-delete=${n.id}
-                      @click=${() => this._requestDeleteTimedNotification(n.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              `)
-            : E}
-      </div>
+      <config-growspaces-tab
+        .vm=${createGrowspacesTabViewModel(this._sm, deps)}
+        @select-growspace=${(e) => this._handleEditSelection(e.detail.id)}
+        @start-add-growspace=${this._startAddGrowspace}
+        @add-draft-changed=${(e) => this._t({ type: 'UPDATE_ADD_DRAFT', partial: e.detail.partial })}
+        @edit-draft-changed=${(e) => this._t({ type: 'UPDATE_EDIT_DRAFT', partial: e.detail.partial })}
+        @env-draft-changed=${(e) => this._setEnv(e.detail.partial)}
+      ></config-growspaces-tab>
     `;
     }
-    _renderTimedNotificationForm(sub) {
-        const isAdding = sub.kind === 'adding';
-        const draft = sub.draft;
-        const triggerOptions = [
-            { value: 'clone_start', label: 'Clone Start' },
-            { value: 'veg_start', label: 'Veg Start' },
-            { value: 'flower_start', label: 'Flower Start' },
-            { value: 'dry_start', label: 'Dry Start' },
-        ];
+    _renderSensorsTab() {
+        const deps = {
+            entityOptions: (domains, deviceClass) => this._getEntities(domains, deviceClass),
+            averageSensorValue: (ids) => this._averageSensorValue(ids),
+        };
         return x `
-      <div class="detail-card" style="margin-bottom:12px;">
-        <h4 style="margin:0 0 12px;font-size:0.9rem;font-weight:600;">
-          ${isAdding ? 'Add Timed Notification' : 'Edit Timed Notification'}
-        </h4>
-
-        <div class="md3-input-group">
-          <label class="md3-label">Message</label>
-          <input
-            class="md3-input"
-            type="text"
-            data-timed-field="message"
-            .value=${draft.message}
-            @input=${(e) => this._t({ type: 'UPDATE_TIMED_DRAFT', partial: { message: e.target.value } })}
-          />
-        </div>
-
-        <div class="md3-input-group">
-          <label class="md3-label">Trigger</label>
-          <select
-            class="md3-input"
-            data-timed-field="triggerType"
-            .value=${draft.triggerType}
-            @change=${(e) => this._t({
-            type: 'UPDATE_TIMED_DRAFT',
-            partial: { triggerType: e.target.value },
-        })}
-          >
-            ${triggerOptions.map((o) => x `
-                <option value="${o.value}" ?selected=${draft.triggerType === o.value}>${o.label}</option>
-              `)}
-          </select>
-        </div>
-
-        <div class="md3-input-group">
-          <label class="md3-label">Day</label>
-          <input
-            class="md3-input"
-            type="number"
-            min="1"
-            data-timed-field="day"
-            .value=${String(draft.day)}
-            @change=${(e) => this._t({ type: 'UPDATE_TIMED_DRAFT', partial: { day: Number(e.target.value) } })}
-          />
-        </div>
-
-        <div class="md3-input-group">
-          <label class="md3-label">Growspaces</label>
-          <div style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;padding:4px 0;">
-            ${Object.entries(this.growspaceOptions).map(([id, name]) => x `
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                  <input
-                    type="checkbox"
-                    data-timed-gs=${id}
-                    .checked=${draft.growspaceIds.includes(id)}
-                    @change=${(e) => {
-            const checked = e.target.checked;
-            const next = checked
-                ? [...draft.growspaceIds, id]
-                : draft.growspaceIds.filter((g) => g !== id);
-            this._t({ type: 'UPDATE_TIMED_DRAFT', partial: { growspaceIds: next } });
-        }}
-                  />
-                  ${name}
-                </label>
-              `)}
-          </div>
-        </div>
-
-        <div style="display:flex;gap:8px;margin-top:12px;">
-          <button class="md3-button outlined" @click=${this._cancelTimedNotification}>Cancel</button>
-          <button
-            class="md3-button primary"
-            @click=${isAdding ? this._commitAddTimedNotification : this._commitEditTimedNotification}
-          >
-            ${isAdding ? 'Add' : 'Save'}
-          </button>
-        </div>
-      </div>
-    `;
-    }
-    _renderGrowspacesSection() {
-        const sub = this._sm.tabs.growspaces.sub;
-        if (sub.kind === 'confirm-delete') {
-            return x `
-        <div class="cfg-master-detail" style="grid-template-columns:1fr;">
-          <div class="detail-card" style="text-align:center;padding:40px 20px;">
-            <h3 style="color:var(--error-color,#ff5252);">Delete Growspace?</h3>
-            <p style="margin-bottom:30px;color:var(--secondary-text-color);">
-              Are you sure you want to delete "<strong>${sub.name}</strong>"?<br />
-              This will remove all associated plants and history.<br />
-              This action cannot be undone.
-            </p>
-          </div>
-        </div>
-      `;
-        }
-        const editingId = sub.kind === 'editing' ? sub.growspaceId : '';
-        const isAdding = sub.kind === 'adding';
-        return x `
-      <div class="cfg-master-detail">
-        <!-- Master list -->
-        <div class="cfg-master-list">
-          <div
-            style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--secondary-text-color,rgba(255,255,255,0.5));padding:0 4px 8px;"
-          >
-            All Growspaces
-          </div>
-          ${Object.entries(this.growspaceOptions).map(([id, name]) => x `
-              <div
-                class="cfg-gs-row ${editingId === id && !isAdding ? 'active' : ''}"
-                @click=${() => this._handleEditSelection(id)}
-              >
-                <span class="gs-name">${name}</span>
-              </div>
-            `)}
-          <button class="cfg-master-add-btn" @click=${this._startAddGrowspace}>
-            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiPlus}"></path>
-            </svg>
-            Add Growspace
-          </button>
-        </div>
-
-        <!-- Detail pane -->
-        <div class="cfg-detail-pane">
-          ${isAdding ? this._renderAddGrowspaceForm() : E}
-          ${!isAdding && editingId ? this._renderEditGrowspaceForm() : E}
-          ${!isAdding && !editingId
-            ? x `
-                <div style="text-align:center;padding:40px 20px;color:var(--secondary-text-color);">
-                  Select a growspace to edit, or click "Add Growspace" to create a new one.
-                </div>
-              `
-            : E}
-        </div>
-      </div>
-    `;
-    }
-    _renderAddGrowspaceForm() {
-        const sub = this._sm.tabs.growspaces.sub;
-        if (sub.kind !== 'adding')
-            return E;
-        return x `
-      <div class="detail-card">
-        <h3>New Growspace</h3>
-        <md3-text-input
-          label="Growspace Name"
-          .value=${sub.name}
-          @change=${(e) => this._t({ type: 'UPDATE_ADD_DRAFT', partial: { name: e.detail } })}
-        ></md3-text-input>
-        <div class="row-col-grid">
-          <md3-number-input
-            label="Rows"
-            .value=${sub.rows}
-            @change=${(e) => this._t({ type: 'UPDATE_ADD_DRAFT', partial: { rows: parseInt(e.detail) } })}
-          ></md3-number-input>
-          <md3-number-input
-            label="Plants per Row"
-            .value=${sub.plantsPerRow}
-            @change=${(e) => this._t({ type: 'UPDATE_ADD_DRAFT', partial: { plantsPerRow: parseInt(e.detail) } })}
-          ></md3-number-input>
-        </div>
-        <div class="md3-input-group">
-          <label class="md3-label">Notification Service (Mobile App)</label>
-          <select
-            class="md3-input"
-            .value=${sub.notificationService}
-            @change=${(e) => this._t({ type: 'UPDATE_ADD_DRAFT', partial: { notificationService: e.target.value } })}
-          >
-            <option value="">None</option>
-            ${this._getMobileAppNotifyServices().map((s) => x `
-                <option value="${s.value}" ?selected=${sub.notificationService === s.value}>
-                  ${s.label}
-                </option>
-              `)}
-          </select>
-        </div>
-      </div>
-    `;
-    }
-    _renderEditGrowspaceForm() {
-        const sub = this._sm.tabs.growspaces.sub;
-        if (sub.kind !== 'editing')
-            return E;
-        const d = this._sm.environmentDraft;
-        return x `
-      <div class="detail-card">
-        <h3>Edit Details</h3>
-        <md3-text-input
-          label="Growspace Name"
-          .value=${sub.name}
-          @change=${(e) => this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { name: e.detail } })}
-        ></md3-text-input>
-        <div class="row-col-grid">
-          <md3-number-input
-            label="Rows"
-            .value=${sub.rows}
-            @change=${(e) => this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { rows: parseInt(e.detail) } })}
-          ></md3-number-input>
-          <md3-number-input
-            label="Plants per Row"
-            .value=${sub.plantsPerRow}
-            @change=${(e) => this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { plantsPerRow: parseInt(e.detail) } })}
-          ></md3-number-input>
-        </div>
-        <div class="md3-input-group">
-          <label class="md3-label">Notification Service (Mobile App)</label>
-          <select
-            class="md3-input"
-            .value=${sub.notificationService}
-            @change=${(e) => this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { notificationService: e.target.value } })}
-          >
-            <option value="">None</option>
-            ${this._getMobileAppNotifyServices().map((s) => x `
-                <option value="${s.value}" ?selected=${sub.notificationService === s.value}>
-                  ${s.label}
-                </option>
-              `)}
-          </select>
-        </div>
-        ${this._renderMultiEntitySelect('Lung Room Temp Sensors', d.lungroomTempSensors, ['sensor', 'input_number'], 'temperature', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { lungroomTempSensors: v } }))}
-        ${this._renderMultiEntitySelect('Area Camera', d.cameraEntities, ['camera'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { cameraEntities: v } }))}
-      </div>
-    `;
-    }
-    _renderSensorsSection() {
-        const d = this._sm.environmentDraft;
-        return x `
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiThermometer}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Monitoring Sensors</h3>
-        </div>
-        <div class="form-section">
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Temperature Sensors', d.temperatureSensors, ['sensor', 'input_number'], 'temperature', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { temperatureSensors: v } }))}
-            ${this._renderMultiEntitySelect('Humidity Sensors', d.humiditySensors, ['sensor', 'input_number'], 'humidity', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { humiditySensors: v } }))}
-          </div>
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('VPD Sensors (Optional)', d.vpdSensors, ['sensor', 'input_number'], 'pressure', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdSensors: v } }))}
-            ${this._renderEntitySelect('Soil Moisture Sensor', d.soilMoistureSensor, ['sensor', 'input_number'], 'moisture', (e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { soilMoistureSensor: e.detail.value } }))}
-          </div>
-          <div class="row-col-grid">
-            ${this._renderEntitySelect('CO₂ Sensor', d.co2Sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { co2Sensor: e.detail.value } }))}
-            ${this._renderMultiEntitySelect('Light Source / Sensor', d.lightSensors, ['switch', 'light', 'input_boolean', 'sensor'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { lightSensors: v } }))}
-          </div>
-          ${this._renderMultiEntitySelect('Substrate Temperature Sensors', d.substrateTemperatureSensors, ['sensor', 'input_number'], 'temperature', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { substrateTemperatureSensors: v } }))}
-          ${this._renderLstOffsetSection()}
-        </div>
-      </div>
-    `;
-    }
-    _renderLstOffsetSection() {
-        const d = this._sm.environmentDraft;
-        const hasTemp = d.temperatureSensors.length > 0;
-        const hasHumidity = d.humiditySensors.length > 0;
-        const hasHardwareVpd = d.vpdSensors.some((id) => !id.includes('calculated_vpd'));
-        if (!hasTemp || !hasHumidity || hasHardwareVpd)
-            return E;
-        const avgTemp = this._averageSensorValue(d.temperatureSensors);
-        const avgHumidity = this._averageSensorValue(d.humiditySensors);
-        const vpd = avgTemp != null && avgHumidity != null
-            ? calculateVpdWithLstOffset(avgTemp, avgHumidity, d.lstOffset)
-            : null;
-        const vpdDisplay = vpd != null ? `${vpd} kPa` : '—';
-        return x `
-      <div style="margin-top:12px;">
-        <md3-number-input
-          label="Leaf Surface Temperature Offset"
-          .value=${d.lstOffset}
-          @change=${(e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { lstOffset: parseFloat(e.detail) } })}
-          min="-10"
-          max="10"
-          step="0.5"
-          suffix="°C"
-        ></md3-number-input>
-        <div style="margin-top:4px;font-size:0.85em;color:var(--secondary-text-color,rgba(255,255,255,0.5));">
-          Current VPD: ${vpdDisplay}
-        </div>
-      </div>
+      <config-sensors-tab
+        .vm=${createSensorsTabViewModel(this._sm, deps)}
+        @env-draft-changed=${(e) => this._setEnv(e.detail.partial)}
+      ></config-sensors-tab>
     `;
     }
     _averageSensorValue(entityIds) {
@@ -21408,53 +24275,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         }
         return count > 0 ? sum / count : null;
     }
-    _renderClimateSection() {
-        const d = this._sm.environmentDraft;
-        return x `
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiFan}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Climate Control</h3>
-        </div>
-        <div class="form-section">
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Exhaust Fan / Switch', d.exhaustFanEntities, ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { exhaustFanEntities: v } }))}
-            ${this._renderMultiEntitySelect('Circulation Fan / Switch', d.circulationFanEntities, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { circulationFanEntities: v } }))}
-          </div>
-          <div class="row-col-grid">
-            <md3-number-input
-              label="Stress Threshold %"
-              .value=${d.stressThreshold}
-              @change=${(e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { stressThreshold: parseFloat(e.detail) } })}
-              step="0.01"
-            ></md3-number-input>
-            <md3-number-input
-              label="Mold Threshold %"
-              .value=${d.moldThreshold}
-              @change=${(e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { moldThreshold: parseFloat(e.detail) } })}
-              step="0.01"
-            ></md3-number-input>
-          </div>
-          <div class="control-row">
-            <button
-              class="md3-button tonal error"
-              @click=${this._handleRemoveEnvironment}
-              ?disabled=${!d.selectedGrowspaceId}
-            >
-              Remove Environment
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-    }
+    // Fan/exhaust edits forward a partial; merge against the live draft so
+    // synchronous multi-field edits accumulate (the component never reads the SM).
     _updateFanConfig(partial) {
         this._t({
             type: 'UPDATE_ENV_DRAFT',
@@ -21462,232 +24284,6 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 circulationFanConfig: { ...this._sm.environmentDraft.circulationFanConfig, ...partial },
             },
         });
-    }
-    _renderFanControllerPanel() {
-        const fan = this._sm.environmentDraft.circulationFanConfig;
-        const disabled = !fan.enabled;
-        const mode = fan.regulation_mode;
-        return x `
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiFan}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Fan Controller</h3>
-        </div>
-
-        <!-- Enabled toggle -->
-        <div class="form-section">
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              .checked=${fan.enabled}
-              @change=${(e) => this._updateFanConfig({ enabled: e.target.checked })}
-            />
-            <span>Enabled</span>
-          </label>
-        </div>
-
-        <!-- Regulation mode -->
-        <div class="form-section" style="${disabled ? 'opacity:0.5;pointer-events:none;' : ''}">
-          <md3-select
-            label="Regulation Mode"
-            .value=${mode}
-            .options=${[
-            { value: 'vpd', label: 'VPD' },
-            { value: 'humidity', label: 'Humidity' },
-            { value: 'temperature', label: 'Temperature' },
-        ]}
-            @change=${(e) => this._updateFanConfig({ regulation_mode: e.detail })}
-          ></md3-select>
-
-          <!-- Stage-Aware VPD toggle (VPD mode only) -->
-          ${mode === 'vpd'
-            ? x `
-                <div style="margin-top:8px;">
-                  <label class="checkbox-label">
-                    <input
-                      type="checkbox"
-                      .checked=${fan.stage_vpd_enabled}
-                      @change=${(e) => this._updateFanConfig({
-                stage_vpd_enabled: e.target.checked,
-            })}
-                    />
-                    <span>Stage-Aware VPD</span>
-                  </label>
-                </div>
-                ${fan.stage_vpd_enabled
-                ? x `
-                      <div style="margin-top:12px;">
-                        <stage-vpd-overrides-table
-                          .overrides=${(fan.stage_vpd_overrides ?? {})}
-                          @overrides-change=${(e) => this._updateFanConfig({ stage_vpd_overrides: e.detail })}
-                        ></stage-vpd-overrides-table>
-                      </div>
-                    `
-                : E}
-              `
-            : E}
-
-          <!-- Active mode target + tolerance -->
-          <div class="row-col-grid">
-            ${mode === 'vpd'
-            ? x `
-                  <md3-number-input
-                    label="${fan.stage_vpd_enabled ? 'Fallback VPD Target (kPa)' : 'VPD Target (kPa)'}"
-                    style="${fan.stage_vpd_enabled ? 'opacity:0.5;' : ''}"
-                    .value=${fan.vpd_target}
-                    @change=${(e) => this._updateFanConfig({ vpd_target: parseFloat(e.detail) })}
-                    step="0.01"
-                  ></md3-number-input>
-                  <md3-number-input
-                    label="VPD Tolerance (kPa)"
-                    .value=${fan.vpd_tolerance}
-                    @change=${(e) => this._updateFanConfig({ vpd_tolerance: parseFloat(e.detail) })}
-                    step="0.01"
-                  ></md3-number-input>
-                `
-            : E}
-            ${mode === 'humidity'
-            ? x `
-                  <md3-number-input
-                    label="Humidity Target (%)"
-                    .value=${fan.humidity_target}
-                    @change=${(e) => this._updateFanConfig({ humidity_target: parseFloat(e.detail) })}
-                    step="0.1"
-                  ></md3-number-input>
-                  <md3-number-input
-                    label="Humidity Tolerance (%)"
-                    .value=${fan.humidity_tolerance}
-                    @change=${(e) => this._updateFanConfig({ humidity_tolerance: parseFloat(e.detail) })}
-                    step="0.1"
-                  ></md3-number-input>
-                `
-            : E}
-            ${mode === 'temperature'
-            ? x `
-                  <md3-number-input
-                    label="Temperature Target (°C)"
-                    .value=${fan.temperature_target}
-                    @change=${(e) => this._updateFanConfig({ temperature_target: parseFloat(e.detail) })}
-                    step="0.1"
-                  ></md3-number-input>
-                  <md3-number-input
-                    label="Temperature Tolerance (°C)"
-                    .value=${fan.temperature_tolerance}
-                    @change=${(e) => this._updateFanConfig({ temperature_tolerance: parseFloat(e.detail) })}
-                    step="0.1"
-                  ></md3-number-input>
-                `
-            : E}
-          </div>
-
-          <!-- Temperature Override (VPD mode only, collapsible) -->
-          ${mode === 'vpd'
-            ? x `
-                <div style="margin-top:8px;">
-                  <button
-                    class="md3-button tonal"
-                    style="display:flex;align-items:center;gap:4px;width:100%;justify-content:space-between;"
-                    @click=${() => {
-                this._fanTempOverrideExpanded = !this._fanTempOverrideExpanded;
-            }}
-                  >
-                    <span>Temperature Override</span>
-                    <svg
-                      style="width:18px;height:18px;transition:transform 0.2s;transform:rotate(${this._fanTempOverrideExpanded ? '180deg' : '0deg'});"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="${mdiChevronDown}"></path>
-                    </svg>
-                  </button>
-                  ${this._fanTempOverrideExpanded
-                ? x `
-                        <div class="row-col-grid" style="margin-top:8px;">
-                          <md3-number-input
-                            label="Critical Temp Low (°C)"
-                            .value=${fan.critical_temp_low ?? ''}
-                            @change=${(e) => this._updateFanConfig({
-                    critical_temp_low: e.detail !== '' ? parseFloat(e.detail) : null,
-                })}
-                            step="0.1"
-                          ></md3-number-input>
-                          <md3-number-input
-                            label="Critical Temp High (°C)"
-                            .value=${fan.critical_temp_high ?? ''}
-                            @change=${(e) => this._updateFanConfig({
-                    critical_temp_high: e.detail !== '' ? parseFloat(e.detail) : null,
-                })}
-                            step="0.1"
-                          ></md3-number-input>
-                          <md3-number-input
-                            label="Critical Temp Hysteresis (°C)"
-                            .value=${fan.critical_temp_hysteresis}
-                            @change=${(e) => this._updateFanConfig({
-                    critical_temp_hysteresis: parseFloat(e.detail),
-                })}
-                            step="0.1"
-                          ></md3-number-input>
-                        </div>
-                      `
-                : E}
-                </div>
-              `
-            : E}
-
-          <!-- Min / Max speed -->
-          <div class="row-col-grid" style="margin-top:8px;">
-            <md3-number-input
-              label="Min Speed (%)"
-              .value=${fan.min_speed}
-              @change=${(e) => this._updateFanConfig({ min_speed: parseFloat(e.detail) })}
-              step="1"
-            ></md3-number-input>
-            <md3-number-input
-              label="Max Speed (%)"
-              .value=${fan.max_speed}
-              @change=${(e) => this._updateFanConfig({ max_speed: parseFloat(e.detail) })}
-              step="1"
-            ></md3-number-input>
-          </div>
-
-          <!-- Dynamic Wind -->
-          <div style="margin-top:8px;">
-            <label class="checkbox-label">
-              <input
-                type="checkbox"
-                .checked=${fan.wind_enabled}
-                @change=${(e) => this._updateFanConfig({ wind_enabled: e.target.checked })}
-              />
-              <span>Dynamic Wind</span>
-            </label>
-            ${fan.wind_enabled
-            ? x `
-                  <div class="row-col-grid" style="margin-top:8px;">
-                    <md3-number-input
-                      label="Wind Period (s)"
-                      .value=${fan.wind_period_seconds}
-                      @change=${(e) => this._updateFanConfig({ wind_period_seconds: parseFloat(e.detail) })}
-                      step="1"
-                    ></md3-number-input>
-                    <md3-number-input
-                      label="Wind Amplitude (%)"
-                      .value=${fan.wind_amplitude_pct}
-                      @change=${(e) => this._updateFanConfig({ wind_amplitude_pct: parseFloat(e.detail) })}
-                      step="1"
-                    ></md3-number-input>
-                  </div>
-                `
-            : E}
-          </div>
-        </div>
-      </div>
-    `;
     }
     _updateExhaustFanConfig(partial) {
         this._t({
@@ -21697,873 +24293,124 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             },
         });
     }
-    _renderExhaustFanControllerPanel() {
-        const fan = this._sm.environmentDraft.exhaustFanConfig;
-        const disabled = !fan.enabled;
-        return x `
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiFan}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Exhaust Fan Controller</h3>
-        </div>
-
-        <!-- Enabled toggle -->
-        <div class="form-section">
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              .checked=${fan.enabled}
-              @change=${(e) => this._updateExhaustFanConfig({ enabled: e.target.checked })}
-            />
-            <span>Enabled</span>
-          </label>
-        </div>
-
-        <!-- Combined demand: temp + humidity + VPD all live (no regulation mode) -->
-        <div class="form-section" style="${disabled ? 'opacity:0.5;pointer-events:none;' : ''}">
-          <!-- Stage-Aware VPD toggle (always available — no VPD-mode gate) -->
-          <div>
-            <label class="checkbox-label">
-              <input
-                type="checkbox"
-                .checked=${fan.stage_vpd_enabled}
-                @change=${(e) => this._updateExhaustFanConfig({
-            stage_vpd_enabled: e.target.checked,
-        })}
-              />
-              <span>Stage-Aware VPD</span>
-            </label>
-          </div>
-          ${fan.stage_vpd_enabled
-            ? x `
-                <div style="margin-top:12px;">
-                  <stage-vpd-overrides-table
-                    .overrides=${(fan.stage_vpd_overrides ?? {})}
-                    @overrides-change=${(e) => this._updateExhaustFanConfig({ stage_vpd_overrides: e.detail })}
-                  ></stage-vpd-overrides-table>
-                </div>
-              `
-            : E}
-
-          <!-- Temperature target + tolerance -->
-          <div class="row-col-grid" style="margin-top:8px;">
-            <md3-number-input
-              label="Temperature Target (°C)"
-              .value=${fan.temperature_target}
-              @change=${(e) => this._updateExhaustFanConfig({ temperature_target: parseFloat(e.detail) })}
-              step="0.1"
-            ></md3-number-input>
-            <md3-number-input
-              label="Temperature Tolerance (°C)"
-              .value=${fan.temperature_tolerance}
-              @change=${(e) => this._updateExhaustFanConfig({ temperature_tolerance: parseFloat(e.detail) })}
-              step="0.1"
-            ></md3-number-input>
-          </div>
-
-          <!-- Humidity target + tolerance -->
-          <div class="row-col-grid">
-            <md3-number-input
-              label="Humidity Target (%)"
-              .value=${fan.humidity_target}
-              @change=${(e) => this._updateExhaustFanConfig({ humidity_target: parseFloat(e.detail) })}
-              step="0.1"
-            ></md3-number-input>
-            <md3-number-input
-              label="Humidity Tolerance (%)"
-              .value=${fan.humidity_tolerance}
-              @change=${(e) => this._updateExhaustFanConfig({ humidity_tolerance: parseFloat(e.detail) })}
-              step="0.1"
-            ></md3-number-input>
-          </div>
-
-          <!-- VPD target + tolerance -->
-          <div class="row-col-grid">
-            <md3-number-input
-              label="${fan.stage_vpd_enabled ? 'Fallback VPD Target (kPa)' : 'VPD Target (kPa)'}"
-              style="${fan.stage_vpd_enabled ? 'opacity:0.5;' : ''}"
-              .value=${fan.vpd_target}
-              @change=${(e) => this._updateExhaustFanConfig({ vpd_target: parseFloat(e.detail) })}
-              step="0.01"
-            ></md3-number-input>
-            <md3-number-input
-              label="VPD Tolerance (kPa)"
-              .value=${fan.vpd_tolerance}
-              @change=${(e) => this._updateExhaustFanConfig({ vpd_tolerance: parseFloat(e.detail) })}
-              step="0.01"
-            ></md3-number-input>
-          </div>
-
-          <!-- Min / Max speed -->
-          <div class="row-col-grid" style="margin-top:8px;">
-            <md3-number-input
-              label="Min Speed (%)"
-              .value=${fan.min_speed}
-              @change=${(e) => this._updateExhaustFanConfig({ min_speed: parseFloat(e.detail) })}
-              step="1"
-            ></md3-number-input>
-            <md3-number-input
-              label="Max Speed (%)"
-              .value=${fan.max_speed}
-              @change=${(e) => this._updateExhaustFanConfig({ max_speed: parseFloat(e.detail) })}
-              step="1"
-            ></md3-number-input>
-          </div>
-
-          <!-- Critical Temperature (collapsible, collapsed by default) -->
-          <div style="margin-top:8px;">
-            <button
-              class="md3-button tonal"
-              style="display:flex;align-items:center;gap:4px;width:100%;justify-content:space-between;"
-              @click=${() => {
-            this._exhaustCriticalTempExpanded = !this._exhaustCriticalTempExpanded;
-        }}
-            >
-              <span>Critical Temperature</span>
-              <svg
-                style="width:18px;height:18px;transition:transform 0.2s;transform:rotate(${this
-            ._exhaustCriticalTempExpanded
-            ? '180deg'
-            : '0deg'});"
-                viewBox="0 0 24 24"
-              >
-                <path d="${mdiChevronDown}"></path>
-              </svg>
-            </button>
-            ${this._exhaustCriticalTempExpanded
-            ? x `
-                  <div class="row-col-grid" style="margin-top:8px;">
-                    <md3-number-input
-                      label="Critical Temp Low (°C)"
-                      .value=${fan.critical_temp_low ?? ''}
-                      @change=${(e) => this._updateExhaustFanConfig({
-                critical_temp_low: e.detail !== '' ? parseFloat(e.detail) : null,
-            })}
-                      step="0.1"
-                    ></md3-number-input>
-                    <md3-number-input
-                      label="Critical Temp High (°C)"
-                      .value=${fan.critical_temp_high ?? ''}
-                      @change=${(e) => this._updateExhaustFanConfig({
-                critical_temp_high: e.detail !== '' ? parseFloat(e.detail) : null,
-            })}
-                      step="0.1"
-                    ></md3-number-input>
-                    <md3-number-input
-                      label="Critical Temp Hysteresis (°C)"
-                      .value=${fan.critical_temp_hysteresis}
-                      @change=${(e) => this._updateExhaustFanConfig({
-                critical_temp_hysteresis: parseFloat(e.detail),
-            })}
-                      step="0.1"
-                    ></md3-number-input>
-                  </div>
-                `
-            : E}
-          </div>
-        </div>
-      </div>
-    `;
-    }
-    _renderHumiditySection() {
-        const stageColors = {
-            seedling: '#8bc34a',
-            mother: '#e91e63',
-            veg: '#4caf50',
-            early_flower: '#ff9800',
-            mid_flower: '#ff7043',
-            late_flower: '#f44336',
-            drying: '#9c27b0',
-            curing: '#2196f3',
+    _renderClimateTab() {
+        const deps = {
+            entityOptions: (domains, deviceClass) => this._getEntities(domains, deviceClass),
         };
         return x `
-      <!-- Devices -->
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiAirHumidifier}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Humidity Devices</h3>
-        </div>
-        <div class="form-section">
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Humidifier', this._sm.environmentDraft.humidifierEntities, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { humidifierEntities: v } }))}
-            ${this._renderMultiEntitySelect('Dehumidifier', this._sm.environmentDraft.dehumidifierEntities, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { dehumidifierEntities: v } }))}
-          </div>
-          <div class="row-col-grid">
-            <label class="checkbox-label">
-              <input
-                type="checkbox"
-                .checked=${this._humidifierControlEnabled}
-                @change=${(e) => {
-            const enabled = e.target.checked;
-            this._humidifierControlEnabled = enabled;
-            setHumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled).catch((err) => console.error('[setHumidifierControl failed]', err));
-        }}
-              />
-              Enable Humidifier Control
-            </label>
-            <label class="checkbox-label">
-              <input
-                type="checkbox"
-                .checked=${this._dehumidifierControlEnabled}
-                @change=${(e) => {
-            const enabled = e.target.checked;
-            this._dehumidifierControlEnabled = enabled;
-            setDehumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled).catch((err) => console.error('[setDehumidifierControl failed]', err));
-        }}
-              />
-              Enable Dehumidifier Control
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <!-- Thresholds accordion -->
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiWaterPercent}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Thresholds per Stage</h3>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          ${HUMIDITY_STAGES.map((stage) => {
-            const isOpen = this._openHumidityStageId === stage.id;
-            const color = stageColors[stage.id] || '#4caf50';
-            const dhDay = this._getThresholdValue(stage.dehum, 'day', 'on');
-            const huDay = this._getHumidifierThresholdValue(stage.hum, 'day', 'on');
-            return x `
-              <div class="acc-card">
-                <div
-                  class="acc-head"
-                  @click=${() => {
-                this._openHumidityStageId = isOpen ? '' : stage.id;
-            }}
-                >
-                  <div class="acc-stage-dot" style="background:${color};"></div>
-                  <div class="acc-head-title">${stage.label}</div>
-                  ${!isOpen
-                ? x `
-                        <div class="acc-head-desc">
-                          Dehum on &gt; ${dhDay > 0 ? dhDay.toFixed(2) + ' kPa' : '—'} &nbsp;·&nbsp; Hum on &lt;
-                          ${huDay > 0 ? huDay.toFixed(2) + ' kPa' : '—'}
-                        </div>
-                      `
-                : E}
-                  <svg class="acc-chev ${isOpen ? 'open' : ''}" viewBox="0 0 24 24">
-                    <path d="${mdiChevronDown}"></path>
-                  </svg>
-                </div>
-                ${isOpen
-                ? x `
-                      <div class="acc-body">
-                        <!-- Dehumidifier block -->
-                        <div class="acc-device-block">
-                          <div class="acc-device-header" style="color:var(--secondary,#2196f3);">
-                            <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>
-                            Dehumidifier
-                          </div>
-                          <div class="acc-cycle-grid">
-                            <div>
-                              <div class="acc-cycle-row" style="color:#ff9800;">
-                                <svg viewBox="0 0 24 24">
-                                  <path d="${mdiWhiteBalanceSunny}"></path>
-                                </svg>
-                                Day
-                              </div>
-                              <div
-                                style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
-                              >
-                                <md3-number-input
-                                  label="On Above (kPa)"
-                                  .value=${this._getThresholdValue(stage.dehum, 'day', 'on')}
-                                  @change=${(e) => this._updateThreshold(stage.dehum, 'day', 'on', parseFloat(e.detail))}
-                                  step="0.05"
-                                ></md3-number-input>
-                                <md3-number-input
-                                  label="Off Below (kPa)"
-                                  .value=${this._getThresholdValue(stage.dehum, 'day', 'off')}
-                                  @change=${(e) => this._updateThreshold(stage.dehum, 'day', 'off', parseFloat(e.detail))}
-                                  step="0.05"
-                                ></md3-number-input>
-                              </div>
-                            </div>
-                            <div>
-                              <div class="acc-cycle-row" style="color:#7986cb;">
-                                <svg viewBox="0 0 24 24"><path d="${mdiWeatherNight}"></path></svg>
-                                Night
-                              </div>
-                              <div
-                                style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
-                              >
-                                <md3-number-input
-                                  label="On Above (kPa)"
-                                  .value=${this._getThresholdValue(stage.dehum, 'night', 'on')}
-                                  @change=${(e) => this._updateThreshold(stage.dehum, 'night', 'on', parseFloat(e.detail))}
-                                  step="0.05"
-                                ></md3-number-input>
-                                <md3-number-input
-                                  label="Off Below (kPa)"
-                                  .value=${this._getThresholdValue(stage.dehum, 'night', 'off')}
-                                  @change=${(e) => this._updateThreshold(stage.dehum, 'night', 'off', parseFloat(e.detail))}
-                                  step="0.05"
-                                ></md3-number-input>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <!-- Humidifier block -->
-                        <div class="acc-device-block">
-                          <div class="acc-device-header" style="color:#00bcd4;">
-                            <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>
-                            Humidifier
-                          </div>
-                          <div class="acc-cycle-grid">
-                            <div>
-                              <div class="acc-cycle-row" style="color:#ff9800;">
-                                <svg viewBox="0 0 24 24">
-                                  <path d="${mdiWhiteBalanceSunny}"></path>
-                                </svg>
-                                Day
-                              </div>
-                              <div
-                                style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
-                              >
-                                <md3-number-input
-                                  label="On Below (kPa)"
-                                  .value=${this._getHumidifierThresholdValue(stage.hum, 'day', 'on')}
-                                  @change=${(e) => this._updateHumidifierThreshold(stage.hum, 'day', 'on', parseFloat(e.detail))}
-                                  step="0.05"
-                                ></md3-number-input>
-                                <md3-number-input
-                                  label="Off Above (kPa)"
-                                  .value=${this._getHumidifierThresholdValue(stage.hum, 'day', 'off')}
-                                  @change=${(e) => this._updateHumidifierThreshold(stage.hum, 'day', 'off', parseFloat(e.detail))}
-                                  step="0.05"
-                                ></md3-number-input>
-                              </div>
-                            </div>
-                            <div>
-                              <div class="acc-cycle-row" style="color:#7986cb;">
-                                <svg viewBox="0 0 24 24"><path d="${mdiWeatherNight}"></path></svg>
-                                Night
-                              </div>
-                              <div
-                                style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
-                              >
-                                <md3-number-input
-                                  label="On Below (kPa)"
-                                  .value=${this._getHumidifierThresholdValue(stage.hum, 'night', 'on')}
-                                  @change=${(e) => this._updateHumidifierThreshold(stage.hum, 'night', 'on', parseFloat(e.detail))}
-                                  step="0.05"
-                                ></md3-number-input>
-                                <md3-number-input
-                                  label="Off Above (kPa)"
-                                  .value=${this._getHumidifierThresholdValue(stage.hum, 'night', 'off')}
-                                  @change=${(e) => this._updateHumidifierThreshold(stage.hum, 'night', 'off', parseFloat(e.detail))}
-                                  step="0.05"
-                                ></md3-number-input>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    `
-                : E}
-              </div>
-            `;
+      <config-climate-tab
+        .vm=${createClimateTabViewModel(this._sm, deps, {
+            fanTempOverrideExpanded: this._fanTempOverrideExpanded,
+            exhaustCriticalTempExpanded: this._exhaustCriticalTempExpanded,
         })}
-        </div>
-      </div>
+        @env-draft-changed=${(e) => this._setEnv(e.detail.partial)}
+        @fan-config-changed=${(e) => this._updateFanConfig(e.detail.partial)}
+        @exhaust-config-changed=${(e) => this._updateExhaustFanConfig(e.detail.partial)}
+        @toggle-fan-temp-override=${() => {
+            this._fanTempOverrideExpanded = !this._fanTempOverrideExpanded;
+        }}
+        @toggle-exhaust-critical-temp=${() => {
+            this._exhaustCriticalTempExpanded = !this._exhaustCriticalTempExpanded;
+        }}
+        @remove-environment-requested=${this._handleRemoveEnvironment}
+      ></config-climate-tab>
     `;
     }
-    _renderIrrigationSection() {
+    _renderHumidityTab() {
+        const deps = {
+            entityOptions: (domains, deviceClass) => this._getEntities(domains, deviceClass),
+        };
         return x `
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiGauge}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Irrigation Monitoring</h3>
-        </div>
-        <div class="form-section">
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('pH Sensors', this._sm.environmentDraft.phSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { phSensors: v } }))}
-            ${this._renderMultiEntitySelect('Feed EC Sensors', this._sm.environmentDraft.feedEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { feedEcSensors: v } }))}
-          </div>
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Runoff EC Sensors', this._sm.environmentDraft.runoffEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { runoffEcSensors: v } }))}
-          </div>
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Drain Volume Sensors', this._sm.environmentDraft.drainVolumeSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { drainVolumeSensors: v } }))}
-            ${this._renderMultiEntitySelect('Irrigation Flow Sensors', this._sm.environmentDraft.irrigationFlowSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { irrigationFlowSensors: v } }))}
-          </div>
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Power Sensors', this._sm.environmentDraft.powerSensors, ['sensor', 'input_number', 'number'], 'power', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { powerSensors: v } }))}
-            ${this._renderMultiEntitySelect('Energy Sensors', this._sm.environmentDraft.energySensors, ['sensor', 'input_number', 'number'], 'energy', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { energySensors: v } }))}
-          </div>
-        </div>
-      </div>
+      <config-humidity-tab
+        .vm=${createHumidityTabViewModel(this._sm, deps, {
+            humidifierControlEnabled: this._humidifierControlEnabled,
+            dehumidifierControlEnabled: this._dehumidifierControlEnabled,
+            openStageId: this._openHumidityStageId,
+        })}
+        @env-draft-changed=${(e) => this._setEnv(e.detail.partial)}
+        @set-humidifier-control=${(e) => this._setHumidifierControl(e.detail.enabled)}
+        @set-dehumidifier-control=${(e) => this._setDehumidifierControl(e.detail.enabled)}
+        @toggle-stage=${(e) => {
+            this._openHumidityStageId =
+                this._openHumidityStageId === e.detail.stageId ? '' : e.detail.stageId;
+        }}
+        @update-dehum-threshold=${(e) => this._updateThreshold(e.detail.stage, e.detail.cycle, e.detail.point, e.detail.value)}
+        @update-hum-threshold=${(e) => this._updateHumidifierThreshold(e.detail.stage, e.detail.cycle, e.detail.point, e.detail.value)}
+      ></config-humidity-tab>
     `;
     }
-    _renderSubstrateEcSection() {
+    _setHumidifierControl(enabled) {
+        this._humidifierControlEnabled = enabled;
+        setHumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled).catch((err) => console.error('[setHumidifierControl failed]', err));
+    }
+    _setDehumidifierControl(enabled) {
+        this._dehumidifierControlEnabled = enabled;
+        setDehumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled).catch((err) => console.error('[setDehumidifierControl failed]', err));
+    }
+    _renderIrrigationTab() {
+        const deps = {
+            entityOptions: (domains, deviceClass) => this._getEntities(domains, deviceClass),
+        };
         return x `
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiLightningBolt}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Substrate EC</h3>
-        </div>
-        <div class="form-section">
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Bulk EC Sensors', this._sm.environmentDraft.bulkEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { bulkEcSensors: v } }))}
-            ${this._renderMultiEntitySelect('Pore EC Sensors', this._sm.environmentDraft.poreEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { poreEcSensors: v } }))}
-          </div>
-        </div>
-      </div>
+      <config-irrigation-tab
+        .vm=${createIrrigationTabViewModel(this._sm, deps)}
+        @env-draft-changed=${(e) => this._setEnv(e.detail.partial)}
+      ></config-irrigation-tab>
     `;
     }
-    _renderTanksSection() {
-        const listId = 'list-tank-sensor-entity';
-        const entities = this._getEntities(['sensor', 'input_number'], null);
+    _renderTanksTab() {
+        const deps = {
+            entityOptions: (domains, deviceClass) => this._getEntities(domains, deviceClass),
+        };
         return x `
-      <div class="detail-card">
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
-        >
-          <div style="display:flex;align-items:center;gap:8px;">
-            <svg
-              style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-              viewBox="0 0 24 24"
-            >
-              <path d="${mdiWater}"></path>
-            </svg>
-            <h3 style="margin:0;border:none;padding:0;">Irrigation Tanks</h3>
-          </div>
-          <button class="md3-button tonal" @click=${this._openAddTank} style="padding:6px 12px;">
-            <svg
-              style="width:16px;height:16px;fill:currentColor;margin-right:4px;"
-              viewBox="0 0 24 24"
-            >
-              <path d="${mdiPlus}"></path>
-            </svg>
-            Add Tank
-          </button>
-        </div>
-
-        ${this._sm.environmentDraft.irrigationTanks.length === 0 && this._sm.tabs.tanks.sub.kind === 'idle'
-            ? x `<div style="font-size:0.85rem;color:var(--secondary-text-color);padding:8px 0;">
-              No tanks configured.
-            </div>`
-            : E}
-
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          ${this._sm.environmentDraft.irrigationTanks.map((tank, i) => x `
-              <div
-                style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:10px 12px;border-radius:8px;"
-              >
-                <div>
-                  <div style="font-weight:500;">${tank.name || 'Tank ' + (i + 1)}</div>
-                  <div style="font-size:0.78rem;color:var(--secondary-text-color);">
-                    ${tank.sensorEntity}
-                    ${tank.volumeLiters != null ? x ` · ${tank.volumeLiters} L` : E} · warn
-                    at ${tank.warningLevel ?? 30}%
-                  </div>
-                </div>
-                <div style="display:flex;gap:6px;">
-                  <button
-                    class="md3-button text"
-                    @click=${() => this._editTank(i)}
-                    style="padding:6px;min-width:auto;"
-                  >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                      <path d="${mdiPencil}"></path>
-                    </svg>
-                  </button>
-                  <button
-                    class="md3-button text error"
-                    @click=${() => this._deleteTank(i)}
-                    style="padding:6px;min-width:auto;"
-                  >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                      <path d="${mdiDelete}"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            `)}
-        </div>
-
-        ${this._sm.tabs.tanks.sub.kind !== 'idle'
-            ? x `
-              ${(() => {
-                const tankSub = this._sm.tabs.tanks.sub;
-                if (tankSub.kind !== 'adding' && tankSub.kind !== 'editing')
-                    return E;
-                return x `
-                  <div
-                    style="margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--divider-color,rgba(255,255,255,0.15));border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;"
-                  >
-                    <div class="md3-input-group">
-                      <label class="md3-label">Sensor Entity *</label>
-                      <input
-                        class="md3-input"
-                        list="${listId}"
-                        .value=${tankSub.sensorEntity}
-                        @input=${(e) => {
-                    this._t({ type: 'UPDATE_TANK_DRAFT', partial: { sensorEntity: e.target.value } });
-                }}
-                        placeholder="Search entity..."
-                      />
-                      <datalist id="${listId}">
-                        ${entities.map((eid) => x `<option value="${eid}"></option>`)}
-                      </datalist>
-                    </div>
-                    <div class="md3-input-group">
-                      <label class="md3-label">Name</label>
-                      <input
-                        class="md3-input"
-                        type="text"
-                        .value=${tankSub.name}
-                        @input=${(e) => {
-                    this._t({ type: 'UPDATE_TANK_DRAFT', partial: { name: e.target.value } });
-                }}
-                        placeholder="e.g. Main Tank"
-                      />
-                    </div>
-                    <div class="row-col-grid">
-                      <div class="md3-input-group">
-                        <label class="md3-label">Volume (L, optional)</label>
-                        <input
-                          class="md3-input"
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          .value=${tankSub.volumeLiters != null ? String(tankSub.volumeLiters) : ''}
-                          @input=${(e) => {
-                    const v = e.target.value;
-                    this._t({ type: 'UPDATE_TANK_DRAFT', partial: { volumeLiters: v === '' ? null : parseFloat(v) } });
-                }}
-                          placeholder="e.g. 100"
-                        />
-                      </div>
-                      <div class="md3-input-group">
-                        <label class="md3-label">Warning Level (%)</label>
-                        <input
-                          class="md3-input"
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="1"
-                          .value=${String(tankSub.warningLevel)}
-                          @input=${(e) => {
-                    this._t({ type: 'UPDATE_TANK_DRAFT', partial: { warningLevel: parseFloat(e.target.value) || 30 } });
-                }}
-                        />
-                      </div>
-                    </div>
-                    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px;">
-                      <button class="md3-button tonal" @click=${this._cancelTank}>Cancel</button>
-                      <button class="md3-button primary" @click=${this._saveTank}>Save Tank</button>
-                    </div>
-                  </div>
-                `;
-            })()}
-            `
-            : E}
-      </div>
+      <config-tanks-tab
+        .vm=${createTanksTabViewModel$1(this._sm, deps)}
+        @add-tank-requested=${this._openAddTank}
+        @edit-tank-requested=${(e) => this._editTank(e.detail.index)}
+        @delete-tank-requested=${(e) => this._deleteTank(e.detail.index)}
+        @tank-draft-changed=${(e) => this._t({ type: 'UPDATE_TANK_DRAFT', partial: e.detail.partial })}
+        @cancel-tank=${this._cancelTank}
+        @save-tank-requested=${this._saveTank}
+      ></config-tanks-tab>
     `;
     }
-    _renderVisionSection() {
+    _renderVisionTab() {
+        const deps = {
+            entityOptions: (domains, deviceClass) => this._getEntities(domains, deviceClass),
+        };
         return x `
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiCamera}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Vision Checkup</h3>
-        </div>
-        ${this._renderMultiEntitySelect('Camera Entities', this._sm.environmentDraft.cameraEntities, ['camera'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { cameraEntities: v } }))}
-        ${this._sm.environmentDraft.cameraEntities.length === 0
-            ? x `<p style="opacity:0.6;font-size:0.85rem;margin:8px 0 0;">
-              Add camera entities above to enable vision checkups.
-            </p>`
-            : x `
-              <div class="form-section" style="margin-top:12px;">
-                <label class="checkbox-label">
-                  <input
-                    type="checkbox"
-                    .checked=${this._sm.environmentDraft.visionEnabled}
-                    @change=${(e) => {
-                this._t({ type: 'UPDATE_ENV_DRAFT', partial: { visionEnabled: e.target.checked } });
-            }}
-                  />
-                  Enable automatic vision checkups
-                </label>
-                <md3-number-input
-                  label="Early check offset (min after lights on)"
-                  .value=${this._sm.environmentDraft.visionEarlyOffset}
-                  @change=${(e) => {
-                this._t({ type: 'UPDATE_ENV_DRAFT', partial: { visionEarlyOffset: Number(e.detail) } });
-            }}
-                  min="1"
-                >
-                </md3-number-input>
-                <md3-number-input
-                  label="Mid check (hours into light cycle)"
-                  .value=${this._sm.environmentDraft.visionMidHours}
-                  @change=${(e) => {
-                this._t({ type: 'UPDATE_ENV_DRAFT', partial: { visionMidHours: Number(e.detail) } });
-            }}
-                  min="1"
-                >
-                </md3-number-input>
-                <md3-number-input
-                  label="Late check offset (min before lights off)"
-                  .value=${this._sm.environmentDraft.visionLateOffset}
-                  @change=${(e) => {
-                this._t({ type: 'UPDATE_ENV_DRAFT', partial: { visionLateOffset: Number(e.detail) } });
-            }}
-                  min="1"
-                >
-                </md3-number-input>
-              </div>
-            `}
-      </div>
+      <config-vision-tab
+        .vm=${createVisionTabViewModel(this._sm, deps)}
+        @env-draft-changed=${(e) => this._setEnv(e.detail.partial)}
+      ></config-vision-tab>
     `;
     }
-    _renderHeatmapSection() {
+    _renderHeatmapTab() {
         return x `
-      <div class="detail-card">
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
-        >
-          <h3>Sensor Groups</h3>
-          <button class="md3-button tonal" @click=${this._openAddGroup}>Add Group</button>
-        </div>
-        ${this._sm.environmentDraft.sensorGroups.length === 0
-            ? x `<div style="text-align:center;padding:20px;color:var(--secondary-text-color);">
-              No sensor groups configured.
-            </div>`
-            : x `
-              <div style="display:flex;flex-direction:column;gap:8px;">
-                ${this._sm.environmentDraft.sensorGroups.map((group) => x `
-                    <div
-                      style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
-                    >
-                      <div>
-                        <div style="font-weight:500;">${group.name}</div>
-                        <div style="font-size:0.8rem;color:var(--secondary-text-color);">
-                          X: ${group.x}, Y: ${group.y}, Z: ${group.z}
-                        </div>
-                      </div>
-                      <div style="display:flex;gap:8px;">
-                        <button
-                          class="md3-button text"
-                          @click=${() => this._editGroup(group)}
-                          style="padding:8px;min-width:auto;"
-                        >
-                          <svg
-                            style="width:20px;height:20px;fill:currentColor;"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="${mdiPencil}"></path>
-                          </svg>
-                        </button>
-                        <button
-                          class="md3-button text error"
-                          @click=${() => this._deleteGroup(group.id)}
-                          style="padding:8px;min-width:auto;"
-                        >
-                          <svg
-                            style="width:20px;height:20px;fill:currentColor;"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="${mdiDelete}"></path>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  `)}
-              </div>
-            `}
-      </div>
+      <config-heatmap-tab
+        .vm=${createHeatmapTabViewModel(this._sm)}
+        @add-group-requested=${this._openAddGroup}
+        @edit-group-requested=${(e) => this._editGroup(e.detail.group)}
+        @delete-group-requested=${(e) => this._deleteGroup(e.detail.id)}
+      ></config-heatmap-tab>
     `;
     }
-    _renderSubareasSection() {
-        const envId = this._sm.environmentDraft.selectedGrowspaceId;
-        const gsSub = this._sm.tabs.growspaces.sub;
-        const growspaceId = envId || (gsSub.kind === 'editing' ? gsSub.growspaceId : '');
-        const subareasSub = this._sm.tabs.subareas.sub;
-        if (!growspaceId) {
-            return x `
-        <div class="detail-card">
-          <h3>Subareas</h3>
-          <div style="text-align:center;padding:20px;color:var(--secondary-text-color);">
-            Select a growspace in the Sensors tab first.
-          </div>
-        </div>
-      `;
-        }
+    _renderSubareasTab() {
         return x `
-      <div class="detail-card">
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
-        >
-          <h3 style="margin:0;">Subareas</h3>
-          <button
-            class="md3-button tonal"
-            @click=${() => this._t({ type: 'BEGIN_ADD_SUBAREA' })}
-          >
-            <svg
-              style="width:18px;height:18px;fill:currentColor;margin-right:6px;"
-              viewBox="0 0 24 24"
-            >
-              <path d="${mdiPlus}"></path>
-            </svg>
-            Add Subarea
-          </button>
-        </div>
-
-        ${subareasSub.kind === 'adding'
-            ? x `
-              <div
-                style="display:flex;gap:8px;align-items:center;margin-bottom:16px;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
-              >
-                <input
-                  class="md3-input"
-                  style="flex:1;"
-                  placeholder="Subarea name..."
-                  .value=${subareasSub.name}
-                  @input=${(e) => this._t({ type: 'UPDATE_SUBAREA_NAME', name: e.target.value })}
-                  @keydown=${(e) => {
-                if (e.key === 'Enter')
-                    this._handleAddSubarea();
-            }}
-                />
-                <button
-                  class="md3-button primary"
-                  @click=${this._handleAddSubarea}
-                  ?disabled=${!subareasSub.name.trim()}
-                >
-                  Add
-                </button>
-                <button class="md3-button tonal" @click=${() => this._t({ type: 'CANCEL_SUBAREA' })}>
-                  Cancel
-                </button>
-              </div>
-            `
-            : E}
-        ${this._subareasLoading
-            ? x `<div style="text-align:center;padding:20px;color:var(--secondary-text-color);">
-              Loading...
-            </div>`
-            : this._subareas.length === 0
-                ? x `<div style="text-align:center;padding:20px;color:var(--secondary-text-color);">
-                No subareas configured. Add one to get started.
-              </div>`
-                : x `
-                <div style="display:flex;flex-direction:column;gap:8px;">
-                  ${this._subareas.map((subarea) => x `
-                      <div
-                        style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
-                      >
-                        <div>
-                          <div style="font-weight:500;">${subarea.name}</div>
-                          <div style="font-size:0.8rem;color:var(--secondary-text-color);">
-                            ID: ${subarea.id}
-                          </div>
-                        </div>
-                        <div style="display:flex;gap:4px;align-items:center;">
-                          ${subareasSub.kind === 'confirm-delete' && subareasSub.subareaId === subarea.id
-                    ? x `
-                                <span
-                                  style="font-size:0.85rem;color:var(--secondary-text-color);margin-right:4px;"
-                                  >Remove ${subarea.name}?</span
-                                >
-                                <button
-                                  class="md3-button primary error"
-                                  @click=${() => this._confirmDeleteSubarea(subarea.id)}
-                                  style="padding:6px 10px;min-width:auto;font-size:0.8rem;"
-                                >
-                                  Yes
-                                </button>
-                                <button
-                                  class="md3-button tonal"
-                                  @click=${() => this._t({ type: 'CANCEL_DELETE_SUBAREA' })}
-                                  style="padding:6px 10px;min-width:auto;font-size:0.8rem;"
-                                >
-                                  No
-                                </button>
-                              `
-                    : x `
-                                <button
-                                  class="md3-button text"
-                                  @click=${() => this._handleEditSubarea(subarea)}
-                                  style="padding:8px;min-width:auto;"
-                                  title="Edit sensors"
-                                >
-                                  <svg
-                                    style="width:20px;height:20px;fill:currentColor;"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path d="${mdiPencil}"></path>
-                                  </svg>
-                                </button>
-                                <button
-                                  class="md3-button text error"
-                                  @click=${() => this._handleDeleteSubarea(subarea.id)}
-                                  style="padding:8px;min-width:auto;"
-                                  title="Delete subarea"
-                                >
-                                  <svg
-                                    style="width:20px;height:20px;fill:currentColor;"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path d="${mdiDelete}"></path>
-                                  </svg>
-                                </button>
-                              `}
-                        </div>
-                      </div>
-                    `)}
-                </div>
-              `}
-      </div>
+      <config-subareas-tab
+        .vm=${createSubareasTabViewModel(this._sm, {
+            subareas: this._subareas,
+            loading: this._subareasLoading,
+        })}
+        @add-subarea-requested=${() => this._t({ type: 'BEGIN_ADD_SUBAREA' })}
+        @subarea-name-changed=${(e) => this._t({ type: 'UPDATE_SUBAREA_NAME', name: e.detail.name })}
+        @commit-add-subarea=${() => this._handleAddSubarea()}
+        @cancel-add-subarea=${() => this._t({ type: 'CANCEL_SUBAREA' })}
+        @edit-subarea-requested=${(e) => this._handleEditSubarea(e.detail.subarea)}
+        @delete-subarea-requested=${(e) => this._handleDeleteSubarea(e.detail.id)}
+        @confirm-delete-subarea=${(e) => this._confirmDeleteSubarea(e.detail.id)}
+        @cancel-delete-subarea=${() => this._t({ type: 'CANCEL_DELETE_SUBAREA' })}
+      ></config-subareas-tab>
     `;
     }
     // ── Main render ──────────────────────────────────────────────────────────
@@ -22586,10 +24433,6 @@ let ConfigDialog = class ConfigDialog extends i$3 {
       </div>
     `;
     }
-    _getVpdOptimalValue(key, period, slot) {
-        const overrides = this._sm.environmentDraft.vpdOptimalOverrides;
-        return overrides[key]?.[period]?.[slot] ?? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot];
-    }
     _updateVpdOptimal(key, period, slot, raw) {
         const overrides = this._sm.environmentDraft.vpdOptimalOverrides;
         const parsed = parseFloat(raw);
@@ -22610,108 +24453,16 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     _resetVpdOptimal() {
         this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdOptimalOverrides: {} } });
     }
-    _renderVpdTargetsSection() {
+    _renderVpdTargetsTab() {
         return x `
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiTune}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">VPD Optimal Targets</h3>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          ${FAN_VPD_STAGE_KEYS.map((key) => {
-            const isOpen = this._openVpdStageId === key;
-            const color = VPD_STAGE_COLORS[key];
-            const dayLow = this._getVpdOptimalValue(key, 'day', 'low');
-            const dayHigh = this._getVpdOptimalValue(key, 'day', 'high');
-            const nightLow = this._getVpdOptimalValue(key, 'night', 'low');
-            const nightHigh = this._getVpdOptimalValue(key, 'night', 'high');
-            return x `
-              <div class="acc-card">
-                <div
-                  class="acc-head"
-                  @click=${() => {
-                this._openVpdStageId = isOpen ? '' : key;
-            }}
-                >
-                  <div class="acc-stage-dot" style="background:${color};"></div>
-                  <div class="acc-head-title">${FAN_VPD_STAGE_LABELS[key]}</div>
-                  ${!isOpen
-                ? x `
-                        <div class="acc-head-desc">
-                          Day ${dayLow.toFixed(2)}–${dayHigh.toFixed(2)} &nbsp;·&nbsp; Night
-                          ${nightLow.toFixed(2)}–${nightHigh.toFixed(2)} kPa
-                        </div>
-                      `
-                : E}
-                  <svg class="acc-chev ${isOpen ? 'open' : ''}" viewBox="0 0 24 24">
-                    <path d="${mdiChevronDown}"></path>
-                  </svg>
-                </div>
-                ${isOpen
-                ? x `
-                      <div class="acc-body">
-                        <div class="acc-cycle-grid">
-                          <div>
-                            <div class="acc-cycle-row" style="color:#ff9800;">
-                              <svg viewBox="0 0 24 24">
-                                <path d="${mdiWhiteBalanceSunny}"></path>
-                              </svg>
-                              Day
-                            </div>
-                            <div
-                              style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
-                            >
-                              <md3-number-input
-                                label="Low (kPa)"
-                                .value=${dayLow}
-                                @change=${(e) => this._updateVpdOptimal(key, 'day', 'low', e.detail)}
-                              ></md3-number-input>
-                              <md3-number-input
-                                label="High (kPa)"
-                                .value=${dayHigh}
-                                @change=${(e) => this._updateVpdOptimal(key, 'day', 'high', e.detail)}
-                              ></md3-number-input>
-                            </div>
-                          </div>
-                          <div>
-                            <div class="acc-cycle-row" style="color:#7986cb;">
-                              <svg viewBox="0 0 24 24"><path d="${mdiWeatherNight}"></path></svg>
-                              Night
-                            </div>
-                            <div
-                              style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
-                            >
-                              <md3-number-input
-                                label="Low (kPa)"
-                                .value=${nightLow}
-                                @change=${(e) => this._updateVpdOptimal(key, 'night', 'low', e.detail)}
-                              ></md3-number-input>
-                              <md3-number-input
-                                label="High (kPa)"
-                                .value=${nightHigh}
-                                @change=${(e) => this._updateVpdOptimal(key, 'night', 'high', e.detail)}
-                              ></md3-number-input>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    `
-                : E}
-              </div>
-            `;
-        })}
-        </div>
-        <button class="md3-button text" @click=${this._resetVpdOptimal} style="margin-top:12px;">
-          Reset all to defaults
-        </button>
-      </div>
+      <config-vpd-targets-tab
+        .vm=${createVpdTargetsTabViewModel(this._sm, { openStageId: this._openVpdStageId })}
+        @toggle-stage=${(e) => {
+            this._openVpdStageId = this._openVpdStageId === e.detail.key ? '' : e.detail.key;
+        }}
+        @update-vpd-optimal=${(e) => this._updateVpdOptimal(e.detail.key, e.detail.period, e.detail.slot, e.detail.value)}
+        @reset-vpd-optimal=${this._resetVpdOptimal}
+      ></config-vpd-targets-tab>
     `;
     }
     render() {
@@ -22840,32 +24591,19 @@ let ConfigDialog = class ConfigDialog extends i$3 {
 
               <!-- Scrollable content -->
               <div class="cfg-scroll">
-                ${this.currentTab === ConfigTab.GROWSPACES
-            ? this._renderGrowspacesSection()
-            : E}
+                ${this.currentTab === ConfigTab.GROWSPACES ? this._renderGrowspacesTab() : E}
                 ${this.currentTab === ConfigTab.NOTIFICATIONS
-            ? this._renderNotificationsSection()
+            ? this._renderNotificationsTab()
             : E}
-                ${this.currentTab === ConfigTab.SENSORS ? this._renderSensorsSection() : E}
-                ${this.currentTab === ConfigTab.CLIMATE ? this._renderClimateSection() : E}
-                ${this.currentTab === ConfigTab.CLIMATE
-            ? this._renderFanControllerPanel()
-            : E}
-                ${this.currentTab === ConfigTab.CLIMATE
-            ? this._renderExhaustFanControllerPanel()
-            : E}
-                ${this.currentTab === ConfigTab.HUMIDITY ? this._renderHumiditySection() : E}
-                ${this.currentTab === ConfigTab.IRRIGATION
-            ? this._renderIrrigationSection()
-            : E}
-                ${this.currentTab === ConfigTab.IRRIGATION
-            ? this._renderSubstrateEcSection()
-            : E}
-                ${this.currentTab === ConfigTab.TANKS ? this._renderTanksSection() : E}
-                ${this.currentTab === ConfigTab.VISION ? this._renderVisionSection() : E}
-                ${this.currentTab === ConfigTab.HEATMAP ? this._renderHeatmapSection() : E}
-                ${this.currentTab === ConfigTab.SUBAREAS ? this._renderSubareasSection() : E}
-                ${this.currentTab === ConfigTab.VPD_TARGETS ? this._renderVpdTargetsSection() : E}
+                ${this.currentTab === ConfigTab.SENSORS ? this._renderSensorsTab() : E}
+                ${this.currentTab === ConfigTab.CLIMATE ? this._renderClimateTab() : E}
+                ${this.currentTab === ConfigTab.HUMIDITY ? this._renderHumidityTab() : E}
+                ${this.currentTab === ConfigTab.IRRIGATION ? this._renderIrrigationTab() : E}
+                ${this.currentTab === ConfigTab.TANKS ? this._renderTanksTab() : E}
+                ${this.currentTab === ConfigTab.VISION ? this._renderVisionTab() : E}
+                ${this.currentTab === ConfigTab.HEATMAP ? this._renderHeatmapTab() : E}
+                ${this.currentTab === ConfigTab.SUBAREAS ? this._renderSubareasTab() : E}
+                ${this.currentTab === ConfigTab.VPD_TARGETS ? this._renderVpdTargetsTab() : E}
               </div>
             </div>
           </div>
@@ -59964,6 +61702,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         @delete-growspace-submit=${(e) => this._handleRemoveGrowspace(e.detail)}
         @remove-environment-submit=${(e) => this._handleRemoveEnvironment(e.detail)}
         @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
+        @save-notification-settings-submit=${(e) => this._handleSaveNotificationSettings(e.detail)}
         @vision-checkup-config-submit=${(e) => this._handleVisionCheckupConfig(e.detail)}
       ></config-dialog>
     `;
@@ -60038,7 +61777,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
             // service doesn't accept it), so persist it via its dedicated service.
             // Dispatched last: configure_environment rebuilds EnvironmentConfig and
             // resets exhaust_fan_config to default, so this must run after it.
-            if (detail.exhaustFanConfig) {
+            if (needsExhaustCall(detail)) {
                 await configureExhaustFan({
                     growspaceId: detail.selectedGrowspaceId,
                     fanConfig: detail.exhaustFanConfig,
@@ -60050,6 +61789,22 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         }
         catch (e) {
             showError(e, 'Failed to configure environment');
+        }
+    }
+    async _handleSaveNotificationSettings(detail) {
+        try {
+            await withToast(async () => {
+                await saveNotificationSettings(detail);
+                await this.store?.refreshData();
+            }, {
+                success: 'Notification settings saved',
+                errorPrefix: 'Failed to save notification settings',
+                rethrow: true,
+            });
+            closeDialog();
+        }
+        catch (e) {
+            console.error('[DialogHost] saveNotificationSettings failed:', e);
         }
     }
     async _handleVisionCheckupConfig(detail) {

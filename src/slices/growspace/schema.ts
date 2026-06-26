@@ -317,6 +317,22 @@ export const GrowspaceAPIResponseSchema = z
       .optional()
       .prefault({}),
 
+    // Global notification settings duplicated onto every growspace payload so
+    // the Config Dialog can seed/round-trip saved values.
+    notification_settings: z.record(z.string(), z.number()).optional(),
+    ai_auto_alerts: z.boolean().optional(),
+    timed_notifications: z
+      .array(
+        z.object({
+          id: z.string(),
+          message: z.string(),
+          trigger_type: z.string(),
+          day: z.number(),
+          growspace_ids: z.array(z.string()),
+        })
+      )
+      .optional(),
+
     _ts: z.number().optional(),
   })
   .passthrough();

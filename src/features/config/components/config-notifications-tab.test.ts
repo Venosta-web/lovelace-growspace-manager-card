@@ -24,7 +24,7 @@ const baseDraft: NotificationsDraft = {
 
 const timedDraft: TimedNotificationDraft = {
   message: 'Lights on',
-  triggerType: 'veg_start',
+  triggerType: 'veg',
   day: 3,
   growspaceIds: ['gs1'],
 };
@@ -75,8 +75,8 @@ describe('ConfigNotificationsTab — render', () => {
 
   it('renders a row per timed notification', async () => {
     const items: TimedNotification[] = [
-      { id: 'n1', message: 'A', triggerType: 'veg_start', day: 1, growspaceIds: [] },
-      { id: 'n2', message: 'B', triggerType: 'dry_start', day: 9, growspaceIds: [] },
+      { id: 'n1', message: 'A', triggerType: 'veg', day: 1, growspaceIds: [] },
+      { id: 'n2', message: 'B', triggerType: 'dry', day: 9, growspaceIds: [] },
     ];
     const el = await mount(makeVm({ timedNotifications: items }));
     expect(el.shadowRoot!.querySelectorAll('[data-timed-id]').length).toBe(2);
@@ -120,7 +120,7 @@ describe('ConfigNotificationsTab — intents out', () => {
     const item: TimedNotification = {
       id: 'n1',
       message: 'A',
-      triggerType: 'veg_start',
+      triggerType: 'veg',
       day: 1,
       growspaceIds: ['gs1'],
     };
@@ -134,7 +134,7 @@ describe('ConfigNotificationsTab — intents out', () => {
     expect(received[0].id).toBe('n1');
     expect(received[0].draft).toEqual({
       message: 'A',
-      triggerType: 'veg_start',
+      triggerType: 'veg',
       day: 1,
       growspaceIds: ['gs1'],
     });
@@ -144,7 +144,7 @@ describe('ConfigNotificationsTab — intents out', () => {
     const item: TimedNotification = {
       id: 'n1',
       message: 'A',
-      triggerType: 'veg_start',
+      triggerType: 'veg',
       day: 1,
       growspaceIds: [],
     };
