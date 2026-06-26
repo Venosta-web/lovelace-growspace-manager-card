@@ -756,39 +756,6 @@ describe('ConfigDialog', () => {
             expect((element as any).editNotificationService).toBe('');
         });
 
-        it('should render entity select fallback to entity_id if friendly_name missing', async () => {
-            element.hass = {
-                ...element.hass,
-                states: {
-                    'sensor.no_friendly': {
-                        entity_id: 'sensor.no_friendly',
-                        attributes: {}, // No friendly_name
-                        state: 'on'
-                    }
-                }
-            } as any;
-            element.currentTab = ConfigTab.SENSORS;
-            await element.updateComplete;
-            // Force re-render/update to ensure _renderEntitySelect uses the entity
-            // But we need to make sure _getEntities returns it.
-            // _getEntities filters by domain/device class.
-            // It calls 'sensor.no_friendly'
-            // We need to inject it into _getEntities or make sure it matches default filter
-            // renderEnvironmentTab calls _getEntities(['sensor'], 'temperature') etc.
-            // Let's verify _getEntities is called.
-            // Actually, simplest way is to call _renderEntitySelect directly if possible?
-            // It's private.
-            const result = (element as any)._renderEntitySelect(
-                'Label',
-                'val',
-                ['sensor'],
-                null,
-                (e: any) => { }
-            );
-            // result is TemplateResult. hard to inspect options deep inside.
-            // Better to inspect DOM if rendered.
-        });
-
         it('should handle env growspace change with device missing environmentAttributes', () => {
             const dev = {
                 deviceId: 'no_env',
@@ -953,19 +920,8 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle multi-select chip removal', async () => {
-            const spy = vi.fn();
-            const result = (element as any)._renderMultiEntitySelect(
-                'Test',
-                ['entity1', 'entity2'],
-                ['sensor'],
-                null,
-                spy
-            );
-
-            // Directly call the changeHandler via the spy since we can't easily click in TemplateResult without rendering
-            // But actually we can render it to a temporary div or just assume the logic works if we see it in the code.
-            // Let's try to find it in shadowRoot if possible by rendering the component with some multi-values.
-
+            // The inline `_renderMultiEntitySelect` helper was removed in #368; chip
+            // removal is now exercised through the live Sensors tab component.
             element.currentTab = ConfigTab.SENSORS;
             (element as any).envLightSensors = ['sensor.1', 'sensor.2'];
             await element.updateComplete;
