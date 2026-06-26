@@ -5,13 +5,11 @@ import {
   mdiCog,
   mdiViewDashboard,
   mdiThermometer,
-  mdiPencil,
   mdiDelete,
   mdiWaterPercent,
   mdiGauge,
   mdiFan,
   mdiViewGrid,
-  mdiPlus,
   mdiWater,
   mdiCamera,
   mdiBell,
@@ -67,6 +65,8 @@ import '../features/config/components/config-growspaces-tab';
 import { createGrowspacesTabViewModel } from '../features/config/viewmodels/growspaces-tab.viewmodel';
 import '../features/config/components/config-heatmap-tab';
 import { createHeatmapTabViewModel } from '../features/config/viewmodels/heatmap-tab.viewmodel';
+import '../features/config/components/config-subareas-tab';
+import { createSubareasTabViewModel } from '../features/config/viewmodels/subareas-tab.viewmodel';
 import { composeEnvironmentConfig } from '../features/config/environment-save';
 
 
@@ -1751,148 +1751,23 @@ export class ConfigDialog extends LitElement {
     `;
   }
 
-  private _renderSubareasSection() {
-    const envId = this._sm.environmentDraft.selectedGrowspaceId;
-    const gsSub = this._sm.tabs.growspaces.sub;
-    const growspaceId = envId || (gsSub.kind === 'editing' ? gsSub.growspaceId : '');
-    const subareasSub = this._sm.tabs.subareas.sub;
-    if (!growspaceId) {
-      return html`
-        <div class="detail-card">
-          <h3>Subareas</h3>
-          <div style="text-align:center;padding:20px;color:var(--secondary-text-color);">
-            Select a growspace in the Sensors tab first.
-          </div>
-        </div>
-      `;
-    }
+  private _renderSubareasTab() {
     return html`
-      <div class="detail-card">
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
-        >
-          <h3 style="margin:0;">Subareas</h3>
-          <button
-            class="md3-button tonal"
-            @click=${() => this._t({ type: 'BEGIN_ADD_SUBAREA' })}
-          >
-            <svg
-              style="width:18px;height:18px;fill:currentColor;margin-right:6px;"
-              viewBox="0 0 24 24"
-            >
-              <path d="${mdiPlus}"></path>
-            </svg>
-            Add Subarea
-          </button>
-        </div>
-
-        ${subareasSub.kind === 'adding'
-          ? html`
-              <div
-                style="display:flex;gap:8px;align-items:center;margin-bottom:16px;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
-              >
-                <input
-                  class="md3-input"
-                  style="flex:1;"
-                  placeholder="Subarea name..."
-                  .value=${subareasSub.name}
-                  @input=${(e: Event) =>
-                    this._t({ type: 'UPDATE_SUBAREA_NAME', name: (e.target as HTMLInputElement).value })}
-                  @keydown=${(e: KeyboardEvent) => {
-                    if (e.key === 'Enter') this._handleAddSubarea();
-                  }}
-                />
-                <button
-                  class="md3-button primary"
-                  @click=${this._handleAddSubarea}
-                  ?disabled=${!subareasSub.name.trim()}
-                >
-                  Add
-                </button>
-                <button class="md3-button tonal" @click=${() => this._t({ type: 'CANCEL_SUBAREA' })}>
-                  Cancel
-                </button>
-              </div>
-            `
-          : nothing}
-        ${this._subareasLoading
-          ? html`<div style="text-align:center;padding:20px;color:var(--secondary-text-color);">
-              Loading...
-            </div>`
-          : this._subareas.length === 0
-            ? html`<div style="text-align:center;padding:20px;color:var(--secondary-text-color);">
-                No subareas configured. Add one to get started.
-              </div>`
-            : html`
-                <div style="display:flex;flex-direction:column;gap:8px;">
-                  ${this._subareas.map(
-                    (subarea) => html`
-                      <div
-                        style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
-                      >
-                        <div>
-                          <div style="font-weight:500;">${subarea.name}</div>
-                          <div style="font-size:0.8rem;color:var(--secondary-text-color);">
-                            ID: ${subarea.id}
-                          </div>
-                        </div>
-                        <div style="display:flex;gap:4px;align-items:center;">
-                          ${subareasSub.kind === 'confirm-delete' && subareasSub.subareaId === subarea.id
-                            ? html`
-                                <span
-                                  style="font-size:0.85rem;color:var(--secondary-text-color);margin-right:4px;"
-                                  >Remove ${subarea.name}?</span
-                                >
-                                <button
-                                  class="md3-button primary error"
-                                  @click=${() => this._confirmDeleteSubarea(subarea.id)}
-                                  style="padding:6px 10px;min-width:auto;font-size:0.8rem;"
-                                >
-                                  Yes
-                                </button>
-                                <button
-                                  class="md3-button tonal"
-                                  @click=${() => this._t({ type: 'CANCEL_DELETE_SUBAREA' })}
-                                  style="padding:6px 10px;min-width:auto;font-size:0.8rem;"
-                                >
-                                  No
-                                </button>
-                              `
-                            : html`
-                                <button
-                                  class="md3-button text"
-                                  @click=${() => this._handleEditSubarea(subarea)}
-                                  style="padding:8px;min-width:auto;"
-                                  title="Edit sensors"
-                                >
-                                  <svg
-                                    style="width:20px;height:20px;fill:currentColor;"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path d="${mdiPencil}"></path>
-                                  </svg>
-                                </button>
-                                <button
-                                  class="md3-button text error"
-                                  @click=${() => this._handleDeleteSubarea(subarea.id)}
-                                  style="padding:8px;min-width:auto;"
-                                  title="Delete subarea"
-                                >
-                                  <svg
-                                    style="width:20px;height:20px;fill:currentColor;"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path d="${mdiDelete}"></path>
-                                  </svg>
-                                </button>
-                              `}
-                        </div>
-                      </div>
-                    `
-                  )}
-                </div>
-              `}
-      </div>
+      <config-subareas-tab
+        .vm=${createSubareasTabViewModel(this._sm, {
+          subareas: this._subareas,
+          loading: this._subareasLoading,
+        })}
+        @add-subarea-requested=${() => this._t({ type: 'BEGIN_ADD_SUBAREA' })}
+        @subarea-name-changed=${(e: CustomEvent) =>
+          this._t({ type: 'UPDATE_SUBAREA_NAME', name: e.detail.name })}
+        @commit-add-subarea=${() => this._handleAddSubarea()}
+        @cancel-add-subarea=${() => this._t({ type: 'CANCEL_SUBAREA' })}
+        @edit-subarea-requested=${(e: CustomEvent) => this._handleEditSubarea(e.detail.subarea)}
+        @delete-subarea-requested=${(e: CustomEvent) => this._handleDeleteSubarea(e.detail.id)}
+        @confirm-delete-subarea=${(e: CustomEvent) => this._confirmDeleteSubarea(e.detail.id)}
+        @cancel-delete-subarea=${() => this._t({ type: 'CANCEL_DELETE_SUBAREA' })}
+      ></config-subareas-tab>
     `;
   }
 
@@ -2103,7 +1978,7 @@ export class ConfigDialog extends LitElement {
                 ${this.currentTab === ConfigTab.TANKS ? this._renderTanksTab() : nothing}
                 ${this.currentTab === ConfigTab.VISION ? this._renderVisionTab() : nothing}
                 ${this.currentTab === ConfigTab.HEATMAP ? this._renderHeatmapTab() : nothing}
-                ${this.currentTab === ConfigTab.SUBAREAS ? this._renderSubareasSection() : nothing}
+                ${this.currentTab === ConfigTab.SUBAREAS ? this._renderSubareasTab() : nothing}
                 ${this.currentTab === ConfigTab.VPD_TARGETS ? this._renderVpdTargetsTab() : nothing}
               </div>
             </div>
