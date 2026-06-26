@@ -7,7 +7,7 @@ import { ConfigTab } from '../../../src/constants';
 async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     await element.updateComplete;
     const tab = element.shadowRoot!.querySelector(
-        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-irrigation-tab'
+        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-irrigation-tab, config-vision-tab'
     ) as HTMLElement & { updateComplete: Promise<boolean> };
     await tab.updateComplete;
     return tab.shadowRoot!;
@@ -613,19 +613,18 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         await element.updateComplete;
 
         // With no cameras: instruction paragraph should appear
-        const para = element.shadowRoot?.querySelector('p');
+        const para = (await sensorsShadow(element)).querySelector('p');
         expect(para?.textContent).toContain('Add camera entities');
 
         // With cameras: camera entities multi-select renders
         (element as any).envVisionCameraEntities = ['camera.tent'];
-        await element.updateComplete;
 
-        const labels = Array.from(element.shadowRoot?.querySelectorAll('.md3-label-multi') ?? []);
+        const labels = Array.from((await sensorsShadow(element)).querySelectorAll('.md3-label-multi'));
         const cameraLabel = labels.find((l) => l.textContent?.includes('Camera'));
         expect(cameraLabel).toBeDefined();
 
-        // Click the chip-remove × to trigger the changeHandler arrow fn (line 1732)
-        const chipRemove = element.shadowRoot?.querySelector('.chip-remove') as HTMLElement | null;
+        // Click the chip-remove × to trigger the changeHandler arrow fn
+        const chipRemove = (await sensorsShadow(element)).querySelector('.chip-remove') as HTMLElement | null;
         if (chipRemove) {
             chipRemove.click();
             await element.updateComplete;
