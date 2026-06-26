@@ -40,29 +40,37 @@ async function mountVpdTab(): Promise<ConfigDialog> {
   return el;
 }
 
+// The VPD Targets tab is now a nested dumb component (ADR-0019); pierce it.
+async function vpdShadow(el: ConfigDialog): Promise<ShadowRoot> {
+  await el.updateComplete;
+  const tab = el.shadowRoot!.querySelector('config-vpd-targets-tab') as HTMLElement & {
+    updateComplete: Promise<boolean>;
+  };
+  await tab.updateComplete;
+  return tab.shadowRoot!;
+}
+
 describe('ConfigDialog VPD Targets tab — render', () => {
   it('renders one accordion card per fan VPD stage', async () => {
     const el = await mountVpdTab();
-    const cards = el.shadowRoot!.querySelectorAll('.acc-card');
+    const cards = (await vpdShadow(el)).querySelectorAll('.acc-card');
     expect(cards.length).toBe(FAN_VPD_STAGE_KEYS.length);
   });
 
   it('shows a collapsed summary line and hides the body until a stage is opened', async () => {
     const el = await mountVpdTab();
+    const root = await vpdShadow(el);
     // Nothing open by default → no body, but each head has a summary line.
-    expect(el.shadowRoot!.querySelectorAll('.acc-body').length).toBe(0);
-    expect(el.shadowRoot!.querySelectorAll('.acc-head-desc').length).toBe(
-      FAN_VPD_STAGE_KEYS.length
-    );
+    expect(root.querySelectorAll('.acc-body').length).toBe(0);
+    expect(root.querySelectorAll('.acc-head-desc').length).toBe(FAN_VPD_STAGE_KEYS.length);
   });
 
   it('reveals Day/Night md3-number-inputs when a stage head is clicked', async () => {
     const el = await mountVpdTab();
-    const firstHead = el.shadowRoot!.querySelector<HTMLElement>('.acc-head')!;
-    firstHead.click();
-    await el.updateComplete;
+    (await vpdShadow(el)).querySelector<HTMLElement>('.acc-head')!.click();
 
-    const body = el.shadowRoot!.querySelector('.acc-body');
+    const root = await vpdShadow(el);
+    const body = root.querySelector('.acc-body');
     expect(body).not.toBeNull();
     // Day low/high + Night low/high = 4 inputs.
     expect(body!.querySelectorAll('md3-number-input').length).toBe(4);
@@ -70,7 +78,7 @@ describe('ConfigDialog VPD Targets tab — render', () => {
 
   it('renders a reset-all button', async () => {
     const el = await mountVpdTab();
-    const buttons = [...el.shadowRoot!.querySelectorAll('button')];
+    const buttons = [...(await vpdShadow(el)).querySelectorAll('button')];
     expect(buttons.some((b) => /reset all to defaults/i.test(b.textContent ?? ''))).toBe(true);
   });
 });

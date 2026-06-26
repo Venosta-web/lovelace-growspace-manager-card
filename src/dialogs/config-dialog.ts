@@ -8,15 +8,12 @@ import {
   mdiPencil,
   mdiDelete,
   mdiWaterPercent,
-  mdiWhiteBalanceSunny,
-  mdiWeatherNight,
   mdiGauge,
   mdiFan,
   mdiViewGrid,
   mdiPlus,
   mdiWater,
   mdiCamera,
-  mdiChevronDown,
   mdiBell,
   mdiTune,
 } from '@mdi/js';
@@ -29,8 +26,6 @@ import '../features/shared/ui/gs-help-tooltip';
 import './sensor-group-dialog';
 import './subarea-config-dialog';
 import {
-  FAN_VPD_STAGE_KEYS,
-  FAN_VPD_STAGE_LABELS,
   VPD_OPTIMAL_STAGE_DEFAULTS,
   type FanVpdStageKey,
   type VpdOptimalOverrides,
@@ -64,21 +59,10 @@ import '../features/config/components/config-irrigation-tab';
 import { createIrrigationTabViewModel } from '../features/config/viewmodels/irrigation-tab.viewmodel';
 import '../features/config/components/config-vision-tab';
 import { createVisionTabViewModel } from '../features/config/viewmodels/vision-tab.viewmodel';
+import '../features/config/components/config-vpd-targets-tab';
+import { createVpdTargetsTabViewModel } from '../features/config/viewmodels/vpd-targets-tab.viewmodel';
 import { composeEnvironmentConfig } from '../features/config/environment-save';
 
-// Stage-dot colours for the VPD targets accordion. Reuses the humidity stage
-// hues for matching stages; `clone` (VPD-only) gets its own cyan.
-const VPD_STAGE_COLORS: Record<FanVpdStageKey, string> = {
-  seedling: '#8bc34a',
-  clone: '#26c6da',
-  mother: '#e91e63',
-  veg: '#4caf50',
-  flower_early: '#ff9800',
-  flower_mid: '#ff7043',
-  flower_late: '#f44336',
-  dry: '#9c27b0',
-  cure: '#2196f3',
-};
 
 @customElement('config-dialog')
 export class ConfigDialog extends LitElement {
@@ -2260,15 +2244,6 @@ export class ConfigDialog extends LitElement {
     `;
   }
 
-  private _getVpdOptimalValue(
-    key: FanVpdStageKey,
-    period: 'day' | 'night',
-    slot: 'low' | 'high'
-  ): number {
-    const overrides = this._sm.environmentDraft.vpdOptimalOverrides as VpdOptimalOverrides;
-    return overrides[key]?.[period]?.[slot] ?? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot];
-  }
-
   private _updateVpdOptimal(
     key: FanVpdStageKey,
     period: 'day' | 'night',
@@ -2296,112 +2271,17 @@ export class ConfigDialog extends LitElement {
     this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdOptimalOverrides: {} } });
   }
 
-  private _renderVpdTargetsSection() {
+  private _renderVpdTargetsTab() {
     return html`
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiTune}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">VPD Optimal Targets</h3>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          ${FAN_VPD_STAGE_KEYS.map((key) => {
-            const isOpen = this._openVpdStageId === key;
-            const color = VPD_STAGE_COLORS[key];
-            const dayLow = this._getVpdOptimalValue(key, 'day', 'low');
-            const dayHigh = this._getVpdOptimalValue(key, 'day', 'high');
-            const nightLow = this._getVpdOptimalValue(key, 'night', 'low');
-            const nightHigh = this._getVpdOptimalValue(key, 'night', 'high');
-            return html`
-              <div class="acc-card">
-                <div
-                  class="acc-head"
-                  @click=${() => {
-                    this._openVpdStageId = isOpen ? '' : key;
-                  }}
-                >
-                  <div class="acc-stage-dot" style="background:${color};"></div>
-                  <div class="acc-head-title">${FAN_VPD_STAGE_LABELS[key]}</div>
-                  ${!isOpen
-                    ? html`
-                        <div class="acc-head-desc">
-                          Day ${dayLow.toFixed(2)}–${dayHigh.toFixed(2)} &nbsp;·&nbsp; Night
-                          ${nightLow.toFixed(2)}–${nightHigh.toFixed(2)} kPa
-                        </div>
-                      `
-                    : nothing}
-                  <svg class="acc-chev ${isOpen ? 'open' : ''}" viewBox="0 0 24 24">
-                    <path d="${mdiChevronDown}"></path>
-                  </svg>
-                </div>
-                ${isOpen
-                  ? html`
-                      <div class="acc-body">
-                        <div class="acc-cycle-grid">
-                          <div>
-                            <div class="acc-cycle-row" style="color:#ff9800;">
-                              <svg viewBox="0 0 24 24">
-                                <path d="${mdiWhiteBalanceSunny}"></path>
-                              </svg>
-                              Day
-                            </div>
-                            <div
-                              style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
-                            >
-                              <md3-number-input
-                                label="Low (kPa)"
-                                .value=${dayLow}
-                                @change=${(e: CustomEvent) =>
-                                  this._updateVpdOptimal(key, 'day', 'low', e.detail)}
-                              ></md3-number-input>
-                              <md3-number-input
-                                label="High (kPa)"
-                                .value=${dayHigh}
-                                @change=${(e: CustomEvent) =>
-                                  this._updateVpdOptimal(key, 'day', 'high', e.detail)}
-                              ></md3-number-input>
-                            </div>
-                          </div>
-                          <div>
-                            <div class="acc-cycle-row" style="color:#7986cb;">
-                              <svg viewBox="0 0 24 24"><path d="${mdiWeatherNight}"></path></svg>
-                              Night
-                            </div>
-                            <div
-                              style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
-                            >
-                              <md3-number-input
-                                label="Low (kPa)"
-                                .value=${nightLow}
-                                @change=${(e: CustomEvent) =>
-                                  this._updateVpdOptimal(key, 'night', 'low', e.detail)}
-                              ></md3-number-input>
-                              <md3-number-input
-                                label="High (kPa)"
-                                .value=${nightHigh}
-                                @change=${(e: CustomEvent) =>
-                                  this._updateVpdOptimal(key, 'night', 'high', e.detail)}
-                              ></md3-number-input>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    `
-                  : nothing}
-              </div>
-            `;
-          })}
-        </div>
-        <button class="md3-button text" @click=${this._resetVpdOptimal} style="margin-top:12px;">
-          Reset all to defaults
-        </button>
-      </div>
+      <config-vpd-targets-tab
+        .vm=${createVpdTargetsTabViewModel(this._sm, { openStageId: this._openVpdStageId })}
+        @toggle-stage=${(e: CustomEvent) => {
+          this._openVpdStageId = this._openVpdStageId === e.detail.key ? '' : e.detail.key;
+        }}
+        @update-vpd-optimal=${(e: CustomEvent) =>
+          this._updateVpdOptimal(e.detail.key, e.detail.period, e.detail.slot, e.detail.value)}
+        @reset-vpd-optimal=${this._resetVpdOptimal}
+      ></config-vpd-targets-tab>
     `;
   }
 
@@ -2552,7 +2432,7 @@ export class ConfigDialog extends LitElement {
                 ${this.currentTab === ConfigTab.VISION ? this._renderVisionTab() : nothing}
                 ${this.currentTab === ConfigTab.HEATMAP ? this._renderHeatmapSection() : nothing}
                 ${this.currentTab === ConfigTab.SUBAREAS ? this._renderSubareasSection() : nothing}
-                ${this.currentTab === ConfigTab.VPD_TARGETS ? this._renderVpdTargetsSection() : nothing}
+                ${this.currentTab === ConfigTab.VPD_TARGETS ? this._renderVpdTargetsTab() : nothing}
               </div>
             </div>
           </div>
