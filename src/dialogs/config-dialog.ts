@@ -18,7 +18,6 @@ import {
   mdiCamera,
   mdiChevronDown,
   mdiBell,
-  mdiLightningBolt,
   mdiTune,
 } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
@@ -61,6 +60,8 @@ import {
   createHumidityTabViewModel,
   type HumidityStageId,
 } from '../features/config/viewmodels/humidity-tab.viewmodel';
+import '../features/config/components/config-irrigation-tab';
+import { createIrrigationTabViewModel } from '../features/config/viewmodels/irrigation-tab.viewmodel';
 import { composeEnvironmentConfig } from '../features/config/environment-save';
 
 // Stage-dot colours for the VPD targets accordion. Reuses the humidity stage
@@ -1850,116 +1851,16 @@ export class ConfigDialog extends LitElement {
     );
   }
 
-  private _renderIrrigationSection() {
+  private _renderIrrigationTab() {
+    const deps = {
+      entityOptions: (domains: string[], deviceClass: string | null) =>
+        this._getEntities(domains, deviceClass),
+    };
     return html`
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiGauge}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Irrigation Monitoring</h3>
-        </div>
-        <div class="form-section">
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect(
-              'pH Sensors',
-              this._sm.environmentDraft.phSensors,
-              ['sensor', 'input_number', 'number'],
-              null,
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { phSensors: v } })
-            )}
-            ${this._renderMultiEntitySelect(
-              'Feed EC Sensors',
-              this._sm.environmentDraft.feedEcSensors,
-              ['sensor', 'input_number', 'number'],
-              null,
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { feedEcSensors: v } })
-            )}
-          </div>
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect(
-              'Runoff EC Sensors',
-              this._sm.environmentDraft.runoffEcSensors,
-              ['sensor', 'input_number', 'number'],
-              null,
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { runoffEcSensors: v } })
-            )}
-          </div>
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect(
-              'Drain Volume Sensors',
-              this._sm.environmentDraft.drainVolumeSensors,
-              ['sensor', 'input_number', 'number'],
-              null,
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { drainVolumeSensors: v } })
-            )}
-            ${this._renderMultiEntitySelect(
-              'Irrigation Flow Sensors',
-              this._sm.environmentDraft.irrigationFlowSensors,
-              ['sensor', 'input_number', 'number'],
-              null,
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { irrigationFlowSensors: v } })
-            )}
-          </div>
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect(
-              'Power Sensors',
-              this._sm.environmentDraft.powerSensors,
-              ['sensor', 'input_number', 'number'],
-              'power',
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { powerSensors: v } })
-            )}
-            ${this._renderMultiEntitySelect(
-              'Energy Sensors',
-              this._sm.environmentDraft.energySensors,
-              ['sensor', 'input_number', 'number'],
-              'energy',
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { energySensors: v } })
-            )}
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderSubstrateEcSection() {
-    return html`
-      <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiLightningBolt}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Substrate EC</h3>
-        </div>
-        <div class="form-section">
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect(
-              'Bulk EC Sensors',
-              this._sm.environmentDraft.bulkEcSensors,
-              ['sensor', 'input_number', 'number'],
-              null,
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { bulkEcSensors: v } })
-            )}
-            ${this._renderMultiEntitySelect(
-              'Pore EC Sensors',
-              this._sm.environmentDraft.poreEcSensors,
-              ['sensor', 'input_number', 'number'],
-              null,
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { poreEcSensors: v } })
-            )}
-          </div>
-        </div>
-      </div>
+      <config-irrigation-tab
+        .vm=${createIrrigationTabViewModel(this._sm, deps)}
+        @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
+      ></config-irrigation-tab>
     `;
   }
 
@@ -2701,12 +2602,7 @@ export class ConfigDialog extends LitElement {
                 ${this.currentTab === ConfigTab.SENSORS ? this._renderSensorsTab() : nothing}
                 ${this.currentTab === ConfigTab.CLIMATE ? this._renderClimateTab() : nothing}
                 ${this.currentTab === ConfigTab.HUMIDITY ? this._renderHumidityTab() : nothing}
-                ${this.currentTab === ConfigTab.IRRIGATION
-                  ? this._renderIrrigationSection()
-                  : nothing}
-                ${this.currentTab === ConfigTab.IRRIGATION
-                  ? this._renderSubstrateEcSection()
-                  : nothing}
+                ${this.currentTab === ConfigTab.IRRIGATION ? this._renderIrrigationTab() : nothing}
                 ${this.currentTab === ConfigTab.TANKS ? this._renderTanksSection() : nothing}
                 ${this.currentTab === ConfigTab.VISION ? this._renderVisionSection() : nothing}
                 ${this.currentTab === ConfigTab.HEATMAP ? this._renderHeatmapSection() : nothing}

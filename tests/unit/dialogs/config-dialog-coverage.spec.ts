@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
 
-// Env tabs (Sensors, Climate, Humidity) are nested dumb components behind their
-// own shadow roots (ADR-0019, "Applied to Config Dialog"); pierce whichever is active.
+// Env tabs (Sensors, Climate, Humidity, Irrigation) are nested dumb components
+// behind their own shadow roots (ADR-0019); pierce whichever is active.
 async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     await element.updateComplete;
     const tab = element.shadowRoot!.querySelector(
-        'config-sensors-tab, config-climate-tab, config-humidity-tab'
+        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-irrigation-tab'
     ) as HTMLElement & { updateComplete: Promise<boolean> };
     await tab.updateComplete;
     return tab.shadowRoot!;
@@ -472,7 +472,8 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envEnergySensors = ['sensor.energy'];
         await element.updateComplete;
 
-        const labels = Array.from(element.shadowRoot?.querySelectorAll('.md3-label-multi') ?? []);
+        const root = await sensorsShadow(element);
+        const labels = Array.from(root.querySelectorAll('.md3-label-multi'));
         const labelTexts = labels.map((l) => l.textContent?.trim());
         expect(labelTexts).toContain('pH Sensors');
         expect(labelTexts).toContain('Feed EC Sensors');
@@ -482,7 +483,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         expect(labelTexts).toContain('Energy Sensors');
 
         // Click every chip-remove × to invoke all changeHandler arrow fns
-        const chipRemoves = Array.from(element.shadowRoot?.querySelectorAll('.chip-remove') ?? []) as HTMLElement[];
+        const chipRemoves = Array.from((await sensorsShadow(element)).querySelectorAll('.chip-remove')) as HTMLElement[];
         for (const chip of chipRemoves) {
             chip.click();
         }
@@ -501,7 +502,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envSelectedId = 'gs1';
         await element.updateComplete;
 
-        const h3s = Array.from(element.shadowRoot?.querySelectorAll('h3') ?? []);
+        const h3s = Array.from((await sensorsShadow(element)).querySelectorAll('h3'));
         const headings = h3s.map((h) => h.textContent?.trim());
         expect(headings).toContain('Substrate EC');
     });
