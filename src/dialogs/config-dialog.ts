@@ -63,6 +63,8 @@ import '../features/config/components/config-vpd-targets-tab';
 import { createVpdTargetsTabViewModel } from '../features/config/viewmodels/vpd-targets-tab.viewmodel';
 import '../features/config/components/config-tanks-tab';
 import { createTanksTabViewModel } from '../features/config/viewmodels/tanks-tab.viewmodel';
+import '../features/config/components/config-growspaces-tab';
+import { createGrowspacesTabViewModel } from '../features/config/viewmodels/growspaces-tab.viewmodel';
 import { composeEnvironmentConfig } from '../features/config/environment-save';
 
 
@@ -1542,172 +1544,24 @@ export class ConfigDialog extends LitElement {
     `;
   }
 
-  private _renderGrowspacesSection() {
-    const sub = this._sm.tabs.growspaces.sub;
-
-    if (sub.kind === 'confirm-delete') {
-      return html`
-        <div class="cfg-master-detail" style="grid-template-columns:1fr;">
-          <div class="detail-card" style="text-align:center;padding:40px 20px;">
-            <h3 style="color:var(--error-color,#ff5252);">Delete Growspace?</h3>
-            <p style="margin-bottom:30px;color:var(--secondary-text-color);">
-              Are you sure you want to delete "<strong>${sub.name}</strong>"?<br />
-              This will remove all associated plants and history.<br />
-              This action cannot be undone.
-            </p>
-          </div>
-        </div>
-      `;
-    }
-
-    const editingId = sub.kind === 'editing' ? sub.growspaceId : '';
-    const isAdding = sub.kind === 'adding';
-
+  private _renderGrowspacesTab() {
+    const deps = {
+      growspaceOptions: this.growspaceOptions,
+      notifyServices: this._getMobileAppNotifyServices(),
+      entityOptions: (domains: string[], deviceClass: string | null) =>
+        this._getEntities(domains, deviceClass),
+    };
     return html`
-      <div class="cfg-master-detail">
-        <!-- Master list -->
-        <div class="cfg-master-list">
-          <div
-            style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--secondary-text-color,rgba(255,255,255,0.5));padding:0 4px 8px;"
-          >
-            All Growspaces
-          </div>
-          ${Object.entries(this.growspaceOptions).map(
-            ([id, name]) => html`
-              <div
-                class="cfg-gs-row ${editingId === id && !isAdding ? 'active' : ''}"
-                @click=${() => this._handleEditSelection(id)}
-              >
-                <span class="gs-name">${name}</span>
-              </div>
-            `
-          )}
-          <button class="cfg-master-add-btn" @click=${this._startAddGrowspace}>
-            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiPlus}"></path>
-            </svg>
-            Add Growspace
-          </button>
-        </div>
-
-        <!-- Detail pane -->
-        <div class="cfg-detail-pane">
-          ${isAdding ? this._renderAddGrowspaceForm() : nothing}
-          ${!isAdding && editingId ? this._renderEditGrowspaceForm() : nothing}
-          ${!isAdding && !editingId
-            ? html`
-                <div style="text-align:center;padding:40px 20px;color:var(--secondary-text-color);">
-                  Select a growspace to edit, or click "Add Growspace" to create a new one.
-                </div>
-              `
-            : nothing}
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderAddGrowspaceForm() {
-    const sub = this._sm.tabs.growspaces.sub;
-    if (sub.kind !== 'adding') return nothing;
-    return html`
-      <div class="detail-card">
-        <h3>New Growspace</h3>
-        <md3-text-input
-          label="Growspace Name"
-          .value=${sub.name}
-          @change=${(e: CustomEvent) => this._t({ type: 'UPDATE_ADD_DRAFT', partial: { name: e.detail } })}
-        ></md3-text-input>
-        <div class="row-col-grid">
-          <md3-number-input
-            label="Rows"
-            .value=${sub.rows}
-            @change=${(e: CustomEvent) => this._t({ type: 'UPDATE_ADD_DRAFT', partial: { rows: parseInt(e.detail) } })}
-          ></md3-number-input>
-          <md3-number-input
-            label="Plants per Row"
-            .value=${sub.plantsPerRow}
-            @change=${(e: CustomEvent) => this._t({ type: 'UPDATE_ADD_DRAFT', partial: { plantsPerRow: parseInt(e.detail) } })}
-          ></md3-number-input>
-        </div>
-        <div class="md3-input-group">
-          <label class="md3-label">Notification Service (Mobile App)</label>
-          <select
-            class="md3-input"
-            .value=${sub.notificationService}
-            @change=${(e: Event) =>
-              this._t({ type: 'UPDATE_ADD_DRAFT', partial: { notificationService: (e.target as HTMLSelectElement).value } })}
-          >
-            <option value="">None</option>
-            ${this._getMobileAppNotifyServices().map(
-              (s) => html`
-                <option value="${s.value}" ?selected=${sub.notificationService === s.value}>
-                  ${s.label}
-                </option>
-              `
-            )}
-          </select>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderEditGrowspaceForm() {
-    const sub = this._sm.tabs.growspaces.sub;
-    if (sub.kind !== 'editing') return nothing;
-    const d = this._sm.environmentDraft;
-    return html`
-      <div class="detail-card">
-        <h3>Edit Details</h3>
-        <md3-text-input
-          label="Growspace Name"
-          .value=${sub.name}
-          @change=${(e: CustomEvent) => this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { name: e.detail } })}
-        ></md3-text-input>
-        <div class="row-col-grid">
-          <md3-number-input
-            label="Rows"
-            .value=${sub.rows}
-            @change=${(e: CustomEvent) => this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { rows: parseInt(e.detail) } })}
-          ></md3-number-input>
-          <md3-number-input
-            label="Plants per Row"
-            .value=${sub.plantsPerRow}
-            @change=${(e: CustomEvent) => this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { plantsPerRow: parseInt(e.detail) } })}
-          ></md3-number-input>
-        </div>
-        <div class="md3-input-group">
-          <label class="md3-label">Notification Service (Mobile App)</label>
-          <select
-            class="md3-input"
-            .value=${sub.notificationService}
-            @change=${(e: Event) =>
-              this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { notificationService: (e.target as HTMLSelectElement).value } })}
-          >
-            <option value="">None</option>
-            ${this._getMobileAppNotifyServices().map(
-              (s) => html`
-                <option value="${s.value}" ?selected=${sub.notificationService === s.value}>
-                  ${s.label}
-                </option>
-              `
-            )}
-          </select>
-        </div>
-        ${this._renderMultiEntitySelect(
-          'Lung Room Temp Sensors',
-          d.lungroomTempSensors,
-          ['sensor', 'input_number'],
-          'temperature',
-          (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { lungroomTempSensors: v } })
-        )}
-        ${this._renderMultiEntitySelect(
-          'Area Camera',
-          d.cameraEntities,
-          ['camera'],
-          null,
-          (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { cameraEntities: v } })
-        )}
-      </div>
+      <config-growspaces-tab
+        .vm=${createGrowspacesTabViewModel(this._sm, deps)}
+        @select-growspace=${(e: CustomEvent) => this._handleEditSelection(e.detail.id)}
+        @start-add-growspace=${this._startAddGrowspace}
+        @add-draft-changed=${(e: CustomEvent) =>
+          this._t({ type: 'UPDATE_ADD_DRAFT', partial: e.detail.partial })}
+        @edit-draft-changed=${(e: CustomEvent) =>
+          this._t({ type: 'UPDATE_EDIT_DRAFT', partial: e.detail.partial })}
+        @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
+      ></config-growspaces-tab>
     `;
   }
 
@@ -2286,9 +2140,7 @@ export class ConfigDialog extends LitElement {
 
               <!-- Scrollable content -->
               <div class="cfg-scroll">
-                ${this.currentTab === ConfigTab.GROWSPACES
-                  ? this._renderGrowspacesSection()
-                  : nothing}
+                ${this.currentTab === ConfigTab.GROWSPACES ? this._renderGrowspacesTab() : nothing}
                 ${this.currentTab === ConfigTab.NOTIFICATIONS
                   ? this._renderNotificationsTab()
                   : nothing}
