@@ -7,7 +7,7 @@ import { ConfigTab } from '../../../src/constants';
 async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     await element.updateComplete;
     const tab = element.shadowRoot!.querySelector(
-        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-irrigation-tab, config-vision-tab'
+        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-irrigation-tab, config-vision-tab, config-tanks-tab'
     ) as HTMLElement & { updateComplete: Promise<boolean> };
     await tab.updateComplete;
     return tab.shadowRoot!;
@@ -515,8 +515,8 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         ];
         await element.updateComplete;
 
-        // Tank list item is rendered
-        expect(element.shadowRoot?.textContent).toContain('Main Tank');
+        // Tank list item is rendered (now in the nested config-tanks-tab)
+        expect((await sensorsShadow(element)).textContent).toContain('Main Tank');
 
         // Click the edit tank button (arrow fn at line 1667)
         const editTankBtn = (Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.text:not(.error)') ?? []) as HTMLElement[])
@@ -543,7 +543,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         expect((element as any)._editingTankIndex).toBe(0);
 
         // Interact with form inputs to cover their @input arrow fns
-        const formInputs = Array.from(element.shadowRoot?.querySelectorAll('input.md3-input') ?? []) as HTMLInputElement[];
+        const formInputs = Array.from((await sensorsShadow(element)).querySelectorAll('input.md3-input')) as HTMLInputElement[];
         if (formInputs.length >= 1) {
             // Sensor entity input
             formInputs[0].value = 'sensor.tank_new';
@@ -1145,12 +1145,13 @@ describe('ConfigDialog - Tank branch coverage (lines 2475, 2507, 2565)', () => {
         ];
         await element.updateComplete;
 
-        // name || 'Tank X' fallback (line 2471)
-        expect(element.shadowRoot?.textContent).toContain('Tank 1');
-        // warningLevel ?? 30 → 30% (line 2475)
-        expect(element.shadowRoot?.textContent).toContain('30%');
-        // volumeLiters == null → nothing branch — no "L" suffix (line 2474)
-        expect(element.shadowRoot?.textContent).not.toMatch(/\d+ L/);
+        const text = (await sensorsShadow(element)).textContent ?? '';
+        // name || 'Tank X' fallback
+        expect(text).toContain('Tank 1');
+        // warningLevel ?? 30 → 30%
+        expect(text).toContain('30%');
+        // volumeLiters == null → nothing branch — no "L" suffix
+        expect(text).not.toMatch(/\d+ L/);
     });
 
     it('line 2507: IIFE guard returns nothing when tank sub kind is not adding or editing', async () => {
@@ -1173,11 +1174,10 @@ describe('ConfigDialog - Tank branch coverage (lines 2475, 2507, 2565)', () => {
 
     it('line 2565: warningLevel input cleared → parseFloat(NaN) || 30 stores 30', async () => {
         (element as any)._openAddTank();
-        await element.updateComplete;
 
         // Distinguish warning level input (max="100") from volume input (no max)
         const inputs = Array.from(
-            element.shadowRoot?.querySelectorAll('input.md3-input') ?? []
+            (await sensorsShadow(element)).querySelectorAll('input.md3-input')
         ) as HTMLInputElement[];
         const warningInput = inputs.find((i) => i.type === 'number' && i.max === '100');
         expect(warningInput).toBeDefined();
