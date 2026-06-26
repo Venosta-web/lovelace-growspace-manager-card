@@ -65,6 +65,8 @@ import '../features/config/components/config-tanks-tab';
 import { createTanksTabViewModel } from '../features/config/viewmodels/tanks-tab.viewmodel';
 import '../features/config/components/config-growspaces-tab';
 import { createGrowspacesTabViewModel } from '../features/config/viewmodels/growspaces-tab.viewmodel';
+import '../features/config/components/config-heatmap-tab';
+import { createHeatmapTabViewModel } from '../features/config/viewmodels/heatmap-tab.viewmodel';
 import { composeEnvironmentConfig } from '../features/config/environment-save';
 
 
@@ -1738,64 +1740,14 @@ export class ConfigDialog extends LitElement {
     `;
   }
 
-  private _renderHeatmapSection() {
+  private _renderHeatmapTab() {
     return html`
-      <div class="detail-card">
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
-        >
-          <h3>Sensor Groups</h3>
-          <button class="md3-button tonal" @click=${this._openAddGroup}>Add Group</button>
-        </div>
-        ${this._sm.environmentDraft.sensorGroups.length === 0
-          ? html`<div style="text-align:center;padding:20px;color:var(--secondary-text-color);">
-              No sensor groups configured.
-            </div>`
-          : html`
-              <div style="display:flex;flex-direction:column;gap:8px;">
-                ${this._sm.environmentDraft.sensorGroups.map(
-                  (group) => html`
-                    <div
-                      style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
-                    >
-                      <div>
-                        <div style="font-weight:500;">${group.name}</div>
-                        <div style="font-size:0.8rem;color:var(--secondary-text-color);">
-                          X: ${group.x}, Y: ${group.y}, Z: ${group.z}
-                        </div>
-                      </div>
-                      <div style="display:flex;gap:8px;">
-                        <button
-                          class="md3-button text"
-                          @click=${() => this._editGroup(group)}
-                          style="padding:8px;min-width:auto;"
-                        >
-                          <svg
-                            style="width:20px;height:20px;fill:currentColor;"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="${mdiPencil}"></path>
-                          </svg>
-                        </button>
-                        <button
-                          class="md3-button text error"
-                          @click=${() => this._deleteGroup(group.id)}
-                          style="padding:8px;min-width:auto;"
-                        >
-                          <svg
-                            style="width:20px;height:20px;fill:currentColor;"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="${mdiDelete}"></path>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  `
-                )}
-              </div>
-            `}
-      </div>
+      <config-heatmap-tab
+        .vm=${createHeatmapTabViewModel(this._sm)}
+        @add-group-requested=${this._openAddGroup}
+        @edit-group-requested=${(e: CustomEvent) => this._editGroup(e.detail.group)}
+        @delete-group-requested=${(e: CustomEvent) => this._deleteGroup(e.detail.id)}
+      ></config-heatmap-tab>
     `;
   }
 
@@ -2150,7 +2102,7 @@ export class ConfigDialog extends LitElement {
                 ${this.currentTab === ConfigTab.IRRIGATION ? this._renderIrrigationTab() : nothing}
                 ${this.currentTab === ConfigTab.TANKS ? this._renderTanksTab() : nothing}
                 ${this.currentTab === ConfigTab.VISION ? this._renderVisionTab() : nothing}
-                ${this.currentTab === ConfigTab.HEATMAP ? this._renderHeatmapSection() : nothing}
+                ${this.currentTab === ConfigTab.HEATMAP ? this._renderHeatmapTab() : nothing}
                 ${this.currentTab === ConfigTab.SUBAREAS ? this._renderSubareasSection() : nothing}
                 ${this.currentTab === ConfigTab.VPD_TARGETS ? this._renderVpdTargetsTab() : nothing}
               </div>
