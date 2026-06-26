@@ -61,6 +61,8 @@ import '../features/config/components/config-vision-tab';
 import { createVisionTabViewModel } from '../features/config/viewmodels/vision-tab.viewmodel';
 import '../features/config/components/config-vpd-targets-tab';
 import { createVpdTargetsTabViewModel } from '../features/config/viewmodels/vpd-targets-tab.viewmodel';
+import '../features/config/components/config-tanks-tab';
+import { createTanksTabViewModel } from '../features/config/viewmodels/tanks-tab.viewmodel';
 import { composeEnvironmentConfig } from '../features/config/environment-save';
 
 
@@ -1850,156 +1852,22 @@ export class ConfigDialog extends LitElement {
     `;
   }
 
-  private _renderTanksSection() {
-    const listId = 'list-tank-sensor-entity';
-    const entities = this._getEntities(['sensor', 'input_number'], null);
+  private _renderTanksTab() {
+    const deps = {
+      entityOptions: (domains: string[], deviceClass: string | null) =>
+        this._getEntities(domains, deviceClass),
+    };
     return html`
-      <div class="detail-card">
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
-        >
-          <div style="display:flex;align-items:center;gap:8px;">
-            <svg
-              style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-              viewBox="0 0 24 24"
-            >
-              <path d="${mdiWater}"></path>
-            </svg>
-            <h3 style="margin:0;border:none;padding:0;">Irrigation Tanks</h3>
-          </div>
-          <button class="md3-button tonal" @click=${this._openAddTank} style="padding:6px 12px;">
-            <svg
-              style="width:16px;height:16px;fill:currentColor;margin-right:4px;"
-              viewBox="0 0 24 24"
-            >
-              <path d="${mdiPlus}"></path>
-            </svg>
-            Add Tank
-          </button>
-        </div>
-
-        ${this._sm.environmentDraft.irrigationTanks.length === 0 && this._sm.tabs.tanks.sub.kind === 'idle'
-          ? html`<div style="font-size:0.85rem;color:var(--secondary-text-color);padding:8px 0;">
-              No tanks configured.
-            </div>`
-          : nothing}
-
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          ${this._sm.environmentDraft.irrigationTanks.map(
-            (tank, i) => html`
-              <div
-                style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:10px 12px;border-radius:8px;"
-              >
-                <div>
-                  <div style="font-weight:500;">${tank.name || 'Tank ' + (i + 1)}</div>
-                  <div style="font-size:0.78rem;color:var(--secondary-text-color);">
-                    ${tank.sensorEntity}
-                    ${tank.volumeLiters != null ? html` · ${tank.volumeLiters} L` : nothing} · warn
-                    at ${tank.warningLevel ?? 30}%
-                  </div>
-                </div>
-                <div style="display:flex;gap:6px;">
-                  <button
-                    class="md3-button text"
-                    @click=${() => this._editTank(i)}
-                    style="padding:6px;min-width:auto;"
-                  >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                      <path d="${mdiPencil}"></path>
-                    </svg>
-                  </button>
-                  <button
-                    class="md3-button text error"
-                    @click=${() => this._deleteTank(i)}
-                    style="padding:6px;min-width:auto;"
-                  >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                      <path d="${mdiDelete}"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            `
-          )}
-        </div>
-
-        ${this._sm.tabs.tanks.sub.kind !== 'idle'
-          ? html`
-              ${(() => {
-                const tankSub = this._sm.tabs.tanks.sub;
-                if (tankSub.kind !== 'adding' && tankSub.kind !== 'editing') return nothing;
-                return html`
-                  <div
-                    style="margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--divider-color,rgba(255,255,255,0.15));border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;"
-                  >
-                    <div class="md3-input-group">
-                      <label class="md3-label">Sensor Entity *</label>
-                      <input
-                        class="md3-input"
-                        list="${listId}"
-                        .value=${tankSub.sensorEntity}
-                        @input=${(e: Event) => {
-                          this._t({ type: 'UPDATE_TANK_DRAFT', partial: { sensorEntity: (e.target as HTMLInputElement).value } });
-                        }}
-                        placeholder="Search entity..."
-                      />
-                      <datalist id="${listId}">
-                        ${entities.map((eid) => html`<option value="${eid}"></option>`)}
-                      </datalist>
-                    </div>
-                    <div class="md3-input-group">
-                      <label class="md3-label">Name</label>
-                      <input
-                        class="md3-input"
-                        type="text"
-                        .value=${tankSub.name}
-                        @input=${(e: Event) => {
-                          this._t({ type: 'UPDATE_TANK_DRAFT', partial: { name: (e.target as HTMLInputElement).value } });
-                        }}
-                        placeholder="e.g. Main Tank"
-                      />
-                    </div>
-                    <div class="row-col-grid">
-                      <div class="md3-input-group">
-                        <label class="md3-label">Volume (L, optional)</label>
-                        <input
-                          class="md3-input"
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          .value=${tankSub.volumeLiters != null ? String(tankSub.volumeLiters) : ''}
-                          @input=${(e: Event) => {
-                            const v = (e.target as HTMLInputElement).value;
-                            this._t({ type: 'UPDATE_TANK_DRAFT', partial: { volumeLiters: v === '' ? null : parseFloat(v) } });
-                          }}
-                          placeholder="e.g. 100"
-                        />
-                      </div>
-                      <div class="md3-input-group">
-                        <label class="md3-label">Warning Level (%)</label>
-                        <input
-                          class="md3-input"
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="1"
-                          .value=${String(tankSub.warningLevel)}
-                          @input=${(e: Event) => {
-                            this._t({ type: 'UPDATE_TANK_DRAFT', partial: { warningLevel: parseFloat((e.target as HTMLInputElement).value) || 30 } });
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px;">
-                      <button class="md3-button tonal" @click=${this._cancelTank}>Cancel</button>
-                      <button class="md3-button primary" @click=${this._saveTank}>Save Tank</button>
-                    </div>
-                  </div>
-                `;
-              })()}
-            `
-          : nothing}
-      </div>
+      <config-tanks-tab
+        .vm=${createTanksTabViewModel(this._sm, deps)}
+        @add-tank-requested=${this._openAddTank}
+        @edit-tank-requested=${(e: CustomEvent) => this._editTank(e.detail.index)}
+        @delete-tank-requested=${(e: CustomEvent) => this._deleteTank(e.detail.index)}
+        @tank-draft-changed=${(e: CustomEvent) =>
+          this._t({ type: 'UPDATE_TANK_DRAFT', partial: e.detail.partial })}
+        @cancel-tank=${this._cancelTank}
+        @save-tank-requested=${this._saveTank}
+      ></config-tanks-tab>
     `;
   }
 
@@ -2428,7 +2296,7 @@ export class ConfigDialog extends LitElement {
                 ${this.currentTab === ConfigTab.CLIMATE ? this._renderClimateTab() : nothing}
                 ${this.currentTab === ConfigTab.HUMIDITY ? this._renderHumidityTab() : nothing}
                 ${this.currentTab === ConfigTab.IRRIGATION ? this._renderIrrigationTab() : nothing}
-                ${this.currentTab === ConfigTab.TANKS ? this._renderTanksSection() : nothing}
+                ${this.currentTab === ConfigTab.TANKS ? this._renderTanksTab() : nothing}
                 ${this.currentTab === ConfigTab.VISION ? this._renderVisionTab() : nothing}
                 ${this.currentTab === ConfigTab.HEATMAP ? this._renderHeatmapSection() : nothing}
                 ${this.currentTab === ConfigTab.SUBAREAS ? this._renderSubareasSection() : nothing}
