@@ -15,7 +15,7 @@ import { html } from 'lit';
 async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     await element.updateComplete;
     const tab = element.shadowRoot!.querySelector(
-        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-vision-tab, config-growspaces-tab'
+        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-vision-tab, config-growspaces-tab, config-heatmap-tab'
     ) as (HTMLElement & { updateComplete: Promise<boolean> }) | null;
     if (tab) {
         await tab.updateComplete;
@@ -1068,13 +1068,13 @@ describe('ConfigDialog', () => {
             await element.updateComplete;
         });
 
-        it('should render sensor groups list', () => {
-            const groupName = element.shadowRoot?.querySelector('div[style*="font-weight:500"]');
+        it('should render sensor groups list', async () => {
+            const groupName = (await sensorsShadow(element)).querySelector('div[style*="font-weight:500"]');
             expect(groupName?.textContent).toBe('Group 1');
         });
 
         it('should open add group dialog', async () => {
-            const addBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
+            const addBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
                 .find(b => b.textContent?.includes('Add Group'));
             (addBtn as HTMLElement)?.click();
             await element.updateComplete;
@@ -1093,7 +1093,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should delete a group', async () => {
-            const deleteBtn = element.shadowRoot?.querySelector('button.error');
+            const deleteBtn = (await sensorsShadow(element)).querySelector('button.error');
             (deleteBtn as HTMLElement)?.click();
             await element.updateComplete;
 

@@ -7,7 +7,7 @@ import { ConfigTab } from '../../../src/constants';
 async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     await element.updateComplete;
     const tab = element.shadowRoot!.querySelector(
-        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-irrigation-tab, config-vision-tab, config-tanks-tab, config-growspaces-tab'
+        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-irrigation-tab, config-vision-tab, config-tanks-tab, config-growspaces-tab, config-heatmap-tab'
     ) as HTMLElement & { updateComplete: Promise<boolean> };
     await tab.updateComplete;
     return tab.shadowRoot!;
@@ -639,15 +639,12 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         ];
         await element.updateComplete;
 
-        // Group name rendered
-        expect(element.shadowRoot?.textContent).toContain('Group A');
+        // Group name rendered (now in the nested config-heatmap-tab)
+        const root = await sensorsShadow(element);
+        expect(root.textContent).toContain('Group A');
 
-        // Click the edit button DOM element to cover the arrow fn at line 1780.
-        // querySelectorAll returns them in DOM order; the header close button is first,
-        // so the group edit button is the last non-error text button.
-        const textButtons = Array.from(
-            element.shadowRoot?.querySelectorAll('button.md3-button.text:not(.error)') ?? []
-        );
+        // Click the group's edit button (the non-error text button) to cover its handler.
+        const textButtons = Array.from(root.querySelectorAll('button.md3-button.text:not(.error)'));
         const editBtn = textButtons[textButtons.length - 1] as HTMLElement | undefined;
         expect(editBtn).toBeDefined();
         editBtn!.click();
