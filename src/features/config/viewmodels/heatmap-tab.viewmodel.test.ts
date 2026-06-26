@@ -8,7 +8,16 @@ function sm(): ConfigDialogSM {
   return createInitialSM();
 }
 
-const group: SensorGroup = { id: 'g1', name: 'Group A', x: 1, y: 2, z: 3, sensors: [] } as SensorGroup;
+const group: SensorGroup = {
+  id: 'g1',
+  name: 'Group A',
+  x: 1,
+  y: 2,
+  z: 3,
+  temperature_sensors: [],
+  humidity_sensors: [],
+  vpd_sensors: [],
+};
 
 describe('createHeatmapTabViewModel', () => {
   it('reports the empty state when there are no sensor groups', () => {
