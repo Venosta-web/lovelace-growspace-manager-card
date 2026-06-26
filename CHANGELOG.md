@@ -1,3 +1,10 @@
+# [1.1.0-next.63](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.62...v1.1.0-next.63) (2026-06-26)
+
+
+### Features
+
+* **config-dialog:** save, round-trip, and fire notifications-tab settings ([7bcde09](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7bcde0927f158f8d0c826933ee88822861c60b54))
+
 # [1.1.0-next.62](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.61...v1.1.0-next.62) (2026-06-23)
 
 
