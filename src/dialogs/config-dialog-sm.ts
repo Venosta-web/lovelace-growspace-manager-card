@@ -130,7 +130,9 @@ export interface GrowspacesTabState {
 
 // ─── Notifications tab ────────────────────────────────────────────────────────
 
-export type TimedNotificationTrigger = 'clone_start' | 'veg_start' | 'flower_start' | 'dry_start';
+// Bare stage names matching the backend firing path (calculate_days_in_stage);
+// the legacy '*_start' values never resolved and so never fired.
+export type TimedNotificationTrigger = 'clone' | 'veg' | 'flower' | 'dry';
 
 export interface TimedNotification {
   id: string;
@@ -323,7 +325,7 @@ function defaultNotificationsDraft(): NotificationsDraft {
 }
 
 function defaultTimedNotificationDraft(): TimedNotificationDraft {
-  return { message: '', triggerType: 'clone_start', day: 1, growspaceIds: [] };
+  return { message: '', triggerType: 'clone', day: 1, growspaceIds: [] };
 }
 
 function defaultNotificationsTabState(): NotificationsTabState {

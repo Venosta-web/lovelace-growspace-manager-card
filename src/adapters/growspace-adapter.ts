@@ -342,6 +342,30 @@ export class GrowspaceAdapter {
         }
       : null;
 
+    // Global notification settings ride every growspace payload (camelCase keys
+    // + a separate ai_auto_alerts flag); fold the flag into the settings object
+    // the Config Dialog seeds from. Undefined when the backend omits them.
+    const notificationSettings: GrowspaceDevice['notificationSettings'] =
+      wsData?.notification_settings
+        ? { ...wsData.notification_settings, aiAutoAlerts: wsData.ai_auto_alerts ?? true }
+        : undefined;
+
+    // Timed notifications are stored snake_case (backend consumers require it);
+    // map to the camelCase shape the Config Dialog seeds from. Legacy entries
+    // saved with the old '*_start' trigger values are normalised to the bare
+    // stage names the firing path (calculate_days_in_stage) resolves.
+    const timedNotifications: GrowspaceDevice['timedNotifications'] = (
+      wsData?.timed_notifications ?? []
+    ).map((n) => ({
+      id: n.id,
+      message: n.message,
+      triggerType: n.trigger_type.replace(/_start$/, '') as NonNullable<
+        GrowspaceDevice['timedNotifications']
+      >[number]['triggerType'],
+      day: n.day,
+      growspaceIds: n.growspace_ids,
+    }));
+
     // 8. Construct Device
     return createGrowspaceDevice({
       deviceId: growspaceId,
@@ -351,6 +375,8 @@ export class GrowspaceAdapter {
       rows: gridData?.rows ?? 3,
       plantsPerRow: gridData?.plants_per_row ?? 3,
       notificationTarget: identity?.notification_target,
+      notificationSettings,
+      timedNotifications,
       dimensions: gridData?.dimensions
         ? {
             width: gridData.dimensions.width ?? 120,

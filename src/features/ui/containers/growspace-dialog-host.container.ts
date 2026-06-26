@@ -48,6 +48,7 @@ import {
   configureExhaustFan,
   removeEnvironment,
 } from '../../../slices/growspace';
+import { saveNotificationSettings } from '../../../slices/notification';
 import { withToast, showError, showToast, closeDialog } from '../../../slices/ui';
 import * as uiSlice from '../../../slices/ui';
 import { setHass } from '../../../services/hass-call';
@@ -1031,6 +1032,8 @@ export class GrowspaceDialogHost extends LitElement {
         @delete-growspace-submit=${(e: CustomEvent) => this._handleRemoveGrowspace(e.detail)}
         @remove-environment-submit=${(e: CustomEvent) => this._handleRemoveEnvironment(e.detail)}
         @configure-environment-submit=${(e: CustomEvent) => this._handleEnvironmentConfig(e.detail)}
+        @save-notification-settings-submit=${(e: CustomEvent) =>
+        this._handleSaveNotificationSettings(e.detail)}
         @vision-checkup-config-submit=${(e: CustomEvent) =>
         this._handleVisionCheckupConfig(e.detail)}
       ></config-dialog>
@@ -1123,6 +1126,35 @@ export class GrowspaceDialogHost extends LitElement {
       uiSlice.closeDialog();
     } catch (e: unknown) {
       showError(e, 'Failed to configure environment');
+    }
+  }
+
+  private async _handleSaveNotificationSettings(detail: {
+    notification_settings: Record<string, number>;
+    ai_auto_alerts: boolean;
+    timed_notifications?: {
+      id: string;
+      message: string;
+      trigger_type: string;
+      day: number;
+      growspace_ids: string[];
+    }[];
+  }) {
+    try {
+      await withToast(
+        async () => {
+          await saveNotificationSettings(detail);
+          await this.store?.refreshData();
+        },
+        {
+          success: 'Notification settings saved',
+          errorPrefix: 'Failed to save notification settings',
+          rethrow: true,
+        }
+      );
+      uiSlice.closeDialog();
+    } catch (e: unknown) {
+      console.error('[DialogHost] saveNotificationSettings failed:', e);
     }
   }
 

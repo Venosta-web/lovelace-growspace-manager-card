@@ -1087,6 +1087,15 @@ export class ConfigDialog extends LitElement {
 
   private _submitNotifications() {
     const draft = this._sm.tabs.notifications.draft;
+    // Backend consumers (calendar, notification_manager) read timed notifications
+    // in snake_case, so convert the camelCase SM shape at this card→backend boundary.
+    const timedNotifications = this._sm.tabs.notifications.timedNotifications.map((n) => ({
+      id: n.id,
+      message: n.message,
+      trigger_type: n.triggerType,
+      day: n.day,
+      growspace_ids: n.growspaceIds,
+    }));
     this.dispatchEvent(
       new CustomEvent('save-notification-settings-submit', {
         detail: {
@@ -1099,6 +1108,7 @@ export class ConfigDialog extends LitElement {
             warningPersistenceMinutes: draft.warningPersistenceMinutes,
           },
           ai_auto_alerts: draft.aiAutoAlerts,
+          timed_notifications: timedNotifications,
         },
         bubbles: true,
         composed: true,

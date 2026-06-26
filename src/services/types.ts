@@ -466,6 +466,21 @@ export interface GrowspaceAPIResponse {
     air_exchange?: string | null;
     energy_tracking?: SerializedEnergyTracking | null;
   };
+  /**
+   * Global notification timing settings (camelCase keys), duplicated onto every
+   * growspace payload so the Config Dialog can seed/round-trip saved values.
+   */
+  notification_settings?: Record<string, number>;
+  /** Global AI auto-alerts toggle, shipped alongside notification_settings. */
+  ai_auto_alerts?: boolean;
+  /** Global timed notifications (snake_case wire shape), duplicated per payload. */
+  timed_notifications?: Array<{
+    id: string;
+    message: string;
+    trigger_type: string;
+    day: number;
+    growspace_ids: string[];
+  }>;
   _ts?: number; // Backend serialization timestamp for efficient equality checks
 }
 
@@ -673,7 +688,7 @@ export interface GrowspaceDevice {
   timedNotifications?: Array<{
     id: string;
     message: string;
-    triggerType: 'clone_start' | 'veg_start' | 'flower_start' | 'dry_start';
+    triggerType: 'clone' | 'veg' | 'flower' | 'dry';
     day: number;
     growspaceIds: string[];
   }>;

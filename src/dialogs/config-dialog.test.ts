@@ -154,7 +154,7 @@ describe('timed notifications — add flow', () => {
 describe('timed notifications — edit flow', () => {
   it('_startEditTimedNotification transitions sub to editing with pre-populated draft', () => {
     const el = makeEl();
-    const draft = { message: 'Check roots', triggerType: 'veg_start' as const, day: 7, growspaceIds: ['gs1'] };
+    const draft = { message: 'Check roots', triggerType: 'veg' as const, day: 7, growspaceIds: ['gs1'] };
     (el as any)._startEditTimedNotification('notif-1', draft);
     const sub = (el as any)._sm.tabs.notifications.sub;
     expect(sub.kind).toBe('editing');
@@ -181,7 +181,7 @@ describe('timed notifications — confirm-delete flow', () => {
         ...(el as any)._sm.tabs,
         notifications: {
           draft: (el as any)._sm.tabs.notifications.draft,
-          timedNotifications: [{ id: 'notif-1', message: 'msg', triggerType: 'veg_start', day: 3, growspaceIds: [] }],
+          timedNotifications: [{ id: 'notif-1', message: 'msg', triggerType: 'veg', day: 3, growspaceIds: [] }],
           sub: { kind: 'confirm-delete', id: 'notif-1' },
         },
       },
@@ -197,6 +197,38 @@ describe('timed notifications — confirm-delete flow', () => {
     (el as any)._startAddTimedNotification();
     (el as any)._cancelTimedNotification();
     expect((el as any)._sm.tabs.notifications.sub.kind).toBe('idle');
+  });
+});
+
+describe('_submitNotifications — timed notifications persistence', () => {
+  it('includes the timed notifications (snake_case) in the save payload', () => {
+    const el = makeEl();
+    (el as any)._sm = {
+      ...(el as any)._sm,
+      tabs: {
+        ...(el as any)._sm.tabs,
+        notifications: {
+          draft: (el as any)._sm.tabs.notifications.draft,
+          timedNotifications: [
+            { id: 'notif-1', message: 'Feed me', triggerType: 'veg', day: 3, growspaceIds: ['gs-1'] },
+          ],
+          sub: { kind: 'idle' },
+        },
+      },
+    };
+
+    let detail: any;
+    el.addEventListener('save-notification-settings-submit', (e: Event) => {
+      detail = (e as CustomEvent).detail;
+    });
+
+    (el as any)._submitNotifications();
+
+    // trigger_type must be a bare stage so the backend firing path
+    // (calculate_days_in_stage) resolves it; 'veg' never fires.
+    expect(detail.timed_notifications).toEqual([
+      { id: 'notif-1', message: 'Feed me', trigger_type: 'veg', day: 3, growspace_ids: ['gs-1'] },
+    ]);
   });
 });
 

@@ -232,3 +232,66 @@ describe('GrowspaceAdapter lst_offset', () => {
     expect(device?.environmentAttributes?.lstOffset).toBeUndefined();
   });
 });
+
+// ─── Notification settings (Config Dialog round-trip) ────────────────────────
+
+describe('GrowspaceAdapter notification settings', () => {
+  function wsWithNotifications(extra: Partial<GrowspaceAPIResponse>): GrowspaceAPIResponse {
+    return {
+      identity: { growspace_id: 'gs1', name: 'Tent', overview_entity_id: 'sensor.gs1' },
+      ...extra,
+    } as unknown as GrowspaceAPIResponse;
+  }
+
+  it('maps notification_settings + ai_auto_alerts onto device.notificationSettings', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithNotifications({
+        notification_settings: { criticalCooldownMinutes: 7, warningCooldownMinutes: 45 },
+        ai_auto_alerts: false,
+      } as unknown as Partial<GrowspaceAPIResponse>),
+    );
+
+    expect(device?.notificationSettings?.criticalCooldownMinutes).toBe(7);
+    expect(device?.notificationSettings?.warningCooldownMinutes).toBe(45);
+    expect(device?.notificationSettings?.aiAutoAlerts).toBe(false);
+  });
+
+  it('leaves notificationSettings undefined when the backend omits the settings', () => {
+    const device = GrowspaceAdapter.transformGrowspace(null, wsWithNotifications({}));
+    expect(device?.notificationSettings).toBeUndefined();
+  });
+
+  it('maps timed_notifications (snake_case) onto device.timedNotifications (camelCase)', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithNotifications({
+        timed_notifications: [
+          { id: 'n1', message: 'Feed me', trigger_type: 'veg', day: 3, growspace_ids: ['gs-1'] },
+        ],
+      } as unknown as Partial<GrowspaceAPIResponse>),
+    );
+
+    expect(device?.timedNotifications).toEqual([
+      { id: 'n1', message: 'Feed me', triggerType: 'veg', day: 3, growspaceIds: ['gs-1'] },
+    ]);
+  });
+
+  it('normalises legacy "*_start" trigger values to the bare stage that fires', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithNotifications({
+        timed_notifications: [
+          { id: 'n1', message: 'Old', trigger_type: 'veg_start', day: 3, growspace_ids: [] },
+        ],
+      } as unknown as Partial<GrowspaceAPIResponse>),
+    );
+
+    expect(device?.timedNotifications?.[0].triggerType).toBe('veg');
+  });
+
+  it('leaves timedNotifications as an empty list when the backend omits them', () => {
+    const device = GrowspaceAdapter.transformGrowspace(null, wsWithNotifications({}));
+    expect(device?.timedNotifications).toEqual([]);
+  });
+});

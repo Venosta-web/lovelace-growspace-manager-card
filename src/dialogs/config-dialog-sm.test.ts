@@ -188,7 +188,7 @@ describe('notifications tab seeding', () => {
     const notification = {
       id: 'n1',
       message: 'Check roots',
-      triggerType: 'clone_start' as const,
+      triggerType: 'clone' as const,
       day: 7,
       growspaceIds: ['gs1'],
     };
@@ -269,7 +269,7 @@ describe('isNotificationsDirty', () => {
 
   it('returns true when sub is editing with a changed draft', () => {
     const notification = {
-      id: 'n1', message: 'Original', triggerType: 'clone_start' as const, day: 7, growspaceIds: [],
+      id: 'n1', message: 'Original', triggerType: 'clone' as const, day: 7, growspaceIds: [],
     };
     const device = makeDevice({ timedNotifications: [notification] });
     const sm = createInitialSM(device);
@@ -277,7 +277,7 @@ describe('isNotificationsDirty', () => {
       transition(sm, {
         type: 'START_EDIT_TIMED_NOTIFICATION',
         id: 'n1',
-        draft: { message: 'Original', triggerType: 'clone_start', day: 7, growspaceIds: [] },
+        draft: { message: 'Original', triggerType: 'clone', day: 7, growspaceIds: [] },
       }),
       { type: 'UPDATE_TIMED_DRAFT', partial: { message: 'Changed' } }
     );
@@ -1121,7 +1121,7 @@ describe('ADD_TIMED_NOTIFICATION', () => {
     expect(sm.tabs.notifications.sub.kind).toBe('idle');
     expect(sm.tabs.notifications.timedNotifications).toHaveLength(1);
     expect(sm.tabs.notifications.timedNotifications[0]).toEqual({
-      id: 'n1', message: 'Check roots', triggerType: 'clone_start', day: 7, growspaceIds: ['gs1'],
+      id: 'n1', message: 'Check roots', triggerType: 'clone', day: 7, growspaceIds: ['gs1'],
     });
   });
 
@@ -1134,7 +1134,7 @@ describe('ADD_TIMED_NOTIFICATION', () => {
 
 describe('START_EDIT_TIMED_NOTIFICATION', () => {
   it('enters editing sub-state with the given draft', () => {
-    const draft = { message: 'Original', triggerType: 'veg_start' as const, day: 14, growspaceIds: ['gs1'] };
+    const draft = { message: 'Original', triggerType: 'veg' as const, day: 14, growspaceIds: ['gs1'] };
     const sm = transition(createInitialSM(), { type: 'START_EDIT_TIMED_NOTIFICATION', id: 'n1', draft });
     const sub = sm.tabs.notifications.sub;
     expect(sub.kind).toBe('editing');
@@ -1148,7 +1148,7 @@ describe('START_EDIT_TIMED_NOTIFICATION', () => {
 describe('EDIT_TIMED_NOTIFICATION', () => {
   it('updates the item in the list and returns to idle', () => {
     const existing = {
-      id: 'n1', message: 'Original', triggerType: 'clone_start' as const, day: 7, growspaceIds: [],
+      id: 'n1', message: 'Original', triggerType: 'clone' as const, day: 7, growspaceIds: [],
     };
     const device = makeDevice({ timedNotifications: [existing] });
     const sm = transition(
@@ -1156,7 +1156,7 @@ describe('EDIT_TIMED_NOTIFICATION', () => {
         transition(createInitialSM(device), {
           type: 'START_EDIT_TIMED_NOTIFICATION',
           id: 'n1',
-          draft: { message: 'Original', triggerType: 'clone_start', day: 7, growspaceIds: [] },
+          draft: { message: 'Original', triggerType: 'clone', day: 7, growspaceIds: [] },
         }),
         { type: 'UPDATE_TIMED_DRAFT', partial: { message: 'Updated', day: 10 } }
       ),
@@ -1164,7 +1164,7 @@ describe('EDIT_TIMED_NOTIFICATION', () => {
     );
     expect(sm.tabs.notifications.sub.kind).toBe('idle');
     expect(sm.tabs.notifications.timedNotifications[0]).toEqual({
-      id: 'n1', message: 'Updated', triggerType: 'clone_start', day: 10, growspaceIds: [],
+      id: 'n1', message: 'Updated', triggerType: 'clone', day: 10, growspaceIds: [],
     });
   });
 });
@@ -1179,7 +1179,7 @@ describe('CANCEL_TIMED_NOTIFICATION', () => {
   });
 
   it('resets sub to idle from editing', () => {
-    const draft = { message: 'X', triggerType: 'veg_start' as const, day: 1, growspaceIds: [] };
+    const draft = { message: 'X', triggerType: 'veg' as const, day: 1, growspaceIds: [] };
     const sm = transition(
       transition(createInitialSM(), { type: 'START_EDIT_TIMED_NOTIFICATION', id: 'n1', draft }),
       { type: 'CANCEL_TIMED_NOTIFICATION' }
@@ -1206,7 +1206,7 @@ describe('DELETE_TIMED_NOTIFICATION + CONFIRM_DELETE', () => {
 
   it('removes the item from the list on CONFIRM_DELETE', () => {
     const existing = {
-      id: 'n1', message: 'Delete me', triggerType: 'clone_start' as const, day: 3, growspaceIds: [],
+      id: 'n1', message: 'Delete me', triggerType: 'clone' as const, day: 3, growspaceIds: [],
     };
     const device = makeDevice({ timedNotifications: [existing] });
     const sm = transition(
@@ -1238,7 +1238,7 @@ describe('RESET_FROM_DEVICE re-seeds notifications', () => {
       {
         type: 'RESET_FROM_DEVICE',
         device: makeDevice({ notificationSettings: { criticalCooldownMinutes: 90 }, timedNotifications: [
-          { id: 'n1', message: 'New', triggerType: 'veg_start', day: 5, growspaceIds: [] },
+          { id: 'n1', message: 'New', triggerType: 'veg', day: 5, growspaceIds: [] },
         ] }),
       }
     );

@@ -53,12 +53,9 @@ describe('createNotificationsTabViewModel', () => {
   it('exposes the four trigger options in display order', () => {
     const sm = createInitialSM(device);
     const vm = createNotificationsTabViewModel(sm, {});
-    expect(vm.triggerOptions.map((o) => o.value)).toEqual([
-      'clone_start',
-      'veg_start',
-      'flower_start',
-      'dry_start',
-    ]);
+    // Bare stage names so the backend firing path (calculate_days_in_stage)
+    // resolves them; the old '*_start' values never fired.
+    expect(vm.triggerOptions.map((o) => o.value)).toEqual(['clone', 'veg', 'flower', 'dry']);
     // a fresh array copy, not the shared module constant
     expect(vm.triggerOptions).not.toBe(TRIGGER_OPTIONS);
   });

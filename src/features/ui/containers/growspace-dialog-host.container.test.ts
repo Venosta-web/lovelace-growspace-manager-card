@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { waterPlant as mockWaterPlant } from '../../../slices/plant';
 import { configureEnvironment as mockConfigureEnvironment } from '../../../slices/growspace';
 import { applyIPM as mockApplyIPM } from '../../../slices/nutrient';
+import { saveNotificationSettings as mockSaveNotificationSettings } from '../../../slices/notification';
 import { notification$, activeDialog$ } from '../../../slices/ui';
 import './growspace-dialog-host.container';
 import type { GrowspaceDialogHost } from './growspace-dialog-host.container';
@@ -41,6 +42,10 @@ vi.mock('../../../slices/genetics', () => ({
   deletePollinationEvent: vi.fn(), harvestSeeds: vi.fn(), sowSeed: vi.fn(),
   setPlantSex: vi.fn(), unlinkSeedBatch: vi.fn(), getLineageTree: vi.fn(),
   getStrainLineageTree: vi.fn(), updateStrainLineageTree: vi.fn(), importStrainLineageTree: vi.fn(),
+}));
+
+vi.mock('../../../slices/notification', () => ({
+  saveNotificationSettings: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 // Mock slices/nutrient so the IPM handler's slice calls don't hit the backend.
@@ -566,5 +571,98 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
     expect(notification$.get()?.type).toBe('error');
     expect(notification$.get()?.message).toContain('mandatory');
     expect(mockConfigureEnvironment).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// save-notification-settings wiring (regression for the dead "Save
+// Notifications" button — the host never listened for the dialog's event)
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceDialogHost – save-notification-settings wiring', () => {
+  const notifDetail = {
+    notification_settings: {
+      criticalCooldownMinutes: 5,
+      warningCooldownMinutes: 30,
+      recoveryCooldownMinutes: 15,
+      escalationDelayMinutes: 60,
+      minStressDurationSeconds: 120,
+      warningPersistenceMinutes: 10,
+    },
+    ai_auto_alerts: true,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(mockSaveNotificationSettings).mockResolvedValue({ success: true });
+  });
+
+  async function renderConfigDialog(): Promise<HTMLElement> {
+    const el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    (el as any).store = {
+      $dialogHostState: {
+        subscribe: vi.fn(() => () => {}),
+        get: vi.fn().mockReturnValue({
+          activeDialog: { type: 'CONFIG', payload: { currentTab: 'notifications' } },
+          devices: [{ deviceId: 'gs-1', name: 'Tent 1' }],
+          selectedDevice: 'gs-1',
+          strainLibrary: [],
+          nutrientPresets: {},
+          ipmPresets: {},
+          nutrientInventory: null,
+        }),
+      },
+      refreshData: vi.fn().mockResolvedValue(undefined),
+    };
+
+    (el as any)._initControllers();
+    const result = (el as any).render();
+    const container = document.createElement('div');
+    const { render } = await import('lit');
+    render(result, container);
+
+    const dialog = container.querySelector('config-dialog');
+    if (!dialog) throw new Error('config-dialog did not render');
+    return dialog as HTMLElement;
+  }
+
+  function dispatchSave(dialog: HTMLElement): void {
+    dialog.dispatchEvent(
+      new CustomEvent('save-notification-settings-submit', {
+        detail: notifDetail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  it('calls saveNotificationSettings when the dialog emits save-notification-settings-submit', async () => {
+    const dialog = await renderConfigDialog();
+
+    dispatchSave(dialog);
+    await Promise.resolve();
+
+    expect(mockSaveNotificationSettings).toHaveBeenCalledWith(notifDetail);
+  });
+
+  it('shows a success toast and closes the dialog after a successful save', async () => {
+    activeDialog$.set({ type: 'CONFIG', payload: { currentTab: 'notifications' } } as never);
+    const dialog = await renderConfigDialog();
+
+    dispatchSave(dialog);
+    await vi.waitFor(() => expect(activeDialog$.get().type).toBe('NONE'));
+
+    expect(notification$.get()?.type).toBe('success');
+  });
+
+  it('shows an error toast and keeps the dialog open when the save fails', async () => {
+    vi.mocked(mockSaveNotificationSettings).mockRejectedValueOnce(new Error('Backend down'));
+    activeDialog$.set({ type: 'CONFIG', payload: { currentTab: 'notifications' } } as never);
+    const dialog = await renderConfigDialog();
+
+    dispatchSave(dialog);
+    await vi.waitFor(() => expect(notification$.get()?.type).toBe('error'));
+
+    expect(activeDialog$.get().type).toBe('CONFIG');
   });
 });
