@@ -2,30 +2,38 @@ name: Lint & Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
+  workflow_dispatch:
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6.0.2
-    
+
     - name: Set up Node.js
       uses: actions/setup-node@v6.4.0
       with:
         node-version: 24
         cache: 'npm'
-        
+
     - name: Install dependencies
       run: npm ci
-      
+
     - name: Run Lint
       run: npm run lint
-      
-    - name: Check Formatting
-      run: npm run format -- --check
-      
+
+    - name: Typecheck
+      run: npm run typecheck
+
     - name: Build
       run: npm run build
+
+    # Non-blocking until the existing prettier drift (~173 files) is reformatted
+    # in a dedicated PR — see ADR 0025. The previous `format -- --check` step was a
+    # no-op (it ran `prettier --write`), so it never actually checked.
+    - name: Check Formatting (non-blocking)
+      run: npm run format:check
+      continue-on-error: true
