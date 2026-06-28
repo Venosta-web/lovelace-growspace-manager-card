@@ -214,11 +214,26 @@ export interface TankDailyEntry {
   refilled: number;
 }
 
+export interface TankConsumptionBucket {
+  /** ISO-8601 start of the 15-minute bucket. */
+  ts: string;
+  /** Liters consumed in this bucket. */
+  liters: number;
+}
+
 export interface TankWaterHistory {
-  snapshots: Array<{ timestamp: string; level_pct: number }>;
-  events: TankWaterEvent[];
+  /**
+   * Compact 15-min consumption buckets for the last 24h (full data, non-zero
+   * buckets only). The backend ships these instead of raw events so the 24h
+   * chart is not limited to a truncated event slice.
+   */
+  buckets_24h?: TankConsumptionBucket[];
   daily_7d?: TankDailyEntry[];
   recent_refills?: TankWaterEvent[];
+  // Raw snapshots/events are no longer sent by the backend (attribute-size
+  // budget); kept optional for backward/forward compatibility.
+  snapshots?: Array<{ timestamp: string; level_pct: number }>;
+  events?: TankWaterEvent[];
 }
 
 export interface SerializedIrrigationTank {

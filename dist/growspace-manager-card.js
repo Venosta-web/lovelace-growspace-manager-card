@@ -33049,8 +33049,12 @@ function createWaterAnalyticsTabViewModel($sm, $device) {
         const totalDrain = drainTimes.length;
         const irrigDuration = device?.irrigationConfig?.irrigationDuration ?? 0;
         const drainDuration = device?.irrigationConfig?.drainDuration ?? 0;
-        const tanksWithHistory = tanks.filter((t) => t.volumeLiters != null && t.waterHistory?.events?.length);
-        const allTankEvents = tanksWithHistory.flatMap((t) => t.waterHistory.events);
+        const tanksWithHistory = tanks.filter((t) => t.volumeLiters != null &&
+            (t.waterHistory?.buckets_24h?.length ||
+                t.waterHistory?.daily_7d?.length ||
+                t.waterHistory?.recent_refills?.length));
+        const allTankBuckets24h = tanksWithHistory.flatMap((t) => t.waterHistory.buckets_24h ?? []);
+        const allTankRefills = tanksWithHistory.flatMap((t) => t.waterHistory.recent_refills ?? []);
         const allDaily7d = tanksWithHistory.flatMap((t) => t.waterHistory.daily_7d ?? []);
         const todayKey = new Date().toISOString().slice(0, 10);
         const tankLitersToday = allDaily7d
@@ -33087,7 +33091,8 @@ function createWaterAnalyticsTabViewModel($sm, $device) {
             tankLitersToday,
             tankLiters7d,
             tankAvgPerDay,
-            tankEvents: allTankEvents,
+            tankBuckets24h: allTankBuckets24h,
+            tankRefills: allTankRefills,
             hasTankHistory: tanksWithHistory.length > 0,
             isCropSteering,
             cropSteering: {
@@ -35394,9 +35399,9 @@ IrrigationConfigTab = __decorate([
  *   - `water-analytics-reset-tracking` — the Maintenance "Reset All Data" button.
  *
  * Clock/locale formatting kept here (per ADR-0019, to keep the VM factory
- * deterministic): the 24h consumption-bucket chart and the recent-refills list
- * are derived in-component from the VM's raw `tankEvents`, and timestamps are
- * `toLocaleString`-formatted here.
+ * deterministic): the 24h consumption-bucket chart places the VM's full-data
+ * `tankBuckets24h` into a clock-aligned grid, and the recent-refills list reads
+ * `tankRefills`; timestamps are `toLocaleString`-formatted here.
  *
  * Markup is transcribed verbatim from the former inline `_renderWaterAnalyticsTab`
  * in `irrigation-dialog.container.ts` so the rendered output stays byte-identical.
@@ -35556,7 +35561,9 @@ let IrrigationWaterAnalyticsTab = class IrrigationWaterAnalyticsTab extends i$3 
     _renderTankDerivedUsage(vm) {
         if (!(vm.hasTankSensors && vm.hasTankHistory))
             return E;
-        // 24h consumption buckets (15 min) + recent refills — clock-dependent, derived here.
+        // Build the 96-slot 15-min grid aligned to the current clock, then place the
+        // backend's full-data consumption buckets (`vm.tankBuckets24h`) into it.
+        // Bucket timestamps are already 15-min aligned, so they land in exact slots.
         const now = new Date();
         const bucket15Min = 15 * 60 * 1000;
         const bucketCount24h = 96;
@@ -35566,21 +35573,16 @@ let IrrigationWaterAnalyticsTab = class IrrigationWaterAnalyticsTab extends i$3 
             start: chartStart + i * bucket15Min,
             liters: 0,
         }));
-        for (const ev of vm.tankEvents) {
-            if (ev.event_type !== 'consumption')
-                continue;
-            const ts = new Date(ev.timestamp).getTime();
+        for (const b of vm.tankBuckets24h) {
+            const ts = new Date(b.ts).getTime();
             if (ts < chartStart || ts >= chartEnd)
                 continue;
             const idx = Math.floor((ts - chartStart) / bucket15Min);
             if (idx >= 0 && idx < bucketCount24h)
-                consumptionBuckets24h[idx].liters += ev.liters;
+                consumptionBuckets24h[idx].liters += b.liters;
         }
         const maxBucketLiters = Math.max(...consumptionBuckets24h.map((b) => b.liters), 0.01);
-        const recentRefills = vm.tankEvents
-            .filter((e) => e.event_type === 'refill')
-            .slice(-10)
-            .reverse();
+        const recentRefills = vm.tankRefills.slice(-10).reverse();
         return x `
       <div class="detail-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -140390,7 +140392,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.62"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.63"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

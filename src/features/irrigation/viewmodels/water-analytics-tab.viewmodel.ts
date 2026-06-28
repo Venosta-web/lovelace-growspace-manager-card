@@ -33,6 +33,7 @@ import type {
   GrowspaceDevice,
   IrrigationStrategy,
   IrrigationTime,
+  TankConsumptionBucket,
   TankWaterEvent,
 } from '../../../types';
 import type { WaterUsage } from '../../../services/types';
@@ -116,9 +117,11 @@ export interface WaterAnalyticsTabViewModel {
   tankLitersToday: number;
   tankLiters7d: number;
   tankAvgPerDay: number;
-  /** All consumption+refill events across tanks with history (component buckets/sorts by clock). */
-  tankEvents: TankWaterEvent[];
-  /** True when at least one tank has volume + history events. */
+  /** Full-data 15-min consumption buckets (last 24h) across tanks with history. */
+  tankBuckets24h: TankConsumptionBucket[];
+  /** Recent refill events (full 7d summary) across tanks with history. */
+  tankRefills: TankWaterEvent[];
+  /** True when at least one tank has volume + history. */
   hasTankHistory: boolean;
 
   // ── Schedule Summary ──
@@ -198,10 +201,17 @@ export function createWaterAnalyticsTabViewModel(
     const drainDuration = device?.irrigationConfig?.drainDuration ?? 0;
 
     const tanksWithHistory = tanks.filter(
-      (t) => t.volumeLiters != null && t.waterHistory?.events?.length
+      (t) =>
+        t.volumeLiters != null &&
+        (t.waterHistory?.buckets_24h?.length ||
+          t.waterHistory?.daily_7d?.length ||
+          t.waterHistory?.recent_refills?.length)
     );
-    const allTankEvents: TankWaterEvent[] = tanksWithHistory.flatMap(
-      (t) => t.waterHistory!.events
+    const allTankBuckets24h: TankConsumptionBucket[] = tanksWithHistory.flatMap(
+      (t) => t.waterHistory!.buckets_24h ?? []
+    );
+    const allTankRefills: TankWaterEvent[] = tanksWithHistory.flatMap(
+      (t) => t.waterHistory!.recent_refills ?? []
     );
     const allDaily7d = tanksWithHistory.flatMap((t) => t.waterHistory!.daily_7d ?? []);
     const todayKey = new Date().toISOString().slice(0, 10);
@@ -246,7 +256,8 @@ export function createWaterAnalyticsTabViewModel(
       tankLitersToday,
       tankLiters7d,
       tankAvgPerDay,
-      tankEvents: allTankEvents,
+      tankBuckets24h: allTankBuckets24h,
+      tankRefills: allTankRefills,
       hasTankHistory: tanksWithHistory.length > 0,
 
       isCropSteering,
