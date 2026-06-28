@@ -85,6 +85,16 @@ describe('VpdCloudRenderer', () => {
     let renderer: VpdCloudRenderer;
 
     beforeEach(() => {
+        // Reset SensorTypeUtils classifier return values each test. afterEach uses
+        // clearAllMocks (which preserves implementations but NOT return values), so
+        // defaulting to false here prevents a `mockReturnValue(true)` from one test
+        // leaking into the next.
+        vi.mocked(SensorTypeUtils.isTemperature).mockReturnValue(false);
+        vi.mocked(SensorTypeUtils.isHumidity).mockReturnValue(false);
+        vi.mocked(SensorTypeUtils.isVPD).mockReturnValue(false);
+        vi.mocked(SensorTypeUtils.isLight).mockReturnValue(false);
+        vi.mocked(SensorTypeUtils.isFan).mockReturnValue(false);
+
         context = {
             device: {
                 dimensions: { width: 100, length: 100, height: 200 },
@@ -104,7 +114,12 @@ describe('VpdCloudRenderer', () => {
     });
 
     afterEach(() => {
-        vi.restoreAllMocks();
+        // NOT restoreAllMocks(): that calls mockRestore() on the hoisted
+        // vi.mock('three') factory's vi.fn().mockImplementation(...) constructors
+        // (Group/Mesh/ShaderMaterial), stripping their implementations so the next
+        // `new THREE.Group()` has no `.add` spy. clearAllMocks only clears call
+        // history and keeps implementations intact.
+        vi.clearAllMocks();
     });
 
     it('should dispose and return if selectedMetric is none or lights', () => {
