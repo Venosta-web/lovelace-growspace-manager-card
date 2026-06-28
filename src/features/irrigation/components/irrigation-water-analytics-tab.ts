@@ -11,9 +11,9 @@
  *   - `water-analytics-reset-tracking` — the Maintenance "Reset All Data" button.
  *
  * Clock/locale formatting kept here (per ADR-0019, to keep the VM factory
- * deterministic): the 24h consumption-bucket chart and the recent-refills list
- * are derived in-component from the VM's raw `tankEvents`, and timestamps are
- * `toLocaleString`-formatted here.
+ * deterministic): the 24h consumption-bucket chart places the VM's full-data
+ * `tankBuckets24h` into a clock-aligned grid, and the recent-refills list reads
+ * `tankRefills`; timestamps are `toLocaleString`-formatted here.
  *
  * Markup is transcribed verbatim from the former inline `_renderWaterAnalyticsTab`
  * in `irrigation-dialog.container.ts` so the rendered output stays byte-identical.
@@ -22,7 +22,6 @@
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { dialogStyles } from '../../../styles/dialog.styles';
-import type { TankWaterEvent } from '../../../types';
 import type {
   WaterAnalyticsTabViewModel,
   WaterAnalyticsScheduleRow,
@@ -238,7 +237,9 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
   ): TemplateResult | typeof nothing {
     if (!(vm.hasTankSensors && vm.hasTankHistory)) return nothing;
 
-    // 24h consumption buckets (15 min) + recent refills — clock-dependent, derived here.
+    // Build the 96-slot 15-min grid aligned to the current clock, then place the
+    // backend's full-data consumption buckets (`vm.tankBuckets24h`) into it.
+    // Bucket timestamps are already 15-min aligned, so they land in exact slots.
     const now = new Date();
     const bucket15Min = 15 * 60 * 1000;
     const bucketCount24h = 96;
@@ -248,19 +249,14 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
       start: chartStart + i * bucket15Min,
       liters: 0,
     }));
-    for (const ev of vm.tankEvents) {
-      if ((ev as TankWaterEvent).event_type !== 'consumption') continue;
-      const ts = new Date((ev as TankWaterEvent).timestamp).getTime();
+    for (const b of vm.tankBuckets24h) {
+      const ts = new Date(b.ts).getTime();
       if (ts < chartStart || ts >= chartEnd) continue;
       const idx = Math.floor((ts - chartStart) / bucket15Min);
-      if (idx >= 0 && idx < bucketCount24h)
-        consumptionBuckets24h[idx].liters += (ev as TankWaterEvent).liters;
+      if (idx >= 0 && idx < bucketCount24h) consumptionBuckets24h[idx].liters += b.liters;
     }
     const maxBucketLiters = Math.max(...consumptionBuckets24h.map((b) => b.liters), 0.01);
-    const recentRefills = vm.tankEvents
-      .filter((e) => e.event_type === 'refill')
-      .slice(-10)
-      .reverse();
+    const recentRefills = vm.tankRefills.slice(-10).reverse();
 
     return html`
       <div class="detail-card">

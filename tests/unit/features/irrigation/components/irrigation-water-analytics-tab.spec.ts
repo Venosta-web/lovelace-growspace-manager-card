@@ -34,7 +34,8 @@ function makeVm(overrides: Partial<WaterAnalyticsTabViewModel> = {}): WaterAnaly
     tankLitersToday: 0,
     tankLiters7d: 0,
     tankAvgPerDay: 0,
-    tankEvents: [],
+    tankBuckets24h: [],
+    tankRefills: [],
     hasTankHistory: false,
     isCropSteering: false,
     cropSteering: { shots: [], drainRows: [], totalDrain: 0, drainDuration: 0 },
@@ -122,6 +123,41 @@ describe('irrigation-water-analytics-tab', () => {
     expect(text).toContain('Tank Levels');
     expect(text).toContain('Warning Tank');
     expect(text).toContain('⚠');
+  });
+
+  it('renders the full 24h consumption history from tankBuckets24h (not a truncated slice)', async () => {
+    // Regression: the 24h chart used to bucket only the last 20 raw events, so
+    // consumption from earlier in the day vanished. It now renders the backend's
+    // full-data buckets. A bucket ~20h ago must still produce a bar.
+    const align = (ms: number): string => {
+      const bucket15 = 15 * 60 * 1000;
+      return new Date(Math.floor(ms / bucket15) * bucket15).toISOString();
+    };
+    const now = Date.now();
+    const el = await mount(
+      makeVm({
+        hasTankSensors: true,
+        hasTankHistory: true,
+        tankLitersToday: 32.8,
+        tankBuckets24h: [
+          { ts: align(now - 20 * 60 * 60 * 1000), liters: 3.5 }, // ~20h ago
+          { ts: align(now - 30 * 60 * 1000), liters: 1.25 }, // recent
+        ],
+        tankRefills: [
+          { event_type: 'refill', timestamp: align(now - 60 * 60 * 1000), liters: 7.8 } as any,
+        ],
+      })
+    );
+    const titles = [...el.shadowRoot!.querySelectorAll('[title]')].map((n) =>
+      n.getAttribute('title')
+    );
+    // The old, earlier-in-the-day bucket must be present (not truncated away).
+    expect(titles.some((t) => t?.includes('3.50 L'))).toBe(true);
+    expect(titles.some((t) => t?.includes('1.25 L'))).toBe(true);
+    // Refills render from the VM's tankRefills summary.
+    const text = norm(el.shadowRoot!.textContent);
+    expect(text).toContain('Recent refills');
+    expect(text).toContain('+7.8 L');
   });
 
   it('renders the plain schedule summary from the VM rows', async () => {

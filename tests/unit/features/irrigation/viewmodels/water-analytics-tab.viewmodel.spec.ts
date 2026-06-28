@@ -125,7 +125,10 @@ describe('createWaterAnalyticsTabViewModel', () => {
               fillLevel: 50,
               volumeLiters: 100,
               waterHistory: {
-                events: [{ event_type: 'consumption', timestamp: '2026-01-01T00:00:00Z', liters: 2 }],
+                buckets_24h: [{ ts: '2026-01-02T10:00:00Z', liters: 2 }],
+                recent_refills: [
+                  { event_type: 'refill', timestamp: '2026-01-02T08:00:00Z', liters: 50 },
+                ],
                 daily_7d: [
                   { date: '2026-01-01', consumed: 4 },
                   { date: '2026-01-02', consumed: 6 },
@@ -141,7 +144,8 @@ describe('createWaterAnalyticsTabViewModel', () => {
     expect(vm.tankLiters7d).toBe(10);
     // two days with consumption > 0 → avg 5/day
     expect(vm.tankAvgPerDay).toBe(5);
-    expect(vm.tankEvents).toHaveLength(1);
+    expect(vm.tankBuckets24h).toHaveLength(1);
+    expect(vm.tankRefills).toHaveLength(1);
   });
 
   it('builds the plain schedule summary (no crop steering) from irrigation/drain times', () => {
