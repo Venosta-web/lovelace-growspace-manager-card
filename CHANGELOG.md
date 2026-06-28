@@ -1,3 +1,10 @@
+# [1.1.0-next.64](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.63...v1.1.0-next.64) (2026-06-28)
+
+
+### Bug Fixes
+
+* **water-analytics:** render 24h chart from full-data buckets_24h ([170cb59](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/170cb5922faf6cc9bcec6762aae3ca5287231f4d))
+
 # [1.1.0-next.63](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.62...v1.1.0-next.63) (2026-06-26)
 
 
