@@ -211,11 +211,32 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       this._viewModeInitialized = true;
     }
 
+    this._syncBootstrap();
+  }
+
+  /**
+   * Create the BootstrapController on first config, or push config changes into
+   * it. Driven from both setConfig (the HA path) and willUpdate (the carousel
+   * sets `_config` directly, bypassing setConfig) so device hydration and
+   * auto-selection happen however the config arrives. Idempotent.
+   */
+  private _syncBootstrap(): void {
+    if (!this._config) return;
     if (!this._bootstrapCtrl) {
       this._bootstrapCtrl = new BootstrapController(this, this.store.grid, this._config);
       this.store.setRefreshCallback(() => this._bootstrapCtrl.refresh());
     } else {
       this._bootstrapCtrl.setCardConfig(this._config);
+    }
+  }
+
+  protected willUpdate(changedProps: PropertyValues): void {
+    // The carousel card sets `._config` directly instead of calling setConfig,
+    // so wire the BootstrapController off the reactive property change too.
+    // willUpdate runs before firstUpdated, so the controller exists in time for
+    // firstUpdated's updateHass to drive the initial hydrate + auto-select.
+    if (changedProps.has('_config')) {
+      this._syncBootstrap();
     }
   }
 

@@ -112,6 +112,41 @@ describe('BootstrapController', () => {
     });
   });
 
+  describe('setCardConfig() — default_growspace change (carousel advance)', () => {
+    it('re-runs auto-select so a new default_growspace flips the selection without a hass change', () => {
+      const host = makeHost();
+      const grid = makeGrid(null);
+      const ctrl = new BootstrapController(host, grid, {
+        default_growspace: 'Tent A',
+      } as GrowspaceManagerCardConfig);
+
+      // Devices are already hydrated (store lazy-init / a sibling card).
+      setDevices([
+        { deviceId: 'gs-1', name: 'Tent A' } as never,
+        { deviceId: 'gs-2', name: 'Tent B' } as never,
+      ]);
+
+      // The carousel cycles to the next growspace — same hass reference, only
+      // the config's default_growspace changes.
+      ctrl.setCardConfig({ default_growspace: 'Tent B' } as GrowspaceManagerCardConfig);
+
+      expect(grid.setSelectedDevice).toHaveBeenCalledWith('gs-2');
+    });
+
+    it('does not re-select when default_growspace is unchanged', () => {
+      const host = makeHost();
+      const grid = makeGrid('gs-1');
+      const ctrl = new BootstrapController(host, grid, {
+        default_growspace: 'Tent A',
+      } as GrowspaceManagerCardConfig);
+      setDevices([{ deviceId: 'gs-1', name: 'Tent A' } as never]);
+
+      ctrl.setCardConfig({ default_growspace: 'Tent A' } as GrowspaceManagerCardConfig);
+
+      expect(grid.setSelectedDevice).not.toHaveBeenCalled();
+    });
+  });
+
   describe('updateHass() — subsequent calls', () => {
     it('re-hydrates from cached collection when a watched entity changes', async () => {
       const host = makeHost();
