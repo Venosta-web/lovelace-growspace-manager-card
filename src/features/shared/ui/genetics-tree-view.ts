@@ -22,12 +22,14 @@ import {
   edgePathCurve,
 } from './genetics-tree-layout';
 import {
-  type ViewMode,
+  type GeneticsTreeSM,
   visibleNodes,
   computeLayout,
   lineageSets,
   highlightSets,
   hasActiveFilters,
+  createInitialSM,
+  transition,
 } from './genetics-tree-view-sm';
 
 const GEN_COLORS: Record<string, string> = {
@@ -52,13 +54,7 @@ export class GeneticsTreeView extends LitElement {
   /** Keys of nodes that have a strain library entry (real or stub). */
   @property({ attribute: false }) libraryKeys: Set<string> = new Set();
 
-  @state() private _mode: ViewMode = 'tree';
-  @state() private _focalId: string | null = null;
-  @state() private _search = '';
-  @state() private _genFilter: string | null = null;
-  @state() private _breederFilter = '';
-  @state() private _collapsed: Set<string> = new Set();
-  @state() private _selectedId: string | null = null;
+  @state() private _sm: GeneticsTreeSM = createInitialSM();
   @state() private _hoverId: string | null = null;
   @state() private _panX = 0;
   @state() private _panY = 0;
@@ -117,10 +113,9 @@ export class GeneticsTreeView extends LitElement {
   }
 
   override willUpdate(changed: Map<string, unknown>): void {
-    // Sync external focalId property → internal state + switch to lineage mode
-    if (changed.has('focalId') && this.focalId !== this._focalId) {
-      this._focalId = this.focalId;
-      if (this.focalId) this._mode = 'lineage';
+    // Sync external focalId property → SM + switch to lineage mode
+    if (changed.has('focalId') && this.focalId !== this._sm.focalId) {
+      this._sm = transition(this._sm, { type: 'EXTERNAL_FOCAL_CHANGED', focalId: this.focalId });
     }
 
     if (changed.has('nodes')) {
@@ -129,13 +124,19 @@ export class GeneticsTreeView extends LitElement {
       this._childrenOf = childrenOf;
     }
 
+    // A field "changed" only when the _sm reference itself was reassigned this
+    // update (a viewport-only change like _scale must not trigger a recompute).
+    const prevSm = changed.get('_sm') as GeneticsTreeSM | undefined;
+    const smChanged = (k: keyof GeneticsTreeSM): boolean =>
+      changed.has('_sm') && (prevSm === undefined || prevSm[k] !== this._sm[k]);
+
     const needsRecompute =
       changed.has('nodes') ||
       changed.has('focalId') ||
-      changed.has('_mode') ||
-      changed.has('_focalId') ||
-      changed.has('_collapsed') ||
-      changed.has('_breederFilter') ||
+      smChanged('mode') ||
+      smChanged('focalId') ||
+      smChanged('collapsed') ||
+      smChanged('breederFilter') ||
       changed.has('_viewW') ||
       changed.has('_viewH');
 
@@ -145,9 +146,9 @@ export class GeneticsTreeView extends LitElement {
         !this._userHasInteracted ||
         changed.has('_viewW') ||
         changed.has('_viewH') ||
-        changed.has('_mode') ||
-        changed.has('_focalId') ||
-        changed.has('_breederFilter')
+        smChanged('mode') ||
+        smChanged('focalId') ||
+        smChanged('breederFilter')
       ) {
         this._fitToScreen();
       }
@@ -159,13 +160,13 @@ export class GeneticsTreeView extends LitElement {
   // ---------------------------------------------------------------------------
 
   private _recompute(): void {
-    this._computed = computeLayout(this._visibleNodes(), this._mode, this._focalId);
+    this._computed = computeLayout(this._visibleNodes(), this._sm.mode, this._sm.focalId);
   }
 
   private _visibleNodes(): TreeNode[] {
     return visibleNodes(this.nodes, {
-      breederFilter: this._breederFilter,
-      collapsed: this._collapsed,
+      breederFilter: this._sm.breederFilter,
+      collapsed: this._sm.collapsed,
       childrenOf: this._childrenOf,
     });
   }
@@ -192,23 +193,23 @@ export class GeneticsTreeView extends LitElement {
   // ---------------------------------------------------------------------------
 
   private get _ancestorSet(): Set<string> {
-    return lineageSets(this.nodes, this._focalId).ancestors;
+    return lineageSets(this.nodes, this._sm.focalId).ancestors;
   }
 
   private get _descendantSet(): Set<string> {
-    return lineageSets(this.nodes, this._focalId).descendants;
+    return lineageSets(this.nodes, this._sm.focalId).descendants;
   }
 
   private get _highlightId(): string | null {
-    return highlightSets(this.nodes, this._hoverId, this._selectedId).highlightId;
+    return highlightSets(this.nodes, this._hoverId, this._sm.selectedId).highlightId;
   }
 
   private get _highlightAncSet(): Set<string> {
-    return highlightSets(this.nodes, this._hoverId, this._selectedId).ancestors;
+    return highlightSets(this.nodes, this._hoverId, this._sm.selectedId).ancestors;
   }
 
   private get _highlightDescSet(): Set<string> {
-    return highlightSets(this.nodes, this._hoverId, this._selectedId).descendants;
+    return highlightSets(this.nodes, this._hoverId, this._sm.selectedId).descendants;
   }
 
   // ---------------------------------------------------------------------------
@@ -271,14 +272,12 @@ export class GeneticsTreeView extends LitElement {
 
     if (e.detail >= 2) {
       // Double-click → enter lineage mode focused on this node
-      this._focalId = p.id;
-      this._mode = 'lineage';
-      this._selectedId = p.id;
+      this._sm = transition(this._sm, { type: 'FOCUS_NODE', id: p.id });
       this._userHasInteracted = false;
       return;
     }
 
-    this._selectedId = this._selectedId === p.id ? null : p.id;
+    this._sm = transition(this._sm, { type: 'NODE_CLICKED', id: p.id });
   }
 
   private _openStrainEditor(id: string): void {
@@ -292,29 +291,22 @@ export class GeneticsTreeView extends LitElement {
   }
 
   private _isolateLineage(id: string): void {
-    this._focalId = id;
-    this._mode = 'lineage';
-    this._selectedId = id;
+    this._sm = transition(this._sm, { type: 'FOCUS_NODE', id });
     this._userHasInteracted = false;
   }
 
   private _clearFocus(): void {
-    this._focalId = null;
-    this._selectedId = null;
-    if (this._mode === 'lineage') this._mode = 'tree';
+    this._sm = transition(this._sm, { type: 'CLEAR_FOCUS' });
     this._userHasInteracted = false;
   }
 
   private _jumpTo(id: string): void {
-    this._selectedId = id;
+    this._sm = transition(this._sm, { type: 'JUMP_TO', id });
     this._userHasInteracted = false;
   }
 
   private _toggleCollapse(id: string): void {
-    const next = new Set(this._collapsed);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    this._collapsed = next;
+    this._sm = transition(this._sm, { type: 'TOGGLE_COLLAPSE', id });
   }
 
   // ---------------------------------------------------------------------------
@@ -346,10 +338,10 @@ export class GeneticsTreeView extends LitElement {
           if (target.closest('.toolbar-row')) return;
           if (target.closest('.filter-row')) return;
           if (this._didPan) return;
-          if (this._focalId) {
+          if (this._sm.focalId) {
             this._clearFocus();
           } else {
-            this._selectedId = null;
+            this._sm = transition(this._sm, { type: 'DESELECT' });
           }
         }}
       >
@@ -382,17 +374,20 @@ export class GeneticsTreeView extends LitElement {
           <input
             type="text"
             placeholder="Search strain or breeder…"
-            .value=${this._search}
+            .value=${this._sm.search}
             @input=${(e: InputEvent) => {
-              this._search = (e.target as HTMLInputElement).value;
+              this._sm = transition(this._sm, {
+                type: 'SET_SEARCH',
+                value: (e.target as HTMLInputElement).value,
+              });
             }}
           />
-          ${this._search
+          ${this._sm.search
             ? html`
                 <button
                   class="icon-btn"
                   @click=${() => {
-                    this._search = '';
+                    this._sm = transition(this._sm, { type: 'SET_SEARCH', value: '' });
                   }}
                 >
                   <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
@@ -403,33 +398,35 @@ export class GeneticsTreeView extends LitElement {
 
         <div class="seg" role="tablist" aria-label="View mode">
           <button
-            class="${this._mode === 'tree' ? 'active' : ''}"
+            class="${this._sm.mode === 'tree' ? 'active' : ''}"
             @click=${() => {
-              this._mode = 'tree';
-              this._focalId = null;
+              this._sm = transition(this._sm, { type: 'SET_MODE', mode: 'tree', nodes: this.nodes });
               this._userHasInteracted = false;
             }}
           >
             Tree
           </button>
           <button
-            class="${this._mode === 'lineage' ? 'active' : ''}"
+            class="${this._sm.mode === 'lineage' ? 'active' : ''}"
             @click=${() => {
-              this._mode = 'lineage';
-              if (this._selectedId) {
-                this._focalId = this._selectedId;
-              } else if (!this._focalId && this.nodes.length) {
-                this._focalId = this.nodes.find((n) => n.parents.mother)?.id ?? this.nodes[0].id;
-              }
+              this._sm = transition(this._sm, {
+                type: 'SET_MODE',
+                mode: 'lineage',
+                nodes: this.nodes,
+              });
               this._userHasInteracted = false;
             }}
           >
             Lineage
           </button>
           <button
-            class="${this._mode === 'families' ? 'active' : ''}"
+            class="${this._sm.mode === 'families' ? 'active' : ''}"
             @click=${() => {
-              this._mode = 'families';
+              this._sm = transition(this._sm, {
+                type: 'SET_MODE',
+                mode: 'families',
+                nodes: this.nodes,
+              });
               this._userHasInteracted = false;
             }}
           >
@@ -441,9 +438,12 @@ export class GeneticsTreeView extends LitElement {
           ? html`
               <select
                 class="select-pill"
-                .value=${this._breederFilter}
+                .value=${this._sm.breederFilter}
                 @change=${(e: Event) => {
-                  this._breederFilter = (e.target as HTMLSelectElement).value;
+                  this._sm = transition(this._sm, {
+                    type: 'SET_BREEDER_FILTER',
+                    value: (e.target as HTMLSelectElement).value,
+                  });
                 }}
               >
                 <option value="">All breeders</option>
@@ -469,17 +469,17 @@ export class GeneticsTreeView extends LitElement {
 
   private _renderFilterRow(gens: string[]): TemplateResult {
     const showClear = hasActiveFilters({
-      collapsed: this._collapsed,
-      genFilter: this._genFilter,
-      selectedId: this._selectedId,
-      search: this._search,
+      collapsed: this._sm.collapsed,
+      genFilter: this._sm.genFilter,
+      selectedId: this._sm.selectedId,
+      search: this._sm.search,
     });
     return html`
       <div class="filter-row">
         <button
-          class="gen-chip ${this._genFilter === null ? 'active' : ''}"
+          class="gen-chip ${this._sm.genFilter === null ? 'active' : ''}"
           @click=${() => {
-            this._genFilter = null;
+            this._sm = transition(this._sm, { type: 'SET_GEN_FILTER', gen: null });
           }}
         >
           All
@@ -487,10 +487,10 @@ export class GeneticsTreeView extends LitElement {
         ${gens.map(
           (g) => html`
             <button
-              class="gen-chip ${this._genFilter === g ? 'active' : ''}"
+              class="gen-chip ${this._sm.genFilter === g ? 'active' : ''}"
               style="--chip-c:${genColor(g)}"
               @click=${() => {
-                this._genFilter = this._genFilter === g ? null : g;
+                this._sm = transition(this._sm, { type: 'SET_GEN_FILTER', gen: g });
               }}
             >
               ${g}
@@ -502,10 +502,7 @@ export class GeneticsTreeView extends LitElement {
               <button
                 class="clear-btn"
                 @click=${() => {
-                  this._collapsed = new Set();
-                  this._genFilter = null;
-                  this._selectedId = null;
-                  this._search = '';
+                  this._sm = transition(this._sm, { type: 'RESET_FILTERS' });
                 }}
               >
                 Clear
@@ -521,7 +518,7 @@ export class GeneticsTreeView extends LitElement {
   // ---------------------------------------------------------------------------
 
   private _renderBreederBands(c: LayoutResult): TemplateResult {
-    if (this._mode !== 'families' || !c.bands) return html`${nothing}`;
+    if (this._sm.mode !== 'families' || !c.bands) return html`${nothing}`;
     return html`
       ${c.bands.map(
         (b) => html`
@@ -540,7 +537,7 @@ export class GeneticsTreeView extends LitElement {
   // ---------------------------------------------------------------------------
 
   private _renderGenGutterLabels(c: LayoutResult): TemplateResult {
-    if (this._mode !== 'tree' || !c.bands) return html`${nothing}`;
+    if (this._sm.mode !== 'tree' || !c.bands) return html`${nothing}`;
     return html`
       ${c.bands.map(
         (b) => html`
@@ -570,8 +567,8 @@ export class GeneticsTreeView extends LitElement {
     const highlightDesc = this._highlightDescSet;
     const anc = this._ancestorSet;
     const desc = this._descendantSet;
-    const focalId = this._mode === 'lineage' ? this._focalId : null;
-    const pathFn = this._mode === 'families' ? edgePathCurve : edgePath;
+    const focalId = this._sm.mode === 'lineage' ? this._sm.focalId : null;
+    const pathFn = this._sm.mode === 'families' ? edgePathCurve : edgePath;
 
     return html`
       <svg
@@ -618,20 +615,20 @@ export class GeneticsTreeView extends LitElement {
   // ---------------------------------------------------------------------------
 
   private _renderNodes(c: LayoutResult, visible: TreeNode[]): TemplateResult {
-    const searchLc = this._search.toLowerCase();
+    const searchLc = this._sm.search.toLowerCase();
     const highlightId = this._highlightId;
     const highlightAnc = this._highlightAncSet;
     const highlightDesc = this._highlightDescSet;
     const anc = this._ancestorSet;
     const desc = this._descendantSet;
-    const focalId = this._focalId;
+    const focalId = this._sm.focalId;
 
     return html`
       ${visible.map((p) => {
         const ln = c.nodes[p.id];
         if (!ln) return nothing;
 
-        const isSelected = this._selectedId === p.id;
+        const isSelected = this._sm.selectedId === p.id;
         const isFocal = focalId === p.id;
 
         const inFocalGraph = focalId && (isFocal || anc.has(p.id) || desc.has(p.id));
@@ -644,13 +641,13 @@ export class GeneticsTreeView extends LitElement {
           p.name.toLowerCase().includes(searchLc) ||
           p.strain.toLowerCase().includes(searchLc) ||
           p.breeder.toLowerCase().includes(searchLc);
-        const genMatch = !this._genFilter || p.gen === this._genFilter;
+        const genMatch = !this._sm.genFilter || p.gen === this._sm.genFilter;
 
         const dim =
           (focalId && !inFocalGraph) || (highlightId && !inHighlight) || !searchMatch || !genMatch;
 
         const hasChildren = (this._childrenOf[p.id] ?? []).length > 0;
-        const isCollapsed = this._collapsed.has(p.id);
+        const isCollapsed = this._sm.collapsed.has(p.id);
         const descCount = isCollapsed ? this._countDescendants(p.id) : 0;
 
         const stageColor = genColor(p.gen);
@@ -736,8 +733,8 @@ export class GeneticsTreeView extends LitElement {
   // ---------------------------------------------------------------------------
 
   private _renderFocusBanner(): TemplateResult {
-    if (this._mode !== 'lineage' || !this._focalId) return html`${nothing}`;
-    const focal = this._byId[this._focalId];
+    if (this._sm.mode !== 'lineage' || !this._sm.focalId) return html`${nothing}`;
+    const focal = this._byId[this._sm.focalId];
     if (!focal) return html`${nothing}`;
     const anc = this._ancestorSet;
     const desc = this._descendantSet;
@@ -761,8 +758,8 @@ export class GeneticsTreeView extends LitElement {
   // ---------------------------------------------------------------------------
 
   private _renderDetailPanel(): TemplateResult {
-    if (!this._selectedId) return html`${nothing}`;
-    const n = this._byId[this._selectedId];
+    if (!this._sm.selectedId) return html`${nothing}`;
+    const n = this._byId[this._sm.selectedId];
     if (!n) return html`${nothing}`;
 
     const motherNode = n.parents.mother ? this._byId[n.parents.mother] : null;
@@ -781,7 +778,7 @@ export class GeneticsTreeView extends LitElement {
         <button
           class="detail-close"
           @click=${() => {
-            this._selectedId = null;
+            this._sm = transition(this._sm, { type: 'DESELECT' });
           }}
           aria-label="Close"
         >
@@ -959,7 +956,7 @@ export class GeneticsTreeView extends LitElement {
           const ln = c.nodes[p.id];
           if (!ln) return nothing;
           const pos = project(ln.x + ln.w / 2, ln.y + ln.h / 2);
-          const isFocal = p.id === this._focalId || p.id === this._selectedId;
+          const isFocal = p.id === this._sm.focalId || p.id === this._sm.selectedId;
           const isAnc = anc.has(p.id);
           const isDesc = desc.has(p.id);
           const fill = isFocal

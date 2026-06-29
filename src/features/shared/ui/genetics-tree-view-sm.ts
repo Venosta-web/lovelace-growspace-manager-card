@@ -87,3 +87,101 @@ export function hasActiveFilters(opts: {
 }): boolean {
   return opts.collapsed.size > 0 || !!opts.genFilter || !!opts.selectedId || !!opts.search;
 }
+
+// ---------------------------------------------------------------------------
+// State machine — navigation / filter / selection
+// ---------------------------------------------------------------------------
+
+/** Navigation, filter, and selection state. Viewport state stays in the component. */
+export interface GeneticsTreeSM {
+  mode: ViewMode;
+  focalId: string | null;
+  breederFilter: string;
+  collapsed: Set<string>;
+  selectedId: string | null;
+  search: string;
+  genFilter: string | null;
+}
+
+export type GeneticsTreeEvent =
+  | { type: 'EXTERNAL_FOCAL_CHANGED'; focalId: string | null }
+  | { type: 'FOCUS_NODE'; id: string }
+  | { type: 'NODE_CLICKED'; id: string }
+  | { type: 'CLEAR_FOCUS' }
+  | { type: 'JUMP_TO'; id: string }
+  | { type: 'TOGGLE_COLLAPSE'; id: string }
+  | { type: 'DESELECT' }
+  | { type: 'SET_SEARCH'; value: string }
+  | { type: 'SET_MODE'; mode: ViewMode; nodes: TreeNode[] }
+  | { type: 'SET_BREEDER_FILTER'; value: string }
+  | { type: 'SET_GEN_FILTER'; gen: string | null }
+  | { type: 'RESET_FILTERS' };
+
+export function createInitialSM(): GeneticsTreeSM {
+  return {
+    mode: 'tree',
+    focalId: null,
+    breederFilter: '',
+    collapsed: new Set(),
+    selectedId: null,
+    search: '',
+    genFilter: null,
+  };
+}
+
+function applySetMode(sm: GeneticsTreeSM, mode: ViewMode, nodes: TreeNode[]): GeneticsTreeSM {
+  if (mode === 'tree') return { ...sm, mode: 'tree', focalId: null };
+  if (mode === 'families') return { ...sm, mode: 'families' };
+  // lineage: prefer the current selection, else keep an existing focal, else pick a default
+  let focalId = sm.focalId;
+  if (sm.selectedId) {
+    focalId = sm.selectedId;
+  } else if (!sm.focalId && nodes.length) {
+    focalId = nodes.find((n) => n.parents.mother)?.id ?? nodes[0].id;
+  }
+  return { ...sm, mode: 'lineage', focalId };
+}
+
+export function transition(sm: GeneticsTreeSM, event: GeneticsTreeEvent): GeneticsTreeSM {
+  switch (event.type) {
+    case 'FOCUS_NODE':
+      return { ...sm, mode: 'lineage', focalId: event.id, selectedId: event.id };
+    case 'NODE_CLICKED':
+      return { ...sm, selectedId: sm.selectedId === event.id ? null : event.id };
+    case 'CLEAR_FOCUS':
+      return {
+        ...sm,
+        focalId: null,
+        selectedId: null,
+        mode: sm.mode === 'lineage' ? 'tree' : sm.mode,
+      };
+    case 'SET_MODE':
+      return applySetMode(sm, event.mode, event.nodes);
+    case 'JUMP_TO':
+      return { ...sm, selectedId: event.id };
+    case 'DESELECT':
+      return { ...sm, selectedId: null };
+    case 'TOGGLE_COLLAPSE': {
+      const collapsed = new Set(sm.collapsed);
+      if (collapsed.has(event.id)) collapsed.delete(event.id);
+      else collapsed.add(event.id);
+      return { ...sm, collapsed };
+    }
+    case 'SET_SEARCH':
+      return { ...sm, search: event.value };
+    case 'SET_BREEDER_FILTER':
+      return { ...sm, breederFilter: event.value };
+    case 'SET_GEN_FILTER':
+      return { ...sm, genFilter: event.gen === null || sm.genFilter === event.gen ? null : event.gen };
+    case 'RESET_FILTERS':
+      return { ...sm, collapsed: new Set(), genFilter: null, selectedId: null, search: '' };
+    case 'EXTERNAL_FOCAL_CHANGED':
+      return {
+        ...sm,
+        focalId: event.focalId,
+        mode: event.focalId ? 'lineage' : sm.mode,
+      };
+    default:
+      return sm;
+  }
+}

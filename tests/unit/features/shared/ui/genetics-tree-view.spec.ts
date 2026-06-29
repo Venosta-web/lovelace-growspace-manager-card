@@ -97,14 +97,14 @@ describe('GeneticsTreeView', () => {
     const clearSearchBtn = element.shadowRoot?.querySelector('.search-bar .icon-btn') as HTMLElement;
     clearSearchBtn.click();
     await element.updateComplete;
-    expect(element['_search']).toBe('');
+    expect(element['_sm'].search).toBe('');
   });
 
   it('should switch to lineage mode and show focus banner', async () => {
     const lineageBtn = element.shadowRoot?.querySelector('.seg button:nth-child(2)') as HTMLElement;
     lineageBtn.click();
     await element.updateComplete;
-    expect(element['_mode']).toBe('lineage');
+    expect(element['_sm'].mode).toBe('lineage');
 
     const banner = element.shadowRoot?.querySelector('.focus-banner');
     expect(banner).not.toBeNull();
@@ -112,8 +112,8 @@ describe('GeneticsTreeView', () => {
 
   it('should re-focus to selected node when clicking lineage while already in lineage mode', async () => {
     // Start in lineage mode focused on f1
-    element['_mode'] = 'lineage';
-    element['_focalId'] = 'f1';
+    element['_sm'] = { ...element['_sm'], mode: 'lineage' };
+    element['_sm'] = { ...element['_sm'], focalId: 'f1' };
     await element.updateComplete;
 
     // Select a different node (p1)
@@ -121,33 +121,33 @@ describe('GeneticsTreeView', () => {
       .find(n => n.querySelector('.pn-name')?.textContent === 'Parent 1') as HTMLElement;
     p1Node.click();
     await element.updateComplete;
-    expect(element['_selectedId']).toBe('p1');
+    expect(element['_sm'].selectedId).toBe('p1');
 
     // Click lineage button — should re-focus to p1, not stay on f1
     const lineageBtn = element.shadowRoot?.querySelector('.seg button:nth-child(2)') as HTMLElement;
     lineageBtn.click();
     await element.updateComplete;
 
-    expect(element['_mode']).toBe('lineage');
-    expect(element['_focalId']).toBe('p1');
+    expect(element['_sm'].mode).toBe('lineage');
+    expect(element['_sm'].focalId).toBe('p1');
   });
 
   it('should handle node selection and deselection', async () => {
     const node = element.shadowRoot?.querySelector('.tree-node') as HTMLElement;
     node.click();
     await element.updateComplete;
-    expect(element['_selectedId']).not.toBeNull();
+    expect(element['_sm'].selectedId).not.toBeNull();
 
-    const selectedId = element['_selectedId'];
+    const selectedId = element['_sm'].selectedId;
     node.click();
     await element.updateComplete;
-    expect(element['_selectedId']).toBeNull();
+    expect(element['_sm'].selectedId).toBeNull();
 
     // Single-click does NOT auto-enter lineage mode (focusModeAuto = false)
     node.click();
     await element.updateComplete;
-    expect(element['_mode']).toBe('tree');
-    expect(element['_selectedId']).toBe(selectedId);
+    expect(element['_sm'].mode).toBe('tree');
+    expect(element['_sm'].selectedId).toBe(selectedId);
   });
 
   it('should enter lineage mode on double-click', async () => {
@@ -157,8 +157,8 @@ describe('GeneticsTreeView', () => {
     f1Node.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 }));
     await element.updateComplete;
 
-    expect(element['_mode']).toBe('lineage');
-    expect(element['_focalId']).toBe('f1');
+    expect(element['_sm'].mode).toBe('lineage');
+    expect(element['_sm'].focalId).toBe('f1');
     expect(element.shadowRoot?.querySelector('.focus-banner')).not.toBeNull();
   });
 
@@ -170,14 +170,14 @@ describe('GeneticsTreeView', () => {
     foldBtn.click();
     await element.updateComplete;
 
-    expect(element['_collapsed'].has('f1')).toBe(true);
+    expect(element['_sm'].collapsed.has('f1')).toBe(true);
     const nodes = element.shadowRoot?.querySelectorAll('.tree-node');
     // f2 and f3 hidden; p3 still visible (parent is p1, not f1)
     expect(nodes?.length).toBe(4);
 
     foldBtn.click();
     await element.updateComplete;
-    expect(element['_collapsed'].has('f1')).toBe(false);
+    expect(element['_sm'].collapsed.has('f1')).toBe(false);
   });
 
   it('should handle complex panning and zooming', async () => {
@@ -222,7 +222,7 @@ describe('GeneticsTreeView', () => {
     select.dispatchEvent(new Event('change'));
     await element.updateComplete;
 
-    expect(element['_breederFilter']).toBe('Breeder 2');
+    expect(element['_sm'].breederFilter).toBe('Breeder 2');
     // Only p2 has breeder 2
     const visibleNodes = element.shadowRoot?.querySelectorAll('.tree-node');
     expect(visibleNodes?.length).toBe(1);
@@ -231,12 +231,12 @@ describe('GeneticsTreeView', () => {
     select.value = '';
     select.dispatchEvent(new Event('change'));
     await element.updateComplete;
-    expect(element['_breederFilter']).toBe('');
+    expect(element['_sm'].breederFilter).toBe('');
   });
 
   it('should handle detail panel and lineage navigation', async () => {
     // Set f1 as selected
-    element['_selectedId'] = 'f1';
+    element['_sm'] = { ...element['_sm'], selectedId: 'f1' };
     await element.updateComplete;
 
     const detailPanel = element.shadowRoot?.querySelector('.detail-panel');
@@ -246,20 +246,20 @@ describe('GeneticsTreeView', () => {
     const motherLink = detailPanel?.querySelector('.detail-parent') as HTMLElement;
     motherLink.click();
     await element.updateComplete;
-    expect(element['_selectedId']).not.toBe('f1');
+    expect(element['_sm'].selectedId).not.toBe('f1');
 
     // Restore and close panel
-    element['_selectedId'] = 'f1';
+    element['_sm'] = { ...element['_sm'], selectedId: 'f1' };
     await element.updateComplete;
     const closeBtn = element.shadowRoot?.querySelector('.detail-close') as HTMLElement;
     closeBtn.click();
     await element.updateComplete;
-    expect(element['_selectedId']).toBeNull();
+    expect(element['_sm'].selectedId).toBeNull();
   });
 
   it('should navigate to father via detail panel father link', async () => {
     // f1 has mother: p1 and father: p2 — father link is the second .detail-parent
-    element['_selectedId'] = 'f1';
+    element['_sm'] = { ...element['_sm'], selectedId: 'f1' };
     await element.updateComplete;
 
     const detailParents = Array.from(
@@ -270,12 +270,12 @@ describe('GeneticsTreeView', () => {
     fatherLink.click();
     await element.updateComplete;
 
-    expect(element['_selectedId']).toBe('p2');
+    expect(element['_sm'].selectedId).toBe('p2');
   });
 
   it('should navigate to offspring via detail panel offspring link', async () => {
     // p1 has no parents but is the mother of f1 — only offspring section renders
-    element['_selectedId'] = 'p1';
+    element['_sm'] = { ...element['_sm'], selectedId: 'p1' };
     await element.updateComplete;
 
     const offspringLink = element.shadowRoot?.querySelector('.detail-panel .detail-parent') as HTMLElement;
@@ -283,11 +283,11 @@ describe('GeneticsTreeView', () => {
     offspringLink.click();
     await element.updateComplete;
 
-    expect(element['_selectedId']).toBe('f1');
+    expect(element['_sm'].selectedId).toBe('f1');
   });
 
   it('should handle detail panel Isolate Lineage button', async () => {
-    element['_selectedId'] = 'f1';
+    element['_sm'] = { ...element['_sm'], selectedId: 'f1' };
     await element.updateComplete;
 
     const isolateBtn = element.shadowRoot?.querySelector('.detail-actions .pill-btn.active') as HTMLElement;
@@ -295,8 +295,8 @@ describe('GeneticsTreeView', () => {
     isolateBtn.click();
     await element.updateComplete;
 
-    expect(element['_mode']).toBe('lineage');
-    expect(element['_focalId']).toBe('f1');
+    expect(element['_sm'].mode).toBe('lineage');
+    expect(element['_sm'].focalId).toBe('f1');
   });
 
   it('should handle zoom control buttons', async () => {
@@ -325,23 +325,23 @@ describe('GeneticsTreeView', () => {
   });
 
   it('should clear collapsed + gen filter with clear button', async () => {
-    element['_collapsed'] = new Set(['p1']);
-    element['_genFilter'] = 'F1';
+    element['_sm'] = { ...element['_sm'], collapsed: new Set(['p1']) };
+    element['_sm'] = { ...element['_sm'], genFilter: 'F1' };
     await element.updateComplete;
 
     const clearBtn = element.shadowRoot?.querySelector('.clear-btn') as HTMLElement;
     clearBtn.click();
     await element.updateComplete;
 
-    expect(element['_collapsed'].size).toBe(0);
-    expect(element['_genFilter']).toBeNull();
+    expect(element['_sm'].collapsed.size).toBe(0);
+    expect(element['_sm'].genFilter).toBeNull();
   });
 
   it('should handle families mode layout', async () => {
     const familiesBtn = element.shadowRoot?.querySelector('.seg button:nth-child(3)') as HTMLElement;
     familiesBtn.click();
     await element.updateComplete;
-    expect(element['_mode']).toBe('families');
+    expect(element['_sm'].mode).toBe('families');
     expect(element['_computed']).not.toBeNull();
 
     const bands = element.shadowRoot?.querySelectorAll('.band');
@@ -355,8 +355,8 @@ describe('GeneticsTreeView', () => {
   });
 
   it('should handle tree mode with null focalId', async () => {
-    element['_mode'] = 'tree';
-    element['_focalId'] = null;
+    element['_sm'] = { ...element['_sm'], mode: 'tree' };
+    element['_sm'] = { ...element['_sm'], focalId: null };
     element.focalId = null;
     await element.updateComplete;
     expect(element['_computed']).not.toBeNull();
@@ -367,16 +367,16 @@ describe('GeneticsTreeView', () => {
       .find(c => c.textContent?.trim() === 'P1') as HTMLElement;
     genChipP1.click();
     await element.updateComplete;
-    expect(element['_genFilter']).toBe('P1');
+    expect(element['_sm'].genFilter).toBe('P1');
 
     const allChip = element.shadowRoot?.querySelector('.gen-chip:nth-child(1)') as HTMLElement;
     allChip.click();
     await element.updateComplete;
-    expect(element['_genFilter']).toBeNull();
+    expect(element['_sm'].genFilter).toBeNull();
   });
 
   it('should render tree-mode generation gutter labels', async () => {
-    element['_mode'] = 'tree';
+    element['_sm'] = { ...element['_sm'], mode: 'tree' };
     await element.updateComplete;
     const labels = element.shadowRoot?.querySelectorAll('.gen-gutter');
     expect(labels?.length).toBeGreaterThan(0);
@@ -393,8 +393,8 @@ describe('GeneticsTreeView', () => {
   });
 
   it('should clear focus when clear button in focus banner is clicked', async () => {
-    element['_focalId'] = 'f1';
-    element['_mode'] = 'lineage';
+    element['_sm'] = { ...element['_sm'], focalId: 'f1' };
+    element['_sm'] = { ...element['_sm'], mode: 'lineage' };
     await element.updateComplete;
 
     const clearBtn = element.shadowRoot?.querySelector('.focus-banner button') as HTMLElement;
@@ -402,26 +402,26 @@ describe('GeneticsTreeView', () => {
     clearBtn.click();
     await element.updateComplete;
 
-    expect(element['_focalId']).toBeNull();
-    expect(element['_mode']).toBe('tree');
+    expect(element['_sm'].focalId).toBeNull();
+    expect(element['_sm'].mode).toBe('tree');
   });
 
   it('should clear focus when clicking shell background while focalId is set', async () => {
-    element['_focalId'] = 'f1';
-    element['_mode'] = 'lineage';
+    element['_sm'] = { ...element['_sm'], focalId: 'f1' };
+    element['_sm'] = { ...element['_sm'], mode: 'lineage' };
     await element.updateComplete;
 
     const bgGrid = element.shadowRoot?.querySelector('.bg-grid') as HTMLElement;
     bgGrid.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
     await element.updateComplete;
 
-    expect(element['_focalId']).toBeNull();
-    expect(element['_mode']).toBe('tree');
+    expect(element['_sm'].focalId).toBeNull();
+    expect(element['_sm'].mode).toBe('tree');
   });
 
   it('should reset mode, focalId, and userHasInteracted when switching back to tree mode', async () => {
-    element['_mode'] = 'lineage';
-    element['_focalId'] = 'f1';
+    element['_sm'] = { ...element['_sm'], mode: 'lineage' };
+    element['_sm'] = { ...element['_sm'], focalId: 'f1' };
     element['_userHasInteracted'] = true;
     await element.updateComplete;
 
@@ -429,8 +429,8 @@ describe('GeneticsTreeView', () => {
     treeBtn.click();
     await element.updateComplete;
 
-    expect(element['_mode']).toBe('tree');
-    expect(element['_focalId']).toBeNull();
+    expect(element['_sm'].mode).toBe('tree');
+    expect(element['_sm'].focalId).toBeNull();
     expect(element['_userHasInteracted']).toBe(false);
   });
 
@@ -451,7 +451,7 @@ describe('GeneticsTreeView', () => {
 
   it('should dispatch open-strain-editor event when Open in Library is clicked', async () => {
     element.libraryKeys = new Set(['f1']);
-    element['_selectedId'] = 'f1';
+    element['_sm'] = { ...element['_sm'], selectedId: 'f1' };
     await element.updateComplete;
 
     const events: CustomEvent[] = [];
@@ -497,7 +497,7 @@ describe('GeneticsTreeView', () => {
   });
 
   it('should not deselect when shell click target is inside a tree-node', async () => {
-    element['_selectedId'] = 'f1';
+    element['_sm'] = { ...element['_sm'], selectedId: 'f1' };
     await element.updateComplete;
 
     const node = element.shadowRoot?.querySelector('.tree-node') as HTMLElement;
@@ -505,11 +505,11 @@ describe('GeneticsTreeView', () => {
     await element.updateComplete;
 
     // Shell click guard fires — selectedId is changed by _onNodeClick, not cleared
-    expect(element['_selectedId']).not.toBeNull();
+    expect(element['_sm'].selectedId).not.toBeNull();
   });
 
   it('should not deselect when shell click follows a pan', async () => {
-    element['_selectedId'] = 'f1';
+    element['_sm'] = { ...element['_sm'], selectedId: 'f1' };
     element['_didPan'] = true;
     await element.updateComplete;
 
@@ -517,12 +517,12 @@ describe('GeneticsTreeView', () => {
     bgGrid.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
     await element.updateComplete;
 
-    expect(element['_selectedId']).toBe('f1');
+    expect(element['_sm'].selectedId).toBe('f1');
   });
 
   it('should omit father link when selected node has no father', async () => {
     // f2 has mother=f1, father=null — only mother link should render
-    element['_selectedId'] = 'f2';
+    element['_sm'] = { ...element['_sm'], selectedId: 'f2' };
     await element.updateComplete;
 
     const detailParents = element.shadowRoot?.querySelectorAll('.detail-panel .detail-parent');
@@ -533,7 +533,7 @@ describe('GeneticsTreeView', () => {
 
   it('should omit mother link when selected node has no mother', async () => {
     // p3 has mother=null, father=p1 — only father link should render
-    element['_selectedId'] = 'p3';
+    element['_sm'] = { ...element['_sm'], selectedId: 'p3' };
     await element.updateComplete;
 
     const detailParents = element.shadowRoot?.querySelectorAll('.detail-panel .detail-parent');
@@ -544,7 +544,7 @@ describe('GeneticsTreeView', () => {
 
   it('should omit offspring section when selected node has no children', async () => {
     // f3 is a leaf node with no children
-    element['_selectedId'] = 'f3';
+    element['_sm'] = { ...element['_sm'], selectedId: 'f3' };
     await element.updateComplete;
 
     const sections = Array.from(
@@ -573,7 +573,7 @@ describe('GeneticsTreeView', () => {
     `);
     el['_viewW'] = 1000;
     el['_viewH'] = 800;
-    el['_selectedId'] = 'root';
+    el['_sm'] = { ...el['_sm'], selectedId: 'root' };
     await el.updateComplete;
 
     const label = el.shadowRoot?.querySelector('.detail-section-label');
