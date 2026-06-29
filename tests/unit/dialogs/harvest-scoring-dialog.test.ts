@@ -23,7 +23,15 @@ if (!customElements.get('ha-dialog')) {
   customElements.define('ha-dialog', HaDialogMock);
 }
 
-vi.mock('../../../src/slices/plant', () => ({
+// Spread the real module and override only the two mutators we assert on. A
+// bare factory that returns *only* these two drops the slice's other ~20
+// exports; once the ActionDispatcher retirement (#342-344) raised this slice's
+// import fan-in, that incomplete mock module stopped applying in browser mode
+// (the imported bindings fell back to the real async functions — "is not a
+// spy") on CI. importOriginal keeps the module graph valid, matching the repo
+// convention (see irrigation-dialog-extra.spec.ts).
+vi.mock('../../../src/slices/plant', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../src/slices/plant')>()),
   scorePlant: vi.fn().mockResolvedValue({}),
   advancePlantStage: vi.fn().mockResolvedValue('dry'),
 }));
