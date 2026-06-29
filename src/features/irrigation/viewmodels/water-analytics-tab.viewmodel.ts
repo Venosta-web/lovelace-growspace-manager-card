@@ -92,6 +92,8 @@ export interface WaterAnalyticsVolumeRow {
 export interface WaterAnalyticsTabViewModel {
   // ── Cycle telemetry (gated on hasPump) ──
   hasPump: boolean;
+  /** At least one tank is configured — a gravity/manual tank-fed setup when !hasPump. */
+  hasTank: boolean;
   cyclesToday: number;
   /** Raw L dispensed today; component formats. */
   volumeDispensedToday: number;
@@ -99,7 +101,7 @@ export interface WaterAnalyticsTabViewModel {
   lastCycleTimestamp: number | string | null;
   nextScheduledCycle: number | string | null;
 
-  // ── Today's usage (gated on hasPump) ──
+  // ── Today's usage (gated on hasPump || hasTank) ──
   waterUsage: WaterUsage | null | undefined;
   /** Avg runoff % across readings with volumes, or null. */
   avgRunoff: number | null;
@@ -176,6 +178,7 @@ export function createWaterAnalyticsTabViewModel(
       device?.irrigationConfig?.irrigationPumpEntity ||
       device?.irrigationConfig?.drainPumpEntity
     );
+    const hasTank = tanks.length > 0;
     const hasTankSensors = tanks.some((t) => t.sensorEntity);
 
     const recentReadings = readings.slice(-30).reverse();
@@ -234,6 +237,7 @@ export function createWaterAnalyticsTabViewModel(
 
     return {
       hasPump,
+      hasTank,
       cyclesToday: device?.cyclesToday ?? 0,
       volumeDispensedToday: device?.volumeDispensedToday ?? 0,
       lastCycleTimestamp: device?.lastCycleTimestamp ?? null,

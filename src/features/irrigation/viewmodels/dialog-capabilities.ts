@@ -19,11 +19,32 @@ import { computed, type ReadableAtom } from 'nanostores';
 import type { GrowspaceDevice, IrrigationConfig } from '../../../services/types';
 
 /**
+ * The growspace's irrigation *hardware* shape (distinct from the delivery
+ * behaviour — Manual Schedule vs Crop Steering). See CONTEXT.md "Irrigation
+ * Method".
+ */
+export type IrrigationMethod = 'pump' | 'tank' | 'none';
+
+/**
  * Cross-tab derived capabilities for the Irrigation Dialog.
  */
 export interface DialogCapabilities {
   /** An irrigation or drain pump is configured. */
   hasPump: boolean;
+  /** At least one irrigation tank is configured. */
+  hasTank: boolean;
+  /**
+   * The growspace's irrigation method, derived from configured hardware:
+   * - `'pump'` when a pump/drain entity actuates irrigation,
+   * - `'tank'` for a gravity/manual tank-fed setup (tanks present, no pump),
+   * - `'none'` when nothing is configured.
+   *
+   * Recognising `'tank'` lets the dialog surface tank-based water telemetry and
+   * label the mode instead of treating a pumpless grower as unconfigured. Note
+   * a `'tank'` method still has no actuator, so crop-steering actuation stays
+   * gated on `hasPump` (ADR-0016).
+   */
+  irrigationMethod: IrrigationMethod;
   /** A soil-moisture sensor is configured. */
   hasSoilMoisture: boolean;
   /** An irrigation strategy is enabled. */
@@ -50,6 +71,7 @@ function deriveCapabilities(
   const cfg = liveConfig ?? device?.irrigationConfig;
 
   const hasPump = !!(cfg?.irrigationPumpEntity || cfg?.drainPumpEntity);
+  const hasTank = (env?.irrigationTanks?.length ?? 0) > 0;
   const hasSoilMoisture =
     !!env?.soilMoistureSensor || (env?.soilMoistureSensors?.length ?? 0) > 0;
   const hasStrategy = !!device?.irrigationStrategy?.enabled;
@@ -58,6 +80,8 @@ function deriveCapabilities(
 
   return {
     hasPump,
+    hasTank,
+    irrigationMethod: hasPump ? 'pump' : hasTank ? 'tank' : 'none',
     hasSoilMoisture,
     hasStrategy,
     cropSteeringGroupVisible: (hasSoilMoisture || hasStrategy) && hasPump,

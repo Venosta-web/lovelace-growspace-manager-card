@@ -65,6 +65,13 @@ export class IrrigationConfigTab extends LitElement {
         cursor: default;
       }
 
+      .section-note {
+        margin: 0 0 14px;
+        font-size: 12px;
+        line-height: 1.4;
+        opacity: 0.6;
+      }
+
       /* ── Disable stub controls (shared shape with the still-inline Steering tab) ── */
       .stub-row {
         display: flex;
@@ -128,12 +135,21 @@ export class IrrigationConfigTab extends LitElement {
     const vm = this.vm;
     const draft = vm.draft;
 
+    const isTank = vm.irrigationMethod === 'tank';
+
     return html`
       <div class="detail-card">
         <div class="section-header"><h3>Pump Configuration</h3></div>
+        ${isTank
+          ? html`<p class="section-note">
+              Optional — this growspace runs tank-based (gravity or manual). Add an
+              irrigation pump to enable automated schedules, manual run controls, and
+              Crop Steering.
+            </p>`
+          : nothing}
         <div class="section-content">
           ${this._renderEntitySelect(
-            'Irrigation Pump',
+            isTank ? 'Irrigation Pump (optional)' : 'Irrigation Pump',
             vm.irrigationPumpEntity,
             vm.pumpEntityOptions,
             'irrigation'

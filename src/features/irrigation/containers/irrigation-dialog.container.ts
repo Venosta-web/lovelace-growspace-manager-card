@@ -141,7 +141,7 @@ import {
   createSteeringTabViewModel,
   type SteeringTabViewModel,
 } from '../viewmodels/steering-tab.viewmodel';
-import { atom, type ReadableAtom } from 'nanostores';
+import { atom, computed, type ReadableAtom } from 'nanostores';
 import '../components/irrigation-overview-tab';
 import '../components/irrigation-tanks-tab';
 import '../components/irrigation-ec-ramp-tab';
@@ -333,10 +333,14 @@ export class IrrigationDialog extends LitElement {
   // `irrigationConfigs$` slice) so the in-tab panel gate stays byte-identical.
   private _hasPumpAtom = atom<boolean>(false);
   /** Config tab ViewModel — `$sm`-first, mixed source (pump options + hasPump). No `$caps`. */
+  // Derived from the shared caps atom (single source) so the Config tab can
+  // relabel the Pump Configuration section in tank-based mode without re-deriving.
+  private _irrigationMethod = computed([this._caps], (caps) => caps.irrigationMethod);
   private _configVm: ReadableAtom<ConfigTabViewModel> = createConfigTabViewModel(
     this._smAtom,
     this._hasPumpAtom,
-    this._pumpEntityOptions
+    this._pumpEntityOptions,
+    this._irrigationMethod
   );
   private _configVmController = new StoreController(this, this._configVm);
   /** Substrate & EC tab ViewModel — `$sm`-first, consumes `$caps` (ADR-0017/0019). */
@@ -730,8 +734,21 @@ export class IrrigationDialog extends LitElement {
   private get _setupHints(): Array<{ icon: string; text: string }> {
     const hints: Array<{ icon: string; text: string }> = [];
     const visible = this._visibleTabs;
+    const method = this._caps.get().irrigationMethod;
 
-    if (!visible.includes('schedules')) {
+    // Tank-based (gravity/manual, no pump) is a valid mode, not a half-configured
+    // pump setup. Acknowledge it positively and skip the "configure a pump" nags —
+    // a pump is optional here (it only adds automated actuation). Crop steering
+    // still needs an actuator, so its tab stays pump-gated (ADR-0016) and we frame
+    // the pump as the path to *enabling* it rather than as a missing requirement.
+    if (method === 'tank') {
+      hints.push({
+        icon: '🪣',
+        text: 'Tank-based irrigation detected (gravity or manual). Tank levels and water usage are tracked here; add an irrigation pump entity in Irrigation Settings to also enable automated schedules and Crop Steering.',
+      });
+    }
+
+    if (method !== 'tank' && !visible.includes('schedules')) {
       hints.push({
         icon: '🚰',
         text: 'Configure an irrigation or drain pump in Irrigation Settings to enable Schedules, manual run controls, and behaviour settings.',
@@ -740,10 +757,12 @@ export class IrrigationDialog extends LitElement {
     if (!visible.includes('steering')) {
       const hasPump = this._hasPump;
       if (!hasPump) {
-        hints.push({
-          icon: '🚰',
-          text: 'Configure an irrigation or drain pump in Irrigation Settings to enable Crop Steering features.',
-        });
+        if (method !== 'tank') {
+          hints.push({
+            icon: '🚰',
+            text: 'Configure an irrigation or drain pump in Irrigation Settings to enable Crop Steering features.',
+          });
+        }
       } else {
         hints.push({
           icon: '🌱',

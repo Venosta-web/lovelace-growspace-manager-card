@@ -71,6 +71,25 @@ function withPump(overrides: Partial<Parameters<typeof createGrowspaceDevice>[0]
   });
 }
 
+// A gravity/manual tank-fed grower: tanks present, no pump configured.
+function withTank(overrides: Partial<Parameters<typeof createGrowspaceDevice>[0]> = {}) {
+  return makeDevice({
+    ...overrides,
+    environmentAttributes: {
+      irrigationTanks: [
+        {
+          sensorEntity: 'sensor.tank',
+          name: 'Tank',
+          warningLevel: 10,
+          fillLevel: 53,
+          isWarning: false,
+        },
+      ],
+      ...overrides.environmentAttributes,
+    },
+  });
+}
+
 // Collapse all whitespace runs to a single space for text-content assertions.
 function normalize(s: string | null | undefined): string {
   return (s ?? '').replace(/\s+/g, ' ').trim();
@@ -265,6 +284,96 @@ describe('IrrigationDialog – Config tab: pump-gated panels', () => {
         )
       )
     ).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tank-based irrigation mode (gravity/manual, no pump)
+// ---------------------------------------------------------------------------
+
+describe('IrrigationDialog – tank-based mode recognition', () => {
+  function hintTexts(el: IrrigationDialog): string[] {
+    return Array.from(el.shadowRoot!.querySelectorAll('.setup-hint')).map((h) =>
+      normalize(h.textContent)
+    );
+  }
+
+  it('acknowledges tank-based mode instead of nagging to configure a pump', async () => {
+    const device = withTank();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const hints = hintTexts(el);
+    expect(hints.some((h) => h.includes('Tank-based irrigation detected'))).toBe(true);
+    // The pump-centric crop-steering and schedules nags are suppressed for tank mode.
+    expect(hints.some((h) => h.includes('to enable Crop Steering features.'))).toBe(false);
+    expect(
+      hints.some((h) => h.includes('to enable Schedules, manual run controls'))
+    ).toBe(false);
+  });
+
+  it('still nags to configure a pump when neither a pump nor a tank exists', async () => {
+    const device = makeDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const hints = hintTexts(el);
+    expect(hints.some((h) => h.includes('Tank-based irrigation detected'))).toBe(false);
+    expect(hints.some((h) => h.includes('to enable Crop Steering features.'))).toBe(true);
+  });
+
+  it("surfaces the Water Analytics 'Today's Usage' figures for a pumpless tank grower", async () => {
+    const device = withTank();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'water_analytics'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const tab = el.shadowRoot!.querySelector('irrigation-water-analytics-tab') as
+      | (HTMLElement & { updateComplete: Promise<unknown> })
+      | null;
+    expect(tab).not.toBeNull();
+    await tab!.updateComplete;
+    expect(normalize(tab!.shadowRoot!.textContent)).toContain("Today's Usage");
+  });
+
+  async function configTabText(
+    device: ReturnType<typeof createGrowspaceDevice>
+  ): Promise<string> {
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'config'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    const cfg = el.shadowRoot!.querySelector('irrigation-config-tab') as
+      | (HTMLElement & { updateComplete: Promise<unknown> })
+      | null;
+    expect(cfg).not.toBeNull();
+    await cfg!.updateComplete;
+    return normalize(cfg!.shadowRoot!.textContent);
+  }
+
+  it('relabels the Pump Configuration section as optional in tank-based mode', async () => {
+    const text = await configTabText(withTank());
+    expect(text).toContain('tank-based (gravity or manual)');
+    expect(text).toContain('Irrigation Pump (optional)');
+  });
+
+  it('keeps the Pump Configuration section unchanged when a pump is configured', async () => {
+    const text = await configTabText(withPump());
+    expect(text).not.toContain('tank-based (gravity or manual)');
+    expect(text).not.toContain('Irrigation Pump (optional)');
   });
 });
 
