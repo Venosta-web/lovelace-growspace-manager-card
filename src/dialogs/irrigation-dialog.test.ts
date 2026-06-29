@@ -326,7 +326,10 @@ describe('IrrigationDialog – tank-based mode recognition', () => {
     expect(hints.some((h) => h.includes('to enable Crop Steering features.'))).toBe(true);
   });
 
-  it("surfaces the Water Analytics 'Today's Usage' figures for a pumpless tank grower", async () => {
+  it("hides the Water Analytics 'Today's Usage' block for a pumpless tank grower", async () => {
+    // The "Today's Usage" block is a pump-only KPI section (gated on hasPump).
+    // A gravity/manual tank-fed grower has no pump, so they rely on the
+    // Tank-Derived Water Usage block instead and never see "Today's Usage" (#401).
     const device = withTank();
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog
@@ -342,7 +345,7 @@ describe('IrrigationDialog – tank-based mode recognition', () => {
       | null;
     expect(tab).not.toBeNull();
     await tab!.updateComplete;
-    expect(normalize(tab!.shadowRoot!.textContent)).toContain("Today's Usage");
+    expect(normalize(tab!.shadowRoot!.textContent)).not.toContain("Today's Usage");
   });
 
   async function configTabText(

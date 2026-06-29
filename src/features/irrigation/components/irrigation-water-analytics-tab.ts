@@ -128,10 +128,11 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
   }
 
   private _renderTodaysUsage(vm: WaterAnalyticsTabViewModel): TemplateResult | typeof nothing {
-    // The "Liters today" / efficiency figures come from the backend's additive
-    // Aggregate Water Use total, which is meaningful for a tank-fed grower too —
-    // so this renders for tank-based setups, not just pump-based ones.
-    if (!vm.hasPump && !vm.hasTank) return nothing;
+    // Pump-only block: every KPI here (Liters today, Per plant/day, Water
+    // efficiency, Avg runoff) is empty for a pump-less grower, who relies on the
+    // Tank-Derived Water Usage block instead. A tank-only grower knowingly loses
+    // the additive Liters-today figure and the manual-log Avg runoff (CONTEXT.md).
+    if (!vm.hasPump) return nothing;
     const wu = vm.waterUsage;
     const avgRunoff = vm.avgRunoff;
     return html`
