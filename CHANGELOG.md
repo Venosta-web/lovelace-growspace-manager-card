@@ -1,3 +1,10 @@
+# [1.1.0-next.66](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.65...v1.1.0-next.66) (2026-06-29)
+
+
+### Bug Fixes
+
+* **carousel:** restore growspace auto-selection in carousel inner card ([7cec72c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7cec72c2e05019004ac5eb69bcfb550e49d314db))
+
 # [1.1.0-next.65](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.64...v1.1.0-next.65) (2026-06-29)
 
 
