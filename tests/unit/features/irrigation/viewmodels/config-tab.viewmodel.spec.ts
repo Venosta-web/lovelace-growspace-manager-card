@@ -18,16 +18,19 @@ import {
   createConfigTabViewModel,
   type PumpEntityOptionVM,
 } from '../../../../../src/features/irrigation/viewmodels/config-tab.viewmodel';
+import type { IrrigationMethod } from '../../../../../src/features/irrigation/viewmodels/dialog-capabilities';
 
 function build(
   sm: DialogSM,
   hasPump = false,
-  pumpOptions: PumpEntityOptionVM[] = []
+  pumpOptions: PumpEntityOptionVM[] = [],
+  irrigationMethod: IrrigationMethod = 'none'
 ) {
   const $sm = atom<DialogSM>(sm);
   const $hasPump = atom<boolean>(hasPump);
   const $opts = atom<PumpEntityOptionVM[]>(pumpOptions);
-  return createConfigTabViewModel($sm, $hasPump, $opts).get();
+  const $method = atom<IrrigationMethod>(irrigationMethod);
+  return createConfigTabViewModel($sm, $hasPump, $opts, $method).get();
 }
 
 describe('createConfigTabViewModel', () => {
