@@ -292,6 +292,12 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
             vm.tankAvgPerDay > 0 ? 'L/day' : '',
             '#ce93d8'
           )}
+          ${this._kpiCard(
+            'Per plant / day',
+            vm.tankLitersPerPlantPerDay > 0 ? vm.tankLitersPerPlantPerDay.toFixed(2) : '—',
+            vm.tankLitersPerPlantPerDay > 0 ? 'L' : '',
+            '#81c784'
+          )}
         </div>
         <div style="margin-bottom:6px;">
           <div
