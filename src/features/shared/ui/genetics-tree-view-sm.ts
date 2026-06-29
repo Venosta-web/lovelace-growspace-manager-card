@@ -101,6 +101,13 @@ export interface GeneticsTreeSM {
   selectedId: string | null;
   search: string;
   genFilter: string | null;
+  /**
+   * Monotonic counter bumped on every re-arming (navigation) transition —
+   * the ones that previously set the component's `_userHasInteracted = false`,
+   * plus breeder-filter changes. The component compares it against its own
+   * `panGen` to decide whether to auto-refit. See CONTEXT.md: Genetics Tree View SM.
+   */
+  reframeGen: number;
 }
 
 export type GeneticsTreeEvent =
@@ -126,12 +133,43 @@ export function createInitialSM(): GeneticsTreeSM {
     selectedId: null,
     search: '',
     genFilter: null,
+    reframeGen: 0,
   };
 }
 
+/** Bump the reframe counter to re-arm auto-refit after a navigation transition. */
+function rearm(sm: GeneticsTreeSM): GeneticsTreeSM {
+  return { ...sm, reframeGen: sm.reframeGen + 1 };
+}
+
+/**
+ * Pure auto-refit decision for the component's `willUpdate`. Splits the old
+ * `_userHasInteracted` logic into orthogonal rules:
+ * - `resized` / `externalFocal` are component-local always-refit inputs (a
+ *   viewport-input change and a prop-driven focal rebind) — they never consult
+ *   the reframe counter.
+ * - a `layoutChanged` (relayout-affecting SM/nodes change) refits only while
+ *   armed, i.e. a navigation has bumped `reframeGen` past the `panGen` that the
+ *   last pan/zoom gesture pinned. `panGen` starts at -1 so the first layout is
+ *   armed-from-start.
+ */
+export function shouldRefit(opts: {
+  layoutChanged: boolean;
+  resized: boolean;
+  externalFocal: boolean;
+  reframeGen: number;
+  panGen: number;
+}): boolean {
+  return (
+    opts.resized ||
+    opts.externalFocal ||
+    (opts.layoutChanged && opts.reframeGen > opts.panGen)
+  );
+}
+
 function applySetMode(sm: GeneticsTreeSM, mode: ViewMode, nodes: TreeNode[]): GeneticsTreeSM {
-  if (mode === 'tree') return { ...sm, mode: 'tree', focalId: null };
-  if (mode === 'families') return { ...sm, mode: 'families' };
+  if (mode === 'tree') return rearm({ ...sm, mode: 'tree', focalId: null });
+  if (mode === 'families') return rearm({ ...sm, mode: 'families' });
   // lineage: prefer the current selection, else keep an existing focal, else pick a default
   let focalId = sm.focalId;
   if (sm.selectedId) {
@@ -139,26 +177,26 @@ function applySetMode(sm: GeneticsTreeSM, mode: ViewMode, nodes: TreeNode[]): Ge
   } else if (!sm.focalId && nodes.length) {
     focalId = nodes.find((n) => n.parents.mother)?.id ?? nodes[0].id;
   }
-  return { ...sm, mode: 'lineage', focalId };
+  return rearm({ ...sm, mode: 'lineage', focalId });
 }
 
 export function transition(sm: GeneticsTreeSM, event: GeneticsTreeEvent): GeneticsTreeSM {
   switch (event.type) {
     case 'FOCUS_NODE':
-      return { ...sm, mode: 'lineage', focalId: event.id, selectedId: event.id };
+      return rearm({ ...sm, mode: 'lineage', focalId: event.id, selectedId: event.id });
     case 'NODE_CLICKED':
       return { ...sm, selectedId: sm.selectedId === event.id ? null : event.id };
     case 'CLEAR_FOCUS':
-      return {
+      return rearm({
         ...sm,
         focalId: null,
         selectedId: null,
         mode: sm.mode === 'lineage' ? 'tree' : sm.mode,
-      };
+      });
     case 'SET_MODE':
       return applySetMode(sm, event.mode, event.nodes);
     case 'JUMP_TO':
-      return { ...sm, selectedId: event.id };
+      return rearm({ ...sm, selectedId: event.id });
     case 'DESELECT':
       return { ...sm, selectedId: null };
     case 'TOGGLE_COLLAPSE': {
@@ -170,7 +208,9 @@ export function transition(sm: GeneticsTreeSM, event: GeneticsTreeEvent): Geneti
     case 'SET_SEARCH':
       return { ...sm, search: event.value };
     case 'SET_BREEDER_FILTER':
-      return { ...sm, breederFilter: event.value };
+      // Breeder is normalized into the re-arming set (CONTEXT.md): the old code
+      // force-refit on a breeder change without re-arming, an oversight.
+      return rearm({ ...sm, breederFilter: event.value });
     case 'SET_GEN_FILTER':
       return { ...sm, genFilter: event.gen === null || sm.genFilter === event.gen ? null : event.gen };
     case 'RESET_FILTERS':
