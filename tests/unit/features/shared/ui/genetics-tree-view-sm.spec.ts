@@ -8,6 +8,8 @@ import {
   hasActiveFilters,
   createInitialSM,
   transition,
+  shouldRefit,
+  type GeneticsTreeEvent,
 } from '../../../../../src/features/shared/ui/genetics-tree-view-sm';
 
 function node(id: string, gen: string, breeder: string, mother: string | null = null, father: string | null = null): TreeNode {
@@ -136,6 +138,41 @@ describe('genetics-tree-view-sm', () => {
     });
   });
 
+  describe('shouldRefit', () => {
+    const base = { layoutChanged: false, resized: false, externalFocal: false, reframeGen: 0, panGen: -1 };
+
+    it('does not refit when nothing changed this update', () => {
+      expect(shouldRefit({ ...base, layoutChanged: false })).toBe(false);
+    });
+
+    it('always refits on resize, regardless of the counters', () => {
+      expect(shouldRefit({ ...base, resized: true, reframeGen: 0, panGen: 5 })).toBe(true);
+    });
+
+    it('always refits on an external focal change, without consulting the counters', () => {
+      expect(shouldRefit({ ...base, externalFocal: true, reframeGen: 0, panGen: 5 })).toBe(true);
+    });
+
+    it('refits a layout change while armed (reframeGen > panGen)', () => {
+      // armed-from-start: panGen = -1, reframeGen = 0
+      expect(shouldRefit({ ...base, layoutChanged: true, reframeGen: 0, panGen: -1 })).toBe(true);
+    });
+
+    it('holds a layout change once a pan has pinned panGen to reframeGen', () => {
+      // a pan pins panGen := reframeGen → no longer armed
+      expect(shouldRefit({ ...base, layoutChanged: true, reframeGen: 3, panGen: 3 })).toBe(false);
+    });
+
+    it('re-arms: a navigation bumps reframeGen past the pinned panGen', () => {
+      // after the pan above, a navigation transition bumps reframeGen to 4
+      expect(shouldRefit({ ...base, layoutChanged: true, reframeGen: 4, panGen: 3 })).toBe(true);
+    });
+
+    it('does not refit a layout change with no counter change and no resize', () => {
+      expect(shouldRefit({ ...base, layoutChanged: false, reframeGen: 3, panGen: 3 })).toBe(false);
+    });
+  });
+
   describe('transition', () => {
     it('starts idle: tree mode, no focal/selection/filters', () => {
       const sm = createInitialSM();
@@ -147,6 +184,7 @@ describe('genetics-tree-view-sm', () => {
         selectedId: null,
         search: '',
         genFilter: null,
+        reframeGen: 0,
       });
     });
 
@@ -268,6 +306,38 @@ describe('genetics-tree-view-sm', () => {
       expect(reset.breederFilter).toBe('Beta');
       expect(reset.mode).toBe('lineage');
       expect(reset.focalId).toBe('c');
+    });
+
+    it('SET_MODE bumps reframeGen (re-arms auto-refit)', () => {
+      const sm = createInitialSM();
+      expect(sm.reframeGen).toBe(0);
+      const moved = transition(sm, { type: 'SET_MODE', mode: 'families', nodes });
+      expect(moved.reframeGen).toBe(1);
+    });
+
+    // The re-arming set: the transitions that previously set `_userHasInteracted
+    // = false`, plus the sanctioned breeder normalization.
+    it.each<[string, GeneticsTreeEvent]>([
+      ['FOCUS_NODE', { type: 'FOCUS_NODE', id: 'c' }],
+      ['CLEAR_FOCUS', { type: 'CLEAR_FOCUS' }],
+      ['JUMP_TO', { type: 'JUMP_TO', id: 'c' }],
+      ['SET_MODE', { type: 'SET_MODE', mode: 'lineage', nodes }],
+      ['SET_BREEDER_FILTER', { type: 'SET_BREEDER_FILTER', value: 'Beta' }],
+    ])('%s bumps reframeGen', (_label, event) => {
+      expect(transition(createInitialSM(), event).reframeGen).toBe(1);
+    });
+
+    // Decoration-only / external transitions must NOT re-arm.
+    it.each<[string, GeneticsTreeEvent]>([
+      ['NODE_CLICKED', { type: 'NODE_CLICKED', id: 'c' }],
+      ['DESELECT', { type: 'DESELECT' }],
+      ['SET_SEARCH', { type: 'SET_SEARCH', value: 'kush' }],
+      ['SET_GEN_FILTER', { type: 'SET_GEN_FILTER', gen: 'F1' }],
+      ['TOGGLE_COLLAPSE', { type: 'TOGGLE_COLLAPSE', id: 'a' }],
+      ['RESET_FILTERS', { type: 'RESET_FILTERS' }],
+      ['EXTERNAL_FOCAL_CHANGED', { type: 'EXTERNAL_FOCAL_CHANGED', focalId: 'c' }],
+    ])('%s leaves reframeGen unchanged', (_label, event) => {
+      expect(transition(createInitialSM(), event).reframeGen).toBe(0);
     });
 
     it('EXTERNAL_FOCAL_CHANGED to an id enters lineage mode; to null only clears the focal', () => {

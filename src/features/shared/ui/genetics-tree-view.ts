@@ -23,6 +23,7 @@ import {
 } from './genetics-tree-layout';
 import {
   type GeneticsTreeSM,
+  type ViewMode,
   visibleNodes,
   computeLayout,
   lineageSets,
@@ -30,6 +31,7 @@ import {
   hasActiveFilters,
   createInitialSM,
   transition,
+  shouldRefit,
 } from './genetics-tree-view-sm';
 
 const GEN_COLORS: Record<string, string> = {
@@ -68,7 +70,21 @@ export class GeneticsTreeView extends LitElement {
   private _childrenOf: Record<string, string[]> = {};
   private _byId: Record<string, TreeNode> = {};
   private _resizeObs?: ResizeObserver;
-  private _userHasInteracted = false;
+  /**
+   * The `sm.reframeGen` value pinned by the last pan/zoom gesture. Auto-refit is
+   * armed while `sm.reframeGen > _panGen`. Starts at -1 so the first layout is
+   * armed-from-start (mirrors the old `_userHasInteracted = false` initial). Not
+   * reactive — it's gesture/navigation bookkeeping, never rendered.
+   */
+  private _panGen = -1;
+  /** Snapshot of the relayout-affecting inputs, to detect layout changes. */
+  private _lastSig: {
+    mode: ViewMode;
+    focalId: string | null;
+    breederFilter: string;
+    collapsed: Set<string>;
+    nodes: TreeNode[];
+  } | null = null;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -113,9 +129,13 @@ export class GeneticsTreeView extends LitElement {
   }
 
   override willUpdate(changed: Map<string, unknown>): void {
-    // Sync external focalId property → SM + switch to lineage mode
+    // Sync external focalId property → SM + switch to lineage mode. This is a
+    // prop-driven rebind, not a user navigation: it always refits (like resize)
+    // and deliberately does not re-arm the reframe counter.
+    let externalFocal = false;
     if (changed.has('focalId') && this.focalId !== this._sm.focalId) {
       this._sm = transition(this._sm, { type: 'EXTERNAL_FOCAL_CHANGED', focalId: this.focalId });
+      externalFocal = true;
     }
 
     if (changed.has('nodes')) {
@@ -124,35 +144,54 @@ export class GeneticsTreeView extends LitElement {
       this._childrenOf = childrenOf;
     }
 
-    // A field "changed" only when the _sm reference itself was reassigned this
-    // update (a viewport-only change like _scale must not trigger a recompute).
-    const prevSm = changed.get('_sm') as GeneticsTreeSM | undefined;
-    const smChanged = (k: keyof GeneticsTreeSM): boolean =>
-      changed.has('_sm') && (prevSm === undefined || prevSm[k] !== this._sm[k]);
+    // Recompute keys off the relayout-affecting SM/nodes identity — not an
+    // enumerated changed.has() list. Decoration-only SM changes (selection,
+    // search, gen filter) and viewport-only changes leave the signature intact.
+    const layoutChanged = this._layoutInputsChanged();
+    const resized = changed.has('_viewW') || changed.has('_viewH');
 
-    const needsRecompute =
-      changed.has('nodes') ||
-      changed.has('focalId') ||
-      smChanged('mode') ||
-      smChanged('focalId') ||
-      smChanged('collapsed') ||
-      smChanged('breederFilter') ||
-      changed.has('_viewW') ||
-      changed.has('_viewH');
-
-    if (needsRecompute) {
+    if (layoutChanged || resized) {
       this._recompute();
-      if (
-        !this._userHasInteracted ||
-        changed.has('_viewW') ||
-        changed.has('_viewH') ||
-        smChanged('mode') ||
-        smChanged('focalId') ||
-        smChanged('breederFilter')
-      ) {
-        this._fitToScreen();
-      }
     }
+    if (
+      shouldRefit({
+        layoutChanged,
+        resized,
+        externalFocal,
+        reframeGen: this._sm.reframeGen,
+        panGen: this._panGen,
+      })
+    ) {
+      this._fitToScreen();
+    }
+  }
+
+  /**
+   * Whether the inputs to the layout (visibleNodes + chooseLayout) changed since
+   * the last update. `collapsed` and `nodes` compare by reference — `transition`
+   * mints a fresh `collapsed` Set only on collapse/reset, and the parent passes a
+   * new `nodes` array on data change.
+   */
+  private _layoutInputsChanged(): boolean {
+    const s = this._sm;
+    const prev = this._lastSig;
+    const changed =
+      prev === null ||
+      prev.mode !== s.mode ||
+      prev.focalId !== s.focalId ||
+      prev.breederFilter !== s.breederFilter ||
+      prev.collapsed !== s.collapsed ||
+      prev.nodes !== this.nodes;
+    if (changed) {
+      this._lastSig = {
+        mode: s.mode,
+        focalId: s.focalId,
+        breederFilter: s.breederFilter,
+        collapsed: s.collapsed,
+        nodes: this.nodes,
+      };
+    }
+    return changed;
   }
 
   // ---------------------------------------------------------------------------
@@ -218,7 +257,7 @@ export class GeneticsTreeView extends LitElement {
 
   private _onWheel(e: WheelEvent): void {
     e.preventDefault();
-    this._userHasInteracted = true;
+    this._panGen = this._sm.reframeGen;
     const el = e.currentTarget as HTMLElement;
     const rect = el.getBoundingClientRect();
     const mx = e.clientX - rect.left;
@@ -245,7 +284,7 @@ export class GeneticsTreeView extends LitElement {
       target.closest('.zoom-controls')
     )
       return;
-    this._userHasInteracted = true;
+    this._panGen = this._sm.reframeGen;
     this._didPan = false;
     this._dragging = { sx: e.clientX, sy: e.clientY, ox: this._panX, oy: this._panY };
   }
@@ -273,7 +312,6 @@ export class GeneticsTreeView extends LitElement {
     if (e.detail >= 2) {
       // Double-click → enter lineage mode focused on this node
       this._sm = transition(this._sm, { type: 'FOCUS_NODE', id: p.id });
-      this._userHasInteracted = false;
       return;
     }
 
@@ -292,17 +330,14 @@ export class GeneticsTreeView extends LitElement {
 
   private _isolateLineage(id: string): void {
     this._sm = transition(this._sm, { type: 'FOCUS_NODE', id });
-    this._userHasInteracted = false;
   }
 
   private _clearFocus(): void {
     this._sm = transition(this._sm, { type: 'CLEAR_FOCUS' });
-    this._userHasInteracted = false;
   }
 
   private _jumpTo(id: string): void {
     this._sm = transition(this._sm, { type: 'JUMP_TO', id });
-    this._userHasInteracted = false;
   }
 
   private _toggleCollapse(id: string): void {
@@ -401,7 +436,6 @@ export class GeneticsTreeView extends LitElement {
             class="${this._sm.mode === 'tree' ? 'active' : ''}"
             @click=${() => {
               this._sm = transition(this._sm, { type: 'SET_MODE', mode: 'tree', nodes: this.nodes });
-              this._userHasInteracted = false;
             }}
           >
             Tree
@@ -414,7 +448,6 @@ export class GeneticsTreeView extends LitElement {
                 mode: 'lineage',
                 nodes: this.nodes,
               });
-              this._userHasInteracted = false;
             }}
           >
             Lineage
@@ -427,7 +460,6 @@ export class GeneticsTreeView extends LitElement {
                 mode: 'families',
                 nodes: this.nodes,
               });
-              this._userHasInteracted = false;
             }}
           >
             Families
@@ -875,7 +907,7 @@ export class GeneticsTreeView extends LitElement {
         <button
           class="icon-btn"
           @click=${() => {
-            this._userHasInteracted = true;
+            this._panGen = this._sm.reframeGen;
             this._scale = Math.min(this._scale * 1.2, 4.0);
           }}
         >
@@ -885,7 +917,7 @@ export class GeneticsTreeView extends LitElement {
         <button
           class="icon-btn"
           @click=${() => {
-            this._userHasInteracted = true;
+            this._panGen = this._sm.reframeGen;
             this._scale = Math.max(this._scale / 1.2, 0.08);
           }}
         >
@@ -949,7 +981,7 @@ export class GeneticsTreeView extends LitElement {
           const wy = (e.clientY - rect.top - PAD) / k + minY;
           this._panX = this._viewW / 2 - wx * this._scale;
           this._panY = this._viewH / 2 - wy * this._scale;
-          this._userHasInteracted = true;
+          this._panGen = this._sm.reframeGen;
         }}
       >
         ${visible.map((p) => {

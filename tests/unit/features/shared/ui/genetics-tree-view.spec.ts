@@ -419,10 +419,10 @@ describe('GeneticsTreeView', () => {
     expect(element['_sm'].mode).toBe('tree');
   });
 
-  it('should reset mode, focalId, and userHasInteracted when switching back to tree mode', async () => {
-    element['_sm'] = { ...element['_sm'], mode: 'lineage' };
-    element['_sm'] = { ...element['_sm'], focalId: 'f1' };
-    element['_userHasInteracted'] = true;
+  it('should reset mode/focalId and re-arm auto-refit when switching back to tree mode', async () => {
+    element['_sm'] = { ...element['_sm'], mode: 'lineage', focalId: 'f1' };
+    // Simulate a prior pan that pinned panGen to the current reframeGen (disarmed).
+    element['_panGen'] = element['_sm'].reframeGen;
     await element.updateComplete;
 
     const treeBtn = element.shadowRoot?.querySelector('.seg button:nth-child(1)') as HTMLElement;
@@ -431,7 +431,8 @@ describe('GeneticsTreeView', () => {
 
     expect(element['_sm'].mode).toBe('tree');
     expect(element['_sm'].focalId).toBeNull();
-    expect(element['_userHasInteracted']).toBe(false);
+    // SET_MODE bumped reframeGen past the pinned panGen → armed again.
+    expect(element['_sm'].reframeGen).toBeGreaterThan(element['_panGen']);
   });
 
   it('should set and clear _hoverId on mouseenter and mouseleave', async () => {
@@ -480,7 +481,8 @@ describe('GeneticsTreeView', () => {
     await element.updateComplete;
 
     expect(element['_panX']).not.toBe(before.panX);
-    expect(element['_userHasInteracted']).toBe(true);
+    // A pan/zoom gesture pins panGen to reframeGen → auto-refit is disarmed.
+    expect(element['_panGen']).toBe(element['_sm'].reframeGen);
   });
 
   it('should ignore non-left-button mousedown on shell', async () => {
