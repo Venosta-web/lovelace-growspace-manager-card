@@ -6,6 +6,14 @@
 * **irrigation:** recognize tank-based mode (gravity/manual, no pump) ([b31ae04](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b31ae0427e432703e6570a3c4b5630ed8837ab12))
 * **irrigation:** relabel Pump Configuration as optional in tank-based mode ([139dde2](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/139dde25e1410967ec8632b1b1b5f34acbfaa52b))
 
+# [1.1.0-next.65](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.64...v1.1.0-next.65) (2026-06-29)
+
+
+### Features
+
+* **irrigation:** recognize tank-based mode (gravity/manual, no pump) ([b31ae04](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b31ae0427e432703e6570a3c4b5630ed8837ab12))
+* **irrigation:** relabel Pump Configuration as optional in tank-based mode ([139dde2](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/139dde25e1410967ec8632b1b1b5f34acbfaa52b))
+
 # [1.1.0-next.64](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.63...v1.1.0-next.64) (2026-06-28)
 
 
