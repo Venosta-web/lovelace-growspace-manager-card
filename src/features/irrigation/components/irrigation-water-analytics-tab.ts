@@ -128,7 +128,10 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
   }
 
   private _renderTodaysUsage(vm: WaterAnalyticsTabViewModel): TemplateResult | typeof nothing {
-    if (!vm.hasPump) return nothing;
+    // The "Liters today" / efficiency figures come from the backend's additive
+    // Aggregate Water Use total, which is meaningful for a tank-fed grower too —
+    // so this renders for tank-based setups, not just pump-based ones.
+    if (!vm.hasPump && !vm.hasTank) return nothing;
     const wu = vm.waterUsage;
     const avgRunoff = vm.avgRunoff;
     return html`

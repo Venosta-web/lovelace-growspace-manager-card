@@ -730,8 +730,21 @@ export class IrrigationDialog extends LitElement {
   private get _setupHints(): Array<{ icon: string; text: string }> {
     const hints: Array<{ icon: string; text: string }> = [];
     const visible = this._visibleTabs;
+    const method = this._caps.get().irrigationMethod;
 
-    if (!visible.includes('schedules')) {
+    // Tank-based (gravity/manual, no pump) is a valid mode, not a half-configured
+    // pump setup. Acknowledge it positively and skip the "configure a pump" nags —
+    // a pump is optional here (it only adds automated actuation). Crop steering
+    // still needs an actuator, so its tab stays pump-gated (ADR-0016) and we frame
+    // the pump as the path to *enabling* it rather than as a missing requirement.
+    if (method === 'tank') {
+      hints.push({
+        icon: '🪣',
+        text: 'Tank-based irrigation detected (gravity or manual). Tank levels and water usage are tracked here; add an irrigation pump entity in Irrigation Settings to also enable automated schedules and Crop Steering.',
+      });
+    }
+
+    if (method !== 'tank' && !visible.includes('schedules')) {
       hints.push({
         icon: '🚰',
         text: 'Configure an irrigation or drain pump in Irrigation Settings to enable Schedules, manual run controls, and behaviour settings.',
@@ -740,10 +753,12 @@ export class IrrigationDialog extends LitElement {
     if (!visible.includes('steering')) {
       const hasPump = this._hasPump;
       if (!hasPump) {
-        hints.push({
-          icon: '🚰',
-          text: 'Configure an irrigation or drain pump in Irrigation Settings to enable Crop Steering features.',
-        });
+        if (method !== 'tank') {
+          hints.push({
+            icon: '🚰',
+            text: 'Configure an irrigation or drain pump in Irrigation Settings to enable Crop Steering features.',
+          });
+        }
       } else {
         hints.push({
           icon: '🌱',
