@@ -16,14 +16,19 @@ import {
   NODE_W,
   NODE_H,
   buildIndex,
-  layoutTopDown,
-  layoutSubgraph,
-  layoutBreederGrouped,
   ancestorsOf,
   descendantsOf,
   edgePath,
   edgePathCurve,
 } from './genetics-tree-layout';
+import {
+  type ViewMode,
+  visibleNodes,
+  computeLayout,
+  lineageSets,
+  highlightSets,
+  hasActiveFilters,
+} from './genetics-tree-view-sm';
 
 const GEN_COLORS: Record<string, string> = {
   P1: '#9e9e9e',
@@ -38,8 +43,6 @@ const GEN_COLORS: Record<string, string> = {
 function genColor(gen: string): string {
   return GEN_COLORS[gen] ?? '#555';
 }
-
-type ViewMode = 'tree' | 'lineage' | 'families';
 
 @customElement('genetics-tree-view')
 export class GeneticsTreeView extends LitElement {
@@ -156,45 +159,15 @@ export class GeneticsTreeView extends LitElement {
   // ---------------------------------------------------------------------------
 
   private _recompute(): void {
-    const visible = this._visibleNodes();
-
-    if (visible.length === 0) {
-      this._computed = null;
-      return;
-    }
-
-    if (this._mode === 'families') {
-      this._computed = layoutBreederGrouped(visible);
-    } else if (this._mode === 'lineage' && this._focalId) {
-      this._computed = layoutSubgraph(visible, this._focalId);
-    } else {
-      this._computed = layoutTopDown(visible);
-    }
+    this._computed = computeLayout(this._visibleNodes(), this._mode, this._focalId);
   }
 
   private _visibleNodes(): TreeNode[] {
-    let nodes = this.nodes;
-
-    if (this._breederFilter) {
-      nodes = nodes.filter((n) => n.breeder === this._breederFilter);
-    }
-
-    if (this._collapsed.size > 0) {
-      const hidden = new Set<string>();
-      const queue = [...this._collapsed];
-      while (queue.length > 0) {
-        const id = queue.shift()!;
-        for (const childId of this._childrenOf[id] ?? []) {
-          if (!hidden.has(childId)) {
-            hidden.add(childId);
-            queue.push(childId);
-          }
-        }
-      }
-      nodes = nodes.filter((n) => !hidden.has(n.id));
-    }
-
-    return nodes;
+    return visibleNodes(this.nodes, {
+      breederFilter: this._breederFilter,
+      collapsed: this._collapsed,
+      childrenOf: this._childrenOf,
+    });
   }
 
   private _fitToScreen(): void {
@@ -219,29 +192,23 @@ export class GeneticsTreeView extends LitElement {
   // ---------------------------------------------------------------------------
 
   private get _ancestorSet(): Set<string> {
-    if (!this._focalId) return new Set();
-    return ancestorsOf(this.nodes, this._focalId);
+    return lineageSets(this.nodes, this._focalId).ancestors;
   }
 
   private get _descendantSet(): Set<string> {
-    if (!this._focalId) return new Set();
-    return descendantsOf(this.nodes, this._focalId);
+    return lineageSets(this.nodes, this._focalId).descendants;
   }
 
   private get _highlightId(): string | null {
-    return this._hoverId ?? this._selectedId;
+    return highlightSets(this.nodes, this._hoverId, this._selectedId).highlightId;
   }
 
   private get _highlightAncSet(): Set<string> {
-    const hid = this._highlightId;
-    if (!hid) return new Set();
-    return ancestorsOf(this.nodes, hid);
+    return highlightSets(this.nodes, this._hoverId, this._selectedId).ancestors;
   }
 
   private get _highlightDescSet(): Set<string> {
-    const hid = this._highlightId;
-    if (!hid) return new Set();
-    return descendantsOf(this.nodes, hid);
+    return highlightSets(this.nodes, this._hoverId, this._selectedId).descendants;
   }
 
   // ---------------------------------------------------------------------------
@@ -501,8 +468,12 @@ export class GeneticsTreeView extends LitElement {
   // ---------------------------------------------------------------------------
 
   private _renderFilterRow(gens: string[]): TemplateResult {
-    const showClear =
-      this._collapsed.size > 0 || !!this._genFilter || !!this._selectedId || !!this._search;
+    const showClear = hasActiveFilters({
+      collapsed: this._collapsed,
+      genFilter: this._genFilter,
+      selectedId: this._selectedId,
+      search: this._search,
+    });
     return html`
       <div class="filter-row">
         <button
