@@ -19,6 +19,13 @@ import { computed, type ReadableAtom } from 'nanostores';
 import type { GrowspaceDevice, IrrigationConfig } from '../../../services/types';
 
 /**
+ * The growspace's irrigation *hardware* shape (distinct from the delivery
+ * behaviour — Manual Schedule vs Crop Steering). See CONTEXT.md "Irrigation
+ * Method".
+ */
+export type IrrigationMethod = 'pump' | 'tank' | 'none';
+
+/**
  * Cross-tab derived capabilities for the Irrigation Dialog.
  */
 export interface DialogCapabilities {
@@ -37,7 +44,7 @@ export interface DialogCapabilities {
    * a `'tank'` method still has no actuator, so crop-steering actuation stays
    * gated on `hasPump` (ADR-0016).
    */
-  irrigationMethod: 'pump' | 'tank' | 'none';
+  irrigationMethod: IrrigationMethod;
   /** A soil-moisture sensor is configured. */
   hasSoilMoisture: boolean;
   /** An irrigation strategy is enabled. */

@@ -344,6 +344,37 @@ describe('IrrigationDialog – tank-based mode recognition', () => {
     await tab!.updateComplete;
     expect(normalize(tab!.shadowRoot!.textContent)).toContain("Today's Usage");
   });
+
+  async function configTabText(
+    device: ReturnType<typeof createGrowspaceDevice>
+  ): Promise<string> {
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'config'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    const cfg = el.shadowRoot!.querySelector('irrigation-config-tab') as
+      | (HTMLElement & { updateComplete: Promise<unknown> })
+      | null;
+    expect(cfg).not.toBeNull();
+    await cfg!.updateComplete;
+    return normalize(cfg!.shadowRoot!.textContent);
+  }
+
+  it('relabels the Pump Configuration section as optional in tank-based mode', async () => {
+    const text = await configTabText(withTank());
+    expect(text).toContain('tank-based (gravity or manual)');
+    expect(text).toContain('Irrigation Pump (optional)');
+  });
+
+  it('keeps the Pump Configuration section unchanged when a pump is configured', async () => {
+    const text = await configTabText(withPump());
+    expect(text).not.toContain('tank-based (gravity or manual)');
+    expect(text).not.toContain('Irrigation Pump (optional)');
+  });
 });
 
 // ---------------------------------------------------------------------------

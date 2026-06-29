@@ -141,7 +141,7 @@ import {
   createSteeringTabViewModel,
   type SteeringTabViewModel,
 } from '../viewmodels/steering-tab.viewmodel';
-import { atom, type ReadableAtom } from 'nanostores';
+import { atom, computed, type ReadableAtom } from 'nanostores';
 import '../components/irrigation-overview-tab';
 import '../components/irrigation-tanks-tab';
 import '../components/irrigation-ec-ramp-tab';
@@ -333,10 +333,14 @@ export class IrrigationDialog extends LitElement {
   // `irrigationConfigs$` slice) so the in-tab panel gate stays byte-identical.
   private _hasPumpAtom = atom<boolean>(false);
   /** Config tab ViewModel — `$sm`-first, mixed source (pump options + hasPump). No `$caps`. */
+  // Derived from the shared caps atom (single source) so the Config tab can
+  // relabel the Pump Configuration section in tank-based mode without re-deriving.
+  private _irrigationMethod = computed([this._caps], (caps) => caps.irrigationMethod);
   private _configVm: ReadableAtom<ConfigTabViewModel> = createConfigTabViewModel(
     this._smAtom,
     this._hasPumpAtom,
-    this._pumpEntityOptions
+    this._pumpEntityOptions,
+    this._irrigationMethod
   );
   private _configVmController = new StoreController(this, this._configVm);
   /** Substrate & EC tab ViewModel — `$sm`-first, consumes `$caps` (ADR-0017/0019). */

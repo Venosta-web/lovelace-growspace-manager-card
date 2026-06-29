@@ -19,13 +19,16 @@
  * Caps shows only when steering is enabled; Skip During Dark only when it is
  * NOT. Both gates are surfaced as VM flags so the component holds no logic.
  *
- * No `$caps` (the Config tab is always visible). Number-string formatting
- * (`String(value)` / `parseFloat`) stays in the component's `render()` so this
- * factory is deterministically testable with no DOM.
+ * The Config tab is always visible, so it takes no rail-group gate — but it does
+ * read `irrigationMethod` (derived from the shared caps atom by the container) to
+ * relabel the Pump Configuration section as optional in tank-based mode. Number-
+ * string formatting (`String(value)` / `parseFloat`) stays in the component's
+ * `render()` so this factory is deterministically testable with no DOM.
  */
 
 import { computed, type ReadableAtom } from 'nanostores';
 import type { DialogSM, ConfigDraft } from '../../../dialogs/irrigation-dialog-sm';
+import type { IrrigationMethod } from './dialog-capabilities';
 
 /** One `<option>` for a pump entity `<select>` (precomputed label). */
 export interface PumpEntityOptionVM {
@@ -49,6 +52,12 @@ export interface ConfigTabViewModel {
   steeringEnabled: boolean;
   /** True when a pump is configured → show Behaviour + Manual Override panels. */
   hasPump: boolean;
+  /**
+   * Irrigation hardware shape (from the shared caps atom). `'tank'` relabels the
+   * Pump Configuration section as optional so a gravity/manual grower doesn't read
+   * as half-configured. See CONTEXT.md "Irrigation Method".
+   */
+  irrigationMethod: IrrigationMethod;
   /** True while a run-now request is in flight (the Run Now `saving` class + label). */
   isRunningNow: boolean;
   /** True while ANY mutation is applying (disables the Run Now button). */
@@ -65,22 +74,27 @@ export interface ConfigTabViewModel {
 export function createConfigTabViewModel(
   $sm: ReadableAtom<DialogSM>,
   $hasPump: ReadableAtom<boolean>,
-  $pumpEntityOptions: ReadableAtom<PumpEntityOptionVM[]>
+  $pumpEntityOptions: ReadableAtom<PumpEntityOptionVM[]>,
+  $irrigationMethod: ReadableAtom<IrrigationMethod>
 ): ReadableAtom<ConfigTabViewModel> {
-  return computed([$sm, $hasPump, $pumpEntityOptions], (sm, hasPump, pumpEntityOptions) => {
-    const schedulesDraft = sm.tabs.schedules.draft;
-    const isApplying = sm.status.kind === 'applying';
-    const isRunningNow = sm.status.kind === 'applying' && sm.status.action === 'run-now';
+  return computed(
+    [$sm, $hasPump, $pumpEntityOptions, $irrigationMethod],
+    (sm, hasPump, pumpEntityOptions, irrigationMethod) => {
+      const schedulesDraft = sm.tabs.schedules.draft;
+      const isApplying = sm.status.kind === 'applying';
+      const isRunningNow = sm.status.kind === 'applying' && sm.status.action === 'run-now';
 
-    return {
-      draft: sm.tabs.config.draft,
-      irrigationPumpEntity: schedulesDraft.irrigationPumpEntity,
-      drainPumpEntity: schedulesDraft.drainPumpEntity,
-      pumpEntityOptions,
-      steeringEnabled: !!sm.tabs.steering.draft.enabled,
-      hasPump,
-      isRunningNow,
-      isApplying,
-    };
-  });
+      return {
+        draft: sm.tabs.config.draft,
+        irrigationPumpEntity: schedulesDraft.irrigationPumpEntity,
+        drainPumpEntity: schedulesDraft.drainPumpEntity,
+        pumpEntityOptions,
+        steeringEnabled: !!sm.tabs.steering.draft.enabled,
+        hasPump,
+        irrigationMethod,
+        isRunningNow,
+        isApplying,
+      };
+    }
+  );
 }
