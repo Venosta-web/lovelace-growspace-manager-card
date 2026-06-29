@@ -48,10 +48,15 @@ export class BootstrapController implements ReactiveController {
   hostDisconnected(): void {}
 
   setCardConfig(config: GrowspaceManagerCardConfig): void {
-    if (config.default_growspace !== this._config?.default_growspace) {
-      this._defaultApplied = false;
-    }
+    const defaultChanged = config.default_growspace !== this._config?.default_growspace;
     this._config = config;
+    if (defaultChanged) {
+      // Re-arm and re-pick now: the carousel cycles default_growspace without a
+      // hass change, so updateHass (which is what normally drives _autoSelect)
+      // never fires. _autoSelect is a no-op until devices are hydrated.
+      this._defaultApplied = false;
+      this._autoSelect();
+    }
   }
 
   async refresh(): Promise<void> {
