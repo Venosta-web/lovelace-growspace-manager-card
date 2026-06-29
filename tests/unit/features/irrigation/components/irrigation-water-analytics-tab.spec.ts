@@ -112,6 +112,18 @@ describe('irrigation-water-analytics-tab', () => {
     expect(text).not.toContain('Cycle Telemetry');
   });
 
+  it('hides Today\'s Usage for a tank-only grower (hasPump false, hasTank true)', async () => {
+    const el = await mount(
+      makeVm({
+        hasPump: false,
+        hasTank: true,
+        waterUsage: { litersToday: 10.5 } as any,
+      })
+    );
+    const text = norm(el.shadowRoot!.textContent);
+    expect(text).not.toContain("Today's Usage");
+  });
+
   it('renders tank levels with a warning badge', async () => {
     const el = await mount(
       makeVm({
