@@ -8,9 +8,17 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HarvestScoringDialog } from '../../../src/dialogs/harvest-scoring-dialog';
-import { scorePlant, advancePlantStage } from '../../../src/slices/plant';
 import '../../../src/dialogs/harvest-scoring-dialog';
 import { aPlant, aHass } from '../../fixtures';
+import { setHass } from '../../../src/services/hass-call';
+import { PlantStage } from '../../../src/features/plants/types';
+
+// WS commands the slice mutators reach on confirm. The dialog calls scorePlant
+// then advancePlantStage; both funnel through hass.callWS via the shared
+// hass-call singleton (scorePlant → score_plant, advancePlantStage →
+// harvestPlant → harvest_plant).
+const WS_SCORE = 'growspace_manager/score_plant';
+const WS_HARVEST = 'growspace_manager/harvest_plant';
 
 if (!customElements.get('ha-dialog')) {
   class HaDialogMock extends HTMLElement {
@@ -23,24 +31,35 @@ if (!customElements.get('ha-dialog')) {
   customElements.define('ha-dialog', HaDialogMock);
 }
 
-vi.mock('../../../src/slices/plant', () => ({
-  scorePlant: vi.fn().mockResolvedValue({}),
-  advancePlantStage: vi.fn().mockResolvedValue('dry'),
-}));
-
 function makeMockStore() {
   return { actions: {} };
+}
+
+// advancePlantStage only advances flower/dry/mother; a default veg plant throws.
+function aHarvestablePlant() {
+  return aPlant({ stage: PlantStage.FLOWER } as any);
 }
 
 describe('HarvestScoringDialog', () => {
   let element: HarvestScoringDialog;
   let mockStore: ReturnType<typeof makeMockStore>;
+  let hass: ReturnType<typeof aHass>;
+
+  // The slice mutators are driven through the real hass-call seam rather than a
+  // module mock: setHass() points the shared singleton at a controllable fake
+  // hass, so callWS is a spy we can assert on and reject. This avoids the
+  // browser-mode ESM-mock unreliability that made the prior vi.mock('slices/plant')
+  // flake on CI ("[AsyncFunction scorePlant] is not a spy").
+  const wsCommands = (): string[] =>
+    (hass.callWS as ReturnType<typeof vi.fn>).mock.calls.map((c) => (c[0] as { type: string })?.type);
 
   beforeEach(async () => {
     mockStore = makeMockStore();
+    hass = aHass();
+    setHass(hass as never);
     element = document.createElement('harvest-scoring-dialog') as HarvestScoringDialog;
     (element as any).store = mockStore;
-    (element as any).hass = aHass();
+    (element as any).hass = hass;
     document.body.appendChild(element);
     await element.updateComplete;
   });
@@ -142,7 +161,7 @@ describe('HarvestScoringDialog', () => {
   });
 
   it('calls store harvest on confirmed save flow', async () => {
-    element.dialogState = { plant: aPlant() };
+    element.dialogState = { plant: aHarvestablePlant() };
     element.open = true;
     await element.updateComplete;
 
@@ -155,13 +174,13 @@ describe('HarvestScoringDialog', () => {
     const confirmBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.filled') as HTMLButtonElement;
     confirmBtn.click();
     await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
-    expect(advancePlantStage).toHaveBeenCalled();
+    expect(wsCommands()).toContain(WS_HARVEST);
   });
 
   it('calls store harvest on confirmed skip flow', async () => {
-    element.dialogState = { plant: aPlant() };
+    element.dialogState = { plant: aHarvestablePlant() };
     element.open = true;
     await element.updateComplete;
 
@@ -174,15 +193,15 @@ describe('HarvestScoringDialog', () => {
     const confirmBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.filled') as HTMLButtonElement;
     confirmBtn.click();
     await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
-    expect(advancePlantStage).toHaveBeenCalled();
-    expect(scorePlant).not.toHaveBeenCalled();
+    expect(wsCommands()).toContain(WS_HARVEST);
+    expect(wsCommands()).not.toContain(WS_SCORE);
   });
 
   it('shows error banner when harvest fails', async () => {
-    vi.mocked(advancePlantStage).mockRejectedValueOnce(new Error('Network error'));
-    element.dialogState = { plant: aPlant() };
+    (hass.callWS as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
+    element.dialogState = { plant: aHarvestablePlant() };
     element.open = true;
     await element.updateComplete;
 
@@ -192,7 +211,7 @@ describe('HarvestScoringDialog', () => {
     const confirmBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.filled') as HTMLButtonElement;
     confirmBtn.click();
     await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     await element.updateComplete;
 
     expect(element.shadowRoot?.querySelector('.error-banner')).not.toBeNull();
@@ -292,7 +311,7 @@ describe('HarvestScoringDialog', () => {
   });
 
   it('calls scorePhenotype when harvest confirmed with non-empty scoring', async () => {
-    element.dialogState = { plant: aPlant() };
+    element.dialogState = { plant: aHarvestablePlant() };
     element.open = true;
     await element.updateComplete;
 
@@ -310,10 +329,10 @@ describe('HarvestScoringDialog', () => {
     const confirmBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.filled') as HTMLButtonElement;
     confirmBtn.click();
     await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
-    expect(scorePlant).toHaveBeenCalled();
-    expect(advancePlantStage).toHaveBeenCalled();
+    expect(wsCommands()).toContain(WS_SCORE);
+    expect(wsCommands()).toContain(WS_HARVEST);
   });
 });
 
