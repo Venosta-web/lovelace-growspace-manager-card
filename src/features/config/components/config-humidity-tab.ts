@@ -33,6 +33,7 @@ import {
 } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui/md3-number-input';
+import { renderAcInfinityDevices } from './ac-infinity-device-editor';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
 import type {
   HumidityTabViewModel,
@@ -255,6 +256,22 @@ export class ConfigHumidityTab extends LitElement {
             ${this._multiSelect('Humidifier', 'humidifierEntities', this.vm.humidifierEntities, this.vm.humidifierOptions)}
             ${this._multiSelect('Dehumidifier', 'dehumidifierEntities', this.vm.dehumidifierEntities, this.vm.dehumidifierOptions)}
           </div>
+          ${renderAcInfinityDevices({
+            label: 'Humidifier AC Infinity Devices',
+            devices: this.vm.humidifierAcInfinityDevices,
+            modeOptions: this.vm.acInfinityModeOptions,
+            speedOptions: this.vm.acInfinitySpeedOptions,
+            idPrefix: 'humidifier',
+            onChange: (devices) => this._update({ humidifierAcInfinityDevices: devices }),
+          })}
+          ${renderAcInfinityDevices({
+            label: 'Dehumidifier AC Infinity Devices',
+            devices: this.vm.dehumidifierAcInfinityDevices,
+            modeOptions: this.vm.acInfinityModeOptions,
+            speedOptions: this.vm.acInfinitySpeedOptions,
+            idPrefix: 'dehumidifier',
+            onChange: (devices) => this._update({ dehumidifierAcInfinityDevices: devices }),
+          })}
           <div class="row-col-grid">
             <label class="checkbox-label">
               <input

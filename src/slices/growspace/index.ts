@@ -7,6 +7,7 @@ import {
   GrowspaceAPICollectionSchema,
   GrowReportSchema,
   type GrowReport,
+  type AcInfinityDevice,
   type CirculationFanConfig,
   type ExhaustFanConfig,
 } from './schema';
@@ -151,13 +152,17 @@ export async function configureEnvironment(data: {
   lightSensors?: string[];
   exhaustEntity?: string;
   exhaustFanEntities?: string[];
+  exhaustFanAcInfinityDevices?: AcInfinityDevice[];
+  circulationFanAcInfinityDevices?: AcInfinityDevice[];
   humidifierEntity?: string;
   humidifierEntities?: string[];
   humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+  humidifierAcInfinityDevices?: AcInfinityDevice[];
   controlHumidifier?: boolean;
   dehumidifierEntity?: string;
   dehumidifierEntities?: string[];
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+  dehumidifierAcInfinityDevices?: AcInfinityDevice[];
   soilMoistureSensor?: string;
   controlDehumidifier?: boolean;
   vegDayHours?: number;
@@ -205,6 +210,17 @@ export async function configureEnvironment(data: {
   if (data.dehumidifierEntity) payload.dehumidifier_entity = data.dehumidifierEntity;
   if (data.dehumidifierEntities) payload.dehumidifier_entities = data.dehumidifierEntities;
   if (data.dehumidifierThresholds) payload.dehumidifier_thresholds = data.dehumidifierThresholds;
+  // AC Infinity bundles are already snake_case objects ({mode_entity, speed_entity,
+  // on_speed}); send straight to the wire. An empty array is an explicit clear; an
+  // omitted (undefined) field is preserved by the backend (ADR-0022).
+  if (data.exhaustFanAcInfinityDevices)
+    payload.exhaust_fan_ac_infinity_devices = data.exhaustFanAcInfinityDevices;
+  if (data.circulationFanAcInfinityDevices)
+    payload.circulation_fan_ac_infinity_devices = data.circulationFanAcInfinityDevices;
+  if (data.humidifierAcInfinityDevices)
+    payload.humidifier_ac_infinity_devices = data.humidifierAcInfinityDevices;
+  if (data.dehumidifierAcInfinityDevices)
+    payload.dehumidifier_ac_infinity_devices = data.dehumidifierAcInfinityDevices;
   if (data.soilMoistureSensor) payload.soil_moisture_sensor = data.soilMoistureSensor;
   if (data.controlDehumidifier !== undefined) payload.control_dehumidifier = data.controlDehumidifier;
   if (data.vegDayHours) payload.veg_day_hours = data.vegDayHours;

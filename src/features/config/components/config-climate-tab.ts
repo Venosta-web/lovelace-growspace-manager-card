@@ -34,6 +34,7 @@ import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui/md3-number-input';
 import '../../shared/ui/md3-select';
 import '../../environment/components/stage-vpd-overrides-table';
+import { renderAcInfinityDevices } from './ac-infinity-device-editor';
 import type { StageVpdOverrides } from '../../environment/components/stage-vpd-overrides-table';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
 import type {
@@ -188,6 +189,22 @@ export class ConfigClimateTab extends LitElement {
             ${this._multiSelect('Exhaust Fan / Switch', 'exhaustFanEntities', c.exhaustFanEntities, c.exhaustFanOptions)}
             ${this._multiSelect('Circulation Fan / Switch', 'circulationFanEntities', c.circulationFanEntities, c.circulationFanOptions)}
           </div>
+          ${renderAcInfinityDevices({
+            label: 'Exhaust Fan AC Infinity Devices',
+            devices: c.exhaustFanAcInfinityDevices,
+            modeOptions: c.acInfinityModeOptions,
+            speedOptions: c.acInfinitySpeedOptions,
+            idPrefix: 'exhaust',
+            onChange: (devices) => this._update({ exhaustFanAcInfinityDevices: devices }),
+          })}
+          ${renderAcInfinityDevices({
+            label: 'Circulation Fan AC Infinity Devices',
+            devices: c.circulationFanAcInfinityDevices,
+            modeOptions: c.acInfinityModeOptions,
+            speedOptions: c.acInfinitySpeedOptions,
+            idPrefix: 'circulation',
+            onChange: (devices) => this._update({ circulationFanAcInfinityDevices: devices }),
+          })}
           <div class="row-col-grid">
             <md3-number-input
               label="Stress Threshold %"

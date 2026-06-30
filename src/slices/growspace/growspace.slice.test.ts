@@ -409,6 +409,43 @@ describe('configureEnvironment', () => {
     expect(payload).not.toHaveProperty('humidity_sensors');
   });
 
+  it('sends AC Infinity bundles as snake_case objects on the wire (ADR-0022)', async () => {
+    await configureEnvironment({
+      growspaceId: 'gs1',
+      exhaustFanAcInfinityDevices: [
+        { mode_entity: 'select.port1_mode', speed_entity: 'number.port1_speed', on_speed: 8 },
+      ],
+      humidifierAcInfinityDevices: [
+        { mode_entity: 'select.hum_mode', speed_entity: 'number.hum_speed', on_speed: 10 },
+      ],
+    });
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'configure_environment',
+      expect.objectContaining({
+        exhaust_fan_ac_infinity_devices: [
+          { mode_entity: 'select.port1_mode', speed_entity: 'number.port1_speed', on_speed: 8 },
+        ],
+        humidifier_ac_infinity_devices: [
+          { mode_entity: 'select.hum_mode', speed_entity: 'number.hum_speed', on_speed: 10 },
+        ],
+      })
+    );
+  });
+
+  it('sends an empty AC Infinity list as an explicit clear, omits when undefined', async () => {
+    // Empty array → backend clears; undefined → backend preserves (omitted).
+    await configureEnvironment({
+      growspaceId: 'gs1',
+      exhaustFanAcInfinityDevices: [],
+    });
+
+    const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(payload).toHaveProperty('exhaust_fan_ac_infinity_devices', []);
+    expect(payload).not.toHaveProperty('humidifier_ac_infinity_devices');
+  });
+
   it('calls configure_environment with all optional fields and mapped snake_case properties', async () => {
     await configureEnvironment({
       growspaceId: 'gs1',

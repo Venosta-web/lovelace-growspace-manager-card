@@ -14,6 +14,10 @@ function makeVm(over: Partial<ClimateTabViewModel> = {}): ClimateTabViewModel {
       exhaustFanOptions: [],
       circulationFanEntities: [],
       circulationFanOptions: [],
+      exhaustFanAcInfinityDevices: [],
+      circulationFanAcInfinityDevices: [],
+      acInfinityModeOptions: [],
+      acInfinitySpeedOptions: [],
       stressThreshold: 0.7,
       moldThreshold: 0.85,
       canRemoveEnvironment: true,
@@ -158,5 +162,52 @@ describe('ConfigClimateTab — intents out', () => {
     )!;
     stress.dispatchEvent(new CustomEvent('change', { detail: '0.9', bubbles: true, composed: true }));
     expect(received).toEqual([{ stressThreshold: 0.9 }]);
+  });
+});
+
+describe('ConfigClimateTab — AC Infinity editor', () => {
+  function vmWithExhaustDevice() {
+    const base = makeVm();
+    return {
+      ...base,
+      control: {
+        ...base.control,
+        exhaustFanAcInfinityDevices: [
+          { mode_entity: 'select.port1_mode', speed_entity: 'number.port1_speed', on_speed: 8 },
+        ],
+      },
+    };
+  }
+
+  it('renders a device card per configured bundle', async () => {
+    const el = await mount(vmWithExhaustDevice());
+    const text = el.shadowRoot!.textContent ?? '';
+    expect(text).toContain('Exhaust Fan AC Infinity Devices');
+    expect(text).toContain('Port 1');
+  });
+
+  it('appends a blank device when Add is clicked', async () => {
+    const el = await mount(vmWithExhaustDevice());
+    const partials = listenPartials(el);
+    const addBtn = [...el.shadowRoot!.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Add AC Infinity device')
+    )!;
+    addBtn.click();
+    expect(partials).toHaveLength(1);
+    expect(partials[0].exhaustFanAcInfinityDevices).toHaveLength(2);
+    expect(partials[0].exhaustFanAcInfinityDevices![1]).toEqual({
+      mode_entity: '',
+      speed_entity: '',
+      on_speed: 10,
+    });
+  });
+
+  it('removes a device when its × is clicked', async () => {
+    const el = await mount(vmWithExhaustDevice());
+    const partials = listenPartials(el);
+    const removeBtn = el.shadowRoot!.querySelector('.ac-infinity-device .chip-remove') as HTMLElement;
+    removeBtn.click();
+    expect(partials).toHaveLength(1);
+    expect(partials[0].exhaustFanAcInfinityDevices).toEqual([]);
   });
 });

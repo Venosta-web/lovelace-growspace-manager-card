@@ -1,11 +1,16 @@
 import type { PlantEntity, PlantAttributes, StrainEntry } from '../../features/plants/types';
 import type { SensorGroup } from '../../features/environment/types';
 import type { VisionCheckupConfig } from '../../slices/camera';
-import type { CirculationFanConfig, ExhaustFanConfig } from '../../slices/growspace/schema';
+import type {
+  AcInfinityDevice,
+  CirculationFanConfig,
+  ExhaustFanConfig,
+} from '../../slices/growspace/schema';
 
 export type { VisionCheckupConfig };
 export type { CirculationFanConfig };
 export type { ExhaustFanConfig };
+export type { AcInfinityDevice };
 
 export interface VisionCheckupResult {
   severity: string;
@@ -92,6 +97,8 @@ export interface EnvironmentConfigData {
   circulationFanEntities: string[];
   exhaustEntity: string;
   exhaustFanEntities: string[];
+  exhaustFanAcInfinityDevices?: AcInfinityDevice[];
+  circulationFanAcInfinityDevices?: AcInfinityDevice[];
 
   stressThreshold: number;
   moldThreshold: number;
@@ -105,12 +112,14 @@ export interface EnvironmentConfigData {
   humidifierEntities: string[];
   humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
   humidifierControlEnabled: boolean;
+  humidifierAcInfinityDevices?: AcInfinityDevice[];
 
   // Dehumidifier
   dehumidifierEntity: string;
   dehumidifierEntities: string[];
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
   dehumidifierControlEnabled: boolean;
+  dehumidifierAcInfinityDevices?: AcInfinityDevice[];
 
   sensorGroups?: SensorGroup[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
@@ -153,6 +162,8 @@ export interface EnvironmentConfigEventDetail {
   circulationFanEntities?: string[];
   exhaustEntity?: string | null;
   exhaustFanEntities?: string[];
+  exhaustFanAcInfinityDevices?: AcInfinityDevice[];
+  circulationFanAcInfinityDevices?: AcInfinityDevice[];
   stressThreshold: number;
   moldThreshold: number;
   lightSensor?: string | null;
@@ -162,11 +173,13 @@ export interface EnvironmentConfigEventDetail {
   humidifierEntities?: string[];
   humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
   humidifierControlEnabled: boolean;
+  humidifierAcInfinityDevices?: AcInfinityDevice[];
   // Dehumidifier
   dehumidifierEntity?: string | null;
   dehumidifierEntities?: string[];
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
   dehumidifierControlEnabled: boolean;
+  dehumidifierAcInfinityDevices?: AcInfinityDevice[];
   sensorGroups?: SensorGroup[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   irrigationTanks?: any[];

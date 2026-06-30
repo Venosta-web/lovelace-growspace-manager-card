@@ -165,6 +165,17 @@ export const ExhaustFanConfigSchema = z.object({
 
 export type ExhaustFanConfig = z.infer<typeof ExhaustFanConfigSchema>;
 
+// An AC Infinity actuator bundle (ADR-0022 in the integration). A port exposes no
+// `fan` entity, so it is driven via a mode `select` + speed `number`. Keys stay
+// snake_case end-to-end to match the backend wire shape (no camelCase conversion).
+export const AcInfinityDeviceSchema = z.object({
+  mode_entity: z.string(),
+  speed_entity: z.string(),
+  on_speed: z.number().optional().default(10),
+});
+
+export type AcInfinityDevice = z.infer<typeof AcInfinityDeviceSchema>;
+
 export const GrowspaceAPIResponseSchema = z
   .object({
     identity: z
@@ -200,6 +211,22 @@ export const GrowspaceAPIResponseSchema = z
         exhaust_fan_entities: z.array(z.string()).optional().default([]),
         humidifier_entities: z.array(z.string()).optional().default([]),
         dehumidifier_entities: z.array(z.string()).optional().default([]),
+        exhaust_fan_ac_infinity_devices: z
+          .array(AcInfinityDeviceSchema)
+          .optional()
+          .default([]),
+        circulation_fan_ac_infinity_devices: z
+          .array(AcInfinityDeviceSchema)
+          .optional()
+          .default([]),
+        humidifier_ac_infinity_devices: z
+          .array(AcInfinityDeviceSchema)
+          .optional()
+          .default([]),
+        dehumidifier_ac_infinity_devices: z
+          .array(AcInfinityDeviceSchema)
+          .optional()
+          .default([]),
         light_sensors: z.array(z.string()).optional().default([]),
         vpd: z.string().nullable().optional(),
         soil_moisture_value: z.string().nullable().optional(),
