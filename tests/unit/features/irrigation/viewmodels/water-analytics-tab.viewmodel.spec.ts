@@ -113,29 +113,30 @@ describe('createWaterAnalyticsTabViewModel', () => {
     expect(vm.avgTankLevel).toBeNull();
   });
 
-  it('derives tank-derived 7d / avg-per-day totals and the history gate', () => {
+  const tankWithHistory = {
+    name: 'A',
+    sensorEntity: 'sensor.level',
+    fillLevel: 50,
+    volumeLiters: 100,
+    waterHistory: {
+      buckets_24h: [{ ts: '2026-01-02T10:00:00Z', liters: 2 }],
+      recent_refills: [
+        { event_type: 'refill', timestamp: '2026-01-02T08:00:00Z', liters: 50 },
+      ],
+      daily_7d: [
+        { date: '2026-01-01', consumed: 4 },
+        { date: '2026-01-02', consumed: 6 },
+      ],
+    },
+  };
+
+  it('derives tank-derived 7d / avg-per-day / per-plant totals and the history gate', () => {
     const vm = build(
       createInitialSM(),
       device({
+        plants: [{}, {}] as any,
         environmentAttributes: {
-          irrigationTanks: [
-            {
-              name: 'A',
-              sensorEntity: 'sensor.level',
-              fillLevel: 50,
-              volumeLiters: 100,
-              waterHistory: {
-                buckets_24h: [{ ts: '2026-01-02T10:00:00Z', liters: 2 }],
-                recent_refills: [
-                  { event_type: 'refill', timestamp: '2026-01-02T08:00:00Z', liters: 50 },
-                ],
-                daily_7d: [
-                  { date: '2026-01-01', consumed: 4 },
-                  { date: '2026-01-02', consumed: 6 },
-                ],
-              },
-            },
-          ],
+          irrigationTanks: [tankWithHistory],
         } as any,
       })
     );
@@ -144,8 +145,23 @@ describe('createWaterAnalyticsTabViewModel', () => {
     expect(vm.tankLiters7d).toBe(10);
     // two days with consumption > 0 → avg 5/day
     expect(vm.tankAvgPerDay).toBe(5);
+    // 5 L/day ÷ 2 plants → 2.5 L/plant/day (cycle-average basis)
+    expect(vm.tankLitersPerPlantPerDay).toBe(2.5);
     expect(vm.tankBuckets24h).toHaveLength(1);
     expect(vm.tankRefills).toHaveLength(1);
+  });
+
+  it('reports 0 tank L/plant/day when the growspace has no plants (renders "—")', () => {
+    const vm = build(
+      createInitialSM(),
+      device({
+        environmentAttributes: {
+          irrigationTanks: [tankWithHistory],
+        } as any,
+      })
+    );
+    expect(vm.tankAvgPerDay).toBe(5);
+    expect(vm.tankLitersPerPlantPerDay).toBe(0);
   });
 
   it('builds the plain schedule summary (no crop steering) from irrigation/drain times', () => {

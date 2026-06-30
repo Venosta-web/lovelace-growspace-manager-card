@@ -119,6 +119,13 @@ export interface WaterAnalyticsTabViewModel {
   tankLitersToday: number;
   tankLiters7d: number;
   tankAvgPerDay: number;
+  /**
+   * Card-derived avg daily tank consumption per plant (`tankAvgPerDay /
+   * plantCount`), 0 when either operand is 0. Uses the cycle-average basis (not
+   * a partial-day "today" figure) so it reconciles with the displayed "Avg per
+   * day" ÷ plant count, mirroring the backend pump `litersPerPlantPerDay`.
+   */
+  tankLitersPerPlantPerDay: number;
   /** Full-data 15-min consumption buckets (last 24h) across tanks with history. */
   tankBuckets24h: TankConsumptionBucket[];
   /** Recent refill events (full 7d summary) across tanks with history. */
@@ -226,6 +233,9 @@ export function createWaterAnalyticsTabViewModel(
       allDaily7d.filter((d) => d.consumed > 0).map((d) => d.date)
     ).size;
     const tankAvgPerDay = daysWithData > 0 ? tankLiters7d / daysWithData : 0;
+    const plantCount = device?.plants?.length ?? 0;
+    const tankLitersPerPlantPerDay =
+      tankAvgPerDay > 0 && plantCount > 0 ? tankAvgPerDay / plantCount : 0;
 
     const volumeRows: WaterAnalyticsVolumeRow[] = readingsWithVolumes.map((r) => ({
       timestamp: r.timestamp,
@@ -260,6 +270,7 @@ export function createWaterAnalyticsTabViewModel(
       tankLitersToday,
       tankLiters7d,
       tankAvgPerDay,
+      tankLitersPerPlantPerDay,
       tankBuckets24h: allTankBuckets24h,
       tankRefills: allTankRefills,
       hasTankHistory: tanksWithHistory.length > 0,
