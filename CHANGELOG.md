@@ -1,3 +1,10 @@
+# [1.1.0-next.67](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.66...v1.1.0-next.67) (2026-06-30)
+
+
+### Features
+
+* **irrigation:** add card-derived "Per plant / day" KPI to Tank-Derived Water Usage ([#402](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/402)) ([c814e97](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/c814e97bc8139e3b25a97e093141ad8ed322b272))
+
 # [1.1.0-next.66](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.65...v1.1.0-next.66) (2026-06-29)
 
 
