@@ -55,6 +55,13 @@ import { WSError } from '../../services/errors';
 // Atoms (public)
 // ---------------------------------------------------------------------------
 
+/**
+ * @deprecated View mode is owned per-card by `GrowspaceUIStore.$viewMode`, not
+ * page-globally. This module-level atom (and `setViewMode` / `toggleHeaderExpansion`
+ * / `layoutSpec$`) is retained only for the slice's own unit tests. Production code
+ * must read/write view mode through the per-card store (`store.ui`), otherwise
+ * every card on a dashboard shares one view mode again.
+ */
 export const viewMode$ = atom<GrowspaceViewMode>(ViewMode.STANDARD);
 export const isLoading$ = atom<boolean>(true);
 export const activeDialog$ = atom<ActiveDialogState>({ type: 'NONE' });

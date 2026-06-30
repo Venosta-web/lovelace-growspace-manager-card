@@ -1,23 +1,29 @@
-import { WritableAtom, ReadableAtom } from 'nanostores';
+import { WritableAtom, ReadableAtom, atom, computed } from 'nanostores';
 import { GrowspaceViewMode, GridOverlayMode } from '../../types';
 import { ActiveDialogState } from '../../ui-state';
+import { ViewMode } from '../../constants';
+import { VIEW_MODE_LAYOUT_MAP, type LayoutSpec } from '../../slices/ui/layout-spec';
 import * as ui from '../../slices/ui';
 
 /**
  * Thin compatibility shim over the `slices/ui` source of truth.
  *
- * Every atom field below points at the *same* atom instance owned by
- * `slices/ui` — there is no second atom and no second computed anywhere. The
- * class exists only so remaining `store.ui.*` consumers keep working; all state
- * and behaviour live in the slice. Mutators delegate to the slice's mutator
- * functions so there is a single definition of each operation.
+ * Most atom fields below point at the *same* atom instance owned by
+ * `slices/ui`. The exception is view-mode state (`$viewMode` and everything
+ * computed from it), which is owned *per instance* here: the active view mode
+ * (standard / compact / header / heatmap) is a property of a single card on the
+ * dashboard, not the page. Each card on a dashboard gets its own `$viewMode`,
+ * so expanding/collapsing one card no longer drags the others with it.
  *
- * New code should import from `slices/ui` directly rather than reaching through
- * this class.
+ * New code should import the genuinely page-global state from `slices/ui`
+ * directly, but reach view mode through the per-card store (this class).
  */
 export class GrowspaceUIStore {
+  // View-mode state — owned per instance (NOT shared via slices/ui), so each
+  // card on the dashboard expands/collapses independently.
+  public readonly $viewMode: WritableAtom<GrowspaceViewMode> = atom(ViewMode.STANDARD);
+
   // Atoms — re-exported instances from slices/ui (single source of truth).
-  public readonly $viewMode: WritableAtom<GrowspaceViewMode> = ui.viewMode$;
   public readonly $isLoading: WritableAtom<boolean> = ui.isLoading$;
   public readonly $activeDialog: WritableAtom<ActiveDialogState> = ui.activeDialog$;
   public readonly $isEditMode: WritableAtom<boolean> = ui.isEditMode$;
@@ -38,8 +44,19 @@ export class GrowspaceUIStore {
   public readonly $flowerFlipDismissed: WritableAtom<Record<string, string>> =
     ui.flowerFlipDismissed$;
 
-  // Computed — re-exported instances from slices/ui (no recomputation here).
-  public readonly $isCompactView: ReadableAtom<boolean> = ui.isCompactView$;
+  // Computed — derived from this instance's $viewMode so the layout each card
+  // renders follows its own view mode, not a shared one.
+  public readonly $isCompactView: ReadableAtom<boolean> = computed(
+    this.$viewMode,
+    (mode) => mode === ViewMode.COMPACT
+  );
+
+  /** LayoutSpec for this card's active view mode (drives <growspace-view>). */
+  public readonly $layoutSpec: ReadableAtom<LayoutSpec> = computed(
+    this.$viewMode,
+    (mode) => VIEW_MODE_LAYOUT_MAP[mode]
+  );
+
   public readonly $cardViewState: ReadableAtom<{
     viewMode: GrowspaceViewMode;
     isLoading: boolean;
@@ -54,11 +71,52 @@ export class GrowspaceUIStore {
     focusedPlantIndex: number;
     selectedPlants: Set<string>;
     overlayMode: GridOverlayMode;
-  }> = ui.cardViewState$;
+  }> = computed(
+    [
+      this.$viewMode,
+      this.$isCompactView,
+      ui.isLoading$,
+      ui.isEditMode$,
+      ui.activeDialog$,
+      ui.notification$,
+      ui.focusedPlantIndex$,
+      ui.selectedPlants$,
+      ui.gridOverlayMode$,
+    ],
+    (
+      viewMode,
+      isCompact,
+      isLoading,
+      isEditMode,
+      activeDialog,
+      notification,
+      focusedPlantIndex,
+      selectedPlants,
+      overlayMode
+    ) => ({
+      viewMode,
+      isLoading,
+      isEditMode,
+      isCompact,
+      activeDialog,
+      notification,
+      focusedPlantIndex,
+      selectedPlants,
+      overlayMode,
+    })
+  );
 
-  // Actions — delegate to slice mutators (single definition of each operation).
+  // Actions — view-mode mutators write this instance's atom; the rest delegate
+  // to slice mutators (single definition of each operation).
   public setViewMode(mode: GrowspaceViewMode) {
-    ui.setViewMode(mode);
+    this.$viewMode.set(mode);
+  }
+
+  /** Toggle the header-expanded view for this card only: HEADER ⇄ STANDARD. */
+  public toggleHeaderExpansion() {
+    this.$viewMode.set(
+      this.$viewMode.get() === ViewMode.HEADER ? ViewMode.STANDARD : ViewMode.HEADER
+    );
   }
 
   public setGridOverlayMode(mode: GridOverlayMode) {

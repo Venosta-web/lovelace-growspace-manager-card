@@ -72,7 +72,7 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
     // so default to the primary env metrics if none are active yet.
     if (this.store.history.$activeEnvGraphs.get().size === 0) {
       ['temperature', 'humidity', 'vpd', 'co2'].forEach((m) =>
-        toggleEnvGraph(m, this.store.history)
+        toggleEnvGraph(m, this.store.history, this.store.ui)
       );
     }
   }
