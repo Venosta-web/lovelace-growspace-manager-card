@@ -210,4 +210,49 @@ describe('ConfigClimateTab — AC Infinity editor', () => {
     expect(partials).toHaveLength(1);
     expect(partials[0].exhaustFanAcInfinityDevices).toEqual([]);
   });
+
+  it('renders the mode and speed pickers as md3-select, not free-text inputs', async () => {
+    const el = await mount(vmWithExhaustDevice());
+    const card = el.shadowRoot!.querySelector('.ac-infinity-device')!;
+    const selects = card.querySelectorAll('md3-select');
+    expect(selects).toHaveLength(2);
+    expect(card.querySelector('input[list]')).toBeNull();
+  });
+
+  it('forwards a mode-picker change as an updated device bundle', async () => {
+    const el = await mount(vmWithExhaustDevice());
+    const partials = listenPartials(el);
+    const modeSelect = el.shadowRoot!.querySelector('.ac-infinity-device md3-select')!;
+    modeSelect.dispatchEvent(
+      new CustomEvent('change', { detail: 'select.new_mode', bubbles: true, composed: true })
+    );
+    expect(partials[0].exhaustFanAcInfinityDevices).toEqual([
+      { mode_entity: 'select.new_mode', speed_entity: 'number.port1_speed', on_speed: 8 },
+    ]);
+  });
+
+  it('keeps an already-saved value in the option list even when the filter excludes it', async () => {
+    const base = makeVm();
+    const el = await mount({
+      ...base,
+      control: {
+        ...base.control,
+        acInfinityModeOptions: ['select.other'],
+        exhaustFanAcInfinityDevices: [
+          { mode_entity: 'select.legacy', speed_entity: '', on_speed: 8 },
+        ],
+      },
+    });
+    const modeSelect = el.shadowRoot!.querySelector('.ac-infinity-device md3-select')!;
+    expect((modeSelect as unknown as { options: string[] }).options).toContain('select.legacy');
+  });
+
+  it('renders the section title in normal flow, not absolutely positioned', async () => {
+    const el = await mount(vmWithExhaustDevice());
+    const editor = el.shadowRoot!.querySelector('.ac-infinity-editor')!;
+    const title = [...editor.children].find((c) =>
+      c.textContent?.includes('Exhaust Fan AC Infinity Devices')
+    )!;
+    expect(getComputedStyle(title).position).not.toBe('absolute');
+  });
 });

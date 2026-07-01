@@ -33,6 +33,7 @@ import {
 } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui/md3-number-input';
+import '../../shared/ui/md3-select';
 import { renderAcInfinityDevices } from './ac-infinity-device-editor';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
 import type {
