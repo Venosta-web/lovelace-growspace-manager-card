@@ -114,4 +114,20 @@ describe('createClimateTabViewModel — AC Infinity devices', () => {
     expect(c.acInfinityModeOptions).toEqual(['select.mode']);
     expect(c.acInfinitySpeedOptions).toEqual(['number.speed']);
   });
+
+  it('restricts the AC Infinity pickers to the ac_infinity platform', () => {
+    const calls: Array<[string[], string | null, string | undefined]> = [];
+    const d: ClimateTabDeps = {
+      entityOptions: (domains, deviceClass, platform) => {
+        calls.push([domains, deviceClass, platform]);
+        return [];
+      },
+    };
+    createClimateTabViewModel(sm(), d, collapsed);
+    expect(calls).toContainEqual([['select'], null, 'ac_infinity']);
+    expect(calls).toContainEqual([['number'], null, 'ac_infinity']);
+    // the plain fan-entity pickers must NOT be platform-restricted
+    const exhaustCall = calls.find((c) => c[0].includes('binary_sensor'))!;
+    expect(exhaustCall[2]).toBeUndefined();
+  });
 });

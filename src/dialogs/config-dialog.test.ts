@@ -337,3 +337,58 @@ describe('_resetVpdOptimal', () => {
     expect((el as any)._sm.environmentDraft.vpdOptimalOverrides).toEqual({});
   });
 });
+
+describe('_getEntities — platform filter', () => {
+  function hassWith(): any {
+    return {
+      states: {
+        'select.aci_mode': { attributes: {} },
+        'select.zha_mode': { attributes: {} },
+        'number.aci_speed': { attributes: {} },
+      },
+      entities: {
+        'select.aci_mode': { platform: 'ac_infinity' },
+        'select.zha_mode': { platform: 'zha' },
+        'number.aci_speed': { platform: 'ac_infinity' },
+      },
+    };
+  }
+
+  it('keeps only entities whose registry platform matches when a platform is given', () => {
+    const el = makeEl();
+    el.hass = hassWith();
+    expect((el as any)._getEntities(['select'], null, 'ac_infinity')).toEqual(['select.aci_mode']);
+  });
+
+  it('ignores platform (returns all matching domains) when none is given', () => {
+    const el = makeEl();
+    el.hass = hassWith();
+    expect((el as any)._getEntities(['select'], null)).toEqual(['select.aci_mode', 'select.zha_mode']);
+  });
+
+  it('excludes entities missing from the registry when a platform is required', () => {
+    const el = makeEl();
+    const hass = hassWith();
+    delete hass.entities['select.aci_mode'];
+    el.hass = hass;
+    expect((el as any)._getEntities(['select'], null, 'ac_infinity')).toEqual([]);
+  });
+
+  it('forwards the ac_infinity platform from the Climate tab deps down to _getEntities', () => {
+    const el = makeEl();
+    el.hass = { states: {}, entities: {} } as any;
+    const spy = vi.spyOn(el as any, '_getEntities');
+    (el as any)._renderClimateTab();
+    expect(spy).toHaveBeenCalledWith(['select'], null, 'ac_infinity');
+    expect(spy).toHaveBeenCalledWith(['number'], null, 'ac_infinity');
+  });
+
+  it('forwards the ac_infinity platform from the Humidity tab deps down to _getEntities', () => {
+    const el = makeEl();
+    el.hass = { states: {}, entities: {} } as any;
+    const spy = vi.spyOn(el as any, '_getEntities');
+    (el as any)._renderHumidityTab();
+    expect(spy).toHaveBeenCalledWith(['select'], null, 'ac_infinity');
+    expect(spy).toHaveBeenCalledWith(['number'], null, 'ac_infinity');
+  });
+});
