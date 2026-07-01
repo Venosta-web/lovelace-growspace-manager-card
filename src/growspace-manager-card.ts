@@ -309,7 +309,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleToggleExpansion() {
-    uiSlice.toggleHeaderExpansion();
+    this.store.ui.toggleHeaderExpansion();
   }
 
   private _handleTrainingSelected() {

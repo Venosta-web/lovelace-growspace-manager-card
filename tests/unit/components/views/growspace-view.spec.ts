@@ -2,8 +2,9 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { atom, computed } from 'nanostores';
-import { viewMode$, notification$ } from '../../../../src/slices/ui';
+import { notification$ } from '../../../../src/slices/ui';
 import { ViewMode } from '../../../../src/constants';
+import { GrowspaceUIStore } from '../../../../src/store/ui/ui-store';
 import { gridInteraction$, cancel } from '../../../../src/slices/grid-interaction';
 
 // ── Child-component mocks ──────────────────────────────────────────────────
@@ -72,6 +73,9 @@ describe('GrowspaceView', () => {
     devicesAtom = atom<unknown[]>([]);
     const $viewStandardState = computed([devicesAtom], (devices) => ({ devices }));
     return {
+      // View mode is per card now: <growspace-view> derives its LayoutSpec from
+      // this store's own ui.$layoutSpec, driven via ui.setViewMode below.
+      ui: new GrowspaceUIStore(),
       actions: { ui: { toast: vi.fn() } },
       $viewStandardState,
       hass: { callService: vi.fn() },
@@ -94,7 +98,7 @@ describe('GrowspaceView', () => {
   beforeEach(() => {
     cancel();
     gridInteraction$.set({ status: 'idle' });
-    viewMode$.set(ViewMode.STANDARD);
+    // Fresh store per test starts at STANDARD; tests drive it via mockStore.ui.
     mockStore = buildMockStore();
   });
 
@@ -106,7 +110,7 @@ describe('GrowspaceView', () => {
   // ── STANDARD mode ─────────────────────────────────────────────────────────
 
   it('renders header, analytics and grid in STANDARD mode', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
 
     expect(element.shadowRoot?.querySelector('growspace-header')).toBeTruthy();
@@ -115,7 +119,7 @@ describe('GrowspaceView', () => {
   });
 
   it('standard header renders growspace-header (non-HEADER variant)', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
 
     // The non-HEADER variant renders a bare growspace-header (no .view-mode-container wrapper)
@@ -126,7 +130,7 @@ describe('GrowspaceView', () => {
   });
 
   it('standard grid redispatches growspace-changed from header', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
 
     const header = element.shadowRoot?.querySelector('growspace-header');
@@ -144,7 +148,7 @@ describe('GrowspaceView', () => {
   // ── HEADER mode ───────────────────────────────────────────────────────────
 
   it('renders header with expand-handle button in HEADER mode', async () => {
-    viewMode$.set(ViewMode.HEADER);
+    mockStore.ui.setViewMode(ViewMode.HEADER);
     element = await createElement();
 
     const wrapper = element.shadowRoot?.querySelector('.view-mode-container.header');
@@ -154,7 +158,7 @@ describe('GrowspaceView', () => {
   });
 
   it('expand-handle button dispatches toggle-expansion in HEADER mode', async () => {
-    viewMode$.set(ViewMode.HEADER);
+    mockStore.ui.setViewMode(ViewMode.HEADER);
     element = await createElement();
 
     const spy = vi.spyOn(element, 'dispatchEvent');
@@ -167,7 +171,7 @@ describe('GrowspaceView', () => {
   });
 
   it('HEADER mode header redispatches growspace-changed from growspace-header', async () => {
-    viewMode$.set(ViewMode.HEADER);
+    mockStore.ui.setViewMode(ViewMode.HEADER);
     element = await createElement();
 
     const header = element.shadowRoot?.querySelector('growspace-header');
@@ -185,7 +189,7 @@ describe('GrowspaceView', () => {
   // ── COMPACT mode ──────────────────────────────────────────────────────────
 
   it('renders only grid with compact controls in COMPACT mode', async () => {
-    viewMode$.set(ViewMode.COMPACT);
+    mockStore.ui.setViewMode(ViewMode.COMPACT);
     element = await createElement();
 
     expect(element.shadowRoot?.querySelector('growspace-header')).toBeNull();
@@ -197,7 +201,7 @@ describe('GrowspaceView', () => {
   });
 
   it('compact exit button dispatches view-mode-changed with mode=standard', async () => {
-    viewMode$.set(ViewMode.COMPACT);
+    mockStore.ui.setViewMode(ViewMode.COMPACT);
     element = await createElement();
 
     const spy = vi.spyOn(element, 'dispatchEvent');
@@ -212,7 +216,7 @@ describe('GrowspaceView', () => {
   // ── HEATMAP mode ──────────────────────────────────────────────────────────
 
   it('renders header and heatmap-3d in HEATMAP mode', async () => {
-    viewMode$.set(ViewMode.HEATMAP);
+    mockStore.ui.setViewMode(ViewMode.HEATMAP);
     element = await createElement();
 
     expect(element.shadowRoot?.querySelector('growspace-header')).toBeTruthy();
@@ -222,7 +226,7 @@ describe('GrowspaceView', () => {
   });
 
   it('edit-mode-changed from heatmap-3d updates editMode3DCords', async () => {
-    viewMode$.set(ViewMode.HEATMAP);
+    mockStore.ui.setViewMode(ViewMode.HEATMAP);
     element = await createElement();
 
     const heatmap = element.shadowRoot?.querySelector('heatmap-3d');
@@ -238,7 +242,7 @@ describe('GrowspaceView', () => {
   });
 
   it('sensor-position-changed from heatmap-3d is redispatched', async () => {
-    viewMode$.set(ViewMode.HEATMAP);
+    mockStore.ui.setViewMode(ViewMode.HEATMAP);
     element = await createElement();
 
     const heatmap = element.shadowRoot?.querySelector('heatmap-3d');
@@ -260,7 +264,7 @@ describe('GrowspaceView', () => {
   // ── Standard grid — optional UI elements ──────────────────────────────────
 
   it('shows edit-mode banner when isEditMode is true (STANDARD)', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
     element.isEditMode = true;
     await element.updateComplete;
@@ -269,7 +273,7 @@ describe('GrowspaceView', () => {
   });
 
   it('hides edit-mode banner when isEditMode is false (STANDARD)', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
     element.isEditMode = false;
     await element.updateComplete;
@@ -278,7 +282,7 @@ describe('GrowspaceView', () => {
   });
 
   it('redispatches batch-add-plants from banner', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
     element.isEditMode = true;
     await element.updateComplete;
@@ -296,7 +300,7 @@ describe('GrowspaceView', () => {
   });
 
   it('shows transplant-source-panel when gridInteraction$ status is transplanting', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     devicesAtom.set([
       {
         name: 'GS1',
@@ -321,7 +325,7 @@ describe('GrowspaceView', () => {
   });
 
   it('hides transplant-source-panel when gridInteraction$ is idle', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
 
     gridInteraction$.set({ status: 'idle' });
@@ -332,7 +336,7 @@ describe('GrowspaceView', () => {
   });
 
   it('shows collapse-handle button when config.initial_view_mode is header', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
     element.config = { initial_view_mode: 'header' } as never;
     await element.updateComplete;
@@ -341,7 +345,7 @@ describe('GrowspaceView', () => {
   });
 
   it('collapse-handle dispatches toggle-expansion', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
     element.config = { initial_view_mode: 'header' } as never;
     await element.updateComplete;
@@ -356,7 +360,7 @@ describe('GrowspaceView', () => {
   });
 
   it('hides collapse-handle when config.initial_view_mode is not header', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
     element.config = { initial_view_mode: 'standard' } as never;
     await element.updateComplete;
@@ -367,7 +371,7 @@ describe('GrowspaceView', () => {
   // ── focusPlant ────────────────────────────────────────────────────────────
 
   it('focusPlant delegates to growspace-grid-container', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
 
     const grid = element.shadowRoot?.querySelector('growspace-grid-container') as MockGridContainer;
@@ -379,7 +383,7 @@ describe('GrowspaceView', () => {
   });
 
   it('focusPlant does not throw when grid is absent', async () => {
-    viewMode$.set(ViewMode.HEADER);
+    mockStore.ui.setViewMode(ViewMode.HEADER);
     element = await createElement();
 
     // HEADER mode renders no grid — focusPlant should be a no-op
@@ -389,7 +393,7 @@ describe('GrowspaceView', () => {
   // ── willUpdate / store re-init ─────────────────────────────────────────────
 
   it('willUpdate re-initialises controllers when store property changes', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
 
     const initSpy = vi.spyOn(element as never as { _initControllers(): void }, '_initControllers');
@@ -406,7 +410,7 @@ describe('GrowspaceView', () => {
 
   it('handles transplant drop successfully', async () => {
     vi.useFakeTimers();
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     mockStore.hass.callService.mockResolvedValue({});
     element = await createElement();
 
@@ -432,7 +436,7 @@ describe('GrowspaceView', () => {
   });
 
   it('handles transplant drop failure gracefully', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     mockStore.hass.callService.mockRejectedValue(new Error('network error'));
     element = await createElement();
 
@@ -449,7 +453,7 @@ describe('GrowspaceView', () => {
   });
 
   it('transplant drop is a no-op when device has no deviceId', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
     element.device = { deviceId: undefined } as never;
 
@@ -463,7 +467,7 @@ describe('GrowspaceView', () => {
   // ── _redispatch fallback (null detail → target.value) ─────────────────────
 
   it('_redispatch uses target.value when detail is null', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
 
     const spy = vi.spyOn(element, 'dispatchEvent');
@@ -486,7 +490,7 @@ describe('GrowspaceView', () => {
   // ── _getPlantsByStage edge cases ───────────────────────────────────────────
 
   it('_getPlantsByStage returns empty array when devices is falsy', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
     devicesAtom.set(null as never);
 
@@ -497,7 +501,7 @@ describe('GrowspaceView', () => {
   });
 
   it('_getPlantsByStage handles devices without plants property', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
     devicesAtom.set([{ name: 'Empty' }] as never);
 
@@ -508,7 +512,7 @@ describe('GrowspaceView', () => {
   });
 
   it('_getPlantsByStage attaches _growspaceName to each returned plant', async () => {
-    viewMode$.set(ViewMode.STANDARD);
+    mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
     devicesAtom.set([
       {

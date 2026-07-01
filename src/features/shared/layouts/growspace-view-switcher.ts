@@ -1,8 +1,10 @@
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { consume } from '@lit/context';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../../../types';
 import { ViewMode } from '../../../constants';
-import { setViewMode } from '../../../slices/ui';
+import { storeContext } from '../../../context';
+import type { GrowspaceStore } from '../../../store/core/growspace-store';
 
 // Register the unified view component
 import './growspace-view';
@@ -12,12 +14,15 @@ import '../ui/error-boundary';
  * Thin adapter that bridges the card's property API to the declarative
  * <growspace-view> component.  It:
  *   • keeps the same @property surface so parent cards need no changes
- *   • forwards the active viewMode to the global atom so <growspace-view>
- *     can derive its LayoutSpec reactively
+ *   • forwards the active viewMode to this card's own store so <growspace-view>
+ *     can derive its LayoutSpec reactively (per-instance, not page-global)
  *   • proxies focusPlant() calls down to the active grid
  */
 @customElement('growspace-view-switcher')
 export class GrowspaceViewSwitcher extends LitElement {
+  @consume({ context: storeContext, subscribe: true })
+  store!: GrowspaceStore;
+
   @property({ type: String }) viewMode: string = ViewMode.STANDARD;
   @property({ attribute: false }) hass: unknown;
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
@@ -37,9 +42,9 @@ export class GrowspaceViewSwitcher extends LitElement {
   protected updated(changedProps: Map<string | number | symbol, unknown>): void {
     super.updated(changedProps);
 
-    // Keep the global atom in sync when the card updates the property.
+    // Keep this card's own view-mode atom in sync when the property changes.
     if (changedProps.has('viewMode')) {
-      setViewMode(this.viewMode as import('../../../types').GrowspaceViewMode);
+      this.store?.ui.setViewMode(this.viewMode as import('../../../types').GrowspaceViewMode);
     }
 
     if (changedProps.has('focusedPlantIndex') && this.focusedPlantIndex >= 0) {

@@ -10,8 +10,8 @@
  *   chart  — growspace-analytics (standard) or heatmap-3d (heatmap mode)
  *   grid   — growspace-grid-container (plant placement grid)
  *
- * The active LayoutSpec is derived automatically from the global `viewMode$`
- * atom via the `layoutSpec$` computed atom — no manual wiring required.
+ * The active LayoutSpec is derived from this card's own `store.ui.$layoutSpec`
+ * (per-instance), so each card on a dashboard renders its own view mode.
  */
 
 import { LitElement, html, TemplateResult, PropertyValues } from 'lit';
@@ -24,7 +24,7 @@ import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../../
 import { ViewMode } from '../../../constants';
 import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
-import { layoutSpec$ } from '../../../slices/ui/layout-spec';
+import type { LayoutSpec } from '../../../slices/ui/layout-spec';
 import { showToast } from '../../../slices/ui';
 import { gridInteraction$ } from '../../../slices/grid-interaction';
 
@@ -65,7 +65,7 @@ export class GrowspaceView extends LitElement {
 
   // ── Internal store subscriptions ──────────────────────────────────────────
 
-  private _specController = new StoreController(this, layoutSpec$);
+  private _specController!: StoreController<LayoutSpec>;
   private _gridInteractionController!: StoreController<
     typeof gridInteraction$ extends import('nanostores').ReadableAtom<infer T> ? T : never
   >;
@@ -74,6 +74,9 @@ export class GrowspaceView extends LitElement {
 
   private _initControllers() {
     if (this.store) {
+      if (!this._specController) {
+        this._specController = new StoreController(this, this.store.ui.$layoutSpec);
+      }
       if (!this._viewStandardController) {
         this._viewStandardController = new StoreController(this, this.store.$viewStandardState);
       }
@@ -110,7 +113,7 @@ export class GrowspaceView extends LitElement {
   // ── Render ────────────────────────────────────────────────────────────────
 
   protected render(): TemplateResult {
-    const spec = this._specController.value;
+    const spec = this._specController?.value;
 
     return html`
       ${spec?.slots.includes('header') ? this._renderHeader() : ''}
@@ -122,7 +125,7 @@ export class GrowspaceView extends LitElement {
   // ── Slot renderers ────────────────────────────────────────────────────────
 
   private _renderHeader(): TemplateResult {
-    const spec = this._specController.value;
+    const spec = this._specController?.value;
     if (spec?.viewVariant === ViewMode.HEADER) {
       return html`
         <div class="view-mode-container header">
@@ -148,7 +151,7 @@ export class GrowspaceView extends LitElement {
   }
 
   private _renderChart(): TemplateResult {
-    const spec = this._specController.value;
+    const spec = this._specController?.value;
     if (spec?.chartType === 'heatmap') {
       return html`
         <heatmap-3d
@@ -170,7 +173,7 @@ export class GrowspaceView extends LitElement {
   }
 
   private _renderGrid(): TemplateResult {
-    if (this._specController.value?.viewVariant === ViewMode.COMPACT) {
+    if (this._specController?.value?.viewVariant === ViewMode.COMPACT) {
       return html`
         <div class="compact-controls">
           <button

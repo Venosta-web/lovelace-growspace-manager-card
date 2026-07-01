@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GrowspaceUIStore } from './ui-store';
 import { showToast, notification$ } from '../../slices/ui';
+import { ViewMode } from '../../constants';
 
 describe('GrowspaceUIStore.$cardViewState includes selectedPlants', () => {
   let store: GrowspaceUIStore;
@@ -49,6 +50,57 @@ describe('GrowspaceUIStore.$cardViewState includes selectedPlants', () => {
   it('cardViewState.overlayMode updates when $gridOverlayMode changes', () => {
     store.setGridOverlayMode('vpd' as any);
     expect(store.$cardViewState.get().overlayMode).toBe('vpd');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Per-instance view mode — two cards on one dashboard expand independently.
+// Regression: expanding card N used to flip a page-global atom, expanding all
+// cards at once. View mode (and everything derived from it) must be per-store.
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceUIStore view mode is owned per instance', () => {
+  let cardA: GrowspaceUIStore;
+  let cardB: GrowspaceUIStore;
+
+  beforeEach(() => {
+    cardA = new GrowspaceUIStore();
+    cardB = new GrowspaceUIStore();
+  });
+
+  it('does not share the $viewMode atom between instances', () => {
+    expect(cardA.$viewMode).not.toBe(cardB.$viewMode);
+  });
+
+  it('setViewMode on one card leaves the other unchanged', () => {
+    cardA.setViewMode(ViewMode.HEADER);
+    expect(cardA.$viewMode.get()).toBe(ViewMode.HEADER);
+    expect(cardB.$viewMode.get()).toBe(ViewMode.STANDARD);
+  });
+
+  it('toggleHeaderExpansion on one card does not expand the other', () => {
+    // Both start expanded (STANDARD); collapse only card A to HEADER.
+    cardA.toggleHeaderExpansion();
+    expect(cardA.$viewMode.get()).toBe(ViewMode.HEADER);
+    expect(cardB.$viewMode.get()).toBe(ViewMode.STANDARD);
+
+    // Re-expanding card A still leaves card B alone.
+    cardA.toggleHeaderExpansion();
+    expect(cardA.$viewMode.get()).toBe(ViewMode.STANDARD);
+    expect(cardB.$viewMode.get()).toBe(ViewMode.STANDARD);
+  });
+
+  it('$layoutSpec follows each card own view mode', () => {
+    cardA.setViewMode(ViewMode.HEADER);
+    // HEADER layout renders header only; STANDARD renders header + chart + grid.
+    expect(cardA.$layoutSpec.get().slots).toEqual(['header']);
+    expect(cardB.$layoutSpec.get().slots).toContain('grid');
+  });
+
+  it('$isCompactView is per instance', () => {
+    cardA.setViewMode(ViewMode.COMPACT);
+    expect(cardA.$isCompactView.get()).toBe(true);
+    expect(cardB.$isCompactView.get()).toBe(false);
   });
 });
 

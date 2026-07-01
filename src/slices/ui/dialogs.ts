@@ -1,7 +1,14 @@
 import { ConfigTab, ViewMode } from '../../constants';
 import { PlantEntity, GrowspaceDevice, EnvironmentConfigData } from '../../types';
 import { plantToDeviceMap$, selectedDeviceId$, devices$, optimisticDeletedPlantIds$ } from '../grid';
-import { openDialog, selectedPlants$, setPendingDeepLink, viewMode$, setViewMode } from './index';
+import { openDialog, selectedPlants$, setPendingDeepLink } from './index';
+import type { GrowspaceViewMode } from '../../types';
+
+/** Minimal per-card view-mode surface (a card's `store.ui`) used to drop HEADER → STANDARD. */
+interface ViewModeHost {
+  $viewMode: { get(): GrowspaceViewMode };
+  setViewMode(mode: GrowspaceViewMode): void;
+}
 
 /**
  * Pure dialog-open helpers: each builds an `ActiveDialogState` payload and calls
@@ -95,7 +102,8 @@ export function openAddPlantDialog(row?: number, col?: number): void {
  */
 export function toggleEnvGraph(
   metric: string,
-  history?: { toggleEnvGraph(metric: string): boolean }
+  history?: { toggleEnvGraph(metric: string): boolean },
+  ui?: ViewModeHost
 ): void {
   if (metric === 'crop_steering') {
     const gsId = selectedDeviceId$.get();
@@ -104,8 +112,8 @@ export function toggleEnvGraph(
   }
   if (!history) return;
   const isNowActive = history.toggleEnvGraph(metric);
-  if (isNowActive && viewMode$.get() === ViewMode.HEADER) {
-    setViewMode(ViewMode.STANDARD);
+  if (isNowActive && ui && ui.$viewMode.get() === ViewMode.HEADER) {
+    ui.setViewMode(ViewMode.STANDARD);
   }
 }
 
