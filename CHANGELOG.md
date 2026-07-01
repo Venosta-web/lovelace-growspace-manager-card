@@ -1,3 +1,10 @@
+# [1.1.0-next.71](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.70...v1.1.0-next.71) (2026-07-01)
+
+
+### Features
+
+* **config:** warn on AC Infinity Automated Mode Conflict ([09b0c74](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/09b0c74e922d634ac96f2e3d043e5d9246de3f37)), closes [#418](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/418)
+
 # [1.1.0-next.70](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.69...v1.1.0-next.70) (2026-07-01)
 
 
