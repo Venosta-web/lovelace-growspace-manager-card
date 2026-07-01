@@ -100,7 +100,7 @@ export interface HumidityTabViewModel {
 
 /** Hass adapter the shell injects so the component stays hass-free. */
 export interface HumidityTabDeps {
-  entityOptions: (domains: string[], deviceClass: string | null) => string[];
+  entityOptions: (domains: string[], deviceClass: string | null, platform?: string) => string[];
 }
 
 /** The three Shell-`@state` flags projected into the VM. */
@@ -159,8 +159,8 @@ export function createHumidityTabViewModel(
     dehumidifierOptions: deps.entityOptions(DEHUMIDIFIER_DOMAINS, null),
     humidifierAcInfinityDevices: d.humidifierAcInfinityDevices,
     dehumidifierAcInfinityDevices: d.dehumidifierAcInfinityDevices,
-    acInfinityModeOptions: deps.entityOptions(['select'], null),
-    acInfinitySpeedOptions: deps.entityOptions(['number'], null),
+    acInfinityModeOptions: deps.entityOptions(['select'], null, 'ac_infinity'),
+    acInfinitySpeedOptions: deps.entityOptions(['number'], null, 'ac_infinity'),
     humidifierControlEnabled: expand.humidifierControlEnabled,
     dehumidifierControlEnabled: expand.dehumidifierControlEnabled,
     stages: HUMIDITY_STAGES.map((s) => ({

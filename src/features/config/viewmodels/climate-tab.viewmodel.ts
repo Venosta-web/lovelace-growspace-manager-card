@@ -91,7 +91,7 @@ export interface ClimateTabViewModel {
 
 /** Hass adapter the shell injects so the component stays hass-free. */
 export interface ClimateTabDeps {
-  entityOptions: (domains: string[], deviceClass: string | null) => string[];
+  entityOptions: (domains: string[], deviceClass: string | null, platform?: string) => string[];
 }
 
 /** The two Shell-`@state` expander flags, projected into the VM. */
@@ -126,8 +126,8 @@ export function createClimateTabViewModel(
       circulationFanOptions: deps.entityOptions(CIRCULATION_FAN_DOMAINS, null),
       exhaustFanAcInfinityDevices: d.exhaustFanAcInfinityDevices,
       circulationFanAcInfinityDevices: d.circulationFanAcInfinityDevices,
-      acInfinityModeOptions: deps.entityOptions(['select'], null),
-      acInfinitySpeedOptions: deps.entityOptions(['number'], null),
+      acInfinityModeOptions: deps.entityOptions(['select'], null, 'ac_infinity'),
+      acInfinitySpeedOptions: deps.entityOptions(['number'], null, 'ac_infinity'),
       stressThreshold: d.stressThreshold,
       moldThreshold: d.moldThreshold,
       canRemoveEnvironment: Boolean(d.selectedGrowspaceId),

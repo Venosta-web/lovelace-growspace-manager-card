@@ -76,4 +76,17 @@ describe('createHumidityTabViewModel — stages', () => {
     expect(veg.dehum.day.on).toBeCloseTo(0.99);
     expect(veg.dehum.night.off).toBeCloseTo(0.4);
   });
+
+  it('restricts the AC Infinity pickers to the ac_infinity platform', () => {
+    const calls: Array<[string[], string | null, string | undefined]> = [];
+    const d: HumidityTabDeps = {
+      entityOptions: (domains, deviceClass, platform) => {
+        calls.push([domains, deviceClass, platform]);
+        return [];
+      },
+    };
+    createHumidityTabViewModel(sm(), d, collapsed);
+    expect(calls).toContainEqual([['select'], null, 'ac_infinity']);
+    expect(calls).toContainEqual([['number'], null, 'ac_infinity']);
+  });
 });

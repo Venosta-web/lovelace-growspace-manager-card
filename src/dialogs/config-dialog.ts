@@ -1254,8 +1254,17 @@ export class ConfigDialog extends LitElement {
       .sort((a, b) => a.label.localeCompare(b.label));
   }
 
-  private _getEntities(domains: string[], deviceClass: string | null): string[] {
+  private _getEntities(
+    domains: string[],
+    deviceClass: string | null,
+    platform?: string
+  ): string[] {
     if (!this.hass) return [];
+    // hass.entities (the entity registry) is present at runtime but not declared
+    // on custom-card-helpers' HomeAssistant type; read platform through a cast.
+    const registry = (this.hass as unknown as {
+      entities?: Record<string, { platform?: string }>;
+    }).entities;
     return Object.keys(this.hass.states || {})
       .filter((eid) => {
         const state = this.hass.states[eid];
@@ -1263,7 +1272,8 @@ export class ConfigDialog extends LitElement {
         const domain = eid.split('.')[0];
         return (
           domains.includes(domain) &&
-          (!deviceClass || state.attributes.device_class === deviceClass)
+          (!deviceClass || state.attributes.device_class === deviceClass) &&
+          (!platform || registry?.[eid]?.platform === platform)
         );
       })
       .sort();
@@ -1485,8 +1495,8 @@ export class ConfigDialog extends LitElement {
     const deps = {
       growspaceOptions: this.growspaceOptions,
       notifyServices: this._getMobileAppNotifyServices(),
-      entityOptions: (domains: string[], deviceClass: string | null) =>
-        this._getEntities(domains, deviceClass),
+      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+        this._getEntities(domains, deviceClass, platform),
     };
     return html`
       <config-growspaces-tab
@@ -1504,8 +1514,8 @@ export class ConfigDialog extends LitElement {
 
   private _renderSensorsTab() {
     const deps = {
-      entityOptions: (domains: string[], deviceClass: string | null) =>
-        this._getEntities(domains, deviceClass),
+      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+        this._getEntities(domains, deviceClass, platform),
       averageSensorValue: (ids: string[]) => this._averageSensorValue(ids),
     };
     return html`
@@ -1560,8 +1570,8 @@ export class ConfigDialog extends LitElement {
 
   private _renderClimateTab() {
     const deps = {
-      entityOptions: (domains: string[], deviceClass: string | null) =>
-        this._getEntities(domains, deviceClass),
+      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+        this._getEntities(domains, deviceClass, platform),
     };
     return html`
       <config-climate-tab
@@ -1585,8 +1595,8 @@ export class ConfigDialog extends LitElement {
 
   private _renderHumidityTab() {
     const deps = {
-      entityOptions: (domains: string[], deviceClass: string | null) =>
-        this._getEntities(domains, deviceClass),
+      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+        this._getEntities(domains, deviceClass, platform),
     };
     return html`
       <config-humidity-tab
@@ -1632,8 +1642,8 @@ export class ConfigDialog extends LitElement {
 
   private _renderIrrigationTab() {
     const deps = {
-      entityOptions: (domains: string[], deviceClass: string | null) =>
-        this._getEntities(domains, deviceClass),
+      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+        this._getEntities(domains, deviceClass, platform),
     };
     return html`
       <config-irrigation-tab
@@ -1645,8 +1655,8 @@ export class ConfigDialog extends LitElement {
 
   private _renderTanksTab() {
     const deps = {
-      entityOptions: (domains: string[], deviceClass: string | null) =>
-        this._getEntities(domains, deviceClass),
+      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+        this._getEntities(domains, deviceClass, platform),
     };
     return html`
       <config-tanks-tab
@@ -1664,8 +1674,8 @@ export class ConfigDialog extends LitElement {
 
   private _renderVisionTab() {
     const deps = {
-      entityOptions: (domains: string[], deviceClass: string | null) =>
-        this._getEntities(domains, deviceClass),
+      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+        this._getEntities(domains, deviceClass, platform),
     };
     return html`
       <config-vision-tab
