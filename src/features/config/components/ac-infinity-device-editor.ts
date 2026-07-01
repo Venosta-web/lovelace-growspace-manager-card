@@ -30,6 +30,17 @@ function blankDevice(): AcInfinityDevice {
   return { mode_entity: '', speed_entity: '', on_speed: 10 };
 }
 
+/**
+ * The picker's option list: the platform-filtered set, plus the device's own
+ * currently-saved value (so an already-configured entity that no longer matches
+ * the filter — e.g. the integration is unavailable — still renders selected
+ * instead of blanking). Empty selection contributes nothing.
+ */
+function optionsWithCurrent(options: string[], current: string): string[] {
+  if (!current || options.includes(current)) return options;
+  return [current, ...options];
+}
+
 export function renderAcInfinityDevices(p: AcInfinityEditorProps): TemplateResult {
   const { devices, onChange } = p;
   const update = (index: number, patch: Partial<AcInfinityDevice>): void =>
@@ -38,11 +49,14 @@ export function renderAcInfinityDevices(p: AcInfinityEditorProps): TemplateResul
   const add = (): void => onChange([...devices, blankDevice()]);
 
   return html`
-    <div class="ac-infinity-editor" style="margin-top:12px;">
-      <label class="md3-label-multi">${p.label}</label>
+    <div class="ac-infinity-editor" style="position:relative;margin-top:12px;">
+      <div
+        class="ac-infinity-editor-label"
+        style="font-size:0.75rem;color:var(--secondary-text-color);margin-bottom:8px;"
+      >
+        ${p.label}
+      </div>
       ${devices.map((device, index) => {
-        const modeListId = `aci-mode-${p.idPrefix}-${index}`;
-        const speedListId = `aci-speed-${p.idPrefix}-${index}`;
         return html`
           <div
             class="ac-infinity-device detail-card"
@@ -59,33 +73,21 @@ export function renderAcInfinityDevices(p: AcInfinityEditorProps): TemplateResul
                 >×</span
               >
             </div>
-            <div class="multi-select-container" style="margin-bottom:8px;">
-              <label class="md3-label-multi">Mode (select)</label>
-              <input
-                class="search-input-inner"
-                list="${modeListId}"
+            <div style="margin-bottom:8px;">
+              <md3-select
+                label="Mode (select)"
                 .value=${device.mode_entity}
-                placeholder="select.…"
-                @change=${(e: Event) =>
-                  update(index, { mode_entity: (e.target as HTMLInputElement).value })}
-              />
-              <datalist id="${modeListId}">
-                ${p.modeOptions.map((eid) => html`<option value="${eid}"></option>`)}
-              </datalist>
+                .options=${optionsWithCurrent(p.modeOptions, device.mode_entity)}
+                @change=${(e: CustomEvent<string>) => update(index, { mode_entity: e.detail })}
+              ></md3-select>
             </div>
-            <div class="multi-select-container" style="margin-bottom:8px;">
-              <label class="md3-label-multi">Speed (number)</label>
-              <input
-                class="search-input-inner"
-                list="${speedListId}"
+            <div style="margin-bottom:8px;">
+              <md3-select
+                label="Speed (number)"
                 .value=${device.speed_entity}
-                placeholder="number.…"
-                @change=${(e: Event) =>
-                  update(index, { speed_entity: (e.target as HTMLInputElement).value })}
-              />
-              <datalist id="${speedListId}">
-                ${p.speedOptions.map((eid) => html`<option value="${eid}"></option>`)}
-              </datalist>
+                .options=${optionsWithCurrent(p.speedOptions, device.speed_entity)}
+                @change=${(e: CustomEvent<string>) => update(index, { speed_entity: e.detail })}
+              ></md3-select>
             </div>
             <md3-number-input
               label="On-speed (1–10)"
