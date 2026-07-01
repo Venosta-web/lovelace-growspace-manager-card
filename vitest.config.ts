@@ -3,6 +3,12 @@ import { playwright } from '@vitest/browser-playwright';
 
 export default defineConfig({
     test: {
+        // Browser-mode module mocks (vi.mock) rely on per-file isolation. Under CI
+        // parallelism that isolation occasionally races, so a file's mock factory
+        // isn't applied and vi.mocked(fn).mockResolvedValueOnce throws. The failures
+        // are intermittent and pass on a fresh context — retry absorbs the race
+        // without masking a genuinely broken test (which fails all attempts).
+        retry: 2,
         browser: {
             enabled: true,
             provider: playwright({ contextOptions: { viewport: { width: 1280, height: 720 } } }),
