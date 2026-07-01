@@ -62,6 +62,14 @@ export class SnapshotsDialog extends LitElement {
         object-fit: cover;
         background: rgba(0, 0, 0, 0.2);
       }
+      .vision-snapshot-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 8px;
+      }
+      .vision-snapshot-grid .snapshot-image {
+        border-radius: 8px;
+      }
       .snapshot-info {
         padding: 12px;
         font-size: 0.85rem;
@@ -303,6 +311,7 @@ export class SnapshotsDialog extends LitElement {
                         </div>
                       `
                     : ''}
+                  ${this._renderVisionSnapshots(r)}
                 </div>
                 ${this._visionHistory.length > 1
                   ? html`
@@ -341,6 +350,28 @@ export class SnapshotsDialog extends LitElement {
                     `
                   : ''}
               `}
+      </div>
+    `;
+  }
+
+  private _renderVisionSnapshots(r: VisionCheckupResult) {
+    // Only render locally-served images; skip raw media-source:// fallbacks so
+    // no broken image is shown.
+    const paths = (r.snapshot_paths ?? []).filter((p) => p.startsWith('/local/'));
+    if (paths.length === 0) return '';
+    return html`
+      <div class="vision-snapshot-grid" style="margin-top:12px;">
+        ${paths.map(
+          (path) => html`
+            <img
+              src="${path}"
+              class="snapshot-image"
+              alt="Vision checkup snapshot"
+              loading="lazy"
+              onerror="this.src='data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23666\\' d=\\'M21,17H7V3H21M21,1H7A2,2 0 0,0 5,3V17A2,2 0 0,0 7,19H21A2,2 0 0,0 23,17V3A2,2 0 0,0 21,1M3,5H1V21A2,2 0 0,0 3,23H19V21H3V5M15.96,10.29L13.21,13.83L11.25,11.47L8.5,15H19.5L15.96,10.29Z\\'/%3E%3C/svg%3E'"
+            />
+          `
+        )}
       </div>
     `;
   }

@@ -19,6 +19,7 @@ export interface VisionCheckupResult {
   analysis: string;
   issues_detected: string[];
   recommendations: string[];
+  snapshot_paths: string[];
 }
 
 export interface AddPlantDialogState {
