@@ -19,6 +19,7 @@
 
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 import type {
+  AcInfinityDevice,
   CirculationFanConfig,
   ExhaustFanConfig,
 } from '../../../slices/growspace/schema';
@@ -35,6 +36,12 @@ export interface ClimateControlVM {
   exhaustFanOptions: string[];
   circulationFanEntities: string[];
   circulationFanOptions: string[];
+  exhaustFanAcInfinityDevices: AcInfinityDevice[];
+  circulationFanAcInfinityDevices: AcInfinityDevice[];
+  /** `select.*` entities for AC Infinity mode pickers (shared across both roles). */
+  acInfinityModeOptions: string[];
+  /** `number.*` entities for AC Infinity speed pickers. */
+  acInfinitySpeedOptions: string[];
   stressThreshold: number;
   moldThreshold: number;
   /** Remove Environment is enabled only when a growspace is selected. */
@@ -117,6 +124,10 @@ export function createClimateTabViewModel(
       exhaustFanOptions: deps.entityOptions(EXHAUST_FAN_DOMAINS, null),
       circulationFanEntities: d.circulationFanEntities,
       circulationFanOptions: deps.entityOptions(CIRCULATION_FAN_DOMAINS, null),
+      exhaustFanAcInfinityDevices: d.exhaustFanAcInfinityDevices,
+      circulationFanAcInfinityDevices: d.circulationFanAcInfinityDevices,
+      acInfinityModeOptions: deps.entityOptions(['select'], null),
+      acInfinitySpeedOptions: deps.entityOptions(['number'], null),
       stressThreshold: d.stressThreshold,
       moldThreshold: d.moldThreshold,
       canRemoveEnvironment: Boolean(d.selectedGrowspaceId),

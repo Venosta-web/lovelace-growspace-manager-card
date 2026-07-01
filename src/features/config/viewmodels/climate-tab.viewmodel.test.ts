@@ -87,3 +87,31 @@ describe('createClimateTabViewModel — exhaust fan panel', () => {
     expect(createClimateTabViewModel(sm(), deps, expanded).exhaust.criticalTempExpanded).toBe(true);
   });
 });
+
+describe('createClimateTabViewModel — AC Infinity devices', () => {
+  it('projects the draft bundle lists for both fan roles', () => {
+    const exhaust = [{ mode_entity: 'select.e', speed_entity: 'number.e', on_speed: 8 }];
+    const circ = [{ mode_entity: 'select.c', speed_entity: 'number.c', on_speed: 5 }];
+    const s = transition(sm(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { exhaustFanAcInfinityDevices: exhaust, circulationFanAcInfinityDevices: circ },
+    });
+    const c = createClimateTabViewModel(s, deps, collapsed).control;
+    expect(c.exhaustFanAcInfinityDevices).toEqual(exhaust);
+    expect(c.circulationFanAcInfinityDevices).toEqual(circ);
+  });
+
+  it('sources mode options from select.* and speed options from number.*', () => {
+    const d: ClimateTabDeps = {
+      entityOptions: (domains) =>
+        domains.includes('select')
+          ? ['select.mode']
+          : domains.includes('number')
+            ? ['number.speed']
+            : [],
+    };
+    const c = createClimateTabViewModel(sm(), d, collapsed).control;
+    expect(c.acInfinityModeOptions).toEqual(['select.mode']);
+    expect(c.acInfinitySpeedOptions).toEqual(['number.speed']);
+  });
+});

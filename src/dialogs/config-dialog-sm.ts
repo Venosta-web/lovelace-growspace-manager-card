@@ -16,7 +16,11 @@
 import type { DialogStateMachine } from './dialog-sm';
 import type { GrowspaceDevice, SensorGroup } from '../types';
 import type { Subarea } from '../slices/subarea/schema';
-import type { CirculationFanConfig, ExhaustFanConfig } from '../slices/growspace/schema';
+import type {
+  AcInfinityDevice,
+  CirculationFanConfig,
+  ExhaustFanConfig,
+} from '../slices/growspace/schema';
 
 // ─── Tab ID ───────────────────────────────────────────────────────────────────
 
@@ -48,12 +52,16 @@ export interface EnvironmentDraft {
   // Climate devices
   exhaustFanEntities: string[];
   circulationFanEntities: string[];
+  exhaustFanAcInfinityDevices: AcInfinityDevice[];
+  circulationFanAcInfinityDevices: AcInfinityDevice[];
   stressThreshold: number;
   moldThreshold: number;
 
   // Humidity devices
   humidifierEntities: string[];
   dehumidifierEntities: string[];
+  humidifierAcInfinityDevices: AcInfinityDevice[];
+  dehumidifierAcInfinityDevices: AcInfinityDevice[];
   humidifierThresholds: Record<string, Record<string, { on: number; off: number }>>;
   dehumidifierThresholds: Record<string, Record<string, { on: number; off: number }>>;
 
@@ -342,10 +350,14 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
     lightSensors: [],
     exhaustFanEntities: [],
     circulationFanEntities: [],
+    exhaustFanAcInfinityDevices: [],
+    circulationFanAcInfinityDevices: [],
     stressThreshold: 0.8,
     moldThreshold: 0.8,
     humidifierEntities: [],
     dehumidifierEntities: [],
+    humidifierAcInfinityDevices: [],
+    dehumidifierAcInfinityDevices: [],
     humidifierThresholds: {},
     dehumidifierThresholds: {},
     soilMoistureSensor: '',
@@ -503,6 +515,10 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
         : [],
     humidifierThresholds: attrs.humidifierThresholds ?? {},
     dehumidifierThresholds: attrs.dehumidifierThresholds ?? {},
+    exhaustFanAcInfinityDevices: attrs.exhaustFanAcInfinityDevices ?? [],
+    circulationFanAcInfinityDevices: attrs.circulationFanAcInfinityDevices ?? [],
+    humidifierAcInfinityDevices: attrs.humidifierAcInfinityDevices ?? [],
+    dehumidifierAcInfinityDevices: attrs.dehumidifierAcInfinityDevices ?? [],
     soilMoistureSensor: attrs.soilMoistureSensor ?? '',
     substrateTemperatureSensors: attrs.substrateTemperatureSensors ?? [],
     phSensors: attrs.phSensors ?? [],

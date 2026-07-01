@@ -21,6 +21,7 @@
 
 import { DehumidifierStage, HumidifierStage } from '../../../types';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
+import type { AcInfinityDevice } from '../../../slices/growspace/schema';
 
 export type StageThresholds = Record<string, Record<string, { on: number; off: number }>>;
 
@@ -86,6 +87,12 @@ export interface HumidityTabViewModel {
   humidifierOptions: string[];
   dehumidifierEntities: string[];
   dehumidifierOptions: string[];
+  humidifierAcInfinityDevices: AcInfinityDevice[];
+  dehumidifierAcInfinityDevices: AcInfinityDevice[];
+  /** `select.*` entities for AC Infinity mode pickers. */
+  acInfinityModeOptions: string[];
+  /** `number.*` entities for AC Infinity speed pickers. */
+  acInfinitySpeedOptions: string[];
   humidifierControlEnabled: boolean;
   dehumidifierControlEnabled: boolean;
   stages: HumidityStageVM[];
@@ -150,6 +157,10 @@ export function createHumidityTabViewModel(
     humidifierOptions: deps.entityOptions(HUMIDIFIER_DOMAINS, null),
     dehumidifierEntities: d.dehumidifierEntities,
     dehumidifierOptions: deps.entityOptions(DEHUMIDIFIER_DOMAINS, null),
+    humidifierAcInfinityDevices: d.humidifierAcInfinityDevices,
+    dehumidifierAcInfinityDevices: d.dehumidifierAcInfinityDevices,
+    acInfinityModeOptions: deps.entityOptions(['select'], null),
+    acInfinitySpeedOptions: deps.entityOptions(['number'], null),
     humidifierControlEnabled: expand.humidifierControlEnabled,
     dehumidifierControlEnabled: expand.dehumidifierControlEnabled,
     stages: HUMIDITY_STAGES.map((s) => ({
