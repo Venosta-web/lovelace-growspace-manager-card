@@ -1,3 +1,10 @@
+# [1.1.0-next.68](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.67...v1.1.0-next.68) (2026-07-01)
+
+
+### Bug Fixes
+
+* make growspace view mode per-card instead of page-global ([2bb5c91](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/2bb5c91b88296b8465ddba6642a7644acd468d3e))
+
 # [1.1.0-next.67](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.66...v1.1.0-next.67) (2026-06-30)
 
 
