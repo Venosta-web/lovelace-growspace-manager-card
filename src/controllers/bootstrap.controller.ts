@@ -7,7 +7,17 @@ import { fetchRawCollection } from '../slices/growspace';
 import { hydrate } from '../services/hydrate';
 import { setIsLoading } from '../slices/ui';
 import { setHass } from '../services/hass-call';
+import type { EntityRegistry } from '../slices/device-state';
 import type { GrowspaceAPIResponse } from '../types';
+
+/**
+ * The entity registry (`hass.entities`) is present at runtime but not declared
+ * on custom-card-helpers' HomeAssistant type. Read it through a narrow cast so
+ * hydration can resolve AC Infinity read-back sensors.
+ */
+function entityRegistryOf(hass: HomeAssistant | undefined): EntityRegistry | undefined {
+  return (hass as unknown as { entities?: EntityRegistry } | undefined)?.entities;
+}
 
 /**
  * Bootstrap controller — ADR-0022.
@@ -70,7 +80,7 @@ export class BootstrapController implements ReactiveController {
       const collection = await fetchRawCollection();
       this._lastCollection = collection;
       const hassStates = this._lastHassRef?.states ?? {};
-      this._watchedEntities = hydrate(collection, hassStates);
+      this._watchedEntities = hydrate(collection, hassStates, entityRegistryOf(this._lastHassRef));
       this._autoSelect();
     } finally {
       this._isFetching = false;
@@ -106,7 +116,7 @@ export class BootstrapController implements ReactiveController {
       this._lastHassRef = hass;
     }
 
-    this._watchedEntities = hydrate(this._lastCollection, hass.states);
+    this._watchedEntities = hydrate(this._lastCollection, hass.states, entityRegistryOf(hass));
     this._autoSelect();
   }
 

@@ -6,8 +6,10 @@ import { setPlants } from '../slices/plant';
 import {
   setDeviceSnapshot,
   setSubareaDeviceSnapshot,
+  deviceSnapshots$,
   subareaDeviceSnapshots$,
   deviceSnapshotEntityIds,
+  type EntityRegistry,
 } from '../slices/device-state';
 import {
   setEnvSnapshot,
@@ -27,7 +29,8 @@ import { subareas$, subareasGrowspaceId$ } from '../slices/subarea';
  */
 export function hydrate(
   collection: Record<string, GrowspaceAPIResponse>,
-  hassStates: Record<string, HassEntity>
+  hassStates: Record<string, HassEntity>,
+  registry?: EntityRegistry
 ): Set<string> {
   const devices = Object.values(collection)
     .map((wsData) => GrowspaceAdapter.transformGrowspace(null, wsData))
@@ -48,7 +51,11 @@ export function hydrate(
   const hydratedGrowspaceId = subareasGrowspaceId$.get();
 
   devices.forEach((d) => {
-    setDeviceSnapshot(d.deviceId, d, hassStates);
+    setDeviceSnapshot(d.deviceId, d, hassStates, registry);
+    // The resolved device entities (incl. AC Infinity current-power sensors that
+    // live outside environmentAttributes) must be watched so the chips refresh.
+    const devSnap = deviceSnapshots$.get().get(d.deviceId);
+    if (devSnap) deviceSnapshotEntityIds(devSnap).forEach((id) => watchedEntities.add(id));
 
     if (d.name) setEnvSnapshot(d.deviceId, d, hassStates);
 

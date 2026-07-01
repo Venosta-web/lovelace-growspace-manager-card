@@ -30,6 +30,7 @@ import { atom } from 'nanostores';
 import { mdiLightbulbOn, mdiFan, mdiAirHumidifier, mdiAirHumidifierOff } from '@mdi/js';
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { GrowspaceDevice } from '../../services/types';
+import type { AcInfinityDevice } from '../growspace/schema';
 import type { Subarea } from '../subarea/schema';
 
 // ---------------------------------------------------------------------------
@@ -264,6 +265,51 @@ function _buildSnapshot(ids: DeviceEntityIds, hassStates: HassStates): DeviceSna
   };
 }
 
+/**
+ * Minimal entity-registry shape the AC Infinity resolver reads. Mirrors the
+ * frontend's `hass.entities` display map (present at runtime, untyped on
+ * custom-card-helpers' HomeAssistant), narrowed to the fields we need.
+ */
+export interface EntityRegistryLike {
+  device_id?: string | null;
+  translation_key?: string | null;
+}
+export type EntityRegistry = Record<string, EntityRegistryLike>;
+
+/** Language-independent translation_key of the AC Infinity per-port power read-back. */
+const AC_INFINITY_CURRENT_POWER_KEY = 'current_power';
+
+/**
+ * The entity whose state a bundle's chip should display. A port's speed_entity
+ * is the control setpoint we *write*; its actual running level is a sibling
+ * `sensor` on the same HA device tagged `current_power`. Prefer that read-back
+ * when the registry exposes it, else fall back to the speed setpoint so the
+ * chip still renders (a bundle with no power sensor keeps appearing).
+ */
+function _acInfinityDisplayEntity(device: AcInfinityDevice, registry: EntityRegistry | undefined): string {
+  const deviceId = registry?.[device.speed_entity]?.device_id;
+  if (registry && deviceId) {
+    for (const [entityId, entry] of Object.entries(registry)) {
+      if (
+        entry.device_id === deviceId &&
+        entry.translation_key === AC_INFINITY_CURRENT_POWER_KEY &&
+        entityId.startsWith('sensor.')
+      ) {
+        return entityId;
+      }
+    }
+  }
+  return device.speed_entity;
+}
+
+/** Resolve each AC Infinity bundle to the entity id its chip should read. */
+function _acInfinityDisplayEntities(
+  devices: AcInfinityDevice[] | undefined,
+  registry: EntityRegistry | undefined
+): string[] {
+  return (devices ?? []).map((d) => _acInfinityDisplayEntity(d, registry));
+}
+
 // ---------------------------------------------------------------------------
 // Pure computation (exported — used by HeaderMetrics and tests)
 // ---------------------------------------------------------------------------
@@ -273,7 +319,9 @@ function _buildSnapshot(ids: DeviceEntityIds, hassStates: HassStates): DeviceSna
  *
  * Thin entity-resolution adapter over the shared snapshot core: entity IDs come
  * from the device's environmentAttributes, preferring the plural list fields
- * with the legacy singular fields as fallback.
+ * with the legacy singular fields as fallback, plus each AC Infinity bundle's
+ * display entity — its port `current_power` read-back sensor when the entity
+ * registry exposes it, else the speed setpoint (a port has no `fan` entity).
  *
  * This is the canonical place to read device-controlled entity states from hass.states.
  * All downstream consumers (HeaderMetrics, cards) should subscribe to the atom
@@ -281,19 +329,31 @@ function _buildSnapshot(ids: DeviceEntityIds, hassStates: HassStates): DeviceSna
  */
 export function computeDeviceSnapshot(
   device: GrowspaceDevice,
-  hassStates: HassStates
+  hassStates: HassStates,
+  registry?: EntityRegistry
 ): DeviceSnapshot {
   const env = device.environmentAttributes ?? {};
 
   return _buildSnapshot(
     {
       lightIds: env.lightSensors ?? (env.lightSensor ? [env.lightSensor] : []),
-      exhaustIds: env.exhaustFanEntities ?? (env.exhaustEntity ? [env.exhaustEntity] : []),
-      circulationIds:
-        env.circulationFanEntities ?? (env.circulationFanEntity ? [env.circulationFanEntity] : []),
-      humidifierIds: env.humidifierEntities ?? (env.humidifierEntity ? [env.humidifierEntity] : []),
-      dehumidifierIds:
-        env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : []),
+      exhaustIds: [
+        ...(env.exhaustFanEntities ?? (env.exhaustEntity ? [env.exhaustEntity] : [])),
+        ..._acInfinityDisplayEntities(env.exhaustFanAcInfinityDevices, registry),
+      ],
+      circulationIds: [
+        ...(env.circulationFanEntities ??
+          (env.circulationFanEntity ? [env.circulationFanEntity] : [])),
+        ..._acInfinityDisplayEntities(env.circulationFanAcInfinityDevices, registry),
+      ],
+      humidifierIds: [
+        ...(env.humidifierEntities ?? (env.humidifierEntity ? [env.humidifierEntity] : [])),
+        ..._acInfinityDisplayEntities(env.humidifierAcInfinityDevices, registry),
+      ],
+      dehumidifierIds: [
+        ...(env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : [])),
+        ..._acInfinityDisplayEntities(env.dehumidifierAcInfinityDevices, registry),
+      ],
     },
     hassStates
   );
@@ -360,9 +420,10 @@ export const subareaDeviceSnapshots$ = atom<Map<string, DeviceSnapshot>>(new Map
 export function setDeviceSnapshot(
   growspaceId: string,
   device: GrowspaceDevice,
-  hassStates: HassStates
+  hassStates: HassStates,
+  registry?: EntityRegistry
 ): void {
-  const snapshot = computeDeviceSnapshot(device, hassStates);
+  const snapshot = computeDeviceSnapshot(device, hassStates, registry);
   const updated = new Map(deviceSnapshots$.get());
   updated.set(growspaceId, snapshot);
   deviceSnapshots$.set(updated);

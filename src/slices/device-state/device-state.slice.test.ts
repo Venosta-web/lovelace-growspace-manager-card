@@ -914,3 +914,221 @@ describe('deviceSnapshotEntityIds', () => {
     expect(deviceSnapshotEntityIds(snapshot)).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Cycle 18 — AC Infinity device bundles contribute chips (growspace path)
+//
+// An AC Infinity port exposes no `fan` entity: it is a {mode_entity,
+// speed_entity, on_speed} bundle. Its speed_entity (a number, 0-10) is the
+// readable representation, so it must feed the device-snapshot ID lists or the
+// header chip never appears.
+// ---------------------------------------------------------------------------
+
+describe('computeDeviceSnapshot — AC Infinity device bundles', () => {
+  it('builds an exhaust chip from an AC Infinity bundle when no plain entity is configured', () => {
+    const device = makeDevice({
+      environmentAttributes: {
+        exhaustFanAcInfinityDevices: [
+          {
+            mode_entity: 'select.ac_infinity_exhaust_mode',
+            speed_entity: 'number.ac_infinity_exhaust_speed',
+            on_speed: 5,
+          },
+        ],
+      },
+    });
+    const hassStates: HassStates = {
+      'number.ac_infinity_exhaust_speed': makeHassEntity(
+        'number.ac_infinity_exhaust_speed',
+        '5',
+        {}
+      ),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans).not.toBeNull();
+    expect(snapshot.exhaustFans!.value).toBe('5');
+    expect(snapshot.exhaustFans!.entityIds).toEqual(['number.ac_infinity_exhaust_speed']);
+  });
+
+  it('combines a plain exhaust entity with an AC Infinity bundle', () => {
+    const device = makeDevice({
+      environmentAttributes: {
+        exhaustFanEntities: ['fan.wall_exhaust'],
+        exhaustFanAcInfinityDevices: [
+          {
+            mode_entity: 'select.ac_infinity_exhaust_mode',
+            speed_entity: 'number.ac_infinity_exhaust_speed',
+            on_speed: 5,
+          },
+        ],
+      },
+    });
+    const hassStates: HassStates = {
+      'fan.wall_exhaust': makeHassEntity('fan.wall_exhaust', 'on', { percentage: 100 }),
+      'number.ac_infinity_exhaust_speed': makeHassEntity(
+        'number.ac_infinity_exhaust_speed',
+        '7',
+        {}
+      ),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('Multiple');
+    expect(snapshot.exhaustFans!.entityIds).toEqual([
+      'fan.wall_exhaust',
+      'number.ac_infinity_exhaust_speed',
+    ]);
+    expect(snapshot.exhaustFans!.multiValues).toEqual(['100%', '7']);
+  });
+
+  // The remaining categories: circulation fans read as a speed-sensor (0-10),
+  // while humidifiers/dehumidifiers read on/off from the same speed number.
+  it.each([
+    {
+      attr: 'circulationFanAcInfinityDevices',
+      key: 'circulationFans' as const,
+      expected: '5',
+    },
+    {
+      attr: 'humidifierAcInfinityDevices',
+      key: 'humidifiers' as const,
+      expected: 'On',
+    },
+    {
+      attr: 'dehumidifierAcInfinityDevices',
+      key: 'dehumidifiers' as const,
+      expected: 'On',
+    },
+  ])('builds a $key chip from an AC Infinity bundle', ({ attr, key, expected }) => {
+    const speedEntity = 'number.ac_infinity_speed';
+    const device = makeDevice({
+      environmentAttributes: {
+        [attr]: [{ mode_entity: 'select.ac_infinity_mode', speed_entity: speedEntity, on_speed: 5 }],
+      },
+    });
+    const hassStates: HassStates = {
+      [speedEntity]: makeHassEntity(speedEntity, '5', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot[key]).not.toBeNull();
+    expect(snapshot[key]!.value).toBe(expected);
+    expect(snapshot[key]!.entityIds).toEqual([speedEntity]);
+  });
+
+  it('leaves a category null when its AC Infinity list is empty and no plain entity exists', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanAcInfinityDevices: [] },
+    });
+
+    const snapshot = computeDeviceSnapshot(device, {});
+
+    expect(snapshot.exhaustFans).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 19 — AC Infinity chip reads the port's read-back "Current Power" sensor
+//
+// A port's speed_entity is the control setpoint (what we write); the actual
+// running level is a sibling `sensor` on the same HA device, tagged with the
+// language-independent translation_key `current_power`. The chip must display
+// that read-back, falling back to the speed setpoint only when it is absent.
+// ---------------------------------------------------------------------------
+
+describe('computeDeviceSnapshot — AC Infinity current-power resolution', () => {
+  const speedEntity = 'number.ac_infinity_exhaust_speed';
+  const powerSensor = 'sensor.ac_infinity_exhaust_aktuelle_leistung';
+
+  function exhaustDevice(): GrowspaceDevice {
+    return makeDevice({
+      environmentAttributes: {
+        exhaustFanAcInfinityDevices: [
+          {
+            mode_entity: 'select.ac_infinity_exhaust_mode',
+            speed_entity: speedEntity,
+            on_speed: 5,
+          },
+        ],
+      },
+    });
+  }
+
+  it('reads the current-power sensor instead of the speed setpoint when the registry exposes it', () => {
+    const hassStates: HassStates = {
+      [speedEntity]: makeHassEntity(speedEntity, '2', {}),
+      [powerSensor]: makeHassEntity(powerSensor, '8', {}),
+    };
+    const registry = {
+      [speedEntity]: { device_id: 'dev-port-1', platform: 'ac_infinity' },
+      [powerSensor]: {
+        device_id: 'dev-port-1',
+        translation_key: 'current_power',
+        platform: 'ac_infinity',
+      },
+    };
+
+    const snapshot = computeDeviceSnapshot(exhaustDevice(), hassStates, registry);
+
+    expect(snapshot.exhaustFans!.value).toBe('8');
+    expect(snapshot.exhaustFans!.entityIds).toEqual([powerSensor]);
+  });
+
+  it('falls back to the speed setpoint when the port has no current-power sibling', () => {
+    const hassStates: HassStates = {
+      [speedEntity]: makeHassEntity(speedEntity, '2', {}),
+    };
+    // Registry knows the speed entity's device but exposes no `current_power` sensor on it.
+    const registry = {
+      [speedEntity]: { device_id: 'dev-port-1', platform: 'ac_infinity' },
+      'sensor.dev_port_1_remaining_time': {
+        device_id: 'dev-port-1',
+        translation_key: 'remaining_time',
+        platform: 'ac_infinity',
+      },
+    };
+
+    const snapshot = computeDeviceSnapshot(exhaustDevice(), hassStates, registry);
+
+    expect(snapshot.exhaustFans!.value).toBe('2');
+    expect(snapshot.exhaustFans!.entityIds).toEqual([speedEntity]);
+  });
+
+  it('falls back to the speed setpoint when no registry is available', () => {
+    const hassStates: HassStates = {
+      [speedEntity]: makeHassEntity(speedEntity, '2', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(exhaustDevice(), hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('2');
+    expect(snapshot.exhaustFans!.entityIds).toEqual([speedEntity]);
+  });
+
+  it('does not match a current-power sensor on a different device', () => {
+    const hassStates: HassStates = {
+      [speedEntity]: makeHassEntity(speedEntity, '2', {}),
+      'sensor.other_port_aktuelle_leistung': makeHassEntity(
+        'sensor.other_port_aktuelle_leistung',
+        '8',
+        {}
+      ),
+    };
+    const registry = {
+      [speedEntity]: { device_id: 'dev-port-1', platform: 'ac_infinity' },
+      'sensor.other_port_aktuelle_leistung': {
+        device_id: 'dev-port-2',
+        translation_key: 'current_power',
+        platform: 'ac_infinity',
+      },
+    };
+
+    const snapshot = computeDeviceSnapshot(exhaustDevice(), hassStates, registry);
+
+    expect(snapshot.exhaustFans!.entityIds).toEqual([speedEntity]);
+  });
+});

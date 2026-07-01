@@ -7,6 +7,7 @@ import { setIrrigationConfig, setTankLevels } from '../slices/irrigation';
 vi.mock('../slices/device-state', () => ({
   setDeviceSnapshot: vi.fn(),
   setSubareaDeviceSnapshot: vi.fn(),
+  deviceSnapshots$: { get: () => new Map() },
   subareaDeviceSnapshots$: { get: () => new Map() },
   deviceSnapshotEntityIds: vi.fn(() => []),
 }));
