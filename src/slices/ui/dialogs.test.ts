@@ -161,6 +161,16 @@ describe('slices/ui pure dialog-open helpers', () => {
     }
   });
 
+  it('openLogbookDialog uses the explicit growspace id over the selected device', () => {
+    setSelectedDeviceId('gs-selected');
+    openLogbookDialog('gs-explicit');
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('LOGBOOK');
+    if (dialog.type === 'LOGBOOK') {
+      expect(dialog.payload.growspaceId).toBe('gs-explicit');
+    }
+  });
+
   it('openLogbookDialog is a no-op when no device is selected', () => {
     openLogbookDialog();
     expect(activeDialog$.get().type).toBe('NONE');
