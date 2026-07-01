@@ -5,7 +5,7 @@ import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
 import { SnapshotsDialogState } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
-import { mdiCamera, mdiRefresh } from '@mdi/js';
+import { mdiCamera, mdiRefresh, mdiClose } from '@mdi/js';
 import {
   type Snapshot,
   getSnapshots,
@@ -38,6 +38,7 @@ export class SnapshotsDialog extends LitElement {
   @state() private _selectedResult: VisionCheckupResult | null = null;
   @state() private _isLoadingVision = false;
   @state() private _isRunningCheckup = false;
+  @state() private _lightboxSrc: string | null = null;
 
   static styles = [
     dialogStyles,
@@ -111,6 +112,39 @@ export class SnapshotsDialog extends LitElement {
       .tab-btn.active {
         color: var(--primary-color);
         border-bottom-color: var(--primary-color);
+      }
+      .lightbox-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        cursor: zoom-out;
+      }
+      .lightbox-image {
+        max-width: 95%;
+        max-height: 95%;
+        object-fit: contain;
+        border-radius: 8px;
+        cursor: default;
+      }
+      .lightbox-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: rgba(0, 0, 0, 0.5);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        cursor: pointer;
       }
     `,
   ];
@@ -187,6 +221,47 @@ export class SnapshotsDialog extends LitElement {
 
   private _close() {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  }
+
+  private _openLightbox(src: string) {
+    this._lightboxSrc = src;
+    // Capture-phase so Escape is intercepted before ha-dialog's escapeKeyAction
+    // fires, keeping dismissal scoped to the lightbox.
+    window.addEventListener('keydown', this._onLightboxKeydown, true);
+  }
+
+  private _closeLightbox() {
+    this._lightboxSrc = null;
+    window.removeEventListener('keydown', this._onLightboxKeydown, true);
+  }
+
+  private _onLightboxKeydown = (e: KeyboardEvent) => {
+    if (e.key !== 'Escape') return;
+    e.stopPropagation();
+    e.preventDefault();
+    this._closeLightbox();
+  };
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener('keydown', this._onLightboxKeydown, true);
+  }
+
+  private _renderLightbox() {
+    if (!this._lightboxSrc) return '';
+    return html`
+      <div class="lightbox-backdrop" @click=${this._closeLightbox}>
+        <button class="lightbox-close" @click=${this._closeLightbox} aria-label="Close">
+          <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+        </button>
+        <img
+          class="lightbox-image"
+          src="${this._lightboxSrc}"
+          alt="Vision checkup snapshot enlarged"
+          @click=${(e: Event) => e.stopPropagation()}
+        />
+      </div>
+    `;
   }
 
   private _formatDate(timestampStr: string) {
@@ -368,6 +443,8 @@ export class SnapshotsDialog extends LitElement {
               class="snapshot-image"
               alt="Vision checkup snapshot"
               loading="lazy"
+              style="cursor:zoom-in;"
+              @click=${() => this._openLightbox(path)}
               onerror="this.src='data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23666\\' d=\\'M21,17H7V3H21M21,1H7A2,2 0 0,0 5,3V17A2,2 0 0,0 7,19H21A2,2 0 0,0 23,17V3A2,2 0 0,0 21,1M3,5H1V21A2,2 0 0,0 3,23H19V21H3V5M15.96,10.29L13.21,13.83L11.25,11.47L8.5,15H19.5L15.96,10.29Z\\'/%3E%3C/svg%3E'"
             />
           `
@@ -463,6 +540,7 @@ export class SnapshotsDialog extends LitElement {
               `
             : this._renderVisionTab()}
         </div>
+        ${this._renderLightbox()}
       </gs-dialog>
     `;
   }

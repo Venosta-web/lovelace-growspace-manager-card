@@ -467,6 +467,121 @@ describe('Vision Checkup tab', () => {
     expect(images?.length).toBe(2);
   });
 
+  it('clicking a vision snapshot opens a full-size lightbox overlay of that image', async () => {
+    mockVisionHistory[0].snapshot_paths = [
+      '/local/growspace_manager/snapshots/gs1/a_cam1_processed.jpg',
+    ];
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const thumb = element.shadowRoot?.querySelector(
+      '.vision-snapshot-grid img.snapshot-image'
+    ) as HTMLImageElement;
+    thumb.click();
+    await element.updateComplete;
+
+    const overlay = element.shadowRoot?.querySelector('.lightbox-backdrop');
+    expect(overlay).toBeTruthy();
+    const full = overlay?.querySelector('img.lightbox-image') as HTMLImageElement;
+    expect(full.getAttribute('src')).toBe(
+      '/local/growspace_manager/snapshots/gs1/a_cam1_processed.jpg'
+    );
+  });
+
+  it('enlarges the clicked image in a multi-camera result', async () => {
+    mockVisionHistory[0].snapshot_paths = [
+      '/local/growspace_manager/snapshots/gs1/a_cam1_processed.jpg',
+      '/local/growspace_manager/snapshots/gs1/b_cam2_processed.jpg',
+    ];
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const thumbs = element.shadowRoot?.querySelectorAll(
+      '.vision-snapshot-grid img.snapshot-image'
+    );
+    (thumbs?.[1] as HTMLImageElement).click();
+    await element.updateComplete;
+
+    const full = element.shadowRoot?.querySelector(
+      '.lightbox-backdrop img.lightbox-image'
+    ) as HTMLImageElement;
+    expect(full.getAttribute('src')).toBe(
+      '/local/growspace_manager/snapshots/gs1/b_cam2_processed.jpg'
+    );
+  });
+
+  const openLightbox = async () => {
+    mockVisionHistory[0].snapshot_paths = [
+      '/local/growspace_manager/snapshots/gs1/a_cam1_processed.jpg',
+    ];
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+    const thumb = element.shadowRoot?.querySelector(
+      '.vision-snapshot-grid img.snapshot-image'
+    ) as HTMLImageElement;
+    thumb.click();
+    await element.updateComplete;
+  };
+
+  it('dismisses the lightbox on backdrop click', async () => {
+    await openLightbox();
+    const backdrop = element.shadowRoot?.querySelector('.lightbox-backdrop') as HTMLElement;
+    backdrop.click();
+    await element.updateComplete;
+    expect(element.shadowRoot?.querySelector('.lightbox-backdrop')).toBeNull();
+  });
+
+  it('does not dismiss the lightbox when the enlarged image itself is clicked', async () => {
+    await openLightbox();
+    const full = element.shadowRoot?.querySelector(
+      '.lightbox-backdrop img.lightbox-image'
+    ) as HTMLImageElement;
+    full.click();
+    await element.updateComplete;
+    expect(element.shadowRoot?.querySelector('.lightbox-backdrop')).toBeTruthy();
+  });
+
+  it('dismisses the lightbox via the explicit close control', async () => {
+    await openLightbox();
+    const closeBtn = element.shadowRoot?.querySelector('.lightbox-close') as HTMLElement;
+    closeBtn.click();
+    await element.updateComplete;
+    expect(element.shadowRoot?.querySelector('.lightbox-backdrop')).toBeNull();
+  });
+
+  it('dismisses the lightbox on Escape and intercepts the key from the dialog', async () => {
+    await openLightbox();
+    const closeSpy = vi.fn();
+    element.addEventListener('close', closeSpy);
+
+    const ev = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    window.dispatchEvent(ev);
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.querySelector('.lightbox-backdrop')).toBeNull();
+    expect(ev.defaultPrevented).toBe(true);
+    expect(closeSpy).not.toHaveBeenCalled();
+    expect(element.open).toBe(true);
+  });
+
   it('renders history list with compact rows', async () => {
     element.dialogState = { growspaceId: 'gs1' };
     element.open = true;
