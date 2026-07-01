@@ -10,8 +10,9 @@
  * Environment Draft, exactly like the plain entity multi-selects.
  */
 
-import { html, type TemplateResult } from 'lit';
+import { html, nothing, type TemplateResult } from 'lit';
 import type { AcInfinityDevice } from '../../../slices/growspace/schema';
+import type { AcInfinityConflict } from './ac-infinity-conflict';
 
 export interface AcInfinityEditorProps {
   /** Section heading, e.g. "Exhaust Fan AC Infinity Devices". */
@@ -23,7 +24,33 @@ export interface AcInfinityEditorProps {
   speedOptions: string[];
   /** Unique prefix so the per-card `<datalist>` ids don't collide across roles. */
   idPrefix: string;
+  /**
+   * Automated Mode Conflicts keyed by `mode_entity` — a port whose mode entity
+   * is present here is in a self-running mode and gets a passive warning. Absent
+   * key = no conflict (Off/On/unavailable/unknown). Optional so callers without
+   * hass access render no warnings.
+   */
+  conflicts?: Record<string, AcInfinityConflict>;
   onChange: (devices: AcInfinityDevice[]) => void;
+}
+
+/** The passive, non-blocking Automated Mode Conflict notice under a mode picker. */
+function renderConflict(conflict: AcInfinityConflict | undefined): TemplateResult | typeof nothing {
+  if (!conflict) return nothing;
+  return html`
+    <div
+      class="ac-infinity-mode-conflict"
+      role="alert"
+      style="display:flex;gap:6px;margin-top:6px;padding:8px;font-size:0.75rem;line-height:1.35;border-radius:6px;color:var(--warning-color,#e6a700);background:rgba(230,167,0,0.10);border:1px solid rgba(230,167,0,0.35);"
+    >
+      <span aria-hidden="true">⚠</span>
+      <span>
+        <strong>${conflict.deviceName}</strong> is in <strong>${conflict.mode}</strong> mode. AC
+        Infinity's own automation will keep overriding Growspace Manager. Set this port to Off or On
+        in the AC Infinity app before GSM can control it.
+      </span>
+    </div>
+  `;
 }
 
 function blankDevice(): AcInfinityDevice {
@@ -80,6 +107,7 @@ export function renderAcInfinityDevices(p: AcInfinityEditorProps): TemplateResul
                 .options=${optionsWithCurrent(p.modeOptions, device.mode_entity)}
                 @change=${(e: CustomEvent<string>) => update(index, { mode_entity: e.detail })}
               ></md3-select>
+              ${renderConflict(p.conflicts?.[device.mode_entity])}
             </div>
             <div style="margin-bottom:8px;">
               <md3-select

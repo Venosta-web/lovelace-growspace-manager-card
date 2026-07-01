@@ -18,6 +18,7 @@ function makeVm(over: Partial<ClimateTabViewModel> = {}): ClimateTabViewModel {
       circulationFanAcInfinityDevices: [],
       acInfinityModeOptions: [],
       acInfinitySpeedOptions: [],
+      acInfinityConflicts: {},
       stressThreshold: 0.7,
       moldThreshold: 0.85,
       canRemoveEnvironment: true,
@@ -254,5 +255,23 @@ describe('ConfigClimateTab — AC Infinity editor', () => {
       c.textContent?.includes('Exhaust Fan AC Infinity Devices')
     )!;
     expect(getComputedStyle(title).position).not.toBe('absolute');
+  });
+
+  it('renders an Automated Mode Conflict warning for a port in a self-running mode', async () => {
+    const vm = vmWithExhaustDevice();
+    vm.control.acInfinityConflicts = {
+      'select.port1_mode': { deviceName: 'Grow Tent Port 1', mode: 'VPD' },
+    };
+    const el = await mount(vm);
+    const warning = el.shadowRoot!.querySelector('.ac-infinity-mode-conflict');
+    expect(warning).not.toBeNull();
+    const text = warning!.textContent ?? '';
+    expect(text).toContain('Grow Tent Port 1');
+    expect(text).toContain('VPD');
+  });
+
+  it('renders no warning when the port has no conflict', async () => {
+    const el = await mount(vmWithExhaustDevice());
+    expect(el.shadowRoot!.querySelector('.ac-infinity-mode-conflict')).toBeNull();
   });
 });

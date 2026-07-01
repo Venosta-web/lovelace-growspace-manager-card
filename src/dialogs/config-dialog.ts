@@ -47,6 +47,10 @@ import { createNotificationsTabViewModel } from '../features/config/viewmodels/n
 import '../features/config/components/config-sensors-tab';
 import { createSensorsTabViewModel } from '../features/config/viewmodels/sensors-tab.viewmodel';
 import '../features/config/components/config-climate-tab';
+import {
+  isAutomatedMode,
+  type AcInfinityConflict,
+} from '../features/config/components/ac-infinity-conflict';
 import { createClimateTabViewModel } from '../features/config/viewmodels/climate-tab.viewmodel';
 import '../features/config/components/config-humidity-tab';
 import {
@@ -1283,6 +1287,32 @@ export class ConfigDialog extends LitElement {
       .sort();
   }
 
+  /**
+   * Automated Mode Conflict resolver for a bound AC Infinity mode entity. Returns
+   * the conflict (device name + current mode) when the port sits in a self-running
+   * mode, else null. The reactive read of `hass.states` here is what makes the
+   * warning update live and re-appear on dialog reopen.
+   */
+  private _acInfinityConflict(modeEntity: string): AcInfinityConflict | null {
+    if (!modeEntity || !this.hass) return null;
+    const state = this.hass.states[modeEntity];
+    if (!state || !isAutomatedMode(state.state)) return null;
+    return { deviceName: this._deviceNameForEntity(modeEntity), mode: state.state };
+  }
+
+  /** Device-registry name for an entity, falling back to friendly name then id. */
+  private _deviceNameForEntity(entityId: string): string {
+    const hass = this.hass as unknown as {
+      entities?: Record<string, { device_id?: string }>;
+      devices?: Record<string, { name_by_user?: string; name?: string }>;
+    };
+    const deviceId = hass.entities?.[entityId]?.device_id;
+    const device = deviceId ? hass.devices?.[deviceId] : undefined;
+    const deviceName = device?.name_by_user || device?.name;
+    if (deviceName) return deviceName;
+    return this.hass.states[entityId]?.attributes?.friendly_name || entityId;
+  }
+
   // ── Threshold helpers ────────────────────────────────────────────────────
 
   private _updateThreshold(stage: string, cycle: string, point: 'on' | 'off', value: number) {
@@ -1576,6 +1606,7 @@ export class ConfigDialog extends LitElement {
     const deps = {
       entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
+      acInfinityConflict: (modeEntity: string) => this._acInfinityConflict(modeEntity),
     };
     return html`
       <config-climate-tab
@@ -1601,6 +1632,7 @@ export class ConfigDialog extends LitElement {
     const deps = {
       entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
+      acInfinityConflict: (modeEntity: string) => this._acInfinityConflict(modeEntity),
     };
     return html`
       <config-humidity-tab

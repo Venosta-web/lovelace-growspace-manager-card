@@ -30,6 +30,7 @@ function makeVm(over: Partial<HumidityTabViewModel> = {}): HumidityTabViewModel 
     dehumidifierAcInfinityDevices: [],
     acInfinityModeOptions: [],
     acInfinitySpeedOptions: [],
+    acInfinityConflicts: {},
     humidifierControlEnabled: false,
     dehumidifierControlEnabled: false,
     stages: [stage()],

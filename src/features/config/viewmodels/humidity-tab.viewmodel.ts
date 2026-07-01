@@ -21,6 +21,8 @@
 
 import { DehumidifierStage, HumidifierStage } from '../../../types';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
+import type { AcInfinityConflict } from '../components/ac-infinity-conflict';
+import { buildAcInfinityConflicts } from './ac-infinity-conflicts';
 import type { AcInfinityDevice } from '../../../slices/growspace/schema';
 
 export type StageThresholds = Record<string, Record<string, { on: number; off: number }>>;
@@ -93,6 +95,8 @@ export interface HumidityTabViewModel {
   acInfinityModeOptions: string[];
   /** `number.*` entities for AC Infinity speed pickers. */
   acInfinitySpeedOptions: string[];
+  /** Automated Mode Conflicts for the tab's ports, keyed by `mode_entity`. */
+  acInfinityConflicts: Record<string, AcInfinityConflict>;
   humidifierControlEnabled: boolean;
   dehumidifierControlEnabled: boolean;
   stages: HumidityStageVM[];
@@ -101,6 +105,8 @@ export interface HumidityTabViewModel {
 /** Hass adapter the shell injects so the component stays hass-free. */
 export interface HumidityTabDeps {
   entityOptions: (domains: string[], deviceClass: string | null, platform?: string) => string[];
+  /** Hass-reading resolver: a bound mode entity → its conflict, or null if none. */
+  acInfinityConflict: (modeEntity: string) => AcInfinityConflict | null;
 }
 
 /** The three Shell-`@state` flags projected into the VM. */
@@ -161,6 +167,10 @@ export function createHumidityTabViewModel(
     dehumidifierAcInfinityDevices: d.dehumidifierAcInfinityDevices,
     acInfinityModeOptions: deps.entityOptions(['select'], null, 'ac_infinity'),
     acInfinitySpeedOptions: deps.entityOptions(['number'], null, 'ac_infinity'),
+    acInfinityConflicts: buildAcInfinityConflicts(
+      [d.humidifierAcInfinityDevices, d.dehumidifierAcInfinityDevices],
+      deps.acInfinityConflict
+    ),
     humidifierControlEnabled: expand.humidifierControlEnabled,
     dehumidifierControlEnabled: expand.dehumidifierControlEnabled,
     stages: HUMIDITY_STAGES.map((s) => ({

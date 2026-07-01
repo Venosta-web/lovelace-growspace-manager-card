@@ -7,7 +7,7 @@ import {
 import { createInitialSM, transition } from '../../../dialogs/config-dialog-sm';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 
-const deps: ClimateTabDeps = { entityOptions: () => [] };
+const deps: ClimateTabDeps = { entityOptions: () => [], acInfinityConflict: () => null };
 const collapsed: ClimateExpandState = {
   fanTempOverrideExpanded: false,
   exhaustCriticalTempExpanded: false,
@@ -33,7 +33,7 @@ describe('createClimateTabViewModel — control section', () => {
   });
 
   it('fills fan picker options from the injected adapter', () => {
-    const d: ClimateTabDeps = { entityOptions: (domains) => (domains.includes('binary_sensor') ? ['x.exhaust'] : ['x.circ']) };
+    const d: ClimateTabDeps = { entityOptions: (domains) => (domains.includes('binary_sensor') ? ['x.exhaust'] : ['x.circ']), acInfinityConflict: () => null };
     const vm = createClimateTabViewModel(sm(), d, collapsed);
     expect(vm.control.exhaustFanOptions).toEqual(['x.exhaust']); // exhaust domains include binary_sensor
     expect(vm.control.circulationFanOptions).toEqual(['x.circ']);
@@ -109,6 +109,7 @@ describe('createClimateTabViewModel — AC Infinity devices', () => {
           : domains.includes('number')
             ? ['number.speed']
             : [],
+      acInfinityConflict: () => null,
     };
     const c = createClimateTabViewModel(sm(), d, collapsed).control;
     expect(c.acInfinityModeOptions).toEqual(['select.mode']);
@@ -122,6 +123,7 @@ describe('createClimateTabViewModel — AC Infinity devices', () => {
         calls.push([domains, deviceClass, platform]);
         return [];
       },
+      acInfinityConflict: () => null,
     };
     createClimateTabViewModel(sm(), d, collapsed);
     expect(calls).toContainEqual([['select'], null, 'ac_infinity']);
