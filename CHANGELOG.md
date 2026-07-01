@@ -1,3 +1,10 @@
+# [1.1.0-next.73](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.72...v1.1.0-next.73) (2026-07-01)
+
+
+### Features
+
+* **snapshots:** click-to-enlarge lightbox for vision checkup snapshots ([6900b5c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/6900b5c1b35cd6dd61fe1b8ef97a79b2a57d5a82)), closes [#412](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/412)
+
 # [1.1.0-next.72](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.71...v1.1.0-next.72) (2026-07-01)
 
 
