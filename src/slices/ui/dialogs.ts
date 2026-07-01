@@ -256,6 +256,14 @@ export function openConfigDialog(device?: GrowspaceDevice): void {
         lightSensors: device?.environmentAttributes?.lightSensors || [],
         exhaustEntity: device?.environmentAttributes?.exhaustEntity || '',
         exhaustFanEntities: device?.environmentAttributes?.exhaustFanEntities || [],
+        exhaustFanAcInfinityDevices:
+          device?.environmentAttributes?.exhaustFanAcInfinityDevices || [],
+        circulationFanAcInfinityDevices:
+          device?.environmentAttributes?.circulationFanAcInfinityDevices || [],
+        humidifierAcInfinityDevices:
+          device?.environmentAttributes?.humidifierAcInfinityDevices || [],
+        dehumidifierAcInfinityDevices:
+          device?.environmentAttributes?.dehumidifierAcInfinityDevices || [],
         humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
         humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
         humidifierControlEnabled: device?.environmentAttributes?.humidifierControlEnabled || false,

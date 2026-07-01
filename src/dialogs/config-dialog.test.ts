@@ -124,6 +124,25 @@ describe('setInitialState irrigation tanks mapping', () => {
   });
 });
 
+// ─── setInitialState AC Infinity devices ─────────────────────────────────────
+
+describe('setInitialState AC Infinity devices', () => {
+  it('seeds exhaust AC Infinity devices from environmentData into the draft', () => {
+    const el = makeEl();
+    const device = {
+      mode_entity: 'select.sog_exhaust_aktiver_modus',
+      speed_entity: 'number.sog_exhaust_einschaltleistung',
+      on_speed: 10,
+    };
+    el.setInitialState(ConfigTab.SENSORS, {
+      selectedGrowspaceId: 'gs1',
+      exhaustFanAcInfinityDevices: [device],
+    } as any);
+    const draft = (el as any)._sm.environmentDraft;
+    expect(draft.exhaustFanAcInfinityDevices).toEqual([device]);
+  });
+});
+
 // ─── _loadSubareas catch block (lines 1432–1433) ─────────────────────────────
 
 describe('_loadSubareas error handling', () => {
