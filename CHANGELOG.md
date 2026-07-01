@@ -1,3 +1,10 @@
+# [1.1.0-next.70](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.69...v1.1.0-next.70) (2026-07-01)
+
+
+### Bug Fixes
+
+* **header:** show AC Infinity current-power in device chips ([6854b90](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/6854b9034d08c8626e9c1987be759d8110ebfc08))
+
 # [1.1.0-next.69](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.68...v1.1.0-next.69) (2026-07-01)
 
 
