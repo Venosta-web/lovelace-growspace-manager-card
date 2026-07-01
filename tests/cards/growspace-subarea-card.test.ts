@@ -162,7 +162,7 @@ describe('GrowspaceSubareaCard', () => {
         const toggleSpy = vi.mocked(uiSlice.toggleEnvGraph);
         const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as HTMLElement;
         heroUI.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'temperature' }, bubbles: true, composed: true }));
-        expect(toggleSpy).toHaveBeenCalledWith('temperature', element.store.history);
+        expect(toggleSpy).toHaveBeenCalledWith('temperature', element.store.history, element.store.ui);
     });
 
     test('opens config dialog on gear icon click', async () => {
@@ -376,7 +376,7 @@ describe('GrowspaceSubareaCard', () => {
         const toggleSpy = vi.mocked(uiSlice.toggleEnvGraph);
         const chip = element.shadowRoot?.querySelector('growspace-chip') as HTMLElement;
         chip.dispatchEvent(new CustomEvent('click'));
-        expect(toggleSpy).toHaveBeenCalledWith('light', element.store.history); // MetricKey.LIGHT = 'light'
+        expect(toggleSpy).toHaveBeenCalledWith('light', element.store.history, element.store.ui); // MetricKey.LIGHT = 'light'
     });
 
     test('renders active state class on metric chip when active', async () => {
@@ -755,7 +755,7 @@ describe('GrowspaceSubareaCard', () => {
         secondaryUI.dispatchEvent(
             new CustomEvent('toggle-graph', { detail: { metric: 'substrate_temperature' }, bubbles: true, composed: true })
         );
-        expect(toggleSpy).toHaveBeenCalledWith('substrate_temperature', element.store.history);
+        expect(toggleSpy).toHaveBeenCalledWith('substrate_temperature', element.store.history, element.store.ui);
     });
 
     test('mobile secondary chips render via growspace-header-hero-ui and fire toggle-graph', async () => {
@@ -784,7 +784,7 @@ describe('GrowspaceSubareaCard', () => {
         lastHeroUI.dispatchEvent(
             new CustomEvent('toggle-graph', { detail: { metric: 'substrate_temperature' }, bubbles: true, composed: true })
         );
-        expect(toggleSpy).toHaveBeenCalledWith('substrate_temperature', element.store.history);
+        expect(toggleSpy).toHaveBeenCalledWith('substrate_temperature', element.store.history, element.store.ui);
     });
 
     test('mobile device chips render via growspace-header-hero-ui and fire toggle-graph', async () => {
@@ -799,7 +799,7 @@ describe('GrowspaceSubareaCard', () => {
         (heroUIs![0] as HTMLElement).dispatchEvent(
             new CustomEvent('toggle-graph', { detail: { metric: 'light' }, bubbles: true, composed: true })
         );
-        expect(toggleSpy).toHaveBeenCalledWith('light', element.store.history);
+        expect(toggleSpy).toHaveBeenCalledWith('light', element.store.history, element.store.ui);
     });
 
     test('updated handles undefined devices via the ?? [] fallback without throwing', () => {
@@ -895,7 +895,7 @@ describe('GrowspaceSubareaCard', () => {
             heroUI.dispatchEvent(
                 new CustomEvent('toggle-graph', { detail: { metric: 'temperature' }, bubbles: true, composed: true })
             );
-            expect(toggleSpy).toHaveBeenCalledWith('temperature', element.store.history);
+            expect(toggleSpy).toHaveBeenCalledWith('temperature', element.store.history, element.store.ui);
         });
 
         test('ViewMode.COMPACT hides secondary panel (view-mode aware rendering)', async () => {

@@ -126,6 +126,7 @@ vi.mock('../../src/store/core/growspace-store', () => ({
             $cardViewState: atomMocks.$cardViewState,
             $pendingDeepLinkPlantId: atomMocks.$pendingDeepLinkPlantId,
             setViewMode: vi.fn(),
+            toggleHeaderExpansion: vi.fn(),
             setEditMode: vi.fn(),
             clearPlantSelection: vi.fn(),
             setIsLoading: vi.fn(),
@@ -607,10 +608,11 @@ describe('GrowspaceManagerCard', () => {
             (element as any)._handleIPMSelected();
             expect(uiSlice.openIPMDialog).toHaveBeenCalled();
 
-            // Toggle expansion (if available)
+            // Toggle expansion (if available) — now flips this card's own view mode
             if (typeof (element as any)._handleToggleExpansion === 'function') {
+                const toggleSpy = vi.spyOn(element.store.ui, 'toggleHeaderExpansion');
                 (element as any)._handleToggleExpansion();
-                expect(uiSlice.toggleHeaderExpansion).toHaveBeenCalled();
+                expect(toggleSpy).toHaveBeenCalled();
             }
 
             // Training selected

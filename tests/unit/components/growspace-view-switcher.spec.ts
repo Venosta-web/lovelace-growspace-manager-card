@@ -4,7 +4,8 @@ vi.unmock('../../../src/features/shared/layouts/growspace-view-switcher');
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceViewSwitcher } from '../../../src/features/shared/layouts/growspace-view-switcher';
 import { GrowspaceDevice } from '../../../src/types';
-import { viewMode$, setViewMode } from '../../../src/slices/ui';
+import { viewMode$ } from '../../../src/slices/ui';
+import { GrowspaceUIStore } from '../../../src/store/ui/ui-store';
 import { ViewMode } from '../../../src/constants';
 
 // Mock the unified view component and its heavy children so we can test
@@ -58,11 +59,19 @@ describe('GrowspaceViewSwitcher', () => {
     expect(anyTag).toBeNull();
   });
 
-  it('syncs viewMode to the global atom when viewMode property changes', async () => {
-    element.viewMode = ViewMode.COMPACT;
-    await element.updateComplete;
+  it("syncs viewMode to this card's own store when the viewMode property changes", async () => {
+    // View mode is per card now: the switcher writes the change to its own
+    // store.ui, not the page-global atom.
+    const store = { ui: new GrowspaceUIStore() };
+    const el = await fixture<GrowspaceViewSwitcher>(html`
+      <growspace-view-switcher .device=${mockDevice} .store=${store as never}></growspace-view-switcher>
+    `);
+    await el.updateComplete;
 
-    expect(viewMode$.get()).toBe(ViewMode.COMPACT);
+    el.viewMode = ViewMode.COMPACT;
+    await el.updateComplete;
+
+    expect(store.ui.$viewMode.get()).toBe(ViewMode.COMPACT);
   });
 
   it('passes properties to growspace-view', async () => {

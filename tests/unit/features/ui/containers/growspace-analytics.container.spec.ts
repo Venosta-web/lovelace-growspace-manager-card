@@ -2,6 +2,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { atom } from 'nanostores';
 import * as uiSlice from '../../../../../src/slices/ui';
+import { ViewMode } from '../../../../../src/constants';
 import '../../../../../src/features/ui/containers/growspace-analytics.container';
 import type { GrowspaceAnalyticsContainer } from '../../../../../src/features/ui/containers/growspace-analytics.container';
 
@@ -49,6 +50,9 @@ const buildMockStore = ($analyticsViewState: ReturnType<typeof atom>) => {
             toggleEnvGraph: vi.fn().mockReturnValue(false),
         },
         toggleEnvGraph,
+        // Per-card view-mode surface the container forwards to the slice op so it
+        // can drop HEADER → STANDARD on this card only.
+        ui: { $viewMode: atom(ViewMode.STANDARD), setViewMode: vi.fn() },
         actions: { ui: { toggleEnvGraph } },
     };
 };
@@ -178,13 +182,13 @@ describe('GrowspaceAnalyticsContainer', () => {
     it('toggle-graph event with string detail calls store.actions.ui.toggleEnvGraph', async () => {
         const ui = element.shadowRoot!.querySelector('growspace-analytics-ui')!;
         ui.dispatchEvent(new CustomEvent('toggle-graph', { detail: 'temperature' }));
-        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('temperature', mockStore.history);
+        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('temperature', mockStore.history, mockStore.ui);
     });
 
     it('toggle-graph event with object detail calls store.actions.ui.toggleEnvGraph with metric', async () => {
         const ui = element.shadowRoot!.querySelector('growspace-analytics-ui')!;
         ui.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'co2' } }));
-        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('co2', mockStore.history);
+        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('co2', mockStore.history, mockStore.ui);
     });
 
     it('toggle-graph event with empty metric does not call toggleEnvGraph', async () => {
