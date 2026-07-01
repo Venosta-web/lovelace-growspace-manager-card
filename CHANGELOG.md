@@ -1,3 +1,10 @@
+# [1.1.0-next.69](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.68...v1.1.0-next.69) (2026-07-01)
+
+
+### Features
+
+* **config:** AC Infinity device editor in the Climate & Humidity tabs ([#410](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/410)) ([b479f6a](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b479f6a8e85006d3efa61a9d81161d03fba470f5)), closes [#510](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/510) [#510](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/510)
+
 # [1.1.0-next.68](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.67...v1.1.0-next.68) (2026-07-01)
 
 
