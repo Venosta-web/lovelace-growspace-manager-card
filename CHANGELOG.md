@@ -1,3 +1,10 @@
+# [1.1.0-next.74](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.73...v1.1.0-next.74) (2026-07-01)
+
+
+### Bug Fixes
+
+* **ui:** per-card plant selection + edit mode ([#406](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/406)) ([e2a71f8](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e2a71f82e550e24fc442261424c7027d66d77b30)), closes [#409](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/409)
+
 # [1.1.0-next.73](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.72...v1.1.0-next.73) (2026-07-01)
 
 
