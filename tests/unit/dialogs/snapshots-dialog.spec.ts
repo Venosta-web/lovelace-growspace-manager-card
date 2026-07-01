@@ -396,6 +396,77 @@ describe('Vision Checkup tab', () => {
     expect(recs?.length).toBe(2);
   });
 
+  it('renders a persisted /local/ snapshot as an image in the result detail view', async () => {
+    mockVisionHistory[0].snapshot_paths = [
+      '/local/growspace_manager/snapshots/gs1/20240101_120000_cam1_processed.jpg',
+    ];
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const images = element.shadowRoot?.querySelectorAll('.vision-snapshot-grid img.snapshot-image');
+    expect(images?.length).toBe(1);
+    expect((images?.[0] as HTMLImageElement).getAttribute('src')).toBe(
+      '/local/growspace_manager/snapshots/gs1/20240101_120000_cam1_processed.jpg'
+    );
+  });
+
+  it('renders no snapshot grid when snapshot_paths is empty', async () => {
+    // mockVisionHistory[0].snapshot_paths defaults to []
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const grid = element.shadowRoot?.querySelector('.vision-snapshot-grid');
+    expect(grid).toBeNull();
+  });
+
+  it('renders no image for raw media-source:// fallback paths', async () => {
+    mockVisionHistory[0].snapshot_paths = ['media-source://camera/camera.grow_cam'];
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const grid = element.shadowRoot?.querySelector('.vision-snapshot-grid');
+    expect(grid).toBeNull();
+    const images = element.shadowRoot?.querySelectorAll('.vision-snapshot-grid img.snapshot-image');
+    expect(images?.length).toBe(0);
+  });
+
+  it('renders only /local/ images when mixed with a media-source:// fallback', async () => {
+    mockVisionHistory[0].snapshot_paths = [
+      '/local/growspace_manager/snapshots/gs1/a_cam1_processed.jpg',
+      'media-source://camera/camera.grow_cam',
+      '/local/growspace_manager/snapshots/gs1/b_cam2_processed.jpg',
+    ];
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const images = element.shadowRoot?.querySelectorAll('.vision-snapshot-grid img.snapshot-image');
+    expect(images?.length).toBe(2);
+  });
+
   it('renders history list with compact rows', async () => {
     element.dialogState = { growspaceId: 'gs1' };
     element.open = true;
