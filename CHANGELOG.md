@@ -1,3 +1,10 @@
+# [1.1.0-next.72](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.71...v1.1.0-next.72) (2026-07-01)
+
+
+### Features
+
+* **snapshots:** render persisted vision checkup snapshots in result detail ([f085e9e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/f085e9eaba696863f9364f6c8cf654111b8ccbe0)), closes [#411](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/411)
+
 # [1.1.0-next.71](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.70...v1.1.0-next.71) (2026-07-01)
 
 
