@@ -194,6 +194,7 @@ export class ConfigClimateTab extends LitElement {
             devices: c.exhaustFanAcInfinityDevices,
             modeOptions: c.acInfinityModeOptions,
             speedOptions: c.acInfinitySpeedOptions,
+            conflicts: c.acInfinityConflicts,
             idPrefix: 'exhaust',
             onChange: (devices) => this._update({ exhaustFanAcInfinityDevices: devices }),
           })}
@@ -202,6 +203,7 @@ export class ConfigClimateTab extends LitElement {
             devices: c.circulationFanAcInfinityDevices,
             modeOptions: c.acInfinityModeOptions,
             speedOptions: c.acInfinitySpeedOptions,
+            conflicts: c.acInfinityConflicts,
             idPrefix: 'circulation',
             onChange: (devices) => this._update({ circulationFanAcInfinityDevices: devices }),
           })}

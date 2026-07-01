@@ -18,6 +18,8 @@
  */
 
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
+import type { AcInfinityConflict } from '../components/ac-infinity-conflict';
+import { buildAcInfinityConflicts } from './ac-infinity-conflicts';
 import type {
   AcInfinityDevice,
   CirculationFanConfig,
@@ -42,6 +44,8 @@ export interface ClimateControlVM {
   acInfinityModeOptions: string[];
   /** `number.*` entities for AC Infinity speed pickers. */
   acInfinitySpeedOptions: string[];
+  /** Automated Mode Conflicts for the tab's ports, keyed by `mode_entity`. */
+  acInfinityConflicts: Record<string, AcInfinityConflict>;
   stressThreshold: number;
   moldThreshold: number;
   /** Remove Environment is enabled only when a growspace is selected. */
@@ -92,6 +96,8 @@ export interface ClimateTabViewModel {
 /** Hass adapter the shell injects so the component stays hass-free. */
 export interface ClimateTabDeps {
   entityOptions: (domains: string[], deviceClass: string | null, platform?: string) => string[];
+  /** Hass-reading resolver: a bound mode entity → its conflict, or null if none. */
+  acInfinityConflict: (modeEntity: string) => AcInfinityConflict | null;
 }
 
 /** The two Shell-`@state` expander flags, projected into the VM. */
@@ -128,6 +134,10 @@ export function createClimateTabViewModel(
       circulationFanAcInfinityDevices: d.circulationFanAcInfinityDevices,
       acInfinityModeOptions: deps.entityOptions(['select'], null, 'ac_infinity'),
       acInfinitySpeedOptions: deps.entityOptions(['number'], null, 'ac_infinity'),
+      acInfinityConflicts: buildAcInfinityConflicts(
+        [d.exhaustFanAcInfinityDevices, d.circulationFanAcInfinityDevices],
+        deps.acInfinityConflict
+      ),
       stressThreshold: d.stressThreshold,
       moldThreshold: d.moldThreshold,
       canRemoveEnvironment: Boolean(d.selectedGrowspaceId),

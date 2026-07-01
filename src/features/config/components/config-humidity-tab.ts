@@ -262,6 +262,7 @@ export class ConfigHumidityTab extends LitElement {
             devices: this.vm.humidifierAcInfinityDevices,
             modeOptions: this.vm.acInfinityModeOptions,
             speedOptions: this.vm.acInfinitySpeedOptions,
+            conflicts: this.vm.acInfinityConflicts,
             idPrefix: 'humidifier',
             onChange: (devices) => this._update({ humidifierAcInfinityDevices: devices }),
           })}
@@ -270,6 +271,7 @@ export class ConfigHumidityTab extends LitElement {
             devices: this.vm.dehumidifierAcInfinityDevices,
             modeOptions: this.vm.acInfinityModeOptions,
             speedOptions: this.vm.acInfinitySpeedOptions,
+            conflicts: this.vm.acInfinityConflicts,
             idPrefix: 'dehumidifier',
             onChange: (devices) => this._update({ dehumidifierAcInfinityDevices: devices }),
           })}

@@ -8,7 +8,7 @@ import {
 import { createInitialSM, transition } from '../../../dialogs/config-dialog-sm';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 
-const deps: HumidityTabDeps = { entityOptions: () => [] };
+const deps: HumidityTabDeps = { entityOptions: () => [], acInfinityConflict: () => null };
 const collapsed: HumidityExpandState = {
   humidifierControlEnabled: false,
   dehumidifierControlEnabled: false,
@@ -25,7 +25,7 @@ describe('createHumidityTabViewModel — devices', () => {
       type: 'UPDATE_ENV_DRAFT',
       partial: { humidifierEntities: ['switch.h'], dehumidifierEntities: ['switch.d'] },
     });
-    const d: HumidityTabDeps = { entityOptions: (domains) => (domains.includes('binary_sensor') ? ['x'] : []) };
+    const d: HumidityTabDeps = { entityOptions: (domains) => (domains.includes('binary_sensor') ? ['x'] : []), acInfinityConflict: () => null };
     const vm = createHumidityTabViewModel(s, d, collapsed);
     expect(vm.humidifierEntities).toEqual(['switch.h']);
     expect(vm.dehumidifierEntities).toEqual(['switch.d']);
@@ -84,6 +84,7 @@ describe('createHumidityTabViewModel — stages', () => {
         calls.push([domains, deviceClass, platform]);
         return [];
       },
+      acInfinityConflict: () => null,
     };
     createHumidityTabViewModel(sm(), d, collapsed);
     expect(calls).toContainEqual([['select'], null, 'ac_infinity']);
