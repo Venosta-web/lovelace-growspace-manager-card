@@ -254,7 +254,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   // Event handlers
   private _handleKeyboardNav(e: KeyboardEvent) {
-    handleKeyboardNavigation(e.key);
+    handleKeyboardNavigation(e.key, this.store);
   }
 
   private _handleGlobalKeydown = (e: KeyboardEvent) => {
@@ -289,15 +289,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleSelectAll() {
-    uiSlice.selectAllPlantsInSelectedDevice();
+    this.store.selectAllPlantsInSelectedDevice();
   }
 
   private _handleClearSelection() {
-    uiSlice.clearPlantSelection();
+    this.store.ui.clearPlantSelection();
   }
 
   private _handleWaterSelected() {
-    uiSlice.openBatchWateringDialog();
+    this.store.ui.openBatchWateringDialog();
   }
 
   private _handleExitEditMode() {
@@ -313,7 +313,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleTrainingSelected() {
-    uiSlice.openBatchTrainingDialog();
+    this.store.ui.openBatchTrainingDialog();
   }
 
   private _handleBatchAddPlants() {
@@ -321,15 +321,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handlePrintLabelsSelected() {
-    uiSlice.openBatchPrintLabelsDialog();
+    this.store.ui.openBatchPrintLabelsDialog();
   }
 
   private _handleCloneSelected() {
-    uiSlice.openBatchCloneDialog();
+    this.store.ui.openBatchCloneDialog();
   }
 
   private _handleDeleteSelected = () => {
-    deleteSelectedPlants();
+    deleteSelectedPlants(this.store);
   };
 
   private _handleTransplantMode = () => {

@@ -129,10 +129,16 @@ vi.mock('../../src/store/core/growspace-store', () => ({
             toggleHeaderExpansion: vi.fn(),
             setEditMode: vi.fn(),
             clearPlantSelection: vi.fn(),
+            togglePlantSelection: vi.fn(),
+            deselectPlants: vi.fn(),
             setIsLoading: vi.fn(),
             selectAllPlants: vi.fn(),
             setFocusedPlantIndex: vi.fn(),
             setActiveDialog: vi.fn(),
+            openBatchWateringDialog: vi.fn(),
+            openBatchTrainingDialog: vi.fn(),
+            openBatchCloneDialog: vi.fn(),
+            openBatchPrintLabelsDialog: vi.fn(),
             showToast: vi.fn(),
         };
         grid = {
@@ -174,6 +180,8 @@ vi.mock('../../src/store/core/growspace-store', () => ({
                 printLabel: vi.fn(),
             },
         };
+
+        selectAllPlantsInSelectedDevice = vi.fn();
 
         constructor(host: any) { this.host = host; }
         updateHass() { }
@@ -492,8 +500,9 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle select all', () => {
+            const spy = vi.spyOn(element.store, 'selectAllPlantsInSelectedDevice');
             (element as any)._handleSelectAll();
-            expect(uiSlice.selectAllPlantsInSelectedDevice).toHaveBeenCalled();
+            expect(spy).toHaveBeenCalled();
         });
 
         it('should handle delete selected', () => {
@@ -538,7 +547,7 @@ describe('GrowspaceManagerCard', () => {
         it('should handle keyboard nav', () => {
             vi.mocked(handleKeyboardNavigation).mockClear();
             (element as any)._handleKeyboardNav(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
-            expect(handleKeyboardNavigation).toHaveBeenCalledWith('ArrowRight');
+            expect(handleKeyboardNavigation).toHaveBeenCalledWith('ArrowRight', element.store);
         });
 
         it('should trigger download when _downloadFile is called', () => {
@@ -591,13 +600,15 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle private event handlers', () => {
-            // Clear selection
+            // Clear selection — routes through this card's store
+            const clearSpy = vi.spyOn(element.store.ui, 'clearPlantSelection');
             (element as any)._handleClearSelection();
-            expect(uiSlice.clearPlantSelection).toHaveBeenCalled();
+            expect(clearSpy).toHaveBeenCalled();
 
-            // Water selected
+            // Water selected — snapshots this card's selection
+            const waterSpy = vi.spyOn(element.store.ui, 'openBatchWateringDialog');
             (element as any)._handleWaterSelected();
-            expect(uiSlice.openBatchWateringDialog).toHaveBeenCalled();
+            expect(waterSpy).toHaveBeenCalled();
 
             // Exit edit mode
             const editSpy = vi.spyOn(element.store.ui, 'setEditMode');
@@ -615,9 +626,10 @@ describe('GrowspaceManagerCard', () => {
                 expect(toggleSpy).toHaveBeenCalled();
             }
 
-            // Training selected
+            // Training selected — snapshots this card's selection
+            const trainingSpy = vi.spyOn(element.store.ui, 'openBatchTrainingDialog');
             (element as any)._handleTrainingSelected();
-            expect(uiSlice.openBatchTrainingDialog).toHaveBeenCalled();
+            expect(trainingSpy).toHaveBeenCalled();
 
             // Batch Add
             const dialogSpy = vi.spyOn(element.store.ui, 'setActiveDialog');
@@ -626,13 +638,15 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle print labels selected', () => {
+            const spy = vi.spyOn(element.store.ui, 'openBatchPrintLabelsDialog');
             (element as any)._handlePrintLabelsSelected();
-            expect(uiSlice.openBatchPrintLabelsDialog).toHaveBeenCalled();
+            expect(spy).toHaveBeenCalled();
         });
 
         it('should handle clone selected', () => {
+            const spy = vi.spyOn(element.store.ui, 'openBatchCloneDialog');
             (element as any)._handleCloneSelected();
-            expect(uiSlice.openBatchCloneDialog).toHaveBeenCalled();
+            expect(spy).toHaveBeenCalled();
         });
     });
 

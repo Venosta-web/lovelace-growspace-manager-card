@@ -5,11 +5,7 @@ import { GrowspaceStore } from '../store/core/growspace-store';
 import { BatchCloneDialog } from './batch-clone-dialog';
 import './batch-clone-dialog';
 import { setDevices } from '../slices/grid';
-import {
-  __resetUiSliceForTests,
-  notification$,
-  openBatchCloneDialog as openBatchCloneDialogSlice,
-} from '../slices/ui';
+import { __resetUiSliceForTests, notification$ } from '../slices/ui';
 import { takeClone } from '../slices/plant';
 
 // The dialog now calls the Plant slice `takeClone` mutator directly.
@@ -34,7 +30,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
   it('opens BATCH_CLONE dialog via store method', () => {
     store.ui.$selectedPlants.set(new Set(['p1', 'p2']));
 
-    openBatchCloneDialogSlice();
+    store.ui.openBatchCloneDialog();
 
     const active = store.ui.$activeDialog.get();
     expect(active.type).toBe('BATCH_CLONE');
@@ -45,7 +41,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
   });
 
   it('does not open dialog when no plants are selected', () => {
-    openBatchCloneDialogSlice();
+    store.ui.openBatchCloneDialog();
 
     expect(store.ui.$activeDialog.get().type).toBe('NONE');
   });
@@ -54,7 +50,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
     const ids = ['alpha', 'beta', 'gamma', 'delta'];
     store.ui.$selectedPlants.set(new Set(ids));
 
-    openBatchCloneDialogSlice();
+    store.ui.openBatchCloneDialog();
 
     const active = store.ui.$activeDialog.get();
     if (active.type === 'BATCH_CLONE') {
@@ -68,7 +64,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
   it('reflects dialogHostState after opening', () => {
     store.ui.$selectedPlants.set(new Set(['p1']));
 
-    openBatchCloneDialogSlice();
+    store.ui.openBatchCloneDialog();
 
     expect(store.$dialogHostState.get().activeDialog.type).toBe('BATCH_CLONE');
   });

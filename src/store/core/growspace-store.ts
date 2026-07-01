@@ -247,6 +247,28 @@ export class GrowspaceStore {
     this.grid.setSelectedDevice(deviceId);
   }
 
+  /**
+   * Select every plant in this card's currently-selected device.
+   *
+   * Reads the per-card selected device and its (optimistic-deletion-filtered)
+   * plants from this card's grid slice, then writes this card's selection — so
+   * "select all" on one card never touches another. No-op when no device is
+   * selected.
+   */
+  selectAllPlantsInSelectedDevice() {
+    const selectedId = this.grid.$selectedDevice.get();
+    if (!selectedId) return;
+
+    const device = this.grid.$activeDevices.get().find((d) => d.deviceId === selectedId);
+    if (!device?.plants) return;
+
+    const ids = device.plants
+      .map((plant) => plant.attributes.plant_id)
+      .filter((pId): pId is string => Boolean(pId));
+
+    this.ui.selectAllPlants(ids);
+  }
+
   // Grid helper — triggers a data refresh after a position change
   updateGrid() {
     this.refreshData();

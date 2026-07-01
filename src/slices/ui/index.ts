@@ -65,7 +65,22 @@ import { WSError } from '../../services/errors';
 export const viewMode$ = atom<GrowspaceViewMode>(ViewMode.STANDARD);
 export const isLoading$ = atom<boolean>(true);
 export const activeDialog$ = atom<ActiveDialogState>({ type: 'NONE' });
+/**
+ * @deprecated Edit mode is owned per-card by `GrowspaceUIStore.$isEditMode`, not
+ * page-globally. This module-level atom (and `setEditMode`) is retained only for
+ * the slice's own unit tests. Production code must read/write edit mode through
+ * the per-card store (`store.ui`), otherwise every card on a dashboard shares one
+ * edit-mode flag again.
+ */
 export const isEditMode$ = atom<boolean>(false);
+/**
+ * @deprecated Selection is owned per-card by `GrowspaceUIStore.$selectedPlants`,
+ * not page-globally. This module-level atom (and the `togglePlantSelection` /
+ * `selectAllPlants` / `clearPlantSelection` / `deselectPlants` /
+ * `selectAllPlantsInSelectedDevice` mutators) is retained only for the slice's
+ * own unit tests. Production code must read/write selection through the per-card
+ * store (`store.ui`), otherwise every card on a dashboard shares one selection.
+ */
 export const selectedPlants$ = atom<Set<string>>(new Set());
 export const focusedPlantIndex$ = atom<number>(-1);
 export const menuOpen$ = atom<boolean>(false);

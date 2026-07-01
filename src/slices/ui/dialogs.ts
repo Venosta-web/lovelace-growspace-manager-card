@@ -1,7 +1,7 @@
 import { ConfigTab, ViewMode } from '../../constants';
 import { PlantEntity, GrowspaceDevice, EnvironmentConfigData } from '../../types';
 import { plantToDeviceMap$, selectedDeviceId$, devices$, optimisticDeletedPlantIds$ } from '../grid';
-import { openDialog, selectedPlants$, setPendingDeepLink } from './index';
+import { openDialog, setPendingDeepLink } from './index';
 import type { GrowspaceViewMode } from '../../types';
 
 /** Minimal per-card view-mode surface (a card's `store.ui`) used to drop HEADER → STANDARD. */
@@ -157,8 +157,7 @@ export function handleDeepLink(plantId: string): void {
   }
 }
 
-export function openBatchPrintLabelsDialog(): void {
-  const selectedIds = Array.from(selectedPlants$.get());
+export function openBatchPrintLabelsDialog(selectedIds: string[]): void {
   if (selectedIds.length === 0) return;
 
   openDialog({
@@ -167,8 +166,7 @@ export function openBatchPrintLabelsDialog(): void {
   });
 }
 
-export function openBatchCloneDialog(): void {
-  const selectedIds = Array.from(selectedPlants$.get());
+export function openBatchCloneDialog(selectedIds: string[]): void {
   if (selectedIds.length === 0) return;
 
   openDialog({
@@ -177,8 +175,7 @@ export function openBatchCloneDialog(): void {
   });
 }
 
-export function openBatchWateringDialog(growspaceId?: string): void {
-  const selectedIds = Array.from(selectedPlants$.get());
+export function openBatchWateringDialog(selectedIds: string[], growspaceId?: string): void {
   if (selectedIds.length === 0 && !growspaceId) return;
 
   let targetGrowspaceId = growspaceId;
@@ -196,8 +193,7 @@ export function openBatchWateringDialog(growspaceId?: string): void {
   });
 }
 
-export function openBatchTrainingDialog(growspaceId?: string): void {
-  const selectedIds = Array.from(selectedPlants$.get());
+export function openBatchTrainingDialog(selectedIds: string[], growspaceId?: string): void {
   if (selectedIds.length === 0 && !growspaceId) return;
 
   let targetGrowspaceId = growspaceId;

@@ -848,9 +848,8 @@ export class GrowspaceDialogHost extends LitElement {
       await Promise.all(targetIds.map((id) => updatePlant(id, payloadTemplate)));
       closeDialog();
       await this._handleDataChanged();
-      if (uiSlice.isEditMode$.get()) {
-        uiSlice.clearPlantSelection();
-        uiSlice.setEditMode(false);
+      if (this.store.ui.$isEditMode.get()) {
+        this.store.ui.setEditMode(false);
       }
     } catch (e) {
       showError(e, 'Failed to update plant(s)');
@@ -861,7 +860,7 @@ export class GrowspaceDialogHost extends LitElement {
     const ids = Array.isArray(plantId) ? plantId : [plantId];
     try {
       await Promise.all(ids.map((id) => deletePlant(id)));
-      uiSlice.deselectPlants(ids);
+      this.store.ui.deselectPlants(ids);
       if (uiSlice.activeDialog$.get().type === 'PLANT_OVERVIEW') closeDialog();
       await this._handleDataChanged();
     } catch (e) {
