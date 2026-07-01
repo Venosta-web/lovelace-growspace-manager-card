@@ -222,12 +222,12 @@ export function openStrainRecommendationDialog(): void {
   });
 }
 
-export function openLogbookDialog(): void {
-  const growspaceId = selectedDeviceId$.get();
-  if (growspaceId) {
+export function openLogbookDialog(growspaceId?: string): void {
+  const resolvedId = growspaceId || selectedDeviceId$.get();
+  if (resolvedId) {
     openDialog({
       type: 'LOGBOOK',
-      payload: { growspaceId },
+      payload: { growspaceId: resolvedId },
     });
   }
 }

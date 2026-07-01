@@ -235,7 +235,7 @@ export class GrowspaceHeaderContainer extends LitElement {
         uiSlice.openGrowMasterDialog(this.device?.deviceId || '');
         break;
       case 'logbook':
-        uiSlice.openLogbookDialog();
+        uiSlice.openLogbookDialog(this.device?.deviceId);
         break;
       case 'snapshots':
         uiSlice.openSnapshotsDialog(this.device?.deviceId || undefined);
