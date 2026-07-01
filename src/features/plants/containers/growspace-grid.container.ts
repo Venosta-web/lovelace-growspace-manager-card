@@ -141,7 +141,7 @@ export class GrowspaceGridContainer extends LitElement {
     if (!plant) return;
     if (this.store.ui.$isEditMode.get() && this.store.ui.$selectedPlants.get().size > 0) {
       if (plantId && !this.store.ui.$selectedPlants.get().has(plantId)) {
-        uiSlice.togglePlantSelection(plantId);
+        this.store.ui.togglePlantSelection(plantId);
       }
       uiSlice.openPlantOverviewDialog(plant, Array.from(this.store.ui.$selectedPlants.get()));
     } else {

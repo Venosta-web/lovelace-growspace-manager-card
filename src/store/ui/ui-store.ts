@@ -3,31 +3,41 @@ import { GrowspaceViewMode, GridOverlayMode } from '../../types';
 import { ActiveDialogState } from '../../ui-state';
 import { ViewMode } from '../../constants';
 import { VIEW_MODE_LAYOUT_MAP, type LayoutSpec } from '../../slices/ui/layout-spec';
+import { cancel } from '../../slices/grid-interaction';
 import * as ui from '../../slices/ui';
 
 /**
  * Thin compatibility shim over the `slices/ui` source of truth.
  *
  * Most atom fields below point at the *same* atom instance owned by
- * `slices/ui`. The exception is view-mode state (`$viewMode` and everything
- * computed from it), which is owned *per instance* here: the active view mode
- * (standard / compact / header / heatmap) is a property of a single card on the
- * dashboard, not the page. Each card on a dashboard gets its own `$viewMode`,
- * so expanding/collapsing one card no longer drags the others with it.
+ * `slices/ui`. The exceptions are state that belongs to a single card, not the
+ * page, and is therefore owned *per instance* here:
+ *
+ *   - view mode (`$viewMode` and everything computed from it) — standard /
+ *     compact / header / heatmap is a property of one card, so each card
+ *     expands/collapses independently.
+ *   - plant selection (`$selectedPlants`) and edit mode (`$isEditMode`) —
+ *     selecting plants or entering edit mode on one card must not bleed into
+ *     the others on the same dashboard. These two are deliberately coupled:
+ *     leaving edit mode clears this card's selection.
  *
  * New code should import the genuinely page-global state from `slices/ui`
- * directly, but reach view mode through the per-card store (this class).
+ * directly, but reach the per-card state through this store.
  */
 export class GrowspaceUIStore {
   // View-mode state — owned per instance (NOT shared via slices/ui), so each
   // card on the dashboard expands/collapses independently.
   public readonly $viewMode: WritableAtom<GrowspaceViewMode> = atom(ViewMode.STANDARD);
 
+  // Selection + edit-mode state — owned per instance (NOT shared via slices/ui),
+  // so selecting plants or toggling edit mode on one card leaves the others
+  // untouched. Mutated only through this store's methods below.
+  public readonly $isEditMode: WritableAtom<boolean> = atom(false);
+  public readonly $selectedPlants: WritableAtom<Set<string>> = atom(new Set<string>());
+
   // Atoms — re-exported instances from slices/ui (single source of truth).
   public readonly $isLoading: WritableAtom<boolean> = ui.isLoading$;
   public readonly $activeDialog: WritableAtom<ActiveDialogState> = ui.activeDialog$;
-  public readonly $isEditMode: WritableAtom<boolean> = ui.isEditMode$;
-  public readonly $selectedPlants: WritableAtom<Set<string>> = ui.selectedPlants$;
   public readonly $focusedPlantIndex: WritableAtom<number> = ui.focusedPlantIndex$;
   public readonly $menuOpen: WritableAtom<boolean> = ui.menuOpen$;
   public readonly $notification: WritableAtom<{
@@ -76,11 +86,11 @@ export class GrowspaceUIStore {
       this.$viewMode,
       this.$isCompactView,
       ui.isLoading$,
-      ui.isEditMode$,
+      this.$isEditMode,
       ui.activeDialog$,
       ui.notification$,
       ui.focusedPlantIndex$,
-      ui.selectedPlants$,
+      this.$selectedPlants,
       ui.gridOverlayMode$,
     ],
     (
@@ -135,24 +145,66 @@ export class GrowspaceUIStore {
     ui.closeDialog();
   }
 
+  /**
+   * Enter or exit edit mode for this card.
+   *
+   * Exiting clears this card's selection and cancels any in-flight transplant
+   * so the card always returns to a clean state when the user leaves edit mode.
+   */
   public setEditMode(isEdit: boolean) {
-    ui.setEditMode(isEdit);
+    this.$isEditMode.set(isEdit);
+    if (!isEdit) {
+      this.$selectedPlants.set(new Set());
+      cancel();
+    }
   }
 
+  /** Add a plant to this card's selection, or remove it if already selected. */
   public togglePlantSelection(plantId: string) {
-    ui.togglePlantSelection(plantId);
+    const current = new Set(this.$selectedPlants.get());
+    if (current.has(plantId)) {
+      current.delete(plantId);
+    } else {
+      current.add(plantId);
+    }
+    this.$selectedPlants.set(current);
   }
 
+  /** Replace this card's entire selection with the provided plant IDs. */
   public selectAllPlants(plantIds: string[]) {
-    ui.selectAllPlants(plantIds);
+    this.$selectedPlants.set(new Set(plantIds));
   }
 
+  /** Clear this card's plant selection. */
   public clearPlantSelection() {
-    ui.clearPlantSelection();
+    this.$selectedPlants.set(new Set());
   }
 
+  /** Remove specific plant IDs from this card's selection. */
   public deselectPlants(plantIds: string[]) {
-    ui.deselectPlants(plantIds);
+    const current = new Set(this.$selectedPlants.get());
+    plantIds.forEach((id) => current.delete(id));
+    this.$selectedPlants.set(current);
+  }
+
+  // Batch-dialog openers — snapshot *this card's* selection into the dialog
+  // payload, so a batch operation acts on the plants selected on the card that
+  // triggered it (not a page-global selection).
+
+  public openBatchWateringDialog(growspaceId?: string) {
+    ui.openBatchWateringDialog(Array.from(this.$selectedPlants.get()), growspaceId);
+  }
+
+  public openBatchTrainingDialog(growspaceId?: string) {
+    ui.openBatchTrainingDialog(Array.from(this.$selectedPlants.get()), growspaceId);
+  }
+
+  public openBatchCloneDialog() {
+    ui.openBatchCloneDialog(Array.from(this.$selectedPlants.get()));
+  }
+
+  public openBatchPrintLabelsDialog() {
+    ui.openBatchPrintLabelsDialog(Array.from(this.$selectedPlants.get()));
   }
 
   public setFocusedPlantIndex(index: number) {

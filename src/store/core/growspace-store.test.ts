@@ -265,3 +265,39 @@ describe('GrowspaceStore – movePlant', () => {
     expect(gridSpy).not.toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Per-card plant selection + edit mode (issue #406).
+// Two growspace-manager cards on one dashboard must not share plant selection
+// or edit mode: toggling either on one card leaves the other untouched.
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceStore – per-card selection + edit mode', () => {
+  let cardA: GrowspaceStore;
+  let cardB: GrowspaceStore;
+
+  beforeEach(() => {
+    ({ store: cardA } = makeStore());
+    ({ store: cardB } = makeStore());
+  });
+
+  it('selecting a plant on one card does not select it on another', () => {
+    cardA.ui.togglePlantSelection('plant-1');
+    expect(cardA.ui.$selectedPlants.get().has('plant-1')).toBe(true);
+    expect(cardB.ui.$selectedPlants.get().has('plant-1')).toBe(false);
+  });
+
+  it('entering edit mode on one card does not affect another', () => {
+    cardA.ui.setEditMode(true);
+    expect(cardA.ui.$isEditMode.get()).toBe(true);
+    expect(cardB.ui.$isEditMode.get()).toBe(false);
+  });
+
+  it('exiting edit mode clears only that card selection', () => {
+    cardA.ui.togglePlantSelection('plant-1');
+    cardB.ui.togglePlantSelection('plant-2');
+    cardA.ui.setEditMode(false);
+    expect(cardA.ui.$selectedPlants.get().size).toBe(0);
+    expect(cardB.ui.$selectedPlants.get().has('plant-2')).toBe(true);
+  });
+});

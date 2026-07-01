@@ -4,11 +4,7 @@ import { GrowspaceSharedStore } from '../store/core/growspace-shared-store';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { BatchPrintLabelDialog } from './batch-print-label-dialog';
 import './batch-print-label-dialog';
-import {
-  __resetUiSliceForTests,
-  notification$,
-  openBatchPrintLabelsDialog as openBatchPrintLabelsDialogSlice,
-} from '../slices/ui';
+import { __resetUiSliceForTests, notification$ } from '../slices/ui';
 import { printLabel } from '../slices/plant';
 
 vi.mock('../slices/plant', async (importOriginal) => ({
@@ -32,7 +28,7 @@ describe('GrowspaceStore.openBatchPrintLabelsDialog', () => {
   it('opens BATCH_PRINT_LABELS dialog via store method', () => {
     store.ui.$selectedPlants.set(new Set(['p1', 'p2']));
 
-    openBatchPrintLabelsDialogSlice();
+    store.ui.openBatchPrintLabelsDialog();
 
     const active = store.ui.$activeDialog.get();
     expect(active.type).toBe('BATCH_PRINT_LABELS');
@@ -43,7 +39,7 @@ describe('GrowspaceStore.openBatchPrintLabelsDialog', () => {
   });
 
   it('does not open dialog when no plants are selected', () => {
-    openBatchPrintLabelsDialogSlice();
+    store.ui.openBatchPrintLabelsDialog();
 
     expect(store.ui.$activeDialog.get().type).toBe('NONE');
   });
@@ -52,7 +48,7 @@ describe('GrowspaceStore.openBatchPrintLabelsDialog', () => {
     const ids = ['alpha', 'beta', 'gamma', 'delta'];
     store.ui.$selectedPlants.set(new Set(ids));
 
-    openBatchPrintLabelsDialogSlice();
+    store.ui.openBatchPrintLabelsDialog();
 
     const active = store.ui.$activeDialog.get();
     if (active.type === 'BATCH_PRINT_LABELS') {
@@ -66,7 +62,7 @@ describe('GrowspaceStore.openBatchPrintLabelsDialog', () => {
   it('reflects dialogHostState after opening', () => {
     store.ui.$selectedPlants.set(new Set(['p1']));
 
-    openBatchPrintLabelsDialogSlice();
+    store.ui.openBatchPrintLabelsDialog();
 
     expect(store.$dialogHostState.get().activeDialog.type).toBe('BATCH_PRINT_LABELS');
   });

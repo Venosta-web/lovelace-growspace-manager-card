@@ -111,10 +111,10 @@ describe('GrowspaceGridCard', () => {
     const cardContainer = element.shadowRoot?.querySelector('.unified-growspace-card');
 
     const handlers = [
-      { event: 'select-all', spy: vi.mocked(uiSlice.selectAllPlantsInSelectedDevice) },
-      { event: 'clear-selection', spy: vi.mocked(uiSlice.clearPlantSelection) },
-      { event: 'water-selected', spy: vi.mocked(uiSlice.openBatchWateringDialog) },
-      { event: 'training-selected', spy: vi.mocked(uiSlice.openBatchTrainingDialog) },
+      { event: 'select-all', spy: vi.spyOn(element.store, 'selectAllPlantsInSelectedDevice') },
+      { event: 'clear-selection', spy: vi.spyOn(element.store.ui, 'clearPlantSelection') },
+      { event: 'water-selected', spy: vi.spyOn(element.store.ui, 'openBatchWateringDialog') },
+      { event: 'training-selected', spy: vi.spyOn(element.store.ui, 'openBatchTrainingDialog') },
       { event: 'ipm-selected', spy: vi.mocked(uiSlice.openIPMDialog) },
       { event: 'delete-selected', spy: vi.mocked(deleteSelectedPlants) },
     ];
@@ -226,11 +226,11 @@ describe('GrowspaceGridCard', () => {
     expect(haCard?.classList.contains('wide-growspace')).toBe(true);
 
     const keyboardSpy = vi.mocked(handleKeyboardNavigation);
-    const selectAllSpy = vi.mocked(uiSlice.selectAllPlantsInSelectedDevice);
-    const clearSpy = vi.mocked(uiSlice.clearPlantSelection);
-    const waterSpy = vi.mocked(uiSlice.openBatchWateringDialog);
+    const selectAllSpy = vi.spyOn(element.store, 'selectAllPlantsInSelectedDevice');
+    const clearSpy = vi.spyOn(element.store.ui, 'clearPlantSelection');
+    const waterSpy = vi.spyOn(element.store.ui, 'openBatchWateringDialog');
     const ipmSpy = vi.mocked(uiSlice.openIPMDialog);
-    const trainingSpy = vi.mocked(uiSlice.openBatchTrainingDialog);
+    const trainingSpy = vi.spyOn(element.store.ui, 'openBatchTrainingDialog');
     const deleteSpy = vi.mocked(deleteSelectedPlants);
     const deviceChangeSpy = vi
       .spyOn(element.store, 'handleDeviceChange')
@@ -249,7 +249,7 @@ describe('GrowspaceGridCard', () => {
     cardContainer?.dispatchEvent(new CustomEvent('delete-selected'));
     cardContainer?.dispatchEvent(new CustomEvent('exit-edit-mode'));
 
-    expect(keyboardSpy).toHaveBeenCalledWith('ArrowRight');
+    expect(keyboardSpy).toHaveBeenCalledWith('ArrowRight', element.store);
     expect(deviceChangeSpy).toHaveBeenCalledWith('other_tent');
     expect(selectAllSpy).toHaveBeenCalled();
     expect(clearSpy).toHaveBeenCalled();

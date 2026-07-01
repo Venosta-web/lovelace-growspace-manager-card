@@ -176,9 +176,8 @@ describe('slices/ui pure dialog-open helpers', () => {
     expect(activeDialog$.get().type).toBe('NONE');
   });
 
-  it('openBatchWateringDialog opens WATERING from the current selection', () => {
-    selectedPlants$.set(new Set(['p1', 'p2']));
-    openBatchWateringDialog('gs-1');
+  it('openBatchWateringDialog opens WATERING from the given selection', () => {
+    openBatchWateringDialog(['p1', 'p2'], 'gs-1');
     const dialog = activeDialog$.get();
     expect(dialog.type).toBe('WATERING');
     if (dialog.type === 'WATERING') {
@@ -188,13 +187,12 @@ describe('slices/ui pure dialog-open helpers', () => {
   });
 
   it('openBatchWateringDialog is a no-op with no selection and no growspace', () => {
-    openBatchWateringDialog();
+    openBatchWateringDialog([]);
     expect(activeDialog$.get().type).toBe('NONE');
   });
 
-  it('openBatchTrainingDialog opens TRAINING from the current selection', () => {
-    selectedPlants$.set(new Set(['p1']));
-    openBatchTrainingDialog('gs-1');
+  it('openBatchTrainingDialog opens TRAINING from the given selection', () => {
+    openBatchTrainingDialog(['p1'], 'gs-1');
     expect(activeDialog$.get().type).toBe('TRAINING');
   });
 
