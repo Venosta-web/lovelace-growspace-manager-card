@@ -109,10 +109,9 @@ export interface HumidityTabDeps {
   acInfinityConflict: (modeEntity: string) => AcInfinityConflict | null;
 }
 
-/** The three Shell-`@state` flags projected into the VM. */
+/** The Shell-`@state` accordion flag projected into the VM. The humidity control
+ * toggles now live in the Shared Environment Draft, not here. */
 export interface HumidityExpandState {
-  humidifierControlEnabled: boolean;
-  dehumidifierControlEnabled: boolean;
   openStageId: HumidityStageId | '';
 }
 
@@ -171,8 +170,8 @@ export function createHumidityTabViewModel(
       [d.humidifierAcInfinityDevices, d.dehumidifierAcInfinityDevices],
       deps.acInfinityConflict
     ),
-    humidifierControlEnabled: expand.humidifierControlEnabled,
-    dehumidifierControlEnabled: expand.dehumidifierControlEnabled,
+    humidifierControlEnabled: d.humidifierControlEnabled,
+    dehumidifierControlEnabled: d.dehumidifierControlEnabled,
     stages: HUMIDITY_STAGES.map((s) => ({
       id: s.id,
       label: s.label,

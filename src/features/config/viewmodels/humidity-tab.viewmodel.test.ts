@@ -10,8 +10,6 @@ import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 
 const deps: HumidityTabDeps = { entityOptions: () => [], acInfinityConflict: () => null };
 const collapsed: HumidityExpandState = {
-  humidifierControlEnabled: false,
-  dehumidifierControlEnabled: false,
   openStageId: '',
 };
 
@@ -32,12 +30,12 @@ describe('createHumidityTabViewModel — devices', () => {
     expect(vm.humidifierOptions).toEqual(['x']); // humidifier domains include binary_sensor
   });
 
-  it('projects the two control-enable flags from the Shell', () => {
-    const vm = createHumidityTabViewModel(sm(), deps, {
-      humidifierControlEnabled: true,
-      dehumidifierControlEnabled: true,
-      openStageId: '',
+  it('projects the two control-enable flags from the draft', () => {
+    const s = transition(sm(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { humidifierControlEnabled: true, dehumidifierControlEnabled: true },
     });
+    const vm = createHumidityTabViewModel(s, deps, collapsed);
     expect(vm.humidifierControlEnabled).toBe(true);
     expect(vm.dehumidifierControlEnabled).toBe(true);
   });

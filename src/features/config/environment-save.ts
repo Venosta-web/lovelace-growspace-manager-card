@@ -22,20 +22,14 @@
 import type { EnvironmentDraft } from '../../dialogs/config-dialog-sm';
 import type { EnvironmentConfigEventDetail } from '../../lib/types/dialog';
 
-/** The two control-toggle flags that live on the dialog, outside the draft. */
-export interface EnvironmentControlFlags {
-  humidifierControlEnabled: boolean;
-  dehumidifierControlEnabled: boolean;
-}
-
 /**
- * Pure composer: the whole Shared Environment Draft (+ the dialog's two control
- * toggles) → the `configure-environment-submit` event detail. Every field is
- * copied so the full-replace save never drops one.
+ * Pure composer: the whole Shared Environment Draft → the
+ * `configure-environment-submit` event detail. Every field is copied so the
+ * full-replace save never drops one. The two humidity control toggles are
+ * ordinary draft fields, seeded and mutated through the same seam as the rest.
  */
 export function composeEnvironmentConfig(
-  draft: EnvironmentDraft,
-  flags: EnvironmentControlFlags
+  draft: EnvironmentDraft
 ): EnvironmentConfigEventDetail {
   return {
     selectedGrowspaceId: draft.selectedGrowspaceId,
@@ -52,11 +46,11 @@ export function composeEnvironmentConfig(
     circulationFanAcInfinityDevices: draft.circulationFanAcInfinityDevices,
     humidifierEntities: draft.humidifierEntities,
     humidifierThresholds: draft.humidifierThresholds,
-    humidifierControlEnabled: flags.humidifierControlEnabled,
+    humidifierControlEnabled: draft.humidifierControlEnabled,
     humidifierAcInfinityDevices: draft.humidifierAcInfinityDevices,
     dehumidifierEntities: draft.dehumidifierEntities,
     dehumidifierThresholds: draft.dehumidifierThresholds,
-    dehumidifierControlEnabled: flags.dehumidifierControlEnabled,
+    dehumidifierControlEnabled: draft.dehumidifierControlEnabled,
     dehumidifierAcInfinityDevices: draft.dehumidifierAcInfinityDevices,
     soilMoistureSensor: draft.soilMoistureSensor,
     sensorGroups: draft.sensorGroups,

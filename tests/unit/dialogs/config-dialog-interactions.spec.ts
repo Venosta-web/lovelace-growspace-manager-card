@@ -107,8 +107,7 @@ describe('ConfigDialog Interactions', () => {
         });
         await element.updateComplete;
 
-        (element as any)._dehumidifierControlEnabled = true;
-        (element as any)._humidifierControlEnabled = false;
+        (element as any)._setEnv({ dehumidifierControlEnabled: true, humidifierControlEnabled: false });
 
         const listener = vi.fn();
         element.addEventListener('configure-environment-submit', listener);

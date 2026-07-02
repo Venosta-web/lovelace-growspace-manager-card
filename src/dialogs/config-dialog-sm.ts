@@ -64,6 +64,8 @@ export interface EnvironmentDraft {
   dehumidifierAcInfinityDevices: AcInfinityDevice[];
   humidifierThresholds: Record<string, Record<string, { on: number; off: number }>>;
   dehumidifierThresholds: Record<string, Record<string, { on: number; off: number }>>;
+  humidifierControlEnabled: boolean;
+  dehumidifierControlEnabled: boolean;
 
   // Substrate / irrigation monitoring sensors
   soilMoistureSensor: string;
@@ -359,6 +361,8 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
     dehumidifierAcInfinityDevices: [],
     humidifierThresholds: {},
     dehumidifierThresholds: {},
+    humidifierControlEnabled: false,
+    dehumidifierControlEnabled: false,
     soilMoistureSensor: '',
     substrateTemperatureSensors: [],
     phSensors: [],
@@ -514,6 +518,8 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
         : [],
     humidifierThresholds: attrs.humidifierThresholds ?? {},
     dehumidifierThresholds: attrs.dehumidifierThresholds ?? {},
+    humidifierControlEnabled: attrs.humidifierControlEnabled ?? false,
+    dehumidifierControlEnabled: attrs.dehumidifierControlEnabled ?? false,
     exhaustFanAcInfinityDevices: attrs.exhaustFanAcInfinityDevices ?? [],
     circulationFanAcInfinityDevices: attrs.circulationFanAcInfinityDevices ?? [],
     humidifierAcInfinityDevices: attrs.humidifierAcInfinityDevices ?? [],

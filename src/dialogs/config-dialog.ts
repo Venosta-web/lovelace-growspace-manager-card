@@ -105,8 +105,6 @@ export class ConfigDialog extends LitElement {
 
   // ── Humidity accordion (pure UI ephemeral state) ──────────────────────────
   @state() private _openHumidityStageId: HumidityStageId | '' = '';
-  @state() private _dehumidifierControlEnabled = false;
-  @state() private _humidifierControlEnabled = false;
 
   // ── VPD targets accordion (pure UI ephemeral state) ───────────────────────
   @state() private _openVpdStageId: FanVpdStageKey | '' = '';
@@ -168,11 +166,11 @@ export class ConfigDialog extends LitElement {
   get envSoilMoistureSensor() { return this._d.soilMoistureSensor; }
   set envSoilMoistureSensor(v: string) { this._setEnv({ soilMoistureSensor: v }); }
 
-  get envDehumidifierControlEnabled() { return this._dehumidifierControlEnabled; }
-  set envDehumidifierControlEnabled(v: boolean) { this._dehumidifierControlEnabled = v; }
+  get envDehumidifierControlEnabled() { return this._sm.environmentDraft.dehumidifierControlEnabled; }
+  set envDehumidifierControlEnabled(v: boolean) { this._setEnv({ dehumidifierControlEnabled: v }); }
 
-  get envHumidifierControlEnabled() { return this._humidifierControlEnabled; }
-  set envHumidifierControlEnabled(v: boolean) { this._humidifierControlEnabled = v; }
+  get envHumidifierControlEnabled() { return this._sm.environmentDraft.humidifierControlEnabled; }
+  set envHumidifierControlEnabled(v: boolean) { this._setEnv({ humidifierControlEnabled: v }); }
 
   get envDehumidifierThresholds() { return this._d.dehumidifierThresholds; }
   set envDehumidifierThresholds(v: Record<string, Record<string, { on: number; off: number }>>) { this._setEnv({ dehumidifierThresholds: v }); }
@@ -943,9 +941,6 @@ export class ConfigDialog extends LitElement {
       ...createInitialSM(device),
       activeTab: this.initialTab as ConfigTabId,
     };
-    const attrs = device?.environmentAttributes;
-    this._dehumidifierControlEnabled = attrs?.dehumidifierControlEnabled ?? false;
-    this._humidifierControlEnabled = attrs?.humidifierControlEnabled ?? false;
     if (device) this._populateEditFields(device.deviceId);
     if (this.initialTab === ConfigTab.SUBAREAS) this._loadSubareas();
   }
@@ -985,10 +980,7 @@ export class ConfigDialog extends LitElement {
   private _submitEnvironment() {
     this.dispatchEvent(
       new CustomEvent('configure-environment-submit', {
-        detail: composeEnvironmentConfig(this._sm.environmentDraft, {
-          humidifierControlEnabled: this._humidifierControlEnabled,
-          dehumidifierControlEnabled: this._dehumidifierControlEnabled,
-        }),
+        detail: composeEnvironmentConfig(this._sm.environmentDraft),
         bubbles: true,
         composed: true,
       })
@@ -1387,8 +1379,6 @@ export class ConfigDialog extends LitElement {
     const device = this.devices.find((d) => d.deviceId === growspaceId);
     if (device) {
       this._t({ type: 'RESET_FROM_DEVICE', device });
-      this._dehumidifierControlEnabled = device.environmentAttributes?.dehumidifierControlEnabled ?? false;
-      this._humidifierControlEnabled = device.environmentAttributes?.humidifierControlEnabled ?? false;
     } else {
       this._t({
         type: 'UPDATE_ENV_DRAFT',
@@ -1406,6 +1396,8 @@ export class ConfigDialog extends LitElement {
           soilMoistureSensor: '',
           dehumidifierThresholds: {},
           humidifierThresholds: {},
+          humidifierControlEnabled: false,
+          dehumidifierControlEnabled: false,
           visionEnabled: false,
           visionEarlyOffset: 60,
           visionMidHours: 6,
@@ -1426,8 +1418,6 @@ export class ConfigDialog extends LitElement {
           vpdOptimalOverrides: {},
         },
       });
-      this._dehumidifierControlEnabled = false;
-      this._humidifierControlEnabled = false;
       this._t({ type: 'CANCEL_TANK' });
     }
   }
@@ -1567,8 +1557,6 @@ export class ConfigDialog extends LitElement {
     return html`
       <config-humidity-tab
         .vm=${createHumidityTabViewModel(this._sm, deps, {
-          humidifierControlEnabled: this._humidifierControlEnabled,
-          dehumidifierControlEnabled: this._dehumidifierControlEnabled,
           openStageId: this._openHumidityStageId,
         })}
         @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
@@ -1593,14 +1581,14 @@ export class ConfigDialog extends LitElement {
   }
 
   private _setHumidifierControl(enabled: boolean) {
-    this._humidifierControlEnabled = enabled;
+    this._setEnv({ humidifierControlEnabled: enabled });
     setHumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled).catch(
       (err: unknown) => console.error('[setHumidifierControl failed]', err)
     );
   }
 
   private _setDehumidifierControl(enabled: boolean) {
-    this._dehumidifierControlEnabled = enabled;
+    this._setEnv({ dehumidifierControlEnabled: enabled });
     setDehumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled).catch(
       (err: unknown) => console.error('[setDehumidifierControl failed]', err)
     );

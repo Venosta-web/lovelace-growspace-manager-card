@@ -87,17 +87,22 @@ describe('createInitialSM', () => {
     expect(sm.environmentDraft.stressThreshold).toBe(0.8);
   });
 
-  it('does not include dehumidifierControlEnabled in the environment draft', () => {
+  it('defaults the humidity control flags to false in the environment draft', () => {
     const sm = createInitialSM();
-    expect('dehumidifierControlEnabled' in sm.environmentDraft).toBe(false);
+    expect(sm.environmentDraft.humidifierControlEnabled).toBe(false);
+    expect(sm.environmentDraft.dehumidifierControlEnabled).toBe(false);
   });
 
-  it('does not seed dehumidifierControlEnabled from device attributes', () => {
+  it('seeds the humidity control flags from device attributes', () => {
     const device = makeDevice({
-      environmentAttributes: { dehumidifierControlEnabled: true },
+      environmentAttributes: {
+        humidifierControlEnabled: true,
+        dehumidifierControlEnabled: true,
+      },
     });
     const sm = createInitialSM(device);
-    expect('dehumidifierControlEnabled' in sm.environmentDraft).toBe(false);
+    expect(sm.environmentDraft.humidifierControlEnabled).toBe(true);
+    expect(sm.environmentDraft.dehumidifierControlEnabled).toBe(true);
   });
 
   it('seeds environment draft from device', () => {
