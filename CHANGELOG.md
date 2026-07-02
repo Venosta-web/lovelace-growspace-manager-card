@@ -1,3 +1,10 @@
+# [1.1.0-next.75](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.74...v1.1.0-next.75) (2026-07-02)
+
+
+### Bug Fixes
+
+* **ui:** per-card grid overlay mode ([#407](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/407)) ([4e6194c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/4e6194c60fec7cdf9c6abfdc8558acff4590caed))
+
 # [1.1.0-next.74](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.73...v1.1.0-next.74) (2026-07-01)
 
 
