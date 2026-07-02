@@ -91,6 +91,13 @@ export const notification$ = atom<{
 } | null>(null);
 export const error$ = atom<string | null>(null);
 export const defaultApplied$ = atom<boolean>(false);
+/**
+ * @deprecated Grid overlay mode is owned per-card by
+ * `GrowspaceUIStore.$gridOverlayMode`, not page-globally. This module-level atom
+ * (and `setGridOverlayMode`) is retained only for the slice's own unit tests.
+ * Production code must read/write the overlay mode through the per-card store
+ * (`store.ui`), otherwise every card on a dashboard shares one overlay again.
+ */
 export const gridOverlayMode$ = atom<GridOverlayMode>(GridOverlayModeEnum.NONE);
 export const language$ = atom<string>('en');
 export const pendingDeepLinkPlantId$ = atom<string | null>(null);
@@ -164,7 +171,13 @@ export function setViewMode(mode: GrowspaceViewMode): void {
   viewMode$.set(mode);
 }
 
-/** Switch the active grid overlay (e.g. vpd, ec, none). */
+/**
+ * Switch the active grid overlay (e.g. vpd, ec, none).
+ *
+ * @deprecated Writes the page-global slice atom; production code must go through
+ * the per-card store (`store.ui.setGridOverlayMode`). Retained for the slice's
+ * own unit tests.
+ */
 export function setGridOverlayMode(mode: GridOverlayMode): void {
   gridOverlayMode$.set(mode);
 }

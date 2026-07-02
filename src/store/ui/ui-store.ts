@@ -16,6 +16,9 @@ import * as ui from '../../slices/ui';
  *   - view mode (`$viewMode` and everything computed from it) — standard /
  *     compact / header / heatmap is a property of one card, so each card
  *     expands/collapses independently.
+ *   - grid overlay mode (`$gridOverlayMode`) — the active grid overlay (vpd /
+ *     bio_status / none) is a property of one card, so switching the overlay on
+ *     one card leaves the others untouched.
  *   - plant selection (`$selectedPlants`) and edit mode (`$isEditMode`) —
  *     selecting plants or entering edit mode on one card must not bleed into
  *     the others on the same dashboard. These two are deliberately coupled:
@@ -28,6 +31,11 @@ export class GrowspaceUIStore {
   // View-mode state — owned per instance (NOT shared via slices/ui), so each
   // card on the dashboard expands/collapses independently.
   public readonly $viewMode: WritableAtom<GrowspaceViewMode> = atom(ViewMode.STANDARD);
+
+  // Grid overlay mode — owned per instance (NOT shared via slices/ui), so
+  // switching the overlay (vpd / bio_status / none) on one card leaves the
+  // others untouched. Mutated only through setGridOverlayMode below.
+  public readonly $gridOverlayMode: WritableAtom<GridOverlayMode> = atom(GridOverlayMode.NONE);
 
   // Selection + edit-mode state — owned per instance (NOT shared via slices/ui),
   // so selecting plants or toggling edit mode on one card leaves the others
@@ -48,7 +56,6 @@ export class GrowspaceUIStore {
 
   public readonly $error: WritableAtom<string | null> = ui.error$;
   public readonly $defaultApplied: WritableAtom<boolean> = ui.defaultApplied$;
-  public readonly $gridOverlayMode: WritableAtom<GridOverlayMode> = ui.gridOverlayMode$;
   public readonly $language: WritableAtom<string> = ui.language$;
   public readonly $pendingDeepLinkPlantId: WritableAtom<string | null> = ui.pendingDeepLinkPlantId$;
   public readonly $flowerFlipDismissed: WritableAtom<Record<string, string>> =
@@ -91,7 +98,7 @@ export class GrowspaceUIStore {
       ui.notification$,
       ui.focusedPlantIndex$,
       this.$selectedPlants,
-      ui.gridOverlayMode$,
+      this.$gridOverlayMode,
     ],
     (
       viewMode,
@@ -130,7 +137,7 @@ export class GrowspaceUIStore {
   }
 
   public setGridOverlayMode(mode: GridOverlayMode) {
-    ui.setGridOverlayMode(mode);
+    this.$gridOverlayMode.set(mode);
   }
 
   public setIsLoading(loading: boolean) {

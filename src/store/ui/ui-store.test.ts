@@ -105,6 +105,38 @@ describe('GrowspaceUIStore view mode is owned per instance', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Per-instance grid overlay mode — two cards on one dashboard switch the grid
+// overlay (vpd / ec / none) independently. Regression: changing the overlay on
+// card N used to flip a page-global slice atom, changing it on every card.
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceUIStore grid overlay mode is owned per instance', () => {
+  let cardA: GrowspaceUIStore;
+  let cardB: GrowspaceUIStore;
+
+  beforeEach(() => {
+    cardA = new GrowspaceUIStore();
+    cardB = new GrowspaceUIStore();
+  });
+
+  it('does not share the $gridOverlayMode atom between instances', () => {
+    expect(cardA.$gridOverlayMode).not.toBe(cardB.$gridOverlayMode);
+  });
+
+  it('setGridOverlayMode on one card leaves the other unchanged', () => {
+    cardA.setGridOverlayMode('vpd' as any);
+    expect(cardA.$gridOverlayMode.get()).toBe('vpd');
+    expect(cardB.$gridOverlayMode.get()).toBe('none');
+  });
+
+  it('$cardViewState.overlayMode reflects this card own overlay mode', () => {
+    cardA.setGridOverlayMode('vpd' as any);
+    expect(cardA.$cardViewState.get().overlayMode).toBe('vpd');
+    expect(cardB.$cardViewState.get().overlayMode).toBe('none');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Shared notification atom — slices/ui.showToast must reach the toast container
 // ---------------------------------------------------------------------------
 
