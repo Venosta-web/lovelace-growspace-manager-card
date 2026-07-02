@@ -995,7 +995,7 @@ export class GrowspaceDialogHost extends LitElement {
         .hass=${this.hass}
         .devices=${this._dialogHostController.value.devices}
         .currentTab=${dialogState.currentTab}
-        .environmentData=${dialogState.environmentData}
+        .growspaceId=${dialogState.growspaceId}
         .growspaceOptions=${growspaceOptions}
         @close=${() => this._closeDialogIfActive('CONFIG')}
         @add-growspace-submit=${async (e: CustomEvent) => {

@@ -109,7 +109,6 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     @state() private _parentGrowspaceName = '';
     @state() private _showConfigDialog = false;
     @state() private _historyCache: Record<string, any[]> = {};
-    private _configEnvDataSnapshot: Record<string, unknown> | null = null;
 
     static styles: CSSResultGroup = [
         variables,
@@ -443,33 +442,6 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         const growspaceOptions: Record<string, string> = Object.fromEntries(
             devices.map((d) => [d.deviceId, d.name])
         );
-        const parentEnvAttrs = parentDevice?.environmentAttributes;
-        const configEnvData = {
-            selectedGrowspaceId: this._config.growspace_id,
-            temperatureSensor: parentEnvAttrs?.temperatureSensor || '',
-            humiditySensor: parentEnvAttrs?.humiditySensor || '',
-            vpdSensor: parentEnvAttrs?.vpdSensor || '',
-            co2Sensor: parentEnvAttrs?.co2Sensor || '',
-            circulationFanEntity: parentEnvAttrs?.circulationFanEntity || '',
-            circulationFanEntities: parentEnvAttrs?.circulationFanEntities || [],
-            stressThreshold: 0.8,
-            moldThreshold: 0.8,
-            lightSensor: parentEnvAttrs?.lightSensor || '',
-            lightSensors: parentEnvAttrs?.lightSensors || [],
-            exhaustEntity: parentEnvAttrs?.exhaustEntity || '',
-            exhaustFanEntities: parentEnvAttrs?.exhaustFanEntities || [],
-            humidifierEntity: parentEnvAttrs?.humidifierEntity || '',
-            humidifierEntities: parentEnvAttrs?.humidifierEntities || [],
-            dehumidifierEntity: parentEnvAttrs?.dehumidifierEntity || '',
-            dehumidifierEntities: parentEnvAttrs?.dehumidifierEntities || [],
-            soilMoistureSensor: parentEnvAttrs?.soilMoistureSensor || '',
-            dehumidifierControlEnabled: parentEnvAttrs?.dehumidifierControlEnabled || false,
-            dehumidifierThresholds: parentEnvAttrs?.dehumidifierThresholds || {},
-            sensorGroups: parentEnvAttrs?.sensorGroups || [],
-            sensorCoordinates: parentEnvAttrs?.sensorCoordinates || {},
-            irrigationTanks: parentEnvAttrs?.irrigationTanks || [],
-            cameraEntities: parentEnvAttrs?.cameraEntities || [],
-        };
         const parentName = this._parentGrowspaceName || this._config.growspace_id;
 
         return html`
@@ -503,7 +475,6 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                         class="config-button"
                         title="Configure subareas"
                         @click=${() => {
-                            this._configEnvDataSnapshot = configEnvData;
                             this._showConfigDialog = true;
                         }}
                       >
@@ -532,7 +503,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 .growspaceOptions=${growspaceOptions}
                 .initialTab=${ConfigTab.SUBAREAS}
                 .allowedTabs=${[ConfigTab.SUBAREAS]}
-                .environmentData=${this._configEnvDataSnapshot}
+                .growspaceId=${this._config.growspace_id}
                 @close=${() => {
                         this._showConfigDialog = false;
                     }}

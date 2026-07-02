@@ -105,17 +105,19 @@ describe('_tankDraft getter', () => {
   });
 });
 
-// ─── setInitialState irrigation tanks mapping (line 974) ─────────────────────
+// ─── seed from device: irrigation tanks mapping ──────────────────────────────
 
-describe('setInitialState irrigation tanks mapping', () => {
+describe('_seedFromDevice irrigation tanks mapping', () => {
   it('maps tanks array and fills missing fields with defaults', () => {
     const el = makeEl();
-    el.setInitialState(ConfigTab.SENSORS, {
-      selectedGrowspaceId: 'gs1',
-      irrigationTanks: [
-        { sensorEntity: 'sensor.tank1', name: 'Main Tank', volumeLiters: 50, warningLevel: 20 },
-        { sensorEntity: 'sensor.tank2' }, // name/volumeLiters/warningLevel missing
-      ],
+    (el as any)._seedFromDevice({
+      deviceId: 'gs1',
+      environmentAttributes: {
+        irrigationTanks: [
+          { sensorEntity: 'sensor.tank1', name: 'Main Tank', volumeLiters: 50, warningLevel: 20 },
+          { sensorEntity: 'sensor.tank2' }, // name/volumeLiters/warningLevel missing
+        ],
+      },
     } as any);
     const tanks = (el as any)._sm.environmentDraft.irrigationTanks;
     expect(tanks).toHaveLength(2);
@@ -124,19 +126,19 @@ describe('setInitialState irrigation tanks mapping', () => {
   });
 });
 
-// ─── setInitialState AC Infinity devices ─────────────────────────────────────
+// ─── seed from device: AC Infinity devices ───────────────────────────────────
 
-describe('setInitialState AC Infinity devices', () => {
-  it('seeds exhaust AC Infinity devices from environmentData into the draft', () => {
+describe('_seedFromDevice AC Infinity devices', () => {
+  it('seeds exhaust AC Infinity devices from the device into the draft', () => {
     const el = makeEl();
     const device = {
       mode_entity: 'select.sog_exhaust_aktiver_modus',
       speed_entity: 'number.sog_exhaust_einschaltleistung',
       on_speed: 10,
     };
-    el.setInitialState(ConfigTab.SENSORS, {
-      selectedGrowspaceId: 'gs1',
-      exhaustFanAcInfinityDevices: [device],
+    (el as any)._seedFromDevice({
+      deviceId: 'gs1',
+      environmentAttributes: { exhaustFanAcInfinityDevices: [device] },
     } as any);
     const draft = (el as any)._sm.environmentDraft;
     expect(draft.exhaustFanAcInfinityDevices).toEqual([device]);

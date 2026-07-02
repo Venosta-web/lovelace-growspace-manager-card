@@ -114,29 +114,12 @@ describe('slices/ui pure dialog-open helpers', () => {
     }
   });
 
-  it('openConfigDialog opens CONFIG seeded from the device', () => {
+  it('openConfigDialog opens CONFIG carrying the growspace id to seed from', () => {
     openConfigDialog({ deviceId: 'gs-1' } as never);
     const dialog = activeDialog$.get();
     expect(dialog.type).toBe('CONFIG');
     if (dialog.type === 'CONFIG') {
-      expect(dialog.payload.environmentData.selectedGrowspaceId).toBe('gs-1');
-    }
-  });
-
-  it('openConfigDialog carries exhaust AC Infinity devices from the device', () => {
-    const acDevice = {
-      mode_entity: 'select.sog_exhaust_aktiver_modus',
-      speed_entity: 'number.sog_exhaust_einschaltleistung',
-      on_speed: 10,
-    };
-    openConfigDialog({
-      deviceId: 'gs-1',
-      environmentAttributes: { exhaustFanAcInfinityDevices: [acDevice] },
-    } as never);
-    const dialog = activeDialog$.get();
-    expect(dialog.type).toBe('CONFIG');
-    if (dialog.type === 'CONFIG') {
-      expect(dialog.payload.environmentData.exhaustFanAcInfinityDevices).toEqual([acDevice]);
+      expect(dialog.payload.growspaceId).toBe('gs-1');
     }
   });
 

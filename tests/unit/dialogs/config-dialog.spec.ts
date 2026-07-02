@@ -255,18 +255,15 @@ describe('ConfigDialog', () => {
         });
 
         it('should load initial state', async () => {
-            element.setInitialState(ConfigTab.SENSORS, {
-                selectedGrowspaceId: 'gs1',
-                temperatureSensor: 'sensor.temp',
-                temperatureSensors: ['sensor.temp'],
-                humiditySensor: 'sensor.hum',
-                humiditySensors: ['sensor.hum'],
-                vpdSensor: '', vpdSensors: [], co2Sensor: '', circulationFanEntity: '',
-                stressThreshold: 0, moldThreshold: 0, lightSensor: '', lightSensors: [],
-                exhaustEntity: '', exhaustFanEntities: [], humidifierEntity: '', humidifierEntities: [],
-                humidifierControlEnabled: false,
-                dehumidifierEntity: '', dehumidifierEntities: [], circulationFanEntities: [],
-                soilMoistureSensor: '', dehumidifierControlEnabled: true, dehumidifierThresholds: {}
+            (element as any)._seedFromDevice({
+                deviceId: 'gs1',
+                name: 'Growspace 1',
+                rows: 4,
+                plantsPerRow: 4,
+                environmentAttributes: {
+                    temperatureSensors: ['sensor.temp'],
+                    humiditySensors: ['sensor.hum'],
+                },
             });
             await element.updateComplete;
 
@@ -662,10 +659,10 @@ describe('ConfigDialog', () => {
     });
 
     describe('Final Coverage Gaps', () => {
-        it('should handle willUpdate with null environmentData', async () => {
-            element.environmentData = { growspace_id: 'g1' } as any;
+        it('should handle willUpdate when growspaceId changes then clears', async () => {
+            element.growspaceId = 'g1';
             await element.updateComplete;
-            element.environmentData = null as any;
+            element.growspaceId = '';
             await element.updateComplete;
         });
 
@@ -888,8 +885,8 @@ describe('ConfigDialog', () => {
             expect(res).toEqual([]);
         });
 
-        it('should handle null environmentData in willUpdate', async () => {
-            element.environmentData = undefined as any;
+        it('should handle empty growspaceId in willUpdate', async () => {
+            element.growspaceId = '';
             await element.updateComplete;
             // No error should occur
         });

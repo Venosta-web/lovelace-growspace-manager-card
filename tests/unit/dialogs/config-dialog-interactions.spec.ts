@@ -59,9 +59,9 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('should trigger sensor changes via DOM select', async () => {
-        element.setInitialState(ConfigTab.SENSORS, {
-            selectedGrowspaceId: 'gs1'
-        } as any);
+        (element as any)._seedFromDevice({
+            deviceId: 'gs1', name: 'GS1', rows: 4, plantsPerRow: 4, environmentAttributes: {},
+        });
         element.hass = {
             states: {
                 'sensor.temp1': { entity_id: 'sensor.temp1', attributes: { device_class: 'temperature', friendly_name: 'T1' } }
@@ -80,11 +80,15 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('should trigger updateThreshold via night/off selection', async () => {
-        element.setInitialState(ConfigTab.HUMIDITY, {
-            dehumidifierThresholds: {
-                'gs1': { 'day': { on: 60, off: 55 }, 'night': { on: 65, off: 60 } }
-            }
-        } as any);
+        element.initialTab = ConfigTab.HUMIDITY;
+        (element as any)._seedFromDevice({
+            deviceId: 'gs1', name: 'GS1', rows: 4, plantsPerRow: 4,
+            environmentAttributes: {
+                dehumidifierThresholds: {
+                    'gs1': { 'day': { on: 60, off: 55 }, 'night': { on: 65, off: 60 } },
+                },
+            },
+        });
         (element as any)._openHumidityStageId = 'gs1';
         await element.updateComplete;
 
@@ -97,7 +101,10 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('configure-environment-submit payload includes dehumidifierControlEnabled and humidifierControlEnabled', async () => {
-        element.setInitialState(ConfigTab.HUMIDITY, { selectedGrowspaceId: 'gs1' } as any);
+        element.initialTab = ConfigTab.HUMIDITY;
+        (element as any)._seedFromDevice({
+            deviceId: 'gs1', name: 'GS1', rows: 4, plantsPerRow: 4, environmentAttributes: {},
+        });
         await element.updateComplete;
 
         (element as any)._dehumidifierControlEnabled = true;
@@ -113,7 +120,10 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('toggling dehumidifier control checkbox calls setDehumidifierControl immediately', async () => {
-        element.setInitialState(ConfigTab.HUMIDITY, { selectedGrowspaceId: 'gs1' } as any);
+        element.initialTab = ConfigTab.HUMIDITY;
+        (element as any)._seedFromDevice({
+            deviceId: 'gs1', name: 'GS1', rows: 4, plantsPerRow: 4, environmentAttributes: {},
+        });
         await element.updateComplete;
 
         // Humidity tab is a nested dumb component (ADR-0019); pierce its shadow.

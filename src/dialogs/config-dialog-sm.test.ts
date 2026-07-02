@@ -157,6 +157,45 @@ describe('createInitialSM', () => {
     const sm = createInitialSM(device);
     expect(sm.environmentDraft.vpdOptimalOverrides).toEqual({});
   });
+
+  // Characterization: `createInitialSM(device)` (via envDraftFromDevice) is the single
+  // seeding seam and a strict superset of the legacy flat-payload seeders. These pin the
+  // fields those legacy paths silently dropped (lstOffset, humidifierThresholds) plus the
+  // AC Infinity bundles, so the four→one collapse can't regress them.
+  it('seeds lstOffset from device (dropped by the legacy flat-payload seeders)', () => {
+    const device = makeDevice({ environmentAttributes: { lstOffset: -3.5 } as any });
+    const sm = createInitialSM(device);
+    expect(sm.environmentDraft.lstOffset).toBe(-3.5);
+  });
+
+  it('seeds humidifierThresholds from device (dropped by openConfigDialog)', () => {
+    const thresholds = { veg: { day: { on: 60, off: 55 } } };
+    const device = makeDevice({
+      environmentAttributes: { humidifierThresholds: thresholds } as any,
+    });
+    const sm = createInitialSM(device);
+    expect(sm.environmentDraft.humidifierThresholds).toEqual(thresholds);
+  });
+
+  it('seeds AC Infinity bundles for every actuator role from device', () => {
+    const exhaust = [{ mode_entity: 'select.ac_ex', speed_entity: 'number.ac_ex', on_speed: 7 }];
+    const circ = [{ mode_entity: 'select.ac_ci', speed_entity: 'number.ac_ci', on_speed: 5 }];
+    const hum = [{ mode_entity: 'select.ac_hu', speed_entity: 'number.ac_hu', on_speed: 8 }];
+    const dehum = [{ mode_entity: 'select.ac_de', speed_entity: 'number.ac_de', on_speed: 9 }];
+    const device = makeDevice({
+      environmentAttributes: {
+        exhaustFanAcInfinityDevices: exhaust,
+        circulationFanAcInfinityDevices: circ,
+        humidifierAcInfinityDevices: hum,
+        dehumidifierAcInfinityDevices: dehum,
+      } as any,
+    });
+    const sm = createInitialSM(device);
+    expect(sm.environmentDraft.exhaustFanAcInfinityDevices).toEqual(exhaust);
+    expect(sm.environmentDraft.circulationFanAcInfinityDevices).toEqual(circ);
+    expect(sm.environmentDraft.humidifierAcInfinityDevices).toEqual(hum);
+    expect(sm.environmentDraft.dehumidifierAcInfinityDevices).toEqual(dehum);
+  });
 });
 
 // ─── Notifications tab seeding ────────────────────────────────────────────────

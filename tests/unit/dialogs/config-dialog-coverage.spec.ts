@@ -774,28 +774,21 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         expect(loadSpy).toHaveBeenCalled();
     });
 
-    it('setInitialState populates visionCheckupConfig and triggers loadSubareas on SUBAREAS tab', async () => {
+    it('_seedFromDevice populates visionCheckupConfig and triggers loadSubareas on SUBAREAS tab', async () => {
         vi.spyOn(element as any, '_loadSubareas').mockResolvedValue(undefined);
 
-        element.setInitialState(ConfigTab.SUBAREAS, {
-            selectedGrowspaceId: 'gs1',
-            temperatureSensors: [], humiditySensors: [], vpdSensors: [],
-            co2Sensor: '', circulationFanEntities: [], stressThreshold: 0.8,
-            moldThreshold: 0.8, lightSensors: [], exhaustFanEntities: [],
-            humidifierEntities: [], dehumidifierEntities: [], soilMoistureSensor: '',
-            dehumidifierControlEnabled: false, dehumidifierThresholds: {},
-            humidifierControlEnabled: false, humidifierThresholds: {},
-            sensorGroups: [], sensorCoordinates: {}, irrigationTanks: [],
-            cameraEntities: [], lungroomTempSensors: [], substrateTemperatureSensors: [],
-            phSensors: [], feedEcSensors: [], substrateEcSensors: [], runoffEcSensors: [],
-            drainVolumeSensors: [], irrigationFlowSensors: [], powerSensors: [], energySensors: [],
-            visionCheckupConfig: {
-                enabled: true,
-                early_check_offset_minutes: 30,
-                mid_check_hours: 4,
-                late_check_offset_minutes: 45,
+        element.initialTab = ConfigTab.SUBAREAS;
+        (element as any)._seedFromDevice({
+            deviceId: 'gs1', name: 'GS1', rows: 4, plantsPerRow: 4,
+            environmentAttributes: {
+                visionCheckupConfig: {
+                    enabled: true,
+                    early_check_offset_minutes: 30,
+                    mid_check_hours: 4,
+                    late_check_offset_minutes: 45,
+                },
             },
-        } as any);
+        });
 
         expect((element as any).envVisionEnabled).toBe(true);
         expect((element as any).envVisionEarlyOffset).toBe(30);
@@ -1248,21 +1241,22 @@ describe('ConfigDialog - misc branch coverage (getters/setters/guards/setInitial
         expect((element as any)._newSubareaName).toBe('');
     });
 
-    it('setInitialState without environmentData leaves draft at defaults (line 943)', () => {
-        // No environmentData → envPartial = {} → SM uses initial draft
-        element.setInitialState(ConfigTab.SENSORS);
+    it('_seedFromDevice without a device leaves draft at defaults', () => {
+        // No device → default draft (new-growspace / not-yet-loaded case)
+        (element as any)._seedFromDevice(undefined);
         expect((element as any)._sm.environmentDraft.selectedGrowspaceId).toBe('');
     });
 
-    it('setInitialState with legacy single-sensor fields maps to arrays (lines 948,953,956,958)', () => {
-        element.setInitialState(ConfigTab.SENSORS, {
-            selectedGrowspaceId: 'gs1',
-            // no *Sensors arrays → falls back to legacy single-sensor fields
-            temperatureSensor: 'sensor.temp',
-            humiditySensor: 'sensor.hum',
-            vpdSensor: 'sensor.vpd',
-            // no lightSensors / lightSensor
-        } as any);
+    it('_seedFromDevice maps legacy single-sensor fields to arrays', () => {
+        (element as any)._seedFromDevice({
+            deviceId: 'gs1', name: 'GS1', rows: 4, plantsPerRow: 4,
+            environmentAttributes: {
+                // no *Sensors arrays → falls back to legacy single-sensor fields
+                temperatureSensor: 'sensor.temp',
+                humiditySensor: 'sensor.hum',
+                vpdSensor: 'sensor.vpd',
+            },
+        });
         expect((element as any)._sm.environmentDraft.temperatureSensors).toEqual(['sensor.temp']);
         expect((element as any)._sm.environmentDraft.humiditySensors).toEqual(['sensor.hum']);
         expect((element as any)._sm.environmentDraft.vpdSensors).toEqual(['sensor.vpd']);

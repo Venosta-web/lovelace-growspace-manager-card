@@ -78,73 +78,6 @@ export interface EnvironmentConfigDialogState {
   deviceId: string;
 }
 
-export interface EnvironmentConfigData {
-  selectedGrowspaceId: string;
-
-  // Basic sensors (multi)
-  temperatureSensors: string[];
-  humiditySensors: string[];
-  vpdSensors: string[];
-  co2Sensor: string;
-  soilMoistureSensor: string;
-
-  // Legacy singular (backward compat)
-  temperatureSensor: string;
-  humiditySensor: string;
-  vpdSensor: string;
-
-  // Fans
-  circulationFanEntity: string;
-  circulationFanEntities: string[];
-  exhaustEntity: string;
-  exhaustFanEntities: string[];
-  exhaustFanAcInfinityDevices?: AcInfinityDevice[];
-  circulationFanAcInfinityDevices?: AcInfinityDevice[];
-
-  stressThreshold: number;
-  moldThreshold: number;
-
-  // Lights
-  lightSensor: string;
-  lightSensors: string[];
-
-  // Humidifier
-  humidifierEntity: string;
-  humidifierEntities: string[];
-  humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  humidifierControlEnabled: boolean;
-  humidifierAcInfinityDevices?: AcInfinityDevice[];
-
-  // Dehumidifier
-  dehumidifierEntity: string;
-  dehumidifierEntities: string[];
-  dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  dehumidifierControlEnabled: boolean;
-  dehumidifierAcInfinityDevices?: AcInfinityDevice[];
-
-  sensorGroups?: SensorGroup[];
-  sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
-  irrigationTanks?: any[];
-  cameraEntities?: string[];
-  lungroomTempSensors?: string[];
-  visionCheckupConfig?: VisionCheckupConfig;
-
-  // Advanced / irrigation monitoring sensors
-  substrateTemperatureSensors?: string[];
-  phSensors?: string[];
-  feedEcSensors?: string[];
-  bulkEcSensors?: string[];
-  poreEcSensors?: string[];
-  runoffEcSensors?: string[];
-  drainVolumeSensors?: string[];
-  irrigationFlowSensors?: string[];
-  powerSensors?: string[];
-  energySensors?: string[];
-  circulationFanConfig?: CirculationFanConfig;
-  exhaustFanConfig?: ExhaustFanConfig;
-  vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
-}
-
 export interface VisionCheckupConfigEventDetail {
   growspaceId: string;
   visionCheckupConfig: VisionCheckupConfig;
@@ -214,7 +147,7 @@ export interface ConfigDialogState {
     | 'vision'
     | 'heatmap'
     | 'subareas';
-  environmentData: EnvironmentConfigData;
+  growspaceId: string;
 }
 
 export interface GrowMasterDialogState {
