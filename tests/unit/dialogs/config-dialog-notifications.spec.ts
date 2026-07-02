@@ -49,6 +49,10 @@ describe('ConfigDialog — Notifications tab', () => {
     element.hass = { services: {}, localize: (k: string) => `[${k}]`, callService: vi.fn() } as any;
     element.devices = [device];
     element.growspaceOptions = { gs1: 'Tent 1' };
+    // The dialog seeds once per open from the growspace it is given (its real
+    // openers always pass one); the notifications tab draft comes from that
+    // device's notificationSettings via the single envDraftFromDevice seam.
+    element.growspaceId = 'gs1';
     element.open = true;
     document.body.appendChild(element);
     await element.updateComplete;
