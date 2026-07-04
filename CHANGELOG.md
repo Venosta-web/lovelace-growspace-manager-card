@@ -1,3 +1,10 @@
+# [1.1.0-next.76](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.75...v1.1.0-next.76) (2026-07-04)
+
+
+### Bug Fixes
+
+* **ui:** expand header-only view to standard when a chip activates its graph ([e60ed18](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e60ed18989e0fdc8f6532ed69daf08116d03dfcb))
+
 # [1.1.0-next.75](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.74...v1.1.0-next.75) (2026-07-02)
 
 
