@@ -176,6 +176,31 @@ export const AcInfinityDeviceSchema = z.object({
 
 export type AcInfinityDevice = z.infer<typeof AcInfinityDeviceSchema>;
 
+// Schedule-driven grow light controller config (backend GrowLightConfig). Not
+// sensor-regulated: the light holds `power` during the photoperiod.
+export const GrowLightConfigSchema = z.object({
+  enabled: z.boolean(),
+  power: z.number(),
+  sunrise_enabled: z.boolean().optional().default(false),
+  sunrise_minutes: z.number().optional().default(0),
+});
+
+export type GrowLightConfig = z.infer<typeof GrowLightConfigSchema>;
+
+// An AC Infinity grow light port (backend ACInfinityGrowLight). Unlike the fan
+// bundle it is a configurator: mode select + on/off `time` entities + on_power,
+// plus the native sunrise switch + duration. Keys stay snake_case end-to-end.
+export const AcInfinityGrowLightSchema = z.object({
+  mode_entity: z.string(),
+  on_time_entity: z.string(),
+  off_time_entity: z.string(),
+  power_entity: z.string(),
+  sunrise_switch_entity: z.string().optional().default(''),
+  sunrise_duration_entity: z.string().optional().default(''),
+});
+
+export type AcInfinityGrowLight = z.infer<typeof AcInfinityGrowLightSchema>;
+
 export const GrowspaceAPIResponseSchema = z
   .object({
     identity: z
@@ -227,6 +252,12 @@ export const GrowspaceAPIResponseSchema = z
           .array(AcInfinityDeviceSchema)
           .optional()
           .default([]),
+        growlight_entities: z.array(z.string()).optional().default([]),
+        growlight_ac_infinity_devices: z
+          .array(AcInfinityGrowLightSchema)
+          .optional()
+          .default([]),
+        growlight_config: GrowLightConfigSchema.optional(),
         light_sensors: z.array(z.string()).optional().default([]),
         vpd: z.string().nullable().optional(),
         soil_moisture_value: z.string().nullable().optional(),

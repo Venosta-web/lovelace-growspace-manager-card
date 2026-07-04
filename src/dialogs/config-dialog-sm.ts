@@ -18,8 +18,10 @@ import type { GrowspaceDevice, SensorGroup } from '../types';
 import type { Subarea } from '../slices/subarea/schema';
 import type {
   AcInfinityDevice,
+  AcInfinityGrowLight,
   CirculationFanConfig,
   ExhaustFanConfig,
+  GrowLightConfig,
 } from '../slices/growspace/schema';
 
 // ─── Tab ID ───────────────────────────────────────────────────────────────────
@@ -103,6 +105,11 @@ export interface EnvironmentDraft {
   // Fan controller
   circulationFanConfig: CirculationFanConfig;
   exhaustFanConfig: ExhaustFanConfig;
+
+  // Grow light controller
+  growlightEntities: string[];
+  growlightAcInfinityDevices: AcInfinityGrowLight[];
+  growlightConfig: GrowLightConfig;
 
   // VPD optimal overrides
   vpdOptimalOverrides: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
@@ -416,6 +423,14 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
       stage_vpd_enabled: false,
       stage_vpd_overrides: {},
     },
+    growlightEntities: [],
+    growlightAcInfinityDevices: [],
+    growlightConfig: {
+      enabled: false,
+      power: 100,
+      sunrise_enabled: false,
+      sunrise_minutes: 0,
+    },
     vpdOptimalOverrides: {},
     lstOffset: -2.0,
   };
@@ -546,6 +561,9 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
     visionLateOffset: vc?.late_check_offset_minutes ?? 60,
     circulationFanConfig: attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
     exhaustFanConfig: attrs.exhaustFanConfig ?? defaultEnvironmentDraft().exhaustFanConfig,
+    growlightEntities: attrs.growlightEntities ?? [],
+    growlightAcInfinityDevices: attrs.growlightAcInfinityDevices ?? [],
+    growlightConfig: attrs.growlightConfig ?? defaultEnvironmentDraft().growlightConfig,
     vpdOptimalOverrides: attrs.vpdOptimalOverrides ?? {},
     lstOffset: attrs.lstOffset ?? -2.0,
   };

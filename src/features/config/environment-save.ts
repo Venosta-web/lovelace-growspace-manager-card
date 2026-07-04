@@ -76,6 +76,9 @@ export function composeEnvironmentConfig(
     energySensors: draft.energySensors,
     circulationFanConfig: draft.circulationFanConfig,
     exhaustFanConfig: draft.exhaustFanConfig,
+    growlightEntities: draft.growlightEntities,
+    growlightAcInfinityDevices: draft.growlightAcInfinityDevices,
+    growlightConfig: draft.growlightConfig,
     vpdOptimalOverrides: draft.vpdOptimalOverrides,
     lstOffset: draft.lstOffset,
   };

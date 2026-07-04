@@ -7,8 +7,10 @@ import type { SensorGroup } from '../features/environment/types';
 import type { VisionCheckupConfig } from '../lib/types/dialog';
 import type {
   AcInfinityDevice,
+  AcInfinityGrowLight,
   CirculationFanConfig,
   ExhaustFanConfig,
+  GrowLightConfig,
 } from '../slices/growspace/schema';
 
 // --- Irrigation ---
@@ -375,6 +377,9 @@ export interface SerializedEnvironmentAttributes {
   circulation_fan_ac_infinity_devices?: AcInfinityDevice[];
   humidifier_ac_infinity_devices?: AcInfinityDevice[];
   dehumidifier_ac_infinity_devices?: AcInfinityDevice[];
+  growlight_entities?: string[];
+  growlight_ac_infinity_devices?: AcInfinityGrowLight[];
+  growlight_config?: GrowLightConfig;
 
   // Irrigation Pump States
   irrigation_pump_state?: string;
@@ -554,6 +559,9 @@ export interface EnvironmentAttributes {
   circulationFanAcInfinityDevices?: AcInfinityDevice[];
   humidifierAcInfinityDevices?: AcInfinityDevice[];
   dehumidifierAcInfinityDevices?: AcInfinityDevice[];
+  growlightEntities?: string[];
+  growlightAcInfinityDevices?: AcInfinityGrowLight[];
+  growlightConfig?: GrowLightConfig;
   irrigationPumpState?: string;
   drainPumpState?: string;
   vpd?: string;

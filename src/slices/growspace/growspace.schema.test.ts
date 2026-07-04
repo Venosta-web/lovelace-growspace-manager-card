@@ -5,6 +5,7 @@ import {
   GrowspaceAPICollectionSchema,
   GrowReportSchema,
   CirculationFanConfigSchema,
+  GrowLightConfigSchema,
   ExhaustFanConfigSchema,
 } from './schema';
 
@@ -153,6 +154,8 @@ describe('Growspace Zod Schemas', () => {
           circulation_fan_ac_infinity_devices: [],
           humidifier_ac_infinity_devices: [],
           dehumidifier_ac_infinity_devices: [],
+          growlight_entities: [],
+          growlight_ac_infinity_devices: [],
           light_sensors: [],
           humidifier_thresholds: {},
           dehumidifier_thresholds: {},
@@ -711,5 +714,53 @@ describe('Growspace Zod Schemas', () => {
       expect(parsed.environment.temperature_avg).toBeUndefined();
       expect(parsed.environment.humidity_avg).toBeNull();
     });
+  });
+});
+
+describe('GrowLightConfigSchema', () => {
+  it('parses a full grow light config with sunrise', () => {
+    const result = GrowLightConfigSchema.parse({
+      enabled: true,
+      power: 80,
+      sunrise_enabled: true,
+      sunrise_minutes: 15,
+    });
+    expect(result).toEqual({
+      enabled: true,
+      power: 80,
+      sunrise_enabled: true,
+      sunrise_minutes: 15,
+    });
+  });
+});
+
+describe('GrowspaceAPIResponseSchema grow light fields', () => {
+  it('defaults grow light fields when absent', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({});
+    expect(parsed.environment.growlight_entities).toEqual([]);
+    expect(parsed.environment.growlight_ac_infinity_devices).toEqual([]);
+    expect(parsed.environment.growlight_config).toBeUndefined();
+  });
+
+  it('parses grow light entities and an AC Infinity bundle', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      environment: {
+        growlight_entities: ['switch.grow', 'light.bar'],
+        growlight_ac_infinity_devices: [
+          {
+            mode_entity: 'select.port_mode',
+            on_time_entity: 'time.port_on',
+            off_time_entity: 'time.port_off',
+            power_entity: 'number.port_power',
+            sunrise_switch_entity: 'switch.port_sunrise',
+            sunrise_duration_entity: 'number.port_sunrise_minutes',
+          },
+        ],
+        growlight_config: { enabled: true, power: 90, sunrise_enabled: false, sunrise_minutes: 0 },
+      },
+    });
+    expect(parsed.environment.growlight_entities).toEqual(['switch.grow', 'light.bar']);
+    expect(parsed.environment.growlight_ac_infinity_devices[0].off_time_entity).toBe('time.port_off');
+    expect(parsed.environment.growlight_config?.power).toBe(90);
   });
 });

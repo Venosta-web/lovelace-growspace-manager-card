@@ -3,8 +3,10 @@ import type { SensorGroup } from '../../features/environment/types';
 import type { VisionCheckupConfig } from '../../slices/camera';
 import type {
   AcInfinityDevice,
+  AcInfinityGrowLight,
   CirculationFanConfig,
   ExhaustFanConfig,
+  GrowLightConfig,
 } from '../../slices/growspace/schema';
 
 export type { VisionCheckupConfig };
@@ -121,6 +123,9 @@ export interface EnvironmentConfigData {
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
   dehumidifierControlEnabled: boolean;
   dehumidifierAcInfinityDevices?: AcInfinityDevice[];
+  growlightEntities?: string[];
+  growlightAcInfinityDevices?: AcInfinityGrowLight[];
+  growlightConfig?: GrowLightConfig;
 
   sensorGroups?: SensorGroup[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
@@ -181,6 +186,9 @@ export interface EnvironmentConfigEventDetail {
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
   dehumidifierControlEnabled: boolean;
   dehumidifierAcInfinityDevices?: AcInfinityDevice[];
+  growlightEntities?: string[];
+  growlightAcInfinityDevices?: AcInfinityGrowLight[];
+  growlightConfig?: GrowLightConfig;
   sensorGroups?: SensorGroup[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   irrigationTanks?: any[];

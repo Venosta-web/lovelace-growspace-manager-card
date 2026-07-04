@@ -295,3 +295,39 @@ describe('GrowspaceAdapter notification settings', () => {
     expect(device?.timedNotifications).toEqual([]);
   });
 });
+
+// ─── Grow light (Config Dialog round-trip) ───────────────────────────────────
+
+describe('GrowspaceAdapter grow light', () => {
+  function wsWithEnvironment(env: Record<string, unknown>): GrowspaceAPIResponse {
+    return {
+      identity: { growspace_id: 'gs1', name: 'Tent', overview_entity_id: 'sensor.gs1' },
+      environment: env,
+    } as unknown as GrowspaceAPIResponse;
+  }
+
+  it('maps grow light entities, config, and AC Infinity bundle', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithEnvironment({
+        growlight_entities: ['switch.grow'],
+        growlight_config: { enabled: true, power: 80, sunrise_enabled: false, sunrise_minutes: 0 },
+        growlight_ac_infinity_devices: [
+          {
+            mode_entity: 'select.m',
+            on_time_entity: 'time.on',
+            off_time_entity: 'time.off',
+            power_entity: 'number.p',
+            sunrise_switch_entity: '',
+            sunrise_duration_entity: '',
+          },
+        ],
+      }),
+    );
+    expect(device?.environmentAttributes?.growlightEntities).toEqual(['switch.grow']);
+    expect(device?.environmentAttributes?.growlightConfig?.power).toBe(80);
+    expect(device?.environmentAttributes?.growlightAcInfinityDevices?.[0].off_time_entity).toBe(
+      'time.off',
+    );
+  });
+});

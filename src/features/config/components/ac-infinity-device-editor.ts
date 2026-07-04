@@ -63,7 +63,7 @@ function blankDevice(): AcInfinityDevice {
  * the filter — e.g. the integration is unavailable — still renders selected
  * instead of blanking). Empty selection contributes nothing.
  */
-function optionsWithCurrent(options: string[], current: string): string[] {
+export function optionsWithCurrent(options: string[], current: string): string[] {
   if (!current || options.includes(current)) return options;
   return [current, ...options];
 }

@@ -273,6 +273,7 @@ export enum ConfigTab {
   NOTIFICATIONS = 'notifications',
   SENSORS = 'sensors',
   CLIMATE = 'climate',
+  GROWLIGHT = 'growlight',
   HUMIDITY = 'humidity',
   IRRIGATION = 'irrigation',
   TANKS = 'tanks',

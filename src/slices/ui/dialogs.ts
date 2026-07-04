@@ -260,6 +260,9 @@ export function openConfigDialog(device?: GrowspaceDevice): void {
           device?.environmentAttributes?.humidifierAcInfinityDevices || [],
         dehumidifierAcInfinityDevices:
           device?.environmentAttributes?.dehumidifierAcInfinityDevices || [],
+        growlightEntities: device?.environmentAttributes?.growlightEntities || [],
+        growlightAcInfinityDevices:
+          device?.environmentAttributes?.growlightAcInfinityDevices || [],
         humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
         humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
         humidifierControlEnabled: device?.environmentAttributes?.humidifierControlEnabled || false,
@@ -288,6 +291,7 @@ export function openConfigDialog(device?: GrowspaceDevice): void {
         energySensors: device?.environmentAttributes?.energySensors || [],
         circulationFanConfig: device?.environmentAttributes?.circulationFanConfig,
         exhaustFanConfig: device?.environmentAttributes?.exhaustFanConfig,
+        growlightConfig: device?.environmentAttributes?.growlightConfig,
         vpdOptimalOverrides: device?.environmentAttributes?.vpdOptimalOverrides || {},
       } as EnvironmentConfigData,
     },
