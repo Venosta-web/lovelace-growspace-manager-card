@@ -185,7 +185,7 @@ export class GrowspaceHeaderContainer extends LitElement {
   private _handleToggleGraph(e: CustomEvent) {
     const metric = typeof e.detail === 'string' ? e.detail : e.detail.metric;
     if (metric) {
-      uiSlice.toggleEnvGraph(metric, this.store?.history);
+      uiSlice.toggleEnvGraph(metric, this.store?.history, this.store?.ui);
     }
   }
 

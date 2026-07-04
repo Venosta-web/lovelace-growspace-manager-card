@@ -45,4 +45,17 @@ describe('GrowspaceHeaderContainer – cog menu actions', () => {
       expect(dialog.payload.growspaceId).toBe('gs-1');
     }
   });
+
+  it('expands HEADER view to STANDARD when a chip activates its env graph', () => {
+    const setViewMode = vi.fn();
+    const el = makeElement();
+    (el as any).store = {
+      history: { toggleEnvGraph: () => true },
+      ui: { $viewMode: { get: () => 'header' }, setViewMode },
+    };
+
+    (el as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: { metric: 'temp' } }));
+
+    expect(setViewMode).toHaveBeenCalledWith('standard');
+  });
 });
