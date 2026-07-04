@@ -964,6 +964,8 @@ export class ConfigDialog extends LitElement {
           circulationFanAcInfinityDevices: environmentData.circulationFanAcInfinityDevices || [],
           humidifierAcInfinityDevices: environmentData.humidifierAcInfinityDevices || [],
           dehumidifierAcInfinityDevices: environmentData.dehumidifierAcInfinityDevices || [],
+          growlightEntities: environmentData.growlightEntities || [],
+          growlightAcInfinityDevices: environmentData.growlightAcInfinityDevices || [],
           humidifierEntities: environmentData.humidifierEntities || [],
           dehumidifierEntities: environmentData.dehumidifierEntities || [],
           soilMoistureSensor: environmentData.soilMoistureSensor,
@@ -998,6 +1000,9 @@ export class ConfigDialog extends LitElement {
             : {}),
           ...(environmentData.exhaustFanConfig
             ? { exhaustFanConfig: environmentData.exhaustFanConfig }
+            : {}),
+          ...(environmentData.growlightConfig
+            ? { growlightConfig: environmentData.growlightConfig }
             : {}),
           vpdOptimalOverrides: environmentData.vpdOptimalOverrides || {},
         }
