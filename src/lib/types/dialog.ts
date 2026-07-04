@@ -214,15 +214,20 @@ export interface EnvironmentConfigEventDetail {
 export interface ConfigDialogState {
   currentTab:
     | 'growspaces'
+    | 'notifications'
     | 'sensors'
     | 'climate'
+    | 'growlight'
     | 'humidity'
     | 'irrigation'
     | 'tanks'
     | 'vision'
     | 'heatmap'
-    | 'subareas';
+    | 'subareas'
+    | 'vpd_targets';
   environmentData: EnvironmentConfigData;
+  /** Optional deep-link: a `data-scroll-target` value to scroll into view + pulse. */
+  scrollToField?: string;
 }
 
 export interface GrowMasterDialogState {

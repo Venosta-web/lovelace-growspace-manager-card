@@ -6,8 +6,9 @@
  * configurator pickers. Projects its slice of the [[Shared Environment Draft]].
  *
  * `entityOptions` is the injected hass adapter for the pickers. `lightsOnTime`
- * is the growspace's crop-steering anchor, shown read-only here — it is edited on
- * the Irrigation → Steering tab (its canonical home), so this tab does not own it.
+ * is the growspace's crop-steering anchor, sourced live from the strategy atom and
+ * **edited here** — this tab is its canonical home (ADR-0026). It remains an
+ * `IrrigationStrategy` field, persisted immediately by the host, not in the env draft.
  */
 
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
@@ -33,14 +34,14 @@ export interface GrowlightTabViewModel {
   numberOptions: string[];
   /** `switch.*` entities for the sunrise-enable picker. */
   switchOptions: string[];
-  /** Read-only lights-on anchor (edited on Irrigation → Steering); null if unknown. */
+  /** Editable lights-on anchor, sourced live from the strategy atom; null if unknown. */
   lightsOnTime: string | null;
 }
 
 /** Hass adapter the shell injects so the component stays hass-free. */
 export interface GrowlightTabDeps {
   entityOptions: (domains: string[], deviceClass: string | null) => string[];
-  /** The growspace's crop-steering lights-on time, shown read-only. */
+  /** The growspace's crop-steering lights-on time, read live from the strategy atom. */
   lightsOnTime?: string | null;
 }
 

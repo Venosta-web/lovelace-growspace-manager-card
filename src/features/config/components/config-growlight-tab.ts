@@ -6,15 +6,20 @@
  * AC Infinity configurator pickers. `@property .vm: GrowlightTabViewModel` in,
  * `env-draft-changed` Tab Intents out, no `@state()` and no `hass`.
  *
- * `lights_on_time` is shown read-only — it is the crop-steering anchor, edited on
- * the Irrigation → Steering tab, so this tab does not own it.
+ * This tab **owns the edit surface** for `lights_on_time` — the crop-steering
+ * photoperiod anchor. It stays an `IrrigationStrategy` field (not `GrowLightConfig`),
+ * so editing it emits a dedicated `lights-on-changed` Tab Intent (not `env-draft-changed`):
+ * the host persists it immediately via `updateIrrigationStrategy`, outside the dialog's
+ * buffered Save. The input sits outside the controller enable-gate so a crop-steering-only
+ * user with no controller can still set the anchor. See ADR-0026.
  */
 
-import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
+import { LitElement, html, css, nothing, type PropertyValues, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiWhiteBalanceSunny } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui/md3-number-input';
+import '../../shared/ui/md3-text-input';
 import { renderGrowlightAcInfinityDevices } from './ac-infinity-growlight-editor';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
 import type { GrowLightConfig, AcInfinityGrowLight } from '../../../slices/growspace/schema';
@@ -23,6 +28,9 @@ import type { GrowlightTabViewModel } from '../viewmodels/growlight-tab.viewmode
 @customElement('config-growlight-tab')
 export class ConfigGrowlightTab extends LitElement {
   @property({ attribute: false }) vm!: GrowlightTabViewModel;
+
+  /** Deep-link: when set to `lightsOnTime`, scroll the input into view and pulse it (#433). */
+  @property({ type: String }) scrollToField?: string;
 
   static styles = [
     dialogStyles,
@@ -51,6 +59,22 @@ export class ConfigGrowlightTab extends LitElement {
         font-size: 0.75rem;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
         line-height: 1.4;
+      }
+      /* Deep-link pulse (#433) — mirrors the irrigation dialog's field-pulse. */
+      @keyframes field-pulse-anim {
+        0% {
+          box-shadow: 0 0 0 0 rgba(var(--primary-color-rgb, 33, 150, 243), 0.5);
+        }
+        50% {
+          box-shadow: 0 0 0 6px rgba(var(--primary-color-rgb, 33, 150, 243), 0.2);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(var(--primary-color-rgb, 33, 150, 243), 0);
+        }
+      }
+      .field-pulse {
+        border-radius: 4px;
+        animation: field-pulse-anim 3s ease-out 1;
       }
       .disabled {
         opacity: 0.5;
@@ -91,6 +115,23 @@ export class ConfigGrowlightTab extends LitElement {
     `,
   ];
 
+  protected updated(changed: PropertyValues): void {
+    // Deep-link from the FlowerFlipChip (#433): scroll the lights-on input into
+    // view and pulse it once. The target lives in this component's own shadow root,
+    // so the query must run here (the dialog can't pierce the boundary).
+    if (changed.has('scrollToField') && this.scrollToField === 'lightsOnTime') {
+      const target = this.shadowRoot?.querySelector<HTMLElement>(
+        '[data-scroll-target="lightsOnTime"]'
+      );
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.add('field-pulse');
+      target.addEventListener('animationend', () => target.classList.remove('field-pulse'), {
+        once: true,
+      });
+    }
+  }
+
   private _emit(type: string, detail?: unknown): void {
     this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
   }
@@ -108,6 +149,11 @@ export class ConfigGrowlightTab extends LitElement {
       ...patch,
     };
     this._update({ growlightConfig: next });
+  }
+
+  /** Lights-on is a strategy field persisted immediately by the host (ADR-0026). */
+  private _emitLightsOn(value: string): void {
+    this._emit('lights-on-changed', { lightsOnTime: value });
   }
 
   render(): TemplateResult {
@@ -129,11 +175,17 @@ export class ConfigGrowlightTab extends LitElement {
             Enable grow light controller
           </label>
 
+          <md3-text-input
+            label="Lights On Time"
+            type="time"
+            data-scroll-target="lightsOnTime"
+            .value=${vm.lightsOnTime ?? '06:00'}
+            @change=${(e: CustomEvent) =>
+              this._emitLightsOn((e.target as HTMLInputElement).value || e.detail)}
+          ></md3-text-input>
           <p class="anchor-note">
-            Lights-on time:
-            <strong>${vm.lightsOnTime ?? '— set on the Irrigation → Steering tab'}</strong>. The
-            lights-off time is derived from your veg / flower day-length settings. Edit the lights-on
-            time on the Irrigation → Steering tab.
+            The crop-steering photoperiod anchor. Saves immediately. The lights-off time is
+            derived from your veg / flower day-length settings.
           </p>
 
           <div class=${vm.disabled ? 'disabled form-section' : 'form-section'}>

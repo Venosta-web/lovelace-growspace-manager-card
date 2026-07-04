@@ -51,10 +51,35 @@ afterEach(() => {
 });
 
 describe('ConfigGrowlightTab', () => {
-  it('renders the enable checkbox and the anchor note', async () => {
-    const el = await mount(makeVm());
+  it('renders the enable checkbox and an editable lights-on input', async () => {
+    const el = await mount(makeVm({ lightsOnTime: '06:00' }));
     expect(el.shadowRoot!.textContent).toContain('Enable grow light controller');
-    expect(el.shadowRoot!.textContent).toContain('Irrigation → Steering');
+    const input = [...el.shadowRoot!.querySelectorAll('md3-text-input')].find(
+      (n) => n.getAttribute('label') === 'Lights On Time'
+    );
+    expect(input).toBeDefined();
+    expect((input as { value?: string }).value).toBe('06:00');
+    // The old "edit on the Steering tab" pointer is gone — this tab owns it now.
+    expect(el.shadowRoot!.textContent).not.toContain('Irrigation → Steering');
+  });
+
+  it('editing lights-on dispatches lights-on-changed (not env-draft-changed)', async () => {
+    const el = await mount(makeVm({ lightsOnTime: '06:00' }));
+    const envPartials = listenPartials(el);
+    let emitted: string | undefined;
+    el.addEventListener('lights-on-changed', (e: Event) => {
+      emitted = (e as CustomEvent).detail.lightsOnTime;
+    });
+    const input = [...el.shadowRoot!.querySelectorAll('md3-text-input')].find(
+      (n) => n.getAttribute('label') === 'Lights On Time'
+    )! as HTMLElement & { value: string };
+    input.value = '07:30';
+    input.dispatchEvent(
+      new CustomEvent('change', { detail: '07:30', bubbles: true, composed: true })
+    );
+    expect(emitted).toBe('07:30');
+    // Lights-on is a strategy field — it must not ride the buffered env draft.
+    expect(envPartials).toHaveLength(0);
   });
 
   it('enabling the controller dispatches growlightConfig.enabled=true', async () => {
@@ -81,6 +106,28 @@ describe('ConfigGrowlightTab', () => {
       n.getAttribute('label')
     );
     expect(onLabels).toContain('Sunrise duration (minutes)');
+  });
+
+  it('scrolls + pulses the lights-on input when deep-linked via scrollToField (#433)', async () => {
+    const el = await mount(makeVm({ lightsOnTime: '06:00' }));
+    const input = el.shadowRoot!.querySelector(
+      '[data-scroll-target="lightsOnTime"]'
+    ) as HTMLElement;
+    // scrollIntoView is unreliable in headless layout — stub it so we assert the pulse.
+    input.scrollIntoView = () => {};
+    el.scrollToField = 'lightsOnTime';
+    await el.updateComplete;
+    expect(input.classList.contains('field-pulse')).toBe(true);
+  });
+
+  it('does not pulse for an unrelated scrollToField', async () => {
+    const el = await mount(makeVm({ lightsOnTime: '06:00' }));
+    const input = el.shadowRoot!.querySelector(
+      '[data-scroll-target="lightsOnTime"]'
+    ) as HTMLElement;
+    el.scrollToField = 'somethingElse';
+    await el.updateComplete;
+    expect(input.classList.contains('field-pulse')).toBe(false);
   });
 
   it('adds an AC Infinity grow light port via the editor', async () => {

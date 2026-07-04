@@ -37,7 +37,7 @@ describe('createGrowlightTabViewModel', () => {
     expect(vm.switchOptions).toContain('switch.opt');
   });
 
-  it('surfaces the injected read-only lights-on time', () => {
+  it('surfaces the injected lights-on time from the strategy atom', () => {
     const vm = createGrowlightTabViewModel(sm(), {
       entityOptions: () => [],
       lightsOnTime: '06:00:00',

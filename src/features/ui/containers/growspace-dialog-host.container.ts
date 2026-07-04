@@ -994,6 +994,8 @@ export class GrowspaceDialogHost extends LitElement {
         .hass=${this.hass}
         .devices=${this._dialogHostController.value.devices}
         .currentTab=${dialogState.currentTab}
+        .initialTab=${dialogState.currentTab}
+        .scrollToField=${dialogState.scrollToField}
         .environmentData=${dialogState.environmentData}
         .growspaceOptions=${growspaceOptions}
         @close=${() => this._closeDialogIfActive('CONFIG')}

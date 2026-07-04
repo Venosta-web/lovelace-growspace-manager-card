@@ -35,6 +35,7 @@ import { ConfigTab } from '../constants';
 import { setDehumidifierControl, setHumidifierControl } from '../slices/growspace';
 import { getSubareas, addSubarea, removeSubarea } from '../slices/subarea';
 import type { Subarea } from '../slices/subarea';
+import { irrigationStrategies$, updateIrrigationStrategy } from '../slices/irrigation';
 import {
   createInitialSM,
   transition,
@@ -91,6 +92,9 @@ export class ConfigDialog extends LitElement {
   public devices: GrowspaceDevice[] = [];
 
   @property({ type: String }) initialTab: ConfigTab = ConfigTab.SENSORS;
+
+  /** Deep-link: a `data-scroll-target` value to scroll into view + pulse on open. */
+  @property({ type: String }) scrollToField?: string;
 
   @property({ attribute: false }) allowedTabs?: ConfigTab[];
 
@@ -1637,16 +1641,33 @@ export class ConfigDialog extends LitElement {
   }
 
   private _renderGrowlightTab() {
+    const growspaceId = this._sm.environmentDraft.selectedGrowspaceId;
     const deps = {
       entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
+      lightsOnTime: growspaceId
+        ? (irrigationStrategies$.get().get(growspaceId)?.lightsOnTime ?? null)
+        : null,
     };
     return html`
       <config-growlight-tab
         .vm=${createGrowlightTabViewModel(this._sm, deps)}
+        .scrollToField=${this.scrollToField}
         @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
+        @lights-on-changed=${(e: CustomEvent) => this._onLightsOnChanged(e.detail.lightsOnTime)}
       ></config-growlight-tab>
     `;
+  }
+
+  /**
+   * Lights-on is an `IrrigationStrategy` field (ADR-0026): persist it immediately
+   * via the strategy path, not the buffered env-draft Save. Partial merge, so only
+   * `lights_on_time` is sent.
+   */
+  private _onLightsOnChanged(lightsOnTime: string) {
+    const growspaceId = this._sm.environmentDraft.selectedGrowspaceId;
+    if (!growspaceId) return;
+    void updateIrrigationStrategy(growspaceId, { lightsOnTime });
   }
 
   private _renderHumidityTab() {
