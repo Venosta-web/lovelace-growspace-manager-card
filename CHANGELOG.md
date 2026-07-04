@@ -1,3 +1,13 @@
+# [1.1.0-next.77](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.76...v1.1.0-next.77) (2026-07-04)
+
+
+### Features
+
+* **config:** grow light wire schema ([#428](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/428)) ([df78dc0](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/df78dc0db5f55086411e329c6266bbd652ecdb2e))
+* **config:** Growlights tab UI ([#428](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/428)) ([804dc92](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/804dc92f287083af56f1fe4d36b0fe71cabd393c))
+* **config:** send grow light config on environment save ([#428](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/428)) ([cb1f3fb](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/cb1f3fb0108eec2934057b362ada7b09ac9ca291))
+* **config:** thread grow light through the env draft + 3 seeders ([#428](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/428)) ([d885f52](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/d885f52b895e25ff3581f3710943b69f2787a197))
+
 # [1.1.0-next.76](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.75...v1.1.0-next.76) (2026-07-04)
 
 
