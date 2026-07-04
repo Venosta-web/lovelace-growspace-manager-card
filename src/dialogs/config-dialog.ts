@@ -9,6 +9,7 @@ import {
   mdiWaterPercent,
   mdiGauge,
   mdiFan,
+  mdiWhiteBalanceSunny,
   mdiViewGrid,
   mdiWater,
   mdiCamera,
@@ -47,6 +48,8 @@ import { createNotificationsTabViewModel } from '../features/config/viewmodels/n
 import '../features/config/components/config-sensors-tab';
 import { createSensorsTabViewModel } from '../features/config/viewmodels/sensors-tab.viewmodel';
 import '../features/config/components/config-climate-tab';
+import '../features/config/components/config-growlight-tab';
+import { createGrowlightTabViewModel } from '../features/config/viewmodels/growlight-tab.viewmodel';
 import {
   isAutomatedMode,
   type AcInfinityConflict,
@@ -1633,6 +1636,19 @@ export class ConfigDialog extends LitElement {
     `;
   }
 
+  private _renderGrowlightTab() {
+    const deps = {
+      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+        this._getEntities(domains, deviceClass, platform),
+    };
+    return html`
+      <config-growlight-tab
+        .vm=${createGrowlightTabViewModel(this._sm, deps)}
+        @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
+      ></config-growlight-tab>
+    `;
+  }
+
   private _renderHumidityTab() {
     const deps = {
       entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
@@ -1911,6 +1927,7 @@ export class ConfigDialog extends LitElement {
                     <div class="cfg-rail-caps">Environment</div>
                     ${this._navItem(ConfigTab.SENSORS, mdiThermometer, 'Sensors')}
                     ${this._navItem(ConfigTab.CLIMATE, mdiFan, 'Climate')}
+                    ${this._navItem(ConfigTab.GROWLIGHT, mdiWhiteBalanceSunny, 'Growlights')}
                     ${this._navItem(ConfigTab.HUMIDITY, mdiWaterPercent, 'Humidity')}
 
                     <div class="cfg-rail-caps">Equipment</div>
@@ -1959,6 +1976,7 @@ export class ConfigDialog extends LitElement {
                   : nothing}
                 ${this.currentTab === ConfigTab.SENSORS ? this._renderSensorsTab() : nothing}
                 ${this.currentTab === ConfigTab.CLIMATE ? this._renderClimateTab() : nothing}
+                ${this.currentTab === ConfigTab.GROWLIGHT ? this._renderGrowlightTab() : nothing}
                 ${this.currentTab === ConfigTab.HUMIDITY ? this._renderHumidityTab() : nothing}
                 ${this.currentTab === ConfigTab.IRRIGATION ? this._renderIrrigationTab() : nothing}
                 ${this.currentTab === ConfigTab.TANKS ? this._renderTanksTab() : nothing}
@@ -2015,6 +2033,7 @@ export class ConfigDialog extends LitElement {
             ${[
               ConfigTab.SENSORS,
               ConfigTab.CLIMATE,
+              ConfigTab.GROWLIGHT,
               ConfigTab.HUMIDITY,
               ConfigTab.IRRIGATION,
               ConfigTab.TANKS,

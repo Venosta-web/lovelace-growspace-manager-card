@@ -41,6 +41,7 @@ describe('ConfigDialog Interactions', () => {
             ConfigTab.NOTIFICATIONS,
             ConfigTab.SENSORS,
             ConfigTab.CLIMATE,
+            ConfigTab.GROWLIGHT,
             ConfigTab.HUMIDITY,
             ConfigTab.IRRIGATION,
             ConfigTab.TANKS,
