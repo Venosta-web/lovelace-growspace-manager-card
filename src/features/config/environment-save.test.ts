@@ -19,6 +19,26 @@ describe('composeEnvironmentConfig', () => {
     expect(detail.dehumidifierControlEnabled).toBe(true);
   });
 
+  it('passes grow light fields through', () => {
+    const d = draft();
+    d.growlightEntities = ['switch.grow'];
+    d.growlightConfig = { enabled: true, power: 80, sunrise_enabled: true, sunrise_minutes: 15 };
+    d.growlightAcInfinityDevices = [
+      {
+        mode_entity: 'select.m',
+        on_time_entity: 'time.on',
+        off_time_entity: 'time.off',
+        power_entity: 'number.p',
+        sunrise_switch_entity: '',
+        sunrise_duration_entity: '',
+      },
+    ];
+    const detail = composeEnvironmentConfig(d, flags);
+    expect(detail.growlightEntities).toEqual(['switch.grow']);
+    expect(detail.growlightConfig?.power).toBe(80);
+    expect(detail.growlightAcInfinityDevices?.[0].off_time_entity).toBe('time.off');
+  });
+
   it('full-replace safety: a sensor-only edit still carries the fan + irrigation fields', () => {
     // Simulate a user who only touched the Sensors tab, but whose draft was
     // seeded complete (envDraftFromDevice). The composed payload must re-send

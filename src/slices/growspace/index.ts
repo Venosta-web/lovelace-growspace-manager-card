@@ -8,8 +8,10 @@ import {
   GrowReportSchema,
   type GrowReport,
   type AcInfinityDevice,
+  type AcInfinityGrowLight,
   type CirculationFanConfig,
   type ExhaustFanConfig,
+  type GrowLightConfig,
 } from './schema';
 import type { SensorGroup } from '../../features/environment/types';
 import type { GrowspaceDevice, GrowspaceAPIResponse } from '../../services/types';
@@ -186,6 +188,9 @@ export async function configureEnvironment(data: {
   powerSensors?: string[];
   energySensors?: string[];
   circulationFanConfig?: CirculationFanConfig;
+  growlightEntities?: string[];
+  growlightAcInfinityDevices?: AcInfinityGrowLight[];
+  growlightConfig?: GrowLightConfig;
   vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
   lstOffset?: number;
 }): Promise<void> {
@@ -251,6 +256,10 @@ export async function configureEnvironment(data: {
   if (data.powerSensors?.length) payload.power_sensors = data.powerSensors;
   if (data.energySensors?.length) payload.energy_sensors = data.energySensors;
   if (data.circulationFanConfig) payload.circulation_fan_config = data.circulationFanConfig;
+  if (data.growlightEntities) payload.growlight_entities = data.growlightEntities;
+  if (data.growlightAcInfinityDevices)
+    payload.growlight_ac_infinity_devices = data.growlightAcInfinityDevices;
+  if (data.growlightConfig) payload.growlight_config = data.growlightConfig;
   if (data.vpdOptimalOverrides) payload.vpd_optimal_overrides = data.vpdOptimalOverrides;
   if (data.lstOffset != null) payload.lst_offset = data.lstOffset;
 
