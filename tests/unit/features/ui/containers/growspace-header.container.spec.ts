@@ -302,12 +302,12 @@ describe('GrowspaceHeaderContainer', () => {
 
     it('_handleToggleGraph with string detail calls store.actions.ui.toggleEnvGraph', () => {
         (element as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: 'temperature' }));
-        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('temperature', mockStore.history);
+        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('temperature', mockStore.history, mockStore.ui);
     });
 
     it('_handleToggleGraph with object detail calls store.actions.ui.toggleEnvGraph with metric', () => {
         (element as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: { metric: 'humidity' } }));
-        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('humidity', mockStore.history);
+        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('humidity', mockStore.history, mockStore.ui);
     });
 
     it('_handleToggleGraph with empty metric does not call toggleEnvGraph', () => {
