@@ -35,6 +35,8 @@ describe('createGrowlightTabViewModel', () => {
     expect(vm.timeOptions).toContain('time.opt');
     expect(vm.numberOptions).toContain('number.opt');
     expect(vm.switchOptions).toContain('switch.opt');
+    // Plain grow light picker is restricted to light + switch actuators only.
+    expect(vm.growlightEntityOptions).toEqual(['light.opt', 'switch.opt']);
   });
 
   it('surfaces the injected lights-on time from the strategy atom', () => {

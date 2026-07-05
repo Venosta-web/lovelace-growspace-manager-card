@@ -87,6 +87,21 @@ describe('computeDeviceSnapshot — light sensor percentage', () => {
     expect(snapshot.lightSensors!.value).toBe('70%');
     expect(snapshot.lightSensors!.entityIds).toEqual(['sensor.tent_1_light']);
   });
+
+  it('feeds configured grow light actuators into the light chip (no light sensor)', () => {
+    const device = makeDevice({
+      environmentAttributes: { growlightEntities: ['light.sim_flower_grow_light'] },
+    });
+    const hassStates: HassStates = {
+      'light.sim_flower_grow_light': makeHassEntity('light.sim_flower_grow_light', 'on', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.lightSensors).not.toBeNull();
+    expect(snapshot.lightSensors!.value).toBe('On');
+    expect(snapshot.lightSensors!.entityIds).toEqual(['light.sim_flower_grow_light']);
+  });
 });
 
 // ---------------------------------------------------------------------------

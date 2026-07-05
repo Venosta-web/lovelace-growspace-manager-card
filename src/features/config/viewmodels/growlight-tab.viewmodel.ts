@@ -23,7 +23,7 @@ export interface GrowlightTabViewModel {
   /** Greyed-out (pointer-events:none) when the controller is disabled. */
   disabled: boolean;
   growlightEntities: string[];
-  /** Plain dimmable/on-off grow light entities (switch/light/fan/input_boolean). */
+  /** Plain grow light actuators: `light.*` (dimmable) and `switch.*` (on/off). */
   growlightEntityOptions: string[];
   acInfinityDevices: AcInfinityGrowLight[];
   /** `select.*` entities for the Active Mode picker. */
@@ -45,7 +45,9 @@ export interface GrowlightTabDeps {
   lightsOnTime?: string | null;
 }
 
-const PLAIN_GROWLIGHT_DOMAINS = ['switch', 'light', 'fan', 'input_boolean'];
+// Grow lights are actuators: only `light.*` (dimmable) and `switch.*` (on/off).
+// AC Infinity ports are configured through the dedicated configurator below.
+const PLAIN_GROWLIGHT_DOMAINS = ['light', 'switch'];
 
 /**
  * Pure factory: the Config Dialog SM + injected hass adapter → one Growlights tab
