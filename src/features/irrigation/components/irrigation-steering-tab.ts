@@ -33,7 +33,6 @@ import type { IrrigationStrategy, SteeringMode } from '../../../services/types';
 import type { ConfigDraft, Phase } from '../../../dialogs/irrigation-dialog-sm';
 import type { SteeringTabViewModel } from '../viewmodels/steering-tab.viewmodel';
 import '../../../features/shared/ui';
-import '../../../features/shared/ui/md3-text-input';
 import '../../../features/shared/ui/md3-number-input';
 import '../../../features/shared/ui/md3-switch';
 import '../../../features/shared/ui/gs-help-tooltip';
@@ -117,6 +116,25 @@ export class IrrigationSteeringTab extends LitElement {
         font-size: 11px;
         opacity: 0.6;
         margin-top: 2px;
+      }
+      /* ── Read-only lights-on (edited on Config → Growlights, ADR-0026) ── */
+      .lights-on-readonly {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .lights-on-readonly .ro-label {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .lights-on-readonly .ro-value {
+        font-size: 15px;
+        font-weight: 500;
+      }
+      .lights-on-hint {
+        font-size: 11.5px;
+        color: rgba(255, 255, 255, 0.5);
+        margin: 4px 0 0;
       }
     `,
   ];
@@ -280,18 +298,11 @@ export class IrrigationSteeringTab extends LitElement {
 
           <h4 style="margin:4px 0;margin-top:12px;">Timing</h4>
 
-          <div style="display:flex;align-items:center;gap:8px;">
-            <md3-text-input
-              label="Lights On Time"
-              type="time"
-              data-scroll-target="lightsOnTime"
-              .value=${vm.draft.lightsOnTime}
-              @change=${(e: CustomEvent) =>
-                this._updateStrategyField(
-                  'lightsOnTime',
-                  (e.target as HTMLInputElement).value || e.detail
-                )}
-            ></md3-text-input>
+          <div style="display:flex;align-items:center;gap:8px;" data-scroll-target="lightsOnTime">
+            <div class="lights-on-readonly">
+              <span class="ro-label">Lights On Time</span>
+              <span class="ro-value">${vm.draft.lightsOnTime || '—'}</span>
+            </div>
             ${
               vm.detectedLightsOnTime
                 ? html`
@@ -300,6 +311,7 @@ export class IrrigationSteeringTab extends LitElement {
                 : ''
             }
           </div>
+          <p class="lights-on-hint">Set in Config → Growlights.</p>
           <md3-number-input
             label="P0 Duration (min)"
             .value=${vm.draft.p0DurationMinutes}

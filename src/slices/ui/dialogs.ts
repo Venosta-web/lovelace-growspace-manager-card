@@ -228,11 +228,16 @@ export function openLogbookDialog(growspaceId?: string): void {
   }
 }
 
-export function openConfigDialog(device?: GrowspaceDevice): void {
+export function openConfigDialog(
+  device?: GrowspaceDevice,
+  initialTab: ConfigTab = ConfigTab.SENSORS,
+  scrollToField?: string
+): void {
   openDialog({
     type: 'CONFIG',
     payload: {
-      currentTab: ConfigTab.SENSORS,
+      currentTab: initialTab,
+      scrollToField,
       environmentData: {
         selectedGrowspaceId: device?.deviceId || '',
         // Multi sensors (preferred)

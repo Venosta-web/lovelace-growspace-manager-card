@@ -335,7 +335,10 @@ describe('IrrigationDialog', () => {
         // (end-to-end wiring). Only the cross-tab/real-data cases that the hand-built
         // VM specs can't cover are kept and migrated to the child shadow below.
 
-        it('should update lights_on_time using event detail fallback', async () => {
+        // Lights-on editing moved off the Steering tab to the Config → Growlights tab
+        // (ADR-0026); the Steering tab now shows it read-only. The editable-input +
+        // event-detail-fallback behaviour is covered in config-growlight-tab.test.ts.
+        it('shows lights-on read-only with a hint on the Steering tab', async () => {
             document.body.appendChild(element);
             element.open = true;
             (element as any)._sm = { ...(element as any)._sm, activeTab: 'steering' };
@@ -343,19 +346,13 @@ describe('IrrigationDialog', () => {
 
             const child = element.shadowRoot?.querySelector('irrigation-steering-tab') as any;
             await child?.updateComplete;
-            const dateInput = child.shadowRoot?.querySelector('md3-text-input[label="Lights On Time"]');
-            expect(dateInput).toBeTruthy();
-
-            // Simulate event where target.value is empty but e.detail has value
-            const evt = new CustomEvent('change', { detail: '07:00' });
-            // We can't easily force target.value to be empty if it's bound, but we can dispatch against a fake target
-            // Or just mock the event target
-            Object.defineProperty(evt, 'target', { value: { value: '' }, writable: true });
-
-            dateInput?.dispatchEvent(evt);
-            await element.updateComplete;
-
-            expect((element as any)._sm.tabs.steering.draft.lightsOnTime).toBe('07:00');
+            // No editable lights-on input remains on this tab.
+            expect(
+                child.shadowRoot?.querySelector('md3-text-input[label="Lights On Time"]')
+            ).toBeNull();
+            // The read-only value + the pointer to the Growlights tab are shown.
+            expect(child.shadowRoot?.querySelector('.lights-on-readonly')).toBeTruthy();
+            expect(child.shadowRoot?.textContent).toContain('Set in Config → Growlights');
             document.body.removeChild(element);
         });
 

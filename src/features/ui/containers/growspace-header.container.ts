@@ -21,7 +21,7 @@ import * as uiSlice from '../../../slices/ui';
 import { irrigationConfigs$, irrigationStrategies$, tankLevels$ } from '../../../slices/irrigation';
 import { getFlowerFlipInfo, FlowerFlipInfo } from '../../../utils/flower-flip';
 import { PlantUtils } from '../../../utils/plant-utils';
-import { ViewMode } from '../../../constants';
+import { ViewMode, ConfigTab } from '../../../constants';
 import { DateTime } from 'luxon';
 
 import '../components/growspace-header-ui';
@@ -307,11 +307,10 @@ export class GrowspaceHeaderContainer extends LitElement {
   private _handleFlowerFlipClick(e: CustomEvent) {
     const { growspaceId, flowerStart } = e.detail;
     this.store?.ui.dismissFlowerFlip(growspaceId, flowerStart);
-    uiSlice.openIrrigationDialog({
-      growspaceId,
-      initialTab: 'steering',
-      scrollToField: 'lightsOnTime',
-    });
+    // Lights-on is edited on the Config → Growlights tab now (ADR-0026); the chip
+    // fires at flower-flip to prompt setting it, so open that editable tab and pulse
+    // the lights-on input into focus (#433).
+    uiSlice.openConfigDialog(this.device, ConfigTab.GROWLIGHT, 'lightsOnTime');
   }
 
   render() {

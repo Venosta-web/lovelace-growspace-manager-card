@@ -24,6 +24,7 @@ import {
   addOptimisticDeletedPlantId,
   removeOptimisticDeletedPlantId,
 } from '../grid';
+import { ConfigTab } from '../../constants';
 import type { PlantEntity } from '../../types';
 
 function deviceWithPlants(deviceId: string, plantIds: string[]) {
@@ -120,6 +121,17 @@ describe('slices/ui pure dialog-open helpers', () => {
     expect(dialog.type).toBe('CONFIG');
     if (dialog.type === 'CONFIG') {
       expect(dialog.payload.environmentData.selectedGrowspaceId).toBe('gs-1');
+      // Defaults to the Sensors tab when no initialTab is given.
+      expect(dialog.payload.currentTab).toBe(ConfigTab.SENSORS);
+    }
+  });
+
+  it('openConfigDialog honours an explicit initialTab', () => {
+    openConfigDialog({ deviceId: 'gs-1' } as never, ConfigTab.GROWLIGHT);
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('CONFIG');
+    if (dialog.type === 'CONFIG') {
+      expect(dialog.payload.currentTab).toBe(ConfigTab.GROWLIGHT);
     }
   });
 
