@@ -1566,6 +1566,31 @@ describe('Cycle 13 — light chip icon and value', () => {
     expect(chip.entityIds).toEqual([]);
   });
 
+  it('renders the light chip from a single grow light actuator with no light sensor', () => {
+    // Grow light assigned in the Growlights tab (light.*/switch.*), no light
+    // sensor: isLightsOn is null, so the chip must read the actuator state directly.
+    const snapshot = makeDeviceSnapshot({
+      lightSensors: makeDeviceEntry({ entityIds: ['light.sim_flower_grow_light'], value: 'On' }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      makeEnvSnapshot(),
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    const chip = deviceChips.find((c) => c.key === MetricKey.LIGHT)!;
+    expect(chip.value).toBe('On');
+    expect(chip.icon).toBe(mdiLightbulbOn);
+    expect(chip.entityIds).toEqual(['light.sim_flower_grow_light']);
+  });
+
   it('omits the light chip when there is no light sensor flag and no light entities', () => {
     const { deviceChips } = computeHeaderMetrics(
       makeEnvSnapshot(),
@@ -1639,7 +1664,9 @@ describe('Cycle 14 — subarea device chips', () => {
     expect(chip.icon).toBe(mdiLightbulbOn);
   });
 
-  it('omits the light chip in the main context for the same snapshot (no isLightsOn flag)', () => {
+  it('renders the light chip in the main context for a single actuator (no isLightsOn flag)', () => {
+    // Main context has no "Lights" label and no preferEntryValue, but a single
+    // grow light actuator with no light sensor must still surface its On/Off state.
     const snapshot = makeDeviceSnapshot({
       lightSensors: makeDeviceEntry({ entityIds: ['light.veg_light'], value: 'On' }),
     });
@@ -1656,7 +1683,10 @@ describe('Cycle 14 — subarea device chips', () => {
       snapshot
     );
 
-    expect(deviceChips.find((c) => c.key === MetricKey.LIGHT)).toBeUndefined();
+    const chip = deviceChips.find((c) => c.key === MetricKey.LIGHT)!;
+    expect(chip.value).toBe('On');
+    expect(chip.icon).toBe(mdiLightbulbOn);
+    expect(chip.label).toBeUndefined();
   });
 
   it('drives the bulb icon from a single numeric light reading in the subarea context', () => {

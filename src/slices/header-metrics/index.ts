@@ -483,6 +483,12 @@ function _buildLightChip(
     if (!isNaN(numVal)) {
       value = entry.value;
       icon = numVal > 0 ? mdiLightbulbOn : mdiLightbulbOff;
+    } else if (isLightsOn === null && !opts.preferEntryValue) {
+      // A single binary grow light actuator (light.*/switch.*) with no light
+      // sensor to supply is_lights_on: render its On/Off state directly, else
+      // the chip would be suppressed entirely.
+      value = entry.value;
+      icon = entry.value === 'Off' ? mdiLightbulbOff : mdiLightbulbOn;
     }
   }
   if (value === undefined && opts.preferEntryValue) {
