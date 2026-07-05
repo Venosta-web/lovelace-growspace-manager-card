@@ -75,9 +75,10 @@ const UNAVAILABLE_STATES = new Set(['unavailable', 'unknown']);
 // ---------------------------------------------------------------------------
 
 /**
- * Normalize a light sensor entity state.
- * - If `unit_of_measurement` is `%`: return a rounded percentage string.
- * - Otherwise: return "On" / "Off" for binary states.
+ * Normalize a light sensor / grow light entity state.
+ * - `unit_of_measurement` `%`: rounded percentage string.
+ * - Dimmable light actuator: brightness (0–255) as a percentage.
+ * - Otherwise: "On" / "Off" for binary states, or a rounded numeric reading.
  */
 function _normalizeLightSensor(entity: HassEntity | undefined): string | undefined {
   if (!entity) return undefined;
@@ -87,6 +88,14 @@ function _normalizeLightSensor(entity: HassEntity | undefined): string | undefin
     const n = parseFloat(entity.state);
     return isNaN(n) ? undefined : `${Math.round(n)}%`;
   }
+  // Dimmable grow light actuator (light.*): show brightness as a percentage,
+  // matching the 0–100% a light sensor reports. `brightness` is 0–255 and present
+  // only while on; a dimmable light that is off reads 0%.
+  const brightness = entity.attributes?.brightness;
+  if (typeof brightness === 'number') {
+    return `${Math.round((brightness / 255) * 100)}%`;
+  }
+  if (entity.state === 'off' && entity.attributes?.supported_color_modes) return '0%';
   if (entity.state === 'on') return 'On';
   if (entity.state === 'off') return 'Off';
   const n = parseFloat(entity.state);
