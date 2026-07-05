@@ -336,7 +336,17 @@ export function computeDeviceSnapshot(
 
   return _buildSnapshot(
     {
-      lightIds: env.lightSensors ?? (env.lightSensor ? [env.lightSensor] : []),
+      // The light chip reflects light sensors plus the configured plain grow
+      // light actuators (light.*/switch.*). AC Infinity grow light ports are not
+      // yet surfaced here — their bundle has no fan-style read-back entity.
+      lightIds: [
+        ...(env.lightSensors && env.lightSensors.length > 0
+          ? env.lightSensors
+          : env.lightSensor
+          ? [env.lightSensor]
+          : []),
+        ...(env.growlightEntities ?? []),
+      ],
       exhaustIds: [
         ...(env.exhaustFanEntities ?? (env.exhaustEntity ? [env.exhaustEntity] : [])),
         ..._acInfinityDisplayEntities(env.exhaustFanAcInfinityDevices, registry),
