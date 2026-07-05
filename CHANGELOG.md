@@ -1,3 +1,15 @@
+# [1.1.0-next.78](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.77...v1.1.0-next.78) (2026-07-05)
+
+
+### Bug Fixes
+
+* **test:** close the flower-flip test block after the dev merge ([0b24e95](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/0b24e950f79695efb8e95e8ad617d1d506c6fd50))
+
+
+### Features
+
+* **config:** move lights-on editing to the Growlights tab ([#431](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/431), [#432](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/432), [#433](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/433)) ([48a211f](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/48a211f43e63094023dbb1c5c8f2afb3e122ec74))
+
 # [1.1.0-next.77](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.76...v1.1.0-next.77) (2026-07-04)
 
 
