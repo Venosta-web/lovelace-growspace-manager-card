@@ -66,6 +66,8 @@ describe('GrowspaceHeaderContainer – cog menu actions', () => {
       // Deep-links to the lights-on input so #433 can scroll + pulse it.
       expect(dialog.payload.scrollToField).toBe('lightsOnTime');
     }
+  });
+
   it('expands HEADER view to STANDARD when a chip activates its env graph', () => {
     const setViewMode = vi.fn();
     const el = makeElement();
