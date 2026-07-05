@@ -1,3 +1,11 @@
+# [1.1.0-next.79](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.78...v1.1.0-next.79) (2026-07-05)
+
+
+### Bug Fixes
+
+* **growlight:** light chip reflects grow light actuators; restrict picker to light/switch ([7f38777](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7f387779f70358f5a21a4b011ba6f71c787af78a)), closes [#428](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/428)
+* **growlight:** render the light chip for a single on/off actuator ([d696614](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/d696614a5a70c60c0636e6d4877159a7af07516d))
+
 # [1.1.0-next.78](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.77...v1.1.0-next.78) (2026-07-05)
 
 
