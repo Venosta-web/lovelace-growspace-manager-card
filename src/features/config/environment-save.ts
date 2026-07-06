@@ -3,12 +3,13 @@
  *
  * The single pure place that turns the Config Dialog's [[Shared Environment
  * Draft]] into the outbound `configure-environment-submit` event detail. It
- * exists because `configure_environment` is a **full replace** — the backend
- * rebuilds `EnvironmentConfig` and silently resets any field absent from the
- * payload. The Shared Environment Draft is seeded complete by `envDraftFromDevice`,
- * so composing the *whole* draft on every env-tab save re-sends a complete
- * config; a sensor-only edit never clobbers fan/irrigation/exhaust fields. That
- * full-replace safety is the property the unit test pins down.
+ * exists because the backend applies **patch semantics** (GSM ADR-0026): an
+ * omitted field keeps its stored value, while a present field — including an
+ * empty list — is a deliberate set/clear. The Shared Environment Draft is
+ * seeded complete by `envDraftFromDevice`, so composing the *whole* draft on
+ * every env-tab save delivers every field explicitly: edits land, clears land
+ * (present-empty), and nothing is left to the backend's keep-on-omit default.
+ * That completeness is the property the unit test pins down.
  *
  * Architecture note: the Config Dialog persists the environment by dispatching
  * `configure-environment-submit`, which the Growspace Dialog Host fulfils as

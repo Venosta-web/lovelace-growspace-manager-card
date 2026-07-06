@@ -1080,7 +1080,9 @@ export class GrowspaceDialogHost extends LitElement {
         temperatureSensors,
         humiditySensors,
         vpdSensors: detail.vpdSensors,
-        co2Sensor: detail.co2Sensor || undefined,
+        // Cleared nullable scalars travel as explicit null — under patch
+        // semantics (GSM ADR-0026) an omitted key would keep the old sensor.
+        co2Sensor: detail.co2Sensor || null,
         circulationFanEntities: detail.circulationFanEntities,
         stressThreshold: detail.stressThreshold,
         moldThreshold: detail.moldThreshold,
@@ -1097,7 +1099,7 @@ export class GrowspaceDialogHost extends LitElement {
         humidifierAcInfinityDevices: detail.humidifierAcInfinityDevices,
         dehumidifierEntities: detail.dehumidifierEntities,
         dehumidifierThresholds: detail.dehumidifierThresholds,
-        soilMoistureSensor: detail.soilMoistureSensor || undefined,
+        soilMoistureSensor: detail.soilMoistureSensor || null,
         controlDehumidifier: detail.dehumidifierControlEnabled,
         dehumidifierAcInfinityDevices: detail.dehumidifierAcInfinityDevices,
         sensorGroups: detail.sensorGroups,
@@ -1121,8 +1123,8 @@ export class GrowspaceDialogHost extends LitElement {
       });
       // Exhaust config can't ride the configure_environment payload (the backend
       // service doesn't accept it), so persist it via its dedicated service.
-      // Dispatched last: configure_environment rebuilds EnvironmentConfig and
-      // resets exhaust_fan_config to default, so this must run after it.
+      // Under patch semantics (GSM ADR-0026) configure_environment preserves
+      // exhaust_fan_config, so the ordering is no longer load-bearing.
       if (needsExhaustCall(detail)) {
         await configureExhaustFan({
           growspaceId: detail.selectedGrowspaceId,
