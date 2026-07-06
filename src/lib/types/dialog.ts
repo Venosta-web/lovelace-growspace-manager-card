@@ -25,6 +25,8 @@ export interface VisionCheckupResult {
 }
 
 export interface AddPlantDialogState {
+  /** Target growspace, captured at open time (ADR-0027). */
+  growspaceId?: string;
   row: number;
   col: number;
   strain?: string;
@@ -40,6 +42,8 @@ export interface AddPlantDialogState {
 }
 
 export interface AddPlantsDialogState {
+  /** Target growspace, captured at open time (ADR-0027). */
+  growspaceId?: string;
   strain?: string;
   phenotype?: string;
   amount?: number;

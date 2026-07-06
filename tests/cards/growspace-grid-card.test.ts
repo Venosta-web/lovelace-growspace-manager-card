@@ -130,7 +130,7 @@ describe('GrowspaceGridCard', () => {
 
     const dialogSpy = vi.spyOn(element.store.ui, 'setActiveDialog');
     cardContainer?.dispatchEvent(new CustomEvent('batch-add-plants'));
-    expect(dialogSpy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: {} });
+    expect(dialogSpy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: { growspaceId: 'test_tent' } });
 
     const deviceSpy = vi.spyOn(element.store, 'handleDeviceChange');
     cardContainer?.dispatchEvent(new CustomEvent('growspace-changed', { detail: 'other_tent' }));
@@ -256,7 +256,7 @@ describe('GrowspaceGridCard', () => {
     expect(waterSpy).toHaveBeenCalled();
     expect(trainingSpy).toHaveBeenCalled();
     expect(ipmSpy).toHaveBeenCalled();
-    expect(setActiveDialogSpy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: {} });
+    expect(setActiveDialogSpy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: { growspaceId: 'selected_tent' } });
     expect(deleteSpy).toHaveBeenCalled();
     expect(setEditModeSpy).toHaveBeenCalledWith(false);
   });

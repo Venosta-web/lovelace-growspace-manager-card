@@ -18,7 +18,6 @@ import {
   removeEnvironment as sliceRemoveEnvironment,
 } from '../../../../../src/slices/growspace';
 import { fetchStrainLibrary as sliceFetchStrainLibrary } from '../../../../../src/slices/strain';
-import { selectedDeviceId$ } from '../../../../../src/slices/grid';
 import { hassCall, callService, callServiceReturning } from '../../../../../src/services/hass-call';
 import { notification$ } from '../../../../../src/slices/ui';
 import {
@@ -422,6 +421,71 @@ describe('GrowspaceDialogHostContainer', () => {
                 editingStrain: expect.objectContaining({ strain: 'New Strain' })
             })
         }));
+    });
+
+    // Regression for #437 / ADR-0027: the add-plant confirm handlers must resolve
+    // their target growspace from the dialog payload (falling back to the per-card
+    // selection), never the dead page-global `selectedDeviceId$`.
+    describe('add-plant growspace resolution (ADR-0027, #437)', () => {
+        const singleDetail = { strain: 'OG Kush', row: 1, col: 2 };
+
+        it('single add uses the payload growspaceId even when per-card selection is empty', async () => {
+            mockStore.ui.$activeDialog.set({
+                type: 'ADD_PLANT',
+                payload: { growspaceId: 'gs-payload', row: 1, col: 2 },
+            });
+            mockStore.grid.$selectedDevice.set(null);
+            await element.updateComplete;
+
+            // @ts-ignore - reaching private for test
+            await element._confirmAddPlant({ ...singleDetail });
+
+            expect(sliceAddPlant).toHaveBeenCalledWith(
+                expect.objectContaining({ growspace_id: 'gs-payload' })
+            );
+            expect(uiSlice.showToast).not.toHaveBeenCalledWith('No growspace selected', 'error');
+        });
+
+        it('single add falls back to the per-card selected device when payload omits growspaceId', async () => {
+            mockStore.ui.$activeDialog.set({ type: 'ADD_PLANT', payload: { row: 1, col: 2 } });
+            mockStore.grid.$selectedDevice.set('gs-percard');
+            await element.updateComplete;
+
+            // @ts-ignore - reaching private for test
+            await element._confirmAddPlant({ ...singleDetail });
+
+            expect(sliceAddPlant).toHaveBeenCalledWith(
+                expect.objectContaining({ growspace_id: 'gs-percard' })
+            );
+        });
+
+        it('single add errors when neither payload nor per-card selection resolves a growspace', async () => {
+            mockStore.ui.$activeDialog.set({ type: 'ADD_PLANT', payload: { row: 1, col: 2 } });
+            mockStore.grid.$selectedDevice.set(null);
+            await element.updateComplete;
+
+            // @ts-ignore - reaching private for test
+            await element._confirmAddPlant({ ...singleDetail });
+
+            expect(sliceAddPlant).not.toHaveBeenCalled();
+            expect(uiSlice.showToast).toHaveBeenCalledWith('No growspace selected', 'error');
+        });
+
+        it('batch add uses the payload growspaceId even when per-card selection is empty', async () => {
+            mockStore.ui.$activeDialog.set({
+                type: 'ADD_PLANTS',
+                payload: { growspaceId: 'gs-batch' },
+            });
+            mockStore.grid.$selectedDevice.set(null);
+            await element.updateComplete;
+
+            // @ts-ignore - reaching private for test
+            await element._confirmAddPlants({ strain: 'OG Kush', amount: 2 });
+
+            expect(sliceAddPlants).toHaveBeenCalledWith(
+                expect.objectContaining({ growspace_id: 'gs-batch' })
+            );
+        });
     });
 
     it('should handle transplant failure branch', async () => {
@@ -1315,7 +1379,7 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should surface library error inline when addBatch rejects and keep dialog open', async () => {
-            selectedDeviceId$.set('gs-1');
+            mockStore.grid.$selectedDevice.set('gs-1');
             vi.mocked(sliceAddPlants).mockRejectedValueOnce(new Error('Strain name is required'));
             mockStore.ui.$activeDialog.set({ type: 'ADD_PLANTS', payload: {} });
             await element.updateComplete;
@@ -1336,7 +1400,7 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should clear library error on subsequent successful addBatch', async () => {
-            selectedDeviceId$.set('gs-1');
+            mockStore.grid.$selectedDevice.set('gs-1');
             vi.mocked(sliceAddPlants)
                 .mockRejectedValueOnce(new Error('First attempt failed'))
                 .mockResolvedValueOnce(undefined);
@@ -1913,7 +1977,7 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should handle @add-plant-submit on ADD_PLANT dialog', async () => {
-            selectedDeviceId$.set('gs-1');
+            mockStore.grid.$selectedDevice.set('gs-1');
             await openDialog('ADD_PLANT', { row: 0, col: 0 });
             const dialog = element.shadowRoot?.querySelector('add-plant-dialog');
             dialog?.dispatchEvent(new CustomEvent('add-plant-submit', { detail: { strain: 'Test', row: 0, col: 0 } }));
@@ -1930,7 +1994,7 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should handle @add-plants-submit on ADD_PLANTS dialog', async () => {
-            selectedDeviceId$.set('gs-1');
+            mockStore.grid.$selectedDevice.set('gs-1');
             await openDialog('ADD_PLANTS', {});
             const dialog = element.shadowRoot?.querySelector('add-plants-dialog');
             dialog?.dispatchEvent(new CustomEvent('add-plants-submit', { detail: { amount: 3 } }));

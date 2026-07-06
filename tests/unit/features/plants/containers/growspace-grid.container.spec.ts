@@ -46,6 +46,9 @@ describe('GrowspaceGridContainer', () => {
       data: {
         $devices: atom([]),
       },
+      grid: {
+        $selectedDevice: atom('gs1'),
+      },
       actions: {
         ui: {
           openPlantOverviewDialog: vi.fn(),
@@ -115,8 +118,8 @@ describe('GrowspaceGridContainer', () => {
       detail: { row: 2, col: 2 }
     }));
 
-    // Action expects 0-based
-    expect(uiSlice.openAddPlantDialog).toHaveBeenCalledWith(1, 1);
+    // Action expects the target growspace (ADR-0027) + 0-based row/col
+    expect(uiSlice.openAddPlantDialog).toHaveBeenCalledWith('gs1', 1, 1);
   });
 
   it('delegates grid-drop to plant action', async () => {
