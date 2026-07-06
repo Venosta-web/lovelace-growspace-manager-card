@@ -102,6 +102,38 @@ describe('computeDeviceSnapshot — light sensor percentage', () => {
     expect(snapshot.lightSensors!.value).toBe('On');
     expect(snapshot.lightSensors!.entityIds).toEqual(['light.sim_flower_grow_light']);
   });
+
+  it('shows a dimmable grow light brightness as a percentage', () => {
+    const device = makeDevice({
+      environmentAttributes: { growlightEntities: ['light.sim_flower_grow_light'] },
+    });
+    const hassStates: HassStates = {
+      // brightness 191/255 ≈ 75%
+      'light.sim_flower_grow_light': makeHassEntity('light.sim_flower_grow_light', 'on', {
+        brightness: 191,
+        supported_color_modes: ['brightness'],
+      }),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.lightSensors!.value).toBe('75%');
+  });
+
+  it('shows 0% for a dimmable grow light that is off', () => {
+    const device = makeDevice({
+      environmentAttributes: { growlightEntities: ['light.sim_flower_grow_light'] },
+    });
+    const hassStates: HassStates = {
+      'light.sim_flower_grow_light': makeHassEntity('light.sim_flower_grow_light', 'off', {
+        supported_color_modes: ['brightness'],
+      }),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.lightSensors!.value).toBe('0%');
+  });
 });
 
 // ---------------------------------------------------------------------------
