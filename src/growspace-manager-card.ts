@@ -7,7 +7,6 @@ import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-hel
 import { setHass } from './services/hass-call';
 import { fetchAiStatus } from './slices/ai-insight';
 import { setMutateListener, undo, canUndo } from './services/mutate';
-import { selectedDeviceId$ } from './slices/grid';
 import * as uiSlice from './slices/ui';
 import { fetchStrainLibrary } from './slices/strain';
 import {
@@ -260,7 +259,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private _handleGlobalKeydown = (e: KeyboardEvent) => {
     const isUndo = (e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey;
     if (!isUndo) return;
-    const growspaceId = selectedDeviceId$.get();
+    const growspaceId = this.store.grid.$selectedDevice.get();
     if (!growspaceId || !canUndo(growspaceId)) return;
     e.preventDefault();
     undo(growspaceId)

@@ -3,25 +3,22 @@
  *
  * Public API (atoms):
  *   devices$                  — read: all growspace devices (bootstrapped by SyncService)
- *   selectedDeviceId$         — read/write: the currently selected device ID
  *   optimisticDeletedPlantIds$ — read: plant IDs optimistically removed from the grid
  *   activeDevices$            — read: devices with optimistically deleted plants filtered out
  *   growspaceOptions$         — read: device_id → device name map for selectors
- *   gridLayout$               — read: computed grid layout for the selected device
+ *
+ * The active-growspace selection is per-card only: `makePerCardGridSlice()` mints
+ * an isolated `$selectedDevice` atom per card. There is no module-global selection
+ * (the old `selectedDeviceId$` / `gridSlice` facade were removed once every reader
+ * moved to the per-card slice — see CONTEXT.md "Active growspace" and ADR-0027).
  *
  * Public API (bootstrap writes):
  *   setDevices()              — replace the devices array (called by SyncService)
- *   setSelectedDeviceId()     — set the active device (called by cards / handleDeviceChange)
  *
  * Public API (sibling setters — called by Plant slice cross-slice mutations):
  *   addOptimisticDeletedPlantId()    — mark a plant as optimistically removed from the grid
  *   removeOptimisticDeletedPlantId() — restore a plant after a failed mutation inverse
  *   clearOptimisticDeletedPlantIds() — reset all optimistic deletes (called after a sync)
- *
- * GridSliceRef / gridSlice:
- *   A stable facade object compatible with the legacy ActionContext.grid interface.
- *   Cards and action modules may use `ctx.grid.$selectedDevice` / `ctx.grid.setSelectedDevice()`
- *   through this facade without knowing about the underlying atoms.
  *
  * Action type, payload shapes, and zod schemas are private to this module.
  * Cross-slice side-effects from the Plant slice are accepted via the sibling setters above.
@@ -66,15 +63,6 @@ export interface GridSliceRef {
 export const devices$ = atom<GrowspaceDevice[]>([]);
 
 /**
- * The currently selected growspace device ID.
- *
- * NOTE: this is a module-level singleton.  Multiple card instances on the same
- * dashboard share this state.  Per-card selection isolation is deferred to a
- * later refactor step.
- */
-export const selectedDeviceId$ = atom<string | null>(null);
-
-/**
  * Plant IDs that have been optimistically removed from the grid by the Plant
  * slice before the backend confirms the mutation.  The Grid slice filters these
  * out of `activeDevices$` so the UI reflects the change immediately.
@@ -116,30 +104,6 @@ export const growspaceOptions$ = computed(
   (devices): Record<string, string> => Object.fromEntries(devices.map((d) => [d.deviceId, d.name]))
 );
 
-/** Grid layout for the currently selected device. */
-export const gridLayout$ = computed(
-  [activeDevices$, selectedDeviceId$],
-  (devices, selectedId): GridLayout => {
-    if (!selectedId) return { effectiveRows: 0, grid: [] };
-    const device = devices.find((d) => d.deviceId === selectedId);
-    if (!device) return { effectiveRows: 0, grid: [] };
-    const effectiveRows = PlantUtils.calculateEffectiveRows(device);
-    const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plantsPerRow);
-    return { effectiveRows, grid };
-  }
-);
-
-/** Combined view-state atom (one subscription covers grid + selector + device list). */
-export const gridViewState$ = computed(
-  [activeDevices$, selectedDeviceId$, gridLayout$, growspaceOptions$],
-  (devices, selectedDevice, gridLayout, growspaceOptions): GridViewState => ({
-    devices,
-    selectedDevice,
-    gridLayout,
-    growspaceOptions,
-  })
-);
-
 // ---------------------------------------------------------------------------
 // Bootstrap writes (public)
 // ---------------------------------------------------------------------------
@@ -147,11 +111,6 @@ export const gridViewState$ = computed(
 /** Replace the full device list. Called by SyncService after every data refresh. */
 export function setDevices(devices: readonly GrowspaceDevice[]): void {
   devices$.set(devices as GrowspaceDevice[]);
-}
-
-/** Set the active growspace device. Called by cards via handleDeviceChange. */
-export function setSelectedDeviceId(id: string | null): void {
-  selectedDeviceId$.set(id);
 }
 
 // ---------------------------------------------------------------------------
@@ -229,24 +188,6 @@ export function patchDeviceStrategy(
     )
   );
 }
-
-// ---------------------------------------------------------------------------
-// GridSliceRef facade — backward-compatible ActionContext.grid interface
-// ---------------------------------------------------------------------------
-
-/**
- * Stable facade that satisfies the `ActionContext.grid` contract used by action
- * modules (ctx.grid.$selectedDevice, ctx.grid.setSelectedDevice, etc.).
- * Pass `gridSlice` wherever `GrowspaceGridStore` was previously expected.
- */
-export const gridSlice: GridSliceRef = {
-  $selectedDevice: selectedDeviceId$,
-  $growspaceOptions: growspaceOptions$,
-  $activeDevices: activeDevices$,
-  $gridLayout: gridLayout$,
-  $gridViewState: gridViewState$,
-  setSelectedDevice: setSelectedDeviceId,
-};
 
 /**
  * Create a per-card GridSliceRef with an isolated $selectedDevice atom.
