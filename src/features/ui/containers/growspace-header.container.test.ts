@@ -74,6 +74,7 @@ describe('GrowspaceHeaderContainer – cog menu actions', () => {
     (el as any).store = {
       history: { toggleEnvGraph: () => true },
       ui: { $viewMode: { get: () => 'header' }, setViewMode },
+      grid: { $selectedDevice: { get: () => null } },
     };
 
     (el as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: { metric: 'temp' } }));

@@ -9,6 +9,8 @@ import {
   openConfigDialog,
   openStrainLibraryDialog,
   openIrrigationDialog,
+  openIPMDialog,
+  toggleEnvGraph,
   openGrowMasterDialog,
   openWateringDialog,
   openTrainingDialog,
@@ -113,6 +115,52 @@ describe('slices/ui pure dialog-open helpers', () => {
     if (dialog.type === 'IRRIGATION') {
       expect(dialog.payload.growspaceId).toBe('gs-1');
     }
+  });
+
+  // Regression for #440 / ADR-0027: IPM and crop-steering must resolve their
+  // growspace from an explicit/per-card source, never the dead page-global.
+  it('openIPMDialog opens IPM with an explicit growspace id', () => {
+    openIPMDialog({ growspaceId: 'gs-1' });
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('IPM');
+    if (dialog.type === 'IPM') {
+      expect(dialog.payload.growspaceId).toBe('gs-1');
+    }
+  });
+
+  it('openIPMDialog ignores the dead page-global selection', () => {
+    setSelectedDeviceId('gs-global');
+    openIPMDialog();
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('IPM');
+    if (dialog.type === 'IPM') {
+      expect(dialog.payload.growspaceId).toBeUndefined();
+    }
+  });
+
+  it('openIPMDialog stays plant-scoped (no growspace) when given plant ids', () => {
+    openIPMDialog({ plantIds: ['p1', 'p2'] });
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('IPM');
+    if (dialog.type === 'IPM') {
+      expect(dialog.payload.plantIds).toEqual(['p1', 'p2']);
+      expect(dialog.payload.growspaceId).toBeUndefined();
+    }
+  });
+
+  it('toggleEnvGraph(crop_steering) opens the irrigation dialog for the given growspace', () => {
+    toggleEnvGraph('crop_steering', undefined, undefined, 'gs-1');
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('IRRIGATION');
+    if (dialog.type === 'IRRIGATION') {
+      expect(dialog.payload.growspaceId).toBe('gs-1');
+    }
+  });
+
+  it('toggleEnvGraph(crop_steering) is a no-op without a growspace (never reads the dead global)', () => {
+    setSelectedDeviceId('gs-global');
+    toggleEnvGraph('crop_steering', undefined, undefined, undefined);
+    expect(activeDialog$.get().type).toBe('NONE');
   });
 
   it('openConfigDialog opens CONFIG seeded from the device', () => {
