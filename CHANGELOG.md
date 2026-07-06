@@ -1,3 +1,10 @@
+# [1.1.0-next.80](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.79...v1.1.0-next.80) (2026-07-06)
+
+
+### Features
+
+* **growlight:** show dimmable grow light brightness as a percentage ([b083583](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b08358307476f4e84289ed258ca2400937fd0e3f))
+
 # [1.1.0-next.79](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.78...v1.1.0-next.79) (2026-07-05)
 
 
