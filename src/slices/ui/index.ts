@@ -48,7 +48,6 @@ import type { GrowspaceViewMode, GridOverlayMode } from '../../types';
 import { ViewMode, GridOverlayMode as GridOverlayModeEnum } from '../../constants';
 import type { ActiveDialogState } from '../../store/ui/dialog-types';
 import { cancel } from '../grid-interaction';
-import { devices$, optimisticDeletedPlantIds$, selectedDeviceId$ } from '../grid';
 import { WSError } from '../../services/errors';
 
 // ---------------------------------------------------------------------------
@@ -76,9 +75,9 @@ export const isEditMode$ = atom<boolean>(false);
 /**
  * @deprecated Selection is owned per-card by `GrowspaceUIStore.$selectedPlants`,
  * not page-globally. This module-level atom (and the `togglePlantSelection` /
- * `selectAllPlants` / `clearPlantSelection` / `deselectPlants` /
- * `selectAllPlantsInSelectedDevice` mutators) is retained only for the slice's
- * own unit tests. Production code must read/write selection through the per-card
+ * `selectAllPlants` / `clearPlantSelection` / `deselectPlants` mutators) is
+ * retained only for the slice's own unit tests. Production code must read/write
+ * selection through the per-card
  * store (`store.ui`), otherwise every card on a dashboard shares one selection.
  */
 export const selectedPlants$ = atom<Set<string>>(new Set());
@@ -235,25 +234,6 @@ export function selectAllPlants(plantIds: string[]): void {
 /** Clear the plant selection. */
 export function clearPlantSelection(): void {
   selectedPlants$.set(new Set());
-}
-
-/**
- * Select every (non-optimistically-deleted) plant in the currently selected
- * device. No-op when no device is selected.
- */
-export function selectAllPlantsInSelectedDevice(): void {
-  const selectedDevice = selectedDeviceId$.get();
-  if (!selectedDevice) return;
-
-  const device = devices$.get().find((d) => d.deviceId === selectedDevice);
-  if (!device?.plants) return;
-
-  const deleted = optimisticDeletedPlantIds$.get();
-  const allIds = device.plants
-    .map((plant) => plant.attributes.plant_id)
-    .filter((pId): pId is string => Boolean(pId) && !deleted.has(pId));
-
-  selectAllPlants(allIds);
 }
 
 /** Remove specific plant IDs from the selection. */

@@ -1,6 +1,6 @@
 import { ConfigTab, ViewMode } from '../../constants';
 import { PlantEntity, GrowspaceDevice, EnvironmentConfigData } from '../../types';
-import { plantToDeviceMap$, selectedDeviceId$, devices$, optimisticDeletedPlantIds$ } from '../grid';
+import { plantToDeviceMap$, devices$, optimisticDeletedPlantIds$ } from '../grid';
 import { openDialog, setPendingDeepLink } from './index';
 import type { GrowspaceViewMode } from '../../types';
 
@@ -227,11 +227,10 @@ export function openStrainRecommendationDialog(): void {
 }
 
 export function openLogbookDialog(growspaceId?: string): void {
-  const resolvedId = growspaceId || selectedDeviceId$.get();
-  if (resolvedId) {
+  if (growspaceId) {
     openDialog({
       type: 'LOGBOOK',
-      payload: { growspaceId: resolvedId },
+      payload: { growspaceId },
     });
   }
 }

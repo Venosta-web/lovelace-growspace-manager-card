@@ -6,7 +6,6 @@ import { LibraryExportReadyEvent } from '../../src/lib/events';
 import { ViewMode } from '../../src/features/environment/constants';
 import { atom, computed } from 'nanostores';
 import { setMutateListener, undo, canUndo } from '../../src/services/mutate';
-import { selectedDeviceId$ } from '../../src/slices/grid';
 import * as uiSlice from '../../src/slices/ui';
 import { fetchStrainLibrary } from '../../src/slices/strain';
 import { handleKeyboardNavigation, deleteSelectedPlants } from '../../src/lib/keyboard-navigation';
@@ -44,7 +43,6 @@ vi.mock('../../src/services/mutate', () => ({
 
 vi.mock('../../src/slices/grid', async (importOriginal) => ({
     ...(await importOriginal<typeof import('../../src/slices/grid')>()),
-    selectedDeviceId$: { get: vi.fn() },
     optimisticDeletedPlantIds$: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
     addOptimisticDeletedPlantId: vi.fn(),
     removeOptimisticDeletedPlantId: vi.fn(),
@@ -729,7 +727,7 @@ describe('GrowspaceManagerCard', () => {
 
     describe('_handleGlobalKeydown (Ctrl+Z undo)', () => {
         it('should call undo and show toast when Ctrl+Z is pressed and canUndo is true', async () => {
-            vi.mocked(selectedDeviceId$.get).mockReturnValue('gs1');
+            atomMocks.$selectedDevice.set('gs1');
             vi.mocked(canUndo).mockReturnValue(true);
             vi.mocked(undo).mockResolvedValue(undefined);
 
@@ -746,7 +744,7 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should do nothing when the key is not Ctrl+Z', () => {
-            vi.mocked(selectedDeviceId$.get).mockReturnValue('gs1');
+            atomMocks.$selectedDevice.set('gs1');
             vi.mocked(canUndo).mockReturnValue(true);
 
             const event = new KeyboardEvent('keydown', { key: 'a', ctrlKey: true });
@@ -756,7 +754,7 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should do nothing when no growspace is selected', () => {
-            vi.mocked(selectedDeviceId$.get).mockReturnValue(null);
+            atomMocks.$selectedDevice.set(null);
             vi.mocked(canUndo).mockReturnValue(false);
 
             const event = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true });
@@ -766,7 +764,7 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should do nothing when canUndo returns false', () => {
-            vi.mocked(selectedDeviceId$.get).mockReturnValue('gs1');
+            atomMocks.$selectedDevice.set('gs1');
             vi.mocked(canUndo).mockReturnValue(false);
 
             const event = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true });
@@ -776,7 +774,7 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should log error when undo rejects in global keydown handler', async () => {
-            vi.mocked(selectedDeviceId$.get).mockReturnValue('gs1');
+            atomMocks.$selectedDevice.set('gs1');
             vi.mocked(canUndo).mockReturnValue(true);
             vi.mocked(undo).mockRejectedValue(new Error('fail'));
             const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

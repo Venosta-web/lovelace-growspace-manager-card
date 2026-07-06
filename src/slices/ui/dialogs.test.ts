@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   __resetUiSliceForTests,
   activeDialog$,
-  selectedPlants$,
   openPlantOverviewDialog,
   openStrainRecommendationDialog,
   openLogbookDialog,
@@ -18,29 +17,15 @@ import {
   openSnapshotsDialog,
   openBatchWateringDialog,
   openBatchTrainingDialog,
-  selectAllPlantsInSelectedDevice,
 } from './index';
-import {
-  setDevices,
-  setSelectedDeviceId,
-  addOptimisticDeletedPlantId,
-  removeOptimisticDeletedPlantId,
-} from '../grid';
+import { setDevices } from '../grid';
 import { ConfigTab } from '../../constants';
 import type { PlantEntity } from '../../types';
-
-function deviceWithPlants(deviceId: string, plantIds: string[]) {
-  return {
-    deviceId,
-    plants: plantIds.map((plant_id) => ({ attributes: { plant_id } })),
-  } as never;
-}
 
 describe('slices/ui pure dialog-open helpers', () => {
   beforeEach(() => {
     __resetUiSliceForTests();
     setDevices([]);
-    setSelectedDeviceId(null);
   });
 
   it('openGrowMasterDialog opens GROW_MASTER with the growspace id', () => {
@@ -128,8 +113,7 @@ describe('slices/ui pure dialog-open helpers', () => {
     }
   });
 
-  it('openIPMDialog ignores the dead page-global selection', () => {
-    setSelectedDeviceId('gs-global');
+  it('openIPMDialog opens growspace-unscoped IPM when given no context', () => {
     openIPMDialog();
     const dialog = activeDialog$.get();
     expect(dialog.type).toBe('IPM');
@@ -157,8 +141,7 @@ describe('slices/ui pure dialog-open helpers', () => {
     }
   });
 
-  it('toggleEnvGraph(crop_steering) is a no-op without a growspace (never reads the dead global)', () => {
-    setSelectedDeviceId('gs-global');
+  it('toggleEnvGraph(crop_steering) is a no-op without a growspace', () => {
     toggleEnvGraph('crop_steering', undefined, undefined, undefined);
     expect(activeDialog$.get().type).toBe('NONE');
   });
@@ -211,18 +194,7 @@ describe('slices/ui pure dialog-open helpers', () => {
     }
   });
 
-  it('openLogbookDialog opens LOGBOOK for the selected device', () => {
-    setSelectedDeviceId('gs-1');
-    openLogbookDialog();
-    const dialog = activeDialog$.get();
-    expect(dialog.type).toBe('LOGBOOK');
-    if (dialog.type === 'LOGBOOK') {
-      expect(dialog.payload.growspaceId).toBe('gs-1');
-    }
-  });
-
-  it('openLogbookDialog uses the explicit growspace id over the selected device', () => {
-    setSelectedDeviceId('gs-selected');
+  it('openLogbookDialog opens LOGBOOK with the explicit growspace id', () => {
     openLogbookDialog('gs-explicit');
     const dialog = activeDialog$.get();
     expect(dialog.type).toBe('LOGBOOK');
@@ -231,7 +203,7 @@ describe('slices/ui pure dialog-open helpers', () => {
     }
   });
 
-  it('openLogbookDialog is a no-op when no device is selected', () => {
+  it('openLogbookDialog is a no-op when no growspace id is given', () => {
     openLogbookDialog();
     expect(activeDialog$.get().type).toBe('NONE');
   });
@@ -254,34 +226,5 @@ describe('slices/ui pure dialog-open helpers', () => {
   it('openBatchTrainingDialog opens TRAINING from the given selection', () => {
     openBatchTrainingDialog(['p1'], 'gs-1');
     expect(activeDialog$.get().type).toBe('TRAINING');
-  });
-
-  it('selectAllPlantsInSelectedDevice selects every plant in the selected device', () => {
-    setDevices([deviceWithPlants('gs-1', ['p1', 'p2', 'p3'])]);
-    setSelectedDeviceId('gs-1');
-
-    selectAllPlantsInSelectedDevice();
-
-    expect(selectedPlants$.get()).toEqual(new Set(['p1', 'p2', 'p3']));
-  });
-
-  it('selectAllPlantsInSelectedDevice excludes optimistically-deleted plants', () => {
-    setDevices([deviceWithPlants('gs-1', ['p1', 'p2'])]);
-    setSelectedDeviceId('gs-1');
-    addOptimisticDeletedPlantId('p2');
-
-    selectAllPlantsInSelectedDevice();
-
-    expect(selectedPlants$.get()).toEqual(new Set(['p1']));
-    removeOptimisticDeletedPlantId('p2');
-  });
-
-  it('selectAllPlantsInSelectedDevice is a no-op when no device is selected', () => {
-    setDevices([deviceWithPlants('gs-1', ['p1'])]);
-    setSelectedDeviceId(null);
-
-    selectAllPlantsInSelectedDevice();
-
-    expect(selectedPlants$.get()).toEqual(new Set());
   });
 });

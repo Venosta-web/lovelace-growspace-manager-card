@@ -9,16 +9,11 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { GrowspaceDevice, PlantEntity } from '../../types';
 import {
   devices$,
-  selectedDeviceId$,
   optimisticDeletedPlantIds$,
   activeDevices$,
   growspaceOptions$,
-  gridLayout$,
-  gridViewState$,
   plantToDeviceMap$,
-  gridSlice,
   setDevices,
-  setSelectedDeviceId,
   addOptimisticDeletedPlantId,
   removeOptimisticDeletedPlantId,
   clearOptimisticDeletedPlantIds,
@@ -59,7 +54,6 @@ const makeDevice = (
 
 beforeEach(() => {
   devices$.set([]);
-  selectedDeviceId$.set(null);
   optimisticDeletedPlantIds$.set(new Set());
 });
 
@@ -77,23 +71,6 @@ describe('devices$', () => {
     setDevices([device]);
     expect(devices$.get()).toHaveLength(1);
     expect(devices$.get()[0].deviceId).toBe('gs1');
-  });
-});
-
-describe('selectedDeviceId$', () => {
-  it('starts null', () => {
-    expect(selectedDeviceId$.get()).toBeNull();
-  });
-
-  it('setSelectedDeviceId sets the value', () => {
-    setSelectedDeviceId('gs1');
-    expect(selectedDeviceId$.get()).toBe('gs1');
-  });
-
-  it('setSelectedDeviceId accepts null to clear', () => {
-    setSelectedDeviceId('gs1');
-    setSelectedDeviceId(null);
-    expect(selectedDeviceId$.get()).toBeNull();
   });
 });
 
@@ -159,67 +136,6 @@ describe('growspaceOptions$', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Computed: gridLayout$
-// ---------------------------------------------------------------------------
-
-describe('gridLayout$', () => {
-  it('returns empty layout when no device is selected', () => {
-    setDevices([makeDevice('gs1', 'Room 1', [])]);
-
-    const layout = gridLayout$.get();
-    expect(layout.effectiveRows).toBe(0);
-    expect(layout.grid).toHaveLength(0);
-  });
-
-  it('returns empty layout when selected device is not in the list', () => {
-    setSelectedDeviceId('unknown');
-
-    const layout = gridLayout$.get();
-    expect(layout.effectiveRows).toBe(0);
-  });
-
-  it('builds the grid for the selected device', () => {
-    const p1 = makePlant('p1', 1, 1);
-    const p2 = makePlant('p2', 1, 2);
-    setDevices([makeDevice('gs1', 'Room 1', [p1, p2], 2, 2)]);
-    setSelectedDeviceId('gs1');
-
-    const layout = gridLayout$.get();
-    expect(layout.grid[0][0]?.attributes.plant_id).toBe('p1');
-    expect(layout.grid[0][1]?.attributes.plant_id).toBe('p2');
-  });
-
-  it('reflects optimistic deletes in the layout', () => {
-    const p1 = makePlant('p1', 1, 1);
-    setDevices([makeDevice('gs1', 'Room 1', [p1], 2, 2)]);
-    setSelectedDeviceId('gs1');
-
-    addOptimisticDeletedPlantId('p1');
-
-    const layout = gridLayout$.get();
-    expect(layout.grid[0][0]).toBeNull();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Computed: gridViewState$
-// ---------------------------------------------------------------------------
-
-describe('gridViewState$', () => {
-  it('exposes devices, selectedDevice, gridLayout, and growspaceOptions', () => {
-    const p = makePlant('p1', 1, 1);
-    setDevices([makeDevice('gs1', 'Room 1', [p], 2, 2)]);
-    setSelectedDeviceId('gs1');
-
-    const state = gridViewState$.get();
-    expect(state.devices).toHaveLength(1);
-    expect(state.selectedDevice).toBe('gs1');
-    expect(state.growspaceOptions).toEqual({ gs1: 'Room 1' });
-    expect(state.gridLayout.effectiveRows).toBeGreaterThan(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
 // Sibling setters
 // ---------------------------------------------------------------------------
 
@@ -257,46 +173,6 @@ describe('clearOptimisticDeletedPlantIds', () => {
     addOptimisticDeletedPlantId('p2');
     clearOptimisticDeletedPlantIds();
     expect(optimisticDeletedPlantIds$.get().size).toBe(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// gridSlice facade (GridSliceRef compatibility)
-// ---------------------------------------------------------------------------
-
-describe('gridSlice', () => {
-  it('exposes $selectedDevice writable atom', () => {
-    setSelectedDeviceId('gs-facade');
-    expect(gridSlice.$selectedDevice.get()).toBe('gs-facade');
-  });
-
-  it('setSelectedDevice on facade updates selectedDeviceId$', () => {
-    gridSlice.setSelectedDevice('gs-test');
-    expect(selectedDeviceId$.get()).toBe('gs-test');
-  });
-
-  it('$growspaceOptions on facade reflects active devices', () => {
-    setDevices([makeDevice('gs1', 'Room A', [])]);
-    expect(gridSlice.$growspaceOptions.get()).toEqual({ gs1: 'Room A' });
-  });
-
-  it('$activeDevices on facade matches activeDevices$', () => {
-    const p = makePlant('p1', 1, 1);
-    setDevices([makeDevice('gs1', 'Room 1', [p])]);
-    expect(gridSlice.$activeDevices.get()).toEqual(activeDevices$.get());
-  });
-
-  it('$gridLayout on facade matches gridLayout$', () => {
-    const p = makePlant('p1', 1, 1);
-    setDevices([makeDevice('gs1', 'Room 1', [p], 2, 2)]);
-    setSelectedDeviceId('gs1');
-    expect(gridSlice.$gridLayout.get()).toEqual(gridLayout$.get());
-  });
-
-  it('$gridViewState on facade matches gridViewState$', () => {
-    setDevices([makeDevice('gs1', 'Room 1', [], 2, 2)]);
-    setSelectedDeviceId('gs1');
-    expect(gridSlice.$gridViewState.get()).toEqual(gridViewState$.get());
   });
 });
 
@@ -375,13 +251,14 @@ describe('cross-slice sibling setter usage', () => {
   it('addOptimisticDeletedPlantId + removeOptimisticDeletedPlantId round-trips correctly', () => {
     const p = makePlant('p-roundtrip', 1, 1);
     setDevices([makeDevice('gs1', 'Room 1', [p], 2, 2)]);
-    setSelectedDeviceId('gs1');
+    const slice = makePerCardGridSlice();
+    slice.setSelectedDevice('gs1');
 
     addOptimisticDeletedPlantId('p-roundtrip');
-    expect(gridLayout$.get().grid[0][0]).toBeNull();
+    expect(slice.$gridLayout.get().grid[0][0]).toBeNull();
 
     removeOptimisticDeletedPlantId('p-roundtrip');
-    expect(gridLayout$.get().grid[0][0]?.attributes.plant_id).toBe('p-roundtrip');
+    expect(slice.$gridLayout.get().grid[0][0]?.attributes.plant_id).toBe('p-roundtrip');
   });
 });
 

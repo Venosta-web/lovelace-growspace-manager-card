@@ -9,7 +9,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GrowspaceHeaderContainer } from './growspace-header.container';
 import './growspace-header.container';
 import { activeDialog$, __resetUiSliceForTests } from '../../../slices/ui';
-import { setSelectedDeviceId } from '../../../slices/grid';
 import { ConfigTab } from '../../../constants';
 import type { GrowspaceDevice } from '../../../types';
 
@@ -30,7 +29,6 @@ function triggerAction(el: GrowspaceHeaderContainer, action: string) {
 describe('GrowspaceHeaderContainer – cog menu actions', () => {
   beforeEach(() => {
     __resetUiSliceForTests();
-    setSelectedDeviceId(null);
   });
 
   afterEach(() => {
