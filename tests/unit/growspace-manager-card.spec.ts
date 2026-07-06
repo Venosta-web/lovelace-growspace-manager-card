@@ -142,6 +142,7 @@ vi.mock('../../src/store/core/growspace-store', () => ({
             showToast: vi.fn(),
         };
         grid = {
+            $selectedDevice: atomMocks.$selectedDevice,
             $activeDevices: atomMocks.$activeDevices,
             $gridLayout: atomMocks.$gridLayout,
             $growspaceOptions: atomMocks.$growspaceOptions,
@@ -541,7 +542,7 @@ describe('GrowspaceManagerCard', () => {
         it('should handle batch add plants', () => {
             const spy = vi.spyOn(element.store.ui, 'setActiveDialog');
             (element as any)._handleBatchAddPlants();
-            expect(spy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: {} });
+            expect(spy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: { growspaceId: 'gs1' } });
         });
 
         it('should handle keyboard nav', () => {
@@ -634,7 +635,7 @@ describe('GrowspaceManagerCard', () => {
             // Batch Add
             const dialogSpy = vi.spyOn(element.store.ui, 'setActiveDialog');
             (element as any)._handleBatchAddPlants();
-            expect(dialogSpy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: {} });
+            expect(dialogSpy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: { growspaceId: 'gs1' } });
         });
 
         it('should handle print labels selected', () => {

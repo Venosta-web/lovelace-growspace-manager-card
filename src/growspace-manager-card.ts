@@ -317,7 +317,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleBatchAddPlants() {
-    this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
+    this.store.ui.setActiveDialog({
+      type: 'ADD_PLANTS',
+      payload: { growspaceId: this.store.grid.$selectedDevice.get() ?? undefined },
+    });
   }
 
   private _handlePrintLabelsSelected() {

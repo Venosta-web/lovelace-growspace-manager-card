@@ -148,7 +148,10 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
   private _handleIPMSelected = () => uiSlice.openIPMDialog();
   private _handleTrainingSelected = () => this.store.ui.openBatchTrainingDialog();
   private _handleBatchAddPlants = () =>
-    this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
+    this.store.ui.setActiveDialog({
+      type: 'ADD_PLANTS',
+      payload: { growspaceId: this.store.grid.$selectedDevice.get() ?? undefined },
+    });
   private _handleDeleteSelected = () => deleteSelectedPlants(this.store);
   private _handleTransplantMode = () => {
     if (gridInteraction$.get().status === 'transplanting') {

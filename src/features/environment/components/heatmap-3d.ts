@@ -629,7 +629,11 @@ export class Heatmap3D extends LitElement {
         openPlantOverviewDialog(data.plant);
       } else if (data.plant.row !== undefined && data.plant.col !== undefined) {
         // Empty slot
-        openAddPlantDialog(data.plant.row, data.plant.col);
+        openAddPlantDialog(
+          this.device?.deviceId ?? this.store?.grid.$selectedDevice.get() ?? null,
+          data.plant.row,
+          data.plant.col
+        );
       }
     }
   }

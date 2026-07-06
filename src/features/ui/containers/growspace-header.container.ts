@@ -218,7 +218,7 @@ export class GrowspaceHeaderContainer extends LitElement {
 
     switch (action) {
       case 'add_plant':
-        uiSlice.openAddPlantDialog();
+        uiSlice.openAddPlantDialog(this.device?.deviceId ?? this.store.grid.$selectedDevice.get());
         break;
       case 'config': {
         if (this.device) uiSlice.openConfigDialog(this.device);

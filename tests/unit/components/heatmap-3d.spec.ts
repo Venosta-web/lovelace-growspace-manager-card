@@ -963,7 +963,7 @@ describe('Heatmap3D Logic', () => {
             );
             const mockEmpty = { row: 3, col: 4 };
             (element as any).handleInteraction('click', { plant: mockEmpty });
-            expect(uiSlice.openAddPlantDialog).toHaveBeenCalledWith(3, 4);
+            expect(uiSlice.openAddPlantDialog).toHaveBeenCalledWith('gs1', 3, 4);
         });
 
         it('should handle drag and dragend via handleInteraction', () => {

@@ -49,20 +49,25 @@ export function openPlantOverviewDialog(plant: PlantEntity, selectedIds?: string
 }
 
 /**
- * Open the add-plant dialog. With an explicit row/col, open there; otherwise pick
- * the first empty cell of the selected growspace. The dialog self-fetches its
- * strain library on open.
+ * Open the add-plant dialog for `growspaceId`. With an explicit row/col, open
+ * there; otherwise pick the first empty cell of that growspace. The target is
+ * carried in the payload so the confirm handler never re-derives it from ambient
+ * selection (ADR-0027). The dialog self-fetches its strain library on open.
  */
-export function openAddPlantDialog(row?: number, col?: number): void {
+export function openAddPlantDialog(
+  growspaceId: string | null,
+  row?: number,
+  col?: number
+): void {
+  const gid = growspaceId ?? undefined;
   if (row !== undefined && col !== undefined) {
-    openDialog({ type: 'ADD_PLANT', payload: { row, col } });
+    openDialog({ type: 'ADD_PLANT', payload: { growspaceId: gid, row, col } });
     return;
   }
 
-  const selectedDeviceId = selectedDeviceId$.get();
-  if (!selectedDeviceId) return;
+  if (!growspaceId) return;
 
-  const device = devices$.get().find((d) => d.deviceId === selectedDeviceId);
+  const device = devices$.get().find((d) => d.deviceId === growspaceId);
   let targetRow = 0;
   let targetCol = 0;
 
@@ -92,7 +97,7 @@ export function openAddPlantDialog(row?: number, col?: number): void {
     }
   }
 
-  openDialog({ type: 'ADD_PLANT', payload: { row: targetRow, col: targetCol } });
+  openDialog({ type: 'ADD_PLANT', payload: { growspaceId: gid, row: targetRow, col: targetCol } });
 }
 
 /**

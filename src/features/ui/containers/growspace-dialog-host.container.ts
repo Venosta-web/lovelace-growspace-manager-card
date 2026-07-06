@@ -27,7 +27,6 @@ import {
 } from '../../../slices/genetics';
 import { updateVisionCheckupConfig } from '../../../slices/camera';
 import { getStrainRecommendation } from '../../../slices/ai-insight';
-import { selectedDeviceId$ } from '../../../slices/grid';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { needsExhaustCall } from '../../config/environment-save';
 import {
@@ -756,9 +755,19 @@ export class GrowspaceDialogHost extends LitElement {
     }
   }
 
+  /**
+   * Resolve the growspace an add-plant dialog targets: the id captured in the
+   * open payload (ADR-0027), falling back to this card's per-card selection.
+   * Never the page-global `selectedDeviceId$`, which is dead (always null).
+   */
+  private _activeGrowspaceId(): string | null {
+    const active = this.store.ui.$activeDialog.get() as { payload?: { growspaceId?: string } };
+    return active.payload?.growspaceId ?? this.store.grid.$selectedDevice.get();
+  }
+
   private async _confirmAddPlant(detail: AddPlantDialogState): Promise<void> {
     if (!detail.strain) return;
-    const selectedDevice = selectedDeviceId$.get();
+    const selectedDevice = this._activeGrowspaceId();
     if (!selectedDevice) {
       showToast('No growspace selected', 'error');
       return;
@@ -797,7 +806,7 @@ export class GrowspaceDialogHost extends LitElement {
   }
 
   private async _confirmAddPlants(detail: AddPlantsDialogState): Promise<void> {
-    const selectedDevice = selectedDeviceId$.get();
+    const selectedDevice = this._activeGrowspaceId();
     if (!selectedDevice) {
       showToast('No growspace selected', 'error');
       return;

@@ -155,7 +155,7 @@ export class GrowspaceGridContainer extends LitElement {
   private _handleEmptySlotClick(e: CustomEvent<{ row: number; col: number }>) {
     const { row, col } = e.detail;
     // Convert from 1-based (display) to 0-based (API)
-    uiSlice.openAddPlantDialog(row - 1, col - 1);
+    uiSlice.openAddPlantDialog(this.store.grid.$selectedDevice.get(), row - 1, col - 1);
   }
 
   /**
