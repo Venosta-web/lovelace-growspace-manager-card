@@ -616,9 +616,9 @@ describe('GrowspaceManagerCard', () => {
             (element as any)._handleExitEditMode();
             expect(editSpy).toHaveBeenCalledWith(false);
 
-            // IPM selected
+            // IPM selected — threads the per-card growspace (ADR-0027)
             (element as any)._handleIPMSelected();
-            expect(uiSlice.openIPMDialog).toHaveBeenCalled();
+            expect(uiSlice.openIPMDialog).toHaveBeenCalledWith({ growspaceId: 'gs1' });
 
             // Toggle expansion (if available) — now flips this card's own view mode
             if (typeof (element as any)._handleToggleExpansion === 'function') {

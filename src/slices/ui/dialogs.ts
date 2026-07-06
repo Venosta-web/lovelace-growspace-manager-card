@@ -108,11 +108,13 @@ export function openAddPlantDialog(
 export function toggleEnvGraph(
   metric: string,
   history?: { toggleEnvGraph(metric: string): boolean },
-  ui?: ViewModeHost
+  ui?: ViewModeHost,
+  growspaceId?: string | null
 ): void {
   if (metric === 'crop_steering') {
-    const gsId = selectedDeviceId$.get();
-    if (gsId) openIrrigationDialog({ growspaceId: gsId, initialTab: 'overview' });
+    // Target growspace comes from the caller's per-card selection (ADR-0027),
+    // never the dead page-global selection.
+    if (growspaceId) openIrrigationDialog({ growspaceId, initialTab: 'overview' });
     return;
   }
   if (!history) return;
@@ -124,9 +126,10 @@ export function toggleEnvGraph(
 
 /** Open the IPM dialog for a growspace or a set of plants (self-fetches presets). */
 export function openIPMDialog(context?: { growspaceId?: string; plantIds?: string[] }): void {
-  const growspaceId =
-    context?.growspaceId ||
-    (!context?.plantIds?.length ? selectedDeviceId$.get() || undefined : undefined);
+  // Growspace-scoped IPM must be given its target explicitly (ADR-0027); the
+  // dead page-global selection is no longer consulted. Plant-scoped calls carry
+  // plantIds and leave growspaceId undefined.
+  const growspaceId = context?.growspaceId || undefined;
   openDialog({ type: 'IPM', payload: { growspaceId, plantIds: context?.plantIds } });
 }
 

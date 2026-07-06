@@ -182,13 +182,13 @@ describe('GrowspaceAnalyticsContainer', () => {
     it('toggle-graph event with string detail calls store.actions.ui.toggleEnvGraph', async () => {
         const ui = element.shadowRoot!.querySelector('growspace-analytics-ui')!;
         ui.dispatchEvent(new CustomEvent('toggle-graph', { detail: 'temperature' }));
-        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('temperature', mockStore.history, mockStore.ui);
+        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('temperature', mockStore.history, mockStore.ui, 'grow1');
     });
 
     it('toggle-graph event with object detail calls store.actions.ui.toggleEnvGraph with metric', async () => {
         const ui = element.shadowRoot!.querySelector('growspace-analytics-ui')!;
         ui.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'co2' } }));
-        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('co2', mockStore.history, mockStore.ui);
+        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('co2', mockStore.history, mockStore.ui, 'grow1');
     });
 
     it('toggle-graph event with empty metric does not call toggleEnvGraph', async () => {

@@ -305,7 +305,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleIPMSelected() {
-    uiSlice.openIPMDialog();
+    uiSlice.openIPMDialog({ growspaceId: this.store.grid.$selectedDevice.get() ?? undefined });
   }
 
   private _handleToggleExpansion() {
