@@ -51,6 +51,10 @@ export async function updateGrowspace(data: {
 }): Promise<void> {
   const previous = growspaceDevices$.get();
 
+  // configure_environment is patch semantics (GSM ADR-0026): an omitted key keeps
+  // the backend value; a present key — including [] or null — is a deliberate
+  // set/clear. Gates must therefore be `!== undefined`, never truthiness/length,
+  // or clearing a field silently stops working.
   const payload: Record<string, unknown> = { growspace_id: data.growspaceId };
   if (data.name !== undefined) payload.name = data.name;
   if (data.rows !== undefined) payload.rows = data.rows;
@@ -145,7 +149,7 @@ export async function configureEnvironment(data: {
   temperatureSensors?: string[];
   humiditySensors?: string[];
   vpdSensors?: string[];
-  co2Sensor?: string;
+  co2Sensor?: string | null;
   circulationFanEntity?: string;
   circulationFanEntities?: string[];
   stressThreshold?: number;
@@ -165,7 +169,7 @@ export async function configureEnvironment(data: {
   dehumidifierEntities?: string[];
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
   dehumidifierAcInfinityDevices?: AcInfinityDevice[];
-  soilMoistureSensor?: string;
+  soilMoistureSensor?: string | null;
   controlDehumidifier?: boolean;
   vegDayHours?: number;
   flowerEarlyDayHours?: number;
@@ -194,12 +198,16 @@ export async function configureEnvironment(data: {
   vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
   lstOffset?: number;
 }): Promise<void> {
+  // configure_environment is patch semantics (GSM ADR-0026): an omitted key keeps
+  // the backend value; a present key — including [] or null — is a deliberate
+  // set/clear. Gates must therefore be `!== undefined`, never truthiness/length,
+  // or clearing a field silently stops working.
   const payload: Record<string, unknown> = { growspace_id: data.growspaceId };
 
-  if (data.temperatureSensors?.length) payload.temperature_sensors = data.temperatureSensors;
-  if (data.humiditySensors?.length) payload.humidity_sensors = data.humiditySensors;
-  if (data.vpdSensors?.length) payload.vpd_sensors = data.vpdSensors;
-  if (data.co2Sensor) payload.co2_sensor = data.co2Sensor;
+  if (data.temperatureSensors !== undefined) payload.temperature_sensors = data.temperatureSensors;
+  if (data.humiditySensors !== undefined) payload.humidity_sensors = data.humiditySensors;
+  if (data.vpdSensors !== undefined) payload.vpd_sensors = data.vpdSensors;
+  if (data.co2Sensor !== undefined) payload.co2_sensor = data.co2Sensor;
   if (data.circulationFanEntity) payload.circulation_fan_entity = data.circulationFanEntity;
   if (data.circulationFanEntities) payload.circulation_fan_entities = data.circulationFanEntities;
   if (data.stressThreshold) payload.stress_threshold = data.stressThreshold;
@@ -226,7 +234,7 @@ export async function configureEnvironment(data: {
     payload.humidifier_ac_infinity_devices = data.humidifierAcInfinityDevices;
   if (data.dehumidifierAcInfinityDevices)
     payload.dehumidifier_ac_infinity_devices = data.dehumidifierAcInfinityDevices;
-  if (data.soilMoistureSensor) payload.soil_moisture_sensor = data.soilMoistureSensor;
+  if (data.soilMoistureSensor !== undefined) payload.soil_moisture_sensor = data.soilMoistureSensor;
   if (data.controlDehumidifier !== undefined) payload.control_dehumidifier = data.controlDehumidifier;
   if (data.vegDayHours) payload.veg_day_hours = data.vegDayHours;
   if (data.flowerEarlyDayHours) payload.flower_early_day_hours = data.flowerEarlyDayHours;
@@ -235,7 +243,7 @@ export async function configureEnvironment(data: {
   if (data.minimumSourceAirTemperature) payload.minimum_source_air_temperature = data.minimumSourceAirTemperature;
   if (data.sensorGroups) payload.sensor_groups = data.sensorGroups;
   if (data.sensorCoordinates) payload.sensor_coordinates = data.sensorCoordinates;
-  if (data.irrigationTanks?.length) {
+  if (data.irrigationTanks !== undefined) {
     payload.irrigation_tanks = data.irrigationTanks.map((t) => ({
       sensor_entity: t.sensorEntity,
       name: t.name,
@@ -245,16 +253,16 @@ export async function configureEnvironment(data: {
   }
   if (data.cameraEntities) payload.camera_entities = data.cameraEntities;
   if (data.lungroomTempSensors) payload.lung_room_temp_sensors = data.lungroomTempSensors;
-  if (data.substrateTemperatureSensors?.length) payload.substrate_temperature_sensors = data.substrateTemperatureSensors;
-  if (data.phSensors?.length) payload.ph_sensors = data.phSensors;
-  if (data.feedEcSensors?.length) payload.feed_ec_sensors = data.feedEcSensors;
-  if (data.bulkEcSensors?.length) payload.bulk_ec_sensors = data.bulkEcSensors;
-  if (data.poreEcSensors?.length) payload.pore_ec_sensors = data.poreEcSensors;
-  if (data.runoffEcSensors?.length) payload.runoff_ec_sensors = data.runoffEcSensors;
-  if (data.drainVolumeSensors?.length) payload.drain_volume_sensors = data.drainVolumeSensors;
-  if (data.irrigationFlowSensors?.length) payload.irrigation_flow_sensors = data.irrigationFlowSensors;
-  if (data.powerSensors?.length) payload.power_sensors = data.powerSensors;
-  if (data.energySensors?.length) payload.energy_sensors = data.energySensors;
+  if (data.substrateTemperatureSensors !== undefined) payload.substrate_temperature_sensors = data.substrateTemperatureSensors;
+  if (data.phSensors !== undefined) payload.ph_sensors = data.phSensors;
+  if (data.feedEcSensors !== undefined) payload.feed_ec_sensors = data.feedEcSensors;
+  if (data.bulkEcSensors !== undefined) payload.bulk_ec_sensors = data.bulkEcSensors;
+  if (data.poreEcSensors !== undefined) payload.pore_ec_sensors = data.poreEcSensors;
+  if (data.runoffEcSensors !== undefined) payload.runoff_ec_sensors = data.runoffEcSensors;
+  if (data.drainVolumeSensors !== undefined) payload.drain_volume_sensors = data.drainVolumeSensors;
+  if (data.irrigationFlowSensors !== undefined) payload.irrigation_flow_sensors = data.irrigationFlowSensors;
+  if (data.powerSensors !== undefined) payload.power_sensors = data.powerSensors;
+  if (data.energySensors !== undefined) payload.energy_sensors = data.energySensors;
   if (data.circulationFanConfig) payload.circulation_fan_config = data.circulationFanConfig;
   if (data.growlightEntities) payload.growlight_entities = data.growlightEntities;
   if (data.growlightAcInfinityDevices)

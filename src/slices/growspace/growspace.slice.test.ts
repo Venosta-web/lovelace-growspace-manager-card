@@ -401,12 +401,60 @@ describe('configureEnvironment', () => {
     );
   });
 
-  it('omits fields that are undefined or empty arrays', async () => {
+  it('sends an explicit empty list as a deliberate clear, omits undefined (ADR-0026)', async () => {
+    // Patch semantics: present-empty clears the backend field; an omitted
+    // (undefined) field is preserved. Truthiness/length gates would silently
+    // turn a clear into a keep.
     await configureEnvironment({ growspaceId: 'gs1', temperatureSensors: [] });
 
     const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
-    expect(payload).not.toHaveProperty('temperature_sensors');
+    expect(payload).toHaveProperty('temperature_sensors', []);
     expect(payload).not.toHaveProperty('humidity_sensors');
+  });
+
+  it('sends empty sensor lists and tank list as deliberate clears (ADR-0026)', async () => {
+    await configureEnvironment({
+      growspaceId: 'gs1',
+      poreEcSensors: [],
+      drainVolumeSensors: [],
+      irrigationFlowSensors: [],
+      powerSensors: [],
+      irrigationTanks: [],
+    });
+
+    const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(payload).toHaveProperty('pore_ec_sensors', []);
+    expect(payload).toHaveProperty('drain_volume_sensors', []);
+    expect(payload).toHaveProperty('irrigation_flow_sensors', []);
+    expect(payload).toHaveProperty('power_sensors', []);
+    expect(payload).toHaveProperty('irrigation_tanks', []);
+  });
+
+  it('sends explicit null to clear nullable scalar sensors (ADR-0026)', async () => {
+    await configureEnvironment({
+      growspaceId: 'gs1',
+      co2Sensor: null,
+      soilMoistureSensor: null,
+    });
+
+    const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(payload).toHaveProperty('co2_sensor', null);
+    expect(payload).toHaveProperty('soil_moisture_sensor', null);
+  });
+
+  it('a partial call carries only the provided fields so the backend keeps the rest', async () => {
+    // The irrigation dialog's tank save sends only irrigationTanks; under
+    // patch semantics everything else must stay untouched (omitted).
+    await configureEnvironment({
+      growspaceId: 'gs1',
+      irrigationTanks: [{ sensorEntity: 'sensor.tank', name: 'Tank', warningLevel: 20 }],
+    });
+
+    const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(payload).toEqual({
+      growspace_id: 'gs1',
+      irrigation_tanks: [{ sensor_entity: 'sensor.tank', name: 'Tank', warning_level: 20 }],
+    });
   });
 
   it('sends AC Infinity bundles as snake_case objects on the wire (ADR-0022)', async () => {
