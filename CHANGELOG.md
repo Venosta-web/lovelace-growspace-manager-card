@@ -1,3 +1,11 @@
+# [1.1.0-next.82](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.81...v1.1.0-next.82) (2026-07-06)
+
+
+### Bug Fixes
+
+* resolve add-plant target growspace from payload, not dead global ([#437](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/437)) ([13bfad1](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/13bfad1deba2407fbf94105f0135a4ff0c005ee2)), closes [#342-344](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/342-344)
+* resolve IPM + crop-steering target growspace from per-card selection ([#440](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/440)) ([8845546](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/8845546dba2f60451f4715938296689af554ffb6)), closes [#437](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/437) [#342-344](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/342-344)
+
 # [1.1.0-next.81](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.80...v1.1.0-next.81) (2026-07-06)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "lovelace-growspace-manager-card",
-  "version": "1.1.0-next.81",
+  "version": "1.1.0-next.82",
   "description": "",
   "main": "rollup.config.js",
   "scripts": {
