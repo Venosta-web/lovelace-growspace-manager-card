@@ -1,3 +1,10 @@
+# [1.1.0-next.81](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.80...v1.1.0-next.81) (2026-07-06)
+
+
+### Bug Fixes
+
+* send explicit clears in configure_environment payload (GSM ADR-0026) ([efc1bdc](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/efc1bdc9b97000ecd602b6c2bf8765e71832c608)), closes [#522](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/522)
+
 # [1.1.0-next.80](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.79...v1.1.0-next.80) (2026-07-06)
 
 
