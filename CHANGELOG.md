@@ -1,3 +1,10 @@
+# [1.1.0-next.84](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.83...v1.1.0-next.84) (2026-07-07)
+
+
+### Bug Fixes
+
+* forward notificationService in edit-growspace-submit handler ([c85b237](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/c85b237fb1e1b0680f4d015ab7beb2ba81c1046e))
+
 # [1.1.0-next.83](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.82...v1.1.0-next.83) (2026-07-07)
 
 
