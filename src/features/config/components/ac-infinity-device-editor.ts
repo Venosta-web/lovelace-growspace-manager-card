@@ -14,6 +14,7 @@ import { html, nothing, type TemplateResult } from 'lit';
 import type { AcInfinityDevice } from '../../../slices/growspace/schema';
 import type { AcInfinityConflict } from './ac-infinity-conflict';
 import type { PortDeviceOption } from '../viewmodels/ac-infinity-port-resolver';
+import { renderPortPicker } from './ac-infinity-port-picker';
 
 export interface AcInfinityEditorProps {
   /** Section heading, e.g. "Exhaust Fan AC Infinity Devices". */
@@ -65,40 +66,6 @@ function renderConflict(conflict: AcInfinityConflict | undefined): TemplateResul
   `;
 }
 
-/** The inline Port Pre-fill notice naming the roles a pick failed to resolve. */
-function renderPrefillWarning(missing: string[] | undefined): TemplateResult | typeof nothing {
-  if (!missing || missing.length === 0) return nothing;
-  return html`
-    <div
-      class="ac-infinity-prefill-warning"
-      role="alert"
-      style="display:flex;gap:6px;margin-top:6px;padding:8px;font-size:0.75rem;line-height:1.35;border-radius:6px;color:var(--warning-color,#e6a700);background:rgba(230,167,0,0.10);border:1px solid rgba(230,167,0,0.35);"
-    >
-      <span aria-hidden="true">⚠</span>
-      <span>No ${missing.join(' or ')} entity found on this device — cleared it; pick manually below.</span>
-    </div>
-  `;
-}
-
-/** The device picker that pre-fills a port's bundle. Omitted when no port list is supplied. */
-function renderDevicePicker(
-  p: AcInfinityEditorProps,
-  index: number
-): TemplateResult | typeof nothing {
-  if (!p.portDevices || p.portDevices.length === 0) return nothing;
-  return html`
-    <div style="margin-bottom:8px;">
-      <md3-select
-        label="AC Infinity device"
-        .value=${p.portDeviceIds?.[index] ?? ''}
-        .options=${p.portDevices.map((d) => ({ label: d.label, value: d.id }))}
-        @change=${(e: CustomEvent<string>) => p.onPickDevice?.(index, e.detail)}
-      ></md3-select>
-      ${renderPrefillWarning(p.prefillWarnings?.[index])}
-    </div>
-  `;
-}
-
 function blankDevice(): AcInfinityDevice {
   return { mode_entity: '', speed_entity: '', on_speed: 10 };
 }
@@ -146,7 +113,12 @@ export function renderAcInfinityDevices(p: AcInfinityEditorProps): TemplateResul
                 >×</span
               >
             </div>
-            ${renderDevicePicker(p, index)}
+            ${renderPortPicker({
+              portDevices: p.portDevices,
+              selectedDeviceId: p.portDeviceIds?.[index] ?? '',
+              warning: p.prefillWarnings?.[index],
+              onPick: (deviceId) => p.onPickDevice?.(index, deviceId),
+            })}
             <div style="margin-bottom:8px;">
               <md3-select
                 label="Mode (select)"

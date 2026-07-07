@@ -60,18 +60,20 @@ import {
   resolveAcInfinityPort,
   listAcInfinityPortDevices,
   fillAcInfinityActuatorPort,
+  fillAcInfinityGrowLightPort,
   deviceIdForModeEntity,
   type EntityRegistrySnapshot,
   type PortDeviceOption,
 } from '../features/config/viewmodels/ac-infinity-port-resolver';
-import type { AcInfinityDevice } from '../slices/growspace/schema';
+import type { AcInfinityDevice, AcInfinityGrowLight } from '../slices/growspace/schema';
 
-/** The four env-draft actuator bundle fields a Port Pre-fill pick can target. */
+/** The env-draft AC Infinity bundle fields a Port Pre-fill pick can target. */
 const AC_INFINITY_BUNDLE_FIELDS = [
   'exhaustFanAcInfinityDevices',
   'circulationFanAcInfinityDevices',
   'humidifierAcInfinityDevices',
   'dehumidifierAcInfinityDevices',
+  'growlightAcInfinityDevices',
 ] as const;
 import { createClimateTabViewModel } from '../features/config/viewmodels/climate-tab.viewmodel';
 import '../features/config/components/config-humidity-tab';
@@ -1393,12 +1395,14 @@ export class ConfigDialog extends LitElement {
     // The picker's blank "Select…" option is not a device — never let a stray
     // click through it wipe a configured bundle.
     if (!deviceId) return;
-    const current = (this._sm.environmentDraft as unknown as Record<string, AcInfinityDevice[]>)[
-      field
-    ];
+    const current = (this._sm.environmentDraft as unknown as Record<string, unknown[]>)[field];
     if (!current?.[index]) return;
     const roles = resolveAcInfinityPort(this._entityRegistry, deviceId);
-    const { device, missing } = fillAcInfinityActuatorPort(current[index], roles);
+    // The grow-light bundle fills all six roles; the actuator bundles fill two.
+    const { device, missing } =
+      field === 'growlightAcInfinityDevices'
+        ? fillAcInfinityGrowLightPort(current[index] as AcInfinityGrowLight, roles)
+        : fillAcInfinityActuatorPort(current[index] as AcInfinityDevice, roles);
     const next = current.map((d, i) => (i === index ? device : d));
     // _setEnv clears this field's warnings; re-set only the picked port's.
     this._setEnv({ [field]: next } as Partial<EnvironmentDraft>);
@@ -1745,6 +1749,10 @@ export class ConfigDialog extends LitElement {
       lightsOnTime: growspaceId
         ? (irrigationStrategies$.get().get(growspaceId)?.lightsOnTime ?? null)
         : null,
+      acInfinityPortDevices: () => this._acInfinityPortDevices(),
+      acInfinityPortDeviceId: (modeEntity: string) => this._acInfinityPortDeviceId(modeEntity),
+      acInfinityPrefillWarning: (field: string, index: number) =>
+        this._acInfinityPrefillWarnings[`${field}:${index}`] ?? [],
     };
     return html`
       <config-growlight-tab
@@ -1752,6 +1760,8 @@ export class ConfigDialog extends LitElement {
         .scrollToField=${this.scrollToField}
         @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
         @lights-on-changed=${(e: CustomEvent) => this._onLightsOnChanged(e.detail.lightsOnTime)}
+        @pick-ac-infinity-device=${(e: CustomEvent) =>
+          this._pickAcInfinityPort(e.detail.field, e.detail.index, e.detail.deviceId)}
       ></config-growlight-tab>
     `;
   }

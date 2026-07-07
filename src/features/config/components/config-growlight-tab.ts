@@ -140,6 +140,10 @@ export class ConfigGrowlightTab extends LitElement {
     this._emit('env-draft-changed', { partial });
   }
 
+  private _pickPort(field: string, index: number, deviceId: string): void {
+    this._emit('pick-ac-infinity-device', { field, index, deviceId });
+  }
+
   private _updateConfig(patch: Partial<GrowLightConfig>): void {
     const next: GrowLightConfig = {
       enabled: this.vm.enabled,
@@ -233,8 +237,13 @@ export class ConfigGrowlightTab extends LitElement {
               timeOptions: vm.timeOptions,
               numberOptions: vm.numberOptions,
               switchOptions: vm.switchOptions,
+              portDevices: vm.acInfinityPortDevices,
+              portDeviceIds: vm.growlightPortDeviceIds,
+              prefillWarnings: vm.growlightPrefillWarnings,
               onChange: (devices: AcInfinityGrowLight[]) =>
                 this._update({ growlightAcInfinityDevices: devices }),
+              onPickDevice: (index: number, deviceId: string) =>
+                this._pickPort('growlightAcInfinityDevices', index, deviceId),
             })}
           </div>
         </div>

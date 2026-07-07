@@ -3,7 +3,12 @@ import { createGrowlightTabViewModel, type GrowlightTabDeps } from './growlight-
 import { createInitialSM, transition } from '../../../dialogs/config-dialog-sm';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 
-const noDeps: GrowlightTabDeps = { entityOptions: () => [] };
+const portDeps = {
+  acInfinityPortDevices: () => [],
+  acInfinityPortDeviceId: () => '',
+  acInfinityPrefillWarning: () => [],
+};
+const noDeps: GrowlightTabDeps = { entityOptions: () => [], ...portDeps };
 
 function sm(): ConfigDialogSM {
   return createInitialSM();
@@ -28,7 +33,10 @@ describe('createGrowlightTabViewModel', () => {
   });
 
   it('greys out when disabled and requests the AC Infinity picker options', () => {
-    const deps: GrowlightTabDeps = { entityOptions: (domains) => domains.map((dm) => `${dm}.opt`) };
+    const deps: GrowlightTabDeps = {
+      entityOptions: (domains) => domains.map((dm) => `${dm}.opt`),
+      ...portDeps,
+    };
     const vm = createGrowlightTabViewModel(sm(), deps);
     expect(vm.disabled).toBe(true); // default enabled=false
     expect(vm.modeOptions).toContain('select.opt');
@@ -43,6 +51,7 @@ describe('createGrowlightTabViewModel', () => {
     const vm = createGrowlightTabViewModel(sm(), {
       entityOptions: () => [],
       lightsOnTime: '06:00:00',
+      ...portDeps,
     });
     expect(vm.lightsOnTime).toBe('06:00:00');
   });

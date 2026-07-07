@@ -13,6 +13,7 @@
 
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 import type { AcInfinityGrowLight } from '../../../slices/growspace/schema';
+import type { PortDeviceOption } from './ac-infinity-port-resolver';
 
 /** Complete render input for `<config-growlight-tab>`. */
 export interface GrowlightTabViewModel {
@@ -34,6 +35,12 @@ export interface GrowlightTabViewModel {
   numberOptions: string[];
   /** `switch.*` entities for the sunrise-enable picker. */
   switchOptions: string[];
+  /** Port Pre-fill (ADR-0028): pickable `ac_infinity` port devices for the picker. */
+  acInfinityPortDevices: PortDeviceOption[];
+  /** Device each port derives from its saved `mode_entity` (picker value on reopen). */
+  growlightPortDeviceIds: string[];
+  /** Roles the last pick failed to resolve, per port index (inline warning). */
+  growlightPrefillWarnings: string[][];
   /** Editable lights-on anchor, sourced live from the strategy atom; null if unknown. */
   lightsOnTime: string | null;
 }
@@ -43,6 +50,12 @@ export interface GrowlightTabDeps {
   entityOptions: (domains: string[], deviceClass: string | null) => string[];
   /** The growspace's crop-steering lights-on time, read live from the strategy atom. */
   lightsOnTime?: string | null;
+  /** Hass-reading: the pickable `ac_infinity` port devices for the picker. */
+  acInfinityPortDevices: () => PortDeviceOption[];
+  /** Hass-reading: the device a saved mode entity belongs to (picker value on reopen). */
+  acInfinityPortDeviceId: (modeEntity: string) => string;
+  /** Shell-state read: the roles a port's last pick failed to resolve. */
+  acInfinityPrefillWarning: (field: string, index: number) => string[];
 }
 
 // Grow lights are actuators: only `light.*` (dimmable) and `switch.*` (on/off).
@@ -72,6 +85,13 @@ export function createGrowlightTabViewModel(
     timeOptions: deps.entityOptions(['time'], null),
     numberOptions: deps.entityOptions(['number'], null),
     switchOptions: deps.entityOptions(['switch'], null),
+    acInfinityPortDevices: deps.acInfinityPortDevices(),
+    growlightPortDeviceIds: d.growlightAcInfinityDevices.map((dev) =>
+      deps.acInfinityPortDeviceId(dev.mode_entity)
+    ),
+    growlightPrefillWarnings: d.growlightAcInfinityDevices.map((_, i) =>
+      deps.acInfinityPrefillWarning('growlightAcInfinityDevices', i)
+    ),
     lightsOnTime: deps.lightsOnTime ?? null,
   };
 }
