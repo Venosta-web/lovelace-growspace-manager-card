@@ -586,3 +586,11 @@ Pure pass-through container that subscribes to `nutrientInventory$` and threads 
 
 **`__VERSION__`**
 Build-time constant injected by the bundler. Holds the card's semver version string for startup logging and diagnostics.
+
+## Cross-repo contract
+
+**Contract Fixture**
+The GSM repo's golden growspace payload (`tests/fixtures/contract/growspace_payload.json` there), serialized from a maximally populated growspace. Card CI strict-parses it — unknown *and* missing keys both fail — fetched from two refs: GSM `prerelease` and the latest GSM release.
+
+**Backward-Safe Card Change**
+A card change whose strict parse passes against the **release-ref** [[Contract Fixture]], proving it works against the GSM version users actually run. The only sanctioned exception to the GSM-first landing order; a PR green on `prerelease` but red on the release ref waits for the next GSM release. Pattern named after the env-clear fix (#439).
