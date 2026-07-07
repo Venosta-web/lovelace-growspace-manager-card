@@ -53,3 +53,27 @@ merge on it would tax fast iteration with docker-HA flake retries.
   `dev` — the intended bite point.
 
 [growspace_manager ADR 0020]: ../../../growspace_manager/docs/adr/0020-ci-merge-gate-and-ha-core-aligned-test-rules.md
+
+## Amendment (2026-07-07) — enforcement mechanics, hook-tier cut, nightly e2e
+
+A workflow review found the protection in decision 1 was never turned on. Closing
+the gap came with three refinements:
+
+1. **Rulesets, not classic branch protection.** `dev` and `main` require a PR with
+   green checks (`test`, `lint`), with a bypass list containing **only the GitHub
+   Actions app** so semantic-release can keep pushing `chore(release)` commits to
+   `dev`. Zero required approvals — a solo author cannot approve their own PR, so a
+   review requirement would be bypassed ritually; green checks are the merge
+   condition.
+2. **The three-tier hook ladder is cut to one tier.** Pre-commit (still on the
+   pre-commit framework, per decision 2's one-hook-system rationale) runs fast
+   checks only: eslint, prettier, `no-commit-to-branch dev/main`, and a worktree
+   guard rejecting commits in the shared main checkout unless
+   `ALLOW_MAIN_CHECKOUT=1`. The pre-push `tsc` + vitest tier is dropped — with the
+   ruleset enforcing CI, slow pre-push hooks only invite `--no-verify`.
+3. **E2E gains a nightly scheduled run against `dev`** (PR-gated e2e stays
+   main-only). This bounds the "e2e regression lands on dev and hides until the
+   next release" window from weeks to a day without putting docker-HA flake in the
+   required-check path. The nightly suite includes a config-dialog full round-trip
+   spec (populate → save → reopen → assert; clear → save → reopen → assert), the
+   only automated net for the env-draft-seeder class of regression.
