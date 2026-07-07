@@ -18,6 +18,9 @@ function makeVm(over: Partial<GrowlightTabViewModel> = {}): GrowlightTabViewMode
     timeOptions: ['time.on', 'time.off'],
     numberOptions: ['number.p'],
     switchOptions: ['switch.s'],
+    acInfinityPortDevices: [],
+    growlightPortDeviceIds: [],
+    growlightPrefillWarnings: [],
     lightsOnTime: null,
     ...over,
   };
@@ -138,5 +141,65 @@ describe('ConfigGrowlightTab', () => {
     )!;
     addBtn.click();
     expect(partials[partials.length - 1]?.growlightAcInfinityDevices).toHaveLength(1);
+  });
+});
+
+function listen<T = unknown>(el: HTMLElement, type: string): T[] {
+  const received: T[] = [];
+  el.addEventListener(type, (e: Event) => received.push((e as CustomEvent).detail as T));
+  return received;
+}
+
+function devicePickers(el: ConfigGrowlightTab): Element[] {
+  return [...el.shadowRoot!.querySelectorAll('md3-select')].filter(
+    (s) => (s as unknown as { label: string }).label === 'AC Infinity device'
+  );
+}
+
+describe('ConfigGrowlightTab — Port Pre-fill', () => {
+  const withPort = () =>
+    makeVm({
+      acInfinityDevices: [
+        {
+          mode_entity: 'select.m',
+          on_time_entity: '',
+          off_time_entity: '',
+          power_entity: '',
+          sunrise_switch_entity: '',
+          sunrise_duration_entity: '',
+        },
+      ],
+      acInfinityPortDevices: [{ id: 'dev1', label: 'Grow Tent Port 1' }],
+      growlightPortDeviceIds: ['dev1'],
+      growlightPrefillWarnings: [[]],
+    });
+
+  it('renders a device picker per grow light port, valued from the derived device id', async () => {
+    const el = await mount(withPort());
+    const pickers = devicePickers(el);
+    expect(pickers.length).toBe(1);
+    expect((pickers[0] as unknown as { value: string }).value).toBe('dev1');
+    expect((pickers[0] as unknown as { options: unknown[] }).options).toEqual([
+      { label: 'Grow Tent Port 1', value: 'dev1' },
+    ]);
+  });
+
+  it('emits pick-ac-infinity-device targeting the grow light bundle field', async () => {
+    const el = await mount(withPort());
+    const events = listen<{ field: string; index: number; deviceId: string }>(
+      el,
+      'pick-ac-infinity-device'
+    );
+    devicePickers(el)[0].dispatchEvent(
+      new CustomEvent('change', { detail: 'dev1', bubbles: true, composed: true })
+    );
+    expect(events).toEqual([{ field: 'growlightAcInfinityDevices', index: 0, deviceId: 'dev1' }]);
+  });
+
+  it('renders the inline warning naming the roles the VM reports missing', async () => {
+    const vm = withPort();
+    vm.growlightPrefillWarnings = [['Sunrise switch', 'Sunrise duration']];
+    const el = await mount(vm);
+    expect(el.shadowRoot!.textContent).toContain('Sunrise switch');
   });
 });

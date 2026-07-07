@@ -11,6 +11,8 @@
 import { html, type TemplateResult } from 'lit';
 import type { AcInfinityGrowLight } from '../../../slices/growspace/schema';
 import { optionsWithCurrent } from './ac-infinity-device-editor';
+import { renderPortPicker } from './ac-infinity-port-picker';
+import type { PortDeviceOption } from '../viewmodels/ac-infinity-port-resolver';
 import '../../shared/ui/md3-select';
 import '../../shared/ui/md3-number-input';
 
@@ -24,6 +26,17 @@ export interface GrowlightAcInfinityEditorProps {
   numberOptions: string[];
   /** `switch.*` entities (sunrise enable). */
   switchOptions: string[];
+  /**
+   * Port Pre-fill (ADR-0028): the pickable `ac_infinity` port devices. Omitted →
+   * no picker renders (existing manual flow).
+   */
+  portDevices?: PortDeviceOption[];
+  /** The device each port derives from its saved `mode_entity`, parallel to `devices`. */
+  portDeviceIds?: string[];
+  /** Roles the last pick failed to resolve, per port index (inline warning). */
+  prefillWarnings?: string[][];
+  /** Picking a device for a port — the host resolves + fills + warns. */
+  onPickDevice?: (index: number, deviceId: string) => void;
   onChange: (devices: AcInfinityGrowLight[]) => void;
 }
 
@@ -74,6 +87,12 @@ export function renderGrowlightAcInfinityDevices(
                 >×</span
               >
             </div>
+            ${renderPortPicker({
+              portDevices: p.portDevices,
+              selectedDeviceId: p.portDeviceIds?.[index] ?? '',
+              warning: p.prefillWarnings?.[index],
+              onPick: (deviceId) => p.onPickDevice?.(index, deviceId),
+            })}
             <div style="margin-bottom:8px;">
               <md3-select
                 label="Active Mode (select)"

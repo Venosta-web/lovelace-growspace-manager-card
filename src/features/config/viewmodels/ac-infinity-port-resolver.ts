@@ -11,7 +11,7 @@
  * the same `power` role without one inheriting the other's vocabulary.
  */
 
-import type { AcInfinityDevice } from '../../../slices/growspace/schema';
+import type { AcInfinityDevice, AcInfinityGrowLight } from '../../../slices/growspace/schema';
 
 /** The subset of a frontend `hass.entities[eid]` entry this module reads. */
 export interface AcInfinityRegistryEntry {
@@ -115,6 +115,37 @@ export function fillAcInfinityActuatorPort(
     const eid = roles[role];
     if (eid) device[field] = eid;
     else missing.push(label);
+  }
+  return { device, missing };
+}
+
+/** The grow-light bundle's six roles, in the order the warning names them. */
+const GROWLIGHT_ROLES: { role: AcInfinityRole; label: string; field: keyof AcInfinityGrowLight }[] =
+  [
+    { role: 'mode', label: 'Mode', field: 'mode_entity' },
+    { role: 'onTime', label: 'On time', field: 'on_time_entity' },
+    { role: 'offTime', label: 'Off time', field: 'off_time_entity' },
+    { role: 'power', label: 'Power', field: 'power_entity' },
+    { role: 'sunriseSwitch', label: 'Sunrise switch', field: 'sunrise_switch_entity' },
+    { role: 'sunriseDuration', label: 'Sunrise duration', field: 'sunrise_duration_entity' },
+  ];
+
+/**
+ * Apply a port pick to a grow-light bundle: overwrite all six role fields from
+ * the resolved roles in one pass, clearing any that did not resolve (sunrise
+ * roles included — a port without them saves with empty sunrise fields).
+ * `missing` names the roles that resolved to nothing, for the inline warning.
+ */
+export function fillAcInfinityGrowLightPort(
+  current: AcInfinityGrowLight,
+  roles: Partial<Record<AcInfinityRole, string>>
+): { device: AcInfinityGrowLight; missing: string[] } {
+  const device = { ...current };
+  const missing: string[] = [];
+  for (const { role, label, field } of GROWLIGHT_ROLES) {
+    const eid = roles[role];
+    device[field] = eid ?? '';
+    if (!eid) missing.push(label);
   }
   return { device, missing };
 }

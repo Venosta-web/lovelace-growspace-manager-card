@@ -521,3 +521,78 @@ describe('Port Pre-fill — pick handler', () => {
     expect((el as any)._acInfinityPrefillWarnings['exhaustFanAcInfinityDevices:0']).toBeUndefined();
   });
 });
+
+describe('Port Pre-fill — grow light six-role fill', () => {
+  // dev1 exposes all six grow-light roles; dev2 lacks the two sunrise entities.
+  function hassWithGrowLightPorts(): any {
+    return {
+      states: {},
+      entities: {
+        'select.g1_mode': { platform: 'ac_infinity', device_id: 'dev1', translation_key: 'active_mode' },
+        'time.g1_on': { platform: 'ac_infinity', device_id: 'dev1', translation_key: 'schedule_mode_on_time' },
+        'time.g1_off': { platform: 'ac_infinity', device_id: 'dev1', translation_key: 'schedule_mode_off_time' },
+        'number.g1_power': { platform: 'ac_infinity', device_id: 'dev1', translation_key: 'on_power' },
+        'switch.g1_sunrise': { platform: 'ac_infinity', device_id: 'dev1', translation_key: 'sunrise_timer_enabled' },
+        'number.g1_sunrise_min': { platform: 'ac_infinity', device_id: 'dev1', translation_key: 'sunrise_timer_minutes' },
+        'select.g2_mode': { platform: 'ac_infinity', device_id: 'dev2', translation_key: 'active_mode' },
+        'time.g2_on': { platform: 'ac_infinity', device_id: 'dev2', translation_key: 'schedule_mode_on_time' },
+        'time.g2_off': { platform: 'ac_infinity', device_id: 'dev2', translation_key: 'schedule_mode_off_time' },
+        'number.g2_power': { platform: 'ac_infinity', device_id: 'dev2', translation_key: 'on_power' },
+      },
+      devices: { dev1: { name: 'Light Port 1' }, dev2: { name: 'Light Port 2' } },
+    };
+  }
+
+  const blankGrowLight = () => ({
+    mode_entity: '',
+    on_time_entity: '',
+    off_time_entity: '',
+    power_entity: '',
+    sunrise_switch_entity: '',
+    sunrise_duration_entity: '',
+  });
+
+  function withGrowLightPort(el: ConfigDialog): void {
+    el.setInitialState(ConfigTab.SENSORS, {
+      selectedGrowspaceId: 'gs1',
+      growlightAcInfinityDevices: [blankGrowLight()],
+    } as any);
+  }
+
+  it('fills all six roles from one pick, no warning', () => {
+    const el = makeEl();
+    el.hass = hassWithGrowLightPorts();
+    withGrowLightPort(el);
+    (el as any)._pickAcInfinityPort('growlightAcInfinityDevices', 0, 'dev1');
+    const draft = (el as any)._sm.environmentDraft;
+    expect(draft.growlightAcInfinityDevices[0]).toEqual({
+      mode_entity: 'select.g1_mode',
+      on_time_entity: 'time.g1_on',
+      off_time_entity: 'time.g1_off',
+      power_entity: 'number.g1_power',
+      sunrise_switch_entity: 'switch.g1_sunrise',
+      sunrise_duration_entity: 'number.g1_sunrise_min',
+    });
+    expect((el as any)._acInfinityPrefillWarnings['growlightAcInfinityDevices:0']).toEqual([]);
+  });
+
+  it('clears unresolved sunrise roles and warns, bundle still saveable', () => {
+    const el = makeEl();
+    el.hass = hassWithGrowLightPorts();
+    withGrowLightPort(el);
+    (el as any)._pickAcInfinityPort('growlightAcInfinityDevices', 0, 'dev2');
+    const draft = (el as any)._sm.environmentDraft;
+    expect(draft.growlightAcInfinityDevices[0]).toEqual({
+      mode_entity: 'select.g2_mode',
+      on_time_entity: 'time.g2_on',
+      off_time_entity: 'time.g2_off',
+      power_entity: 'number.g2_power',
+      sunrise_switch_entity: '',
+      sunrise_duration_entity: '',
+    });
+    expect((el as any)._acInfinityPrefillWarnings['growlightAcInfinityDevices:0']).toEqual([
+      'Sunrise switch',
+      'Sunrise duration',
+    ]);
+  });
+});

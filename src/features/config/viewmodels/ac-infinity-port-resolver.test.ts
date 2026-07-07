@@ -3,10 +3,11 @@ import {
   resolveAcInfinityPort,
   listAcInfinityPortDevices,
   fillAcInfinityActuatorPort,
+  fillAcInfinityGrowLightPort,
   deviceIdForModeEntity,
 } from './ac-infinity-port-resolver';
 import type { EntityRegistrySnapshot } from './ac-infinity-port-resolver';
-import type { AcInfinityDevice } from '../../../slices/growspace/schema';
+import type { AcInfinityDevice, AcInfinityGrowLight } from '../../../slices/growspace/schema';
 
 /** A registry entry as the frontend exposes it on `hass.entities[eid]`. */
 const entry = (platform: string, device_id: string, translation_key: string) => ({
@@ -148,6 +149,63 @@ describe('fillAcInfinityActuatorPort', () => {
     const { device, missing } = fillAcInfinityActuatorPort(port(), {});
     expect(device).toEqual({ mode_entity: '', speed_entity: '', on_speed: 10 });
     expect(missing).toEqual(['Mode', 'Speed']);
+  });
+});
+
+describe('fillAcInfinityGrowLightPort', () => {
+  const blank = (): AcInfinityGrowLight => ({
+    mode_entity: '',
+    on_time_entity: '',
+    off_time_entity: '',
+    power_entity: '',
+    sunrise_switch_entity: '',
+    sunrise_duration_entity: '',
+  });
+
+  it('fills all six roles from one resolution pass', () => {
+    const { device, missing } = fillAcInfinityGrowLightPort(blank(), {
+      mode: 'select.mode',
+      onTime: 'time.on',
+      offTime: 'time.off',
+      power: 'number.power',
+      sunriseSwitch: 'switch.sunrise',
+      sunriseDuration: 'number.sunrise_minutes',
+    });
+    expect(device).toEqual({
+      mode_entity: 'select.mode',
+      on_time_entity: 'time.on',
+      off_time_entity: 'time.off',
+      power_entity: 'number.power',
+      sunrise_switch_entity: 'switch.sunrise',
+      sunrise_duration_entity: 'number.sunrise_minutes',
+    });
+    expect(missing).toEqual([]);
+  });
+
+  it('clears unresolved sunrise roles and names them, bundle still complete', () => {
+    const stale: AcInfinityGrowLight = {
+      mode_entity: 'select.old',
+      on_time_entity: 'time.old_on',
+      off_time_entity: 'time.old_off',
+      power_entity: 'number.old',
+      sunrise_switch_entity: 'switch.old',
+      sunrise_duration_entity: 'number.old_min',
+    };
+    const { device, missing } = fillAcInfinityGrowLightPort(stale, {
+      mode: 'select.mode',
+      onTime: 'time.on',
+      offTime: 'time.off',
+      power: 'number.power',
+    });
+    expect(device).toEqual({
+      mode_entity: 'select.mode',
+      on_time_entity: 'time.on',
+      off_time_entity: 'time.off',
+      power_entity: 'number.power',
+      sunrise_switch_entity: '',
+      sunrise_duration_entity: '',
+    });
+    expect(missing).toEqual(['Sunrise switch', 'Sunrise duration']);
   });
 });
 
