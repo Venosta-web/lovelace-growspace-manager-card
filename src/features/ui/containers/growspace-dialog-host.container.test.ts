@@ -6,7 +6,10 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { waterPlant as mockWaterPlant } from '../../../slices/plant';
-import { configureEnvironment as mockConfigureEnvironment } from '../../../slices/growspace';
+import {
+  configureEnvironment as mockConfigureEnvironment,
+  updateGrowspace as mockUpdateGrowspace,
+} from '../../../slices/growspace';
 import { applyIPM as mockApplyIPM } from '../../../slices/nutrient';
 import { saveNotificationSettings as mockSaveNotificationSettings } from '../../../slices/notification';
 import { notification$, activeDialog$ } from '../../../slices/ui';
@@ -32,6 +35,7 @@ vi.mock('../../../slices/growspace', async (importOriginal) => ({
   configureEnvironment: vi.fn().mockResolvedValue(undefined),
   configureExhaustFan: vi.fn().mockResolvedValue(undefined),
   removeEnvironment: vi.fn().mockResolvedValue(undefined),
+  updateGrowspace: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../slices/genetics', () => ({
@@ -664,5 +668,91 @@ describe('GrowspaceDialogHost – save-notification-settings wiring', () => {
     await vi.waitFor(() => expect(notification$.get()?.type).toBe('error'));
 
     expect(activeDialog$.get().type).toBe('CONFIG');
+  });
+});
+
+describe('GrowspaceDialogHost – edit-growspace-submit handler', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(mockUpdateGrowspace).mockResolvedValue(undefined);
+  });
+
+  async function renderConfigDialog(): Promise<HTMLElement> {
+    const el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    (el as any).store = {
+      $dialogHostState: {
+        subscribe: vi.fn(() => () => {}),
+        get: vi.fn().mockReturnValue({
+          activeDialog: { type: 'CONFIG', payload: { currentTab: 'growspaces' } },
+          devices: [{ deviceId: 'gs-1', name: 'Tent 1' }],
+          selectedDevice: 'gs-1',
+          strainLibrary: [],
+          nutrientPresets: {},
+          ipmPresets: {},
+          nutrientInventory: null,
+        }),
+      },
+      refreshData: vi.fn().mockResolvedValue(undefined),
+    };
+
+    (el as any)._initControllers();
+    const result = (el as any).render();
+    const container = document.createElement('div');
+    const { render } = await import('lit');
+    render(result, container);
+
+    const dialog = container.querySelector('config-dialog');
+    if (!dialog) throw new Error('config-dialog did not render');
+    return dialog as HTMLElement;
+  }
+
+  it('forwards notificationService from the dialog event to updateGrowspace', async () => {
+    const dialog = await renderConfigDialog();
+
+    dialog.dispatchEvent(
+      new CustomEvent('edit-growspace-submit', {
+        detail: {
+          growspaceId: 'gs-1',
+          name: 'Tent 1',
+          rows: 4,
+          plantsPerRow: 4,
+          notificationService: 'notify.mobile_app_pixel',
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+    await Promise.resolve();
+
+    expect(mockUpdateGrowspace).toHaveBeenCalledWith({
+      growspaceId: 'gs-1',
+      name: 'Tent 1',
+      rows: 4,
+      plantsPerRow: 4,
+      notificationService: 'notify.mobile_app_pixel',
+    });
+  });
+
+  it('forwards an emptied notificationService as an explicit clear', async () => {
+    const dialog = await renderConfigDialog();
+
+    dialog.dispatchEvent(
+      new CustomEvent('edit-growspace-submit', {
+        detail: {
+          growspaceId: 'gs-1',
+          name: 'Tent 1',
+          rows: 4,
+          plantsPerRow: 4,
+          notificationService: '',
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+    await Promise.resolve();
+
+    expect(mockUpdateGrowspace).toHaveBeenCalledWith(
+      expect.objectContaining({ notificationService: '' })
+    );
   });
 });
