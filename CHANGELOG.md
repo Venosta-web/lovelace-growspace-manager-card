@@ -1,3 +1,12 @@
+# [1.1.0-next.83](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.82...v1.1.0-next.83) (2026-07-07)
+
+
+### Features
+
+* **config:** AC Infinity Port Pre-fill on the four actuator roles ([#445](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/445)) ([6df9c6f](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/6df9c6feca7ccdb2603bbac100706f21b1a47147)), closes [#446](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/446)
+* **config:** AC Infinity Port Pre-fill on the grow light tab ([#446](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/446)) ([7f9b197](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7f9b1974117c8ba996f023991edcf6e2fbe24331))
+* **config:** Duplicate Port Warning when one port spans two roles ([#447](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/447)) ([68d2645](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/68d2645763d72e7afe7372b73258585a81e78091))
+
 # [1.1.0-next.82](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.81...v1.1.0-next.82) (2026-07-06)
 
 
