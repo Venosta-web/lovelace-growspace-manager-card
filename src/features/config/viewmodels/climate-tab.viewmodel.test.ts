@@ -7,7 +7,7 @@ import {
 import { createInitialSM, transition } from '../../../dialogs/config-dialog-sm';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 
-const deps: ClimateTabDeps = { entityOptions: () => [], acInfinityConflict: () => null };
+const deps: ClimateTabDeps = { entityOptions: () => [], acInfinityConflict: () => null, acInfinityPortDevices: () => [], acInfinityPortDeviceId: () => '', acInfinityPrefillWarning: () => [] };
 const collapsed: ClimateExpandState = {
   fanTempOverrideExpanded: false,
   exhaustCriticalTempExpanded: false,
@@ -33,7 +33,7 @@ describe('createClimateTabViewModel — control section', () => {
   });
 
   it('fills fan picker options from the injected adapter', () => {
-    const d: ClimateTabDeps = { entityOptions: (domains) => (domains.includes('binary_sensor') ? ['x.exhaust'] : ['x.circ']), acInfinityConflict: () => null };
+    const d: ClimateTabDeps = { entityOptions: (domains) => (domains.includes('binary_sensor') ? ['x.exhaust'] : ['x.circ']), acInfinityConflict: () => null, acInfinityPortDevices: () => [], acInfinityPortDeviceId: () => '', acInfinityPrefillWarning: () => [] };
     const vm = createClimateTabViewModel(sm(), d, collapsed);
     expect(vm.control.exhaustFanOptions).toEqual(['x.exhaust']); // exhaust domains include binary_sensor
     expect(vm.control.circulationFanOptions).toEqual(['x.circ']);
@@ -110,6 +110,9 @@ describe('createClimateTabViewModel — AC Infinity devices', () => {
             ? ['number.speed']
             : [],
       acInfinityConflict: () => null,
+      acInfinityPortDevices: () => [],
+      acInfinityPortDeviceId: () => '',
+      acInfinityPrefillWarning: () => [],
     };
     const c = createClimateTabViewModel(sm(), d, collapsed).control;
     expect(c.acInfinityModeOptions).toEqual(['select.mode']);
@@ -124,6 +127,9 @@ describe('createClimateTabViewModel — AC Infinity devices', () => {
         return [];
       },
       acInfinityConflict: () => null,
+      acInfinityPortDevices: () => [],
+      acInfinityPortDeviceId: () => '',
+      acInfinityPrefillWarning: () => [],
     };
     createClimateTabViewModel(sm(), d, collapsed);
     expect(calls).toContainEqual([['select'], null, 'ac_infinity']);

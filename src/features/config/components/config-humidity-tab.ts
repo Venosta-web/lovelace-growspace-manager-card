@@ -235,6 +235,10 @@ export class ConfigHumidityTab extends LitElement {
     this._emit('env-draft-changed', { partial });
   }
 
+  private _pickPort(field: string, index: number, deviceId: string): void {
+    this._emit('pick-ac-infinity-device', { field, index, deviceId });
+  }
+
   render(): TemplateResult {
     return html`${this._renderDevices()}${this._renderThresholds()}`;
   }
@@ -263,8 +267,13 @@ export class ConfigHumidityTab extends LitElement {
             modeOptions: this.vm.acInfinityModeOptions,
             speedOptions: this.vm.acInfinitySpeedOptions,
             conflicts: this.vm.acInfinityConflicts,
+            portDevices: this.vm.acInfinityPortDevices,
+            portDeviceIds: this.vm.humidifierPortDeviceIds,
+            prefillWarnings: this.vm.humidifierPrefillWarnings,
             idPrefix: 'humidifier',
             onChange: (devices) => this._update({ humidifierAcInfinityDevices: devices }),
+            onPickDevice: (index, deviceId) =>
+              this._pickPort('humidifierAcInfinityDevices', index, deviceId),
           })}
           ${renderAcInfinityDevices({
             label: 'Dehumidifier AC Infinity Devices',
@@ -272,8 +281,13 @@ export class ConfigHumidityTab extends LitElement {
             modeOptions: this.vm.acInfinityModeOptions,
             speedOptions: this.vm.acInfinitySpeedOptions,
             conflicts: this.vm.acInfinityConflicts,
+            portDevices: this.vm.acInfinityPortDevices,
+            portDeviceIds: this.vm.dehumidifierPortDeviceIds,
+            prefillWarnings: this.vm.dehumidifierPrefillWarnings,
             idPrefix: 'dehumidifier',
             onChange: (devices) => this._update({ dehumidifierAcInfinityDevices: devices }),
+            onPickDevice: (index, deviceId) =>
+              this._pickPort('dehumidifierAcInfinityDevices', index, deviceId),
           })}
           <div class="row-col-grid">
             <label class="checkbox-label">

@@ -411,3 +411,113 @@ describe('_getEntities — platform filter', () => {
     expect(spy).toHaveBeenCalledWith(['number'], null, 'ac_infinity');
   });
 });
+
+describe('Port Pre-fill — pick handler', () => {
+  // A port device (dev1) exposing a full mode + speed pair, and a mode-only
+  // device (dev2) whose speed number is disabled (absent from the registry).
+  function hassWithPorts(): any {
+    return {
+      states: {},
+      entities: {
+        'select.p1_mode': {
+          platform: 'ac_infinity',
+          device_id: 'dev1',
+          translation_key: 'active_mode',
+        },
+        'number.p1_power': {
+          platform: 'ac_infinity',
+          device_id: 'dev1',
+          translation_key: 'on_power',
+        },
+        'select.p2_mode': {
+          platform: 'ac_infinity',
+          device_id: 'dev2',
+          translation_key: 'active_mode',
+        },
+      },
+      devices: {
+        dev1: { name_by_user: 'Tent Port 1' },
+        dev2: { name: 'Tent Port 2' },
+      },
+    };
+  }
+
+  function withPort(el: ConfigDialog): void {
+    el.setInitialState(ConfigTab.SENSORS, {
+      selectedGrowspaceId: 'gs1',
+      exhaustFanAcInfinityDevices: [{ mode_entity: '', speed_entity: '', on_speed: 7 }],
+    } as any);
+  }
+
+  it('lists the pickable port devices labeled by device name, sorted', () => {
+    const el = makeEl();
+    el.hass = hassWithPorts();
+    expect((el as any)._acInfinityPortDevices()).toEqual([
+      { id: 'dev1', label: 'Tent Port 1' },
+      { id: 'dev2', label: 'Tent Port 2' },
+    ]);
+  });
+
+  it('fills mode + speed from the picked device and preserves on_speed, no warning', () => {
+    const el = makeEl();
+    el.hass = hassWithPorts();
+    withPort(el);
+    (el as any)._pickAcInfinityPort('exhaustFanAcInfinityDevices', 0, 'dev1');
+    const draft = (el as any)._sm.environmentDraft;
+    expect(draft.exhaustFanAcInfinityDevices[0]).toEqual({
+      mode_entity: 'select.p1_mode',
+      speed_entity: 'number.p1_power',
+      on_speed: 7,
+    });
+    expect((el as any)._acInfinityPrefillWarnings['exhaustFanAcInfinityDevices:0']).toEqual([]);
+  });
+
+  it('clears the unresolved speed role and warns when the device lacks it', () => {
+    const el = makeEl();
+    el.hass = hassWithPorts();
+    withPort(el);
+    (el as any)._pickAcInfinityPort('exhaustFanAcInfinityDevices', 0, 'dev2');
+    const draft = (el as any)._sm.environmentDraft;
+    expect(draft.exhaustFanAcInfinityDevices[0]).toEqual({
+      mode_entity: 'select.p2_mode',
+      speed_entity: '',
+      on_speed: 7,
+    });
+    expect((el as any)._acInfinityPrefillWarnings['exhaustFanAcInfinityDevices:0']).toEqual([
+      'Speed',
+    ]);
+  });
+
+  it('leaves a configured bundle untouched when the blank option is selected', () => {
+    const el = makeEl();
+    el.hass = hassWithPorts();
+    el.setInitialState(ConfigTab.SENSORS, {
+      selectedGrowspaceId: 'gs1',
+      exhaustFanAcInfinityDevices: [
+        { mode_entity: 'select.p1_mode', speed_entity: 'number.p1_power', on_speed: 7 },
+      ],
+    } as any);
+    (el as any)._pickAcInfinityPort('exhaustFanAcInfinityDevices', 0, '');
+    const draft = (el as any)._sm.environmentDraft;
+    expect(draft.exhaustFanAcInfinityDevices[0]).toEqual({
+      mode_entity: 'select.p1_mode',
+      speed_entity: 'number.p1_power',
+      on_speed: 7,
+    });
+    expect((el as any)._acInfinityPrefillWarnings['exhaustFanAcInfinityDevices:0']).toBeUndefined();
+  });
+
+  it('drops the port warning once the bundle is edited manually', () => {
+    const el = makeEl();
+    el.hass = hassWithPorts();
+    withPort(el);
+    (el as any)._pickAcInfinityPort('exhaustFanAcInfinityDevices', 0, 'dev2');
+    expect((el as any)._acInfinityPrefillWarnings['exhaustFanAcInfinityDevices:0']).toEqual([
+      'Speed',
+    ]);
+    (el as any)._setEnv({
+      exhaustFanAcInfinityDevices: [{ mode_entity: 'select.p2_mode', speed_entity: 'number.x', on_speed: 7 }],
+    });
+    expect((el as any)._acInfinityPrefillWarnings['exhaustFanAcInfinityDevices:0']).toBeUndefined();
+  });
+});

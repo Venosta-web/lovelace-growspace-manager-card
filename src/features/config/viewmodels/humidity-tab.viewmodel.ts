@@ -23,6 +23,7 @@ import { DehumidifierStage, HumidifierStage } from '../../../types';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 import type { AcInfinityConflict } from '../components/ac-infinity-conflict';
 import { buildAcInfinityConflicts } from './ac-infinity-conflicts';
+import type { PortDeviceOption } from './ac-infinity-port-resolver';
 import type { AcInfinityDevice } from '../../../slices/growspace/schema';
 
 export type StageThresholds = Record<string, Record<string, { on: number; off: number }>>;
@@ -97,6 +98,14 @@ export interface HumidityTabViewModel {
   acInfinitySpeedOptions: string[];
   /** Automated Mode Conflicts for the tab's ports, keyed by `mode_entity`. */
   acInfinityConflicts: Record<string, AcInfinityConflict>;
+  /** Port Pre-fill (ADR-0028): pickable `ac_infinity` port devices, shared across both roles. */
+  acInfinityPortDevices: PortDeviceOption[];
+  /** Device each port derives from its saved `mode_entity` (picker value on reopen). */
+  humidifierPortDeviceIds: string[];
+  dehumidifierPortDeviceIds: string[];
+  /** Roles the last pick failed to resolve, per port index (inline warning). */
+  humidifierPrefillWarnings: string[][];
+  dehumidifierPrefillWarnings: string[][];
   humidifierControlEnabled: boolean;
   dehumidifierControlEnabled: boolean;
   stages: HumidityStageVM[];
@@ -107,6 +116,12 @@ export interface HumidityTabDeps {
   entityOptions: (domains: string[], deviceClass: string | null, platform?: string) => string[];
   /** Hass-reading resolver: a bound mode entity → its conflict, or null if none. */
   acInfinityConflict: (modeEntity: string) => AcInfinityConflict | null;
+  /** Hass-reading: the pickable `ac_infinity` port devices for the picker. */
+  acInfinityPortDevices: () => PortDeviceOption[];
+  /** Hass-reading: the device a saved mode entity belongs to (picker value on reopen). */
+  acInfinityPortDeviceId: (modeEntity: string) => string;
+  /** Shell-state read: the roles a port's last pick failed to resolve. */
+  acInfinityPrefillWarning: (field: string, index: number) => string[];
 }
 
 /** The three Shell-`@state` flags projected into the VM. */
@@ -170,6 +185,19 @@ export function createHumidityTabViewModel(
     acInfinityConflicts: buildAcInfinityConflicts(
       [d.humidifierAcInfinityDevices, d.dehumidifierAcInfinityDevices],
       deps.acInfinityConflict
+    ),
+    acInfinityPortDevices: deps.acInfinityPortDevices(),
+    humidifierPortDeviceIds: d.humidifierAcInfinityDevices.map((dev) =>
+      deps.acInfinityPortDeviceId(dev.mode_entity)
+    ),
+    dehumidifierPortDeviceIds: d.dehumidifierAcInfinityDevices.map((dev) =>
+      deps.acInfinityPortDeviceId(dev.mode_entity)
+    ),
+    humidifierPrefillWarnings: d.humidifierAcInfinityDevices.map((_, i) =>
+      deps.acInfinityPrefillWarning('humidifierAcInfinityDevices', i)
+    ),
+    dehumidifierPrefillWarnings: d.dehumidifierAcInfinityDevices.map((_, i) =>
+      deps.acInfinityPrefillWarning('dehumidifierAcInfinityDevices', i)
     ),
     humidifierControlEnabled: expand.humidifierControlEnabled,
     dehumidifierControlEnabled: expand.dehumidifierControlEnabled,

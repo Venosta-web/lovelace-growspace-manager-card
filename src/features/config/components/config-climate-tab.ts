@@ -157,6 +157,10 @@ export class ConfigClimateTab extends LitElement {
     this._emit('fan-config-changed', { partial });
   }
 
+  private _pickPort(field: string, index: number, deviceId: string): void {
+    this._emit('pick-ac-infinity-device', { field, index, deviceId });
+  }
+
   private _updateExhaust(partial: Partial<ExhaustFanConfig>): void {
     this._emit('exhaust-config-changed', { partial });
   }
@@ -195,8 +199,13 @@ export class ConfigClimateTab extends LitElement {
             modeOptions: c.acInfinityModeOptions,
             speedOptions: c.acInfinitySpeedOptions,
             conflicts: c.acInfinityConflicts,
+            portDevices: c.acInfinityPortDevices,
+            portDeviceIds: c.exhaustFanPortDeviceIds,
+            prefillWarnings: c.exhaustFanPrefillWarnings,
             idPrefix: 'exhaust',
             onChange: (devices) => this._update({ exhaustFanAcInfinityDevices: devices }),
+            onPickDevice: (index, deviceId) =>
+              this._pickPort('exhaustFanAcInfinityDevices', index, deviceId),
           })}
           ${renderAcInfinityDevices({
             label: 'Circulation Fan AC Infinity Devices',
@@ -204,8 +213,13 @@ export class ConfigClimateTab extends LitElement {
             modeOptions: c.acInfinityModeOptions,
             speedOptions: c.acInfinitySpeedOptions,
             conflicts: c.acInfinityConflicts,
+            portDevices: c.acInfinityPortDevices,
+            portDeviceIds: c.circulationFanPortDeviceIds,
+            prefillWarnings: c.circulationFanPrefillWarnings,
             idPrefix: 'circulation',
             onChange: (devices) => this._update({ circulationFanAcInfinityDevices: devices }),
+            onPickDevice: (index, deviceId) =>
+              this._pickPort('circulationFanAcInfinityDevices', index, deviceId),
           })}
           <div class="row-col-grid">
             <md3-number-input

@@ -20,6 +20,7 @@
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 import type { AcInfinityConflict } from '../components/ac-infinity-conflict';
 import { buildAcInfinityConflicts } from './ac-infinity-conflicts';
+import type { PortDeviceOption } from './ac-infinity-port-resolver';
 import type {
   AcInfinityDevice,
   CirculationFanConfig,
@@ -46,6 +47,14 @@ export interface ClimateControlVM {
   acInfinitySpeedOptions: string[];
   /** Automated Mode Conflicts for the tab's ports, keyed by `mode_entity`. */
   acInfinityConflicts: Record<string, AcInfinityConflict>;
+  /** Port Pre-fill (ADR-0028): pickable `ac_infinity` port devices, shared across both roles. */
+  acInfinityPortDevices: PortDeviceOption[];
+  /** Device each exhaust port derives from its saved `mode_entity` (picker value on reopen). */
+  exhaustFanPortDeviceIds: string[];
+  circulationFanPortDeviceIds: string[];
+  /** Roles the last pick failed to resolve, per port index (inline warning). */
+  exhaustFanPrefillWarnings: string[][];
+  circulationFanPrefillWarnings: string[][];
   stressThreshold: number;
   moldThreshold: number;
   /** Remove Environment is enabled only when a growspace is selected. */
@@ -98,6 +107,12 @@ export interface ClimateTabDeps {
   entityOptions: (domains: string[], deviceClass: string | null, platform?: string) => string[];
   /** Hass-reading resolver: a bound mode entity → its conflict, or null if none. */
   acInfinityConflict: (modeEntity: string) => AcInfinityConflict | null;
+  /** Hass-reading: the pickable `ac_infinity` port devices for the picker. */
+  acInfinityPortDevices: () => PortDeviceOption[];
+  /** Hass-reading: the device a saved mode entity belongs to (picker value on reopen). */
+  acInfinityPortDeviceId: (modeEntity: string) => string;
+  /** Shell-state read: the roles a port's last pick failed to resolve. */
+  acInfinityPrefillWarning: (field: string, index: number) => string[];
 }
 
 /** The two Shell-`@state` expander flags, projected into the VM. */
@@ -137,6 +152,19 @@ export function createClimateTabViewModel(
       acInfinityConflicts: buildAcInfinityConflicts(
         [d.exhaustFanAcInfinityDevices, d.circulationFanAcInfinityDevices],
         deps.acInfinityConflict
+      ),
+      acInfinityPortDevices: deps.acInfinityPortDevices(),
+      exhaustFanPortDeviceIds: d.exhaustFanAcInfinityDevices.map((dev) =>
+        deps.acInfinityPortDeviceId(dev.mode_entity)
+      ),
+      circulationFanPortDeviceIds: d.circulationFanAcInfinityDevices.map((dev) =>
+        deps.acInfinityPortDeviceId(dev.mode_entity)
+      ),
+      exhaustFanPrefillWarnings: d.exhaustFanAcInfinityDevices.map((_, i) =>
+        deps.acInfinityPrefillWarning('exhaustFanAcInfinityDevices', i)
+      ),
+      circulationFanPrefillWarnings: d.circulationFanAcInfinityDevices.map((_, i) =>
+        deps.acInfinityPrefillWarning('circulationFanAcInfinityDevices', i)
       ),
       stressThreshold: d.stressThreshold,
       moldThreshold: d.moldThreshold,

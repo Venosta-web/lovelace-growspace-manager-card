@@ -19,6 +19,11 @@ function makeVm(over: Partial<ClimateTabViewModel> = {}): ClimateTabViewModel {
       acInfinityModeOptions: [],
       acInfinitySpeedOptions: [],
       acInfinityConflicts: {},
+      acInfinityPortDevices: [],
+      exhaustFanPortDeviceIds: [],
+      circulationFanPortDeviceIds: [],
+      exhaustFanPrefillWarnings: [],
+      circulationFanPrefillWarnings: [],
       stressThreshold: 0.7,
       moldThreshold: 0.85,
       canRemoveEnvironment: true,
@@ -101,6 +106,56 @@ describe('ConfigClimateTab — render', () => {
     const el = await mount(makeVm({ fan: { ...makeVm().fan, vpdTargetLabel: 'Fallback VPD Target (kPa)' } }));
     const labels = [...el.shadowRoot!.querySelectorAll('md3-number-input')].map((n) => n.getAttribute('label'));
     expect(labels).toContain('Fallback VPD Target (kPa)');
+  });
+});
+
+function devicePickers(el: ConfigClimateTab): Element[] {
+  return [...el.shadowRoot!.querySelectorAll('md3-select')].filter(
+    (s) => (s as unknown as { label: string }).label === 'AC Infinity device'
+  );
+}
+
+describe('ConfigClimateTab — Port Pre-fill', () => {
+  const withPort = () =>
+    makeVm({
+      control: {
+        ...makeVm().control,
+        exhaustFanAcInfinityDevices: [{ mode_entity: 'select.m', speed_entity: '', on_speed: 10 }],
+        acInfinityPortDevices: [{ id: 'dev1', label: 'Grow Tent Port 1' }],
+        exhaustFanPortDeviceIds: ['dev1'],
+        exhaustFanPrefillWarnings: [[]],
+      },
+    });
+
+  it('renders a device picker per port, valued from the derived device id', async () => {
+    const el = await mount(withPort());
+    const pickers = devicePickers(el);
+    expect(pickers.length).toBe(1);
+    expect((pickers[0] as unknown as { value: string }).value).toBe('dev1');
+    expect((pickers[0] as unknown as { options: unknown[] }).options).toEqual([
+      { label: 'Grow Tent Port 1', value: 'dev1' },
+    ]);
+  });
+
+  it('emits pick-ac-infinity-device with the field, index and picked device', async () => {
+    const el = await mount(withPort());
+    const events = listen<{ field: string; index: number; deviceId: string }>(
+      el,
+      'pick-ac-infinity-device'
+    );
+    devicePickers(el)[0].dispatchEvent(
+      new CustomEvent('change', { detail: 'dev1', bubbles: true, composed: true })
+    );
+    expect(events).toEqual([
+      { field: 'exhaustFanAcInfinityDevices', index: 0, deviceId: 'dev1' },
+    ]);
+  });
+
+  it('renders the inline warning naming the roles the VM reports missing', async () => {
+    const vm = withPort();
+    vm.control.exhaustFanPrefillWarnings = [['Speed']];
+    const el = await mount(vm);
+    expect(el.shadowRoot!.textContent).toContain('Speed');
   });
 });
 

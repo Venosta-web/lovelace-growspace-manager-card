@@ -43,6 +43,7 @@ import {
   type ConfigDialogEvent,
   type ConfigTabId,
   type TimedNotificationDraft,
+  type EnvironmentDraft,
 } from './config-dialog-sm';
 import '../features/config/components/config-notifications-tab';
 import { createNotificationsTabViewModel } from '../features/config/viewmodels/notifications-tab.viewmodel';
@@ -55,6 +56,23 @@ import {
   isAutomatedMode,
   type AcInfinityConflict,
 } from '../features/config/components/ac-infinity-conflict';
+import {
+  resolveAcInfinityPort,
+  listAcInfinityPortDevices,
+  fillAcInfinityActuatorPort,
+  deviceIdForModeEntity,
+  type EntityRegistrySnapshot,
+  type PortDeviceOption,
+} from '../features/config/viewmodels/ac-infinity-port-resolver';
+import type { AcInfinityDevice } from '../slices/growspace/schema';
+
+/** The four env-draft actuator bundle fields a Port Pre-fill pick can target. */
+const AC_INFINITY_BUNDLE_FIELDS = [
+  'exhaustFanAcInfinityDevices',
+  'circulationFanAcInfinityDevices',
+  'humidifierAcInfinityDevices',
+  'dehumidifierAcInfinityDevices',
+] as const;
 import { createClimateTabViewModel } from '../features/config/viewmodels/climate-tab.viewmodel';
 import '../features/config/components/config-humidity-tab';
 import {
@@ -139,6 +157,11 @@ export class ConfigDialog extends LitElement {
   private get _d() { return this._sm.environmentDraft; }
   private _setEnv(partial: Partial<typeof this._sm.environmentDraft>) {
     this._sm = transition(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
+    // A manual write to an AC Infinity bundle invalidates that field's Port
+    // Pre-fill warnings (the pick path re-sets its own key afterwards).
+    for (const field of AC_INFINITY_BUNDLE_FIELDS) {
+      if (field in partial) this._acInfinityPrefillWarnings = this._clearedPrefillWarnings(field);
+    }
   }
 
   get envSelectedId() { return this._d.selectedGrowspaceId; }
@@ -1325,6 +1348,74 @@ export class ConfigDialog extends LitElement {
     return this.hass.states[entityId]?.attributes?.friendly_name || entityId;
   }
 
+  // ── Port Pre-fill (ADR-0028) ─────────────────────────────────────────────
+
+  /**
+   * Roles the last device pick failed to resolve, keyed `${field}:${index}`.
+   * Ephemeral UI state — never part of the env draft (no seeder). A pick sets
+   * one key; any manual write to that field clears the whole field's keys.
+   */
+  @state() private _acInfinityPrefillWarnings: Record<string, string[]> = {};
+
+  /** The frontend entity registry (`hass.entities`), untyped on the hass type. */
+  private get _entityRegistry(): EntityRegistrySnapshot {
+    return (
+      (this.hass as unknown as { entities?: EntityRegistrySnapshot }).entities ?? {}
+    );
+  }
+
+  /** Device-registry name for a device id (`name_by_user || name`), falling back to the id. */
+  private _deviceNameById(deviceId: string): string {
+    const devices = (this.hass as unknown as {
+      devices?: Record<string, { name_by_user?: string; name?: string }>;
+    }).devices;
+    const device = devices?.[deviceId];
+    return device?.name_by_user || device?.name || deviceId;
+  }
+
+  private _acInfinityPortDevices(): PortDeviceOption[] {
+    if (!this.hass) return [];
+    return listAcInfinityPortDevices(this._entityRegistry, (id) => this._deviceNameById(id));
+  }
+
+  private _acInfinityPortDeviceId(modeEntity: string): string {
+    if (!this.hass) return '';
+    return deviceIdForModeEntity(this._entityRegistry, modeEntity);
+  }
+
+  /**
+   * Apply a Port Pre-fill pick to one actuator bundle: resolve the picked device
+   * to its member entities, overwrite the port's role fields (clearing unresolved
+   * ones), persist through the normal env-draft path, and record the inline
+   * warning naming what wasn't found.
+   */
+  private _pickAcInfinityPort(field: string, index: number, deviceId: string): void {
+    // The picker's blank "Select…" option is not a device — never let a stray
+    // click through it wipe a configured bundle.
+    if (!deviceId) return;
+    const current = (this._sm.environmentDraft as unknown as Record<string, AcInfinityDevice[]>)[
+      field
+    ];
+    if (!current?.[index]) return;
+    const roles = resolveAcInfinityPort(this._entityRegistry, deviceId);
+    const { device, missing } = fillAcInfinityActuatorPort(current[index], roles);
+    const next = current.map((d, i) => (i === index ? device : d));
+    // _setEnv clears this field's warnings; re-set only the picked port's.
+    this._setEnv({ [field]: next } as Partial<EnvironmentDraft>);
+    this._acInfinityPrefillWarnings = {
+      ...this._acInfinityPrefillWarnings,
+      [`${field}:${index}`]: missing,
+    };
+  }
+
+  /** The warning map with every key for `field` dropped (a manual write invalidates them). */
+  private _clearedPrefillWarnings(field: string): Record<string, string[]> {
+    const prefix = `${field}:`;
+    return Object.fromEntries(
+      Object.entries(this._acInfinityPrefillWarnings).filter(([k]) => !k.startsWith(prefix))
+    );
+  }
+
   // ── Threshold helpers ────────────────────────────────────────────────────
 
   private _updateThreshold(stage: string, cycle: string, point: 'on' | 'off', value: number) {
@@ -1619,6 +1710,10 @@ export class ConfigDialog extends LitElement {
       entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
       acInfinityConflict: (modeEntity: string) => this._acInfinityConflict(modeEntity),
+      acInfinityPortDevices: () => this._acInfinityPortDevices(),
+      acInfinityPortDeviceId: (modeEntity: string) => this._acInfinityPortDeviceId(modeEntity),
+      acInfinityPrefillWarning: (field: string, index: number) =>
+        this._acInfinityPrefillWarnings[`${field}:${index}`] ?? [],
     };
     return html`
       <config-climate-tab
@@ -1627,6 +1722,8 @@ export class ConfigDialog extends LitElement {
           exhaustCriticalTempExpanded: this._exhaustCriticalTempExpanded,
         })}
         @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
+        @pick-ac-infinity-device=${(e: CustomEvent) =>
+          this._pickAcInfinityPort(e.detail.field, e.detail.index, e.detail.deviceId)}
         @fan-config-changed=${(e: CustomEvent) => this._updateFanConfig(e.detail.partial)}
         @exhaust-config-changed=${(e: CustomEvent) => this._updateExhaustFanConfig(e.detail.partial)}
         @toggle-fan-temp-override=${() => {
@@ -1675,6 +1772,10 @@ export class ConfigDialog extends LitElement {
       entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
       acInfinityConflict: (modeEntity: string) => this._acInfinityConflict(modeEntity),
+      acInfinityPortDevices: () => this._acInfinityPortDevices(),
+      acInfinityPortDeviceId: (modeEntity: string) => this._acInfinityPortDeviceId(modeEntity),
+      acInfinityPrefillWarning: (field: string, index: number) =>
+        this._acInfinityPrefillWarnings[`${field}:${index}`] ?? [],
     };
     return html`
       <config-humidity-tab
@@ -1684,6 +1785,8 @@ export class ConfigDialog extends LitElement {
           openStageId: this._openHumidityStageId,
         })}
         @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
+        @pick-ac-infinity-device=${(e: CustomEvent) =>
+          this._pickAcInfinityPort(e.detail.field, e.detail.index, e.detail.deviceId)}
         @set-humidifier-control=${(e: CustomEvent) => this._setHumidifierControl(e.detail.enabled)}
         @set-dehumidifier-control=${(e: CustomEvent) =>
           this._setDehumidifierControl(e.detail.enabled)}
