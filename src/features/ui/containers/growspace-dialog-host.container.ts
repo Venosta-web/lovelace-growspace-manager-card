@@ -1031,6 +1031,7 @@ export class GrowspaceDialogHost extends LitElement {
             name: e.detail.name,
             rows: e.detail.rows,
             plantsPerRow: e.detail.plantsPerRow,
+            notificationService: e.detail.notificationService,
           });
           showToast('Growspace updated successfully', 'success');
           closeDialog();
