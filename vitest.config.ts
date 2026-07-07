@@ -3,11 +3,14 @@ import { playwright } from '@vitest/browser-playwright';
 
 export default defineConfig({
     test: {
-        // Browser-mode module mocks (vi.mock) rely on per-file isolation. Under CI
-        // parallelism that isolation occasionally races, so a file's mock factory
-        // isn't applied and vi.mocked(fn).mockResolvedValueOnce throws. The failures
-        // are intermittent and pass on a fresh context — retry absorbs the race
-        // without masking a genuinely broken test (which fails all attempts).
+        // Per-test retry absorbs transient in-context flakes (spy timing etc.).
+        // It does NOT absorb the browser-mode module-mock race (vitest-dev/
+        // vitest#8339, our issue #453): when a file's hoisted vi.mock factory
+        // fails to apply, the poisoned module graph persists for the file's
+        // whole lifetime and every retry fails identically (verified 2026-07-07:
+        // camera.slice failed the same lines across all 3 attempts). That class
+        // is absorbed in CI by re-running the whole vitest process (test.yml
+        // retry step) and measured by the flake-hunter workflow with --retry=0.
         retry: 2,
         browser: {
             enabled: true,
