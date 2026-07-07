@@ -19,7 +19,12 @@ jobs:
       - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
-          persist-credentials: false
+          # Push the release commit/tags over SSH as the deploy key: the
+          # integration-branch-gate ruleset only supports a DeployKey bypass on
+          # user-owned repos, so GITHUB_TOKEN (github-actions app) pushes to
+          # dev/main get rejected with GH013. GITHUB_TOKEN below still handles
+          # the GitHub Release + assets.
+          ssh-key: ${{ secrets.RELEASE_SSH_KEY }}
 
       - name: Use Node.js
         uses: actions/setup-node@v6.4.0
