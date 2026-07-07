@@ -14,7 +14,7 @@ import { html, nothing, type TemplateResult } from 'lit';
 import type { AcInfinityDevice } from '../../../slices/growspace/schema';
 import type { AcInfinityConflict } from './ac-infinity-conflict';
 import type { PortDeviceOption } from '../viewmodels/ac-infinity-port-resolver';
-import { renderPortPicker } from './ac-infinity-port-picker';
+import { renderPortPicker, renderDuplicateWarning } from './ac-infinity-port-picker';
 
 export interface AcInfinityEditorProps {
   /** Section heading, e.g. "Exhaust Fan AC Infinity Devices". */
@@ -44,6 +44,8 @@ export interface AcInfinityEditorProps {
   prefillWarnings?: string[][];
   /** Picking a device for a port — the host resolves + fills + warns. */
   onPickDevice?: (index: number, deviceId: string) => void;
+  /** Duplicate Port Warning message per port index ('' = none), naming the other role(s). */
+  duplicateWarnings?: string[];
   onChange: (devices: AcInfinityDevice[]) => void;
 }
 
@@ -127,6 +129,7 @@ export function renderAcInfinityDevices(p: AcInfinityEditorProps): TemplateResul
                 @change=${(e: CustomEvent<string>) => update(index, { mode_entity: e.detail })}
               ></md3-select>
               ${renderConflict(p.conflicts?.[device.mode_entity])}
+              ${renderDuplicateWarning(p.duplicateWarnings?.[index])}
             </div>
             <div style="margin-bottom:8px;">
               <md3-select

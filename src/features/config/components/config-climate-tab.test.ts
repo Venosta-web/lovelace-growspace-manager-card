@@ -24,6 +24,8 @@ function makeVm(over: Partial<ClimateTabViewModel> = {}): ClimateTabViewModel {
       circulationFanPortDeviceIds: [],
       exhaustFanPrefillWarnings: [],
       circulationFanPrefillWarnings: [],
+      exhaustFanDuplicateWarnings: [],
+      circulationFanDuplicateWarnings: [],
       stressThreshold: 0.7,
       moldThreshold: 0.85,
       canRemoveEnvironment: true,
@@ -156,6 +158,15 @@ describe('ConfigClimateTab — Port Pre-fill', () => {
     vm.control.exhaustFanPrefillWarnings = [['Speed']];
     const el = await mount(vm);
     expect(el.shadowRoot!.textContent).toContain('Speed');
+  });
+
+  it('renders the Duplicate Port Warning the VM supplies for a port', async () => {
+    const vm = withPort();
+    vm.control.exhaustFanDuplicateWarnings = [
+      'This port is also configured as Dehumidifier — two controllers would fight over it.',
+    ];
+    const el = await mount(vm);
+    expect(el.shadowRoot!.textContent).toContain('also configured as Dehumidifier');
   });
 });
 

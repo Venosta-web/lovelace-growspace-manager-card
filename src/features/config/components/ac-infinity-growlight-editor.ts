@@ -11,7 +11,7 @@
 import { html, type TemplateResult } from 'lit';
 import type { AcInfinityGrowLight } from '../../../slices/growspace/schema';
 import { optionsWithCurrent } from './ac-infinity-device-editor';
-import { renderPortPicker } from './ac-infinity-port-picker';
+import { renderPortPicker, renderDuplicateWarning } from './ac-infinity-port-picker';
 import type { PortDeviceOption } from '../viewmodels/ac-infinity-port-resolver';
 import '../../shared/ui/md3-select';
 import '../../shared/ui/md3-number-input';
@@ -37,6 +37,8 @@ export interface GrowlightAcInfinityEditorProps {
   prefillWarnings?: string[][];
   /** Picking a device for a port — the host resolves + fills + warns. */
   onPickDevice?: (index: number, deviceId: string) => void;
+  /** Duplicate Port Warning message per port index ('' = none), naming the other role(s). */
+  duplicateWarnings?: string[];
   onChange: (devices: AcInfinityGrowLight[]) => void;
 }
 
@@ -100,6 +102,7 @@ export function renderGrowlightAcInfinityDevices(
                 .options=${optionsWithCurrent(p.modeOptions, device.mode_entity)}
                 @change=${(e: CustomEvent<string>) => update(index, { mode_entity: e.detail })}
               ></md3-select>
+              ${renderDuplicateWarning(p.duplicateWarnings?.[index])}
             </div>
             <div style="margin-bottom:8px;">
               <md3-select

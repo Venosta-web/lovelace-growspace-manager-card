@@ -36,6 +36,8 @@ function makeVm(over: Partial<HumidityTabViewModel> = {}): HumidityTabViewModel 
     dehumidifierPortDeviceIds: [],
     humidifierPrefillWarnings: [],
     dehumidifierPrefillWarnings: [],
+    humidifierDuplicateWarnings: [],
+    dehumidifierDuplicateWarnings: [],
     humidifierControlEnabled: false,
     dehumidifierControlEnabled: false,
     stages: [stage()],

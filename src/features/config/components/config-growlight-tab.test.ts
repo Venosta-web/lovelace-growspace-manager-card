@@ -21,6 +21,7 @@ function makeVm(over: Partial<GrowlightTabViewModel> = {}): GrowlightTabViewMode
     acInfinityPortDevices: [],
     growlightPortDeviceIds: [],
     growlightPrefillWarnings: [],
+    growlightDuplicateWarnings: [],
     lightsOnTime: null,
     ...over,
   };

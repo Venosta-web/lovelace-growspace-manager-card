@@ -35,6 +35,26 @@ function renderPrefillWarning(missing: string[] | undefined): TemplateResult | t
   `;
 }
 
+/**
+ * The passive Duplicate Port Warning (ADR-0028) under a mode picker — same
+ * visual conventions as the Automated Mode Conflict. `''`/undefined → nothing.
+ */
+export function renderDuplicateWarning(
+  message: string | undefined
+): TemplateResult | typeof nothing {
+  if (!message) return nothing;
+  return html`
+    <div
+      class="ac-infinity-duplicate-warning"
+      role="alert"
+      style="display:flex;gap:6px;margin-top:6px;padding:8px;font-size:0.75rem;line-height:1.35;border-radius:6px;color:var(--warning-color,#e6a700);background:rgba(230,167,0,0.10);border:1px solid rgba(230,167,0,0.35);"
+    >
+      <span aria-hidden="true">⚠</span>
+      <span>${message}</span>
+    </div>
+  `;
+}
+
 /** The device picker that pre-fills a port's bundle. Omitted when no port list is supplied. */
 export function renderPortPicker(p: PortPickerProps): TemplateResult | typeof nothing {
   if (!p.portDevices || p.portDevices.length === 0) return nothing;

@@ -19,7 +19,11 @@
 
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 import type { AcInfinityConflict } from '../components/ac-infinity-conflict';
-import { buildAcInfinityConflicts } from './ac-infinity-conflicts';
+import {
+  buildAcInfinityConflicts,
+  buildDuplicatePortWarnings,
+  acInfinityRoleLists,
+} from './ac-infinity-conflicts';
 import type { PortDeviceOption } from './ac-infinity-port-resolver';
 import type {
   AcInfinityDevice,
@@ -55,6 +59,9 @@ export interface ClimateControlVM {
   /** Roles the last pick failed to resolve, per port index (inline warning). */
   exhaustFanPrefillWarnings: string[][];
   circulationFanPrefillWarnings: string[][];
+  /** Duplicate Port Warning per port ('' = none) — the port's mode entity is also another role. */
+  exhaustFanDuplicateWarnings: string[];
+  circulationFanDuplicateWarnings: string[];
   stressThreshold: number;
   moldThreshold: number;
   /** Remove Environment is enabled only when a growspace is selected. */
@@ -138,6 +145,7 @@ export function createClimateTabViewModel(
   const fan = d.circulationFanConfig;
   const exhaust = d.exhaustFanConfig;
   const mode = fan.regulation_mode as FanRegulationMode;
+  const duplicates = buildDuplicatePortWarnings(acInfinityRoleLists(d));
 
   return {
     control: {
@@ -166,6 +174,8 @@ export function createClimateTabViewModel(
       circulationFanPrefillWarnings: d.circulationFanAcInfinityDevices.map((_, i) =>
         deps.acInfinityPrefillWarning('circulationFanAcInfinityDevices', i)
       ),
+      exhaustFanDuplicateWarnings: duplicates.exhaustFanAcInfinityDevices,
+      circulationFanDuplicateWarnings: duplicates.circulationFanAcInfinityDevices,
       stressThreshold: d.stressThreshold,
       moldThreshold: d.moldThreshold,
       canRemoveEnvironment: Boolean(d.selectedGrowspaceId),

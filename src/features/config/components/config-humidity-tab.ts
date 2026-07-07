@@ -270,6 +270,7 @@ export class ConfigHumidityTab extends LitElement {
             portDevices: this.vm.acInfinityPortDevices,
             portDeviceIds: this.vm.humidifierPortDeviceIds,
             prefillWarnings: this.vm.humidifierPrefillWarnings,
+            duplicateWarnings: this.vm.humidifierDuplicateWarnings,
             idPrefix: 'humidifier',
             onChange: (devices) => this._update({ humidifierAcInfinityDevices: devices }),
             onPickDevice: (index, deviceId) =>
@@ -284,6 +285,7 @@ export class ConfigHumidityTab extends LitElement {
             portDevices: this.vm.acInfinityPortDevices,
             portDeviceIds: this.vm.dehumidifierPortDeviceIds,
             prefillWarnings: this.vm.dehumidifierPrefillWarnings,
+            duplicateWarnings: this.vm.dehumidifierDuplicateWarnings,
             idPrefix: 'dehumidifier',
             onChange: (devices) => this._update({ dehumidifierAcInfinityDevices: devices }),
             onPickDevice: (index, deviceId) =>

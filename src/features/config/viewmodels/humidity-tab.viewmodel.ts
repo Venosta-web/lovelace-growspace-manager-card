@@ -22,7 +22,11 @@
 import { DehumidifierStage, HumidifierStage } from '../../../types';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 import type { AcInfinityConflict } from '../components/ac-infinity-conflict';
-import { buildAcInfinityConflicts } from './ac-infinity-conflicts';
+import {
+  buildAcInfinityConflicts,
+  buildDuplicatePortWarnings,
+  acInfinityRoleLists,
+} from './ac-infinity-conflicts';
 import type { PortDeviceOption } from './ac-infinity-port-resolver';
 import type { AcInfinityDevice } from '../../../slices/growspace/schema';
 
@@ -106,6 +110,9 @@ export interface HumidityTabViewModel {
   /** Roles the last pick failed to resolve, per port index (inline warning). */
   humidifierPrefillWarnings: string[][];
   dehumidifierPrefillWarnings: string[][];
+  /** Duplicate Port Warning per port ('' = none) — the port's mode entity is also another role. */
+  humidifierDuplicateWarnings: string[];
+  dehumidifierDuplicateWarnings: string[];
   humidifierControlEnabled: boolean;
   dehumidifierControlEnabled: boolean;
   stages: HumidityStageVM[];
@@ -173,6 +180,7 @@ export function createHumidityTabViewModel(
   expand: HumidityExpandState
 ): HumidityTabViewModel {
   const d = sm.environmentDraft;
+  const duplicates = buildDuplicatePortWarnings(acInfinityRoleLists(d));
   return {
     humidifierEntities: d.humidifierEntities,
     humidifierOptions: deps.entityOptions(HUMIDIFIER_DOMAINS, null),
@@ -199,6 +207,8 @@ export function createHumidityTabViewModel(
     dehumidifierPrefillWarnings: d.dehumidifierAcInfinityDevices.map((_, i) =>
       deps.acInfinityPrefillWarning('dehumidifierAcInfinityDevices', i)
     ),
+    humidifierDuplicateWarnings: duplicates.humidifierAcInfinityDevices,
+    dehumidifierDuplicateWarnings: duplicates.dehumidifierAcInfinityDevices,
     humidifierControlEnabled: expand.humidifierControlEnabled,
     dehumidifierControlEnabled: expand.dehumidifierControlEnabled,
     stages: HUMIDITY_STAGES.map((s) => ({

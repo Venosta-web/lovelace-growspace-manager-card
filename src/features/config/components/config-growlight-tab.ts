@@ -240,6 +240,7 @@ export class ConfigGrowlightTab extends LitElement {
               portDevices: vm.acInfinityPortDevices,
               portDeviceIds: vm.growlightPortDeviceIds,
               prefillWarnings: vm.growlightPrefillWarnings,
+              duplicateWarnings: vm.growlightDuplicateWarnings,
               onChange: (devices: AcInfinityGrowLight[]) =>
                 this._update({ growlightAcInfinityDevices: devices }),
               onPickDevice: (index: number, deviceId: string) =>
