@@ -202,6 +202,7 @@ export class ConfigClimateTab extends LitElement {
             portDevices: c.acInfinityPortDevices,
             portDeviceIds: c.exhaustFanPortDeviceIds,
             prefillWarnings: c.exhaustFanPrefillWarnings,
+            duplicateWarnings: c.exhaustFanDuplicateWarnings,
             idPrefix: 'exhaust',
             onChange: (devices) => this._update({ exhaustFanAcInfinityDevices: devices }),
             onPickDevice: (index, deviceId) =>
@@ -216,6 +217,7 @@ export class ConfigClimateTab extends LitElement {
             portDevices: c.acInfinityPortDevices,
             portDeviceIds: c.circulationFanPortDeviceIds,
             prefillWarnings: c.circulationFanPrefillWarnings,
+            duplicateWarnings: c.circulationFanDuplicateWarnings,
             idPrefix: 'circulation',
             onChange: (devices) => this._update({ circulationFanAcInfinityDevices: devices }),
             onPickDevice: (index, deviceId) =>

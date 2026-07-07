@@ -56,3 +56,26 @@ describe('createGrowlightTabViewModel', () => {
     expect(vm.lightsOnTime).toBe('06:00:00');
   });
 });
+
+describe('createGrowlightTabViewModel — Duplicate Port Warning', () => {
+  const growLight = (mode_entity: string) => ({
+    mode_entity,
+    on_time_entity: '',
+    off_time_entity: '',
+    power_entity: '',
+    sunrise_switch_entity: '',
+    sunrise_duration_entity: '',
+  });
+
+  it('warns on a grow light port whose mode entity is also a circulation fan', () => {
+    const s = transition(sm(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: {
+        circulationFanAcInfinityDevices: [{ mode_entity: 'select.shared', speed_entity: '', on_speed: 10 }],
+        growlightAcInfinityDevices: [growLight('select.shared')],
+      },
+    });
+    const vm = createGrowlightTabViewModel(s, noDeps);
+    expect(vm.growlightDuplicateWarnings[0]).toContain('Circulation Fan');
+  });
+});

@@ -139,3 +139,32 @@ describe('createClimateTabViewModel — AC Infinity devices', () => {
     expect(exhaustCall[2]).toBeUndefined();
   });
 });
+
+describe('createClimateTabViewModel — Duplicate Port Warning', () => {
+  const acDev = (mode_entity: string) => ({ mode_entity, speed_entity: '', on_speed: 10 });
+
+  it('warns on an exhaust port whose mode entity is also a dehumidifier', () => {
+    const s = transition(sm(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: {
+        exhaustFanAcInfinityDevices: [acDev('select.shared')],
+        dehumidifierAcInfinityDevices: [acDev('select.shared')],
+      },
+    });
+    const c = createClimateTabViewModel(s, deps, collapsed).control;
+    expect(c.exhaustFanDuplicateWarnings[0]).toContain('Dehumidifier');
+  });
+
+  it('leaves ports clear when no mode entity is shared across roles', () => {
+    const s = transition(sm(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: {
+        exhaustFanAcInfinityDevices: [acDev('select.a')],
+        circulationFanAcInfinityDevices: [acDev('select.b')],
+      },
+    });
+    const c = createClimateTabViewModel(s, deps, collapsed).control;
+    expect(c.exhaustFanDuplicateWarnings).toEqual(['']);
+    expect(c.circulationFanDuplicateWarnings).toEqual(['']);
+  });
+});

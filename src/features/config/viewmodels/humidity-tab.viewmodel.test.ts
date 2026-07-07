@@ -94,3 +94,19 @@ describe('createHumidityTabViewModel — stages', () => {
     expect(calls).toContainEqual([['number'], null, 'ac_infinity']);
   });
 });
+
+describe('createHumidityTabViewModel — Duplicate Port Warning', () => {
+  const acDev = (mode_entity: string) => ({ mode_entity, speed_entity: '', on_speed: 10 });
+
+  it('warns on a dehumidifier port shared with an exhaust fan, naming Exhaust Fan', () => {
+    const s = transition(sm(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: {
+        exhaustFanAcInfinityDevices: [acDev('select.shared')],
+        dehumidifierAcInfinityDevices: [acDev('select.shared')],
+      },
+    });
+    const vm = createHumidityTabViewModel(s, deps, collapsed);
+    expect(vm.dehumidifierDuplicateWarnings[0]).toContain('Exhaust Fan');
+  });
+});
