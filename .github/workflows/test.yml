@@ -29,4 +29,17 @@ jobs:
       run: npx playwright install --with-deps chromium
 
     - name: Run Unit Tests
+      id: unit-tests
+      # continue-on-error lets the retry step below run; the job still fails if
+      # the retry fails too.
+      continue-on-error: true
+      run: npm run test:unit
+
+    # vitest browser mode intermittently fails to apply a file's hoisted vi.mock
+    # factory (vitest-dev/vitest#8339, tracked in issue #453). Per-test retry
+    # can't absorb it — the poisoned module graph persists for the file's whole
+    # lifetime — but a fresh vitest process gets a fresh module graph, so one
+    # full re-run does. Genuinely broken tests fail both attempts.
+    - name: Retry Unit Tests (browser-mode mock race, issue #453)
+      if: steps.unit-tests.outcome == 'failure'
       run: npm run test:unit
