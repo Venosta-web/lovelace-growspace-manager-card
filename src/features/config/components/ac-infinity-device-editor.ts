@@ -13,6 +13,7 @@
 import { html, nothing, type TemplateResult } from 'lit';
 import type { AcInfinityDevice } from '../../../slices/growspace/schema';
 import type { AcInfinityConflict } from './ac-infinity-conflict';
+import type { PortDeviceOption } from '../viewmodels/ac-infinity-port-resolver';
 
 export interface AcInfinityEditorProps {
   /** Section heading, e.g. "Exhaust Fan AC Infinity Devices". */
@@ -31,6 +32,17 @@ export interface AcInfinityEditorProps {
    * hass access render no warnings.
    */
   conflicts?: Record<string, AcInfinityConflict>;
+  /**
+   * Port Pre-fill (ADR-0028): the pickable `ac_infinity` port devices, shared
+   * across the tab's roles. Omitted → no picker renders (existing manual flow).
+   */
+  portDevices?: PortDeviceOption[];
+  /** The device each port derives from its saved `mode_entity`, parallel to `devices`. */
+  portDeviceIds?: string[];
+  /** Roles that failed to resolve on the last pick, per port index (inline warning). */
+  prefillWarnings?: string[][];
+  /** Picking a device for a port — the host resolves + fills + warns. */
+  onPickDevice?: (index: number, deviceId: string) => void;
   onChange: (devices: AcInfinityDevice[]) => void;
 }
 
@@ -49,6 +61,40 @@ function renderConflict(conflict: AcInfinityConflict | undefined): TemplateResul
         Infinity's own automation will keep overriding Growspace Manager. Set this port to Off or On
         in the AC Infinity app before GSM can control it.
       </span>
+    </div>
+  `;
+}
+
+/** The inline Port Pre-fill notice naming the roles a pick failed to resolve. */
+function renderPrefillWarning(missing: string[] | undefined): TemplateResult | typeof nothing {
+  if (!missing || missing.length === 0) return nothing;
+  return html`
+    <div
+      class="ac-infinity-prefill-warning"
+      role="alert"
+      style="display:flex;gap:6px;margin-top:6px;padding:8px;font-size:0.75rem;line-height:1.35;border-radius:6px;color:var(--warning-color,#e6a700);background:rgba(230,167,0,0.10);border:1px solid rgba(230,167,0,0.35);"
+    >
+      <span aria-hidden="true">⚠</span>
+      <span>No ${missing.join(' or ')} entity found on this device — cleared it; pick manually below.</span>
+    </div>
+  `;
+}
+
+/** The device picker that pre-fills a port's bundle. Omitted when no port list is supplied. */
+function renderDevicePicker(
+  p: AcInfinityEditorProps,
+  index: number
+): TemplateResult | typeof nothing {
+  if (!p.portDevices || p.portDevices.length === 0) return nothing;
+  return html`
+    <div style="margin-bottom:8px;">
+      <md3-select
+        label="AC Infinity device"
+        .value=${p.portDeviceIds?.[index] ?? ''}
+        .options=${p.portDevices.map((d) => ({ label: d.label, value: d.id }))}
+        @change=${(e: CustomEvent<string>) => p.onPickDevice?.(index, e.detail)}
+      ></md3-select>
+      ${renderPrefillWarning(p.prefillWarnings?.[index])}
     </div>
   `;
 }
@@ -100,6 +146,7 @@ export function renderAcInfinityDevices(p: AcInfinityEditorProps): TemplateResul
                 >×</span
               >
             </div>
+            ${renderDevicePicker(p, index)}
             <div style="margin-bottom:8px;">
               <md3-select
                 label="Mode (select)"
