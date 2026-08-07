@@ -326,7 +326,28 @@ export class IrrigationOverviewTab extends LitElement {
           ${panel.phaseLabel
             ? html`<span class="cs-phase-pill">Phase ${panel.phaseLabel}</span>`
             : nothing}
+          ${panel.infiltration
+            ? html`<span
+                class="cs-phase-pill"
+                data-metric="infiltration"
+                style="color:${panel.infiltration.color};"
+                title="How the substrate is responding to the last shot."
+                >${panel.infiltration.label}</span
+              >`
+            : nothing}
         </div>
+        ${panel.suppression
+          ? html`<p
+              class="cs-shot-suppression"
+              data-metric="shot-suppression"
+              data-held=${panel.suppression.held ? 'true' : 'false'}
+              style="font-size:0.8rem;margin:0 0 12px;color:${panel.suppression.held
+                ? 'var(--warning-color, #FF9800)'
+                : 'var(--secondary-text-color)'};"
+            >
+              ${panel.suppression.label}
+            </p>`
+          : nothing}
         ${panel.rows
           ? html`
               ${panel.rows.map((row, i) =>

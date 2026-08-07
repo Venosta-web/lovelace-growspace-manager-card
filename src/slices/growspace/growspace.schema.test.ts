@@ -537,6 +537,49 @@ describe('Growspace Zod Schemas', () => {
         });
       });
 
+      it('parses the infiltration state and suppression reason on shot_composition', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            substrate: {
+              shot_composition: {
+                infiltration: 'infiltrating',
+                suppressed_by: 'cooldown',
+                last_shot: null,
+              },
+            },
+          },
+        });
+
+        const composition = parsed.irrigation.substrate?.shot_composition;
+        expect(composition?.infiltration).toBe('infiltrating');
+        expect(composition?.suppressed_by).toBe('cooldown');
+      });
+
+      it('accepts a shot_composition without the infiltration fields (older backend)', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            substrate: { shot_composition: { ec_modulation_enabled: true, last_shot: null } },
+          },
+        });
+
+        const composition = parsed.irrigation.substrate?.shot_composition;
+        expect(composition?.infiltration).toBeUndefined();
+        expect(composition?.suppressed_by).toBeUndefined();
+      });
+
+      it('accepts a suppression reason it has never seen, rather than rejecting the payload', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            substrate: {
+              shot_composition: { infiltration: 'liquefying', suppressed_by: 'tank_empty' },
+            },
+          },
+        });
+
+        const composition = parsed.irrigation.substrate?.shot_composition;
+        expect(composition?.suppressed_by).toBe('tank_empty');
+      });
+
       it('accepts null measured fields and defaults ec_trend_available to false', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({
           irrigation: {

@@ -182,7 +182,22 @@ export interface SerializedSubstrateMetrics {
   score?: number | null;
   measured_classification?: SteeringClassification | null;
   intent_deviation?: IntentDeviation | null;
-  shot_composition?: Record<string, unknown> | null;
+  shot_composition?: SerializedShotComposition | null;
+}
+
+/**
+ * The shot-composition payload from `shot_composition_payload()`.
+ *
+ * Only the fields the card reads by name are declared; the rest stay reachable
+ * through the index signature. `infiltration` (growspace_manager #530) and
+ * `suppressed_by` (#531) are absent on older backends, so both are optional.
+ */
+export interface SerializedShotComposition {
+  /** Measured Infiltration state: 'infiltrating' | 'settled' | 'drying' | 'unknown'. */
+  infiltration?: string | null;
+  /** Why the last steering tick withheld a shot; null when it fired. */
+  suppressed_by?: string | null;
+  [key: string]: unknown;
 }
 
 export interface SerializedIrrigationConfig {
@@ -674,7 +689,7 @@ export interface SteeringMetrics {
   score: number | null;
   measuredClassification: SteeringClassification | null;
   intentDeviation: IntentDeviation | null;
-  shotComposition: Record<string, unknown> | null;
+  shotComposition: SerializedShotComposition | null;
 }
 
 export interface GrowspaceDevice {

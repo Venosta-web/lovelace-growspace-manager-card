@@ -27,6 +27,7 @@ import type {
   SteeringMode,
   SteeringClassification,
   IntentDeviation,
+  SerializedShotComposition,
 } from '../../../services/types';
 import type { DialogCapabilities } from './dialog-capabilities';
 
@@ -52,10 +53,36 @@ export interface ShotCompositionRow {
   value: string;
 }
 
+/** The measured Infiltration state, as a badge beside the panel heading. */
+export interface InfiltrationBadge {
+  label: string;
+  color: string;
+}
+
+/** Why the last steering tick withheld a shot. */
+export interface ShotSuppression {
+  /** Grower-facing sentence explaining the withheld shot. */
+  label: string;
+  /**
+   * True when something other than the ordinary cooldown is withholding the
+   * shot. Release time then depends on the substrate and is not predictable, so
+   * the Projected Shot Window must be labelled as held rather than counted down
+   * (ADR-0031).
+   */
+  held: boolean;
+}
+
 /** Phase-state + shot-composition diagnostics for the last fired shot. */
 export interface ShotCompositionPanel {
   /** Active steering phase pill text (e.g. 'P2'), or null when unknown. */
   phaseLabel: string | null;
+  /**
+   * Measured Infiltration state; null when the backend predates the field or
+   * reports `unknown` (no fresh sensor data — nothing honest to show).
+   */
+  infiltration: InfiltrationBadge | null;
+  /** Why the last tick withheld a shot; null when it fired, or on an older backend. */
+  suppression: ShotSuppression | null;
   /** Composition rows; null when no shot has fired yet this session. */
   rows: ShotCompositionRow[] | null;
 }
@@ -136,6 +163,52 @@ function deriveIntentBanner(deviation: IntentDeviation | null): 'ontarget' | 'de
   return null;
 }
 
+const INFILTRATION_BADGES: Record<string, InfiltrationBadge> = {
+  infiltrating: { label: 'Absorbing', color: 'var(--info-color, #2196F3)' },
+  settled: { label: 'Settled', color: 'var(--success-color, #4CAF50)' },
+  drying: { label: 'Drying back', color: 'var(--warning-color, #FF9800)' },
+};
+
+const SUPPRESSION_LABELS: Record<string, ShotSuppression> = {
+  cooldown: { label: 'Waiting out the shot cooldown.', held: false },
+  infiltrating: {
+    label: 'Held — the substrate is still absorbing the last shot.',
+    held: true,
+  },
+  no_pump: { label: 'Held — no irrigation pump is configured.', held: true },
+  zero_volume: { label: 'Held — the computed shot came out at zero.', held: true },
+};
+
+/**
+ * The measured Infiltration state as a badge, or null when there is nothing
+ * honest to show — an older backend omits the field entirely, and `unknown`
+ * means no fresh sensor sample rather than a settled substrate.
+ */
+export function deriveInfiltration(
+  composition: SerializedShotComposition | null | undefined
+): InfiltrationBadge | null {
+  const state = composition?.infiltration;
+  if (typeof state !== 'string') return null;
+  return INFILTRATION_BADGES[state] ?? null;
+}
+
+/**
+ * Why the last steering tick withheld a shot, or null when it fired (or the
+ * backend predates `suppressed_by`).
+ *
+ * Exported because the Irrigation Dialog footer applies the same rule to the
+ * Projected Shot Window — the two must agree on what counts as held. A reason
+ * this card does not recognise is treated as held: showing a countdown for a
+ * shot that may never fire is the worse failure.
+ */
+export function deriveShotSuppression(
+  composition: SerializedShotComposition | null | undefined
+): ShotSuppression | null {
+  const reason = composition?.suppressed_by;
+  if (typeof reason !== 'string' || reason === '') return null;
+  return SUPPRESSION_LABELS[reason] ?? { label: `Held — ${reason}.`, held: true };
+}
+
 function deriveShotComposition(
   metrics: SteeringMetrics,
   device: GrowspaceDevice | undefined
@@ -145,14 +218,21 @@ function deriveShotComposition(
 
   const phase = device?.irrigationConfig?.activeSteeringPhase;
   const phaseLabel = phase ? phase.toUpperCase() : null;
+  // Both live from the first tick, unlike `last_shot` — so they are resolved
+  // above the no-shot-yet return, which is exactly when a grower asking "why
+  // isn't it watering?" is looking at this panel.
+  const infiltration = deriveInfiltration(composition);
+  const suppression = deriveShotSuppression(composition);
 
   const lastShot = composition.last_shot as Record<string, unknown> | null | undefined;
   if (!lastShot) {
-    return { phaseLabel, rows: null };
+    return { phaseLabel, infiltration, suppression, rows: null };
   }
 
   return {
     phaseLabel,
+    infiltration,
+    suppression,
     rows: [
       { label: 'Base', value: `${fmtNum(lastShot.base_seconds)}s` },
       { label: 'VWC factor', value: `×${fmtNum(lastShot.vwc_factor)}` },
