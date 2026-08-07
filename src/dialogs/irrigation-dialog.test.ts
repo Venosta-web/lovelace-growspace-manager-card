@@ -147,6 +147,56 @@ describe('IrrigationDialog – footer meta timestamps', () => {
     expect(normalize(meta?.textContent)).toContain('Next —');
   });
 
+  // Under crop steering the "Next" value is the Projected Shot Window, whose
+  // bounds are cooldown-derived. While the Infiltration Gate holds a shot those
+  // bounds will not fire, so the range must be replaced rather than counted
+  // down (growspace_manager ADR-0031).
+  function steeringDevice(suppressedBy: string | null) {
+    return withPump({
+      irrigationStrategy: makeStrategy(),
+      projectedShotWindow: { start: '2026-05-24T06:00:00.000Z', end: '2026-05-24T06:30:00.000Z' },
+      steeringMetrics: makeMetrics({
+        shotComposition: { suppressed_by: suppressedBy, last_shot: null },
+      }),
+    });
+  }
+
+  it.each([
+    ['infiltrating', 'Next Held'],
+    ['no_pump', 'Next Held'],
+    ['zero_volume', 'Next Held'],
+  ])('labels the projected shot window as held while suppressed by %s', async (reason, expected) => {
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${steeringDevice(reason)}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const meta = el.shadowRoot!.querySelector('.dlg-footer-meta');
+    expect(normalize(meta?.textContent)).toContain(expected);
+  });
+
+  it.each([
+    ['an ordinary cooldown wait', 'cooldown'],
+    ['a backend that reports no suppression', null],
+  ])('still shows the projected shot window range during %s', async (_case, reason) => {
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${steeringDevice(reason)}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const text = normalize(el.shadowRoot!.querySelector('.dlg-footer-meta')?.textContent);
+    expect(text).not.toContain('Next Held');
+    expect(text).toMatch(/Next.+–/);
+  });
+
   it('hides the footer meta block when no irrigation or drain pump is configured', async () => {
     const device = makeDevice();
     const el = await fixture<IrrigationDialog>(html`
@@ -846,6 +896,56 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     await el.updateComplete;
 
     expect((await overviewRoot(el)).querySelector('[data-metric="shot-composition"]')).toBeNull();
+  });
+
+  // Infiltration state and the suppression reason are live from the first tick,
+  // unlike `last_shot` — so they must survive the no-shot-yet branch of the
+  // panel, which is exactly when a grower asks why nothing is watering.
+  async function overviewPanel(shotComposition: Record<string, unknown>) {
+    const device = makeSteeringDevice({
+      irrigationStrategy: makeStrategy(),
+      steeringMetrics: makeMetrics({ shotComposition }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    return await overviewRoot(el);
+  }
+
+  it('shows the infiltration state and the hold reason before any shot has fired', async () => {
+    const root = await overviewPanel({
+      infiltration: 'infiltrating',
+      suppressed_by: 'infiltrating',
+      last_shot: null,
+    });
+
+    expect(normalize(root.querySelector('[data-metric="infiltration"]')?.textContent)).toBe(
+      'Absorbing'
+    );
+    const suppression = root.querySelector('[data-metric="shot-suppression"]');
+    expect(suppression?.getAttribute('data-held')).toBe('true');
+    expect(normalize(suppression?.textContent)).toContain('still absorbing');
+  });
+
+  it('marks an ordinary cooldown wait as not held', async () => {
+    const root = await overviewPanel({ suppressed_by: 'cooldown', last_shot: null });
+
+    const suppression = root.querySelector('[data-metric="shot-suppression"]');
+    expect(suppression?.getAttribute('data-held')).toBe('false');
+    expect(normalize(suppression?.textContent)).toContain('cooldown');
+  });
+
+  it('leaves both slots empty against a backend that sends neither field', async () => {
+    const root = await overviewPanel({ ec_modulation_enabled: true, last_shot: null });
+
+    expect(root.querySelector('[data-metric="shot-composition"]')).not.toBeNull();
+    expect(root.querySelector('[data-metric="infiltration"]')).toBeNull();
+    expect(root.querySelector('[data-metric="shot-suppression"]')).toBeNull();
   });
 });
 

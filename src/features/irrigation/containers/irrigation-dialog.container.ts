@@ -85,6 +85,7 @@ import {
 } from '../viewmodels/dialog-capabilities';
 import {
   createOverviewTabViewModel,
+  deriveShotSuppression,
   type OverviewTabViewModel,
 } from '../viewmodels/overview-tab.viewmodel';
 import { createShellViewModel, type ShellViewModel } from '../viewmodels/shell.viewmodel';
@@ -1174,9 +1175,17 @@ export class IrrigationDialog extends LitElement {
    * point in time; Crop Steering has no fixed schedule, so it shows a
    * projected range bounded by guardrails (cooldown + phase windows) instead —
    * see ADR-0011 / [[Projected Shot Window]] in CONTEXT.md.
+   *
+   * While a shot is held for a reason other than the cooldown the window's
+   * bounds are still cooldown-derived and no shot will fire at them, so the
+   * range is replaced by the hold reason rather than rendered as a countdown
+   * (growspace_manager ADR-0031).
    */
   private _renderFooterNext() {
     if (this.device?.irrigationStrategy?.enabled) {
+      const suppression = deriveShotSuppression(this.device?.steeringMetrics?.shotComposition);
+      if (suppression?.held) return 'Held';
+
       const window = this.device?.projectedShotWindow;
       if (!window) return '—';
       return `${this._formatFooterTimestamp(window.start)}–${this._formatFooterTimestamp(window.end)}`;

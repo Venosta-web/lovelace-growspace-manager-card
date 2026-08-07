@@ -108,7 +108,18 @@ const SubstrateMetricsSchema = z
       .enum(['on_target', 'more_generative', 'more_vegetative'])
       .nullable()
       .optional(),
-    shot_composition: z.record(z.string(), z.unknown()).nullable().optional(),
+    // `infiltration` and `suppressed_by` are typed as loose strings rather than
+    // enums: a backend that predates them omits both, and a newer one may add a
+    // reason this card has never heard of — neither may fail validation here.
+    // The Overview VM maps known values to labels and falls back for the rest.
+    shot_composition: z
+      .object({
+        infiltration: z.string().nullable().optional(),
+        suppressed_by: z.string().nullable().optional(),
+      })
+      .passthrough()
+      .nullable()
+      .optional(),
   })
   .passthrough()
   .nullable()
