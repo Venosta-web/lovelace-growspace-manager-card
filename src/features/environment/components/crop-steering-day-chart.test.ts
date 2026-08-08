@@ -4,7 +4,7 @@ import type { CropSteeringDayChart } from './crop-steering-day-chart';
 import { cropSteeringHistory$ } from '../../../slices/irrigation';
 import { createGrowspaceDevice, type GrowspaceDevice } from '../../../services/types';
 import { hassCall } from '../../../services/hass-call';
-import { MetricKey } from '../constants';
+import { METRIC_CONFIG, MetricKey } from '../constants';
 import type { HistorySensorState, SensorHistories } from '../types';
 
 vi.mock('../../../services/hass-call', async (importOriginal) => ({
@@ -285,5 +285,95 @@ describe('CropSteeringDayChart – rolling window mode', () => {
     const readout = el.shadowRoot!.querySelector('.cm-readout');
     expect(readout?.textContent?.replace(/\s+/g, ' ')).toMatch(/VWC\s*64\.0%/);
     expect(readout?.textContent?.replace(/\s+/g, ' ')).toMatch(/Pore\s*3\.4/);
+  });
+});
+
+// ─── axis domains ─────────────────────────────────────────────────────────────
+
+/** Y coordinates of every vertex in a path's `d`, in draw order. */
+function pathYs(el: CropSteeringDayChart, selector: string): number[] {
+  const d = el.shadowRoot!.querySelector(selector)?.getAttribute('d') ?? '';
+  return [...d.matchAll(/[ML]\s*[-\d.]+\s*,\s*([-\d.]+)/g)].map((m) => Number(m[1]));
+}
+
+/** A trace pinned against an axis edge by clamping has zero y-variance. */
+function isFlat(ys: number[]): boolean {
+  return ys.length > 1 && ys.every((y) => y === ys[0]);
+}
+
+describe('CropSteeringDayChart – axis domains', () => {
+  const now = new Date();
+
+  it('scales the EC axis to its data when the configured EC target sits outside it', async () => {
+    cropSteeringHistory$.set(new Map());
+    const el = createElement();
+    el.device = makeDevice({
+      biologicalMetrics: { granularStage: 'veg' },
+      // An unconfigured stage range yields a 0.0 midpoint, which used to pin the
+      // EC axis to [0, 2] and flatten real 2.6–4.0 mS/cm readings against the top.
+      irrigationConfig: { ecTargetRanges: [{ stage: 'veg', minEc: 0, maxEc: 0 }] },
+    } as Partial<GrowspaceDevice>);
+    el.rollingWindow = true;
+    el.range = '24h';
+    el.sensorHistory = {
+      [MetricKey.SOIL_MOISTURE]: [mkHistoryState(120, 30, now), mkHistoryState(5, 34.9, now)],
+      [MetricKey.PORE_EC]: [
+        mkHistoryState(120, 2.6, now),
+        mkHistoryState(60, 3.3, now),
+        mkHistoryState(5, 4.03, now),
+      ],
+    };
+    await el.updateComplete;
+    await vi.waitFor(() => el.shadowRoot!.querySelector('.cs-model svg') !== null);
+
+    const ys = pathYs(el, 'path[stroke-width="1.6"]');
+    expect(ys.length).toBeGreaterThan(1);
+    expect(isFlat(ys)).toBe(false);
+
+    // The right-hand EC ticks must bracket the readings they are scaling.
+    const ecTicks = Array.from(el.shadowRoot!.querySelectorAll('.cm-tick.right')).map((t) =>
+      Number(t.textContent)
+    );
+    expect(Math.max(...ecTicks)).toBeGreaterThanOrEqual(4.03);
+  });
+
+  it('labels both axes in their own units — VWC left, EC right', async () => {
+    const el = createElement();
+    el.device = makeDevice();
+    await el.updateComplete;
+    await vi.waitFor(() => el.shadowRoot!.querySelector('.cs-model svg') !== null);
+
+    const left = Array.from(el.shadowRoot!.querySelectorAll('.cm-tick.left')).map(
+      (t) => t.textContent ?? ''
+    );
+    const right = Array.from(el.shadowRoot!.querySelectorAll('.cm-tick.right')).map(
+      (t) => t.textContent ?? ''
+    );
+    expect(left.length).toBeGreaterThan(1);
+    expect(left.every((l) => l.endsWith('%'))).toBe(true);
+    expect(right.length).toBe(left.length);
+    expect(right.every((l) => /^\d+\.\d$/.test(l))).toBe(true);
+  });
+
+  it('widens the EC axis to cover the projection so it is not clipped', async () => {
+    // Pore EC concentrates through the projected drybacks, climbing well past the
+    // historical range — a domain derived from history alone clips the overshoot.
+    mockHassCall.mockResolvedValue({
+      growspace_id: 'gs1',
+      lights_on: LIGHTS_ON_ISO,
+      soil_moisture: [mkBucket(0, 20), mkBucket(30, 19.8)],
+      pore_ec: [mkBucket(0, 3.3), mkBucket(30, 3.4)],
+    });
+    const el = createElement();
+    el.device = makeDevice();
+    await el.updateComplete;
+    await vi.waitFor(() => el.shadowRoot!.querySelector('.cs-model svg') !== null);
+
+    const poreEcColor = METRIC_CONFIG[MetricKey.PORE_EC].color;
+    const ys = pathYs(el, `path[stroke-width="1.4"][stroke="${poreEcColor}"]`);
+    expect(ys.length).toBeGreaterThan(1);
+    expect(isFlat(ys)).toBe(false);
+    // padT is the plot ceiling; anything landing on it is the clamp saturating.
+    expect(Math.min(...ys)).toBeGreaterThan(28);
   });
 });
