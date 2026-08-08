@@ -1,3 +1,10 @@
+# [1.1.0-next.92](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.91...v1.1.0-next.92) (2026-08-08)
+
+
+### Bug Fixes
+
+* **substrate-chart:** stop clamping Pore/Bulk EC and the projection ([#482](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/482)) ([1044e28](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1044e28c4f623bfcc4547b5d7aae52d3dcfda9b7))
+
 # [1.1.0-next.91](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.90...v1.1.0-next.91) (2026-08-08)
 
 
