@@ -28,8 +28,6 @@
   "type": "module",
   "devDependencies": {
     "@ai-hero/sandcastle": "^0.7",
-    "@commitlint/cli": "^21.2.1",
-    "@commitlint/config-conventional": "^21.2.0",
     "@eslint/js": "^9.39.4",
     "@lit-labs/rollup-plugin-minify-html-literals": "^0.2.0",
     "@lit-labs/testing": "^0.2.8",
