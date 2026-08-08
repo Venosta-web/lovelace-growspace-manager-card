@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { computeEnvSeries } from './env-series';
 import { computeMetricDescriptors } from '../../slices/metric-descriptors';
-import { ChartType, MetricKey } from './constants';
+import { ChartType, MetricKey, StatusLevel, STATUS_COLORS } from './constants';
 import type { HistorySensorState, SensorHistories } from './types';
 import type { DeviceSnapshot } from '../../slices/device-state';
 
@@ -150,26 +150,128 @@ describe('computeEnvSeries — temperature', () => {
   });
 
   it('skips a metric that has no descriptor yet', () => {
-    const histories = { [MetricKey.VPD]: [reading(30, '1.2')] };
+    const histories = { [MetricKey.CO2]: [reading(30, '800')] };
 
-    expect(computeEnvSeries(DESCRIPTORS, histories, [MetricKey.VPD], windowOf(24))).toEqual([]);
+    expect(computeEnvSeries(DESCRIPTORS, histories, [MetricKey.CO2], windowOf(24))).toEqual([]);
   });
 
   it('preserves the requested metric order', () => {
     const histories = {
       [MetricKey.TEMPERATURE]: [reading(30, '21')],
-      [MetricKey.VPD]: [reading(30, '1.2')],
+      [MetricKey.CO2]: [reading(30, '800')],
     };
 
     const series = computeEnvSeries(
       DESCRIPTORS,
       histories,
-      [MetricKey.VPD, MetricKey.TEMPERATURE],
+      [MetricKey.CO2, MetricKey.TEMPERATURE],
       windowOf(24)
     );
 
-    // VPD has no descriptor yet, so temperature is all that survives.
+    // CO2 has no descriptor yet, so temperature is all that survives.
     expect(series.map((s) => s.id)).toEqual([MetricKey.TEMPERATURE]);
+  });
+});
+
+describe('computeEnvSeries — VPD', () => {
+  const descriptors = computeMetricDescriptors(
+    null,
+    {},
+    {
+      attributes: {
+        day_vpd_target_min: 1,
+        day_vpd_target_max: 2,
+        day_vpd_danger_min: 0.5,
+        day_vpd_danger_max: 2.5,
+        night_vpd_target_min: 0.4,
+        night_vpd_target_max: 0.6,
+        night_vpd_danger_min: 0.2,
+        night_vpd_danger_max: 0.8,
+      },
+    }
+  );
+
+  function vpdReading(minutesAgo: number, state: string): HistorySensorState {
+    return { ...reading(minutesAgo, state), entity_id: 'sensor.tent_vpd' };
+  }
+
+  function lightReading(minutesAgo: number, state: string): HistorySensorState {
+    return { ...reading(minutesAgo, state), entity_id: 'light.tent' };
+  }
+
+  it('returns status bands with time boundaries and no pixel geometry', () => {
+    const [series] = computeEnvSeries(
+      descriptors,
+      {
+        [MetricKey.VPD]: [
+          vpdReading(50, '1.0'),
+          vpdReading(40, '1.5'),
+          vpdReading(30, '2.2'),
+          vpdReading(20, '3.0'),
+        ],
+        [MetricKey.LIGHT]: [lightReading(120, 'on')],
+      },
+      [MetricKey.VPD],
+      windowOf(1)
+    );
+
+    expect(series.vpdBands).toEqual([
+      {
+        status: StatusLevel.OPTIMAL,
+        startTime: NOW.getTime() - HOUR_MS,
+        endTime: NOW.getTime() - 30 * 60 * 1000,
+      },
+      {
+        status: StatusLevel.WARNING,
+        startTime: NOW.getTime() - 30 * 60 * 1000,
+        endTime: NOW.getTime() - 20 * 60 * 1000,
+      },
+      {
+        status: StatusLevel.DANGER,
+        startTime: NOW.getTime() - 20 * 60 * 1000,
+        endTime: NOW.getTime(),
+      },
+    ]);
+    expect(series.vpdBands?.every((band) => !('x' in band) && !('y' in band))).toBe(true);
+    expect(series).not.toHaveProperty('vpdSegments');
+  });
+
+  it('uses ChartUtils day/night inference for every historical VPD point', () => {
+    const [series] = computeEnvSeries(
+      descriptors,
+      {
+        [MetricKey.VPD]: [vpdReading(50, '1.5'), vpdReading(20, '1.5')],
+        // Before the first ON event getIsDay infers night; after it, day.
+        [MetricKey.LIGHT]: [lightReading(30, 'on')],
+      },
+      [MetricKey.VPD],
+      windowOf(1)
+    );
+
+    expect(series.vpdBands).toEqual([
+      {
+        status: StatusLevel.DANGER,
+        startTime: NOW.getTime() - HOUR_MS,
+        endTime: NOW.getTime() - 20 * 60 * 1000,
+      },
+      {
+        status: StatusLevel.OPTIMAL,
+        startTime: NOW.getTime() - 20 * 60 * 1000,
+        endTime: NOW.getTime(),
+      },
+    ]);
+    expect(series.color).toBe(STATUS_COLORS[StatusLevel.OPTIMAL]);
+  });
+
+  it('returns no bands when fewer than two value-space points survive', () => {
+    const [series] = computeEnvSeries(
+      descriptors,
+      { [MetricKey.VPD]: [vpdReading(0, 'unknown')] },
+      [MetricKey.VPD],
+      windowOf(1)
+    );
+
+    expect(series).toBeUndefined();
   });
 });
 

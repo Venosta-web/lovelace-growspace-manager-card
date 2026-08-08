@@ -1,4 +1,3 @@
-
 export interface GraphDataPoint {
   time: number;
   value: number;
@@ -29,7 +28,7 @@ export interface GraphSeries {
   avg?: number;
   path: string;
   fillType: 'gradient' | 'flat' | 'none';
-  vpdSegments?: Array<{ path: string; color: string }>;
+  vpdBands?: import('./env-series').VpdBand[];
 }
 
 export interface TooltipItem {

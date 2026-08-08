@@ -12,7 +12,7 @@
  * derivation.
  */
 
-import { ChartType } from './constants';
+import { ChartType, MetricKey, StatusLevel, STATUS_COLORS } from './constants';
 import type { HistorySensorState, SensorHistories } from './types';
 import type { MetricDescriptor } from '../../slices/metric-descriptors';
 import { ChartUtils } from '../../utils/chart-utils';
@@ -26,6 +26,13 @@ export interface EnvSeriesPoint {
   time: number;
   value: number;
   meta?: unknown;
+}
+
+/** A status-coloured time interval. It deliberately carries no chart geometry. */
+export interface VpdBand {
+  status: StatusLevel;
+  startTime: number;
+  endTime: number;
 }
 
 /** One metric's history, shaped for rendering but still in domain units. */
@@ -42,6 +49,7 @@ export interface EnvSeries {
   max: number;
   avg: number;
   chartType: ChartType;
+  vpdBands?: VpdBand[];
 }
 
 /**
@@ -156,6 +164,51 @@ function _axisBounds(
   return { min, max };
 }
 
+function _vpdStatus(
+  value: number,
+  thresholds: NonNullable<MetricDescriptor['vpdThresholds']>,
+  isDay: boolean
+): StatusLevel {
+  const range = isDay ? thresholds.day : thresholds.night;
+  if (value < range.dangerMin || value > range.dangerMax) return StatusLevel.DANGER;
+  if (value < range.targetMin || value > range.targetMax) return StatusLevel.WARNING;
+  return StatusLevel.OPTIMAL;
+}
+
+function _vpdBands(
+  points: EnvSeriesPoint[],
+  thresholds: NonNullable<MetricDescriptor['vpdThresholds']>,
+  lightHistory: EnvSeriesPoint[]
+): VpdBand[] {
+  if (points.length < 2) return [];
+
+  const bands: VpdBand[] = [];
+  let startTime = points[0].time;
+  let status = _vpdStatus(
+    points[0].value,
+    thresholds,
+    ChartUtils.getIsDay(points[0].time, lightHistory)
+  );
+
+  for (let i = 1; i < points.length; i++) {
+    const point = points[i];
+    const pointStatus = _vpdStatus(
+      point.value,
+      thresholds,
+      ChartUtils.getIsDay(point.time, lightHistory)
+    );
+    if (pointStatus !== status) {
+      bands.push({ status, startTime, endTime: point.time });
+      startTime = point.time;
+      status = pointStatus;
+    }
+  }
+
+  const endTime = points[points.length - 1].time;
+  if (endTime > startTime) bands.push({ status, startTime, endTime });
+  return bands;
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -188,11 +241,26 @@ export function computeEnvSeries(
 
     const reduced = _reduce(points);
     const bounds = _axisBounds(descriptor, reduced, isCombined);
+    const vpdThresholds = key === MetricKey.VPD ? descriptor.vpdThresholds : undefined;
+    const lightHistory = vpdThresholds
+      ? ChartUtils.normalizeHistory(histories[MetricKey.LIGHT] ?? [], MetricKey.LIGHT)
+      : [];
+    const vpdBands = vpdThresholds ? _vpdBands(points, vpdThresholds, lightHistory) : undefined;
+
+    let color = descriptor.color;
+    if (vpdThresholds) {
+      const lastPoint = points[points.length - 1];
+      // Preserve the legacy current-status rule: absent light history means day;
+      // otherwise the latest light state decides the series/header colour.
+      const currentIsDay =
+        lightHistory.length === 0 || lightHistory[lightHistory.length - 1].value === 1;
+      color = STATUS_COLORS[_vpdStatus(lastPoint.value, vpdThresholds, currentIsDay)];
+    }
 
     series.push({
       id: key,
       title: descriptor.title,
-      color: descriptor.color,
+      color,
       unit: descriptor.unit,
       icon: descriptor.icon,
       points,
@@ -200,6 +268,7 @@ export function computeEnvSeries(
       max: bounds.max,
       avg: reduced.avg,
       chartType: descriptor.chartType,
+      ...(vpdBands ? { vpdBands } : {}),
     });
   }
 

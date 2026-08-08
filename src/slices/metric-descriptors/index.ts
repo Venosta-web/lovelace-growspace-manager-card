@@ -7,18 +7,20 @@
  *   computeMetricDescriptors() — derive the descriptor table.
  *
  * Like `computeHeaderMetrics`, this module reads no atoms and no injected `hass` —
+
  * everything it needs is passed in. Fan entity modes are derived from DeviceEntry
- * entity ids; only the light unit reads the supplied states snapshot (ADR-0030).
+ * entity ids; the light unit reads the supplied states snapshot, and VPD thresholds
+ * read the supplied overview-entity snapshot (ADR-0030).
  *
- * Scope, per ADR-0030's landing order: **temperature, fan, light, and the step-vs-line
- * shape and fixed axes of the binary metrics**. A key with no
+ * Scope, per ADR-0030's landing order: **temperature, fan, light, VPD, and the
+ * step-vs-line shape and fixed axes of the binary metrics**. A key with no
  * descriptor is not yet migrated, and consumers fall back to their existing
  * derivation for it. Widened by:
- *   #470 — VPD day/night threshold table (adds an EnvSnapshot param)
  *   #471 — multi-sensor series refs, replacing `':'`-joined history keys
  */
 
 import { ChartType, METRIC_CONFIG, MetricKey } from '../../features/environment/constants';
+import { DEFAULTS } from '../../lib/constants';
 import {
   classifyFanEntity,
   fanReadingToAxisScale,
@@ -38,6 +40,18 @@ import {
  */
 export type MetricAxis = 'auto' | { min: number; max: number };
 
+export interface VpdThresholdRange {
+  targetMin: number;
+  targetMax: number;
+  dangerMin: number;
+  dangerMax: number;
+}
+
+export interface VpdThresholds {
+  day: VpdThresholdRange;
+  night: VpdThresholdRange;
+}
+
 /** Everything a chip or a graph must know about one metric. */
 export interface MetricDescriptor {
   key: string;
@@ -47,8 +61,35 @@ export interface MetricDescriptor {
   icon: string;
   chartType: ChartType;
   axis: MetricAxis;
+  vpdThresholds?: VpdThresholds;
   /** Entity context used to normalize history values for this migration slice. */
   entityId?: string;
+}
+
+export interface OverviewEntitySnapshot {
+  attributes?: Record<string, unknown>;
+}
+
+function _vpdThresholds(overviewEntity?: OverviewEntitySnapshot): VpdThresholds {
+  const attrs = overviewEntity?.attributes ?? {};
+  const day = {
+    targetMin: Number(attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? DEFAULTS.VPD.TARGET_MIN),
+    targetMax: Number(attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? DEFAULTS.VPD.TARGET_MAX),
+    dangerMin: Number(attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? DEFAULTS.VPD.DANGER_MIN),
+    dangerMax: Number(attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? DEFAULTS.VPD.DANGER_MAX),
+  };
+
+  return {
+    day,
+    // Missing night values intentionally inherit the resolved day values, including
+    // legacy keys and defaults.
+    night: {
+      targetMin: Number(attrs.night_vpd_target_min ?? day.targetMin),
+      targetMax: Number(attrs.night_vpd_target_max ?? day.targetMax),
+      dangerMin: Number(attrs.night_vpd_danger_min ?? day.dangerMin),
+      dangerMax: Number(attrs.night_vpd_danger_max ?? day.dangerMax),
+    },
+  };
 }
 
 type HassStates = Record<
@@ -135,7 +176,8 @@ function _descriptor(
  */
 export function computeMetricDescriptors(
   deviceSnapshot: DeviceSnapshot | null = null,
-  hassStates: HassStates = {}
+  hassStates: HassStates = {},
+  overviewEntity?: OverviewEntitySnapshot
 ): Record<string, MetricDescriptor> {
   return {
     [MetricKey.TEMPERATURE]: _descriptor(MetricKey.TEMPERATURE, ChartType.LINE, 'auto'),
@@ -147,6 +189,10 @@ export function computeMetricDescriptors(
     [MetricKey.HUMIDIFIER]: _descriptor(MetricKey.HUMIDIFIER, ChartType.LINE, { min: 0, max: 10 }),
     [MetricKey.IRRIGATION]: _descriptor(MetricKey.IRRIGATION, ChartType.STEP, { min: 0, max: 1 }),
     [MetricKey.DRAIN]: _descriptor(MetricKey.DRAIN, ChartType.STEP, { min: 0, max: 1 }),
+    [MetricKey.VPD]: {
+      ..._descriptor(MetricKey.VPD, ChartType.LINE, 'auto'),
+      vpdThresholds: _vpdThresholds(overviewEntity),
+    },
     [MetricKey.EXHAUST]: _fanDescriptor(MetricKey.EXHAUST, deviceSnapshot?.exhaustFans),
     [MetricKey.CIRCULATION_FAN]: _fanDescriptor(
       MetricKey.CIRCULATION_FAN,

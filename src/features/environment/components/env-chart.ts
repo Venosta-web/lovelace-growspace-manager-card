@@ -20,7 +20,6 @@ import {
   ScrollDirection,
   SENSOR_CHART_DEFAULTS,
 } from '../constants';
-import { DEFAULTS } from '../../../lib/constants';
 import { BINARY_ON_STATES } from '../../../lib/types/hass';
 
 import { consume } from '@lit/context';
@@ -159,99 +158,15 @@ export class GrowspaceEnvChart extends LitElement {
     this._cachedChartRect = null;
   }
 
-  private _metricDescriptors() {
-    return computeMetricDescriptors(this.deviceSnapshot, this.hass?.states ?? {});
-  }
-
-  private _getVpdThresholds() {
-    const defaultThresholds = {
-      targetMin: DEFAULTS.VPD.TARGET_MIN,
-      targetMax: DEFAULTS.VPD.TARGET_MAX,
-      dangerMin: DEFAULTS.VPD.DANGER_MIN,
-      dangerMax: DEFAULTS.VPD.DANGER_MAX,
-    };
-
-    const overviewEntity = this.device?.overviewEntityId
-      ? this.hass?.states[this.device.overviewEntityId]
-      : null;
-
-    if (!overviewEntity?.attributes) return { day: defaultThresholds, night: defaultThresholds };
-
-    const attrs = overviewEntity.attributes;
-
-    // Day targets
-    const day = {
-      targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? DEFAULTS.VPD.TARGET_MIN,
-      targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? DEFAULTS.VPD.TARGET_MAX,
-      dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? DEFAULTS.VPD.DANGER_MIN,
-      dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? DEFAULTS.VPD.DANGER_MAX,
-    };
-
-    // Night targets - use day values as sensible defaults if night not explicitly configured
-    // This is intentional default behavior, not backward compatibility
-    const night = {
-      targetMin: attrs.night_vpd_target_min ?? day.targetMin,
-      targetMax: attrs.night_vpd_target_max ?? day.targetMax,
-      dangerMin: attrs.night_vpd_danger_min ?? day.dangerMin,
-      dangerMax: attrs.night_vpd_danger_max ?? day.dangerMax,
-    };
-
-    return { day, night };
-  }
-
-  private _getVpdStatusForValue(
-    value: number,
-    thresholds: ReturnType<typeof this._getVpdThresholds>,
-    isDay: boolean
-  ): StatusLevel {
-    const t = isDay ? thresholds.day : thresholds.night;
-    if (value < t.dangerMin || value > t.dangerMax) return StatusLevel.DANGER;
-    if (value < t.targetMin || value > t.targetMax) return StatusLevel.WARNING;
-    return StatusLevel.OPTIMAL;
-  }
-
   private _getVpdStatusColor(status: StatusLevel): string {
     return STATUS_COLORS[status] || METRIC_CONFIG.vpd.color;
   }
 
-  private _generateVpdSegments(
-    points: Array<{ x: number; y: number; value: number; time: number }>,
-    thresholds: ReturnType<typeof this._getVpdThresholds>,
-    lightHistory: GraphDataPoint[]
-  ): Array<{ path: string; color: string }> {
-    if (points.length < 2) return [];
-
-    const segments: Array<{ path: string; color: string }> = [];
-    let currentSegment: typeof points = [];
-
-    // Helper to determine day/night at a specific time
-    // using ChartUtils.getIsDay to ensure consistent logic with sparklines
-
-    const isDay = ChartUtils.getIsDay(points[0].time, lightHistory);
-    let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds, isDay);
-
-    for (let i = 0; i < points.length; i++) {
-      const p = points[i];
-      const pIsDay = ChartUtils.getIsDay(p.time, lightHistory);
-      const status = this._getVpdStatusForValue(p.value, thresholds, pIsDay);
-
-      if (status === currentStatus) {
-        currentSegment.push(p);
-      } else {
-        if (currentSegment.length >= 1) {
-          currentSegment.push(p);
-          const pathStr = `M ${currentSegment.map((pt) => `${pt.x},${pt.y}`).join(' L ')}`;
-          segments.push({ path: pathStr, color: this._getVpdStatusColor(currentStatus) });
-        }
-        currentSegment = [p];
-        currentStatus = status;
-      }
-    }
-    if (currentSegment.length >= 2) {
-      const pathStr = `M ${currentSegment.map((pt) => `${pt.x},${pt.y}`).join(' L ')}`;
-      segments.push({ path: pathStr, color: this._getVpdStatusColor(currentStatus) });
-    }
-    return segments;
+  private _metricDescriptors() {
+    const overviewEntity = this.device?.overviewEntityId
+      ? this.hass?.states[this.device.overviewEntityId]
+      : undefined;
+    return computeMetricDescriptors(this.deviceSnapshot, this.hass?.states ?? {}, overviewEntity);
   }
 
   private _computeGraphSeries(
@@ -280,15 +195,6 @@ export class GrowspaceEnvChart extends LitElement {
     const seriesList: GraphSeries[] = [];
     const startTimeMs = startTime.getTime();
     const nowMs = now.getTime();
-
-    // Prepare Light History for VPD calculation if needed
-    let lightHistoryPoints: GraphDataPoint[] = [];
-    if (metricKeys.includes(MetricKey.VPD) && this.sensorHistory[MetricKey.LIGHT]) {
-      lightHistoryPoints = ChartUtils.normalizeHistory(
-        this.sensorHistory[MetricKey.LIGHT],
-        MetricKey.LIGHT
-      );
-    }
 
     metricKeys.forEach((key, seriesIdx) => {
       // Extract base metric if using composite key
@@ -421,8 +327,6 @@ export class GrowspaceEnvChart extends LitElement {
           min -= 1;
         }
 
-        const paddedRange = max - min || 1;
-
         const pathStr = ChartUtils.generatePathFromValues(dataPoints, width, height, {
           min,
           max,
@@ -432,35 +336,18 @@ export class GrowspaceEnvChart extends LitElement {
           timeRange: this.range,
         });
 
-        let vpdSegments;
+        let vpdBands;
         let seriesColor = config.color || '#fff';
 
         if (key === MetricKey.VPD) {
-          const thresholds = this._getVpdThresholds();
-          const vpdPoints = dataPoints.map((p) => ({
-            x: ((p.time - startTimeMs) / durationMillis) * width,
-            y: height - ((p.value - min) / paddedRange) * height,
-            value: p.value,
-            time: p.time,
-          }));
-          vpdSegments = this._generateVpdSegments(vpdPoints, thresholds, lightHistoryPoints);
-
-          if (dataPoints.length > 0) {
-            // Determine current status (last point)
-            const lastPoint = dataPoints[dataPoints.length - 1];
-            // Get current light state for last point color
-            // Or just rely on current environment active state?
-            // Better to match the graph logic:
-            let isDay = true;
-            if (lightHistoryPoints.length > 0) {
-              const lastLight = lightHistoryPoints[lightHistoryPoints.length - 1];
-              // If last light point is recent enough... usually it covers 'now'
-              isDay = lastLight.value === 1;
-            }
-            seriesColor = this._getVpdStatusColor(
-              this._getVpdStatusForValue(lastPoint.value, thresholds, isDay)
-            );
-          }
+          const [vpdSeries] = computeEnvSeries(
+            descriptors,
+            this.sensorHistory ?? {},
+            [MetricKey.VPD],
+            { startTimeMs, nowMs }
+          );
+          vpdBands = vpdSeries?.vpdBands;
+          seriesColor = vpdSeries?.color ?? seriesColor;
         }
 
         seriesList.push({
@@ -475,7 +362,7 @@ export class GrowspaceEnvChart extends LitElement {
           avg,
           path: pathStr,
           fillType: this.isCombined || key.includes(':') ? 'flat' : 'gradient',
-          vpdSegments,
+          vpdBands,
         });
       }
     });
@@ -538,6 +425,7 @@ export class GrowspaceEnvChart extends LitElement {
         timeRange: this.range,
       }),
       fillType: 'gradient' as const,
+      vpdBands: series.vpdBands,
     }));
   }
 
@@ -631,9 +519,23 @@ export class GrowspaceEnvChart extends LitElement {
             <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
               ${this._renderGrid(width, height)}
               ${series.map((s) => {
-                // Handle VPD segments separately (they have their own path validation)
-                if (s.vpdSegments?.length) {
-                  return svg`${s.vpdSegments.map((seg) => svg`<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
+                // VPD bands remain in value/time space until this render step, where
+                // the component has the chart dimensions needed to create paths.
+                if (s.vpdBands?.length) {
+                  return svg`${s.vpdBands.map((band) => {
+                    const bandPoints = s.points.filter(
+                      (point) => point.time >= band.startTime && point.time <= band.endTime
+                    );
+                    const path = ChartUtils.generatePathFromValues(bandPoints, width, height, {
+                      min: s.min,
+                      max: s.max,
+                      startTime: startTime.getTime(),
+                      endTime: startTime.getTime() + durationMillis,
+                      type: ChartType.LINE,
+                      timeRange: this.range,
+                    });
+                    return svg`<path d="${path}" fill="none" stroke="${this._getVpdStatusColor(band.status)}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`;
+                  })}`;
                 }
 
                 // Skip rendering regular paths if no valid path data
