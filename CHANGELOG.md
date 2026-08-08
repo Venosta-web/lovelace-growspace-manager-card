@@ -1,3 +1,10 @@
+# [1.1.0-next.87](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.86...v1.1.0-next.87) (2026-08-08)
+
+
+### Features
+
+* **env-graph:** derive temperature through Metric Descriptor + Env Series ([#475](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/475)) ([04c3fb0](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/04c3fb075fb1a1736b96d554a2de6a1df07cfde7)), closes [#467](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/467) [#472](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/472)
+
 # [1.1.0-next.86](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.85...v1.1.0-next.86) (2026-08-08)
 
 
