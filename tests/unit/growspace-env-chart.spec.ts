@@ -340,12 +340,12 @@ describe('GrowspaceEnvChart', () => {
         vi.useRealTimers();
     });
 
-    it('should format tooltip for exhaust/humidifier with state meta', async () => {
+    it('should format tooltip for humidifier with state meta', async () => {
         vi.useFakeTimers();
         const now = Date.now();
-        element.metricKey = 'exhaust';
+        element.metricKey = 'humidifier';
         element.sensorHistory = {
-            'exhaust': [
+            'humidifier': [
                 { state: '5', last_changed: new Date(now).toISOString(), attributes: {} }
             ] as any
         };
@@ -471,21 +471,6 @@ describe('GrowspaceEnvChart', () => {
         // min should be 19, max 21
         expect(series.min).toBe(19);
         expect(series.max).toBe(21);
-    });
-
-    it('should use fixed range for specific metrics', async () => {
-        const now = Date.now();
-        element.metricKey = 'circulation_fan';
-        element.sensorHistory = {
-            'circulation_fan': [
-                { state: '5', last_changed: new Date(now).toISOString() }
-            ] as any
-        };
-        await element.updateComplete;
-
-        const series = (element as any)._renderSeries[0];
-        expect(series.min).toBe(0);
-        expect(series.max).toBe(10);
     });
 
     it('should handle scroll interaction in combined header', async () => {
@@ -660,7 +645,7 @@ describe('GrowspaceEnvChart', () => {
         const now = Date.now();
         element.isCombined = true;
         // Test all special handling keys
-        element.metrics = ['exhaust', 'humidifier', 'dehumidifier', 'optimal', 'light', 'irrigation', 'drain'];
+        element.metrics = ['humidifier', 'dehumidifier', 'optimal', 'irrigation', 'drain'];
 
         // Setup history for all of them
         const history: Record<string, any[]> = {};
@@ -675,10 +660,6 @@ describe('GrowspaceEnvChart', () => {
         expect(seriesList.length).toBe(element.metrics.length);
 
         // Verify min/max clamping logic
-        const exhaust = seriesList.find((s: any) => s.id === 'exhaust');
-        expect(exhaust.min).toBe(0);
-        expect(exhaust.max).toBe(10);
-
         const dehum = seriesList.find((s: any) => s.id === 'dehumidifier');
         expect(dehum.min).toBe(0);
         expect(dehum.max).toBe(1);
@@ -840,12 +821,12 @@ describe('GrowspaceEnvChart', () => {
             expect(scrollSpy).toHaveBeenCalledWith('left');
         });
 
-        it('should cover tooltip meta state branch for exhaust', async () => {
+        it('should cover tooltip meta state branch for humidifier', async () => {
             vi.useFakeTimers();
             const now = Date.now();
-            element.metricKey = 'exhaust'; // Force single header logic check? or handleGraphHover
+            element.metricKey = 'humidifier';
             element.sensorHistory = {
-                'exhaust': [
+                'humidifier': [
                     { state: '5', last_changed: new Date(now).toISOString(), attributes: {} }
                     // Note: attributes.state is checked in code as meta.state
                 ] as any
@@ -1391,7 +1372,7 @@ describe('GrowspaceEnvChart', () => {
             expect(series[0].color).toBe('#ffffff');
         });
 
-        it('should cover binary state variants for dehumidifier and light', async () => {
+        it('should cover binary state variants for dehumidifier', async () => {
             const now = Date.now();
             element.metricKey = 'dehumidifier';
             element.sensorHistory = {
@@ -1401,29 +1382,9 @@ describe('GrowspaceEnvChart', () => {
                 ] as any
             };
             await element.updateComplete;
-            let series = (element as any)._renderSeries;
+            const series = (element as any)._renderSeries;
             expect(series[0].points[0].value).toBe(1);
             expect(series[0].points[1].value).toBe(1);
-
-            element.metricKey = 'light';
-            element.sensorHistory = {
-                'light': [
-                    { state: 'on', last_changed: new Date(now - 2000).toISOString() },
-                    { state: 'off', last_changed: new Date(now - 1000).toISOString() },
-                    { state: '50', last_changed: new Date(now).toISOString() } // Numeric > 0 = ON
-                ] as any
-            };
-            await element.updateComplete;
-            series = (element as any)._renderSeries;
-            // The series adds an initial point at startTime, one for each history item, and one at 'now'.
-            // History: 'on' at -2000, 'off' at -1000, '50' at 0
-            // dataPoints: [startTime, 'on', 'off', '50', now] -> total 5 points
-            expect(series[0].points.length).toBe(5);
-            expect(series[0].points[0].value).toBe(1); // carried from 'on' at startTime
-            expect(series[0].points[1].value).toBe(1); // 'on'
-            expect(series[0].points[2].value).toBe(0); // 'off'
-            expect(series[0].points[3].value).toBe(1); // '50'
-            expect(series[0].points[4].value).toBe(1); // 'now'
         });
 
         it('should handle tooltips when cached rect is missing', async () => {

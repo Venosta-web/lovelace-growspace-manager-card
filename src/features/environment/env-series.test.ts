@@ -3,6 +3,7 @@ import { computeEnvSeries } from './env-series';
 import { computeMetricDescriptors } from '../../slices/metric-descriptors';
 import { ChartType, MetricKey, StatusLevel, STATUS_COLORS } from './constants';
 import type { HistorySensorState, SensorHistories } from './types';
+import type { DeviceSnapshot } from '../../slices/device-state';
 
 const DESCRIPTORS = computeMetricDescriptors();
 const NOW = new Date('2026-05-01T12:00:00.000Z');
@@ -28,6 +29,20 @@ function windowOf(hours: number) {
 
 function computeTemperature(histories: SensorHistories, hours = 24) {
   return computeEnvSeries(DESCRIPTORS, histories, [MetricKey.TEMPERATURE], windowOf(hours));
+}
+
+function snapshot(
+  field: 'lightSensors' | 'exhaustFans' | 'circulationFans',
+  entityId: string
+): DeviceSnapshot {
+  return {
+    lightSensors: null,
+    exhaustFans: null,
+    circulationFans: null,
+    humidifiers: null,
+    dehumidifiers: null,
+    [field]: { entityIds: [entityId], value: undefined, icon: '' },
+  };
 }
 
 describe('computeEnvSeries — temperature', () => {
@@ -155,18 +170,22 @@ describe('computeEnvSeries — temperature', () => {
 });
 
 describe('computeEnvSeries — VPD', () => {
-  const descriptors = computeMetricDescriptors({
-    attributes: {
-      day_vpd_target_min: 1,
-      day_vpd_target_max: 2,
-      day_vpd_danger_min: 0.5,
-      day_vpd_danger_max: 2.5,
-      night_vpd_target_min: 0.4,
-      night_vpd_target_max: 0.6,
-      night_vpd_danger_min: 0.2,
-      night_vpd_danger_max: 0.8,
-    },
-  });
+  const descriptors = computeMetricDescriptors(
+    null,
+    {},
+    {
+      attributes: {
+        day_vpd_target_min: 1,
+        day_vpd_target_max: 2,
+        day_vpd_danger_min: 0.5,
+        day_vpd_danger_max: 2.5,
+        night_vpd_target_min: 0.4,
+        night_vpd_target_max: 0.6,
+        night_vpd_danger_min: 0.2,
+        night_vpd_danger_max: 0.8,
+      },
+    }
+  );
 
   function vpdReading(minutesAgo: number, state: string): HistorySensorState {
     return { ...reading(minutesAgo, state), entity_id: 'sensor.tent_vpd' };
@@ -249,5 +268,67 @@ describe('computeEnvSeries — VPD', () => {
     );
 
     expect(series).toBeUndefined();
+  });
+});
+
+describe('computeEnvSeries — fan and light value spaces', () => {
+  it('shapes an HA fan as percentage values on a fixed 0–100 axis', () => {
+    const descriptors = computeMetricDescriptors(snapshot('exhaustFans', 'fan.tent_exhaust'), {});
+    const history = {
+      [MetricKey.EXHAUST]: [{ ...reading(30, 'on'), attributes: { percentage: 45 } }],
+    };
+
+    const [series] = computeEnvSeries(descriptors, history, [MetricKey.EXHAUST], windowOf(24));
+
+    expect(series.unit).toBe('%');
+    expect(series.points.map((point) => point.value)).toEqual([1, 45, 45]);
+    expect({ min: series.min, max: series.max }).toEqual({ min: 0, max: 100 });
+  });
+
+  it('shapes a speed-sensor fan on the fixed 0–10 axis', () => {
+    const descriptors = computeMetricDescriptors(
+      snapshot('circulationFans', 'sensor.tent_circulation_speed'),
+      {}
+    );
+    const history = { [MetricKey.CIRCULATION_FAN]: [reading(30, '6')] };
+
+    const [series] = computeEnvSeries(
+      descriptors,
+      history,
+      [MetricKey.CIRCULATION_FAN],
+      windowOf(24)
+    );
+
+    expect(series.unit).toBe('');
+    expect(series.points.map((point) => point.value)).toEqual([6, 6, 6]);
+    expect({ min: series.min, max: series.max }).toEqual({ min: 0, max: 10 });
+  });
+
+  it('keeps percentage light numeric and raw light binary', () => {
+    const deviceSnapshot = snapshot('lightSensors', 'sensor.tent_light');
+    const percentDescriptors = computeMetricDescriptors(deviceSnapshot, {
+      'sensor.tent_light': { state: '50', attributes: { unit_of_measurement: '%' } },
+    });
+    const rawDescriptors = computeMetricDescriptors(deviceSnapshot, {
+      'sensor.tent_light': { state: 'on', attributes: {} },
+    });
+    const histories = {
+      [MetricKey.LIGHT]: [reading(60, 'off'), reading(30, '50')],
+    };
+
+    const [percentage] = computeEnvSeries(
+      percentDescriptors,
+      histories,
+      [MetricKey.LIGHT],
+      windowOf(24)
+    );
+    const [raw] = computeEnvSeries(rawDescriptors, histories, [MetricKey.LIGHT], windowOf(24));
+
+    expect(percentage.points.map((point) => point.value)).toEqual([50, 50]);
+    expect(percentage.chartType).toBe(ChartType.LINE);
+    expect({ min: percentage.min, max: percentage.max }).toEqual({ min: 0, max: 100 });
+    expect(raw.points.map((point) => point.value)).toEqual([0, 0, 1, 1]);
+    expect(raw.chartType).toBe(ChartType.STEP);
+    expect({ min: raw.min, max: raw.max }).toEqual({ min: 0, max: 1 });
   });
 });
