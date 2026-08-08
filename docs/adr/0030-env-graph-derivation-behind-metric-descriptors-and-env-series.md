@@ -19,8 +19,8 @@ splitting on `':'` and rescanning `Object.keys(sensorHistory)` to rediscover the
 
 **Decision:** split the derivation into two modules, both with real seams.
 
-- **[[Metric Descriptor]]** (`slices/metric-descriptors/`) — `computeMetricDescriptors(growspaceId,
-  viewContext, hassStates)` returns, per `MetricKey`: structured `{ entityId, name }` series,
+- **[[Metric Descriptor]]** (`slices/metric-descriptors/`) — `computeMetricDescriptors()` returns,
+  per `MetricKey`: structured `{ entityId, name }` series,
   display unit, colour, title, chart type, axis scale, and the day/night VPD threshold table.
   It becomes the single owner of metric→entity resolution, subsuming `METRIC_ENTITY_KEYS` /
   `getEntityIdsForMetric`.
@@ -51,9 +51,15 @@ cannot disagree, which they can today.
 
 ## Consequences
 
+- **Metric Descriptor takes explicit data parameters and reads no atoms**, following
+  `computeHeaderMetrics(envSnapshot, plants, …)` — the module it is a peer of. Parameters are
+  added as each metric family lands and the facts stop being static; at temperature-only it
+  needs none. A `growspaceId` argument was considered and rejected: it would force an atom
+  read inside the function and cost the module its store-free testability.
 - **Metric Descriptor is pure of `hass` *injection*, not free of `hass.states`.** It takes a
-  states snapshot as an argument — the `computeEnvSnapshot(device, hassStates)` /
-  [[Hydration orchestrator]] shape, not the atom-only HeaderMetrics shape. This is forced:
+  states snapshot as an argument once it needs one (from #468 onward) — the
+  `computeEnvSnapshot(device, hassStates)` / [[Hydration orchestrator]] shape, not the
+  atom-only HeaderMetrics shape. This is forced:
   three inputs sit on no atom today — the day/night VPD threshold table (`EnvSnapshot` carries
   only the resolved `vpdStatus`), the light sensor's `unit_of_measurement` (`DeviceSnapshot`
   holds the display string `"70%"`, not the unit), and per-sensor `friendly_name` for
