@@ -150,10 +150,10 @@ describe('computeEnvSeries — temperature', () => {
     expect(computeTemperature(temperatureHistory(future))).toEqual([]);
   });
 
-  it('skips a metric that has no descriptor yet', () => {
-    const histories = { [MetricKey.CO2]: [reading(30, '800')] };
+  it('skips a key the descriptor table does not know', () => {
+    const histories = { not_a_metric: [reading(30, '800')] };
 
-    expect(computeEnvSeries(DESCRIPTORS, histories, [MetricKey.CO2], windowOf(24))).toEqual([]);
+    expect(computeEnvSeries(DESCRIPTORS, histories, ['not_a_metric'], windowOf(24))).toEqual([]);
   });
 
   it('preserves the requested metric order', () => {
@@ -169,8 +169,7 @@ describe('computeEnvSeries — temperature', () => {
       windowOf(24)
     );
 
-    // CO2 has no descriptor yet, so temperature is all that survives.
-    expect(series.map((s) => s.id)).toEqual([MetricKey.TEMPERATURE]);
+    expect(series.map((s) => s.id)).toEqual([MetricKey.CO2, MetricKey.TEMPERATURE]);
   });
 });
 

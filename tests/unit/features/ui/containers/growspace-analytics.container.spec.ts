@@ -3,6 +3,7 @@ import { fixture, html } from '@open-wc/testing-helpers';
 import { atom } from 'nanostores';
 import * as uiSlice from '../../../../../src/slices/ui';
 import { ViewMode } from '../../../../../src/constants';
+import { MetricKey } from '../../../../../src/features/environment/constants';
 import '../../../../../src/features/ui/containers/growspace-analytics.container';
 import type { GrowspaceAnalyticsContainer } from '../../../../../src/features/ui/containers/growspace-analytics.container';
 
@@ -79,6 +80,17 @@ describe('GrowspaceAnalyticsContainer', () => {
 
     it('renders growspace-analytics-ui when state has active graphs and device', async () => {
         expect(element.shadowRoot?.querySelector('growspace-analytics-ui')).toBeTruthy();
+    });
+
+    it('hands the charts a Metric Descriptor table', async () => {
+        // The charts derive nothing themselves (ADR-0030), so an empty table here
+        // is a silent blackout: every graph would render "No Data".
+        const ui = element.shadowRoot?.querySelector('growspace-analytics-ui') as any;
+
+        expect(Object.keys(ui.descriptors ?? {}).length).toBeGreaterThan(0);
+        expect(ui.descriptors[MetricKey.TEMPERATURE]).toMatchObject({
+            key: MetricKey.TEMPERATURE,
+        });
     });
 
     it('renders empty when device is not set', async () => {

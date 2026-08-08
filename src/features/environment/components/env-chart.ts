@@ -6,11 +6,10 @@ import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import type { GrowspaceDevice } from '../../../services/types';
-import type { GraphSeries, TooltipData, GraphDataPoint, SensorHistories } from '../types';
+import type { GraphSeries, TooltipData, SensorHistories } from '../types';
 import { ChartUtils } from '../../../utils/chart-utils';
 import { computeEnvSeries } from '../env-series';
-import { computeMetricDescriptors } from '../../../slices/metric-descriptors';
-import type { DeviceSnapshot } from '../../../slices/device-state';
+import type { MetricDescriptor } from '../../../slices/metric-descriptors';
 import {
   METRIC_CONFIG,
   MetricKey,
@@ -20,7 +19,6 @@ import {
   ScrollDirection,
   SENSOR_CHART_DEFAULTS,
 } from '../constants';
-import { BINARY_ON_STATES } from '../../../lib/types/hass';
 
 import { consume } from '@lit/context';
 import { hassContext } from '../../../lib/context';
@@ -32,34 +30,24 @@ export class GrowspaceEnvChart extends LitElement {
   hass!: HomeAssistant;
 
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
-  @property({ attribute: false }) deviceSnapshot: DeviceSnapshot | null = null;
   @property({ attribute: false }) sensorHistory: SensorHistories = {};
   /**
-   * The entities backing each metric, when the host resolved them itself rather
-   * than leaving it to `device` — the subarea view, whose histories are its own
-   * sensors' and not the parent growspace's. Must match how `sensorHistory` is
-   * keyed, or a metric's series and its history describe different sensors.
+   * The Metric Descriptor table this chart derives from, computed by the host.
+   *
+   * It arrives as a property rather than being computed here because building it
+   * reads `hass.states`, which no component below [[EnvSnapshot]] may do
+   * (ADR-0030). A metric absent from the table renders nothing.
    */
-  @property({ attribute: false }) metricSensors: Record<string, string[]> | undefined;
+  @property({ attribute: false }) descriptors: Record<string, MetricDescriptor> = {};
 
   @property({ type: String }) metricKey = '';
-  @property({ type: String }) unit = '';
-  @property({ type: String }) color = '#ffffff';
   @property({ type: String }) title = '';
   @property({ type: String }) icon = mdiMagnify;
   @property({ type: String }) range: '1h' | '6h' | '24h' | '7d' = '24h';
-  @property({ type: String }) type: ChartType = ChartType.LINE;
-
-  @property({ type: String }) chartTitle: string | undefined;
-  @property({ type: String }) customSensorId: string | undefined;
 
   // For combined graphs
   @property({ type: Array }) metrics: string[] = [];
   @property({ type: Boolean }) isCombined = false;
-  @property({ type: Object }) metricConfig: Record<
-    string,
-    { color: string; title: string; unit: string; icon?: string }
-  > = {};
 
   @state() private _activeTooltip: TooltipData | null = null;
   @state() private _hoverTime: number | null = null;
@@ -169,241 +157,12 @@ export class GrowspaceEnvChart extends LitElement {
     return STATUS_COLORS[status] || METRIC_CONFIG.vpd.color;
   }
 
-  private _metricDescriptors() {
-    const overviewEntity = this.device?.overviewEntityId
-      ? this.hass?.states[this.device.overviewEntityId]
-      : undefined;
-    return computeMetricDescriptors(
-      this.deviceSnapshot,
-      this.hass?.states ?? {},
-      overviewEntity,
-      this.device,
-      this.metricSensors
-    );
-  }
-
-  private _computeGraphSeries(
-    width: number,
-    height: number,
-    startTime: Date,
-    durationMillis: number,
-    now: Date
-  ): GraphSeries[] {
-    const descriptors = this._metricDescriptors();
-    const baseKeys = this.isCombined ? this.metrics : [this.metricKey];
-    const metricKeys: string[] = [];
-
-    // Expand composite keys for multi-sensor metrics
-    for (const key of baseKeys) {
-      const compositeKeys = Object.keys(this.sensorHistory || {}).filter((hKey) =>
-        hKey.startsWith(`${key}:`)
-      );
-      if (compositeKeys.length > 0) {
-        metricKeys.push(...compositeKeys);
-      } else {
-        metricKeys.push(key);
-      }
-    }
-
-    const seriesList: GraphSeries[] = [];
-    const startTimeMs = startTime.getTime();
-    const nowMs = now.getTime();
-
-    metricKeys.forEach((key, seriesIdx) => {
-      // Extract base metric if using composite key
-      const baseKey = key.includes(':') ? key.split(':')[0] : key;
-      const descriptor = descriptors[baseKey];
-
-      const baseConfig = this.metricConfig[baseKey] || {
-        color: METRIC_CONFIG[baseKey]?.color || this.color,
-        title: this.chartTitle || METRIC_CONFIG[baseKey]?.title || this.title || baseKey,
-        unit: METRIC_CONFIG[baseKey]?.unit || this.unit,
-        icon: METRIC_CONFIG[baseKey]?.icon || this.icon,
-      };
-
-      // Handle color deviation for multi-sensor series
-      let seriesBaseColor = baseConfig.color || '#fff';
-      let seriesTitle = baseConfig.title || baseKey;
-      if (key.includes(':')) {
-        const parts = key.split(':');
-        const entityId = parts[1];
-
-        // Only deviate if this is not the first sensor for this baseMetric in our metricKeys
-        const sameBaseIndices = metricKeys
-          .map((k, i) => (k.startsWith(`${baseKey}:`) ? i : -1))
-          .filter((i) => i !== -1);
-        const subIdx = sameBaseIndices.indexOf(seriesIdx);
-
-        if (subIdx > 0) {
-          seriesBaseColor = `color-mix(in srgb, ${seriesBaseColor}, white ${subIdx * 20}%)`;
-        }
-
-        // Try to refine title if it's a multi-sensor series
-        const stateObj = this.hass?.states[entityId];
-        const friendlyName = stateObj?.attributes?.friendly_name || entityId;
-        const baseTitle = baseConfig.title || baseKey;
-        seriesTitle = `${baseTitle} (${friendlyName})`;
-      }
-
-      const config = { ...baseConfig, color: seriesBaseColor, title: seriesTitle };
-      if (descriptor) config.unit = descriptor.unit;
-
-      const historySource = this.sensorHistory[key] || [];
-      if (historySource.length === 0) return;
-
-      const dataPoints: GraphDataPoint[] = [];
-      let initialState = historySource[0];
-
-      for (const h of historySource) {
-        if (new Date(h.last_changed).getTime() > startTimeMs) break;
-        initialState = h;
-      }
-
-      const fanEntityId =
-        key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN
-          ? descriptor?.entityId
-          : undefined;
-      const lightEntityUnit = key === MetricKey.LIGHT ? descriptor?.unit : undefined;
-
-      if (initialState) {
-        const val =
-          key === MetricKey.OPTIMAL || BINARY_ON_STATES.includes(initialState.state)
-            ? BINARY_ON_STATES.includes(initialState.state)
-              ? 1
-              : 0
-            : ChartUtils.normalizeSensorValue(initialState, key, fanEntityId, lightEntityUnit);
-        if (val !== undefined) dataPoints.push({ time: startTimeMs, value: val });
-      }
-
-      const len = historySource.length;
-      for (let i = 0; i < len; i++) {
-        const h = historySource[i];
-        const t = new Date(h.last_changed).getTime();
-        if (t <= startTimeMs) continue;
-
-        let val: number | undefined;
-        if (key === MetricKey.OPTIMAL) {
-          val = BINARY_ON_STATES.includes(h.state) ? 1 : 0;
-          if (h.attributes?.reasons)
-            dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
-          else dataPoints.push({ time: t, value: val });
-        } else {
-          val = ChartUtils.normalizeSensorValue(h, key, fanEntityId, lightEntityUnit);
-          if (val !== undefined) dataPoints.push({ time: t, value: val });
-        }
-      }
-
-      if (dataPoints.length > 0) {
-        const last = dataPoints[dataPoints.length - 1];
-        dataPoints.push({ time: nowMs, value: last.value, meta: last.meta });
-      }
-
-      if (dataPoints.length > 0) {
-        // ⚡ BOLT OPTIMIZATION: Single-pass min/max/sum calculation
-        // Combines 3 separate iterations into one O(n) pass
-        // Also avoids spread operator which can cause stack overflow for large arrays
-        let min = dataPoints[0].value;
-        let max = dataPoints[0].value;
-        let sum = 0;
-        for (let i = 0; i < dataPoints.length; i++) {
-          const val = dataPoints[i].value;
-          if (val < min) min = val;
-          if (val > max) max = val;
-          sum += val;
-        }
-        const avg = sum / dataPoints.length;
-
-        const isStep =
-          descriptor?.chartType === ChartType.STEP ||
-          (config as { type?: ChartType }).type === ChartType.STEP ||
-          key === MetricKey.OPTIMAL ||
-          key === MetricKey.DEHUMIDIFIER ||
-          (key === MetricKey.LIGHT && lightEntityUnit !== '%') ||
-          key === MetricKey.IRRIGATION ||
-          key === MetricKey.DRAIN;
-        if (descriptor?.axis !== undefined && descriptor.axis !== 'auto') {
-          min = descriptor.axis.min;
-          max = descriptor.axis.max;
-        } else if (key === MetricKey.HUMIDIFIER) {
-          min = 0;
-          max = 10;
-        } else if (key === MetricKey.DEHUMIDIFIER) {
-          min = 0;
-          max = 1;
-        } else if (isStep) {
-          min = 0;
-          max = 1;
-        }
-
-        if (!this.isCombined && max === min && !isStep) {
-          max += 1;
-          min -= 1;
-        }
-
-        const pathStr = ChartUtils.generatePathFromValues(dataPoints, width, height, {
-          min,
-          max,
-          startTime: startTimeMs,
-          endTime: startTimeMs + durationMillis,
-          type: isStep ? ChartType.STEP : ChartType.LINE,
-          timeRange: this.range,
-        });
-
-        let vpdBands;
-        let seriesColor = config.color || '#fff';
-
-        if (key === MetricKey.VPD) {
-          const [vpdSeries] = computeEnvSeries(
-            descriptors,
-            this.sensorHistory ?? {},
-            [MetricKey.VPD],
-            { startTimeMs, nowMs }
-          );
-          vpdBands = vpdSeries?.vpdBands;
-          seriesColor = vpdSeries?.color ?? seriesColor;
-        }
-
-        seriesList.push({
-          id: key,
-          title: config.title || key,
-          color: seriesColor,
-          unit: config.unit || '',
-          icon: config.icon || '',
-          points: dataPoints,
-          min,
-          max,
-          avg,
-          path: pathStr,
-          fillType: this.isCombined || key.includes(':') ? 'flat' : 'gradient',
-          vpdBands,
-        });
-      }
-    });
-
-    return seriesList;
-  }
-
   /**
-   * Whether this chart's metric is derived by the Env Series builder yet.
-   *
-   * ADR-0030 migrates the derivation metric by metric, so both forms coexist here:
-   * a metric with a Metric Descriptor goes through `computeEnvSeries`, everything
-   * else stays on `_computeGraphSeries`. One case is excluded until its own slice
-   * lands — combined graphs. Widening is a matter of adding descriptors, not
-   * editing this predicate.
+   * Derive the chart's metrics as Env Series (value space), then apply geometry —
+   * the one step that needs the chart's pixel dimensions, and the only part of the
+   * derivation this component still owns (ADR-0030).
    */
-  private _isEnvSeriesMigrated(): boolean {
-    if (this.isCombined) return false;
-    return Boolean(this._metricDescriptors()[this.metricKey]);
-  }
-
-  /**
-   * Derive the metric as Env Series (value space), then apply geometry — the one
-   * step that needs the chart's pixel dimensions. The `GraphSeries` shape is
-   * preserved so every render method downstream is unaffected; it disappears when
-   * the legacy path does (#472).
-   */
-  private _envSeriesToGraphSeries(
+  private _buildRenderSeries(
     width: number,
     height: number,
     startTime: Date,
@@ -411,10 +170,12 @@ export class GrowspaceEnvChart extends LitElement {
     now: Date
   ): GraphSeries[] {
     const startTimeMs = startTime.getTime();
+    const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
 
-    return computeEnvSeries(this._metricDescriptors(), this.sensorHistory ?? {}, [this.metricKey], {
+    return computeEnvSeries(this.descriptors, this.sensorHistory ?? {}, metricKeys, {
       startTimeMs,
       nowMs: now.getTime(),
+      isCombined: this.isCombined,
     }).map((series) => ({
       id: series.id,
       title: series.title,
@@ -433,50 +194,26 @@ export class GrowspaceEnvChart extends LitElement {
         type: series.chartType,
         timeRange: this.range,
       }),
-      // Multi-sensor traces overlay each other, so they take the flat fill the
-      // legacy path gave composite keys; a lone series keeps its gradient.
-      fillType: series.sensor ? ('flat' as const) : ('gradient' as const),
+      // Overlaid traces — a combined chart's metrics, or one metric's several
+      // sensors — take a flat fill; a lone trace keeps its gradient.
+      fillType: this.isCombined || series.sensor ? ('flat' as const) : ('gradient' as const),
       vpdBands: series.vpdBands,
     }));
   }
 
   protected willUpdate(changedProperties: PropertyValues) {
     if (
-      changedProperties.has('device') ||
-      changedProperties.has('deviceSnapshot') ||
-      changedProperties.has('hass') ||
+      changedProperties.has('descriptors') ||
       changedProperties.has('sensorHistory') ||
       changedProperties.has('range') ||
       changedProperties.has('metricKey') ||
       changedProperties.has('metrics') ||
       changedProperties.has('isCombined')
     ) {
-      let needsUpdate = true;
-
-      if (changedProperties.has('sensorHistory') && changedProperties.size === 1) {
-        const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
-        const oldHist = changedProperties.get('sensorHistory') as SensorHistories | undefined;
-
-        if (oldHist) {
-          let allSame = true;
-          for (const k of metricKeys) {
-            if (this.sensorHistory[k] !== oldHist[k]) {
-              allSame = false;
-              break;
-            }
-          }
-          if (allSame) needsUpdate = false;
-        }
-      }
-
-      if (needsUpdate) {
-        const durationMillis = this._getDurationMillis(this.range);
-        const now = new Date();
-        const startTime = new Date(now.getTime() - durationMillis);
-        this._renderSeries = this._isEnvSeriesMigrated()
-          ? this._envSeriesToGraphSeries(800, 200, startTime, durationMillis, now)
-          : this._computeGraphSeries(800, 200, startTime, durationMillis, now);
-      }
+      const durationMillis = this._getDurationMillis(this.range);
+      const now = new Date();
+      const startTime = new Date(now.getTime() - durationMillis);
+      this._renderSeries = this._buildRenderSeries(800, 200, startTime, durationMillis, now);
     }
   }
 

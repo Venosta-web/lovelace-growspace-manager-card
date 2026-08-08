@@ -40,11 +40,45 @@ describe('computeMetricDescriptors', () => {
     });
   });
 
-  it('omits metrics that have not been migrated yet', () => {
+  it('describes every metric the card knows', () => {
     const descriptors = computeMetricDescriptors();
 
-    // Consumers treat an absent key as "still on the legacy derivation".
-    expect(descriptors[MetricKey.HUMIDITY]).toBeUndefined();
+    expect(Object.keys(descriptors).sort()).toEqual(Object.keys(METRIC_CONFIG).sort());
+  });
+
+  it('has no descriptor for a key that is not a metric', () => {
+    expect(computeMetricDescriptors()['not_a_metric']).toBeUndefined();
+  });
+
+  it('takes the display facts of a plain metric straight from its config', () => {
+    const descriptor = computeMetricDescriptors()[MetricKey.HUMIDITY];
+
+    expect(descriptor).toEqual({
+      key: MetricKey.HUMIDITY,
+      title: METRIC_CONFIG[MetricKey.HUMIDITY].title,
+      color: METRIC_CONFIG[MetricKey.HUMIDITY].color,
+      unit: METRIC_CONFIG[MetricKey.HUMIDITY].unit,
+      icon: METRIC_CONFIG[MetricKey.HUMIDITY].icon,
+      chartType: ChartType.LINE,
+      axis: 'auto',
+      sensors: [],
+    });
+  });
+
+  it.each([
+    [MetricKey.CO2, ChartType.LINE, 'auto'],
+    [MetricKey.SOIL_MOISTURE, ChartType.LINE, 'auto'],
+    [MetricKey.FEED_EC, ChartType.LINE, 'auto'],
+    [MetricKey.IRRIGATION, ChartType.STEP, { min: 0, max: 1 }],
+    [MetricKey.DRAIN, ChartType.STEP, { min: 0, max: 1 }],
+    [MetricKey.OPTIMAL, ChartType.STEP, { min: 0, max: 1 }],
+    [MetricKey.DEHUMIDIFIER, ChartType.STEP, { min: 0, max: 1 }],
+    [MetricKey.HUMIDIFIER, ChartType.LINE, { min: 0, max: 10 }],
+  ])('shapes %s as a %s series on the axis its values need', (key, chartType, axis) => {
+    const descriptor = computeMetricDescriptors()[key];
+
+    expect(descriptor.chartType).toBe(chartType);
+    expect(descriptor.axis).toEqual(axis);
   });
 
   it('reads explicit day and night VPD thresholds from the overview entity', () => {

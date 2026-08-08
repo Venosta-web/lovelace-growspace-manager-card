@@ -6,8 +6,8 @@
  * **No pixels and no SVG paths** — geometry belongs to the rendering component,
  * which owns the chart's width and height.
  *
- * Scope, per ADR-0030's landing order: a metric is derived here only when the
- * descriptor table carries it.
+ * A metric is derived here only when the descriptor table carries it. That table
+ * covers every metric the card knows, so an absent key means "not a metric".
  *
  * Multi-sensor grouping is carried structurally: a descriptor's `sensors` decide
  * how many series a metric has, in what order, and what each is called. The
