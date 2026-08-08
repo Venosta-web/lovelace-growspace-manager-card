@@ -34,6 +34,13 @@ export class GrowspaceEnvChart extends LitElement {
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
   @property({ attribute: false }) deviceSnapshot: DeviceSnapshot | null = null;
   @property({ attribute: false }) sensorHistory: SensorHistories = {};
+  /**
+   * The entities backing each metric, when the host resolved them itself rather
+   * than leaving it to `device` — the subarea view, whose histories are its own
+   * sensors' and not the parent growspace's. Must match how `sensorHistory` is
+   * keyed, or a metric's series and its history describe different sensors.
+   */
+  @property({ attribute: false }) metricSensors: Record<string, string[]> | undefined;
 
   @property({ type: String }) metricKey = '';
   @property({ type: String }) unit = '';
@@ -170,7 +177,8 @@ export class GrowspaceEnvChart extends LitElement {
       this.deviceSnapshot,
       this.hass?.states ?? {},
       overviewEntity,
-      this.device
+      this.device,
+      this.metricSensors
     );
   }
 

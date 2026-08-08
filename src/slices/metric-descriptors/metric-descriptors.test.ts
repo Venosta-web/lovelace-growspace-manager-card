@@ -218,6 +218,22 @@ describe('computeMetricDescriptors — sensors', () => {
     expect(descriptors[MetricKey.VPD].sensors).toEqual([]);
   });
 
+  it('lets a view context declare the entities it keyed its own histories by', () => {
+    const descriptors = computeMetricDescriptors(null, states, undefined, device, {
+      [MetricKey.TEMPERATURE]: ['sensor.sub1', 'sensor.sub2'],
+    });
+
+    // The subarea view reads its own sensors, not the parent growspace's.
+    expect(descriptors[MetricKey.TEMPERATURE].sensors.map((s) => s.entityId)).toEqual([
+      'sensor.sub1',
+      'sensor.sub2',
+    ]);
+    // A metric the view did not declare still resolves from the device.
+    expect(descriptors[MetricKey.VPD].sensors.map((s) => s.entityId)).toEqual(
+      resolveMetricEntityIds(device, MetricKey.VPD, states)
+    );
+  });
+
   it('resolves the same entities history fetching does', () => {
     const descriptor = computeMetricDescriptors(null, states, undefined, device)[
       MetricKey.TEMPERATURE

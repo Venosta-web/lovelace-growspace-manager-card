@@ -109,6 +109,12 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     @state() private _parentGrowspaceName = '';
     @state() private _showConfigDialog = false;
     @state() private _historyCache: Record<string, any[]> = {};
+    /**
+     * The entity lists `_historyCache` was keyed by. Handed to the analytics
+     * charts so a metric's series and its history describe the same sensors —
+     * a subarea's are its own, not the parent growspace's.
+     */
+    @state() private _metricSensors: Record<string, string[]> = {};
     private _configEnvDataSnapshot: Record<string, unknown> | null = null;
 
     static styles: CSSResultGroup = [
@@ -364,6 +370,9 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             }
 
             this._historyCache = cache;
+            this._metricSensors = Object.fromEntries(
+                metricEntities.map(({ metric, entityIds }) => [metric, entityIds])
+            );
             // Inject subarea sensor history into the store so growspace-analytics
             // shows the subarea's sensors instead of the parent growspace's sensors.
             this.store.history.setHistoryBatch(cache);
@@ -519,6 +528,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                             ? html`<growspace-analytics
                             .device=${parentDevice}
                             .deviceSnapshot=${subareaDeviceSnapshot}
+                            .metricSensors=${this._metricSensors}
                             @set-range=${this._handleSubareaRangeChange}
                           ></growspace-analytics>`
                             : ''}

@@ -25,6 +25,7 @@ export class GrowspaceAnalyticsUI extends LitElement {
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
   @property({ attribute: false }) deviceSnapshot: DeviceSnapshot | null = null;
   @property({ attribute: false }) sensorHistory: SensorHistories = {};
+  @property({ attribute: false }) metricSensors: Record<string, string[]> | undefined;
 
   static styles = [
     growspaceCardStyles,
@@ -105,6 +106,7 @@ export class GrowspaceAnalyticsUI extends LitElement {
           .device=${this.device}
           .deviceSnapshot=${this.deviceSnapshot}
           .sensorHistory=${this.sensorHistory}
+          .metricSensors=${this.metricSensors}
           .metrics=${item.metrics}
           .isCombined=${true}
           .range=${this.range}
@@ -137,6 +139,7 @@ export class GrowspaceAnalyticsUI extends LitElement {
         .device=${this.device}
         .deviceSnapshot=${this.deviceSnapshot}
         .sensorHistory=${this.sensorHistory}
+        .metricSensors=${this.metricSensors}
         .metricKey=${item.metrics[0]}
         .metrics=${item.metrics}
         .range=${this.range}

@@ -537,6 +537,29 @@ describe('computeEnvSeries — multi-sensor metrics', () => {
     expect(series[0].color).toBe(`color-mix(in srgb, ${base}, white 20%)`);
   });
 
+  it('leaves a multi-sensor VPD metric on its per-sensor colours, without status bands', () => {
+    const base = METRIC_CONFIG[MetricKey.VPD].color;
+    const device = {
+      deviceId: 'g1',
+      name: 'Tent',
+      environmentAttributes: { vpdSensors: ['sensor.v1', 'sensor.v2'] },
+    } as unknown as GrowspaceDevice;
+    const descriptors = computeMetricDescriptors(null, {}, undefined, device);
+
+    const series = computeEnvSeries(
+      descriptors,
+      {
+        'vpd:sensor.v1': [reading(30, '1.2')],
+        'vpd:sensor.v2': [reading(30, '1.4')],
+      },
+      [MetricKey.VPD],
+      windowOf(24)
+    );
+
+    expect(series.map((s) => s.color)).toEqual([base, `color-mix(in srgb, ${base}, white 20%)`]);
+    expect(series.every((s) => s.vpdBands === undefined)).toBe(true);
+  });
+
   it('skips a sensor whose history has not arrived', () => {
     const series = temperatureFor(
       { 'temperature:sensor.t2': [reading(30, '25')] },

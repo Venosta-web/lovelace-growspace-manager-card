@@ -310,7 +310,11 @@ function _buildSeries(
 
   const reduced = _reduce(points);
   const bounds = _axisBounds(descriptor, reduced, isCombined);
-  const vpdThresholds = key === MetricKey.VPD ? descriptor.vpdThresholds : undefined;
+  // Status bands describe *the* VPD trace; a multi-sensor VPD metric draws one
+  // trace per sensor, which stay on the metric colour rather than each claiming
+  // to be the growspace's status.
+  const vpdThresholds =
+    key === MetricKey.VPD && !spec.sensor ? descriptor.vpdThresholds : undefined;
   const lightHistory = vpdThresholds
     ? ChartUtils.normalizeHistory(histories[MetricKey.LIGHT] ?? [], MetricKey.LIGHT)
     : [];

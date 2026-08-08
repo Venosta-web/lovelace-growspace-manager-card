@@ -198,11 +198,10 @@ function _descriptor(
  * describe the same entities.
  */
 function _sensorsForMetric(
-  device: GrowspaceDevice,
-  key: string,
+  entityIds: string[],
   hassStates: HassStates
 ): MetricSensorRef[] {
-  return resolveMetricEntityIds(device, key, hassStates).map((entityId) => ({
+  return entityIds.map((entityId) => ({
     entityId,
     name: (hassStates[entityId]?.attributes?.friendly_name as string | undefined) || entityId,
   }));
@@ -218,21 +217,28 @@ function _sensorsForMetric(
  * Only migrated metrics appear. Callers treat an absent key as "not migrated"
  * rather than as an error.
  *
- * `device` supplies the metric→entity mapping. Without it the descriptors carry
- * no sensors, and a consumer sees every metric as single-sensor.
+ * `device` supplies the metric→entity mapping. Without it, and without an
+ * override, the descriptors carry no sensors and a consumer sees every metric as
+ * single-sensor.
+ *
+ * `metricSensorIds` lets a view context that resolves its own entities — the
+ * subarea card, whose four hero metrics come from its own `SensorReadings` and
+ * not from the parent growspace's config — declare them. A view must pass the
+ * same lists it keyed its histories by, since the two are read together.
  */
 export function computeMetricDescriptors(
   deviceSnapshot: DeviceSnapshot | null = null,
   hassStates: HassStates = {},
   overviewEntity?: OverviewEntitySnapshot,
-  device?: GrowspaceDevice | null
+  device?: GrowspaceDevice | null,
+  metricSensorIds?: Record<string, string[]>
 ): Record<string, MetricDescriptor> {
   const table = _descriptorTable(deviceSnapshot, hassStates, overviewEntity);
 
-  if (device) {
-    for (const [key, descriptor] of Object.entries(table)) {
-      descriptor.sensors = _sensorsForMetric(device, key, hassStates);
-    }
+  for (const [key, descriptor] of Object.entries(table)) {
+    const entityIds =
+      metricSensorIds?.[key] ?? (device ? resolveMetricEntityIds(device, key, hassStates) : []);
+    descriptor.sensors = _sensorsForMetric(entityIds, hassStates);
   }
 
   return table;
