@@ -5,8 +5,13 @@ import {
   HistoryTimeRange,
   GrowspaceDevice,
 } from '../../types';
-import { METRIC_ENTITY_KEYS, STORAGE_KEYS, WS_TYPE_GET_HISTORY_STATS } from '../../constants';
-import { resolveMetricEntityIds } from '../../slices/metric-descriptors';
+import { STORAGE_KEYS, WS_TYPE_GET_HISTORY_STATS } from '../../constants';
+import {
+  computeMetricDescriptors,
+  metricHistoryKeys,
+  type MetricHistoryKey,
+} from '../../slices/metric-descriptors';
+import { deviceSnapshots$ } from '../../slices/device-state';
 import { devices$ } from '../../slices/grid';
 import { callApi, hassCall, getHass } from '../../services/hass-call';
 import { HistoryStatsResponseSchema } from '../../schemas/api-schema';
@@ -121,6 +126,8 @@ export class GrowspaceHistoryStore {
 
   // --- Internals ---
   private readonly STORAGE_KEY_PREFIX = STORAGE_KEYS.HISTORY_PREFIX;
+  /** Bumped to 2 when the histories map stopped using `'metric:entity'` keys (#473). */
+  private readonly STORAGE_VERSION = 2;
   private readonly CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000;
   private _refreshInterval: number | null = null;
   private _selectedDeviceUnsub: (() => void) | null = null;
@@ -419,41 +426,11 @@ export class GrowspaceHistoryStore {
 
     const { start, end } = this.calculateTimeRange(range);
 
-    const metricsToFetch = ['optimal', ...Object.keys(METRIC_ENTITY_KEYS)];
+    const metricKeys = this._metricHistoryKeys(device);
 
-    const entityMap: Record<string, string> = {};
     const entitiesToFetch = new Set<string>();
-
-    // 1. Identify Overview Entity
-    if (device.overviewEntityId) {
-      entitiesToFetch.add(device.overviewEntityId);
-      // Map main overview entity to 'main' for timestamp tracking if needed,
-      // but usually main data is split into metrics.
-      // The controller logic mapped overview_entity_id to 'main' in some places,
-      // let's follow that pattern if consistent.
-    }
-
-    // 2. Identify Metric Entities
-    for (const metric of metricsToFetch) {
-      const entityIds = this.getEntityIdsForMetric(device, metric);
-      entityIds.forEach((entityId) => {
-        const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
-        entityMap[key] = entityId;
-        entitiesToFetch.add(entityId);
-      });
-    }
-
-    // 3. Identify Composite Keys (Multi-Device Graphs)
-    const activeGraphs = this.$activeEnvGraphs.get();
-    activeGraphs.forEach((key) => {
-      if (key.includes(':')) {
-        const [metric, entityId] = key.split(':');
-        if (metric && entityId) {
-          entityMap[key] = entityId;
-          entitiesToFetch.add(entityId);
-        }
-      }
-    });
+    if (device.overviewEntityId) entitiesToFetch.add(device.overviewEntityId);
+    metricKeys.forEach(({ entityId }) => entitiesToFetch.add(entityId));
 
     if (entitiesToFetch.size === 0) return;
 
@@ -467,19 +444,12 @@ export class GrowspaceHistoryStore {
 
     if (!batchResults) return;
 
-    // Overview/Main
-
-    // Metrics
     const formattedUpdates: Record<string, HistorySensorState[]> = {};
 
-    for (const metric of metricsToFetch) {
-      const entityIds = this.getEntityIdsForMetric(device, metric);
-      entityIds.forEach((entityId) => {
-        const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
-        const result = batchResults[entityId] || [];
-        formattedUpdates[key] = result;
-        this.updateLastTimestamp(key, result);
-      });
+    for (const { entityId, historyKey } of metricKeys) {
+      const result = batchResults[entityId] || [];
+      formattedUpdates[historyKey] = result;
+      this.updateLastTimestamp(historyKey, result);
     }
 
     this.setHistoryBatch(formattedUpdates);
@@ -503,40 +473,18 @@ export class GrowspaceHistoryStore {
     }
 
     const now = new Date();
-    const metricsToFetch = ['optimal', ...Object.keys(METRIC_ENTITY_KEYS)];
 
+    // Same descriptor-derived list the initial fetch used, filtered to the keys
+    // that actually carry a timestamp to continue from.
     const entityMap: Record<string, string> = {};
     const entitiesToFetch = new Set<string>();
 
-    // Overview
-    if (device.overviewEntityId) {
-      // Logic for overview delta if needed
-    }
-
-    for (const metric of metricsToFetch) {
-      const entityIds = this.getEntityIdsForMetric(device, metric);
-      entityIds.forEach((entityId) => {
-        const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
-        const lastTimestamp = currentTimestamps[key];
-        if (lastTimestamp) {
-          entityMap[key] = entityId;
-          entitiesToFetch.add(entityId);
-        }
-      });
-    }
-
-    // Composite Keys Delta
-    const activeGraphs = this.$activeEnvGraphs.get();
-    activeGraphs.forEach((key) => {
-      if (key.includes(':')) {
-        const [metric, entityId] = key.split(':');
-        const lastTimestamp = currentTimestamps[key];
-        if (metric && entityId && lastTimestamp) {
-          entityMap[key] = entityId;
-          entitiesToFetch.add(entityId);
-        }
+    for (const { entityId, historyKey } of this._metricHistoryKeys(device)) {
+      if (currentTimestamps[historyKey]) {
+        entityMap[historyKey] = entityId;
+        entitiesToFetch.add(entityId);
       }
-    });
+    }
 
     if (entitiesToFetch.size === 0) return;
 
@@ -604,7 +552,15 @@ export class GrowspaceHistoryStore {
       if (!raw) return false;
 
       const data = JSON.parse(raw);
-      if (!data || !data.version || !data.timestamp || !data.history) return false;
+      if (!data || !data.timestamp || !data.history) return false;
+
+      // A v1 payload is keyed by the retired `'metric:entity'` scheme (#473).
+      // Restoring it would seed keys nothing reads and timestamps the delta
+      // fetch would anchor to, so it is dropped and refetched instead.
+      if (data.version !== this.STORAGE_VERSION) {
+        localStorage.removeItem(key);
+        return false;
+      }
 
       const age = Date.now() - data.timestamp;
       if (age > this.CACHE_VALIDITY_MS) {
@@ -636,7 +592,7 @@ export class GrowspaceHistoryStore {
     try {
       const key = this.STORAGE_KEY_PREFIX + deviceId;
       const data = {
-        version: 1,
+        version: this.STORAGE_VERSION,
         timestamp: Date.now(),
         history: this.$historyCache.get(),
         timestamps: this.$lastTimestamps.get(),
@@ -650,16 +606,33 @@ export class GrowspaceHistoryStore {
   // --- Utils ---
 
   /**
-   * Delegates to the Metric Descriptor's resolver (ADR-0030) so the entities a
-   * history is fetched for are the same ones a descriptor describes.
+   * Every entity this store fetches for `device`, paired with the key its
+   * history is filed under.
+   *
+   * The store resolves nothing itself (ADR-0030): the Metric Descriptor table
+   * decides which entities back a metric, and `metricHistoryKeys` decides what
+   * the result is called. Both fetch paths go through here, so the initial
+   * fetch and the delta cannot ask for different entity sets.
+   *
+   * The table covers every metric in `METRIC_CONFIG`, which is a superset of
+   * the metrics that resolve to entities — a metric with no backing sensor
+   * contributes nothing, exactly as an unmapped metric did before.
    */
-  private getEntityIdsForMetric(device: GrowspaceDevice, metricKey: string): string[] {
-    return resolveMetricEntityIds(device, metricKey, getHass()?.states ?? {});
-  }
+  private _metricHistoryKeys(device: GrowspaceDevice): MetricHistoryKey[] {
+    const hassStates = getHass()?.states ?? {};
+    const descriptors = computeMetricDescriptors(
+      deviceSnapshots$.get().get(device.deviceId) ?? null,
+      hassStates,
+      device.overviewEntityId ? hassStates[device.overviewEntityId] : undefined,
+      device
+    );
 
-  private getEntityIdForMetric(device: GrowspaceDevice, metricKey: string): string | null {
-    const ids = this.getEntityIdsForMetric(device, metricKey);
-    return ids.length > 0 ? ids[0] : null;
+    return Object.entries(descriptors).flatMap(([metricKey, descriptor]) =>
+      metricHistoryKeys(
+        metricKey,
+        descriptor.sensors.map((sensor) => sensor.entityId)
+      )
+    );
   }
 
   private calculateTimeRange(range: '1h' | '6h' | '24h' | '7d') {

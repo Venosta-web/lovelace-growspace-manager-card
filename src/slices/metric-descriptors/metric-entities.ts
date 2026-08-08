@@ -9,8 +9,12 @@
  *
  * The mapping itself is a behaviour-preserving move of `history-store`'s
  * former `getEntityIdsForMetric`, down to its plural, snake_case and
- * per-metric special cases. `METRIC_ENTITY_KEYS` retires with the `':'`-joined
- * history keys in #473.
+ * per-metric special cases. `METRIC_ENTITY_KEYS` is its data table and stays
+ * here; what retired in #473 is `history-store`'s own copy of the lookup.
+ *
+ * `metricHistoryKeys` is the other half of the contract: the one place that
+ * decides what a fetched history is filed under. Fetcher and reader both call
+ * it, so neither can invent a key the other does not look up.
  */
 
 import { METRIC_ENTITY_KEYS } from '../../features/environment/constants';
@@ -18,6 +22,34 @@ import type { GrowspaceDevice } from '../../services/types';
 
 /** A states snapshot, passed in so resolution stays free of an injected `hass`. */
 export type MetricEntityStates = Record<string, unknown>;
+
+/** One sensor of a metric, paired with the histories-map key its data lands under. */
+export interface MetricHistoryKey {
+  entityId: string;
+  historyKey: string;
+}
+
+/**
+ * The histories-map keys for `metricKey`, one per backing entity, in the given
+ * order.
+ *
+ * A single-sensor metric is filed under the metric key itself — what every
+ * consumer of `SensorHistories` reads (`histories.vpd`, `histories.light`), and
+ * the shape `$combinedHistory` seeds. A multi-sensor metric files each sensor
+ * under its own entity id, so the map is keyed by things that exist rather than
+ * by `'metric:entity'` strings a reader has to split apart (#473).
+ *
+ * The two never collide: an entity id contains a dot and a metric key does not.
+ * Two metrics that share an entity share a bucket of *raw* states, which is
+ * correct — normalization is per-metric and happens downstream.
+ */
+export function metricHistoryKeys(metricKey: string, entityIds: string[]): MetricHistoryKey[] {
+  const multiSensor = entityIds.length > 1;
+  return entityIds.map((entityId) => ({
+    entityId,
+    historyKey: multiSensor ? entityId : metricKey,
+  }));
+}
 
 /**
  * Every entity backing `metricKey` on `device`, in the order a caller should

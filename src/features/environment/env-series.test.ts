@@ -469,8 +469,8 @@ describe('computeEnvSeries — multi-sensor metrics', () => {
     const base = METRIC_CONFIG[MetricKey.TEMPERATURE].color;
     const series = temperatureFor(
       {
-        'temperature:sensor.t1': [reading(30, '20')],
-        'temperature:sensor.t2': [reading(30, '25')],
+        'sensor.t1': [reading(30, '20')],
+        'sensor.t2': [reading(30, '25')],
       },
       'sensor.t1',
       'sensor.t2'
@@ -489,9 +489,9 @@ describe('computeEnvSeries — multi-sensor metrics', () => {
     const base = METRIC_CONFIG[MetricKey.TEMPERATURE].color;
     const series = temperatureFor(
       {
-        'temperature:sensor.t1': [reading(30, '20')],
-        'temperature:sensor.t2': [reading(30, '25')],
-        'temperature:sensor.t3': [reading(30, '30')],
+        'sensor.t1': [reading(30, '20')],
+        'sensor.t2': [reading(30, '25')],
+        'sensor.t3': [reading(30, '30')],
       },
       'sensor.t1',
       'sensor.t2',
@@ -508,8 +508,8 @@ describe('computeEnvSeries — multi-sensor metrics', () => {
   it('reduces each sensor against its own history', () => {
     const series = temperatureFor(
       {
-        'temperature:sensor.t1': [reading(120, '18'), reading(60, '20')],
-        'temperature:sensor.t2': [reading(120, '25'), reading(60, '30')],
+        'sensor.t1': [reading(120, '18'), reading(60, '20')],
+        'sensor.t2': [reading(120, '25'), reading(60, '30')],
       },
       'sensor.t1',
       'sensor.t2'
@@ -523,8 +523,8 @@ describe('computeEnvSeries — multi-sensor metrics', () => {
     const base = METRIC_CONFIG[MetricKey.TEMPERATURE].color;
     const series = temperatureFor(
       {
-        'temperature:sensor.t1': [reading(30, 'unavailable')],
-        'temperature:sensor.t2': [reading(30, '25')],
+        'sensor.t1': [reading(30, 'unavailable')],
+        'sensor.t2': [reading(30, '25')],
       },
       'sensor.t1',
       'sensor.t2'
@@ -548,8 +548,8 @@ describe('computeEnvSeries — multi-sensor metrics', () => {
     const series = computeEnvSeries(
       descriptors,
       {
-        'vpd:sensor.v1': [reading(30, '1.2')],
-        'vpd:sensor.v2': [reading(30, '1.4')],
+        'sensor.v1': [reading(30, '1.2')],
+        'sensor.v2': [reading(30, '1.4')],
       },
       [MetricKey.VPD],
       windowOf(24)
@@ -559,12 +559,24 @@ describe('computeEnvSeries — multi-sensor metrics', () => {
     expect(series.every((s) => s.vpdBands === undefined)).toBe(true);
   });
 
-  it('skips a sensor whose history has not arrived', () => {
-    const series = temperatureFor(
-      { 'temperature:sensor.t2': [reading(30, '25')] },
+  it('reads a multi-sensor history by entity id, not by a composite key', () => {
+    const composite = temperatureFor(
+      { 'temperature:sensor.t1': [reading(30, '20')] },
       'sensor.t1',
       'sensor.t2'
     );
+    const structural = temperatureFor(
+      { 'sensor.t1': [reading(30, '20')] },
+      'sensor.t1',
+      'sensor.t2'
+    );
+
+    expect(composite).toHaveLength(0);
+    expect(structural.map((s) => s.id)).toEqual(['temperature:sensor.t1']);
+  });
+
+  it('skips a sensor whose history has not arrived', () => {
+    const series = temperatureFor({ 'sensor.t2': [reading(30, '25')] }, 'sensor.t1', 'sensor.t2');
 
     expect(series.map((s) => s.id)).toEqual(['temperature:sensor.t2']);
   });

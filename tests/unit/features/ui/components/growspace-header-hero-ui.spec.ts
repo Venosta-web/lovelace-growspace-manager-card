@@ -37,7 +37,10 @@ describe('GrowspaceHeaderHeroUI', () => {
   });
 
   it('renders one hero-card per chip', async () => {
-    const chips = [makeChip({ key: 'temperature' }), makeChip({ key: 'humidity', label: 'Humidity' })];
+    const chips = [
+      makeChip({ key: 'temperature' }),
+      makeChip({ key: 'humidity', label: 'Humidity' }),
+    ];
     const el = await fixture<GrowspaceHeaderHeroUI>(html`
       <growspace-header-hero-ui .chips=${chips}></growspace-header-hero-ui>
     `);
@@ -112,10 +115,13 @@ describe('GrowspaceHeaderHeroUI', () => {
     const handler = vi.fn();
     const chips = [makeChip({ key: 'humidity' })];
     const el = await fixture<GrowspaceHeaderHeroUI>(html`
-      <growspace-header-hero-ui .chips=${chips} @chip-drag-start=${handler}></growspace-header-hero-ui>
+      <growspace-header-hero-ui
+        .chips=${chips}
+        @chip-drag-start=${handler}
+      ></growspace-header-hero-ui>
     `);
     const card = el.shadowRoot!.querySelector('.hero-card') as HTMLElement;
-    
+
     const dataTransfer = {
       setData: vi.fn(),
       effectAllowed: '',
@@ -124,7 +130,7 @@ describe('GrowspaceHeaderHeroUI', () => {
     Object.defineProperty(event, 'dataTransfer', { value: dataTransfer });
 
     card?.dispatchEvent(event);
-    
+
     expect(dataTransfer.setData).toHaveBeenCalledWith('text/plain', 'humidity');
     expect(dataTransfer.effectAllowed).toBe('move');
     expect(handler).toHaveBeenCalledOnce();
@@ -138,12 +144,12 @@ describe('GrowspaceHeaderHeroUI', () => {
       <growspace-header-hero-ui .chips=${chips} @chip-drop=${handler}></growspace-header-hero-ui>
     `);
     const card = el.shadowRoot!.querySelector('.hero-card') as HTMLElement;
-    
+
     const event = new DragEvent('drop', { bubbles: true, composed: true, cancelable: true });
     vi.spyOn(event, 'preventDefault');
 
     card?.dispatchEvent(event);
-    
+
     expect(event.preventDefault).toHaveBeenCalled();
     expect(handler).toHaveBeenCalledOnce();
     expect(handler.mock.calls[0][0].detail.targetMetric).toBe('temperature');
@@ -155,7 +161,7 @@ describe('GrowspaceHeaderHeroUI', () => {
       <growspace-header-hero-ui .chips=${chips}></growspace-header-hero-ui>
     `);
     const card = el.shadowRoot!.querySelector('.hero-card') as HTMLElement;
-    
+
     const event = new DragEvent('dragover', { bubbles: true, composed: true, cancelable: true });
     vi.spyOn(event, 'preventDefault');
 
@@ -163,13 +169,20 @@ describe('GrowspaceHeaderHeroUI', () => {
     expect(event.preventDefault).toHaveBeenCalled();
   });
 
-  it('renders multi-entity sparklines when multiple entity IDs are provided', async () => {
-    const chips = [makeChip({ key: 'co2', entityIds: ['id1', 'id2'] })];
-    const historyCache = {
-      'co2:id1': [{ x: 0, y: 400 }, { x: 1, y: 450 }],
-      'co2:id2': [{ x: 0, y: 500 }, { x: 1, y: 550 }],
-    };
-    
+  it('renders multi-entity sparklines from histories keyed by entity id', async () => {
+    const chips = [makeChip({ key: 'co2', entityIds: ['sensor.id1', 'sensor.id2'] })];
+    // Keyed the way `history-store` files a multi-sensor metric since #473 —
+    // by bare entity id, not by `'co2:sensor.id1'`.
+    const first = [
+      { x: 0, y: 400 },
+      { x: 1, y: 450 },
+    ];
+    const second = [
+      { x: 0, y: 500 },
+      { x: 1, y: 550 },
+    ];
+    const historyCache = { 'sensor.id1': first, 'sensor.id2': second };
+
     vi.spyOn(ChartUtils, 'generateSparklinePath').mockReturnValue('M 0 0 L 10 10');
 
     const el = await fixture<GrowspaceHeaderHeroUI>(html`
@@ -179,12 +192,40 @@ describe('GrowspaceHeaderHeroUI', () => {
       ></growspace-header-hero-ui>
     `);
 
+    // The component looked each sensor's history up and found it — the
+    // assertion that a key-scheme drift would break.
+    const histories = vi.mocked(ChartUtils.generateSparklinePath).mock.calls.map((call) => call[0]);
+    expect(histories).toContain(first);
+    expect(histories).toContain(second);
+
     const sparkline = el.shadowRoot!.querySelector('.hero-sparkline');
     expect(sparkline).not.toBeNull();
     const paths = sparkline!.querySelectorAll('path');
     // 2 paths for history + 1 for gradient area
     expect(paths.length).toBe(3);
     expect(paths[1].getAttribute('stroke')).toContain('color-mix');
+  });
+
+  it('does not read a multi-entity sparkline from a retired composite key', async () => {
+    const chips = [makeChip({ key: 'co2', entityIds: ['sensor.id1', 'sensor.id2'] })];
+    const historyCache = {
+      'co2:sensor.id1': [{ x: 0, y: 400 }],
+      'co2:sensor.id2': [{ x: 0, y: 500 }],
+    };
+
+    vi.spyOn(ChartUtils, 'generateSparklinePath').mockImplementation((history: any) =>
+      history?.length ? 'M 0 0 L 10 10' : ''
+    );
+
+    const el = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${chips}
+        .historyCache=${historyCache}
+      ></growspace-header-hero-ui>
+    `);
+
+    const sparkline = el.shadowRoot!.querySelector('.hero-sparkline');
+    expect(sparkline?.querySelectorAll('path').length ?? 0).toBe(0);
   });
 
   it('renders VPD sparkline segments when chip is vpd and device/hass are present', async () => {
@@ -196,9 +237,9 @@ describe('GrowspaceHeaderHeroUI', () => {
           attributes: {
             day_vpd_target_min: 0.9,
             day_vpd_target_max: 1.1,
-          }
-        }
-      }
+          },
+        },
+      },
     } as any;
     const historyCache = {
       vpd: [{ x: 0, y: 1.0 }],
@@ -206,7 +247,7 @@ describe('GrowspaceHeaderHeroUI', () => {
     };
 
     vi.spyOn(ChartUtils, 'generateVpdSparklineSegments').mockReturnValue([
-      { path: 'M 0 0 L 10 10', color: 'green' }
+      { path: 'M 0 0 L 10 10', color: 'green' },
     ]);
 
     const el = await fixture<GrowspaceHeaderHeroUI>(html`
@@ -231,9 +272,9 @@ describe('GrowspaceHeaderHeroUI', () => {
     const hass = {
       states: {
         'sensor.grow_tent_vpd': {
-          attributes: {}
-        }
-      }
+          attributes: {},
+        },
+      },
     } as any;
     const historyCache = { vpd: [{ x: 0, y: 1.0 }] };
 
@@ -254,7 +295,7 @@ describe('GrowspaceHeaderHeroUI', () => {
       expect.anything(),
       {
         day: { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6 },
-        night: { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6 }
+        night: { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6 },
       },
       expect.anything(),
       expect.anything()
@@ -264,9 +305,12 @@ describe('GrowspaceHeaderHeroUI', () => {
   it('renders single-entity sparkline when path is generated', async () => {
     const chips = [makeChip({ key: 'temperature' })];
     const historyCache = {
-      temperature: [{ x: 0, y: 20 }, { x: 1, y: 25 }],
+      temperature: [
+        { x: 0, y: 20 },
+        { x: 1, y: 25 },
+      ],
     };
-    
+
     vi.spyOn(ChartUtils, 'generateSparklinePath').mockReturnValue('M 0 0 L 10 10');
 
     const el = await fixture<GrowspaceHeaderHeroUI>(html`
@@ -288,9 +332,9 @@ describe('GrowspaceHeaderHeroUI', () => {
         'sensor.grow_tent_vpd': {
           attributes: {
             night_vpd_target_min: 0.5,
-          }
-        }
-      }
+          },
+        },
+      },
     } as any;
     const historyCache = { vpd: [{ x: 0, y: 1.0 }] };
 
@@ -310,7 +354,7 @@ describe('GrowspaceHeaderHeroUI', () => {
       expect.anything(),
       expect.anything(),
       expect.objectContaining({
-        night: expect.objectContaining({ targetMin: 0.5 })
+        night: expect.objectContaining({ targetMin: 0.5 }),
       }),
       expect.anything(),
       expect.anything()
@@ -340,7 +384,7 @@ describe('GrowspaceHeaderHeroUI', () => {
       expect.anything(),
       {
         day: { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6 },
-        night: { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6 }
+        night: { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6 },
       },
       expect.anything(),
       expect.anything()
@@ -353,7 +397,7 @@ describe('GrowspaceHeaderHeroUI', () => {
       'co2:id1': [{ x: 0, y: 400 }],
       'co2:id2': [{ x: 0, y: 500 }],
     };
-    
+
     // Return null for the first entity, then M 0 0 for the second
     vi.spyOn(ChartUtils, 'generateSparklinePath')
       .mockReturnValueOnce(null as any)
@@ -378,17 +422,20 @@ describe('GrowspaceHeaderHeroUI', () => {
     `);
     const card = el.shadowRoot!.querySelector('.hero-card');
     expect(card?.classList.contains('active')).toBe(false);
-    expect(Array.from(card?.classList || []).some(c => c.startsWith('status-'))).toBe(false);
+    expect(Array.from(card?.classList || []).some((c) => c.startsWith('status-'))).toBe(false);
   });
 
   it('handles missing dataTransfer in dragstart', async () => {
     const handler = vi.fn();
     const chips = [makeChip()];
     const el = await fixture<GrowspaceHeaderHeroUI>(html`
-      <growspace-header-hero-ui .chips=${chips} @chip-drag-start=${handler}></growspace-header-hero-ui>
+      <growspace-header-hero-ui
+        .chips=${chips}
+        @chip-drag-start=${handler}
+      ></growspace-header-hero-ui>
     `);
     const card = el.shadowRoot!.querySelector('.hero-card') as HTMLElement;
-    
+
     // Explicitly nullify dataTransfer
     const event = new DragEvent('dragstart', { bubbles: true, composed: true });
     Object.defineProperty(event, 'dataTransfer', { value: null });
@@ -417,7 +464,7 @@ describe('GrowspaceHeaderHeroUI', () => {
 
   it('sets draggable attribute correctly based on mobile settings', async () => {
     const chips = [makeChip()];
-    
+
     // Case 1: Not mobile -> draggable
     const el1 = await fixture<GrowspaceHeaderHeroUI>(html`
       <growspace-header-hero-ui .chips=${chips} .isMobile=${false}></growspace-header-hero-ui>
@@ -426,13 +473,21 @@ describe('GrowspaceHeaderHeroUI', () => {
 
     // Case 2: Mobile, no link -> NOT draggable
     const el2 = await fixture<GrowspaceHeaderHeroUI>(html`
-      <growspace-header-hero-ui .chips=${chips} .isMobile=${true} .mobileLink=${false}></growspace-header-hero-ui>
+      <growspace-header-hero-ui
+        .chips=${chips}
+        .isMobile=${true}
+        .mobileLink=${false}
+      ></growspace-header-hero-ui>
     `);
     expect(el2.shadowRoot!.querySelector('.hero-card')?.getAttribute('draggable')).toBe('false');
 
     // Case 3: Mobile, with link -> draggable
     const el3 = await fixture<GrowspaceHeaderHeroUI>(html`
-      <growspace-header-hero-ui .chips=${chips} .isMobile=${true} .mobileLink=${true}></growspace-header-hero-ui>
+      <growspace-header-hero-ui
+        .chips=${chips}
+        .isMobile=${true}
+        .mobileLink=${true}
+      ></growspace-header-hero-ui>
     `);
     expect(el3.shadowRoot!.querySelector('.hero-card')?.getAttribute('draggable')).toBe('true');
   });
@@ -475,9 +530,7 @@ describe('GrowspaceHeaderHeroUI', () => {
   });
 
   it('renders crop steering phase hero card when chip is steering_phase and irrigation strategy is enabled', async () => {
-    const chips = [
-      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P3 · 22:40' })
-    ];
+    const chips = [makeChip({ key: 'steering_phase', label: 'Phase', value: 'P3 · 22:40' })];
     const strategy = {
       enabled: true,
       targetVwcPercent: 60,
@@ -496,15 +549,13 @@ describe('GrowspaceHeaderHeroUI', () => {
     // Verify it renders the phase-hero-card class
     const card = el.shadowRoot!.querySelector('.phase-hero-card');
     expect(card).not.toBeNull();
-    
+
     // Since historyCache is empty, it should not render a chart SVG
     expect(el.shadowRoot!.querySelector('.phase-chart-svg')).toBeNull();
   });
 
   it('returns null chart and does not render SVG when historyCache is invalid or lacks enough data points', async () => {
-    const chips = [
-      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P3 · 22:40' })
-    ];
+    const chips = [makeChip({ key: 'steering_phase', label: 'Phase', value: 'P3 · 22:40' })];
     const strategy = {
       enabled: true,
       targetVwcPercent: 60,
@@ -516,9 +567,7 @@ describe('GrowspaceHeaderHeroUI', () => {
 
     // Case 1: Only 1 data point
     const historyCache1 = {
-      soil_moisture: [
-        { last_changed: new Date().toISOString(), state: '55.5' }
-      ]
+      soil_moisture: [{ last_changed: new Date().toISOString(), state: '55.5' }],
     };
     const el1 = await fixture<GrowspaceHeaderHeroUI>(html`
       <growspace-header-hero-ui
@@ -533,8 +582,8 @@ describe('GrowspaceHeaderHeroUI', () => {
     const historyCache2 = {
       soil_moisture: [
         { last_changed: new Date(Date.now() - 3600000).toISOString(), state: 'unavailable' },
-        { last_changed: new Date().toISOString(), state: 'unknown' }
-      ]
+        { last_changed: new Date().toISOString(), state: 'unknown' },
+      ],
     };
     const el2 = await fixture<GrowspaceHeaderHeroUI>(html`
       <growspace-header-hero-ui
@@ -547,9 +596,7 @@ describe('GrowspaceHeaderHeroUI', () => {
   });
 
   it('renders SVG chart with target and trigger lines when valid history cache is provided', async () => {
-    const chips = [
-      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30' })
-    ];
+    const chips = [makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30' })];
     const strategy = {
       enabled: true,
       targetVwcPercent: 60,
@@ -564,7 +611,7 @@ describe('GrowspaceHeaderHeroUI', () => {
         { last_changed: new Date(now - 24 * 60 * 60 * 1000).toISOString(), state: '50.0' },
         { last_changed: new Date(now - 12 * 60 * 60 * 1000).toISOString(), state: '62.0' },
         { last_changed: new Date(now).toISOString(), state: '55.5' },
-      ]
+      ],
     };
 
     const el = await fixture<GrowspaceHeaderHeroUI>(html`
@@ -586,14 +633,12 @@ describe('GrowspaceHeaderHeroUI', () => {
 
     // Verify SVG elements (lines, texts for Target VWC and P3 trigger VWC)
     const texts = Array.from(svg!.querySelectorAll('text'));
-    expect(texts.some(t => t.textContent?.includes('Target 60%'))).toBe(true);
-    expect(texts.some(t => t.textContent?.includes('P3 trigger 45%'))).toBe(true);
+    expect(texts.some((t) => t.textContent?.includes('Target 60%'))).toBe(true);
+    expect(texts.some((t) => t.textContent?.includes('P3 trigger 45%'))).toBe(true);
   });
 
   it('handles mousemove and mouseleave on SVG chart for hover details', async () => {
-    const chips = [
-      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30' })
-    ];
+    const chips = [makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30' })];
     const strategy = {
       enabled: true,
       targetVwcPercent: 60,
@@ -608,7 +653,7 @@ describe('GrowspaceHeaderHeroUI', () => {
         { last_changed: new Date(now - 24 * 60 * 60 * 1000).toISOString(), state: '50.0' },
         { last_changed: new Date(now - 12 * 60 * 60 * 1000).toISOString(), state: '62.0' },
         { last_changed: new Date(now).toISOString(), state: '55.5' },
-      ]
+      ],
     };
 
     const el = await fixture<GrowspaceHeaderHeroUI>(html`
@@ -659,9 +704,7 @@ describe('GrowspaceHeaderHeroUI', () => {
   });
 
   it('renders multi-day phase segments when timeRange is 7d', async () => {
-    const chips = [
-      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30' })
-    ];
+    const chips = [makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30' })];
     const strategy = {
       enabled: true,
       targetVwcPercent: 60,
@@ -675,7 +718,7 @@ describe('GrowspaceHeaderHeroUI', () => {
       soil_moisture: [
         { last_changed: new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString(), state: '50.0' },
         { last_changed: new Date(now).toISOString(), state: '55.5' },
-      ]
+      ],
     };
 
     const el = await fixture<GrowspaceHeaderHeroUI>(html`
@@ -696,9 +739,7 @@ describe('GrowspaceHeaderHeroUI', () => {
     const toggleHandler = vi.fn();
     const dragHandler = vi.fn();
     const dropHandler = vi.fn();
-    const chips = [
-      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30' })
-    ];
+    const chips = [makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30' })];
     const strategy = {
       enabled: true,
       targetVwcPercent: 60,
@@ -712,7 +753,7 @@ describe('GrowspaceHeaderHeroUI', () => {
       soil_moisture: [
         { last_changed: new Date(now - 3600000).toISOString(), state: '50.0' },
         { last_changed: new Date(now).toISOString(), state: '55.5' },
-      ]
+      ],
     };
 
     const el = await fixture<GrowspaceHeaderHeroUI>(html`
@@ -740,7 +781,11 @@ describe('GrowspaceHeaderHeroUI', () => {
     expect(dragHandler).toHaveBeenCalledOnce();
 
     // Trigger dragover
-    const dragOverEvent = new DragEvent('dragover', { bubbles: true, composed: true, cancelable: true });
+    const dragOverEvent = new DragEvent('dragover', {
+      bubbles: true,
+      composed: true,
+      cancelable: true,
+    });
     vi.spyOn(dragOverEvent, 'preventDefault');
     card.dispatchEvent(dragOverEvent);
     expect(dragOverEvent.preventDefault).toHaveBeenCalled();
@@ -754,9 +799,7 @@ describe('GrowspaceHeaderHeroUI', () => {
   });
 
   it('renders P3 Dryback badge when current phase is P3', async () => {
-    const chips = [
-      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P3 · 22:40' })
-    ];
+    const chips = [makeChip({ key: 'steering_phase', label: 'Phase', value: 'P3 · 22:40' })];
     const strategy = {
       enabled: true,
       targetVwcPercent: 60,
@@ -770,7 +813,7 @@ describe('GrowspaceHeaderHeroUI', () => {
       soil_moisture: [
         { last_changed: new Date(now - 3600000).toISOString(), state: '50.0' },
         { last_changed: new Date(now).toISOString(), state: '55.5' },
-      ]
+      ],
     };
 
     const el = await fixture<GrowspaceHeaderHeroUI>(html`
@@ -799,4 +842,3 @@ describe('GrowspaceHeaderHeroUI', () => {
     expect(chart.hoverVwc(1.5)).toBe(60.0);
   });
 });
-

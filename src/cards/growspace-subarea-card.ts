@@ -45,6 +45,7 @@ import { variables } from '../styles/variables';
 
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { toggleEnvGraph } from '../slices/ui';
+import { metricHistoryKeys } from '../slices/metric-descriptors';
 import { BootstrapController } from '../controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
@@ -360,12 +361,10 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             const cache: Record<string, any[]> = {};
 
             for (const { metric, entityIds } of metricEntities) {
-                if (entityIds.length === 1) {
-                    cache[metric] = batchResults[entityIds[0]] || [];
-                } else {
-                    entityIds.forEach((id) => {
-                        cache[`${metric}:${id}`] = batchResults[id] || [];
-                    });
+                // Keyed through the shared function so this view's injected
+                // histories are filed exactly where the chart looks (#473).
+                for (const { entityId, historyKey } of metricHistoryKeys(metric, entityIds)) {
+                    cache[historyKey] = batchResults[entityId] || [];
                 }
             }
 

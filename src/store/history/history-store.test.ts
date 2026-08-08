@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GrowspaceHistoryStore, getHistory, getBatchHistory, getHistoryStats } from './history-store';
+import {
+  GrowspaceHistoryStore,
+  getHistory,
+  getBatchHistory,
+  getHistoryStats,
+} from './history-store';
 import type { GrowspaceDevice } from '../../types';
 import { atom } from 'nanostores';
 import { setDevices } from '../../slices/grid';
@@ -138,7 +143,7 @@ describe('GrowspaceHistoryStore - history transport', () => {
   });
 
   beforeEach(() => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {});
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
   });
 
@@ -157,7 +162,13 @@ describe('GrowspaceHistoryStore - history transport', () => {
   });
 
   it('WS fallback to REST: store receives data when WS fails but REST succeeds', async () => {
-    const point = { entity_id: TEMP_ENTITY, state: '18', last_changed: '2024-01-02T00:00:00Z', last_updated: '2024-01-02T00:00:00Z', attributes: {} };
+    const point = {
+      entity_id: TEMP_ENTITY,
+      state: '18',
+      last_changed: '2024-01-02T00:00:00Z',
+      last_updated: '2024-01-02T00:00:00Z',
+      attributes: {},
+    };
     vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('WS failed'));
     vi.mocked(hassCallModule.callApi).mockResolvedValueOnce([[point]]);
     const store = makeTransportStore();
@@ -370,7 +381,7 @@ describe('GrowspaceHistoryStore - localStorage', () => {
       last_updated: '2024-01-01T00:00:00Z',
     };
     const stored = {
-      version: 1,
+      version: 2,
       timestamp: Date.now(),
       history: { temperature: [point] },
       timestamps: { temperature: '2024-01-01T00:00:00Z' },
@@ -394,13 +405,13 @@ describe('GrowspaceHistoryStore - localStorage', () => {
 
   it('discards expired localStorage data and removes the key', () => {
     const stored = {
-      version: 1,
+      version: 2,
       timestamp: Date.now() - 25 * 60 * 60 * 1000, // 25 hours ago
       history: { temperature: [] },
       timestamps: {},
     };
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(JSON.stringify(stored));
-    const removeSpy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => { });
+    const removeSpy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {});
 
     const device = {
       deviceId: 'dev1',
@@ -414,6 +425,40 @@ describe('GrowspaceHistoryStore - localStorage', () => {
     expect(removeSpy).toHaveBeenCalled();
   });
 
+  it('discards a v1 cache keyed by the retired composite scheme, leaving no stale keys', () => {
+    const point = {
+      value: '22',
+      last_changed: '2024-01-01T00:00:00Z',
+      last_updated: '2024-01-01T00:00:00Z',
+    };
+    const stored = {
+      version: 1,
+      timestamp: Date.now(),
+      history: {
+        'temperature:sensor.tent1_temp1': [point],
+        'temperature:sensor.tent1_temp2': [point],
+      },
+      timestamps: { 'temperature:sensor.tent1_temp1': '2024-01-01T00:00:00Z' },
+    };
+    vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(JSON.stringify(stored));
+    const removeSpy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {});
+
+    const device = {
+      deviceId: 'dev1',
+      name: 'Tent 1',
+      environmentAttributes: {},
+    } as unknown as GrowspaceDevice;
+    setDevices([device]);
+    const store = new GrowspaceHistoryStore(atom<string | null>('dev1'));
+
+    expect(removeSpy).toHaveBeenCalled();
+    expect(store.$historyCache.get()).toEqual({});
+    // No stale timestamp survives, so the next refresh is a full fetch rather
+    // than a delta anchored to a key nothing writes any more.
+    expect(store.$lastTimestamps.get()).toEqual({});
+    expect(store.$historyLoaded.get()).toBe(false);
+  });
+
   it('handles malformed localStorage JSON without throwing', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('{not valid json}');
 
@@ -423,7 +468,7 @@ describe('GrowspaceHistoryStore - localStorage', () => {
 
   it('loads cached data that has no timestamps field gracefully', () => {
     const stored = {
-      version: 1,
+      version: 2,
       timestamp: Date.now(),
       history: { temperature: [] },
       // intentionally no `timestamps` field
@@ -483,7 +528,9 @@ describe('GrowspaceHistoryStore - _mergeDeltaData', () => {
   });
 
   it('appends newer data points to existing cache', () => {
-    const existing = [{ value: '20', last_updated: '2024-01-01T00:00:00Z', last_changed: '' } as any];
+    const existing = [
+      { value: '20', last_updated: '2024-01-01T00:00:00Z', last_changed: '' } as any,
+    ];
     store.setHistoryData('temperature', existing);
     const delta = [{ value: '22', last_updated: '2024-01-01T01:00:00Z', last_changed: '' } as any];
     (store as any)._mergeDeltaData('temperature', delta);
@@ -491,9 +538,13 @@ describe('GrowspaceHistoryStore - _mergeDeltaData', () => {
   });
 
   it('ignores delta points that are not newer than existing data', () => {
-    const existing = [{ value: '20', last_updated: '2024-01-01T01:00:00Z', last_changed: '' } as any];
+    const existing = [
+      { value: '20', last_updated: '2024-01-01T01:00:00Z', last_changed: '' } as any,
+    ];
     store.setHistoryData('temperature', existing);
-    const olderDelta = [{ value: '18', last_updated: '2024-01-01T00:00:00Z', last_changed: '' } as any];
+    const olderDelta = [
+      { value: '18', last_updated: '2024-01-01T00:00:00Z', last_changed: '' } as any,
+    ];
     (store as any)._mergeDeltaData('temperature', olderDelta);
     expect(store.$historyCache.get()['temperature']).toHaveLength(1);
   });
@@ -508,7 +559,9 @@ describe('GrowspaceHistoryStore - _mergeDeltaData', () => {
   });
 
   it('filters delta using last_changed when delta lacks last_updated but existing has it', () => {
-    const existing = [{ value: '20', last_updated: '2024-01-01T00:00:00Z', last_changed: '' } as any];
+    const existing = [
+      { value: '20', last_updated: '2024-01-01T00:00:00Z', last_changed: '' } as any,
+    ];
     store.setHistoryData('temperature', existing);
     const delta = [{ value: '22', last_changed: '2024-01-01T01:00:00Z' } as any];
     (store as any)._mergeDeltaData('temperature', delta);
@@ -516,7 +569,9 @@ describe('GrowspaceHistoryStore - _mergeDeltaData', () => {
   });
 
   it('discards an older delta point that uses only last_changed for its timestamp', () => {
-    const existing = [{ value: '20', last_updated: '2024-01-01T02:00:00Z', last_changed: '' } as any];
+    const existing = [
+      { value: '20', last_updated: '2024-01-01T02:00:00Z', last_changed: '' } as any,
+    ];
     store.setHistoryData('temperature', existing);
     // delta has only last_changed and it's OLDER than existing — should be discarded
     const olderDelta = [{ value: '18', last_changed: '2024-01-01T00:00:00Z' } as any];
@@ -568,218 +623,6 @@ describe('GrowspaceHistoryStore - _getIntervalForRange', () => {
 });
 
 // ---------------------------------------------------------------------------
-// getEntityIdsForMetric / getEntityIdForMetric (private, tested directly)
-// ---------------------------------------------------------------------------
-
-describe('GrowspaceHistoryStore - getEntityIdsForMetric', () => {
-  let store: GrowspaceHistoryStore;
-
-  beforeEach(() => {
-    store = makeStore();
-  });
-
-  it('returns plural sensor ids when temperatureSensors array is present', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      environmentAttributes: {
-        temperatureSensors: ['sensor.tent1_temp1', 'sensor.tent1_temp2'],
-      },
-    } as unknown as GrowspaceDevice;
-    const ids = (store as any).getEntityIdsForMetric(device, 'temperature');
-    expect(ids).toEqual(['sensor.tent1_temp1', 'sensor.tent1_temp2']);
-  });
-
-  it('derives optimal entity id from overviewEntityId slug', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      overviewEntityId: 'sensor.tent_1_overview',
-      environmentAttributes: {},
-    } as unknown as GrowspaceDevice;
-    const ids = (store as any).getEntityIdsForMetric(device, 'optimal');
-    expect(ids).toEqual(['binary_sensor.tent_1_optimal_conditions']);
-  });
-
-  it('uses cure-specific optimal entity id for cure devices', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Cure',
-      environmentAttributes: {},
-    } as unknown as GrowspaceDevice;
-    const ids = (store as any).getEntityIdsForMetric(device, 'optimal');
-    expect(ids).toEqual(['binary_sensor.cure_optimal_curing']);
-  });
-
-  it('uses dry-specific optimal entity id for dry devices', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Dry',
-      environmentAttributes: {},
-    } as unknown as GrowspaceDevice;
-    const ids = (store as any).getEntityIdsForMetric(device, 'optimal');
-    expect(ids).toEqual(['binary_sensor.dry_optimal_drying']);
-  });
-
-  it('returns empty array for an unknown metric key', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      environmentAttributes: {},
-    } as unknown as GrowspaceDevice;
-    const ids = (store as any).getEntityIdsForMetric(device, 'completely_unknown_metric');
-    expect(ids).toEqual([]);
-  });
-
-  it('reads environmentAttributes from snake_case environment_attributes fallback', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      // no camelCase environmentAttributes — use snake_case
-      environment_attributes: { temperatureSensor: 'sensor.temp' },
-    } as unknown as GrowspaceDevice;
-    const ids = (store as any).getEntityIdsForMetric(device, 'temperature');
-    expect(ids).toEqual(['sensor.temp']);
-  });
-
-  it('returns empty array when device has no environment attributes at all', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      // neither environmentAttributes nor environment_attributes
-    } as unknown as GrowspaceDevice;
-    const ids = (store as any).getEntityIdsForMetric(device, 'temperature');
-    expect(ids).toEqual([]);
-  });
-
-  it('skips irrigation entity when value is not a string', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      irrigationConfig: { irrigationPumpEntity: 42 }, // numeric, not a string
-      environmentAttributes: {},
-    } as unknown as GrowspaceDevice;
-    const ids = (store as any).getEntityIdsForMetric(device, 'irrigation');
-    expect(ids).toEqual([]);
-  });
-
-  it('returns the calculated VPD entity when it exists in hass states', () => {
-    const calculatedId = 'sensor.tent_1_calculated_vpd';
-    vi.mocked(hassCallModule.getHass).mockReturnValue({
-      states: { [calculatedId]: { state: '1.2' } },
-    } as any);
-    const storeWithHass = new GrowspaceHistoryStore(atom<string | null>(null));
-
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      environmentAttributes: {},
-    } as unknown as GrowspaceDevice;
-    const ids = (storeWithHass as any).getEntityIdsForMetric(device, 'vpd');
-    expect(ids).toEqual([calculatedId]);
-    vi.mocked(hassCallModule.getHass).mockReset();
-  });
-
-  it('returns irrigation pump entity from camelCase irrigationConfig key', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      irrigationConfig: { irrigationPumpEntity: 'switch.irrigation_pump' },
-      environmentAttributes: {},
-    } as unknown as GrowspaceDevice;
-    const ids = (store as any).getEntityIdsForMetric(device, 'irrigation');
-    expect(ids).toEqual(['switch.irrigation_pump']);
-  });
-
-  it('falls back to snake_case key when camelCase irrigationConfig key is absent', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      irrigationConfig: { irrigation_pump_entity: 'switch.irrigation_pump' },
-      environmentAttributes: {},
-    } as unknown as GrowspaceDevice;
-    const ids = (store as any).getEntityIdsForMetric(device, 'irrigation');
-    expect(ids).toEqual(['switch.irrigation_pump']);
-  });
-
-  it('getEntityIdForMetric returns null when no entity found', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      environmentAttributes: {},
-    } as unknown as GrowspaceDevice;
-    expect((store as any).getEntityIdForMetric(device, 'temperature')).toBeNull();
-  });
-
-  it('getEntityIdForMetric returns the first entity when multiple exist', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      environmentAttributes: {
-        temperatureSensors: ['sensor.temp1', 'sensor.temp2'],
-      },
-    } as unknown as GrowspaceDevice;
-    expect((store as any).getEntityIdForMetric(device, 'temperature')).toBe('sensor.temp1');
-  });
-
-  it('returns energySensors array directly when primary key is already plural', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      environmentAttributes: { energySensors: ['sensor.energy1', 'sensor.energy2'] },
-    } as unknown as GrowspaceDevice;
-    expect((store as any).getEntityIdsForMetric(device, 'energy')).toEqual([
-      'sensor.energy1',
-      'sensor.energy2',
-    ]);
-  });
-
-  it('returns powerSensors array for the power metric', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      environmentAttributes: { powerSensors: ['sensor.power1'] },
-    } as unknown as GrowspaceDevice;
-    expect((store as any).getEntityIdsForMetric(device, 'power')).toEqual(['sensor.power1']);
-  });
-
-  it('returns phSensors array for the ph metric', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      environmentAttributes: { phSensors: ['sensor.ph1'] },
-    } as unknown as GrowspaceDevice;
-    expect((store as any).getEntityIdsForMetric(device, 'ph')).toEqual(['sensor.ph1']);
-  });
-
-  it('returns feedEcSensors array for the feed_ec metric', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      environmentAttributes: { feedEcSensors: ['sensor.feed_ec1'] },
-    } as unknown as GrowspaceDevice;
-    expect((store as any).getEntityIdsForMetric(device, 'feed_ec')).toEqual(['sensor.feed_ec1']);
-  });
-
-  it('extracts sensorEntity from tank objects for irrigation_tank_level', () => {
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      environmentAttributes: {
-        irrigationTanks: [
-          { sensorEntity: 'sensor.tank1_level', name: 'Tank 1' },
-          { sensorEntity: 'sensor.tank2_level', name: 'Tank 2' },
-        ],
-      },
-    } as unknown as GrowspaceDevice;
-    expect((store as any).getEntityIdsForMetric(device, 'irrigation_tank_level')).toEqual([
-      'sensor.tank1_level',
-      'sensor.tank2_level',
-    ]);
-  });
-});
-
-// ---------------------------------------------------------------------------
 // _fetchHistory: overviewEntityId and composite key branches
 // ---------------------------------------------------------------------------
 
@@ -792,7 +635,7 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
   });
 
   beforeEach(() => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {});
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
   });
 
@@ -836,32 +679,7 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     expect(store.$historyError.get()).toBeFalsy();
   });
 
-  it('skips non-composite active graph keys when building the entity set', async () => {
-    vi.mocked(hassCallModule.hassCall).mockResolvedValue({});
-    const device = {
-      deviceId: 'dev1',
-      name: 'Tent 1',
-      environmentAttributes: { temperatureSensor: TEMP_ENTITY },
-    } as unknown as GrowspaceDevice;
-    setDevices([device]);
-    const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore($selectedDevice);
-    // A plain (non-composite, no ':') graph key should be ignored in the composite-key loop
-    store.$activeEnvGraphs.set(new Set(['temperature']));
-
-    await store.loadHistoryOnDemand();
-
-    const [, wsParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [
-      string,
-      { entity_ids: string[] },
-      unknown,
-    ];
-    // Only TEMP_ENTITY from the metric loop; 'temperature' key has no ':'
-    expect(wsParams.entity_ids).toContain(TEMP_ENTITY);
-    expect(wsParams.entity_ids).not.toContain('temperature');
-  });
-
-  it('uses metric:entityId composite key when device has plural sensors', async () => {
+  it('keys a plural-sensor metric by entity id, never by a composite key', async () => {
     const entity1 = 'sensor.tent1_temp1';
     const entity2 = 'sensor.tent1_temp2';
     vi.mocked(hassCallModule.hassCall).mockResolvedValue({
@@ -879,8 +697,28 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
 
     await store.loadHistoryOnDemand();
 
-    expect(store.$historyCache.get()[`temperature:${entity1}`]).toHaveLength(1);
-    expect(store.$historyCache.get()[`temperature:${entity2}`]).toHaveLength(1);
+    const cache = store.$historyCache.get();
+    expect(cache[entity1]).toHaveLength(1);
+    expect(cache[entity2]).toHaveLength(1);
+    expect(Object.keys(cache).filter((k) => k.includes(':'))).toEqual([]);
+  });
+
+  it('keys a single-sensor metric by the metric key, which every consumer reads', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({
+      [TEMP_ENTITY]: [{ s: '22', lu: '2024-01-01T00:00:00.000Z', a: {} }],
+    });
+    const device = {
+      deviceId: 'dev1',
+      name: 'Tent 1',
+      environmentAttributes: { temperatureSensor: TEMP_ENTITY },
+    } as unknown as GrowspaceDevice;
+    setDevices([device]);
+    const store = new GrowspaceHistoryStore(atom<string | null>('dev1'));
+
+    await store.loadHistoryOnDemand();
+
+    expect(store.$historyCache.get().temperature).toHaveLength(1);
+    expect(store.$historyCache.get()[TEMP_ENTITY]).toBeUndefined();
   });
 
   it('fetches power, energy, ph, and feed_ec entities when they are configured', async () => {
@@ -916,18 +754,18 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
     expect(wsParams.entity_ids).toContain(feedEcEntity);
   });
 
-  it('includes composite key entities in the fetch set', async () => {
+  it('derives the fetch set from the device alone — active graphs do not add entities', async () => {
     vi.mocked(hassCallModule.hassCall).mockResolvedValue({});
-    const compositeEntityId = 'sensor.extra_device_temp';
     const device = {
       deviceId: 'dev1',
       name: 'Tent 1',
-      environmentAttributes: {},
+      environmentAttributes: { temperatureSensor: TEMP_ENTITY },
     } as unknown as GrowspaceDevice;
     setDevices([device]);
-    const $selectedDevice = atom<string | null>('dev1');
-    const store = new GrowspaceHistoryStore($selectedDevice);
-    store.$activeEnvGraphs.set(new Set([`temperature:${compositeEntityId}`]));
+    const store = new GrowspaceHistoryStore(atom<string | null>('dev1'));
+    // Graph identities are still `'metric:entity'` strings; they are a UI
+    // concern and no longer steer what gets fetched (#473).
+    store.$activeEnvGraphs.set(new Set(['temperature', 'temperature:sensor.extra_device_temp']));
 
     await store.loadHistoryOnDemand();
 
@@ -936,7 +774,10 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
       { entity_ids: string[] },
       unknown,
     ];
-    expect(wsParams.entity_ids).toContain(compositeEntityId);
+    // Temperature plus the always-derived `optimal` binary sensor — and nothing
+    // contributed by the active graph set.
+    expect(wsParams.entity_ids).toEqual([TEMP_ENTITY, 'binary_sensor.tent_1_optimal_conditions']);
+    expect(wsParams.entity_ids).not.toContain('sensor.extra_device_temp');
   });
 });
 
@@ -952,7 +793,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
   });
 
   beforeEach(() => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {});
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
   });
 
@@ -1086,7 +927,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     expect(store.$historyCache.get()['temperature']).toBeUndefined();
   });
 
-  it('delta fetch uses composite key (metric:entityId) when device has plural sensors', async () => {
+  it('delta fetch keys a plural-sensor metric by entity id', async () => {
     vi.useFakeTimers();
 
     const entity1 = 'sensor.tent1_temp1';
@@ -1105,9 +946,8 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     const $selectedDevice = atom<string | null>('dev1');
     const store = new GrowspaceHistoryStore($selectedDevice);
 
-    // Seed composite-key timestamps so the delta loop picks them up
-    store.$lastTimestamps.setKey(`temperature:${entity1}`, '2024-01-01T00:00:00Z');
-    store.$lastTimestamps.setKey(`temperature:${entity2}`, '2024-01-01T00:00:00Z');
+    store.$lastTimestamps.setKey(entity1, '2024-01-01T00:00:00Z');
+    store.$lastTimestamps.setKey(entity2, '2024-01-01T00:00:00Z');
 
     store.startAutoRefresh();
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 100);
@@ -1121,6 +961,52 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     ];
     expect(wsParams.entity_ids).toContain(entity1);
     expect(wsParams.entity_ids).toContain(entity2);
+    expect(store.$historyCache.get()[entity1]).toHaveLength(1);
+    expect(store.$historyCache.get()[entity2]).toHaveLength(1);
+  });
+
+  it('delta fetch asks for the same metric entities the initial fetch did', async () => {
+    vi.useFakeTimers();
+    vi.mocked(hassCallModule.hassCall).mockResolvedValue({});
+
+    const temp1 = 'sensor.tent1_temp1';
+    const temp2 = 'sensor.tent1_temp2';
+    const device = {
+      deviceId: 'dev1',
+      name: 'Tent 1',
+      environmentAttributes: {
+        temperatureSensors: [temp1, temp2],
+        humiditySensor: 'sensor.tent1_humidity',
+      },
+    } as unknown as GrowspaceDevice;
+    setDevices([device]);
+    const store = new GrowspaceHistoryStore(atom<string | null>('dev1'));
+
+    await store.loadHistoryOnDemand();
+    const [, initialParams] = vi.mocked(hassCallModule.hassCall).mock.calls[0] as [
+      string,
+      { entity_ids: string[] },
+      unknown,
+    ];
+
+    // Every key the initial fetch wrote now carries a timestamp, so the delta
+    // covers the same metrics rather than falling through to a full refetch.
+    Object.keys(store.$historyCache.get()).forEach((key) =>
+      store.$lastTimestamps.setKey(key, '2024-01-01T00:00:00Z')
+    );
+
+    store.startAutoRefresh();
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 100);
+    store.stopAutoRefresh();
+
+    const [, deltaParams] = vi.mocked(hassCallModule.hassCall).mock.calls[1] as [
+      string,
+      { entity_ids: string[] },
+      unknown,
+    ];
+    expect([...deltaParams.entity_ids].sort()).toEqual([...initialParams.entity_ids].sort());
+    expect(deltaParams.entity_ids).toContain(temp1);
+    expect(deltaParams.entity_ids).toContain(temp2);
   });
 
   it('delta fetch does not call _mergeDeltaData when batchResults have no data for an entity', async () => {
