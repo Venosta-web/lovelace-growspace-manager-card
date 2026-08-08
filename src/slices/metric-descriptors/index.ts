@@ -12,10 +12,10 @@
  * entity ids; the light unit reads the supplied states snapshot, and VPD thresholds
  * read the supplied overview-entity snapshot (ADR-0030).
  *
- * Scope, per ADR-0030's landing order: **temperature, fan, light, VPD, and the
- * step-vs-line shape and fixed axes of the binary metrics**. A key with no
- * descriptor is not yet migrated, and consumers fall back to their existing
- * derivation for it.
+ * The table covers **every metric in `METRIC_CONFIG`** — that set is closed, and
+ * `history-store` only ever fetches within it, so a key with no descriptor is a
+ * key with no history either. Consumers may treat an absent descriptor as "no
+ * such metric" rather than as "not migrated yet".
  *
  * Since #471 a descriptor also carries the sensors backing its metric, as
  * structured `{ entityId, name }` refs — the grouping consumers used to
@@ -80,7 +80,7 @@ export interface MetricDescriptor {
   chartType: ChartType;
   axis: MetricAxis;
   vpdThresholds?: VpdThresholds;
-  /** Entity context used to normalize history values for this migration slice. */
+  /** The entity whose reading shape decides how history values normalize (fan, light). */
   entityId?: string;
   /**
    * The sensors backing this metric, in presentation order. More than one means
@@ -172,7 +172,7 @@ function _lightDescriptor(
 }
 
 function _descriptor(
-  key: MetricKey,
+  key: string,
   chartType: ChartType,
   axis: MetricAxis,
   unit?: string
@@ -197,10 +197,7 @@ function _descriptor(
  * descriptor's sensor list and the histories fetched for that metric always
  * describe the same entities.
  */
-function _sensorsForMetric(
-  entityIds: string[],
-  hassStates: HassStates
-): MetricSensorRef[] {
+function _sensorsForMetric(entityIds: string[], hassStates: HassStates): MetricSensorRef[] {
   return entityIds.map((entityId) => ({
     entityId,
     name: (hassStates[entityId]?.attributes?.friendly_name as string | undefined) || entityId,
@@ -213,9 +210,6 @@ function _sensorsForMetric(
 
 /**
  * Build the descriptor table, keyed by `MetricKey`.
- *
- * Only migrated metrics appear. Callers treat an absent key as "not migrated"
- * rather than as an error.
  *
  * `device` supplies the metric→entity mapping. Without it, and without an
  * override, the descriptors carry no sensors and a consumer sees every metric as
@@ -244,30 +238,42 @@ export function computeMetricDescriptors(
   return table;
 }
 
+/**
+ * The axis a metric gets from its `METRIC_CONFIG` entry alone.
+ *
+ * A step metric spans the binary 0..1 range; the humidifier's speed scale is the
+ * one plain metric with bounds of its own. Everything else scales to its data.
+ */
+function _defaultAxis(key: string, chartType: ChartType): MetricAxis {
+  if (key === MetricKey.HUMIDIFIER) return { min: 0, max: 10 };
+  return chartType === ChartType.STEP ? { min: 0, max: 1 } : 'auto';
+}
+
 function _descriptorTable(
   deviceSnapshot: DeviceSnapshot | null,
   hassStates: HassStates,
   overviewEntity?: OverviewEntitySnapshot
 ): Record<string, MetricDescriptor> {
-  return {
-    [MetricKey.TEMPERATURE]: _descriptor(MetricKey.TEMPERATURE, ChartType.LINE, 'auto'),
-    [MetricKey.OPTIMAL]: _descriptor(MetricKey.OPTIMAL, ChartType.STEP, { min: 0, max: 1 }),
-    [MetricKey.DEHUMIDIFIER]: _descriptor(MetricKey.DEHUMIDIFIER, ChartType.STEP, {
-      min: 0,
-      max: 1,
-    }),
-    [MetricKey.HUMIDIFIER]: _descriptor(MetricKey.HUMIDIFIER, ChartType.LINE, { min: 0, max: 10 }),
-    [MetricKey.IRRIGATION]: _descriptor(MetricKey.IRRIGATION, ChartType.STEP, { min: 0, max: 1 }),
-    [MetricKey.DRAIN]: _descriptor(MetricKey.DRAIN, ChartType.STEP, { min: 0, max: 1 }),
-    [MetricKey.VPD]: {
-      ..._descriptor(MetricKey.VPD, ChartType.LINE, 'auto'),
-      vpdThresholds: _vpdThresholds(overviewEntity),
-    },
-    [MetricKey.EXHAUST]: _fanDescriptor(MetricKey.EXHAUST, deviceSnapshot?.exhaustFans),
-    [MetricKey.CIRCULATION_FAN]: _fanDescriptor(
-      MetricKey.CIRCULATION_FAN,
-      deviceSnapshot?.circulationFans
-    ),
-    [MetricKey.LIGHT]: _lightDescriptor(deviceSnapshot?.lightSensors, hassStates),
+  const table: Record<string, MetricDescriptor> = {};
+
+  // Every metric the card knows is a metric of `METRIC_CONFIG`, and most need
+  // nothing beyond it — so the table is generated from it, and only the metrics
+  // whose facts depend on the device or its states get a case below.
+  for (const [key, config] of Object.entries(METRIC_CONFIG)) {
+    const chartType = config.type ?? ChartType.LINE;
+    table[key] = _descriptor(key, chartType, _defaultAxis(key, chartType));
+  }
+
+  table[MetricKey.VPD] = {
+    ...table[MetricKey.VPD],
+    vpdThresholds: _vpdThresholds(overviewEntity),
   };
+  table[MetricKey.EXHAUST] = _fanDescriptor(MetricKey.EXHAUST, deviceSnapshot?.exhaustFans);
+  table[MetricKey.CIRCULATION_FAN] = _fanDescriptor(
+    MetricKey.CIRCULATION_FAN,
+    deviceSnapshot?.circulationFans
+  );
+  table[MetricKey.LIGHT] = _lightDescriptor(deviceSnapshot?.lightSensors, hassStates);
+
+  return table;
 }

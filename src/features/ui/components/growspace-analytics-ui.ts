@@ -3,7 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { GrowspaceDevice, SensorHistories, HistoryTimeRange } from '../../../types';
-import type { DeviceSnapshot } from '../../../slices/device-state';
+import type { MetricDescriptor } from '../../../slices/metric-descriptors';
 import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
 import '../../../growspace-env-chart';
@@ -23,9 +23,9 @@ export class GrowspaceAnalyticsUI extends LitElement {
   @property({ attribute: false }) range: HistoryTimeRange = '24h';
   @property({ attribute: false }) hass: HomeAssistant | undefined;
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
-  @property({ attribute: false }) deviceSnapshot: DeviceSnapshot | null = null;
   @property({ attribute: false }) sensorHistory: SensorHistories = {};
-  @property({ attribute: false }) metricSensors: Record<string, string[]> | undefined;
+  /** The Metric Descriptor table the charts derive from, built by the container. */
+  @property({ attribute: false }) descriptors: Record<string, MetricDescriptor> = {};
 
   static styles = [
     growspaceCardStyles,
@@ -104,9 +104,8 @@ export class GrowspaceAnalyticsUI extends LitElement {
         <growspace-env-chart
           .hass=${this.hass}
           .device=${this.device}
-          .deviceSnapshot=${this.deviceSnapshot}
           .sensorHistory=${this.sensorHistory}
-          .metricSensors=${this.metricSensors}
+          .descriptors=${this.descriptors}
           .metrics=${item.metrics}
           .isCombined=${true}
           .range=${this.range}
@@ -118,10 +117,7 @@ export class GrowspaceAnalyticsUI extends LitElement {
     }
     if (item.metrics[0] === MetricKey.WATER) {
       return html`
-        <tank-water-chart
-          .device=${this.device}
-          .range=${this.range}
-        ></tank-water-chart>
+        <tank-water-chart .device=${this.device} .range=${this.range}></tank-water-chart>
       `;
     }
     if (item.metrics[0] === MetricKey.STEERING_PHASE) {
@@ -137,9 +133,8 @@ export class GrowspaceAnalyticsUI extends LitElement {
       <growspace-env-chart
         .hass=${this.hass}
         .device=${this.device}
-        .deviceSnapshot=${this.deviceSnapshot}
         .sensorHistory=${this.sensorHistory}
-        .metricSensors=${this.metricSensors}
+        .descriptors=${this.descriptors}
         .metricKey=${item.metrics[0]}
         .metrics=${item.metrics}
         .range=${this.range}
