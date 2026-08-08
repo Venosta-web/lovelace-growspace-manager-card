@@ -455,24 +455,6 @@ describe('GrowspaceEnvChart', () => {
         expect(greenPath).toBeTruthy();
     });
 
-    it('should scale flat lines correctly', async () => {
-        const now = Date.now();
-        element.metricKey = 'temp';
-        // Constant value 20
-        element.sensorHistory = {
-            'temp': [
-                { state: '20.0', last_changed: new Date(now - 3600000).toISOString() },
-                { state: '20.0', last_changed: new Date(now).toISOString() }
-            ] as any
-        };
-        await element.updateComplete;
-
-        const series = (element as any)._renderSeries[0];
-        // min should be 19, max 21
-        expect(series.min).toBe(19);
-        expect(series.max).toBe(21);
-    });
-
     it('should use fixed range for specific metrics', async () => {
         const now = Date.now();
         element.metricKey = 'circulation_fan';
@@ -656,38 +638,6 @@ describe('GrowspaceEnvChart', () => {
         expect(segments?.length).toBeGreaterThan(0);
     });
 
-    it('should handle all metric type variations correctly', async () => {
-        const now = Date.now();
-        element.isCombined = true;
-        // Test all special handling keys
-        element.metrics = ['exhaust', 'humidifier', 'dehumidifier', 'optimal', 'light', 'irrigation', 'drain'];
-
-        // Setup history for all of them
-        const history: Record<string, any[]> = {};
-        element.metrics.forEach(k => {
-            history[k] = [{ state: k === 'optimal' ? 'on' : '5', last_changed: new Date(now).toISOString() }];
-        });
-        element.sensorHistory = history as any;
-
-        await element.updateComplete;
-
-        const seriesList = (element as any)._renderSeries;
-        expect(seriesList.length).toBe(element.metrics.length);
-
-        // Verify min/max clamping logic
-        const exhaust = seriesList.find((s: any) => s.id === 'exhaust');
-        expect(exhaust.min).toBe(0);
-        expect(exhaust.max).toBe(10);
-
-        const dehum = seriesList.find((s: any) => s.id === 'dehumidifier');
-        expect(dehum.min).toBe(0);
-        expect(dehum.max).toBe(1);
-
-        const optimal = seriesList.find((s: any) => s.id === 'optimal');
-        expect(optimal.min).toBe(0);
-        expect(optimal.max).toBe(1);
-    });
-
     it('should handle time ranges correctly', async () => {
         // Ensure data exists so graph renders (not empty state)
         element.metricKey = 'temp';
@@ -826,31 +776,7 @@ describe('GrowspaceEnvChart', () => {
             const now = new Date();
             const startTime = new Date(now.getTime() - 3600000);
 
-            // 1. Test Step Chart overrides
-            // 'irrigation' is forced step
-            (element as any).metricKey = 'irrigation';
-            (element as any).isCombined = false;
-            (element as any).sensorHistory = { 'irrigation': [{ state: 'on', last_changed: now.toISOString() }] };
-            const seriesStep = (element as any)._computeGraphSeries(100, 100, startTime, 3600000, now);
-            expect(seriesStep[0].min).toBe(0);
-            expect(seriesStep[0].max).toBe(1); // Binary forced 0-1
-
-            // 2. Test Single line padding (min==max) case
-            (element as any).metricKey = 'temp';
-            (element as any).sensorHistory = { 'temp': [{ state: '20', last_changed: now.toISOString() }] };
-            const seriesFlat = (element as any)._computeGraphSeries(100, 100, startTime, 3600000, now);
-            expect(seriesFlat[0].min).toBe(19);
-            expect(seriesFlat[0].max).toBe(21);
-
-            // 3. Test Combined graph (no padding should happen for flat lines according to code logic line 318 `!this.isCombined`)
-            (element as any).isCombined = true;
-            (element as any).metrics = ['temp'];
-            (element as any).metricConfig = { 'temp': { color: 'red', title: 'T', unit: 'C' } };
-            const seriesCombinedFlat = (element as any)._computeGraphSeries(100, 100, startTime, 3600000, now);
-            expect(seriesCombinedFlat[0].min).toBe(20);
-            expect(seriesCombinedFlat[0].max).toBe(20);
-
-            // 4. Test Pre-start history handling
+            // Test pre-start history handling on a metric that still uses the legacy path.
             // History item is BEFORE start time, should be added as initial point at startTime
             const oldTime = new Date(startTime.getTime() - 100000);
             (element as any).isCombined = false;
@@ -861,7 +787,7 @@ describe('GrowspaceEnvChart', () => {
             expect(seriesOld[0].points[0].time).toBe(startTime.getTime());
             expect(seriesOld[0].points[0].value).toBe(400);
 
-            // 5. Test empty history explicitly returning early
+            // Test empty history explicitly returning early.
             (element as any).sensorHistory = { 'co2': [] };
             const seriesEmpty = (element as any)._computeGraphSeries(100, 100, startTime, 3600000, now);
             expect(seriesEmpty).toEqual([]);
@@ -1138,65 +1064,6 @@ describe('GrowspaceEnvChart', () => {
             // so needsUpdate = true.
             expect(computeSpy).toHaveBeenCalled();
         });
-        it('should render optimal sensor header correctly (Optimal, Not Optimal, Reasons)', async () => {
-            // 1. Optimal (Value 1)
-            const s1 = { id: 'optimal', title: 'Opt', units: 'state', points: [{ time: 1, value: 1 }], color: 'green', min: 0, max: 1, avg: 0.5, fillType: 'flat' };
-            vi.spyOn((element as any), '_computeGraphSeries').mockReturnValue([s1]);
-            element.metricKey = 'optimal';
-            // Ensure history exists to trigger initial compute if needed, though we spy it.
-            element.sensorHistory = { 'optimal': [] } as any;
-            await element.requestUpdate();
-            await element.updateComplete;
-            let headerVal = element.shadowRoot?.querySelector('.gs-env-graph-header div[style*="font-size:1.2em"]')?.textContent;
-            expect(headerVal).toBe('Optimal');
-
-            // 2. Not Optimal (Value 0, no reasons)
-            const s2 = { id: 'optimal', title: 'Opt', units: 'state', points: [{ time: 1, value: 0 }], color: 'green', min: 0, max: 1, avg: 0, fillType: 'flat' };
-            vi.spyOn((element as any), '_computeGraphSeries').mockReturnValue([s2]);
-
-            // Trigger re-computation by changing array ref
-            element.sensorHistory = { 'optimal': [{ state: '0', last_changed: 'now' }] } as any;
-
-            await element.requestUpdate();
-            await element.updateComplete;
-            headerVal = element.shadowRoot?.querySelector('.gs-env-graph-header div[style*="font-size:1.2em"]')?.textContent;
-            expect(headerVal).toBe('Not Optimal');
-
-            // 3. Reasons (Value 0, with reasons)
-            const s3 = { id: 'optimal', title: 'Opt', units: 'state', points: [{ time: 1, value: 0, meta: { reasons: 'Too Hot' } }], color: 'green', min: 0, max: 1, avg: 0, fillType: 'flat' };
-            vi.spyOn((element as any), '_computeGraphSeries').mockReturnValue([s3]);
-
-            element.sensorHistory = { 'optimal': [{ state: '0', last_changed: 'later' }] } as any;
-
-            await element.requestUpdate();
-            await element.updateComplete;
-            headerVal = element.shadowRoot?.querySelector('.gs-env-graph-header div[style*="font-size:1.2em"]')?.textContent;
-            expect(headerVal).toBe('Too Hot');
-        });
-
-        it('should render generic binary sensor header correctly (ON, OFF)', async () => {
-            // 1. ON
-            const s1 = { id: 'dehumidifier', title: 'Dehum', units: 'state', points: [{ time: 1, value: 1 }], color: 'blue', min: 0, max: 1, avg: 0.5, fillType: 'flat' };
-            vi.spyOn((element as any), '_computeGraphSeries').mockReturnValue([s1]);
-            element.metricKey = 'dehumidifier';
-            element.sensorHistory = { 'dehumidifier': [] } as any;
-            await element.requestUpdate();
-            await element.updateComplete;
-            let headerVal = element.shadowRoot?.querySelector('.gs-env-graph-header div[style*="font-size:1.2em"]')?.textContent;
-            expect(headerVal).toBe('ON');
-
-            // 2. OFF
-            const s2 = { id: 'dehumidifier', title: 'Dehum', units: 'state', points: [{ time: 1, value: 0 }], color: 'blue', min: 0, max: 1, avg: 0, fillType: 'flat' };
-            vi.spyOn((element as any), '_computeGraphSeries').mockReturnValue([s2]);
-
-            element.sensorHistory = { 'dehumidifier': [{ state: '0', last_changed: 'now' }] } as any;
-
-            await element.requestUpdate();
-            await element.updateComplete;
-            headerVal = element.shadowRoot?.querySelector('.gs-env-graph-header div[style*="font-size:1.2em"]')?.textContent;
-            expect(headerVal).toBe('OFF');
-        });
-
         it('should render header placeholders when points are empty', async () => {
             const s1 = { id: 'temp', title: 'Temp', unit: 'C', points: [], color: 'red', min: 0, max: 100, avg: 0, fillType: 'gradient' };
             vi.spyOn((element as any), '_computeGraphSeries').mockReturnValue([s1]);
@@ -1571,41 +1438,6 @@ describe('GrowspaceEnvChart', () => {
             expect(series.length).toBe(1);
             expect(series[0].title).toBe('unknown_metric');
             expect(series[0].color).toBe('#ffffff');
-        });
-
-        it('should cover binary state variants for dehumidifier and light', async () => {
-            const now = Date.now();
-            element.metricKey = 'dehumidifier';
-            element.sensorHistory = {
-                'dehumidifier': [
-                    { state: 'heating', last_changed: new Date(now - 1000).toISOString() },
-                    { state: 'drying', last_changed: new Date(now).toISOString() }
-                ] as any
-            };
-            await element.updateComplete;
-            let series = (element as any)._renderSeries;
-            expect(series[0].points[0].value).toBe(1);
-            expect(series[0].points[1].value).toBe(1);
-
-            element.metricKey = 'light';
-            element.sensorHistory = {
-                'light': [
-                    { state: 'on', last_changed: new Date(now - 2000).toISOString() },
-                    { state: 'off', last_changed: new Date(now - 1000).toISOString() },
-                    { state: '50', last_changed: new Date(now).toISOString() } // Numeric > 0 = ON
-                ] as any
-            };
-            await element.updateComplete;
-            series = (element as any)._renderSeries;
-            // The series adds an initial point at startTime, one for each history item, and one at 'now'.
-            // History: 'on' at -2000, 'off' at -1000, '50' at 0
-            // dataPoints: [startTime, 'on', 'off', '50', now] -> total 5 points
-            expect(series[0].points.length).toBe(5);
-            expect(series[0].points[0].value).toBe(1); // carried from 'on' at startTime
-            expect(series[0].points[1].value).toBe(1); // 'on'
-            expect(series[0].points[2].value).toBe(0); // 'off'
-            expect(series[0].points[3].value).toBe(1); // '50'
-            expect(series[0].points[4].value).toBe(1); // 'now'
         });
 
         it('should handle tooltips when cached rect is missing', async () => {

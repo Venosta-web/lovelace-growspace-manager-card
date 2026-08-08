@@ -7,11 +7,10 @@
  *   computeMetricDescriptors() — derive the descriptor table.
  *
  * Like `computeHeaderMetrics`, this module reads no atoms and no injected `hass` —
- * everything it needs is passed in. It currently needs nothing: the temperature
- * descriptor is static. Later slices add explicit data parameters as the facts they
- * carry stop being static (ADR-0030).
+ * everything it needs is passed in. The light unit is supplied by the caller because
+ * it decides whether light is a percentage line or a binary step trace (ADR-0030).
  *
- * Scope, per ADR-0030's landing order: **temperature only**. A key with no
+ * Scope, per ADR-0030's landing order: **temperature and axis/shape metrics**. A key with no
  * descriptor is not yet migrated, and consumers fall back to their existing
  * derivation for it. Widened by:
  *   #468 — fan and light unit/axis overrides (adds a `hass.states` snapshot param)
@@ -45,6 +44,28 @@ export interface MetricDescriptor {
   axis: MetricAxis;
 }
 
+export interface MetricDescriptorInputs {
+  lightUnit?: string;
+}
+
+function _descriptor(
+  key: MetricKey,
+  chartType: ChartType,
+  axis: MetricAxis,
+  unit?: string
+): MetricDescriptor {
+  const config = METRIC_CONFIG[key];
+  return {
+    key,
+    title: config.title,
+    color: config.color,
+    unit: unit ?? config.unit,
+    icon: config.icon,
+    chartType,
+    axis,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -55,18 +76,26 @@ export interface MetricDescriptor {
  * Only migrated metrics appear. Callers treat an absent key as "not migrated"
  * rather than as an error.
  */
-export function computeMetricDescriptors(): Record<string, MetricDescriptor> {
-  const temperature = METRIC_CONFIG[MetricKey.TEMPERATURE];
+export function computeMetricDescriptors(
+  inputs: MetricDescriptorInputs = {}
+): Record<string, MetricDescriptor> {
+  const lightIsPercentage = inputs.lightUnit === '%';
 
   return {
-    [MetricKey.TEMPERATURE]: {
-      key: MetricKey.TEMPERATURE,
-      title: temperature.title,
-      color: temperature.color,
-      unit: temperature.unit,
-      icon: temperature.icon,
-      chartType: ChartType.LINE,
-      axis: 'auto',
-    },
+    [MetricKey.TEMPERATURE]: _descriptor(MetricKey.TEMPERATURE, ChartType.LINE, 'auto'),
+    [MetricKey.OPTIMAL]: _descriptor(MetricKey.OPTIMAL, ChartType.STEP, { min: 0, max: 1 }),
+    [MetricKey.DEHUMIDIFIER]: _descriptor(MetricKey.DEHUMIDIFIER, ChartType.STEP, {
+      min: 0,
+      max: 1,
+    }),
+    [MetricKey.HUMIDIFIER]: _descriptor(MetricKey.HUMIDIFIER, ChartType.LINE, { min: 0, max: 10 }),
+    [MetricKey.IRRIGATION]: _descriptor(MetricKey.IRRIGATION, ChartType.STEP, { min: 0, max: 1 }),
+    [MetricKey.DRAIN]: _descriptor(MetricKey.DRAIN, ChartType.STEP, { min: 0, max: 1 }),
+    [MetricKey.LIGHT]: _descriptor(
+      MetricKey.LIGHT,
+      lightIsPercentage ? ChartType.LINE : ChartType.STEP,
+      lightIsPercentage ? { min: 0, max: 100 } : { min: 0, max: 1 },
+      lightIsPercentage ? '%' : undefined
+    ),
   };
 }

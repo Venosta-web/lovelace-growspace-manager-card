@@ -27,12 +27,6 @@ import { consume } from '@lit/context';
 import { hassContext } from '../../../lib/context';
 import '../../shared/ui/error-boundary';
 
-/**
- * Metrics already migrated to the Env Series builder (ADR-0030). Static today —
- * the descriptor table gains data parameters as later slices land.
- */
-const ENV_SERIES_DESCRIPTORS = computeMetricDescriptors();
-
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
   @consume({ context: hassContext, subscribe: true })
@@ -186,6 +180,10 @@ export class GrowspaceEnvChart extends LitElement {
     const entityId = this.device.environmentAttributes?.lightSensor;
     if (!entityId) return undefined;
     return this.hass.states[entityId]?.attributes?.unit_of_measurement as string | undefined;
+  }
+
+  private _metricDescriptors() {
+    return computeMetricDescriptors({ lightUnit: this._resolveLightEntityUnit() });
   }
 
   private _getVpdThresholds() {
@@ -532,7 +530,7 @@ export class GrowspaceEnvChart extends LitElement {
    */
   private _isEnvSeriesMigrated(): boolean {
     if (this.isCombined) return false;
-    if (!ENV_SERIES_DESCRIPTORS[this.metricKey]) return false;
+    if (!this._metricDescriptors()[this.metricKey]) return false;
     return !Object.keys(this.sensorHistory ?? {}).some((key) =>
       key.startsWith(`${this.metricKey}:`)
     );
@@ -553,7 +551,7 @@ export class GrowspaceEnvChart extends LitElement {
   ): GraphSeries[] {
     const startTimeMs = startTime.getTime();
 
-    return computeEnvSeries(ENV_SERIES_DESCRIPTORS, this.sensorHistory ?? {}, [this.metricKey], {
+    return computeEnvSeries(this._metricDescriptors(), this.sensorHistory ?? {}, [this.metricKey], {
       startTimeMs,
       nowMs: now.getTime(),
     }).map((series) => ({
@@ -585,7 +583,8 @@ export class GrowspaceEnvChart extends LitElement {
       changedProperties.has('range') ||
       changedProperties.has('metricKey') ||
       changedProperties.has('metrics') ||
-      changedProperties.has('isCombined')
+      changedProperties.has('isCombined') ||
+      changedProperties.has('hass')
     ) {
       let needsUpdate = true;
 

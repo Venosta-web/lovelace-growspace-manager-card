@@ -18,6 +18,10 @@ function reading(minutesAgo: number, state: string): HistorySensorState {
   };
 }
 
+function metricHistory(key: MetricKey, ...entries: HistorySensorState[]): SensorHistories {
+  return { [key]: entries };
+}
+
 function temperatureHistory(...entries: HistorySensorState[]): SensorHistories {
   return { [MetricKey.TEMPERATURE]: entries };
 }
@@ -83,18 +87,14 @@ describe('computeEnvSeries — temperature', () => {
   });
 
   it('pads a flat line by one unit either side so it does not draw on an edge', () => {
-    const [series] = computeTemperature(
-      temperatureHistory(reading(120, '20'), reading(60, '20'))
-    );
+    const [series] = computeTemperature(temperatureHistory(reading(120, '20'), reading(60, '20')));
 
     expect(series.min).toBe(19);
     expect(series.max).toBe(21);
   });
 
   it('does not pad a range that already spans values', () => {
-    const [series] = computeTemperature(
-      temperatureHistory(reading(120, '20'), reading(60, '22'))
-    );
+    const [series] = computeTemperature(temperatureHistory(reading(120, '20'), reading(60, '22')));
 
     expect(series.min).toBe(20);
     expect(series.max).toBe(22);
@@ -155,5 +155,93 @@ describe('computeEnvSeries — temperature', () => {
 
     // VPD has no descriptor yet, so temperature is all that survives.
     expect(series.map((s) => s.id)).toEqual([MetricKey.TEMPERATURE]);
+  });
+});
+
+describe('computeEnvSeries — descriptor-owned chart shape and axes', () => {
+  it.each([
+    [MetricKey.OPTIMAL, 'on', ChartType.STEP, 0, 1],
+    [MetricKey.DEHUMIDIFIER, 'drying', ChartType.STEP, 0, 1],
+    [MetricKey.HUMIDIFIER, '6', ChartType.LINE, 0, 10],
+    [MetricKey.IRRIGATION, 'on', ChartType.STEP, 0, 1],
+    [MetricKey.DRAIN, 'off', ChartType.STEP, 0, 1],
+    [MetricKey.LIGHT, 'on', ChartType.STEP, 0, 1],
+  ])(
+    'shapes %s as a %s series on its fixed axis',
+    (key, state, chartType, expectedMin, expectedMax) => {
+      const [series] = computeEnvSeries(
+        DESCRIPTORS,
+        metricHistory(key, reading(30, state)),
+        [key],
+        windowOf(24)
+      );
+
+      expect(series.chartType).toBe(chartType);
+      expect({ min: series.min, max: series.max }).toEqual({
+        min: expectedMin,
+        max: expectedMax,
+      });
+    }
+  );
+
+  it('normalizes non-percentage light as binary values', () => {
+    const [series] = computeEnvSeries(
+      DESCRIPTORS,
+      metricHistory(MetricKey.LIGHT, reading(30, 'on'), reading(20, 'off'), reading(10, '50')),
+      [MetricKey.LIGHT],
+      windowOf(24)
+    );
+
+    expect(series.points.map((point) => point.value)).toEqual([1, 1, 0, 1, 1]);
+  });
+
+  it('carries optimal reasons into point metadata and forward to now', () => {
+    const optimal = {
+      ...reading(30, 'off'),
+      attributes: { reasons: ['Temperature high', 'VPD low'] },
+    };
+    const [series] = computeEnvSeries(
+      DESCRIPTORS,
+      metricHistory(MetricKey.OPTIMAL, optimal),
+      [MetricKey.OPTIMAL],
+      windowOf(24)
+    );
+
+    expect(series.points[1].meta).toEqual({ reasons: ['Temperature high', 'VPD low'] });
+    expect(series.points[series.points.length - 1].meta).toEqual({
+      reasons: ['Temperature high', 'VPD low'],
+    });
+  });
+
+  it('pads one flat auto-scaled line by ±1', () => {
+    const [series] = computeTemperature(temperatureHistory(reading(30, '20')));
+
+    expect({ min: series.min, max: series.max }).toEqual({ min: 19, max: 21 });
+  });
+
+  it('does not pad a flat step series', () => {
+    const stepDescriptor = {
+      ...DESCRIPTORS[MetricKey.IRRIGATION],
+      axis: 'auto' as const,
+    };
+    const [series] = computeEnvSeries(
+      { [MetricKey.IRRIGATION]: stepDescriptor },
+      metricHistory(MetricKey.IRRIGATION, reading(30, 'on')),
+      [MetricKey.IRRIGATION],
+      windowOf(24)
+    );
+
+    expect({ min: series.min, max: series.max }).toEqual({ min: 1, max: 1 });
+  });
+
+  it('does not pad a flat combined series', () => {
+    const [series] = computeEnvSeries(
+      DESCRIPTORS,
+      temperatureHistory(reading(30, '20')),
+      [MetricKey.TEMPERATURE],
+      { ...windowOf(24), isCombined: true }
+    );
+
+    expect({ min: series.min, max: series.max }).toEqual({ min: 20, max: 20 });
   });
 });
