@@ -8,6 +8,8 @@ import { styleMap } from 'lit/directives/style-map.js';
 import type { GrowspaceDevice } from '../../../services/types';
 import type { GraphSeries, TooltipData, GraphDataPoint, SensorHistories } from '../types';
 import { ChartUtils } from '../../../utils/chart-utils';
+import { computeEnvSeries } from '../env-series';
+import { computeMetricDescriptors } from '../../../slices/metric-descriptors';
 import { classifyFanEntity, fanReadingToAxisScale } from '../../../slices/device-state';
 import {
   METRIC_CONFIG,
@@ -24,6 +26,12 @@ import { BINARY_ON_STATES } from '../../../lib/types/hass';
 import { consume } from '@lit/context';
 import { hassContext } from '../../../lib/context';
 import '../../shared/ui/error-boundary';
+
+/**
+ * Metrics already migrated to the Env Series builder (ADR-0030). Static today —
+ * the descriptor table gains data parameters as later slices land.
+ */
+const ENV_SERIES_DESCRIPTORS = computeMetricDescriptors();
 
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
@@ -512,6 +520,67 @@ export class GrowspaceEnvChart extends LitElement {
     return seriesList;
   }
 
+  /**
+   * Whether this chart's metric is derived by the Env Series builder yet.
+   *
+   * ADR-0030 migrates the derivation metric by metric, so both forms coexist here:
+   * a metric with a Metric Descriptor goes through `computeEnvSeries`, everything
+   * else stays on `_computeGraphSeries`. Two cases are excluded until their own
+   * slices land — combined graphs, and metrics whose history arrives under
+   * multi-sensor `'metric:entity'` keys (#471). Widening is a matter of adding
+   * descriptors, not editing this predicate.
+   */
+  private _isEnvSeriesMigrated(): boolean {
+    if (this.isCombined) return false;
+    if (!ENV_SERIES_DESCRIPTORS[this.metricKey]) return false;
+    return !Object.keys(this.sensorHistory ?? {}).some((key) =>
+      key.startsWith(`${this.metricKey}:`)
+    );
+  }
+
+  /**
+   * Derive the metric as Env Series (value space), then apply geometry — the one
+   * step that needs the chart's pixel dimensions. The `GraphSeries` shape is
+   * preserved so every render method downstream is unaffected; it disappears when
+   * the legacy path does (#472).
+   */
+  private _envSeriesToGraphSeries(
+    width: number,
+    height: number,
+    startTime: Date,
+    durationMillis: number,
+    now: Date
+  ): GraphSeries[] {
+    const startTimeMs = startTime.getTime();
+
+    return computeEnvSeries(
+      ENV_SERIES_DESCRIPTORS,
+      this.sensorHistory ?? {},
+      [this.metricKey],
+      this.range,
+      now
+    ).map((series) => ({
+      id: series.id,
+      title: series.title,
+      color: series.color,
+      unit: series.unit,
+      icon: series.icon,
+      points: series.points,
+      min: series.min,
+      max: series.max,
+      avg: series.avg,
+      path: ChartUtils.generatePathFromValues(series.points, width, height, {
+        min: series.min,
+        max: series.max,
+        startTime: startTimeMs,
+        endTime: startTimeMs + durationMillis,
+        type: series.chartType,
+        timeRange: this.range,
+      }),
+      fillType: 'gradient' as const,
+    }));
+  }
+
   protected willUpdate(changedProperties: PropertyValues) {
     if (
       changedProperties.has('device') ||
@@ -543,7 +612,9 @@ export class GrowspaceEnvChart extends LitElement {
         const durationMillis = this._getDurationMillis(this.range);
         const now = new Date();
         const startTime = new Date(now.getTime() - durationMillis);
-        this._renderSeries = this._computeGraphSeries(800, 200, startTime, durationMillis, now);
+        this._renderSeries = this._isEnvSeriesMigrated()
+          ? this._envSeriesToGraphSeries(800, 200, startTime, durationMillis, now)
+          : this._computeGraphSeries(800, 200, startTime, durationMillis, now);
       }
     }
   }
