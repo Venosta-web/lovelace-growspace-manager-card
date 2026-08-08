@@ -340,12 +340,12 @@ describe('GrowspaceEnvChart', () => {
         vi.useRealTimers();
     });
 
-    it('should format tooltip for exhaust/humidifier with state meta', async () => {
+    it('should format tooltip for humidifier with state meta', async () => {
         vi.useFakeTimers();
         const now = Date.now();
-        element.metricKey = 'exhaust';
+        element.metricKey = 'humidifier';
         element.sensorHistory = {
-            'exhaust': [
+            'humidifier': [
                 { state: '5', last_changed: new Date(now).toISOString(), attributes: {} }
             ] as any
         };
@@ -453,21 +453,6 @@ describe('GrowspaceEnvChart', () => {
         // Verify optimal color usage (green #4caf50)
         const greenPath = elVpd.shadowRoot?.querySelector('path[stroke="var(--success-color, #4caf50)"]');
         expect(greenPath).toBeTruthy();
-    });
-
-    it('should use fixed range for specific metrics', async () => {
-        const now = Date.now();
-        element.metricKey = 'circulation_fan';
-        element.sensorHistory = {
-            'circulation_fan': [
-                { state: '5', last_changed: new Date(now).toISOString() }
-            ] as any
-        };
-        await element.updateComplete;
-
-        const series = (element as any)._renderSeries[0];
-        expect(series.min).toBe(0);
-        expect(series.max).toBe(10);
     });
 
     it('should handle scroll interaction in combined header', async () => {
@@ -636,6 +621,34 @@ describe('GrowspaceEnvChart', () => {
         // Just verify it renders without throwing
         const segments = element.shadowRoot?.querySelectorAll('path[stroke]');
         expect(segments?.length).toBeGreaterThan(0);
+    });
+
+    it('should handle all metric type variations correctly', async () => {
+        const now = Date.now();
+        element.isCombined = true;
+        // Test all special handling keys
+        element.metrics = ['humidifier', 'dehumidifier', 'optimal', 'irrigation', 'drain'];
+
+        // Setup history for all of them
+        const history: Record<string, any[]> = {};
+        element.metrics.forEach(k => {
+            history[k] = [{ state: k === 'optimal' ? 'on' : '5', last_changed: new Date(now).toISOString() }];
+        });
+        element.sensorHistory = history as any;
+
+        await element.updateComplete;
+
+        const seriesList = (element as any)._renderSeries;
+        expect(seriesList.length).toBe(element.metrics.length);
+
+        // Verify min/max clamping logic
+        const dehum = seriesList.find((s: any) => s.id === 'dehumidifier');
+        expect(dehum.min).toBe(0);
+        expect(dehum.max).toBe(1);
+
+        const optimal = seriesList.find((s: any) => s.id === 'optimal');
+        expect(optimal.min).toBe(0);
+        expect(optimal.max).toBe(1);
     });
 
     it('should handle time ranges correctly', async () => {
@@ -865,12 +878,12 @@ describe('GrowspaceEnvChart', () => {
             expect(scrollSpy).toHaveBeenCalledWith('left');
         });
 
-        it('should cover tooltip meta state branch for exhaust', async () => {
+        it('should cover tooltip meta state branch for humidifier', async () => {
             vi.useFakeTimers();
             const now = Date.now();
-            element.metricKey = 'exhaust'; // Force single header logic check? or handleGraphHover
+            element.metricKey = 'humidifier';
             element.sensorHistory = {
-                'exhaust': [
+                'humidifier': [
                     { state: '5', last_changed: new Date(now).toISOString(), attributes: {} }
                     // Note: attributes.state is checked in code as meta.state
                 ] as any
@@ -1438,6 +1451,21 @@ describe('GrowspaceEnvChart', () => {
             expect(series.length).toBe(1);
             expect(series[0].title).toBe('unknown_metric');
             expect(series[0].color).toBe('#ffffff');
+        });
+
+        it('should cover binary state variants for dehumidifier', async () => {
+            const now = Date.now();
+            element.metricKey = 'dehumidifier';
+            element.sensorHistory = {
+                'dehumidifier': [
+                    { state: 'heating', last_changed: new Date(now - 1000).toISOString() },
+                    { state: 'drying', last_changed: new Date(now).toISOString() }
+                ] as any
+            };
+            await element.updateComplete;
+            const series = (element as any)._renderSeries;
+            expect(series[0].points[0].value).toBe(1);
+            expect(series[0].points[1].value).toBe(1);
         });
 
         it('should handle tooltips when cached rect is missing', async () => {

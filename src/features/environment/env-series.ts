@@ -89,7 +89,7 @@ function _pointsForMetric(
   const points: EnvSeriesPoint[] = [];
 
   const pointFor = (state: HistorySensorState, time: number): EnvSeriesPoint | undefined => {
-    const value = ChartUtils.normalizeSensorValue(state, key, undefined, descriptor.unit);
+    const value = ChartUtils.normalizeSensorValue(state, key, descriptor.entityId, descriptor.unit);
     if (value === undefined) return undefined;
     const reasons = state.attributes?.reasons;
     return reasons === undefined ? { time, value } : { time, value, meta: { reasons } };

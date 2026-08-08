@@ -1,3 +1,10 @@
+# [1.1.0-next.88](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.87...v1.1.0-next.88) (2026-08-08)
+
+
+### Features
+
+* **env-graph:** derive fan and light through descriptors ([#476](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/476)) ([54ed015](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/54ed015c31aa39deb3fb27d87bfcb584a46fb9d5))
+
 # [1.1.0-next.87](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.86...v1.1.0-next.87) (2026-08-08)
 
 
