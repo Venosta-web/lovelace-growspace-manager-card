@@ -34,6 +34,13 @@ export class GrowspaceEnvChart extends LitElement {
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
   @property({ attribute: false }) deviceSnapshot: DeviceSnapshot | null = null;
   @property({ attribute: false }) sensorHistory: SensorHistories = {};
+  /**
+   * The entities backing each metric, when the host resolved them itself rather
+   * than leaving it to `device` — the subarea view, whose histories are its own
+   * sensors' and not the parent growspace's. Must match how `sensorHistory` is
+   * keyed, or a metric's series and its history describe different sensors.
+   */
+  @property({ attribute: false }) metricSensors: Record<string, string[]> | undefined;
 
   @property({ type: String }) metricKey = '';
   @property({ type: String }) unit = '';
@@ -166,7 +173,13 @@ export class GrowspaceEnvChart extends LitElement {
     const overviewEntity = this.device?.overviewEntityId
       ? this.hass?.states[this.device.overviewEntityId]
       : undefined;
-    return computeMetricDescriptors(this.deviceSnapshot, this.hass?.states ?? {}, overviewEntity);
+    return computeMetricDescriptors(
+      this.deviceSnapshot,
+      this.hass?.states ?? {},
+      overviewEntity,
+      this.device,
+      this.metricSensors
+    );
   }
 
   private _computeGraphSeries(
@@ -375,17 +388,13 @@ export class GrowspaceEnvChart extends LitElement {
    *
    * ADR-0030 migrates the derivation metric by metric, so both forms coexist here:
    * a metric with a Metric Descriptor goes through `computeEnvSeries`, everything
-   * else stays on `_computeGraphSeries`. Two cases are excluded until their own
-   * slices land — combined graphs, and metrics whose history arrives under
-   * multi-sensor `'metric:entity'` keys (#471). Widening is a matter of adding
-   * descriptors, not editing this predicate.
+   * else stays on `_computeGraphSeries`. One case is excluded until its own slice
+   * lands — combined graphs. Widening is a matter of adding descriptors, not
+   * editing this predicate.
    */
   private _isEnvSeriesMigrated(): boolean {
     if (this.isCombined) return false;
-    if (!this._metricDescriptors()[this.metricKey]) return false;
-    return !Object.keys(this.sensorHistory ?? {}).some((key) =>
-      key.startsWith(`${this.metricKey}:`)
-    );
+    return Boolean(this._metricDescriptors()[this.metricKey]);
   }
 
   /**
@@ -424,7 +433,9 @@ export class GrowspaceEnvChart extends LitElement {
         type: series.chartType,
         timeRange: this.range,
       }),
-      fillType: 'gradient' as const,
+      // Multi-sensor traces overlay each other, so they take the flat fill the
+      // legacy path gave composite keys; a lone series keeps its gradient.
+      fillType: series.sensor ? ('flat' as const) : ('gradient' as const),
       vpdBands: series.vpdBands,
     }));
   }

@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { computeEnvSeries } from './env-series';
 import { computeMetricDescriptors } from '../../slices/metric-descriptors';
-import { ChartType, MetricKey, StatusLevel, STATUS_COLORS } from './constants';
+import { ChartType, METRIC_CONFIG, MetricKey, StatusLevel, STATUS_COLORS } from './constants';
 import type { HistorySensorState, SensorHistories } from './types';
 import type { DeviceSnapshot } from '../../slices/device-state';
+import type { GrowspaceDevice } from '../../services/types';
 
 const DESCRIPTORS = computeMetricDescriptors();
 const NOW = new Date('2026-05-01T12:00:00.000Z');
@@ -422,5 +423,150 @@ describe('computeEnvSeries — fan and light value spaces', () => {
     expect(raw.points.map((point) => point.value)).toEqual([0, 0, 1, 1]);
     expect(raw.chartType).toBe(ChartType.STEP);
     expect({ min: raw.min, max: raw.max }).toEqual({ min: 0, max: 1 });
+  });
+});
+
+describe('computeEnvSeries — multi-sensor metrics', () => {
+  const STATES = {
+    'sensor.t1': { state: '20', attributes: { friendly_name: 'Room 1' } },
+    'sensor.t2': { state: '22', attributes: { friendly_name: 'Room 2' } },
+    'sensor.t3': { state: '24', attributes: { friendly_name: 'Room 3' } },
+  };
+
+  function deviceWith(...entityIds: string[]): GrowspaceDevice {
+    return {
+      deviceId: 'g1',
+      name: 'Tent',
+      overviewEntityId: 'sensor.tent_overview',
+      environmentAttributes: { temperatureSensors: entityIds },
+    } as unknown as GrowspaceDevice;
+  }
+
+  function descriptorsFor(...entityIds: string[]) {
+    return computeMetricDescriptors(null, STATES, undefined, deviceWith(...entityIds));
+  }
+
+  function temperatureFor(histories: SensorHistories, ...entityIds: string[]) {
+    return computeEnvSeries(
+      descriptorsFor(...entityIds),
+      histories,
+      [MetricKey.TEMPERATURE],
+      windowOf(24)
+    );
+  }
+
+  it('renders one series for a single-sensor metric, keyed by the metric alone', () => {
+    const series = temperatureFor(temperatureHistory(reading(30, '21')), 'sensor.t1');
+
+    expect(series).toHaveLength(1);
+    expect(series[0].id).toBe(MetricKey.TEMPERATURE);
+    expect(series[0].title).toBe('Temperature');
+    expect(series[0].color).toBe(METRIC_CONFIG[MetricKey.TEMPERATURE].color);
+    // Absent marker: a lone series is drawn with the metric's gradient fill.
+    expect(series[0].sensor).toBeUndefined();
+  });
+
+  it('splits a two-sensor metric into one titled, tinted series per sensor', () => {
+    const base = METRIC_CONFIG[MetricKey.TEMPERATURE].color;
+    const series = temperatureFor(
+      {
+        'temperature:sensor.t1': [reading(30, '20')],
+        'temperature:sensor.t2': [reading(30, '25')],
+      },
+      'sensor.t1',
+      'sensor.t2'
+    );
+
+    expect(series.map((s) => s.id)).toEqual(['temperature:sensor.t1', 'temperature:sensor.t2']);
+    expect(series.map((s) => s.title)).toEqual(['Temperature (Room 1)', 'Temperature (Room 2)']);
+    expect(series.map((s) => s.color)).toEqual([base, `color-mix(in srgb, ${base}, white 20%)`]);
+    expect(series.map((s) => s.sensor)).toEqual([
+      { entityId: 'sensor.t1', name: 'Room 1' },
+      { entityId: 'sensor.t2', name: 'Room 2' },
+    ]);
+  });
+
+  it('deviates each further sensor progressively toward white', () => {
+    const base = METRIC_CONFIG[MetricKey.TEMPERATURE].color;
+    const series = temperatureFor(
+      {
+        'temperature:sensor.t1': [reading(30, '20')],
+        'temperature:sensor.t2': [reading(30, '25')],
+        'temperature:sensor.t3': [reading(30, '30')],
+      },
+      'sensor.t1',
+      'sensor.t2',
+      'sensor.t3'
+    );
+
+    expect(series.map((s) => s.color)).toEqual([
+      base,
+      `color-mix(in srgb, ${base}, white 20%)`,
+      `color-mix(in srgb, ${base}, white 40%)`,
+    ]);
+  });
+
+  it('reduces each sensor against its own history', () => {
+    const series = temperatureFor(
+      {
+        'temperature:sensor.t1': [reading(120, '18'), reading(60, '20')],
+        'temperature:sensor.t2': [reading(120, '25'), reading(60, '30')],
+      },
+      'sensor.t1',
+      'sensor.t2'
+    );
+
+    expect({ min: series[0].min, max: series[0].max }).toEqual({ min: 18, max: 20 });
+    expect({ min: series[1].min, max: series[1].max }).toEqual({ min: 25, max: 30 });
+  });
+
+  it('drops an unavailable sensor without shifting the colours of the rest', () => {
+    const base = METRIC_CONFIG[MetricKey.TEMPERATURE].color;
+    const series = temperatureFor(
+      {
+        'temperature:sensor.t1': [reading(30, 'unavailable')],
+        'temperature:sensor.t2': [reading(30, '25')],
+      },
+      'sensor.t1',
+      'sensor.t2'
+    );
+
+    expect(series.map((s) => s.id)).toEqual(['temperature:sensor.t2']);
+    // The tint is positional on the descriptor, so a sensor that reports nothing
+    // does not repaint the ones that do.
+    expect(series[0].color).toBe(`color-mix(in srgb, ${base}, white 20%)`);
+  });
+
+  it('leaves a multi-sensor VPD metric on its per-sensor colours, without status bands', () => {
+    const base = METRIC_CONFIG[MetricKey.VPD].color;
+    const device = {
+      deviceId: 'g1',
+      name: 'Tent',
+      environmentAttributes: { vpdSensors: ['sensor.v1', 'sensor.v2'] },
+    } as unknown as GrowspaceDevice;
+    const descriptors = computeMetricDescriptors(null, {}, undefined, device);
+
+    const series = computeEnvSeries(
+      descriptors,
+      {
+        'vpd:sensor.v1': [reading(30, '1.2')],
+        'vpd:sensor.v2': [reading(30, '1.4')],
+      },
+      [MetricKey.VPD],
+      windowOf(24)
+    );
+
+    expect(series.map((s) => s.color)).toEqual([base, `color-mix(in srgb, ${base}, white 20%)`]);
+    expect(series.every((s) => s.vpdBands === undefined)).toBe(true);
+  });
+
+  it('skips a sensor whose history has not arrived', () => {
+    const series = temperatureFor(
+      { 'temperature:sensor.t2': [reading(30, '25')] },
+      'sensor.t1',
+      'sensor.t2'
+    );
+
+    expect(series.map((s) => s.id)).toEqual(['temperature:sensor.t2']);
   });
 });

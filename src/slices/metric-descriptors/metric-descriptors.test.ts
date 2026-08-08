@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { computeMetricDescriptors } from './index';
+import { computeMetricDescriptors, resolveMetricEntityIds } from './index';
+import type { GrowspaceDevice } from '../../services/types';
 import { ChartType, METRIC_CONFIG, MetricKey } from '../../features/environment/constants';
 import { DEFAULTS } from '../../lib/constants';
 import type { DeviceSnapshot } from '../device-state';
@@ -35,6 +36,7 @@ describe('computeMetricDescriptors', () => {
       icon: METRIC_CONFIG[MetricKey.TEMPERATURE].icon,
       chartType: ChartType.LINE,
       axis: 'auto',
+      sensors: [],
     });
   });
 
@@ -168,5 +170,79 @@ describe('computeMetricDescriptors', () => {
       axis: { min: 0, max: 1 },
       chartType: ChartType.STEP,
     });
+  });
+});
+
+describe('computeMetricDescriptors — sensors', () => {
+  const device = {
+    deviceId: 'g1',
+    name: 'Tent',
+    overviewEntityId: 'sensor.tent_overview',
+    environmentAttributes: {
+      temperatureSensors: ['sensor.t1', 'sensor.t2'],
+    },
+  } as unknown as GrowspaceDevice;
+
+  const states = {
+    'sensor.t1': { state: '20', attributes: { friendly_name: 'Room 1' } },
+    'sensor.t2': { state: '22', attributes: {} },
+  };
+
+  it('carries every sensor backing a metric, named for display', () => {
+    const descriptor = computeMetricDescriptors(null, states, undefined, device)[
+      MetricKey.TEMPERATURE
+    ];
+
+    expect(descriptor.sensors).toEqual([
+      { entityId: 'sensor.t1', name: 'Room 1' },
+      // No friendly name — the entity id is the name a consumer shows.
+      { entityId: 'sensor.t2', name: 'sensor.t2' },
+    ]);
+  });
+
+  it('resolves a single-sensor metric to one sensor', () => {
+    const single = {
+      ...device,
+      environmentAttributes: { temperatureSensor: 'sensor.t1' },
+    } as unknown as GrowspaceDevice;
+
+    expect(
+      computeMetricDescriptors(null, states, undefined, single)[MetricKey.TEMPERATURE].sensors
+    ).toEqual([{ entityId: 'sensor.t1', name: 'Room 1' }]);
+  });
+
+  it('carries no sensors without a device, so consumers see single-sensor metrics', () => {
+    const descriptors = computeMetricDescriptors(null, states);
+
+    expect(descriptors[MetricKey.TEMPERATURE].sensors).toEqual([]);
+    expect(descriptors[MetricKey.VPD].sensors).toEqual([]);
+  });
+
+  it('lets a view context declare the entities it keyed its own histories by', () => {
+    const descriptors = computeMetricDescriptors(null, states, undefined, device, {
+      [MetricKey.TEMPERATURE]: ['sensor.sub1', 'sensor.sub2'],
+    });
+
+    // The subarea view reads its own sensors, not the parent growspace's.
+    expect(descriptors[MetricKey.TEMPERATURE].sensors.map((s) => s.entityId)).toEqual([
+      'sensor.sub1',
+      'sensor.sub2',
+    ]);
+    // A metric the view did not declare still resolves from the device.
+    expect(descriptors[MetricKey.VPD].sensors.map((s) => s.entityId)).toEqual(
+      resolveMetricEntityIds(device, MetricKey.VPD, states)
+    );
+  });
+
+  it('resolves the same entities history fetching does', () => {
+    const descriptor = computeMetricDescriptors(null, states, undefined, device)[
+      MetricKey.TEMPERATURE
+    ];
+
+    // Both sides of the seam must agree on the entity list, or a graph silently
+    // renders the wrong history (ADR-0030).
+    expect(descriptor.sensors.map((s) => s.entityId)).toEqual(
+      resolveMetricEntityIds(device, MetricKey.TEMPERATURE, states)
+    );
   });
 });

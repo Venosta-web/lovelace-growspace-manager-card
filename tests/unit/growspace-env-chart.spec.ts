@@ -1231,30 +1231,6 @@ describe('GrowspaceEnvChart', () => {
             expect(card).toBeTruthy();
         });
 
-        it('should handle multi-sensor metric expansion and color deviation', async () => {
-            const now = Date.now();
-            element.isCombined = true;
-            element.metrics = ['temperature'];
-            element.sensorHistory = {
-                'temperature:sensor1': [{ state: '20', last_changed: new Date(now).toISOString() }] as any,
-                'temperature:sensor2': [{ state: '22', last_changed: new Date(now).toISOString() }] as any
-            };
-            (element as any).hass = {
-                states: {
-                    'sensor1': { attributes: { friendly_name: 'Room 1' } },
-                    'sensor2': { attributes: { friendly_name: 'Room 2' } }
-                }
-            };
-
-            await element.updateComplete;
-
-            const series = (element as any)._renderSeries;
-            expect(series.length).toBe(2);
-            expect(series[0].title).toContain('Room 1');
-            expect(series[1].title).toContain('Room 2');
-            expect(series[1].color).toContain('color-mix');
-        });
-
         it('should handle fallback metric config for unknown keys', async () => {
             const now = Date.now();
             element.isCombined = true;

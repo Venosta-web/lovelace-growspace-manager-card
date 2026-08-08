@@ -22,6 +22,8 @@ export class GrowspaceAnalyticsContainer extends LitElement {
 
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
   @property({ attribute: false }) deviceSnapshot: DeviceSnapshot | null | undefined;
+  /** Per-metric entity lists when the host resolved them itself (subarea view). */
+  @property({ attribute: false }) metricSensors: Record<string, string[]> | undefined;
   private _deviceSnapshotsController!: StoreController<Map<string, DeviceSnapshot>>;
 
   private _controller!: StoreController<{
@@ -119,6 +121,7 @@ export class GrowspaceAnalyticsContainer extends LitElement {
         .device=${this.device}
         .deviceSnapshot=${deviceSnapshot}
         .sensorHistory=${state.combinedHistory || {}}
+        .metricSensors=${this.metricSensors}
         @set-range=${this._handleSetRange}
         @toggle-graph=${this._handleToggleGraph}
         @unlink-graphs=${this._handleUnlinkGraphs}
