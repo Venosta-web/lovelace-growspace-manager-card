@@ -7,14 +7,18 @@
  * which owns the chart's width and height.
  *
  * Scope, per ADR-0030's landing order: a metric is derived here only when the
- * descriptor table carries it. Multi-sensor (`'metric:entity'`) history keys are
- * not handled yet — that is #471 — so callers must keep those on their existing
- * derivation.
+ * descriptor table carries it.
+ *
+ * Multi-sensor grouping is carried structurally: a descriptor's `sensors` decide
+ * how many series a metric has, in what order, and what each is called. The
+ * histories map is still keyed by `'metric:entity'` strings, so this module
+ * composes that key — it never parses one, and never scans the map to discover
+ * which sensors exist. The key scheme itself retires in #473.
  */
 
 import { ChartType, MetricKey, StatusLevel, STATUS_COLORS } from './constants';
 import type { HistorySensorState, SensorHistories } from './types';
-import type { MetricDescriptor } from '../../slices/metric-descriptors';
+import type { MetricDescriptor, MetricSensorRef } from '../../slices/metric-descriptors';
 import { ChartUtils } from '../../utils/chart-utils';
 import { BINARY_ON_STATES } from '../../lib/types/hass';
 
@@ -50,6 +54,12 @@ export interface EnvSeries {
   avg: number;
   chartType: ChartType;
   vpdBands?: VpdBand[];
+  /**
+   * The sensor this series traces, present only when its metric has more than
+   * one. Consumers that draw multi-sensor metrics differently — a flat fill
+   * rather than a gradient — read this instead of inspecting the series id.
+   */
+  sensor?: MetricSensorRef;
 }
 
 /**
@@ -209,6 +219,42 @@ function _vpdBands(
   return bands;
 }
 
+/**
+ * How one metric splits into series.
+ *
+ * A single-sensor metric has one, keyed and titled by the metric itself. A
+ * multi-sensor metric has one per sensor, each named after its sensor and tinted
+ * away from the metric colour so the traces stay distinguishable.
+ */
+interface SeriesSpec {
+  id: string;
+  historyKey: string;
+  title: string;
+  color: string;
+  sensor?: MetricSensorRef;
+}
+
+function _seriesSpecs(descriptor: MetricDescriptor, key: string): SeriesSpec[] {
+  const sensors = descriptor.sensors ?? [];
+  if (sensors.length < 2) {
+    return [{ id: key, historyKey: key, title: descriptor.title, color: descriptor.color }];
+  }
+
+  return sensors.map((sensor, index) => ({
+    // The `'metric:entity'` history key is composed here, never parsed. It also
+    // remains the series id, which `$activeEnvGraphs` membership and the
+    // graph-toggle events are keyed by. Retired in #473.
+    id: `${key}:${sensor.entityId}`,
+    historyKey: `${key}:${sensor.entityId}`,
+    title: `${descriptor.title} (${sensor.name})`,
+    color:
+      index === 0
+        ? descriptor.color
+        : `color-mix(in srgb, ${descriptor.color}, white ${index * 20}%)`,
+    sensor,
+  }));
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -216,8 +262,9 @@ function _vpdBands(
 /**
  * Derive value-space series for `metricKeys`.
  *
- * A key is skipped when it has no descriptor or no history. The returned order
- * follows `metricKeys`.
+ * A key is skipped when it has no descriptor or no history, and contributes one
+ * series per sensor when its descriptor carries several. The returned order
+ * follows `metricKeys`, then descriptor sensor order.
  */
 export function computeEnvSeries(
   descriptors: Record<string, MetricDescriptor>,
@@ -233,44 +280,64 @@ export function computeEnvSeries(
     const descriptor = descriptors[key];
     if (!descriptor) continue;
 
-    const history = histories[key] ?? [];
-    if (history.length === 0) continue;
-
-    const points = _pointsForMetric(descriptor, history, startTimeMs, nowMs);
-    if (points.length === 0) continue;
-
-    const reduced = _reduce(points);
-    const bounds = _axisBounds(descriptor, reduced, isCombined);
-    const vpdThresholds = key === MetricKey.VPD ? descriptor.vpdThresholds : undefined;
-    const lightHistory = vpdThresholds
-      ? ChartUtils.normalizeHistory(histories[MetricKey.LIGHT] ?? [], MetricKey.LIGHT)
-      : [];
-    const vpdBands = vpdThresholds ? _vpdBands(points, vpdThresholds, lightHistory) : undefined;
-
-    let color = descriptor.color;
-    if (vpdThresholds) {
-      const lastPoint = points[points.length - 1];
-      // Preserve the legacy current-status rule: absent light history means day;
-      // otherwise the latest light state decides the series/header colour.
-      const currentIsDay =
-        lightHistory.length === 0 || lightHistory[lightHistory.length - 1].value === 1;
-      color = STATUS_COLORS[_vpdStatus(lastPoint.value, vpdThresholds, currentIsDay)];
+    for (const spec of _seriesSpecs(descriptor, key)) {
+      const built = _buildSeries(descriptor, spec, histories, {
+        startTimeMs,
+        nowMs,
+        isCombined,
+      });
+      if (built) series.push(built);
     }
-
-    series.push({
-      id: key,
-      title: descriptor.title,
-      color,
-      unit: descriptor.unit,
-      icon: descriptor.icon,
-      points,
-      min: bounds.min,
-      max: bounds.max,
-      avg: reduced.avg,
-      chartType: descriptor.chartType,
-      ...(vpdBands ? { vpdBands } : {}),
-    });
   }
 
   return series;
+}
+
+function _buildSeries(
+  descriptor: MetricDescriptor,
+  spec: SeriesSpec,
+  histories: SensorHistories,
+  window: { startTimeMs: number; nowMs: number; isCombined: boolean }
+): EnvSeries | undefined {
+  const { startTimeMs, nowMs, isCombined } = window;
+  const key = descriptor.key;
+
+  const history = histories[spec.historyKey] ?? [];
+  if (history.length === 0) return undefined;
+
+  const points = _pointsForMetric(descriptor, history, startTimeMs, nowMs);
+  if (points.length === 0) return undefined;
+
+  const reduced = _reduce(points);
+  const bounds = _axisBounds(descriptor, reduced, isCombined);
+  const vpdThresholds = key === MetricKey.VPD ? descriptor.vpdThresholds : undefined;
+  const lightHistory = vpdThresholds
+    ? ChartUtils.normalizeHistory(histories[MetricKey.LIGHT] ?? [], MetricKey.LIGHT)
+    : [];
+  const vpdBands = vpdThresholds ? _vpdBands(points, vpdThresholds, lightHistory) : undefined;
+
+  let color = spec.color;
+  if (vpdThresholds) {
+    const lastPoint = points[points.length - 1];
+    // Preserve the legacy current-status rule: absent light history means day;
+    // otherwise the latest light state decides the series/header colour.
+    const currentIsDay =
+      lightHistory.length === 0 || lightHistory[lightHistory.length - 1].value === 1;
+    color = STATUS_COLORS[_vpdStatus(lastPoint.value, vpdThresholds, currentIsDay)];
+  }
+
+  return {
+    id: spec.id,
+    title: spec.title,
+    color,
+    unit: descriptor.unit,
+    icon: descriptor.icon,
+    points,
+    min: bounds.min,
+    max: bounds.max,
+    avg: reduced.avg,
+    chartType: descriptor.chartType,
+    ...(vpdBands ? { vpdBands } : {}),
+    ...(spec.sensor ? { sensor: spec.sensor } : {}),
+  };
 }

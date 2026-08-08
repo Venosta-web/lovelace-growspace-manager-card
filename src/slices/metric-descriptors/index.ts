@@ -15,8 +15,11 @@
  * Scope, per ADR-0030's landing order: **temperature, fan, light, VPD, and the
  * step-vs-line shape and fixed axes of the binary metrics**. A key with no
  * descriptor is not yet migrated, and consumers fall back to their existing
- * derivation for it. Widened by:
- *   #471 — multi-sensor series refs, replacing `':'`-joined history keys
+ * derivation for it.
+ *
+ * Since #471 a descriptor also carries the sensors backing its metric, as
+ * structured `{ entityId, name }` refs — the grouping consumers used to
+ * rediscover by splitting `':'`-joined history keys.
  */
 
 import { ChartType, METRIC_CONFIG, MetricKey } from '../../features/environment/constants';
@@ -27,6 +30,10 @@ import {
   type DeviceEntry,
   type DeviceSnapshot,
 } from '../device-state';
+import { resolveMetricEntityIds } from './metric-entities';
+import type { GrowspaceDevice } from '../../services/types';
+
+export { resolveMetricEntityIds } from './metric-entities';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -52,6 +59,17 @@ export interface VpdThresholds {
   night: VpdThresholdRange;
 }
 
+/**
+ * One sensor backing a metric.
+ *
+ * `name` is resolved here, once, so a consumer never has to look a friendly name
+ * up for itself — the reason the descriptor takes a states snapshot at all.
+ */
+export interface MetricSensorRef {
+  entityId: string;
+  name: string;
+}
+
 /** Everything a chip or a graph must know about one metric. */
 export interface MetricDescriptor {
   key: string;
@@ -64,6 +82,11 @@ export interface MetricDescriptor {
   vpdThresholds?: VpdThresholds;
   /** Entity context used to normalize history values for this migration slice. */
   entityId?: string;
+  /**
+   * The sensors backing this metric, in presentation order. More than one means
+   * the metric renders one series per sensor. Empty when no device was supplied.
+   */
+  sensors: MetricSensorRef[];
 }
 
 export interface OverviewEntitySnapshot {
@@ -120,6 +143,7 @@ function _fanDescriptor(
     chartType: ChartType.LINE,
     axis: fanReadingToAxisScale(kind),
     entityId,
+    sensors: [],
   };
 }
 
@@ -143,6 +167,7 @@ function _lightDescriptor(
     chartType: isPercentage ? ChartType.LINE : ChartType.STEP,
     axis: isPercentage ? { min: 0, max: 100 } : { min: 0, max: 1 },
     entityId,
+    sensors: [],
   };
 }
 
@@ -161,7 +186,26 @@ function _descriptor(
     icon: config.icon,
     chartType,
     axis,
+    sensors: [],
   };
+}
+
+/**
+ * The sensors backing `key`, named for display.
+ *
+ * Resolution is shared with `history-store` (see `metric-entities.ts`) so a
+ * descriptor's sensor list and the histories fetched for that metric always
+ * describe the same entities.
+ */
+function _sensorsForMetric(
+  device: GrowspaceDevice,
+  key: string,
+  hassStates: HassStates
+): MetricSensorRef[] {
+  return resolveMetricEntityIds(device, key, hassStates).map((entityId) => ({
+    entityId,
+    name: (hassStates[entityId]?.attributes?.friendly_name as string | undefined) || entityId,
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -173,10 +217,30 @@ function _descriptor(
  *
  * Only migrated metrics appear. Callers treat an absent key as "not migrated"
  * rather than as an error.
+ *
+ * `device` supplies the metric→entity mapping. Without it the descriptors carry
+ * no sensors, and a consumer sees every metric as single-sensor.
  */
 export function computeMetricDescriptors(
   deviceSnapshot: DeviceSnapshot | null = null,
   hassStates: HassStates = {},
+  overviewEntity?: OverviewEntitySnapshot,
+  device?: GrowspaceDevice | null
+): Record<string, MetricDescriptor> {
+  const table = _descriptorTable(deviceSnapshot, hassStates, overviewEntity);
+
+  if (device) {
+    for (const [key, descriptor] of Object.entries(table)) {
+      descriptor.sensors = _sensorsForMetric(device, key, hassStates);
+    }
+  }
+
+  return table;
+}
+
+function _descriptorTable(
+  deviceSnapshot: DeviceSnapshot | null,
+  hassStates: HassStates,
   overviewEntity?: OverviewEntitySnapshot
 ): Record<string, MetricDescriptor> {
   return {
