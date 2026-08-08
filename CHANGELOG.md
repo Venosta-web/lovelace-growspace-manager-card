@@ -1,3 +1,10 @@
+# [1.1.0-next.89](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.88...v1.1.0-next.89) (2026-08-08)
+
+
+### Features
+
+* **env-graph:** derive step shapes and axes from descriptors ([#477](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/477)) ([e61e4ee](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e61e4ee095b3d8f352b2fcd4a1a5898ad385bbfc))
+
 # [1.1.0-next.88](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.87...v1.1.0-next.88) (2026-08-08)
 
 
