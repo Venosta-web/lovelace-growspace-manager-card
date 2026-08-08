@@ -54,7 +54,7 @@ export class CropSteeringDayChart extends LitElement {
     }
     .cs-model {
       position: relative;
-      height: 224px;
+      height: 300px;
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 10px;
       background: rgba(0, 0, 0, 0.2);
@@ -160,9 +160,11 @@ export class CropSteeringDayChart extends LitElement {
     .cm-axis-cap.right {
       right: 7px;
     }
+    /* Guide labels sit inboard of the tick columns they belong to: VWC reads off
+       the left axis, EC off the right, matching the axis caps below them. */
     .cm-target {
       position: absolute;
-      right: 8px;
+      left: 44px;
       z-index: 2;
       transform: translateY(-50%);
       font-size: 9.5px;
@@ -176,9 +178,24 @@ export class CropSteeringDayChart extends LitElement {
         0 0 4px rgba(0, 0, 0, 0.8);
       pointer-events: none;
     }
-    .cm-target.left {
-      left: 8px;
-      right: auto;
+    .cm-target.right {
+      right: 52px;
+      left: auto;
+    }
+    .cm-tick {
+      position: absolute;
+      z-index: 2;
+      transform: translateY(-50%);
+      font-size: 9px;
+      font-variant-numeric: tabular-nums;
+      color: rgba(255, 255, 255, 0.32);
+      pointer-events: none;
+    }
+    .cm-tick.left {
+      left: 6px;
+    }
+    .cm-tick.right {
+      right: 6px;
     }
     .placeholder {
       padding: 32px;
@@ -645,11 +662,11 @@ export class CropSteeringDayChart extends LitElement {
     const bulkEcColor = METRIC_CONFIG[MetricKey.BULK_EC].color;
 
     const svgW = 1000;
-    const svgH = 224;
+    const svgH = 300;
     const padL = 6;
     const padR = 6;
     const padT = 28;
-    const padB = 20;
+    const padB = 26;
     const iW = svgW - padL - padR;
     const iH = svgH - padT - padB;
     const xAt = (offset: number) => padL + (offset / day) * iW;
@@ -682,18 +699,6 @@ export class CropSteeringDayChart extends LitElement {
       ? this._buildRollingTracePts(MetricKey.SOIL_MOISTURE, anchorMs, nowMs)
       : buildTracePts(history?.soil_moisture, anchorMs);
 
-    const vwcAxisPad = 5;
-    let vwcAxisLo = Math.min(target, p2Trigger);
-    let vwcAxisHi = Math.max(target, p2Trigger);
-    for (const p of vwcPts) {
-      vwcAxisLo = Math.min(vwcAxisLo, p.v);
-      vwcAxisHi = Math.max(vwcAxisHi, p.v);
-    }
-    vwcAxisLo = Math.max(0, vwcAxisLo - vwcAxisPad);
-    vwcAxisHi = vwcAxisHi + vwcAxisPad;
-    const yAtVwc = (v: number) =>
-      padT + iH - Math.max(0, Math.min(1, (v - vwcAxisLo) / (vwcAxisHi - vwcAxisLo))) * iH;
-
     const hasRollingSensor = (key: string) =>
       Object.keys(this.sensorHistory).some((k) => k === key || k.startsWith(`${key}:`));
 
@@ -715,45 +720,17 @@ export class CropSteeringDayChart extends LitElement {
     const ecTargetRange = (this.device?.irrigationConfig?.ecTargetRanges ?? []).find(
       (r) => r.stage === this.device?.biologicalMetrics?.granularStage
     );
-    const ecTargetMid = ecTargetRange ? (ecTargetRange.minEc + ecTargetRange.maxEc) / 2 : null;
-
-    const ecValsForAxis: number[] = [];
-    for (const pts of [poreEcPts, bulkEcPts]) {
-      if (!pts) continue;
-      for (const p of pts) if (p) ecValsForAxis.push(p.v);
-    }
-    let ecAxisLo: number;
-    let ecAxisHi: number;
-    if (ecTargetMid !== null) {
-      ecAxisLo = Math.max(0, ecTargetMid - 2);
-      ecAxisHi = ecTargetMid + 2;
-    } else if (ecValsForAxis.length > 0) {
-      const dataMin = Math.min(...ecValsForAxis);
-      const dataMax = Math.max(...ecValsForAxis);
-      const pad = Math.max(0.3, (dataMax - dataMin) * 0.15);
-      ecAxisLo = Math.max(0, dataMin - pad);
-      ecAxisHi = dataMax + pad;
-    } else {
-      ecAxisLo = 1;
-      ecAxisHi = 5;
-    }
-    const yAtEc = (v: number) =>
-      padT + iH - Math.max(0, Math.min(1, (v - ecAxisLo) / (ecAxisHi - ecAxisLo))) * iH;
-
-    const vwcPath = buildPath(vwcPts, yAtVwc);
-    const porePath = poreEcPts ? buildPath(poreEcPts, yAtEc) : '';
-    const bulkPath = bulkEcPts ? buildPath(bulkEcPts, yAtEc) : '';
-
-    const targetY = yAtVwc(target);
-    const p2TriggerY = yAtVwc(p2Trigger);
-    // Keep the label clear of the bottom-left axis-cap row ("VWC %") when the EC target sits
-    // near the axis floor (e.g. 0.1) and would otherwise land in that corner.
-    const ecTargetY = ecTargetMid !== null ? Math.min(yAtEc(ecTargetMid), svgH - 30) : 0;
+    const ecTargetRaw = ecTargetRange ? (ecTargetRange.minEc + ecTargetRange.maxEc) / 2 : null;
+    // A stage the user never configured still yields a range, as {min: 0, max: 0}. A 0 mS/cm
+    // target is not a real setpoint, so treat it as absent rather than anchoring the axis on it.
+    const ecTargetMid = ecTargetRaw !== null && ecTargetRaw > 0 ? ecTargetRaw : null;
 
     const lastKnown = (pts: TracePt[]): number | null =>
       pts.length ? pts[pts.length - 1].v : null;
     const seedVwc = lastKnown(vwcPts) ?? target;
     const seedPore = lastKnown(poreEcPts ?? []) ?? ecTargetMid ?? 3;
+    // The projection is drawn through the same scales as the history, so it has to be known
+    // before the axis domains are fixed — otherwise projected peaks clamp against the ceiling.
     const projection = generateSubstrateProjection(
       nowOffset,
       shots,
@@ -763,6 +740,68 @@ export class CropSteeringDayChart extends LitElement {
       viewStart,
       target
     );
+
+    const vwcAxisPad = 5;
+    let vwcAxisLo = Math.min(target, p2Trigger);
+    let vwcAxisHi = Math.max(target, p2Trigger);
+    for (const v of [...vwcPts.map((p) => p.v), ...projection.map((p) => p.vwc)]) {
+      vwcAxisLo = Math.min(vwcAxisLo, v);
+      vwcAxisHi = Math.max(vwcAxisHi, v);
+    }
+    vwcAxisLo = Math.max(0, vwcAxisLo - vwcAxisPad);
+    vwcAxisHi = vwcAxisHi + vwcAxisPad;
+    const yAtVwc = (v: number) =>
+      padT + iH - Math.max(0, Math.min(1, (v - vwcAxisLo) / (vwcAxisHi - vwcAxisLo))) * iH;
+
+    const ecValsForAxis: number[] = [];
+    for (const pts of [poreEcPts, bulkEcPts]) {
+      if (!pts) continue;
+      for (const p of pts) if (p) ecValsForAxis.push(p.v);
+    }
+    for (const p of projection) ecValsForAxis.push(p.pore, p.bulk);
+    let ecAxisLo: number;
+    let ecAxisHi: number;
+    if (ecValsForAxis.length > 0) {
+      // Union of the data and the target band — anchoring on the target alone flattened
+      // real readings against an axis edge whenever the two disagreed.
+      let dataMin = Math.min(...ecValsForAxis);
+      let dataMax = Math.max(...ecValsForAxis);
+      if (ecTargetMid !== null) {
+        dataMin = Math.min(dataMin, ecTargetMid);
+        dataMax = Math.max(dataMax, ecTargetMid);
+      }
+      const pad = Math.max(0.3, (dataMax - dataMin) * 0.15);
+      ecAxisLo = Math.max(0, dataMin - pad);
+      ecAxisHi = dataMax + pad;
+    } else if (ecTargetMid !== null) {
+      ecAxisLo = Math.max(0, ecTargetMid - 2);
+      ecAxisHi = ecTargetMid + 2;
+    } else {
+      ecAxisLo = 1;
+      ecAxisHi = 5;
+    }
+    const yAtEc = (v: number) =>
+      padT + iH - Math.max(0, Math.min(1, (v - ecAxisLo) / (ecAxisHi - ecAxisLo))) * iH;
+
+    // The two scales are overlaid on one plot, so they share gridlines and each labels
+    // the same fractions in its own units — VWC down the left edge, EC down the right.
+    const tickFractions = [0, 0.25, 0.5, 0.75, 1];
+    const ticks = tickFractions.map((f) => ({
+      y: padT + iH - f * iH,
+      vwc: `${(vwcAxisLo + f * (vwcAxisHi - vwcAxisLo)).toFixed(0)}%`,
+      ec: (ecAxisLo + f * (ecAxisHi - ecAxisLo)).toFixed(1),
+    }));
+
+    const vwcPath = buildPath(vwcPts, yAtVwc);
+    const porePath = poreEcPts ? buildPath(poreEcPts, yAtEc) : '';
+    const bulkPath = bulkEcPts ? buildPath(bulkEcPts, yAtEc) : '';
+
+    const targetY = yAtVwc(target);
+    const p2TriggerY = yAtVwc(p2Trigger);
+    // Keep the label clear of the bottom-right axis-cap row ("mS/cm") when the EC target sits
+    // near the axis floor (e.g. 0.1) and would otherwise land in that corner.
+    const ecTargetY = ecTargetMid !== null ? Math.min(yAtEc(ecTargetMid), svgH - 30) : 0;
+
     const projVwcSeg = projection
       .map(
         (p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yAtVwc(p.vwc).toFixed(1)}`
@@ -967,11 +1006,11 @@ export class CropSteeringDayChart extends LitElement {
           </defs>
 
           <!-- horizontal gridlines at VWC ticks -->
-          ${[vwcAxisLo, (vwcAxisLo + vwcAxisHi) / 2, vwcAxisHi].map(
-            (v) => svg`
+          ${tickFractions.map(
+            (f) => svg`
               <line
                 x1="${xAt(0)}" x2="${xAt(day)}"
-                y1="${yAtVwc(v).toFixed(1)}" y2="${yAtVwc(v).toFixed(1)}"
+                y1="${(padT + iH - f * iH).toFixed(1)}" y2="${(padT + iH - f * iH).toFixed(1)}"
                 stroke="rgba(255,255,255,0.05)"
               />
             `
@@ -1094,6 +1133,14 @@ export class CropSteeringDayChart extends LitElement {
         <span class="cm-axis-cap left">VWC %</span>
         <span class="cm-axis-cap right">mS/cm</span>
 
+        <!-- The bottom tick would sit on top of the axis caps, so it is left unlabelled. -->
+        ${ticks.slice(1).map(
+          (t) => html`
+            <span class="cm-tick left" style="top:${t.y.toFixed(1)}px;">${t.vwc}</span>
+            <span class="cm-tick right" style="top:${t.y.toFixed(1)}px;">${t.ec}</span>
+          `
+        )}
+
         <span class="cm-target" style="top:${targetY.toFixed(1)}px;color:${vwcColor};"
           >Target ${target.toFixed(0)}%</span
         >
@@ -1104,7 +1151,7 @@ export class CropSteeringDayChart extends LitElement {
         >
         ${ecTargetMid !== null
           ? html`<span
-              class="cm-target left"
+              class="cm-target right"
               style="top:${ecTargetY.toFixed(1)}px;color:${poreEcColor};"
               >Pore EC target ${ecTargetMid.toFixed(1)}</span
             >`
