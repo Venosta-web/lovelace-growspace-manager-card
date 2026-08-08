@@ -3,6 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { GrowspaceDevice, SensorHistories, HistoryTimeRange } from '../../../types';
+import type { DeviceSnapshot } from '../../../slices/device-state';
 import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
 import '../../../growspace-env-chart';
@@ -22,6 +23,7 @@ export class GrowspaceAnalyticsUI extends LitElement {
   @property({ attribute: false }) range: HistoryTimeRange = '24h';
   @property({ attribute: false }) hass: HomeAssistant | undefined;
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
+  @property({ attribute: false }) deviceSnapshot: DeviceSnapshot | null = null;
   @property({ attribute: false }) sensorHistory: SensorHistories = {};
 
   static styles = [
@@ -101,6 +103,7 @@ export class GrowspaceAnalyticsUI extends LitElement {
         <growspace-env-chart
           .hass=${this.hass}
           .device=${this.device}
+          .deviceSnapshot=${this.deviceSnapshot}
           .sensorHistory=${this.sensorHistory}
           .metrics=${item.metrics}
           .isCombined=${true}
@@ -132,6 +135,7 @@ export class GrowspaceAnalyticsUI extends LitElement {
       <growspace-env-chart
         .hass=${this.hass}
         .device=${this.device}
+        .deviceSnapshot=${this.deviceSnapshot}
         .sensorHistory=${this.sensorHistory}
         .metricKey=${item.metrics[0]}
         .metrics=${item.metrics}
