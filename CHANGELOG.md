@@ -1,3 +1,10 @@
+# [1.1.0-next.86](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.85...v1.1.0-next.86) (2026-08-08)
+
+
+### Bug Fixes
+
+* **date-input:** split datetime-local into separate date and time inputs ([#465](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/465)) ([b856134](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b8561349b67d798a8dd6449addf13b76d90b44d7))
+
 # [1.1.0-next.85](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.84...v1.1.0-next.85) (2026-08-08)
 
 
