@@ -41,6 +41,16 @@ describe('computeMetricDescriptors', () => {
     expect(descriptors[MetricKey.HUMIDITY]).toBeUndefined();
   });
 
+  it.each([
+    [MetricKey.OPTIMAL, ChartType.STEP, { min: 0, max: 1 }],
+    [MetricKey.DEHUMIDIFIER, ChartType.STEP, { min: 0, max: 1 }],
+    [MetricKey.HUMIDIFIER, ChartType.LINE, { min: 0, max: 10 }],
+    [MetricKey.IRRIGATION, ChartType.STEP, { min: 0, max: 1 }],
+    [MetricKey.DRAIN, ChartType.STEP, { min: 0, max: 1 }],
+  ])('describes %s with its chart shape and fixed axis', (key, chartType, axis) => {
+    expect(computeMetricDescriptors()[key]).toMatchObject({ key, chartType, axis });
+  });
+
   it('derives fan units and axes from entity ids without reading states', () => {
     const states = new Proxy(
       {},
@@ -92,7 +102,7 @@ describe('computeMetricDescriptors', () => {
       'sensor.tent_light': { state: 'on', attributes: {} },
     });
     expect(raw[MetricKey.LIGHT]).toMatchObject({
-      unit: 'state',
+      unit: METRIC_CONFIG[MetricKey.LIGHT].unit,
       axis: { min: 0, max: 1 },
       chartType: ChartType.STEP,
     });

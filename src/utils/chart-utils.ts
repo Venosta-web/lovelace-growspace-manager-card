@@ -496,6 +496,9 @@ export class ChartUtils {
     const s = ent.state;
     if (s === EntityState.UNAVAILABLE || s === EntityState.UNKNOWN) return undefined;
 
+    if (key === MetricKey.OPTIMAL) {
+      return BINARY_ON_STATES.includes(s) ? 1 : 0;
+    }
     if (key === MetricKey.DEHUMIDIFIER) {
       return BINARY_ON_STATES.includes(s) || s === 'heating' || s === 'drying' ? 1 : 0;
     }

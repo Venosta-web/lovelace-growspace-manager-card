@@ -516,15 +516,10 @@ export class GrowspaceEnvChart extends LitElement {
   ): GraphSeries[] {
     const startTimeMs = startTime.getTime();
 
-    return computeEnvSeries(
-      this._metricDescriptors(),
-      this.sensorHistory ?? {},
-      [this.metricKey],
-      {
-        startTimeMs,
-        nowMs: now.getTime(),
-      }
-    ).map((series) => ({
+    return computeEnvSeries(this._metricDescriptors(), this.sensorHistory ?? {}, [this.metricKey], {
+      startTimeMs,
+      nowMs: now.getTime(),
+    }).map((series) => ({
       id: series.id,
       title: series.title,
       color: series.color,
