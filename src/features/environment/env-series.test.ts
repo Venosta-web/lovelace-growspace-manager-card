@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeEnvSeries, durationMillisForRange } from './env-series';
+import { computeEnvSeries } from './env-series';
 import { computeMetricDescriptors } from '../../slices/metric-descriptors';
 import { ChartType, MetricKey } from './constants';
 import type { HistorySensorState, SensorHistories } from './types';
@@ -22,20 +22,13 @@ function temperatureHistory(...entries: HistorySensorState[]): SensorHistories {
   return { [MetricKey.TEMPERATURE]: entries };
 }
 
-function computeTemperature(histories: SensorHistories, range: '1h' | '6h' | '24h' | '7d' = '24h') {
-  return computeEnvSeries(DESCRIPTORS, histories, [MetricKey.TEMPERATURE], range, NOW);
+function windowOf(hours: number) {
+  return { startTimeMs: NOW.getTime() - hours * HOUR_MS, nowMs: NOW.getTime() };
 }
 
-describe('durationMillisForRange', () => {
-  it.each([
-    ['1h', HOUR_MS],
-    ['6h', 6 * HOUR_MS],
-    ['24h', 24 * HOUR_MS],
-    ['7d', 7 * 24 * HOUR_MS],
-  ] as const)('spans %s', (range, expected) => {
-    expect(durationMillisForRange(range)).toBe(expected);
-  });
-});
+function computeTemperature(histories: SensorHistories, hours = 24) {
+  return computeEnvSeries(DESCRIPTORS, histories, [MetricKey.TEMPERATURE], windowOf(hours));
+}
 
 describe('computeEnvSeries — temperature', () => {
   it('carries the descriptor display facts onto the series', () => {
@@ -74,7 +67,7 @@ describe('computeEnvSeries — temperature', () => {
     // The 20°C reading predates the 1h window; it must still anchor the left edge.
     const [series] = computeTemperature(
       temperatureHistory(reading(300, '20'), reading(30, '25')),
-      '1h'
+      1
     );
 
     const windowStart = NOW.getTime() - HOUR_MS;
@@ -119,7 +112,7 @@ describe('computeEnvSeries — temperature', () => {
   it('emits a seed point at the window start even when the reading is inside the window', () => {
     // Matches the legacy derivation: the first in-window reading is both the seed
     // (stamped at the window start) and its own point at its real timestamp.
-    const [series] = computeTemperature(temperatureHistory(reading(120, '20')), '24h');
+    const [series] = computeTemperature(temperatureHistory(reading(120, '20')), 24);
 
     const windowStart = NOW.getTime() - 24 * HOUR_MS;
     expect(series.points.map((p) => p.time)).toEqual([
@@ -144,7 +137,7 @@ describe('computeEnvSeries — temperature', () => {
   it('skips a metric that has no descriptor yet', () => {
     const histories = { [MetricKey.VPD]: [reading(30, '1.2')] };
 
-    expect(computeEnvSeries(DESCRIPTORS, histories, [MetricKey.VPD], '24h', NOW)).toEqual([]);
+    expect(computeEnvSeries(DESCRIPTORS, histories, [MetricKey.VPD], windowOf(24))).toEqual([]);
   });
 
   it('preserves the requested metric order', () => {
@@ -157,8 +150,7 @@ describe('computeEnvSeries — temperature', () => {
       DESCRIPTORS,
       histories,
       [MetricKey.VPD, MetricKey.TEMPERATURE],
-      '24h',
-      NOW
+      windowOf(24)
     );
 
     // VPD has no descriptor yet, so temperature is all that survives.

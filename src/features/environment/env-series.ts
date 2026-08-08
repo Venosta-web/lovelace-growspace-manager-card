@@ -43,23 +43,22 @@ export interface EnvSeries {
   chartType: ChartType;
 }
 
-export type HistoryRange = '1h' | '6h' | '24h' | '7d';
+/**
+ * The window a series is derived over.
+ *
+ * Passed in rather than derived from a [[Time Range Selector]] range so that the
+ * caller's window and the window the trace is drawn against cannot drift apart —
+ * points seeded at one window start and a path drawn against another would be a
+ * silently misaligned trace.
+ */
+export interface EnvSeriesWindow {
+  startTimeMs: number;
+  nowMs: number;
+}
 
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
-
-const RANGE_DURATION_MS: Record<HistoryRange, number> = {
-  '1h': 60 * 60 * 1000,
-  '6h': 6 * 60 * 60 * 1000,
-  '24h': 24 * 60 * 60 * 1000,
-  '7d': 7 * 24 * 60 * 60 * 1000,
-};
-
-/** Milliseconds spanned by a Time Range Selector range. */
-export function durationMillisForRange(range: HistoryRange): number {
-  return RANGE_DURATION_MS[range] ?? RANGE_DURATION_MS['24h'];
-}
 
 /**
  * The last state at or before `startTimeMs`, which seeds the trace's left edge so
@@ -153,11 +152,9 @@ export function computeEnvSeries(
   descriptors: Record<string, MetricDescriptor>,
   histories: SensorHistories,
   metricKeys: string[],
-  range: HistoryRange,
-  now: Date
+  window: EnvSeriesWindow
 ): EnvSeries[] {
-  const nowMs = now.getTime();
-  const startTimeMs = nowMs - durationMillisForRange(range);
+  const { startTimeMs, nowMs } = window;
 
   const series: EnvSeries[] = [];
 
