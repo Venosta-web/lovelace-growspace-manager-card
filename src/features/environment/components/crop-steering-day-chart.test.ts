@@ -95,7 +95,7 @@ describe('CropSteeringDayChart – history fetch lifecycle', () => {
     expect(mockHassCall).toHaveBeenCalledWith(
       'growspace_manager/get_crop_steering_history',
       { growspace_id: 'gs1' },
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -113,7 +113,7 @@ describe('CropSteeringDayChart – history fetch lifecycle', () => {
     expect(mockHassCall).toHaveBeenLastCalledWith(
       'growspace_manager/get_crop_steering_history',
       { growspace_id: 'gs2' },
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -156,7 +156,7 @@ describe('CropSteeringDayChart – rendering', () => {
     await vi.waitFor(() => el.shadowRoot!.querySelector('.cs-model') !== null);
 
     const labels = Array.from(el.shadowRoot!.querySelectorAll('.cm-target')).map(
-      (t) => t.textContent ?? '',
+      (t) => t.textContent ?? ''
     );
     expect(labels.some((l) => l.includes('Target') && l.includes('%'))).toBe(true);
     expect(labels.some((l) => l.includes('P2 trigger') && l.includes('%'))).toBe(true);
@@ -201,7 +201,7 @@ describe('CropSteeringDayChart – rendering', () => {
         clientX: rect.left + rect.width / 2,
         clientY: rect.top + rect.height / 2,
         bubbles: true,
-      }),
+      })
     );
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     await el.updateComplete;
@@ -248,6 +248,28 @@ describe('CropSteeringDayChart – rolling window mode', () => {
     const text = el.shadowRoot!.textContent?.replace(/\s+/g, ' ') ?? '';
     expect(text).toContain('-6h');
     expect(text).toContain('Now');
+  });
+
+  it('averages a multi-sensor metric whose histories are keyed by entity id', async () => {
+    cropSteeringHistory$.set(new Map());
+    const el = createElement();
+    el.device = makeDevice({
+      environmentAttributes: { soilMoistureSensors: ['sensor.vwc_a', 'sensor.vwc_b'] },
+    } as Partial<GrowspaceDevice>);
+    el.rollingWindow = true;
+    el.range = '24h';
+    // Since #473 `history-store` files each sensor of a multi-sensor metric
+    // under its own entity id, with nothing naming the metric it belongs to.
+    el.sensorHistory = {
+      'sensor.vwc_a': [mkHistoryState(60, 60, now), mkHistoryState(5, 64, now)],
+      'sensor.vwc_b': [mkHistoryState(60, 62, now), mkHistoryState(5, 66, now)],
+      [MetricKey.PORE_EC]: [mkHistoryState(10, 3.4, now)],
+    };
+    await el.updateComplete;
+    await vi.waitFor(() => el.shadowRoot!.querySelector('.cm-readout') !== null);
+
+    const readout = el.shadowRoot!.querySelector('.cm-readout');
+    expect(readout?.textContent?.replace(/\s+/g, ' ')).toMatch(/VWC\s*65\.0%/);
   });
 
   it('sources its trace data from sensorHistory rather than cropSteeringHistory', async () => {
