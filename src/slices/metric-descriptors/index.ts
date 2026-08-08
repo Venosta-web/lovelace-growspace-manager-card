@@ -33,7 +33,8 @@ import {
 import { resolveMetricEntityIds } from './metric-entities';
 import type { GrowspaceDevice } from '../../services/types';
 
-export { resolveMetricEntityIds } from './metric-entities';
+export { resolveMetricEntityIds, metricHistoryKeys } from './metric-entities';
+export type { MetricHistoryKey } from './metric-entities';
 
 // ---------------------------------------------------------------------------
 // Public types

@@ -10,14 +10,15 @@
  * covers every metric the card knows, so an absent key means "not a metric".
  *
  * Multi-sensor grouping is carried structurally: a descriptor's `sensors` decide
- * how many series a metric has, in what order, and what each is called. The
- * histories map is still keyed by `'metric:entity'` strings, so this module
- * composes that key — it never parses one, and never scans the map to discover
- * which sensors exist. The key scheme itself retires in #473.
+ * how many series a metric has, in what order, and what each is called. This
+ * module never parses a history key and never scans the map to discover which
+ * sensors exist — it asks `metricHistoryKeys` for the key each sensor's data is
+ * filed under, the same function `history-store` files it with (#473).
  */
 
 import { ChartType, MetricKey, StatusLevel, STATUS_COLORS } from './constants';
 import type { HistorySensorState, SensorHistories } from './types';
+import { metricHistoryKeys } from '../../slices/metric-descriptors';
 import type { MetricDescriptor, MetricSensorRef } from '../../slices/metric-descriptors';
 import { ChartUtils } from '../../utils/chart-utils';
 import { BINARY_ON_STATES } from '../../lib/types/hass';
@@ -240,12 +241,17 @@ function _seriesSpecs(descriptor: MetricDescriptor, key: string): SeriesSpec[] {
     return [{ id: key, historyKey: key, title: descriptor.title, color: descriptor.color }];
   }
 
+  const keys = metricHistoryKeys(
+    key,
+    sensors.map((sensor) => sensor.entityId)
+  );
+
   return sensors.map((sensor, index) => ({
-    // The `'metric:entity'` history key is composed here, never parsed. It also
-    // remains the series id, which `$activeEnvGraphs` membership and the
-    // graph-toggle events are keyed by. Retired in #473.
+    // The series *id* is still `'metric:entity'`: it is a graph identity, which
+    // `$activeEnvGraphs` membership and the graph-toggle events are keyed by.
+    // The history key is a different thing, and comes from the shared function.
     id: `${key}:${sensor.entityId}`,
-    historyKey: `${key}:${sensor.entityId}`,
+    historyKey: keys[index].historyKey,
     title: `${descriptor.title} (${sensor.name})`,
     color:
       index === 0
