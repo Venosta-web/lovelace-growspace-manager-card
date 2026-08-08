@@ -1,3 +1,10 @@
+# [1.1.0-next.91](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.90...v1.1.0-next.91) (2026-08-08)
+
+
+### Features
+
+* **env-graph:** carry multi-sensor grouping structurally ([#479](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/479)) ([f7dd7f2](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/f7dd7f202eb620dad5eb74cfd2c6c0544750ff81)), closes [#473](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/473) [#471](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/471)
+
 # [1.1.0-next.90](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.89...v1.1.0-next.90) (2026-08-08)
 
 
