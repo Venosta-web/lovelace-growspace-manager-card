@@ -103,6 +103,16 @@ describe('computeMetricDescriptors', () => {
     });
   });
 
+  it.each([
+    [MetricKey.OPTIMAL, ChartType.STEP, { min: 0, max: 1 }],
+    [MetricKey.DEHUMIDIFIER, ChartType.STEP, { min: 0, max: 1 }],
+    [MetricKey.HUMIDIFIER, ChartType.LINE, { min: 0, max: 10 }],
+    [MetricKey.IRRIGATION, ChartType.STEP, { min: 0, max: 1 }],
+    [MetricKey.DRAIN, ChartType.STEP, { min: 0, max: 1 }],
+  ])('describes %s with its chart shape and fixed axis', (key, chartType, axis) => {
+    expect(computeMetricDescriptors()[key]).toMatchObject({ key, chartType, axis });
+  });
+
   it('derives fan units and axes from entity ids without reading states', () => {
     const states = new Proxy(
       {},

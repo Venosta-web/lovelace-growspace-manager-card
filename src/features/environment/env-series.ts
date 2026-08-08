@@ -63,6 +63,8 @@ export interface EnvSeries {
 export interface EnvSeriesWindow {
   startTimeMs: number;
   nowMs: number;
+  /** Combined charts preserve a flat data range rather than padding it by ±1. */
+  isCombined?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -94,21 +96,30 @@ function _pointsForMetric(
   const key = descriptor.key;
   const points: EnvSeriesPoint[] = [];
 
+  const pointFor = (state: HistorySensorState, time: number): EnvSeriesPoint | undefined => {
+    const value = ChartUtils.normalizeSensorValue(state, key, descriptor.entityId, descriptor.unit);
+    if (value === undefined) return undefined;
+    const reasons = state.attributes?.reasons;
+    return reasons === undefined ? { time, value } : { time, value, meta: { reasons } };
+  };
+
   const seed = _stateAtWindowStart(history, startTimeMs);
   if (seed) {
-    // Preserve the legacy chart's left-edge seeding semantics: recognized binary
-    // strings are seeded directly, while in-window points use metric normalization.
-    const seedValue = BINARY_ON_STATES.includes(seed.state)
-      ? 1
-      : ChartUtils.normalizeSensorValue(seed, key, descriptor.entityId, descriptor.unit);
-    if (seedValue !== undefined) points.push({ time: startTimeMs, value: seedValue });
+    // Preserve the legacy left-edge seed: every recognized binary-on state is
+    // carried in as 1 before metric-specific normalization is considered.
+    if (BINARY_ON_STATES.includes(seed.state)) {
+      points.push({ time: startTimeMs, value: 1 });
+    } else {
+      const point = pointFor(seed, startTimeMs);
+      if (point) points.push(point);
+    }
   }
 
   for (const h of history) {
     const time = new Date(h.last_changed).getTime();
     if (time <= startTimeMs) continue;
-    const value = ChartUtils.normalizeSensorValue(h, key, descriptor.entityId, descriptor.unit);
-    if (value !== undefined) points.push({ time, value });
+    const point = pointFor(h, time);
+    if (point) points.push(point);
   }
 
   // Carry the last known value forward to "now" so the trace reaches the right
@@ -141,12 +152,13 @@ function _reduce(points: EnvSeriesPoint[]): { min: number; max: number; avg: num
  */
 function _axisBounds(
   descriptor: MetricDescriptor,
-  reduced: { min: number; max: number }
+  reduced: { min: number; max: number },
+  isCombined: boolean
 ): { min: number; max: number } {
   if (descriptor.axis !== 'auto') return { ...descriptor.axis };
 
   const { min, max } = reduced;
-  if (max === min && descriptor.chartType !== ChartType.STEP) {
+  if (!isCombined && max === min && descriptor.chartType !== ChartType.STEP) {
     return { min: min - 1, max: max + 1 };
   }
   return { min, max };
@@ -213,7 +225,7 @@ export function computeEnvSeries(
   metricKeys: string[],
   window: EnvSeriesWindow
 ): EnvSeries[] {
-  const { startTimeMs, nowMs } = window;
+  const { startTimeMs, nowMs, isCombined = false } = window;
 
   const series: EnvSeries[] = [];
 
@@ -228,7 +240,7 @@ export function computeEnvSeries(
     if (points.length === 0) continue;
 
     const reduced = _reduce(points);
-    const bounds = _axisBounds(descriptor, reduced);
+    const bounds = _axisBounds(descriptor, reduced, isCombined);
     const vpdThresholds = key === MetricKey.VPD ? descriptor.vpdThresholds : undefined;
     const lightHistory = vpdThresholds
       ? ChartUtils.normalizeHistory(histories[MetricKey.LIGHT] ?? [], MetricKey.LIGHT)

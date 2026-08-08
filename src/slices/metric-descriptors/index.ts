@@ -12,7 +12,8 @@
  * entity ids; the light unit reads the supplied states snapshot, and VPD thresholds
  * read the supplied overview-entity snapshot (ADR-0030).
  *
- * Scope, per ADR-0030's landing order: **temperature, fan, light, and VPD**. A key with no
+ * Scope, per ADR-0030's landing order: **temperature, fan, light, VPD, and the
+ * step-vs-line shape and fixed axes of the binary metrics**. A key with no
  * descriptor is not yet migrated, and consumers fall back to their existing
  * derivation for it. Widened by:
  *   #471 — multi-sensor series refs, replacing `':'`-joined history keys
@@ -145,6 +146,24 @@ function _lightDescriptor(
   };
 }
 
+function _descriptor(
+  key: MetricKey,
+  chartType: ChartType,
+  axis: MetricAxis,
+  unit?: string
+): MetricDescriptor {
+  const config = METRIC_CONFIG[key];
+  return {
+    key,
+    title: config.title,
+    color: config.color,
+    unit: unit ?? config.unit,
+    icon: config.icon,
+    chartType,
+    axis,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -160,27 +179,18 @@ export function computeMetricDescriptors(
   hassStates: HassStates = {},
   overviewEntity?: OverviewEntitySnapshot
 ): Record<string, MetricDescriptor> {
-  const temperature = METRIC_CONFIG[MetricKey.TEMPERATURE];
-  const vpd = METRIC_CONFIG[MetricKey.VPD];
-
   return {
-    [MetricKey.TEMPERATURE]: {
-      key: MetricKey.TEMPERATURE,
-      title: temperature.title,
-      color: temperature.color,
-      unit: temperature.unit,
-      icon: temperature.icon,
-      chartType: ChartType.LINE,
-      axis: 'auto',
-    },
+    [MetricKey.TEMPERATURE]: _descriptor(MetricKey.TEMPERATURE, ChartType.LINE, 'auto'),
+    [MetricKey.OPTIMAL]: _descriptor(MetricKey.OPTIMAL, ChartType.STEP, { min: 0, max: 1 }),
+    [MetricKey.DEHUMIDIFIER]: _descriptor(MetricKey.DEHUMIDIFIER, ChartType.STEP, {
+      min: 0,
+      max: 1,
+    }),
+    [MetricKey.HUMIDIFIER]: _descriptor(MetricKey.HUMIDIFIER, ChartType.LINE, { min: 0, max: 10 }),
+    [MetricKey.IRRIGATION]: _descriptor(MetricKey.IRRIGATION, ChartType.STEP, { min: 0, max: 1 }),
+    [MetricKey.DRAIN]: _descriptor(MetricKey.DRAIN, ChartType.STEP, { min: 0, max: 1 }),
     [MetricKey.VPD]: {
-      key: MetricKey.VPD,
-      title: vpd.title,
-      color: vpd.color,
-      unit: vpd.unit,
-      icon: vpd.icon,
-      chartType: ChartType.LINE,
-      axis: 'auto',
+      ..._descriptor(MetricKey.VPD, ChartType.LINE, 'auto'),
       vpdThresholds: _vpdThresholds(overviewEntity),
     },
     [MetricKey.EXHAUST]: _fanDescriptor(MetricKey.EXHAUST, deviceSnapshot?.exhaustFans),

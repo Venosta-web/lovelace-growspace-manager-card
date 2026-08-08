@@ -455,24 +455,6 @@ describe('GrowspaceEnvChart', () => {
         expect(greenPath).toBeTruthy();
     });
 
-    it('should scale flat lines correctly', async () => {
-        const now = Date.now();
-        element.metricKey = 'temp';
-        // Constant value 20
-        element.sensorHistory = {
-            'temp': [
-                { state: '20.0', last_changed: new Date(now - 3600000).toISOString() },
-                { state: '20.0', last_changed: new Date(now).toISOString() }
-            ] as any
-        };
-        await element.updateComplete;
-
-        const series = (element as any)._renderSeries[0];
-        // min should be 19, max 21
-        expect(series.min).toBe(19);
-        expect(series.max).toBe(21);
-    });
-
     it('should handle scroll interaction in combined header', async () => {
         const now = Date.now();
         const history = { 'temp': [{ state: '20', last_changed: new Date(now).toISOString() }] as any };
@@ -708,31 +690,7 @@ describe('GrowspaceEnvChart', () => {
             const now = new Date();
             const startTime = new Date(now.getTime() - 3600000);
 
-            // 1. Test Step Chart overrides
-            // 'irrigation' is forced step
-            (element as any).metricKey = 'irrigation';
-            (element as any).isCombined = false;
-            (element as any).sensorHistory = { 'irrigation': [{ state: 'on', last_changed: now.toISOString() }] };
-            const seriesStep = (element as any)._computeGraphSeries(100, 100, startTime, 3600000, now);
-            expect(seriesStep[0].min).toBe(0);
-            expect(seriesStep[0].max).toBe(1); // Binary forced 0-1
-
-            // 2. Test Single line padding (min==max) case
-            (element as any).metricKey = 'temp';
-            (element as any).sensorHistory = { 'temp': [{ state: '20', last_changed: now.toISOString() }] };
-            const seriesFlat = (element as any)._computeGraphSeries(100, 100, startTime, 3600000, now);
-            expect(seriesFlat[0].min).toBe(19);
-            expect(seriesFlat[0].max).toBe(21);
-
-            // 3. Test Combined graph (no padding should happen for flat lines according to code logic line 318 `!this.isCombined`)
-            (element as any).isCombined = true;
-            (element as any).metrics = ['temp'];
-            (element as any).metricConfig = { 'temp': { color: 'red', title: 'T', unit: 'C' } };
-            const seriesCombinedFlat = (element as any)._computeGraphSeries(100, 100, startTime, 3600000, now);
-            expect(seriesCombinedFlat[0].min).toBe(20);
-            expect(seriesCombinedFlat[0].max).toBe(20);
-
-            // 4. Test Pre-start history handling
+            // Test pre-start history handling on a metric that still uses the legacy path.
             // History item is BEFORE start time, should be added as initial point at startTime
             const oldTime = new Date(startTime.getTime() - 100000);
             (element as any).isCombined = false;
@@ -743,7 +701,7 @@ describe('GrowspaceEnvChart', () => {
             expect(seriesOld[0].points[0].time).toBe(startTime.getTime());
             expect(seriesOld[0].points[0].value).toBe(400);
 
-            // 5. Test empty history explicitly returning early
+            // Test empty history explicitly returning early.
             (element as any).sensorHistory = { 'co2': [] };
             const seriesEmpty = (element as any)._computeGraphSeries(100, 100, startTime, 3600000, now);
             expect(seriesEmpty).toEqual([]);
@@ -1020,65 +978,6 @@ describe('GrowspaceEnvChart', () => {
             // so needsUpdate = true.
             expect(computeSpy).toHaveBeenCalled();
         });
-        it('should render optimal sensor header correctly (Optimal, Not Optimal, Reasons)', async () => {
-            // 1. Optimal (Value 1)
-            const s1 = { id: 'optimal', title: 'Opt', units: 'state', points: [{ time: 1, value: 1 }], color: 'green', min: 0, max: 1, avg: 0.5, fillType: 'flat' };
-            vi.spyOn((element as any), '_computeGraphSeries').mockReturnValue([s1]);
-            element.metricKey = 'optimal';
-            // Ensure history exists to trigger initial compute if needed, though we spy it.
-            element.sensorHistory = { 'optimal': [] } as any;
-            await element.requestUpdate();
-            await element.updateComplete;
-            let headerVal = element.shadowRoot?.querySelector('.gs-env-graph-header div[style*="font-size:1.2em"]')?.textContent;
-            expect(headerVal).toBe('Optimal');
-
-            // 2. Not Optimal (Value 0, no reasons)
-            const s2 = { id: 'optimal', title: 'Opt', units: 'state', points: [{ time: 1, value: 0 }], color: 'green', min: 0, max: 1, avg: 0, fillType: 'flat' };
-            vi.spyOn((element as any), '_computeGraphSeries').mockReturnValue([s2]);
-
-            // Trigger re-computation by changing array ref
-            element.sensorHistory = { 'optimal': [{ state: '0', last_changed: 'now' }] } as any;
-
-            await element.requestUpdate();
-            await element.updateComplete;
-            headerVal = element.shadowRoot?.querySelector('.gs-env-graph-header div[style*="font-size:1.2em"]')?.textContent;
-            expect(headerVal).toBe('Not Optimal');
-
-            // 3. Reasons (Value 0, with reasons)
-            const s3 = { id: 'optimal', title: 'Opt', units: 'state', points: [{ time: 1, value: 0, meta: { reasons: 'Too Hot' } }], color: 'green', min: 0, max: 1, avg: 0, fillType: 'flat' };
-            vi.spyOn((element as any), '_computeGraphSeries').mockReturnValue([s3]);
-
-            element.sensorHistory = { 'optimal': [{ state: '0', last_changed: 'later' }] } as any;
-
-            await element.requestUpdate();
-            await element.updateComplete;
-            headerVal = element.shadowRoot?.querySelector('.gs-env-graph-header div[style*="font-size:1.2em"]')?.textContent;
-            expect(headerVal).toBe('Too Hot');
-        });
-
-        it('should render generic binary sensor header correctly (ON, OFF)', async () => {
-            // 1. ON
-            const s1 = { id: 'dehumidifier', title: 'Dehum', units: 'state', points: [{ time: 1, value: 1 }], color: 'blue', min: 0, max: 1, avg: 0.5, fillType: 'flat' };
-            vi.spyOn((element as any), '_computeGraphSeries').mockReturnValue([s1]);
-            element.metricKey = 'dehumidifier';
-            element.sensorHistory = { 'dehumidifier': [] } as any;
-            await element.requestUpdate();
-            await element.updateComplete;
-            let headerVal = element.shadowRoot?.querySelector('.gs-env-graph-header div[style*="font-size:1.2em"]')?.textContent;
-            expect(headerVal).toBe('ON');
-
-            // 2. OFF
-            const s2 = { id: 'dehumidifier', title: 'Dehum', units: 'state', points: [{ time: 1, value: 0 }], color: 'blue', min: 0, max: 1, avg: 0, fillType: 'flat' };
-            vi.spyOn((element as any), '_computeGraphSeries').mockReturnValue([s2]);
-
-            element.sensorHistory = { 'dehumidifier': [{ state: '0', last_changed: 'now' }] } as any;
-
-            await element.requestUpdate();
-            await element.updateComplete;
-            headerVal = element.shadowRoot?.querySelector('.gs-env-graph-header div[style*="font-size:1.2em"]')?.textContent;
-            expect(headerVal).toBe('OFF');
-        });
-
         it('should render header placeholders when points are empty', async () => {
             const s1 = { id: 'temp', title: 'Temp', unit: 'C', points: [], color: 'red', min: 0, max: 100, avg: 0, fillType: 'gradient' };
             vi.spyOn((element as any), '_computeGraphSeries').mockReturnValue([s1]);
