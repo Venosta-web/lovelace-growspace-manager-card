@@ -1,3 +1,10 @@
+# [1.1.0-next.90](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.89...v1.1.0-next.90) (2026-08-08)
+
+
+### Features
+
+* **env-graph:** derive VPD bands in value space ([#478](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/478)) ([9ec7ebc](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/9ec7ebcc39b6145f49839fffa668c81c0d337d2d))
+
 # [1.1.0-next.89](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.88...v1.1.0-next.89) (2026-08-08)
 
 
