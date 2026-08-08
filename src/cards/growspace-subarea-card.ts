@@ -444,6 +444,9 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             devices.map((d) => [d.deviceId, d.name])
         );
         const parentEnvAttrs = parentDevice?.environmentAttributes;
+        const subareaDeviceSnapshot = this._subarea
+            ? (subareaDeviceSnapshots$.get().get(this._subarea.id) ?? null)
+            : null;
         const configEnvData = {
             selectedGrowspaceId: this._config.growspace_id,
             temperatureSensor: parentEnvAttrs?.temperatureSensor || '',
@@ -515,6 +518,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                     ${parentDevice
                             ? html`<growspace-analytics
                             .device=${parentDevice}
+                            .deviceSnapshot=${subareaDeviceSnapshot}
                             @set-range=${this._handleSubareaRangeChange}
                           ></growspace-analytics>`
                             : ''}

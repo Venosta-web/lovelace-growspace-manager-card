@@ -9,6 +9,7 @@ import { toggleEnvGraph } from '../../../slices/ui';
 import type { GrowspaceDevice } from '../../../types';
 import { METRIC_SORT_ORDER, type MetricKey } from '../../../constants';
 import type { AnalyticsItem } from '../components/growspace-analytics-ui';
+import { deviceSnapshots$, type DeviceSnapshot } from '../../../slices/device-state';
 import '../components/growspace-analytics-ui';
 
 @customElement('growspace-analytics')
@@ -20,6 +21,8 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   private store!: GrowspaceStore;
 
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
+  @property({ attribute: false }) deviceSnapshot: DeviceSnapshot | null | undefined;
+  private _deviceSnapshotsController!: StoreController<Map<string, DeviceSnapshot>>;
 
   private _controller!: StoreController<{
     historyLoading: boolean;
@@ -34,6 +37,9 @@ export class GrowspaceAnalyticsContainer extends LitElement {
     if (this.store && !this._controller) {
       this._controller = new StoreController(this, this.store.history.$analyticsViewState);
       this.store.history.startAutoRefresh();
+    }
+    if (!this._deviceSnapshotsController) {
+      this._deviceSnapshotsController = new StoreController(this, deviceSnapshots$);
     }
   }
 
@@ -99,6 +105,11 @@ export class GrowspaceAnalyticsContainer extends LitElement {
     const state = this._controller?.value;
     if (!state || state.activeEnvGraphs?.size === 0 || !this.device) return html``;
 
+    const deviceSnapshot =
+      this.deviceSnapshot === undefined
+        ? (deviceSnapshots$.get().get(this.device.deviceId) ?? null)
+        : this.deviceSnapshot;
+
     return html`
       <growspace-analytics-ui
         .items=${this._items}
@@ -106,6 +117,7 @@ export class GrowspaceAnalyticsContainer extends LitElement {
         .range=${this.store.history.getRange()}
         .hass=${this.hass}
         .device=${this.device}
+        .deviceSnapshot=${deviceSnapshot}
         .sensorHistory=${state.combinedHistory || {}}
         @set-range=${this._handleSetRange}
         @toggle-graph=${this._handleToggleGraph}

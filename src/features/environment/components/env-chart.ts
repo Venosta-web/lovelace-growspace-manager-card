@@ -10,7 +10,7 @@ import type { GraphSeries, TooltipData, GraphDataPoint, SensorHistories } from '
 import { ChartUtils } from '../../../utils/chart-utils';
 import { computeEnvSeries } from '../env-series';
 import { computeMetricDescriptors } from '../../../slices/metric-descriptors';
-import { classifyFanEntity, fanReadingToAxisScale } from '../../../slices/device-state';
+import type { DeviceSnapshot } from '../../../slices/device-state';
 import {
   METRIC_CONFIG,
   MetricKey,
@@ -27,18 +27,13 @@ import { consume } from '@lit/context';
 import { hassContext } from '../../../lib/context';
 import '../../shared/ui/error-boundary';
 
-/**
- * Metrics already migrated to the Env Series builder (ADR-0030). Static today —
- * the descriptor table gains data parameters as later slices land.
- */
-const ENV_SERIES_DESCRIPTORS = computeMetricDescriptors();
-
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
   @consume({ context: hassContext, subscribe: true })
   hass!: HomeAssistant;
 
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
+  @property({ attribute: false }) deviceSnapshot: DeviceSnapshot | null = null;
   @property({ attribute: false }) sensorHistory: SensorHistories = {};
 
   @property({ type: String }) metricKey = '';
@@ -164,28 +159,8 @@ export class GrowspaceEnvChart extends LitElement {
     this._cachedChartRect = null;
   }
 
-  /**
-   * Return the entity domain (e.g. "fan", "sensor", "switch") for the first entity
-   * configured for a fan metric key (EXHAUST or CIRCULATION_FAN).
-   * Returns undefined when no entity is configured or hass is unavailable.
-   */
-  private _resolveFanEntityId(key: string): string | undefined {
-    if (!this.device || !this.hass) return undefined;
-    const env = this.device.environmentAttributes ?? {};
-    if (key === MetricKey.EXHAUST) {
-      return (env.exhaustFanEntities ?? [])[0] ?? env.exhaustEntity;
-    }
-    if (key === MetricKey.CIRCULATION_FAN) {
-      return (env.circulationFanEntities ?? [])[0] ?? env.circulationFanEntity;
-    }
-    return undefined;
-  }
-
-  private _resolveLightEntityUnit(): string | undefined {
-    if (!this.device || !this.hass) return undefined;
-    const entityId = this.device.environmentAttributes?.lightSensor;
-    if (!entityId) return undefined;
-    return this.hass.states[entityId]?.attributes?.unit_of_measurement as string | undefined;
+  private _metricDescriptors() {
+    return computeMetricDescriptors(this.deviceSnapshot, this.hass?.states ?? {});
   }
 
   private _getVpdThresholds() {
@@ -286,6 +261,7 @@ export class GrowspaceEnvChart extends LitElement {
     durationMillis: number,
     now: Date
   ): GraphSeries[] {
+    const descriptors = this._metricDescriptors();
     const baseKeys = this.isCombined ? this.metrics : [this.metricKey];
     const metricKeys: string[] = [];
 
@@ -317,6 +293,7 @@ export class GrowspaceEnvChart extends LitElement {
     metricKeys.forEach((key, seriesIdx) => {
       // Extract base metric if using composite key
       const baseKey = key.includes(':') ? key.split(':')[0] : key;
+      const descriptor = descriptors[baseKey];
 
       const baseConfig = this.metricConfig[baseKey] || {
         color: METRIC_CONFIG[baseKey]?.color || this.color,
@@ -350,6 +327,7 @@ export class GrowspaceEnvChart extends LitElement {
       }
 
       const config = { ...baseConfig, color: seriesBaseColor, title: seriesTitle };
+      if (descriptor) config.unit = descriptor.unit;
 
       const historySource = this.sensorHistory[key] || [];
       if (historySource.length === 0) return;
@@ -364,21 +342,9 @@ export class GrowspaceEnvChart extends LitElement {
 
       const fanEntityId =
         key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN
-          ? this._resolveFanEntityId(key)
+          ? descriptor?.entityId
           : undefined;
-      const fanKind = fanEntityId
-        ? classifyFanEntity(fanEntityId, this.hass?.states[fanEntityId]).kind
-        : undefined;
-
-      if (fanKind === 'ha-fan') {
-        config.unit = '%';
-      }
-
-      const lightEntityUnit = key === MetricKey.LIGHT ? this._resolveLightEntityUnit() : undefined;
-
-      if (lightEntityUnit === '%') {
-        config.unit = '%';
-      }
+      const lightEntityUnit = key === MetricKey.LIGHT ? descriptor?.unit : undefined;
 
       if (initialState) {
         const val =
@@ -429,19 +395,16 @@ export class GrowspaceEnvChart extends LitElement {
         const avg = sum / dataPoints.length;
 
         const isStep =
+          descriptor?.chartType === ChartType.STEP ||
           (config as { type?: ChartType }).type === ChartType.STEP ||
           key === MetricKey.OPTIMAL ||
           key === MetricKey.DEHUMIDIFIER ||
           (key === MetricKey.LIGHT && lightEntityUnit !== '%') ||
           key === MetricKey.IRRIGATION ||
           key === MetricKey.DRAIN;
-        if (key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN) {
-          const fanScale = fanReadingToAxisScale(fanKind ?? 'speed-sensor');
-          min = fanScale.min;
-          max = fanScale.max;
-        } else if (key === MetricKey.LIGHT && lightEntityUnit === '%') {
-          min = 0;
-          max = 100;
+        if (descriptor?.axis !== undefined && descriptor.axis !== 'auto') {
+          min = descriptor.axis.min;
+          max = descriptor.axis.max;
         } else if (key === MetricKey.HUMIDIFIER) {
           min = 0;
           max = 10;
@@ -532,7 +495,7 @@ export class GrowspaceEnvChart extends LitElement {
    */
   private _isEnvSeriesMigrated(): boolean {
     if (this.isCombined) return false;
-    if (!ENV_SERIES_DESCRIPTORS[this.metricKey]) return false;
+    if (!this._metricDescriptors()[this.metricKey]) return false;
     return !Object.keys(this.sensorHistory ?? {}).some((key) =>
       key.startsWith(`${this.metricKey}:`)
     );
@@ -553,10 +516,15 @@ export class GrowspaceEnvChart extends LitElement {
   ): GraphSeries[] {
     const startTimeMs = startTime.getTime();
 
-    return computeEnvSeries(ENV_SERIES_DESCRIPTORS, this.sensorHistory ?? {}, [this.metricKey], {
-      startTimeMs,
-      nowMs: now.getTime(),
-    }).map((series) => ({
+    return computeEnvSeries(
+      this._metricDescriptors(),
+      this.sensorHistory ?? {},
+      [this.metricKey],
+      {
+        startTimeMs,
+        nowMs: now.getTime(),
+      }
+    ).map((series) => ({
       id: series.id,
       title: series.title,
       color: series.color,
@@ -581,6 +549,8 @@ export class GrowspaceEnvChart extends LitElement {
   protected willUpdate(changedProperties: PropertyValues) {
     if (
       changedProperties.has('device') ||
+      changedProperties.has('deviceSnapshot') ||
+      changedProperties.has('hass') ||
       changedProperties.has('sensorHistory') ||
       changedProperties.has('range') ||
       changedProperties.has('metricKey') ||

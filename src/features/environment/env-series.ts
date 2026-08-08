@@ -16,6 +16,7 @@ import { ChartType } from './constants';
 import type { HistorySensorState, SensorHistories } from './types';
 import type { MetricDescriptor } from '../../slices/metric-descriptors';
 import { ChartUtils } from '../../utils/chart-utils';
+import { BINARY_ON_STATES } from '../../lib/types/hass';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -77,23 +78,28 @@ function _stateAtWindowStart(
 }
 
 function _pointsForMetric(
-  key: string,
+  descriptor: MetricDescriptor,
   history: HistorySensorState[],
   startTimeMs: number,
   nowMs: number
 ): EnvSeriesPoint[] {
+  const key = descriptor.key;
   const points: EnvSeriesPoint[] = [];
 
   const seed = _stateAtWindowStart(history, startTimeMs);
   if (seed) {
-    const seedValue = ChartUtils.normalizeSensorValue(seed, key);
+    // Preserve the legacy chart's left-edge seeding semantics: recognized binary
+    // strings are seeded directly, while in-window points use metric normalization.
+    const seedValue = BINARY_ON_STATES.includes(seed.state)
+      ? 1
+      : ChartUtils.normalizeSensorValue(seed, key, descriptor.entityId, descriptor.unit);
     if (seedValue !== undefined) points.push({ time: startTimeMs, value: seedValue });
   }
 
   for (const h of history) {
     const time = new Date(h.last_changed).getTime();
     if (time <= startTimeMs) continue;
-    const value = ChartUtils.normalizeSensorValue(h, key);
+    const value = ChartUtils.normalizeSensorValue(h, key, descriptor.entityId, descriptor.unit);
     if (value !== undefined) points.push({ time, value });
   }
 
@@ -165,7 +171,7 @@ export function computeEnvSeries(
     const history = histories[key] ?? [];
     if (history.length === 0) continue;
 
-    const points = _pointsForMetric(key, history, startTimeMs, nowMs);
+    const points = _pointsForMetric(descriptor, history, startTimeMs, nowMs);
     if (points.length === 0) continue;
 
     const reduced = _reduce(points);
