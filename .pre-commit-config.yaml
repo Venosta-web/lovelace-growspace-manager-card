@@ -1,3 +1,7 @@
+# `commit-msg` is not installed by default — declare it so `prek install`
+# (or `pre-commit install`) wires up the commitlint hook without extra flags.
+default_install_hook_types: [pre-commit, commit-msg]
+
 repos:
   - repo: local
     hooks:
@@ -7,3 +11,9 @@ repos:
         language: system
         types: [javascript, ts, json]
         pass_filenames: false
+
+      - id: commitlint
+        name: commitlint
+        entry: npx --no -- commitlint --edit
+        language: system
+        stages: [commit-msg]

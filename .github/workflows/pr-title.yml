@@ -1,0 +1,40 @@
+name: PR Title
+
+on:
+  pull_request:
+    branches: [ "main", "dev" ]
+    # `edited` is what makes a failed check recoverable: without it, fixing a bad
+    # title leaves the red run stale forever with no way to re-run it.
+    types: [ opened, edited, synchronize, reopened ]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate conventional-commit PR title
+        uses: amannn/action-semantic-pull-request@v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Kept in sync with commitlint.config.js — semantic-release only bumps
+          # on feat/fix/BREAKING CHANGE, but the rest have to be spellable or
+          # perfectly ordinary PRs start failing this check.
+          types: |
+            feat
+            fix
+            ci
+            chore
+            docs
+            refactor
+            test
+            perf
+            build
+            style
+            revert
+          requireScope: false
+          # Merge commits are still an allowed merge method, so a single-commit
+          # PR does not necessarily land its PR title. Don't enforce here.
+          validateSingleCommit: false
