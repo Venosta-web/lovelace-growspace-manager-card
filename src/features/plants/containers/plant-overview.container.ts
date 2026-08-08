@@ -981,9 +981,10 @@ export class PlantOverviewContainer extends LitElement {
 
   private _handleSave(): void {
     const attrs = this._editedAttributesAtom.get();
-    // No date/time completeness validation: the md3-date-input datetime-local
-    // picker cannot emit a partial value, and the Lifecycle Timestamp seam owns
-    // the format on the way out (toWire). See ADR-0018.
+    // No date/time completeness validation: md3-date-input never emits a partial
+    // value (an empty date clears the field, a missing time defaults to midnight),
+    // and the Lifecycle Timestamp seam owns the format on the way out (toWire).
+    // See ADR-0018.
     this.dispatchEvent(
       new CustomEvent('update-plant', {
         detail: attrs,

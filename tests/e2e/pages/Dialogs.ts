@@ -103,8 +103,18 @@ export class AddPlantDialog {
 
   // ── Step 3: Schedule ─────────────────────────────────────────────────────────
 
+  /**
+   * Fills an md3-date-input. `date` may be `YYYY-MM-DD` or `YYYY-MM-DDTHH:MM` —
+   * in time mode the control renders separate date and time inputs.
+   */
   async fillDate(label: string, date: string) {
-    await this.dialog.locator(`md3-date-input[label="${label}"]`).locator('input').fill(date);
+    const control = this.dialog.locator(`md3-date-input[label="${label}"]`);
+    const [datePart, timePart] = date.split('T');
+    await control.locator('input[type="date"]').fill(datePart);
+    const timeInput = control.locator('input[type="time"]');
+    if (timePart && (await timeInput.count())) {
+      await timeInput.fill(timePart.slice(0, 5));
+    }
   }
 
   // ── Legacy helpers (kept for existing tests) ─────────────────────────────────
