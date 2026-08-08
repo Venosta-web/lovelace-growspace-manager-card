@@ -1,3 +1,15 @@
+# [1.1.0-next.85](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.84...v1.1.0-next.85) (2026-08-08)
+
+
+### Bug Fixes
+
+* regenerate lockfile with npm 10 so the Release job can npm ci ([#462](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/462)) ([45e3e67](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/45e3e670087f80833afda772ab421e9e6236f423)), closes [#460](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/460) [#461](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/461) [#460](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/460) [pre-#460](https://github.com/pre-/issues/460)
+
+
+### Features
+
+* render infiltration state and shot-suppression reason ([23e1c89](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/23e1c89f10ba4022f94488f2aca081933ec52f6e)), closes [#459](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/459) [#458](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/458)
+
 # [1.1.0-next.84](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.83...v1.1.0-next.84) (2026-07-07)
 
 
