@@ -11,6 +11,7 @@ import type {
   CirculationFanConfig,
   ExhaustFanConfig,
   GrowLightConfig,
+  SerializedWaterUsage,
 } from '../slices/growspace/schema';
 
 // --- Irrigation ---
@@ -325,13 +326,6 @@ export interface EnergyTracking {
   dailyKwh?: number | null;
   costTotal?: number | null;
   costPerGram?: number | null;
-}
-
-export interface SerializedWaterUsage {
-  total_liters?: number;
-  cycle_start_date?: string;
-  daily_readings?: Array<Record<string, unknown>>;
-  liters_today?: number | null;
 }
 
 export interface WaterUsage {
