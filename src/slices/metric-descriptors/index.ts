@@ -234,6 +234,21 @@ export function computeMetricDescriptors(
     const entityIds =
       metricSensorIds?.[key] ?? (device ? resolveMetricEntityIds(device, key, hassStates) : []);
     descriptor.sensors = _sensorsForMetric(entityIds, hassStates);
+
+    // A snapshot can legitimately lag behind configuration during bootstrap.
+    // Fan type is stable and encoded in the configured entity id, so do not
+    // degrade an HA fan to the generic speed-sensor value space while waiting
+    // for its first live state snapshot.
+    if (
+      (key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN) &&
+      !descriptor.entityId &&
+      entityIds[0]
+    ) {
+      const kind = classifyFanEntity(entityIds[0], undefined).kind;
+      descriptor.entityId = entityIds[0];
+      descriptor.unit = kind === 'ha-fan' ? '%' : METRIC_CONFIG[key].unit;
+      descriptor.axis = fanReadingToAxisScale(kind);
+    }
   }
 
   return table;
