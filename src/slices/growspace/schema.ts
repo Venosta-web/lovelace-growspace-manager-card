@@ -220,10 +220,11 @@ export type AcInfinityGrowLight = z.infer<typeof AcInfinityGrowLightSchema>;
 export const WaterUsageSchema = z.object({
   total_liters: z.number().optional().default(0),
   cycle_start_date: z.string().optional().default(''),
-  daily_readings: z
-    .array(z.record(z.string(), z.unknown()))
-    .optional()
-    .default([]),
+  // Deliberately left as unknown elements. A stricter element type would make a
+  // single malformed entry fail the whole get_data parse (hassCall throws on
+  // schema mismatch), trading one missing field for a blank card; the adapter
+  // casts instead. The entries' own shape is out of scope for this seam.
+  daily_readings: z.array(z.unknown()).optional().default([]),
   // Rolling-window size the backend enforces on daily_readings. Serialized by
   // the dataclass, unused by the card, declared so the shape stays complete.
   max_daily_readings: z.number().optional(),
