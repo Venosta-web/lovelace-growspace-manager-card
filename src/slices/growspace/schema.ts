@@ -355,6 +355,12 @@ export const GrowspaceAPIResponseSchema = z
       .object({
         irrigation_config: IrrigationConfigSchema,
         irrigation_strategy: IrrigationStrategySchema.nullable().optional().default(null),
+        // Server-authoritative Volume Mode gate (ADR-0017): true only when a
+        // substrate profile and a positive pump flow rate are both configured.
+        // Left `.optional()` with no default so an older backend that omits it
+        // stays distinguishable from one that reports false; the adapter's
+        // `?? false` is the single place that collapses absence to locked.
+        volume_mode_capable: z.boolean().optional(),
         drain_config: DrainConfigSchema,
         substrate: SubstrateMetricsSchema,
         water_usage: WaterUsageSchema.nullable().optional(),

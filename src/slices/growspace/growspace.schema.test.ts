@@ -325,6 +325,28 @@ describe('Growspace Zod Schemas', () => {
       });
     });
 
+    describe('volume_mode_capable', () => {
+      it('survives a parse round-trip on the irrigation wrapper', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: { irrigation_config: {}, volume_mode_capable: true },
+        });
+
+        expect(parsed.irrigation.volume_mode_capable).toBe(true);
+      });
+
+      it('keeps a reported-false growspace distinct from one that omits the flag', () => {
+        const notCapable = GrowspaceAPIResponseSchema.parse({
+          irrigation: { irrigation_config: {}, volume_mode_capable: false },
+        });
+        const older = GrowspaceAPIResponseSchema.parse({
+          irrigation: { irrigation_config: {} },
+        });
+
+        expect(notCapable.irrigation.volume_mode_capable).toBe(false);
+        expect(older.irrigation.volume_mode_capable).toBeUndefined();
+      });
+    });
+
     describe('IrrigationScheduleItemSchema & IrrigationConfigSchema', () => {
       it('should parse irrigation schedule items using time and duration', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({
