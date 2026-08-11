@@ -25,26 +25,50 @@ export const PollinationEventSchema = z.object({
 });
 
 /**
- * Opaque Region (ADR 0031) — pending. A lineage node is assembled by several
- * backend builders (`managers/lineage.py` emits name/source/parents/generation,
- * the strain library and genetics manager add their own keys) and the tree is
- * recursive, so the emitted key set is not established from one call site. The
- * passthrough stays until that trace is done rather than risk stripping a node
- * field the Genetics tree renders. Tracked on #488.
+ * A node of the lineage tree returned by `get_lineage_tree` and
+ * `get_strain_lineage_tree`.
+ *
+ * Two independent backend builders produce nodes and `websocket/lineage.py:69-79`
+ * grafts them together — the genetics manager builds the root, and its `parents`
+ * may be replaced wholesale by strain-library children — so one response mixes
+ * key sets and only `name` is emitted by every variety:
+ *
+ * | variety                                  | name | parents | generation | source    | phenotype |
+ * | ---------------------------------------- | ---- | ------- | ---------- | --------- | --------- |
+ * | genetics root (`genetics.py:524-527`)    | ✓    | ✓       | ✓          | —         | —         |
+ * | genetics receiver leaf (`genetics.py:552`)| ✓   | `[]`    | —          | —         | —         |
+ * | strain-library node (`lineage.py:73-78`) | ✓    | ✓       | ✓          | `library` | when set  |
+ * | manual leaf (`lineage.py:101-103`)       | ✓    | `[]`    | —          | `manual`  | when set  |
+ *
+ * `id`, `type` and `sex` were declared here and required, but no builder emits
+ * them — the parse failed for every real tree, `hassCall` threw, and both call
+ * sites swallowed it into `null`, so the Genetics tree rendered empty. `url`
+ * likewise exists only on seedfinder *input* trees (`lineage.py:31`), never on
+ * an emitted node.
  */
-export const LineageNodeSchema: z.ZodType<unknown> = z.lazy(() =>
-  z
-    .object({
-      id: z.string(),
-      name: z.string(),
-      type: z.enum(['plant', 'seed_batch', 'strain']),
-      phenotype: z.string().optional(),
-      generation: z.string().optional(),
-      parents: z.array(LineageNodeSchema).optional(),
-    })
-    // eslint-disable-next-line no-restricted-syntax -- pending Opaque Region, see above
-    .passthrough()
-);
+const LineageNodeFieldsSchema = z.object({
+  name: z.string(),
+  source: z.enum(['library', 'manual']).optional(),
+  generation: z.string().optional(),
+  phenotype: z.string().optional(),
+});
+
+/**
+ * Only the recursive edge is written by hand: zod cannot infer the type of a
+ * self-referential schema, so `z.ZodType` needs an annotation to close the
+ * cycle. Every leaf field still comes from the schema via `z.infer`, and the
+ * annotation is checked against it — a field declared in one and not the other
+ * fails to compile.
+ */
+export type LineageNode = z.infer<typeof LineageNodeFieldsSchema> & {
+  parents?: LineageNode[];
+};
+
+export const LineageNodeSchema: z.ZodType<LineageNode> = LineageNodeFieldsSchema.extend({
+  get parents() {
+    return z.array(LineageNodeSchema).optional();
+  },
+});
 
 export const GeneticsDataSchema = z.object({
   seed_batches: z.record(z.string(), SeedBatchSchema).default({}),

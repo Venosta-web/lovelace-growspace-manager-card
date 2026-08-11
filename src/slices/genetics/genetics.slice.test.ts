@@ -179,7 +179,13 @@ describe('addSeedBatch', () => {
     vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('svc error'));
 
     await expect(
-      addSeedBatch({ strain_name: 'Test', breeder: 'B', quantity: 1, acquisition_date: '2026-01-01', generation: 'S1' })
+      addSeedBatch({
+        strain_name: 'Test',
+        breeder: 'B',
+        quantity: 1,
+        acquisition_date: '2026-01-01',
+        generation: 'S1',
+      })
     ).rejects.toThrow('svc error');
   });
 });
@@ -358,11 +364,10 @@ describe('setPlantSex', () => {
   it('calls callService with set_plant_sex', async () => {
     await setPlantSex('plant-1', 'female');
 
-    expect(hassCallModule.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_plant_sex',
-      { plant_id: 'plant-1', sex: 'female' }
-    );
+    expect(hassCallModule.callService).toHaveBeenCalledWith('growspace_manager', 'set_plant_sex', {
+      plant_id: 'plant-1',
+      sex: 'female',
+    });
   });
 
   it('re-throws when callService fails', async () => {
@@ -415,74 +420,62 @@ describe('pollinationEvents$', () => {
 // ---------------------------------------------------------------------------
 
 describe('LineageNodeSchema', () => {
-  it('validates a simple valid lineage node', () => {
-    const node = {
-      id: 'node-1',
-      name: 'OG Kush',
-      type: 'plant',
-      phenotype: 'Piney',
-      generation: 'F1',
-    };
-    const parsed = LineageNodeSchema.safeParse(node);
+  // The genetics root, verbatim from `managers/genetics.py:524-527`. The schema
+  // used to require `id` and `type`, which no builder emits, so this parse
+  // failed and both call sites turned the WSError into a null tree.
+  const GENETICS_ROOT = { name: 'OG Kush', parents: [], generation: 'F1' };
+
+  it('parses the genetics root the backend actually emits', () => {
+    const parsed = LineageNodeSchema.safeParse(GENETICS_ROOT);
     expect(parsed.success).toBe(true);
-    if (parsed.success) {
-      expect(parsed.data).toEqual(node);
-    }
+    expect(parsed.success && parsed.data).toEqual(GENETICS_ROOT);
   });
 
-  it('validates a recursive valid lineage node with multiple levels of parents', () => {
-    const recursiveNode = {
-      id: 'child',
+  it('parses the grafted tree without stripping source, generation or phenotype', () => {
+    // Root from the genetics manager, `parents` replaced by strain-library
+    // children (`websocket/lineage.py:69-79`), terminating in a manual leaf.
+    const grafted = {
       name: 'Blue Dream Cross',
-      type: 'plant',
+      generation: 'F1',
       parents: [
         {
-          id: 'parent-1',
           name: 'Blue Dream',
-          type: 'strain',
+          source: 'library',
+          generation: '',
+          phenotype: 'Tall',
           parents: [
-            {
-              id: 'grandparent-1',
-              name: 'Super Silver Haze',
-              type: 'strain',
-            },
-            {
-              id: 'grandparent-2',
-              name: 'Blueberry',
-              type: 'strain',
-            }
-          ]
+            { name: 'Super Silver Haze', source: 'library', generation: '', parents: [] },
+            { name: 'Blueberry', source: 'manual', parents: [] },
+          ],
         },
-        {
-          id: 'parent-2',
-          name: 'Unknown Male',
-          type: 'seed_batch',
-        }
-      ]
+        { name: 'Unknown Male', source: 'manual', parents: [] },
+      ],
     };
-    const parsed = LineageNodeSchema.safeParse(recursiveNode);
+    const parsed = LineageNodeSchema.safeParse(grafted);
     expect(parsed.success).toBe(true);
-    if (parsed.success) {
-      expect(parsed.data).toEqual(recursiveNode);
-    }
+    expect(parsed.success && parsed.data).toEqual(grafted);
   });
 
-  it('rejects an invalid node missing required properties', () => {
-    const invalidNode = {
-      name: 'No ID or Type',
-    };
-    const parsed = LineageNodeSchema.safeParse(invalidNode);
-    expect(parsed.success).toBe(false);
+  it('parses the genetics receiver leaf, which emits neither generation nor source', () => {
+    // `managers/genetics.py:552` — name and an empty parents list, nothing else.
+    const parsed = LineageNodeSchema.safeParse({ name: 'Sour Diesel', parents: [] });
+    expect(parsed.success).toBe(true);
   });
 
-  it('rejects an invalid node with incorrect type enum', () => {
-    const invalidNode = {
-      id: 'invalid-1',
-      name: 'Wrong Type',
-      type: 'flower', // invalid enum, should be plant/seed_batch/strain
-    };
-    const parsed = LineageNodeSchema.safeParse(invalidNode);
-    expect(parsed.success).toBe(false);
+  it('rejects a node without a name', () => {
+    expect(LineageNodeSchema.safeParse({ parents: [] }).success).toBe(false);
+  });
+
+  it('rejects a source outside the two literals the backend emits', () => {
+    expect(
+      LineageNodeSchema.safeParse({ name: 'Wrong Source', source: 'seedfinder' }).success
+    ).toBe(false);
+  });
+
+  it('strips the id and type keys the card invented for this shape', () => {
+    const parsed = LineageNodeSchema.safeParse({ name: 'OG Kush', id: 'node-1', type: 'plant' });
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data).toEqual({ name: 'OG Kush' });
   });
 });
 
@@ -509,9 +502,9 @@ describe('harvestSeeds', () => {
   it('re-throws when callService fails', async () => {
     vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('harvest error'));
 
-    await expect(
-      harvestSeeds({ event_id: 'event-123', quantity: 10 })
-    ).rejects.toThrow('harvest error');
+    await expect(harvestSeeds({ event_id: 'event-123', quantity: 10 })).rejects.toThrow(
+      'harvest error'
+    );
   });
 });
 
@@ -566,9 +559,7 @@ describe('updateStrainLineageTree', () => {
   it('re-throws when hassCall fails', async () => {
     vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('WS fail'));
 
-    await expect(
-      updateStrainLineageTree('Blue Dream', [])
-    ).rejects.toThrow('WS fail');
+    await expect(updateStrainLineageTree('Blue Dream', [])).rejects.toThrow('WS fail');
   });
 });
 
@@ -593,8 +584,6 @@ describe('importStrainLineageTree', () => {
   it('re-throws when hassCall fails', async () => {
     vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('WS fail'));
 
-    await expect(
-      importStrainLineageTree('Blue Dream', {})
-    ).rejects.toThrow('WS fail');
+    await expect(importStrainLineageTree('Blue Dream', {})).rejects.toThrow('WS fail');
   });
 });

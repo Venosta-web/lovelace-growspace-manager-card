@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { hassCall, callService } from '../../services/hass-call';
 import type { SeedBatch, PollinationEvent } from '../../types';
 import { GeneticsDataSchema, LineageNodeSchema } from './schema';
-import type { LineageNode } from '../../features/plants/types';
+import type { LineageNode } from './schema';
 
 export const seedBatches$ = atom<SeedBatch[]>([]);
 export const pollinationEvents$ = atom<PollinationEvent[]>([]);
@@ -76,11 +76,11 @@ export async function deletePollinationEvent(eventId: string): Promise<void> {
 
 export async function getLineageTree(plantId: string): Promise<LineageNode | null> {
   try {
-    return (await hassCall(
+    return await hassCall(
       'growspace_manager/get_lineage_tree',
       { plant_id: plantId },
       LineageNodeSchema
-    )) as LineageNode;
+    );
   } catch {
     return null;
   }
@@ -108,11 +108,11 @@ export async function harvestSeeds(data: {
 
 export async function getStrainLineageTree(strainName: string): Promise<LineageNode | null> {
   try {
-    return (await hassCall(
+    return await hassCall(
       'growspace_manager/get_strain_lineage_tree',
       { strain_name: strainName },
       LineageNodeSchema
-    )) as LineageNode;
+    );
   } catch {
     return null;
   }

@@ -243,19 +243,7 @@ export interface PlantDisplayData {
 
 // --- Lineage / Breeding ---
 
-export interface LineageNode {
-  /** plant_id or seed_batch_id of this node */
-  id: string;
-  /** Display name (strain name) */
-  name: string;
-  /** Phenotype name — present when not 'default'; shown alongside name in the tree */
-  phenotype?: string;
-  /** 'plant' | 'seed_batch' | 'strain' */
-  type: 'plant' | 'seed_batch' | 'strain';
-  /** Generation designation, e.g. F1, S1, BX1 */
-  generation?: string;
-  /** Sex of the plant (only for plant nodes) */
-  sex?: PlantSex | string;
-  /** Parent nodes (up to 2) */
-  parents?: LineageNode[];
-}
+// The lineage node is a wire shape, so per ADR 0031 it is described once — by
+// `LineageNodeSchema` in the genetics slice — and re-exported here for the
+// components that render it.
+export type { LineageNode } from '../../slices/genetics/schema';
