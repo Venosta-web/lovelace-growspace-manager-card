@@ -1,3 +1,22 @@
+/**
+ * #488 asked whether the "field X survives the parse" tests here become
+ * redundant once the wire types are derived from these schemas. They do not,
+ * and the reason is worth keeping: TypeScript only errors on a key someone
+ * *reads*, while ADR 0031 requires declaring every key the backend *emits*.
+ *
+ * So these stay, each carrying something a type cannot express:
+ *
+ * - the whole-object `toEqual` round-trips also pin the unread keys
+ *   (`max_daily_readings`) and the rows inside an Opaque Region
+ *   (`daily_readings`), which no read site would catch
+ * - `keeps every field the backend emits` checks all 27 strategy keys at once
+ *   — the stand-in for the Contract Fixture until ADR 0029's fixture lands
+ * - the collection-schema variants exercise the `z.record` path that hydration
+ *   actually takes, not just the response schema
+ * - `dynamic_shot_enabled false` and `volume_mode_capable` false-vs-absent
+ *   assert a value is not collapsed into a default, which is not a shape claim
+ */
+
 import { describe, it, expect } from 'vitest';
 import { ZodError } from 'zod';
 import {

@@ -64,6 +64,11 @@ export default [
           message:
             'ADR 0031: z.looseObject() is .passthrough() under another name. Declare the field, or use an Opaque Region with the reason inline.',
         },
+        {
+          selector: "MemberExpression > Identifier[name='catchall']",
+          message:
+            'ADR 0031: .catchall() reopens a schema. Declare the fields, or model an Opaque Region at the collection boundary.',
+        },
       ],
       '@typescript-eslint/no-unused-vars': [
         'error',

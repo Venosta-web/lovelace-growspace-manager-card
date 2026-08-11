@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { VisionCheckupConfigSchema } from '../camera/schema';
 import { GridApiSchema } from '../grid/schema';
 import { SteeringModeSchema } from '../irrigation/schema';
+import { TimedNotificationSchema } from '../notification/schema';
 import { SubareaSchema } from '../subarea/schema';
 
 const IrrigationScheduleItemSchema = z
@@ -563,17 +564,7 @@ export const GrowspaceAPIResponseSchema = z.object({
   // the Config Dialog can seed/round-trip saved values.
   notification_settings: z.record(z.string(), z.number()).optional(),
   ai_auto_alerts: z.boolean().optional(),
-  timed_notifications: z
-    .array(
-      z.object({
-        id: z.string(),
-        message: z.string(),
-        trigger_type: z.string(),
-        day: z.number(),
-        growspace_ids: z.array(z.string()),
-      })
-    )
-    .optional(),
+  timed_notifications: z.array(TimedNotificationSchema).optional(),
 
   _ts: z.number().optional(),
 });

@@ -1,81 +1,55 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import '../../../../../src/features/shared/ui/lineage-tree';
-import type { LineageTree, LineageTreeEditor } from '../../../../../src/features/shared/ui/lineage-tree';
+import type {
+  LineageTree,
+  LineageTreeEditor,
+} from '../../../../../src/features/shared/ui/lineage-tree';
 import type { LineageNode } from '../../../../../src/features/plants/types';
 
 const mockRootNode: LineageNode = {
-  id: 'plant1',
   name: 'OG Kush',
-  type: 'plant',
-  sex: 'female',
   generation: 'F1',
   phenotype: 'Lemon Funk',
-  parents: []
+  parents: [],
 };
 
 const mockLineageWithParents: LineageNode = {
-  id: 'plant1',
   name: 'OG Kush',
-  type: 'plant',
-  sex: 'female',
   generation: 'F1',
   parents: [
-    {
-      id: 'p1',
-      name: 'Chemdawg',
-      type: 'strain',
-      parents: []
-    },
-    {
-      id: 'p2',
-      name: 'Hindu Kush',
-      type: 'strain',
-      parents: []
-    }
-  ]
+    { name: 'Chemdawg', source: 'library', parents: [] },
+    { name: 'Hindu Kush', source: 'manual', parents: [] },
+  ],
 };
 
 const mockDeepLineage: LineageNode = {
-  id: 'root',
   name: 'Root',
-  type: 'plant',
   parents: [
     {
-      id: 'L1',
       name: 'Level 1',
-      type: 'strain',
+      source: 'library',
       parents: [
         {
-          id: 'L2',
           name: 'Level 2',
-          type: 'strain',
+          source: 'library',
           parents: [
             {
-              id: 'L3',
               name: 'Level 3',
-              type: 'strain',
+              source: 'library',
               parents: [
                 {
-                  id: 'L4',
                   name: 'Level 4',
-                  type: 'strain',
-                  parents: [
-                    {
-                      id: 'L5',
-                      name: 'Level 5 (Hidden)',
-                      type: 'strain',
-                      parents: []
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
+                  source: 'library',
+                  parents: [{ name: 'Level 5 (Hidden)', source: 'library', parents: [] }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
 };
 
 describe('LineageTree', () => {
@@ -108,10 +82,6 @@ describe('LineageTree', () => {
     const pheno = element.shadowRoot?.querySelector('.node-phenotype');
     expect(pheno?.textContent).toBe('Lemon Funk');
 
-    const sexBadge = element.shadowRoot?.querySelector('.sex-badge');
-    expect(sexBadge?.textContent).toBe('♀');
-    expect((sexBadge as HTMLElement).style.color).toContain('rgb(76, 175, 80)'); // #4caf50
-
     const genBadge = element.shadowRoot?.querySelector('.gen-badge');
     expect(genBadge?.textContent).toBe('F1');
   });
@@ -135,8 +105,9 @@ describe('LineageTree', () => {
     // Level 1, 2, 3, 4 should be rendered
     // Level 5 should NOT be rendered (depth < 4 check in code)
 
-    const nodeLabels = Array.from(element.shadowRoot?.querySelectorAll('.node-label') ?? [])
-      .map(el => el.textContent);
+    const nodeLabels = Array.from(element.shadowRoot?.querySelectorAll('.node-label') ?? []).map(
+      (el) => el.textContent
+    );
 
     expect(nodeLabels).toContain('Root');
     expect(nodeLabels).toContain('Level 1');
@@ -155,8 +126,9 @@ describe('LineageTree', () => {
     element.addEventListener('node-click', clickSpy);
 
     // Find an ancestor node (Chemdawg)
-    const chemdawgNode = Array.from(element.shadowRoot?.querySelectorAll('.node-card') ?? [])
-      .find(el => el.querySelector('.node-label')?.textContent === 'Chemdawg') as HTMLElement;
+    const chemdawgNode = Array.from(element.shadowRoot?.querySelectorAll('.node-card') ?? []).find(
+      (el) => el.querySelector('.node-label')?.textContent === 'Chemdawg'
+    ) as HTMLElement;
 
     expect(chemdawgNode.classList.contains('ancestor')).toBe(true);
     chemdawgNode.click();
@@ -174,8 +146,9 @@ describe('LineageTree', () => {
     element.addEventListener('node-click', clickSpy);
 
     // Find root node (OG Kush)
-    const rootNode = Array.from(element.shadowRoot?.querySelectorAll('.node-card') ?? [])
-      .find(el => el.querySelector('.node-label')?.textContent === 'OG Kush') as HTMLElement;
+    const rootNode = Array.from(element.shadowRoot?.querySelectorAll('.node-card') ?? []).find(
+      (el) => el.querySelector('.node-label')?.textContent === 'OG Kush'
+    ) as HTMLElement;
 
     expect(rootNode.classList.contains('ancestor')).toBe(false);
     rootNode.click();
@@ -203,7 +176,7 @@ describe('LineageTreeEditor', () => {
   const mockStrainEntries = [
     { name: 'Chemdawg', phenotype: 'Original' },
     { name: 'Hindu Kush' },
-    { name: 'Sour Diesel' }
+    { name: 'Sour Diesel' },
   ];
 
   beforeEach(async () => {
@@ -216,8 +189,9 @@ describe('LineageTreeEditor', () => {
   });
 
   it('should render existing parents', () => {
-    const parentLabels = Array.from(element.shadowRoot?.querySelectorAll('.lte-parent-name') ?? [])
-      .map(el => el.textContent);
+    const parentLabels = Array.from(
+      element.shadowRoot?.querySelectorAll('.lte-parent-name') ?? []
+    ).map((el) => el.textContent);
 
     expect(parentLabels).toContain('Chemdawg');
     expect(parentLabels).toContain('Hindu Kush');
@@ -227,8 +201,15 @@ describe('LineageTreeEditor', () => {
     element.node = {
       ...mockRootNode,
       parents: [
-        { id: 'p1', name: 'Parent', phenotype: 'Berry', type: 'strain', source: 'library', parents: [] }
-      ]
+        {
+          id: 'p1',
+          name: 'Parent',
+          phenotype: 'Berry',
+          type: 'strain',
+          source: 'library',
+          parents: [],
+        },
+      ],
     } as any;
     await element.updateComplete;
 
@@ -286,8 +267,9 @@ describe('LineageTreeEditor', () => {
     searchInput.dispatchEvent(new InputEvent('input'));
     await element.updateComplete;
 
-    const suggestions = Array.from(element.shadowRoot?.querySelectorAll('.lte-suggestion') ?? [])
-      .map(el => el.textContent?.trim());
+    const suggestions = Array.from(
+      element.shadowRoot?.querySelectorAll('.lte-suggestion') ?? []
+    ).map((el) => el.textContent?.trim());
 
     expect(suggestions).toContain('Chemdawg (Original)');
     expect(suggestions).not.toContain('Hindu Kush');
@@ -320,9 +302,9 @@ describe('LineageTreeEditor', () => {
           name: 'Parent with Lineage',
           type: 'strain',
           source: 'library',
-          parents: [{ id: 'gp1', name: 'Grandparent', type: 'strain', parents: [] }]
-        }
-      ]
+          parents: [{ id: 'gp1', name: 'Grandparent', type: 'strain', parents: [] }],
+        },
+      ],
     };
     element.node = nodeWithLineageParent as any;
     await element.updateComplete;
@@ -344,7 +326,7 @@ describe('LineageTreeEditor', () => {
   it('should default parent source to "manual" if missing', async () => {
     element.node = {
       ...mockRootNode,
-      parents: [{ id: 'p1', name: 'No Source Parent', type: 'strain', parents: [] }]
+      parents: [{ id: 'p1', name: 'No Source Parent', type: 'strain', parents: [] }],
     } as any;
     await element.updateComplete;
 
@@ -365,7 +347,9 @@ describe('LineageTreeEditor', () => {
     searchInput.dispatchEvent(new InputEvent('input'));
     await element.updateComplete;
 
-    const manualSuggestion = element.shadowRoot?.querySelector('.lte-suggestion.manual') as HTMLElement;
+    const manualSuggestion = element.shadowRoot?.querySelector(
+      '.lte-suggestion.manual'
+    ) as HTMLElement;
     expect(manualSuggestion.textContent).toContain('Use "Mystery Strain"');
 
     const changeSpy = vi.fn();
@@ -376,7 +360,7 @@ describe('LineageTreeEditor', () => {
     expect(changeSpy.mock.calls[0][0].detail.parents[0]).toEqual({
       name: 'Mystery Strain',
       phenotype: undefined,
-      source: 'manual'
+      source: 'manual',
     });
   });
 
@@ -390,11 +374,13 @@ describe('LineageTreeEditor', () => {
 
     const searchInput = element.shadowRoot?.querySelector('.lte-search') as HTMLInputElement;
     // Using a more standard way to dispatch keyboard event
-    searchInput.dispatchEvent(new KeyboardEvent('keydown', {
-      key: 'Escape',
-      bubbles: true,
-      composed: true
-    }));
+    searchInput.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        composed: true,
+      })
+    );
     await element.updateComplete;
 
     expect(element.shadowRoot?.querySelector('.lte-search')).toBeNull();

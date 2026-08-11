@@ -12,27 +12,17 @@
 
 import { hassCall } from '../../services/hass-call';
 import {
+  type NotificationSettingsPayload,
   type SaveNotificationSettingsResponse,
+  type TimedNotificationWire,
   SaveNotificationSettingsResponseSchema,
 } from './schema';
 
-export type { SaveNotificationSettingsResponse };
-
-/** A timed notification in the backend (snake_case) wire shape. */
-export interface TimedNotificationWire {
-  id: string;
-  message: string;
-  trigger_type: string;
-  day: number;
-  growspace_ids: string[];
-}
-
-/** Settings persisted by {@link saveNotificationSettings}. */
-export interface NotificationSettingsPayload {
-  notification_settings: Record<string, number>;
-  ai_auto_alerts: boolean;
-  timed_notifications?: TimedNotificationWire[];
-}
+export type {
+  NotificationSettingsPayload,
+  SaveNotificationSettingsResponse,
+  TimedNotificationWire,
+};
 
 /**
  * Persist notification timing settings and the ai_auto_alerts toggle atomically.

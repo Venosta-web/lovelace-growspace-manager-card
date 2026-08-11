@@ -17,9 +17,12 @@ export const SensorGroupSchema = z.object({
   x: z.number(),
   y: z.number(),
   z: z.number(),
-  temperature_sensors: z.array(z.string()),
-  humidity_sensors: z.array(z.string()),
-  vpd_sensors: z.array(z.string()),
+  // The backend model defaults these to empty lists and `to_dict()` always
+  // emits them (`models/growspace.py:85-87`); defaulting here keeps a group
+  // usable for its coordinates even if a stored one predates a list.
+  temperature_sensors: z.array(z.string()).optional().default([]),
+  humidity_sensors: z.array(z.string()).optional().default([]),
+  vpd_sensors: z.array(z.string()).optional().default([]),
 });
 
 export type SensorGroup = z.infer<typeof SensorGroupSchema>;
