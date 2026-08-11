@@ -1,3 +1,10 @@
+# [1.1.0-next.93](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.92...v1.1.0-next.93) (2026-08-11)
+
+
+### Bug Fixes
+
+* **env-graph:** show circulation fan percentages ([#483](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/483)) ([222ef2b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/222ef2b31b9452ba3afd97c2d94ae4bd8d29fdd3))
+
 # [1.1.0-next.92](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.91...v1.1.0-next.92) (2026-08-08)
 
 
