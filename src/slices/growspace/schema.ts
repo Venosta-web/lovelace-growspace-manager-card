@@ -117,6 +117,7 @@ export const DrainConfigSchema = z.object({
   enabled: z.boolean(),
   max_ec_delta: z.number(),
   target_runoff_percent: z.number(),
+  max_readings: z.number().optional(),
   readings: z
     .array(
       z.object({
@@ -322,6 +323,21 @@ export const AcInfinityGrowLightSchema = z.object({
 
 export type AcInfinityGrowLight = z.infer<typeof AcInfinityGrowLightSchema>;
 
+export const LegacyStageThresholdsSchema = z.record(
+  z.string(),
+  z.record(z.string(), z.object({ on: z.number(), off: z.number() }))
+);
+
+const StageTargetThresholdsSchema = z.record(
+  z.string(),
+  z.object({ target: z.number(), tolerance: z.number() })
+);
+
+const EnvironmentThresholdsSchema = z.union([
+  StageTargetThresholdsSchema,
+  LegacyStageThresholdsSchema,
+]);
+
 // Cumulative water usage for a growspace (backend WaterUsageData), plus the
 // `liters_today` figure the view model folds in on top of the dataclass. This
 // schema is the single description of the shape — the wire type below is
@@ -349,7 +365,7 @@ export const GrowspaceAPIResponseSchema = z.object({
   identity: z
     .object({
       growspace_id: z.string(),
-      overview_entity_id: z.string().optional(),
+      overview_entity_id: z.string().nullish(),
       name: z.string(),
       type: z.enum(['normal', 'mother', 'clone', 'dry', 'cure', 'flower', 'veg']),
       notification_target: z.string().nullable().optional(),
@@ -423,14 +439,8 @@ export const GrowspaceAPIResponseSchema = z.object({
       dehumidifier_mode: z.unknown().optional(),
       // Derived pore-EC minus bulk-EC average; only present when both read.
       substrate_ec_delta: z.number().optional(),
-      humidifier_thresholds: z
-        .record(z.string(), z.record(z.string(), z.object({ on: z.number(), off: z.number() })))
-        .optional()
-        .default({}),
-      dehumidifier_thresholds: z
-        .record(z.string(), z.record(z.string(), z.object({ on: z.number(), off: z.number() })))
-        .optional()
-        .default({}),
+      humidifier_thresholds: EnvironmentThresholdsSchema.optional().default({}),
+      dehumidifier_thresholds: EnvironmentThresholdsSchema.optional().default({}),
       vpd_optimal_overrides: z
         .record(
           z.string(),
@@ -553,6 +563,7 @@ export const GrowspaceAPIResponseSchema = z.object({
         .object({
           cycle_start_date: z.string().nullable().optional(),
           cycle_start_kwh: z.number().nullable().optional(),
+          last_kwh_reading: z.number().nullable().optional(),
         })
         .nullable()
         .optional(),

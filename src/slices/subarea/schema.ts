@@ -6,6 +6,76 @@
  */
 
 import { z } from 'zod';
+import { VisionCheckupConfigSchema } from '../camera/schema';
+
+const StageVpdOverridesSchema = z
+  .record(z.string(), z.object({ day: z.number(), night: z.number() }))
+  .optional()
+  .default({});
+
+const CirculationFanConfigSchema = z.object({
+  enabled: z.boolean(),
+  regulation_mode: z.enum(['vpd', 'humidity', 'temperature']),
+  min_speed: z.number(),
+  max_speed: z.number(),
+  vpd_target: z.number(),
+  vpd_tolerance: z.number(),
+  humidity_target: z.number(),
+  humidity_tolerance: z.number(),
+  temperature_target: z.number(),
+  temperature_tolerance: z.number(),
+  critical_temp_low: z.number().nullable(),
+  critical_temp_high: z.number().nullable(),
+  critical_temp_hysteresis: z.number(),
+  wind_enabled: z.boolean(),
+  wind_period_seconds: z.number(),
+  wind_amplitude_pct: z.number(),
+  stage_vpd_enabled: z.boolean(),
+  stage_vpd_overrides: StageVpdOverridesSchema,
+});
+
+const ExhaustFanConfigSchema = CirculationFanConfigSchema.omit({
+  regulation_mode: true,
+  wind_enabled: true,
+  wind_period_seconds: true,
+  wind_amplitude_pct: true,
+});
+
+const AcInfinityDeviceSchema = z.object({
+  mode_entity: z.string(),
+  speed_entity: z.string(),
+  on_speed: z.number().optional().default(10),
+});
+
+const AcInfinityGrowLightSchema = z.object({
+  mode_entity: z.string(),
+  on_time_entity: z.string(),
+  off_time_entity: z.string(),
+  power_entity: z.string(),
+  sunrise_switch_entity: z.string().optional().default(''),
+  sunrise_duration_entity: z.string().optional().default(''),
+});
+
+const GrowLightConfigSchema = z.object({
+  enabled: z.boolean(),
+  power: z.number(),
+  sunrise_enabled: z.boolean().optional().default(false),
+  sunrise_minutes: z.number().optional().default(0),
+});
+
+const StageThresholdsSchema = z
+  .record(z.string(), z.object({ target: z.number(), tolerance: z.number() }))
+  .optional();
+
+const VpdOptimalOverridesSchema = z
+  .record(
+    z.string(),
+    z.object({
+      day: z.object({ low: z.number(), high: z.number() }),
+      night: z.object({ low: z.number(), high: z.number() }),
+    })
+  )
+  .optional();
 
 // ---------------------------------------------------------------------------
 // SensorGroup
@@ -47,6 +117,15 @@ export const EnvironmentConfigSchema = z.object({
   circulation_fan_entities: z.array(z.string()).optional(),
   humidifier_entities: z.array(z.string()).optional(),
   dehumidifier_entities: z.array(z.string()).optional(),
+  growlight_entities: z.array(z.string()).optional(),
+  exhaust_fan_ac_infinity_devices: z.array(AcInfinityDeviceSchema).optional(),
+  circulation_fan_ac_infinity_devices: z.array(AcInfinityDeviceSchema).optional(),
+  humidifier_ac_infinity_devices: z.array(AcInfinityDeviceSchema).optional(),
+  dehumidifier_ac_infinity_devices: z.array(AcInfinityDeviceSchema).optional(),
+  growlight_ac_infinity_devices: z.array(AcInfinityGrowLightSchema).optional(),
+  circulation_fan_config: CirculationFanConfigSchema.optional(),
+  exhaust_fan_config: ExhaustFanConfigSchema.optional(),
+  growlight_config: GrowLightConfigSchema.optional(),
   sensor_coordinates: z
     .record(
       z.string(),
@@ -69,7 +148,17 @@ export const EnvironmentConfigSchema = z.object({
   electricity_cost_per_kwh: z.number().optional(),
   dli_target_veg: z.number().optional(),
   dli_target_flower: z.number().optional(),
+  lst_offset: z.number().optional(),
   control_dehumidifier: z.boolean().optional(),
+  control_humidifier: z.boolean().optional(),
+  dehumidifier_thresholds: StageThresholdsSchema,
+  humidifier_thresholds: StageThresholdsSchema,
+  minimum_source_air_temperature: z.number().optional(),
+  bayesian_options: z.record(z.string(), z.unknown()).optional(),
+  irrigation_tanks: z.array(z.unknown()).optional(),
+  snapshot_interval_hours: z.number().optional(),
+  vision_checkup_config: VisionCheckupConfigSchema.optional(),
+  vpd_optimal_overrides: VpdOptimalOverridesSchema,
   stress_threshold: z.number().optional(),
   mold_threshold: z.number().optional(),
 });

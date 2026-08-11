@@ -13,6 +13,7 @@ import {
 } from '../types';
 import type { ECTargetStage, SteeringMetrics, SerializedIrrigationConfig } from '../services/types';
 import { ActiveEventSchema, IrrigationTankRowSchema } from '../slices/irrigation/schema';
+import { LegacyStageThresholdsSchema } from '../slices/growspace/schema';
 import { SensorGroupSchema } from '../slices/subarea/schema';
 import type { SensorGroup } from '../slices/subarea/schema';
 
@@ -21,6 +22,13 @@ function parseSensorGroups(raw: unknown[] | undefined): SensorGroup[] {
     const parsed = SensorGroupSchema.safeParse(g);
     return parsed.success ? [parsed.data] : [];
   });
+}
+
+function parseLegacyStageThresholds(raw: unknown) {
+  // Current GSM snapshots use target/tolerance, while the editor still writes
+  // the legacy day/night on/off model. Do not reinterpret one as the other.
+  const parsed = LegacyStageThresholdsSchema.safeParse(raw);
+  return parsed.success ? parsed.data : undefined;
 }
 
 export class GrowspaceAdapter {
@@ -127,12 +135,12 @@ export class GrowspaceAdapter {
       dehumidifierEntity: environment?.dehumidifier_entity,
       dehumidifierEntities: environment?.dehumidifier_entities,
       dehumidifierControlEnabled: environment?.dehumidifier_control_enabled,
-      dehumidifierThresholds: environment?.dehumidifier_thresholds,
+      dehumidifierThresholds: parseLegacyStageThresholds(environment?.dehumidifier_thresholds),
       dehumidifierState: environment?.dehumidifier_state ?? undefined,
       humidifierEntity: environment?.humidifier_entity,
       humidifierEntities: environment?.humidifier_entities,
       humidifierControlEnabled: environment?.humidifier_control_enabled,
-      humidifierThresholds: environment?.humidifier_thresholds,
+      humidifierThresholds: parseLegacyStageThresholds(environment?.humidifier_thresholds),
       exhaustEntity: environment?.exhaust_entity,
       exhaustFanEntities: environment?.exhaust_fan_entities,
       circulationFanEntity: environment?.circulation_fan_entity,
