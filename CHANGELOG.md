@@ -1,3 +1,10 @@
+# [1.1.0-next.95](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.94...v1.1.0-next.95) (2026-08-11)
+
+
+### Bug Fixes
+
+* **release:** restore HACS bundle in release tags ([#492](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/492)) ([097fbd3](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/097fbd34c214537670e170da5de1f4a22942478d))
+
 # [1.1.0-next.94](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.93...v1.1.0-next.94) (2026-08-11)
 
 
