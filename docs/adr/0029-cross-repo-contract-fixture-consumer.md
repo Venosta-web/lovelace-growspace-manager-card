@@ -18,6 +18,14 @@ env-clear pattern) existed only as maintainer memory.
    maximally populated growspace payload, see GSM ADR 0030). Strict means both
    directions fail: an unknown key (GSM added a field the card doesn't know) and
    a missing key (the card expects a field GSM doesn't send).
+
+   > **Amended by ADR 0031.** Strict parsing is not achievable: `hassCall`
+   > throws on any parse failure, so production schemas strip unknown keys
+   > rather than reject them. The check is a recursive **key-set diff** with an
+   > **asymmetric verdict per ref** — `prerelease` tests completeness (fixture
+   > keys ⊆ schema keys), the release ref tests backward-safety (the schema's
+   > non-optional keys ⊆ fixture keys). A key in the release fixture but absent
+   > from the schema is expected, not drift. The rest of this ADR stands.
 2. **Two refs, one test.** The fixture is fetched from GSM `prerelease` *and*
    from the latest GSM release tag. Passing against the release fixture is the
    mechanical definition of a **backward-safe card change** — the sanctioned
