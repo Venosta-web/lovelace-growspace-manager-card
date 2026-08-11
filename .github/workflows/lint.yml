@@ -31,6 +31,9 @@ jobs:
     - name: Build
       run: npm run build
 
+    - name: Validate HACS release layout
+      run: npm run validate:hacs-release
+
     # Non-blocking until the existing prettier drift (~173 files) is reformatted
     # in a dedicated PR — see ADR 0025. The previous `format -- --check` step was a
     # no-op (it ran `prettier --write`), so it never actually checked.
@@ -65,3 +68,6 @@ jobs:
 
     - name: Build
       run: npm run build
+
+    - name: Validate HACS release layout
+      run: npm run validate:hacs-release
