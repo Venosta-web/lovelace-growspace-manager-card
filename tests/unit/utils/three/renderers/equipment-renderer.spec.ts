@@ -169,29 +169,6 @@ describe('EquipmentRenderer', () => {
         expect(pump.userData.isActive).toBe(true); // Active due to event
     });
 
-    it('should link pump to tank and handle unlink', () => {
-        context.device.irrigationConfig = { irrigationPumpEntity: 'p1' };
-        context.device.environmentAttributes.pump_tank_links = { 'p1': 't1' };
-
-        const tankMesh = new (THREE.Group as any)();
-        tankMesh.userData.entityId = 't1';
-        tankMesh.position.set(20, 0, 30);
-        context.sensorMeshes.set('t1', tankMesh);
-
-        renderer.render();
-        const pump = context.sensorMeshes.get('p1');
-        expect(pump.userData.tankId).toBe('t1');
-
-        const unlinkIcon = pump.getObjectByName('unlinkIcon');
-        expect(unlinkIcon.visible).toBe(true);
-
-        // Sim click unlink
-        unlinkIcon.element.onclick!(new MouseEvent('click'));
-        expect(context.scene.userData.element.dispatchEvent).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'unlink' })
-        );
-    });
-
     it('should render and animate exhaust fans with speed', () => {
         context.device.environmentAttributes.exhaustFanEntities = ['ex1'];
         context.device.environmentAttributes.sensorCoordinates = { 'ex1': { x: 50, y: 75, z: 200 } };
@@ -331,20 +308,6 @@ describe('EquipmentRenderer', () => {
         expect(context.sensorMeshes.get('h1').userData.intensity).toBe(0);
     });
 
-    it('should handle pump link where tankMesh exists but ID mismatch', () => {
-        context.device.irrigationConfig = { irrigationPumpEntity: 'p1' };
-        context.device.environmentAttributes.pump_tank_links = { 'p1': 't1' };
-
-        const wrongTank = new (THREE.Group as any)();
-        wrongTank.userData.entityId = 't2'; // ID mismatch
-        context.sensorMeshes.set('t1', wrongTank);
-
-        renderer.render();
-        const pump = context.sensorMeshes.get('p1');
-        // Should use standard positioning if ID doesn't match
-        expect(pump.position.y).toBe(0);
-    });
-
     it('should replace old hose when humidifier update occurs outside', () => {
         context.device.environmentAttributes.humidifierEntities = ['h1'];
         context.device.environmentAttributes.sensorCoordinates = { 'h1': { x: -20, y: 50, z: 0 } };
@@ -478,40 +441,6 @@ describe('EquipmentRenderer', () => {
         expect(context.sensorMeshes.get('p2').userData.isActive).toBe(false);
     });
 
-    it('should cover updatePumpModel short-circuit and complex if branches', () => {
-        context.device.irrigationConfig = { irrigationPumpEntity: 'p1' };
-        context.device.environmentAttributes.sensorCoordinates = { 'p1': { x: -20, y: 50 } };
-        context.hass.states['p1'] = { state: 'on' };
-        renderer.render();
-        const pump = context.sensorMeshes.get('p1');
-
-        // Branch: First part of IF is false (not outside, no tankMesh)
-        context.device.environmentAttributes.sensorCoordinates['p1'].x = 50;
-        renderer.render();
-        // Since it's no longer outside, it should handle the else branch for positioning
-
-        // Branch: First part true, second part false (no change)
-        context.device.environmentAttributes.sensorCoordinates['p1'].x = -20;
-        renderer.render(); // Re-creates hose
-        renderer.render(); // No change, should skip hose creation
-
-        // Branch: Second part parts (change isActive, change isOutside, change targetH, change tankId)
-        context.hass.states['p1'] = { state: 'off' };
-        renderer.render(); // isActive changed
-
-        context.device.environmentAttributes.sensorCoordinates['p1'].x = -30;
-        renderer.render(); // isOutside changed (still true, but coordinate changed)
-
-        context.device.environmentAttributes.sensorCoordinates['p1'].z = 100;
-        renderer.render(); // targetH changed
-
-        const tankMesh = new (THREE.Group as any)();
-        tankMesh.userData.entityId = 't1';
-        context.sensorMeshes.set('t1', tankMesh);
-        context.device.environmentAttributes.pump_tank_links = { 'p1': 't1' };
-        renderer.render(); // tankId changed
-    });
-
     it('should cover intensity logic branches for humidifier/dehumidifier', () => {
         context.device.environmentAttributes.humidifierEntities = ['h1'];
         context.device.environmentAttributes.dehumidifierEntities = ['d1'];
@@ -618,17 +547,6 @@ describe('EquipmentRenderer', () => {
         renderer.animate(0.1); // Should not throw
     });
 
-    it('should hit the unlink event element missing branch if dispatchEvent fails', () => {
-        context.scene.userData.element = undefined;
-        context.device.irrigationConfig = { irrigationPumpEntity: 'p1' };
-        context.device.environmentAttributes.pump_tank_links = { 'p1': 't1' };
-        renderer.render();
-        const pump = context.sensorMeshes.get('p1');
-        const unlinkIcon = pump.getObjectByName('unlinkIcon');
-
-        unlinkIcon!.element.onclick!(new MouseEvent('click')); // Should not throw due to ?. 
-    });
-
     it('should hit all intensity ternary branches', () => {
         context.device.environmentAttributes.humidifierEntities = ['h1', 'h2', 'h3', 'h4'];
         context.device.environmentAttributes.sensorCoordinates = {
@@ -708,20 +626,6 @@ describe('EquipmentRenderer', () => {
         renderer.render();
     });
 
-    it('should hit pump tank link branches', () => {
-        context.device.irrigationConfig = { irrigationPumpEntity: 'p1' };
-        context.device.environmentAttributes.sensorCoordinates = { 'p1': { x: 50, y: 50 } };
-
-        // tankId missing
-        renderer.render();
-        expect(context.sensorMeshes.get('p1').userData.tankId).toBeUndefined();
-
-        // tankId present but tankMesh null
-        context.device.environmentAttributes.pump_tank_links = { 'p1': 'non_existent_tank' };
-        renderer.render();
-        expect(context.sensorMeshes.get('p1').userData.tankId).toBe('non_existent_tank');
-    });
-
     it('should cover particle animation falling off branches', () => {
         // Set life to <= 0 and active.length to 0 to hit the final 'else' in particle loops
         context.hass.states = {};
@@ -799,28 +703,6 @@ describe('EquipmentRenderer', () => {
         renderer.render();
     });
 
-    it('should cover updatePumpModel more complex branches', () => {
-        context.device.irrigationConfig = { irrigationPumpEntity: 'p1' };
-        context.device.environmentAttributes.sensorCoordinates = { 'p1': { x: -10, y: 10 } };
-        renderer.render();
-        const pump = context.sensorMeshes.get('p1');
-
-        // tankMesh present, tankId changed
-        const tank1 = new (THREE.Group as any)();
-        tank1.userData.entityId = 't1';
-        context.sensorMeshes.set('t1', tank1);
-
-        context.device.environmentAttributes.pump_tank_links = { 'p1': 't1' };
-        renderer.render(); // Set up tankMesh
-
-        const tank2 = new (THREE.Group as any)();
-        tank2.userData.entityId = 't2';
-        context.sensorMeshes.set('t2', tank2);
-
-        context.device.environmentAttributes.pump_tank_links['p1'] = 't2';
-        renderer.render(); // tankId changed, should hit branch for hose update
-    });
-
     it('should cover particle animation end-of-life branches', () => {
         // Set life to epsilon to hit life[i] > 0 then life[i] <= 0
         context.hass.states = {};
@@ -831,17 +713,6 @@ describe('EquipmentRenderer', () => {
 
         renderer.animate(0.1); // life[0] will be <= 0
         expect(humLife[0]).toBeLessThanOrEqual(0);
-    });
-
-    it('should hit missing requestUpdate branch in unlink', () => {
-        context.requestUpdate = undefined as any;
-        context.device.irrigationConfig = { irrigationPumpEntity: 'p1' };
-        context.device.environmentAttributes.pump_tank_links = { 'p1': 't1' };
-        context.sensorMeshes.set('t1', new THREE.Group());
-        renderer.render();
-        const pump = context.sensorMeshes.get('p1');
-        const unlinkIcon = pump.getObjectByName('unlinkIcon');
-        unlinkIcon!.element.onclick!(new MouseEvent('click')); // Should skip requestUpdate block
     });
 
     it('should hit dimensions missing partial properties', () => {

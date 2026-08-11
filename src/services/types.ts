@@ -268,7 +268,6 @@ export interface EnvironmentAttributes {
   irrigationTanks?: IrrigationTank[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   sensorTypes?: Record<string, string>;
-  pump_tank_links?: Record<string, string>;
   activeEvents?: Record<string, ActiveEvent>;
   sensorGroups?: SensorGroup[];
   electricityCostPerKwh?: number | null;

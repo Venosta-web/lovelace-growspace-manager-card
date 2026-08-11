@@ -734,46 +734,6 @@ describe('Heatmap3D Logic', () => {
             }
         });
 
-        it('should handle pump-tank linking', async () => {
-            const pumpId = 'sensor.pump1';
-            const tankId = 'sensor.tank1';
-
-            const pumpMesh = new THREE.Mesh();
-            pumpMesh.userData.types = ['irrigation_pump'];
-            const tankMesh = new THREE.Mesh();
-            tankMesh.userData.types = ['irrigation_tank'];
-
-            (element as any).sceneManager.sensorMeshes.set(pumpId, pumpMesh);
-            (element as any).sceneManager.sensorMeshes.set(tankId, tankMesh);
-
-            const updateSpy = vi.spyOn(element as any, '_updatePumpTankLinks');
-
-            // Link pump -> tank
-            (element as any)._handleLink(pumpId, tankId);
-            expect(element.device!.environmentAttributes!.pump_tank_links![pumpId]).toBe(tankId);
-            expect(updateSpy).toHaveBeenCalled();
-
-            // Link tank -> pump (reverse selection)
-            delete element.device!.environmentAttributes!.pump_tank_links![pumpId];
-            (element as any)._handleLink(tankId, pumpId);
-            expect(element.device!.environmentAttributes!.pump_tank_links![pumpId]).toBe(tankId);
-
-            // Unlink
-            (element as any)._handleUnlink(pumpId);
-            expect(element.device!.environmentAttributes!.pump_tank_links![pumpId]).toBeUndefined();
-        });
-
-        it('should handle linking with missing meshes', () => {
-            (element as any)._handleLink('missing1', 'missing2');
-            expect(true).toBe(true); // No error
-        });
-
-        it('should handle unlink with missing links object', () => {
-            element.device!.environmentAttributes!.pump_tank_links = undefined;
-            (element as any)._handleUnlink('p1');
-            expect(true).toBe(true); // No error
-        });
-
         it('should sync local coordinates from mesh', () => {
             element.device = JSON.parse(JSON.stringify(mockDevice)); // Ensure fresh device
             const mesh = new THREE.Mesh();
@@ -987,14 +947,6 @@ describe('Heatmap3D Logic', () => {
             expect((element as any)._hoveredPlant).toBeNull();
         });
 
-        it('should handle link and unlink events via handleInteraction', () => {
-            const spyLink = vi.spyOn(element as any, '_handleLink').mockImplementation(() => { });
-            const spyUnlink = vi.spyOn(element as any, '_handleUnlink').mockImplementation(() => { });
-            (element as any).handleInteraction('link', { from: 's1', to: 's2' });
-            expect(spyLink).toHaveBeenCalledWith('s1', 's2');
-            (element as any).handleInteraction('unlink', { entityId: 's1' });
-            expect(spyUnlink).toHaveBeenCalledWith('s1');
-        });
     });
 
     describe('Tooltip', () => {
@@ -1065,17 +1017,6 @@ describe('Heatmap3D Logic', () => {
             vi.mocked(getHistoryStats).mockClear();
             await (element as any).fetchHistory();
             expect(getHistoryStats).not.toHaveBeenCalled();
-        });
-
-        it('should initialize environmentAttributes in _handleLink if missing', () => {
-            element.device = { ...mockDevice, environmentAttributes: undefined };
-            const m1 = new THREE.Mesh(); m1.userData.types = ['irrigation_pump'];
-            const m2 = new THREE.Mesh(); m2.userData.types = ['irrigation_tank'];
-            (element as any).sceneManager.sensorMeshes.set('p1', m1);
-            (element as any).sceneManager.sensorMeshes.set('t1', m2);
-
-            (element as any)._handleLink('p1', 't1');
-            expect(element.device?.environmentAttributes?.pump_tank_links).toBeDefined();
         });
 
         it('should handle showHeatmap toggle via @change', async () => {
@@ -1152,13 +1093,6 @@ describe('Heatmap3D Logic', () => {
             expect(true).toBe(true);
         });
 
-        it('should handle unlink event on container', () => {
-            const spy = vi.spyOn(element as any, '_handleUnlink').mockImplementation(() => { });
-            const event = new CustomEvent('unlink', { detail: { entityId: 's1' } });
-            (element as any).container.dispatchEvent(event);
-            expect(spy).toHaveBeenCalledWith('s1');
-        });
-
         it('should handle requestUpdate callback from sceneManager', () => {
             const spy = vi.spyOn(element, 'requestUpdate');
             const context = (element as any).sceneManager.context;
@@ -1170,22 +1104,6 @@ describe('Heatmap3D Logic', () => {
             const context = (element as any).sceneManager.context;
             const val = context.getSensorValue('sensor.temp1', 'temperature');
             expect(val).toBe(25.5);
-        });
-
-        it('should handle toggleLinkMode from UI', async () => {
-            (element as any).editMode3DCords = true;
-            (element as any)._activeSensorTab = 'irrigation';
-            await elementUpdated(element);
-
-            const linkButton = element.shadowRoot?.querySelector('.side-panel .sensor-tab:not(.active)') as HTMLElement;
-            if (linkButton && linkButton.textContent?.includes('Mode')) {
-                linkButton.click();
-                expect((element as any)._linkMode).toBe(true);
-            } else {
-                // Fallback to direct call if UI selector is tricky
-                (element as any).toggleLinkMode();
-                expect((element as any)._linkMode).toBe(true);
-            }
         });
 
         it('should exercise getMetricValue', () => {
@@ -1232,37 +1150,6 @@ describe('Heatmap3D Logic', () => {
             (element as any).handleSliderInput('s1', 'z', 50);
             expect(mesh.userData.logicalZ).toBe(50);
             expect(mesh.position.y).toBe(40); // Remains 40, didn't update to 50
-        });
-
-        it('should handle _handleLink with reverse selection', () => {
-            const pumpId = 'p1';
-            const tankId = 't1';
-            const pumpMesh = new THREE.Mesh();
-            pumpMesh.userData.types = ['irrigation_pump'];
-            const tankMesh = new THREE.Mesh();
-            tankMesh.userData.types = ['irrigation_tank'];
-
-            (element as any).sceneManager.sensorMeshes.set(pumpId, pumpMesh);
-            (element as any).sceneManager.sensorMeshes.set(tankId, tankMesh);
-
-            // Link tank -> pump (to cover "Allow reverse selection too" branches)
-            (element as any)._handleLink(tankId, pumpId);
-            expect(element.device?.environmentAttributes?.pump_tank_links?.[pumpId]).toBe(tankId);
-        });
-
-        it('should handle _handleLink with drain pump', () => {
-            const pumpId = 'd1';
-            const tankId = 't1';
-            const pumpMesh = new THREE.Mesh();
-            pumpMesh.userData.types = ['drain_pump'];
-            const tankMesh = new THREE.Mesh();
-            tankMesh.userData.types = ['irrigation_tank'];
-
-            (element as any).sceneManager.sensorMeshes.set(pumpId, pumpMesh);
-            (element as any).sceneManager.sensorMeshes.set(tankId, tankMesh);
-
-            (element as any)._handleLink(pumpId, tankId);
-            expect(element.device?.environmentAttributes?.pump_tank_links?.[pumpId]).toBe(tankId);
         });
 
         it('should click every sensor tab and check filtering with matching meshes', async () => {
