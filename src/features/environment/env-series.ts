@@ -21,7 +21,6 @@ import type { HistorySensorState, SensorHistories } from './types';
 import { metricHistoryKeys } from '../../slices/metric-descriptors';
 import type { MetricDescriptor, MetricSensorRef } from '../../slices/metric-descriptors';
 import { ChartUtils } from '../../utils/chart-utils';
-import { BINARY_ON_STATES } from '../../lib/types/hass';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -102,13 +101,19 @@ function _pointsForMetric(
   descriptor: MetricDescriptor,
   history: HistorySensorState[],
   startTimeMs: number,
-  nowMs: number
+  nowMs: number,
+  entityId?: string
 ): EnvSeriesPoint[] {
   const key = descriptor.key;
   const points: EnvSeriesPoint[] = [];
 
   const pointFor = (state: HistorySensorState, time: number): EnvSeriesPoint | undefined => {
-    const value = ChartUtils.normalizeSensorValue(state, key, descriptor.entityId, descriptor.unit);
+    const value = ChartUtils.normalizeSensorValue(
+      state,
+      key,
+      entityId ?? descriptor.entityId,
+      descriptor.unit
+    );
     if (value === undefined) return undefined;
     const reasons = state.attributes?.reasons;
     return reasons === undefined ? { time, value } : { time, value, meta: { reasons } };
@@ -116,14 +121,8 @@ function _pointsForMetric(
 
   const seed = _stateAtWindowStart(history, startTimeMs);
   if (seed) {
-    // Preserve the legacy left-edge seed: every recognized binary-on state is
-    // carried in as 1 before metric-specific normalization is considered.
-    if (BINARY_ON_STATES.includes(seed.state)) {
-      points.push({ time: startTimeMs, value: 1 });
-    } else {
-      const point = pointFor(seed, startTimeMs);
-      if (point) points.push(point);
-    }
+    const point = pointFor(seed, startTimeMs);
+    if (point) points.push(point);
   }
 
   for (const h of history) {
@@ -311,7 +310,7 @@ function _buildSeries(
   const history = histories[spec.historyKey] ?? [];
   if (history.length === 0) return undefined;
 
-  const points = _pointsForMetric(descriptor, history, startTimeMs, nowMs);
+  const points = _pointsForMetric(descriptor, history, startTimeMs, nowMs, spec.sensor?.entityId);
   if (points.length === 0) return undefined;
 
   const reduced = _reduce(points);

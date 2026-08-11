@@ -126,8 +126,8 @@ export class GrowspaceHistoryStore {
 
   // --- Internals ---
   private readonly STORAGE_KEY_PREFIX = STORAGE_KEYS.HISTORY_PREFIX;
-  /** Bumped to 2 when the histories map stopped using `'metric:entity'` keys (#473). */
-  private readonly STORAGE_VERSION = 2;
+  /** Bumped to 3 because older fan histories omit the percentage attribute. */
+  private readonly STORAGE_VERSION = 3;
   private readonly CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000;
   private _refreshInterval: number | null = null;
   private _selectedDeviceUnsub: (() => void) | null = null;

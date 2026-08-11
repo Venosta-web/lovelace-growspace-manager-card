@@ -373,7 +373,30 @@ describe('computeEnvSeries — fan and light value spaces', () => {
     const [series] = computeEnvSeries(descriptors, history, [MetricKey.EXHAUST], windowOf(24));
 
     expect(series.unit).toBe('%');
-    expect(series.points.map((point) => point.value)).toEqual([1, 45, 45]);
+    expect(series.points.map((point) => point.value)).toEqual([45, 45, 45]);
+    expect({ min: series.min, max: series.max }).toEqual({ min: 0, max: 100 });
+  });
+
+  it('shapes an HA circulation fan from device configuration before a snapshot exists', () => {
+    const device = {
+      deviceId: 'g1',
+      name: 'Tent',
+      environmentAttributes: { circulationFanEntities: ['fan.tent_circulation'] },
+    } as unknown as GrowspaceDevice;
+    const descriptors = computeMetricDescriptors(null, {}, undefined, device);
+    const history = {
+      [MetricKey.CIRCULATION_FAN]: [{ ...reading(30, 'on'), attributes: { percentage: 65 } }],
+    };
+
+    const [series] = computeEnvSeries(
+      descriptors,
+      history,
+      [MetricKey.CIRCULATION_FAN],
+      windowOf(24)
+    );
+
+    expect(series.unit).toBe('%');
+    expect(series.points.map((point) => point.value)).toEqual([65, 65, 65]);
     expect({ min: series.min, max: series.max }).toEqual({ min: 0, max: 100 });
   });
 

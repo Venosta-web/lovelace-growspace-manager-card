@@ -381,7 +381,7 @@ describe('GrowspaceHistoryStore - localStorage', () => {
       last_updated: '2024-01-01T00:00:00Z',
     };
     const stored = {
-      version: 2,
+      version: 3,
       timestamp: Date.now(),
       history: { temperature: [point] },
       timestamps: { temperature: '2024-01-01T00:00:00Z' },
@@ -459,6 +459,37 @@ describe('GrowspaceHistoryStore - localStorage', () => {
     expect(store.$historyLoaded.get()).toBe(false);
   });
 
+  it('discards a v2 cache whose fan history can only represent on as one percent', () => {
+    const stored = {
+      version: 2,
+      timestamp: Date.now(),
+      history: {
+        circulation_fan: [
+          {
+            entity_id: 'fan.circulation',
+            state: 'on',
+            attributes: {},
+            last_changed: '2024-01-01T00:00:00Z',
+          },
+        ],
+      },
+      timestamps: { circulation_fan: '2024-01-01T00:00:00Z' },
+    };
+    vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(JSON.stringify(stored));
+    const removeSpy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {});
+
+    const device = {
+      deviceId: 'dev1',
+      name: 'Tent 1',
+      environmentAttributes: {},
+    } as unknown as GrowspaceDevice;
+    setDevices([device]);
+    const store = new GrowspaceHistoryStore(atom<string | null>('dev1'));
+
+    expect(removeSpy).toHaveBeenCalled();
+    expect(store.$historyCache.get()).toEqual({});
+  });
+
   it('handles malformed localStorage JSON without throwing', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('{not valid json}');
 
@@ -468,7 +499,7 @@ describe('GrowspaceHistoryStore - localStorage', () => {
 
   it('loads cached data that has no timestamps field gracefully', () => {
     const stored = {
-      version: 2,
+      version: 3,
       timestamp: Date.now(),
       history: { temperature: [] },
       // intentionally no `timestamps` field

@@ -27,6 +27,18 @@ describe('resolveMetricEntityIds', () => {
     ]);
   });
 
+  it('returns plural entity ids when circulationFanEntities array is present', () => {
+    const device = makeDevice({
+      environmentAttributes: {
+        circulationFanEntities: ['fan.tent1_circulation', 'fan.tent2_circulation'],
+      },
+    });
+    expect(resolveMetricEntityIds(device, 'circulation_fan')).toEqual([
+      'fan.tent1_circulation',
+      'fan.tent2_circulation',
+    ]);
+  });
+
   it('derives optimal entity id from overviewEntityId slug', () => {
     const device = makeDevice({
       overviewEntityId: 'sensor.tent_1_overview',

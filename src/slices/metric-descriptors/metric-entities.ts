@@ -101,7 +101,9 @@ export function resolveMetricEntityIds(
   // 1. Try plural keys first
   const pluralKey = mapping.primary.endsWith('Sensor')
     ? mapping.primary.replace('Sensor', 'Sensors')
-    : `${mapping.primary}s`;
+    : mapping.primary.endsWith('Entity')
+      ? mapping.primary.replace('Entity', 'Entities')
+      : `${mapping.primary}s`;
 
   let pluralIds = envAttrs[pluralKey] as string[] | undefined;
   if (!pluralIds && /[A-Z]/.test(pluralKey)) {
