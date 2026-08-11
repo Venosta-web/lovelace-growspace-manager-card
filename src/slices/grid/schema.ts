@@ -22,7 +22,13 @@ export const PlantSlotSchema = z
     // `Plant.phenotype` is a str property on the backend (the genetics
     // phenotype name, '' when unset). The former z.union([string, unknown])
     // inferred as `unknown` and hid that from every read site.
-    phenotype: z.string().optional().default(''),
+    // Accepts null defensively: hassCall throws on a parse failure, so one
+    // legacy record with a null phenotype would blank every growspace rather
+    // than one plant.
+    phenotype: z
+      .string()
+      .nullish()
+      .transform((v) => v ?? ''),
     row: z.number().optional().default(0),
     col: z.number().optional().default(0),
     position: z.string().optional().default(''),
