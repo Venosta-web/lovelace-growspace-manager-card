@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { VisionCheckupConfigSchema } from '../camera/schema';
 import { GridApiSchema } from '../grid/schema';
 import { SteeringModeSchema } from '../irrigation/schema';
 import { SubareaSchema } from '../subarea/schema';
@@ -83,8 +84,32 @@ const IrrigationConfigSchema = z
       .optional()
       .default([]),
     veg_day_hours: z.number().optional(),
+    // Emitted by IrrigationConfig.to_dict() (ADR 0028 made it model-complete).
+    // pump_flow_rate_ml_per_sec is unread by the card — the backend folds it
+    // into volume_mode_capable — but it is declared because it is emitted.
+    pump_flow_rate_ml_per_sec: z.number().optional(),
+    soil_trigger_percent: z.number().nullable().optional(),
+    daily_volume_cap_liters: z.number().nullable().optional(),
+    max_cycles_per_day: z.number().nullable().optional(),
+    skip_during_dark: z.boolean().optional(),
+    pause_on_low_tank: z.boolean().optional(),
+    log_to_logbook: z.boolean().optional(),
+    ec_target_ranges: z
+      .array(
+        z.object({
+          stage: z.string(),
+          feed_ec_min: z.number(),
+          feed_ec_max: z.number(),
+        })
+      )
+      .optional()
+      .default([]),
+    auto_advance_p1_to_p2: z.boolean().optional(),
+    auto_advance_p2_to_p3: z.boolean().optional(),
+    halt_on_runoff_ec_threshold: z.number().nullable().optional(),
+    active_steering_phase: z.enum(['p1', 'p2', 'p3']).optional(),
+    phase_changed_at: z.string().nullable().optional(),
   })
-  .passthrough()
   .optional()
   .prefault({});
 
@@ -118,6 +143,43 @@ const DrybackEventSchema = z.object({
   trough_timestamp: z.string().nullable().optional(),
 });
 
+/**
+ * `shot_composition_payload()` — the modulation capability and configured band
+ * (always present, so the card can explain modulation before the first shot),
+ * plus `last_shot`, which is the ShotComposition dataclass and stays null until
+ * a P1/P2 shot fires.
+ *
+ * `infiltration` and `suppressed_by` are typed as loose strings rather than
+ * enums: a backend that predates them omits both, and a newer one may add a
+ * reason this card has never heard of — neither may fail validation here. The
+ * Overview VM maps known values to labels and falls back for the rest.
+ */
+const ShotCompositionSchema = z.object({
+  infiltration: z.string().nullable().optional(),
+  suppressed_by: z.string().nullable().optional(),
+  ec_modulation_enabled: z.boolean().optional(),
+  ec_modulation_available: z.boolean().optional(),
+  pore_ec_target_min: z.number().nullable().optional(),
+  pore_ec_target_max: z.number().nullable().optional(),
+  current_vwc_factor: z.number().optional(),
+  current_interval_factor: z.number().optional(),
+  dynamic_shot_enabled: z.boolean().optional(),
+  last_shot: z
+    .object({
+      phase: z.string(),
+      base_seconds: z.number(),
+      vwc_factor: z.number(),
+      ec_factor: z.number(),
+      ec_modulation_available: z.boolean(),
+      composed_seconds: z.number(),
+      effective_seconds: z.number(),
+      capped: z.boolean(),
+      timestamp: z.string(),
+    })
+    .nullable()
+    .optional(),
+});
+
 // Measured steering readout (#444/#445/#448): tracker-derived dryback / EC
 // fields plus the injected score, Measured Classification, Intent Deviation,
 // and shot composition. Measured fields are nullable (no reading yet); a null
@@ -140,10 +202,7 @@ const SubstrateMetricsSchema = z
       .nullable()
       .optional(),
     score: z.number().nullable().optional(),
-    measured_classification: z
-      .enum(['vegetative', 'balanced', 'generative'])
-      .nullable()
-      .optional(),
+    measured_classification: z.enum(['vegetative', 'balanced', 'generative']).nullable().optional(),
     intent_deviation: z
       .enum(['on_target', 'more_generative', 'more_vegetative'])
       .nullable()
@@ -152,16 +211,30 @@ const SubstrateMetricsSchema = z
     // enums: a backend that predates them omits both, and a newer one may add a
     // reason this card has never heard of — neither may fail validation here.
     // The Overview VM maps known values to labels and falls back for the rest.
-    shot_composition: z
-      .object({
-        infiltration: z.string().nullable().optional(),
-        suppressed_by: z.string().nullable().optional(),
-      })
-      .passthrough()
-      .nullable()
-      .optional(),
+    shot_composition: ShotCompositionSchema.nullable().optional(),
+    // Injected next to the score in view_model_builder.py; unread by the card.
+    runoff_score: z.number().nullable().optional(),
   })
-  .passthrough()
+  .nullable()
+  .optional();
+
+/**
+ * The reconciled feed/pore EC view (ADR-0015), emitted on the irrigation block
+ * by `ec_state_payload()` and null on time-based irrigation. Declared in full
+ * though the card reads none of it yet (ADR 0031).
+ */
+const EcStateSchema = z
+  .object({
+    pore_ec: z.number().nullable().optional(),
+    recommendation: z.string().optional(),
+    active_feed_ec: z.unknown().optional(),
+    feed_ec_source: z.string().nullable().optional(),
+    runoff_ec: z.number().nullable().optional(),
+    feed_to_runoff_delta: z.number().nullable().optional(),
+    runoff_percent: z.number().nullable().optional(),
+    runoff_pct_target: z.number().nullable().optional(),
+    halt_irrigation: z.boolean().optional(),
+  })
   .nullable()
   .optional();
 
@@ -275,198 +348,239 @@ export const WaterUsageSchema = z.object({
 
 export type SerializedWaterUsage = z.infer<typeof WaterUsageSchema>;
 
-export const GrowspaceAPIResponseSchema = z
-  .object({
-    identity: z
-      .object({
-        growspace_id: z.string(),
-        overview_entity_id: z.string().optional(),
-        name: z.string(),
-        type: z.enum(['normal', 'mother', 'clone', 'dry', 'cure', 'flower', 'veg']),
-        notification_target: z.string().nullable().optional(),
-      })
-      .optional()
-      .default({ growspace_id: '', name: '', type: 'normal' }),
+export const GrowspaceAPIResponseSchema = z.object({
+  identity: z
+    .object({
+      growspace_id: z.string(),
+      overview_entity_id: z.string().optional(),
+      name: z.string(),
+      type: z.enum(['normal', 'mother', 'clone', 'dry', 'cure', 'flower', 'veg']),
+      notification_target: z.string().nullable().optional(),
+    })
+    .optional()
+    .default({ growspace_id: '', name: '', type: 'normal' }),
 
-    grid: GridApiSchema,
+  grid: GridApiSchema,
 
-    environment: z
-      .object({
-        temperature_sensor: z.string().optional(),
-        humidity_sensor: z.string().optional(),
-        vpd_sensor: z.string().optional(),
-        co2_sensor: z.string().optional(),
-        soil_moisture_sensor: z.string().optional(),
-        light_sensor: z.string().optional(),
-        exhaust_entity: z.string().optional(),
-        humidifier_entity: z.string().optional(),
-        humidifier_control_enabled: z.boolean().optional(),
-        dehumidifier_entity: z.string().optional(),
-        dehumidifier_control_enabled: z.boolean().optional(),
-        circulation_fan_entity: z.string().optional(),
-        circulation_fan_entities: z.array(z.string()).optional().default([]),
-        circulation_fan_config: CirculationFanConfigSchema.optional(),
-        exhaust_fan_config: ExhaustFanConfigSchema.optional(),
-        exhaust_fan_entities: z.array(z.string()).optional().default([]),
-        humidifier_entities: z.array(z.string()).optional().default([]),
-        dehumidifier_entities: z.array(z.string()).optional().default([]),
-        exhaust_fan_ac_infinity_devices: z
-          .array(AcInfinityDeviceSchema)
-          .optional()
-          .default([]),
-        circulation_fan_ac_infinity_devices: z
-          .array(AcInfinityDeviceSchema)
-          .optional()
-          .default([]),
-        humidifier_ac_infinity_devices: z
-          .array(AcInfinityDeviceSchema)
-          .optional()
-          .default([]),
-        dehumidifier_ac_infinity_devices: z
-          .array(AcInfinityDeviceSchema)
-          .optional()
-          .default([]),
-        growlight_entities: z.array(z.string()).optional().default([]),
-        growlight_ac_infinity_devices: z
-          .array(AcInfinityGrowLightSchema)
-          .optional()
-          .default([]),
-        growlight_config: GrowLightConfigSchema.optional(),
-        light_sensors: z.array(z.string()).optional().default([]),
-        vpd: z.string().nullable().optional(),
-        soil_moisture_value: z.string().nullable().optional(),
-        dehumidifier_state: z.string().nullable().optional(),
-        humidifier_thresholds: z
-          .record(z.string(), z.record(z.string(), z.object({ on: z.number(), off: z.number() })))
-          .optional()
-          .default({}),
-        dehumidifier_thresholds: z
-          .record(z.string(), z.record(z.string(), z.object({ on: z.number(), off: z.number() })))
-          .optional()
-          .default({}),
-        vpd_optimal_overrides: z
-          .record(
-            z.string(),
-            z.object({
-              day: z.object({ low: z.number(), high: z.number() }),
-              night: z.object({ low: z.number(), high: z.number() }),
-            })
-          )
-          .optional()
-          .default({}),
-        electricity_cost_per_kwh: z.number().nullable().optional(),
-        substrate_temperature_sensors: z.array(z.string()).optional().default([]),
-        camera_entities: z.array(z.string()).optional().default([]),
-        energy_sensors: z.array(z.string()).optional().default([]),
-        irrigation_tanks: z.array(z.unknown()).optional().default([]),
-        irrigation_pump_state: z.string().nullable().optional(),
-        drain_pump_state: z.string().nullable().optional(),
-        active_events: z.record(z.string(), z.unknown()).optional().default({}),
-      })
-      .passthrough()
-      .optional()
-      .prefault({}),
-
-    sensors: z
-      .object({
-        sensor_types: z.record(z.string(), z.string()).optional().default({}),
-        sensor_coordinates: z
-          .record(
-            z.string(),
-            z.object({
-              x: z.number(),
-              y: z.number(),
-              z: z.number(),
-              rotation: z.number().optional(),
-            })
-          )
-          .optional()
-          .default({}),
-        sensor_groups: z.array(z.unknown()).optional().default([]),
-      })
-      .optional()
-      .prefault({}),
-
-    // Same wire shape as get_subareas (SubareaSchema). Optional: older backends
-    // don't include the key in the growspace payload.
-    subareas: z.array(SubareaSchema).optional(),
-
-    irrigation: z
-      .object({
-        irrigation_config: IrrigationConfigSchema,
-        irrigation_strategy: IrrigationStrategySchema.nullable().optional().default(null),
-        // Server-authoritative Volume Mode gate (ADR-0017): true only when a
-        // substrate profile and a positive pump flow rate are both configured.
-        // Left `.optional()` with no default so an older backend that omits it
-        // stays distinguishable from one that reports false; the adapter's
-        // `?? false` is the single place that collapses absence to locked.
-        volume_mode_capable: z.boolean().optional(),
-        drain_config: DrainConfigSchema,
-        substrate: SubstrateMetricsSchema,
-        water_usage: WaterUsageSchema.nullable().optional(),
-        last_cycle_timestamp: z.string().nullable().optional(),
-        next_scheduled_cycle: z.string().nullable().optional(),
-        projected_shot_window: z
-          .object({ start: z.string(), end: z.string() })
-          .nullable()
-          .optional(),
-        cycles_today: z.number().optional().default(0),
-        volume_dispensed_today: z.number().optional().default(0),
-      })
-      .optional()
-      .prefault({}),
-
-    metrics: z
-      .object({
-        vpd_status: z.string().optional().default('unknown'),
-        vpd_target_min: z.preprocess((val) => (val === null ? undefined : val), z.number().optional().default(0)),
-        vpd_target_max: z.preprocess((val) => (val === null ? undefined : val), z.number().optional().default(0)),
-        vpd_danger_min: z.preprocess((val) => (val === null ? undefined : val), z.number().optional().default(0)),
-        vpd_danger_max: z.preprocess((val) => (val === null ? undefined : val), z.number().optional().default(0)),
-        granular_stage: z.string().optional().default('unknown'),
-        is_day: z.boolean().optional().default(false),
-        veg_week: z.number().optional().default(0),
-        flower_week: z.number().optional().default(0),
-        max_veg_days: z.number().optional().default(0),
-        max_flower_days: z.number().optional().default(0),
-        max_dry_days: z.number().optional().default(0),
-        max_cure_days: z.number().optional().default(0),
-        max_stage_summary: z.string().optional().default(''),
-        air_exchange: z
-          .union([z.string(), z.number().transform(String)])
-          .nullable()
-          .optional(),
-        energy_tracking: z
-          .object({
-            cycle_start_date: z.string().nullable().optional(),
-            cycle_start_kwh: z.number().nullable().optional(),
+  environment: z
+    .object({
+      temperature_sensor: z.string().optional(),
+      humidity_sensor: z.string().optional(),
+      vpd_sensor: z.string().optional(),
+      co2_sensor: z.string().optional(),
+      soil_moisture_sensor: z.string().optional(),
+      light_sensor: z.string().optional(),
+      exhaust_entity: z.string().optional(),
+      humidifier_entity: z.string().optional(),
+      humidifier_control_enabled: z.boolean().optional(),
+      dehumidifier_entity: z.string().optional(),
+      dehumidifier_control_enabled: z.boolean().optional(),
+      circulation_fan_entity: z.string().optional(),
+      circulation_fan_entities: z.array(z.string()).optional().default([]),
+      circulation_fan_config: CirculationFanConfigSchema.optional(),
+      exhaust_fan_config: ExhaustFanConfigSchema.optional(),
+      exhaust_fan_entities: z.array(z.string()).optional().default([]),
+      humidifier_entities: z.array(z.string()).optional().default([]),
+      dehumidifier_entities: z.array(z.string()).optional().default([]),
+      exhaust_fan_ac_infinity_devices: z.array(AcInfinityDeviceSchema).optional().default([]),
+      circulation_fan_ac_infinity_devices: z.array(AcInfinityDeviceSchema).optional().default([]),
+      humidifier_ac_infinity_devices: z.array(AcInfinityDeviceSchema).optional().default([]),
+      dehumidifier_ac_infinity_devices: z.array(AcInfinityDeviceSchema).optional().default([]),
+      growlight_entities: z.array(z.string()).optional().default([]),
+      growlight_ac_infinity_devices: z.array(AcInfinityGrowLightSchema).optional().default([]),
+      growlight_config: GrowLightConfigSchema.optional(),
+      light_sensors: z.array(z.string()).optional().default([]),
+      // Plural sensor lists. The singular *_sensor keys above are the legacy
+      // single-entity form; both are emitted.
+      temperature_sensors: z.array(z.string()).optional().default([]),
+      humidity_sensors: z.array(z.string()).optional().default([]),
+      vpd_sensors: z.array(z.string()).optional().default([]),
+      lung_room_temp_sensors: z.array(z.string()).optional().default([]),
+      power_sensors: z.array(z.string()).optional().default([]),
+      // EC / pH / flow sensor lists — the card uses these for capability
+      // detection (e.g. the Pore EC controls unlock on pore_ec_sensors).
+      ph_sensors: z.array(z.string()).optional().default([]),
+      feed_ec_sensors: z.array(z.string()).optional().default([]),
+      bulk_ec_sensors: z.array(z.string()).optional().default([]),
+      pore_ec_sensors: z.array(z.string()).optional().default([]),
+      runoff_ec_sensors: z.array(z.string()).optional().default([]),
+      drain_volume_sensors: z.array(z.string()).optional().default([]),
+      irrigation_flow_sensors: z.array(z.string()).optional().default([]),
+      vision_checkup_config: VisionCheckupConfigSchema.optional(),
+      lst_offset: z.number().optional(),
+      vpd: z.string().nullable().optional(),
+      soil_moisture_value: z.string().nullable().optional(),
+      // Live actuator/sensor states the serializer reads off hass. Only
+      // humidifier_state is read by the card today; the rest are declared
+      // because the backend emits them (ADR 0031), not because they are used.
+      dehumidifier_state: z.string().nullable().optional(),
+      humidifier_state: z.string().nullable().optional(),
+      exhaust_state: z.string().nullable().optional(),
+      circulation_fan_state: z.string().nullable().optional(),
+      temperature: z.string().nullable().optional(),
+      humidity: z.string().nullable().optional(),
+      // Copied straight off the dehumidifier entity's attributes, so their
+      // type is the entity's, not ours. Unread by the card.
+      dehumidifier_humidity: z.unknown().optional(),
+      dehumidifier_current_humidity: z.unknown().optional(),
+      dehumidifier_mode: z.unknown().optional(),
+      // Derived pore-EC minus bulk-EC average; only present when both read.
+      substrate_ec_delta: z.number().optional(),
+      humidifier_thresholds: z
+        .record(z.string(), z.record(z.string(), z.object({ on: z.number(), off: z.number() })))
+        .optional()
+        .default({}),
+      dehumidifier_thresholds: z
+        .record(z.string(), z.record(z.string(), z.object({ on: z.number(), off: z.number() })))
+        .optional()
+        .default({}),
+      vpd_optimal_overrides: z
+        .record(
+          z.string(),
+          z.object({
+            day: z.object({ low: z.number(), high: z.number() }),
+            night: z.object({ low: z.number(), high: z.number() }),
           })
-          .nullable()
-          .optional(),
-      })
-      .passthrough()
-      .optional()
-      .prefault({}),
+        )
+        .optional()
+        .default({}),
+      electricity_cost_per_kwh: z.number().nullable().optional(),
+      substrate_temperature_sensors: z.array(z.string()).optional().default([]),
+      camera_entities: z.array(z.string()).optional().default([]),
+      energy_sensors: z.array(z.string()).optional().default([]),
+      irrigation_tanks: z.array(z.unknown()).optional().default([]),
+      irrigation_pump_state: z.string().nullable().optional(),
+      drain_pump_state: z.string().nullable().optional(),
+      active_events: z.record(z.string(), z.unknown()).optional().default({}),
+    })
+    .optional()
+    .prefault({}),
 
-    // Global notification settings duplicated onto every growspace payload so
-    // the Config Dialog can seed/round-trip saved values.
-    notification_settings: z.record(z.string(), z.number()).optional(),
-    ai_auto_alerts: z.boolean().optional(),
-    timed_notifications: z
-      .array(
-        z.object({
-          id: z.string(),
-          message: z.string(),
-          trigger_type: z.string(),
-          day: z.number(),
-          growspace_ids: z.array(z.string()),
+  sensors: z
+    .object({
+      sensor_types: z.record(z.string(), z.string()).optional().default({}),
+      sensor_coordinates: z
+        .record(
+          z.string(),
+          z.object({
+            x: z.number(),
+            y: z.number(),
+            z: z.number(),
+            rotation: z.number().optional(),
+          })
+        )
+        .optional()
+        .default({}),
+      sensor_groups: z.array(z.unknown()).optional().default([]),
+    })
+    .optional()
+    .prefault({}),
+
+  // Same wire shape as get_subareas (SubareaSchema). Optional: older backends
+  // don't include the key in the growspace payload.
+  subareas: z.array(SubareaSchema).optional(),
+
+  irrigation: z
+    .object({
+      irrigation_config: IrrigationConfigSchema,
+      irrigation_strategy: IrrigationStrategySchema.nullable().optional().default(null),
+      // Server-authoritative Volume Mode gate (ADR-0017): true only when a
+      // substrate profile and a positive pump flow rate are both configured.
+      // Left `.optional()` with no default so an older backend that omits it
+      // stays distinguishable from one that reports false; the adapter's
+      // `?? false` is the single place that collapses absence to locked.
+      volume_mode_capable: z.boolean().optional(),
+      drain_config: DrainConfigSchema,
+      substrate: SubstrateMetricsSchema,
+      ec_state: EcStateSchema,
+      water_usage: WaterUsageSchema.nullable().optional(),
+      last_cycle_timestamp: z.string().nullable().optional(),
+      next_scheduled_cycle: z.string().nullable().optional(),
+      projected_shot_window: z.object({ start: z.string(), end: z.string() }).nullable().optional(),
+      cycles_today: z.number().optional().default(0),
+      volume_dispensed_today: z.number().optional().default(0),
+    })
+    .optional()
+    .prefault({}),
+
+  metrics: z
+    .object({
+      vpd_status: z.string().optional().default('unknown'),
+      vpd_target_min: z.preprocess(
+        (val) => (val === null ? undefined : val),
+        z.number().optional().default(0)
+      ),
+      vpd_target_max: z.preprocess(
+        (val) => (val === null ? undefined : val),
+        z.number().optional().default(0)
+      ),
+      vpd_danger_min: z.preprocess(
+        (val) => (val === null ? undefined : val),
+        z.number().optional().default(0)
+      ),
+      vpd_danger_max: z.preprocess(
+        (val) => (val === null ? undefined : val),
+        z.number().optional().default(0)
+      ),
+      // Per-period VPD bands the analyzer emits alongside the resolved pair
+      // above. The hero and metric descriptors prefer day_* when present.
+      day_vpd_target_min: z.number().nullable().optional(),
+      day_vpd_target_max: z.number().nullable().optional(),
+      day_vpd_danger_min: z.number().nullable().optional(),
+      day_vpd_danger_max: z.number().nullable().optional(),
+      night_vpd_target_min: z.number().nullable().optional(),
+      night_vpd_target_max: z.number().nullable().optional(),
+      night_vpd_danger_min: z.number().nullable().optional(),
+      night_vpd_danger_max: z.number().nullable().optional(),
+      // Bayesian stage blend, emitted with the metrics but unread by the card.
+      transition_factor: z.number().optional(),
+      transition_stages: z.array(z.string()).optional(),
+      granular_stage: z.string().optional().default('unknown'),
+      is_day: z.boolean().optional().default(false),
+      veg_week: z.number().optional().default(0),
+      flower_week: z.number().optional().default(0),
+      // Emitted next to veg_week/flower_week; unread by the card, which
+      // derives the dry/cure weeks per plant.
+      dry_week: z.number().optional(),
+      cure_week: z.number().optional(),
+      max_veg_days: z.number().optional().default(0),
+      max_flower_days: z.number().optional().default(0),
+      max_dry_days: z.number().optional().default(0),
+      max_cure_days: z.number().optional().default(0),
+      max_stage_summary: z.string().optional().default(''),
+      air_exchange: z
+        .union([z.string(), z.number().transform(String)])
+        .nullable()
+        .optional(),
+      energy_tracking: z
+        .object({
+          cycle_start_date: z.string().nullable().optional(),
+          cycle_start_kwh: z.number().nullable().optional(),
         })
-      )
-      .optional(),
+        .nullable()
+        .optional(),
+    })
+    .optional()
+    .prefault({}),
 
-    _ts: z.number().optional(),
-  })
-  .passthrough();
+  // Global notification settings duplicated onto every growspace payload so
+  // the Config Dialog can seed/round-trip saved values.
+  notification_settings: z.record(z.string(), z.number()).optional(),
+  ai_auto_alerts: z.boolean().optional(),
+  timed_notifications: z
+    .array(
+      z.object({
+        id: z.string(),
+        message: z.string(),
+        trigger_type: z.string(),
+        day: z.number(),
+        growspace_ids: z.array(z.string()),
+      })
+    )
+    .optional(),
+
+  _ts: z.number().optional(),
+});
 
 export type GrowspaceAPISchemaResponse = z.infer<typeof GrowspaceAPIResponseSchema>;
 
