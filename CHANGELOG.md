@@ -1,3 +1,10 @@
+# [1.1.0-next.94](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.93...v1.1.0-next.94) (2026-08-11)
+
+
+### Bug Fixes
+
+* **water-usage:** derive the wire type from its schema so liters_today survives ([#490](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/490)) ([401aff1](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/401aff1eed82b695f265442f8a229b399f53bdde)), closes [#484](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/484)
+
 # [1.1.0-next.93](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.92...v1.1.0-next.93) (2026-08-11)
 
 
