@@ -108,6 +108,9 @@ describe('GrowspaceAdapter irrigation strategy', () => {
     expect(strat?.ecModulationEnabled).toBe(true);
   });
 
+  // The shape the shipped GSM release emits. Current backends always serialize
+  // substrate_profile (default_factory), so the undefined case below only
+  // occurs against that older payload.
   it('defaults band to null and modulation to false when absent', () => {
     const device = GrowspaceAdapter.transformGrowspace(null, wsWithStrategy({ enabled: true }));
     const strat = device?.irrigationStrategy;
