@@ -1,3 +1,10 @@
+# [1.1.0-next.97](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.96...v1.1.0-next.97) (2026-08-11)
+
+
+### Bug Fixes
+
+* **schema:** declare the full Irrigation Strategy so settings survive hydration ([#495](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/495)) ([e5ec26b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e5ec26b71f5cab45cafacf3b85f06ba3a2b36be5)), closes [#487](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/487)
+
 # [1.1.0-next.96](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.95...v1.1.0-next.96) (2026-08-11)
 
 
