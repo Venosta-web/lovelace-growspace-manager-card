@@ -1,3 +1,10 @@
+# [1.1.0-next.96](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.95...v1.1.0-next.96) (2026-08-11)
+
+
+### Bug Fixes
+
+* **schema:** restore volume_mode_capable through the irrigation wrapper ([#494](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/494)) ([fd93277](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/fd932772011b621f1a25e97887300b03380b3d9d)), closes [#491](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/491) [#486](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/486)
+
 # [1.1.0-next.95](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.94...v1.1.0-next.95) (2026-08-11)
 
 
