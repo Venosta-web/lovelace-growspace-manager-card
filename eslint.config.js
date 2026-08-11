@@ -46,6 +46,25 @@ export default [
       // `.finally()` genuinely terminates a chain; without this the default
       // (catch-only) flags chains that already handle errors via `.catch()`.
       'promise/catch-or-return': ['error', { terminationMethod: ['catch', 'finally'] }],
+      // ADR 0031: every GSM wire shape is declared exactly once and strips
+      // unknown keys. `.passthrough()` / `z.looseObject()` reopen the shape and
+      // are what let fields drift undeclared for so long (#484, #486, #487).
+      // A shape that genuinely cannot be enumerated is an Opaque Region: keep
+      // its elements unvalidated (`z.unknown()`) with the reason stated inline,
+      // rather than reopening the whole object.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression > Identifier[name='passthrough']",
+          message:
+            'ADR 0031: schemas must strip unknown keys. Declare the field, or use an Opaque Region (z.unknown() elements) with the reason inline.',
+        },
+        {
+          selector: "MemberExpression > Identifier[name='looseObject']",
+          message:
+            'ADR 0031: z.looseObject() is .passthrough() under another name. Declare the field, or use an Opaque Region with the reason inline.',
+        },
+      ],
       '@typescript-eslint/no-unused-vars': [
         'error',
         {

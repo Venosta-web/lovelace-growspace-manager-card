@@ -28,8 +28,9 @@ export const NutrientPresetsSchema = z.record(
       week: z.number().int().min(1).optional().default(1),
       ec_target: z.number().min(0).nullish().transform((v) => v ?? undefined),
       ph_target: z.number().min(0).max(14).nullish().transform((v) => v ?? undefined),
+      // Stamped by BasePreset on every preset; unread by the card.
+      created_at: z.string().optional(),
     })
-    .passthrough()
 );
 
 export type NutrientPresetsResponse = z.infer<typeof NutrientPresetsSchema>;
@@ -38,8 +39,7 @@ export type NutrientPresetsResponse = z.infer<typeof NutrientPresetsSchema>;
 // IPM Presets
 // ---------------------------------------------------------------------------
 
-export const IPMPresetSchema = z
-  .object({
+export const IPMPresetSchema = z.object({
     id: z.string(),
     name: z.string(),
     type: z.enum(['foliar', 'drench', 'beneficials']),
@@ -59,8 +59,9 @@ export const IPMPresetSchema = z
       .number()
       .nullish()
       .transform((v) => v || undefined),
-  })
-  .passthrough();
+    // Stamped by BasePreset on every preset; unread by the card.
+    created_at: z.string().optional(),
+  });
 
 export const IPMPresetsSchema = z.record(z.string(), IPMPresetSchema);
 

@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi } from 'vitest';
-import { NutrientPresetsSchema, IPMPresetsSchema, validateGrowspaceResponse, validateGrowspaceCollection, validateStrainLibrary, HistoryPointSchema, GrowspaceAPIResponseSchema, ECRampPointSchema, ECRampCurvesSchema, StrainPhenotypeSchema, StrainDataSchema } from '../../../src/schemas/api-schema';
+import { NutrientPresetsSchema, IPMPresetsSchema, validateGrowspaceResponse, validateGrowspaceCollection, StrainLibraryWrapperSchema, HistoryPointSchema, GrowspaceAPIResponseSchema, ECRampPointSchema, ECRampCurvesSchema, StrainPhenotypeSchema, StrainDataSchema } from '../../../src/schemas/api-schema';
 
 describe('API Schemas', () => {
     describe('NutrientPresetsSchema', () => {
@@ -136,21 +136,19 @@ describe('API Schemas', () => {
             spy.mockRestore();
         });
 
+        // The strain library is validated by the Strain slice's own schema at the
+        // hassCall seam; the wrapper is re-exported here for the older path.
         it('should validate strain library', () => {
-            const validData = {
+            const result = StrainLibraryWrapperSchema.safeParse({
                 strains: {},
                 strain_list: []
-            };
-            const result = validateStrainLibrary(validData);
+            });
             expect(result.success).toBe(true);
         });
 
         it('should return error for invalid strain library', () => {
-            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            const invalidData = { strains: "invalid" };
-            const result = validateStrainLibrary(invalidData);
+            const result = StrainLibraryWrapperSchema.safeParse({ strains: "invalid" });
             expect(result.success).toBe(false);
-            spy.mockRestore();
         });
 
         it('should handle irrigation schedule transformations', () => {

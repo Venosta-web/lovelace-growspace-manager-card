@@ -42,6 +42,7 @@ export const LineageNodeSchema: z.ZodType<unknown> = z.lazy(() =>
       generation: z.string().optional(),
       parents: z.array(LineageNodeSchema).optional(),
     })
+    // eslint-disable-next-line no-restricted-syntax -- pending Opaque Region, see above
     .passthrough()
 );
 
