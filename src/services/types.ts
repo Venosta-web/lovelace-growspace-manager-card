@@ -1,5 +1,5 @@
 import type { PlantEntity, RawPlantData, GrowspaceType } from '../features/plants/types';
-import type { SensorGroup } from '../features/environment/types';
+import type { SensorGroup } from '../slices/subarea/schema';
 import type { VisionCheckupConfig } from '../lib/types/dialog';
 import type {
   AcInfinityDevice,
@@ -135,9 +135,15 @@ export type IntentDeviation = 'on_target' | 'more_generative' | 'more_vegetative
 
 // The tank wire shapes are described once, by the irrigation slice's schemas
 // (ADR 0031), and re-exported here for the domain model below and its readers.
-import type { TankWaterHistory } from '../slices/irrigation/schema';
+import type {
+  ActiveEvent,
+  TankDepletionStatus,
+  TankWaterHistory,
+} from '../slices/irrigation/schema';
 
 export type {
+  ActiveEvent,
+  TankDepletionStatus,
   TankWaterEvent,
   TankDailyEntry,
   TankConsumptionBucket,
@@ -152,7 +158,7 @@ export interface IrrigationTank {
   fillLevel: number | null;
   isWarning: boolean;
   hoursRemaining?: number | null;
-  depletionStatus?: 'depleting' | 'refilling' | 'static' | 'insufficient_data' | null;
+  depletionStatus?: TankDepletionStatus | null;
   volumeLiters?: number | null;
   waterHistory?: TankWaterHistory;
 }
@@ -263,7 +269,7 @@ export interface EnvironmentAttributes {
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   sensorTypes?: Record<string, string>;
   pump_tank_links?: Record<string, string>;
-  activeEvents?: Record<string, { start: string; duration: number }>;
+  activeEvents?: Record<string, ActiveEvent>;
   sensorGroups?: SensorGroup[];
   electricityCostPerKwh?: number | null;
   substrateTemperatureSensors?: string[];

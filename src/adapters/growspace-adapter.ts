@@ -12,8 +12,16 @@ import {
   IrrigationStrategy,
 } from '../types';
 import type { ECTargetStage, SteeringMetrics, SerializedIrrigationConfig } from '../services/types';
-import { IrrigationTankRowSchema } from '../slices/irrigation/schema';
-import type { SensorGroup } from '../features/environment/types';
+import { ActiveEventSchema, IrrigationTankRowSchema } from '../slices/irrigation/schema';
+import { SensorGroupSchema } from '../slices/subarea/schema';
+import type { SensorGroup } from '../slices/subarea/schema';
+
+function parseSensorGroups(raw: unknown[] | undefined): SensorGroup[] {
+  return (raw ?? []).flatMap((g) => {
+    const parsed = SensorGroupSchema.safeParse(g);
+    return parsed.success ? [parsed.data] : [];
+  });
+}
 
 export class GrowspaceAdapter {
   static transformGrowspace(
@@ -62,11 +70,13 @@ export class GrowspaceAdapter {
     // 3. Sensor Coordinates — merge group coords, then backfill defaults
     const sensorCoordinates = { ...(sensors?.sensor_coordinates ?? {}) };
 
-    // Merge group coordinates
-    // `sensor_groups` is an Opaque Region (ADR 0031): an open-ended, user-driven
-    // collection left unvalidated so one malformed group cannot fail the whole
-    // get_data parse. SensorGroup is this adapter's expectation of a row.
-    ((sensors?.sensor_groups ?? []) as SensorGroup[]).forEach((g) => {
+    // Merge group coordinates.
+    // `sensor_groups` is an Opaque Region (ADR 0031): an open-ended, grower-driven
+    // collection left unvalidated at the growspace level so one malformed group
+    // cannot fail the whole get_data parse. Rows are parsed individually, so a
+    // bad group costs its own coordinates and nothing else.
+    const sensorGroups = parseSensorGroups(sensors?.sensor_groups);
+    sensorGroups.forEach((g) => {
       const groupCoords = { x: g.x, y: g.y, z: g.z };
       [
         ...(g.temperature_sensors || []),
@@ -163,13 +173,18 @@ export class GrowspaceAdapter {
           },
         ];
       }),
-      activeEvents: environment?.active_events as
-        | Record<string, { start: string; duration: number }>
-        | undefined,
+      activeEvents: environment?.active_events
+        ? Object.fromEntries(
+            Object.entries(environment.active_events).flatMap(([type, raw]) => {
+              const parsed = ActiveEventSchema.safeParse(raw);
+              return parsed.success ? [[type, parsed.data] as const] : [];
+            })
+          )
+        : undefined,
       // Sensor lookup data comes from sensors sub-object
       sensorCoordinates,
       sensorTypes: sensors?.sensor_types,
-      sensorGroups: sensors?.sensor_groups as SensorGroup[] | undefined,
+      sensorGroups: sensors?.sensor_groups ? sensorGroups : undefined,
       electricityCostPerKwh: environment?.electricity_cost_per_kwh,
       substrateTemperatureSensors: environment?.substrate_temperature_sensors,
       cameraEntities: environment?.camera_entities,

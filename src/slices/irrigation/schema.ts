@@ -179,6 +179,25 @@ export const PhaseWindowsSchema = z.object({
 export type PhaseWindows = z.infer<typeof PhaseWindowsSchema>;
 
 // ---------------------------------------------------------------------------
+// In-flight cycles (read — the values of the `environment.active_events` Opaque Region)
+// ---------------------------------------------------------------------------
+
+/**
+ * One in-flight irrigation or drain cycle
+ * (`irrigation_coordinator.py:507-510`). The record is keyed by event type
+ * (`'irrigation'` or `'drain'`) and its entries are popped when the cycle ends,
+ * so it holds only what is running right now.
+ */
+export const ActiveEventSchema = z.object({
+  /** UTC ISO-8601 start. */
+  start: z.string(),
+  /** Cycle length in **seconds**. */
+  duration: z.number().int(),
+});
+
+export type ActiveEvent = z.infer<typeof ActiveEventSchema>;
+
+// ---------------------------------------------------------------------------
 // Tank rows (read — the elements of the `environment.irrigation_tanks` Opaque Region)
 // ---------------------------------------------------------------------------
 
@@ -238,6 +257,8 @@ export const TankDepletionStatusSchema = z.enum([
   'static',
   'insufficient_data',
 ]);
+
+export type TankDepletionStatus = z.infer<typeof TankDepletionStatusSchema>;
 
 /**
  * One row of `environment.irrigation_tanks` (`growspace_view_model.py:630-641`).
