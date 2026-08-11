@@ -1,33 +1,37 @@
 import { z } from 'zod';
 
-export const SeedBatchSchema = z
-  .object({
-    batch_id: z.string(),
-    strain_name: z.string(),
-    breeder: z.string(),
-    quantity: z.number(),
-    acquisition_date: z.string(),
-    generation: z.string(),
-    lineage: z.string().default(''),
-    parent_1_strain: z.string().nullable().optional(),
-    parent_1_phenotype: z.string().nullable().optional(),
-    parent_2_strain: z.string().nullable().optional(),
-    parent_2_phenotype: z.string().nullable().optional(),
-    notes: z.string().default(''),
-  })
-  .passthrough();
+export const SeedBatchSchema = z.object({
+  batch_id: z.string(),
+  strain_name: z.string(),
+  breeder: z.string(),
+  quantity: z.number(),
+  acquisition_date: z.string(),
+  generation: z.string(),
+  lineage: z.string().default(''),
+  parent_1_strain: z.string().nullable().optional(),
+  parent_1_phenotype: z.string().nullable().optional(),
+  parent_2_strain: z.string().nullable().optional(),
+  parent_2_phenotype: z.string().nullable().optional(),
+  notes: z.string().default(''),
+});
 
-export const PollinationEventSchema = z
-  .object({
-    event_id: z.string(),
-    date: z.string(),
-    donor_plant_id: z.string(),
-    receiver_plant_id: z.string(),
-    notes: z.string().default(''),
-    result_seed_batch_id: z.string().nullable().default(null),
-  })
-  .passthrough();
+export const PollinationEventSchema = z.object({
+  event_id: z.string(),
+  date: z.string(),
+  donor_plant_id: z.string(),
+  receiver_plant_id: z.string(),
+  notes: z.string().default(''),
+  result_seed_batch_id: z.string().nullable().default(null),
+});
 
+/**
+ * Opaque Region (ADR 0031) — pending. A lineage node is assembled by several
+ * backend builders (`managers/lineage.py` emits name/source/parents/generation,
+ * the strain library and genetics manager add their own keys) and the tree is
+ * recursive, so the emitted key set is not established from one call site. The
+ * passthrough stays until that trace is done rather than risk stripping a node
+ * field the Genetics tree renders. Tracked on #488.
+ */
 export const LineageNodeSchema: z.ZodType<unknown> = z.lazy(() =>
   z
     .object({

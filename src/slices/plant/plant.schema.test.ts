@@ -123,15 +123,12 @@ describe('UpdatePlantPayloadSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('passes through unknown keys (passthrough schema)', () => {
+  it('rejects an unknown key rather than sending it to the backend', () => {
     const result = UpdatePlantPayloadSchema.safeParse({
       plant_id: 'abc',
       custom_field: 'extra',
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect((result.data as Record<string, unknown>).custom_field).toBe('extra');
-    }
+    expect(result.success).toBe(false);
   });
 });
 
@@ -419,13 +416,21 @@ describe('LogMoistureReadingPayloadSchema', () => {
   });
 
   it('accepts boundary values (0 and 100)', () => {
-    expect(LogMoistureReadingPayloadSchema.safeParse({ plant_id: 'abc', moisture_percent: 0 }).success).toBe(true);
-    expect(LogMoistureReadingPayloadSchema.safeParse({ plant_id: 'abc', moisture_percent: 100 }).success).toBe(true);
+    expect(
+      LogMoistureReadingPayloadSchema.safeParse({ plant_id: 'abc', moisture_percent: 0 }).success
+    ).toBe(true);
+    expect(
+      LogMoistureReadingPayloadSchema.safeParse({ plant_id: 'abc', moisture_percent: 100 }).success
+    ).toBe(true);
   });
 
   it('rejects values outside 0–100', () => {
-    expect(LogMoistureReadingPayloadSchema.safeParse({ plant_id: 'abc', moisture_percent: -1 }).success).toBe(false);
-    expect(LogMoistureReadingPayloadSchema.safeParse({ plant_id: 'abc', moisture_percent: 101 }).success).toBe(false);
+    expect(
+      LogMoistureReadingPayloadSchema.safeParse({ plant_id: 'abc', moisture_percent: -1 }).success
+    ).toBe(false);
+    expect(
+      LogMoistureReadingPayloadSchema.safeParse({ plant_id: 'abc', moisture_percent: 101 }).success
+    ).toBe(false);
   });
 });
 
