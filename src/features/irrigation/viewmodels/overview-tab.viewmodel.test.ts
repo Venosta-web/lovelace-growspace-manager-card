@@ -108,7 +108,17 @@ describe('overview-tab.viewmodel – shot composition panel', () => {
     const result = panel({
       infiltration: 'settled',
       suppressed_by: 'cooldown',
-      last_shot: { base_seconds: 30, vwc_factor: 1.1, ec_factor: 1, effective_seconds: 33 },
+      last_shot: {
+        phase: 'p2',
+        base_seconds: 30,
+        vwc_factor: 1.1,
+        ec_factor: 1,
+        ec_modulation_available: true,
+        composed_seconds: 33,
+        effective_seconds: 33,
+        capped: false,
+        timestamp: '2026-08-11T10:00:00+00:00',
+      },
     });
     expect(result?.rows).toHaveLength(4);
     expect(result?.infiltration?.label).toBe('Settled');

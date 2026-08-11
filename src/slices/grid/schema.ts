@@ -19,7 +19,10 @@ export const PlantSlotSchema = z
     plant_id: z.string().optional().default(''),
     stage: z.string().optional().default('unknown'),
     strain: z.string().optional().default(''),
-    phenotype: z.union([z.string(), z.unknown()]).optional().default(''),
+    // `Plant.phenotype` is a str property on the backend (the genetics
+    // phenotype name, '' when unset). The former z.union([string, unknown])
+    // inferred as `unknown` and hid that from every read site.
+    phenotype: z.string().optional().default(''),
     row: z.number().optional().default(0),
     col: z.number().optional().default(0),
     position: z.string().optional().default(''),
@@ -46,6 +49,7 @@ export const PlantSlotSchema = z
     flower_start: z.string().nullable().optional().default(null),
     dry_start: z.string().nullable().optional().default(null),
     cure_start: z.string().nullable().optional().default(null),
+    days_since_last_watering: z.number().nullable().optional().default(null),
   })
   .catchall(z.unknown())
   .nullable();
@@ -57,6 +61,9 @@ export const PlantSlotSchema = z
 export const GridDimensionsSchema = z
   .object({
     length: z.number().optional(),
+    // The backend's default dimensions use `depth`, not `length`; the adapter
+    // falls back to it when sizing the 3D view.
+    depth: z.number().optional(),
     width: z.number().optional(),
     height: z.number().optional(),
     unit: z.string().optional().default('cm'),

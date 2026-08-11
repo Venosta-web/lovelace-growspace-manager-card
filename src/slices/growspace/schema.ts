@@ -69,70 +69,68 @@ export const IrrigationStrategySchema = z.object({
 
 export type SerializedIrrigationStrategy = z.infer<typeof IrrigationStrategySchema>;
 
-const IrrigationConfigSchema = z
-  .object({
-    irrigation_pump_entity: z.string().nullable().optional(),
-    drain_pump_entity: z.string().nullable().optional(),
-    irrigation_duration: z.number().nullable().optional(),
-    drain_duration: z.number().nullable().optional(),
-    irrigation_times: z
-      .array(z.union([z.string().transform((t) => ({ time: t })), IrrigationScheduleItemSchema]))
-      .optional()
-      .default([]),
-    drain_times: z
-      .array(z.union([z.string().transform((t) => ({ time: t })), IrrigationScheduleItemSchema]))
-      .optional()
-      .default([]),
-    veg_day_hours: z.number().optional(),
-    // Emitted by IrrigationConfig.to_dict() (ADR 0028 made it model-complete).
-    // pump_flow_rate_ml_per_sec is unread by the card — the backend folds it
-    // into volume_mode_capable — but it is declared because it is emitted.
-    pump_flow_rate_ml_per_sec: z.number().optional(),
-    soil_trigger_percent: z.number().nullable().optional(),
-    daily_volume_cap_liters: z.number().nullable().optional(),
-    max_cycles_per_day: z.number().nullable().optional(),
-    skip_during_dark: z.boolean().optional(),
-    pause_on_low_tank: z.boolean().optional(),
-    log_to_logbook: z.boolean().optional(),
-    ec_target_ranges: z
-      .array(
-        z.object({
-          stage: z.string(),
-          feed_ec_min: z.number(),
-          feed_ec_max: z.number(),
-        })
-      )
-      .optional()
-      .default([]),
-    auto_advance_p1_to_p2: z.boolean().optional(),
-    auto_advance_p2_to_p3: z.boolean().optional(),
-    halt_on_runoff_ec_threshold: z.number().nullable().optional(),
-    active_steering_phase: z.enum(['p1', 'p2', 'p3']).optional(),
-    phase_changed_at: z.string().nullable().optional(),
-  })
-  .optional()
-  .prefault({});
+export const IrrigationConfigSchema = z.object({
+  irrigation_pump_entity: z.string().nullable().optional(),
+  drain_pump_entity: z.string().nullable().optional(),
+  irrigation_duration: z.number().nullable().optional(),
+  drain_duration: z.number().nullable().optional(),
+  irrigation_times: z
+    .array(z.union([z.string().transform((t) => ({ time: t })), IrrigationScheduleItemSchema]))
+    .optional()
+    .default([]),
+  drain_times: z
+    .array(z.union([z.string().transform((t) => ({ time: t })), IrrigationScheduleItemSchema]))
+    .optional()
+    .default([]),
+  veg_day_hours: z.number().optional(),
+  // Emitted by IrrigationConfig.to_dict() (ADR 0028 made it model-complete).
+  // pump_flow_rate_ml_per_sec is unread by the card — the backend folds it
+  // into volume_mode_capable — but it is declared because it is emitted.
+  pump_flow_rate_ml_per_sec: z.number().optional(),
+  soil_trigger_percent: z.number().nullable().optional(),
+  daily_volume_cap_liters: z.number().nullable().optional(),
+  max_cycles_per_day: z.number().nullable().optional(),
+  skip_during_dark: z.boolean().optional(),
+  pause_on_low_tank: z.boolean().optional(),
+  log_to_logbook: z.boolean().optional(),
+  ec_target_ranges: z
+    .array(
+      z.object({
+        stage: z.string(),
+        feed_ec_min: z.number(),
+        feed_ec_max: z.number(),
+      })
+    )
+    .optional()
+    .default([]),
+  auto_advance_p1_to_p2: z.boolean().optional(),
+  auto_advance_p2_to_p3: z.boolean().optional(),
+  halt_on_runoff_ec_threshold: z.number().nullable().optional(),
+  active_steering_phase: z.enum(['p1', 'p2', 'p3']).optional(),
+  phase_changed_at: z.string().nullable().optional(),
+});
 
-const DrainConfigSchema = z
-  .object({
-    enabled: z.boolean(),
-    max_ec_delta: z.number(),
-    target_runoff_percent: z.number(),
-    readings: z
-      .array(
-        z.object({
-          timestamp: z.string(),
-          feed_ec: z.number(),
-          drain_ec: z.number(),
-          drain_volume_ml: z.number().nullable().optional(),
-          feed_volume_ml: z.number().nullable().optional(),
-        })
-      )
-      .optional()
-      .default([]),
-  })
-  .nullable()
-  .optional();
+export type SerializedIrrigationConfig = z.infer<typeof IrrigationConfigSchema>;
+
+export const DrainConfigSchema = z.object({
+  enabled: z.boolean(),
+  max_ec_delta: z.number(),
+  target_runoff_percent: z.number(),
+  readings: z
+    .array(
+      z.object({
+        timestamp: z.string(),
+        feed_ec: z.number(),
+        drain_ec: z.number(),
+        drain_volume_ml: z.number().nullable().optional(),
+        feed_volume_ml: z.number().nullable().optional(),
+      })
+    )
+    .optional()
+    .default([]),
+});
+
+export type SerializedDrainConfig = z.infer<typeof DrainConfigSchema>;
 
 const DrybackEventSchema = z.object({
   event_type: z.string().optional(),
@@ -184,59 +182,57 @@ const ShotCompositionSchema = z.object({
 // fields plus the injected score, Measured Classification, Intent Deviation,
 // and shot composition. Measured fields are nullable (no reading yet); a null
 // ec_trend with ec_trend_available=false drives the card's unlock hint.
-const SubstrateMetricsSchema = z
-  .object({
-    overnight_dryback: z.number().nullable().optional(),
-    latest_overnight_event: DrybackEventSchema.nullable().optional(),
-    incycle_dryback_count: z.number().optional().default(0),
-    incycle_dryback_avg: z.number().nullable().optional(),
-    ec_trend: z.enum(['rising', 'stable', 'falling']).nullable().optional(),
-    ec_trend_available: z.boolean().optional().default(false),
-    ec_trend_detail: z
-      .object({
-        trend: z.string(),
-        day_start_ec: z.number(),
-        current_ec: z.number(),
-        delta: z.number(),
-      })
-      .nullable()
-      .optional(),
-    score: z.number().nullable().optional(),
-    measured_classification: z.enum(['vegetative', 'balanced', 'generative']).nullable().optional(),
-    intent_deviation: z
-      .enum(['on_target', 'more_generative', 'more_vegetative'])
-      .nullable()
-      .optional(),
-    // `infiltration` and `suppressed_by` are typed as loose strings rather than
-    // enums: a backend that predates them omits both, and a newer one may add a
-    // reason this card has never heard of — neither may fail validation here.
-    // The Overview VM maps known values to labels and falls back for the rest.
-    shot_composition: ShotCompositionSchema.nullable().optional(),
-    // Injected next to the score in view_model_builder.py; unread by the card.
-    runoff_score: z.number().nullable().optional(),
-  })
-  .nullable()
-  .optional();
+export const SubstrateMetricsSchema = z.object({
+  overnight_dryback: z.number().nullable().optional(),
+  latest_overnight_event: DrybackEventSchema.nullable().optional(),
+  incycle_dryback_count: z.number().optional().default(0),
+  incycle_dryback_avg: z.number().nullable().optional(),
+  ec_trend: z.enum(['rising', 'stable', 'falling']).nullable().optional(),
+  ec_trend_available: z.boolean().optional().default(false),
+  ec_trend_detail: z
+    .object({
+      trend: z.string(),
+      day_start_ec: z.number(),
+      current_ec: z.number(),
+      delta: z.number(),
+    })
+    .nullable()
+    .optional(),
+  score: z.number().nullable().optional(),
+  measured_classification: z.enum(['vegetative', 'balanced', 'generative']).nullable().optional(),
+  intent_deviation: z
+    .enum(['on_target', 'more_generative', 'more_vegetative'])
+    .nullable()
+    .optional(),
+  // `infiltration` and `suppressed_by` are typed as loose strings rather than
+  // enums: a backend that predates them omits both, and a newer one may add a
+  // reason this card has never heard of — neither may fail validation here.
+  // The Overview VM maps known values to labels and falls back for the rest.
+  shot_composition: ShotCompositionSchema.nullable().optional(),
+  // Injected next to the score in view_model_builder.py; unread by the card.
+  runoff_score: z.number().nullable().optional(),
+});
+
+export type SerializedSubstrateMetrics = z.infer<typeof SubstrateMetricsSchema>;
+export type SerializedShotComposition = z.infer<typeof ShotCompositionSchema>;
+export type SerializedDrybackEvent = z.infer<typeof DrybackEventSchema>;
 
 /**
  * The reconciled feed/pore EC view (ADR-0015), emitted on the irrigation block
  * by `ec_state_payload()` and null on time-based irrigation. Declared in full
  * though the card reads none of it yet (ADR 0031).
  */
-const EcStateSchema = z
-  .object({
-    pore_ec: z.number().nullable().optional(),
-    recommendation: z.string().optional(),
-    active_feed_ec: z.unknown().optional(),
-    feed_ec_source: z.string().nullable().optional(),
-    runoff_ec: z.number().nullable().optional(),
-    feed_to_runoff_delta: z.number().nullable().optional(),
-    runoff_percent: z.number().nullable().optional(),
-    runoff_pct_target: z.number().nullable().optional(),
-    halt_irrigation: z.boolean().optional(),
-  })
-  .nullable()
-  .optional();
+const EcStateSchema = z.object({
+  pore_ec: z.number().nullable().optional(),
+  recommendation: z.string().optional(),
+  active_feed_ec: z.unknown().optional(),
+  feed_ec_source: z.string().nullable().optional(),
+  runoff_ec: z.number().nullable().optional(),
+  feed_to_runoff_delta: z.number().nullable().optional(),
+  runoff_percent: z.number().nullable().optional(),
+  runoff_pct_target: z.number().nullable().optional(),
+  halt_irrigation: z.boolean().optional(),
+});
 
 export const CirculationFanConfigSchema = z.object({
   enabled: z.boolean(),
@@ -482,7 +478,7 @@ export const GrowspaceAPIResponseSchema = z.object({
 
   irrigation: z
     .object({
-      irrigation_config: IrrigationConfigSchema,
+      irrigation_config: IrrigationConfigSchema.optional().prefault({}),
       irrigation_strategy: IrrigationStrategySchema.nullable().optional().default(null),
       // Server-authoritative Volume Mode gate (ADR-0017): true only when a
       // substrate profile and a positive pump flow rate are both configured.
@@ -490,9 +486,9 @@ export const GrowspaceAPIResponseSchema = z.object({
       // stays distinguishable from one that reports false; the adapter's
       // `?? false` is the single place that collapses absence to locked.
       volume_mode_capable: z.boolean().optional(),
-      drain_config: DrainConfigSchema,
-      substrate: SubstrateMetricsSchema,
-      ec_state: EcStateSchema,
+      drain_config: DrainConfigSchema.nullable().optional(),
+      substrate: SubstrateMetricsSchema.nullable().optional(),
+      ec_state: EcStateSchema.nullable().optional(),
       water_usage: WaterUsageSchema.nullable().optional(),
       last_cycle_timestamp: z.string().nullable().optional(),
       next_scheduled_cycle: z.string().nullable().optional(),
