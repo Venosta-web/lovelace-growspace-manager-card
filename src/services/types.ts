@@ -133,52 +133,17 @@ export type SteeringClassification = 'vegetative' | 'balanced' | 'generative';
 /** Intent Deviation: how the substrate reads relative to the declared mode. */
 export type IntentDeviation = 'on_target' | 'more_generative' | 'more_vegetative';
 
-export interface TankWaterEvent {
-  timestamp: string;
-  event_type: 'consumption' | 'refill';
-  pct_delta: number;
-  liters: number;
-}
+// The tank wire shapes are described once, by the irrigation slice's schemas
+// (ADR 0031), and re-exported here for the domain model below and its readers.
+import type { TankWaterHistory } from '../slices/irrigation/schema';
 
-export interface TankDailyEntry {
-  date: string;
-  consumed: number;
-  refilled: number;
-}
-
-export interface TankConsumptionBucket {
-  /** ISO-8601 start of the 15-minute bucket. */
-  ts: string;
-  /** Liters consumed in this bucket. */
-  liters: number;
-}
-
-export interface TankWaterHistory {
-  /**
-   * Compact 15-min consumption buckets for the last 24h (full data, non-zero
-   * buckets only). The backend ships these instead of raw events so the 24h
-   * chart is not limited to a truncated event slice.
-   */
-  buckets_24h?: TankConsumptionBucket[];
-  daily_7d?: TankDailyEntry[];
-  recent_refills?: TankWaterEvent[];
-  // Raw snapshots/events are no longer sent by the backend (attribute-size
-  // budget); kept optional for backward/forward compatibility.
-  snapshots?: Array<{ timestamp: string; level_pct: number }>;
-  events?: TankWaterEvent[];
-}
-
-export interface SerializedIrrigationTank {
-  sensor_entity: string;
-  name: string;
-  warning_level: number;
-  fill_level: number | null;
-  is_warning: boolean;
-  hours_remaining?: number | null;
-  depletion_status?: 'depleting' | 'refilling' | 'static' | 'insufficient_data' | null;
-  volume_liters?: number | null;
-  water_history?: TankWaterHistory;
-}
+export type {
+  TankWaterEvent,
+  TankDailyEntry,
+  TankConsumptionBucket,
+  TankWaterHistory,
+  SerializedIrrigationTank,
+} from '../slices/irrigation/schema';
 
 export interface IrrigationTank {
   sensorEntity: string;

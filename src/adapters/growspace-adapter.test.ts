@@ -306,10 +306,10 @@ describe('GrowspaceAdapter substrate steering metrics', () => {
   });
 
   it('leaves steeringMetrics undefined when the payload omits substrate', () => {
-    const device = GrowspaceAdapter.transformGrowspace(
-      null,
-      { identity: { growspace_id: 'gs1', name: 'Tent' }, irrigation: {} } as unknown as GrowspaceAPIResponse
-    );
+    const device = GrowspaceAdapter.transformGrowspace(null, {
+      identity: { growspace_id: 'gs1', name: 'Tent' },
+      irrigation: {},
+    } as unknown as GrowspaceAPIResponse);
     expect(device?.steeringMetrics).toBeUndefined();
   });
 });
@@ -327,16 +327,13 @@ describe('GrowspaceAdapter lst_offset', () => {
   it('maps environment.lst_offset to environmentAttributes.lstOffset', () => {
     const device = GrowspaceAdapter.transformGrowspace(
       null,
-      wsWithEnvironment({ lst_offset: -3.5 }),
+      wsWithEnvironment({ lst_offset: -3.5 })
     );
     expect(device?.environmentAttributes?.lstOffset).toBe(-3.5);
   });
 
   it('leaves lstOffset undefined when backend omits it', () => {
-    const device = GrowspaceAdapter.transformGrowspace(
-      null,
-      wsWithEnvironment({}),
-    );
+    const device = GrowspaceAdapter.transformGrowspace(null, wsWithEnvironment({}));
     expect(device?.environmentAttributes?.lstOffset).toBeUndefined();
   });
 });
@@ -357,7 +354,7 @@ describe('GrowspaceAdapter notification settings', () => {
       wsWithNotifications({
         notification_settings: { criticalCooldownMinutes: 7, warningCooldownMinutes: 45 },
         ai_auto_alerts: false,
-      } as unknown as Partial<GrowspaceAPIResponse>),
+      } as unknown as Partial<GrowspaceAPIResponse>)
     );
 
     expect(device?.notificationSettings?.criticalCooldownMinutes).toBe(7);
@@ -377,7 +374,7 @@ describe('GrowspaceAdapter notification settings', () => {
         timed_notifications: [
           { id: 'n1', message: 'Feed me', trigger_type: 'veg', day: 3, growspace_ids: ['gs-1'] },
         ],
-      } as unknown as Partial<GrowspaceAPIResponse>),
+      } as unknown as Partial<GrowspaceAPIResponse>)
     );
 
     expect(device?.timedNotifications).toEqual([
@@ -392,7 +389,7 @@ describe('GrowspaceAdapter notification settings', () => {
         timed_notifications: [
           { id: 'n1', message: 'Old', trigger_type: 'veg_start', day: 3, growspace_ids: [] },
         ],
-      } as unknown as Partial<GrowspaceAPIResponse>),
+      } as unknown as Partial<GrowspaceAPIResponse>)
     );
 
     expect(device?.timedNotifications?.[0].triggerType).toBe('veg');
@@ -430,12 +427,98 @@ describe('GrowspaceAdapter grow light', () => {
             sunrise_duration_entity: '',
           },
         ],
-      }),
+      })
     );
     expect(device?.environmentAttributes?.growlightEntities).toEqual(['switch.grow']);
     expect(device?.environmentAttributes?.growlightConfig?.power).toBe(80);
     expect(device?.environmentAttributes?.growlightAcInfinityDevices?.[0].off_time_entity).toBe(
-      'time.off',
+      'time.off'
     );
+  });
+});
+
+describe('GrowspaceAdapter irrigation tanks through the wire schema', () => {
+  const REAL_TANK = {
+    sensor_entity: 'sensor.tank_level',
+    name: 'Res A',
+    warning_level: 30,
+    fill_level: 62.5,
+    is_warning: false,
+    hours_remaining: 18.25,
+    depletion_status: 'depleting',
+    volume_liters: 200,
+    water_history: {
+      buckets_24h: [{ ts: '2026-08-11T05:00:00+00:00', liters: 0.4125 }],
+      daily_7d: [{ date: '2026-08-10', consumed: 6.125, refilled: 0 }],
+      recent_refills: [
+        {
+          timestamp: '2026-08-09T18:02:11+00:00',
+          event_type: 'refill',
+          pct_delta: 41.5,
+          liters: 83,
+        },
+      ],
+    },
+  };
+
+  function hydrate(tanks: unknown[]) {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      identity: {
+        growspace_id: 'gs1',
+        name: 'Tent',
+        overview_entity_id: 'sensor.gs1',
+        type: 'normal',
+      },
+      environment: { irrigation_tanks: tanks },
+    });
+    return GrowspaceAdapter.transformGrowspace(null, parsed as unknown as GrowspaceAPIResponse)
+      ?.environmentAttributes?.irrigationTanks;
+  }
+
+  it('maps a row the backend really emits, water history included', () => {
+    const tanks = hydrate([REAL_TANK]);
+    expect(tanks).toHaveLength(1);
+    expect(tanks?.[0]).toEqual({
+      sensorEntity: 'sensor.tank_level',
+      name: 'Res A',
+      warningLevel: 30,
+      fillLevel: 62.5,
+      isWarning: false,
+      hoursRemaining: 18.25,
+      depletionStatus: 'depleting',
+      volumeLiters: 200,
+      waterHistory: REAL_TANK.water_history,
+    });
+  });
+
+  it('keeps a null fill_level distinct from a zero reading', () => {
+    // The view model emits null when the sensor is missing or unparseable, and
+    // is_warning is false in that case rather than "below the warning level".
+    const tanks = hydrate([{ ...REAL_TANK, fill_level: null, is_warning: false }]);
+    expect(tanks?.[0].fillLevel).toBeNull();
+  });
+
+  it('drops only the malformed row, so one bad tank cannot blank the growspace', () => {
+    const tanks = hydrate([
+      REAL_TANK,
+      { name: 'No sensor entity' },
+      { ...REAL_TANK, name: 'Res B' },
+    ]);
+    expect(tanks?.map((t) => t.name)).toEqual(['Res A', 'Res B']);
+  });
+
+  it('omits the optional keys the backend leaves off a row', () => {
+    const tanks = hydrate([
+      {
+        sensor_entity: 'sensor.t',
+        name: 'Bare',
+        warning_level: 30,
+        fill_level: 10,
+        is_warning: true,
+      },
+    ]);
+    expect(tanks?.[0].hoursRemaining).toBeNull();
+    expect(tanks?.[0].depletionStatus).toBeNull();
+    expect(tanks?.[0].waterHistory).toBeUndefined();
   });
 });

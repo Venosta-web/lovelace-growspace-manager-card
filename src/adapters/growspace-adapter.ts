@@ -11,12 +11,8 @@ import {
   IrrigationConfig,
   IrrigationStrategy,
 } from '../types';
-import type {
-  ECTargetStage,
-  SteeringMetrics,
-  SerializedIrrigationConfig,
-  SerializedIrrigationTank,
-} from '../services/types';
+import type { ECTargetStage, SteeringMetrics, SerializedIrrigationConfig } from '../services/types';
+import { IrrigationTankRowSchema } from '../slices/irrigation/schema';
 import type { SensorGroup } from '../features/environment/types';
 
 export class GrowspaceAdapter {
@@ -145,22 +141,28 @@ export class GrowspaceAdapter {
       irrigationPumpState: environment?.irrigation_pump_state ?? undefined,
       drainPumpState: environment?.drain_pump_state ?? undefined,
       // `irrigation_tanks` and `active_events` are Opaque Regions (ADR 0031):
-      // open-ended, user-driven collections whose rows stay unvalidated so a
-      // single malformed entry cannot blank every growspace. The Serialized*
-      // types below document what this adapter expects of a row.
-      irrigationTanks: (
-        environment?.irrigation_tanks as SerializedIrrigationTank[] | undefined
-      )?.map((t) => ({
-        sensorEntity: t.sensor_entity,
-        name: t.name,
-        warningLevel: t.warning_level,
-        fillLevel: t.fill_level,
-        isWarning: t.is_warning,
-        hoursRemaining: t.hours_remaining ?? null,
-        depletionStatus: t.depletion_status ?? null,
-        volumeLiters: t.volume_liters ?? null,
-        waterHistory: t.water_history ?? undefined,
-      })),
+      // open-ended, grower-driven collections that stay unvalidated at the
+      // growspace level so one malformed entry cannot blank every growspace.
+      // The tank rows are still parsed individually here, which keeps the blast
+      // radius at one tank while their shape stays schema-described.
+      irrigationTanks: environment?.irrigation_tanks?.flatMap((raw) => {
+        const row = IrrigationTankRowSchema.safeParse(raw);
+        if (!row.success) return [];
+        const t = row.data;
+        return [
+          {
+            sensorEntity: t.sensor_entity,
+            name: t.name,
+            warningLevel: t.warning_level,
+            fillLevel: t.fill_level,
+            isWarning: t.is_warning,
+            hoursRemaining: t.hours_remaining ?? null,
+            depletionStatus: t.depletion_status ?? null,
+            volumeLiters: t.volume_liters ?? null,
+            waterHistory: t.water_history ?? undefined,
+          },
+        ];
+      }),
       activeEvents: environment?.active_events as
         | Record<string, { start: string; duration: number }>
         | undefined,

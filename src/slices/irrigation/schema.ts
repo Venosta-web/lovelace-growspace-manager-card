@@ -179,6 +179,96 @@ export const PhaseWindowsSchema = z.object({
 export type PhaseWindows = z.infer<typeof PhaseWindowsSchema>;
 
 // ---------------------------------------------------------------------------
+// Tank rows (read — the elements of the `environment.irrigation_tanks` Opaque Region)
+// ---------------------------------------------------------------------------
+
+/**
+ * A refill entry in `water_history.recent_refills` — the raw event dict the
+ * tracker built, passed through by reference (`growspace_view_model.py:90`,
+ * `tank_water_tracker.py:242-246`). Only refills are shipped, so the
+ * `growth_stage` the tracker adds on the consumption branch cannot appear here.
+ */
+export const TankWaterEventSchema = z.object({
+  timestamp: z.string(),
+  event_type: z.enum(['consumption', 'refill']),
+  pct_delta: z.number(),
+  liters: z.number(),
+});
+
+export type TankWaterEvent = z.infer<typeof TankWaterEventSchema>;
+
+/** One day of the 7-day summary (`growspace_view_model.py:95-99`). */
+export const TankDailyEntrySchema = z.object({
+  date: z.string(),
+  consumed: z.number(),
+  refilled: z.number(),
+});
+
+export type TankDailyEntry = z.infer<typeof TankDailyEntrySchema>;
+
+/** A 15-minute consumption bucket (`tank_water_tracker.py:118`). */
+export const TankConsumptionBucketSchema = z.object({
+  /** ISO-8601 start of the bucket. */
+  ts: z.string(),
+  /** Liters consumed in this bucket. */
+  liters: z.number(),
+});
+
+export type TankConsumptionBucket = z.infer<typeof TankConsumptionBucketSchema>;
+
+/**
+ * The tank's water history, which is *only* the three computed summaries:
+ * `growspace_view_model.py:640-648` folds in `_compute_tank_water_summaries`
+ * and deliberately omits the raw `snapshots` and `events` that the
+ * `TankWaterHistory` model carries, to stay inside the attribute-size budget.
+ * They were declared here as "kept for forward compatibility"; nothing reads
+ * them and the backend has no branch that emits them, so they are gone.
+ */
+export const TankWaterHistorySchema = z.object({
+  buckets_24h: z.array(TankConsumptionBucketSchema).optional(),
+  daily_7d: z.array(TankDailyEntrySchema).optional(),
+  recent_refills: z.array(TankWaterEventSchema).optional(),
+});
+
+export type TankWaterHistory = z.infer<typeof TankWaterHistorySchema>;
+
+export const TankDepletionStatusSchema = z.enum([
+  'depleting',
+  'refilling',
+  'static',
+  'insufficient_data',
+]);
+
+/**
+ * One row of `environment.irrigation_tanks` (`growspace_view_model.py:630-641`).
+ *
+ * The array itself stays an Opaque Region in the growspace payload (ADR 0031,
+ * opaque-by-arity: the row count is grower-driven, and a stricter element type
+ * would fail the whole `get_data` parse over one malformed tank). The row shape
+ * is not opaque, though — the adapter parses each row with this schema and drops
+ * only the rows that fail, so the blast radius stays one tank while the shape is
+ * still described exactly once.
+ *
+ * `enable_prediction`, `enable_lights_bias`, `enable_vpd_weighting`,
+ * `last_recorded_level` and `peak_level` exist on the backend model
+ * (`models/irrigation.py:279-284`) but are not emitted on these rows.
+ */
+export const IrrigationTankRowSchema = z.object({
+  sensor_entity: z.string(),
+  name: z.string(),
+  warning_level: z.number(),
+  /** null when the sensor is missing or its state does not parse. */
+  fill_level: z.number().nullable(),
+  is_warning: z.boolean(),
+  hours_remaining: z.number().nullable().optional(),
+  depletion_status: TankDepletionStatusSchema.nullable().optional(),
+  volume_liters: z.number().nullable().optional(),
+  water_history: TankWaterHistorySchema.optional(),
+});
+
+export type SerializedIrrigationTank = z.infer<typeof IrrigationTankRowSchema>;
+
+// ---------------------------------------------------------------------------
 // Irrigation analytics (read — not a service payload)
 // ---------------------------------------------------------------------------
 
