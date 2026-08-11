@@ -5,6 +5,7 @@
   "main": "rollup.config.js",
   "scripts": {
     "build": "rollup -c && cp dist/growspace-manager-card.js growspace-manager-card.js",
+    "validate:hacs-release": "node scripts/validate-hacs-release.mjs",
     "copy:ha": "mkdir -p ../../config/www/ && cp dist/growspace-manager-card.js ../../config/www/growspace-manager-card.js",
     "build:dev": "npm run build && npm run copy:ha",
     "watch": "rollup -c -w",

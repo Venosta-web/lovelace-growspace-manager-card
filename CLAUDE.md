@@ -11,10 +11,10 @@ hub; for specifics see:
 ## Gotchas (read first)
 
 1. **Never hand-edit the bundle.** `dist/growspace-manager-card.js`, its sourcemap, and
-   the root `growspace-manager-card.js` (~4MB) are build artifacts. They are **untracked**
-   (gitignored) — produced by `npm run build` and served to HACS via GitHub Release assets,
-   not from the repo tree. Make changes in `src/` and run `npm run build`; never commit or
-   hand-edit the bundle.
+   the root `growspace-manager-card.js` (~4MB) are build artifacts. They are gitignored
+   during normal development and produced by `npm run build`. Semantic-release force-adds
+   the dist bundle to the tagged release commit for HACS, then a cleanup commit removes it
+   from branch tracking. Make changes in `src/`; never commit or hand-edit the bundle.
 2. **Interactions are store-driven, not `tap_action`.** Plant grid cells, hero cards, and
    chips dispatch through the nanostores state machine — not generic Lovelace
    `tap_action`/`hold_action`. Don't wire up the Lovelace action model for these.
