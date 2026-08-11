@@ -730,6 +730,109 @@ describe('Growspace Zod Schemas', () => {
       });
     });
 
+    describe('IrrigationStrategySchema', () => {
+      // Every key IrrigationStrategy.to_dict() emits on GSM prerelease: the 25
+      // model fields plus the two legacy shot keys mirrored from P1 in
+      // __post_serialize__. Values are deliberately non-default so a stripped
+      // field cannot pass by coincidence.
+      const backendStrategy = {
+        enabled: true,
+        lights_on_time: '07:30:00',
+        p0_duration_minutes: 45,
+        p2_stop_before_lights_off_minutes: 90,
+        target_vwc_percent: 62,
+        maintenance_dryback_percent: 3.5,
+        shot_duration_seconds: 8,
+        shot_interval_minutes: 12,
+        p1_shot_duration_seconds: 8,
+        p1_shot_interval_minutes: 12,
+        p2_shot_duration_seconds: 14,
+        p2_shot_interval_minutes: 25,
+        p1_shot_volume_percent: 5.5,
+        p2_shot_volume_percent: 2.5,
+        shot_sizing_mode: 'volume',
+        substrate_profile: { media_type: 'rockwool', liters_per_pot: 6.5 },
+        pore_ec_target_min: 4.2,
+        pore_ec_target_max: 7.8,
+        ec_modulation_enabled: true,
+        auto_light_tracking: true,
+        detected_lights_on_time: '07:28:00',
+        declared_steering_mode: 'generative',
+        dynamic_shot_enabled: false,
+        dynamic_aggressiveness: 1.4,
+        dynamic_recovery: 0.25,
+        dynamic_shot_size_floor: 0.35,
+        dynamic_interval_ceiling: 1.9,
+      };
+
+      it('keeps every field the backend emits', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: { irrigation_strategy: backendStrategy },
+        });
+
+        expect(parsed.irrigation.irrigation_strategy).toEqual(backendStrategy);
+      });
+
+      it('parses through the collection schema without stripping the Pore EC band', () => {
+        const parsed = GrowspaceAPICollectionSchema.parse({
+          tent_a: { irrigation: { irrigation_strategy: backendStrategy } },
+        });
+
+        expect(parsed.tent_a.irrigation.irrigation_strategy?.pore_ec_target_min).toBe(4.2);
+        expect(parsed.tent_a.irrigation.irrigation_strategy?.pore_ec_target_max).toBe(7.8);
+      });
+
+      it('keeps a P2 shot pair that differs from the mirrored legacy values', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: { irrigation_strategy: backendStrategy },
+        });
+
+        expect(parsed.irrigation.irrigation_strategy?.p2_shot_duration_seconds).toBe(14);
+        expect(parsed.irrigation.irrigation_strategy?.p2_shot_interval_minutes).toBe(25);
+      });
+
+      it('keeps dynamic_shot_enabled false rather than losing it to the default-on read', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: { irrigation_strategy: backendStrategy },
+        });
+
+        expect(parsed.irrigation.irrigation_strategy?.dynamic_shot_enabled).toBe(false);
+      });
+
+      it('accepts the legacy shape the shipped GSM release still emits', () => {
+        const legacyStrategy = {
+          enabled: true,
+          lights_on_time: '06:00:00',
+          p0_duration_minutes: 60,
+          p2_stop_before_lights_off_minutes: 120,
+          target_vwc_percent: 55,
+          maintenance_dryback_percent: 2,
+          shot_duration_seconds: 10,
+          shot_interval_minutes: 15,
+        };
+
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: { irrigation_strategy: legacyStrategy },
+        });
+
+        expect(parsed.irrigation.irrigation_strategy).toEqual({
+          ...legacyStrategy,
+          auto_light_tracking: false,
+          detected_lights_on_time: null,
+        });
+      });
+
+      it('rejects an unknown steering mode', () => {
+        expect(() =>
+          GrowspaceAPIResponseSchema.parse({
+            irrigation: {
+              irrigation_strategy: { ...backendStrategy, declared_steering_mode: 'aggressive' },
+            },
+          })
+        ).toThrow(ZodError);
+      });
+    });
+
     describe('Metrics section', () => {
       it('should transform air_exchange from number to string', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({

@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { GrowspaceAdapter } from './growspace-adapter';
 import type { GrowspaceAPIResponse } from '../services/types';
+import { GrowspaceAPIResponseSchema } from '../slices/growspace/schema';
 
 function wsWithStrategy(strategy: Record<string, unknown>): GrowspaceAPIResponse {
   return {
@@ -107,6 +108,9 @@ describe('GrowspaceAdapter irrigation strategy', () => {
     expect(strat?.ecModulationEnabled).toBe(true);
   });
 
+  // The shape the shipped GSM release emits. Current backends always serialize
+  // substrate_profile (default_factory), so the undefined case below only
+  // occurs against that older payload.
   it('defaults band to null and modulation to false when absent', () => {
     const device = GrowspaceAdapter.transformGrowspace(null, wsWithStrategy({ enabled: true }));
     const strat = device?.irrigationStrategy;
@@ -125,6 +129,110 @@ describe('GrowspaceAdapter irrigation strategy', () => {
 
     const notCapable = GrowspaceAdapter.transformGrowspace(null, wsWithStrategy({ enabled: true }));
     expect(notCapable?.volumeModeCapable).toBe(false);
+  });
+});
+
+/**
+ * The hydration path as it actually runs: the backend payload is parsed by the
+ * slice schema at the hassCall seam *before* the adapter sees it. Feeding the
+ * adapter a hand-built object (as the tests above do) skips the seam, so it
+ * cannot catch a field the schema strips — these tests go through both.
+ */
+describe('GrowspaceAdapter irrigation strategy through the wire schema', () => {
+  function hydrate(strategy: Record<string, unknown>) {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      identity: {
+        growspace_id: 'gs1',
+        name: 'Tent',
+        overview_entity_id: 'sensor.gs1',
+        type: 'normal',
+      },
+      irrigation: { irrigation_strategy: strategy },
+    });
+    return GrowspaceAdapter.transformGrowspace(null, parsed as unknown as GrowspaceAPIResponse)
+      ?.irrigationStrategy;
+  }
+
+  const fullStrategy = {
+    enabled: true,
+    lights_on_time: '07:30:00',
+    p0_duration_minutes: 45,
+    p2_stop_before_lights_off_minutes: 90,
+    target_vwc_percent: 62,
+    maintenance_dryback_percent: 3.5,
+    // Legacy mirror of P1 (__post_serialize__) — the value a stripped p1_* would
+    // silently fall back to.
+    shot_duration_seconds: 8,
+    shot_interval_minutes: 12,
+    p1_shot_duration_seconds: 8,
+    p1_shot_interval_minutes: 12,
+    p2_shot_duration_seconds: 14,
+    p2_shot_interval_minutes: 25,
+    p1_shot_volume_percent: 5.5,
+    p2_shot_volume_percent: 2.5,
+    shot_sizing_mode: 'volume',
+    substrate_profile: { media_type: 'rockwool', liters_per_pot: 6.5 },
+    pore_ec_target_min: 4.2,
+    pore_ec_target_max: 7.8,
+    ec_modulation_enabled: true,
+    auto_light_tracking: true,
+    detected_lights_on_time: '07:28:00',
+    declared_steering_mode: 'generative',
+    dynamic_shot_enabled: false,
+    dynamic_aggressiveness: 1.4,
+    dynamic_recovery: 0.25,
+    dynamic_shot_size_floor: 0.35,
+    dynamic_interval_ceiling: 1.9,
+  };
+
+  it('survives a Pore EC band, Substrate Profile, sizing mode, and declared mode', () => {
+    const strat = hydrate(fullStrategy);
+
+    expect(strat?.poreEcTargetMin).toBe(4.2);
+    expect(strat?.poreEcTargetMax).toBe(7.8);
+    expect(strat?.ecModulationEnabled).toBe(true);
+    expect(strat?.substrateProfile).toEqual({ mediaType: 'rockwool', litersPerPot: 6.5 });
+    expect(strat?.shotSizingMode).toBe('volume');
+    expect(strat?.declaredSteeringMode).toBe('generative');
+  });
+
+  it('survives the dynamic_* tunables, including a disabled master toggle', () => {
+    const strat = hydrate(fullStrategy);
+
+    expect(strat?.dynamicShotEnabled).toBe(false);
+    expect(strat?.dynamicAggressiveness).toBe(1.4);
+    expect(strat?.dynamicRecovery).toBe(0.25);
+    expect(strat?.dynamicShotSizeFloor).toBe(0.35);
+    expect(strat?.dynamicIntervalCeiling).toBe(1.9);
+  });
+
+  it('keeps a per-phase shot duration that a stripped field would fake via the legacy value', () => {
+    // P2 differs from the legacy mirror; if the schema strips p2_*, the adapter
+    // reports the plausible legacy 8/12 instead of the stored 14/25.
+    const strat = hydrate(fullStrategy);
+
+    expect(strat?.p2ShotDurationSeconds).toBe(14);
+    expect(strat?.p2ShotIntervalMinutes).toBe(25);
+    expect(strat?.p1ShotDurationSeconds).toBe(8);
+    expect(strat?.p1ShotIntervalMinutes).toBe(12);
+  });
+
+  it('still seeds both phases from the legacy fields when the backend omits per-phase keys', () => {
+    const strat = hydrate({
+      enabled: true,
+      lights_on_time: '06:00:00',
+      p0_duration_minutes: 60,
+      p2_stop_before_lights_off_minutes: 120,
+      target_vwc_percent: 55,
+      maintenance_dryback_percent: 2,
+      shot_duration_seconds: 25,
+      shot_interval_minutes: 18,
+    });
+
+    expect(strat?.p1ShotDurationSeconds).toBe(25);
+    expect(strat?.p2ShotDurationSeconds).toBe(25);
+    expect(strat?.p1ShotIntervalMinutes).toBe(18);
+    expect(strat?.p2ShotIntervalMinutes).toBe(18);
   });
 });
 
