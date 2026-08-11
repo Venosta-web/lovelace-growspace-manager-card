@@ -2,18 +2,6 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { LineageNode } from '../../plants/types';
 
-const SEX_SYMBOLS: Record<string, string> = {
-  female: '♀',
-  male: '♂',
-  hermaphrodite: '⚥',
-};
-
-const SEX_COLORS: Record<string, string> = {
-  female: '#4caf50',
-  male: '#2196f3',
-  hermaphrodite: '#ff9800',
-};
-
 @customElement('lineage-tree')
 export class LineageTree extends LitElement {
   @property({ attribute: false }) node: LineageNode | null = null;
@@ -94,14 +82,12 @@ export class LineageTree extends LitElement {
       min-width: 80px;
       text-align: center;
     }
-    .node-card.plant {
-      border-color: var(--primary-color);
-    }
-    .node-card.seed_batch {
-      border-color: #8bc34a;
-    }
-    .node-card.strain {
+    /* Keyed on the node's 'source'; a node without one is the genetics root. */
+    .node-card.library {
       border-color: #9c27b0;
+    }
+    .node-card.manual {
+      border-color: #8bc34a;
       border-style: dashed;
     }
     .node-label {
@@ -121,10 +107,6 @@ export class LineageTree extends LitElement {
       gap: 4px;
       font-size: 11px;
       color: var(--secondary-text-color);
-    }
-    .sex-badge {
-      font-size: 12px;
-      font-weight: bold;
     }
     .gen-badge {
       background: var(--primary-color);
@@ -174,15 +156,13 @@ export class LineageTree extends LitElement {
   }
 
   private _renderNode(node: LineageNode, depth = 0): TemplateResult {
-    const sexSymbol = node.sex && node.sex !== 'unknown' ? SEX_SYMBOLS[node.sex] : null;
-    const sexColor = node.sex ? SEX_COLORS[node.sex] : null;
     const phenotype = node.phenotype && node.phenotype !== 'default' ? node.phenotype : null;
     const isAncestor = depth > 0;
 
     return html`
       <div class="tree-level">
         <div
-          class="node-card ${node.type} ${isAncestor ? 'ancestor' : ''}"
+          class="node-card ${node.source ?? ''} ${isAncestor ? 'ancestor' : ''}"
           @click=${() => {
             if (this.clickable && isAncestor) this._emitNodeClick(node.name);
           }}
@@ -190,9 +170,6 @@ export class LineageTree extends LitElement {
           <div class="node-label">${node.name}</div>
           ${phenotype ? html`<div class="node-phenotype">${phenotype}</div>` : nothing}
           <div class="node-meta">
-            ${sexSymbol
-              ? html`<span class="sex-badge" style="color:${sexColor}">${sexSymbol}</span>`
-              : nothing}
             ${node.generation ? html`<span class="gen-badge">${node.generation}</span>` : nothing}
           </div>
         </div>
@@ -399,9 +376,7 @@ export class LineageTreeEditor extends LitElement {
     return (this.node?.parents ?? []).map((p) => ({
       name: p.name,
       phenotype: p.phenotype,
-      source: ((p as unknown as Record<string, unknown>)['source'] ?? 'manual') as
-        | 'library'
-        | 'manual',
+      source: p.source ?? 'manual',
     }));
   }
 

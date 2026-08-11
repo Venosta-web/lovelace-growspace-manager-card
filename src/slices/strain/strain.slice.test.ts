@@ -17,6 +17,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as hassCallModule from '../../services/hass-call';
+import { StrainDataSchema, StrainLibraryWrapperSchema } from './schema';
 import {
   strainLibrary$,
   setStrainLibrary,
@@ -506,5 +507,85 @@ describe('deleteBreeder', () => {
     vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('del err'));
 
     await expect(deleteBreeder('DJ Short')).rejects.toThrow('del err');
+  });
+});
+
+describe('StrainDataSchema round-trip', () => {
+  // Every key `StrainLibrary._load()` assembles for a strain entry: the 20 meta
+  // columns and the 8 phenotype fields. Values are deliberately non-default so
+  // a stripped field cannot pass by coincidence.
+  const backendStrain = {
+    meta: {
+      breeder: 'DJ Short',
+      breeder_logo: '/logos/dj-short.png',
+      type: 'Sativa',
+      lineage: 'Blueberry x Haze',
+      sex: 'feminized',
+      generation: 'F4',
+      sativa_percentage: 70,
+      indica_percentage: 30,
+      yield_potential: 'medium',
+      height: 'tall',
+      thc: 22.5,
+      cbd: 0.4,
+      cbg: 0.1,
+      description: 'A blueberry-forward sativa.',
+      awards: ['Cannabis Cup 2003'],
+      effects: ['euphoric'],
+      aroma: ['berry'],
+      taste: ['sweet'],
+      is_stub: false,
+      lineage_tree: [{ name: 'Blueberry', source: 'library' }],
+    },
+    phenotypes: {
+      'Pheno A': {
+        phenotype_id: 7,
+        description: 'The keeper cut.',
+        image_path: '/images/pheno-a.jpg',
+        image_crop_meta: { x: 10, y: 20, scale: 1.5 },
+        images: [{ path: '/images/pheno-a.jpg', is_thumbnail: true }],
+        flower_days_min: 56,
+        flower_days_max: 63,
+        harvests: [{ harvest_id: 1, wet_weight: 420 }],
+      },
+    },
+  };
+
+  it('keeps every field the backend emits', () => {
+    expect(StrainDataSchema.parse(backendStrain)).toEqual(backendStrain);
+  });
+
+  it('parses a whole library through the wrapper without stripping meta', () => {
+    const parsed = StrainLibraryWrapperSchema.parse({
+      strains: { Blueberry: backendStrain },
+      strain_list: ['Blueberry'],
+    });
+
+    expect(parsed.strains.Blueberry.meta.thc).toBe(22.5);
+    expect(parsed.strains.Blueberry.meta.generation).toBe('F4');
+    expect(parsed.strains.Blueberry.phenotypes['Pheno A'].phenotype_id).toBe(7);
+  });
+
+  it('survives an imported strain whose THC arrived as a string', () => {
+    // `import_library` bypasses the service schema's vol.Coerce(float), so a
+    // REAL column can hold a string. Failing here would blank the whole library.
+    const parsed = StrainDataSchema.parse({
+      ...backendStrain,
+      meta: { ...backendStrain.meta, thc: '22%' },
+    });
+
+    expect(parsed.meta.thc).toBe('22%');
+  });
+
+  it('transforms null meta and phenotype fields to undefined', () => {
+    const parsed = StrainDataSchema.parse({
+      meta: { breeder: null, sativa_percentage: null },
+      phenotypes: { default: { description: null, flower_days_min: null } },
+    });
+
+    expect(parsed.meta.breeder).toBeUndefined();
+    expect(parsed.meta.sativa_percentage).toBeUndefined();
+    expect(parsed.phenotypes.default.description).toBeUndefined();
+    expect(parsed.phenotypes.default.flower_days_min).toBeUndefined();
   });
 });

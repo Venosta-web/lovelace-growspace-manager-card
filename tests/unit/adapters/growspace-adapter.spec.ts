@@ -66,7 +66,7 @@ describe('GrowspaceAdapter', () => {
         plants_per_row: 2,
         total_plants: 1,
         grid: {
-          'position_0_0': {
+          position_0_0: {
             plant_id: 'p1',
             entity_id: 'sensor.p1',
             strain: 'Kush',
@@ -91,7 +91,7 @@ describe('GrowspaceAdapter', () => {
             cure_start: null,
             days_since_last_watering: 0,
           },
-          'position_0_1': null,
+          position_0_1: null,
         },
       },
       environment: {
@@ -146,7 +146,7 @@ describe('GrowspaceAdapter', () => {
         plants_per_row: 2,
         total_plants: 1,
         grid: {
-          'position_1_2': {
+          position_1_2: {
             plant_id: 'p1',
             row: 1,
             col: 2,
@@ -171,7 +171,9 @@ describe('GrowspaceAdapter', () => {
   });
 
   it('should handle wsData with null grid', () => {
-    const ws = makeWsData({ grid: { rows: 2, plants_per_row: 2, total_plants: 0, grid: null as any } });
+    const ws = makeWsData({
+      grid: { rows: 2, plants_per_row: 2, total_plants: 0, grid: null as any },
+    });
     const result = GrowspaceAdapter.transformGrowspace(null, ws);
     expect(result?.plants).toHaveLength(0);
   });
@@ -187,13 +189,17 @@ describe('GrowspaceAdapter', () => {
   });
 
   it('should fallback growspace_id from overview when wsData lacks it', () => {
-    const ws = makeWsData({ identity: { growspace_id: '', name: 'Test Room', type: GrowspaceTypeEnum.NORMAL } });
+    const ws = makeWsData({
+      identity: { growspace_id: '', name: 'Test Room', type: GrowspaceTypeEnum.NORMAL },
+    });
     const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
     expect(result?.deviceId).toBe('test_gs');
   });
 
   it('should use default name when both wsData and overview lack it', () => {
-    const ws = makeWsData({ identity: { growspace_id: 'gs_anon', name: '', type: GrowspaceTypeEnum.NORMAL } });
+    const ws = makeWsData({
+      identity: { growspace_id: 'gs_anon', name: '', type: GrowspaceTypeEnum.NORMAL },
+    });
     const overviewWithoutName = {
       entity_id: 'sensor.test',
       attributes: { growspace_id: 'gs_anon' },
@@ -215,7 +221,7 @@ describe('GrowspaceAdapter', () => {
         plants_per_row: 1,
         total_plants: 1,
         grid: {
-          'position_0_0': {
+          position_0_0: {
             plant_id: 'p1',
             entity_id: 'sensor.p1',
             strain: 'Unknown',
@@ -240,13 +246,15 @@ describe('GrowspaceAdapter', () => {
     });
     const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
     expect(result?.irrigationStrategy).toEqual(
-      expect.objectContaining({ enabled: true, targetVwcPercent: 45 }),
+      expect.objectContaining({ enabled: true, targetVwcPercent: 45 })
     );
   });
 
   describe('Coverage Gap Fillers', () => {
     it('should fallback to "unknown" when both wsData and overview lack growspace_id', () => {
-      const ws = makeWsData({ identity: { growspace_id: '', name: 'No ID', type: GrowspaceTypeEnum.NORMAL } });
+      const ws = makeWsData({
+        identity: { growspace_id: '', name: 'No ID', type: GrowspaceTypeEnum.NORMAL },
+      });
       const overviewWithoutId = { entity_id: 'sensor.test', attributes: {} };
       const result = GrowspaceAdapter.transformGrowspace(overviewWithoutId as any, ws);
       expect(result?.deviceId).toBe('unknown');
@@ -267,7 +275,7 @@ describe('GrowspaceAdapter', () => {
           plants_per_row: 2,
           total_plants: 1,
           grid: {
-            'position_0_0': {
+            position_0_0: {
               plant_id: 'p1',
               entity_id: 'sensor.p1',
               strain: 'Valid',
@@ -276,8 +284,8 @@ describe('GrowspaceAdapter', () => {
               row: 0,
               col: 0,
             } as any,
-            'position_0_1': null,
-            'position_1_0': undefined as any,
+            position_0_1: null,
+            position_1_0: undefined as any,
           },
         },
       });
@@ -307,6 +315,7 @@ describe('GrowspaceAdapter', () => {
         sensor_groups: [
           {
             id: 'group1',
+            name: 'Group 1',
             x: 10,
             y: 20,
             z: 5,
@@ -378,12 +387,27 @@ describe('GrowspaceAdapter', () => {
       sensors: {
         sensor_types: {},
         sensor_coordinates: {},
-        sensor_groups: [{ id: 'group_empty', x: 10, y: 10, z: 10 }] as any,
+        sensor_groups: [{ id: 'group_empty', name: 'Empty', x: 10, y: 10, z: 10 }] as any,
       },
     });
     const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
     expect(result).toBeDefined();
     expect(result?.environmentAttributes?.sensorGroups).toHaveLength(1);
+  });
+
+  it('should drop only the group that does not parse', () => {
+    const ws = makeWsData({
+      sensors: {
+        sensor_types: {},
+        sensor_coordinates: {},
+        sensor_groups: [
+          { id: 'good', name: 'Good', x: 1, y: 2, z: 3, temperature_sensors: ['sensor.t'] },
+          { name: 'No id at all' },
+        ] as any,
+      },
+    });
+    const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+    expect(result?.environmentAttributes?.sensorGroups?.map((g) => g.id)).toEqual(['good']);
   });
 
   it('should NOT overwrite existing sensor coordinates with group coordinates', () => {
@@ -584,7 +608,10 @@ describe('GrowspaceAdapter', () => {
         irrigation: {
           irrigation_config: { irrigation_times: [], drain_times: [] },
           irrigation_strategy: null,
-          projected_shot_window: { start: '2026-06-07T09:45:00+00:00', end: '2026-06-07T18:00:00+00:00' },
+          projected_shot_window: {
+            start: '2026-06-07T09:45:00+00:00',
+            end: '2026-06-07T18:00:00+00:00',
+          },
         } as any,
       });
       const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);

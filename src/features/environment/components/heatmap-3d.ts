@@ -10,7 +10,7 @@ import { strainLibraryContext, storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { SceneManager } from '../../../utils/three/scene-manager';
 import { InteractionManager } from '../../../utils/three/interaction-manager';
-import { callService, setHass } from '../../../services/hass-call';
+import { setHass } from '../../../services/hass-call';
 import { updateSensorCoordinates } from '../../../slices/growspace';
 import { openPlantOverviewDialog, openAddPlantDialog } from '../../../slices/ui';
 import { getHistoryStats } from '../../../store/history/history-store';
@@ -42,7 +42,6 @@ export class Heatmap3D extends LitElement {
     | 'ventilation'
     | 'environment'
     | 'irrigation' = 'temperature';
-  @state() private _linkMode: boolean = false;
 
   @consume({ context: strainLibraryContext, subscribe: true })
   strainLibrary: StrainEntry[] = [];
@@ -510,12 +509,6 @@ export class Heatmap3D extends LitElement {
     }
 
     if (this.sceneManager) {
-      // Expose element for renderers to dispatch events back
-      this.sceneManager.scene.userData.element = this.container;
-
-      this.container.addEventListener('unlink', (e: any) => {
-        if (e.detail?.entityId) this._handleUnlink(e.detail.entityId);
-      });
       this.sceneManager.setCallbacks({
         requestUpdate: () => this.requestUpdate(),
         getSensorValue: (id, metric) => this.getSensorValue(id, metric),
@@ -615,14 +608,6 @@ export class Heatmap3D extends LitElement {
       this.requestUpdate();
     }
 
-    if (event === 'link' && data.from && data.to) {
-      this._handleLink(data.from, data.to);
-    }
-
-    if (event === 'unlink' && data.entityId) {
-      this._handleUnlink(data.entityId);
-    }
-
     if (event === 'click' && data.plant) {
       if (data.plant.entity_id) {
         // Existing plant
@@ -635,64 +620,6 @@ export class Heatmap3D extends LitElement {
           data.plant.col
         );
       }
-    }
-  }
-
-  private _handleLink(fromId: string, toId: string) {
-    if (!this.device || !this.sceneManager) return;
-
-    const fromMesh = this.sceneManager.sensorMeshes.get(fromId);
-    const toMesh = this.sceneManager.sensorMeshes.get(toId);
-
-    if (!fromMesh || !toMesh) return;
-
-    const fromTypes = (fromMesh.userData.types || []) as string[];
-    const toTypes = (toMesh.userData.types || []) as string[];
-
-    const isPump = fromTypes.includes('irrigation_pump') || fromTypes.includes('drain_pump');
-    const isTank = toTypes.includes('irrigation_tank');
-
-    // Allow reverse selection too
-    let pumpId = isPump
-      ? fromId
-      : toTypes.includes('irrigation_pump') || toTypes.includes('drain_pump')
-        ? toId
-        : null;
-    let tankId = isTank ? toId : fromTypes.includes('irrigation_tank') ? fromId : null;
-
-    if (pumpId && tankId) {
-      if (!this.device.environmentAttributes) this.device.environmentAttributes = {};
-      if (!this.device.environmentAttributes.pump_tank_links)
-        this.device.environmentAttributes.pump_tank_links = {};
-
-      this.device.environmentAttributes.pump_tank_links[pumpId] = tankId;
-
-      // Sync to backend
-      this._updatePumpTankLinks();
-      this.requestUpdate();
-    }
-  }
-
-  private _handleUnlink(pumpId: string) {
-    if (!this.device || !this.device.environmentAttributes?.pump_tank_links) return;
-
-    delete this.device.environmentAttributes.pump_tank_links[pumpId];
-    this._updatePumpTankLinks();
-    this.requestUpdate();
-  }
-
-  private _updatePumpTankLinks() {
-    if (!this.device) return;
-    callService('growspace_manager', 'update_environment_attributes', {
-      growspace_id: this.device.deviceId,
-      pump_tank_links: this.device.environmentAttributes.pump_tank_links,
-    });
-  }
-
-  private toggleLinkMode() {
-    this._linkMode = !this._linkMode;
-    if (this.interactionManager) {
-      this.interactionManager.setLinkMode(this._linkMode);
     }
   }
 
@@ -1234,23 +1161,6 @@ export class Heatmap3D extends LitElement {
           </button>
         </div>
 
-        ${this._activeSensorTab === 'irrigation'
-          ? html`
-              <div style="padding: 0 10px 10px 10px">
-                <button
-                  class="sensor-tab ${this._linkMode ? 'active' : ''}"
-                  style="width: 100%;"
-                  @click=${this.toggleLinkMode}
-                >
-                  <ha-icon
-                    icon="${this._linkMode ? 'mdi:link-variant-off' : 'mdi:link-variant'}"
-                    style="--mdc-icon-size: 14px; margin-right: 4px;"
-                  ></ha-icon>
-                  ${this._linkMode ? 'Exit Link Mode' : 'Pump-Tank Link Mode'}
-                </button>
-              </div>
-            `
-          : ''}
         ${Array.from(this.sceneManager.sensorMeshes.keys())
           .filter((id) => {
             const mesh = this.sceneManager!.sensorMeshes.get(id);
@@ -1294,8 +1204,7 @@ export class Heatmap3D extends LitElement {
 
             const width = this.device?.dimensions?.width ?? 120;
             const height = this.device?.dimensions?.height ?? 200;
-            const depth =
-              this.device?.dimensions?.length ?? this.device?.dimensions?.depth ?? 120;
+            const depth = this.device?.dimensions?.length ?? this.device?.dimensions?.depth ?? 120;
 
             const xMin = isAllowedOutside ? -100 : 0;
             const xMax = isAllowedOutside ? width + 100 : width;

@@ -1,3 +1,22 @@
+/**
+ * #488 asked whether the "field X survives the parse" tests here become
+ * redundant once the wire types are derived from these schemas. They do not,
+ * and the reason is worth keeping: TypeScript only errors on a key someone
+ * *reads*, while ADR 0031 requires declaring every key the backend *emits*.
+ *
+ * So these stay, each carrying something a type cannot express:
+ *
+ * - the whole-object `toEqual` round-trips also pin the unread keys
+ *   (`max_daily_readings`) and the rows inside an Opaque Region
+ *   (`daily_readings`), which no read site would catch
+ * - `keeps every field the backend emits` checks all 27 strategy keys at once
+ *   — the stand-in for the Contract Fixture until ADR 0029's fixture lands
+ * - the collection-schema variants exercise the `z.record` path that hydration
+ *   actually takes, not just the response schema
+ * - `dynamic_shot_enabled false` and `volume_mode_capable` false-vs-absent
+ *   assert a value is not collapsed into a default, which is not a shape claim
+ */
+
 import { describe, it, expect } from 'vitest';
 import { ZodError } from 'zod';
 import {
@@ -29,8 +48,8 @@ describe('CirculationFanConfigSchema', () => {
         wind_enabled: false,
         wind_period_seconds: 60,
         wind_amplitude_pct: 10,
-  stage_vpd_enabled: false,
-      }),
+        stage_vpd_enabled: false,
+      })
     ).toThrow(ZodError);
   });
 
@@ -52,7 +71,7 @@ describe('CirculationFanConfigSchema', () => {
       wind_enabled: true,
       wind_period_seconds: 120,
       wind_amplitude_pct: 20,
-  stage_vpd_enabled: false,
+      stage_vpd_enabled: false,
     });
     expect(result).toEqual({
       enabled: true,
@@ -128,7 +147,7 @@ describe('ExhaustFanConfigSchema', () => {
         critical_temp_high: null,
         critical_temp_hysteresis: 1.0,
         stage_vpd_enabled: false,
-      }),
+      })
     ).toThrow(ZodError);
   });
 });
@@ -157,6 +176,18 @@ describe('Growspace Zod Schemas', () => {
           growlight_entities: [],
           growlight_ac_infinity_devices: [],
           light_sensors: [],
+          temperature_sensors: [],
+          humidity_sensors: [],
+          vpd_sensors: [],
+          lung_room_temp_sensors: [],
+          power_sensors: [],
+          ph_sensors: [],
+          feed_ec_sensors: [],
+          bulk_ec_sensors: [],
+          pore_ec_sensors: [],
+          runoff_ec_sensors: [],
+          drain_volume_sensors: [],
+          irrigation_flow_sensors: [],
           humidifier_thresholds: {},
           dehumidifier_thresholds: {},
           vpd_optimal_overrides: {},
@@ -175,6 +206,7 @@ describe('Growspace Zod Schemas', () => {
           irrigation_config: {
             irrigation_times: [],
             drain_times: [],
+            ec_target_ranges: [],
           },
           irrigation_strategy: null,
           cycles_today: 0,
@@ -235,32 +267,11 @@ describe('Growspace Zod Schemas', () => {
               wind_enabled: false,
               wind_period_seconds: 60,
               wind_amplitude_pct: 10,
-  stage_vpd_enabled: false,
+              stage_vpd_enabled: false,
             },
           },
-        }),
+        })
       ).toThrow(ZodError);
-    });
-
-    it('should pass through extra fields at the root and nested objects', () => {
-      const parsed = GrowspaceAPIResponseSchema.parse({
-        extra_root_field: 'hello',
-        environment: {
-          extra_env_field: 'world',
-        },
-        metrics: {
-          extra_metric_field: 'foo',
-        },
-      });
-      expect(parsed).toMatchObject({
-        extra_root_field: 'hello',
-        environment: {
-          extra_env_field: 'world',
-        },
-        metrics: {
-          extra_metric_field: 'foo',
-        },
-      });
     });
 
     it('accepts vpd_optimal_overrides in the environment block and defaults to {} when absent', () => {
@@ -320,7 +331,7 @@ describe('Growspace Zod Schemas', () => {
         expect(() =>
           GrowspaceAPIResponseSchema.parse({
             subareas: [{ id: 'sa1', environment_config: {} }],
-          }),
+          })
         ).toThrow(ZodError);
       });
     });
@@ -352,9 +363,7 @@ describe('Growspace Zod Schemas', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({
           irrigation: {
             irrigation_config: {
-              irrigation_times: [
-                { time: '08:00', duration: 15 },
-              ],
+              irrigation_times: [{ time: '08:00', duration: 15 }],
             },
           },
         });
@@ -379,18 +388,14 @@ describe('Growspace Zod Schemas', () => {
           { time: '12:00' },
         ]);
 
-        expect(parsed.irrigation.irrigation_config.drain_times).toEqual([
-          { time: '18:00' },
-        ]);
+        expect(parsed.irrigation.irrigation_config.drain_times).toEqual([{ time: '18:00' }]);
       });
 
       it('should fallback to start_time and duration_seconds', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({
           irrigation: {
             irrigation_config: {
-              irrigation_times: [
-                { start_time: '09:00', duration_seconds: 60 },
-              ],
+              irrigation_times: [{ start_time: '09:00', duration_seconds: 60 }],
             },
           },
         });
@@ -422,9 +427,7 @@ describe('Growspace Zod Schemas', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({
           irrigation: {
             irrigation_config: {
-              irrigation_times: [
-                { time: '10:00', duration: 30, duration_seconds: 90 },
-              ],
+              irrigation_times: [{ time: '10:00', duration: 30, duration_seconds: 90 }],
             },
           },
         });
@@ -439,9 +442,7 @@ describe('Growspace Zod Schemas', () => {
           GrowspaceAPIResponseSchema.parse({
             irrigation: {
               irrigation_config: {
-                irrigation_times: [
-                  { duration: 45 },
-                ],
+                irrigation_times: [{ duration: 45 }],
               },
             },
           });
@@ -451,9 +452,7 @@ describe('Growspace Zod Schemas', () => {
           GrowspaceAPIResponseSchema.parse({
             irrigation: {
               irrigation_config: {
-                irrigation_times: [
-                  { duration: 45 },
-                ],
+                irrigation_times: [{ duration: 45 }],
               },
             },
           });
@@ -975,7 +974,9 @@ describe('GrowspaceAPIResponseSchema grow light fields', () => {
       },
     });
     expect(parsed.environment.growlight_entities).toEqual(['switch.grow', 'light.bar']);
-    expect(parsed.environment.growlight_ac_infinity_devices[0].off_time_entity).toBe('time.port_off');
+    expect(parsed.environment.growlight_ac_infinity_devices[0].off_time_entity).toBe(
+      'time.port_off'
+    );
     expect(parsed.environment.growlight_config?.power).toBe(90);
   });
 });

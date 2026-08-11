@@ -14,94 +14,16 @@ export type {
   GrowspaceAPICollection,
 } from '../slices/growspace/schema';
 
-export const StrainPhenotypeSchema = z
-  .object({
-    description: z
-      .string()
-      .nullable()
-      .optional()
-      .transform((v) => v ?? undefined),
-    image_path: z
-      .string()
-      .nullable()
-      .optional()
-      .transform((v) => v ?? undefined),
-    image_crop_meta: z
-      .object({ x: z.number(), y: z.number(), scale: z.number() })
-      .nullable()
-      .optional()
-      .transform((v) => v ?? undefined),
-    flower_days_min: z
-      .number()
-      .nullable()
-      .optional()
-      .transform((v) => v ?? undefined),
-    flower_days_max: z
-      .number()
-      .nullable()
-      .optional()
-      .transform((v) => v ?? undefined),
-  })
-  .catchall(z.unknown());
-
-export const StrainDataSchema = z
-  .object({
-    meta: z
-      .object({
-        breeder: z
-          .string()
-          .nullable()
-          .optional()
-          .transform((v) => v ?? undefined),
-        breeder_logo: z
-          .string()
-          .nullable()
-          .optional()
-          .transform((v) => v ?? undefined),
-        type: z
-          .string()
-          .nullable()
-          .optional()
-          .transform((v) => v ?? undefined),
-        lineage: z
-          .string()
-          .nullable()
-          .optional()
-          .transform((v) => v ?? undefined),
-        sex: z
-          .string()
-          .nullable()
-          .optional()
-          .transform((v) => v ?? undefined),
-        sativa_percentage: z
-          .number()
-          .nullable()
-          .optional()
-          .transform((v) => v ?? undefined),
-        indica_percentage: z
-          .number()
-          .nullable()
-          .optional()
-          .transform((v) => v ?? undefined),
-        is_stub: z.boolean().optional(),
-      })
-      .passthrough()
-      .optional()
-      .prefault({}),
-    phenotypes: z.record(z.string(), StrainPhenotypeSchema).optional().default({}),
-  })
-  .passthrough();
-
-export const StrainLibrarySchema = z.record(z.string(), StrainDataSchema);
-export const StrainLibraryWrapperSchema = z
-  .object({
-    strains: StrainLibrarySchema,
-    strain_list: z.array(z.string()).optional(),
-  })
-  .passthrough();
-
-export type StrainLibrary = z.infer<typeof StrainLibrarySchema>;
-export type StrainLibraryResponse = z.infer<typeof StrainLibraryWrapperSchema>;
+// Strain shapes live in the Strain slice, which owns the get_strain_library
+// wire contract (ADR 0031: one schema per shape). This module re-exports them
+// for the older import path.
+export {
+  StrainPhenotypeSchema,
+  StrainDataSchema,
+  StrainLibrarySchema,
+  StrainLibraryWrapperSchema,
+} from '../slices/strain/schema';
+export type { StrainLibrary, StrainLibraryResponse } from '../slices/strain/schema';
 
 // Nutrient schemas live in the Nutrient slice — re-exported here for backwards compatibility.
 export {
@@ -125,15 +47,20 @@ export type {
   NutrientInventoryResponse,
 } from '../slices/nutrient/schema';
 
-export const HistoryPointSchema = z
-  .object({
-    s: z.union([z.string(), z.number()]).transform(String),
-    lu: z
-      .union([z.string(), z.number()])
-      .transform((v) => (typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v))),
-    a: z.record(z.string(), z.unknown()).optional().default({}), // Attributes
-  })
-  .passthrough();
+/**
+ * A point from Home Assistant's own compact history API — not a GSM shape, so
+ * ADR 0031's completeness rule does not apply: the emitted key set is HA's to
+ * change and enumerating it here would be a guess. Only the three keys the
+ * history store reads are declared; the rest are stripped, which is safe
+ * because nothing downstream reaches past them.
+ */
+export const HistoryPointSchema = z.object({
+  s: z.union([z.string(), z.number()]).transform(String),
+  lu: z
+    .union([z.string(), z.number()])
+    .transform((v) => (typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v))),
+  a: z.record(z.string(), z.unknown()).optional().default({}), // Attributes
+});
 
 export const HistoryStatsResponseSchema = z.record(z.string(), z.array(HistoryPointSchema));
 export type HistoryStatsResponse = z.infer<typeof HistoryStatsResponseSchema>;
@@ -202,18 +129,3 @@ export const CropSteeringHistorySchema = z.object({
 
 export type CropSteeringHistory = z.infer<typeof CropSteeringHistorySchema>;
 export type CropSteeringBucket = z.infer<typeof CropSteeringBucketSchema>;
-
-/**
- * Validates strain library response.
- */
-export function validateStrainLibrary(data: unknown): ValidationResult<StrainLibraryResponse> {
-  const result = StrainLibraryWrapperSchema.safeParse(data);
-  if (result.success) {
-    return { success: true, data: result.data };
-  }
-  console.error('[API Validation Failed for Strain Library]', result.error.flatten());
-  return {
-    success: false,
-    errors: result.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`),
-  };
-}

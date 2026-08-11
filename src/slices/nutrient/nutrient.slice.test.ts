@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NutrientPresetsSchema } from './schema';
+import { NutrientPresetsSchema, IPMPresetSchema } from './schema';
 import * as hassCallModule from '../../services/hass-call';
 import {
   nutrientPresets$,
@@ -529,5 +529,41 @@ describe('removeECRampCurve', () => {
     vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('remove failed'));
 
     await expect(removeECRampCurve('c1')).rejects.toThrow('remove failed');
+  });
+});
+
+describe('preset schema round-trip', () => {
+  it('keeps created_at on a nutrient preset', () => {
+    const backendPreset = {
+      id: 'p1',
+      name: 'Week 3 Veg',
+      nutrients: [{ nutrient_id: 'n1', dose_ml_l: 2.5, name: 'Grow A' }],
+      stage: 'veg',
+      min_days_in_stage: 7,
+      week: 3,
+      ec_target: 1.4,
+      ph_target: 6.1,
+      created_at: '2026-08-11T09:00:00+00:00',
+    };
+
+    const parsed = NutrientPresetsSchema.parse({ p1: backendPreset });
+
+    expect(parsed.p1).toEqual(backendPreset);
+  });
+
+  it('keeps created_at on an IPM preset', () => {
+    const backendPreset = {
+      id: 'i1',
+      name: 'Neem drench',
+      type: 'drench' as const,
+      items: [{ name: 'Neem oil', dose_amount: 5, dose_unit: 'ml', phi_days: 3 }],
+      stage: 'veg',
+      min_days_in_stage: 5,
+      created_at: '2026-08-11T09:00:00+00:00',
+    };
+
+    const parsed = IPMPresetSchema.parse(backendPreset);
+
+    expect(parsed).toEqual(backendPreset);
   });
 });

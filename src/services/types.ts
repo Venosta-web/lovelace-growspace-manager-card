@@ -1,9 +1,5 @@
-import type {
-  PlantEntity,
-  RawPlantData,
-  GrowspaceType,
-} from '../features/plants/types';
-import type { SensorGroup } from '../features/environment/types';
+import type { PlantEntity, RawPlantData, GrowspaceType } from '../features/plants/types';
+import type { SensorGroup } from '../slices/subarea/schema';
 import type { VisionCheckupConfig } from '../lib/types/dialog';
 import type {
   AcInfinityDevice,
@@ -11,8 +7,13 @@ import type {
   CirculationFanConfig,
   ExhaustFanConfig,
   GrowLightConfig,
+  GrowspaceAPISchemaResponse,
+  SerializedDrainConfig,
+  SerializedDrybackEvent,
+  SerializedIrrigationConfig,
   SerializedIrrigationStrategy,
-  SerializedWaterUsage,
+  SerializedShotComposition,
+  SerializedSubstrateMetrics,
 } from '../slices/growspace/schema';
 
 // --- Irrigation ---
@@ -116,7 +117,15 @@ export interface IrrigationConfig {
   phaseChangedAt?: string;
 }
 
-export type { SerializedIrrigationStrategy };
+export type {
+  GrowspaceAPISchemaResponse,
+  SerializedDrainConfig,
+  SerializedDrybackEvent,
+  SerializedIrrigationConfig,
+  SerializedIrrigationStrategy,
+  SerializedShotComposition,
+  SerializedSubstrateMetrics,
+};
 
 /** Measured Classification bucket — the score-derived steering measurement. */
 export type SteeringClassification = 'vegetative' | 'balanced' | 'generative';
@@ -124,124 +133,23 @@ export type SteeringClassification = 'vegetative' | 'balanced' | 'generative';
 /** Intent Deviation: how the substrate reads relative to the declared mode. */
 export type IntentDeviation = 'on_target' | 'more_generative' | 'more_vegetative';
 
-/** A committed dryback event (overnight or in-cycle) in the wire shape. */
-export interface SerializedDrybackEvent {
-  event_type?: string;
-  peak_vwc: number;
-  trough_vwc: number;
-  dryback: number;
-  peak_timestamp?: string | null;
-  trough_timestamp?: string | null;
-}
+// The tank wire shapes are described once, by the irrigation slice's schemas
+// (ADR 0031), and re-exported here for the domain model below and its readers.
+import type {
+  ActiveEvent,
+  TankDepletionStatus,
+  TankWaterHistory,
+} from '../slices/irrigation/schema';
 
-/**
- * Measured substrate steering metrics (#444/#445/#448), carried in the
- * growspace payload's `irrigation.substrate` block. Tracker-derived dryback /
- * EC fields plus the injected score, classification, deviation, and shot
- * composition. The card renders these instead of reading the sensor entity.
- */
-export interface SerializedSubstrateMetrics {
-  overnight_dryback?: number | null;
-  latest_overnight_event?: SerializedDrybackEvent | null;
-  incycle_dryback_count?: number;
-  incycle_dryback_avg?: number | null;
-  ec_trend?: 'rising' | 'stable' | 'falling' | null;
-  ec_trend_available?: boolean;
-  ec_trend_detail?: {
-    trend: string;
-    day_start_ec: number;
-    current_ec: number;
-    delta: number;
-  } | null;
-  score?: number | null;
-  measured_classification?: SteeringClassification | null;
-  intent_deviation?: IntentDeviation | null;
-  shot_composition?: SerializedShotComposition | null;
-}
-
-/**
- * The shot-composition payload from `shot_composition_payload()`.
- *
- * Only the fields the card reads by name are declared; the rest stay reachable
- * through the index signature. `infiltration` (growspace_manager #530) and
- * `suppressed_by` (#531) are absent on older backends, so both are optional.
- */
-export interface SerializedShotComposition {
-  /** Measured Infiltration state: 'infiltrating' | 'settled' | 'drying' | 'unknown'. */
-  infiltration?: string | null;
-  /** Why the last steering tick withheld a shot; null when it fired. */
-  suppressed_by?: string | null;
-  [key: string]: unknown;
-}
-
-export interface SerializedIrrigationConfig {
-  irrigation_pump_entity?: string | null;
-  drain_pump_entity?: string | null;
-  irrigation_duration?: number | null;
-  drain_duration?: number | null;
-  irrigation_times: IrrigationScheduleItem[];
-  drain_times: IrrigationScheduleItem[];
-  veg_day_hours?: number;
-  soil_trigger_percent?: number | null;
-  daily_volume_cap_liters?: number | null;
-  max_cycles_per_day?: number | null;
-  skip_during_dark?: boolean;
-  pause_on_low_tank?: boolean;
-  log_to_logbook?: boolean;
-  auto_advance_p1_to_p2?: boolean;
-  auto_advance_p2_to_p3?: boolean;
-  halt_on_runoff_ec_threshold?: number | null;
-  ec_target_ranges?: Array<{ stage: string; feed_ec_min: number; feed_ec_max: number }>;
-  active_steering_phase?: 'p1' | 'p2' | 'p3';
-  phase_changed_at?: string | null;
-}
-
-export interface TankWaterEvent {
-  timestamp: string;
-  event_type: 'consumption' | 'refill';
-  pct_delta: number;
-  liters: number;
-}
-
-export interface TankDailyEntry {
-  date: string;
-  consumed: number;
-  refilled: number;
-}
-
-export interface TankConsumptionBucket {
-  /** ISO-8601 start of the 15-minute bucket. */
-  ts: string;
-  /** Liters consumed in this bucket. */
-  liters: number;
-}
-
-export interface TankWaterHistory {
-  /**
-   * Compact 15-min consumption buckets for the last 24h (full data, non-zero
-   * buckets only). The backend ships these instead of raw events so the 24h
-   * chart is not limited to a truncated event slice.
-   */
-  buckets_24h?: TankConsumptionBucket[];
-  daily_7d?: TankDailyEntry[];
-  recent_refills?: TankWaterEvent[];
-  // Raw snapshots/events are no longer sent by the backend (attribute-size
-  // budget); kept optional for backward/forward compatibility.
-  snapshots?: Array<{ timestamp: string; level_pct: number }>;
-  events?: TankWaterEvent[];
-}
-
-export interface SerializedIrrigationTank {
-  sensor_entity: string;
-  name: string;
-  warning_level: number;
-  fill_level: number | null;
-  is_warning: boolean;
-  hours_remaining?: number | null;
-  depletion_status?: 'depleting' | 'refilling' | 'static' | 'insufficient_data' | null;
-  volume_liters?: number | null;
-  water_history?: TankWaterHistory;
-}
+export type {
+  ActiveEvent,
+  TankDepletionStatus,
+  TankWaterEvent,
+  TankDailyEntry,
+  TankConsumptionBucket,
+  TankWaterHistory,
+  SerializedIrrigationTank,
+} from '../slices/irrigation/schema';
 
 export interface IrrigationTank {
   sensorEntity: string;
@@ -250,20 +158,12 @@ export interface IrrigationTank {
   fillLevel: number | null;
   isWarning: boolean;
   hoursRemaining?: number | null;
-  depletionStatus?: 'depleting' | 'refilling' | 'static' | 'insufficient_data' | null;
+  depletionStatus?: TankDepletionStatus | null;
   volumeLiters?: number | null;
   waterHistory?: TankWaterHistory;
 }
 
 // --- New Feature Models ---
-
-export interface SerializedDrainECReading {
-  timestamp: string;
-  feed_ec: number;
-  drain_ec: number;
-  drain_volume_ml?: number | null;
-  feed_volume_ml?: number | null;
-}
 
 export interface DrainECReading {
   timestamp: string;
@@ -273,23 +173,11 @@ export interface DrainECReading {
   feedVolumeMl?: number | null;
 }
 
-export interface SerializedDrainConfig {
-  enabled: boolean;
-  max_ec_delta: number;
-  target_runoff_percent: number;
-  readings?: SerializedDrainECReading[];
-}
-
 export interface DrainConfig {
   enabled: boolean;
   maxEcDelta: number;
   targetRunoffPercent: number;
   readings: DrainECReading[];
-}
-
-export interface SerializedEnergyTracking {
-  cycle_start_date?: string | null;
-  cycle_start_kwh?: number | null;
 }
 
 export interface EnergyTracking {
@@ -313,186 +201,13 @@ export interface WaterUsage {
 
 // --- Backend Serialized Models ---
 
-export interface SerializedBiologicalMetrics {
-  vpd_status: string;
-  vpd_target_min: number;
-  vpd_target_max: number;
-  vpd_danger_min: number;
-  vpd_danger_max: number;
-  granular_stage: string;
-  is_day: boolean;
-  veg_week: number;
-  flower_week: number;
-  air_exchange?: string | null;
-}
-
-export interface SerializedEnvironmentAttributes {
-  // Sensors
-  temperature_sensor?: string;
-  temperature_sensors?: string[];
-  humidity_sensor?: string;
-  humidity_sensors?: string[];
-  vpd_sensor?: string;
-  vpd_sensors?: string[];
-  co2_sensor?: string;
-  co2_sensors?: string[];
-  soil_moisture_sensor?: string;
-  soil_moisture_sensors?: string[];
-  light_sensor?: string;
-  light_sensors?: string[];
-
-  // Actuators / Complex Entities
-  dehumidifier_entity?: string;
-  dehumidifier_entities?: string[];
-  dehumidifier_control_enabled?: boolean;
-  dehumidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  dehumidifier_state?: string;
-  humidifier_entity?: string;
-  humidifier_entities?: string[];
-  humidifier_control_enabled?: boolean;
-  humidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  exhaust_entity?: string;
-  exhaust_fan_entities?: string[];
-  circulation_fan_entity?: string;
-  circulation_fan_entities?: string[];
-  exhaust_fan_ac_infinity_devices?: AcInfinityDevice[];
-  circulation_fan_ac_infinity_devices?: AcInfinityDevice[];
-  humidifier_ac_infinity_devices?: AcInfinityDevice[];
-  dehumidifier_ac_infinity_devices?: AcInfinityDevice[];
-  growlight_entities?: string[];
-  growlight_ac_infinity_devices?: AcInfinityGrowLight[];
-  growlight_config?: GrowLightConfig;
-
-  // Irrigation Pump States
-  irrigation_pump_state?: string;
-  drain_pump_state?: string;
-  active_events?: Record<string, { start: string; duration: number }>;
-
-  // Values calculated by serializer
-  vpd?: string;
-  soil_moisture_value?: string;
-
-  // Legacy / Alias Support
-  exhaust_sensor?: string;
-  humidifier_sensor?: string;
-
-  // Irrigation tanks
-  irrigation_tanks?: SerializedIrrigationTank[];
-
-  // 3D Sensor Coordinates
-  sensor_coordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
-  sensor_types?: Record<string, string>;
-  pump_tank_links?: Record<string, string>;
-
-  // Sensor Groups
-  sensor_groups?: SensorGroup[];
-
-  // Phase 0 Extensions
-  electricity_cost_per_kwh?: number | null;
-  substrate_temperature_sensors?: string[];
-  camera_entities?: string[];
-  lung_room_temp_sensors?: string[];
-  power_sensors?: string[];
-  energy_sensors?: string[];
-
-  // EC / pH / flow sensors
-  ph_sensors?: string[];
-  feed_ec_sensors?: string[];
-  bulk_ec_sensors?: string[];
-  pore_ec_sensors?: string[];
-  runoff_ec_sensors?: string[];
-  drain_volume_sensors?: string[];
-  irrigation_flow_sensors?: string[];
-
-  // Fan / vision / VPD-override configs (passed through to the internal model unchanged)
-  circulation_fan_config?: CirculationFanConfig;
-  exhaust_fan_config?: ExhaustFanConfig;
-  vision_checkup_config?: VisionCheckupConfig;
-  vpd_optimal_overrides?: Record<
-    string,
-    { day: { low: number; high: number }; night: { low: number; high: number } }
-  >;
-  lst_offset?: number;
-}
-
-export interface SerializedStats {
-  max_veg_days: number;
-  max_flower_days: number;
-  veg_week: number;
-  flower_week: number;
-  max_stage_summary: string;
-  total_plants: number;
-}
-
-// The exact structure returned by GrowspaceViewModelBuilder.build() (ADR 0005)
-export interface GrowspaceAPIResponse {
-  identity: {
-    growspace_id: string;
-    overview_entity_id?: string;
-    name: string;
-    type: GrowspaceType;
-    notification_target?: string | null;
-  };
-  grid: {
-    rows: number;
-    plants_per_row: number;
-    total_plants: number;
-    dimensions?: { length: number; width: number; height: number; depth?: number; unit: string };
-    grid: Record<string, RawPlantData | null>;
-  };
-  /** Environment attributes with sensor_types/coordinates/groups extracted into `sensors`. */
-  environment: Omit<
-    SerializedEnvironmentAttributes,
-    'sensor_types' | 'sensor_coordinates' | 'sensor_groups'
-  >;
-  sensors: {
-    sensor_types: Record<string, string>;
-    sensor_coordinates: Record<string, { x: number; y: number; z: number; rotation?: number }>;
-    sensor_groups: SensorGroup[];
-  };
-  /** Subareas in the get_subareas wire shape. Absent on older backends. */
-  subareas?: Subarea[];
-  irrigation: {
-    irrigation_config: SerializedIrrigationConfig;
-    irrigation_strategy?: SerializedIrrigationStrategy | null;
-    volume_mode_capable?: boolean;
-    drain_config?: SerializedDrainConfig | null;
-    water_usage?: SerializedWaterUsage | null;
-    substrate?: SerializedSubstrateMetrics | null;
-    last_cycle_timestamp?: string | null;
-    next_scheduled_cycle?: string | null;
-    projected_shot_window?: { start: string; end: string } | null;
-    cycles_today?: number;
-    volume_dispensed_today?: number;
-  };
-  metrics: SerializedBiologicalMetrics & {
-    max_veg_days: number;
-    max_flower_days: number;
-    max_dry_days?: number;
-    max_cure_days?: number;
-    veg_week: number;
-    flower_week: number;
-    max_stage_summary: string;
-    air_exchange?: string | null;
-    energy_tracking?: SerializedEnergyTracking | null;
-  };
-  /**
-   * Global notification timing settings (camelCase keys), duplicated onto every
-   * growspace payload so the Config Dialog can seed/round-trip saved values.
-   */
-  notification_settings?: Record<string, number>;
-  /** Global AI auto-alerts toggle, shipped alongside notification_settings. */
-  ai_auto_alerts?: boolean;
-  /** Global timed notifications (snake_case wire shape), duplicated per payload. */
-  timed_notifications?: Array<{
-    id: string;
-    message: string;
-    trigger_type: string;
-    day: number;
-    growspace_ids: string[];
-  }>;
-  _ts?: number; // Backend serialization timestamp for efficient equality checks
-}
+/**
+ * The exact structure returned by GrowspaceViewModelBuilder.build() (ADR 0005),
+ * derived from the schema that parses it at the hassCall seam so the two cannot
+ * drift (ADR 0031). Reading a field the schema does not declare is a compile
+ * error rather than a silent runtime strip.
+ */
+export type GrowspaceAPIResponse = GrowspaceAPISchemaResponse;
 
 // --- Internal Frontend Models ---
 
@@ -553,8 +268,7 @@ export interface EnvironmentAttributes {
   irrigationTanks?: IrrigationTank[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   sensorTypes?: Record<string, string>;
-  pump_tank_links?: Record<string, string>;
-  activeEvents?: Record<string, { start: string; duration: number }>;
+  activeEvents?: Record<string, ActiveEvent>;
   sensorGroups?: SensorGroup[];
   electricityCostPerKwh?: number | null;
   substrateTemperatureSensors?: string[];
@@ -574,7 +288,10 @@ export interface EnvironmentAttributes {
   irrigationFlowSensors?: string[];
 
   // VPD optimal overrides
-  vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
+  vpdOptimalOverrides?: Record<
+    string,
+    { day: { low: number; high: number }; night: { low: number; high: number } }
+  >;
 
   // LST offset for VPD calculation
   lstOffset?: number;
@@ -589,49 +306,11 @@ export interface GrowspaceStats {
   totalPlants: number;
 }
 
-export interface EnvironmentConfig {
-  temperature_sensor?: string | null;
-  humidity_sensor?: string | null;
-  vpd_sensor?: string | null;
-  co2_sensor?: string | null;
-  soil_moisture_sensor?: string | null;
-  veg_day_hours?: number;
-  flower_day_hours?: number;
-  temperature_sensors?: string[];
-  humidity_sensors?: string[];
-  vpd_sensors?: string[];
-  light_sensors?: string[];
-  exhaust_fan_entities?: string[];
-  circulation_fan_entities?: string[];
-  humidifier_entities?: string[];
-  dehumidifier_entities?: string[];
-  sensor_coordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
-  sensor_groups?: SensorGroup[];
-  substrate_temperature_sensors?: string[];
-  camera_entities?: string[];
-  lung_room_temp_sensors?: string[];
-  ph_sensors?: string[];
-  feed_ec_sensors?: string[];
-  bulk_ec_sensors?: string[];
-  pore_ec_sensors?: string[];
-  runoff_ec_sensors?: string[];
-  drain_volume_sensors?: string[];
-  irrigation_flow_sensors?: string[];
-  power_sensors?: string[];
-  energy_sensors?: string[];
-  electricity_cost_per_kwh?: number;
-  dli_target_veg?: number;
-  dli_target_flower?: number;
-  control_dehumidifier?: boolean;
-  stress_threshold?: number;
-  mold_threshold?: number;
-}
+// `environment_config` and the subareas that carry it are wire shapes owned by
+// the subarea slice's schemas (ADR 0031); these were field-for-field duplicates.
+import type { Subarea } from '../slices/subarea/schema';
 
-export interface Subarea {
-  id: string;
-  name: string;
-  environment_config: EnvironmentConfig;
-}
+export type { EnvironmentConfig, Subarea } from '../slices/subarea/schema';
 
 /** A committed dryback event in the frontend (camelCase) shape. */
 export interface DrybackEvent {
@@ -761,57 +440,24 @@ export function createGrowspaceDevice(
 
 // --- Nutrients & IPM ---
 
-export interface NutrientItem {
-  nutrient_id: string;
-  dose_ml_l: number;
-  name?: string;
-}
+// Nutrient and IPM presets, stocks and inventory are wire shapes owned by the
+// nutrient slice's schemas (ADR 0031). The interfaces that stood here were
+// *narrower* than those schemas — they omitted `week`, `ec_target`, `ph_target`
+// and `created_at` on a preset, `brand`/`type`/`npk`/`dose_ml_l`/`notes` on a
+// stock, and `phi_days` was optional where the schema defaults it — so a
+// consumer typed against them could not see fields the backend does send.
+export type {
+  NutrientItem,
+  NutrientPreset,
+  NutrientStock,
+  NutrientInventory,
+  IPMType,
+  IPMItem,
+  IPMPreset,
+} from '../slices/nutrient/schema';
 
-export interface NutrientPreset {
-  id: string;
-  name: string;
-  nutrients: NutrientItem[];
-  stage?: string;
-  min_days_in_stage?: number;
-}
-
+/** Card-internal: a nutrient line in the mixing UI, not a wire shape. */
 export interface NutrientEntry {
   name: string;
   concentration: number; // ml/L
-}
-
-export interface NutrientStock {
-  nutrient_id: string;
-  name: string;
-  current_ml: number;
-  initial_ml: number;
-  last_updated: string;
-}
-
-export interface NutrientInventory {
-  stocks: Record<string, NutrientStock>;
-}
-
-export type IPMType = 'foliar' | 'drench' | 'beneficials';
-
-export interface IPMItem {
-  name: string;
-  dose_amount: number;
-  dose_unit: string;
-  phi_days?: number;
-}
-
-export interface IPMPreset {
-  id: string;
-  name: string;
-  type: IPMType;
-  items: IPMItem[];
-  stage?: string;
-  min_days_in_stage?: number;
-}
-
-// --- AI ---
-
-export interface GrowAdviceResponse {
-  response: string | { response: string };
 }

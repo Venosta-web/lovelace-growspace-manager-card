@@ -44,16 +44,9 @@ export interface TooltipData {
   items: TooltipItem[];
 }
 
-export interface SensorGroup {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  z: number;
-  temperature_sensors: string[];
-  humidity_sensors: string[];
-  vpd_sensors: string[];
-}
+// A sensor group is a wire shape: it round-trips through `environment_config`.
+// `SensorGroupSchema` in the subarea slice describes it (ADR 0031).
+export type { SensorGroup } from '../../slices/subarea/schema';
 
 /**
  * Event category types for timeline events

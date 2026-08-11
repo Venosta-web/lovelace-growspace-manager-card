@@ -71,7 +71,10 @@ export const UpdatePlantPayloadSchema = plantIdPayload
     growspace_id: z.string().optional(),
   })
   .merge(optionalDates)
-  .passthrough();
+  // Outbound request, so the rule runs the other way from the inbound schemas:
+  // an unexpected key here is a card-side mistake and should fail loudly rather
+  // than travel to the backend (ADR 0031).
+  .strict();
 
 export type UpdatePlantPayload = z.infer<typeof UpdatePlantPayloadSchema>;
 

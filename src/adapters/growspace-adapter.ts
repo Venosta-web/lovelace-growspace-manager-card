@@ -12,6 +12,16 @@ import {
   IrrigationStrategy,
 } from '../types';
 import type { ECTargetStage, SteeringMetrics, SerializedIrrigationConfig } from '../services/types';
+import { ActiveEventSchema, IrrigationTankRowSchema } from '../slices/irrigation/schema';
+import { SensorGroupSchema } from '../slices/subarea/schema';
+import type { SensorGroup } from '../slices/subarea/schema';
+
+function parseSensorGroups(raw: unknown[] | undefined): SensorGroup[] {
+  return (raw ?? []).flatMap((g) => {
+    const parsed = SensorGroupSchema.safeParse(g);
+    return parsed.success ? [parsed.data] : [];
+  });
+}
 
 export class GrowspaceAdapter {
   static transformGrowspace(
@@ -60,8 +70,13 @@ export class GrowspaceAdapter {
     // 3. Sensor Coordinates — merge group coords, then backfill defaults
     const sensorCoordinates = { ...(sensors?.sensor_coordinates ?? {}) };
 
-    // Merge group coordinates
-    (sensors?.sensor_groups ?? []).forEach((g) => {
+    // Merge group coordinates.
+    // `sensor_groups` is an Opaque Region (ADR 0031): an open-ended, grower-driven
+    // collection left unvalidated at the growspace level so one malformed group
+    // cannot fail the whole get_data parse. Rows are parsed individually, so a
+    // bad group costs its own coordinates and nothing else.
+    const sensorGroups = parseSensorGroups(sensors?.sensor_groups);
+    sensorGroups.forEach((g) => {
       const groupCoords = { x: g.x, y: g.y, z: g.z };
       [
         ...(g.temperature_sensors || []),
@@ -95,9 +110,7 @@ export class GrowspaceAdapter {
     environment?.temperature_sensors?.forEach(ensureCoord);
     environment?.humidity_sensors?.forEach(ensureCoord);
     environment?.vpd_sensors?.forEach(ensureCoord);
-    environment?.co2_sensors?.forEach(ensureCoord);
     environment?.light_sensors?.forEach(ensureCoord);
-    environment?.soil_moisture_sensors?.forEach(ensureCoord);
 
     // 4. Environment Attributes from environment sub-object
     const environmentAttributes: EnvironmentAttributes = {
@@ -108,16 +121,14 @@ export class GrowspaceAdapter {
       vpdSensor: environment?.vpd_sensor,
       vpdSensors: environment?.vpd_sensors,
       co2Sensor: environment?.co2_sensor,
-      co2Sensors: environment?.co2_sensors,
       soilMoistureSensor: environment?.soil_moisture_sensor,
-      soilMoistureSensors: environment?.soil_moisture_sensors,
       lightSensor: environment?.light_sensor,
       lightSensors: environment?.light_sensors,
       dehumidifierEntity: environment?.dehumidifier_entity,
       dehumidifierEntities: environment?.dehumidifier_entities,
       dehumidifierControlEnabled: environment?.dehumidifier_control_enabled,
       dehumidifierThresholds: environment?.dehumidifier_thresholds,
-      dehumidifierState: environment?.dehumidifier_state,
+      dehumidifierState: environment?.dehumidifier_state ?? undefined,
       humidifierEntity: environment?.humidifier_entity,
       humidifierEntities: environment?.humidifier_entities,
       humidifierControlEnabled: environment?.humidifier_control_enabled,
@@ -135,28 +146,45 @@ export class GrowspaceAdapter {
       growlightEntities: environment?.growlight_entities,
       growlightAcInfinityDevices: environment?.growlight_ac_infinity_devices,
       growlightConfig: environment?.growlight_config,
-      vpd: environment?.vpd,
-      soilMoistureValue: environment?.soil_moisture_value,
-      exhaustSensor: environment?.exhaust_sensor,
-      humidifierSensor: environment?.humidifier_sensor,
-      irrigationPumpState: environment?.irrigation_pump_state,
-      drainPumpState: environment?.drain_pump_state,
-      irrigationTanks: environment?.irrigation_tanks?.map((t) => ({
-        sensorEntity: t.sensor_entity,
-        name: t.name,
-        warningLevel: t.warning_level,
-        fillLevel: t.fill_level,
-        isWarning: t.is_warning,
-        hoursRemaining: t.hours_remaining ?? null,
-        depletionStatus: t.depletion_status ?? null,
-        volumeLiters: t.volume_liters ?? null,
-        waterHistory: t.water_history ?? undefined,
-      })),
-      activeEvents: environment?.active_events,
+      vpd: environment?.vpd ?? undefined,
+      soilMoistureValue: environment?.soil_moisture_value ?? undefined,
+      irrigationPumpState: environment?.irrigation_pump_state ?? undefined,
+      drainPumpState: environment?.drain_pump_state ?? undefined,
+      // `irrigation_tanks` and `active_events` are Opaque Regions (ADR 0031):
+      // open-ended, grower-driven collections that stay unvalidated at the
+      // growspace level so one malformed entry cannot blank every growspace.
+      // The tank rows are still parsed individually here, which keeps the blast
+      // radius at one tank while their shape stays schema-described.
+      irrigationTanks: environment?.irrigation_tanks?.flatMap((raw) => {
+        const row = IrrigationTankRowSchema.safeParse(raw);
+        if (!row.success) return [];
+        const t = row.data;
+        return [
+          {
+            sensorEntity: t.sensor_entity,
+            name: t.name,
+            warningLevel: t.warning_level,
+            fillLevel: t.fill_level,
+            isWarning: t.is_warning,
+            hoursRemaining: t.hours_remaining ?? null,
+            depletionStatus: t.depletion_status ?? null,
+            volumeLiters: t.volume_liters ?? null,
+            waterHistory: t.water_history ?? undefined,
+          },
+        ];
+      }),
+      activeEvents: environment?.active_events
+        ? Object.fromEntries(
+            Object.entries(environment.active_events).flatMap(([type, raw]) => {
+              const parsed = ActiveEventSchema.safeParse(raw);
+              return parsed.success ? [[type, parsed.data] as const] : [];
+            })
+          )
+        : undefined,
       // Sensor lookup data comes from sensors sub-object
       sensorCoordinates,
       sensorTypes: sensors?.sensor_types,
-      sensorGroups: sensors?.sensor_groups,
+      sensorGroups: sensors?.sensor_groups ? sensorGroups : undefined,
       electricityCostPerKwh: environment?.electricity_cost_per_kwh,
       substrateTemperatureSensors: environment?.substrate_temperature_sensors,
       cameraEntities: environment?.camera_entities,
@@ -345,7 +373,9 @@ export class GrowspaceAdapter {
           totalLiters: waterUsageRaw.total_liters,
           cycleStartDate: waterUsageRaw.cycle_start_date,
           dailyReadings: waterUsageRaw.daily_readings as Array<Record<string, unknown>>,
-          ...(waterUsageRaw.liters_today != null ? { litersToday: waterUsageRaw.liters_today } : {}),
+          ...(waterUsageRaw.liters_today != null
+            ? { litersToday: waterUsageRaw.liters_today }
+            : {}),
         }
       : null;
 
