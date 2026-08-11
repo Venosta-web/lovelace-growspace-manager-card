@@ -212,6 +212,29 @@ export const AcInfinityGrowLightSchema = z.object({
 
 export type AcInfinityGrowLight = z.infer<typeof AcInfinityGrowLightSchema>;
 
+// Cumulative water usage for a growspace (backend WaterUsageData), plus the
+// `liters_today` figure the view model folds in on top of the dataclass. This
+// schema is the single description of the shape — the wire type below is
+// derived from it, so a field missing here can no longer be "present" in
+// TypeScript while zod strips it at runtime.
+export const WaterUsageSchema = z.object({
+  total_liters: z.number().optional().default(0),
+  cycle_start_date: z.string().optional().default(''),
+  // Deliberately left as unknown elements. A stricter element type would make a
+  // single malformed entry fail the whole get_data parse (hassCall throws on
+  // schema mismatch), trading one missing field for a blank card; the adapter
+  // casts instead. The entries' own shape is out of scope for this seam.
+  daily_readings: z.array(z.unknown()).optional().default([]),
+  // Rolling-window size the backend enforces on daily_readings. Serialized by
+  // the dataclass, unused by the card, declared so the shape stays complete.
+  max_daily_readings: z.number().optional(),
+  // Aggregate Water Use figure. Omitted by the backend when it can't be
+  // computed, so the Today's Usage KPI must treat absent and zero differently.
+  liters_today: z.number().nullable().optional(),
+});
+
+export type SerializedWaterUsage = z.infer<typeof WaterUsageSchema>;
+
 export const GrowspaceAPIResponseSchema = z
   .object({
     identity: z
@@ -334,14 +357,7 @@ export const GrowspaceAPIResponseSchema = z
         irrigation_strategy: IrrigationStrategySchema.nullable().optional().default(null),
         drain_config: DrainConfigSchema,
         substrate: SubstrateMetricsSchema,
-        water_usage: z
-          .object({
-            total_liters: z.number().optional().default(0),
-            cycle_start_date: z.string().optional().default(''),
-            daily_readings: z.array(z.unknown()).optional().default([]),
-          })
-          .nullable()
-          .optional(),
+        water_usage: WaterUsageSchema.nullable().optional(),
         last_cycle_timestamp: z.string().nullable().optional(),
         next_scheduled_cycle: z.string().nullable().optional(),
         projected_shot_window: z

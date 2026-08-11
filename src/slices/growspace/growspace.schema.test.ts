@@ -661,6 +661,53 @@ describe('Growspace Zod Schemas', () => {
       });
     });
 
+    describe('WaterUsageSchema', () => {
+      // Shape emitted by GrowspaceViewModelBuilder.build(): WaterUsageData.to_dict()
+      // with liters_today folded in on top (growspace_view_model.py).
+      const backendWaterUsage = {
+        total_liters: 128.5,
+        cycle_start_date: '2026-07-01',
+        daily_readings: [
+          { date: '2026-08-10', liters: 4.25, source: 'tank' },
+          { date: '2026-08-09', liters: 3.75, source: 'pump_estimate' },
+        ],
+        max_daily_readings: 365,
+        liters_today: 4.25,
+      };
+
+      it('keeps liters_today when parsing a realistic backend payload', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: { water_usage: backendWaterUsage },
+        });
+
+        expect(parsed.irrigation.water_usage).toEqual(backendWaterUsage);
+      });
+
+      it('parses through the collection schema without stripping liters_today', () => {
+        const parsed = GrowspaceAPICollectionSchema.parse({
+          tent_a: { irrigation: { water_usage: backendWaterUsage } },
+        });
+
+        expect(parsed.tent_a.irrigation.water_usage?.liters_today).toBe(4.25);
+      });
+
+      it('accepts a payload omitting liters_today', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            water_usage: { total_liters: 10, cycle_start_date: '2026-07-01', daily_readings: [] },
+          },
+        });
+
+        expect(parsed.irrigation.water_usage?.liters_today).toBeUndefined();
+      });
+
+      it('defaults the whole object away when the backend omits it', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({ irrigation: {} });
+
+        expect(parsed.irrigation.water_usage).toBeUndefined();
+      });
+    });
+
     describe('Metrics section', () => {
       it('should transform air_exchange from number to string', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({
