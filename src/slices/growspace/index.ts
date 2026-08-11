@@ -303,13 +303,11 @@ export async function configureExhaustFan({
 export async function fetchGrowspaceData(): Promise<void> {
   const collection = await hassCall('growspace_manager/get_data', {}, GrowspaceAPICollectionSchema);
   const devices = Object.values(collection)
-    .map((wsData) => GrowspaceAdapter.transformGrowspace(null, wsData as GrowspaceAPIResponse))
+    .map((wsData) => GrowspaceAdapter.transformGrowspace(null, wsData))
     .filter((d): d is GrowspaceDevice => d !== null);
   growspaceDevices$.set(devices);
 }
 
 export async function fetchRawCollection(): Promise<Record<string, GrowspaceAPIResponse>> {
-  return hassCall('growspace_manager/get_data', {}, GrowspaceAPICollectionSchema) as Promise<
-    Record<string, GrowspaceAPIResponse>
-  >;
+  return hassCall('growspace_manager/get_data', {}, GrowspaceAPICollectionSchema);
 }
