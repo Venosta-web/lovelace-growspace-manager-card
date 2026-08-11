@@ -15,6 +15,8 @@ async function readFixture(variable: string): Promise<unknown> {
 
 async function expectFixtureToMatch(variable: string, verdict: ContractVerdict): Promise<void> {
   const fixture = await readFixture(variable);
+  const parsed = GrowspaceAPIResponseSchema.safeParse(fixture);
+  expect(parsed.success, parsed.error?.message).toBe(true);
   const drift = diffContractKeys(GrowspaceAPIResponseSchema, fixture, verdict);
   const diagnostic = drift.map(formatContractDrift).join('\n');
   expect(drift, diagnostic).toEqual([]);

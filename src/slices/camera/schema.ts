@@ -52,6 +52,7 @@ export const VisionCheckupConfigSchema = z.object({
   early_check_offset_minutes: z.number(),
   mid_check_hours: z.number(),
   late_check_offset_minutes: z.number(),
+  history_limit: z.number().optional(),
 });
 
 export type VisionCheckupConfig = z.infer<typeof VisionCheckupConfigSchema>;

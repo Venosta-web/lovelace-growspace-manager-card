@@ -42,7 +42,10 @@ const PhenotypeScoreSchema = z.object({
  */
 export const PlantSlotSchema = z
   .object({
-    entity_id: z.string().optional().default(''),
+    entity_id: z
+      .string()
+      .nullish()
+      .transform((v) => v ?? ''),
     plant_id: z.string().optional().default(''),
     growspace_id: z.string().optional(),
     stage: z.string().optional().default('unknown'),
