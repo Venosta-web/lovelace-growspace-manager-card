@@ -15,6 +15,8 @@ export const SeedBatchSchema = z.object({
   notes: z.string().default(''),
 });
 
+export type SeedBatch = z.infer<typeof SeedBatchSchema>;
+
 export const PollinationEventSchema = z.object({
   event_id: z.string(),
   date: z.string(),
@@ -23,6 +25,8 @@ export const PollinationEventSchema = z.object({
   notes: z.string().default(''),
   result_seed_batch_id: z.string().nullable().default(null),
 });
+
+export type PollinationEvent = z.infer<typeof PollinationEventSchema>;
 
 /**
  * A node of the lineage tree returned by `get_lineage_tree` and

@@ -22,6 +22,8 @@ export const SensorGroupSchema = z.object({
   vpd_sensors: z.array(z.string()),
 });
 
+export type SensorGroup = z.infer<typeof SensorGroupSchema>;
+
 // ---------------------------------------------------------------------------
 // EnvironmentConfig
 // ---------------------------------------------------------------------------

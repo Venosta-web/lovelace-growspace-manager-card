@@ -301,49 +301,11 @@ export interface GrowspaceStats {
   totalPlants: number;
 }
 
-export interface EnvironmentConfig {
-  temperature_sensor?: string | null;
-  humidity_sensor?: string | null;
-  vpd_sensor?: string | null;
-  co2_sensor?: string | null;
-  soil_moisture_sensor?: string | null;
-  veg_day_hours?: number;
-  flower_day_hours?: number;
-  temperature_sensors?: string[];
-  humidity_sensors?: string[];
-  vpd_sensors?: string[];
-  light_sensors?: string[];
-  exhaust_fan_entities?: string[];
-  circulation_fan_entities?: string[];
-  humidifier_entities?: string[];
-  dehumidifier_entities?: string[];
-  sensor_coordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
-  sensor_groups?: SensorGroup[];
-  substrate_temperature_sensors?: string[];
-  camera_entities?: string[];
-  lung_room_temp_sensors?: string[];
-  ph_sensors?: string[];
-  feed_ec_sensors?: string[];
-  bulk_ec_sensors?: string[];
-  pore_ec_sensors?: string[];
-  runoff_ec_sensors?: string[];
-  drain_volume_sensors?: string[];
-  irrigation_flow_sensors?: string[];
-  power_sensors?: string[];
-  energy_sensors?: string[];
-  electricity_cost_per_kwh?: number;
-  dli_target_veg?: number;
-  dli_target_flower?: number;
-  control_dehumidifier?: boolean;
-  stress_threshold?: number;
-  mold_threshold?: number;
-}
+// `environment_config` and the subareas that carry it are wire shapes owned by
+// the subarea slice's schemas (ADR 0031); these were field-for-field duplicates.
+import type { Subarea } from '../slices/subarea/schema';
 
-export interface Subarea {
-  id: string;
-  name: string;
-  environment_config: EnvironmentConfig;
-}
+export type { EnvironmentConfig, Subarea } from '../slices/subarea/schema';
 
 /** A committed dryback event in the frontend (camelCase) shape. */
 export interface DrybackEvent {
@@ -473,57 +435,24 @@ export function createGrowspaceDevice(
 
 // --- Nutrients & IPM ---
 
-export interface NutrientItem {
-  nutrient_id: string;
-  dose_ml_l: number;
-  name?: string;
-}
+// Nutrient and IPM presets, stocks and inventory are wire shapes owned by the
+// nutrient slice's schemas (ADR 0031). The interfaces that stood here were
+// *narrower* than those schemas — they omitted `week`, `ec_target`, `ph_target`
+// and `created_at` on a preset, `brand`/`type`/`npk`/`dose_ml_l`/`notes` on a
+// stock, and `phi_days` was optional where the schema defaults it — so a
+// consumer typed against them could not see fields the backend does send.
+export type {
+  NutrientItem,
+  NutrientPreset,
+  NutrientStock,
+  NutrientInventory,
+  IPMType,
+  IPMItem,
+  IPMPreset,
+} from '../slices/nutrient/schema';
 
-export interface NutrientPreset {
-  id: string;
-  name: string;
-  nutrients: NutrientItem[];
-  stage?: string;
-  min_days_in_stage?: number;
-}
-
+/** Card-internal: a nutrient line in the mixing UI, not a wire shape. */
 export interface NutrientEntry {
   name: string;
   concentration: number; // ml/L
-}
-
-export interface NutrientStock {
-  nutrient_id: string;
-  name: string;
-  current_ml: number;
-  initial_ml: number;
-  last_updated: string;
-}
-
-export interface NutrientInventory {
-  stocks: Record<string, NutrientStock>;
-}
-
-export type IPMType = 'foliar' | 'drench' | 'beneficials';
-
-export interface IPMItem {
-  name: string;
-  dose_amount: number;
-  dose_unit: string;
-  phi_days?: number;
-}
-
-export interface IPMPreset {
-  id: string;
-  name: string;
-  type: IPMType;
-  items: IPMItem[];
-  stage?: string;
-  min_days_in_stage?: number;
-}
-
-// --- AI ---
-
-export interface GrowAdviceResponse {
-  response: string | { response: string };
 }

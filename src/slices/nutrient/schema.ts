@@ -4,67 +4,80 @@ import { z } from 'zod';
 // Nutrient Presets
 // ---------------------------------------------------------------------------
 
-export const NutrientPresetsSchema = z.record(
-  z.string(),
-  z
-    .object({
-      id: z.string(),
-      name: z.string(),
-      nutrients: z.array(
-        z.object({
-          nutrient_id: z.string(),
-          dose_ml_l: z.number(),
-          name: z.string().optional(),
-        })
-      ),
-      stage: z
-        .string()
-        .nullish()
-        .transform((v) => v || undefined),
-      min_days_in_stage: z
-        .number()
-        .nullish()
-        .transform((v) => v || undefined),
-      week: z.number().int().min(1).optional().default(1),
-      ec_target: z.number().min(0).nullish().transform((v) => v ?? undefined),
-      ph_target: z.number().min(0).max(14).nullish().transform((v) => v ?? undefined),
-      // Stamped by BasePreset on every preset; unread by the card.
-      created_at: z.string().optional(),
-    })
-);
+export const NutrientItemSchema = z.object({
+  nutrient_id: z.string(),
+  dose_ml_l: z.number(),
+  name: z.string().optional(),
+});
 
+export const NutrientPresetSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  nutrients: z.array(NutrientItemSchema),
+  stage: z
+    .string()
+    .nullish()
+    .transform((v) => v || undefined),
+  min_days_in_stage: z
+    .number()
+    .nullish()
+    .transform((v) => v || undefined),
+  week: z.number().int().min(1).optional().default(1),
+  ec_target: z
+    .number()
+    .min(0)
+    .nullish()
+    .transform((v) => v ?? undefined),
+  ph_target: z
+    .number()
+    .min(0)
+    .max(14)
+    .nullish()
+    .transform((v) => v ?? undefined),
+  // Stamped by BasePreset on every preset; unread by the card.
+  created_at: z.string().optional(),
+});
+
+export const NutrientPresetsSchema = z.record(z.string(), NutrientPresetSchema);
+
+export type NutrientItem = z.infer<typeof NutrientItemSchema>;
+export type NutrientPreset = z.infer<typeof NutrientPresetSchema>;
 export type NutrientPresetsResponse = z.infer<typeof NutrientPresetsSchema>;
 
 // ---------------------------------------------------------------------------
 // IPM Presets
 // ---------------------------------------------------------------------------
 
+export const IPMTypeSchema = z.enum(['foliar', 'drench', 'beneficials']);
+
+export const IPMItemSchema = z.object({
+  name: z.string(),
+  dose_amount: z.number(),
+  dose_unit: z.string(),
+  phi_days: z.number().optional().default(0),
+});
+
 export const IPMPresetSchema = z.object({
-    id: z.string(),
-    name: z.string(),
-    type: z.enum(['foliar', 'drench', 'beneficials']),
-    items: z.array(
-      z.object({
-        name: z.string(),
-        dose_amount: z.number(),
-        dose_unit: z.string(),
-        phi_days: z.number().optional().default(0),
-      })
-    ),
-    stage: z
-      .string()
-      .nullish()
-      .transform((v) => v || undefined),
-    min_days_in_stage: z
-      .number()
-      .nullish()
-      .transform((v) => v || undefined),
-    // Stamped by BasePreset on every preset; unread by the card.
-    created_at: z.string().optional(),
-  });
+  id: z.string(),
+  name: z.string(),
+  type: IPMTypeSchema,
+  items: z.array(IPMItemSchema),
+  stage: z
+    .string()
+    .nullish()
+    .transform((v) => v || undefined),
+  min_days_in_stage: z
+    .number()
+    .nullish()
+    .transform((v) => v || undefined),
+  // Stamped by BasePreset on every preset; unread by the card.
+  created_at: z.string().optional(),
+});
 
 export const IPMPresetsSchema = z.record(z.string(), IPMPresetSchema);
 
+export type IPMType = z.infer<typeof IPMTypeSchema>;
+export type IPMItem = z.infer<typeof IPMItemSchema>;
 export type IPMPreset = z.infer<typeof IPMPresetSchema>;
 export type IPMPresetsResponse = z.infer<typeof IPMPresetsSchema>;
 
@@ -134,4 +147,5 @@ export const NutrientInventorySchema = z.object({
 });
 
 export type NutrientStock = z.infer<typeof NutrientStockSchema>;
-export type NutrientInventoryResponse = z.infer<typeof NutrientInventorySchema>;
+export type NutrientInventory = z.infer<typeof NutrientInventorySchema>;
+export type NutrientInventoryResponse = NutrientInventory;
