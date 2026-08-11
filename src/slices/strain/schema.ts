@@ -87,9 +87,14 @@ export const StrainDataSchema = z.object({
       generation: z.string().optional(),
       yield_potential: z.string().optional(),
       height: z.string().optional(),
-      thc: z.number().optional(),
-      cbd: z.number().optional(),
-      cbg: z.number().optional(),
+      // REAL columns, but SQLite is dynamically typed and `import_library`
+      // writes raw JSON straight through `add_strain`, bypassing the service
+      // schema's vol.Coerce(float). The card reads none of these off this
+      // payload, so accept either rather than fail the whole library parse on
+      // one imported strain with a string THC.
+      thc: z.union([z.number(), z.string()]).optional(),
+      cbd: z.union([z.number(), z.string()]).optional(),
+      cbg: z.union([z.number(), z.string()]).optional(),
       description: z
         .string()
         .nullish()
