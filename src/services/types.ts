@@ -11,6 +11,7 @@ import type {
   CirculationFanConfig,
   ExhaustFanConfig,
   GrowLightConfig,
+  SerializedIrrigationStrategy,
   SerializedWaterUsage,
 } from '../slices/growspace/schema';
 
@@ -115,35 +116,7 @@ export interface IrrigationConfig {
   phaseChangedAt?: string;
 }
 
-export interface SerializedIrrigationStrategy {
-  enabled: boolean;
-  lights_on_time: string;
-  p0_duration_minutes: number;
-  p2_stop_before_lights_off_minutes: number;
-  target_vwc_percent: number;
-  maintenance_dryback_percent: number;
-  shot_duration_seconds: number;
-  shot_interval_minutes: number;
-  p1_shot_duration_seconds?: number;
-  p1_shot_interval_minutes?: number;
-  p2_shot_duration_seconds?: number;
-  p2_shot_interval_minutes?: number;
-  p1_shot_volume_percent?: number;
-  p2_shot_volume_percent?: number;
-  shot_sizing_mode?: ShotSizingMode;
-  substrate_profile?: { media_type: SubstrateMediaType; liters_per_pot: number };
-  pore_ec_target_min?: number | null;
-  pore_ec_target_max?: number | null;
-  ec_modulation_enabled?: boolean;
-  auto_light_tracking?: boolean;
-  detected_lights_on_time?: string | null;
-  declared_steering_mode?: SteeringMode | null;
-  dynamic_shot_enabled?: boolean;
-  dynamic_aggressiveness?: number;
-  dynamic_recovery?: number;
-  dynamic_shot_size_floor?: number;
-  dynamic_interval_ceiling?: number;
-}
+export type { SerializedIrrigationStrategy };
 
 /** Measured Classification bucket — the score-derived steering measurement. */
 export type SteeringClassification = 'vegetative' | 'balanced' | 'generative';

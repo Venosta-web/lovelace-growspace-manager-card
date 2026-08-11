@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { GridApiSchema } from '../grid/schema';
+import { SteeringModeSchema } from '../irrigation/schema';
 import { SubareaSchema } from '../subarea/schema';
 
 const IrrigationScheduleItemSchema = z
@@ -15,7 +16,16 @@ const IrrigationScheduleItemSchema = z
   }))
   .refine((data) => data.time !== '', { message: 'Time is required' });
 
-const IrrigationStrategySchema = z.object({
+/**
+ * The Irrigation Strategy as the backend emits it (ADR 0031: declare every
+ * field, strip unknown keys). Everything past the original eight is
+ * `.optional()` — the shipped GSM release still serializes only the legacy
+ * shape, so the card must parse both it and `prerelease`'s full strategy.
+ *
+ * `shot_duration_seconds` / `shot_interval_minutes` are the deprecated shared
+ * fields; current backends mirror P1 onto them in `__post_serialize__`.
+ */
+export const IrrigationStrategySchema = z.object({
   enabled: z.boolean(),
   lights_on_time: z.string(),
   p0_duration_minutes: z.number(),
@@ -26,7 +36,37 @@ const IrrigationStrategySchema = z.object({
   shot_interval_minutes: z.number(),
   auto_light_tracking: z.boolean().default(false),
   detected_lights_on_time: z.string().nullable().default(null),
+  // Per-phase shot pairs (P1 ramp-up / P2 maintenance). Absent on the legacy
+  // shape, where the adapter seeds them from the shared fields above.
+  p1_shot_duration_seconds: z.number().optional(),
+  p1_shot_interval_minutes: z.number().optional(),
+  p2_shot_duration_seconds: z.number().optional(),
+  p2_shot_interval_minutes: z.number().optional(),
+  // Volume Mode (ADR-0011): shot sizes as a percent of substrate volume.
+  p1_shot_volume_percent: z.number().optional(),
+  p2_shot_volume_percent: z.number().optional(),
+  shot_sizing_mode: z.enum(['seconds', 'volume']).optional(),
+  substrate_profile: z
+    .object({
+      media_type: z.enum(['coco', 'rockwool', 'soil']),
+      liters_per_pot: z.number(),
+    })
+    .optional(),
+  // Pore EC Target Band + EC Modulation. Both null => no band configured.
+  pore_ec_target_min: z.number().nullable().optional(),
+  pore_ec_target_max: z.number().nullable().optional(),
+  ec_modulation_enabled: z.boolean().optional(),
+  // Declared steering intent (ADR-0012). null means never stamped.
+  declared_steering_mode: SteeringModeSchema.nullable().optional(),
+  // Adaptive Shot Control (ADR-0014).
+  dynamic_shot_enabled: z.boolean().optional(),
+  dynamic_aggressiveness: z.number().optional(),
+  dynamic_recovery: z.number().optional(),
+  dynamic_shot_size_floor: z.number().optional(),
+  dynamic_interval_ceiling: z.number().optional(),
 });
+
+export type SerializedIrrigationStrategy = z.infer<typeof IrrigationStrategySchema>;
 
 const IrrigationConfigSchema = z
   .object({
