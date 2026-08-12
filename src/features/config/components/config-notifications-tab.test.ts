@@ -95,6 +95,9 @@ describe('ConfigNotificationsTab — render', () => {
       'select[data-timed-field="triggerType"]'
     )!;
     expect(select.value).toBe('days_since_germination');
+    // The selection the user sees, not just the settled `.value` property.
+    expect(select.selectedIndex).toBe(0);
+    expect(select.selectedOptions[0].hasAttribute('data-timed-unknown-option')).toBe(true);
     expect(select.querySelector('[data-timed-unknown-option]')).not.toBeNull();
     expect(el.shadowRoot!.querySelector('[data-timed-unknown-hint]')).not.toBeNull();
   });
