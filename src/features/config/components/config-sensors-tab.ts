@@ -274,10 +274,7 @@ export class ConfigSensorsTab extends LitElement {
   private _emitBound(bound: 'min' | 'max', raw: string): void {
     const value = raw.trim() === '' ? null : Number.parseFloat(raw);
     const next = editBound(
-      {
-        min: this.vm.moistureBand?.isCustom ? this.vm.moistureBand.min : null,
-        max: this.vm.moistureBand?.isCustom ? this.vm.moistureBand.max : null,
-      },
+      { min: this.vm.moistureBand?.rawMin ?? null, max: this.vm.moistureBand?.rawMax ?? null },
       bound,
       value !== null && Number.isNaN(value) ? null : value
     );

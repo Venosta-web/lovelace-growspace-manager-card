@@ -86,19 +86,20 @@ export function bandValidationError(draft: BandDraft): string | null {
  * value would produce a half pair the backend rejects outright.
  */
 export function editBound(draft: BandDraft, bound: 'min' | 'max', value: number | null): BandDraft {
-  const other = bound === 'min' ? 'max' : 'min';
-  const otherValue =
-    draft[other] ?? (other === 'min' ? DEFAULT_MOISTURE_MIN : DEFAULT_MOISTURE_MAX);
-
-  // Emptying a bound while the other is still untouched-inherited reverts the
-  // whole pair rather than stranding a half band the user cannot save.
-  if (value === null && draft[other] === null) {
-    return { min: null, max: null };
+  // A fully inherited band materialises on its first edit: the untouched bound
+  // takes the default it was already displaying, so a lone bound — which the
+  // backend rejects outright — can never be produced.
+  if (isCleared(draft)) {
+    if (value === null) return { min: null, max: null };
+    return bound === 'min'
+      ? { min: value, max: DEFAULT_MOISTURE_MAX }
+      : { min: DEFAULT_MOISTURE_MIN, max: value };
   }
 
-  return bound === 'min'
-    ? { min: value, max: value === null ? draft.max : otherValue }
-    : { min: value === null ? draft.min : otherValue, max: value };
+  // Already custom, possibly mid-edit. Touch only the edited bound: a bound the
+  // user deliberately cleared must stay cleared (showing a validation error)
+  // rather than being silently refilled with the default it merely displays.
+  return bound === 'min' ? { ...draft, min: value } : { ...draft, max: value };
 }
 
 /** Reset to defaults: drop the override. The form keeps showing 20–60%. */

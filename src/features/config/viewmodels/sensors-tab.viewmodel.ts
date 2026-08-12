@@ -118,6 +118,14 @@ export interface MoistureBandVM {
   /** Displayed bounds. Equal to the defaults while the band is inherited. */
   min: number;
   max: number;
+  /**
+   * The draft's actual stored bounds, before any default is substituted for
+   * display. Edits must be applied to *these* — reconstructing the pair from
+   * the displayed values would silently turn a cleared bound into the default
+   * the user was only being shown.
+   */
+  rawMin: number | null;
+  rawMax: number | null;
   /** False when showing the inherited defaults rather than a saved override. */
   isCustom: boolean;
   /** Step for the numeric inputs, per the 0.1% decimal requirement. */
@@ -201,6 +209,8 @@ function deriveMoistureBand(draft: EnvironmentDraft, deps: SensorsTabDeps): Mois
     return {
       min: band.min,
       max: band.max,
+      rawMin: pair.min,
+      rawMax: pair.max,
       isCustom: band.isCustom,
       step: 0.1,
       error: null,
@@ -216,6 +226,8 @@ function deriveMoistureBand(draft: EnvironmentDraft, deps: SensorsTabDeps): Mois
   return {
     min: band.min,
     max: band.max,
+    rawMin: pair.min,
+    rawMax: pair.max,
     isCustom: band.isCustom,
     step: 0.1,
     error: bandValidationError(pair),

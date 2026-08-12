@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { editBound } from '../moisture-band';
 import { createSensorsTabViewModel, type SensorsTabDeps } from './sensors-tab.viewmodel';
 import { createInitialSM, transition } from '../../../dialogs/config-dialog-sm';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
@@ -219,5 +220,35 @@ describe('createSensorsTabViewModel — moisture band unit compatibility', () =>
     const band = withMoistureSensor({}, { value: '42', unit }).moistureBand!;
     expect(band.incompatibleUnit).toBe(unit);
     expect(band.preview).toBeNull();
+  });
+});
+
+describe('createSensorsTabViewModel — moisture band edit round-trip', () => {
+  // Regression: the component used to reconstruct the pair from the *displayed*
+  // bounds, so editing one bound while the other was cleared silently replaced
+  // the cleared bound with the default the user was only being shown.
+  it('exposes the cleared bound as raw null while displaying the default', () => {
+    const band = withMoistureSensor({ soilMoistureMin: null, soilMoistureMax: 54 }).moistureBand!;
+    expect(band.min).toBe(20); // displayed fallback
+    expect(band.rawMin).toBeNull(); // actual draft state
+    expect(band.rawMax).toBe(54);
+  });
+
+  it('editing the other bound preserves a cleared bound through the full loop', () => {
+    const band = withMoistureSensor({ soilMoistureMin: null, soilMoistureMax: 54 }).moistureBand!;
+    // Exactly what the component does on a max edit.
+    const next = editBound({ min: band.rawMin, max: band.rawMax }, 'max', 50);
+    expect(next.min).toBeNull();
+    expect(next.max).toBe(50);
+  });
+
+  it('reports raw nulls for an inherited band so an edit materialises defaults', () => {
+    const band = withMoistureSensor().moistureBand!;
+    expect(band.rawMin).toBeNull();
+    expect(band.rawMax).toBeNull();
+    expect(editBound({ min: band.rawMin, max: band.rawMax }, 'min', 30)).toEqual({
+      min: 30,
+      max: 60,
+    });
   });
 });

@@ -151,6 +151,8 @@ function band(over: Partial<NonNullable<SensorsTabViewModel['moistureBand']>> = 
   return {
     min: 20,
     max: 60,
+    rawMin: null,
+    rawMax: null,
     isCustom: false,
     step: 0.1,
     error: null,
@@ -229,7 +231,9 @@ describe('ConfigSensorsTab — acceptable moisture band', () => {
   });
 
   it('materialises both bounds when only one is edited from an inherited band', async () => {
-    const el = await mount(makeVm({ moistureBand: band({ isCustom: false }) }));
+    const el = await mount(
+      makeVm({ moistureBand: band({ isCustom: false, rawMin: null, rawMax: null }) })
+    );
     const received = listenPartials(el);
     const minInput = el.shadowRoot!.querySelectorAll('.moisture-band md3-number-input')[0];
     minInput.dispatchEvent(new CustomEvent('change', { detail: '30' }));
