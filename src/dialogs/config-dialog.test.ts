@@ -163,6 +163,12 @@ describe('_loadSubareas error handling', () => {
 // ─── Timed Notifications ─────────────────────────────────────────────────────
 
 describe('timed notifications — add flow', () => {
+  // restoreAllMocks does not unstub globals, so a failing assertion below would
+  // otherwise leak the stubbed crypto into the rest of the file.
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('_startAddTimedNotification transitions sub to adding', () => {
     const el = makeEl();
     (el as any)._startAddTimedNotification();
@@ -193,8 +199,6 @@ describe('timed notifications — add flow', () => {
     const tab = (el as any)._sm.tabs.notifications;
     expect(tab.timedNotifications).toHaveLength(1);
     expect(tab.timedNotifications[0].id).toBeTruthy();
-
-    vi.unstubAllGlobals();
   });
 });
 
