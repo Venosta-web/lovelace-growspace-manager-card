@@ -71,17 +71,32 @@ export class ConfigIrrigationTab extends LitElement {
         align-items: center;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
         border-radius: 16px;
-        padding: 4px 12px;
+        padding: 0 4px 0 12px;
         font-size: 0.9rem;
-        height: 24px;
+        min-height: 44px;
       }
       .chip-remove {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
         cursor: pointer;
-        margin-left: 6px;
+        margin-left: 2px;
         font-weight: bold;
         opacity: 0.7;
       }
       .chip-remove:hover {
+        opacity: 1;
+      }
+      .chip-remove:focus-visible {
+        outline: 2px solid var(--primary-text-color, #fff);
+        outline-offset: -4px;
         opacity: 1;
       }
       .search-input-inner {
@@ -121,9 +136,7 @@ export class ConfigIrrigationTab extends LitElement {
       <div class="detail-card">
         ${this._header(mdiLightningBolt, 'Substrate EC')}
         <div class="form-section">
-          <div class="row-col-grid">
-            ${this.vm.substrate.map((f) => this._field(f))}
-          </div>
+          <div class="row-col-grid">${this.vm.substrate.map((f) => this._field(f))}</div>
         </div>
       </div>
     `;
@@ -153,9 +166,15 @@ export class ConfigIrrigationTab extends LitElement {
             (val) => html`
               <div class="chip">
                 ${val}
-                <span class="chip-remove" @click=${() => this._update({ [field.key]: values.filter((v) => v !== val) })}
-                  >×</span
+                <button
+                  type="button"
+                  class="chip-remove"
+                  aria-label=${`Remove ${val}`}
+                  title=${`Remove ${val}`}
+                  @click=${() => this._update({ [field.key]: values.filter((v) => v !== val) })}
                 >
+                  ×
+                </button>
               </div>
             `
           )}

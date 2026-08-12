@@ -15,6 +15,7 @@ import {
   mdiCamera,
   mdiBell,
   mdiTune,
+  mdiFloorPlan,
 } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
@@ -132,7 +133,7 @@ export class ConfigDialog extends LitElement {
   @property({ attribute: false })
   public devices: GrowspaceDevice[] = [];
 
-  @property({ type: String }) initialTab: ConfigTab = ConfigTab.SENSORS;
+  @property({ type: String }) initialTab: ConfigTab = ConfigTab.GROWSPACES;
 
   /** Deep-link: a `data-scroll-target` value to scroll into view + pulse on open. */
   @property({ type: String }) scrollToField?: string;
@@ -716,11 +717,18 @@ export class ConfigDialog extends LitElement {
         display: flex;
         align-items: center;
         gap: 10px;
+        width: 100%;
+        min-height: 44px;
+        box-sizing: border-box;
         padding: 8px 12px 8px 16px;
+        border: 0;
+        border-left: 2px solid transparent;
+        background: transparent;
+        font-family: inherit;
         font-size: 0.85rem;
+        text-align: left;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
         cursor: pointer;
-        border-left: 2px solid transparent;
         transition: all 0.15s;
         user-select: none;
       }
@@ -735,6 +743,11 @@ export class ConfigDialog extends LitElement {
         background: rgba(76, 175, 80, 0.1);
         border-left-color: var(--primary-color, #4caf50);
         font-weight: 500;
+      }
+
+      .cfg-nav-item:focus-visible {
+        outline: 2px solid var(--primary-text-color, #fff);
+        outline-offset: -3px;
       }
 
       .cfg-nav-item svg {
@@ -1193,7 +1206,11 @@ export class ConfigDialog extends LitElement {
           border-radius: 0;
         }
         .cfg-rail {
-          flex: 0 0 44px;
+          flex: 0 0 52px;
+        }
+        .cfg-nav-item {
+          justify-content: center;
+          padding: 0;
         }
         .cfg-nav-item span {
           display: none;
@@ -2238,11 +2255,59 @@ export class ConfigDialog extends LitElement {
     if (this.allowedTabs && !this.allowedTabs.includes(tab)) return nothing;
     const active = this.currentTab === tab;
     return html`
-      <div class="cfg-nav-item ${active ? 'active' : ''}" @click=${() => this._switchTab(tab)}>
+      <button
+        type="button"
+        id="config-tab-${tab}"
+        class="cfg-nav-item ${active ? 'active' : ''}"
+        role="tab"
+        data-tab=${tab}
+        aria-controls="config-tabpanel"
+        aria-label=${label}
+        aria-selected=${active ? 'true' : 'false'}
+        title=${label}
+        tabindex=${active ? 0 : -1}
+        @click=${() => this._switchTab(tab)}
+        @keydown=${(event: KeyboardEvent) => this._onNavKeydown(event)}
+      >
         ${this._icon(iconPath, 18)}
         <span>${label}</span>
-      </div>
+      </button>
     `;
+  }
+
+  private _onNavKeydown(event: KeyboardEvent): void {
+    const tabs = Array.from(this.renderRoot.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const currentIndex = tabs.indexOf(event.currentTarget as HTMLButtonElement);
+    if (currentIndex < 0 || tabs.length === 0) return;
+
+    let nextIndex: number;
+    switch (event.key) {
+      case 'ArrowDown':
+      case 'ArrowRight':
+        nextIndex = (currentIndex + 1) % tabs.length;
+        break;
+      case 'ArrowUp':
+      case 'ArrowLeft':
+        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = tabs.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    const next = tabs[nextIndex];
+    const nextTab = next.dataset.tab as ConfigTab;
+    this._switchTab(nextTab);
+    void this.updateComplete.then(() => {
+      if (this.currentTab === nextTab) next.focus();
+    });
   }
 
   private _updateVpdOptimal(
@@ -2377,32 +2442,42 @@ export class ConfigDialog extends LitElement {
             <!-- Left Rail -->
             ${showRail
               ? html`
-                  <div class="cfg-rail">
-                    <div class="cfg-rail-caps">Setup</div>
+                  <div
+                    class="cfg-rail"
+                    role="tablist"
+                    aria-label="Configuration sections"
+                    aria-orientation="vertical"
+                  >
+                    <div class="cfg-rail-caps" role="presentation">Setup</div>
                     ${this._navItem(ConfigTab.GROWSPACES, mdiViewDashboard, 'Growspaces')}
                     ${this._navItem(ConfigTab.NOTIFICATIONS, mdiBell, 'Notifications')}
 
-                    <div class="cfg-rail-caps">Environment</div>
+                    <div class="cfg-rail-caps" role="presentation">Environment</div>
                     ${this._navItem(ConfigTab.SENSORS, mdiThermometer, 'Sensors')}
                     ${this._navItem(ConfigTab.CLIMATE, mdiFan, 'Climate')}
                     ${this._navItem(ConfigTab.GROWLIGHT, mdiWhiteBalanceSunny, 'Growlights')}
                     ${this._navItem(ConfigTab.HUMIDITY, mdiWaterPercent, 'Humidity')}
 
-                    <div class="cfg-rail-caps">Equipment</div>
+                    <div class="cfg-rail-caps" role="presentation">Equipment</div>
                     ${this._navItem(ConfigTab.IRRIGATION, mdiGauge, 'Irrigation')}
                     ${this._navItem(ConfigTab.TANKS, mdiWater, 'Tanks')}
 
-                    <div class="cfg-rail-caps">Advanced</div>
+                    <div class="cfg-rail-caps" role="presentation">Advanced</div>
                     ${this._navItem(ConfigTab.VISION, mdiCamera, 'Vision AI')}
                     ${this._navItem(ConfigTab.HEATMAP, mdiViewGrid, '3D Heatmap')}
-                    ${this._navItem(ConfigTab.SUBAREAS, mdiViewDashboard, 'Subareas')}
+                    ${this._navItem(ConfigTab.SUBAREAS, mdiFloorPlan, 'Subareas')}
                     ${this._navItem(ConfigTab.VPD_TARGETS, mdiTune, 'VPD Targets')}
                   </div>
                 `
               : nothing}
 
             <!-- Content Area -->
-            <div class="cfg-content">
+            <div
+              id="config-tabpanel"
+              class="cfg-content"
+              role=${showRail ? 'tabpanel' : nothing}
+              aria-labelledby=${showRail ? `config-tab-${this.currentTab}` : nothing}
+            >
               <!-- Context bar: growspace selector (all sections except Growspaces) -->
               ${showContextBar
                 ? html`

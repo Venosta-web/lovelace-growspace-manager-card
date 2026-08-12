@@ -105,8 +105,12 @@ describe('ConfigClimateTab — render', () => {
   });
 
   it('uses the Fallback label the VM provides', async () => {
-    const el = await mount(makeVm({ fan: { ...makeVm().fan, vpdTargetLabel: 'Fallback VPD Target (kPa)' } }));
-    const labels = [...el.shadowRoot!.querySelectorAll('md3-number-input')].map((n) => n.getAttribute('label'));
+    const el = await mount(
+      makeVm({ fan: { ...makeVm().fan, vpdTargetLabel: 'Fallback VPD Target (kPa)' } })
+    );
+    const labels = [...el.shadowRoot!.querySelectorAll('md3-number-input')].map((n) =>
+      n.getAttribute('label')
+    );
     expect(labels).toContain('Fallback VPD Target (kPa)');
   });
 });
@@ -148,9 +152,7 @@ describe('ConfigClimateTab — Port Pre-fill', () => {
     devicePickers(el)[0].dispatchEvent(
       new CustomEvent('change', { detail: 'dev1', bubbles: true, composed: true })
     );
-    expect(events).toEqual([
-      { field: 'exhaustFanAcInfinityDevices', index: 0, deviceId: 'dev1' },
-    ]);
+    expect(events).toEqual([{ field: 'exhaustFanAcInfinityDevices', index: 0, deviceId: 'dev1' }]);
   });
 
   it('renders the inline warning naming the roles the VM reports missing', async () => {
@@ -183,7 +185,9 @@ describe('ConfigClimateTab — intents out', () => {
     const el = await mount(makeVm());
     const received = listen<{ partial: Record<string, unknown> }>(el, 'fan-config-changed');
     const select = el.shadowRoot!.querySelector('md3-select')!;
-    select.dispatchEvent(new CustomEvent('change', { detail: 'humidity', bubbles: true, composed: true }));
+    select.dispatchEvent(
+      new CustomEvent('change', { detail: 'humidity', bubbles: true, composed: true })
+    );
     expect(received).toEqual([{ partial: { regulation_mode: 'humidity' } }]);
   });
 
@@ -217,7 +221,9 @@ describe('ConfigClimateTab — intents out', () => {
     const el = await mount(makeVm());
     let fired = 0;
     el.addEventListener('remove-environment-requested', () => fired++);
-    [...el.shadowRoot!.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Remove Environment')!.click();
+    [...el.shadowRoot!.querySelectorAll('button')]
+      .find((b) => b.textContent?.trim() === 'Remove Environment')!
+      .click();
     expect(fired).toBe(1);
   });
 
@@ -227,7 +233,9 @@ describe('ConfigClimateTab — intents out', () => {
     const stress = [...el.shadowRoot!.querySelectorAll('md3-number-input')].find(
       (n) => n.getAttribute('label') === 'Stress Threshold %'
     )!;
-    stress.dispatchEvent(new CustomEvent('change', { detail: '0.9', bubbles: true, composed: true }));
+    stress.dispatchEvent(
+      new CustomEvent('change', { detail: '0.9', bubbles: true, composed: true })
+    );
     expect(received).toEqual([{ stressThreshold: 0.9 }]);
   });
 });
@@ -272,7 +280,11 @@ describe('ConfigClimateTab — AC Infinity editor', () => {
   it('removes a device when its × is clicked', async () => {
     const el = await mount(vmWithExhaustDevice());
     const partials = listenPartials(el);
-    const removeBtn = el.shadowRoot!.querySelector('.ac-infinity-device .chip-remove') as HTMLElement;
+    const removeBtn = el.shadowRoot!.querySelector(
+      '.ac-infinity-device .chip-remove'
+    ) as HTMLButtonElement;
+    expect(removeBtn.tagName).toBe('BUTTON');
+    expect(removeBtn.tabIndex).toBe(0);
     removeBtn.click();
     expect(partials).toHaveLength(1);
     expect(partials[0].exhaustFanAcInfinityDevices).toEqual([]);

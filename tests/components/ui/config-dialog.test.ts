@@ -23,6 +23,7 @@ describe('config dialog unsaved-changes gestures', () => {
     element.devices = [device('gs1'), device('gs2')];
     element.growspaceOptions = { gs1: 'Growspace 1', gs2: 'Growspace 2' };
     element.growspaceId = 'gs1';
+    element.initialTab = ConfigTab.SENSORS;
     element.open = true;
     document.body.appendChild(element);
     await element.updateComplete;
@@ -123,6 +124,7 @@ describe('config dialog environment save gate', () => {
     element.devices = [device('gs1')];
     element.growspaceOptions = { gs1: 'Growspace 1' };
     element.growspaceId = 'gs1';
+    element.initialTab = ConfigTab.SENSORS;
     element.open = true;
     document.body.appendChild(element);
     await element.updateComplete;
@@ -206,5 +208,70 @@ describe('config dialog environment save gate', () => {
     element.currentTab = ConfigTab.VISION;
     await element.updateComplete;
     expect(buttonByText(element, 'Save Vision Settings')).toBeDefined();
+  });
+});
+
+describe('config dialog navigation accessibility', () => {
+  let element: ConfigDialog;
+
+  beforeEach(async () => {
+    element = new ConfigDialog();
+    element.hass = { states: {}, services: {}, language: 'en' } as any;
+    element.devices = [device('gs1')];
+    element.growspaceOptions = { gs1: 'Growspace 1' };
+    element.growspaceId = 'gs1';
+    element.open = true;
+    document.body.appendChild(element);
+    await element.updateComplete;
+  });
+
+  afterEach(() => {
+    element.remove();
+  });
+
+  function tabs(): HTMLButtonElement[] {
+    return Array.from(element.shadowRoot!.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+  }
+
+  it('renders a named tablist with named tabs and roving tabindex', () => {
+    const tablist = element.shadowRoot!.querySelector('[role="tablist"]');
+    const railTabs = tabs();
+
+    expect(tablist?.getAttribute('aria-label')).toBe('Configuration sections');
+    expect(railTabs).toHaveLength(12);
+    expect(railTabs.every((tab) => Boolean(tab.getAttribute('aria-label')))).toBe(true);
+    expect(railTabs.every((tab) => tab.title === tab.getAttribute('aria-label'))).toBe(true);
+    expect(railTabs.filter((tab) => tab.tabIndex === 0)).toHaveLength(1);
+    expect(railTabs[0].getAttribute('aria-selected')).toBe('true');
+    expect(railTabs.slice(1).every((tab) => tab.getAttribute('aria-selected') === 'false')).toBe(
+      true
+    );
+  });
+
+  it('moves selection and focus with arrow keys and wraps at the ends', async () => {
+    const first = tabs()[0];
+    first.focus();
+    first.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    await element.updateComplete;
+
+    expect(element.currentTab).toBe(ConfigTab.NOTIFICATIONS);
+    expect(element.shadowRoot!.activeElement).toBe(tabs()[1]);
+    expect(tabs()[1].tabIndex).toBe(0);
+    expect(tabs()[1].getAttribute('aria-selected')).toBe('true');
+
+    tabs()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+    await element.updateComplete;
+    tabs()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    await element.updateComplete;
+
+    expect(element.currentTab).toBe(ConfigTab.VPD_TARGETS);
+    expect(element.shadowRoot!.activeElement).toBe(tabs()[11]);
+  });
+
+  it('uses distinct icons for Growspaces and Subareas', () => {
+    const growspacesPath = tabs()[0].querySelector('path')!.getAttribute('d');
+    const subareasPath = tabs()[10].querySelector('path')!.getAttribute('d');
+
+    expect(subareasPath).not.toBe(growspacesPath);
   });
 });

@@ -149,17 +149,32 @@ export class ConfigGrowspacesTab extends LitElement {
         align-items: center;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
         border-radius: 16px;
-        padding: 4px 12px;
+        padding: 0 4px 0 12px;
         font-size: 0.9rem;
-        height: 24px;
+        min-height: 44px;
       }
       .chip-remove {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
         cursor: pointer;
-        margin-left: 6px;
+        margin-left: 2px;
         font-weight: bold;
         opacity: 0.7;
       }
       .chip-remove:hover {
+        opacity: 1;
+      }
+      .chip-remove:focus-visible {
+        outline: 2px solid var(--primary-text-color, #fff);
+        outline-offset: -4px;
         opacity: 1;
       }
       .search-input-inner {
@@ -226,9 +241,17 @@ export class ConfigGrowspacesTab extends LitElement {
         </div>
 
         <div class="cfg-detail-pane">
-          ${state.mode === 'adding' ? this._renderForm('add', 'New Growspace', state.draft) : nothing}
+          ${state.mode === 'adding'
+            ? this._renderForm('add', 'New Growspace', state.draft)
+            : nothing}
           ${state.mode === 'editing'
-            ? html`${this._renderForm('edit', 'Edit Details', state.draft, state.lungroom, state.camera)}`
+            ? html`${this._renderForm(
+                'edit',
+                'Edit Details',
+                state.draft,
+                state.lungroom,
+                state.camera
+              )}`
             : nothing}
           ${state.mode === 'idle'
             ? html`
@@ -304,7 +327,8 @@ export class ConfigGrowspacesTab extends LitElement {
   ): TemplateResult {
     const values = field.value;
     const listId = `list-multi-${key}`;
-    const emit = (partial: Partial<EnvironmentDraft>) => this._emit('env-draft-changed', { partial });
+    const emit = (partial: Partial<EnvironmentDraft>) =>
+      this._emit('env-draft-changed', { partial });
     return html`
       <div class="multi-select-container">
         <label class="md3-label-multi">${label}</label>
@@ -313,9 +337,15 @@ export class ConfigGrowspacesTab extends LitElement {
             (val) => html`
               <div class="chip">
                 ${val}
-                <span class="chip-remove" @click=${() => emit({ [key]: values.filter((v) => v !== val) })}
-                  >×</span
+                <button
+                  type="button"
+                  class="chip-remove"
+                  aria-label=${`Remove ${val}`}
+                  title=${`Remove ${val}`}
+                  @click=${() => emit({ [key]: values.filter((v) => v !== val) })}
                 >
+                  ×
+                </button>
               </div>
             `
           )}

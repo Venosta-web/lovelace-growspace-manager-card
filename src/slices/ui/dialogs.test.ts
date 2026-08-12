@@ -152,8 +152,7 @@ describe('slices/ui pure dialog-open helpers', () => {
     expect(dialog.type).toBe('CONFIG');
     if (dialog.type === 'CONFIG') {
       expect(dialog.payload.growspaceId).toBe('gs-1');
-      // Defaults to the Sensors tab when no initialTab is given.
-      expect(dialog.payload.currentTab).toBe(ConfigTab.SENSORS);
+      expect(dialog.payload.currentTab).toBe(ConfigTab.GROWSPACES);
     }
   });
 

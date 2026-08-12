@@ -80,14 +80,16 @@ export function renderGrowlightAcInfinityDevices(
               style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"
             >
               <span style="font-weight:500;">Grow light port ${index + 1}</span>
-              <span
+              <button
+                type="button"
                 class="chip-remove"
-                role="button"
                 aria-label="Remove AC Infinity grow light"
-                style="cursor:pointer;"
+                title="Remove AC Infinity grow light"
+                style="display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:0;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;"
                 @click=${() => remove(index)}
-                >×</span
               >
+                ×
+              </button>
             </div>
             ${renderPortPicker({
               portDevices: p.portDevices,

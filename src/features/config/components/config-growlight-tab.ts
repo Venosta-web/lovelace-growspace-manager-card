@@ -98,11 +98,26 @@ export class ConfigGrowlightTab extends LitElement {
         gap: 6px;
         background: rgba(255, 255, 255, 0.08);
         border-radius: 12px;
-        padding: 2px 8px;
+        padding: 0 4px 0 12px;
         font-size: 0.8rem;
+        min-height: 44px;
       }
       .chip-remove {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
         cursor: pointer;
+      }
+      .chip-remove:focus-visible {
+        outline: 2px solid var(--primary-text-color, #fff);
+        outline-offset: -4px;
       }
       .search-input-inner {
         flex: 1;
@@ -188,12 +203,16 @@ export class ConfigGrowlightTab extends LitElement {
               this._emitLightsOn((e.target as HTMLInputElement).value || e.detail)}
           ></md3-text-input>
           <p class="anchor-note">
-            The crop-steering photoperiod anchor. Saves immediately. The lights-off time is
-            derived from your veg / flower day-length settings.
+            The crop-steering photoperiod anchor. Saves immediately. The lights-off time is derived
+            from your veg / flower day-length settings.
           </p>
 
           <div class=${vm.disabled ? 'disabled form-section' : 'form-section'}>
-            ${this._multiSelect('Grow Light / Switch', vm.growlightEntities, vm.growlightEntityOptions)}
+            ${this._multiSelect(
+              'Grow Light / Switch',
+              vm.growlightEntities,
+              vm.growlightEntityOptions
+            )}
 
             <md3-number-input
               label="Power %"
@@ -230,7 +249,6 @@ export class ConfigGrowlightTab extends LitElement {
                   ></md3-number-input>
                 `
               : nothing}
-
             ${renderGrowlightAcInfinityDevices({
               devices: vm.acInfinityDevices,
               modeOptions: vm.modeOptions,
@@ -262,11 +280,16 @@ export class ConfigGrowlightTab extends LitElement {
             (val) => html`
               <div class="chip">
                 ${val}
-                <span
+                <button
+                  type="button"
                   class="chip-remove"
-                  @click=${() => this._update({ growlightEntities: values.filter((v) => v !== val) })}
-                  >×</span
+                  aria-label=${`Remove ${val}`}
+                  title=${`Remove ${val}`}
+                  @click=${() =>
+                    this._update({ growlightEntities: values.filter((v) => v !== val) })}
                 >
+                  ×
+                </button>
               </div>
             `
           )}
@@ -277,7 +300,8 @@ export class ConfigGrowlightTab extends LitElement {
             @change=${(e: Event) => {
               const input = e.target as HTMLInputElement;
               const val = input.value;
-              if (val && !values.includes(val)) this._update({ growlightEntities: [...values, val] });
+              if (val && !values.includes(val))
+                this._update({ growlightEntities: [...values, val] });
               input.value = '';
             }}
           />
