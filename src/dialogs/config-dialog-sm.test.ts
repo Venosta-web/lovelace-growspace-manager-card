@@ -84,20 +84,25 @@ describe('createInitialSM', () => {
     const sm = createInitialSM();
     expect(sm.environmentDraft.temperatureSensors).toEqual([]);
     expect(sm.environmentDraft.selectedGrowspaceId).toBe('');
-    expect(sm.environmentDraft.stressThreshold).toBe(0.8);
+    expect(sm.environmentDraft.stressThreshold).toBeNull();
   });
 
-  it('does not include dehumidifierControlEnabled in the environment draft', () => {
+  it('defaults the humidity control flags to false in the environment draft', () => {
     const sm = createInitialSM();
-    expect('dehumidifierControlEnabled' in sm.environmentDraft).toBe(false);
+    expect(sm.environmentDraft.humidifierControlEnabled).toBe(false);
+    expect(sm.environmentDraft.dehumidifierControlEnabled).toBe(false);
   });
 
-  it('does not seed dehumidifierControlEnabled from device attributes', () => {
+  it('seeds the humidity control flags from device attributes', () => {
     const device = makeDevice({
-      environmentAttributes: { dehumidifierControlEnabled: true },
+      environmentAttributes: {
+        humidifierControlEnabled: true,
+        dehumidifierControlEnabled: true,
+      },
     });
     const sm = createInitialSM(device);
-    expect('dehumidifierControlEnabled' in sm.environmentDraft).toBe(false);
+    expect(sm.environmentDraft.humidifierControlEnabled).toBe(true);
+    expect(sm.environmentDraft.dehumidifierControlEnabled).toBe(true);
   });
 
   it('seeds environment draft from device', () => {
@@ -173,6 +178,23 @@ describe('createInitialSM', () => {
     const device = makeDevice({ environmentAttributes: {} });
     const sm = createInitialSM(device);
     expect(sm.environmentDraft.vpdOptimalOverrides).toEqual({});
+  });
+
+  it('seeds fields omitted by the former dialog payloads', () => {
+    const humidifierThresholds = { veg: { day: { on: 60, off: 55 } } };
+    const device = makeDevice({
+      environmentAttributes: {
+        lstOffset: -3.5,
+        humidifierThresholds,
+        stressThreshold: 0.7,
+        moldThreshold: 0.75,
+      },
+    });
+    const draft = createInitialSM(device).environmentDraft;
+    expect(draft.lstOffset).toBe(-3.5);
+    expect(draft.humidifierThresholds).toEqual(humidifierThresholds);
+    expect(draft.stressThreshold).toBe(0.7);
+    expect(draft.moldThreshold).toBe(0.75);
   });
 });
 
@@ -597,7 +619,7 @@ describe('UPDATE_ENV_DRAFT', () => {
     });
     expect(next.environmentDraft.co2Sensor).toBe('sensor.co2');
     expect(next.environmentDraft.stressThreshold).toBe(0.9);
-    expect(next.environmentDraft.moldThreshold).toBe(0.8);
+    expect(next.environmentDraft.moldThreshold).toBeNull();
   });
 
   it('replaces array fields entirely', () => {

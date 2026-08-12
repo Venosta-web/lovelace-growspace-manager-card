@@ -62,8 +62,8 @@ export interface ClimateControlVM {
   /** Duplicate Port Warning per port ('' = none) — the port's mode entity is also another role. */
   exhaustFanDuplicateWarnings: string[];
   circulationFanDuplicateWarnings: string[];
-  stressThreshold: number;
-  moldThreshold: number;
+  stressThreshold: number | null;
+  moldThreshold: number | null;
   /** Remove Environment is enabled only when a growspace is selected. */
   canRemoveEnvironment: boolean;
 }

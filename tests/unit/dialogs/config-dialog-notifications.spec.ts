@@ -49,6 +49,7 @@ describe('ConfigDialog — Notifications tab', () => {
     element.hass = { services: {}, localize: (k: string) => `[${k}]`, callService: vi.fn() } as any;
     element.devices = [device];
     element.growspaceOptions = { gs1: 'Tent 1' };
+    element.growspaceId = 'gs1';
     element.open = true;
     document.body.appendChild(element);
     await element.updateComplete;

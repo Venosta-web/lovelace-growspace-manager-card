@@ -24,21 +24,12 @@ import type { EnvironmentDraft } from '../../dialogs/config-dialog-sm';
 import type { EnvironmentConfigEventDetail } from '../../lib/types/dialog';
 import { bandSavePayload } from './moisture-band';
 
-/** The two control-toggle flags that live on the dialog, outside the draft. */
-export interface EnvironmentControlFlags {
-  humidifierControlEnabled: boolean;
-  dehumidifierControlEnabled: boolean;
-}
-
 /**
- * Pure composer: the whole Shared Environment Draft (+ the dialog's two control
- * toggles) → the `configure-environment-submit` event detail. Every field is
- * copied so the full-replace save never drops one.
+ * Pure composer: the whole Shared Environment Draft → the
+ * `configure-environment-submit` event detail. Every field is copied so the
+ * full-replace save never drops one.
  */
-export function composeEnvironmentConfig(
-  draft: EnvironmentDraft,
-  flags: EnvironmentControlFlags
-): EnvironmentConfigEventDetail {
+export function composeEnvironmentConfig(draft: EnvironmentDraft): EnvironmentConfigEventDetail {
   // Null when the band is mid-edit and incomplete: omitting both keys leaves
   // the stored band untouched (patch semantics) instead of sending a lone
   // bound, which the backend rejects — failing the entire environment save.
@@ -59,11 +50,11 @@ export function composeEnvironmentConfig(
     circulationFanAcInfinityDevices: draft.circulationFanAcInfinityDevices,
     humidifierEntities: draft.humidifierEntities,
     humidifierThresholds: draft.humidifierThresholds,
-    humidifierControlEnabled: flags.humidifierControlEnabled,
+    humidifierControlEnabled: draft.humidifierControlEnabled,
     humidifierAcInfinityDevices: draft.humidifierAcInfinityDevices,
     dehumidifierEntities: draft.dehumidifierEntities,
     dehumidifierThresholds: draft.dehumidifierThresholds,
-    dehumidifierControlEnabled: flags.dehumidifierControlEnabled,
+    dehumidifierControlEnabled: draft.dehumidifierControlEnabled,
     dehumidifierAcInfinityDevices: draft.dehumidifierAcInfinityDevices,
     soilMoistureSensor: draft.soilMoistureSensor,
     // Atomic pair, or omitted entirely while the draft is mid-edit — an

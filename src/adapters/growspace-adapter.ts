@@ -217,6 +217,8 @@ export class GrowspaceAdapter {
       irrigationFlowSensors: environment?.irrigation_flow_sensors,
       vpdOptimalOverrides: environment?.vpd_optimal_overrides ?? {},
       lstOffset: environment?.lst_offset,
+      stressThreshold: environment?.stress_threshold ?? null,
+      moldThreshold: environment?.mold_threshold ?? null,
     };
 
     // 5. Stats from metrics sub-object

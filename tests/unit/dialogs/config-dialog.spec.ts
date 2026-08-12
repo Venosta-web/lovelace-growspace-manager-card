@@ -255,18 +255,15 @@ describe('ConfigDialog', () => {
         });
 
         it('should load initial state', async () => {
-            element.setInitialState(ConfigTab.SENSORS, {
-                selectedGrowspaceId: 'gs1',
-                temperatureSensor: 'sensor.temp',
-                temperatureSensors: ['sensor.temp'],
-                humiditySensor: 'sensor.hum',
-                humiditySensors: ['sensor.hum'],
-                vpdSensor: '', vpdSensors: [], co2Sensor: '', circulationFanEntity: '',
-                stressThreshold: 0, moldThreshold: 0, lightSensor: '', lightSensors: [],
-                exhaustEntity: '', exhaustFanEntities: [], humidifierEntity: '', humidifierEntities: [],
-                humidifierControlEnabled: false,
-                dehumidifierEntity: '', dehumidifierEntities: [], circulationFanEntities: [],
-                soilMoistureSensor: '', dehumidifierControlEnabled: true, dehumidifierThresholds: {}
+            (element as any)._seedFromDevice({
+                deviceId: 'gs1',
+                environmentAttributes: {
+                    temperatureSensor: 'sensor.temp',
+                    temperatureSensors: ['sensor.temp'],
+                    humiditySensor: 'sensor.hum',
+                    humiditySensors: ['sensor.hum'],
+                    dehumidifierControlEnabled: true,
+                },
             });
             await element.updateComplete;
 
@@ -662,11 +659,13 @@ describe('ConfigDialog', () => {
     });
 
     describe('Final Coverage Gaps', () => {
-        it('should handle willUpdate with null environmentData', async () => {
-            element.environmentData = { growspace_id: 'g1' } as any;
+        it('should wait when growspaceId has no matching device', async () => {
+            element.open = false;
             await element.updateComplete;
-            element.environmentData = null as any;
+            element.growspaceId = 'missing';
+            element.open = true;
             await element.updateComplete;
+            expect((element as any)._initialStateApplied).toBe(false);
         });
 
         it('should handle updated with open property toggle', async () => {
@@ -888,8 +887,8 @@ describe('ConfigDialog', () => {
             expect(res).toEqual([]);
         });
 
-        it('should handle null environmentData in willUpdate', async () => {
-            element.environmentData = undefined as any;
+        it('should handle an empty growspaceId in willUpdate', async () => {
+            element.growspaceId = '';
             await element.updateComplete;
             // No error should occur
         });
@@ -1278,4 +1277,3 @@ describe('ConfigDialog', () => {
         });
     });
 });
-

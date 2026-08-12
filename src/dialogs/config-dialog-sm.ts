@@ -57,8 +57,8 @@ export interface EnvironmentDraft {
   circulationFanEntities: string[];
   exhaustFanAcInfinityDevices: AcInfinityDevice[];
   circulationFanAcInfinityDevices: AcInfinityDevice[];
-  stressThreshold: number;
-  moldThreshold: number;
+  stressThreshold: number | null;
+  moldThreshold: number | null;
 
   // Humidity devices
   humidifierEntities: string[];
@@ -67,6 +67,8 @@ export interface EnvironmentDraft {
   dehumidifierAcInfinityDevices: AcInfinityDevice[];
   humidifierThresholds: Record<string, Record<string, { on: number; off: number }>>;
   dehumidifierThresholds: Record<string, Record<string, { on: number; off: number }>>;
+  humidifierControlEnabled: boolean;
+  dehumidifierControlEnabled: boolean;
 
   // Substrate / irrigation monitoring sensors
   soilMoistureSensor: string;
@@ -353,8 +355,7 @@ export type ConfigDialogEvent =
 
   // ── Global ──
   | { type: 'SET_TOAST'; message: string | undefined }
-  | { type: 'RESET_FROM_DEVICE'; device: GrowspaceDevice }
-  | { type: 'SEED_NOTIFICATIONS_FROM_DEVICE'; device: GrowspaceDevice };
+  | { type: 'RESET_FROM_DEVICE'; device: GrowspaceDevice };
 
 // ─── Default draft ────────────────────────────────────────────────────────────
 
@@ -390,14 +391,16 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
     circulationFanEntities: [],
     exhaustFanAcInfinityDevices: [],
     circulationFanAcInfinityDevices: [],
-    stressThreshold: 0.8,
-    moldThreshold: 0.8,
+    stressThreshold: null,
+    moldThreshold: null,
     humidifierEntities: [],
     dehumidifierEntities: [],
     humidifierAcInfinityDevices: [],
     dehumidifierAcInfinityDevices: [],
     humidifierThresholds: {},
     dehumidifierThresholds: {},
+    humidifierControlEnabled: false,
+    dehumidifierControlEnabled: false,
     soilMoistureSensor: '',
     soilMoistureMin: null,
     soilMoistureMax: null,
@@ -549,8 +552,8 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
       : attrs.circulationFanEntity
         ? [attrs.circulationFanEntity]
         : [],
-    stressThreshold: 0.8,
-    moldThreshold: 0.8,
+    stressThreshold: attrs.stressThreshold ?? null,
+    moldThreshold: attrs.moldThreshold ?? null,
     humidifierEntities: attrs.humidifierEntities?.length
       ? attrs.humidifierEntities
       : attrs.humidifierEntity
@@ -563,6 +566,8 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
         : [],
     humidifierThresholds: attrs.humidifierThresholds ?? {},
     dehumidifierThresholds: attrs.dehumidifierThresholds ?? {},
+    humidifierControlEnabled: attrs.humidifierControlEnabled ?? false,
+    dehumidifierControlEnabled: attrs.dehumidifierControlEnabled ?? false,
     exhaustFanAcInfinityDevices: attrs.exhaustFanAcInfinityDevices ?? [],
     circulationFanAcInfinityDevices: attrs.circulationFanAcInfinityDevices ?? [],
     humidifierAcInfinityDevices: attrs.humidifierAcInfinityDevices ?? [],
@@ -1105,12 +1110,6 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
 
     case 'RESET_FROM_DEVICE':
       return applyDeviceToSM(sm, event.device);
-
-    case 'SEED_NOTIFICATIONS_FROM_DEVICE':
-      return {
-        ...sm,
-        tabs: { ...sm.tabs, notifications: notificationsTabFromDevice(event.device) },
-      };
 
     default:
       return sm;

@@ -146,12 +146,12 @@ describe('slices/ui pure dialog-open helpers', () => {
     expect(activeDialog$.get().type).toBe('NONE');
   });
 
-  it('openConfigDialog opens CONFIG seeded from the device', () => {
+  it('openConfigDialog opens CONFIG for the device id', () => {
     openConfigDialog({ deviceId: 'gs-1' } as never);
     const dialog = activeDialog$.get();
     expect(dialog.type).toBe('CONFIG');
     if (dialog.type === 'CONFIG') {
-      expect(dialog.payload.environmentData.selectedGrowspaceId).toBe('gs-1');
+      expect(dialog.payload.growspaceId).toBe('gs-1');
       // Defaults to the Sensors tab when no initialTab is given.
       expect(dialog.payload.currentTab).toBe(ConfigTab.SENSORS);
     }
@@ -163,23 +163,6 @@ describe('slices/ui pure dialog-open helpers', () => {
     expect(dialog.type).toBe('CONFIG');
     if (dialog.type === 'CONFIG') {
       expect(dialog.payload.currentTab).toBe(ConfigTab.GROWLIGHT);
-    }
-  });
-
-  it('openConfigDialog carries exhaust AC Infinity devices from the device', () => {
-    const acDevice = {
-      mode_entity: 'select.sog_exhaust_aktiver_modus',
-      speed_entity: 'number.sog_exhaust_einschaltleistung',
-      on_speed: 10,
-    };
-    openConfigDialog({
-      deviceId: 'gs-1',
-      environmentAttributes: { exhaustFanAcInfinityDevices: [acDevice] },
-    } as never);
-    const dialog = activeDialog$.get();
-    expect(dialog.type).toBe('CONFIG');
-    if (dialog.type === 'CONFIG') {
-      expect(dialog.payload.environmentData.exhaustFanAcInfinityDevices).toEqual([acDevice]);
     }
   });
 

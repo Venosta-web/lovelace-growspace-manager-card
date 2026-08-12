@@ -304,6 +304,8 @@ export interface EnvironmentAttributes {
 
   // LST offset for VPD calculation
   lstOffset?: number;
+  stressThreshold?: number | null;
+  moldThreshold?: number | null;
 }
 
 export interface GrowspaceStats {

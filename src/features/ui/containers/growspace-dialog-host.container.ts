@@ -1005,7 +1005,7 @@ export class GrowspaceDialogHost extends LitElement {
         .currentTab=${dialogState.currentTab}
         .initialTab=${dialogState.currentTab}
         .scrollToField=${dialogState.scrollToField}
-        .environmentData=${dialogState.environmentData}
+        .growspaceId=${dialogState.growspaceId}
         .growspaceOptions=${growspaceOptions}
         @close=${() => this._closeDialogIfActive('CONFIG')}
         @add-growspace-submit=${async (e: CustomEvent) => {

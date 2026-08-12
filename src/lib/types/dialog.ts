@@ -84,85 +84,6 @@ export interface EnvironmentConfigDialogState {
   deviceId: string;
 }
 
-export interface EnvironmentConfigData {
-  selectedGrowspaceId: string;
-
-  // Basic sensors (multi)
-  temperatureSensors: string[];
-  humiditySensors: string[];
-  vpdSensors: string[];
-  co2Sensor: string;
-  soilMoistureSensor: string;
-  /** Acceptable Moisture Band override; null on both means inherited. */
-  soilMoistureMin?: number | null;
-  soilMoistureMax?: number | null;
-  soilMoistureBand?: { min: number; max: number; is_custom: boolean };
-  soilMoistureValue?: string;
-  soilMoistureBandCompatible?: boolean;
-
-  // Legacy singular (backward compat)
-  temperatureSensor: string;
-  humiditySensor: string;
-  vpdSensor: string;
-
-  // Fans
-  circulationFanEntity: string;
-  circulationFanEntities: string[];
-  exhaustEntity: string;
-  exhaustFanEntities: string[];
-  exhaustFanAcInfinityDevices?: AcInfinityDevice[];
-  circulationFanAcInfinityDevices?: AcInfinityDevice[];
-
-  stressThreshold: number;
-  moldThreshold: number;
-
-  // Lights
-  lightSensor: string;
-  lightSensors: string[];
-
-  // Humidifier
-  humidifierEntity: string;
-  humidifierEntities: string[];
-  humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  humidifierControlEnabled: boolean;
-  humidifierAcInfinityDevices?: AcInfinityDevice[];
-
-  // Dehumidifier
-  dehumidifierEntity: string;
-  dehumidifierEntities: string[];
-  dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  dehumidifierControlEnabled: boolean;
-  dehumidifierAcInfinityDevices?: AcInfinityDevice[];
-  growlightEntities?: string[];
-  growlightAcInfinityDevices?: AcInfinityGrowLight[];
-  growlightConfig?: GrowLightConfig;
-
-  sensorGroups?: SensorGroup[];
-  sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
-  irrigationTanks?: any[];
-  cameraEntities?: string[];
-  lungroomTempSensors?: string[];
-  visionCheckupConfig?: VisionCheckupConfig;
-
-  // Advanced / irrigation monitoring sensors
-  substrateTemperatureSensors?: string[];
-  phSensors?: string[];
-  feedEcSensors?: string[];
-  bulkEcSensors?: string[];
-  poreEcSensors?: string[];
-  runoffEcSensors?: string[];
-  drainVolumeSensors?: string[];
-  irrigationFlowSensors?: string[];
-  powerSensors?: string[];
-  energySensors?: string[];
-  circulationFanConfig?: CirculationFanConfig;
-  exhaustFanConfig?: ExhaustFanConfig;
-  vpdOptimalOverrides?: Record<
-    string,
-    { day: { low: number; high: number }; night: { low: number; high: number } }
-  >;
-}
-
 export interface VisionCheckupConfigEventDetail {
   growspaceId: string;
   visionCheckupConfig: VisionCheckupConfig;
@@ -186,8 +107,8 @@ export interface EnvironmentConfigEventDetail {
   exhaustFanEntities?: string[];
   exhaustFanAcInfinityDevices?: AcInfinityDevice[];
   circulationFanAcInfinityDevices?: AcInfinityDevice[];
-  stressThreshold: number;
-  moldThreshold: number;
+  stressThreshold: number | null;
+  moldThreshold: number | null;
   lightSensor?: string | null;
   lightSensors?: string[];
   // Humidifier
@@ -244,7 +165,7 @@ export interface ConfigDialogState {
     | 'heatmap'
     | 'subareas'
     | 'vpd_targets';
-  environmentData: EnvironmentConfigData;
+  growspaceId: string;
   /** Optional deep-link: a `data-scroll-target` value to scroll into view + pulse. */
   scrollToField?: string;
 }

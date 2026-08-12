@@ -60,8 +60,9 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('should trigger sensor changes via DOM select', async () => {
-        element.setInitialState(ConfigTab.SENSORS, {
-            selectedGrowspaceId: 'gs1'
+        (element as any)._seedFromDevice({
+            deviceId: 'gs1',
+            environmentAttributes: {},
         } as any);
         element.hass = {
             states: {
@@ -81,10 +82,14 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('should trigger updateThreshold via night/off selection', async () => {
-        element.setInitialState(ConfigTab.HUMIDITY, {
-            dehumidifierThresholds: {
-                'gs1': { 'day': { on: 60, off: 55 }, 'night': { on: 65, off: 60 } }
-            }
+        element.initialTab = ConfigTab.HUMIDITY;
+        (element as any)._seedFromDevice({
+            deviceId: 'gs1',
+            environmentAttributes: {
+                dehumidifierThresholds: {
+                    'gs1': { 'day': { on: 60, off: 55 }, 'night': { on: 65, off: 60 } }
+                },
+            },
         } as any);
         (element as any)._openHumidityStageId = 'gs1';
         await element.updateComplete;
@@ -98,11 +103,14 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('configure-environment-submit payload includes dehumidifierControlEnabled and humidifierControlEnabled', async () => {
-        element.setInitialState(ConfigTab.HUMIDITY, { selectedGrowspaceId: 'gs1' } as any);
+        element.initialTab = ConfigTab.HUMIDITY;
+        (element as any)._seedFromDevice({ deviceId: 'gs1', environmentAttributes: {} });
         await element.updateComplete;
 
-        (element as any)._dehumidifierControlEnabled = true;
-        (element as any)._humidifierControlEnabled = false;
+        (element as any)._setEnv({
+            dehumidifierControlEnabled: true,
+            humidifierControlEnabled: false,
+        });
 
         const listener = vi.fn();
         element.addEventListener('configure-environment-submit', listener);
@@ -113,8 +121,42 @@ describe('ConfigDialog Interactions', () => {
         expect(listener.mock.calls[0][0].detail).toHaveProperty('humidifierControlEnabled', false);
     });
 
+    it('preserves humidifier thresholds after an unrelated tab edit and save', async () => {
+        element.remove();
+        const humidifierThresholds = { veg: { day: { on: 60, off: 55 } } };
+        element = new ConfigDialog();
+        element.devices = [{
+            deviceId: 'gs1',
+            environmentAttributes: { humidifierThresholds },
+        } as any];
+        element.growspaceId = 'gs1';
+        element.growspaceOptions = { gs1: 'Tent 1' };
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const sensorsTab = element.shadowRoot!.querySelector('config-sensors-tab')!;
+        sensorsTab.dispatchEvent(new CustomEvent('env-draft-changed', {
+            detail: { partial: { co2Sensor: 'sensor.changed' } },
+            bubbles: true,
+            composed: true,
+        }));
+        await element.updateComplete;
+
+        const listener = vi.fn();
+        element.addEventListener('configure-environment-submit', listener);
+        const save = Array.from(element.shadowRoot!.querySelectorAll('button'))
+            .find((button) => button.textContent?.includes('Save Configuration')) as HTMLButtonElement;
+        save.click();
+
+        expect(listener).toHaveBeenCalledOnce();
+        expect(listener.mock.calls[0][0].detail.humidifierThresholds).toEqual(humidifierThresholds);
+        expect(listener.mock.calls[0][0].detail.co2Sensor).toBe('sensor.changed');
+    });
+
     it('toggling dehumidifier control checkbox calls setDehumidifierControl immediately', async () => {
-        element.setInitialState(ConfigTab.HUMIDITY, { selectedGrowspaceId: 'gs1' } as any);
+        element.initialTab = ConfigTab.HUMIDITY;
+        (element as any)._seedFromDevice({ deviceId: 'gs1', environmentAttributes: {} });
         await element.updateComplete;
 
         // Humidity tab is a nested dumb component (ADR-0019); pierce its shadow.
