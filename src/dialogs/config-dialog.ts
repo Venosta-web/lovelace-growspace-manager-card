@@ -99,7 +99,6 @@ import '../features/config/components/config-subareas-tab';
 import { createSubareasTabViewModel } from '../features/config/viewmodels/subareas-tab.viewmodel';
 import { composeEnvironmentConfig } from '../features/config/environment-save';
 
-
 @customElement('config-dialog')
 export class ConfigDialog extends LitElement {
   @property({ type: Boolean, reflect: true }) open = false;
@@ -158,7 +157,9 @@ export class ConfigDialog extends LitElement {
   // These allow existing tests and external callers to read/write state
   // through familiar names. The SM is the authoritative source of truth.
 
-  private get _d() { return this._sm.environmentDraft; }
+  private get _d() {
+    return this._sm.environmentDraft;
+  }
   private _setEnv(partial: Partial<typeof this._sm.environmentDraft>) {
     this._sm = transition(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
     // A manual write to an AC Infinity bundle invalidates that field's Port
@@ -168,117 +169,265 @@ export class ConfigDialog extends LitElement {
     }
   }
 
-  get envSelectedId() { return this._d.selectedGrowspaceId; }
-  set envSelectedId(v: string) { this._setEnv({ selectedGrowspaceId: v }); }
+  get envSelectedId() {
+    return this._d.selectedGrowspaceId;
+  }
+  set envSelectedId(v: string) {
+    this._setEnv({ selectedGrowspaceId: v });
+  }
 
-  get envTemperatureSensors() { return this._d.temperatureSensors; }
-  set envTemperatureSensors(v: string[]) { this._setEnv({ temperatureSensors: v }); }
+  get envTemperatureSensors() {
+    return this._d.temperatureSensors;
+  }
+  set envTemperatureSensors(v: string[]) {
+    this._setEnv({ temperatureSensors: v });
+  }
 
-  get envHumiditySensors() { return this._d.humiditySensors; }
-  set envHumiditySensors(v: string[]) { this._setEnv({ humiditySensors: v }); }
+  get envHumiditySensors() {
+    return this._d.humiditySensors;
+  }
+  set envHumiditySensors(v: string[]) {
+    this._setEnv({ humiditySensors: v });
+  }
 
-  get envVpdSensors() { return this._d.vpdSensors; }
-  set envVpdSensors(v: string[]) { this._setEnv({ vpdSensors: v }); }
+  get envVpdSensors() {
+    return this._d.vpdSensors;
+  }
+  set envVpdSensors(v: string[]) {
+    this._setEnv({ vpdSensors: v });
+  }
 
-  get envCo2Sensor() { return this._d.co2Sensor; }
-  set envCo2Sensor(v: string) { this._setEnv({ co2Sensor: v }); }
+  get envCo2Sensor() {
+    return this._d.co2Sensor;
+  }
+  set envCo2Sensor(v: string) {
+    this._setEnv({ co2Sensor: v });
+  }
 
-  get envLightSensors() { return this._d.lightSensors; }
-  set envLightSensors(v: string[]) { this._setEnv({ lightSensors: v }); }
+  get envLightSensors() {
+    return this._d.lightSensors;
+  }
+  set envLightSensors(v: string[]) {
+    this._setEnv({ lightSensors: v });
+  }
 
-  get envExhaustFanEntities() { return this._d.exhaustFanEntities; }
-  set envExhaustFanEntities(v: string[]) { this._setEnv({ exhaustFanEntities: v }); }
+  get envExhaustFanEntities() {
+    return this._d.exhaustFanEntities;
+  }
+  set envExhaustFanEntities(v: string[]) {
+    this._setEnv({ exhaustFanEntities: v });
+  }
 
-  get envCirculationFanEntities() { return this._d.circulationFanEntities; }
-  set envCirculationFanEntities(v: string[]) { this._setEnv({ circulationFanEntities: v }); }
+  get envCirculationFanEntities() {
+    return this._d.circulationFanEntities;
+  }
+  set envCirculationFanEntities(v: string[]) {
+    this._setEnv({ circulationFanEntities: v });
+  }
 
-  get envHumidifierEntities() { return this._d.humidifierEntities; }
-  set envHumidifierEntities(v: string[]) { this._setEnv({ humidifierEntities: v }); }
+  get envHumidifierEntities() {
+    return this._d.humidifierEntities;
+  }
+  set envHumidifierEntities(v: string[]) {
+    this._setEnv({ humidifierEntities: v });
+  }
 
-  get envDehumidifierEntities() { return this._d.dehumidifierEntities; }
-  set envDehumidifierEntities(v: string[]) { this._setEnv({ dehumidifierEntities: v }); }
+  get envDehumidifierEntities() {
+    return this._d.dehumidifierEntities;
+  }
+  set envDehumidifierEntities(v: string[]) {
+    this._setEnv({ dehumidifierEntities: v });
+  }
 
-  get envSoilMoistureSensor() { return this._d.soilMoistureSensor; }
-  set envSoilMoistureSensor(v: string) { this._setEnv({ soilMoistureSensor: v }); }
+  get envSoilMoistureSensor() {
+    return this._d.soilMoistureSensor;
+  }
+  set envSoilMoistureSensor(v: string) {
+    this._setEnv({ soilMoistureSensor: v });
+  }
 
-  get envDehumidifierControlEnabled() { return this._dehumidifierControlEnabled; }
-  set envDehumidifierControlEnabled(v: boolean) { this._dehumidifierControlEnabled = v; }
+  get envDehumidifierControlEnabled() {
+    return this._dehumidifierControlEnabled;
+  }
+  set envDehumidifierControlEnabled(v: boolean) {
+    this._dehumidifierControlEnabled = v;
+  }
 
-  get envHumidifierControlEnabled() { return this._humidifierControlEnabled; }
-  set envHumidifierControlEnabled(v: boolean) { this._humidifierControlEnabled = v; }
+  get envHumidifierControlEnabled() {
+    return this._humidifierControlEnabled;
+  }
+  set envHumidifierControlEnabled(v: boolean) {
+    this._humidifierControlEnabled = v;
+  }
 
-  get envDehumidifierThresholds() { return this._d.dehumidifierThresholds; }
-  set envDehumidifierThresholds(v: Record<string, Record<string, { on: number; off: number }>>) { this._setEnv({ dehumidifierThresholds: v }); }
+  get envDehumidifierThresholds() {
+    return this._d.dehumidifierThresholds;
+  }
+  set envDehumidifierThresholds(v: Record<string, Record<string, { on: number; off: number }>>) {
+    this._setEnv({ dehumidifierThresholds: v });
+  }
 
-  get envHumidifierThresholds() { return this._d.humidifierThresholds; }
-  set envHumidifierThresholds(v: Record<string, Record<string, { on: number; off: number }>>) { this._setEnv({ humidifierThresholds: v }); }
+  get envHumidifierThresholds() {
+    return this._d.humidifierThresholds;
+  }
+  set envHumidifierThresholds(v: Record<string, Record<string, { on: number; off: number }>>) {
+    this._setEnv({ humidifierThresholds: v });
+  }
 
-  get envStressThreshold() { return this._d.stressThreshold; }
-  set envStressThreshold(v: number) { this._setEnv({ stressThreshold: v }); }
+  get envStressThreshold() {
+    return this._d.stressThreshold;
+  }
+  set envStressThreshold(v: number) {
+    this._setEnv({ stressThreshold: v });
+  }
 
-  get envMoldThreshold() { return this._d.moldThreshold; }
-  set envMoldThreshold(v: number) { this._setEnv({ moldThreshold: v }); }
+  get envMoldThreshold() {
+    return this._d.moldThreshold;
+  }
+  set envMoldThreshold(v: number) {
+    this._setEnv({ moldThreshold: v });
+  }
 
-  get envSensorGroups() { return this._d.sensorGroups; }
-  set envSensorGroups(v: import('../types').SensorGroup[]) { this._setEnv({ sensorGroups: v }); }
+  get envSensorGroups() {
+    return this._d.sensorGroups;
+  }
+  set envSensorGroups(v: import('../types').SensorGroup[]) {
+    this._setEnv({ sensorGroups: v });
+  }
 
-  get envSensorCoordinates() { return this._d.sensorCoordinates; }
-  set envSensorCoordinates(v: Record<string, { x: number; y: number; z: number; rotation?: number }>) { this._setEnv({ sensorCoordinates: v }); }
+  get envSensorCoordinates() {
+    return this._d.sensorCoordinates;
+  }
+  set envSensorCoordinates(
+    v: Record<string, { x: number; y: number; z: number; rotation?: number }>
+  ) {
+    this._setEnv({ sensorCoordinates: v });
+  }
 
-  get envIrrigationTanks() { return this._d.irrigationTanks; }
-  set envIrrigationTanks(v: any[]) { this._setEnv({ irrigationTanks: v }); }
+  get envIrrigationTanks() {
+    return this._d.irrigationTanks;
+  }
+  set envIrrigationTanks(v: any[]) {
+    this._setEnv({ irrigationTanks: v });
+  }
 
-  get envVisionCameraEntities() { return this._d.cameraEntities; }
-  set envVisionCameraEntities(v: string[]) { this._setEnv({ cameraEntities: v }); }
+  get envVisionCameraEntities() {
+    return this._d.cameraEntities;
+  }
+  set envVisionCameraEntities(v: string[]) {
+    this._setEnv({ cameraEntities: v });
+  }
 
-  get envLungroomTempSensors() { return this._d.lungroomTempSensors; }
-  set envLungroomTempSensors(v: string[]) { this._setEnv({ lungroomTempSensors: v }); }
+  get envLungroomTempSensors() {
+    return this._d.lungroomTempSensors;
+  }
+  set envLungroomTempSensors(v: string[]) {
+    this._setEnv({ lungroomTempSensors: v });
+  }
 
-  get envSubstrateTemperatureSensors() { return this._d.substrateTemperatureSensors; }
-  set envSubstrateTemperatureSensors(v: string[]) { this._setEnv({ substrateTemperatureSensors: v }); }
+  get envSubstrateTemperatureSensors() {
+    return this._d.substrateTemperatureSensors;
+  }
+  set envSubstrateTemperatureSensors(v: string[]) {
+    this._setEnv({ substrateTemperatureSensors: v });
+  }
 
-  get envPhSensors() { return this._d.phSensors; }
-  set envPhSensors(v: string[]) { this._setEnv({ phSensors: v }); }
+  get envPhSensors() {
+    return this._d.phSensors;
+  }
+  set envPhSensors(v: string[]) {
+    this._setEnv({ phSensors: v });
+  }
 
-  get envFeedEcSensors() { return this._d.feedEcSensors; }
-  set envFeedEcSensors(v: string[]) { this._setEnv({ feedEcSensors: v }); }
+  get envFeedEcSensors() {
+    return this._d.feedEcSensors;
+  }
+  set envFeedEcSensors(v: string[]) {
+    this._setEnv({ feedEcSensors: v });
+  }
 
-  get envBulkEcSensors() { return this._d.bulkEcSensors; }
-  set envBulkEcSensors(v: string[]) { this._setEnv({ bulkEcSensors: v }); }
+  get envBulkEcSensors() {
+    return this._d.bulkEcSensors;
+  }
+  set envBulkEcSensors(v: string[]) {
+    this._setEnv({ bulkEcSensors: v });
+  }
 
-  get envPoreEcSensors() { return this._d.poreEcSensors; }
-  set envPoreEcSensors(v: string[]) { this._setEnv({ poreEcSensors: v }); }
+  get envPoreEcSensors() {
+    return this._d.poreEcSensors;
+  }
+  set envPoreEcSensors(v: string[]) {
+    this._setEnv({ poreEcSensors: v });
+  }
 
-  get envRunoffEcSensors() { return this._d.runoffEcSensors; }
-  set envRunoffEcSensors(v: string[]) { this._setEnv({ runoffEcSensors: v }); }
+  get envRunoffEcSensors() {
+    return this._d.runoffEcSensors;
+  }
+  set envRunoffEcSensors(v: string[]) {
+    this._setEnv({ runoffEcSensors: v });
+  }
 
-  get envDrainVolumeSensors() { return this._d.drainVolumeSensors; }
-  set envDrainVolumeSensors(v: string[]) { this._setEnv({ drainVolumeSensors: v }); }
+  get envDrainVolumeSensors() {
+    return this._d.drainVolumeSensors;
+  }
+  set envDrainVolumeSensors(v: string[]) {
+    this._setEnv({ drainVolumeSensors: v });
+  }
 
-  get envIrrigationFlowSensors() { return this._d.irrigationFlowSensors; }
-  set envIrrigationFlowSensors(v: string[]) { this._setEnv({ irrigationFlowSensors: v }); }
+  get envIrrigationFlowSensors() {
+    return this._d.irrigationFlowSensors;
+  }
+  set envIrrigationFlowSensors(v: string[]) {
+    this._setEnv({ irrigationFlowSensors: v });
+  }
 
-  get envPowerSensors() { return this._d.powerSensors; }
-  set envPowerSensors(v: string[]) { this._setEnv({ powerSensors: v }); }
+  get envPowerSensors() {
+    return this._d.powerSensors;
+  }
+  set envPowerSensors(v: string[]) {
+    this._setEnv({ powerSensors: v });
+  }
 
-  get envEnergySensors() { return this._d.energySensors; }
-  set envEnergySensors(v: string[]) { this._setEnv({ energySensors: v }); }
+  get envEnergySensors() {
+    return this._d.energySensors;
+  }
+  set envEnergySensors(v: string[]) {
+    this._setEnv({ energySensors: v });
+  }
 
-  get envVisionEnabled() { return this._d.visionEnabled; }
-  set envVisionEnabled(v: boolean) { this._setEnv({ visionEnabled: v }); }
+  get envVisionEnabled() {
+    return this._d.visionEnabled;
+  }
+  set envVisionEnabled(v: boolean) {
+    this._setEnv({ visionEnabled: v });
+  }
 
-  get envVisionEarlyOffset() { return this._d.visionEarlyOffset; }
-  set envVisionEarlyOffset(v: number) { this._setEnv({ visionEarlyOffset: v }); }
+  get envVisionEarlyOffset() {
+    return this._d.visionEarlyOffset;
+  }
+  set envVisionEarlyOffset(v: number) {
+    this._setEnv({ visionEarlyOffset: v });
+  }
 
-  get envVisionMidHours() { return this._d.visionMidHours; }
-  set envVisionMidHours(v: number) { this._setEnv({ visionMidHours: v }); }
+  get envVisionMidHours() {
+    return this._d.visionMidHours;
+  }
+  set envVisionMidHours(v: number) {
+    this._setEnv({ visionMidHours: v });
+  }
 
-  get envVisionLateOffset() { return this._d.visionLateOffset; }
-  set envVisionLateOffset(v: number) { this._setEnv({ visionLateOffset: v }); }
+  get envVisionLateOffset() {
+    return this._d.visionLateOffset;
+  }
+  set envVisionLateOffset(v: number) {
+    this._setEnv({ visionLateOffset: v });
+  }
 
   // Growspaces tab compat accessors
 
-  get _isAddingGrowspace() { return this._sm.tabs.growspaces.sub.kind === 'adding'; }
+  get _isAddingGrowspace() {
+    return this._sm.tabs.growspaces.sub.kind === 'adding';
+  }
   set _isAddingGrowspace(v: boolean) {
     if (v) {
       this._t({ type: 'START_ADD_GROWSPACE' });
@@ -287,7 +436,9 @@ export class ConfigDialog extends LitElement {
     }
   }
 
-  get _showDeleteConfirm() { return this._sm.tabs.growspaces.sub.kind === 'confirm-delete'; }
+  get _showDeleteConfirm() {
+    return this._sm.tabs.growspaces.sub.kind === 'confirm-delete';
+  }
   set _showDeleteConfirm(v: boolean) {
     if (v) {
       const sub = this._sm.tabs.growspaces.sub;
@@ -304,7 +455,10 @@ export class ConfigDialog extends LitElement {
     return sub.kind === 'editing' ? sub.growspaceId : '';
   }
   set editSelectedId(id: string) {
-    if (!id) { this._t({ type: 'CANCEL_GROWSPACES' }); return; }
+    if (!id) {
+      this._t({ type: 'CANCEL_GROWSPACES' });
+      return;
+    }
     const device = this.devices?.find((d) => d.deviceId === id);
     this._t({
       type: 'SELECT_GROWSPACE',
@@ -320,25 +474,33 @@ export class ConfigDialog extends LitElement {
     const sub = this._sm.tabs.growspaces.sub;
     return sub.kind === 'editing' ? sub.name : '';
   }
-  set editName(v: string) { this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { name: v } }); }
+  set editName(v: string) {
+    this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { name: v } });
+  }
 
   get editRows(): number {
     const sub = this._sm.tabs.growspaces.sub;
     return sub.kind === 'editing' ? sub.rows : 0;
   }
-  set editRows(v: number) { this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { rows: v } }); }
+  set editRows(v: number) {
+    this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { rows: v } });
+  }
 
   get editPlantsPerRow(): number {
     const sub = this._sm.tabs.growspaces.sub;
     return sub.kind === 'editing' ? sub.plantsPerRow : 0;
   }
-  set editPlantsPerRow(v: number) { this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { plantsPerRow: v } }); }
+  set editPlantsPerRow(v: number) {
+    this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { plantsPerRow: v } });
+  }
 
   get editNotificationService(): string {
     const sub = this._sm.tabs.growspaces.sub;
     return sub.kind === 'editing' ? sub.notificationService : '';
   }
-  set editNotificationService(v: string) { this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { notificationService: v } }); }
+  set editNotificationService(v: string) {
+    this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { notificationService: v } });
+  }
 
   get addName(): string {
     const sub = this._sm.tabs.growspaces.sub;
@@ -377,7 +539,9 @@ export class ConfigDialog extends LitElement {
   }
 
   // Heatmap / groups compat
-  get _showGroupDialog() { return this._sm.tabs.heatmap.sub.kind === 'editing-group'; }
+  get _showGroupDialog() {
+    return this._sm.tabs.heatmap.sub.kind === 'editing-group';
+  }
   set _showGroupDialog(v: boolean) {
     if (v) this._t({ type: 'BEGIN_EDIT_GROUP' });
     else this._t({ type: 'CLOSE_GROUP_DIALOG' });
@@ -392,7 +556,9 @@ export class ConfigDialog extends LitElement {
   }
 
   // Subareas compat
-  get _showSubareaConfigDialog() { return this._sm.tabs.subareas.sub.kind === 'editing-subarea'; }
+  get _showSubareaConfigDialog() {
+    return this._sm.tabs.subareas.sub.kind === 'editing-subarea';
+  }
   set _showSubareaConfigDialog(v: boolean) {
     if (!v) this._t({ type: 'CLOSE_SUBAREA_DIALOG' });
   }
@@ -406,7 +572,9 @@ export class ConfigDialog extends LitElement {
     else this._t({ type: 'CLOSE_SUBAREA_DIALOG' });
   }
 
-  get _showAddSubarea() { return this._sm.tabs.subareas.sub.kind === 'adding'; }
+  get _showAddSubarea() {
+    return this._sm.tabs.subareas.sub.kind === 'adding';
+  }
   set _showAddSubarea(v: boolean) {
     if (v) this._t({ type: 'BEGIN_ADD_SUBAREA' });
     else this._t({ type: 'CANCEL_SUBAREA' });
@@ -431,7 +599,9 @@ export class ConfigDialog extends LitElement {
   }
 
   // Tanks compat
-  get _showTankForm() { return this._sm.tabs.tanks.sub.kind !== 'idle'; }
+  get _showTankForm() {
+    return this._sm.tabs.tanks.sub.kind !== 'idle';
+  }
   get _editingTankIndex(): number | null {
     const sub = this._sm.tabs.tanks.sub;
     return sub.kind === 'editing' ? sub.index : null;
@@ -439,11 +609,21 @@ export class ConfigDialog extends LitElement {
   get _tankDraft() {
     const sub = this._sm.tabs.tanks.sub;
     if (sub.kind === 'adding' || sub.kind === 'editing') {
-      return { sensorEntity: sub.sensorEntity, name: sub.name, volumeLiters: sub.volumeLiters, warningLevel: sub.warningLevel };
+      return {
+        sensorEntity: sub.sensorEntity,
+        name: sub.name,
+        volumeLiters: sub.volumeLiters,
+        warningLevel: sub.warningLevel,
+      };
     }
     return { sensorEntity: '', name: '', volumeLiters: null, warningLevel: 30 };
   }
-  set _tankDraft(v: { sensorEntity: string; name: string; volumeLiters: number | null; warningLevel: number }) {
+  set _tankDraft(v: {
+    sensorEntity: string;
+    name: string;
+    volumeLiters: number | null;
+    warningLevel: number;
+  }) {
     this._t({ type: 'UPDATE_TANK_DRAFT', partial: v });
   }
 
@@ -1003,6 +1183,8 @@ export class ConfigDialog extends LitElement {
           humidifierEntities: environmentData.humidifierEntities || [],
           dehumidifierEntities: environmentData.dehumidifierEntities || [],
           soilMoistureSensor: environmentData.soilMoistureSensor,
+          soilMoistureMin: environmentData.soilMoistureMin ?? null,
+          soilMoistureMax: environmentData.soilMoistureMax ?? null,
           dehumidifierThresholds: environmentData.dehumidifierThresholds || {},
           humidifierThresholds: environmentData.humidifierThresholds || {},
           sensorGroups: environmentData.sensorGroups || [],
@@ -1235,7 +1417,6 @@ export class ConfigDialog extends LitElement {
     this._t({ type: 'CANCEL_GROWSPACES' });
   }
 
-
   private async _handleRemoveEnvironment() {
     const growspaceId = this._sm.environmentDraft.selectedGrowspaceId;
     if (!growspaceId) return;
@@ -1303,17 +1484,15 @@ export class ConfigDialog extends LitElement {
       .sort((a, b) => a.label.localeCompare(b.label));
   }
 
-  private _getEntities(
-    domains: string[],
-    deviceClass: string | null,
-    platform?: string
-  ): string[] {
+  private _getEntities(domains: string[], deviceClass: string | null, platform?: string): string[] {
     if (!this.hass) return [];
     // hass.entities (the entity registry) is present at runtime but not declared
     // on custom-card-helpers' HomeAssistant type; read platform through a cast.
-    const registry = (this.hass as unknown as {
-      entities?: Record<string, { platform?: string }>;
-    }).entities;
+    const registry = (
+      this.hass as unknown as {
+        entities?: Record<string, { platform?: string }>;
+      }
+    ).entities;
     return Object.keys(this.hass.states || {})
       .filter((eid) => {
         const state = this.hass.states[eid];
@@ -1365,16 +1544,16 @@ export class ConfigDialog extends LitElement {
 
   /** The frontend entity registry (`hass.entities`), untyped on the hass type. */
   private get _entityRegistry(): EntityRegistrySnapshot {
-    return (
-      (this.hass as unknown as { entities?: EntityRegistrySnapshot }).entities ?? {}
-    );
+    return (this.hass as unknown as { entities?: EntityRegistrySnapshot }).entities ?? {};
   }
 
   /** Device-registry name for a device id (`name_by_user || name`), falling back to the id. */
   private _deviceNameById(deviceId: string): string {
-    const devices = (this.hass as unknown as {
-      devices?: Record<string, { name_by_user?: string; name?: string }>;
-    }).devices;
+    const devices = (
+      this.hass as unknown as {
+        devices?: Record<string, { name_by_user?: string; name?: string }>;
+      }
+    ).devices;
     const device = devices?.[deviceId];
     return device?.name_by_user || device?.name || deviceId;
   }
@@ -1502,7 +1681,8 @@ export class ConfigDialog extends LitElement {
     const group = e.detail.group as import('../types').SensorGroup;
     const groups = this._sm.environmentDraft.sensorGroups;
     const index = groups.findIndex((g) => g.id === group.id);
-    const updated = index >= 0 ? groups.map((g, i) => (i === index ? group : g)) : [...groups, group];
+    const updated =
+      index >= 0 ? groups.map((g, i) => (i === index ? group : g)) : [...groups, group];
     this._t({ type: 'UPDATE_ENV_DRAFT', partial: { sensorGroups: updated } });
     this._t({ type: 'CLOSE_GROUP_DIALOG' });
   }
@@ -1568,8 +1748,10 @@ export class ConfigDialog extends LitElement {
     const device = this.devices.find((d) => d.deviceId === growspaceId);
     if (device) {
       this._t({ type: 'RESET_FROM_DEVICE', device });
-      this._dehumidifierControlEnabled = device.environmentAttributes?.dehumidifierControlEnabled ?? false;
-      this._humidifierControlEnabled = device.environmentAttributes?.humidifierControlEnabled ?? false;
+      this._dehumidifierControlEnabled =
+        device.environmentAttributes?.dehumidifierControlEnabled ?? false;
+      this._humidifierControlEnabled =
+        device.environmentAttributes?.humidifierControlEnabled ?? false;
     } else {
       this._t({
         type: 'UPDATE_ENV_DRAFT',
@@ -1585,6 +1767,8 @@ export class ConfigDialog extends LitElement {
           humidifierEntities: [],
           dehumidifierEntities: [],
           soilMoistureSensor: '',
+          soilMoistureMin: null,
+          soilMoistureMax: null,
           dehumidifierThresholds: {},
           humidifierThresholds: {},
           visionEnabled: false,
@@ -1662,6 +1846,7 @@ export class ConfigDialog extends LitElement {
       entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
       averageSensorValue: (ids: string[]) => this._averageSensorValue(ids),
+      sensorReading: (entityId: string) => this._sensorReading(entityId),
     };
     return html`
       <config-sensors-tab
@@ -1669,6 +1854,20 @@ export class ConfigDialog extends LitElement {
         @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
       ></config-sensors-tab>
     `;
+  }
+
+  /**
+   * Current state + unit for one entity. The unit is what tells the Moisture
+   * Band whether this sensor can be read as a percentage at all; an absent
+   * unit is the legacy case and stays supported.
+   */
+  private _sensorReading(entityId: string): { value: string | null; unit: string | null } | null {
+    const state = this.hass?.states?.[entityId];
+    if (!state) return null;
+    return {
+      value: state.state ?? null,
+      unit: (state.attributes?.unit_of_measurement as string | undefined) ?? null,
+    };
   }
 
   private _averageSensorValue(entityIds: string[]): number | null {
@@ -1733,7 +1932,8 @@ export class ConfigDialog extends LitElement {
         @pick-ac-infinity-device=${(e: CustomEvent) =>
           this._pickAcInfinityPort(e.detail.field, e.detail.index, e.detail.deviceId)}
         @fan-config-changed=${(e: CustomEvent) => this._updateFanConfig(e.detail.partial)}
-        @exhaust-config-changed=${(e: CustomEvent) => this._updateExhaustFanConfig(e.detail.partial)}
+        @exhaust-config-changed=${(e: CustomEvent) =>
+          this._updateExhaustFanConfig(e.detail.partial)}
         @toggle-fan-temp-override=${() => {
           this._fanTempOverrideExpanded = !this._fanTempOverrideExpanded;
         }}
@@ -2096,7 +2296,10 @@ export class ConfigDialog extends LitElement {
                         <option value="">Select...</option>
                         ${Object.entries(this.growspaceOptions).map(
                           ([id, name]) => html`
-                            <option value="${id}" ?selected=${id === this._sm.environmentDraft.selectedGrowspaceId}>
+                            <option
+                              value="${id}"
+                              ?selected=${id === this._sm.environmentDraft.selectedGrowspaceId}
+                            >
                               ${name}
                             </option>
                           `
@@ -2152,16 +2355,10 @@ export class ConfigDialog extends LitElement {
               }
               if (gsSub.kind === 'editing') {
                 return html`
-                  <button
-                    class="md3-button tonal error"
-                    @click=${this._submitDeleteGrowspace}
-                  >
+                  <button class="md3-button tonal error" @click=${this._submitDeleteGrowspace}>
                     ${this._icon(mdiDelete, 18)} Delete
                   </button>
-                  <button
-                    class="md3-button primary"
-                    @click=${this._submitGrowspaceAndEnv}
-                  >
+                  <button class="md3-button primary" @click=${this._submitGrowspaceAndEnv}>
                     Save Changes
                   </button>
                 `;

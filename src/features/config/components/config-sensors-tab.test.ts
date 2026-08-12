@@ -8,10 +8,7 @@ import type {
 } from '../viewmodels/sensors-tab.viewmodel';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
 
-function field(
-  key: SensorFieldKey,
-  over: Partial<SensorFieldVM> = {}
-): SensorFieldVM {
+function field(key: SensorFieldKey, over: Partial<SensorFieldVM> = {}): SensorFieldVM {
   const multi = over.multi ?? key.endsWith('Sensors');
   return {
     key,
@@ -25,6 +22,7 @@ function field(
 
 function makeVm(over: Partial<SensorsTabViewModel> = {}): SensorsTabViewModel {
   return {
+    moistureBand: null,
     fields: [
       field('temperatureSensors'),
       field('humiditySensors'),
@@ -140,7 +138,101 @@ describe('ConfigSensorsTab — intents out', () => {
     const el = await mount(makeVm({ lst: { offset: 2, vpdDisplay: '0.85 kPa' } }));
     const received = listenPartials(el);
     const input = el.shadowRoot!.querySelector('md3-number-input')!;
-    input.dispatchEvent(new CustomEvent('change', { detail: '3.5', bubbles: true, composed: true }));
+    input.dispatchEvent(
+      new CustomEvent('change', { detail: '3.5', bubbles: true, composed: true })
+    );
     expect(received).toEqual([{ lstOffset: 3.5 }]);
+  });
+});
+
+// ─── Acceptable Moisture Band ────────────────────────────────────────────────
+
+function band(over: Partial<NonNullable<SensorsTabViewModel['moistureBand']>> = {}) {
+  return {
+    min: 20,
+    max: 60,
+    isCustom: false,
+    step: 0.1,
+    error: null,
+    canSave: true,
+    preview: null,
+    incompatibleUnit: null,
+    ...over,
+  };
+}
+
+describe('ConfigSensorsTab — acceptable moisture band', () => {
+  it('is absent when the VM omits it', async () => {
+    const el = await mount(makeVm({ moistureBand: null }));
+    expect(el.shadowRoot!.querySelector('.moisture-band')).toBeNull();
+  });
+
+  it('renders both bounds with a 0.1 step', async () => {
+    const el = await mount(makeVm({ moistureBand: band() }));
+    const inputs = el.shadowRoot!.querySelectorAll('.moisture-band md3-number-input');
+    expect(inputs.length).toBe(2);
+    expect(inputs[0].getAttribute('step')).toBe('0.1');
+  });
+
+  it('badges an inherited band so defaults do not read as a saved override', async () => {
+    const el = await mount(makeVm({ moistureBand: band({ isCustom: false }) }));
+    expect(el.shadowRoot!.querySelector('.moisture-band__badge')).not.toBeNull();
+  });
+
+  it('drops the badge for a custom band', async () => {
+    const el = await mount(makeVm({ moistureBand: band({ isCustom: true }) }));
+    expect(el.shadowRoot!.querySelector('.moisture-band__badge')).toBeNull();
+  });
+
+  it('shows the preview classification when a reading exists', async () => {
+    const el = await mount(
+      makeVm({
+        moistureBand: band({
+          preview: { classification: 'too_wet', label: 'Too wet', reading: 65 },
+        }),
+      })
+    );
+    const preview = el.shadowRoot!.querySelector('.moisture-band__preview')!;
+    expect(preview.textContent).toContain('Too wet');
+    expect(preview.getAttribute('data-classification')).toBe('too_wet');
+  });
+
+  it('omits the preview when there is no valid reading', async () => {
+    const el = await mount(makeVm({ moistureBand: band({ preview: null }) }));
+    expect(el.shadowRoot!.querySelector('.moisture-band__preview')).toBeNull();
+  });
+
+  it('shows an incompatibility state instead of the controls for a non-percentage sensor', async () => {
+    const el = await mount(makeVm({ moistureBand: band({ incompatibleUnit: '°C' }) }));
+    expect(el.shadowRoot!.querySelector('.moisture-band--incompatible')).not.toBeNull();
+    expect(el.shadowRoot!.querySelectorAll('.moisture-band md3-number-input').length).toBe(0);
+  });
+
+  it('surfaces a validation error', async () => {
+    const el = await mount(makeVm({ moistureBand: band({ error: 'bad band', canSave: false }) }));
+    expect(el.shadowRoot!.querySelector('.moisture-band__error')!.textContent).toContain(
+      'bad band'
+    );
+  });
+
+  it('emits both bounds as null when resetting to defaults', async () => {
+    const el = await mount(makeVm({ moistureBand: band({ isCustom: true }) }));
+    const received = listenPartials(el);
+    (el.shadowRoot!.querySelector('.moisture-band__reset') as HTMLButtonElement).click();
+    expect(received).toEqual([{ soilMoistureMin: null, soilMoistureMax: null }]);
+  });
+
+  it('disables reset while the band is already inherited', async () => {
+    const el = await mount(makeVm({ moistureBand: band({ isCustom: false }) }));
+    const reset = el.shadowRoot!.querySelector('.moisture-band__reset') as HTMLButtonElement;
+    expect(reset.disabled).toBe(true);
+  });
+
+  it('materialises both bounds when only one is edited from an inherited band', async () => {
+    const el = await mount(makeVm({ moistureBand: band({ isCustom: false }) }));
+    const received = listenPartials(el);
+    const minInput = el.shadowRoot!.querySelectorAll('.moisture-band md3-number-input')[0];
+    minInput.dispatchEvent(new CustomEvent('change', { detail: '30' }));
+    expect(received).toEqual([{ soilMoistureMin: 30, soilMoistureMax: 60 }]);
   });
 });

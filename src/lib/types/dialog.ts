@@ -93,6 +93,12 @@ export interface EnvironmentConfigData {
   vpdSensors: string[];
   co2Sensor: string;
   soilMoistureSensor: string;
+  /** Acceptable Moisture Band override; null on both means inherited. */
+  soilMoistureMin?: number | null;
+  soilMoistureMax?: number | null;
+  soilMoistureBand?: { min: number; max: number; is_custom: boolean };
+  soilMoistureValue?: string;
+  soilMoistureBandCompatible?: boolean;
 
   // Legacy singular (backward compat)
   temperatureSensor: string;
@@ -151,7 +157,10 @@ export interface EnvironmentConfigData {
   energySensors?: string[];
   circulationFanConfig?: CirculationFanConfig;
   exhaustFanConfig?: ExhaustFanConfig;
-  vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
+  vpdOptimalOverrides?: Record<
+    string,
+    { day: { low: number; high: number }; night: { low: number; high: number } }
+  >;
 }
 
 export interface VisionCheckupConfigEventDetail {
@@ -167,6 +176,9 @@ export interface EnvironmentConfigEventDetail {
   vpdSensors?: string[];
   co2Sensor?: string | null;
   soilMoistureSensor?: string | null;
+  // Acceptable Moisture Band — only ever present as a complete pair.
+  soilMoistureMin?: number | null;
+  soilMoistureMax?: number | null;
   // Fans
   circulationFanEntity?: string | null;
   circulationFanEntities?: string[];
@@ -211,7 +223,10 @@ export interface EnvironmentConfigEventDetail {
   energySensors?: string[];
   circulationFanConfig?: CirculationFanConfig;
   exhaustFanConfig?: ExhaustFanConfig;
-  vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
+  vpdOptimalOverrides?: Record<
+    string,
+    { day: { low: number; high: number }; night: { low: number; high: number } }
+  >;
   lstOffset?: number;
 }
 

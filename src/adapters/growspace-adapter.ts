@@ -157,6 +157,13 @@ export class GrowspaceAdapter {
       growlightConfig: environment?.growlight_config,
       vpd: environment?.vpd ?? undefined,
       soilMoistureValue: environment?.soil_moisture_value ?? undefined,
+      // `?? null` not `?? undefined`: null is the meaningful "inherited" state
+      // for the band pair, and the dialog seeders rely on it.
+      soilMoistureMin: environment?.soil_moisture_min ?? null,
+      soilMoistureMax: environment?.soil_moisture_max ?? null,
+      soilMoistureBand: environment?.soil_moisture_band,
+      soilMoistureUnit: environment?.soil_moisture_unit ?? undefined,
+      soilMoistureBandCompatible: environment?.soil_moisture_band_compatible,
       irrigationPumpState: environment?.irrigation_pump_state ?? undefined,
       drainPumpState: environment?.drain_pump_state ?? undefined,
       // `irrigation_tanks` and `active_events` are Opaque Regions (ADR 0031):

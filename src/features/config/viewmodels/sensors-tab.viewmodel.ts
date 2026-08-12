@@ -17,6 +17,14 @@
  */
 
 import { calculateVpdWithLstOffset } from '../../../utils/vpd-calc';
+import {
+  CLASSIFICATION_LABELS,
+  bandValidationError,
+  classifyReading,
+  effectiveBand,
+  parseReading,
+  type MoistureClassification,
+} from '../moisture-band';
 import type { EnvironmentDraft, ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 
 /** The draft keys the Sensors tab owns — each a `<datalist>`-backed entity picker. */
@@ -40,13 +48,55 @@ interface SensorFieldDef {
 
 /** Field set + display order, transcribed verbatim from the former inline render. */
 const SENSOR_FIELDS: readonly SensorFieldDef[] = [
-  { key: 'temperatureSensors', label: 'Temperature Sensors', multi: true, domains: ['sensor', 'input_number'], deviceClass: 'temperature' },
-  { key: 'humiditySensors', label: 'Humidity Sensors', multi: true, domains: ['sensor', 'input_number'], deviceClass: 'humidity' },
-  { key: 'vpdSensors', label: 'VPD Sensors (Optional)', multi: true, domains: ['sensor', 'input_number'], deviceClass: 'pressure' },
-  { key: 'soilMoistureSensor', label: 'Soil Moisture Sensor', multi: false, domains: ['sensor', 'input_number'], deviceClass: 'moisture' },
-  { key: 'co2Sensor', label: 'CO₂ Sensor', multi: false, domains: ['sensor', 'input_number'], deviceClass: 'carbon_dioxide' },
-  { key: 'lightSensors', label: 'Light Source / Sensor', multi: true, domains: ['switch', 'light', 'input_boolean', 'sensor'], deviceClass: null },
-  { key: 'substrateTemperatureSensors', label: 'Substrate Temperature Sensors', multi: true, domains: ['sensor', 'input_number'], deviceClass: 'temperature' },
+  {
+    key: 'temperatureSensors',
+    label: 'Temperature Sensors',
+    multi: true,
+    domains: ['sensor', 'input_number'],
+    deviceClass: 'temperature',
+  },
+  {
+    key: 'humiditySensors',
+    label: 'Humidity Sensors',
+    multi: true,
+    domains: ['sensor', 'input_number'],
+    deviceClass: 'humidity',
+  },
+  {
+    key: 'vpdSensors',
+    label: 'VPD Sensors (Optional)',
+    multi: true,
+    domains: ['sensor', 'input_number'],
+    deviceClass: 'pressure',
+  },
+  {
+    key: 'soilMoistureSensor',
+    label: 'Soil Moisture Sensor',
+    multi: false,
+    domains: ['sensor', 'input_number'],
+    deviceClass: 'moisture',
+  },
+  {
+    key: 'co2Sensor',
+    label: 'CO₂ Sensor',
+    multi: false,
+    domains: ['sensor', 'input_number'],
+    deviceClass: 'carbon_dioxide',
+  },
+  {
+    key: 'lightSensors',
+    label: 'Light Source / Sensor',
+    multi: true,
+    domains: ['switch', 'light', 'input_boolean', 'sensor'],
+    deviceClass: null,
+  },
+  {
+    key: 'substrateTemperatureSensors',
+    label: 'Substrate Temperature Sensors',
+    multi: true,
+    domains: ['sensor', 'input_number'],
+    deviceClass: 'temperature',
+  },
 ] as const;
 
 /** One rendered sensor picker: identity + current value + the option list. */
@@ -57,6 +107,35 @@ export interface SensorFieldVM {
   /** `string[]` when `multi`, else `string`. */
   value: string[] | string;
   options: string[];
+}
+
+/**
+ * The Acceptable Moisture Band section, present only when a soil-moisture
+ * sensor is configured. Its prerequisite is that sensor alone — never pump or
+ * tank hardware.
+ */
+export interface MoistureBandVM {
+  /** Displayed bounds. Equal to the defaults while the band is inherited. */
+  min: number;
+  max: number;
+  /** False when showing the inherited defaults rather than a saved override. */
+  isCustom: boolean;
+  /** Step for the numeric inputs, per the 0.1% decimal requirement. */
+  step: number;
+  /** Validation message for an incomplete or out-of-range pair, else null. */
+  error: string | null;
+  /** True when the pair is savable (a complete valid pair, or a clean clear). */
+  canSave: boolean;
+  /**
+   * Live classification of the current reading, or null when no valid reading
+   * exists — an unavailable sensor omits the preview without blocking config.
+   */
+  preview: { classification: MoistureClassification; label: string; reading: number } | null;
+  /**
+   * Set when the sensor explicitly reports a non-percentage unit. The band
+   * cannot be interpreted for it, so the controls are not offered.
+   */
+  incompatibleUnit: string | null;
 }
 
 /** The Leaf Surface Temperature offset section, present only when its gate is met. */
@@ -72,6 +151,8 @@ export interface SensorsTabViewModel {
   fields: SensorFieldVM[];
   /** The LST offset + live VPD readout, or null when the gate isn't met. */
   lst: LstVM | null;
+  /** The Acceptable Moisture Band, or null when no moisture sensor is set. */
+  moistureBand: MoistureBandVM | null;
 }
 
 /** Hass-reading adapters the shell injects so the component stays hass-free. */
@@ -80,6 +161,12 @@ export interface SensorsTabDeps {
   entityOptions: (domains: string[], deviceClass: string | null) => string[];
   /** Average current value of the given entities, or null when none report. */
   averageSensorValue: (entityIds: string[]) => number | null;
+  /**
+   * Current reading + unit for one entity, or null when it is missing or
+   * unavailable. The unit decides whether the band can be interpreted at all:
+   * `null` unit is the legacy no-metadata case and stays supported.
+   */
+  sensorReading: (entityId: string) => { value: string | null; unit: string | null } | null;
 }
 
 function deriveLst(draft: EnvironmentDraft, deps: SensorsTabDeps): LstVM | null {
@@ -95,6 +182,50 @@ function deriveLst(draft: EnvironmentDraft, deps: SensorsTabDeps): LstVM | null 
       ? calculateVpdWithLstOffset(avgTemp, avgHumidity, draft.lstOffset)
       : null;
   return { offset: draft.lstOffset, vpdDisplay: vpd != null ? `${vpd} kPa` : '—' };
+}
+
+function deriveMoistureBand(draft: EnvironmentDraft, deps: SensorsTabDeps): MoistureBandVM | null {
+  // Sensor-only prerequisite: the band is about interpreting that sensor's
+  // readings, so pump/tank hardware never gates it.
+  if (!draft.soilMoistureSensor) return null;
+
+  const pair = { min: draft.soilMoistureMin, max: draft.soilMoistureMax };
+  const band = effectiveBand(pair);
+  const reading = deps.sensorReading(draft.soilMoistureSensor);
+
+  // A unit that is present and not '%' is an explicit statement that this
+  // sensor measures something else. No unit at all is the legacy case.
+  const unit = reading?.unit ?? null;
+  const incompatibleUnit = unit !== null && unit.trim() !== '%' ? unit : null;
+  if (incompatibleUnit) {
+    return {
+      min: band.min,
+      max: band.max,
+      isCustom: band.isCustom,
+      step: 0.1,
+      error: null,
+      canSave: true,
+      preview: null,
+      incompatibleUnit,
+    };
+  }
+
+  const value = parseReading(reading?.value);
+  const classification = value !== null ? classifyReading(value, band) : null;
+
+  return {
+    min: band.min,
+    max: band.max,
+    isCustom: band.isCustom,
+    step: 0.1,
+    error: bandValidationError(pair),
+    canSave: bandValidationError(pair) === null,
+    preview:
+      value !== null && classification !== null
+        ? { classification, label: CLASSIFICATION_LABELS[classification], reading: value }
+        : null,
+    incompatibleUnit: null,
+  };
 }
 
 /**
@@ -113,5 +244,5 @@ export function createSensorsTabViewModel(
     value: draft[def.key],
     options: deps.entityOptions(def.domains, def.deviceClass),
   }));
-  return { fields, lst: deriveLst(draft, deps) };
+  return { fields, lst: deriveLst(draft, deps), moistureBand: deriveMoistureBand(draft, deps) };
 }

@@ -24,7 +24,9 @@ import type {
   SensorsTabViewModel,
   SensorFieldVM,
   LstVM,
+  MoistureBandVM,
 } from '../viewmodels/sensors-tab.viewmodel';
+import { editBound, resetBand } from '../moisture-band';
 
 @customElement('config-sensors-tab')
 export class ConfigSensorsTab extends LitElement {
@@ -40,6 +42,65 @@ export class ConfigSensorsTab extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 16px;
+      }
+      /* ── Acceptable Moisture Band ── */
+      .moisture-band {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        border-radius: 8px;
+        background: rgba(var(--rgb-primary-text-color, 255, 255, 255), 0.04);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      }
+      .moisture-band__title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+      }
+      .moisture-band__badge {
+        font-size: 0.75em;
+        font-weight: 400;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: rgba(var(--rgb-primary-text-color, 255, 255, 255), 0.1);
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+      }
+      .moisture-band__note {
+        font-size: 0.85em;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
+      }
+      .moisture-band__error {
+        font-size: 0.85em;
+        color: var(--error-color, #f44336);
+      }
+      .moisture-band__preview {
+        font-size: 0.9em;
+        font-weight: 500;
+      }
+      .moisture-band__preview[data-classification='in_band'] {
+        color: var(--success-color, #4caf50);
+      }
+      .moisture-band__preview[data-classification='too_dry'] {
+        color: var(--warning-color, #ff9800);
+      }
+      .moisture-band__preview[data-classification='too_wet'] {
+        color: var(--info-color, #2196f3);
+      }
+      .moisture-band__reset {
+        align-self: flex-start;
+        background: none;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.2));
+        border-radius: 4px;
+        color: var(--primary-text-color, #fff);
+        cursor: pointer;
+        font-size: 0.85em;
+        padding: 6px 12px;
+      }
+      .moisture-band__reset[disabled] {
+        cursor: default;
+        opacity: 0.4;
       }
       /* ── entity / multi-select pickers — copied from config-dialog ── */
       .multi-select-container {
@@ -122,7 +183,10 @@ export class ConfigSensorsTab extends LitElement {
         <div
           style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
         >
-          <svg style="width:20px;height:20px;fill:var(--primary-color,#4caf50);" viewBox="0 0 24 24">
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
             <path d="${mdiThermometer}"></path>
           </svg>
           <h3 style="margin:0;border:none;padding:0;">Monitoring Sensors</h3>
@@ -130,9 +194,9 @@ export class ConfigSensorsTab extends LitElement {
         <div class="form-section">
           <div class="row-col-grid">${this._field(f[0])}${this._field(f[1])}</div>
           <div class="row-col-grid">${this._field(f[2])}${this._field(f[3])}</div>
+          ${this.vm.moistureBand ? this._renderMoistureBand(this.vm.moistureBand) : nothing}
           <div class="row-col-grid">${this._field(f[4])}${this._field(f[5])}</div>
-          ${this._field(f[6])}
-          ${this.vm.lst ? this._renderLst(this.vm.lst) : nothing}
+          ${this._field(f[6])} ${this.vm.lst ? this._renderLst(this.vm.lst) : nothing}
         </div>
       </div>
     `;
@@ -198,6 +262,91 @@ export class ConfigSensorsTab extends LitElement {
             ${field.options.map((eid) => html`<option value="${eid}"></option>`)}
           </datalist>
         </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Emit one edited bound. `editBound` materialises the *other* bound from the
+   * displayed default when the band was inherited — the backend rejects a lone
+   * bound, so a half pair must never leave here.
+   */
+  private _emitBound(bound: 'min' | 'max', raw: string): void {
+    const value = raw.trim() === '' ? null : Number.parseFloat(raw);
+    const next = editBound(
+      {
+        min: this.vm.moistureBand?.isCustom ? this.vm.moistureBand.min : null,
+        max: this.vm.moistureBand?.isCustom ? this.vm.moistureBand.max : null,
+      },
+      bound,
+      value !== null && Number.isNaN(value) ? null : value
+    );
+    this._emit({ soilMoistureMin: next.min, soilMoistureMax: next.max });
+  }
+
+  private _renderMoistureBand(band: MoistureBandVM): TemplateResult {
+    if (band.incompatibleUnit) {
+      return html`
+        <div class="moisture-band moisture-band--incompatible">
+          <div class="moisture-band__title">Acceptable Moisture Band</div>
+          <div class="moisture-band__note">
+            This sensor reports ${band.incompatibleUnit}, not a percentage, so its readings cannot
+            be interpreted as soil moisture. Choose a percentage sensor to configure a healthy band.
+          </div>
+        </div>
+      `;
+    }
+
+    return html`
+      <div class="moisture-band">
+        <div class="moisture-band__title">
+          Acceptable Moisture Band
+          ${band.isCustom
+            ? nothing
+            : html`<span class="moisture-band__badge">Using defaults</span>`}
+        </div>
+        <div class="moisture-band__note">
+          Readings outside this range (inclusive) are flagged as warnings.
+        </div>
+        <div class="row-col-grid">
+          <md3-number-input
+            label="Healthy minimum"
+            .value=${band.min}
+            @change=${(e: CustomEvent) => this._emitBound('min', String(e.detail))}
+            min="0"
+            max="100"
+            step=${band.step}
+            suffix="%"
+          ></md3-number-input>
+          <md3-number-input
+            label="Healthy maximum"
+            .value=${band.max}
+            @change=${(e: CustomEvent) => this._emitBound('max', String(e.detail))}
+            min="0"
+            max="100"
+            step=${band.step}
+            suffix="%"
+          ></md3-number-input>
+        </div>
+        ${band.error ? html`<div class="moisture-band__error">${band.error}</div>` : nothing}
+        ${band.preview
+          ? html`<div
+              class="moisture-band__preview"
+              data-classification=${band.preview.classification}
+            >
+              Current reading ${band.preview.reading}% — ${band.preview.label}
+            </div>`
+          : nothing}
+        <button
+          class="moisture-band__reset"
+          ?disabled=${!band.isCustom}
+          @click=${() => {
+            const cleared = resetBand();
+            this._emit({ soilMoistureMin: cleared.min, soilMoistureMax: cleared.max });
+          }}
+        >
+          Reset to defaults
+        </button>
       </div>
     `;
   }
