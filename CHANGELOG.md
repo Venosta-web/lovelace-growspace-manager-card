@@ -1,3 +1,10 @@
+# [1.1.0-next.100](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.99...v1.1.0-next.100) (2026-08-12)
+
+
+### Features
+
+* **config:** configure and preview the Acceptable Moisture Band ([#503](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/503)) ([8e88e99](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/8e88e99ea8b6e4edd87a5585ecbae060665651fc)), closes [#501](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/501) [#580](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/580)
+
 # [1.1.0-next.99](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.98...v1.1.0-next.99) (2026-08-12)
 
 
