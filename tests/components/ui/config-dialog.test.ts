@@ -275,3 +275,127 @@ describe('config dialog navigation accessibility', () => {
     expect(subareasPath).not.toBe(growspacesPath);
   });
 });
+
+describe('config dialog remove environment danger zone', () => {
+  let element: ConfigDialog;
+
+  const configuredDevice = createGrowspaceDevice({
+    deviceId: 'gs1',
+    name: 'Flower Tent',
+    rows: 4,
+    plantsPerRow: 4,
+    environmentAttributes: {
+      temperatureSensors: ['sensor.canopy_left', 'sensor.canopy_right'],
+      humiditySensors: ['sensor.humidity'],
+      irrigationTanks: [{ sensorEntity: 'sensor.tank', name: 'Reservoir', warningLevel: 30 }],
+      exhaustFanEntities: ['fan.exhaust'],
+      circulationFanEntities: ['fan.circulation'],
+      humidifierAcInfinityDevices: [
+        { mode_entity: 'select.humidifier_mode', speed_entity: 'number.humidifier_speed' },
+      ],
+    },
+  });
+
+  async function growspacesShadow(): Promise<ShadowRoot> {
+    await element.updateComplete;
+    const tab = element.shadowRoot!.querySelector('config-growspaces-tab') as HTMLElement & {
+      updateComplete: Promise<boolean>;
+    };
+    await tab.updateComplete;
+    return tab.shadowRoot!;
+  }
+
+  async function dangerButton(): Promise<HTMLButtonElement> {
+    return Array.from((await growspacesShadow()).querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Remove Environment')
+    )!;
+  }
+
+  beforeEach(async () => {
+    element = new ConfigDialog();
+    element.hass = { states: {}, services: {}, language: 'en' } as any;
+    element.devices = [configuredDevice];
+    element.growspaceOptions = { gs1: 'Flower Tent' };
+    element.growspaceId = 'gs1';
+    element.initialTab = ConfigTab.GROWSPACES;
+    element.open = true;
+    document.body.appendChild(element);
+    await element.updateComplete;
+  });
+
+  afterEach(() => {
+    element.remove();
+    vi.restoreAllMocks();
+  });
+
+  it('places removal in the Growspaces detail danger zone instead of Climate', async () => {
+    const dangerZone = (await growspacesShadow()).querySelector('.danger-zone');
+
+    expect(dangerZone?.textContent).toContain('Danger zone');
+    expect(dangerZone?.textContent).toContain('Remove Environment');
+
+    element.currentTab = ConfigTab.CLIMATE;
+    await element.updateComplete;
+    const climate = element.shadowRoot!.querySelector('config-climate-tab') as HTMLElement & {
+      updateComplete: Promise<boolean>;
+    };
+    await climate.updateComplete;
+    expect(climate.shadowRoot!.textContent).not.toContain('Remove Environment');
+  });
+
+  it('shows the affected sensor and controller counts in the footer confirmation flow', async () => {
+    await (await dangerButton()).click();
+    await element.updateComplete;
+
+    const confirmation = await growspacesShadow();
+    expect(confirmation.textContent).toContain('4 sensors');
+    expect(confirmation.textContent).toContain('3 controllers');
+    expect(buttonByText(element, 'Confirm Remove')).toBeDefined();
+    expect(buttonByText(element, 'Keep Environment')).toBeDefined();
+    expect(element.shadowRoot!.activeElement).toBe(buttonByText(element, 'Keep Environment'));
+    expect(getComputedStyle(buttonByText(element, 'Confirm Remove')!).minHeight).toBe('44px');
+  });
+
+  it('cancels removal without dispatching a mutation', async () => {
+    const remove = vi.fn();
+    element.addEventListener('remove-environment-submit', remove);
+    await (await dangerButton()).click();
+    await element.updateComplete;
+
+    buttonByText(element, 'Keep Environment')!.click();
+    await element.updateComplete;
+
+    expect(remove).not.toHaveBeenCalled();
+    expect(await dangerButton()).toBeDefined();
+  });
+
+  it('awaits the host mutation and reseeds from its refreshed backend device', async () => {
+    let resolveMutation!: (device: ReturnType<typeof createGrowspaceDevice>) => void;
+    const completion = new Promise<ReturnType<typeof createGrowspaceDevice>>((resolve) => {
+      resolveMutation = resolve;
+    });
+    const remove = vi.fn((event: Event) => {
+      (event as CustomEvent).detail.completion = completion;
+    });
+    element.addEventListener('remove-environment-submit', remove);
+    const confirmSpy = vi.spyOn(window, 'confirm');
+
+    await (await dangerButton()).click();
+    await element.updateComplete;
+    buttonByText(element, 'Confirm Remove')!.click();
+    await element.updateComplete;
+
+    expect(remove).toHaveBeenCalledOnce();
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect((element as any).envTemperatureSensors).toEqual([
+      'sensor.canopy_left',
+      'sensor.canopy_right',
+    ]);
+    expect(buttonByText(element, 'Removing…')?.disabled).toBe(true);
+
+    resolveMutation(device('gs1'));
+
+    await vi.waitFor(() => expect((element as any).envTemperatureSensors).toEqual([]));
+    expect((element as any).envSelectedId).toBe('gs1');
+  });
+});

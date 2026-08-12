@@ -26,12 +26,6 @@ function withFan(partial: Record<string, unknown>): ConfigDialogSM {
 }
 
 describe('createClimateTabViewModel — control section', () => {
-  it('gates Remove Environment on a selected growspace', () => {
-    expect(createClimateTabViewModel(sm(), deps, collapsed).control.canRemoveEnvironment).toBe(false);
-    const s = transition(sm(), { type: 'UPDATE_ENV_DRAFT', partial: { selectedGrowspaceId: 'gs1' } });
-    expect(createClimateTabViewModel(s, deps, collapsed).control.canRemoveEnvironment).toBe(true);
-  });
-
   it('fills fan picker options from the injected adapter', () => {
     const d: ClimateTabDeps = { entityOptions: (domains) => (domains.includes('binary_sensor') ? ['x.exhaust'] : ['x.circ']), acInfinityConflict: () => null, acInfinityPortDevices: () => [], acInfinityPortDeviceId: () => '', acInfinityPrefillWarning: () => [] };
     const vm = createClimateTabViewModel(sm(), d, collapsed);

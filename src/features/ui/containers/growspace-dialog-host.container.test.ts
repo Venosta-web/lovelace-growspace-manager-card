@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { waterPlant as mockWaterPlant } from '../../../slices/plant';
 import {
   configureEnvironment as mockConfigureEnvironment,
+  removeEnvironment as mockRemoveEnvironment,
   updateGrowspace as mockUpdateGrowspace,
 } from '../../../slices/growspace';
 import { applyIPM as mockApplyIPM } from '../../../slices/nutrient';
@@ -107,6 +108,31 @@ function makeSubmitEvent(detail: Record<string, unknown> = {}): CustomEvent {
     },
   });
 }
+
+describe('GrowspaceDialogHost – environment removal completion', () => {
+  it('resolves with backend state only after the mutation and store refresh finish', async () => {
+    const el = createElement();
+    const store = (el as any).store as ReturnType<typeof makeMockStore>;
+    const refreshedDevice = { deviceId: 'gs-1', environmentAttributes: {} };
+    let finishRefresh!: () => void;
+    store.refreshData.mockImplementation(
+      () => new Promise<void>((resolve) => (finishRefresh = resolve))
+    );
+    store.$dialogHostState.get.mockReturnValue({ devices: [refreshedDevice] });
+
+    const completion = (el as any)._handleRemoveEnvironment({ growspace_id: 'gs-1' });
+    let settled = false;
+    void completion.then(() => (settled = true));
+
+    await vi.waitFor(() => expect(store.refreshData).toHaveBeenCalledOnce());
+    expect(mockRemoveEnvironment).toHaveBeenCalledWith('gs-1');
+    expect(settled).toBe(false);
+
+    finishRefresh();
+
+    await expect(completion).resolves.toBe(refreshedDevice);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Tests

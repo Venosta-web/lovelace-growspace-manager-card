@@ -120,6 +120,12 @@ const ENVIRONMENT_SAVE_TABS = new Set<ConfigTab>([
   ConfigTab.VPD_TARGETS,
 ]);
 
+export interface RemoveEnvironmentEventDetail {
+  growspace_id: string;
+  /** Assigned synchronously by the dialog host to expose mutation + refresh completion. */
+  completion?: Promise<GrowspaceDevice | undefined>;
+}
+
 @customElement('config-dialog')
 export class ConfigDialog extends LitElement {
   @property({ type: Boolean, reflect: true }) open = false;
@@ -1184,6 +1190,10 @@ export class ConfigDialog extends LitElement {
         flex: 0 0 auto;
       }
 
+      .remove-environment-action {
+        min-height: 44px;
+      }
+
       .entity-select-container {
         position: relative;
         z-index: 5;
@@ -1484,27 +1494,51 @@ export class ConfigDialog extends LitElement {
     this._t({ type: 'CANCEL_GROWSPACES' });
   }
 
-  private async _handleRemoveEnvironment() {
-    const growspaceId = this._sm.environmentDraft.selectedGrowspaceId;
-    if (!growspaceId) return;
-    const confirmed = window.confirm(
-      'Are you sure you want to remove the environment configuration for this growspace? This will disconnect all sensors and controllers from this growspace.'
-    );
-    if (!confirmed) return;
+  private async _requestRemoveEnvironment(event: CustomEvent) {
+    this._t({
+      type: 'REQUEST_REMOVE_ENVIRONMENT',
+      sensorCount: event.detail.sensorCount,
+      controllerCount: event.detail.controllerCount,
+    });
+    await this.updateComplete;
+    this.shadowRoot?.querySelector<HTMLButtonElement>('.keep-environment-action')?.focus();
+  }
+
+  private async _cancelRemoveEnvironment() {
+    this._t({ type: 'CANCEL_REMOVE_ENVIRONMENT' });
+    await this.updateComplete;
+    const tab = this.shadowRoot?.querySelector('config-growspaces-tab') as
+      | (HTMLElement & { updateComplete: Promise<boolean> })
+      | null;
+    await tab?.updateComplete;
+    tab?.shadowRoot?.querySelector<HTMLButtonElement>('.danger-zone .md3-button')?.focus();
+  }
+
+  private async _confirmRemoveEnvironment() {
+    const sub = this._sm.tabs.growspaces.sub;
+    if (sub.kind !== 'confirm-remove-environment') return;
+    const growspaceId = sub.editing.growspaceId;
+    this._t({ type: 'START_REMOVE_ENVIRONMENT' });
     try {
+      const detail: RemoveEnvironmentEventDetail = { growspace_id: growspaceId };
       this.dispatchEvent(
-        new CustomEvent('remove-environment-submit', {
-          detail: { growspace_id: growspaceId },
+        new CustomEvent<RemoveEnvironmentEventDetail>('remove-environment-submit', {
+          detail,
           bubbles: true,
           composed: true,
         })
       );
-      setTimeout(() => {
-        if (growspaceId) {
-          this._handleEnvGrowspaceChange({ target: { value: growspaceId } } as any);
-        }
-      }, 1000);
+      if (!detail.completion) {
+        throw new Error('Remove environment request was not handled');
+      }
+      const refreshedDevice = await detail.completion;
+      if (!refreshedDevice) {
+        throw new Error(`Growspace ${growspaceId} was missing after environment removal`);
+      }
+      this._t({ type: 'CANCEL_REMOVE_ENVIRONMENT' });
+      this._t({ type: 'RESET_FROM_DEVICE', device: refreshedDevice });
     } catch (e) {
+      this._t({ type: 'CANCEL_REMOVE_ENVIRONMENT' });
       console.error('Failed to remove environment:', e);
     }
   }
@@ -1968,6 +2002,7 @@ export class ConfigDialog extends LitElement {
         @edit-draft-changed=${(e: CustomEvent) =>
           this._t({ type: 'UPDATE_EDIT_DRAFT', partial: e.detail.partial })}
         @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
+        @remove-environment-requested=${this._requestRemoveEnvironment}
       ></config-growspaces-tab>
     `;
   }
@@ -2071,7 +2106,6 @@ export class ConfigDialog extends LitElement {
         @toggle-exhaust-critical-temp=${() => {
           this._exhaustCriticalTempExpanded = !this._exhaustCriticalTempExpanded;
         }}
-        @remove-environment-requested=${this._handleRemoveEnvironment}
       ></config-climate-tab>
     `;
   }
@@ -2548,6 +2582,29 @@ export class ConfigDialog extends LitElement {
 
             ${(() => {
               if (this.currentTab !== ConfigTab.GROWSPACES) return nothing;
+              if (
+                growspaceSub.kind === 'confirm-remove-environment' ||
+                growspaceSub.kind === 'removing-environment'
+              ) {
+                const removing = growspaceSub.kind === 'removing-environment';
+                return html`
+                  <button
+                    class="md3-button tonal keep-environment-action remove-environment-action"
+                    @click=${this._cancelRemoveEnvironment}
+                    ?disabled=${removing}
+                  >
+                    Keep Environment
+                  </button>
+                  <button
+                    class="md3-button primary error remove-environment-action"
+                    @click=${this._confirmRemoveEnvironment}
+                    ?disabled=${removing}
+                    aria-busy=${removing ? 'true' : 'false'}
+                  >
+                    ${removing ? 'Removing…' : 'Confirm Remove'}
+                  </button>
+                `;
+              }
               if (growspaceSub.kind === 'confirm-delete') {
                 return html`
                   <button class="md3-button tonal" @click=${this._cancelDeleteGrowspace}>

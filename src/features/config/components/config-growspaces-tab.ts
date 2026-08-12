@@ -16,11 +16,12 @@
  *   - `add-draft-changed`    detail: { partial: Partial<GrowspaceDraft> }
  *   - `edit-draft-changed`   detail: { partial: Partial<GrowspaceDraft> }
  *   - `env-draft-changed`    detail: { partial }   (edit-form lung-room/camera pickers)
+ *   - `remove-environment-requested` detail: { sensorCount, controllerCount }
  */
 
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { mdiPlus } from '@mdi/js';
+import { mdiAlertOutline, mdiPlus } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui/md3-text-input';
 import '../../shared/ui/md3-number-input';
@@ -190,6 +191,53 @@ export class ConfigGrowspacesTab extends LitElement {
         height: 24px;
         outline: none;
       }
+      .danger-zone {
+        margin-top: auto;
+        padding: 16px;
+        border: 1px solid color-mix(in srgb, var(--error-color, #f44336) 35%, transparent);
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--error-color, #f44336) 6%, transparent);
+      }
+      .danger-zone-heading {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 8px;
+        color: var(--error-color, #f44336);
+        font-size: 1rem;
+        font-weight: 600;
+      }
+      .danger-zone-heading svg {
+        width: 20px;
+        height: 20px;
+        flex: 0 0 auto;
+        fill: currentColor;
+      }
+      .danger-zone p {
+        max-width: 65ch;
+        margin: 0 0 16px;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        font-size: 0.875rem;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+      .danger-zone .md3-button {
+        min-height: 44px;
+      }
+      .remove-environment-confirm {
+        padding: 40px 20px;
+        text-align: center;
+      }
+      .remove-environment-confirm h3 {
+        color: var(--error-color, #f44336);
+      }
+      .remove-environment-confirm p {
+        max-width: 65ch;
+        margin: 0 auto 12px;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
     `,
   ];
 
@@ -209,6 +257,27 @@ export class ConfigGrowspacesTab extends LitElement {
               This will remove all associated plants and history.<br />
               This action cannot be undone.
             </p>
+          </div>
+        </div>
+      `;
+    }
+
+    if (state.mode === 'confirm-remove-environment') {
+      const sensorLabel = state.sensorCount === 1 ? 'sensor' : 'sensors';
+      const controllerLabel = state.controllerCount === 1 ? 'controller' : 'controllers';
+      return html`
+        <div class="cfg-master-detail" style="grid-template-columns:1fr;">
+          <div class="detail-card remove-environment-confirm" role="status" aria-live="polite">
+            <h3>Remove environment from ${state.name}?</h3>
+            <p>
+              This will disconnect <strong>${state.sensorCount} ${sensorLabel}</strong> and
+              <strong>${state.controllerCount} ${controllerLabel}</strong> from this growspace.
+            </p>
+            <p>
+              Camera, tank, spatial, threshold, and automation settings will also be cleared. This
+              action cannot be undone.
+            </p>
+            ${state.removing ? html`<p>Removing environment…</p>` : nothing}
           </div>
         </div>
       `;
@@ -250,7 +319,8 @@ export class ConfigGrowspacesTab extends LitElement {
                 'Edit Details',
                 state.draft,
                 state.lungroom,
-                state.camera
+                state.camera,
+                state.removalImpact
               )}`
             : nothing}
           ${state.mode === 'idle'
@@ -270,7 +340,8 @@ export class ConfigGrowspacesTab extends LitElement {
     heading: string,
     draft: GrowspaceDraft,
     lungroom?: EnvMultiSelect,
-    camera?: EnvMultiSelect
+    camera?: EnvMultiSelect,
+    removalImpact?: { sensorCount: number; controllerCount: number }
   ): TemplateResult {
     const intent = which === 'add' ? 'add-draft-changed' : 'edit-draft-changed';
     const update = (partial: Partial<GrowspaceDraft>) => this._emit(intent, { partial });
@@ -317,6 +388,29 @@ export class ConfigGrowspacesTab extends LitElement {
           : nothing}
         ${camera ? this._multiSelect('Area Camera', 'cameraEntities', camera) : nothing}
       </div>
+      ${which === 'edit' && removalImpact
+        ? html`
+            <section class="danger-zone" aria-labelledby="environment-danger-zone-title">
+              <h3 id="environment-danger-zone-title" class="danger-zone-heading">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d=${mdiAlertOutline}></path>
+                </svg>
+                Danger zone
+              </h3>
+              <p>
+                Remove every environmental assignment and controller configuration from this
+                growspace. Plants and growspace history are not deleted.
+              </p>
+              <button
+                type="button"
+                class="md3-button danger"
+                @click=${() => this._emit('remove-environment-requested', removalImpact)}
+              >
+                Remove Environment
+              </button>
+            </section>
+          `
+        : nothing}
     `;
   }
 

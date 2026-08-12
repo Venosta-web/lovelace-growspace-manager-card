@@ -153,18 +153,6 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any)._cancelDeleteGrowspace();
         expect((element as any)._showDeleteConfirm).to.be.false;
 
-        // _handleRemoveEnvironment (Confirm)
-        vi.spyOn(window, 'confirm').mockReturnValue(true);
-        const removeEnvSpy = vi.fn();
-        element.addEventListener('remove-environment-submit', removeEnvSpy);
-        (element as any)._handleRemoveEnvironment();
-        expect(removeEnvSpy).toHaveBeenCalled();
-
-        // _handleRemoveEnvironment (Cancel)
-        removeEnvSpy.mockClear();
-        vi.spyOn(window, 'confirm').mockReturnValue(false);
-        (element as any)._handleRemoveEnvironment();
-        expect(removeEnvSpy).not.toHaveBeenCalled();
     });
 
     it('should cover Subarea management branches', async () => {

@@ -18,7 +18,12 @@
  * hass/host-derived and injected; `entityOptions` backs the edit form's pickers.
  */
 
-import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
+import type {
+  ConfigDialogSM,
+  EditingGrowspaceSubState,
+  EnvironmentDraft,
+  EnvironmentRemovalImpact,
+} from '../../../dialogs/config-dialog-sm';
 
 /** One master-list row. */
 export interface GrowspaceListItem {
@@ -52,8 +57,20 @@ export interface EnvMultiSelect {
 export type GrowspacesDetailState =
   | { mode: 'idle' }
   | { mode: 'adding'; draft: GrowspaceDraft }
-  | { mode: 'editing'; id: string; draft: GrowspaceDraft; lungroom: EnvMultiSelect; camera: EnvMultiSelect }
-  | { mode: 'confirm-delete'; name: string };
+  | {
+      mode: 'editing';
+      id: string;
+      draft: GrowspaceDraft;
+      lungroom: EnvMultiSelect;
+      camera: EnvMultiSelect;
+      removalImpact: EnvironmentRemovalImpact;
+    }
+  | { mode: 'confirm-delete'; name: string }
+  | ({
+      mode: 'confirm-remove-environment';
+      name: string;
+      removing: boolean;
+    } & EnvironmentRemovalImpact);
 
 /** Complete render input for `<config-growspaces-tab>`. */
 export interface GrowspacesTabViewModel {
@@ -71,13 +88,75 @@ export interface GrowspacesTabDeps {
   entityOptions: (domains: string[], deviceClass: string | null) => string[];
 }
 
-function draftOf(sub: { name: string; rows: number; plantsPerRow: number; notificationService: string }): GrowspaceDraft {
+function draftOf(sub: {
+  name: string;
+  rows: number;
+  plantsPerRow: number;
+  notificationService: string;
+}): GrowspaceDraft {
   return {
     name: sub.name,
     rows: sub.rows,
     plantsPerRow: sub.plantsPerRow,
     notificationService: sub.notificationService,
   };
+}
+
+function addConfigured(target: Set<string>, values: Array<string | undefined>): void {
+  for (const value of values) {
+    if (value) target.add(value);
+  }
+}
+
+/** Count the unique entity assignments that a whole-environment reset disconnects. */
+export function environmentRemovalImpact(draft: EnvironmentDraft): EnvironmentRemovalImpact {
+  const sensors = new Set<string>();
+  addConfigured(sensors, [
+    ...draft.temperatureSensors,
+    ...draft.humiditySensors,
+    ...draft.vpdSensors,
+    draft.co2Sensor,
+    ...draft.lightSensors,
+    draft.soilMoistureSensor,
+    ...draft.substrateTemperatureSensors,
+    ...draft.phSensors,
+    ...draft.feedEcSensors,
+    ...draft.bulkEcSensors,
+    ...draft.poreEcSensors,
+    ...draft.runoffEcSensors,
+    ...draft.drainVolumeSensors,
+    ...draft.irrigationFlowSensors,
+    ...draft.powerSensors,
+    ...draft.energySensors,
+    ...draft.lungroomTempSensors,
+    ...draft.irrigationTanks.map((tank) => tank.sensorEntity),
+  ]);
+
+  const controllers = new Set<string>();
+  addConfigured(controllers, [
+    ...draft.exhaustFanEntities,
+    ...draft.circulationFanEntities,
+    ...draft.humidifierEntities,
+    ...draft.dehumidifierEntities,
+    ...draft.growlightEntities,
+    ...draft.exhaustFanAcInfinityDevices.map((device) => device.mode_entity),
+    ...draft.circulationFanAcInfinityDevices.map((device) => device.mode_entity),
+    ...draft.humidifierAcInfinityDevices.map((device) => device.mode_entity),
+    ...draft.dehumidifierAcInfinityDevices.map((device) => device.mode_entity),
+    ...draft.growlightAcInfinityDevices.map((device) => device.mode_entity),
+  ]);
+
+  return { sensorCount: sensors.size, controllerCount: controllers.size };
+}
+
+function editingSub(
+  sub: ConfigDialogSM['tabs']['growspaces']['sub']
+): EditingGrowspaceSubState | undefined {
+  if (sub.kind === 'editing') return sub;
+  if (sub.kind === 'confirm-remove-environment' || sub.kind === 'removing-environment') {
+    return sub.editing;
+  }
+  return undefined;
 }
 
 /**
@@ -89,7 +168,8 @@ export function createGrowspacesTabViewModel(
   deps: GrowspacesTabDeps
 ): GrowspacesTabViewModel {
   const sub = sm.tabs.growspaces.sub;
-  const editingId = sub.kind === 'editing' ? sub.growspaceId : '';
+  const editing = editingSub(sub);
+  const editingId = editing?.growspaceId ?? '';
   const isAdding = sub.kind === 'adding';
 
   const growspaces = Object.entries(deps.growspaceOptions).map(([id, name]) => ({
@@ -103,14 +183,26 @@ export function createGrowspacesTabViewModel(
     state = { mode: 'confirm-delete', name: sub.name };
   } else if (sub.kind === 'adding') {
     state = { mode: 'adding', draft: draftOf(sub) };
+  } else if (sub.kind === 'confirm-remove-environment' || sub.kind === 'removing-environment') {
+    state = {
+      mode: 'confirm-remove-environment',
+      name: sub.editing.name,
+      sensorCount: sub.sensorCount,
+      controllerCount: sub.controllerCount,
+      removing: sub.kind === 'removing-environment',
+    };
   } else if (sub.kind === 'editing') {
     const d = sm.environmentDraft;
     state = {
       mode: 'editing',
       id: sub.growspaceId,
       draft: draftOf(sub),
-      lungroom: { value: d.lungroomTempSensors, options: deps.entityOptions(['sensor', 'input_number'], 'temperature') },
+      lungroom: {
+        value: d.lungroomTempSensors,
+        options: deps.entityOptions(['sensor', 'input_number'], 'temperature'),
+      },
       camera: { value: d.cameraEntities, options: deps.entityOptions(['camera'], null) },
+      removalImpact: environmentRemovalImpact(d),
     };
   } else {
     state = { mode: 'idle' };

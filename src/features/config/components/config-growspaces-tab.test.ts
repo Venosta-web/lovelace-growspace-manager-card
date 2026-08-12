@@ -7,6 +7,7 @@ import type {
 } from '../viewmodels/growspaces-tab.viewmodel';
 
 const draft: GrowspaceDraft = { name: 'Tent 1', rows: 4, plantsPerRow: 4, notificationService: '' };
+const removalImpact = { sensorCount: 0, controllerCount: 0 };
 
 function makeVm(over: Partial<GrowspacesTabViewModel> = {}): GrowspacesTabViewModel {
   return {
@@ -47,7 +48,17 @@ describe('ConfigGrowspacesTab — render', () => {
 
   it('highlights the active row', async () => {
     const el = await mount(
-      makeVm({ growspaces: [{ id: 'gs1', name: 'Tent 1', active: true }], state: { mode: 'editing', id: 'gs1', draft, lungroom: { value: [], options: [] }, camera: { value: [], options: [] } } })
+      makeVm({
+        growspaces: [{ id: 'gs1', name: 'Tent 1', active: true }],
+        state: {
+          mode: 'editing',
+          id: 'gs1',
+          draft,
+          lungroom: { value: [], options: [] },
+          camera: { value: [], options: [] },
+          removalImpact,
+        },
+      })
     );
     expect(el.shadowRoot!.querySelector('.cfg-gs-row.active')).not.toBeNull();
   });
@@ -72,6 +83,7 @@ describe('ConfigGrowspacesTab — render', () => {
           draft,
           lungroom: { value: ['sensor.lr'], options: ['sensor.lr'] },
           camera: { value: [], options: ['camera.a'] },
+          removalImpact,
         },
       })
     );
@@ -121,6 +133,7 @@ describe('ConfigGrowspacesTab — intents out', () => {
           draft,
           lungroom: { value: [], options: ['sensor.lr'] },
           camera: { value: [], options: [] },
+          removalImpact,
         },
       })
     );
@@ -132,8 +145,8 @@ describe('ConfigGrowspacesTab — intents out', () => {
     );
     expect(drafts).toEqual([{ partial: { name: 'Edited' } }]);
 
-    const lungroomInput = el.shadowRoot!
-      .querySelector('#list-multi-lungroomTempSensors')!
+    const lungroomInput = el
+      .shadowRoot!.querySelector('#list-multi-lungroomTempSensors')!
       .closest('.multi-select-container')!
       .querySelector<HTMLInputElement>('input.search-input-inner')!;
     lungroomInput.value = 'sensor.lr';

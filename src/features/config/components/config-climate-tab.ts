@@ -20,7 +20,6 @@
  *   - `exhaust-config-changed`       detail: { partial: Partial<ExhaustFanConfig> }
  *   - `toggle-fan-temp-override`     (no detail)
  *   - `toggle-exhaust-critical-temp` (no detail)
- *   - `remove-environment-requested` (no detail)
  *
  * Fan/exhaust edits forward only the changed field; the Shell merges it against
  * the live draft (so synchronous multi-field edits accumulate). The component
@@ -262,15 +261,6 @@ export class ConfigClimateTab extends LitElement {
                 this._update({ moldThreshold: e.detail !== '' ? parseFloat(e.detail) : null })}
               step="0.01"
             ></md3-number-input>
-          </div>
-          <div class="control-row">
-            <button
-              class="md3-button tonal error"
-              @click=${() => this._emit('remove-environment-requested')}
-              ?disabled=${!c.canRemoveEnvironment}
-            >
-              Remove Environment
-            </button>
           </div>
         </div>
       </div>
