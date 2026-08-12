@@ -253,6 +253,7 @@ describe('ConfigDialog', () => {
 
     describe('Environment Tab', () => {
         beforeEach(async () => {
+            element.initialTab = ConfigTab.SENSORS;
             element.currentTab = ConfigTab.SENSORS;
             await element.updateComplete;
         });

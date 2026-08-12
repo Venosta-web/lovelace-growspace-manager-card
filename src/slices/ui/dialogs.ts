@@ -233,7 +233,7 @@ export function openLogbookDialog(growspaceId?: string): void {
 
 export function openConfigDialog(
   device?: GrowspaceDevice,
-  initialTab: ConfigTab = ConfigTab.SENSORS,
+  initialTab: ConfigTab = ConfigTab.GROWSPACES,
   scrollToField?: string
 ): void {
   openDialog({

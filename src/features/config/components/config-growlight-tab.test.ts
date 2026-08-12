@@ -143,6 +143,31 @@ describe('ConfigGrowlightTab', () => {
     addBtn.click();
     expect(partials[partials.length - 1]?.growlightAcInfinityDevices).toHaveLength(1);
   });
+
+  it('renders the AC Infinity remove control as a focusable button', async () => {
+    const el = await mount(
+      makeVm({
+        enabled: true,
+        disabled: false,
+        acInfinityDevices: [
+          {
+            mode_entity: 'select.m',
+            on_time_entity: 'time.on',
+            off_time_entity: 'time.off',
+            power_entity: 'number.p',
+            sunrise_switch_entity: 'switch.s',
+            sunrise_duration_entity: 'number.duration',
+          },
+        ],
+      })
+    );
+    const remove = el.shadowRoot!.querySelector<HTMLButtonElement>(
+      '.ac-infinity-device .chip-remove'
+    )!;
+
+    expect(remove.tagName).toBe('BUTTON');
+    expect(remove.tabIndex).toBe(0);
+  });
 });
 
 function listen<T = unknown>(el: HTMLElement, type: string): T[] {

@@ -80,17 +80,32 @@ export class ConfigVisionTab extends LitElement {
         align-items: center;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
         border-radius: 16px;
-        padding: 4px 12px;
+        padding: 0 4px 0 12px;
         font-size: 0.9rem;
-        height: 24px;
+        min-height: 44px;
       }
       .chip-remove {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
         cursor: pointer;
-        margin-left: 6px;
+        margin-left: 2px;
         font-weight: bold;
         opacity: 0.7;
       }
       .chip-remove:hover {
+        opacity: 1;
+      }
+      .chip-remove:focus-visible {
+        outline: 2px solid var(--primary-text-color, #fff);
+        outline-offset: -4px;
         opacity: 1;
       }
       .search-input-inner {
@@ -122,7 +137,10 @@ export class ConfigVisionTab extends LitElement {
         <div
           style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
         >
-          <svg style="width:20px;height:20px;fill:var(--primary-color,#4caf50);" viewBox="0 0 24 24">
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
             <path d="${mdiCamera}"></path>
           </svg>
           <h3 style="margin:0;border:none;padding:0;">Vision Checkup</h3>
@@ -146,7 +164,8 @@ export class ConfigVisionTab extends LitElement {
                 <md3-number-input
                   label="Early check offset (min after lights on)"
                   .value=${vm.earlyOffset}
-                  @change=${(e: CustomEvent) => this._update({ visionEarlyOffset: Number(e.detail) })}
+                  @change=${(e: CustomEvent) =>
+                    this._update({ visionEarlyOffset: Number(e.detail) })}
                   min="1"
                 ></md3-number-input>
                 <md3-number-input
@@ -158,7 +177,8 @@ export class ConfigVisionTab extends LitElement {
                 <md3-number-input
                   label="Late check offset (min before lights off)"
                   .value=${vm.lateOffset}
-                  @change=${(e: CustomEvent) => this._update({ visionLateOffset: Number(e.detail) })}
+                  @change=${(e: CustomEvent) =>
+                    this._update({ visionLateOffset: Number(e.detail) })}
                   min="1"
                 ></md3-number-input>
               </div>
@@ -177,9 +197,15 @@ export class ConfigVisionTab extends LitElement {
             (val) => html`
               <div class="chip">
                 ${val}
-                <span class="chip-remove" @click=${() => this._update({ cameraEntities: values.filter((v) => v !== val) })}
-                  >×</span
+                <button
+                  type="button"
+                  class="chip-remove"
+                  aria-label=${`Remove ${val}`}
+                  title=${`Remove ${val}`}
+                  @click=${() => this._update({ cameraEntities: values.filter((v) => v !== val) })}
                 >
+                  ×
+                </button>
               </div>
             `
           )}

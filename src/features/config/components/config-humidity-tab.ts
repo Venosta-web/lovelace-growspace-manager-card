@@ -106,17 +106,32 @@ export class ConfigHumidityTab extends LitElement {
         align-items: center;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
         border-radius: 16px;
-        padding: 4px 12px;
+        padding: 0 4px 0 12px;
         font-size: 0.9rem;
-        height: 24px;
+        min-height: 44px;
       }
       .chip-remove {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
         cursor: pointer;
-        margin-left: 6px;
+        margin-left: 2px;
         font-weight: bold;
         opacity: 0.7;
       }
       .chip-remove:hover {
+        opacity: 1;
+      }
+      .chip-remove:focus-visible {
+        outline: 2px solid var(--primary-text-color, #fff);
+        outline-offset: -4px;
         opacity: 1;
       }
       .search-input-inner {
@@ -251,15 +266,28 @@ export class ConfigHumidityTab extends LitElement {
         <div
           style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
         >
-          <svg style="width:20px;height:20px;fill:var(--primary-color,#4caf50);" viewBox="0 0 24 24">
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
             <path d="${mdiAirHumidifier}"></path>
           </svg>
           <h3 style="margin:0;border:none;padding:0;">Humidity Devices</h3>
         </div>
         <div class="form-section">
           <div class="row-col-grid">
-            ${this._multiSelect('Humidifier', 'humidifierEntities', this.vm.humidifierEntities, this.vm.humidifierOptions)}
-            ${this._multiSelect('Dehumidifier', 'dehumidifierEntities', this.vm.dehumidifierEntities, this.vm.dehumidifierOptions)}
+            ${this._multiSelect(
+              'Humidifier',
+              'humidifierEntities',
+              this.vm.humidifierEntities,
+              this.vm.humidifierOptions
+            )}
+            ${this._multiSelect(
+              'Dehumidifier',
+              'dehumidifierEntities',
+              this.vm.dehumidifierEntities,
+              this.vm.dehumidifierOptions
+            )}
           </div>
           ${renderAcInfinityDevices({
             label: 'Humidifier AC Infinity Devices',
@@ -297,7 +325,9 @@ export class ConfigHumidityTab extends LitElement {
                 type="checkbox"
                 .checked=${this.vm.humidifierControlEnabled}
                 @change=${(e: Event) =>
-                  this._emit('set-humidifier-control', { enabled: (e.target as HTMLInputElement).checked })}
+                  this._emit('set-humidifier-control', {
+                    enabled: (e.target as HTMLInputElement).checked,
+                  })}
               />
               Enable Humidifier Control
             </label>
@@ -306,7 +336,9 @@ export class ConfigHumidityTab extends LitElement {
                 type="checkbox"
                 .checked=${this.vm.dehumidifierControlEnabled}
                 @change=${(e: Event) =>
-                  this._emit('set-dehumidifier-control', { enabled: (e.target as HTMLInputElement).checked })}
+                  this._emit('set-dehumidifier-control', {
+                    enabled: (e.target as HTMLInputElement).checked,
+                  })}
               />
               Enable Dehumidifier Control
             </label>
@@ -331,9 +363,15 @@ export class ConfigHumidityTab extends LitElement {
             (val) => html`
               <div class="chip">
                 ${val}
-                <span class="chip-remove" @click=${() => this._update({ [key]: values.filter((v) => v !== val) })}
-                  >×</span
+                <button
+                  type="button"
+                  class="chip-remove"
+                  aria-label=${`Remove ${val}`}
+                  title=${`Remove ${val}`}
+                  @click=${() => this._update({ [key]: values.filter((v) => v !== val) })}
                 >
+                  ×
+                </button>
               </div>
             `
           )}
@@ -364,7 +402,10 @@ export class ConfigHumidityTab extends LitElement {
         <div
           style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
         >
-          <svg style="width:20px;height:20px;fill:var(--primary-color,#4caf50);" viewBox="0 0 24 24">
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
             <path d="${mdiWaterPercent}"></path>
           </svg>
           <h3 style="margin:0;border:none;padding:0;">Thresholds per Stage</h3>
@@ -385,7 +426,8 @@ export class ConfigHumidityTab extends LitElement {
           ${!stage.open
             ? html`
                 <div class="acc-head-desc">
-                  Dehum on &gt; ${stage.dehum.day.on > 0 ? stage.dehum.day.on.toFixed(2) + ' kPa' : '—'}
+                  Dehum on &gt;
+                  ${stage.dehum.day.on > 0 ? stage.dehum.day.on.toFixed(2) + ' kPa' : '—'}
                   &nbsp;·&nbsp; Hum on &lt;
                   ${stage.hum.day.on > 0 ? stage.hum.day.on.toFixed(2) + ' kPa' : '—'}
                 </div>
@@ -452,14 +494,24 @@ export class ConfigHumidityTab extends LitElement {
             label="${onLabel}"
             .value=${pair.on}
             @change=${(e: CustomEvent) =>
-              this._emit(intent, { stage: stageKey, cycle: cycleKey, point: 'on', value: parseFloat(e.detail) })}
+              this._emit(intent, {
+                stage: stageKey,
+                cycle: cycleKey,
+                point: 'on',
+                value: parseFloat(e.detail),
+              })}
             step="0.05"
           ></md3-number-input>
           <md3-number-input
             label="${offLabel}"
             .value=${pair.off}
             @change=${(e: CustomEvent) =>
-              this._emit(intent, { stage: stageKey, cycle: cycleKey, point: 'off', value: parseFloat(e.detail) })}
+              this._emit(intent, {
+                stage: stageKey,
+                cycle: cycleKey,
+                point: 'off',
+                value: parseFloat(e.detail),
+              })}
             step="0.05"
           ></md3-number-input>
         </div>

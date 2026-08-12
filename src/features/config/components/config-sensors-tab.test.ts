@@ -119,7 +119,12 @@ describe('ConfigSensorsTab — intents out', () => {
       })
     );
     const received = listenPartials(el);
-    el.shadowRoot!.querySelector<HTMLElement>('.chip .chip-remove')!.click();
+    const remove = el.shadowRoot!.querySelector<HTMLButtonElement>('.chip .chip-remove')!;
+    expect(remove.tagName).toBe('BUTTON');
+    expect(remove.getAttribute('aria-label')).toBe('Remove sensor.a');
+    expect(getComputedStyle(remove).minWidth).toBe('44px');
+    expect(getComputedStyle(remove).minHeight).toBe('44px');
+    remove.click();
     expect(received).toEqual([{ temperatureSensors: ['sensor.b'] }]);
   });
 

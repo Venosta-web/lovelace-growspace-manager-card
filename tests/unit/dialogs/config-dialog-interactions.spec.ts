@@ -22,6 +22,7 @@ describe('ConfigDialog Interactions', () => {
 
     beforeEach(async () => {
         element = new ConfigDialog();
+        element.initialTab = ConfigTab.SENSORS;
         element.open = true; // MUST SET OPEN
         document.body.appendChild(element);
         await element.updateComplete;
@@ -135,6 +136,7 @@ describe('ConfigDialog Interactions', () => {
         } as any];
         element.growspaceId = 'gs1';
         element.growspaceOptions = { gs1: 'Tent 1' };
+        element.initialTab = ConfigTab.SENSORS;
         element.open = true;
         document.body.appendChild(element);
         await element.updateComplete;
