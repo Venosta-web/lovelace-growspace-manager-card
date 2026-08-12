@@ -1,3 +1,10 @@
+# [1.1.0-next.99](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.98...v1.1.0-next.99) (2026-08-12)
+
+
+### Bug Fixes
+
+* **notifications:** surface unrecognised timed-notification triggers ([#502](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/502)) ([dd17e01](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/dd17e01cf08505a9404e561de633bd585725f83e)), closes [#500](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/500)
+
 # [1.1.0-next.98](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.97...v1.1.0-next.98) (2026-08-12)
 
 
