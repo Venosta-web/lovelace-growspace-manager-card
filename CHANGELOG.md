@@ -1,3 +1,10 @@
+# [1.1.0-next.104](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.103...v1.1.0-next.104) (2026-08-12)
+
+
+### Bug Fixes
+
+* move Remove Environment into a proper danger zone ([#517](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/517)) ([3cbcbd5](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/3cbcbd53f6c238bf04ea225f965ce57280e89810))
+
 # [1.1.0-next.103](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.102...v1.1.0-next.103) (2026-08-12)
 
 
