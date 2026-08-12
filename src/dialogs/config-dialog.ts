@@ -32,6 +32,7 @@ import {
 import { GrowspaceDevice, EnvironmentConfigData } from '../types';
 import type { VisionCheckupConfigEventDetail } from '../lib/types/dialog';
 import { ConfigTab } from '../constants';
+import { randomId } from '../utils/random-id';
 import { setDehumidifierControl, setHumidifierControl } from '../slices/growspace';
 import { getSubareas, addSubarea, removeSubarea } from '../slices/subarea';
 import type { Subarea } from '../slices/subarea';
@@ -1123,7 +1124,7 @@ export class ConfigDialog extends LitElement {
   }
 
   private _commitAddTimedNotification() {
-    this._t({ type: 'ADD_TIMED_NOTIFICATION', id: crypto.randomUUID() });
+    this._t({ type: 'ADD_TIMED_NOTIFICATION', id: randomId() });
   }
 
   private _commitEditTimedNotification() {

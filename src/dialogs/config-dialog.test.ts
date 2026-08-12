@@ -168,6 +168,34 @@ describe('timed notifications — add flow', () => {
     (el as any)._startAddTimedNotification();
     expect((el as any)._sm.tabs.notifications.sub.kind).toBe('adding');
   });
+
+  it('_commitAddTimedNotification adds the notification with a generated id', () => {
+    const el = makeEl();
+    (el as any)._startAddTimedNotification();
+    (el as any)._commitAddTimedNotification();
+
+    const tab = (el as any)._sm.tabs.notifications;
+    expect(tab.timedNotifications).toHaveLength(1);
+    expect(tab.timedNotifications[0].id).toBeTruthy();
+  });
+
+  it('_commitAddTimedNotification works without crypto.randomUUID (insecure context)', () => {
+    // HA over plain HTTP is not a secure context, so crypto.randomUUID is undefined
+    // there. Calling it threw, so the notification never entered the SM and nothing
+    // was ever saved or shown on reopen.
+    const realGetRandomValues = globalThis.crypto.getRandomValues.bind(globalThis.crypto);
+    vi.stubGlobal('crypto', { getRandomValues: realGetRandomValues });
+
+    const el = makeEl();
+    (el as any)._startAddTimedNotification();
+    (el as any)._commitAddTimedNotification();
+
+    const tab = (el as any)._sm.tabs.notifications;
+    expect(tab.timedNotifications).toHaveLength(1);
+    expect(tab.timedNotifications[0].id).toBeTruthy();
+
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('timed notifications — edit flow', () => {
