@@ -17,6 +17,9 @@ colors:
   outline: 'rgba(255,255,255,0.12)'
   outline-variant: 'rgba(255,255,255,0.05)'
   surface-tint: '#4caf50'
+  surface-overlay-subtle: 'rgba(0,0,0,0.1)'
+  surface-overlay-recessed: 'rgba(0,0,0,0.15)'
+  surface-overlay-strong: 'rgba(0,0,0,0.2)'
   # Primary — Vitality Green
   primary: '#4caf50'
   on-primary: '#ffffff'
@@ -38,6 +41,13 @@ colors:
   on-error: '#ffffff'
   error-container: 'rgba(244,67,54,0.1)'
   on-error-container: '#f44336'
+  # Warning — functional state, distinct from the Flowering stage
+  warning: '#ffa726'
+  on-warning: '#1e1e1e'
+  # AC Infinity integration conflicts, pre-fill failures, and duplicate ports
+  integration-conflict: '#e6a700'
+  integration-conflict-container: 'rgba(230,167,0,0.1)'
+  integration-conflict-outline: 'rgba(230,167,0,0.35)'
   # Background / global
   background: '#1e1e1e'
   on-background: '#ffffff'
@@ -73,6 +83,19 @@ typography:
     fontWeight: '400'
     lineHeight: '1.4'
     letterSpacing: '0'
+  # Named display exception for the primary identity on a plant tile
+  plant-strain-name:
+    fontFamily: Roboto
+    fontSize: 17.6px
+    fontWeight: '700'
+    lineHeight: '1.2'
+    letterSpacing: '0'
+  supporting-sm:
+    fontFamily: Roboto
+    fontSize: 12px
+    fontWeight: '400'
+    lineHeight: '1.4'
+    letterSpacing: '0'
   label-caps:
     fontFamily: Roboto
     fontSize: 11px
@@ -99,6 +122,17 @@ rounded:
   lg: 1rem
   xl: 1.75rem
   full: 9999px
+  # Named exception: filled fields retain a nearly flat lower edge
+  filled-field-bottom: 0.125rem
+elevation:
+  level-0: none
+  level-1: '0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15)'
+  level-2: '0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15)'
+  level-3: '0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3)'
+  level-4: '0 6px 10px 4px rgba(0,0,0,0.15), 0 2px 3px rgba(0,0,0,0.3)'
+  level-5: '0 8px 12px 6px rgba(0,0,0,0.15), 0 4px 4px rgba(0,0,0,0.3)'
+  # Named exception: broad, soft modal separation for glass dialogs
+  glass-dialog: '0 8px 32px rgba(0,0,0,0.37)'
 spacing:
   unit: 4px
   xs: 4px
@@ -114,6 +148,11 @@ spacing:
 # Design System: Growspace Manager Card
 
 **Project ID:** lovelace-growspace-manager-card
+
+The structured token tables in the frontmatter are canonical. The prose below explains
+their roles but does not introduce alternative token values. Color tokens are canonical
+fallbacks inside Home Assistant theme variables: themes may override them without changing
+the semantic role.
 
 ## 1. Visual Theme & Atmosphere
 
@@ -137,7 +176,8 @@ The depth model is a layered **Glassmorphism 2.0** — not the heavy frosted-gla
 - **Hydro Blue** `#2196f3` (gradient: `linear-gradient(135deg, #2196f3, #1976d2)`) — Water, irrigation, and secondary interactive surfaces. Default plant tile border color. Cure stage indicator.
 - **Alert Red** `#f44336` (gradient: `linear-gradient(135deg, #f44336, #d32f2f)`) — Destructive actions, error states, pulsing alert dots on sick plants.
 - **Amber Light** `#ffeb3b` — Light cycle controller, `--primary-light-color`. SVG chart lines for sensor data. Creates visual warmth in an otherwise cool palette.
-- **Warning Amber** `#ffa726` / `#ff9800` — PHI countdown warnings, training icons, Flowering stage, stat-chip warning state.
+- **Warning Amber** `#ffa726` — Functional warnings such as unknown notification triggers, PHI countdown warnings, training icons, and stat-chip warning states. It is deliberately distinct from Flowering Orange.
+- **Integration Conflict Amber** `#e6a700` — A passive AC Infinity notice for an automated-mode conflict, a failed port pre-fill, or a duplicate port assignment. Its container is `rgba(230,167,0,0.1)` and outline is `rgba(230,167,0,0.35)`; this integration-specific state must not be represented as a plant stage or a general urgency warning.
 
 ### Plant Stage Indicators
 
@@ -176,17 +216,51 @@ Numeric data — sensor readings, plant age, timestamps — uses `font-variant-n
 
 ### Hierarchy & Weights
 
-| Role | Size | Weight | Usage |
-|:---|:---|:---|:---|
-| `--font-size-xl` Display | 1.75rem / 28px | 400 | Growspace name in card header (`gs-title`, `select-sizer`) |
-| `--font-size-xl` Headline | 1.5rem / 24px | 400/600 | Dialog titles, light cycle card titles |
-| `--font-size-lg` Title | 1.25rem / 20px | 500 | Dialog header titles (`.dialog-title`) |
-| `--font-size-md` Body | 1rem / 16px | 400 | Standard content, form inputs, plant stage labels |
-| Plant Strain Name | 1.1rem | 700 | Full-bleed tile primary identity (text-shadow enhanced) |
-| `--font-size-sm` Body Small | 0.875rem / 14px | 400/500 | Secondary labels, button text, dialog subtitles |
-| Header Meta | 0.78rem | 400/500 | Stat counts in header meta row (tabular nums) |
-| `--font-size-xs` Caption | 0.6875rem / 11px | 400/500 | Age pills on plant tiles, chart markers |
-| Label Caps | 0.7rem | 600 | Mobile stage context, uppercase tracking labels |
+| Role                        | Size             | Weight  | Usage                                                      |
+| :-------------------------- | :--------------- | :------ | :--------------------------------------------------------- |
+| `--font-size-xl` Display    | 1.75rem / 28px   | 400     | Growspace name in card header (`gs-title`, `select-sizer`) |
+| `--font-size-xl` Headline   | 1.5rem / 24px    | 400/600 | Dialog titles, light cycle card titles                     |
+| `--font-size-lg` Title      | 1.25rem / 20px   | 500     | Dialog header titles (`.dialog-title`)                     |
+| `--font-size-md` Body       | 1rem / 16px      | 400     | Standard content, form inputs, plant stage labels          |
+| Plant Strain Name           | 1.1rem / 17.6px  | 700     | Full-bleed tile primary identity (text-shadow enhanced)    |
+| `--font-size-sm` Body Small | 0.875rem / 14px  | 400/500 | Secondary labels, button text, dialog subtitles            |
+| Compact Supporting          | 0.75rem / 12px   | 400/500 | Dense hints, field support, compact status text            |
+| Header Meta                 | 0.75rem / 12px   | 400/500 | Stat counts in header meta row (tabular nums)              |
+| `--font-size-xs` Caption    | 0.6875rem / 11px | 400/500 | Age pills on plant tiles, chart markers                    |
+| Label Caps                  | 0.6875rem / 11px | 600     | Mobile stage context, uppercase tracking labels            |
+
+### Config Dialog Token Contract
+
+The Config Dialog uses only four body-scale steps. Nearby literals map to the nearest role rather than extending the ramp:
+
+| Existing literal                | Committed step | Role                             |
+| :------------------------------ | :------------- | :------------------------------- |
+| `0.65rem`, `0.7rem`             | `0.6875rem`    | Caption or uppercase micro-label |
+| `0.75rem`, `0.775rem`, `0.8rem` | `0.75rem`      | Compact supporting text          |
+| `0.85rem`, `0.875rem`, `0.9rem` | `0.875rem`     | Navigation or body-small         |
+| `1rem`                          | `1rem`         | Standard body or compact heading |
+
+Weight, case, spacing, and color distinguish roles within a step. A fractional size between these steps is not a new token.
+
+The Config Dialog also applies these literal-to-token rules:
+
+| Finding                                                                      | Resolution                                                                                                            |
+| :--------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
+| `#e6a700`, `rgba(230,167,0,0.1)`, `rgba(230,167,0,0.35)`                     | Integration Conflict Amber, container, and outline                                                                    |
+| `#ff5252`                                                                    | Alert Red `#f44336`                                                                                                   |
+| `#ffa726`                                                                    | Warning Amber; never Flowering Orange `#ff9800`                                                                       |
+| `#1e2127`                                                                    | Deep Carbon Surface `#1e1e1e`; native options do not introduce another surface                                        |
+| `rgba(0,0,0,0.1)`, `rgba(0,0,0,0.15)`, `rgba(0,0,0,0.2)` used as backgrounds | Subtle, recessed, and strong surface overlays                                                                         |
+| A `box-shadow` containing those alpha values                                 | The nearest complete MD3 elevation token; shadow geometry and color travel together                                   |
+| `6px`, `10px` radii                                                          | `rounded.sm` (`8px`) and `rounded.DEFAULT` (`12px`)                                                                   |
+| `2px` lower corners on filled fields                                         | Explicit exception: the nearly flat bottom edge distinguishes the filled-field shape; it is not a general radius step |
+
+These mappings are exhaustive for the 47 advisory findings reported for `config-dialog.ts` and `src/features/config/`. A surviving literal after token application must carry an inline exception explaining why its role cannot use this contract.
+
+The scan originally described the 10–20% black values as shadows. In the current Config
+Dialog they are surface backgrounds, so they map to overlay tokens. Actual shadows use a
+complete elevation token: MD3 levels 0–5 for ordinary components, or the named Glass Dialog
+Elevation exception for the modal's broader `0 8px 32px rgba(0,0,0,0.37)` shadow.
 
 ### Spacing Principles
 
@@ -221,7 +295,7 @@ The tile's `::before` pseudo-element renders a **3px stage-color accent bar** ac
 
 On hover: `translateY(-4px)` lift + shadow from `0 4px 6px` to `0 8px 16px`. Transition: `0.3s cubic-bezier(0.4, 0, 0.2, 1)`. Status icons (training, watering, IPM, PHI badges) fade in on hover at `opacity: 1`.
 
-**Age pill** (top-left): frosted glass pill (`rgba(0,0,0,0.55)`, `backdrop-filter: blur(6px)`), hairline border, pill-radius 999px, 0.65rem tabular-nums.
+**Age pill** (top-left): frosted glass pill (`rgba(0,0,0,0.55)`, `backdrop-filter: blur(6px)`), hairline border, pill-radius 999px, 0.6875rem tabular-nums.
 
 **Alert dot**: 8px pulsing red circle with `@keyframes pulse-alert` radiating ring (0→6px at 70% keyframe). Draws the eye to plants with active problems without requiring the user to enter the tile.
 
@@ -235,6 +309,7 @@ Two surface variants based on context:
 - **`.glass-dialog-container`**: `background: rgba(20,20,20,0.85)` + `backdrop-filter: blur(16px)` + `box-shadow: 0 8px 32px rgba(0,0,0,0.37)` + same hairline border. Higher opacity for modal layering.
 
 Dialog anatomy:
+
 - **Header**: 16/24px padding, `border-bottom: 1px solid rgba(255,255,255,0.1)`, `background: rgba(0,0,0,0.2)`. Contains 40×40px icon box (12px border-radius, stage-colored icon) + title group (Title Large 20px/500 + subtitle 0.85rem at 70% opacity).
 - **Content**: `padding: 24px`, scrollable `overflow-y: auto`.
 - **Footer button group**: mirrored header treatment, `border-top`, right-aligned flex row with 12px gap.
@@ -245,11 +320,11 @@ The card header uses a two-column asymmetric grid: `minmax(280px, 25%) | minmax(
 
 Stat chips pulse to warning amber or danger red when thresholds are breached, with `@keyframes pulse-red` box-shadow animation on danger chips.
 
-Mobile (≤600px): Header collapses to flex row — title area takes remaining space, secondary strip and stage area are hidden. A `mobile-stage-context` label (0.7rem uppercase, 0.06em tracking) appears above the title to provide stage context that the strip would have shown.
+Mobile (≤600px): Header collapses to flex row — title area takes remaining space, secondary strip and stage area are hidden. A `mobile-stage-context` label (0.6875rem uppercase, 0.06em tracking) appears above the title to provide stage context that the strip would have shown.
 
 ### Inputs & Forms (MD3 `.md3-input-group`)
 
-Bottom-border-only filled style (top-rounded corners 4px, flat bottom except for border). The bottom border is `1px solid rgba(255,255,255,0.4)` at rest, `2px solid rgba(255,255,255,0.6)` on focus (border weight increase instead of color swap signals focus state). Floating label (0.75rem, 0.4px tracking) is always visible above the field — no placeholder-as-label pattern.
+Bottom-border-only filled style (8px top corners and the named 2px Filled Field Bottom exception). The bottom border is `1px solid rgba(255,255,255,0.4)` at rest, `2px solid rgba(255,255,255,0.6)` on focus (border weight increase instead of color swap signals focus state). Floating label (0.75rem, 0.4px tracking) is always visible above the field — no placeholder-as-label pattern.
 
 Error state: `border-bottom-color: #f44336` + label turns red. Supporting text below the input carries the error message (0.75rem red).
 
@@ -297,6 +372,7 @@ Touch targets: checkbox overlays use 44×44px touch area (24px icon + 10px paddi
 ### Language to Use
 
 When prompting Stitch for screens in this system, use vocabulary like:
+
 - "dark operations dashboard", "carbon-shell background", "near-black surface"
 - "stage-color accent bar", "glassmorphic floating panel", "hairline border"
 - "full-bleed plant photo tile with gradient scrim", "MD3 pill button"
@@ -305,28 +381,33 @@ When prompting Stitch for screens in this system, use vocabulary like:
 
 ### Color References
 
-| Name | Hex | Role |
-|:---|:---|:---|
-| Deep Carbon | `#1e1e1e` | Card background |
-| Vitality Green | `#4caf50` | Primary action, Veg stage |
-| Hydro Blue | `#2196f3` | Secondary / irrigation / Cure stage |
-| Alert Red | `#f44336` | Error, destructive, sick plant |
-| Amber Light | `#ffeb3b` | Light cycle, chart data line |
-| Flowering Orange | `#ff9800` | Bloom stage, PHI warning |
-| Drying Purple | `#9c27b0` | Dry stage, IPM activity |
-| Mother Pink | `#e91e63` | Mother plant stage |
-| Divider | `rgba(255,255,255,0.12)` | Section borders |
-| Glass Film | `rgba(20,20,24,0.6)` | Floating glass surface |
+| Name                       | Hex                      | Role                                |
+| :------------------------- | :----------------------- | :---------------------------------- |
+| Deep Carbon                | `#1e1e1e`                | Card background                     |
+| Vitality Green             | `#4caf50`                | Primary action, Veg stage           |
+| Hydro Blue                 | `#2196f3`                | Secondary / irrigation / Cure stage |
+| Alert Red                  | `#f44336`                | Error, destructive, sick plant      |
+| Amber Light                | `#ffeb3b`                | Light cycle, chart data line        |
+| Warning Amber              | `#ffa726`                | Functional warning                  |
+| Integration Conflict Amber | `#e6a700`                | AC Infinity integration notice      |
+| Flowering Orange           | `#ff9800`                | Flowering stage                     |
+| Drying Purple              | `#9c27b0`                | Dry stage, IPM activity             |
+| Mother Pink                | `#e91e63`                | Mother plant stage                  |
+| Divider                    | `rgba(255,255,255,0.12)` | Section borders                     |
+| Glass Film                 | `rgba(20,20,24,0.6)`     | Floating glass surface              |
 
 ### Component Prompts
 
 **Plant tile grid:**
+
 > "A 3-column grid of square plant monitoring tiles. Each tile is a full-bleed dark photograph with a black gradient scrim fading upward from the bottom. At the bottom: a bold white plant name (1.1rem), smaller grey phenotype label, and the current growth stage in the stage accent color. A thin 3px accent bar across the top edge is colored by stage (green=veg, orange=flower, purple=dry, blue=cure). Top-left has a frosted-glass age pill showing days. Background is near-black (#1e1e1e)."
 
 **Dashboard header:**
+
 > "A two-column dashboard header on dark background. Left: a large 1.75rem white gradient-clipped grow-room name selector. Below it a row of small muted meta stats. Right: a horizontal scrollable row of compact stat chips showing plant counts, alert counts, and environmental readings. Chips turn amber-orange on warning, red with a pulse animation on danger."
 
 **Plant detail dialog:**
+
 > "A floating glass dialog (rgba(20,20,20,0.85) background, 16px backdrop blur) with a header bar containing a stage-colored icon box and two-line title. Below: scrollable detail content in rounded dark cards (rgba(255,255,255,0.05) fill, hairline borders). Footer has right-aligned MD3 pill buttons: tonal Cancel and primary green Save."
 
 ### Incremental Iteration
