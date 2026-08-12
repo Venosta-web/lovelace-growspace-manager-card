@@ -70,6 +70,14 @@ export interface EnvironmentDraft {
 
   // Substrate / irrigation monitoring sensors
   soilMoistureSensor: string;
+  /**
+   * Acceptable Moisture Band override. Both null means the growspace inherits
+   * the default band — the form still *displays* 20–60%, but nothing is
+   * stored, which is how "reset to defaults" survives until Save. Required
+   * (not optional) so every draft seeder must fill them or fail to compile.
+   */
+  soilMoistureMin: number | null;
+  soilMoistureMax: number | null;
   substrateTemperatureSensors: string[];
   phSensors: string[];
   feedEcSensors: string[];
@@ -113,7 +121,10 @@ export interface EnvironmentDraft {
   growlightConfig: GrowLightConfig;
 
   // VPD optimal overrides
-  vpdOptimalOverrides: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
+  vpdOptimalOverrides: Record<
+    string,
+    { day: { low: number; high: number }; night: { low: number; high: number } }
+  >;
 
   // LST offset for VPD calculation
   lstOffset: number;
@@ -254,8 +265,7 @@ export interface ConfigTabStates {
   vpd_targets: EnvTabState;
 }
 
-export interface ConfigDialogSM
-  extends DialogStateMachine<ConfigTabId, ConfigTabStates> {
+export interface ConfigDialogSM extends DialogStateMachine<ConfigTabId, ConfigTabStates> {
   environmentDraft: EnvironmentDraft;
 }
 
@@ -279,7 +289,14 @@ export type ConfigDialogEvent =
         notificationService: string;
       }>;
     }
-  | { type: 'SELECT_GROWSPACE'; growspaceId: string; name: string; rows: number; plantsPerRow: number; notificationService: string }
+  | {
+      type: 'SELECT_GROWSPACE';
+      growspaceId: string;
+      name: string;
+      rows: number;
+      plantsPerRow: number;
+      notificationService: string;
+    }
   | {
       type: 'UPDATE_EDIT_DRAFT';
       partial: Partial<{
@@ -309,7 +326,14 @@ export type ConfigDialogEvent =
 
   // ── Tanks ──
   | { type: 'BEGIN_ADD_TANK' }
-  | { type: 'BEGIN_EDIT_TANK'; index: number; sensorEntity: string; name: string; volumeLiters: number | null; warningLevel: number }
+  | {
+      type: 'BEGIN_EDIT_TANK';
+      index: number;
+      sensorEntity: string;
+      name: string;
+      volumeLiters: number | null;
+      warningLevel: number;
+    }
   | { type: 'UPDATE_TANK_DRAFT'; partial: Partial<TankDraftFields> }
   | { type: 'CANCEL_TANK' }
   | { type: 'COMMIT_TANK' }
@@ -375,6 +399,8 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
     humidifierThresholds: {},
     dehumidifierThresholds: {},
     soilMoistureSensor: '',
+    soilMoistureMin: null,
+    soilMoistureMax: null,
     substrateTemperatureSensors: [],
     phSensors: [],
     feedEcSensors: [],
@@ -542,6 +568,8 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
     humidifierAcInfinityDevices: attrs.humidifierAcInfinityDevices ?? [],
     dehumidifierAcInfinityDevices: attrs.dehumidifierAcInfinityDevices ?? [],
     soilMoistureSensor: attrs.soilMoistureSensor ?? '',
+    soilMoistureMin: attrs.soilMoistureMin ?? null,
+    soilMoistureMax: attrs.soilMoistureMax ?? null,
     substrateTemperatureSensors: attrs.substrateTemperatureSensors ?? [],
     phSensors: attrs.phSensors ?? [],
     feedEcSensors: attrs.feedEcSensors ?? [],
@@ -566,7 +594,8 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
     visionEarlyOffset: vc?.early_check_offset_minutes ?? 60,
     visionMidHours: vc?.mid_check_hours ?? 6,
     visionLateOffset: vc?.late_check_offset_minutes ?? 60,
-    circulationFanConfig: attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
+    circulationFanConfig:
+      attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
     exhaustFanConfig: attrs.exhaustFanConfig ?? defaultEnvironmentDraft().exhaustFanConfig,
     growlightEntities: attrs.growlightEntities ?? [],
     growlightAcInfinityDevices: attrs.growlightAcInfinityDevices ?? [],
@@ -626,26 +655,28 @@ export function isNotificationsDirty(sm: ConfigDialogSM, device: GrowspaceDevice
 
   if (sub.kind === 'adding') {
     return (
-      sub.draft.message.trim() !== '' ||
-      sub.draft.day !== 1 ||
-      sub.draft.growspaceIds.length > 0
+      sub.draft.message.trim() !== '' || sub.draft.day !== 1 || sub.draft.growspaceIds.length > 0
     );
   }
 
   if (sub.kind === 'editing') {
     const original = tab.timedNotifications.find((n) => n.id === sub.id);
     if (!original) return true;
-    return JSON.stringify(sub.draft) !== JSON.stringify({
-      message: original.message,
-      triggerType: original.triggerType,
-      day: original.day,
-      growspaceIds: original.growspaceIds,
-    });
+    return (
+      JSON.stringify(sub.draft) !==
+      JSON.stringify({
+        message: original.message,
+        triggerType: original.triggerType,
+        day: original.day,
+        growspaceIds: original.growspaceIds,
+      })
+    );
   }
 
   const seeded = notificationsTabFromDevice(device);
   if (JSON.stringify(tab.draft) !== JSON.stringify(seeded.draft)) return true;
-  if (JSON.stringify(tab.timedNotifications) !== JSON.stringify(seeded.timedNotifications)) return true;
+  if (JSON.stringify(tab.timedNotifications) !== JSON.stringify(seeded.timedNotifications))
+    return true;
   return false;
 }
 
@@ -950,7 +981,13 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
         tabs: {
           ...sm.tabs,
           tanks: {
-            sub: { kind: 'adding', sensorEntity: '', name: '', volumeLiters: null, warningLevel: 30 },
+            sub: {
+              kind: 'adding',
+              sensorEntity: '',
+              name: '',
+              volumeLiters: null,
+              warningLevel: 30,
+            },
           },
         },
       };

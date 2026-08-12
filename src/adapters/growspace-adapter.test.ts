@@ -543,3 +543,68 @@ describe('GrowspaceAdapter irrigation tanks through the wire schema', () => {
     expect(tanks?.[0].waterHistory).toBeUndefined();
   });
 });
+
+// ─── Acceptable Moisture Band (contract adaptation) ──────────────────────────
+
+describe('GrowspaceAdapter acceptable moisture band', () => {
+  function wsWithEnv(env: Record<string, unknown>): GrowspaceAPIResponse {
+    return {
+      identity: { growspace_id: 'gs1', name: 'Tent', overview_entity_id: 'sensor.gs1' },
+      environment: env,
+    } as unknown as GrowspaceAPIResponse;
+  }
+
+  it('maps a stored custom pair and the effective band', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithEnv({
+        soil_moisture_min: 32.5,
+        soil_moisture_max: 54,
+        soil_moisture_band: { min: 32.5, max: 54, is_custom: true },
+      })
+    );
+    const attrs = device?.environmentAttributes;
+    expect(attrs?.soilMoistureMin).toBe(32.5);
+    expect(attrs?.soilMoistureMax).toBe(54);
+    expect(attrs?.soilMoistureBand).toEqual({ min: 32.5, max: 54, is_custom: true });
+  });
+
+  it('maps an inherited band as null bounds, not as the defaults', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithEnv({
+        soil_moisture_min: null,
+        soil_moisture_max: null,
+        soil_moisture_band: { min: 20, max: 60, is_custom: false },
+      })
+    );
+    const attrs = device?.environmentAttributes;
+    expect(attrs?.soilMoistureMin).toBeNull();
+    expect(attrs?.soilMoistureMax).toBeNull();
+    expect(attrs?.soilMoistureBand?.is_custom).toBe(false);
+  });
+
+  it('maps sensor unit and compatibility when a sensor is configured', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithEnv({
+        soil_moisture_sensor: 'sensor.soil',
+        soil_moisture_unit: '%',
+        soil_moisture_band_compatible: true,
+      })
+    );
+    expect(device?.environmentAttributes?.soilMoistureUnit).toBe('%');
+    expect(device?.environmentAttributes?.soilMoistureBandCompatible).toBe(true);
+  });
+
+  it('degrades to an inherited band against a backend that predates the field', () => {
+    // Card releases can outrun the integration; an absent band must read as
+    // inherited rather than throwing or inventing a custom override.
+    const device = GrowspaceAdapter.transformGrowspace(null, wsWithEnv({}));
+    const attrs = device?.environmentAttributes;
+    expect(attrs?.soilMoistureMin).toBeNull();
+    expect(attrs?.soilMoistureMax).toBeNull();
+    expect(attrs?.soilMoistureBand).toBeUndefined();
+    expect(attrs?.soilMoistureBandCompatible).toBeUndefined();
+  });
+});

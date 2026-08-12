@@ -264,6 +264,14 @@ export interface EnvironmentAttributes {
   drainPumpState?: string;
   vpd?: string;
   soilMoistureValue?: string;
+  /** Stored Acceptable Moisture Band override; null means inherited. */
+  soilMoistureMin?: number | null;
+  soilMoistureMax?: number | null;
+  /** The band actually applied, with the inherited/custom distinction. */
+  soilMoistureBand?: { min: number; max: number; is_custom: boolean };
+  /** Only present when a soil-moisture sensor is configured. */
+  soilMoistureUnit?: string;
+  soilMoistureBandCompatible?: boolean;
   exhaustSensor?: string;
   humidifierSensor?: string;
   irrigationTanks?: IrrigationTank[];

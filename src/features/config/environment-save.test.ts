@@ -46,10 +46,15 @@ describe('composeEnvironmentConfig', () => {
     // replace does not reset them.
     const d = draft();
     d.temperatureSensors = ['sensor.temp'];
-    d.circulationFanConfig = { ...d.circulationFanConfig, enabled: true } as typeof d.circulationFanConfig;
+    d.circulationFanConfig = {
+      ...d.circulationFanConfig,
+      enabled: true,
+    } as typeof d.circulationFanConfig;
     d.exhaustFanConfig = { ...d.exhaustFanConfig, enabled: true } as typeof d.exhaustFanConfig;
     d.feedEcSensors = ['sensor.feed_ec'];
-    d.irrigationTanks = [{ sensorEntity: 'sensor.tank', name: 'T', volumeLiters: 50, warningLevel: 20 }];
+    d.irrigationTanks = [
+      { sensorEntity: 'sensor.tank', name: 'T', volumeLiters: 50, warningLevel: 20 },
+    ];
 
     const detail = composeEnvironmentConfig(d, flags);
 
@@ -95,5 +100,64 @@ describe('needsExhaustCall', () => {
 
   it('is false when no exhaust fan config is present', () => {
     expect(needsExhaustCall({ exhaustFanConfig: undefined })).toBe(false);
+  });
+});
+
+describe('composeEnvironmentConfig — Acceptable Moisture Band', () => {
+  it('sends both bounds for a complete custom pair', () => {
+    const d = draft();
+    d.soilMoistureMin = 32.5;
+    d.soilMoistureMax = 54;
+    const detail = composeEnvironmentConfig(d, flags);
+    expect(detail.soilMoistureMin).toBe(32.5);
+    expect(detail.soilMoistureMax).toBe(54);
+  });
+
+  it('sends both bounds as null to clear a stored override', () => {
+    const d = draft();
+    d.soilMoistureMin = null;
+    d.soilMoistureMax = null;
+    const detail = composeEnvironmentConfig(d, flags);
+    expect(detail.soilMoistureMin).toBeNull();
+    expect(detail.soilMoistureMax).toBeNull();
+  });
+
+  it('keeps a zero minimum instead of dropping it as falsy', () => {
+    const d = draft();
+    d.soilMoistureMin = 0;
+    d.soilMoistureMax = 45;
+    const detail = composeEnvironmentConfig(d, flags);
+    expect(detail.soilMoistureMin).toBe(0);
+    expect(detail.soilMoistureMax).toBe(45);
+  });
+
+  it.each([
+    ['half pair', 30, null],
+    ['inverted pair', 70, 30],
+  ])('omits both keys for a %s so the stored band survives', (_l, min, max) => {
+    const d = draft();
+    d.soilMoistureMin = min;
+    d.soilMoistureMax = max;
+    const detail = composeEnvironmentConfig(d, flags);
+    expect('soilMoistureMin' in detail).toBe(false);
+    expect('soilMoistureMax' in detail).toBe(false);
+  });
+
+  it('never emits one bound without the other', () => {
+    const pairs: Array<[number | null, number | null]> = [
+      [null, null],
+      [30, null],
+      [null, 70],
+      [30, 70],
+      [70, 30],
+      [0, 100],
+    ];
+    for (const [min, max] of pairs) {
+      const d = draft();
+      d.soilMoistureMin = min;
+      d.soilMoistureMax = max;
+      const detail = composeEnvironmentConfig(d, flags);
+      expect('soilMoistureMin' in detail).toBe('soilMoistureMax' in detail);
+    }
   });
 });

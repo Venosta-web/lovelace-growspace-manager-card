@@ -22,6 +22,7 @@
 
 import type { EnvironmentDraft } from '../../dialogs/config-dialog-sm';
 import type { EnvironmentConfigEventDetail } from '../../lib/types/dialog';
+import { bandSavePayload } from './moisture-band';
 
 /** The two control-toggle flags that live on the dialog, outside the draft. */
 export interface EnvironmentControlFlags {
@@ -38,6 +39,11 @@ export function composeEnvironmentConfig(
   draft: EnvironmentDraft,
   flags: EnvironmentControlFlags
 ): EnvironmentConfigEventDetail {
+  // Null when the band is mid-edit and incomplete: omitting both keys leaves
+  // the stored band untouched (patch semantics) instead of sending a lone
+  // bound, which the backend rejects — failing the entire environment save.
+  const band = bandSavePayload({ min: draft.soilMoistureMin, max: draft.soilMoistureMax });
+
   return {
     selectedGrowspaceId: draft.selectedGrowspaceId,
     temperatureSensors: draft.temperatureSensors,
@@ -60,6 +66,9 @@ export function composeEnvironmentConfig(
     dehumidifierControlEnabled: flags.dehumidifierControlEnabled,
     dehumidifierAcInfinityDevices: draft.dehumidifierAcInfinityDevices,
     soilMoistureSensor: draft.soilMoistureSensor,
+    // Atomic pair, or omitted entirely while the draft is mid-edit — an
+    // unfinished band must not destroy the stored one or fail the whole save.
+    ...(band ? { soilMoistureMin: band.min, soilMoistureMax: band.max } : {}),
     sensorGroups: draft.sensorGroups,
     sensorCoordinates: draft.sensorCoordinates,
     irrigationTanks: draft.irrigationTanks,

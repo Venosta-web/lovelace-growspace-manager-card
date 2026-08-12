@@ -423,6 +423,22 @@ export const GrowspaceAPIResponseSchema = z.object({
       lst_offset: z.number().optional(),
       vpd: z.string().nullable().optional(),
       soil_moisture_value: z.string().nullable().optional(),
+      // Acceptable Moisture Band. The raw pair is the stored override (null =
+      // inherited) and survives the sensor being replaced or removed, so the
+      // backend emits it unconditionally. `soil_moisture_band` is the resolved
+      // effective band; unit + compatibility only exist when a sensor is
+      // configured, so absent is not the same as incompatible.
+      soil_moisture_min: z.number().nullable().optional(),
+      soil_moisture_max: z.number().nullable().optional(),
+      soil_moisture_band: z
+        .object({
+          min: z.number(),
+          max: z.number(),
+          is_custom: z.boolean(),
+        })
+        .optional(),
+      soil_moisture_unit: z.string().nullable().optional(),
+      soil_moisture_band_compatible: z.boolean().optional(),
       // Live actuator/sensor states the serializer reads off hass. Only
       // humidifier_state is read by the card today; the rest are declared
       // because the backend emits them (ADR 0031), not because they are used.

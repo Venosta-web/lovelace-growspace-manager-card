@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { editBound } from '../moisture-band';
 import { createSensorsTabViewModel, type SensorsTabDeps } from './sensors-tab.viewmodel';
 import { createInitialSM, transition } from '../../../dialogs/config-dialog-sm';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
@@ -10,6 +11,7 @@ function sm(): ConfigDialogSM {
 const noDeps: SensorsTabDeps = {
   entityOptions: () => [],
   averageSensorValue: () => null,
+  sensorReading: () => null,
 };
 
 describe('createSensorsTabViewModel — fields', () => {
@@ -49,6 +51,7 @@ describe('createSensorsTabViewModel — fields', () => {
         return dc === 'moisture' ? ['sensor.soil'] : ['sensor.x'];
       },
       averageSensorValue: () => null,
+      sensorReading: () => null,
     };
     const vm = createSensorsTabViewModel(sm(), deps);
     expect(vm.fields.find((f) => f.key === 'soilMoistureSensor')!.options).toEqual(['sensor.soil']);
@@ -66,7 +69,11 @@ describe('createSensorsTabViewModel — LST section', () => {
     let s = sm();
     s = transition(s, {
       type: 'UPDATE_ENV_DRAFT',
-      partial: { temperatureSensors: ['sensor.t'], humiditySensors: ['sensor.h'], vpdSensors: ['sensor.vpd'] },
+      partial: {
+        temperatureSensors: ['sensor.t'],
+        humiditySensors: ['sensor.h'],
+        vpdSensors: ['sensor.vpd'],
+      },
     });
     expect(createSensorsTabViewModel(s, noDeps).lst).toBeNull();
   });
@@ -80,6 +87,7 @@ describe('createSensorsTabViewModel — LST section', () => {
     const deps: SensorsTabDeps = {
       entityOptions: () => [],
       averageSensorValue: (ids) => (ids[0] === 'sensor.t' ? 25 : 60),
+      sensorReading: () => null,
     };
     const vm = createSensorsTabViewModel(s, deps);
     expect(vm.lst).not.toBeNull();
@@ -92,7 +100,155 @@ describe('createSensorsTabViewModel — LST section', () => {
       type: 'UPDATE_ENV_DRAFT',
       partial: { temperatureSensors: ['sensor.t'], humiditySensors: ['sensor.h'] },
     });
-    const vm = createSensorsTabViewModel(s, { entityOptions: () => [], averageSensorValue: () => null });
+    const vm = createSensorsTabViewModel(s, {
+      entityOptions: () => [],
+      averageSensorValue: () => null,
+      sensorReading: () => null,
+    });
     expect(vm.lst!.vpdDisplay).toBe('—');
+  });
+});
+
+// ─── Acceptable Moisture Band ────────────────────────────────────────────────
+
+function withMoistureSensor(
+  partial: Record<string, unknown> = {},
+  reading: { value: string | null; unit: string | null } | null = null
+) {
+  const s = transition(sm(), {
+    type: 'UPDATE_ENV_DRAFT',
+    partial: { soilMoistureSensor: 'sensor.soil', ...partial },
+  });
+  return createSensorsTabViewModel(s, { ...noDeps, sensorReading: () => reading });
+}
+
+describe('createSensorsTabViewModel — moisture band visibility', () => {
+  it('is absent until a soil-moisture sensor is configured', () => {
+    expect(createSensorsTabViewModel(sm(), noDeps).moistureBand).toBeNull();
+  });
+
+  it('appears as soon as a sensor is picked', () => {
+    expect(withMoistureSensor().moistureBand).not.toBeNull();
+  });
+
+  it('does not depend on pump or tank hardware', () => {
+    // No irrigation tanks, no pump — the band is still offered.
+    const vm = withMoistureSensor({ irrigationTanks: [] });
+    expect(vm.moistureBand).not.toBeNull();
+  });
+});
+
+describe('createSensorsTabViewModel — moisture band state', () => {
+  it('shows the inherited defaults without marking them as a saved override', () => {
+    const band = withMoistureSensor().moistureBand!;
+    expect(band.min).toBe(20);
+    expect(band.max).toBe(60);
+    expect(band.isCustom).toBe(false);
+  });
+
+  it('shows a stored custom pair as an override', () => {
+    const band = withMoistureSensor({ soilMoistureMin: 32.5, soilMoistureMax: 54 }).moistureBand!;
+    expect(band).toMatchObject({ min: 32.5, max: 54, isCustom: true });
+  });
+
+  it('offers a 0.1% decimal step', () => {
+    expect(withMoistureSensor().moistureBand!.step).toBe(0.1);
+  });
+
+  it('surfaces a validation error for an invalid pair and blocks saving it', () => {
+    const band = withMoistureSensor({ soilMoistureMin: 70, soilMoistureMax: 30 }).moistureBand!;
+    expect(band.error).not.toBeNull();
+    expect(band.canSave).toBe(false);
+  });
+});
+
+describe('createSensorsTabViewModel — moisture band preview', () => {
+  it.each([
+    ['too dry', '15.0', 'too_dry', 'Too dry'],
+    ['in band', '40.0', 'in_band', 'Within healthy band'],
+    ['too wet', '65.0', 'too_wet', 'Too wet'],
+  ])('previews %s against the effective band', (_l, value, classification, label) => {
+    const band = withMoistureSensor({}, { value, unit: '%' }).moistureBand!;
+    expect(band.preview).toMatchObject({ classification, label });
+  });
+
+  it.each([
+    ['exactly the minimum', '20.0'],
+    ['exactly the maximum', '60.0'],
+  ])('treats %s as in band (inclusive boundaries)', (_l, value) => {
+    const band = withMoistureSensor({}, { value, unit: '%' }).moistureBand!;
+    expect(band.preview!.classification).toBe('in_band');
+  });
+
+  it('previews against a custom band, not the defaults', () => {
+    const band = withMoistureSensor(
+      { soilMoistureMin: 32.5, soilMoistureMax: 54 },
+      { value: '56.0', unit: '%' }
+    ).moistureBand!;
+    expect(band.preview!.classification).toBe('too_wet');
+  });
+
+  it.each([
+    ['unavailable', 'unavailable'],
+    ['unknown', 'unknown'],
+    ['empty', ''],
+  ])('omits the preview for an %s reading without blocking configuration', (_l, value) => {
+    const band = withMoistureSensor({}, { value, unit: '%' }).moistureBand!;
+    expect(band.preview).toBeNull();
+    expect(band.error).toBeNull();
+  });
+
+  it('omits the preview when the sensor reports nothing at all', () => {
+    expect(withMoistureSensor({}, null).moistureBand!.preview).toBeNull();
+  });
+});
+
+describe('createSensorsTabViewModel — moisture band unit compatibility', () => {
+  it.each([
+    ['percentage', '%'],
+    ['legacy sensors with no unit metadata', null],
+  ])('offers the controls for %s', (_l, unit) => {
+    const band = withMoistureSensor({}, { value: '42', unit }).moistureBand!;
+    expect(band.incompatibleUnit).toBeNull();
+    expect(band.preview).not.toBeNull();
+  });
+
+  it.each([
+    ['temperature', '\u00b0C'],
+    ['volumetric ratio', 'm\u00b3/m\u00b3'],
+  ])('shows an incompatibility state for a %s sensor', (_l, unit) => {
+    const band = withMoistureSensor({}, { value: '42', unit }).moistureBand!;
+    expect(band.incompatibleUnit).toBe(unit);
+    expect(band.preview).toBeNull();
+  });
+});
+
+describe('createSensorsTabViewModel — moisture band edit round-trip', () => {
+  // Regression: the component used to reconstruct the pair from the *displayed*
+  // bounds, so editing one bound while the other was cleared silently replaced
+  // the cleared bound with the default the user was only being shown.
+  it('exposes the cleared bound as raw null while displaying the default', () => {
+    const band = withMoistureSensor({ soilMoistureMin: null, soilMoistureMax: 54 }).moistureBand!;
+    expect(band.min).toBe(20); // displayed fallback
+    expect(band.rawMin).toBeNull(); // actual draft state
+    expect(band.rawMax).toBe(54);
+  });
+
+  it('editing the other bound preserves a cleared bound through the full loop', () => {
+    const band = withMoistureSensor({ soilMoistureMin: null, soilMoistureMax: 54 }).moistureBand!;
+    // Exactly what the component does on a max edit.
+    const next = editBound({ min: band.rawMin, max: band.rawMax }, 'max', 50);
+    expect(next.min).toBeNull();
+    expect(next.max).toBe(50);
+  });
+
+  it('reports raw nulls for an inherited band so an edit materialises defaults', () => {
+    const band = withMoistureSensor().moistureBand!;
+    expect(band.rawMin).toBeNull();
+    expect(band.rawMax).toBeNull();
+    expect(editBound({ min: band.rawMin, max: band.rawMax }, 'min', 30)).toEqual({
+      min: 30,
+      max: 60,
+    });
   });
 });

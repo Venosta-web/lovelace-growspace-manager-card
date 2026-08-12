@@ -442,6 +442,47 @@ describe('configureEnvironment', () => {
     expect(payload).toHaveProperty('soil_moisture_sensor', null);
   });
 
+  it('sends the Acceptable Moisture Band as an atomic pair', async () => {
+    await configureEnvironment({
+      growspaceId: 'gs1',
+      soilMoistureMin: 32.5,
+      soilMoistureMax: 54,
+    });
+
+    const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(payload).toHaveProperty('soil_moisture_min', 32.5);
+    expect(payload).toHaveProperty('soil_moisture_max', 54);
+  });
+
+  it('sends both band bounds as null to clear the override', async () => {
+    await configureEnvironment({
+      growspaceId: 'gs1',
+      soilMoistureMin: null,
+      soilMoistureMax: null,
+    });
+
+    const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(payload).toHaveProperty('soil_moisture_min', null);
+    expect(payload).toHaveProperty('soil_moisture_max', null);
+  });
+
+  it('keeps a zero band minimum rather than dropping it as falsy', async () => {
+    await configureEnvironment({ growspaceId: 'gs1', soilMoistureMin: 0, soilMoistureMax: 45 });
+
+    const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(payload).toHaveProperty('soil_moisture_min', 0);
+  });
+
+  it('omits both band keys when only one bound is supplied', async () => {
+    // The backend rejects a lone bound and fails the entire call, so a half
+    // pair must never reach the wire.
+    await configureEnvironment({ growspaceId: 'gs1', soilMoistureMin: 30 });
+
+    const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(payload).not.toHaveProperty('soil_moisture_min');
+    expect(payload).not.toHaveProperty('soil_moisture_max');
+  });
+
   it('a partial call carries only the provided fields so the backend keeps the rest', async () => {
     // The irrigation dialog's tank save sends only irrigationTanks; under
     // patch semantics everything else must stay untouched (omitted).

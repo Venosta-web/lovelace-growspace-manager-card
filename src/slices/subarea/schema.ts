@@ -107,6 +107,12 @@ export const EnvironmentConfigSchema = z.object({
   vpd_sensor: z.string().nullish(),
   co2_sensor: z.string().nullish(),
   soil_moisture_sensor: z.string().nullish(),
+  // Subareas share the backend's EnvironmentConfig model, so its Acceptable
+  // Moisture Band fields are serialized here too. Declared for contract
+  // completeness only — subareas have no band of their own and nothing reads
+  // these; the band is configured per growspace.
+  soil_moisture_min: z.number().nullish(),
+  soil_moisture_max: z.number().nullish(),
   veg_day_hours: z.number().optional(),
   flower_day_hours: z.number().optional(),
   temperature_sensors: z.array(z.string()).optional(),

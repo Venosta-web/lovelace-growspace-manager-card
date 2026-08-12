@@ -54,11 +54,7 @@ export function openPlantOverviewDialog(plant: PlantEntity, selectedIds?: string
  * carried in the payload so the confirm handler never re-derives it from ambient
  * selection (ADR-0027). The dialog self-fetches its strain library on open.
  */
-export function openAddPlantDialog(
-  growspaceId: string | null,
-  row?: number,
-  col?: number
-): void {
+export function openAddPlantDialog(growspaceId: string | null, row?: number, col?: number): void {
   const gid = growspaceId ?? undefined;
   if (row !== undefined && col !== undefined) {
     openDialog({ type: 'ADD_PLANT', payload: { growspaceId: gid, row, col } });
@@ -273,8 +269,7 @@ export function openConfigDialog(
         dehumidifierAcInfinityDevices:
           device?.environmentAttributes?.dehumidifierAcInfinityDevices || [],
         growlightEntities: device?.environmentAttributes?.growlightEntities || [],
-        growlightAcInfinityDevices:
-          device?.environmentAttributes?.growlightAcInfinityDevices || [],
+        growlightAcInfinityDevices: device?.environmentAttributes?.growlightAcInfinityDevices || [],
         humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
         humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
         humidifierControlEnabled: device?.environmentAttributes?.humidifierControlEnabled || false,
@@ -282,6 +277,11 @@ export function openConfigDialog(
         dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
         dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
         soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
+        soilMoistureMin: device?.environmentAttributes?.soilMoistureMin ?? null,
+        soilMoistureMax: device?.environmentAttributes?.soilMoistureMax ?? null,
+        soilMoistureBand: device?.environmentAttributes?.soilMoistureBand,
+        soilMoistureValue: device?.environmentAttributes?.soilMoistureValue,
+        soilMoistureBandCompatible: device?.environmentAttributes?.soilMoistureBandCompatible,
         dehumidifierControlEnabled:
           device?.environmentAttributes?.dehumidifierControlEnabled || false,
         sensorGroups: device?.environmentAttributes?.sensorGroups || [],

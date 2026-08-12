@@ -113,6 +113,23 @@ describe('createInitialSM', () => {
     expect(sm.environmentDraft.selectedGrowspaceId).toBe('gs1');
   });
 
+  it('seeds a stored Acceptable Moisture Band from device', () => {
+    const device = makeDevice({
+      environmentAttributes: { soilMoistureMin: 32.5, soilMoistureMax: 54 },
+    });
+    const sm = createInitialSM(device);
+    expect(sm.environmentDraft.soilMoistureMin).toBe(32.5);
+    expect(sm.environmentDraft.soilMoistureMax).toBe(54);
+  });
+
+  it('seeds an inherited Acceptable Moisture Band as null, not as 20/60', () => {
+    // Seeding the defaults as values would turn an inherited band into a
+    // custom override the first time the user saves anything else.
+    const sm = createInitialSM(makeDevice({ environmentAttributes: {} }));
+    expect(sm.environmentDraft.soilMoistureMin).toBeNull();
+    expect(sm.environmentDraft.soilMoistureMax).toBeNull();
+  });
+
   it('normalises legacy single-sensor fields to arrays when seeding from device', () => {
     const device = makeDevice({
       environmentAttributes: {
