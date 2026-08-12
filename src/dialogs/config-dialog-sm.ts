@@ -32,6 +32,7 @@ export type ConfigTabId =
   | 'notifications'
   | 'sensors'
   | 'climate'
+  | 'growlight'
   | 'humidity'
   | 'irrigation'
   | 'tanks'
@@ -258,6 +259,7 @@ export interface ConfigTabStates {
   notifications: NotificationsTabState;
   sensors: EnvTabState;
   climate: EnvTabState;
+  growlight: EnvTabState;
   humidity: EnvTabState;
   irrigation: EnvTabState;
   tanks: TanksTabState;
@@ -267,7 +269,18 @@ export interface ConfigTabStates {
   vpd_targets: EnvTabState;
 }
 
-export interface ConfigDialogSM extends DialogStateMachine<ConfigTabId, ConfigTabStates> {
+type SharedDialogStatus = DialogStateMachine<ConfigTabId, ConfigTabStates>['status'];
+
+export type ConfigDialogStatus =
+  | SharedDialogStatus
+  | { kind: 'confirm-discard'; pendingAction: 'close' }
+  | { kind: 'confirm-discard'; pendingAction: 'change-growspace'; growspaceId: string };
+
+export interface ConfigDialogSM extends Omit<
+  DialogStateMachine<ConfigTabId, ConfigTabStates>,
+  'status'
+> {
+  status: ConfigDialogStatus;
   environmentDraft: EnvironmentDraft;
 }
 
@@ -276,6 +289,8 @@ export interface ConfigDialogSM extends DialogStateMachine<ConfigTabId, ConfigTa
 export type ConfigDialogEvent =
   // ── Navigation ──
   | { type: 'REQUEST_TAB'; tab: ConfigTabId }
+  | { type: 'REQUEST_CLOSE' }
+  | { type: 'REQUEST_GROWSPACE_CHANGE'; growspaceId: string }
   | { type: 'SWITCH_TAB'; tab: ConfigTabId }
   | { type: 'DISCARD_AND_SWITCH' }
   | { type: 'CANCEL_TAB_SWITCH' }
@@ -478,6 +493,7 @@ function defaultTabs(): ConfigTabStates {
     notifications: defaultNotificationsTabState(),
     sensors: { sub: { kind: 'idle' } },
     climate: { sub: { kind: 'idle' } },
+    growlight: { sub: { kind: 'idle' } },
     humidity: { sub: { kind: 'idle' } },
     irrigation: { sub: { kind: 'idle' } },
     tanks: { sub: { kind: 'idle' } },
@@ -687,7 +703,8 @@ export function isNotificationsDirty(sm: ConfigDialogSM, device: GrowspaceDevice
 
 /**
  * Returns true if the currently-active tab has unsaved changes.
- * Applies to the growspaces and notifications tabs.
+ * Environment tabs share one draft, so navigating from any of them must compare
+ * that complete draft with the canonical device seeder.
  */
 export function isActiveTabDirty(sm: ConfigDialogSM, device: GrowspaceDevice): boolean {
   if (sm.activeTab === 'growspaces') {
@@ -696,7 +713,7 @@ export function isActiveTabDirty(sm: ConfigDialogSM, device: GrowspaceDevice): b
   if (sm.activeTab === 'notifications') {
     return isNotificationsDirty(sm, device);
   }
-  return false;
+  return JSON.stringify(sm.environmentDraft) !== JSON.stringify(envDraftFromDevice(device));
 }
 
 // ─── Transition helpers ───────────────────────────────────────────────────────
@@ -721,16 +738,16 @@ export function requestTabSwitch(
  * Discard the active tab's draft and switch to the pending tab.
  */
 export function discardAndSwitch(sm: ConfigDialogSM, device: GrowspaceDevice): ConfigDialogSM {
-  if (sm.status.kind !== 'confirm-discard') return sm;
+  if (sm.status.kind !== 'confirm-discard' || !('pendingTab' in sm.status)) return sm;
   const pendingTab = sm.status.pendingTab;
+  const reset = applyDeviceToSM(sm, device);
   return {
-    ...sm,
+    ...reset,
     activeTab: pendingTab,
     status: { kind: 'idle' },
     tabs: {
-      ...sm.tabs,
+      ...reset.tabs,
       growspaces: { sub: { kind: 'idle' } },
-      notifications: notificationsTabFromDevice(device),
     },
   };
 }
@@ -745,11 +762,24 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
     case 'REQUEST_TAB':
       return { ...sm, status: { kind: 'confirm-discard', pendingTab: event.tab } };
 
+    case 'REQUEST_CLOSE':
+      return { ...sm, status: { kind: 'confirm-discard', pendingAction: 'close' } };
+
+    case 'REQUEST_GROWSPACE_CHANGE':
+      return {
+        ...sm,
+        status: {
+          kind: 'confirm-discard',
+          pendingAction: 'change-growspace',
+          growspaceId: event.growspaceId,
+        },
+      };
+
     case 'SWITCH_TAB':
       return { ...sm, activeTab: event.tab, status: { kind: 'idle' } };
 
     case 'DISCARD_AND_SWITCH': {
-      if (sm.status.kind !== 'confirm-discard') return sm;
+      if (sm.status.kind !== 'confirm-discard' || !('pendingTab' in sm.status)) return sm;
       return {
         ...sm,
         activeTab: sm.status.pendingTab,
