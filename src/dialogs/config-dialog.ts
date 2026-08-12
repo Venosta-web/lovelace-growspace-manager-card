@@ -40,6 +40,9 @@ import type { Subarea } from '../slices/subarea';
 import { irrigationStrategies$, updateIrrigationStrategy } from '../slices/irrigation';
 import {
   createInitialSM,
+  discardAndSwitch,
+  isActiveTabDirty,
+  requestTabSwitch,
   transition,
   type ConfigDialogSM,
   type ConfigDialogEvent,
@@ -137,6 +140,16 @@ export class ConfigDialog extends LitElement {
   @state() private _openVpdStageId: FanVpdStageKey | '' = '';
 
   private _initialStateApplied = false;
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    window.addEventListener('keydown', this._onKeydown, true);
+  }
+
+  disconnectedCallback(): void {
+    window.removeEventListener('keydown', this._onKeydown, true);
+    super.disconnectedCallback();
+  }
 
   /** Convenience: dispatch a SM transition and assign the result. */
   private _t(event: ConfigDialogEvent): void {
@@ -1054,6 +1067,49 @@ export class ConfigDialog extends LitElement {
         outline: none;
       }
 
+      /* Matches the feed-and-water discard pattern on the configuration glass sheet. */
+      .confirm-discard-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        box-sizing: border-box;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+      }
+
+      .confirm-discard-box {
+        width: min(100%, 360px);
+        padding: 24px;
+        box-sizing: border-box;
+        border-radius: 16px;
+        background: var(--card-background-color, #1e1e1e);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+      }
+
+      .confirm-discard-box h3 {
+        margin: 0 0 8px;
+        font-size: 1rem;
+        font-weight: 500;
+      }
+
+      .confirm-discard-box p {
+        margin: 0 0 20px;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        font-size: 0.875rem;
+        line-height: 1.5;
+      }
+
+      .confirm-discard-actions {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
       .entity-select-container {
         position: relative;
         z-index: 5;
@@ -1148,15 +1204,41 @@ export class ConfigDialog extends LitElement {
     if (this.initialTab === ConfigTab.SUBAREAS) this._loadSubareas();
   }
 
-  private _close() {
-    const { heatmap, subareas } = this._sm.tabs;
-    if (heatmap.sub.kind === 'editing-group' || subareas.sub.kind === 'editing-subarea') return;
-    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  private _deviceForDirtyCheck(): GrowspaceDevice | undefined {
+    const growspaceSub = this._sm.tabs.growspaces.sub;
+    const editingId = growspaceSub.kind === 'editing' ? growspaceSub.growspaceId : '';
+    if (this._sm.activeTab === ConfigTab.GROWSPACES) {
+      const growspaceId = editingId || this.growspaceId;
+      return this.devices.find((device) => device.deviceId === growspaceId) ?? this.devices[0];
+    }
+    const id = editingId || this._sm.environmentDraft.selectedGrowspaceId || this.growspaceId;
+    return this.devices.find((device) => device.deviceId === id);
   }
 
+  private _close = () => {
+    const { heatmap, subareas } = this._sm.tabs;
+    if (heatmap.sub.kind === 'editing-group' || subareas.sub.kind === 'editing-subarea') return;
+    const device = this._deviceForDirtyCheck();
+    if (device && isActiveTabDirty(this._sm, device)) {
+      this._t({ type: 'REQUEST_CLOSE' });
+      return;
+    }
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  };
+
+  private _onKeydown = (event: KeyboardEvent): void => {
+    if (!this.open || event.key !== 'Escape') return;
+    event.preventDefault();
+    event.stopPropagation();
+    this._close();
+  };
+
   private _switchTab(tab: ConfigTab) {
-    this._t({ type: 'SWITCH_TAB', tab: tab as ConfigTabId });
-    if (tab === ConfigTab.SUBAREAS) {
+    const device = this._deviceForDirtyCheck();
+    this._sm = device
+      ? requestTabSwitch(this._sm, tab as ConfigTabId, device)
+      : transition(this._sm, { type: 'SWITCH_TAB', tab: tab as ConfigTabId });
+    if (this._sm.activeTab === tab && tab === ConfigTab.SUBAREAS) {
       this._loadSubareas();
     }
   }
@@ -1649,6 +1731,15 @@ export class ConfigDialog extends LitElement {
 
   private _handleEnvGrowspaceChange(e: Event) {
     const growspaceId = (e.target as HTMLSelectElement).value;
+    const currentDevice = this._deviceForDirtyCheck();
+    if (currentDevice && isActiveTabDirty(this._sm, currentDevice)) {
+      this._t({ type: 'REQUEST_GROWSPACE_CHANGE', growspaceId });
+      return;
+    }
+    this._applyEnvGrowspaceChange(growspaceId);
+  }
+
+  private _applyEnvGrowspaceChange(growspaceId: string) {
     const device = this.devices.find((d) => d.deviceId === growspaceId);
     if (device) {
       this._t({ type: 'RESET_FROM_DEVICE', device });
@@ -1695,6 +1786,56 @@ export class ConfigDialog extends LitElement {
       });
       this._t({ type: 'CANCEL_TANK' });
     }
+  }
+
+  private _cancelDiscard = (): void => {
+    this._t({ type: 'CANCEL_TAB_SWITCH' });
+  };
+
+  private _confirmDiscard = (): void => {
+    const { status } = this._sm;
+    if (status.kind !== 'confirm-discard') return;
+
+    if ('pendingTab' in status) {
+      const device = this._deviceForDirtyCheck();
+      if (!device) return;
+      const pendingTab = status.pendingTab;
+      this._sm = discardAndSwitch(this._sm, device);
+      if (pendingTab === ConfigTab.SUBAREAS) this._loadSubareas();
+      return;
+    }
+
+    if (status.pendingAction === 'change-growspace') {
+      this._sm = { ...this._sm, status: { kind: 'idle' } };
+      this._applyEnvGrowspaceChange(status.growspaceId);
+      return;
+    }
+
+    this._sm = { ...this._sm, status: { kind: 'idle' } };
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  };
+
+  private _renderConfirmDiscard() {
+    return html`
+      <div class="confirm-discard-overlay">
+        <div
+          class="confirm-discard-box"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="config-discard-title"
+          aria-describedby="config-discard-description"
+        >
+          <h3 id="config-discard-title">Discard changes?</h3>
+          <p id="config-discard-description">
+            You have unsaved changes. If you continue now, your edits will be lost.
+          </p>
+          <div class="confirm-discard-actions">
+            <button class="md3-button tonal" @click=${this._cancelDiscard}>Keep editing</button>
+            <button class="md3-button primary error" @click=${this._confirmDiscard}>Discard</button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   // ── Section renderers ────────────────────────────────────────────────────
@@ -2118,12 +2259,13 @@ export class ConfigDialog extends LitElement {
     const showRail = !this.allowedTabs || this.allowedTabs.length !== 1;
 
     return html`
+      <!-- Scrim dismissal stays disabled so an incidental backdrop tap cannot destroy a mobile form. -->
       <ha-dialog
         open
         @closed=${this._close}
         without-header
         scrimClickAction=""
-        escapeKeyAction="close"
+        escapeKeyAction=""
         width="large"
       >
         <div class="glass-dialog-container">
@@ -2294,6 +2436,7 @@ export class ConfigDialog extends LitElement {
                 `
               : nothing}
           </div>
+          ${this._sm.status.kind === 'confirm-discard' ? this._renderConfirmDiscard() : nothing}
         </div>
       </ha-dialog>
     `;

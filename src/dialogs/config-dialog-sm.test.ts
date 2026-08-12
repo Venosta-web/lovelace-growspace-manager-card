@@ -395,7 +395,7 @@ describe('notifications dirty guard', () => {
     );
     const next = requestTabSwitch(sm, 'sensors', device);
     expect(next.status.kind).toBe('confirm-discard');
-    if (next.status.kind === 'confirm-discard') {
+    if (next.status.kind === 'confirm-discard' && 'pendingTab' in next.status) {
       expect(next.status.pendingTab).toBe('sensors');
     }
   });
@@ -984,10 +984,19 @@ describe('isGrowspacesDirty', () => {
 });
 
 describe('isActiveTabDirty', () => {
-  it('returns false for non-growspaces tabs regardless of env changes', () => {
-    const sm: ConfigDialogSM = { ...createInitialSM(), activeTab: 'sensors' };
+  it('returns false when an environment draft still matches the device', () => {
     const device = makeDevice();
+    const sm: ConfigDialogSM = { ...createInitialSM(device), activeTab: 'sensors' };
     expect(isActiveTabDirty(sm, device)).toBe(false);
+  });
+
+  it('returns true when the environment draft diverges from the device', () => {
+    const device = makeDevice();
+    const sm = transition(
+      { ...createInitialSM(device), activeTab: 'climate' },
+      { type: 'UPDATE_ENV_DRAFT', partial: { stressThreshold: 30 } }
+    );
+    expect(isActiveTabDirty(sm, device)).toBe(true);
   });
 
   it('delegates to isGrowspacesDirty when on growspaces tab', () => {
