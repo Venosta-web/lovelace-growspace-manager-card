@@ -1,3 +1,10 @@
+# [1.1.0-next.102](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.101...v1.1.0-next.102) (2026-08-12)
+
+
+### Bug Fixes
+
+* **config:** make environment save gate honest ([#515](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/515)) ([b413649](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b4136494a426cbfc1f7b15be7f00c3f9d11f918f))
+
 # [1.1.0-next.101](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.100...v1.1.0-next.101) (2026-08-12)
 
 
