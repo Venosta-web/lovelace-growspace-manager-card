@@ -1,3 +1,10 @@
+# [1.1.0-next.103](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.102...v1.1.0-next.103) (2026-08-12)
+
+
+### Bug Fixes
+
+* **config:** make config rail keyboard accessible ([#516](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/516)) ([f594192](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/f59419240710be25881ad60e19a8cafe5505009f))
+
 # [1.1.0-next.102](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.101...v1.1.0-next.102) (2026-08-12)
 
 
