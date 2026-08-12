@@ -86,6 +86,7 @@ import '../../../dialogs/add-plant-dialog';
 import '../../../dialogs/add-plants-dialog';
 import '../../../dialogs/clone-dialog';
 import '../../../dialogs/config-dialog';
+import type { RemoveEnvironmentEventDetail } from '../../../dialogs/config-dialog';
 import '../../../dialogs/grow-master-dialog';
 import '../../../dialogs/harvest-scoring-dialog';
 import '../../../dialogs/irrigation-dialog';
@@ -1041,7 +1042,9 @@ export class GrowspaceDialogHost extends LitElement {
         }
       }}
         @delete-growspace-submit=${(e: CustomEvent) => this._handleRemoveGrowspace(e.detail)}
-        @remove-environment-submit=${(e: CustomEvent) => this._handleRemoveEnvironment(e.detail)}
+        @remove-environment-submit=${(e: CustomEvent<RemoveEnvironmentEventDetail>) => {
+        e.detail.completion = this._handleRemoveEnvironment(e.detail);
+      }}
         @configure-environment-submit=${(e: CustomEvent) => this._handleEnvironmentConfig(e.detail)}
         @save-notification-settings-submit=${(e: CustomEvent) =>
         this._handleSaveNotificationSettings(e.detail)}
@@ -1062,13 +1065,19 @@ export class GrowspaceDialogHost extends LitElement {
     }
   }
 
-  private async _handleRemoveEnvironment(detail: { growspace_id: string }) {
+  private async _handleRemoveEnvironment(
+    detail: RemoveEnvironmentEventDetail
+  ): Promise<GrowspaceDevice | undefined> {
     try {
       await removeEnvironment(detail.growspace_id);
       showToast('Environment configuration removed', 'success');
-      await this._handleDataChanged();
+      await this.store?.refreshData();
+      return this.store?.$dialogHostState
+        .get()
+        .devices.find((device) => device.deviceId === detail.growspace_id);
     } catch (e) {
       showError(e, 'Failed to remove environment');
+      return undefined;
     }
   }
 

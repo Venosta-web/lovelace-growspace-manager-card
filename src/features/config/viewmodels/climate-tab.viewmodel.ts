@@ -64,8 +64,6 @@ export interface ClimateControlVM {
   circulationFanDuplicateWarnings: string[];
   stressThreshold: number | null;
   moldThreshold: number | null;
-  /** Remove Environment is enabled only when a growspace is selected. */
-  canRemoveEnvironment: boolean;
 }
 
 /** Circulation Fan Controller panel view state (config + derived gates). */
@@ -178,7 +176,6 @@ export function createClimateTabViewModel(
       circulationFanDuplicateWarnings: duplicates.circulationFanAcInfinityDevices,
       stressThreshold: d.stressThreshold,
       moldThreshold: d.moldThreshold,
-      canRemoveEnvironment: Boolean(d.selectedGrowspaceId),
     },
     fan: {
       config: fan,

@@ -135,6 +135,20 @@ export interface EnvironmentDraft {
 
 // ─── Growspaces tab ───────────────────────────────────────────────────────────
 
+export interface EditingGrowspaceSubState {
+  kind: 'editing';
+  growspaceId: string;
+  name: string;
+  rows: number;
+  plantsPerRow: number;
+  notificationService: string;
+}
+
+export interface EnvironmentRemovalImpact {
+  sensorCount: number;
+  controllerCount: number;
+}
+
 export type GrowspacesSubState =
   | { kind: 'idle' }
   | {
@@ -144,15 +158,16 @@ export type GrowspacesSubState =
       plantsPerRow: number;
       notificationService: string;
     }
-  | {
-      kind: 'editing';
-      growspaceId: string;
-      name: string;
-      rows: number;
-      plantsPerRow: number;
-      notificationService: string;
-    }
-  | { kind: 'confirm-delete'; growspaceId: string; name: string };
+  | EditingGrowspaceSubState
+  | { kind: 'confirm-delete'; growspaceId: string; name: string }
+  | ({
+      kind: 'confirm-remove-environment';
+      editing: EditingGrowspaceSubState;
+    } & EnvironmentRemovalImpact)
+  | ({
+      kind: 'removing-environment';
+      editing: EditingGrowspaceSubState;
+    } & EnvironmentRemovalImpact);
 
 export interface GrowspacesTabState {
   sub: GrowspacesSubState;
@@ -324,6 +339,9 @@ export type ConfigDialogEvent =
       }>;
     }
   | { type: 'REQUEST_DELETE_GROWSPACE'; growspaceId: string; name: string }
+  | ({ type: 'REQUEST_REMOVE_ENVIRONMENT' } & EnvironmentRemovalImpact)
+  | { type: 'START_REMOVE_ENVIRONMENT' }
+  | { type: 'CANCEL_REMOVE_ENVIRONMENT' }
   | { type: 'CANCEL_GROWSPACES' }
 
   // ── Notifications ──
@@ -856,6 +874,48 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
           },
         },
       };
+
+    case 'REQUEST_REMOVE_ENVIRONMENT': {
+      const sub = sm.tabs.growspaces.sub;
+      if (sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          growspaces: {
+            sub: {
+              kind: 'confirm-remove-environment',
+              editing: sub,
+              sensorCount: event.sensorCount,
+              controllerCount: event.controllerCount,
+            },
+          },
+        },
+      };
+    }
+
+    case 'START_REMOVE_ENVIRONMENT': {
+      const sub = sm.tabs.growspaces.sub;
+      if (sub.kind !== 'confirm-remove-environment') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          growspaces: { sub: { ...sub, kind: 'removing-environment' } },
+        },
+      };
+    }
+
+    case 'CANCEL_REMOVE_ENVIRONMENT': {
+      const sub = sm.tabs.growspaces.sub;
+      if (sub.kind !== 'confirm-remove-environment' && sub.kind !== 'removing-environment') {
+        return sm;
+      }
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, growspaces: { sub: sub.editing } },
+      };
+    }
 
     case 'CANCEL_GROWSPACES':
       return {

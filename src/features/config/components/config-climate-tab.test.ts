@@ -28,7 +28,6 @@ function makeVm(over: Partial<ClimateTabViewModel> = {}): ClimateTabViewModel {
       circulationFanDuplicateWarnings: [],
       stressThreshold: 0.7,
       moldThreshold: 0.85,
-      canRemoveEnvironment: true,
       ...over.control,
     },
     fan: {
@@ -217,14 +216,9 @@ describe('ConfigClimateTab — intents out', () => {
     expect(exhaustToggle).toBe(1);
   });
 
-  it('emits remove-environment-requested', async () => {
+  it('does not expose growspace-wide environment removal', async () => {
     const el = await mount(makeVm());
-    let fired = 0;
-    el.addEventListener('remove-environment-requested', () => fired++);
-    [...el.shadowRoot!.querySelectorAll('button')]
-      .find((b) => b.textContent?.trim() === 'Remove Environment')!
-      .click();
-    expect(fired).toBe(1);
+    expect(el.shadowRoot!.textContent).not.toContain('Remove Environment');
   });
 
   it('emits a top-level threshold change', async () => {
