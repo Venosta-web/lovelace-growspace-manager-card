@@ -16,6 +16,7 @@
 import type { DialogStateMachine } from './dialog-sm';
 import type { GrowspaceDevice, SensorGroup } from '../types';
 import type { Subarea } from '../slices/subarea/schema';
+import type { TimedNotificationTriggerValue } from '../slices/notification/triggers';
 import type {
   AcInfinityDevice,
   AcInfinityGrowLight,
@@ -145,21 +146,27 @@ export interface GrowspacesTabState {
 
 // ─── Notifications tab ────────────────────────────────────────────────────────
 
-// Bare stage names matching the backend firing path (calculate_days_in_stage);
-// the legacy '*_start' values never resolved and so never fired.
-export type TimedNotificationTrigger = 'clone' | 'veg' | 'flower' | 'dry';
+// The trigger vocabulary lives in the notification slice, next to the wire
+// schema; re-exported here because the tab types and ViewModel read it from the
+// SM. A stored trigger outside the vocabulary arrives as `UnrecognisedTrigger`
+// and stays that way until the user picks a stage.
+export type {
+  TimedNotificationTrigger,
+  TimedNotificationTriggerValue,
+  UnrecognisedTrigger,
+} from '../slices/notification/triggers';
 
 export interface TimedNotification {
   id: string;
   message: string;
-  triggerType: TimedNotificationTrigger;
+  triggerType: TimedNotificationTriggerValue;
   day: number;
   growspaceIds: string[];
 }
 
 export interface TimedNotificationDraft {
   message: string;
-  triggerType: TimedNotificationTrigger;
+  triggerType: TimedNotificationTriggerValue;
   day: number;
   growspaceIds: string[];
 }

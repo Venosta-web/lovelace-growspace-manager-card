@@ -382,17 +382,38 @@ describe('GrowspaceAdapter notification settings', () => {
     ]);
   });
 
-  it('normalises legacy "*_start" trigger values to the bare stage that fires', () => {
+  it.each([
+    { id: 'veg_start', stored: 'veg_start', expected: 'veg' },
+    { id: 'flower_start', stored: 'flower_start', expected: 'flower' },
+    { id: 'days_since_flip', stored: 'days_since_flip', expected: 'flower' },
+    { id: 'bare stage', stored: 'dry', expected: 'dry' },
+  ])('normalises the legacy trigger "$id" to the bare stage that fires', ({ stored, expected }) => {
     const device = GrowspaceAdapter.transformGrowspace(
       null,
       wsWithNotifications({
         timed_notifications: [
-          { id: 'n1', message: 'Old', trigger_type: 'veg_start', day: 3, growspace_ids: [] },
+          { id: 'n1', message: 'Old', trigger_type: stored, day: 3, growspace_ids: [] },
         ],
       } as unknown as Partial<GrowspaceAPIResponse>)
     );
 
-    expect(device?.timedNotifications?.[0].triggerType).toBe('veg');
+    expect(device?.timedNotifications?.[0].triggerType).toBe(expected);
+  });
+
+  it.each([
+    { id: 'days_since_germination', stored: 'days_since_germination' },
+    { id: 'nonsense', stored: 'whenever_i_feel_like_it' },
+  ])('flags the unrecognised trigger "$id" instead of coercing it', ({ stored }) => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithNotifications({
+        timed_notifications: [
+          { id: 'n1', message: 'Odd', trigger_type: stored, day: 3, growspace_ids: [] },
+        ],
+      } as unknown as Partial<GrowspaceAPIResponse>)
+    );
+
+    expect(device?.timedNotifications?.[0].triggerType).toEqual({ raw: stored });
   });
 
   it('leaves timedNotifications as an empty list when the backend omits them', () => {

@@ -281,6 +281,46 @@ describe('_submitNotifications — timed notifications persistence', () => {
       { id: 'notif-1', message: 'Feed me', trigger_type: 'veg', day: 3, growspace_ids: ['gs-1'] },
     ]);
   });
+
+  it('writes an unrecognised trigger back verbatim instead of rewriting it', () => {
+    const el = makeEl();
+    (el as any)._sm = {
+      ...(el as any)._sm,
+      tabs: {
+        ...(el as any)._sm.tabs,
+        notifications: {
+          draft: (el as any)._sm.tabs.notifications.draft,
+          timedNotifications: [
+            {
+              id: 'notif-1',
+              message: 'Odd one',
+              triggerType: { raw: 'days_since_germination' },
+              day: 3,
+              growspaceIds: ['gs-1'],
+            },
+          ],
+          sub: { kind: 'idle' },
+        },
+      },
+    };
+
+    let detail: any;
+    el.addEventListener('save-notification-settings-submit', (e: Event) => {
+      detail = (e as CustomEvent).detail;
+    });
+
+    (el as any)._submitNotifications();
+
+    expect(detail.timed_notifications).toEqual([
+      {
+        id: 'notif-1',
+        message: 'Odd one',
+        trigger_type: 'days_since_germination',
+        day: 3,
+        growspace_ids: ['gs-1'],
+      },
+    ]);
+  });
 });
 
 // ─── _updateFanConfig (line 1829) ────────────────────────────────────────────

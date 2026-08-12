@@ -197,6 +197,19 @@ describe('notifications tab seeding', () => {
     expect(sm.tabs.notifications.timedNotifications).toEqual([notification]);
   });
 
+  it('seeds an unrecognised trigger through to the tab state unchanged', () => {
+    const notification = {
+      id: 'n1',
+      message: 'Check roots',
+      triggerType: { raw: 'days_since_germination' },
+      day: 7,
+      growspaceIds: ['gs1'],
+    };
+    const device = makeDevice({ timedNotifications: [notification] });
+    const sm = createInitialSM(device);
+    expect(sm.tabs.notifications.timedNotifications).toEqual([notification]);
+  });
+
   it('defaults to empty timed notifications when device has none', () => {
     const sm = createInitialSM(makeDevice());
     expect(sm.tabs.notifications.timedNotifications).toEqual([]);
@@ -265,6 +278,44 @@ describe('isNotificationsDirty', () => {
     const device = makeDevice();
     const sm = transition(createInitialSM(device), { type: 'START_ADD_TIMED_NOTIFICATION' });
     expect(isNotificationsDirty(sm, device)).toBe(false);
+  });
+
+  it('returns false for an untouched notification carrying an unrecognised trigger', () => {
+    const device = makeDevice({
+      timedNotifications: [
+        {
+          id: 'n1',
+          message: 'Odd one',
+          triggerType: { raw: 'days_since_germination' },
+          day: 7,
+          growspaceIds: [],
+        },
+      ],
+    });
+    const sm = createInitialSM(device);
+    expect(isNotificationsDirty(sm, device)).toBe(false);
+  });
+
+  it('returns false when editing an unrecognised trigger without touching the draft', () => {
+    const notification = {
+      id: 'n1',
+      message: 'Odd one',
+      triggerType: { raw: 'days_since_germination' },
+      day: 7,
+      growspaceIds: [],
+    };
+    const device = makeDevice({ timedNotifications: [notification] });
+    const editing = transition(createInitialSM(device), {
+      type: 'START_EDIT_TIMED_NOTIFICATION',
+      id: 'n1',
+      draft: {
+        message: notification.message,
+        triggerType: notification.triggerType,
+        day: notification.day,
+        growspaceIds: notification.growspaceIds,
+      },
+    });
+    expect(isNotificationsDirty(editing, device)).toBe(false);
   });
 
   it('returns true when sub is editing with a changed draft', () => {

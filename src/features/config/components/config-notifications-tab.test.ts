@@ -73,6 +73,42 @@ describe('ConfigNotificationsTab — render', () => {
     expect(el.shadowRoot!.querySelector('[data-timed="empty-state"]')).not.toBeNull();
   });
 
+  it('marks an unrecognised trigger in the list row instead of showing a stage', async () => {
+    const items: TimedNotification[] = [
+      { id: 'n1', message: 'A', triggerType: { raw: 'days_since_germination' }, day: 1, growspaceIds: [] },
+    ];
+    const el = await mount(makeVm({ timedNotifications: items }));
+    const row = el.shadowRoot!.querySelector('[data-timed-id="n1"]')!;
+    const marker = row.querySelector('[data-timed-unknown-trigger="n1"]')!;
+    expect(marker).not.toBeNull();
+    expect(marker.textContent).toContain('days_since_germination');
+  });
+
+  it('selects the unrecognised value in the edit form rather than a valid stage', async () => {
+    const sub: NotificationsTabSub = {
+      kind: 'editing',
+      id: 'n1',
+      draft: { ...timedDraft, triggerType: { raw: 'days_since_germination' } },
+    };
+    const el = await mount(makeVm({ sub }));
+    const select = el.shadowRoot!.querySelector<HTMLSelectElement>(
+      'select[data-timed-field="triggerType"]'
+    )!;
+    expect(select.value).toBe('days_since_germination');
+    expect(select.querySelector('[data-timed-unknown-option]')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('[data-timed-unknown-hint]')).not.toBeNull();
+  });
+
+  it('offers only the known stages when the draft trigger is recognised', async () => {
+    const sub: NotificationsTabSub = { kind: 'editing', id: 'n1', draft: timedDraft };
+    const el = await mount(makeVm({ sub }));
+    const select = el.shadowRoot!.querySelector<HTMLSelectElement>(
+      'select[data-timed-field="triggerType"]'
+    )!;
+    expect(select.value).toBe('veg');
+    expect(select.querySelector('[data-timed-unknown-option]')).toBeNull();
+  });
+
   it('renders a row per timed notification', async () => {
     const items: TimedNotification[] = [
       { id: 'n1', message: 'A', triggerType: 'veg', day: 1, growspaceIds: [] },
@@ -138,6 +174,22 @@ describe('ConfigNotificationsTab — intents out', () => {
       day: 1,
       growspaceIds: ['gs1'],
     });
+  });
+
+  it('emits a known trigger when the user picks a stage over an unrecognised one', async () => {
+    const sub: NotificationsTabSub = {
+      kind: 'editing',
+      id: 'n1',
+      draft: { ...timedDraft, triggerType: { raw: 'days_since_germination' } },
+    };
+    const el = await mount(makeVm({ sub }));
+    const received = listen<{ partial: Partial<TimedNotificationDraft> }>(el, 'timed-draft-changed');
+    const select = el.shadowRoot!.querySelector<HTMLSelectElement>(
+      'select[data-timed-field="triggerType"]'
+    )!;
+    select.value = 'flower';
+    select.dispatchEvent(new Event('change'));
+    expect(received).toEqual([{ partial: { triggerType: 'flower' } }]);
   });
 
   it('emits request-delete-timed from a row Delete button', async () => {
