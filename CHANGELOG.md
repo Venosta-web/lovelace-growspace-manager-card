@@ -1,3 +1,10 @@
+# [1.1.0-next.101](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.100...v1.1.0-next.101) (2026-08-12)
+
+
+### Bug Fixes
+
+* **config:** guard unsaved environment changes ([#514](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/514)) ([e2edd52](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e2edd529b1925ad2469e0e6923c19349b1fc86f9))
+
 # [1.1.0-next.100](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.99...v1.1.0-next.100) (2026-08-12)
 
 
