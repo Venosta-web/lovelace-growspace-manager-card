@@ -412,6 +412,18 @@ describe('configureEnvironment', () => {
     expect(payload).not.toHaveProperty('humidity_sensors');
   });
 
+  it('omits null stress and mold thresholds so older backends preserve stored values', async () => {
+    await configureEnvironment({
+      growspaceId: 'gs1',
+      stressThreshold: null,
+      moldThreshold: null,
+    });
+
+    const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(payload).not.toHaveProperty('stress_threshold');
+    expect(payload).not.toHaveProperty('mold_threshold');
+  });
+
   it('sends empty sensor lists and tank list as deliberate clears (ADR-0026)', async () => {
     await configureEnvironment({
       growspaceId: 'gs1',

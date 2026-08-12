@@ -421,6 +421,8 @@ export const GrowspaceAPIResponseSchema = z.object({
       irrigation_flow_sensors: z.array(z.string()).optional().default([]),
       vision_checkup_config: VisionCheckupConfigSchema.optional(),
       lst_offset: z.number().optional(),
+      stress_threshold: z.number().nullable().optional(),
+      mold_threshold: z.number().nullable().optional(),
       vpd: z.string().nullable().optional(),
       soil_moisture_value: z.string().nullable().optional(),
       // Acceptable Moisture Band. The raw pair is the stored override (null =

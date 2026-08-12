@@ -3,18 +3,16 @@ import { composeEnvironmentConfig, needsExhaustCall } from './environment-save';
 import { createInitialSM } from '../../dialogs/config-dialog-sm';
 import type { EnvironmentDraft } from '../../dialogs/config-dialog-sm';
 
-const flags = { humidifierControlEnabled: false, dehumidifierControlEnabled: false };
-
 function draft(): EnvironmentDraft {
   return createInitialSM().environmentDraft;
 }
 
 describe('composeEnvironmentConfig', () => {
-  it('passes the two control flags through verbatim', () => {
-    const detail = composeEnvironmentConfig(draft(), {
-      humidifierControlEnabled: true,
-      dehumidifierControlEnabled: true,
-    });
+  it('carries the two control flags from the draft', () => {
+    const d = draft();
+    d.humidifierControlEnabled = true;
+    d.dehumidifierControlEnabled = true;
+    const detail = composeEnvironmentConfig(d);
     expect(detail.humidifierControlEnabled).toBe(true);
     expect(detail.dehumidifierControlEnabled).toBe(true);
   });
@@ -33,7 +31,7 @@ describe('composeEnvironmentConfig', () => {
         sunrise_duration_entity: '',
       },
     ];
-    const detail = composeEnvironmentConfig(d, flags);
+    const detail = composeEnvironmentConfig(d);
     expect(detail.growlightEntities).toEqual(['switch.grow']);
     expect(detail.growlightConfig?.power).toBe(80);
     expect(detail.growlightAcInfinityDevices?.[0].off_time_entity).toBe('time.off');
@@ -56,7 +54,7 @@ describe('composeEnvironmentConfig', () => {
       { sensorEntity: 'sensor.tank', name: 'T', volumeLiters: 50, warningLevel: 20 },
     ];
 
-    const detail = composeEnvironmentConfig(d, flags);
+    const detail = composeEnvironmentConfig(d);
 
     expect(detail.temperatureSensors).toEqual(['sensor.temp']);
     expect(detail.circulationFanConfig?.enabled).toBe(true);
@@ -65,36 +63,25 @@ describe('composeEnvironmentConfig', () => {
     expect(detail.irrigationTanks).toHaveLength(1);
   });
 
-  it('copies every draft field present in the event-detail contract', () => {
-    const detail = composeEnvironmentConfig(draft(), flags);
-    // A representative spread across air / climate / humidity / monitoring / spatial.
-    for (const key of [
-      'selectedGrowspaceId',
-      'temperatureSensors',
-      'humiditySensors',
-      'vpdSensors',
-      'co2Sensor',
-      'lightSensors',
-      'soilMoistureSensor',
-      'substrateTemperatureSensors',
-      'phSensors',
-      'poreEcSensors',
-      'powerSensors',
-      'sensorGroups',
-      'sensorCoordinates',
-      'circulationFanConfig',
-      'exhaustFanConfig',
-      'vpdOptimalOverrides',
-      'lstOffset',
-    ] as const) {
-      expect(detail).toHaveProperty(key);
-    }
+  it('keeps composer keys in parity with the environment draft', () => {
+    const d = draft();
+    const detail = composeEnvironmentConfig(d);
+    const independentlySavedVisionFields = new Set([
+      'visionEnabled',
+      'visionEarlyOffset',
+      'visionMidHours',
+      'visionLateOffset',
+    ]);
+    const composedDraftKeys = Object.keys(d).filter(
+      (key) => !independentlySavedVisionFields.has(key)
+    );
+    expect(Object.keys(detail).sort()).toEqual(composedDraftKeys.sort());
   });
 });
 
 describe('needsExhaustCall', () => {
   it('is true when the payload carries an exhaust fan config', () => {
-    const detail = composeEnvironmentConfig(draft(), flags);
+    const detail = composeEnvironmentConfig(draft());
     expect(needsExhaustCall(detail)).toBe(true);
   });
 
@@ -108,7 +95,7 @@ describe('composeEnvironmentConfig — Acceptable Moisture Band', () => {
     const d = draft();
     d.soilMoistureMin = 32.5;
     d.soilMoistureMax = 54;
-    const detail = composeEnvironmentConfig(d, flags);
+    const detail = composeEnvironmentConfig(d);
     expect(detail.soilMoistureMin).toBe(32.5);
     expect(detail.soilMoistureMax).toBe(54);
   });
@@ -117,7 +104,7 @@ describe('composeEnvironmentConfig — Acceptable Moisture Band', () => {
     const d = draft();
     d.soilMoistureMin = null;
     d.soilMoistureMax = null;
-    const detail = composeEnvironmentConfig(d, flags);
+    const detail = composeEnvironmentConfig(d);
     expect(detail.soilMoistureMin).toBeNull();
     expect(detail.soilMoistureMax).toBeNull();
   });
@@ -126,7 +113,7 @@ describe('composeEnvironmentConfig — Acceptable Moisture Band', () => {
     const d = draft();
     d.soilMoistureMin = 0;
     d.soilMoistureMax = 45;
-    const detail = composeEnvironmentConfig(d, flags);
+    const detail = composeEnvironmentConfig(d);
     expect(detail.soilMoistureMin).toBe(0);
     expect(detail.soilMoistureMax).toBe(45);
   });
@@ -138,7 +125,7 @@ describe('composeEnvironmentConfig — Acceptable Moisture Band', () => {
     const d = draft();
     d.soilMoistureMin = min;
     d.soilMoistureMax = max;
-    const detail = composeEnvironmentConfig(d, flags);
+    const detail = composeEnvironmentConfig(d);
     expect('soilMoistureMin' in detail).toBe(false);
     expect('soilMoistureMax' in detail).toBe(false);
   });
@@ -156,7 +143,7 @@ describe('composeEnvironmentConfig — Acceptable Moisture Band', () => {
       const d = draft();
       d.soilMoistureMin = min;
       d.soilMoistureMax = max;
-      const detail = composeEnvironmentConfig(d, flags);
+      const detail = composeEnvironmentConfig(d);
       expect('soilMoistureMin' in detail).toBe('soilMoistureMax' in detail);
     }
   });

@@ -60,7 +60,7 @@ describe('GrowspaceHeaderContainer – cog menu actions', () => {
     expect(dialog.type).toBe('CONFIG');
     if (dialog.type === 'CONFIG') {
       expect(dialog.payload.currentTab).toBe(ConfigTab.GROWLIGHT);
-      expect(dialog.payload.environmentData.selectedGrowspaceId).toBe('gs-1');
+      expect(dialog.payload.growspaceId).toBe('gs-1');
       // Deep-links to the lights-on input so #433 can scroll + pulse it.
       expect(dialog.payload.scrollToField).toBe('lightsOnTime');
     }

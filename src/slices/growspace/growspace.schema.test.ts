@@ -290,6 +290,14 @@ describe('Growspace Zod Schemas', () => {
       expect(withoutOverrides.environment.vpd_optimal_overrides).toEqual({});
     });
 
+    it('accepts nullable stress and mold thresholds in the environment block', () => {
+      const parsed = GrowspaceAPIResponseSchema.parse({
+        environment: { stress_threshold: 0.7, mold_threshold: null },
+      });
+      expect(parsed.environment.stress_threshold).toBe(0.7);
+      expect(parsed.environment.mold_threshold).toBeNull();
+    });
+
     describe('subareas (top-level payload key)', () => {
       it('parses subareas in the get_subareas wire shape', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({

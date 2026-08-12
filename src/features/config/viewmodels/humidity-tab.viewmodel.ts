@@ -8,11 +8,9 @@
  * unit-testable), and projects each stage's current day/night on/off thresholds
  * for both devices, with the default fallback applied.
  *
- * Three Shell-`@state` inputs are projected in (not SM state, per the ADR-0019
- * carve-out): the open accordion stage and the two control-enable flags
- * (`_humidifierControlEnabled` / `_dehumidifierControlEnabled`, which are also
- * the [[Environment Save Composer]]'s `controlFlags`). `entityOptions` is the
- * injected hass adapter for the device pickers.
+ * The open accordion stage is projected from Shell `@state`; the two control
+ * flags live in the shared environment draft. `entityOptions` is the injected
+ * hass adapter for the device pickers.
  *
  * The stage's `dehumKey` / `humKey` (the `DehumidifierStage` / `HumidifierStage`
  * enum *values*) are the threshold-Record keys — distinct from `id` (the display
@@ -131,10 +129,7 @@ export interface HumidityTabDeps {
   acInfinityPrefillWarning: (field: string, index: number) => string[];
 }
 
-/** The three Shell-`@state` flags projected into the VM. */
 export interface HumidityExpandState {
-  humidifierControlEnabled: boolean;
-  dehumidifierControlEnabled: boolean;
   openStageId: HumidityStageId | '';
 }
 
@@ -209,8 +204,8 @@ export function createHumidityTabViewModel(
     ),
     humidifierDuplicateWarnings: duplicates.humidifierAcInfinityDevices,
     dehumidifierDuplicateWarnings: duplicates.dehumidifierAcInfinityDevices,
-    humidifierControlEnabled: expand.humidifierControlEnabled,
-    dehumidifierControlEnabled: expand.dehumidifierControlEnabled,
+    humidifierControlEnabled: d.humidifierControlEnabled,
+    dehumidifierControlEnabled: d.dehumidifierControlEnabled,
     stages: HUMIDITY_STAGES.map((s) => ({
       id: s.id,
       label: s.label,

@@ -336,6 +336,21 @@ describe('GrowspaceAdapter lst_offset', () => {
     const device = GrowspaceAdapter.transformGrowspace(null, wsWithEnvironment({}));
     expect(device?.environmentAttributes?.lstOffset).toBeUndefined();
   });
+
+  it('maps optional stress and mold thresholds', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithEnvironment({ stress_threshold: 0.7, mold_threshold: 0.75 })
+    );
+    expect(device?.environmentAttributes?.stressThreshold).toBe(0.7);
+    expect(device?.environmentAttributes?.moldThreshold).toBe(0.75);
+  });
+
+  it('uses null thresholds when an older backend omits them', () => {
+    const device = GrowspaceAdapter.transformGrowspace(null, wsWithEnvironment({}));
+    expect(device?.environmentAttributes?.stressThreshold).toBeNull();
+    expect(device?.environmentAttributes?.moldThreshold).toBeNull();
+  });
 });
 
 // ─── Notification settings (Config Dialog round-trip) ────────────────────────

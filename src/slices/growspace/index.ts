@@ -160,8 +160,8 @@ export async function configureEnvironment(data: {
   co2Sensor?: string | null;
   circulationFanEntity?: string;
   circulationFanEntities?: string[];
-  stressThreshold?: number;
-  moldThreshold?: number;
+  stressThreshold?: number | null;
+  moldThreshold?: number | null;
   lightSensor?: string;
   lightSensors?: string[];
   exhaustEntity?: string;

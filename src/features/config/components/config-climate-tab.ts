@@ -227,13 +227,15 @@ export class ConfigClimateTab extends LitElement {
             <md3-number-input
               label="Stress Threshold %"
               .value=${c.stressThreshold}
-              @change=${(e: CustomEvent) => this._update({ stressThreshold: parseFloat(e.detail) })}
+              @change=${(e: CustomEvent) =>
+                this._update({ stressThreshold: e.detail !== '' ? parseFloat(e.detail) : null })}
               step="0.01"
             ></md3-number-input>
             <md3-number-input
               label="Mold Threshold %"
               .value=${c.moldThreshold}
-              @change=${(e: CustomEvent) => this._update({ moldThreshold: parseFloat(e.detail) })}
+              @change=${(e: CustomEvent) =>
+                this._update({ moldThreshold: e.detail !== '' ? parseFloat(e.detail) : null })}
               step="0.01"
             ></md3-number-input>
           </div>

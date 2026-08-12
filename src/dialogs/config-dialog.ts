@@ -29,7 +29,7 @@ import {
   type FanVpdStageKey,
   type VpdOptimalOverrides,
 } from '../features/environment/constants';
-import { GrowspaceDevice, EnvironmentConfigData } from '../types';
+import { GrowspaceDevice } from '../types';
 import type { VisionCheckupConfigEventDetail } from '../lib/types/dialog';
 import { ConfigTab } from '../constants';
 import { randomId } from '../utils/random-id';
@@ -119,8 +119,8 @@ export class ConfigDialog extends LitElement {
 
   @property({ attribute: false }) allowedTabs?: ConfigTab[];
 
-  @property({ attribute: false })
-  public environmentData: EnvironmentConfigData | undefined;
+  /** The growspace to configure. Resolved from `devices` and seeded once per open. */
+  @property({ type: String }) growspaceId = '';
 
   // ── Single SM ────────────────────────────────────────────────────────────
   @state() private _sm: ConfigDialogSM = createInitialSM();
@@ -132,8 +132,6 @@ export class ConfigDialog extends LitElement {
 
   // ── Humidity accordion (pure UI ephemeral state) ──────────────────────────
   @state() private _openHumidityStageId: HumidityStageId | '' = '';
-  @state() private _dehumidifierControlEnabled = false;
-  @state() private _humidifierControlEnabled = false;
 
   // ── VPD targets accordion (pure UI ephemeral state) ───────────────────────
   @state() private _openVpdStageId: FanVpdStageKey | '' = '';
@@ -247,17 +245,17 @@ export class ConfigDialog extends LitElement {
   }
 
   get envDehumidifierControlEnabled() {
-    return this._dehumidifierControlEnabled;
+    return this._d.dehumidifierControlEnabled;
   }
   set envDehumidifierControlEnabled(v: boolean) {
-    this._dehumidifierControlEnabled = v;
+    this._setEnv({ dehumidifierControlEnabled: v });
   }
 
   get envHumidifierControlEnabled() {
-    return this._humidifierControlEnabled;
+    return this._d.humidifierControlEnabled;
   }
   set envHumidifierControlEnabled(v: boolean) {
-    this._humidifierControlEnabled = v;
+    this._setEnv({ humidifierControlEnabled: v });
   }
 
   get envDehumidifierThresholds() {
@@ -277,14 +275,14 @@ export class ConfigDialog extends LitElement {
   get envStressThreshold() {
     return this._d.stressThreshold;
   }
-  set envStressThreshold(v: number) {
+  set envStressThreshold(v: number | null) {
     this._setEnv({ stressThreshold: v });
   }
 
   get envMoldThreshold() {
     return this._d.moldThreshold;
   }
-  set envMoldThreshold(v: number) {
+  set envMoldThreshold(v: number | null) {
     this._setEnv({ moldThreshold: v });
   }
 
@@ -1121,124 +1119,33 @@ export class ConfigDialog extends LitElement {
     `,
   ];
 
-  protected willUpdate(changedProperties: Map<string, unknown>) {
-    if (changedProperties.has('environmentData') && this.environmentData) {
-      this.setInitialState(this.initialTab, this.environmentData);
-    }
+  protected willUpdate(_changedProperties: Map<string, unknown>) {
+    // Seed once per open from the single device→draft seam. Wait until the target
+    // device is available, then never re-seed: background refreshes must not
+    // clobber in-progress edits.
+    if (this._initialStateApplied || !this.open) return;
+    const device = this.growspaceId
+      ? this.devices.find((candidate) => candidate.deviceId === this.growspaceId)
+      : undefined;
+    if (this.growspaceId && !device) return;
+    if (device) this._seedFromDevice(device);
+    this._initialStateApplied = true;
   }
 
   protected updated(changedProperties: Map<string, unknown>) {
     super.updated(changedProperties);
-
-    if (changedProperties.has('open')) {
-      if (this.open) {
-        if (!this._initialStateApplied) {
-          this._initialStateApplied = true;
-        }
-        const firstDevice = this.devices?.[0];
-        if (firstDevice) {
-          this._t({ type: 'SEED_NOTIFICATIONS_FROM_DEVICE', device: firstDevice });
-        }
-      } else {
-        this._initialStateApplied = false;
-      }
+    if (changedProperties.has('open') && !this.open) {
+      this._initialStateApplied = false;
     }
   }
 
-  public setInitialState(
-    currentTab: ConfigTab = ConfigTab.SENSORS,
-    environmentData?: EnvironmentConfigData
-  ) {
-    const vc = environmentData?.visionCheckupConfig;
-    const envPartial = environmentData
-      ? {
-          selectedGrowspaceId: environmentData.selectedGrowspaceId,
-          temperatureSensors: environmentData.temperatureSensors?.length
-            ? environmentData.temperatureSensors
-            : environmentData.temperatureSensor
-              ? [environmentData.temperatureSensor]
-              : [],
-          humiditySensors: environmentData.humiditySensors?.length
-            ? environmentData.humiditySensors
-            : environmentData.humiditySensor
-              ? [environmentData.humiditySensor]
-              : [],
-          vpdSensors: environmentData.vpdSensors?.length
-            ? environmentData.vpdSensors
-            : environmentData.vpdSensor
-              ? [environmentData.vpdSensor]
-              : [],
-          co2Sensor: environmentData.co2Sensor,
-          circulationFanEntities: environmentData.circulationFanEntities || [],
-          stressThreshold: environmentData.stressThreshold,
-          moldThreshold: environmentData.moldThreshold,
-          lightSensors: environmentData.lightSensors || [],
-          exhaustFanEntities: environmentData.exhaustFanEntities || [],
-          exhaustFanAcInfinityDevices: environmentData.exhaustFanAcInfinityDevices || [],
-          circulationFanAcInfinityDevices: environmentData.circulationFanAcInfinityDevices || [],
-          humidifierAcInfinityDevices: environmentData.humidifierAcInfinityDevices || [],
-          dehumidifierAcInfinityDevices: environmentData.dehumidifierAcInfinityDevices || [],
-          growlightEntities: environmentData.growlightEntities || [],
-          growlightAcInfinityDevices: environmentData.growlightAcInfinityDevices || [],
-          humidifierEntities: environmentData.humidifierEntities || [],
-          dehumidifierEntities: environmentData.dehumidifierEntities || [],
-          soilMoistureSensor: environmentData.soilMoistureSensor,
-          soilMoistureMin: environmentData.soilMoistureMin ?? null,
-          soilMoistureMax: environmentData.soilMoistureMax ?? null,
-          dehumidifierThresholds: environmentData.dehumidifierThresholds || {},
-          humidifierThresholds: environmentData.humidifierThresholds || {},
-          sensorGroups: environmentData.sensorGroups || [],
-          sensorCoordinates: environmentData.sensorCoordinates || {},
-          irrigationTanks: (environmentData.irrigationTanks || []).map((t) => ({
-            sensorEntity: t.sensorEntity || '',
-            name: t.name || 'Tank',
-            volumeLiters: t.volumeLiters ?? null,
-            warningLevel: t.warningLevel ?? 30,
-          })),
-          cameraEntities: environmentData.cameraEntities ?? [],
-          lungroomTempSensors: environmentData.lungroomTempSensors || [],
-          substrateTemperatureSensors: environmentData.substrateTemperatureSensors || [],
-          phSensors: environmentData.phSensors || [],
-          feedEcSensors: environmentData.feedEcSensors || [],
-          bulkEcSensors: environmentData.bulkEcSensors || [],
-          poreEcSensors: environmentData.poreEcSensors || [],
-          runoffEcSensors: environmentData.runoffEcSensors || [],
-          drainVolumeSensors: environmentData.drainVolumeSensors || [],
-          irrigationFlowSensors: environmentData.irrigationFlowSensors || [],
-          powerSensors: environmentData.powerSensors || [],
-          energySensors: environmentData.energySensors || [],
-          visionEnabled: vc?.enabled ?? false,
-          visionEarlyOffset: vc?.early_check_offset_minutes ?? 60,
-          visionMidHours: vc?.mid_check_hours ?? 6,
-          visionLateOffset: vc?.late_check_offset_minutes ?? 60,
-          ...(environmentData.circulationFanConfig
-            ? { circulationFanConfig: environmentData.circulationFanConfig }
-            : {}),
-          ...(environmentData.exhaustFanConfig
-            ? { exhaustFanConfig: environmentData.exhaustFanConfig }
-            : {}),
-          ...(environmentData.growlightConfig
-            ? { growlightConfig: environmentData.growlightConfig }
-            : {}),
-          vpdOptimalOverrides: environmentData.vpdOptimalOverrides || {},
-        }
-      : {};
-
+  private _seedFromDevice(device?: GrowspaceDevice) {
     this._sm = {
-      ...createInitialSM(),
-      activeTab: currentTab as ConfigTabId,
-      environmentDraft: { ...createInitialSM().environmentDraft, ...envPartial },
+      ...createInitialSM(device),
+      activeTab: this.initialTab as ConfigTabId,
     };
-    this._dehumidifierControlEnabled = environmentData?.dehumidifierControlEnabled ?? false;
-    this._humidifierControlEnabled = environmentData?.humidifierControlEnabled ?? false;
-
-    if (environmentData?.selectedGrowspaceId) {
-      this._populateEditFields(environmentData.selectedGrowspaceId);
-    }
-
-    if (currentTab === ConfigTab.SUBAREAS) {
-      this._loadSubareas();
-    }
+    if (device) this._populateEditFields(device.deviceId);
+    if (this.initialTab === ConfigTab.SUBAREAS) this._loadSubareas();
   }
 
   private _close() {
@@ -1276,10 +1183,7 @@ export class ConfigDialog extends LitElement {
   private _submitEnvironment() {
     this.dispatchEvent(
       new CustomEvent('configure-environment-submit', {
-        detail: composeEnvironmentConfig(this._sm.environmentDraft, {
-          humidifierControlEnabled: this._humidifierControlEnabled,
-          dehumidifierControlEnabled: this._dehumidifierControlEnabled,
-        }),
+        detail: composeEnvironmentConfig(this._sm.environmentDraft),
         bubbles: true,
         composed: true,
       })
@@ -1748,10 +1652,6 @@ export class ConfigDialog extends LitElement {
     const device = this.devices.find((d) => d.deviceId === growspaceId);
     if (device) {
       this._t({ type: 'RESET_FROM_DEVICE', device });
-      this._dehumidifierControlEnabled =
-        device.environmentAttributes?.dehumidifierControlEnabled ?? false;
-      this._humidifierControlEnabled =
-        device.environmentAttributes?.humidifierControlEnabled ?? false;
     } else {
       this._t({
         type: 'UPDATE_ENV_DRAFT',
@@ -1771,6 +1671,8 @@ export class ConfigDialog extends LitElement {
           soilMoistureMax: null,
           dehumidifierThresholds: {},
           humidifierThresholds: {},
+          humidifierControlEnabled: false,
+          dehumidifierControlEnabled: false,
           visionEnabled: false,
           visionEarlyOffset: 60,
           visionMidHours: 6,
@@ -1791,8 +1693,6 @@ export class ConfigDialog extends LitElement {
           vpdOptimalOverrides: {},
         },
       });
-      this._dehumidifierControlEnabled = false;
-      this._humidifierControlEnabled = false;
       this._t({ type: 'CANCEL_TANK' });
     }
   }
@@ -1994,8 +1894,6 @@ export class ConfigDialog extends LitElement {
     return html`
       <config-humidity-tab
         .vm=${createHumidityTabViewModel(this._sm, deps, {
-          humidifierControlEnabled: this._humidifierControlEnabled,
-          dehumidifierControlEnabled: this._dehumidifierControlEnabled,
           openStageId: this._openHumidityStageId,
         })}
         @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
@@ -2022,14 +1920,14 @@ export class ConfigDialog extends LitElement {
   }
 
   private _setHumidifierControl(enabled: boolean) {
-    this._humidifierControlEnabled = enabled;
+    this._setEnv({ humidifierControlEnabled: enabled });
     setHumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled).catch(
       (err: unknown) => console.error('[setHumidifierControl failed]', err)
     );
   }
 
   private _setDehumidifierControl(enabled: boolean) {
-    this._dehumidifierControlEnabled = enabled;
+    this._setEnv({ dehumidifierControlEnabled: enabled });
     setDehumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled).catch(
       (err: unknown) => console.error('[setDehumidifierControl failed]', err)
     );
