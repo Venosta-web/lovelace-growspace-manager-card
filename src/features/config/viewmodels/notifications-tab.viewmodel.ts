@@ -25,6 +25,7 @@ import type {
   TimedNotification,
   TimedNotificationTrigger,
 } from '../../../dialogs/config-dialog-sm';
+import { TIMED_NOTIFICATION_TRIGGERS } from '../../../slices/notification/triggers';
 
 /** A selectable trigger for a timed notification (value + display label). */
 export interface TriggerOption {
@@ -52,13 +53,17 @@ export interface NotificationsTabViewModel {
   triggerOptions: TriggerOption[];
 }
 
+const TRIGGER_LABELS: Record<TimedNotificationTrigger, string> = {
+  clone: 'Clone Start',
+  veg: 'Veg Start',
+  flower: 'Flower Start',
+  dry: 'Dry Start',
+};
+
 /** The trigger choices, in display order. Static — derived render input. */
-export const TRIGGER_OPTIONS: readonly TriggerOption[] = [
-  { value: 'clone', label: 'Clone Start' },
-  { value: 'veg', label: 'Veg Start' },
-  { value: 'flower', label: 'Flower Start' },
-  { value: 'dry', label: 'Dry Start' },
-];
+export const TRIGGER_OPTIONS: readonly TriggerOption[] = TIMED_NOTIFICATION_TRIGGERS.map(
+  (value) => ({ value, label: TRIGGER_LABELS[value] })
+);
 
 /**
  * Pure factory: the Config Dialog SM + the dialog's `growspaceOptions` map →

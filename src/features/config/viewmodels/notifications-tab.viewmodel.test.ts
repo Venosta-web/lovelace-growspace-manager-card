@@ -41,6 +41,24 @@ describe('createNotificationsTabViewModel', () => {
     expect(vm.timedNotifications).toEqual(sm.tabs.notifications.timedNotifications);
   });
 
+  it('projects an unrecognised trigger through without coercing it to a stage', () => {
+    const sm = createInitialSM({
+      ...device,
+      timedNotifications: [
+        {
+          id: 'n1',
+          message: 'Odd one',
+          triggerType: { raw: 'days_since_germination' },
+          day: 7,
+          growspaceIds: [],
+        },
+      ],
+    } as unknown as GrowspaceDevice);
+    const vm = createNotificationsTabViewModel(sm, {});
+    expect(vm.timedNotifications[0].triggerType).toEqual({ raw: 'days_since_germination' });
+    expect(vm.triggerOptions.map((o) => o.value)).not.toContain('days_since_germination');
+  });
+
   it('maps the growspaceOptions record into render-ready entries', () => {
     const sm = createInitialSM(device);
     const vm = createNotificationsTabViewModel(sm, { gs1: 'Tent 1', gs2: 'Tent 2' });

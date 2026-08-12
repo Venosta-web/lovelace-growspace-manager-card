@@ -33,6 +33,7 @@ import { GrowspaceDevice, EnvironmentConfigData } from '../types';
 import type { VisionCheckupConfigEventDetail } from '../lib/types/dialog';
 import { ConfigTab } from '../constants';
 import { randomId } from '../utils/random-id';
+import { triggerRawValue } from '../slices/notification/triggers';
 import { setDehumidifierControl, setHumidifierControl } from '../slices/growspace';
 import { getSubareas, addSubarea, removeSubarea } from '../slices/subarea';
 import type { Subarea } from '../slices/subarea';
@@ -1138,7 +1139,9 @@ export class ConfigDialog extends LitElement {
     const timedNotifications = this._sm.tabs.notifications.timedNotifications.map((n) => ({
       id: n.id,
       message: n.message,
-      trigger_type: n.triggerType,
+      // An unrecognised trigger is written back verbatim — saving an untouched
+      // notification must not rewrite a trigger the card could not interpret.
+      trigger_type: triggerRawValue(n.triggerType),
       day: n.day,
       growspace_ids: n.growspaceIds,
     }));

@@ -1,5 +1,6 @@
 import type { PlantEntity, RawPlantData, GrowspaceType } from '../features/plants/types';
 import type { SensorGroup } from '../slices/subarea/schema';
+import type { TimedNotificationTriggerValue } from '../slices/notification/triggers';
 import type { VisionCheckupConfig } from '../lib/types/dialog';
 import type {
   AcInfinityDevice,
@@ -384,7 +385,7 @@ export interface GrowspaceDevice {
   timedNotifications?: Array<{
     id: string;
     message: string;
-    triggerType: 'clone' | 'veg' | 'flower' | 'dry';
+    triggerType: TimedNotificationTriggerValue;
     day: number;
     growspaceIds: string[];
   }>;

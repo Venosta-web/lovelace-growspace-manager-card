@@ -14,6 +14,7 @@ import {
 import type { ECTargetStage, SteeringMetrics, SerializedIrrigationConfig } from '../services/types';
 import { ActiveEventSchema, IrrigationTankRowSchema } from '../slices/irrigation/schema';
 import { LegacyStageThresholdsSchema } from '../slices/growspace/schema';
+import { normalizeTriggerType } from '../slices/notification/triggers';
 import { SensorGroupSchema } from '../slices/subarea/schema';
 import type { SensorGroup } from '../slices/subarea/schema';
 
@@ -396,17 +397,16 @@ export class GrowspaceAdapter {
         : undefined;
 
     // Timed notifications are stored snake_case (backend consumers require it);
-    // map to the camelCase shape the Config Dialog seeds from. Legacy entries
-    // saved with the old '*_start' trigger values are normalised to the bare
-    // stage names the firing path (calculate_days_in_stage) resolves.
+    // map to the camelCase shape the Config Dialog seeds from. Legacy trigger
+    // words are normalised to the bare stage names the firing path
+    // (calculate_days_in_stage) resolves; anything else stays flagged as
+    // unrecognised instead of being coerced into a stage it does not mean.
     const timedNotifications: GrowspaceDevice['timedNotifications'] = (
       wsData?.timed_notifications ?? []
     ).map((n) => ({
       id: n.id,
       message: n.message,
-      triggerType: n.trigger_type.replace(/_start$/, '') as NonNullable<
-        GrowspaceDevice['timedNotifications']
-      >[number]['triggerType'],
+      triggerType: normalizeTriggerType(n.trigger_type),
       day: n.day,
       growspaceIds: n.growspace_ids,
     }));

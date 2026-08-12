@@ -31,8 +31,12 @@ import type {
   NotificationsDraft,
   NotificationsTabSub,
   TimedNotificationDraft,
-  TimedNotificationTrigger,
 } from '../../../dialogs/config-dialog-sm';
+import {
+  isKnownTrigger,
+  normalizeTriggerType,
+  triggerRawValue,
+} from '../../../slices/notification/triggers';
 import type { NotificationsTabViewModel } from '../viewmodels/notifications-tab.viewmodel';
 
 @customElement('config-notifications-tab')
@@ -196,11 +200,7 @@ export class ConfigNotificationsTab extends LitElement {
               </div>
             `
           : nothing}
-
-        ${sub.kind === 'adding' || sub.kind === 'editing'
-          ? this._renderForm(sub)
-          : nothing}
-
+        ${sub.kind === 'adding' || sub.kind === 'editing' ? this._renderForm(sub) : nothing}
         ${notifications.length === 0 && sub.kind === 'idle'
           ? html`
               <div
@@ -211,7 +211,6 @@ export class ConfigNotificationsTab extends LitElement {
               </div>
             `
           : nothing}
-
         ${sub.kind === 'idle' || sub.kind === 'confirm-delete'
           ? notifications.map(
               (n) => html`
@@ -223,7 +222,15 @@ export class ConfigNotificationsTab extends LitElement {
                   <span
                     style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
                   >
-                    ${n.message} · ${n.triggerType} · Day ${n.day}
+                    ${n.message} ·
+                    ${isKnownTrigger(n.triggerType)
+                      ? n.triggerType
+                      : html`<span
+                          data-timed-unknown-trigger=${n.id}
+                          style="color:var(--warning-color,#ffa726);"
+                          >Unrecognised trigger “${n.triggerType.raw}”</span
+                        >`}
+                    · Day ${n.day}
                   </span>
                   <div style="display:flex;gap:4px;flex-shrink:0;">
                     <button
@@ -288,12 +295,24 @@ export class ConfigNotificationsTab extends LitElement {
           <select
             class="md3-input"
             data-timed-field="triggerType"
-            .value=${draft.triggerType}
+            .value=${triggerRawValue(draft.triggerType)}
             @change=${(e: Event) =>
               update({
-                triggerType: (e.target as HTMLSelectElement).value as TimedNotificationTrigger,
+                triggerType: normalizeTriggerType((e.target as HTMLSelectElement).value),
               })}
           >
+            ${isKnownTrigger(draft.triggerType)
+              ? nothing
+              : html`
+                  <option
+                    data-timed-unknown-option
+                    value="${draft.triggerType.raw}"
+                    selected
+                    style="color:var(--warning-color,#ffa726);"
+                  >
+                    Unrecognised: ${draft.triggerType.raw}
+                  </option>
+                `}
             ${this.vm.triggerOptions.map(
               (o) => html`
                 <option value="${o.value}" ?selected=${draft.triggerType === o.value}>
@@ -302,6 +321,17 @@ export class ConfigNotificationsTab extends LitElement {
               `
             )}
           </select>
+          ${isKnownTrigger(draft.triggerType)
+            ? nothing
+            : html`
+                <div
+                  data-timed-unknown-hint
+                  style="font-size:0.75rem;color:var(--warning-color,#ffa726);margin-top:4px;"
+                >
+                  This notification's stored trigger is not one this card recognises. It is kept as
+                  is unless you pick a stage.
+                </div>
+              `}
         </div>
 
         <div class="md3-input-group">
