@@ -1,3 +1,10 @@
+# [1.1.0-next.98](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.97...v1.1.0-next.98) (2026-08-12)
+
+
+### Bug Fixes
+
+* **notifications:** generate timed-notification ids outside secure contexts ([#499](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/499)) ([460b241](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/460b241efc46873b44452babba675fb48e3d22a5))
+
 # [1.1.0-next.97](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.96...v1.1.0-next.97) (2026-08-11)
 
 
