@@ -24,6 +24,16 @@
   "errors": {
     "fetch_failed": "Failed to fetch data"
   },
+  "config": {
+    "environment_requires_growspace": "Select a growspace before saving the environment.",
+    "environment_requires_temperature": "A temperature sensor is required.",
+    "environment_requires_humidity": "A humidity sensor is required.",
+    "environment_requires_temperature_and_humidity": "Temperature and humidity sensors are required.",
+    "go_to_sensors": "Go to Sensors",
+    "save_environment": "Save Environment",
+    "save_growspace_and_environment": "Save Growspace & Environment",
+    "save_vision_settings": "Save Vision Settings"
+  },
   "editor": {
     "select_growspace": "Select a growspace...",
     "theme_default": "Default",

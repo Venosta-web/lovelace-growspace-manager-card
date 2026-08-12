@@ -69,6 +69,50 @@ describe('env sensor array setters (lines 219–231)', () => {
   });
 });
 
+describe('_getEntities cache', () => {
+  it('reuses a filtered result until the Home Assistant state snapshot changes', () => {
+    const el = makeEl();
+    let scans = 0;
+    const trackScans = {
+      ownKeys(target: Record<string, unknown>) {
+        scans += 1;
+        return Reflect.ownKeys(target);
+      },
+    };
+    const states = new Proxy(
+      {
+        'sensor.temperature': {
+          state: '24',
+          attributes: { device_class: 'temperature' },
+        },
+      },
+      trackScans
+    );
+    el.hass = { states, services: {} } as any;
+
+    const first = (el as any)._getEntities(['sensor'], 'temperature');
+    const second = (el as any)._getEntities(['sensor'], 'temperature');
+
+    expect(second).toBe(first);
+    expect(scans).toBe(1);
+
+    el.hass = {
+      states: new Proxy(
+        {
+          'sensor.temperature': {
+            state: '25',
+            attributes: { device_class: 'temperature' },
+          },
+        },
+        trackScans
+      ),
+      services: {},
+    } as any;
+    (el as any)._getEntities(['sensor'], 'temperature');
+    expect(scans).toBe(2);
+  });
+});
+
 // ─── _editingSubarea setter else-branch (line 376) ───────────────────────────
 
 describe('_editingSubarea setter', () => {

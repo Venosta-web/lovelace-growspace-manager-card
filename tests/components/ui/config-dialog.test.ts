@@ -8,6 +8,12 @@ function device(deviceId: string) {
   return createGrowspaceDevice({ deviceId, name: deviceId, rows: 4, plantsPerRow: 4 });
 }
 
+function buttonByText(element: ConfigDialog, text: string): HTMLButtonElement | undefined {
+  return Array.from(element.shadowRoot!.querySelectorAll('button')).find((button) =>
+    button.textContent?.includes(text)
+  );
+}
+
 describe('config dialog unsaved-changes gestures', () => {
   let element: ConfigDialog;
 
@@ -105,5 +111,100 @@ describe('config dialog unsaved-changes gestures', () => {
     expect((element as any).envSelectedId).toBe('gs2');
     expect((element as any).envTemperatureSensors).toEqual([]);
     expect((element as any)._sm.status.kind).toBe('idle');
+  });
+});
+
+describe('config dialog environment save gate', () => {
+  let element: ConfigDialog;
+
+  beforeEach(async () => {
+    element = new ConfigDialog();
+    element.hass = { states: {}, services: {}, language: 'en' } as any;
+    element.devices = [device('gs1')];
+    element.growspaceOptions = { gs1: 'Growspace 1' };
+    element.growspaceId = 'gs1';
+    element.open = true;
+    document.body.appendChild(element);
+    await element.updateComplete;
+  });
+
+  afterEach(() => {
+    element.remove();
+    vi.restoreAllMocks();
+  });
+
+  it('explains an unmet precondition on another tab and preserves the draft when navigating to Sensors', async () => {
+    element.currentTab = ConfigTab.CLIMATE;
+    (element as any).envCo2Sensor = 'sensor.co2';
+    await element.updateComplete;
+
+    const message = element.shadowRoot!.querySelector('.save-gate-message');
+    const save = buttonByText(element, 'Save Environment');
+
+    expect(message?.textContent).toContain('Temperature and humidity sensors are required.');
+    expect(message?.textContent).toContain('Go to Sensors');
+    expect(save?.disabled).toBe(true);
+
+    buttonByText(element, 'Go to Sensors')!.click();
+
+    expect(element.currentTab).toBe(ConfigTab.SENSORS);
+    expect((element as any).envCo2Sensor).toBe('sensor.co2');
+    expect(element.shadowRoot!.querySelector('.confirm-discard-overlay')).toBeNull();
+  });
+
+  it('enables and submits the environment save when the precondition is met', async () => {
+    (element as any).envTemperatureSensors = ['sensor.temperature'];
+    (element as any).envHumiditySensors = ['sensor.humidity'];
+    await element.updateComplete;
+    const submit = vi.fn();
+    element.addEventListener('configure-environment-submit', submit);
+
+    const save = buttonByText(element, 'Save Environment');
+    expect(element.shadowRoot!.querySelector('.save-gate-message')).toBeNull();
+    expect(save?.disabled).toBe(false);
+
+    save!.click();
+
+    expect(submit).toHaveBeenCalledOnce();
+  });
+
+  it('blocks both halves of a growspace edit when the environment precondition is unmet', async () => {
+    (element as any)._populateEditFields('gs1');
+    element.currentTab = ConfigTab.GROWSPACES;
+    await element.updateComplete;
+    const edit = vi.fn();
+    const environment = vi.fn();
+    element.addEventListener('edit-growspace-submit', edit);
+    element.addEventListener('configure-environment-submit', environment);
+
+    (element as any)._submitGrowspaceAndEnv();
+
+    expect(edit).not.toHaveBeenCalled();
+    expect(environment).not.toHaveBeenCalled();
+    expect(buttonByText(element, 'Save Growspace & Environment')?.disabled).toBe(true);
+  });
+
+  it('labels each footer action by the configuration it writes', async () => {
+    (element as any).envTemperatureSensors = ['sensor.temperature'];
+    (element as any).envHumiditySensors = ['sensor.humidity'];
+
+    for (const tab of [
+      ConfigTab.SENSORS,
+      ConfigTab.CLIMATE,
+      ConfigTab.GROWLIGHT,
+      ConfigTab.HUMIDITY,
+      ConfigTab.IRRIGATION,
+      ConfigTab.TANKS,
+      ConfigTab.HEATMAP,
+      ConfigTab.VPD_TARGETS,
+    ]) {
+      element.currentTab = tab;
+      await element.updateComplete;
+      expect(buttonByText(element, 'Save Environment')).toBeDefined();
+    }
+
+    element.currentTab = ConfigTab.VISION;
+    await element.updateComplete;
+    expect(buttonByText(element, 'Save Vision Settings')).toBeDefined();
   });
 });

@@ -127,7 +127,11 @@ describe('ConfigDialog Interactions', () => {
         element = new ConfigDialog();
         element.devices = [{
             deviceId: 'gs1',
-            environmentAttributes: { humidifierThresholds },
+            environmentAttributes: {
+                humidifierThresholds,
+                temperatureSensors: ['sensor.temperature'],
+                humiditySensors: ['sensor.humidity'],
+            },
         } as any];
         element.growspaceId = 'gs1';
         element.growspaceOptions = { gs1: 'Tent 1' };
@@ -146,7 +150,7 @@ describe('ConfigDialog Interactions', () => {
         const listener = vi.fn();
         element.addEventListener('configure-environment-submit', listener);
         const save = Array.from(element.shadowRoot!.querySelectorAll('button'))
-            .find((button) => button.textContent?.includes('Save Configuration')) as HTMLButtonElement;
+            .find((button) => button.textContent?.includes('Save Environment')) as HTMLButtonElement;
         save.click();
 
         expect(listener).toHaveBeenCalledOnce();

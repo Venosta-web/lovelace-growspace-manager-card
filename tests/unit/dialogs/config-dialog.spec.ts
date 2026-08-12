@@ -202,13 +202,16 @@ describe('ConfigDialog', () => {
         it('should submit updates', async () => {
             (element as any).editSelectedId = 'gs1';
             (element as any).editName = 'Updated GS';
+            (element as any).envSelectedId = 'gs1';
+            (element as any).envTemperatureSensors = ['sensor.temp'];
+            (element as any).envHumiditySensors = ['sensor.hum'];
             await element.updateComplete;
 
             const listener = vi.fn();
             element.addEventListener('edit-growspace-submit', listener);
 
             const btn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
-                .find(b => b.textContent?.includes('Save Changes'));
+                .find(b => b.textContent?.includes('Save Growspace & Environment'));
             (btn as HTMLElement)?.click();
 
             expect(listener).toHaveBeenCalled();
@@ -295,6 +298,7 @@ describe('ConfigDialog', () => {
             (element as any).envSelectedId = 'gs1';
             (element as any).envTemperatureSensors = ['sensor.new'];
             (element as any).envHumiditySensors = ['sensor.hum'];
+            await element.updateComplete;
 
             const listener = vi.fn();
             element.addEventListener('configure-environment-submit', listener);
@@ -1254,6 +1258,8 @@ describe('ConfigDialog', () => {
         it('carries the edited exhaust config into the submit event so needsExhaustCall is true', async () => {
             element.currentTab = ConfigTab.CLIMATE;
             (element as any).envSelectedId = 'gs1';
+            (element as any).envTemperatureSensors = ['sensor.temp'];
+            (element as any).envHumiditySensors = ['sensor.hum'];
             await element.updateComplete;
 
             // Toggle the exhaust panel's Enabled in the nested Climate component.

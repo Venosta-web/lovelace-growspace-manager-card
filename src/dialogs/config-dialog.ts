@@ -101,6 +101,23 @@ import { createHeatmapTabViewModel } from '../features/config/viewmodels/heatmap
 import '../features/config/components/config-subareas-tab';
 import { createSubareasTabViewModel } from '../features/config/viewmodels/subareas-tab.viewmodel';
 import { composeEnvironmentConfig } from '../features/config/environment-save';
+import {
+  deriveConfigDialogCapabilities,
+  type ConfigDialogCapabilities,
+  type EnvironmentSaveBlockReason,
+} from '../features/config/viewmodels/config-dialog-capabilities';
+import { localize } from '../localize/localize';
+
+const ENVIRONMENT_SAVE_TABS = new Set<ConfigTab>([
+  ConfigTab.SENSORS,
+  ConfigTab.CLIMATE,
+  ConfigTab.GROWLIGHT,
+  ConfigTab.HUMIDITY,
+  ConfigTab.IRRIGATION,
+  ConfigTab.TANKS,
+  ConfigTab.HEATMAP,
+  ConfigTab.VPD_TARGETS,
+]);
 
 @customElement('config-dialog')
 export class ConfigDialog extends LitElement {
@@ -141,6 +158,10 @@ export class ConfigDialog extends LitElement {
 
   private _initialStateApplied = false;
 
+  private _entityOptionsStates?: HomeAssistant['states'];
+  private _entityOptionsRegistry?: EntityRegistrySnapshot;
+  private _entityOptionsCache = new Map<string, string[]>();
+
   connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener('keydown', this._onKeydown, true);
@@ -163,6 +184,23 @@ export class ConfigDialog extends LitElement {
   set currentTab(tab: ConfigTab) {
     this._sm = { ...this._sm, activeTab: tab as ConfigTabId };
   }
+
+  private get _caps(): ConfigDialogCapabilities {
+    return deriveConfigDialogCapabilities(this._sm.environmentDraft);
+  }
+
+  private _localize(key: string): string {
+    return localize(key, '', '', this.hass?.language ?? 'en');
+  }
+
+  private _environmentSaveBlockedMessage(reason: EnvironmentSaveBlockReason): string {
+    return this._localize(`config.environment_requires_${reason.replaceAll('-', '_')}`);
+  }
+
+  /** Environment tabs share one draft, so corrective navigation must preserve it. */
+  private _goToSensors = (): void => {
+    this._t({ type: 'SWITCH_TAB', tab: ConfigTab.SENSORS });
+  };
 
   // ── Legacy state accessors (delegate to SM) ───────────────────────────────
   // These allow existing tests and external callers to read/write state
@@ -1110,6 +1148,29 @@ export class ConfigDialog extends LitElement {
         gap: 8px;
       }
 
+      .save-gate-message {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 4px;
+        padding: 12px 24px 0;
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        font-size: 0.875rem;
+        line-height: 1.4;
+        flex-wrap: wrap;
+      }
+
+      .save-gate-message + .button-group {
+        border-top: 0;
+        padding-top: 8px;
+      }
+
+      .save-gate-message .md3-button {
+        flex: 0 0 auto;
+      }
+
       .entity-select-container {
         position: relative;
         z-index: 5;
@@ -1151,6 +1212,10 @@ export class ConfigDialog extends LitElement {
         }
         .row-col-grid {
           grid-template-columns: 1fr;
+        }
+        .save-gate-message {
+          justify-content: flex-start;
+          padding-inline: 16px;
         }
       }
     `,
@@ -1373,11 +1438,10 @@ export class ConfigDialog extends LitElement {
   }
 
   private _submitGrowspaceAndEnv() {
+    const caps = this._caps;
+    if (!caps.canSaveEnvironment) return;
     this._submitEditGrowspace();
-    const d = this._sm.environmentDraft;
-    if (d.temperatureSensors.length > 0 && d.humiditySensors.length > 0) {
-      this._submitEnvironment();
-    }
+    this._submitEnvironment();
   }
 
   private _submitDeleteGrowspace() {
@@ -1474,14 +1538,21 @@ export class ConfigDialog extends LitElement {
     if (!this.hass) return [];
     // hass.entities (the entity registry) is present at runtime but not declared
     // on custom-card-helpers' HomeAssistant type; read platform through a cast.
-    const registry = (
-      this.hass as unknown as {
-        entities?: Record<string, { platform?: string }>;
-      }
-    ).entities;
-    return Object.keys(this.hass.states || {})
+    const registry = (this.hass as unknown as { entities?: EntityRegistrySnapshot }).entities;
+    const states = this.hass.states;
+    if (states !== this._entityOptionsStates || registry !== this._entityOptionsRegistry) {
+      this._entityOptionsStates = states;
+      this._entityOptionsRegistry = registry;
+      this._entityOptionsCache.clear();
+    }
+
+    const cacheKey = JSON.stringify([domains, deviceClass, platform]);
+    const cached = this._entityOptionsCache.get(cacheKey);
+    if (cached) return cached;
+
+    const entities = Object.keys(states || {})
       .filter((eid) => {
-        const state = this.hass.states[eid];
+        const state = states[eid];
         if (!state) return false;
         const domain = eid.split('.')[0];
         return (
@@ -1491,6 +1562,8 @@ export class ConfigDialog extends LitElement {
         );
       })
       .sort();
+    this._entityOptionsCache.set(cacheKey, entities);
+    return entities;
   }
 
   /**
@@ -2257,6 +2330,13 @@ export class ConfigDialog extends LitElement {
     const showContextBar =
       this.currentTab !== ConfigTab.GROWSPACES && this.currentTab !== ConfigTab.NOTIFICATIONS;
     const showRail = !this.allowedTabs || this.allowedTabs.length !== 1;
+    const growspaceSub = this._sm.tabs.growspaces.sub;
+    const caps = this._caps;
+    const environmentSaveVisible = ENVIRONMENT_SAVE_TABS.has(this.currentTab);
+    const combinedSaveVisible =
+      this.currentTab === ConfigTab.GROWSPACES && growspaceSub.kind === 'editing';
+    const showEnvironmentSaveGate =
+      !caps.canSaveEnvironment && (environmentSaveVisible || combinedSaveVisible);
 
     return html`
       <!-- Scrim dismissal stays disabled so an incidental backdrop tap cannot destroy a mobile form. -->
@@ -2369,14 +2449,31 @@ export class ConfigDialog extends LitElement {
             </div>
           </div>
 
+          ${showEnvironmentSaveGate && caps.environmentSaveBlockReason
+            ? html`
+                <div
+                  id="environment-save-requirement"
+                  class="save-gate-message"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span
+                    >${this._environmentSaveBlockedMessage(caps.environmentSaveBlockReason)} ·</span
+                  >
+                  <button class="md3-button text" type="button" @click=${this._goToSensors}>
+                    ${this._localize('config.go_to_sensors')}
+                  </button>
+                </div>
+              `
+            : nothing}
+
           <!-- Footer -->
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Cancel</button>
 
             ${(() => {
-              const gsSub = this._sm.tabs.growspaces.sub;
               if (this.currentTab !== ConfigTab.GROWSPACES) return nothing;
-              if (gsSub.kind === 'confirm-delete') {
+              if (growspaceSub.kind === 'confirm-delete') {
                 return html`
                   <button class="md3-button tonal" @click=${this._cancelDeleteGrowspace}>
                     No, Keep It
@@ -2386,38 +2483,43 @@ export class ConfigDialog extends LitElement {
                   </button>
                 `;
               }
-              if (gsSub.kind === 'adding') {
+              if (growspaceSub.kind === 'adding') {
                 return html`
                   <button class="md3-button primary" @click=${this._submitAddGrowspace}>
                     Add Growspace
                   </button>
                 `;
               }
-              if (gsSub.kind === 'editing') {
+              if (growspaceSub.kind === 'editing') {
                 return html`
                   <button class="md3-button tonal error" @click=${this._submitDeleteGrowspace}>
                     ${this._icon(mdiDelete, 18)} Delete
                   </button>
-                  <button class="md3-button primary" @click=${this._submitGrowspaceAndEnv}>
-                    Save Changes
+                  <button
+                    class="md3-button primary"
+                    @click=${this._submitGrowspaceAndEnv}
+                    ?disabled=${!caps.canSaveEnvironment}
+                    aria-describedby=${!caps.canSaveEnvironment
+                      ? 'environment-save-requirement'
+                      : nothing}
+                  >
+                    ${this._localize('config.save_growspace_and_environment')}
                   </button>
                 `;
               }
               return nothing;
             })()}
-            ${[
-              ConfigTab.SENSORS,
-              ConfigTab.CLIMATE,
-              ConfigTab.GROWLIGHT,
-              ConfigTab.HUMIDITY,
-              ConfigTab.IRRIGATION,
-              ConfigTab.TANKS,
-              ConfigTab.HEATMAP,
-              ConfigTab.VPD_TARGETS,
-            ].includes(this.currentTab)
+            ${environmentSaveVisible
               ? html`
-                  <button class="md3-button primary" @click=${this._submitEnvironment}>
-                    Save Configuration
+                  <button
+                    class="md3-button primary"
+                    @click=${this._submitEnvironment}
+                    ?disabled=${!caps.canSaveEnvironment}
+                    aria-describedby=${!caps.canSaveEnvironment
+                      ? 'environment-save-requirement'
+                      : nothing}
+                  >
+                    ${this._localize('config.save_environment')}
                   </button>
                 `
               : nothing}
@@ -2431,7 +2533,7 @@ export class ConfigDialog extends LitElement {
             ${this.currentTab === ConfigTab.VISION
               ? html`
                   <button class="md3-button primary" @click=${this._submitVisionCheckupConfig}>
-                    Save Configuration
+                    ${this._localize('config.save_vision_settings')}
                   </button>
                 `
               : nothing}
