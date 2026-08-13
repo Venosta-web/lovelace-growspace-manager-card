@@ -1,3 +1,10 @@
+# [1.1.0-next.110](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.109...v1.1.0-next.110) (2026-08-13)
+
+
+### Features
+
+* **header:** prioritize growspace status and next action ([#534](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/534)) ([961c396](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/961c3960b078ac85bcc1395f8a670cbb838f3178))
+
 # [1.1.0-next.109](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.108...v1.1.0-next.109) (2026-08-13)
 
 
