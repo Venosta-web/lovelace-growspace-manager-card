@@ -10,7 +10,7 @@ import {
   expandAtomicGroups,
   type EnvironmentDraftKey,
 } from './environment-persistence';
-import { createInitialSM } from '../../dialogs/config-dialog-sm';
+import { createInitialSM, transition } from '../../dialogs/config-dialog-sm';
 import type { EnvironmentDraft } from '../../dialogs/config-dialog-sm';
 
 function draft(): EnvironmentDraft {
@@ -208,5 +208,36 @@ describe('needsExhaustCall', () => {
 
   it('is false when no exhaust fan config is present', () => {
     expect(needsExhaustCall({ exhaustFanConfig: undefined })).toBe(false);
+  });
+});
+
+describe('reducer → composer trace (no hand-built dirty sets)', () => {
+  it('carries an exhaust config edit from UPDATE_ENV_DRAFT through to the dedicated call', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { exhaustFanConfig: { ...draft().exhaustFanConfig, enabled: true } },
+    });
+    const detail = composeEnvironmentConfig(sm.environmentDraft, sm.environmentDirty);
+    expect(needsExhaustCall(detail)).toBe(true);
+    expect(detail.exhaustFanConfig?.enabled).toBe(true);
+  });
+
+  it('does not trigger the exhaust call for an unrelated edit made through the reducer', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { temperatureSensors: ['sensor.t'] },
+    });
+    const detail = composeEnvironmentConfig(sm.environmentDraft, sm.environmentDirty);
+    expect(needsExhaustCall(detail)).toBe(false);
+  });
+
+  it('keeps vision fields out of the buffered patch entirely', () => {
+    // Vision is `dedicated` but travels on its own event, not in this detail.
+    const sm = transition(createInitialSM(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { visionEnabled: true, visionMidHours: 6 },
+    });
+    const detail = composeEnvironmentConfig(sm.environmentDraft, sm.environmentDirty);
+    expect(Object.keys(detail)).toEqual(['selectedGrowspaceId']);
   });
 });

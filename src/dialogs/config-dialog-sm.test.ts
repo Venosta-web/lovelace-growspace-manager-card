@@ -1456,3 +1456,14 @@ describe('environment dirty write set (ADR-0032)', () => {
     expect([...afterFailedSave.environmentDirty]).toEqual(['temperatureSensors']);
   });
 });
+
+describe('discard prompt after a clean re-seed', () => {
+  it('does not report the environment dirty when nothing was edited', () => {
+    // The draft is a complete re-derivation of the device, so any seeder
+    // asymmetry would surface here as a spurious "discard changes?" prompt.
+    const device = makeDevice();
+    const sm = transition(createInitialSM(device), { type: 'RESET_FROM_DEVICE', device });
+    expect(sm.environmentDirty.size).toBe(0);
+    expect(isActiveTabDirty(sm, device)).toBe(false);
+  });
+});
