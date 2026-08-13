@@ -310,7 +310,7 @@ describe('growspace-header-ui', () => {
     expect(ctx3!.textContent).not.toContain('plant');
   });
 
-  it('renders meta row with various plant counts, dominant stages, and problem plant combinations', async () => {
+  it('renders metadata separately from the operational attention summary', async () => {
     const deviceOnePlant = { deviceId: 'gs1', name: 'Tent 1', plants: [{ id: 'p1' }] } as any;
     const deviceTwoPlants = { deviceId: 'gs1', name: 'Tent 1', plants: [{ id: 'p1' }, { id: 'p2' }] } as any;
     const dominantStage = { color: '#00ff00', daysLabel: 'Veg Day 5' } as any;
@@ -325,7 +325,10 @@ describe('growspace-header-ui', () => {
     const meta1 = el1.shadowRoot!.querySelector('.header-meta-row');
     expect(meta1).not.toBeNull();
     expect(meta1!.textContent).toContain('1plant');
-    expect(meta1!.textContent).toContain('1needs attention');
+    expect(meta1!.textContent).not.toContain('attention');
+    expect(el1.shadowRoot!.querySelector('.operational-summary')!.textContent).toContain(
+      '1 plant needs attention'
+    );
 
     const el2 = await fixture<GrowspaceHeaderUI>(html`
       <growspace-header-ui
@@ -338,7 +341,10 @@ describe('growspace-header-ui', () => {
     expect(meta2).not.toBeNull();
     expect(meta2!.textContent).toContain('2plants');
     expect(meta2!.textContent).toContain('Veg Day 5');
-    expect(meta2!.textContent).toContain('2need attention');
+    expect(meta2!.textContent).not.toContain('attention');
+    expect(el2.shadowRoot!.querySelector('.operational-summary')!.textContent).toContain(
+      '2 plants need attention'
+    );
 
     const el3 = await fixture<GrowspaceHeaderUI>(html`
       <growspace-header-ui

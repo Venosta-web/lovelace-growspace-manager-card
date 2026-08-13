@@ -36,6 +36,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
   @property() public viewMode = ViewMode.STANDARD;
   @property({ type: Boolean }) public isEditMode = false;
   @property({ attribute: false }) public selectedPlants = new Set<string>();
+  @property({ type: Number }) public problemPlantCount = 0;
   @property() public selectedDevice: string | null = null;
   @property({ attribute: false }) public device?: GrowspaceDevice;
   @property() public activeTask: 'idle' | 'arrange' | 'compare' | 'select_plants' = 'idle';
@@ -213,6 +214,43 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     `;
   }
 
+  private _renderPrimaryAction() {
+    if (this.activeTask !== 'idle') return nothing;
+
+    const plants = this.device?.plants;
+    if (!Array.isArray(plants)) return nothing;
+
+    const hasGrowspace = Boolean(this.device?.deviceId || this.selectedDevice);
+    const selectedCount = this.selectedPlants?.size ?? 0;
+    if (selectedCount > 0 && plants.length > 0 && hasGrowspace) {
+      return this._primaryAction(mdiWaterPlus, `Water selected (${selectedCount})`, 'water');
+    }
+
+    if (this.problemPlantCount > 0 && plants.length > 0) {
+      return this._primaryAction(mdiCheckboxMultipleMarkedOutline, 'Review plants', 'select_plants');
+    }
+
+    if (plants.length === 0 && hasGrowspace) {
+      return this._primaryAction(mdiPlus, 'Add plant', 'add_plant');
+    }
+
+    return nothing;
+  }
+
+  private _primaryAction(icon: string, label: string, action: string) {
+    return html`
+      <button
+        class="primary-action"
+        type="button"
+        data-action=${action}
+        @click=${() => this._triggerAction(action)}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icon}"></path></svg>
+        <span>${label}</span>
+      </button>
+    `;
+  }
+
   static styles = css`
     :host {
       display: flex;
@@ -266,6 +304,37 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     .icon-button.active {
       background: var(--primary-color, #2196f3);
       border-color: var(--primary-color, #2196f3);
+    }
+
+    .primary-action {
+      min-height: 40px;
+      border: 0;
+      border-radius: 20px;
+      padding: 0 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-shrink: 0;
+      background: var(--primary-color, #4caf50);
+      color: var(--text-primary-color, #fff);
+      font: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+    }
+    .primary-action:hover {
+      filter: brightness(1.08);
+    }
+    .primary-action:focus-visible {
+      outline: 2px solid var(--primary-text-color, #fff);
+      outline-offset: 2px;
+    }
+    .primary-action svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
     }
 
     .menu-dropdown {
@@ -459,6 +528,8 @@ export class GrowspaceHeaderActionsUI extends LitElement {
           `
         : nothing}
 
+      ${this._renderPrimaryAction()}
+
       <div class="menu-container">
         <button
           class="icon-button"
@@ -492,33 +563,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         @keydown=${this._handleMenuKeydown}
       >
         <div class="drag-handle" aria-hidden="true"></div>
-        <div class="menu-header" aria-hidden="true">
-          ${localizeWithParams('tasks.menu', {}, this.language)}
-        </div>
-        ${this._menuItem(
-          mdiDragVariant,
-          localizeWithParams('tasks.arrange', {}, this.language),
-          'arrange',
-          {
-            disabled: this.activeTask !== 'idle' || !this.canArrange,
-            active: this.activeTask === 'arrange',
-            title: this.canArrange
-              ? localizeWithParams('tasks.arrange_help', {}, this.language)
-              : localizeWithParams('tasks.arrange_unavailable', {}, this.language),
-          }
-        )}
-        ${this._menuItem(
-          mdiChartMultiple,
-          localizeWithParams('tasks.compare', {}, this.language),
-          'compare',
-          {
-            disabled: this.activeTask !== 'idle' || !this.canCompare,
-            active: this.activeTask === 'compare',
-            title: this.canCompare
-              ? localizeWithParams('tasks.compare_help', {}, this.language)
-              : localizeWithParams('tasks.compare_unavailable', {}, this.language),
-          }
-        )}
+        <div class="menu-header" aria-hidden="true">Plant care</div>
         ${this._menuItem(
           mdiCheckboxMultipleMarkedOutline,
           localizeWithParams('tasks.select_plants', {}, this.language),
@@ -528,16 +573,6 @@ export class GrowspaceHeaderActionsUI extends LitElement {
             active: this.activeTask === 'select_plants',
           }
         )}
-        <div class="menu-divider" role="separator"></div>
-        ${this.isMobile
-          ? html`
-              <div class="menu-header" aria-hidden="true">Growspace</div>
-              ${this._menuItem(mdiCog, 'Settings', 'config')}
-              ${this._menuItem(mdiCube, '3D Heatmap', 'heatmap')}
-              <div class="menu-divider" role="separator"></div>
-            `
-          : nothing}
-        <div class="menu-header" aria-hidden="true">Plant Actions</div>
         ${this._menuItem(mdiPlus, 'Add Plant', 'add_plant')}
         ${this._menuItem(
           mdiWaterPlus,
@@ -558,6 +593,19 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         <div class="menu-divider" role="separator"></div>
 
         <div class="menu-header" aria-hidden="true">Setup</div>
+        ${this._menuItem(
+          mdiDragVariant,
+          localizeWithParams('tasks.arrange', {}, this.language),
+          'arrange',
+          {
+            disabled: this.activeTask !== 'idle' || !this.canArrange,
+            active: this.activeTask === 'arrange',
+            title: this.canArrange
+              ? localizeWithParams('tasks.arrange_help', {}, this.language)
+              : localizeWithParams('tasks.arrange_unavailable', {}, this.language),
+          }
+        )}
+        ${this.isMobile ? this._menuItem(mdiCog, 'Settings', 'config') : nothing}
         ${this._menuItem(mdiWater, 'Irrigation', 'irrigation')}
         ${this._menuItem(mdiBottleTonicPlus, 'Nutrients', 'nutrients')}
         ${this._menuItem(mdiDna, 'Strains', 'strains')}
@@ -565,6 +613,19 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         <div class="menu-divider" role="separator"></div>
 
         <div class="menu-header" aria-hidden="true">Insights</div>
+        ${this._menuItem(
+          mdiChartMultiple,
+          localizeWithParams('tasks.compare', {}, this.language),
+          'compare',
+          {
+            disabled: this.activeTask !== 'idle' || !this.canCompare,
+            active: this.activeTask === 'compare',
+            title: this.canCompare
+              ? localizeWithParams('tasks.compare_help', {}, this.language)
+              : localizeWithParams('tasks.compare_unavailable', {}, this.language),
+          }
+        )}
+        ${this.isMobile ? this._menuItem(mdiCube, '3D Heatmap', 'heatmap') : nothing}
         ${this._menuItem(mdiClipboardTextClock, 'Logbook', 'logbook')}
         ${this._menuItem(mdiCamera, 'Camera Snapshots', 'snapshots')}
         ${this._menuItem(mdiBrain, 'Ask AI', 'ai')}

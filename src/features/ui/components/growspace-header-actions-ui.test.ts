@@ -155,13 +155,13 @@ describe('GrowspaceHeaderActionsUI – mobile render', () => {
     expect(labels).not.toContain('Edit Mode');
   });
 
-  it('shows Growspace menu section with Settings and Heatmap on mobile', async () => {
+  it('groups mobile Settings and Heatmap under Setup and Insights', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui .isMobile=${true}></growspace-header-actions-ui>
     `);
     const headers = el.shadowRoot!.querySelectorAll('.menu-header');
     const headerTexts = Array.from(headers).map((h) => h.textContent?.trim());
-    expect(headerTexts).toContain('Growspace');
+    expect(headerTexts).toEqual(['Plant care', 'Setup', 'Insights']);
 
     const items = el.shadowRoot!.querySelectorAll('.menu-item .menu-item-label');
     const itemTexts = Array.from(items).map((i) => i.textContent?.trim());
