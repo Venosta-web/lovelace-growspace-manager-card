@@ -1390,3 +1390,80 @@ describe('lstOffset on EnvironmentDraft', () => {
     expect(reset.environmentDraft.lstOffset).toBe(-1.0);
   });
 });
+
+describe('environment dirty write set (ADR-0032)', () => {
+  it('starts empty so an untouched dialog saves nothing', () => {
+    expect(createInitialSM().environmentDirty.size).toBe(0);
+  });
+
+  it('records the top-level keys an edit carried', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { temperatureSensors: ['sensor.t'], phSensors: [] },
+    });
+    expect([...sm.environmentDirty].sort()).toEqual(['phSensors', 'temperatureSensors']);
+  });
+
+  it('accumulates keys across successive edits', () => {
+    let sm = transition(createInitialSM(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { temperatureSensors: ['sensor.t'] },
+    });
+    sm = transition(sm, { type: 'UPDATE_ENV_DRAFT', partial: { co2Sensor: 'sensor.co2' } });
+    expect([...sm.environmentDirty].sort()).toEqual(['co2Sensor', 'temperatureSensors']);
+  });
+
+  it('dirties both moisture bounds when only one is edited', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { soilMoistureMin: 30 },
+    });
+    expect(sm.environmentDirty.has('soilMoistureMin')).toBe(true);
+    expect(sm.environmentDirty.has('soilMoistureMax')).toBe(true);
+  });
+
+  it('dirties irrigationTanks when a tank is committed', () => {
+    let sm = transition(createInitialSM(), { type: 'BEGIN_ADD_TANK' });
+    sm = transition(sm, { type: 'UPDATE_TANK_DRAFT', partial: { sensorEntity: 'sensor.tank' } });
+    sm = transition(sm, { type: 'COMMIT_TANK' });
+    expect(sm.environmentDirty.has('irrigationTanks')).toBe(true);
+  });
+
+  it('keeps a dirty key that was edited to an empty value', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { phSensors: [] },
+    });
+    expect(sm.environmentDirty.has('phSensors')).toBe(true);
+  });
+
+  it('clears the write set when re-seeding after a successful save + refresh', () => {
+    const edited = transition(createInitialSM(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { temperatureSensors: ['sensor.t'] },
+    });
+    const reseeded = transition(edited, { type: 'RESET_FROM_DEVICE', device: makeDevice() });
+    expect(reseeded.environmentDirty.size).toBe(0);
+  });
+
+  it('retains the write set when no re-seed happens, so Retry resends the same patch', () => {
+    // A failed save leaves the SM untouched — the dirty keys must survive.
+    const edited = transition(createInitialSM(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { temperatureSensors: ['sensor.t'] },
+    });
+    const afterFailedSave = transition(edited, { type: 'SWITCH_TAB', tab: 'climate' });
+    expect([...afterFailedSave.environmentDirty]).toEqual(['temperatureSensors']);
+  });
+});
+
+describe('discard prompt after a clean re-seed', () => {
+  it('does not report the environment dirty when nothing was edited', () => {
+    // The draft is a complete re-derivation of the device, so any seeder
+    // asymmetry would surface here as a spurious "discard changes?" prompt.
+    const device = makeDevice();
+    const sm = transition(createInitialSM(device), { type: 'RESET_FROM_DEVICE', device });
+    expect(sm.environmentDirty.size).toBe(0);
+    expect(isActiveTabDirty(sm, device)).toBe(false);
+  });
+});

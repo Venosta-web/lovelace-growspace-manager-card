@@ -24,6 +24,8 @@ import type {
   ExhaustFanConfig,
   GrowLightConfig,
 } from '../slices/growspace/schema';
+import { expandAtomicGroups } from '../features/config/environment-persistence';
+import type { EnvironmentDraftKey } from '../features/config/environment-persistence';
 
 // ─── Tab ID ───────────────────────────────────────────────────────────────────
 
@@ -297,6 +299,21 @@ export interface ConfigDialogSM extends Omit<
 > {
   status: ConfigDialogStatus;
   environmentDraft: EnvironmentDraft;
+  /**
+   * Dirty write set (ADR-0032): the top-level draft keys the user has edited
+   * since the draft was last seeded from the device.
+   *
+   * The draft itself stays *complete* — it is the read model for tab
+   * ViewModels, validation, and discard comparison. This set is what makes the
+   * save **sparse**: under patch semantics an omitted key keeps its stored
+   * value, so sending only what was touched makes "a default overwrites stored
+   * config" unrepresentable rather than merely tested-against.
+   *
+   * Membership is user intent, not difference from the seeded value: a key
+   * holding `null`, `''`, `[]`, or `{}` is a deliberate clear and stays in the
+   * patch.
+   */
+  environmentDirty: ReadonlySet<EnvironmentDraftKey>;
 }
 
 // ─── Events ───────────────────────────────────────────────────────────────────
@@ -652,6 +669,7 @@ export function createInitialSM(device?: GrowspaceDevice): ConfigDialogSM {
     status: { kind: 'idle' },
     toast: undefined,
     environmentDraft: defaultEnvironmentDraft(),
+    environmentDirty: new Set(),
   };
   if (device) {
     return applyDeviceToSM(sm, device);
@@ -664,6 +682,10 @@ function applyDeviceToSM(sm: ConfigDialogSM, device: GrowspaceDevice): ConfigDia
   return {
     ...sm,
     environmentDraft: envDraftFromDevice(device),
+    // Re-seeding is the only thing that clears the write set (ADR-0032). It
+    // runs after a successful save + refresh; a failed save leaves the set
+    // intact so Retry sends the same patch.
+    environmentDirty: new Set(),
     tabs: { ...sm.tabs, notifications: notificationsTabFromDevice(device) },
   };
 }
@@ -1066,6 +1088,12 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
       return {
         ...sm,
         environmentDraft: { ...sm.environmentDraft, ...event.partial },
+        // The keys the edit carried become dirty, closed under the atomic
+        // groups so a lone moisture bound can never reach the wire.
+        environmentDirty: expandAtomicGroups([
+          ...sm.environmentDirty,
+          ...(Object.keys(event.partial) as EnvironmentDraftKey[]),
+        ]),
       };
 
     // ── Tanks ─────────────────────────────────────────────────────────────────
@@ -1134,6 +1162,7 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
       return {
         ...sm,
         environmentDraft: { ...sm.environmentDraft, irrigationTanks: updatedTanks },
+        environmentDirty: new Set([...sm.environmentDirty, 'irrigationTanks' as const]),
         tabs: { ...sm.tabs, tanks: { sub: { kind: 'idle' } } },
       };
     }

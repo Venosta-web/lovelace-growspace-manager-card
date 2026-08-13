@@ -103,12 +103,13 @@ describe('ConfigDialog Interactions', () => {
         }
     });
 
-    it('configure-environment-submit payload includes dehumidifierControlEnabled and humidifierControlEnabled', async () => {
+    it('configure-environment-submit payload omits the immediate-persist humidity control flags', async () => {
         element.initialTab = ConfigTab.HUMIDITY;
         (element as any)._seedFromDevice({ deviceId: 'gs1', environmentAttributes: {} });
         await element.updateComplete;
 
         (element as any)._setEnv({
+            co2Sensor: 'sensor.co2',
             dehumidifierControlEnabled: true,
             humidifierControlEnabled: false,
         });
@@ -118,8 +119,14 @@ describe('ConfigDialog Interactions', () => {
         (element as any)._submitEnvironment();
 
         expect(listener).toHaveBeenCalledOnce();
-        expect(listener.mock.calls[0][0].detail).toHaveProperty('dehumidifierControlEnabled', true);
-        expect(listener.mock.calls[0][0].detail).toHaveProperty('humidifierControlEnabled', false);
+        const detail = listener.mock.calls[0][0].detail;
+        // The flags are persisted the moment they are toggled (ADR-0032
+        // `immediate` class), so re-sending them on Save would rewrite state the
+        // user did not touch in this Save.
+        expect(detail).not.toHaveProperty('dehumidifierControlEnabled');
+        expect(detail).not.toHaveProperty('humidifierControlEnabled');
+        // Buffered keys edited in the same batch still ride the patch.
+        expect(detail).toHaveProperty('co2Sensor', 'sensor.co2');
     });
 
     it('preserves humidifier thresholds after an unrelated tab edit and save', async () => {
@@ -156,8 +163,11 @@ describe('ConfigDialog Interactions', () => {
         save.click();
 
         expect(listener).toHaveBeenCalledOnce();
-        expect(listener.mock.calls[0][0].detail.humidifierThresholds).toEqual(humidifierThresholds);
-        expect(listener.mock.calls[0][0].detail.co2Sensor).toBe('sensor.changed');
+        const detail = listener.mock.calls[0][0].detail;
+        expect(detail.co2Sensor).toBe('sensor.changed');
+        // Under patch semantics (ADR-0032) an untouched key is preserved by
+        // being omitted, not by being echoed back from the draft.
+        expect(detail).not.toHaveProperty('humidifierThresholds');
     });
 
     it('toggling dehumidifier control checkbox calls setDehumidifierControl immediately', async () => {

@@ -1,99 +1,114 @@
 /**
- * Environment Save Composer (ADR-0019, "Applied to Config Dialog")
+ * Environment Save Composer (ADR-0032, superseding ADR-0019's full-draft note)
  *
  * The single pure place that turns the Config Dialog's [[Shared Environment
- * Draft]] into the outbound `configure-environment-submit` event detail. It
- * exists because the backend applies **patch semantics** (GSM ADR-0026): an
- * omitted field keeps its stored value, while a present field — including an
- * empty list — is a deliberate set/clear. The Shared Environment Draft is
- * seeded complete by `envDraftFromDevice`, so composing the *whole* draft on
- * every env-tab save delivers every field explicitly: edits land, clears land
- * (present-empty), and nothing is left to the backend's keep-on-omit default.
- * That completeness is the property the unit test pins down.
+ * Draft]] plus its dirty write set into the outbound
+ * `configure-environment-submit` event detail.
+ *
+ * The backend applies **patch semantics** (GSM ADR-0026): an omitted field
+ * keeps its stored value, while a present field — including `null`, `''`, `[]`,
+ * or `{}` — is a deliberate set or clear. The composer therefore emits the
+ * growspace routing ID plus *only the dirty persisted keys*. A field nobody
+ * edited never appears in the payload, so it can never be overwritten with the
+ * default the draft merely displays. That is the property the old whole-draft
+ * composer could not offer: it made every seeding gap a silent data loss.
+ *
+ * Consequences worth remembering:
+ *
+ * - Dirtiness is user intent, not difference from the seeded value. A dirty key
+ *   whose value is empty stays in the patch and expresses a clear.
+ * - `soilMoistureMin`/`soilMoistureMax` are one atomic group. Both or neither
+ *   reach the wire; an incomplete or invalid dirty pair blocks Save outright
+ *   rather than being silently dropped, because a lone bound fails the entire
+ *   `configure_environment` call.
+ * - The humidity control flags are immediate-persist and never ride this patch.
  *
  * Architecture note: the Config Dialog persists the environment by dispatching
  * `configure-environment-submit`, which the Growspace Dialog Host fulfils as
- * `configure_environment` + a conditional, last-dispatched `configure_exhaust_fan`
- * (the host owns the detail→service mapping and the two-call orchestration — the
- * dialog does not call the service directly). So this composer produces the
- * **event detail**, not the `configure_environment` service payload. `needsExhaustCall`
- * is the shared predicate gating that second call; the host is its caller.
+ * `configure_environment` plus a conditional `configure_exhaust_fan` (the host
+ * owns the detail→service mapping). So this composer produces the **event
+ * detail**, not the `configure_environment` service payload. `needsExhaustCall`
+ * is the shared predicate gating that second call.
  */
 
 import type { EnvironmentDraft } from '../../dialogs/config-dialog-sm';
 import type { EnvironmentConfigEventDetail } from '../../lib/types/dialog';
 import { bandSavePayload } from './moisture-band';
+import {
+  ENV_PERSISTENCE,
+  bufferedDirtyKeys,
+  isGroupDirty,
+  type EnvironmentDraftKey,
+} from './environment-persistence';
+
+/** Draft keys the composer never copies verbatim — they need their own handling. */
+const MANUALLY_COMPOSED: ReadonlySet<EnvironmentDraftKey> = new Set([
+  'soilMoistureMin',
+  'soilMoistureMax',
+]);
 
 /**
- * Pure composer: the whole Shared Environment Draft → the
- * `configure-environment-submit` event detail. Every field is copied so the
- * full-replace save never drops one.
+ * Whether the dirty moisture band can be saved.
+ *
+ * Only meaningful when the group is dirty: an untouched band is simply omitted.
+ * A dirty band that is half-filled or inverted must block Save, since the
+ * backend rejects a lone bound and fails the whole environment save with it.
  */
-export function composeEnvironmentConfig(draft: EnvironmentDraft): EnvironmentConfigEventDetail {
-  // Null when the band is mid-edit and incomplete: omitting both keys leaves
-  // the stored band untouched (patch semantics) instead of sending a lone
-  // bound, which the backend rejects — failing the entire environment save.
-  const band = bandSavePayload({ min: draft.soilMoistureMin, max: draft.soilMoistureMax });
+export function isEnvironmentSaveBlockedByBand(
+  draft: Pick<EnvironmentDraft, 'soilMoistureMin' | 'soilMoistureMax'>,
+  dirty: ReadonlySet<EnvironmentDraftKey>
+): boolean {
+  if (!isGroupDirty(dirty, ['soilMoistureMin', 'soilMoistureMax'])) return false;
+  return bandSavePayload({ min: draft.soilMoistureMin, max: draft.soilMoistureMax }) === null;
+}
 
-  return {
+/**
+ * Pure composer: the Shared Environment Draft plus its dirty write set → the
+ * sparse `configure-environment-submit` event detail.
+ */
+export function composeEnvironmentConfig(
+  draft: EnvironmentDraft,
+  dirty: ReadonlySet<EnvironmentDraftKey>
+): EnvironmentConfigEventDetail {
+  const detail: Record<string, unknown> = {
+    // Routing metadata: always present, never a patch field.
     selectedGrowspaceId: draft.selectedGrowspaceId,
-    temperatureSensors: draft.temperatureSensors,
-    humiditySensors: draft.humiditySensors,
-    vpdSensors: draft.vpdSensors,
-    co2Sensor: draft.co2Sensor,
-    circulationFanEntities: draft.circulationFanEntities,
-    stressThreshold: draft.stressThreshold,
-    moldThreshold: draft.moldThreshold,
-    lightSensors: draft.lightSensors,
-    exhaustFanEntities: draft.exhaustFanEntities,
-    exhaustFanAcInfinityDevices: draft.exhaustFanAcInfinityDevices,
-    circulationFanAcInfinityDevices: draft.circulationFanAcInfinityDevices,
-    humidifierEntities: draft.humidifierEntities,
-    humidifierThresholds: draft.humidifierThresholds,
-    humidifierControlEnabled: draft.humidifierControlEnabled,
-    humidifierAcInfinityDevices: draft.humidifierAcInfinityDevices,
-    dehumidifierEntities: draft.dehumidifierEntities,
-    dehumidifierThresholds: draft.dehumidifierThresholds,
-    dehumidifierControlEnabled: draft.dehumidifierControlEnabled,
-    dehumidifierAcInfinityDevices: draft.dehumidifierAcInfinityDevices,
-    soilMoistureSensor: draft.soilMoistureSensor,
-    // Atomic pair, or omitted entirely while the draft is mid-edit — an
-    // unfinished band must not destroy the stored one or fail the whole save.
-    ...(band ? { soilMoistureMin: band.min, soilMoistureMax: band.max } : {}),
-    sensorGroups: draft.sensorGroups,
-    sensorCoordinates: draft.sensorCoordinates,
-    irrigationTanks: draft.irrigationTanks,
-    cameraEntities: draft.cameraEntities,
-    lungroomTempSensors: draft.lungroomTempSensors,
-    substrateTemperatureSensors: draft.substrateTemperatureSensors,
-    phSensors: draft.phSensors,
-    feedEcSensors: draft.feedEcSensors,
-    bulkEcSensors: draft.bulkEcSensors,
-    poreEcSensors: draft.poreEcSensors,
-    runoffEcSensors: draft.runoffEcSensors,
-    drainVolumeSensors: draft.drainVolumeSensors,
-    irrigationFlowSensors: draft.irrigationFlowSensors,
-    powerSensors: draft.powerSensors,
-    energySensors: draft.energySensors,
-    circulationFanConfig: draft.circulationFanConfig,
-    exhaustFanConfig: draft.exhaustFanConfig,
-    growlightEntities: draft.growlightEntities,
-    growlightAcInfinityDevices: draft.growlightAcInfinityDevices,
-    growlightConfig: draft.growlightConfig,
-    vpdOptimalOverrides: draft.vpdOptimalOverrides,
-    lstOffset: draft.lstOffset,
   };
+
+  for (const key of bufferedDirtyKeys(dirty)) {
+    if (MANUALLY_COMPOSED.has(key)) continue;
+    detail[key] = draft[key];
+  }
+
+  // Atomic pair. `bandSavePayload` returns both bounds for a valid custom pair
+  // or a clean two-null clear, and null for an incomplete/invalid pair — which
+  // `isEnvironmentSaveBlockedByBand` has already turned into a blocked Save.
+  if (isGroupDirty(dirty, ['soilMoistureMin', 'soilMoistureMax'])) {
+    const band = bandSavePayload({ min: draft.soilMoistureMin, max: draft.soilMoistureMax });
+    if (band) {
+      detail.soilMoistureMin = band.min;
+      detail.soilMoistureMax = band.max;
+    }
+  }
+
+  // The exhaust config rides the detail so the host can forward it to its
+  // dedicated service, but only when the user actually edited it.
+  if (dirty.has('exhaustFanConfig') && ENV_PERSISTENCE.exhaustFanConfig === 'dedicated') {
+    detail.exhaustFanConfig = draft.exhaustFanConfig;
+  }
+
+  return detail as unknown as EnvironmentConfigEventDetail;
 }
 
 /**
  * Whether a composed env payload needs the dedicated `configure_exhaust_fan`
- * second call — true exactly when it carries an exhaust fan config (the backend
- * `configure_environment` cannot persist `exhaust_fan_config`). The Growspace
- * Dialog Host is the caller; the Climate tab (#359) is the primary producer of
- * a non-default exhaust config.
+ * second call — true exactly when the composer emitted an exhaust fan config,
+ * i.e. the user edited it. `configure_environment` cannot persist
+ * `exhaust_fan_config`, and under patch semantics it preserves the stored one,
+ * so an unrelated edit must not trigger this call.
  */
 export function needsExhaustCall(
   payload: Pick<EnvironmentConfigEventDetail, 'exhaustFanConfig'>
 ): boolean {
-  return Boolean(payload.exhaustFanConfig);
+  return 'exhaustFanConfig' in payload && payload.exhaustFanConfig !== undefined;
 }
