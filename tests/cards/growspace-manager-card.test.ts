@@ -2,7 +2,7 @@ import { expect, test, describe, aroundEach, vi } from 'vitest';
 import { GrowspaceManagerCard } from '../../src/growspace-manager-card';
 import { ViewMode, MetricKey } from '../../src/features/environment/constants';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
-import { aHass, aGrowspace } from '../fixtures';
+import { aHass, aGrowspace, aPlant } from '../fixtures';
 import { renderCard } from '../harness';
 import { gridInteraction$ } from '../../src/slices/grid-interaction';
 
@@ -128,6 +128,63 @@ describe('GrowspaceManagerCard', () => {
 
     expect(element.store.ui.$taskState.get()).toEqual({ kind: 'idle' });
     expect(element.store.ui.$announcement.get().message).toContain('Compare cancelled');
+  });
+
+  test('Compare cannot be cancelled or submitted twice while its save is in flight', async () => {
+    let resolveSave!: () => void;
+    const pendingSave = new Promise<void>((resolve) => {
+      resolveSave = resolve;
+    });
+    const saveSpy = vi.spyOn(element.store.comparisons, 'save').mockReturnValue(pendingSave);
+    element.store.ui.startCompare(0);
+    element.store.ui.toggleComparisonMetric('humidity', 'Humidity', true, null);
+    element.store.ui.toggleComparisonMetric('temperature', 'Temperature', true, null);
+
+    const firstSave = (element as any)._handleTaskDone() as Promise<void>;
+    await Promise.resolve();
+    expect(element.store.ui.$taskState.get()).toMatchObject({
+      kind: 'compare',
+      status: 'saving',
+    });
+
+    (element as any)._handleKeyboardNav(new KeyboardEvent('keydown', { key: 'Escape' }));
+    (element as any)._handleTaskCancel();
+    await (element as any)._handleTaskDone();
+
+    expect(saveSpy).toHaveBeenCalledOnce();
+    expect(element.store.ui.$taskState.get()).toMatchObject({
+      kind: 'compare',
+      status: 'saving',
+    });
+
+    resolveSave();
+    await firstSave;
+    expect(element.store.ui.$taskState.get()).toEqual({ kind: 'idle' });
+    expect(element.store.ui.$announcement.get().message).toContain('Metric Comparison saved');
+  });
+
+  test('Done exits an unchanged Arrange draft without a backend write', async () => {
+    const callWS = (element.hass as any).callWS as ReturnType<typeof vi.fn>;
+    callWS.mockClear();
+    element.store.ui.startArrange([aPlant({ row: 0, col: 0 })], 7);
+
+    await (element as any)._handleTaskDone();
+
+    expect(callWS).not.toHaveBeenCalled();
+    expect(element.store.ui.$taskState.get()).toEqual({ kind: 'idle' });
+    expect(element.store.ui.$announcement.get().message).toContain('Arrangement unchanged');
+  });
+
+  test('Escape discards an Arrange draft and restores the previous view', async () => {
+    element.store.ui.setViewMode(ViewMode.HEADER);
+    element.store.ui.startArrange([aPlant({ row: 0, col: 0 })], 7);
+
+    (element as any)._handleKeyboardNav(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await element.updateComplete;
+
+    expect(element.store.ui.$taskState.get()).toEqual({ kind: 'idle' });
+    expect(element.store.ui.$viewMode.get()).toBe(ViewMode.HEADER);
+    expect(element.store.ui.$announcement.get().message).toContain('Arrange cancelled');
   });
 
   test('Done exits Select plants and clears its provisional selection state', async () => {

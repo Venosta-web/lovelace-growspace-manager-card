@@ -32,7 +32,7 @@ Cycles automatically through multiple selected growspaces.
 The large metric display at the top of the main card and subarea card. Shows an aggregated sensor value (e.g. temperature, VPD). Clicking a hero card opens the Env Graph for that metric. Implemented in `growspace-header-hero-ui.ts`. Each hero item is itself a [[Chip]] (carries a `MetricKey`), so it can be hidden via `hidden_chips` the same way a regular chip can — there is no separate hero-specific visibility setting. When every hero metric is hidden, the hero deck collapses entirely rather than rendering empty. The VPD hero icon colour is stage-and-cycle-aware: the Environment slice resolves [[EnvSnapshot]]'s `vpdStatus` from the overview entity's backend-computed `vpd_status` (falling back to the current-period `vpd_target_*` / `vpd_danger_*` thresholds); the backend pre-computes those per grow stage (veg, flower, etc.) and day/night cycle, so the frontend gets both dimensions for free.
 
 **Chip** (also: Badge)
-A small metric indicator rendered below the hero section. Each chip maps to a `HeaderChip` (defined in `header-metrics/index.ts` — the single definition since the legacy `metrics-utils.ts` was deleted in #269) and carries a `MetricKey`. Clicking a chip opens the Env Graph for that metric. Chips support drag-and-drop reordering.
+A small metric indicator rendered below the hero section. Each chip maps to a `HeaderChip` (defined in `header-metrics/index.ts` — the single definition since the legacy `metrics-utils.ts` was deleted in #269) and carries a `MetricKey`. Activating a chip ordinarily opens its Env Graph; chips have no user-defined order.
 
 **Steering Phase Chip**
 A [[Chip]] that appears in place of the regular irrigation next-time chip when [[Crop Steering]] is active. Carries `MetricKey.STEERING_PHASE` (`'steering_phase'`) — distinct from `MetricKey.IRRIGATION` — so it can be hidden independently via `hidden_chips`. Displays the active phase label and next phase-transition time (e.g. `P3 · 07:30`). Built by `_steeringChipValue()` in the [[HeaderMetrics module]].
@@ -68,6 +68,26 @@ Variant of the Env Graph for device-type metrics (e.g. irrigation device state).
 
 ## Interaction Model
 
+**Arrange**
+A card-scoped task mode for drafting Plant Grid Cell positions within one growspace. Moving onto an occupied cell swaps the two plants; Done atomically persists the complete draft only when its baseline is still current, while Cancel discards it without writing, and Arrange cannot be active at the same time as Compare.
+_Avoid_: Edit Mode, rearrange header
+
+**Compare**
+A card-scoped task mode for choosing two to four currently visible, graphable metrics in a Metric Comparison. While active, metric activation changes the provisional comparison instead of opening or closing an ordinary Env Graph; Done persists the draft, Cancel discards it, and Compare cannot be active at the same time as Arrange.
+_Avoid_: Link Mode, mobile link
+
+**Metric Comparison**
+A user-specific, growspace-scoped group of two to four visible metrics whose Metric Descriptors resolve backing entities and whose Env Graphs can render together over the growspace's shared graph range. Multiple disjoint Metric Comparisons may exist for one growspace, but a metric belongs to at most one; comparisons synchronize across main Growspace Manager Card instances and browser tabs and survive dashboard reloads without becoming shared dashboard configuration. It has an opaque stable identity; its members use canonical metric order, and its display label is derived from those members rather than entered by the grower. Closing its chart preserves the comparison, while editing membership or deleting it requires Compare.
+_Avoid_: graph link, linked graph group
+
+**Select Plants**
+A card-scoped task mode for choosing plants before applying one or more immediately persisted bulk plant actions. It is distinct from Arrange: plant activation changes selection in Select Plants, while plant movement is available only in Arrange; Done or Escape clears selection and exits.
+_Avoid_: Edit Mode
+
+**Arrangement Draft**
+The provisional complete mapping of plants to Plant Grid Cells during Arrange. It carries the layout baseline it was created from so a concurrent growspace change is rejected instead of overwritten.
+_Avoid_: pending moves, edit state
+
 **Store-Driven Interaction**
 Clicks on Plant Grid Cells dispatch actions through the nanostores-based UI store. The store manages selection, watering confirmation, and transplant mode as a state machine — owned by the [[GridInteraction slice]]. No generic Lovelace `tap_action` is used here.
 
@@ -75,7 +95,8 @@ Clicks on Plant Grid Cells dispatch actions through the nanostores-based UI stor
 Clicks on Hero Cards and Chips call `_toggleEnvGraph` / `_toggleMetricGraph`, which open or close the Env Graph inline. This interaction is internal to each card — not exposed as a Lovelace action.
 
 **Chip Graph Linking**
-Dragging one Chip onto another calls `store.history.linkGraphs(source, target)`, which groups the two metrics so their Env Graphs open together. This is not a visual chip reorder — no chip position state exists. In the test harness `CardHandle`, this interaction is exposed as `linkChips(from, to)` (not `dragChip`) to accurately reflect the domain behavior rather than the DOM gesture.
+The legacy interaction in which dragging one Chip onto another immediately calls `store.history.linkGraphs(source, target)`. Guided Compare replaces this interaction by making the Metric Comparison provisional until Done. There is no visual chip reorder because no chip-position state exists.
+_Avoid_: Use this interaction in new work; Metric Comparison is the canonical model.
 
 ## View Modes
 

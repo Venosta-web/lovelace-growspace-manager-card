@@ -22,6 +22,7 @@ import {
   type PlantCardViewModel,
 } from '../viewmodels/plant-card.viewmodel';
 import { PlantCardUI } from '../components/plant-card-ui';
+import { localizeWithParams } from '../../../localize/localize';
 import '../components/plant-card-ui';
 
 /**
@@ -133,12 +134,31 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
         .isEditMode=${vm.isEditMode}
         .isDraggable=${vm.isDraggable}
         .growthDeviation=${vm.growthDeviation}
-        .ariaLabel=${vm.ariaLabel}
+        .ariaLabel=${this._ariaLabel(vm)}
         .checkboxAriaLabel=${vm.checkboxAriaLabel}
         @plant-click=${this._handlePlantClick}
         @plant-toggle-selection=${this._handleToggleSelection}
       ></plant-card-ui>
     `;
+  }
+
+  private _ariaLabel(vm: PlantCardViewModel): string {
+    const task = this.store.ui.$taskState?.get?.() ?? { kind: 'idle' };
+    if (task.kind !== 'arrange') return vm.ariaLabel;
+    const plantId = vm.plant.attributes?.plant_id || vm.plant.entity_id.replace('sensor.', '');
+    return localizeWithParams(
+      task.pickedPlantId === plantId
+        ? 'tasks.arrange_picked_plant_label'
+        : task.pickedPlantId
+          ? 'tasks.arrange_plant_target_label'
+          : 'tasks.arrange_plant_label',
+      {
+        plant: vm.displayData.strainName || plantId,
+        row: this.row,
+        col: this.col,
+      },
+      this.store.ui.$language?.get?.() ?? 'en'
+    );
   }
 
   // Event handlers - dispatch actions through store

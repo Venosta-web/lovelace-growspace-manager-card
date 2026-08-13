@@ -23,7 +23,7 @@ import { getFlowerFlipInfo, FlowerFlipInfo } from '../../../utils/flower-flip';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { ViewMode, ConfigTab } from '../../../constants';
 import { DateTime } from 'luxon';
-import { localizeWithParams } from '../../../localize/localize';
+import { localizePlural, localizeWithParams } from '../../../localize/localize';
 
 import '../components/growspace-header-ui';
 
@@ -54,7 +54,7 @@ export class GrowspaceHeaderContainer extends LitElement {
   private _comparisonsController!: StoreController<any>;
   private _dragController = new HeaderDragController(this);
   private _comparisonUnsub?: () => void;
-  private _comparisonSessionNoticeAnnounced = false;
+  private _startingCompare = false;
   private _eligibleMetricMap = new Map<string, HeaderChip>();
 
   get activeEnvGraphs() {
@@ -214,8 +214,7 @@ export class GrowspaceHeaderContainer extends LitElement {
       this.device.deviceId,
       this.store.history.$linkedGraphGroups.get()
     );
-    if (persistence === 'session' && !this._comparisonSessionNoticeAnnounced) {
-      this._comparisonSessionNoticeAnnounced = true;
+    if (persistence === 'session' && this.store.comparisons.takeSessionOnlyNotice()) {
       this.store.ui.announce(
         localizeWithParams('tasks.comparison_session_only', {}, this.store.ui.$language.get())
       );
@@ -284,7 +283,7 @@ export class GrowspaceHeaderContainer extends LitElement {
     uiSlice.openNutrientsDialog();
   }
 
-  private _handleActionTriggered(e: CustomEvent<{ action: string }>) {
+  private async _handleActionTriggered(e: CustomEvent<{ action: string }>): Promise<void> {
     const { action } = e.detail;
     console.log(`[GrowspaceHeaderContainer] Action triggered: ${action}`);
     if (!this.store) return;
@@ -352,13 +351,40 @@ export class GrowspaceHeaderContainer extends LitElement {
         break;
       }
       case 'compare': {
+        if (this._startingCompare) break;
         if (!this._canCompare) {
           this.store.ui.announce(
             localizeWithParams('tasks.compare_unavailable', {}, this.store.ui.$language.get())
           );
           break;
         }
-        this.store.ui.startCompare(this.store.comparisons?.$state.get().recordRevision ?? 0);
+        this._startingCompare = true;
+        this.requestUpdate();
+        try {
+          const pruned = await this.store.comparisons.pruneUnavailableMetrics(
+            Array.from(this._eligibleMetricMap.keys())
+          );
+          const started = this.store.ui.startCompare(
+            this.store.comparisons.$state.get().recordRevision
+          );
+          if (started && pruned > 0) {
+            this.store.ui.announce(
+              localizePlural(
+                'tasks.compare_entered_after_prune',
+                pruned,
+                {},
+                this.store.ui.$language.get()
+              )
+            );
+          }
+        } catch {
+          this.store.ui.announce(
+            localizeWithParams('tasks.comparison_prune_failed', {}, this.store.ui.$language.get())
+          );
+        } finally {
+          this._startingCompare = false;
+          this.requestUpdate();
+        }
         break;
       }
       case 'select_plants': {
@@ -399,7 +425,7 @@ export class GrowspaceHeaderContainer extends LitElement {
   }
 
   private get _canCompare(): boolean {
-    return this._eligibleMetricMap.size >= 2;
+    return !this._startingCompare && this._eligibleMetricMap.size >= 2;
   }
 
   private _handleFlowerFlipClick(e: CustomEvent) {

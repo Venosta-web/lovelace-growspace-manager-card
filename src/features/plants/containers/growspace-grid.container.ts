@@ -94,6 +94,7 @@ export class GrowspaceGridContainer extends LitElement {
     }
 
     const vm = this.viewModelController.value;
+    const task = this.store.ui.$taskState?.get?.() ?? { kind: 'idle' };
 
     return html`
       <growspace-grid-ui
@@ -105,6 +106,9 @@ export class GrowspaceGridContainer extends LitElement {
         .isCompactView=${vm.isCompactView}
         .isLoading=${vm.isLoading}
         .overlayMode=${vm.overlayMode}
+        .arrangeActive=${task.kind === 'arrange'}
+        .arrangePlantPicked=${task.kind === 'arrange' && Boolean(task.pickedPlantId)}
+        .language=${this.store.ui.$language?.get?.() ?? 'en'}
         @cell-click=${this._handleCellClick}
         @empty-slot-click=${this._handleEmptySlotClick}
         @grid-drop=${this._handleGridDrop}
