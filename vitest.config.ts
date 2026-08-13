@@ -12,6 +12,7 @@ export default defineConfig({
         // is absorbed in CI by re-running the whole vitest process (test.yml
         // retry step) and measured by the flake-hunter workflow with --retry=0.
         retry: 2,
+        fileParallelism: false,
         browser: {
             enabled: true,
             provider: playwright({ contextOptions: { viewport: { width: 1280, height: 720 } } }),
@@ -39,7 +40,7 @@ export default defineConfig({
         ],
         coverage: {
             provider: 'v8',
-            enabled: true,
+            enabled: false,
             clean: true,
             reporter: ['text', 'json', 'html'],
             include: ['src/**/*.ts'],
