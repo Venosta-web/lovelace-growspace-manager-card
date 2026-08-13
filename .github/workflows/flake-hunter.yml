@@ -5,9 +5,10 @@ name: Flake Hunter
 # intermittently not applied — vitest-dev/vitest#8339): use it to baseline the
 # rate and to validate any config experiment before adopting it.
 #
-# Hunts run with --retry=0 (per-test retry off) and coverage disabled so
-# lighter flakes aren't hidden and runs stay fast. The pass/fail verdict per
-# matrix job IS the datapoint; a hunt of 10 with 2 failures = ~20% flake rate.
+# Hunts run with --retry=0 (per-test retry off); coverage remains disabled by
+# the shared Vitest config so lighter flakes aren't hidden and runs stay fast.
+# The pass/fail verdict per matrix job IS the datapoint; a hunt of 10 with 2
+# failures = ~20% flake rate.
 
 # workflow_dispatch only registers once this file reaches the DEFAULT branch
 # (main). Until then — and as the everyday path — push a branch named
@@ -57,4 +58,4 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run suite (attempt ${{ matrix.run }}, no retry, no coverage)
-        run: npx vitest run --retry=0 --coverage.enabled=false
+        run: npx vitest run --retry=0
