@@ -513,9 +513,10 @@ describe('GrowspaceHeaderHeroUI', () => {
     const deckScroll = el.shadowRoot!.querySelector('.deck-scroll') as HTMLElement;
     expect(deckScroll).not.toBeNull();
 
-    // Stub offsetWidth of the first child
-    const firstItem = deckScroll.firstElementChild as HTMLElement;
-    Object.defineProperty(firstItem, 'offsetWidth', { value: 100, configurable: true });
+    const items = Array.from(deckScroll.children) as HTMLElement[];
+    Object.defineProperty(items[0], 'offsetLeft', { value: 0, configurable: true });
+    Object.defineProperty(items[1], 'offsetLeft', { value: 112, configurable: true });
+    Object.defineProperty(items[2], 'offsetLeft', { value: 224, configurable: true });
 
     // Mock scrollLeft directly on the scroll container to bypass layout limitations
     Object.defineProperty(deckScroll, 'scrollLeft', { value: 112, configurable: true });
@@ -527,6 +528,90 @@ describe('GrowspaceHeaderHeroUI', () => {
     // Verify the second dot becomes active
     const dots = el.shadowRoot!.querySelectorAll('.deck-dot');
     expect(dots[1].classList.contains('active')).toBe(true);
+  });
+
+  it('promotes the highest-priority exception and discloses every remaining reading', async () => {
+    const toggleHandler = vi.fn();
+    const chips = [
+      makeChip({ key: 'temperature', label: 'Temperature', status: 'optimal' }),
+      makeChip({ key: 'humidity', label: 'Humidity', status: 'optimal' }),
+    ];
+    const additionalChips = [
+      makeChip({ key: 'dli', label: 'DLI', status: 'optimal' }),
+      makeChip({ key: 'tank', label: 'Tank', status: 'danger' }),
+      makeChip({ key: 'light', label: 'Lights', status: undefined }),
+    ];
+    const el = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${chips}
+        .additionalChips=${additionalChips}
+        .isMobile=${true}
+        @toggle-graph=${toggleHandler}
+      ></growspace-header-hero-ui>
+    `);
+
+    const primaryLabels = Array.from(el.shadowRoot!.querySelectorAll('.deck-item .hero-label')).map(
+      (node) => node.textContent
+    );
+    const moreLabels = Array.from(
+      el.shadowRoot!.querySelectorAll('.more-readings-grid .hero-label')
+    ).map((node) => node.textContent);
+
+    expect(primaryLabels).toEqual(['Tank', 'Temperature']);
+    expect(moreLabels).toEqual(['Humidity', 'DLI', 'Lights']);
+    expect(el.shadowRoot!.querySelector('summary')!.textContent).toContain('More readings 3');
+
+    el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.more-readings-grid .hero-card')[2].click();
+    expect(toggleHandler).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: { metric: 'light' } })
+    );
+  });
+
+  it('supports keyboard movement and announces reading position', async () => {
+    const chips = [
+      makeChip({ key: 'temperature', label: 'Temperature' }),
+      makeChip({ key: 'humidity', label: 'Humidity' }),
+      makeChip({ key: 'co2', label: 'CO2' }),
+    ];
+    const el = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui .chips=${chips} .isMobile=${true}></growspace-header-hero-ui>
+    `);
+    const deck = el.shadowRoot!.querySelector<HTMLElement>('.deck-scroll')!;
+    const items = Array.from(deck.children) as HTMLElement[];
+    items.forEach((item, index) => {
+      Object.defineProperty(item, 'offsetLeft', { value: index * 112, configurable: true });
+    });
+    const scrollTo = vi.fn();
+    Object.defineProperty(deck, 'scrollTo', { value: scrollTo, configurable: true });
+
+    deck.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    await el.updateComplete;
+
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ left: 224 }));
+    expect(el.shadowRoot!.querySelector('.reading-position')!.textContent).toContain(
+      'Reading 3 of 3: CO2'
+    );
+    expect(
+      el.shadowRoot!.querySelector<HTMLButtonElement>('[aria-label="Next reading"]')!.disabled
+    ).toBe(true);
+  });
+
+  it('keeps a single available configured reading usable without redundant controls', async () => {
+    const additionalChips = [makeChip({ key: 'light', label: 'Lights', value: 'On' })];
+    const el = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${[]}
+        .additionalChips=${additionalChips}
+        .isMobile=${true}
+      ></growspace-header-hero-ui>
+    `);
+
+    expect(el.shadowRoot!.querySelectorAll('.deck-item')).toHaveLength(1);
+    expect(el.shadowRoot!.querySelector('.deck-navigation')).toBeNull();
+    expect(el.shadowRoot!.querySelector('.more-readings')).toBeNull();
+    expect(el.shadowRoot!.querySelector('.reading-position')!.textContent).toContain(
+      'Reading 1 of 1: Lights'
+    );
   });
 
   it('renders crop steering phase hero card when chip is steering_phase and irrigation strategy is enabled', async () => {

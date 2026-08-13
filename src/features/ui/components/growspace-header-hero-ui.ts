@@ -12,12 +12,14 @@ import { computePhases } from '../../../features/environment/crop-steering-model
 import type { IrrigationStrategy, IrrigationConfig } from '../../../services/types';
 import type { RawHistoryDataPoint } from '../../../adapters/hass-types';
 import type { HomeAssistant } from 'custom-card-helpers';
+import { mdiChevronDown } from '@mdi/js';
 
 @customElement('growspace-header-hero-ui')
 export class GrowspaceHeaderHeroUI extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public device!: GrowspaceDevice;
   @property({ attribute: false }) public chips: HeaderChip[] = [];
+  @property({ attribute: false }) public additionalChips: HeaderChip[] = [];
   @property({ type: Boolean }) public isMobile = false;
   @property({ type: Boolean }) public mobileLink = false;
   @property({ attribute: false }) public historyCache: any = {};
@@ -31,42 +33,195 @@ export class GrowspaceHeaderHeroUI extends LitElement {
   @state() private _phaseHoverX: number | null = null;
   @query('.deck-scroll') private _deckEl?: HTMLElement;
 
+  private _prioritizeExceptions(chips: HeaderChip[]): HeaderChip[] {
+    const highestPriorityIndex = chips.findIndex((chip) => chip.status === 'danger');
+    const exceptionIndex =
+      highestPriorityIndex >= 0
+        ? highestPriorityIndex
+        : chips.findIndex((chip) => chip.status === 'warning');
+
+    if (exceptionIndex <= 0) return chips;
+    return [
+      chips[exceptionIndex],
+      ...chips.slice(0, exceptionIndex),
+      ...chips.slice(exceptionIndex + 1),
+    ];
+  }
+
+  private get _primaryMobileChips(): HeaderChip[] {
+    const allChips = [...this.chips, ...this.additionalChips].filter(
+      (chip, index, chips) => chips.findIndex((candidate) => candidate.key === chip.key) === index
+    );
+    const primaryCount = Math.max(1, this.chips.length);
+    return this._prioritizeExceptions(allChips).slice(0, primaryCount);
+  }
+
+  private get _moreMobileChips(): HeaderChip[] {
+    const allChips = [...this.chips, ...this.additionalChips].filter(
+      (chip, index, chips) => chips.findIndex((candidate) => candidate.key === chip.key) === index
+    );
+    const primaryKeys = new Set(this._primaryMobileChips.map((chip) => chip.key));
+    return this._prioritizeExceptions(allChips).filter((chip) => !primaryKeys.has(chip.key));
+  }
+
+  protected willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
+    if (changedProperties.has('chips') || changedProperties.has('additionalChips')) {
+      this._deckIndex = 0;
+    }
+  }
+
   private _onDeckScroll() {
     const el = this._deckEl;
     if (!el) return;
-    const firstItem = el.firstElementChild as HTMLElement;
-    if (!firstItem) return;
-    const itemWidth = firstItem.offsetWidth + 12;
-    const next = Math.round(el.scrollLeft / itemWidth);
+    const items = Array.from(el.children) as HTMLElement[];
+    if (items.length === 0) return;
+    const next = items.reduce(
+      (closest, item, index) =>
+        Math.abs(item.offsetLeft - el.scrollLeft) <
+        Math.abs(items[closest].offsetLeft - el.scrollLeft)
+          ? index
+          : closest,
+      0
+    );
     if (next !== this._deckIndex) this._deckIndex = next;
   }
 
+  private _goToReading(index: number) {
+    const chips = this._primaryMobileChips;
+    const next = Math.max(0, Math.min(index, chips.length - 1));
+    const item = this._deckEl?.children.item(next) as HTMLElement | null;
+    if (!item || !this._deckEl) return;
+
+    this._deckIndex = next;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this._deckEl.scrollTo({ left: item.offsetLeft, behavior: reducedMotion ? 'auto' : 'smooth' });
+  }
+
+  private _handleDeckKeydown(event: KeyboardEvent) {
+    let next: number | undefined;
+    switch (event.key) {
+      case 'ArrowLeft':
+        next = this._deckIndex - 1;
+        break;
+      case 'ArrowRight':
+        next = this._deckIndex + 1;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = this._primaryMobileChips.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    this._goToReading(next);
+  }
+
   private _renderDeck() {
+    const primaryChips = this._primaryMobileChips;
+    const moreChips = this._moreMobileChips;
+    const currentChip = primaryChips[this._deckIndex] ?? primaryChips[0];
+
     return html`
-      <div
-        class="deck-scroll"
-        role="region"
-        aria-label="Header metrics"
-        tabindex="0"
-        @scroll=${this._onDeckScroll}
-      >
-        ${repeat(
-          this.chips,
-          (chip) => chip.key,
-          (chip) => html`<div class="deck-item">${this._renderHeroCard(chip)}</div>`
-        )}
-      </div>
-      ${this.chips.length > 1
-        ? html`
-            <div class="deck-dots">
-              ${this.chips.map(
-                (_, i) => html`
-                  <span class="deck-dot ${i === this._deckIndex ? 'active' : ''}"></span>
-                `
-              )}
-            </div>
-          `
-        : nothing}
+      <section class="mobile-reading-flow" aria-labelledby="mobile-readings-heading">
+        <div class="deck-heading-row">
+          <h2 id="mobile-readings-heading">Readings</h2>
+          <span class="reading-position" aria-live="polite" aria-atomic="true">
+            ${currentChip
+              ? `Reading ${this._deckIndex + 1} of ${primaryChips.length}: ${currentChip.label ?? currentChip.key}`
+              : 'No readings available'}
+          </span>
+        </div>
+        <div
+          class="deck-scroll"
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="Prioritized growspace readings"
+          tabindex="0"
+          @keydown=${this._handleDeckKeydown}
+          @scroll=${this._onDeckScroll}
+        >
+          ${repeat(
+            primaryChips,
+            (chip) => chip.key,
+            (chip, index) => html`
+              <div
+                class="deck-item"
+                role="group"
+                aria-roledescription="slide"
+                aria-label="${chip.label ?? chip.key}, reading ${index +
+                1} of ${primaryChips.length}"
+              >
+                ${this._renderHeroCard(chip)}
+              </div>
+            `
+          )}
+        </div>
+        ${primaryChips.length > 1
+          ? html`
+              <div class="deck-navigation" aria-label="Reading navigation">
+                <button
+                  class="deck-arrow"
+                  type="button"
+                  aria-label="Previous reading"
+                  ?disabled=${this._deckIndex === 0}
+                  @click=${() => this._goToReading(this._deckIndex - 1)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M15.4 16.6 10.8 12l4.6-4.6L14 6l-6 6 6 6 1.4-1.4Z"></path>
+                  </svg>
+                </button>
+                <div class="deck-dots">
+                  ${primaryChips.map(
+                    (chip, index) => html`
+                      <button
+                        class="deck-dot ${index === this._deckIndex ? 'active' : ''}"
+                        type="button"
+                        aria-label="Show ${chip.label ?? chip.key}, reading ${index +
+                        1} of ${primaryChips.length}"
+                        aria-current=${index === this._deckIndex ? 'true' : nothing}
+                        @click=${() => this._goToReading(index)}
+                      ></button>
+                    `
+                  )}
+                </div>
+                <button
+                  class="deck-arrow"
+                  type="button"
+                  aria-label="Next reading"
+                  ?disabled=${this._deckIndex === primaryChips.length - 1}
+                  @click=${() => this._goToReading(this._deckIndex + 1)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m8.6 16.6 4.6-4.6-4.6-4.6L10 6l6 6-6 6-1.4-1.4Z"></path>
+                  </svg>
+                </button>
+              </div>
+            `
+          : nothing}
+        ${moreChips.length > 0
+          ? html`
+              <details class="more-readings">
+                <summary>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d=${mdiChevronDown}></path>
+                  </svg>
+                  More readings <span>${moreChips.length}</span>
+                </summary>
+                <div class="more-readings-grid">
+                  ${repeat(
+                    moreChips,
+                    (chip) => chip.key,
+                    (chip) => this._renderHeroCard(chip)
+                  )}
+                </div>
+              </details>
+            `
+          : nothing}
+      </section>
     `;
   }
 
@@ -282,7 +437,8 @@ export class GrowspaceHeaderHeroUI extends LitElement {
           overflow-x: auto;
           scroll-snap-type: x mandatory;
           scrollbar-width: none;
-          padding: 2px 2px 4px;
+          padding: 3px;
+          border-radius: 16px;
         }
 
         .deck-scroll::-webkit-scrollbar {
@@ -295,29 +451,168 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         }
 
         .deck-item {
-          flex: 0 0 calc(100% - 48px);
+          flex: 0 0 100%;
           scroll-snap-align: start;
           min-width: 0;
         }
 
+        .mobile-reading-flow {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .deck-heading-row {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .deck-heading-row h2 {
+          margin: 0;
+          color: var(--primary-text-color, #fff);
+          font-size: 1rem;
+          font-weight: 600;
+          line-height: 1.4;
+        }
+
+        .reading-position {
+          color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+          font-size: 0.75rem;
+          line-height: 1.4;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .deck-navigation {
+          display: grid;
+          grid-template-columns: 44px minmax(0, 1fr) 44px;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .deck-arrow,
+        .deck-dot {
+          border: 0;
+          color: var(--primary-text-color, #fff);
+          background: transparent;
+          font: inherit;
+          cursor: pointer;
+        }
+
+        .deck-arrow {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+        }
+
+        .deck-arrow svg {
+          width: 22px;
+          height: 22px;
+          fill: currentColor;
+        }
+
+        .deck-arrow:disabled {
+          opacity: 0.38;
+          cursor: default;
+        }
+
+        .deck-arrow:focus-visible,
+        .deck-dot:focus-visible,
+        .more-readings summary:focus-visible {
+          outline: 3px solid var(--primary-color, #4caf50);
+          outline-offset: 2px;
+        }
+
         .deck-dots {
           display: flex;
-          gap: 5px;
+          align-items: center;
           justify-content: center;
-          margin-top: 10px;
+          gap: 2px;
+          min-width: 0;
         }
 
         .deck-dot {
-          height: 5px;
-          width: 5px;
-          border-radius: 3px;
-          background: rgba(255, 255, 255, 0.2);
+          position: relative;
+          width: 28px;
+          height: 44px;
+          border-radius: 12px;
+        }
+
+        .deck-dot::before {
+          content: '';
+          position: absolute;
+          top: 19px;
+          left: 9px;
+          height: 6px;
+          width: 10px;
+          border-radius: 9999px;
+          background: var(--divider-color, rgba(255, 255, 255, 0.24));
           transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
         }
 
-        .deck-dot.active {
-          width: 14px;
+        .deck-dot.active::before {
+          left: 5px;
+          width: 18px;
           background: var(--primary-color, #4caf50);
+        }
+
+        .more-readings {
+          border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+          padding-top: 4px;
+        }
+
+        .more-readings summary {
+          min-height: 48px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: var(--primary-text-color, #fff);
+          cursor: pointer;
+          font-size: 0.875rem;
+          font-weight: 600;
+          list-style-position: inside;
+        }
+
+        .more-readings summary span {
+          min-width: 24px;
+          height: 24px;
+          padding: 0 7px;
+          border-radius: 12px;
+          display: inline-grid;
+          place-items: center;
+          background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+          color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+          font-size: 0.75rem;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .more-readings summary svg {
+          width: 20px;
+          height: 20px;
+          fill: currentColor;
+          transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        .more-readings[open] summary svg {
+          transform: rotate(180deg);
+        }
+
+        .more-readings-grid {
+          display: grid;
+          gap: 12px;
+          padding-top: 8px;
+        }
+
+        .more-readings-grid .hero-card {
+          min-height: 96px;
+          border-radius: 16px;
+          padding: 16px;
         }
 
         .hero-value {
