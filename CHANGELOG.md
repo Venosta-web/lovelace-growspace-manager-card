@@ -1,3 +1,10 @@
+# [1.1.0-next.106](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.105...v1.1.0-next.106) (2026-08-13)
+
+
+### Features
+
+* **header:** make growspace status perceivable without color or motion ([#527](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/527)) ([fc435db](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/fc435db7b7a2562ca852980dc0fc21c53fa14a9a)), closes [#522](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/522)
+
 # [1.1.0-next.105](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.104...v1.1.0-next.105) (2026-08-13)
 
 
