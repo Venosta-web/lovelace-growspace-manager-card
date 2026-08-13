@@ -116,6 +116,47 @@ export const headerStyles = css`
     font-variant-numeric: tabular-nums;
   }
 
+  .operational-summary {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 34rem;
+    color: var(--primary-text-color, #fff);
+    font-size: 0.875rem;
+    line-height: 1.35;
+  }
+
+  .operational-summary > span {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+  }
+
+  .operational-summary strong {
+    font-weight: 600;
+  }
+
+  .operational-summary svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    fill: currentColor;
+  }
+
+  .operational-summary.stable svg {
+    color: var(--gm-status-optimal, var(--success-color, #4caf50));
+  }
+
+  .operational-summary.attention svg,
+  .operational-summary.unavailable svg {
+    color: var(--gm-status-warning, var(--warning-color, #ffa726));
+  }
+
+  .operational-detail {
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+    font-size: 0.75rem;
+  }
+
   .header-meta-stat .num {
     color: var(--primary-text-color, #fff);
     font-weight: 500;
@@ -223,9 +264,9 @@ export const headerStyles = css`
 
     .gs-header-top {
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       align-items: flex-start;
-      gap: 8px;
+      gap: 12px;
     }
 
     .header-title-area {
@@ -235,8 +276,8 @@ export const headerStyles = css`
     }
 
     .header-actions {
-      flex-shrink: 0;
-      align-self: flex-start;
+      width: 100%;
+      align-self: stretch;
     }
 
     .header-stage-area-wrapper,

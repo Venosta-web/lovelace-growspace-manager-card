@@ -127,8 +127,6 @@ export class GrowspaceHeaderUI extends LitElement {
     const plantCount = plants.length;
     if (plantCount === 0 && !this.dominant) return nothing;
 
-    const alertCount = this.problemPlants.length;
-
     return html`
       <div class="header-meta-row">
         ${plantCount > 0
@@ -144,16 +142,66 @@ export class GrowspaceHeaderUI extends LitElement {
         ${this.dominant?.weeksLabel
           ? html` <span class="header-meta-stat">${this.dominant.weeksLabel}</span> `
           : nothing}
-        ${alertCount > 0
-          ? html`
-              <span class="header-meta-stat alert">
-                <svg viewBox="0 0 24 24">
-                  <path d="${STATUS_CUES[StatusLevel.WARNING].icon}"></path>
-                </svg>
-                <span class="num">${alertCount}</span>need${alertCount !== 1 ? '' : 's'} attention
-              </span>
-            `
-          : nothing}
+      </div>
+    `;
+  }
+
+  private _renderOperationalSummary() {
+    if (!Array.isArray(this.device?.plants)) {
+      return html`
+        <div class="operational-summary unavailable" role="status">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="${STATUS_CUES[StatusLevel.WARNING].icon}"></path>
+          </svg>
+          <span>
+            <strong>Plant status unavailable</strong>
+            <span class="operational-detail">Status data has not loaded yet.</span>
+          </span>
+        </div>
+      `;
+    }
+
+    const plantCount = this.device.plants.length;
+    const alertCount = this.problemPlants.length;
+    if (plantCount === 0) {
+      return html`
+        <div class="operational-summary empty" role="status">
+          <strong>Ready for plants</strong>
+          <span class="operational-detail">No plants are assigned to this growspace.</span>
+        </div>
+      `;
+    }
+
+    if (alertCount > 0) {
+      const visibleNames = this.problemPlants.slice(0, 2).join(', ');
+      const remaining = alertCount - Math.min(alertCount, 2);
+      const attentionSummary = `${alertCount} plant${alertCount === 1 ? '' : 's'} ${
+        alertCount === 1 ? 'needs' : 'need'
+      } attention`;
+      return html`
+        <div class="operational-summary attention" role="status">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="${STATUS_CUES[StatusLevel.WARNING].icon}"></path>
+          </svg>
+          <span>
+            <strong>${attentionSummary}</strong>
+            <span class="operational-detail">
+              ${visibleNames}${remaining > 0 ? ` +${remaining} more` : ''}
+            </span>
+          </span>
+        </div>
+      `;
+    }
+
+    return html`
+      <div class="operational-summary stable" role="status">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="${STATUS_CUES[StatusLevel.OPTIMAL].icon}"></path>
+        </svg>
+        <span>
+          <strong>All ${plantCount} plant${plantCount === 1 ? '' : 's'} on track</strong>
+          <span class="operational-detail">No plant issues reported.</span>
+        </span>
       </div>
     `;
   }
@@ -194,6 +242,7 @@ export class GrowspaceHeaderUI extends LitElement {
                   </div>`
                 : html`<h1 class="gs-title">${this.device.name}</h1>`}
             </div>
+            ${this._renderOperationalSummary()}
             ${this._renderMetaRow()}
           </div>
 
@@ -206,6 +255,7 @@ export class GrowspaceHeaderUI extends LitElement {
             .viewMode=${this.viewMode}
             .isEditMode=${this.isEditMode}
             .selectedPlants=${this.selectedPlants}
+            .problemPlantCount=${this.problemPlants.length}
             .selectedDevice=${this.deviceId}
             .activeTask=${this.activeTask}
             .canArrange=${this.canArrange}
