@@ -5,6 +5,13 @@ import { ViewMode } from '../../constants';
 import { VIEW_MODE_LAYOUT_MAP, type LayoutSpec } from '../../slices/ui/layout-spec';
 import { cancel } from '../../slices/grid-interaction';
 import * as ui from '../../slices/ui';
+import type { PlantEntity } from '../../types';
+import {
+  type CardTaskKind,
+  type CardTaskState,
+  placementsFromPlants,
+} from '../../features/tasks/task-state';
+import { localizeWithParams } from '../../localize/localize';
 
 /**
  * Thin compatibility shim over the `slices/ui` source of truth.
@@ -42,6 +49,11 @@ export class GrowspaceUIStore {
   // untouched. Mutated only through this store's methods below.
   public readonly $isEditMode: WritableAtom<boolean> = atom(false);
   public readonly $selectedPlants: WritableAtom<Set<string>> = atom(new Set<string>());
+  public readonly $taskState: WritableAtom<CardTaskState> = atom({ kind: 'idle' });
+  public readonly $announcement: WritableAtom<{ message: string; sequence: number }> = atom({
+    message: '',
+    sequence: 0,
+  });
 
   // Atoms — re-exported instances from slices/ui (single source of truth).
   public readonly $isLoading: WritableAtom<boolean> = ui.isLoading$;
@@ -88,6 +100,8 @@ export class GrowspaceUIStore {
     focusedPlantIndex: number;
     selectedPlants: Set<string>;
     overlayMode: GridOverlayMode;
+    taskState: CardTaskState;
+    announcement: { message: string; sequence: number };
   }> = computed(
     [
       this.$viewMode,
@@ -99,6 +113,8 @@ export class GrowspaceUIStore {
       ui.focusedPlantIndex$,
       this.$selectedPlants,
       this.$gridOverlayMode,
+      this.$taskState,
+      this.$announcement,
     ],
     (
       viewMode,
@@ -109,7 +125,9 @@ export class GrowspaceUIStore {
       notification,
       focusedPlantIndex,
       selectedPlants,
-      overlayMode
+      overlayMode,
+      taskState,
+      announcement
     ) => ({
       viewMode,
       isLoading,
@@ -120,6 +138,8 @@ export class GrowspaceUIStore {
       focusedPlantIndex,
       selectedPlants,
       overlayMode,
+      taskState,
+      announcement,
     })
   );
 
@@ -160,10 +180,195 @@ export class GrowspaceUIStore {
    */
   public setEditMode(isEdit: boolean) {
     this.$isEditMode.set(isEdit);
+    if (isEdit && this.$taskState.get().kind === 'idle') {
+      this.$taskState.set({ kind: 'select_plants' });
+    }
     if (!isEdit) {
       this.$selectedPlants.set(new Set());
       cancel();
+      if (this.$taskState.get().kind === 'select_plants') this.$taskState.set({ kind: 'idle' });
     }
+  }
+
+  public announce(message: string): void {
+    const sequence = this.$announcement.get().sequence + 1;
+    this.$announcement.set({ message, sequence });
+  }
+
+  public startArrange(plants: PlantEntity[], layoutRevision: number): boolean {
+    if (this.$taskState.get().kind !== 'idle') return false;
+    const layout = placementsFromPlants(plants);
+    this.$selectedPlants.set(new Set());
+    this.$isEditMode.set(false);
+    this.$taskState.set({
+      kind: 'arrange',
+      previousViewMode: this.$viewMode.get(),
+      expectedLayoutRevision: layoutRevision,
+      original: layout,
+      draft: structuredClone(layout),
+      pickedPlantId: null,
+      status: 'editing',
+      error: null,
+    });
+    this.$viewMode.set(ViewMode.STANDARD);
+    this.announce(localizeWithParams('tasks.arrange_entered', {}, this.$language.get()));
+    return true;
+  }
+
+  public startCompare(recordRevision: number): boolean {
+    if (this.$taskState.get().kind !== 'idle') return false;
+    this.$selectedPlants.set(new Set());
+    this.$isEditMode.set(false);
+    this.$taskState.set({
+      kind: 'compare',
+      comparisonId: null,
+      originalMetrics: [],
+      draftMetrics: [],
+      expectedRecordRevision: recordRevision,
+      error: null,
+    });
+    this.announce(localizeWithParams('tasks.compare_entered', {}, this.$language.get()));
+    return true;
+  }
+
+  public startSelectPlants(): boolean {
+    if (this.$taskState.get().kind !== 'idle') return false;
+    this.$selectedPlants.set(new Set());
+    this.$isEditMode.set(true);
+    this.$taskState.set({ kind: 'select_plants' });
+    this.announce(localizeWithParams('tasks.select_entered', {}, this.$language.get()));
+    return true;
+  }
+
+  public beginComparisonEdit(id: string | null, metrics: string[], recordRevision: number): void {
+    const state = this.$taskState.get();
+    if (state.kind !== 'compare') return;
+    this.$taskState.set({
+      ...state,
+      comparisonId: id,
+      originalMetrics: [...metrics],
+      draftMetrics: [...metrics],
+      expectedRecordRevision: recordRevision,
+      error: null,
+    });
+  }
+
+  public toggleComparisonMetric(
+    metric: string,
+    label: string,
+    eligible: boolean,
+    claimedBy: string | null
+  ): void {
+    const state = this.$taskState.get();
+    if (state.kind !== 'compare') return;
+    if (!eligible) return;
+    if (claimedBy && claimedBy !== state.comparisonId) {
+      const message = localizeWithParams('tasks.comparison_claimed', {}, this.$language.get());
+      this.$taskState.set({ ...state, error: message });
+      this.announce(message);
+      return;
+    }
+    const selected = state.draftMetrics.includes(metric);
+    if (!selected && state.draftMetrics.length >= 4) {
+      const message = localizeWithParams('tasks.comparison_limit', {}, this.$language.get());
+      this.$taskState.set({ ...state, error: message });
+      this.announce(message);
+      return;
+    }
+    const draftMetrics = selected
+      ? state.draftMetrics.filter((candidate) => candidate !== metric)
+      : [...state.draftMetrics, metric];
+    this.$taskState.set({ ...state, draftMetrics, error: null });
+    this.announce(
+      localizeWithParams(
+        selected ? 'tasks.reading_removed' : 'tasks.reading_selected',
+        { reading: label },
+        this.$language.get()
+      )
+    );
+  }
+
+  public pickArrangementPlant(plantId: string, plantName: string): void {
+    const state = this.$taskState.get();
+    if (state.kind !== 'arrange' || state.status !== 'editing') return;
+    this.$taskState.set({ ...state, pickedPlantId: plantId, error: null });
+    this.announce(
+      localizeWithParams('tasks.plant_picked_up', { plant: plantName }, this.$language.get())
+    );
+  }
+
+  public placeArrangementPlant(
+    targetRow: number,
+    targetCol: number,
+    names: Record<string, string>
+  ): void {
+    const state = this.$taskState.get();
+    if (state.kind !== 'arrange' || state.status !== 'editing' || !state.pickedPlantId) return;
+    const sourceId = state.pickedPlantId;
+    const source = state.draft[sourceId];
+    if (!source) return;
+    const occupant = Object.entries(state.draft).find(
+      ([id, placement]) =>
+        id !== sourceId && placement.row === targetRow && placement.col === targetCol
+    )?.[0];
+    const draft = structuredClone(state.draft);
+    draft[sourceId] = { row: targetRow, col: targetCol };
+    if (occupant) draft[occupant] = source;
+    this.$taskState.set({ ...state, draft, pickedPlantId: null, error: null });
+    const key = occupant ? 'tasks.plants_swapped' : 'tasks.plant_moved';
+    this.announce(
+      localizeWithParams(
+        key,
+        {
+          plant: names[sourceId] ?? sourceId,
+          other: occupant ? (names[occupant] ?? occupant) : '',
+          row: targetRow + 1,
+          col: targetCol + 1,
+        },
+        this.$language.get()
+      )
+    );
+  }
+
+  public setArrangementStatus(
+    status: 'editing' | 'saving' | 'stale',
+    error: string | null = null
+  ): void {
+    const state = this.$taskState.get();
+    if (state.kind === 'arrange') this.$taskState.set({ ...state, status, error });
+  }
+
+  public setCompareError(error: string | null): void {
+    const state = this.$taskState.get();
+    if (state.kind === 'compare') this.$taskState.set({ ...state, error });
+  }
+
+  public updateCompareRevision(recordRevision: number): void {
+    const state = this.$taskState.get();
+    if (state.kind === 'compare') {
+      this.$taskState.set({ ...state, expectedRecordRevision: recordRevision, error: null });
+    }
+  }
+
+  public exitTask(completed: boolean): CardTaskKind | null {
+    const state = this.$taskState.get();
+    if (state.kind === 'idle') return null;
+    const kind = state.kind;
+    if (state.kind === 'arrange') this.$viewMode.set(state.previousViewMode);
+    if (state.kind === 'select_plants') {
+      this.$selectedPlants.set(new Set());
+      this.$isEditMode.set(false);
+      cancel();
+    }
+    this.$taskState.set({ kind: 'idle' });
+    this.announce(
+      localizeWithParams(
+        completed ? 'tasks.completed' : 'tasks.cancelled',
+        { task: localizeWithParams(`tasks.${kind}`, {}, this.$language.get()) },
+        this.$language.get()
+      )
+    );
+    return kind;
   }
 
   /** Add a plant to this card's selection, or remove it if already selected. */

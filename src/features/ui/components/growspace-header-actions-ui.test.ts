@@ -22,19 +22,9 @@ function createElement(props: Partial<GrowspaceHeaderActionsUI> = {}): Growspace
 // ---------------------------------------------------------------------------
 
 describe('GrowspaceHeaderActionsUI – _chipDraggable', () => {
-  it('returns "true" on desktop regardless of mobileLink', () => {
-    const el = createElement({ isMobile: false, mobileLink: false });
-    expect((el as any)._chipDraggable).toBe('true');
-  });
-
-  it('returns "false" on mobile when mobileLink is off', () => {
-    const el = createElement({ isMobile: true, mobileLink: false });
+  it('keeps metric dragging disabled outside the guided Compare flow', () => {
+    const el = createElement({ isMobile: false, mobileLink: true });
     expect((el as any)._chipDraggable).toBe('false');
-  });
-
-  it('returns "true" on mobile when mobileLink is on', () => {
-    const el = createElement({ isMobile: true, mobileLink: true });
-    expect((el as any)._chipDraggable).toBe('true');
   });
 });
 
@@ -100,13 +90,23 @@ describe('GrowspaceHeaderActionsUI – desktop render', () => {
     expect(labels).toContain('Settings');
   });
 
-  it('renders edit button on desktop', async () => {
+  it('replaces the Edit Mode icon with named task entries in the overflow menu', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isMobile=${false}></growspace-header-actions-ui>
+      <growspace-header-actions-ui
+        .isMobile=${false}
+        .canArrange=${true}
+        .canCompare=${true}
+        .device=${{ plants: [{}] }}
+      ></growspace-header-actions-ui>
     `);
-    const buttons = el.shadowRoot!.querySelectorAll('.icon-button');
-    const labels = Array.from(buttons).map((b) => (b as HTMLElement).title);
-    expect(labels).toContain('Edit Mode');
+    const toolbarLabels = Array.from(el.shadowRoot!.querySelectorAll('.icon-button')).map(
+      (button) => (button as HTMLElement).title
+    );
+    const taskLabels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map((item) =>
+      item.textContent?.trim()
+    );
+    expect(toolbarLabels).not.toContain('Edit Mode');
+    expect(taskLabels).toEqual(expect.arrayContaining(['Arrange', 'Compare', 'Select plants']));
   });
 
   it('does not show Growspace menu section on desktop', async () => {
@@ -129,11 +129,11 @@ describe('GrowspaceHeaderActionsUI – mobile render', () => {
     expect(el.shadowRoot!.querySelector('.gs-device-chips-container')).toBeNull();
   });
 
-  it('renders mobile-link toggle button on mobile', async () => {
+  it('does not render the hidden mobile link-mode toggle', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui .isMobile=${true}></growspace-header-actions-ui>
     `);
-    expect(el.shadowRoot!.querySelector('.mobile-link')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('.mobile-link')).toBeNull();
   });
 
   it('does not render heatmap and settings as toolbar icon buttons on mobile', async () => {
@@ -146,13 +146,13 @@ describe('GrowspaceHeaderActionsUI – mobile render', () => {
     expect(labels).not.toContain('Settings');
   });
 
-  it('still renders edit button on mobile', async () => {
+  it('does not render the hidden Edit Mode button on mobile', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui .isMobile=${true}></growspace-header-actions-ui>
     `);
     const buttons = el.shadowRoot!.querySelectorAll('.icon-button');
     const labels = Array.from(buttons).map((b) => (b as HTMLElement).title);
-    expect(labels).toContain('Edit Mode');
+    expect(labels).not.toContain('Edit Mode');
   });
 
   it('shows Growspace menu section with Settings and Heatmap on mobile', async () => {
@@ -171,97 +171,37 @@ describe('GrowspaceHeaderActionsUI – mobile render', () => {
 });
 
 // ---------------------------------------------------------------------------
-// mobile-link toggle button state
-// ---------------------------------------------------------------------------
-
-describe('GrowspaceHeaderActionsUI – mobile-link button active state', () => {
-  it('applies active class when mobileLink is true', async () => {
-    const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui
-        .isMobile=${true}
-        .mobileLink=${true}
-      ></growspace-header-actions-ui>
-    `);
-    const btn = el.shadowRoot!.querySelector('.mobile-link');
-    expect(btn?.classList.contains('active')).toBe(true);
-  });
-
-  it('does not apply active class when mobileLink is false', async () => {
-    const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui
-        .isMobile=${true}
-        .mobileLink=${false}
-      ></growspace-header-actions-ui>
-    `);
-    const btn = el.shadowRoot!.querySelector('.mobile-link');
-    expect(btn?.classList.contains('active')).toBe(false);
-  });
-});
-
-// ---------------------------------------------------------------------------
 // event dispatching
 // ---------------------------------------------------------------------------
 
 describe('GrowspaceHeaderActionsUI – events', () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it('dispatches toggle-mobile-link when mobile-link button is clicked', async () => {
+  it('dispatches the understandable task action from a native menu button', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isMobile=${true}></growspace-header-actions-ui>
-    `);
-    const events: Event[] = [];
-    el.addEventListener('toggle-mobile-link', (e) => events.push(e));
-
-    const btn = el.shadowRoot!.querySelector('.mobile-link') as HTMLButtonElement;
-    btn.click();
-
-    expect(events).toHaveLength(1);
-  });
-
-  it('dispatches action-triggered with action "edit" when edit button is clicked', async () => {
-    const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isMobile=${false}></growspace-header-actions-ui>
+      <growspace-header-actions-ui .canCompare=${true}></growspace-header-actions-ui>
     `);
     const events: CustomEvent[] = [];
     el.addEventListener('action-triggered', (e) => events.push(e as CustomEvent));
 
-    const editBtn = Array.from(el.shadowRoot!.querySelectorAll('.icon-button')).find(
-      (b) => (b as HTMLElement).title === 'Edit Mode'
-    ) as HTMLButtonElement;
-    editBtn.click();
+    const compare = Array.from(
+      el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.menu-item')
+    ).find((button) => button.textContent?.includes('Compare'))!;
+    compare.click();
 
     expect(events).toHaveLength(1);
-    expect(events[0].detail).toEqual({ action: 'edit' });
+    expect(events[0].detail).toEqual({ action: 'compare' });
   });
 
-  it('activates toolbar actions from the keyboard and exposes toggle state', async () => {
+  it('exposes the current task state to assistive technology', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isEditMode=${true}></growspace-header-actions-ui>
+      <growspace-header-actions-ui .activeTask=${'compare'}></growspace-header-actions-ui>
     `);
-    const events: CustomEvent[] = [];
-    el.addEventListener('action-triggered', (event) => events.push(event as CustomEvent));
-    const editButton = Array.from(el.shadowRoot!.querySelectorAll('.icon-button')).find(
-      (button) => (button as HTMLElement).title === 'Edit Mode'
-    ) as HTMLButtonElement;
-
-    expect(editButton.getAttribute('aria-pressed')).toBe('true');
-    editButton.focus();
-    await userEvent.keyboard('{Enter}');
-
-    expect(events[events.length - 1]?.detail).toEqual({ action: 'edit' });
-  });
-
-  it('edit button has active class when isEditMode is true', async () => {
-    const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui
-        .isMobile=${false}
-        .isEditMode=${true}
-      ></growspace-header-actions-ui>
-    `);
-    const editBtn = Array.from(el.shadowRoot!.querySelectorAll('.icon-button')).find(
-      (b) => (b as HTMLElement).title === 'Edit Mode'
-    );
-    expect(editBtn?.classList.contains('active')).toBe(true);
+    const compare = Array.from(
+      el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.menu-item')
+    ).find((button) => button.textContent?.includes('Compare'))!;
+    expect(compare.classList.contains('active')).toBe(true);
+    expect(compare.getAttribute('aria-current')).toBe('true');
   });
 
   it('dispatches action-triggered with "water Selected" label when plants are selected', async () => {
@@ -298,11 +238,14 @@ describe('GrowspaceHeaderActionsUI – overflow menu accessibility', () => {
     `);
     const trigger = el.shadowRoot!.querySelector('#menu-trigger') as HTMLButtonElement;
     const menu = el.shadowRoot!.querySelector('#header-menu') as HTMLElement;
-    const items = Array.from(menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'));
+    const items = Array.from(
+      menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')
+    );
 
     expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
     expect(menu.getAttribute('role')).toBe('menu');
-    await userEvent.click(trigger);
+    menu.showPopover();
+    (el as any)._handleMenuToggle({ newState: 'open' });
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
@@ -319,9 +262,15 @@ describe('GrowspaceHeaderActionsUI – overflow menu accessibility', () => {
     `);
     const trigger = el.shadowRoot!.querySelector('#menu-trigger') as HTMLButtonElement;
 
-    await userEvent.click(trigger);
+    (el as any)._handleMenuToggle({ newState: 'open' });
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    await userEvent.keyboard('{Escape}');
+    (el as any)._handleMenuKeydown({
+      key: 'Escape',
+      currentTarget: {
+        hidePopover: () => (el as any)._handleMenuToggle({ newState: 'closed' }),
+      },
+      preventDefault: () => undefined,
+    });
     await el.updateComplete;
 
     expect(trigger.getAttribute('aria-expanded')).toBe('false');

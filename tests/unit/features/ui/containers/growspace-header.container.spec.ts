@@ -81,6 +81,7 @@ const buildMockStore = () => {
         ui: {
             setEditMode: vi.fn(),
             setViewMode: vi.fn(),
+            startSelectPlants: vi.fn(),
             $selectedPlants: { get: vi.fn().mockReturnValue(new Set<string>()) },
             $viewMode: { get: vi.fn().mockReturnValue('standard') },
             $isEditMode: { get: vi.fn().mockReturnValue(false) },
@@ -300,14 +301,14 @@ describe('GrowspaceHeaderContainer', () => {
 
     // --- _handleToggleGraph ---
 
-    it('_handleToggleGraph with string detail calls store.actions.ui.toggleEnvGraph', () => {
+    it('_handleToggleGraph with string detail toggles the reading graph', () => {
         (element as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: 'temperature' }));
-        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('temperature', mockStore.history, mockStore.ui, 'grow1');
+        expect(mockStore.history.toggleEnvGraph).toHaveBeenCalledWith('temperature');
     });
 
-    it('_handleToggleGraph with object detail calls store.actions.ui.toggleEnvGraph with metric', () => {
+    it('_handleToggleGraph with object detail toggles the requested reading graph', () => {
         (element as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: { metric: 'humidity' } }));
-        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('humidity', mockStore.history, mockStore.ui, 'grow1');
+        expect(mockStore.history.toggleEnvGraph).toHaveBeenCalledWith('humidity');
     });
 
     it('_handleToggleGraph with empty metric does not call toggleEnvGraph', () => {
@@ -476,20 +477,18 @@ describe('GrowspaceHeaderContainer', () => {
         expect(uiSlice.openNutrientsDialog).toHaveBeenCalledOnce();
     });
 
-    it('edit action toggles edit mode', () => {
-        mockStore.ui.$isEditMode.get.mockReturnValue(false);
+    it('select plants action starts the guided selection task', () => {
         (element as any)._handleActionTriggered(
-            new CustomEvent('action-triggered', { detail: { action: 'edit' } })
+            new CustomEvent('action-triggered', { detail: { action: 'select_plants' } })
         );
-        expect(mockStore.ui.setEditMode).toHaveBeenCalledWith(true);
+        expect(mockStore.ui.startSelectPlants).toHaveBeenCalledOnce();
     });
 
-    it('edit action sets edit mode to false when currently true', () => {
-        mockStore.ui.$isEditMode.get.mockReturnValue(true);
+    it('legacy edit action no longer changes hidden edit mode', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'edit' } })
         );
-        expect(mockStore.ui.setEditMode).toHaveBeenCalledWith(false);
+        expect(mockStore.ui.setEditMode).not.toHaveBeenCalled();
     });
 
     it('heatmap action toggles to HEATMAP from STANDARD', () => {
@@ -508,13 +507,12 @@ describe('GrowspaceHeaderContainer', () => {
         expect(mockStore.ui.setViewMode).toHaveBeenCalledWith(ViewMode.STANDARD);
     });
 
-    it('edit action switches ViewMode to STANDARD if currently COMPACT', () => {
-        mockStore.ui.$isEditMode.get.mockReturnValue(false);
+    it('select plants action does not silently change the current view', () => {
         mockStore.ui.$viewMode.get.mockReturnValue(ViewMode.COMPACT);
         (element as any)._handleActionTriggered(
-            new CustomEvent('action-triggered', { detail: { action: 'edit' } })
+            new CustomEvent('action-triggered', { detail: { action: 'select_plants' } })
         );
-        expect(mockStore.ui.setViewMode).toHaveBeenCalledWith(ViewMode.STANDARD);
+        expect(mockStore.ui.setViewMode).not.toHaveBeenCalled();
     });
 
     it('ai action with no deviceId falls back to empty string', () => {

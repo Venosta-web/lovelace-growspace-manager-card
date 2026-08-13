@@ -42,7 +42,10 @@ export function getHass(): HomeAssistant | undefined {
  * @param method - HTTP method ('GET', etc.)
  * @param path   - HA REST API path relative to the base URL (e.g. 'history/period/...')
  */
-export async function callApi<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string): Promise<T> {
+export async function callApi<T>(
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  path: string
+): Promise<T> {
   if (!_hass) {
     throw new WSError('internal_error', 'callApi: hass is not set — call setHass() first');
   }
@@ -150,6 +153,7 @@ export async function hassCall<T>(
           'coordinator_not_ready',
           'entity_not_found',
           'validation_failed',
+          'conflict',
           'internal_error',
           'rate_limited',
         ].includes(code)

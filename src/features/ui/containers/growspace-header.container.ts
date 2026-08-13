@@ -23,6 +23,7 @@ import { getFlowerFlipInfo, FlowerFlipInfo } from '../../../utils/flower-flip';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { ViewMode, ConfigTab } from '../../../constants';
 import { DateTime } from 'luxon';
+import { localizeWithParams } from '../../../localize/localize';
 
 import '../components/growspace-header-ui';
 
@@ -50,7 +51,11 @@ export class GrowspaceHeaderContainer extends LitElement {
   private _irrigationStrategiesController!: StoreController<any>;
   private _tankLevelsController!: StoreController<any>;
   private _deviceSnapshotsController!: StoreController<any>;
+  private _comparisonsController!: StoreController<any>;
   private _dragController = new HeaderDragController(this);
+  private _comparisonUnsub?: () => void;
+  private _comparisonSessionNoticeAnnounced = false;
+  private _eligibleMetricMap = new Map<string, HeaderChip>();
 
   get activeEnvGraphs() {
     return this._headerController?.value?.history?.activeEnvGraphs || new Set();
@@ -71,10 +76,16 @@ export class GrowspaceHeaderContainer extends LitElement {
       }
       if (this.store.history) {
         if (!this._historyCacheController) {
-          this._historyCacheController = new StoreController(this, this.store.history.$historyCache);
+          this._historyCacheController = new StoreController(
+            this,
+            this.store.history.$historyCache
+          );
         }
         this.store.history.loadHistoryOnDemand();
         this.store.history.startAutoRefresh();
+      }
+      if (!this._comparisonsController && this.store.comparisons) {
+        this._comparisonsController = new StoreController(this, this.store.comparisons.$state);
       }
     }
     if (!this._envSnapshotsController) {
@@ -100,6 +111,13 @@ export class GrowspaceHeaderContainer extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this._initControllers();
+    this._attachComparisonSync();
+    void this._configureComparisons();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._comparisonUnsub?.();
   }
 
   private get _metrics() {
@@ -148,10 +166,15 @@ export class GrowspaceHeaderContainer extends LitElement {
     );
 
     const hidden = this.config?.hidden_chips;
+    const task = this.store?.ui?.$taskState?.get?.() ?? { kind: 'idle' };
+    const decorate = (chips: HeaderChip[]) =>
+      filterChips(chips, hidden).map((chip) =>
+        task.kind === 'compare' ? { ...chip, active: task.draftMetrics.includes(chip.key) } : chip
+      );
     return {
-      heroChips: filterChips(heroChips, hidden),
-      secondaryChips: filterChips(secondaryChips, hidden),
-      deviceChips: filterChips(deviceChips, hidden),
+      heroChips: decorate(heroChips),
+      secondaryChips: decorate(secondaryChips),
+      deviceChips: decorate(deviceChips),
       dominant,
       irrigationStrategy,
       irrigationConfig,
@@ -162,10 +185,40 @@ export class GrowspaceHeaderContainer extends LitElement {
   willUpdate(changedProps: Map<PropertyKey, unknown>) {
     if (changedProps.has('store')) {
       this._initControllers();
+      this._attachComparisonSync();
     }
 
     if ((changedProps.has('device') || changedProps.has('store')) && this.store?.history) {
       this.store.history.loadHistoryOnDemand();
+    }
+    if (changedProps.has('device') || changedProps.has('store') || changedProps.has('hass')) {
+      void this._configureComparisons();
+    }
+  }
+
+  private _attachComparisonSync(): void {
+    if (!this.store?.comparisons || this._comparisonUnsub) return;
+    this._comparisonUnsub = this.store.comparisons.$state.listen((state) => {
+      const groups = state.comparisons.map((comparison) => comparison.metrics);
+      if (JSON.stringify(groups) !== JSON.stringify(this.store.history.$linkedGraphGroups.get())) {
+        this.store.history.$linkedGraphGroups.set(groups);
+      }
+    });
+  }
+
+  private async _configureComparisons(): Promise<void> {
+    if (!this.store?.comparisons || !this.device?.deviceId || !this.hass) return;
+    const userId = (this.hass as HomeAssistant & { user?: { id?: string } }).user?.id;
+    const persistence = await this.store.comparisons.configure(
+      userId,
+      this.device.deviceId,
+      this.store.history.$linkedGraphGroups.get()
+    );
+    if (persistence === 'session' && !this._comparisonSessionNoticeAnnounced) {
+      this._comparisonSessionNoticeAnnounced = true;
+      this.store.ui.announce(
+        localizeWithParams('tasks.comparison_session_only', {}, this.store.ui.$language.get())
+      );
     }
   }
 
@@ -184,13 +237,28 @@ export class GrowspaceHeaderContainer extends LitElement {
 
   private _handleToggleGraph(e: CustomEvent) {
     const metric = typeof e.detail === 'string' ? e.detail : e.detail.metric;
-    if (metric) {
-      uiSlice.toggleEnvGraph(
+    if (!metric) return;
+    const task = this.store.ui.$taskState?.get?.() ?? { kind: 'idle' };
+    if (task.kind === 'compare') {
+      const chip = this._eligibleMetricMap.get(metric);
+      this.store.ui.toggleComparisonMetric(
         metric,
-        this.store?.history,
-        this.store?.ui,
-        this.device?.deviceId ?? this.store?.grid.$selectedDevice.get()
+        chip?.label ?? metric,
+        Boolean(chip),
+        this.store.comparisons?.groupFor(metric)?.id ?? null
       );
+      return;
+    }
+    if (metric === 'crop_steering') {
+      uiSlice.toggleEnvGraph(metric, this.store.history, this.store.ui, this.device.deviceId);
+      return;
+    }
+    const comparison = this.store.comparisons?.groupFor(metric);
+    const isNowActive = comparison
+      ? this.store.history.toggleEnvGraphGroup(comparison.metrics)
+      : this.store.history.toggleEnvGraph(metric);
+    if (isNowActive && this.store.ui.$viewMode.get() === ViewMode.HEADER) {
+      this.store.ui.setViewMode(ViewMode.STANDARD);
     }
   }
 
@@ -273,15 +341,28 @@ export class GrowspaceHeaderContainer extends LitElement {
       case 'nutrients':
         uiSlice.openNutrientsDialog();
         break;
-      case 'edit': {
-        const newEditMode = !this.store.ui.$isEditMode.get();
-        this.store.ui.setEditMode(newEditMode);
-        if (newEditMode) {
-          const currentMode = this.store.ui.$viewMode.get();
-          if (currentMode === ViewMode.COMPACT || currentMode === ViewMode.HEADER) {
-            this.store.ui.setViewMode(ViewMode.STANDARD);
-          }
+      case 'arrange': {
+        if (!this._canArrange) {
+          this.store.ui.announce(
+            localizeWithParams('tasks.arrange_unavailable', {}, this.store.ui.$language.get())
+          );
+          break;
         }
+        this.store.ui.startArrange(this.device.plants, this.device.layoutRevision ?? 0);
+        break;
+      }
+      case 'compare': {
+        if (!this._canCompare) {
+          this.store.ui.announce(
+            localizeWithParams('tasks.compare_unavailable', {}, this.store.ui.$language.get())
+          );
+          break;
+        }
+        this.store.ui.startCompare(this.store.comparisons?.$state.get().recordRevision ?? 0);
+        break;
+      }
+      case 'select_plants': {
+        this.store.ui.startSelectPlants();
         break;
       }
       case 'heatmap': {
@@ -309,6 +390,18 @@ export class GrowspaceHeaderContainer extends LitElement {
     return getFlowerFlipInfo(this.device, today, dismissed);
   }
 
+  private get _canArrange(): boolean {
+    return Boolean(
+      this.device?.capabilities?.atomicPlantLayout &&
+      this.device.plants.length > 0 &&
+      this.device.rows * this.device.plantsPerRow > 1
+    );
+  }
+
+  private get _canCompare(): boolean {
+    return this._eligibleMetricMap.size >= 2;
+  }
+
   private _handleFlowerFlipClick(e: CustomEvent) {
     const { growspaceId, flowerStart } = e.detail;
     this.store?.ui.dismissFlowerFlip(growspaceId, flowerStart);
@@ -331,6 +424,21 @@ export class GrowspaceHeaderContainer extends LitElement {
       isFlower,
     } = this._metrics;
 
+    const ineligible = new Set(['crop_steering', 'water_usage', 'steering_phase']);
+    const allChips = [...heroChips, ...secondaryChips, ...deviceChips];
+    this._eligibleMetricMap = new Map(
+      allChips
+        .filter((chip) => (chip.entityIds?.length ?? 0) > 0 && !ineligible.has(chip.key))
+        .map((chip) => [chip.key, chip])
+    );
+    this.store?.comparisons?.setMetricCatalog(
+      Array.from(this._eligibleMetricMap.values(), (chip) => ({
+        key: chip.key,
+        label: chip.label ?? chip.key,
+      }))
+    );
+    const taskState = this._actionsController?.value?.taskState ?? { kind: 'idle' };
+
     return html`
       <growspace-header-ui
         .hass=${this.hass}
@@ -349,6 +457,9 @@ export class GrowspaceHeaderContainer extends LitElement {
         .viewMode=${this._actionsController?.value?.viewMode || 'standard'}
         .isEditMode=${this._actionsController?.value?.isEditMode || false}
         .selectedPlants=${this._actionsController?.value?.selectedPlants || new Set()}
+        .activeTask=${taskState.kind}
+        .canArrange=${this._canArrange}
+        .canCompare=${this._canCompare}
         .problemPlants=${this._problemPlants}
         .flowerFlipInfo=${this._flowerFlipInfo}
         .irrigationStrategy=${irrigationStrategy}

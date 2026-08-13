@@ -6,19 +6,22 @@ import type { NutrientPresetsResponse } from '../../slices/nutrient';
 // Sub-stores
 import { GrowspaceUIStore } from '../ui/ui-store';
 import { GrowspaceHistoryStore } from '../history/history-store';
-import { type GridSliceRef, type GridViewState, makePerCardGridSlice, devices$, optimisticDeletedPlantIds$, removeOptimisticDeletedPlantId } from '../../slices/grid';
+import { MetricComparisonStore } from '../comparisons/metric-comparison-store';
+import {
+  type GridSliceRef,
+  type GridViewState,
+  makePerCardGridSlice,
+  devices$,
+  optimisticDeletedPlantIds$,
+  removeOptimisticDeletedPlantId,
+} from '../../slices/grid';
 import { GrowspaceSharedStore } from './growspace-shared-store';
-
 
 // Action Modules
 import * as plantSlice from '../../slices/plant';
 
 // Nutrient Slice atoms
-import {
-  nutrientPresets$,
-  ipmPresets$,
-  nutrientInventory$,
-} from '../../slices/nutrient';
+import { nutrientPresets$, ipmPresets$, nutrientInventory$ } from '../../slices/nutrient';
 import { strainLibrary$ } from '../../slices/strain';
 
 // New infrastructure (Phase 1)
@@ -35,6 +38,7 @@ export class GrowspaceStore {
   public readonly ui: GrowspaceUIStore;
   public readonly grid: GridSliceRef;
   public readonly history: GrowspaceHistoryStore;
+  public readonly comparisons: MetricComparisonStore;
 
   // New infrastructure (Phase 1)
   public readonly eventBus: EventBus;
@@ -56,6 +60,7 @@ export class GrowspaceStore {
     isEditMode: boolean;
     selectedPlants: Set<string>;
     selectedDevice: string | null;
+    taskState: import('../../features/tasks/task-state').CardTaskState;
   }>;
 
   /** Combined atom for card rendering — one subscription replaces grid + ui modules. */
@@ -107,6 +112,7 @@ export class GrowspaceStore {
     this.ui = new GrowspaceUIStore();
     this.grid = makePerCardGridSlice();
     this.history = new GrowspaceHistoryStore(this.grid.$selectedDevice);
+    this.comparisons = new MetricComparisonStore();
 
     // Cross-store computed atoms
     this.$dialogHostState = computed(
@@ -139,12 +145,19 @@ export class GrowspaceStore {
     );
 
     this.$headerActionsState = computed(
-      [this.ui.$viewMode, this.ui.$isEditMode, this.ui.$selectedPlants, this.grid.$selectedDevice],
-      (viewMode, isEditMode, selectedPlants, selectedDevice) => ({
+      [
+        this.ui.$viewMode,
+        this.ui.$isEditMode,
+        this.ui.$selectedPlants,
+        this.grid.$selectedDevice,
+        this.ui.$taskState,
+      ],
+      (viewMode, isEditMode, selectedPlants, selectedDevice, taskState) => ({
         viewMode,
         isEditMode,
         selectedPlants,
         selectedDevice,
+        taskState,
       })
     );
 
@@ -154,12 +167,7 @@ export class GrowspaceStore {
     );
 
     this.$plantCardViewState = computed(
-      [
-        this.ui.$isEditMode,
-        this.ui.$selectedPlants,
-        this.grid.$activeDevices,
-        nutrientPresets$,
-      ],
+      [this.ui.$isEditMode, this.ui.$selectedPlants, this.grid.$activeDevices, nutrientPresets$],
       (isEditMode, selectedPlants, devices, nutrientPresets) => ({
         isEditMode,
         selectedPlants,
@@ -203,9 +211,9 @@ export class GrowspaceStore {
   public destroy(): void {
     this._staleUnsub?.();
     this.history.destroy();
+    this.comparisons.destroy();
     this.eventBus.clear();
   }
-
 
   updateHass(hass: HomeAssistant) {
     this.hass = hass;
@@ -225,11 +233,13 @@ export class GrowspaceStore {
     if (optimisticIds.size === 0) return;
 
     const allPlantIds = new Set<string>();
-    devices$.get().forEach((d) =>
-      d.plants.forEach((p) =>
-        allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))
-      )
-    );
+    devices$
+      .get()
+      .forEach((d) =>
+        d.plants.forEach((p) =>
+          allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))
+        )
+      );
 
     const toRemove = new Set<string>();
     optimisticIds.forEach((id) => {
@@ -287,5 +297,4 @@ export class GrowspaceStore {
       this.updateGrid();
     }
   }
-
 }

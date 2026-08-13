@@ -263,13 +263,13 @@ describe('GrowspaceView', () => {
 
   // ── Standard grid — optional UI elements ──────────────────────────────────
 
-  it('shows edit-mode banner when isEditMode is true (STANDARD)', async () => {
+  it('shows the task bar while Select plants is active (STANDARD)', async () => {
     mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
-    element.isEditMode = true;
+    element.taskState = { kind: 'select_plants' };
     await element.updateComplete;
 
-    expect(element.shadowRoot?.querySelector('growspace-edit-mode-banner')).toBeTruthy();
+    expect(element.shadowRoot?.querySelector('growspace-task-bar')).toBeTruthy();
   });
 
   it('hides edit-mode banner when isEditMode is false (STANDARD)', async () => {
@@ -281,22 +281,13 @@ describe('GrowspaceView', () => {
     expect(element.shadowRoot?.querySelector('growspace-edit-mode-banner')).toBeNull();
   });
 
-  it('redispatches batch-add-plants from banner', async () => {
+  it('does not render the removed edit-mode banner', async () => {
     mockStore.ui.setViewMode(ViewMode.STANDARD);
     element = await createElement();
     element.isEditMode = true;
     await element.updateComplete;
 
-    const banner = element.shadowRoot?.querySelector('growspace-edit-mode-banner');
-    const spy = vi.spyOn(element, 'dispatchEvent');
-
-    banner?.dispatchEvent(
-      new CustomEvent('batch-add-plants', { detail: { quantity: 3 }, bubbles: true, composed: true })
-    );
-
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'batch-add-plants', detail: { quantity: 3 } })
-    );
+    expect(element.shadowRoot?.querySelector('growspace-edit-mode-banner')).toBeNull();
   });
 
   it('shows transplant-source-panel when gridInteraction$ status is transplanting', async () => {

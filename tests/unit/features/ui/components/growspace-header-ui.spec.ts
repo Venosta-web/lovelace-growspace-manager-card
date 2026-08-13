@@ -95,7 +95,7 @@ describe('growspace-header-ui', () => {
     }));
   });
 
-  it('handles mobile link toggling and inventory nutrients opening', async () => {
+  it('forwards inventory nutrients and graph events', async () => {
     const nutrientsHandler = vi.fn();
     const device = { deviceId: 'gs1', name: 'Tent 1' } as any;
     const el = await fixture<GrowspaceHeaderUI>(html`
@@ -105,11 +105,9 @@ describe('growspace-header-ui', () => {
       ></growspace-header-ui>
     `);
 
-    // Test mobile link toggle
     const actionsUi = el.shadowRoot!.querySelector('growspace-header-actions-ui');
-    const initialMobileLink = (el as any)._mobileLink;
     actionsUi!.dispatchEvent(new CustomEvent('toggle-mobile-link'));
-    expect((el as any)._mobileLink).toBe(!initialMobileLink);
+    expect((el as any)._mobileLink).toBeUndefined();
 
     // Test open nutrients forwarding from secondary UI
     const secondaryUi = el.shadowRoot!.querySelector('growspace-header-secondary-ui');
@@ -402,4 +400,3 @@ describe('growspace-header-ui', () => {
     }));
   });
 });
-

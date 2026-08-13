@@ -9,11 +9,7 @@ import { fetchAiStatus } from './slices/ai-insight';
 import { setMutateListener, undo, canUndo } from './services/mutate';
 import * as uiSlice from './slices/ui';
 import { fetchStrainLibrary } from './slices/strain';
-import {
-  fetchNutrientPresets,
-  fetchIPMPresets,
-  fetchNutrientInventory,
-} from './slices/nutrient';
+import { fetchNutrientPresets, fetchIPMPresets, fetchNutrientInventory } from './slices/nutrient';
 
 import type { GrowspaceManagerCardConfig } from './lib/types/config';
 import type { StrainEntry } from './features/plants/types';
@@ -39,6 +35,11 @@ import { BootstrapController } from './controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 import { startTransplant, completeTransplant, gridInteraction$ } from './slices/grid-interaction';
 import { handleKeyboardNavigation, deleteSelectedPlants } from './lib/keyboard-navigation';
+import { commitPlantLayout } from './features/tasks/arrangement-service';
+import { gridFromLayout, layoutsEqual } from './features/tasks/task-state';
+import { ComparisonConflictError } from './store/comparisons/metric-comparison-store';
+import { WSError } from './services/errors';
+import { localizeWithParams } from './localize/localize';
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
@@ -185,6 +186,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (currentStrainLibrary !== this._strainLibrary) {
       this._strainLibrary = (currentStrainLibrary || []) as StrainEntry[];
     }
+
+    const task = this.store.ui.$taskState?.get?.() ?? { kind: 'idle' };
+    const selected = this.devices?.find((device) => device.deviceId === this.selectedDevice);
+    if (
+      task.kind === 'arrange' &&
+      task.status === 'editing' &&
+      selected?.layoutRevision !== undefined &&
+      selected.layoutRevision !== task.expectedLayoutRevision
+    ) {
+      const message = localizeWithParams('tasks.layout_stale', {}, this.store.ui.$language.get());
+      this.store.ui.setArrangementStatus('stale', message);
+      this.store.ui.announce(message);
+    }
   }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
@@ -253,6 +267,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   // Event handlers
   private _handleKeyboardNav(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      const task = this.store.ui.$taskState?.get?.() ?? { kind: 'idle' };
+      if (task.kind !== 'idle') {
+        if (task.kind === 'arrange' && task.status === 'saving') return;
+        e.preventDefault();
+        e.stopPropagation();
+        this._handleTaskCancel();
+        return;
+      }
+    }
     handleKeyboardNavigation(e.key, this.store);
   }
 
@@ -300,7 +324,158 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleExitEditMode() {
-    this.store.ui.setEditMode(false);
+    if ((this.store.ui.$taskState?.get?.() ?? { kind: 'idle' }).kind === 'select_plants') {
+      this._handleTaskCancel();
+    } else this.store.ui.setEditMode(false);
+  }
+
+  private _handleTaskCancel = (): void => {
+    const kind = this.store.ui.exitTask(false);
+    if (kind) void this.updateComplete.then(() => this._focusTaskLauncher());
+  };
+
+  private _handleTaskDone = async (): Promise<void> => {
+    const task = this.store.ui.$taskState?.get?.() ?? { kind: 'idle' };
+    if (task.kind === 'select_plants') {
+      this.store.ui.exitTask(true);
+      await this.updateComplete;
+      this._focusTaskLauncher();
+      return;
+    }
+    if (task.kind === 'compare') {
+      if (task.draftMetrics.length === 0 && task.comparisonId === null) {
+        this.store.ui.exitTask(true);
+      } else if (
+        task.comparisonId !== null &&
+        [...task.draftMetrics].sort().join('\0') === [...task.originalMetrics].sort().join('\0')
+      ) {
+        this.store.ui.exitTask(true);
+      } else if (task.draftMetrics.length < 2 || task.draftMetrics.length > 4) {
+        const message = localizeWithParams(
+          'tasks.comparison_limit',
+          {},
+          this.store.ui.$language.get()
+        );
+        this.store.ui.setCompareError(message);
+        this.store.ui.announce(message);
+        return;
+      } else {
+        try {
+          await this.store.comparisons.save(
+            task.comparisonId,
+            task.draftMetrics,
+            task.expectedRecordRevision,
+            task.originalMetrics
+          );
+          this.store.ui.announce(
+            localizeWithParams('tasks.comparison_saved', {}, this.store.ui.$language.get())
+          );
+          this.store.ui.exitTask(true);
+        } catch (error) {
+          const message =
+            error instanceof ComparisonConflictError
+              ? localizeWithParams('tasks.comparison_conflict', {}, this.store.ui.$language.get())
+              : error instanceof Error
+                ? error.message
+                : String(error);
+          this.store.comparisons.reload();
+          this.store.ui.setCompareError(message);
+          this.store.ui.announce(message);
+          return;
+        }
+      }
+      await this.updateComplete;
+      this._focusTaskLauncher();
+      return;
+    }
+    if (task.kind !== 'arrange' || task.status !== 'editing') return;
+    if (layoutsEqual(task.original, task.draft)) {
+      this.store.ui.announce(
+        localizeWithParams('tasks.layout_unchanged', {}, this.store.ui.$language.get())
+      );
+      this.store.ui.exitTask(true);
+      await this.updateComplete;
+      this._focusTaskLauncher();
+      return;
+    }
+    const growspaceId = this.store.grid.$selectedDevice.get();
+    if (!growspaceId) return;
+    this.store.ui.setArrangementStatus('saving');
+    this.store.ui.announce(
+      localizeWithParams('tasks.saving_layout', {}, this.store.ui.$language.get())
+    );
+    try {
+      await commitPlantLayout(growspaceId, task.expectedLayoutRevision, task.draft);
+      await this.store.refreshData(true);
+      this.store.ui.announce(
+        localizeWithParams('tasks.layout_saved', {}, this.store.ui.$language.get())
+      );
+      this.store.ui.exitTask(true);
+      await this.updateComplete;
+      this._focusTaskLauncher();
+    } catch (error) {
+      const conflict = error instanceof WSError && error.code === 'conflict';
+      const message = localizeWithParams(
+        conflict ? 'tasks.layout_stale' : 'tasks.layout_save_failed',
+        {},
+        this.store.ui.$language.get()
+      );
+      this.store.ui.setArrangementStatus(conflict ? 'stale' : 'editing', message);
+      this.store.ui.announce(message);
+    }
+  };
+
+  private _handleDeleteComparison = async (event: CustomEvent<{ id: string }>): Promise<void> => {
+    const task = this.store.ui.$taskState?.get?.() ?? { kind: 'idle' };
+    if (task.kind !== 'compare') return;
+    try {
+      await this.store.comparisons.delete(event.detail.id, task.expectedRecordRevision);
+      const revision = this.store.comparisons.$state.get().recordRevision;
+      if (task.comparisonId === event.detail.id) {
+        this.store.ui.beginComparisonEdit(null, [], revision);
+      } else {
+        this.store.ui.updateCompareRevision(revision);
+      }
+      this.store.ui.announce(
+        localizeWithParams('tasks.comparison_deleted', {}, this.store.ui.$language.get())
+      );
+    } catch (error) {
+      const message =
+        error instanceof ComparisonConflictError
+          ? localizeWithParams('tasks.comparison_conflict', {}, this.store.ui.$language.get())
+          : error instanceof Error
+            ? error.message
+            : String(error);
+      this.store.comparisons.reload();
+      this.store.ui.setCompareError(message);
+      this.store.ui.announce(message);
+    }
+  };
+
+  private _handleReloadLayout = async (): Promise<void> => {
+    const task = this.store.ui.$taskState?.get?.() ?? { kind: 'idle' };
+    if (task.kind !== 'arrange' || task.status === 'saving') return;
+    this.store.ui.exitTask(false);
+    await this.store.refreshData(true);
+    const device = this.devices.find((candidate) => candidate.deviceId === this.selectedDevice);
+    if (device?.capabilities?.atomicPlantLayout) {
+      this.store.ui.startArrange(device.plants, device.layoutRevision ?? 0);
+    }
+  };
+
+  private _focusTaskLauncher(): void {
+    const visit = (root: ShadowRoot | HTMLElement): HTMLButtonElement | null => {
+      const trigger = root.querySelector<HTMLButtonElement>('#menu-trigger');
+      if (trigger) return trigger;
+      for (const element of root.querySelectorAll<HTMLElement>('*')) {
+        if (element.shadowRoot) {
+          const nested = visit(element.shadowRoot);
+          if (nested) return nested;
+        }
+      }
+      return null;
+    };
+    if (this.shadowRoot) visit(this.shadowRoot)?.focus();
   }
 
   private _handleIPMSelected() {
@@ -373,6 +548,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
 
     const isWide = selectedDeviceData.plantsPerRow > 7;
+    const taskState = this._viewController.value.ui.taskState ?? { kind: 'idle' };
+    const renderedGrid =
+      taskState.kind === 'arrange'
+        ? gridFromLayout(
+            selectedDeviceData.plants,
+            effectiveRows,
+            selectedDeviceData.plantsPerRow,
+            taskState.draft
+          )
+        : grid;
 
     return html`
       <error-boundary
@@ -380,7 +565,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         .onError=${this._handleError}
       >
         <ha-card class=${isWide ? 'wide-growspace' : ''}>
-          <div class="sr-only-announcer" aria-live="polite"></div>
+          <div class="sr-only-announcer" aria-live="polite" aria-atomic="true">
+            ${this._viewController.value.ui.announcement?.message ?? ''}
+          </div>
           <div
             class="unified-growspace-card glass-surface glass-panel"
             role="region"
@@ -401,17 +588,22 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             @delete-selected=${this._handleDeleteSelected}
             @transplant-mode=${this._handleTransplantMode}
             @exit-edit-mode=${this._handleExitEditMode}
+            @task-done=${this._handleTaskDone}
+            @task-cancel=${this._handleTaskCancel}
+            @task-delete-comparison=${this._handleDeleteComparison}
+            @task-reload-layout=${this._handleReloadLayout}
           >
             <growspace-view-switcher
               .viewMode=${this._viewController.value.ui.viewMode}
               .hass=${this.hass}
               .device=${selectedDeviceData}
               .growspaceOptions=${growspaceOptions}
-              .grid=${grid}
+              .grid=${renderedGrid}
               .rows=${effectiveRows}
               .isEditMode=${this._viewController.value.ui.isEditMode}
               .isCompact=${this._viewController.value.ui.isCompact}
               .selectedCount=${this._viewController.value.ui.selectedPlants.size}
+              .taskState=${taskState}
               .config=${this._config}
               .isLoading=${this._viewController.value.ui.isLoading}
               .focusedPlantIndex=${this._viewController.value.ui.focusedPlantIndex}

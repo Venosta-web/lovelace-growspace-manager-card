@@ -26,12 +26,14 @@ const makeStore = (overrides: Partial<{
   strainLibrary: StrainEntry[];
   nutrientPresets: Record<string, any>;
   devices: any[];
+  taskState: any;
 }> = {}) => ({
   $isEditMode: atom(overrides.isEditMode ?? false),
   $selectedPlants: atom(overrides.selectedPlants ?? new Set<string>()),
   $strainLibrary: atom(overrides.strainLibrary ?? []),
   $nutrientPresets: atom(overrides.nutrientPresets ?? {}),
   $devices: atom(overrides.devices ?? []),
+  $taskState: atom(overrides.taskState ?? { kind: 'idle' }),
 });
 
 describe('createPlantCardViewModel', () => {
@@ -139,8 +141,14 @@ describe('createPlantCardViewModel', () => {
       expect(vm$.get().isDraggable).toBe(false);
     });
 
-    it('isDraggable is true when isEditMode is false', () => {
-      const store = makeStore({ isEditMode: false });
+    it('isDraggable is false while no task is active', () => {
+      const store = makeStore();
+      const vm$ = createPlantCardViewModel(atom(makePlant()), store as any);
+      expect(vm$.get().isDraggable).toBe(false);
+    });
+
+    it('isDraggable is true while editing an arrangement', () => {
+      const store = makeStore({ taskState: { kind: 'arrange', status: 'editing' } });
       const vm$ = createPlantCardViewModel(atom(makePlant()), store as any);
       expect(vm$.get().isDraggable).toBe(true);
     });

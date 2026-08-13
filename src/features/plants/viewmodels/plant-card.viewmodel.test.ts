@@ -44,6 +44,7 @@ describe('PlantCardViewModel', () => {
       ]),
       $nutrientPresets: atom({}),
       $devices: atom([]),
+      $taskState: atom({ kind: 'idle' as const }),
     };
   });
 

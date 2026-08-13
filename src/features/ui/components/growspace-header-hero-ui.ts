@@ -853,7 +853,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         type="button"
         aria-label="Toggle ${chip.label ?? 'phase'} graph${chip.linked ? ', linked' : ''}"
         aria-pressed=${chip.active}
-        draggable="${!this.isMobile || this.mobileLink}"
+        draggable="false"
         @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
         @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
         @dragover=${(e: DragEvent) => this._handleDragOver(e)}
@@ -1147,7 +1147,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         type="button"
         aria-label="Toggle ${chip.label || chip.key} graph${chip.linked ? ', linked' : ''}"
         aria-pressed=${chip.active}
-        draggable="${!this.isMobile || this.mobileLink}"
+        draggable="false"
         @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
         @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
         @dragover=${(e: DragEvent) => this._handleDragOver(e)}

@@ -20,10 +20,7 @@ export class GrowspaceHeaderSecondaryUI extends LitElement {
   @property({ type: String }) public growspaceId = '';
 
   private get _chipDraggable(): string {
-    if (this.isMobile) {
-      return this.mobileLink.toString();
-    }
-    return 'true';
+    return 'false';
   }
 
   private _handleChipDragStart(e: DragEvent, metric: string) {

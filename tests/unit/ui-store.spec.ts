@@ -293,6 +293,8 @@ describe('UI Store', () => {
                 focusedPlantIndex: -1,
                 selectedPlants: new Set(),
                 overlayMode: 'none',
+                taskState: { kind: 'idle' },
+                announcement: { message: '', sequence: 0 },
             });
         });
 

@@ -79,6 +79,10 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
     return this.viewModelController?.value?.isSelected ?? false;
   }
 
+  get isDraggable(): boolean {
+    return this.viewModelController?.value?.isDraggable ?? false;
+  }
+
   connectedCallback(): void {
     super.connectedCallback();
     if (this.plant) {
@@ -91,6 +95,7 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
         $strainLibrary: strainLibrary$,
         $nutrientPresets: computed([nutrientPresets$], (p) => p ?? {}),
         $devices: activeDevices$,
+        $taskState: this.store.ui.$taskState,
       });
       this.viewModelController = new StoreController(this, this.viewModel);
     }
@@ -140,6 +145,7 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
 
   private _handlePlantClick(e: CustomEvent): void {
     const { plant } = e.detail;
+    if ((this.store.ui.$taskState?.get?.() ?? { kind: 'idle' }).kind !== 'idle') return;
 
     // Open plant overview dialog
     this.store.ui.setActiveDialog({

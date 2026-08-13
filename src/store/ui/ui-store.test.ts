@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { GrowspaceUIStore } from './ui-store';
 import { showToast, notification$ } from '../../slices/ui';
 import { ViewMode } from '../../constants';
+import type { PlantEntity } from '../../types';
 
 describe('GrowspaceUIStore.$cardViewState includes selectedPlants', () => {
   let store: GrowspaceUIStore;
@@ -159,5 +160,73 @@ describe('GrowspaceUIStore.$notification is the same atom as slices/ui notificat
     store.showToast('Test toast', 'success');
     expect(notification$.get()).not.toBeNull();
     expect(notification$.get()?.message).toBe('Test toast');
+  });
+});
+
+describe('GrowspaceUIStore guided task state', () => {
+  const plants = [
+    {
+      entity_id: 'sensor.one',
+      attributes: { plant_id: 'one', row: 0, col: 0, strain: 'One' },
+    },
+    {
+      entity_id: 'sensor.two',
+      attributes: { plant_id: 'two', row: 0, col: 1, strain: 'Two' },
+    },
+  ] as PlantEntity[];
+
+  it('keeps tasks mutually exclusive', () => {
+    const store = new GrowspaceUIStore();
+    expect(store.startCompare(0)).toBe(true);
+    expect(store.startSelectPlants()).toBe(false);
+    expect(store.startArrange(plants, 4)).toBe(false);
+    expect(store.$taskState.get().kind).toBe('compare');
+  });
+
+  it('drafts an occupied-cell swap and Cancel restores the previous view without writes', () => {
+    const store = new GrowspaceUIStore();
+    store.setViewMode(ViewMode.HEADER);
+    store.startArrange(plants, 4);
+    store.pickArrangementPlant('one', 'One');
+    store.placeArrangementPlant(0, 1, { one: 'One', two: 'Two' });
+
+    const task = store.$taskState.get();
+    expect(task.kind).toBe('arrange');
+    if (task.kind === 'arrange') {
+      expect(task.draft).toEqual({ one: { row: 0, col: 1 }, two: { row: 0, col: 0 } });
+      expect(task.original).toEqual({ one: { row: 0, col: 0 }, two: { row: 0, col: 1 } });
+    }
+
+    store.exitTask(false);
+    expect(store.$taskState.get()).toEqual({ kind: 'idle' });
+    expect(store.$viewMode.get()).toBe(ViewMode.HEADER);
+    expect(store.$announcement.get().message).toContain('cancelled');
+  });
+
+  it('Select plants makes activation selection-scoped and clears selection on Done', () => {
+    const store = new GrowspaceUIStore();
+    store.startSelectPlants();
+    store.togglePlantSelection('one');
+    expect(store.$isEditMode.get()).toBe(true);
+    expect(store.$selectedPlants.get()).toEqual(new Set(['one']));
+
+    store.exitTask(true);
+    expect(store.$isEditMode.get()).toBe(false);
+    expect(store.$selectedPlants.get().size).toBe(0);
+  });
+
+  it('announces Compare membership and enforces the four-reading limit', () => {
+    const store = new GrowspaceUIStore();
+    store.startCompare(2);
+    for (const metric of ['a', 'b', 'c', 'd', 'e']) {
+      store.toggleComparisonMetric(metric, metric.toUpperCase(), true, null);
+    }
+    const task = store.$taskState.get();
+    expect(task.kind).toBe('compare');
+    if (task.kind === 'compare') {
+      expect(task.draftMetrics).toEqual(['a', 'b', 'c', 'd']);
+      expect(task.error).toContain('2 to 4');
+    }
+    expect(store.$announcement.get().message).toContain('2 to 4');
   });
 });

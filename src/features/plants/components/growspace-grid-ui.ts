@@ -65,6 +65,16 @@ export class GrowspaceGridUI extends LitElement {
     }
   }
 
+  public focusCell(row: number, col: number): void {
+    const wrapper = this.shadowRoot?.querySelector<HTMLElement>(
+      `[data-grid-row="${row}"][data-grid-col="${col}"]`
+    );
+    const target = wrapper?.matches('.plant-card-empty')
+      ? wrapper
+      : wrapper?.querySelector<HTMLElement>('plant-card-container');
+    target?.focus();
+  }
+
   static styles = [
     variables,
     sharedStyles,
@@ -521,7 +531,7 @@ export class GrowspaceGridUI extends LitElement {
     }
 
     return html`
-      <div class="grid-item-wrapper">
+      <div class="grid-item-wrapper" data-grid-row=${cell.row} data-grid-col=${cell.col}>
         <plant-card-container
           .plant=${cell.plant}
           .row=${cell.row}
@@ -542,10 +552,21 @@ export class GrowspaceGridUI extends LitElement {
     return html`
       <div
         class="plant-card-empty"
+        role="button"
+        tabindex="0"
+        aria-label="Empty plant cell, row ${row}, column ${col}"
+        data-grid-row="${row}"
+        data-grid-col="${col}"
         data-row="${row}"
         data-col="${col}"
         style="grid-row: ${row}; grid-column: ${col}; position: relative;"
         @click=${() => this._handleEmptySlotClick(row, col)}
+        @keydown=${(event: KeyboardEvent) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            this._handleEmptySlotClick(row, col);
+          }
+        }}
         @drop=${(e: DragEvent) => this._handleDrop(e, row, col, null)}
       >
         <div class="plant-header">

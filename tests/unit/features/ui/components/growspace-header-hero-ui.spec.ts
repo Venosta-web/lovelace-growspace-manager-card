@@ -462,14 +462,14 @@ describe('GrowspaceHeaderHeroUI', () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  it('sets draggable attribute correctly based on mobile settings', async () => {
+  it('keeps metric chips non-draggable across viewport settings', async () => {
     const chips = [makeChip()];
 
-    // Case 1: Not mobile -> draggable
+    // Case 1: Not mobile
     const el1 = await fixture<GrowspaceHeaderHeroUI>(html`
       <growspace-header-hero-ui .chips=${chips} .isMobile=${false}></growspace-header-hero-ui>
     `);
-    expect(el1.shadowRoot!.querySelector('.hero-card')?.getAttribute('draggable')).toBe('true');
+    expect(el1.shadowRoot!.querySelector('.hero-card')?.getAttribute('draggable')).toBe('false');
 
     // Case 2: Mobile, no link -> NOT draggable
     const el2 = await fixture<GrowspaceHeaderHeroUI>(html`
@@ -481,7 +481,7 @@ describe('GrowspaceHeaderHeroUI', () => {
     `);
     expect(el2.shadowRoot!.querySelector('.hero-card')?.getAttribute('draggable')).toBe('false');
 
-    // Case 3: Mobile, with link -> draggable
+    // Case 3: Mobile, with legacy link enabled
     const el3 = await fixture<GrowspaceHeaderHeroUI>(html`
       <growspace-header-hero-ui
         .chips=${chips}
@@ -489,7 +489,7 @@ describe('GrowspaceHeaderHeroUI', () => {
         .mobileLink=${true}
       ></growspace-header-hero-ui>
     `);
-    expect(el3.shadowRoot!.querySelector('.hero-card')?.getAttribute('draggable')).toBe('true');
+    expect(el3.shadowRoot!.querySelector('.hero-card')?.getAttribute('draggable')).toBe('false');
   });
 
   it('falls back to chip key when label is missing', async () => {

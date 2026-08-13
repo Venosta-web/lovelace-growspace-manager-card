@@ -362,6 +362,12 @@ export const WaterUsageSchema = z.object({
 export type SerializedWaterUsage = z.infer<typeof WaterUsageSchema>;
 
 export const GrowspaceAPIResponseSchema = z.object({
+  layout_revision: z.number().int().nonnegative().optional(),
+  capabilities: z
+    .object({
+      atomic_plant_layout: z.boolean().optional().default(false),
+    })
+    .optional(),
   identity: z
     .object({
       growspace_id: z.string(),
