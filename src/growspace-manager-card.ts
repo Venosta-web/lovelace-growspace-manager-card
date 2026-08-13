@@ -37,7 +37,10 @@ import { startTransplant, completeTransplant, gridInteraction$ } from './slices/
 import { handleKeyboardNavigation, deleteSelectedPlants } from './lib/keyboard-navigation';
 import { commitPlantLayout } from './features/tasks/arrangement-service';
 import { gridFromLayout, layoutsEqual } from './features/tasks/task-state';
-import { ComparisonConflictError } from './store/comparisons/metric-comparison-store';
+import {
+  ComparisonConflictError,
+  ComparisonConstraintError,
+} from './store/comparisons/metric-comparison-store';
 import { WSError } from './services/errors';
 import { localizeWithParams } from './localize/localize';
 
@@ -270,7 +273,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (e.key === 'Escape') {
       const task = this.store.ui.$taskState?.get?.() ?? { kind: 'idle' };
       if (task.kind !== 'idle') {
-        if (task.kind === 'arrange' && task.status === 'saving') return;
+        if ((task.kind === 'arrange' || task.kind === 'compare') && task.status === 'saving') {
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         this._handleTaskCancel();
@@ -330,6 +335,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleTaskCancel = (): void => {
+    const task = this.store.ui.$taskState?.get?.() ?? { kind: 'idle' };
+    if ((task.kind === 'arrange' || task.kind === 'compare') && task.status === 'saving') {
+      return;
+    }
     const kind = this.store.ui.exitTask(false);
     if (kind) void this.updateComplete.then(() => this._focusTaskLauncher());
   };
@@ -343,6 +352,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return;
     }
     if (task.kind === 'compare') {
+      if (task.status !== 'editing') return;
       if (task.draftMetrics.length === 0 && task.comparisonId === null) {
         this.store.ui.exitTask(true);
       } else if (
@@ -360,6 +370,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         this.store.ui.announce(message);
         return;
       } else {
+        this.store.ui.setCompareStatus('saving');
+        this.store.ui.announce(
+          localizeWithParams('tasks.comparison_saving', {}, this.store.ui.$language.get())
+        );
         try {
           await this.store.comparisons.save(
             task.comparisonId,
@@ -367,19 +381,29 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             task.expectedRecordRevision,
             task.originalMetrics
           );
+          this.store.ui.exitTask(true);
           this.store.ui.announce(
             localizeWithParams('tasks.comparison_saved', {}, this.store.ui.$language.get())
           );
-          this.store.ui.exitTask(true);
         } catch (error) {
           const message =
             error instanceof ComparisonConflictError
               ? localizeWithParams('tasks.comparison_conflict', {}, this.store.ui.$language.get())
-              : error instanceof Error
-                ? error.message
-                : String(error);
+              : error instanceof ComparisonConstraintError
+                ? localizeWithParams(
+                    error.constraint === 'claimed'
+                      ? 'tasks.comparison_claimed'
+                      : 'tasks.comparison_limit',
+                    {},
+                    this.store.ui.$language.get()
+                  )
+                : localizeWithParams(
+                    'tasks.comparison_save_failed',
+                    {},
+                    this.store.ui.$language.get()
+                  );
           this.store.comparisons.reload();
-          this.store.ui.setCompareError(message);
+          this.store.ui.setCompareStatus('editing', message);
           this.store.ui.announce(message);
           return;
         }
@@ -390,10 +414,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
     if (task.kind !== 'arrange' || task.status !== 'editing') return;
     if (layoutsEqual(task.original, task.draft)) {
+      this.store.ui.exitTask(true);
       this.store.ui.announce(
         localizeWithParams('tasks.layout_unchanged', {}, this.store.ui.$language.get())
       );
-      this.store.ui.exitTask(true);
       await this.updateComplete;
       this._focusTaskLauncher();
       return;
@@ -407,10 +431,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     try {
       await commitPlantLayout(growspaceId, task.expectedLayoutRevision, task.draft);
       await this.store.refreshData(true);
+      this.store.ui.exitTask(true);
       this.store.ui.announce(
         localizeWithParams('tasks.layout_saved', {}, this.store.ui.$language.get())
       );
-      this.store.ui.exitTask(true);
       await this.updateComplete;
       this._focusTaskLauncher();
     } catch (error) {
@@ -427,7 +451,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   private _handleDeleteComparison = async (event: CustomEvent<{ id: string }>): Promise<void> => {
     const task = this.store.ui.$taskState?.get?.() ?? { kind: 'idle' };
-    if (task.kind !== 'compare') return;
+    if (task.kind !== 'compare' || task.status !== 'editing') return;
+    this.store.ui.setCompareStatus('saving');
+    this.store.ui.announce(
+      localizeWithParams('tasks.comparison_deleting', {}, this.store.ui.$language.get())
+    );
     try {
       await this.store.comparisons.delete(event.detail.id, task.expectedRecordRevision);
       const revision = this.store.comparisons.$state.get().recordRevision;
@@ -436,6 +464,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       } else {
         this.store.ui.updateCompareRevision(revision);
       }
+      this.store.ui.setCompareStatus('editing');
       this.store.ui.announce(
         localizeWithParams('tasks.comparison_deleted', {}, this.store.ui.$language.get())
       );
@@ -443,11 +472,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       const message =
         error instanceof ComparisonConflictError
           ? localizeWithParams('tasks.comparison_conflict', {}, this.store.ui.$language.get())
-          : error instanceof Error
-            ? error.message
-            : String(error);
+          : localizeWithParams('tasks.comparison_delete_failed', {}, this.store.ui.$language.get());
       this.store.comparisons.reload();
-      this.store.ui.setCompareError(message);
+      this.store.ui.setCompareStatus('editing', message);
       this.store.ui.announce(message);
     }
   };

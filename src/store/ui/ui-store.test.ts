@@ -229,4 +229,37 @@ describe('GrowspaceUIStore guided task state', () => {
     }
     expect(store.$announcement.get().message).toContain('2 to 4');
   });
+
+  it('freezes Compare draft editing while a save is in flight', () => {
+    const store = new GrowspaceUIStore();
+    store.startCompare(2);
+    store.toggleComparisonMetric('temperature', 'Temperature', true, null);
+    store.setCompareStatus('saving');
+
+    store.toggleComparisonMetric('humidity', 'Humidity', true, null);
+    store.beginComparisonEdit('other', ['co2', 'vpd'], 3);
+
+    const task = store.$taskState.get();
+    expect(task.kind).toBe('compare');
+    if (task.kind === 'compare') {
+      expect(task.draftMetrics).toEqual(['temperature']);
+      expect(task.comparisonId).toBeNull();
+      expect(task.status).toBe('saving');
+    }
+  });
+
+  it('puts down a plant in its original cell without changing the arrangement', () => {
+    const store = new GrowspaceUIStore();
+    store.startArrange(plants, 4);
+    store.pickArrangementPlant('one', 'One');
+    store.placeArrangementPlant(0, 0, { one: 'One', two: 'Two' });
+
+    const task = store.$taskState.get();
+    expect(task.kind).toBe('arrange');
+    if (task.kind === 'arrange') {
+      expect(task.draft).toEqual(task.original);
+      expect(task.pickedPlantId).toBeNull();
+    }
+    expect(store.$announcement.get().message).toContain('arrangement is unchanged');
+  });
 });

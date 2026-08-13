@@ -16,6 +16,7 @@ import type { PlantEntity } from '../../../types';
 import { GridOverlayMode } from '../../../features/environment/constants';
 import { variables } from '../../../styles/variables';
 import { sharedStyles } from '../../../styles/shared.styles';
+import { localizeWithParams } from '../../../localize/localize';
 
 /**
  * Grid interaction events
@@ -51,6 +52,9 @@ export class GrowspaceGridUI extends LitElement {
   @property({ type: Boolean }) isCompactView = false;
   @property({ type: Boolean }) isLoading = false;
   @property() overlayMode: GridOverlayMode = GridOverlayMode.NONE;
+  @property({ type: Boolean }) arrangeActive = false;
+  @property({ type: Boolean }) arrangePlantPicked = false;
+  @property() language = 'en';
 
   @queryAll('plant-card-container') private _plantCards!: NodeListOf<HTMLElement>;
 
@@ -144,6 +148,18 @@ export class GrowspaceGridUI extends LitElement {
         color: var(--primary-color, #4caf50);
         background: color-mix(in srgb, var(--primary-color, #4caf50) 8%, transparent);
         transform: translateY(-2px);
+      }
+
+      .plant-card-empty[aria-disabled='true'] {
+        cursor: default;
+        opacity: 0.7;
+      }
+
+      .plant-card-empty[aria-disabled='true']:hover {
+        border-color: color-mix(in srgb, var(--primary-color, #4caf50) 30%, transparent);
+        color: color-mix(in srgb, var(--primary-color, #4caf50) 65%, transparent);
+        background: color-mix(in srgb, var(--primary-color, #4caf50) 4%, transparent);
+        transform: none;
       }
 
       .grid-item-wrapper {
@@ -549,12 +565,28 @@ export class GrowspaceGridUI extends LitElement {
   }
 
   private _renderEmptySlot(row: number, col: number): TemplateResult {
+    const arrangeDisabled = this.arrangeActive && !this.arrangePlantPicked;
+    const label = this.arrangeActive
+      ? localizeWithParams(
+          this.arrangePlantPicked ? 'tasks.place_plant' : 'tasks.empty_cell',
+          {},
+          this.language
+        )
+      : 'Add Plant';
+    const ariaLabel = this.arrangeActive
+      ? localizeWithParams(
+          this.arrangePlantPicked ? 'tasks.arrange_empty_target' : 'tasks.empty_cell_location',
+          { row, col },
+          this.language
+        )
+      : `Empty plant cell, row ${row}, column ${col}`;
     return html`
       <div
         class="plant-card-empty"
         role="button"
-        tabindex="0"
-        aria-label="Empty plant cell, row ${row}, column ${col}"
+        tabindex=${arrangeDisabled ? '-1' : '0'}
+        aria-disabled=${arrangeDisabled ? 'true' : 'false'}
+        aria-label=${ariaLabel}
         data-grid-row="${row}"
         data-grid-col="${col}"
         data-row="${row}"
@@ -577,7 +609,7 @@ export class GrowspaceGridUI extends LitElement {
             <path d="${mdiPlus}"></path>
           </svg>
         </div>
-        <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
+        <div style="font-weight: 500; opacity: 0.8;">${label}</div>
       </div>
     `;
   }

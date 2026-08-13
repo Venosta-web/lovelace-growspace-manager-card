@@ -25,8 +25,16 @@ export class ComparisonConflictError extends Error {
   }
 }
 
+export class ComparisonConstraintError extends Error {
+  constructor(public readonly constraint: 'claimed' | 'limit') {
+    super(constraint);
+    this.name = 'ComparisonConstraintError';
+  }
+}
+
 const SCHEMA_VERSION = 1 as const;
 const STORAGE_PREFIX = 'growspace-manager-card:metric-comparisons';
+const COMPARISON_CHANGE_EVENT = 'growspace-manager-card:metric-comparisons-changed';
 const sessionRecords = new Map<string, MetricComparisonRecord>();
 let sessionCounter = 0;
 
@@ -35,7 +43,7 @@ function emptyRecord(): MetricComparisonRecord {
 }
 
 function canonicalMetrics(metrics: string[]): string[] {
-  return [...new Set(metrics)].sort((left, right) => left.localeCompare(right));
+  return [...new Set(metrics)].sort();
 }
 
 function validRecord(value: unknown): value is MetricComparisonRecord {
@@ -43,20 +51,37 @@ function validRecord(value: unknown): value is MetricComparisonRecord {
   const record = value as Partial<MetricComparisonRecord>;
   if (
     record.schema_version !== SCHEMA_VERSION ||
+    typeof record.record_revision !== 'number' ||
     !Number.isInteger(record.record_revision) ||
+    record.record_revision < 0 ||
     !Array.isArray(record.comparisons)
   ) {
     return false;
   }
   const claimed = new Set<string>();
+  const ids = new Set<string>();
   return record.comparisons.every((comparison) => {
-    if (!comparison || typeof comparison.id !== 'string' || !Array.isArray(comparison.metrics)) {
+    if (
+      !comparison ||
+      typeof comparison.id !== 'string' ||
+      comparison.id.length === 0 ||
+      ids.has(comparison.id) ||
+      !Array.isArray(comparison.metrics) ||
+      comparison.metrics.some((metric) => typeof metric !== 'string' || metric.length === 0)
+    ) {
       return false;
     }
     const metrics = canonicalMetrics(comparison.metrics);
-    if (metrics.length < 2 || metrics.length > 4 || metrics.some((metric) => claimed.has(metric))) {
+    if (
+      metrics.length !== comparison.metrics.length ||
+      metrics.some((metric, index) => metric !== comparison.metrics[index]) ||
+      metrics.length < 2 ||
+      metrics.length > 4 ||
+      metrics.some((metric) => claimed.has(metric))
+    ) {
       return false;
     }
+    ids.add(comparison.id);
     metrics.forEach((metric) => claimed.add(metric));
     return true;
   });
@@ -85,13 +110,16 @@ export class MetricComparisonStore {
   private _sessionKey = this._instanceId;
   private _durable = false;
   private _metricLabels = new Map<string, string>();
+  private _sessionNoticeIssued = false;
 
   constructor() {
     window.addEventListener('storage', this._handleStorage);
+    window.addEventListener(COMPARISON_CHANGE_EVENT, this._handlePeerChange as EventListener);
   }
 
   public destroy(): void {
     window.removeEventListener('storage', this._handleStorage);
+    window.removeEventListener(COMPARISON_CHANGE_EVENT, this._handlePeerChange as EventListener);
   }
 
   public async configure(
@@ -113,8 +141,9 @@ export class MetricComparisonStore {
     this._durable = durable;
     this._storageKey = storageKey;
     this._sessionKey = sessionKey;
+    const hadRecord = this._hasRecord();
     let record = this._readRecord();
-    if (record.comparisons.length === 0) {
+    if (!hadRecord) {
       const imported = this._validLegacyGroups(legacyGroups);
       if (imported.length > 0) {
         record = {
@@ -131,6 +160,12 @@ export class MetricComparisonStore {
 
   public setMetricCatalog(metrics: Array<{ key: string; label: string }>): void {
     this._metricLabels = new Map(metrics.map((metric) => [metric.key, metric.label]));
+  }
+
+  public takeSessionOnlyNotice(): boolean {
+    if (this._durable || this._sessionNoticeIssued) return false;
+    this._sessionNoticeIssued = true;
+    return true;
   }
 
   public labelFor(metric: string): string {
@@ -153,7 +188,7 @@ export class MetricComparisonStore {
   ): Promise<void> {
     const canonical = canonicalMetrics(metrics);
     if (canonical.length < 2 || canonical.length > 4) {
-      throw new Error('Choose between 2 and 4 readings.');
+      throw new ComparisonConstraintError('limit');
     }
     await this._mutate(expectedRevision, (record) => {
       const existingIndex = comparisonId
@@ -171,7 +206,7 @@ export class MetricComparisonStore {
         (comparison, index) =>
           index !== existingIndex && comparison.metrics.some((metric) => canonical.includes(metric))
       );
-      if (claimed) throw new Error('A reading can belong to only one comparison.');
+      if (claimed) throw new ComparisonConstraintError('claimed');
 
       const next = [...record.comparisons];
       const comparison = { id: comparisonId ?? this._newId(), metrics: canonical };
@@ -195,6 +230,34 @@ export class MetricComparisonStore {
     if (growspaceId) this._publish(this._readRecord(), growspaceId);
   }
 
+  public async pruneUnavailableMetrics(eligibleMetrics: string[]): Promise<number> {
+    const eligible = new Set(eligibleMetrics);
+    return this._runLocked(() => {
+      const current = this._readRecord();
+      let removed = 0;
+      const comparisons = current.comparisons.flatMap((comparison) => {
+        const metrics = comparison.metrics.filter((metric) => eligible.has(metric));
+        if (metrics.length === comparison.metrics.length) return [comparison];
+        if (metrics.length < 2) {
+          removed += comparison.metrics.length;
+          return [];
+        }
+        removed += comparison.metrics.length - metrics.length;
+        return [{ ...comparison, metrics }];
+      });
+      if (removed === 0) return 0;
+      const next: MetricComparisonRecord = {
+        schema_version: SCHEMA_VERSION,
+        record_revision: current.record_revision + 1,
+        comparisons,
+      };
+      this._writeRecord(next);
+      const growspaceId = this.$state.get().growspaceId;
+      if (growspaceId) this._publish(next, growspaceId);
+      return removed;
+    });
+  }
+
   private async _mutate(
     expectedRevision: number,
     update: (record: MetricComparisonRecord) => MetricComparison[]
@@ -214,15 +277,18 @@ export class MetricComparisonStore {
       if (growspaceId) this._publish(next, growspaceId);
     };
 
+    await this._runLocked(commit);
+  }
+
+  private async _runLocked<T>(operation: () => T): Promise<T> {
     if (this._durable && this._storageKey) {
-      await navigator.locks.request(`${this._storageKey}:lock`, async () => commit());
-      return;
+      return navigator.locks.request(`${this._storageKey}:lock`, async () => operation());
     }
-    commit();
+    return operation();
   }
 
   private _canPersist(userId: string | undefined): boolean {
-    if (!userId || !crypto?.randomUUID || !navigator.locks?.request) return false;
+    if (!userId || !globalThis.crypto?.randomUUID || !navigator.locks?.request) return false;
     try {
       const probe = `${STORAGE_PREFIX}:probe`;
       localStorage.setItem(probe, '1');
@@ -247,12 +313,31 @@ export class MetricComparisonStore {
     }
   }
 
+  private _hasRecord(): boolean {
+    if (!this._durable || !this._storageKey) return sessionRecords.has(this._sessionKey);
+    try {
+      return localStorage.getItem(this._storageKey) !== null;
+    } catch {
+      return false;
+    }
+  }
+
   private _writeRecord(record: MetricComparisonRecord): void {
     if (this._durable && this._storageKey) {
       localStorage.setItem(this._storageKey, JSON.stringify(record));
     } else {
       sessionRecords.set(this._sessionKey, cloneRecord(record));
     }
+    window.dispatchEvent(
+      new CustomEvent(COMPARISON_CHANGE_EVENT, {
+        detail: {
+          sourceId: this._instanceId,
+          storageKey: this._storageKey,
+          sessionKey: this._sessionKey,
+          record: cloneRecord(record),
+        },
+      })
+    );
   }
 
   private _publish(record: MetricComparisonRecord, growspaceId: string): void {
@@ -265,7 +350,7 @@ export class MetricComparisonStore {
   }
 
   private _newId(): string {
-    return crypto?.randomUUID?.() ?? `session-${Date.now()}-${++sessionCounter}`;
+    return globalThis.crypto?.randomUUID?.() ?? `session-${Date.now()}-${++sessionCounter}`;
   }
 
   private _validLegacyGroups(groups: string[][]): string[][] {
@@ -292,6 +377,24 @@ export class MetricComparisonStore {
       if (growspaceId && validRecord(parsed)) this._publish(parsed, growspaceId);
     } catch {
       // Ignore malformed writes from other code using the same storage namespace.
+    }
+  };
+
+  private _handlePeerChange = (
+    event: CustomEvent<{
+      sourceId: string;
+      storageKey: string | null;
+      sessionKey: string;
+      record: MetricComparisonRecord;
+    }>
+  ): void => {
+    if (event.detail.sourceId === this._instanceId) return;
+    const sameRecord = this._durable
+      ? event.detail.storageKey === this._storageKey
+      : event.detail.storageKey === null && event.detail.sessionKey === this._sessionKey;
+    const growspaceId = this.$state.get().growspaceId;
+    if (sameRecord && growspaceId && validRecord(event.detail.record)) {
+      this._publish(event.detail.record, growspaceId);
     }
   };
 }

@@ -1,7 +1,7 @@
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
 import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from 'lit';
-import { customElement, property, query } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 
 import { storeContext } from '../../context';
 import { localizePlural, localizeWithParams } from '../../localize/localize';
@@ -19,6 +19,8 @@ export class GrowspaceTaskBar extends LitElement {
   @property({ type: Number }) selectedCount = 0;
 
   @query('h2') private _heading?: HTMLHeadingElement;
+  @query('[data-confirm-delete]') private _deleteConfirmationButton?: HTMLButtonElement;
+  @state() private _pendingDeleteId: string | null = null;
   private _comparisonsController?: StoreController<MetricComparisonState>;
 
   static styles = css`
@@ -157,6 +159,21 @@ export class GrowspaceTaskBar extends LitElement {
       font-size: 0.875rem;
     }
 
+    .delete-confirmation {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      padding-block: 8px;
+      border-block-start: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+    }
+
+    .delete-confirmation p {
+      flex: 1 1 28ch;
+      color: var(--primary-text-color, #fff);
+    }
+
     @media (max-width: 600px) {
       .task-bar {
         grid-template-columns: 1fr;
@@ -190,7 +207,10 @@ export class GrowspaceTaskBar extends LitElement {
     }
     if (changed.has('taskState')) {
       const previous = changed.get('taskState') as CardTaskState | undefined;
-      if (previous?.kind !== this.taskState.kind) this._heading?.focus();
+      if (previous?.kind !== this.taskState.kind) {
+        this._pendingDeleteId = null;
+        this._heading?.focus();
+      }
     }
   }
 
@@ -203,7 +223,9 @@ export class GrowspaceTaskBar extends LitElement {
       {},
       language
     );
-    const saving = this.taskState.kind === 'arrange' && this.taskState.status === 'saving';
+    const saving =
+      (this.taskState.kind === 'arrange' || this.taskState.kind === 'compare') &&
+      this.taskState.status === 'saving';
 
     return html`
       <section class="task-bar" aria-labelledby="active-task-heading">
@@ -270,6 +292,8 @@ export class GrowspaceTaskBar extends LitElement {
   private _compareDetails(language: string): TemplateResult {
     const state = this._comparisonsController?.value;
     const comparisons = state?.comparisons ?? [];
+    const saving = this.taskState.kind === 'compare' && this.taskState.status === 'saving';
+    const pendingDelete = comparisons.find((comparison) => comparison.id === this._pendingDeleteId);
     return html`
       <div class="details">
         ${this.taskState.kind === 'compare' && this.taskState.error
@@ -278,13 +302,45 @@ export class GrowspaceTaskBar extends LitElement {
         <div class="comparison-actions">
           <button
             aria-pressed=${this.taskState.kind === 'compare' && !this.taskState.comparisonId}
+            ?disabled=${saving}
             @click=${() => this.store.ui.beginComparisonEdit(null, [], state?.recordRevision ?? 0)}
           >
             ${localizeWithParams('tasks.new_comparison', {}, language)}
           </button>
         </div>
+        ${pendingDelete
+          ? html`<div
+              class="delete-confirmation"
+              role="group"
+              aria-labelledby="delete-comparison-prompt"
+            >
+              <p id="delete-comparison-prompt">
+                ${localizeWithParams(
+                  'tasks.delete_comparison_confirmation',
+                  { comparison: this.store.comparisons.labelForComparison(pendingDelete) },
+                  language
+                )}
+              </p>
+              <span class="comparison-actions">
+                <button
+                  data-confirm-delete
+                  class="danger"
+                  ?disabled=${saving}
+                  @click=${() => this._confirmDelete(pendingDelete.id)}
+                >
+                  ${localizeWithParams('tasks.confirm_delete', {}, language)}
+                </button>
+                <button ?disabled=${saving} @click=${this._cancelDelete}>
+                  ${localizeWithParams('tasks.keep_comparison', {}, language)}
+                </button>
+              </span>
+            </div>`
+          : nothing}
         ${comparisons.length > 0
-          ? html`<ul class="comparison-list" aria-label="Metric Comparisons">
+          ? html`<ul
+              class="comparison-list"
+              aria-label=${localizeWithParams('tasks.comparison_list_label', {}, language)}
+            >
               ${comparisons.map(
                 (comparison) => html`
                   <li class="comparison-row">
@@ -295,6 +351,7 @@ export class GrowspaceTaskBar extends LitElement {
                       <button
                         aria-pressed=${this.taskState.kind === 'compare' &&
                         this.taskState.comparisonId === comparison.id}
+                        ?disabled=${saving}
                         @click=${() =>
                           this.store.ui.beginComparisonEdit(
                             comparison.id,
@@ -306,8 +363,8 @@ export class GrowspaceTaskBar extends LitElement {
                       </button>
                       <button
                         class="danger"
-                        @click=${() =>
-                          this._dispatch('task-delete-comparison', { id: comparison.id })}
+                        ?disabled=${saving}
+                        @click=${() => this._requestDelete(comparison.id)}
                       >
                         ${localizeWithParams('tasks.delete', {}, language)}
                       </button>
@@ -349,6 +406,21 @@ export class GrowspaceTaskBar extends LitElement {
       </div>
     </div>`;
   }
+
+  private _requestDelete(id: string): void {
+    this._pendingDeleteId = id;
+    void this.updateComplete.then(() => this._deleteConfirmationButton?.focus());
+  }
+
+  private _confirmDelete(id: string): void {
+    this._pendingDeleteId = null;
+    this._dispatch('task-delete-comparison', { id });
+  }
+
+  private _cancelDelete = (): void => {
+    this._pendingDeleteId = null;
+    void this.updateComplete.then(() => this._heading?.focus());
+  };
 
   private _dispatch(type: string, detail?: unknown): void {
     this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));

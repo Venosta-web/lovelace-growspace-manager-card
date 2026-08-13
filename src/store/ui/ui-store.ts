@@ -225,6 +225,7 @@ export class GrowspaceUIStore {
       originalMetrics: [],
       draftMetrics: [],
       expectedRecordRevision: recordRevision,
+      status: 'editing',
       error: null,
     });
     this.announce(localizeWithParams('tasks.compare_entered', {}, this.$language.get()));
@@ -242,7 +243,7 @@ export class GrowspaceUIStore {
 
   public beginComparisonEdit(id: string | null, metrics: string[], recordRevision: number): void {
     const state = this.$taskState.get();
-    if (state.kind !== 'compare') return;
+    if (state.kind !== 'compare' || state.status !== 'editing') return;
     this.$taskState.set({
       ...state,
       comparisonId: id,
@@ -260,7 +261,7 @@ export class GrowspaceUIStore {
     claimedBy: string | null
   ): void {
     const state = this.$taskState.get();
-    if (state.kind !== 'compare') return;
+    if (state.kind !== 'compare' || state.status !== 'editing') return;
     if (!eligible) return;
     if (claimedBy && claimedBy !== state.comparisonId) {
       const message = localizeWithParams('tasks.comparison_claimed', {}, this.$language.get());
@@ -307,6 +308,21 @@ export class GrowspaceUIStore {
     const sourceId = state.pickedPlantId;
     const source = state.draft[sourceId];
     if (!source) return;
+    if (source.row === targetRow && source.col === targetCol) {
+      this.$taskState.set({ ...state, pickedPlantId: null, error: null });
+      this.announce(
+        localizeWithParams(
+          'tasks.plant_returned',
+          {
+            plant: names[sourceId] ?? sourceId,
+            row: targetRow + 1,
+            col: targetCol + 1,
+          },
+          this.$language.get()
+        )
+      );
+      return;
+    }
     const occupant = Object.entries(state.draft).find(
       ([id, placement]) =>
         id !== sourceId && placement.row === targetRow && placement.col === targetCol
@@ -341,6 +357,11 @@ export class GrowspaceUIStore {
   public setCompareError(error: string | null): void {
     const state = this.$taskState.get();
     if (state.kind === 'compare') this.$taskState.set({ ...state, error });
+  }
+
+  public setCompareStatus(status: 'editing' | 'saving', error: string | null = null): void {
+    const state = this.$taskState.get();
+    if (state.kind === 'compare') this.$taskState.set({ ...state, status, error });
   }
 
   public updateCompareRevision(recordRevision: number): void {

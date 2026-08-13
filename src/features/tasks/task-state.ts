@@ -26,6 +26,7 @@ export interface CompareTaskState {
   originalMetrics: string[];
   draftMetrics: string[];
   expectedRecordRevision: number;
+  status: 'editing' | 'saving';
   error: string | null;
 }
 
