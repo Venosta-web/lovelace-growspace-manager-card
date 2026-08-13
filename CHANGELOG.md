@@ -1,3 +1,10 @@
+# [1.1.0-next.111](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.110...v1.1.0-next.111) (2026-08-13)
+
+
+### Bug Fixes
+
+* **tasks:** harden guided arrange and compare flows ([#535](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/535)) ([184d0a3](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/184d0a3ff01079e1efa2ff70706fba861f454a65))
+
 # [1.1.0-next.110](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.109...v1.1.0-next.110) (2026-08-13)
 
 
