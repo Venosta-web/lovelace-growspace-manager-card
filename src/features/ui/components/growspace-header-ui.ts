@@ -8,6 +8,8 @@ import type { IrrigationStrategy, IrrigationConfig } from '../../../services/typ
 import type { FlowerFlipInfo } from '../../../utils/flower-flip';
 import { ResizeController } from '../../../controllers/resize-controller';
 import { headerStyles } from '../../../styles/header.styles';
+import { statusTokens } from '../../../styles/status.styles';
+import { STATUS_CUES, StatusLevel } from '../../environment/constants';
 
 import './growspace-header-actions-ui';
 import './growspace-header-hero-ui';
@@ -40,7 +42,7 @@ export class GrowspaceHeaderUI extends LitElement {
   @state() private _mobileLink = false;
   private _resizeController = new ResizeController(this, () => {});
 
-  static styles = headerStyles;
+  static styles = [statusTokens, headerStyles];
 
   private _handleDeviceChange(e: Event) {
     const target = e.target as HTMLSelectElement;
@@ -106,11 +108,12 @@ export class GrowspaceHeaderUI extends LitElement {
       <div class="mobile-stage-context">
         ${this.dominant
           ? html`
+              <!-- The stage color stays on the dot; the label reads at full contrast. -->
               <span
                 class="mobile-stage-dot"
                 style="background:${this.dominant.color};box-shadow:0 0 6px ${this.dominant.color}"
               ></span>
-              <span style="color:${this.dominant.color}">${this.dominant.daysLabel}</span>
+              <span>${this.dominant.daysLabel}</span>
             `
           : nothing}
         ${this.dominant && plantCount > 0 ? html`<span class="mobile-stage-sep">·</span>` : nothing}
@@ -146,6 +149,9 @@ export class GrowspaceHeaderUI extends LitElement {
         ${alertCount > 0
           ? html`
               <span class="header-meta-stat alert">
+                <svg viewBox="0 0 24 24">
+                  <path d="${STATUS_CUES[StatusLevel.WARNING].icon}"></path>
+                </svg>
                 <span class="num">${alertCount}</span>need${alertCount !== 1 ? '' : 's'} attention
               </span>
             `
@@ -270,7 +276,6 @@ export class GrowspaceHeaderUI extends LitElement {
               ></growspace-header-hero-ui>
             `
           : nothing}
-
         ${this._resizeController.isMobile && this.secondaryChips.length > 0
           ? html`
               <!-- SECONDARY STAT DECK (mobile only) -->

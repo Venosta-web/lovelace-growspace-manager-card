@@ -116,12 +116,26 @@ export const headerStyles = css`
     margin-right: 3px;
   }
 
+  /*
+   * The alert stat keeps readable text and lets the warning token ride on the icon
+   * and the count, rather than tinting the whole phrase amber on every theme.
+   */
   .header-meta-stat.alert {
-    color: #ffb74d;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--primary-text-color, #fff);
   }
 
   .header-meta-stat.alert .num {
-    color: #ffb74d;
+    color: var(--gm-status-warning);
+  }
+
+  .header-meta-stat.alert svg {
+    width: 14px;
+    height: 14px;
+    fill: var(--gm-status-warning);
+    flex-shrink: 0;
   }
 
   /* New component slots */

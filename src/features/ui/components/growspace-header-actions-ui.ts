@@ -296,6 +296,13 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       }
     }
 
+    /* Respect user motion preferences (WCAG 2.3.3) */
+    @media (prefers-reduced-motion: reduce) {
+      .menu-dropdown:popover-open {
+        animation: none;
+      }
+    }
+
     .chips-wrapper {
       display: flex;
       gap: 8px;
@@ -469,5 +476,4 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       </div>
     `;
   }
-
 }

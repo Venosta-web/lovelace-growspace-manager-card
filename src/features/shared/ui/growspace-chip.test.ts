@@ -1,36 +1,104 @@
 import { describe, it, expect } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+import { StatusLevel } from '../../environment/constants';
 import './growspace-chip';
 
-async function renderChip(status: string): Promise<HTMLElement> {
-  const el = await fixture(html`<growspace-chip
-    icon="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"
-    label="pH"
-    value="6.5"
-    status="${status}"
-  ></growspace-chip>`);
-  return el.shadowRoot!.querySelector('.stat-chip') as HTMLElement;
+const DOT_ICON = 'M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z';
+
+async function renderChip(status: string): Promise<ShadowRoot> {
+  const el = await fixture(
+    html`<growspace-chip
+      icon="${DOT_ICON}"
+      label="pH"
+      value="6.5"
+      status="${status}"
+    ></growspace-chip>`
+  );
+  return el.shadowRoot!;
 }
 
-describe('growspace-chip – status-warning color', () => {
-  it('uses orange-red mix color (not pure amber) for text', async () => {
-    const chip = await renderChip('warning');
-    // rgb(247, 125, 59) — 50/50 mix of amber #ffa726 and danger-red #ef5350
-    expect(getComputedStyle(chip).color).toBe('rgb(247, 125, 59)');
+/** The cue's icon path and word — the two signals that survive without color. */
+function cueOf(root: ShadowRoot): { icon: string | null; text: string } {
+  const cue = root.querySelector('.status-cue');
+  return {
+    icon: cue?.querySelector('path')?.getAttribute('d') ?? null,
+    text: cue?.textContent?.trim() ?? '',
+  };
+}
+
+/**
+ * The declarations a selector receives inside `@media (prefers-reduced-motion: reduce)`.
+ * Read as parsed style rather than CSS text — Chrome re-serializes `animation: none`
+ * into its longhand form, so a text match would be checking the wrong thing.
+ */
+function reducedMotionStyle(root: ShadowRoot, selector: string): CSSStyleDeclaration | undefined {
+  return Array.from(root.adoptedStyleSheets)
+    .flatMap((sheet) => Array.from(sheet.cssRules))
+    .filter(
+      (rule): rule is CSSMediaRule =>
+        rule instanceof CSSMediaRule && rule.conditionText.includes('prefers-reduced-motion')
+    )
+    .flatMap((media) => Array.from(media.cssRules))
+    .find(
+      (rule): rule is CSSStyleRule => rule instanceof CSSStyleRule && rule.selectorText === selector
+    )?.style;
+}
+
+describe('growspace-chip – status is perceivable without color', () => {
+  it.each([StatusLevel.OPTIMAL, StatusLevel.WARNING, StatusLevel.DANGER])(
+    'renders a persistent non-color cue for %s',
+    async (status) => {
+      const { icon } = cueOf(await renderChip(status));
+      expect(icon).toBeTruthy();
+    }
+  );
+
+  it('renders no cue when the chip carries no status', async () => {
+    expect(cueOf(await renderChip('')).icon).toBeNull();
   });
 
-  it('uses orange-red mix for border-color', async () => {
-    const chip = await renderChip('warning');
-    expect(getComputedStyle(chip).borderTopColor).toBe('rgba(247, 125, 59, 0.5)');
+  it('keeps warning and danger distinguishable by icon alone', async () => {
+    const warning = cueOf(await renderChip(StatusLevel.WARNING));
+    const danger = cueOf(await renderChip(StatusLevel.DANGER));
+    expect(warning.icon).not.toBe(danger.icon);
   });
 
-  it('uses orange-red mix for background', async () => {
-    const chip = await renderChip('warning');
-    expect(getComputedStyle(chip).backgroundColor).toBe('rgba(247, 125, 59, 0.1)');
+  it('keeps warning and danger distinguishable by word alone', async () => {
+    expect(cueOf(await renderChip(StatusLevel.WARNING)).text).toBe('Warning');
+    expect(cueOf(await renderChip(StatusLevel.DANGER)).text).toBe('Critical');
   });
 
-  it('optimal chip remains green', async () => {
-    const chip = await renderChip('optimal');
-    expect(getComputedStyle(chip).color).toBe('rgb(46, 125, 50)');
+  it('leaves optimal icon-only so a healthy chip stays quiet', async () => {
+    expect(cueOf(await renderChip(StatusLevel.OPTIMAL)).text).toBe('');
+  });
+
+  it('reads status text at the primary text color in every level', async () => {
+    // A status hue on the text itself would invert to unreadable under a light
+    // Home Assistant theme; the hue belongs on the outline, fill, and cue icon.
+    const root = await renderChip(StatusLevel.DANGER);
+    const chip = root.querySelector('.stat-chip') as HTMLElement;
+    const cue = root.querySelector('.status-cue') as HTMLElement;
+    expect(getComputedStyle(cue).color).toBe(getComputedStyle(chip).color);
+  });
+});
+
+describe('growspace-chip – reduced motion', () => {
+  it('stops the danger pulse when reduced motion is requested', async () => {
+    const root = await renderChip(StatusLevel.DANGER);
+    expect(reducedMotionStyle(root, '.stat-chip.status-danger')?.animationName).toBe('none');
+  });
+
+  it('stops the hover lift when reduced motion is requested', async () => {
+    const root = await renderChip(StatusLevel.WARNING);
+    expect(reducedMotionStyle(root, '.stat-chip:hover')?.transform).toBe('none');
+  });
+
+  it('still distinguishes danger from warning with the pulse stopped', async () => {
+    // The pulse is decoration: the outline weight carries the same split.
+    const warning = await renderChip(StatusLevel.WARNING);
+    const danger = await renderChip(StatusLevel.DANGER);
+    const width = (root: ShadowRoot) =>
+      getComputedStyle(root.querySelector('.stat-chip') as HTMLElement).borderTopWidth;
+    expect(width(warning)).not.toBe(width(danger));
   });
 });

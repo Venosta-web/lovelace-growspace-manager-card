@@ -6,7 +6,8 @@ import { GrowspaceDevice } from '../../../types';
 import { HeaderChip } from '../../../slices/header-metrics';
 import { metricHistoryKeys } from '../../../slices/metric-descriptors';
 import { sharedStyles } from '../../../styles/shared.styles';
-import { MetricKey } from '../../../features/environment/constants';
+import { statusTokens } from '../../../styles/status.styles';
+import { MetricKey, STATUS_CUES, toStatusLevel } from '../../../features/environment/constants';
 import { computePhases } from '../../../features/environment/crop-steering-model';
 import type { IrrigationStrategy, IrrigationConfig } from '../../../services/types';
 import type { RawHistoryDataPoint } from '../../../adapters/hass-types';
@@ -94,8 +95,27 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     );
   }
 
+  /**
+   * A hero card also colors its icon and sparkline by status, so the badge carries
+   * the matching icon and word for every level — including optimal, whose green
+   * sparkline would otherwise be a color-only signal.
+   */
+  private _renderStatusBadge(chip: HeaderChip) {
+    const level = toStatusLevel(chip.status);
+    if (!level) return nothing;
+
+    const cue = STATUS_CUES[level];
+    return html`
+      <span class="status-cue hero-status-badge status-${level}">
+        <svg viewBox="0 0 24 24"><path d="${cue.icon}"></path></svg>
+        <span>${cue.label}</span>
+      </span>
+    `;
+  }
+
   static styles = [
     sharedStyles,
+    statusTokens,
     css`
       :host {
         display: grid;
@@ -298,35 +318,32 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         background: var(--divider-color, rgba(255, 255, 255, 0.1));
       }
 
+      /*
+       * The badge classes used to be status-ok / status-error while every producer
+       * of HeaderChip.status emits optimal / warning / danger, so two of the three
+       * levels rendered as unstyled text. They now key off the real vocabulary and
+       * read their hue from the shared status tokens.
+       */
       .hero-status-badge {
-        display: inline-flex;
-        align-items: center;
         padding: 2px 8px;
         border-radius: 999px;
-        font-size: 0.65rem;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
+        border: 1px solid transparent;
         margin-left: auto;
-        flex-shrink: 0;
       }
 
-      .hero-status-badge.status-ok {
-        background: rgba(76, 175, 80, 0.15);
-        color: #69f0ae;
-        border: 1px solid rgba(76, 175, 80, 0.3);
+      .hero-status-badge.status-optimal {
+        background: var(--gm-status-optimal-fill);
+        border-color: var(--gm-status-optimal-outline);
       }
 
       .hero-status-badge.status-warning {
-        background: rgba(255, 167, 38, 0.15);
-        color: #ffb74d;
-        border: 1px solid rgba(255, 167, 38, 0.3);
+        background: var(--gm-status-warning-fill);
+        border-color: var(--gm-status-warning-outline);
       }
 
-      .hero-status-badge.status-error {
-        background: rgba(244, 67, 54, 0.15);
-        color: #ff8a80;
-        border: 1px solid rgba(244, 67, 54, 0.3);
+      .hero-status-badge.status-danger {
+        background: var(--gm-status-danger-fill);
+        border-color: var(--gm-status-danger-outline);
       }
 
       /* ── Phase hero card ─────────────────────────── */
@@ -443,10 +460,23 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         }
       }
 
+      /* Respect user motion preferences (WCAG 2.3.3) */
       @media (prefers-reduced-motion: reduce) {
         .phase-now-pulse {
           animation: none;
           opacity: 0;
+        }
+
+        .hero-card,
+        .hero-sparkline path,
+        .deck-dot {
+          transition: none;
+        }
+
+        .hero-card:hover,
+        .phase-hero-card:hover,
+        .hero-card:active {
+          transform: none;
         }
       }
 
@@ -1166,9 +1196,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
             style="color: ${sparklineColor}"
           ></ha-svg-icon>
           <span class="hero-label">${chip.label || chip.key}</span>
-          ${chip.status
-            ? html`<span class="hero-status-badge status-${chip.status}">${chip.status}</span>`
-            : ''}
+          ${this._renderStatusBadge(chip)}
         </div>
 
         <div class="hero-value-group">

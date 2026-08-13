@@ -1,7 +1,9 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiLink } from '@mdi/js';
 import { sharedStyles } from '../../../styles/shared.styles';
+import { statusTokens } from '../../../styles/status.styles';
+import { StatusLevel, STATUS_CUES, toStatusLevel } from '../../environment/constants';
 
 @customElement('growspace-chip')
 export class GrowspaceChip extends LitElement {
@@ -9,13 +11,14 @@ export class GrowspaceChip extends LitElement {
   @property({ type: String }) label = '';
   @property({ type: String }) value: string | number | undefined = undefined;
   @property({ type: Array }) multiValues: string[] | undefined = undefined;
-  @property({ type: String }) status: 'optimal' | 'warning' | 'danger' | '' = '';
+  @property({ type: String }) status: StatusLevel | '' = '';
   @property({ type: Boolean, reflect: true }) active = false;
   @property({ type: Boolean }) linked = false;
   @property({ type: String }) tooltip = '';
 
   static styles = [
     sharedStyles,
+    statusTokens,
     css`
       :host {
         display: inline-flex;
@@ -45,35 +48,44 @@ export class GrowspaceChip extends LitElement {
         touch-action: auto;
       }
 
-      /* Status Colors */
-      @keyframes pulse-red {
+      /*
+       * Status styling. Text stays at --primary-text-color in every level so it
+       * survives a light Home Assistant theme; the status hue is carried by the
+       * outline, the fill, and the .status-cue icon beside it.
+       */
+      @keyframes pulse-danger {
         0% {
-          box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+          box-shadow: 0 0 0 0 var(--gm-status-danger-outline);
         }
         70% {
-          box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+          box-shadow: 0 0 0 10px transparent;
         }
         100% {
-          box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+          box-shadow: 0 0 0 0 transparent;
         }
       }
 
       .stat-chip.status-optimal {
-        color: #2e7d32 !important;
-        background: rgba(46, 125, 50, 0.1) !important;
+        border-color: var(--gm-status-optimal-outline);
+        background: var(--gm-status-optimal-fill);
       }
 
       .stat-chip.status-warning {
-        color: rgb(247, 125, 59) !important;
-        border-color: rgba(247, 125, 59, 0.5) !important;
-        background: rgba(247, 125, 59, 0.1) !important;
+        border-color: var(--gm-status-warning-outline);
+        background: var(--gm-status-warning-fill);
       }
 
+      /*
+       * Danger differs from warning by cue icon and word, not by hue — so the two
+       * stay distinguishable with the pulse stopped and with color removed. The
+       * heavier outline is a third, redundant signal.
+       */
       .stat-chip.status-danger {
-        color: #ef5350 !important;
-        border-color: rgba(239, 83, 80, 0.5) !important;
-        background: rgba(239, 83, 80, 0.1) !important;
-        animation: pulse-red 2s infinite;
+        border-color: var(--gm-status-danger-outline);
+        border-width: 2px;
+        padding: 7px 15px;
+        background: var(--gm-status-danger-fill);
+        animation: pulse-danger 2s infinite;
       }
 
       .stat-chip:hover {
@@ -124,8 +136,41 @@ export class GrowspaceChip extends LitElement {
         height: 100%;
         fill: var(--primary-color, #03a9f4);
       }
+
+      /* Respect user motion preferences (WCAG 2.3.3) */
+      @media (prefers-reduced-motion: reduce) {
+        .stat-chip {
+          transition: none;
+        }
+
+        .stat-chip:hover {
+          transform: none;
+        }
+
+        .stat-chip.status-danger {
+          animation: none;
+        }
+      }
     `,
   ];
+
+  /**
+   * The non-color signal. Optimal shows the icon alone — a quiet chip stays quiet —
+   * while warning and danger add the word, so the two levels a reader must tell
+   * apart never rely on hue or on the pulse animation to differ.
+   */
+  private _renderStatusCue() {
+    const level = toStatusLevel(this.status);
+    if (!level) return nothing;
+
+    const cue = STATUS_CUES[level];
+    return html`
+      <span class="status-cue status-${level}">
+        <svg viewBox="0 0 24 24"><path d="${cue.icon}"></path></svg>
+        ${level === StatusLevel.OPTIMAL ? nothing : html`<span>${cue.label}</span>`}
+      </span>
+    `;
+  }
 
   render() {
     // Determine classes based on meaningful status string
@@ -148,6 +193,7 @@ export class GrowspaceChip extends LitElement {
               )}
             </div>`
           : this.value}
+        ${this._renderStatusCue()}
         ${this.linked
           ? html`
               <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
