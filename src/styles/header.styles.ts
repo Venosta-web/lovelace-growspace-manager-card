@@ -128,13 +128,13 @@ export const headerStyles = css`
   }
 
   .header-meta-stat.alert .num {
-    color: var(--gm-status-warning);
+    color: var(--gm-status-warning, var(--warning-color, #ffa726));
   }
 
   .header-meta-stat.alert svg {
     width: 14px;
     height: 14px;
-    fill: var(--gm-status-warning);
+    fill: var(--gm-status-warning, var(--warning-color, #ffa726));
     flex-shrink: 0;
   }
 

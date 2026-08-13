@@ -65,14 +65,19 @@ export class GrowspaceChip extends LitElement {
         }
       }
 
+      /*
+       * !important is load-bearing: .stat-chip:hover is declared later and
+       * :host([active]) .stat-chip outranks these on specificity, so without it a
+       * hovered or active chip silently drops its status tint.
+       */
       .stat-chip.status-optimal {
-        border-color: var(--gm-status-optimal-outline);
-        background: var(--gm-status-optimal-fill);
+        border-color: var(--gm-status-optimal-outline) !important;
+        background: var(--gm-status-optimal-fill) !important;
       }
 
       .stat-chip.status-warning {
-        border-color: var(--gm-status-warning-outline);
-        background: var(--gm-status-warning-fill);
+        border-color: var(--gm-status-warning-outline) !important;
+        background: var(--gm-status-warning-fill) !important;
       }
 
       /*
@@ -81,10 +86,10 @@ export class GrowspaceChip extends LitElement {
        * heavier outline is a third, redundant signal.
        */
       .stat-chip.status-danger {
-        border-color: var(--gm-status-danger-outline);
+        border-color: var(--gm-status-danger-outline) !important;
         border-width: 2px;
         padding: 7px 15px;
-        background: var(--gm-status-danger-fill);
+        background: var(--gm-status-danger-fill) !important;
         animation: pulse-danger 2s infinite;
       }
 

@@ -82,6 +82,45 @@ describe('growspace-chip – status is perceivable without color', () => {
   });
 });
 
+describe('growspace-chip – status tint survives other states', () => {
+  // .stat-chip:hover is declared after the status rules and :host([active])
+  // outranks them, so both states can silently erase the tint.
+  it.each([StatusLevel.OPTIMAL, StatusLevel.WARNING, StatusLevel.DANGER])(
+    'keeps the %s outline when the chip is hovered',
+    async (status) => {
+      const root = await renderChip(status);
+      const chip = root.querySelector('.stat-chip') as HTMLElement;
+      const resting = getComputedStyle(chip).borderTopColor;
+
+      const hover = Array.from(root.adoptedStyleSheets)
+        .flatMap((sheet) => Array.from(sheet.cssRules))
+        .find(
+          (rule): rule is CSSStyleRule =>
+            rule instanceof CSSStyleRule && rule.selectorText === '.stat-chip:hover'
+        );
+      // The hover rule must not out-rank the status border, which is !important.
+      expect(hover?.style.getPropertyPriority('border-color')).toBe('');
+      expect(resting).not.toBe('rgba(0, 0, 0, 0)');
+    }
+  );
+
+  it('keeps the danger tint when the chip is also active', async () => {
+    const el = await fixture(
+      html`<growspace-chip
+        icon="${DOT_ICON}"
+        label="Tank"
+        value="4%"
+        status="${StatusLevel.DANGER}"
+        active
+      ></growspace-chip>`
+    );
+    const chip = el.shadowRoot!.querySelector('.stat-chip') as HTMLElement;
+    const plain = await renderChip(StatusLevel.DANGER);
+    const plainChip = plain.querySelector('.stat-chip') as HTMLElement;
+    expect(getComputedStyle(chip).borderTopColor).toBe(getComputedStyle(plainChip).borderTopColor);
+  });
+});
+
 describe('growspace-chip – reduced motion', () => {
   it('stops the danger pulse when reduced motion is requested', async () => {
     const root = await renderChip(StatusLevel.DANGER);
