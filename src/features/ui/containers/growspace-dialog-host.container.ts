@@ -29,6 +29,7 @@ import { updateVisionCheckupConfig } from '../../../slices/camera';
 import { getStrainRecommendation } from '../../../slices/ai-insight';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { needsExhaustCall } from '../../config/environment-save';
+import { environmentPatchToServiceData } from '../../config/environment-service-mapping';
 import {
   updateBreeder,
   deleteBreeder,
@@ -68,6 +69,7 @@ import {
   PlantOverviewDialogState,
 } from '../../../types';
 import type {
+  EnvironmentConfigEventDetail,
   VisionCheckupConfigEventDetail,
   StrainLibraryDialogState,
 } from '../../../lib/types/dialog';
@@ -1081,70 +1083,36 @@ export class GrowspaceDialogHost extends LitElement {
     }
   }
 
-  private async _handleEnvironmentConfig(detail: any) {
-    const temperatureSensors: string[] = detail.temperatureSensors || [];
-    const humiditySensors: string[] = detail.humiditySensors || [];
+  /**
+   * Guard the mandatory sensors — but only for a patch that actually carries
+   * them. Under sparse saves (ADR-0032) an untouched Sensors tab omits both
+   * keys, and the stored sensors still stand; rejecting that save would make
+   * every other tab unsavable.
+   */
+  private _isEnvironmentPatchValid(detail: EnvironmentConfigEventDetail): boolean {
+    const clearsTemperature =
+      'temperatureSensors' in detail && !(detail.temperatureSensors ?? []).length;
+    const clearsHumidity = 'humiditySensors' in detail && !(detail.humiditySensors ?? []).length;
 
-    if (!detail.selectedGrowspaceId || !temperatureSensors.length || !humiditySensors.length) {
-      uiSlice.showToast(
-        'Growspace, Temperature, and Humidity sensors are mandatory',
-        'error'
-      );
-      return;
+    if (!detail.selectedGrowspaceId || clearsTemperature || clearsHumidity) {
+      uiSlice.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
+      return false;
     }
+    return true;
+  }
+
+  private async _handleEnvironmentConfig(detail: EnvironmentConfigEventDetail) {
+    if (!this._isEnvironmentPatchValid(detail)) return;
 
     try {
-      await configureEnvironment({
-        growspaceId: detail.selectedGrowspaceId,
-        temperatureSensors,
-        humiditySensors,
-        vpdSensors: detail.vpdSensors,
-        // Cleared nullable scalars travel as explicit null — under patch
-        // semantics (GSM ADR-0026) an omitted key would keep the old sensor.
-        co2Sensor: detail.co2Sensor || null,
-        circulationFanEntities: detail.circulationFanEntities,
-        stressThreshold: detail.stressThreshold,
-        moldThreshold: detail.moldThreshold,
-        lightSensors: detail.lightSensors,
-        exhaustFanEntities: detail.exhaustFanEntities,
-        exhaustFanAcInfinityDevices: detail.exhaustFanAcInfinityDevices,
-        circulationFanAcInfinityDevices: detail.circulationFanAcInfinityDevices,
-        growlightEntities: detail.growlightEntities,
-        growlightAcInfinityDevices: detail.growlightAcInfinityDevices,
-        growlightConfig: detail.growlightConfig,
-        humidifierEntities: detail.humidifierEntities,
-        humidifierThresholds: detail.humidifierThresholds,
-        controlHumidifier: detail.humidifierControlEnabled,
-        humidifierAcInfinityDevices: detail.humidifierAcInfinityDevices,
-        dehumidifierEntities: detail.dehumidifierEntities,
-        dehumidifierThresholds: detail.dehumidifierThresholds,
-        soilMoistureSensor: detail.soilMoistureSensor || null,
-        controlDehumidifier: detail.dehumidifierControlEnabled,
-        dehumidifierAcInfinityDevices: detail.dehumidifierAcInfinityDevices,
-        sensorGroups: detail.sensorGroups,
-        sensorCoordinates: detail.sensorCoordinates,
-        irrigationTanks: detail.irrigationTanks,
-        cameraEntities: detail.cameraEntities,
-        lungroomTempSensors: detail.lungroomTempSensors,
-        substrateTemperatureSensors: detail.substrateTemperatureSensors,
-        phSensors: detail.phSensors,
-        feedEcSensors: detail.feedEcSensors,
-        bulkEcSensors: detail.bulkEcSensors,
-        poreEcSensors: detail.poreEcSensors,
-        runoffEcSensors: detail.runoffEcSensors,
-        drainVolumeSensors: detail.drainVolumeSensors,
-        irrigationFlowSensors: detail.irrigationFlowSensors,
-        powerSensors: detail.powerSensors,
-        energySensors: detail.energySensors,
-        circulationFanConfig: detail.circulationFanConfig,
-        vpdOptimalOverrides: detail.vpdOptimalOverrides,
-        lstOffset: detail.lstOffset,
-      });
+      await configureEnvironment(environmentPatchToServiceData(detail));
       // Exhaust config can't ride the configure_environment payload (the backend
       // service doesn't accept it), so persist it via its dedicated service.
       // Under patch semantics (GSM ADR-0026) configure_environment preserves
       // exhaust_fan_config, so the ordering is no longer load-bearing.
-      if (needsExhaustCall(detail)) {
+      // Only when the user actually edited it (ADR-0032): an unrelated
+      // environment edit must not re-write the stored exhaust config.
+      if (needsExhaustCall(detail) && detail.exhaustFanConfig) {
         await configureExhaustFan({
           growspaceId: detail.selectedGrowspaceId,
           fanConfig: detail.exhaustFanConfig,

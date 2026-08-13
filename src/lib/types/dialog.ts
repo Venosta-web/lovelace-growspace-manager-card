@@ -89,11 +89,24 @@ export interface VisionCheckupConfigEventDetail {
   visionCheckupConfig: VisionCheckupConfig;
 }
 
+/**
+ * Sparse environment patch (ADR-0032).
+ *
+ * Only `selectedGrowspaceId` is guaranteed — it routes the command. Every other
+ * key is present exactly when the user edited it, and a present key carries a
+ * deliberate value, including an empty one. Consumers must branch on key
+ * *presence* (`'key' in detail`), never on truthiness or array length, or
+ * untouched fields get rewritten and deliberate clears get dropped.
+ *
+ * The humidity control flags are deliberately absent: they are immediate-persist
+ * (`set_humidifier_control` / `set_dehumidifier_control`) and must never be
+ * re-sent by the buffered Save.
+ */
 export interface EnvironmentConfigEventDetail {
   selectedGrowspaceId: string;
   // Multi sensors
-  temperatureSensors: string[];
-  humiditySensors: string[];
+  temperatureSensors?: string[];
+  humiditySensors?: string[];
   vpdSensors?: string[];
   co2Sensor?: string | null;
   soilMoistureSensor?: string | null;
@@ -107,21 +120,19 @@ export interface EnvironmentConfigEventDetail {
   exhaustFanEntities?: string[];
   exhaustFanAcInfinityDevices?: AcInfinityDevice[];
   circulationFanAcInfinityDevices?: AcInfinityDevice[];
-  stressThreshold: number | null;
-  moldThreshold: number | null;
+  stressThreshold?: number | null;
+  moldThreshold?: number | null;
   lightSensor?: string | null;
   lightSensors?: string[];
   // Humidifier
   humidifierEntity?: string | null;
   humidifierEntities?: string[];
   humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  humidifierControlEnabled: boolean;
   humidifierAcInfinityDevices?: AcInfinityDevice[];
   // Dehumidifier
   dehumidifierEntity?: string | null;
   dehumidifierEntities?: string[];
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  dehumidifierControlEnabled: boolean;
   dehumidifierAcInfinityDevices?: AcInfinityDevice[];
   growlightEntities?: string[];
   growlightAcInfinityDevices?: AcInfinityGrowLight[];

@@ -6,12 +6,15 @@
  */
 
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
+import type { EnvironmentDraftKey } from '../environment-persistence';
+import { isEnvironmentSaveBlockedByBand } from '../environment-save';
 
 export type EnvironmentSaveBlockReason =
   | 'growspace'
   | 'temperature'
   | 'humidity'
-  | 'temperature-and-humidity';
+  | 'temperature-and-humidity'
+  | 'moisture-band';
 
 export interface ConfigDialogCapabilities {
   canSaveEnvironment: boolean;
@@ -21,11 +24,13 @@ export interface ConfigDialogCapabilities {
 type EnvironmentSaveInputs = Pick<
   EnvironmentDraft,
   'selectedGrowspaceId' | 'temperatureSensors' | 'humiditySensors'
->;
+> &
+  Partial<Pick<EnvironmentDraft, 'soilMoistureMin' | 'soilMoistureMax'>>;
 
 /** Derive the Config Dialog's cross-tab environment-save capabilities once. */
 export function deriveConfigDialogCapabilities(
-  draft: EnvironmentSaveInputs
+  draft: EnvironmentSaveInputs,
+  dirty: ReadonlySet<EnvironmentDraftKey> = new Set()
 ): ConfigDialogCapabilities {
   if (!draft.selectedGrowspaceId) {
     return { canSaveEnvironment: false, environmentSaveBlockReason: 'growspace' };
@@ -44,6 +49,17 @@ export function deriveConfigDialogCapabilities(
   }
   if (missingHumidity) {
     return { canSaveEnvironment: false, environmentSaveBlockReason: 'humidity' };
+  }
+  // A dirty but half-complete or inverted Acceptable Moisture Band blocks the
+  // whole save (ADR-0032) — the backend rejects a lone bound and fails every
+  // other field along with it, so the dialog must not let the save start.
+  if (
+    isEnvironmentSaveBlockedByBand(
+      { soilMoistureMin: draft.soilMoistureMin ?? null, soilMoistureMax: draft.soilMoistureMax ?? null },
+      dirty
+    )
+  ) {
+    return { canSaveEnvironment: false, environmentSaveBlockReason: 'moisture-band' };
   }
   return { canSaveEnvironment: true, environmentSaveBlockReason: null };
 }
