@@ -88,6 +88,7 @@ export class GrowspaceChip extends LitElement {
       .stat-chip.status-danger {
         border-color: var(--gm-status-danger-outline) !important;
         border-width: 2px;
+        /* Absorbs the extra border so the chip keeps its 8px/16px box. */
         padding: 7px 15px;
         background: var(--gm-status-danger-fill) !important;
         animation: pulse-danger 2s infinite;
