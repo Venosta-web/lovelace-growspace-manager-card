@@ -1,3 +1,10 @@
+# [1.1.0-next.108](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.107...v1.1.0-next.108) (2026-08-13)
+
+
+### Bug Fixes
+
+* make Vitest coverage opt-in ([#531](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/531)) ([5132125](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/513212535a687cc42acff044d7a7296ce6d29004))
+
 # [1.1.0-next.107](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.106...v1.1.0-next.107) (2026-08-13)
 
 
