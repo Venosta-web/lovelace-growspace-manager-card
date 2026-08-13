@@ -1,3 +1,10 @@
+# [1.1.0-next.107](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.106...v1.1.0-next.107) (2026-08-13)
+
+
+### Features
+
+* **header:** make controls keyboard accessible ([#530](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/530)) ([4d229e0](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/4d229e069441c6316685de31dc4ef5728d3266eb))
+
 # [1.1.0-next.106](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.105...v1.1.0-next.106) (2026-08-13)
 
 
