@@ -1163,6 +1163,23 @@ describe('ConfigDialog', () => {
         expect(detail.visionCheckupConfig.late_check_offset_minutes).toBe(45);
       });
 
+      it('does not dispatch event when the vision group is untouched', async () => {
+        const submitSpy = vi.fn();
+        element.addEventListener('vision-checkup-config-submit', submitSpy);
+
+        (element as any).currentTab = 'vision';
+        (element as any).envSelectedId = 'tent1';
+        // A buffered edit (cameraEntities), not a vision-group one: it must not
+        // drag the dedicated vision save along (ADR-0032).
+        (element as any).envVisionCameraEntities = ['camera.tent1'];
+        await element.updateComplete;
+
+        const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary') as HTMLElement;
+        saveBtn?.click();
+
+        expect(submitSpy).not.toHaveBeenCalled();
+      });
+
       it('does not dispatch event when no growspace selected', async () => {
         const submitSpy = vi.fn();
         element.addEventListener('vision-checkup-config-submit', submitSpy);
