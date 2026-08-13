@@ -1,6 +1,15 @@
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 
+import { BROWSER_TEST_INCLUDE, browserTestBatch } from './scripts/browser-test-batches.mjs';
+
+const selectedBatchId = process.env.VITEST_BROWSER_BATCH;
+const selectedBatch = selectedBatchId ? browserTestBatch(selectedBatchId) : undefined;
+
+if (selectedBatchId && !selectedBatch) {
+    throw new Error(`Unknown browser test batch: ${selectedBatchId}`);
+}
+
 export default defineConfig({
     test: {
         // Per-test retry absorbs transient in-context flakes (spy timing etc.).
@@ -31,18 +40,15 @@ export default defineConfig({
             },
         },
         setupFiles: ['./tests/setup.ts'],
-        include: [
-            'tests/unit/**/*.{test,spec}.ts',
-            'tests/cards/**/*.{test,spec}.ts',
-            'tests/components/**/*.{test,spec}.ts',
-            'tests/fixtures/**/*.{test,spec}.ts',
-            'src/**/*.{test,spec}.ts'
-        ],
+        include: selectedBatch?.include ?? BROWSER_TEST_INCLUDE,
+        exclude: selectedBatch?.exclude ?? [],
         coverage: {
             provider: 'v8',
             enabled: false,
             clean: true,
-            reporter: ['text', 'json', 'html'],
+            // Batch coverage maps are carried in Vitest's blob reports. Only
+            // the final merge writes reports, so every batch contributes.
+            reporter: selectedBatch ? [] : ['text', 'json', 'html'],
             include: ['src/**/*.ts'],
             exclude: ['src/**/*.spec.ts', 'src/types.ts']
         },
