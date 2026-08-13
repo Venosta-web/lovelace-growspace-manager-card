@@ -428,6 +428,10 @@ export class GrowspaceAdapter {
       type: (identity?.type ?? 'normal') as GrowspaceDevice['type'],
       rows: gridData?.rows ?? 3,
       plantsPerRow: gridData?.plants_per_row ?? 3,
+      layoutRevision: wsData?.layout_revision,
+      capabilities: wsData?.capabilities
+        ? { atomicPlantLayout: wsData.capabilities.atomic_plant_layout ?? false }
+        : undefined,
       notificationTarget: identity?.notification_target,
       notificationSettings,
       timedNotifications,

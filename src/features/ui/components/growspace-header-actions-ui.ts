@@ -6,14 +6,16 @@ import { GrowspaceDevice } from '../../../types';
 import '../../shared/ui/scroll-container';
 import '../../shared/ui/growspace-chip';
 import '../../shared/ui/gs-help-tooltip';
+import { localizeWithParams } from '../../../localize/localize';
 
 // Icons
 import {
   mdiCog,
   mdiBrain,
   mdiDotsVertical,
-  mdiPencil,
-  mdiLink,
+  mdiDragVariant,
+  mdiChartMultiple,
+  mdiCheckboxMultipleMarkedOutline,
   mdiClipboardTextClock,
   mdiWater,
   mdiWaterPlus,
@@ -36,15 +38,16 @@ export class GrowspaceHeaderActionsUI extends LitElement {
   @property({ attribute: false }) public selectedPlants = new Set<string>();
   @property() public selectedDevice: string | null = null;
   @property({ attribute: false }) public device?: GrowspaceDevice;
+  @property() public activeTask: 'idle' | 'arrange' | 'compare' | 'select_plants' = 'idle';
+  @property({ type: Boolean }) public canArrange = false;
+  @property({ type: Boolean }) public canCompare = false;
+  @property() public language = 'en';
 
   @state() private _draggedMetric: string | null = null;
   @state() private _menuOpen = false;
 
   private get _chipDraggable(): string {
-    if (this.isMobile) {
-      return this.mobileLink.toString();
-    }
-    return 'true';
+    return 'false';
   }
 
   private _triggerAction(action: string) {
@@ -84,7 +87,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
 
   private _menuItems(): HTMLButtonElement[] {
     return Array.from(
-      this.shadowRoot?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? []
+      this.shadowRoot?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? []
     );
   }
 
@@ -119,13 +122,22 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     items[nextIndex]?.focus();
   }
 
-  private _menuItem(icon: string, label: string, action: string) {
+  private _menuItem(
+    icon: string,
+    label: string,
+    action: string,
+    options: { disabled?: boolean; active?: boolean; title?: string } = {}
+  ) {
     return html`
       <button
-        class="menu-item"
+        class="menu-item ${options.active ? 'active' : ''}"
+        data-action=${action}
         role="menuitem"
         tabindex="-1"
         type="button"
+        ?disabled=${options.disabled}
+        aria-current=${options.active ? 'true' : nothing}
+        title=${options.title ?? nothing}
         @click=${() => this._triggerAction(action)}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icon}"></path></svg>
@@ -308,6 +320,14 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
       color: var(--primary-text-color, #fff);
     }
+    .menu-item.active {
+      font-weight: 700;
+      background: color-mix(in srgb, var(--primary-color, #4caf50) 16%, transparent);
+    }
+    .menu-item:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
     .menu-item:focus-visible {
       outline: 2px solid var(--primary-color, #2196f3);
       outline-offset: -3px;
@@ -421,30 +441,6 @@ export class GrowspaceHeaderActionsUI extends LitElement {
             </div>
           `
         : nothing}
-      ${this.isMobile
-        ? html`
-            <button
-              class="icon-button mobile-link ${this.mobileLink ? 'active' : ''}"
-              @click=${() =>
-                this.dispatchEvent(
-                  new CustomEvent('toggle-mobile-link', { bubbles: true, composed: true })
-                )}
-              title="Toggle Link Mode"
-              aria-label="Toggle Link Mode"
-              aria-pressed="${this.mobileLink}"
-              type="button"
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
-            </button>
-          `
-        : ''}
-      ${this._iconButton(
-        mdiPencil,
-        'edit',
-        'Edit Mode',
-        'Edit mode lets you reorder plants, remove them from the growspace, or drag metric chips to rearrange the header.',
-        this.isEditMode
-      )}
       ${!this.isMobile
         ? html`
             ${this._iconButton(
@@ -496,6 +492,43 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         @keydown=${this._handleMenuKeydown}
       >
         <div class="drag-handle" aria-hidden="true"></div>
+        <div class="menu-header" aria-hidden="true">
+          ${localizeWithParams('tasks.menu', {}, this.language)}
+        </div>
+        ${this._menuItem(
+          mdiDragVariant,
+          localizeWithParams('tasks.arrange', {}, this.language),
+          'arrange',
+          {
+            disabled: this.activeTask !== 'idle' || !this.canArrange,
+            active: this.activeTask === 'arrange',
+            title: this.canArrange
+              ? localizeWithParams('tasks.arrange_help', {}, this.language)
+              : localizeWithParams('tasks.arrange_unavailable', {}, this.language),
+          }
+        )}
+        ${this._menuItem(
+          mdiChartMultiple,
+          localizeWithParams('tasks.compare', {}, this.language),
+          'compare',
+          {
+            disabled: this.activeTask !== 'idle' || !this.canCompare,
+            active: this.activeTask === 'compare',
+            title: this.canCompare
+              ? localizeWithParams('tasks.compare_help', {}, this.language)
+              : localizeWithParams('tasks.compare_unavailable', {}, this.language),
+          }
+        )}
+        ${this._menuItem(
+          mdiCheckboxMultipleMarkedOutline,
+          localizeWithParams('tasks.select_plants', {}, this.language),
+          'select_plants',
+          {
+            disabled: this.activeTask !== 'idle' || (this.device?.plants?.length ?? 0) === 0,
+            active: this.activeTask === 'select_plants',
+          }
+        )}
+        <div class="menu-divider" role="separator"></div>
         ${this.isMobile
           ? html`
               <div class="menu-header" aria-hidden="true">Growspace</div>

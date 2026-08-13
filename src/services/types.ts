@@ -361,6 +361,8 @@ export interface GrowspaceDevice {
 
   rows: number;
   plantsPerRow: number;
+  layoutRevision?: number;
+  capabilities?: { atomicPlantLayout: boolean };
   lastUpdated?: string;
   notificationTarget?: string | null;
 

@@ -5,6 +5,7 @@ import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../../
 import { ViewMode } from '../../../constants';
 import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
+import type { CardTaskState } from '../../tasks/task-state';
 
 // Register the unified view component
 import './growspace-view';
@@ -35,6 +36,7 @@ export class GrowspaceViewSwitcher extends LitElement {
   @property({ type: Boolean }) isEditMode = false;
   @property({ type: Boolean }) isCompact = false;
   @property({ type: Number }) selectedCount = 0;
+  @property({ attribute: false }) taskState: CardTaskState = { kind: 'idle' };
   @property({ attribute: false }) config: GrowspaceManagerCardConfig | undefined;
 
   @property({ type: Number }) focusedPlantIndex = -1;
@@ -76,6 +78,7 @@ export class GrowspaceViewSwitcher extends LitElement {
           .isEditMode=${this.isEditMode}
           .isCompact=${this.isCompact}
           .selectedCount=${this.selectedCount}
+          .taskState=${this.taskState}
           .config=${this.config}
           @batch-add-plants=${(e: CustomEvent) =>
             this.dispatchEvent(

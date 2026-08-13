@@ -167,17 +167,17 @@ describe('GrowspaceHeaderSecondaryUI', () => {
     expect((el as any)._chipDraggable).toBe('false');
   });
 
-  it('chip is draggable when isMobile=true and mobileLink=true', async () => {
+  it('chip is not draggable when legacy mobileLink is enabled', async () => {
     const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
       <growspace-header-secondary-ui .chips=${[]} .isMobile=${true} .mobileLink=${true}></growspace-header-secondary-ui>
     `);
-    expect((el as any)._chipDraggable).toBe('true');
+    expect((el as any)._chipDraggable).toBe('false');
   });
 
-  it('chip is always draggable in desktop mode', async () => {
+  it('chip is not draggable in desktop mode', async () => {
     const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
       <growspace-header-secondary-ui .chips=${[]} .isMobile=${false}></growspace-header-secondary-ui>
     `);
-    expect((el as any)._chipDraggable).toBe('true');
+    expect((el as any)._chipDraggable).toBe('false');
   });
 });

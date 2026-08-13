@@ -3,6 +3,7 @@ export type ErrorCode =
   | 'coordinator_not_ready'
   | 'entity_not_found'
   | 'validation_failed'
+  | 'conflict'
   | 'internal_error'
   | 'rate_limited';
 

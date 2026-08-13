@@ -1,5 +1,5 @@
 import { LitElement, html, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 
 import { GrowspaceDevice, GrowspaceManagerCardConfig, NutrientInventory } from '../../../types';
@@ -38,8 +38,10 @@ export class GrowspaceHeaderUI extends LitElement {
   @property({ attribute: false }) selectedPlants = new Set<string>();
   @property({ attribute: false }) hass!: HomeAssistant;
   @property({ attribute: false }) flowerFlipInfo: FlowerFlipInfo | null = null;
+  @property() activeTask: 'idle' | 'arrange' | 'compare' | 'select_plants' = 'idle';
+  @property({ type: Boolean }) canArrange = false;
+  @property({ type: Boolean }) canCompare = false;
 
-  @state() private _mobileLink = false;
   private _resizeController = new ResizeController(this, () => {});
 
   static styles = [statusTokens, headerStyles];
@@ -93,10 +95,6 @@ export class GrowspaceHeaderUI extends LitElement {
         composed: true,
       })
     );
-  }
-
-  private _handleToggleMobileLink() {
-    this._mobileLink = !this._mobileLink;
   }
 
   private _renderMobileStageContext() {
@@ -205,18 +203,20 @@ export class GrowspaceHeaderUI extends LitElement {
             .device=${this.device}
             .deviceChips=${this.deviceChips}
             .isMobile=${this._resizeController.isMobile}
-            .mobileLink=${this._mobileLink}
             .viewMode=${this.viewMode}
             .isEditMode=${this.isEditMode}
             .selectedPlants=${this.selectedPlants}
             .selectedDevice=${this.deviceId}
+            .activeTask=${this.activeTask}
+            .canArrange=${this.canArrange}
+            .canCompare=${this.canCompare}
+            .language=${this.hass?.language ?? 'en'}
             @toggle-graph=${(e: CustomEvent) => {
               e.stopPropagation();
               this._toggleEnvGraph(e.detail.metric);
             }}
             @chip-drag-start=${(e: CustomEvent) => this._handleChipDragStart(null, e.detail.metric)}
             @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
-            @toggle-mobile-link=${() => this._handleToggleMobileLink()}
             @action-triggered=${(e: CustomEvent) => {
               e.stopPropagation();
               this.dispatchEvent(
@@ -233,7 +233,6 @@ export class GrowspaceHeaderUI extends LitElement {
           <div class="secondary-strip-container">
             <growspace-header-secondary-ui
               .isMobile=${this._resizeController.isMobile}
-              .mobileLink=${this._mobileLink}
               .compact=${this.compact}
               .chips=${this.secondaryChips}
               .inventory=${this.inventory}
@@ -261,7 +260,6 @@ export class GrowspaceHeaderUI extends LitElement {
                 .chips=${this.heroChips}
                 .device=${this.device}
                 .isMobile=${this._resizeController.isMobile}
-                .mobileLink=${this._mobileLink}
                 .historyCache=${this.historyCache}
                 .timeRange=${this.timeRange}
                 .irrigationStrategy=${this.irrigationStrategy}
@@ -285,7 +283,6 @@ export class GrowspaceHeaderUI extends LitElement {
                 .chips=${this.secondaryChips}
                 .device=${this.device}
                 .isMobile=${true}
-                .mobileLink=${this._mobileLink}
                 .historyCache=${this.historyCache}
                 .timeRange=${this.timeRange}
                 @toggle-graph=${(e: CustomEvent) => {

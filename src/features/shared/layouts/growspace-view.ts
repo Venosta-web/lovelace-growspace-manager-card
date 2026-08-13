@@ -41,6 +41,8 @@ import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { uiStyles } from '../../../styles/ui.styles';
 import { variables } from '../../../styles/variables';
+import type { CardTaskState } from '../../tasks/task-state';
+import '../../tasks/growspace-task-bar';
 
 @customElement('growspace-view')
 export class GrowspaceView extends LitElement {
@@ -60,6 +62,7 @@ export class GrowspaceView extends LitElement {
   @property({ type: Boolean }) isEditMode = false;
   @property({ type: Boolean }) isCompact = false;
   @property({ type: Number }) selectedCount = 0;
+  @property({ attribute: false }) taskState: CardTaskState = { kind: 'idle' };
   @property({ attribute: false }) config: GrowspaceManagerCardConfig | undefined;
   @property({ type: Boolean }) editMode3DCords = false;
 
@@ -117,6 +120,12 @@ export class GrowspaceView extends LitElement {
 
     return html`
       ${spec?.slots.includes('header') ? this._renderHeader() : ''}
+      ${this.taskState.kind !== 'idle'
+        ? html`<growspace-task-bar
+            .taskState=${this.taskState}
+            .selectedCount=${this.selectedCount}
+          ></growspace-task-bar>`
+        : ''}
       ${spec?.slots.includes('chart') ? this._renderChart() : ''}
       ${spec?.slots.includes('grid') ? this._renderGrid() : ''}
     `;
@@ -197,14 +206,6 @@ export class GrowspaceView extends LitElement {
     }
 
     return html`
-      ${this.isEditMode || this._gridInteractionController?.value?.status === 'transplanting'
-        ? html`
-            <growspace-edit-mode-banner
-              .selectedCount=${this.selectedCount}
-              @batch-add-plants=${(e: CustomEvent) => this._redispatch(e, 'batch-add-plants')}
-            ></growspace-edit-mode-banner>
-          `
-        : ''}
       ${this._gridInteractionController?.value?.status === 'transplanting'
         ? html`
             <transplant-source-panel

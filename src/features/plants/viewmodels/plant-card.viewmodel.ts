@@ -5,15 +5,11 @@
  * Single computed atom that components subscribe to.
  */
 
-import { computed, type ReadableAtom } from 'nanostores';
-import type {
-  PlantEntity,
-  PlantDisplayData,
-  StrainEntry,
-  GrowspaceDevice,
-} from '../../../types';
+import { atom, computed, type ReadableAtom } from 'nanostores';
+import type { PlantEntity, PlantDisplayData, StrainEntry, GrowspaceDevice } from '../../../types';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { calculateGrowthDeviation } from '../../../utils/analytics-utils';
+import type { CardTaskState } from '../../tasks/task-state';
 
 /**
  * Status indicator types
@@ -35,8 +31,11 @@ export interface PlantCardAtoms {
   $isEditMode: ReadableAtom<boolean>;
   $selectedPlants: ReadableAtom<Set<string>>;
   $strainLibrary: ReadableAtom<StrainEntry[]>;
-  $nutrientPresets: ReadableAtom<Record<string, { stage?: string | null; min_days_in_stage?: number | null }>>;
+  $nutrientPresets: ReadableAtom<
+    Record<string, { stage?: string | null; min_days_in_stage?: number | null }>
+  >;
   $devices: ReadableAtom<GrowspaceDevice[]>;
+  $taskState?: ReadableAtom<CardTaskState>;
 }
 
 /**
@@ -106,6 +105,7 @@ export function createPlantCardViewModel(
   $plant: ReadableAtom<PlantEntity | null>,
   deps: PlantCardAtoms
 ): ReadableAtom<PlantCardViewModel | null> {
+  const taskState = deps.$taskState ?? atom<CardTaskState>({ kind: 'idle' });
   return computed(
     [
       $plant,
@@ -114,8 +114,9 @@ export function createPlantCardViewModel(
       deps.$strainLibrary,
       deps.$nutrientPresets,
       deps.$devices,
+      taskState,
     ],
-    (plant, isEditMode, selectedPlants, strainLibrary, nutrientPresets, devices) => {
+    (plant, isEditMode, selectedPlants, strainLibrary, nutrientPresets, devices, taskState) => {
       if (!plant) return null;
 
       const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
@@ -140,7 +141,7 @@ export function createPlantCardViewModel(
         displayData,
         isSelected: selectedPlants.has(plantId),
         isEditMode,
-        isDraggable: !isEditMode,
+        isDraggable: taskState.kind === 'arrange' && taskState.status === 'editing',
         growthDeviation,
         statusIndicators,
         ariaLabel: `${strainName} in ${stageName} stage`,

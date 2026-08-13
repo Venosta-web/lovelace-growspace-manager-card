@@ -295,6 +295,15 @@ export class GrowspaceHistoryStore {
     }
   }
 
+  public toggleEnvGraphGroup(metrics: string[]): boolean {
+    const current = this.$activeEnvGraphs.get();
+    const shouldClose = metrics.every((metric) => current.has(metric));
+    const next = new Set(current);
+    metrics.forEach((metric) => (shouldClose ? next.delete(metric) : next.add(metric)));
+    this.$activeEnvGraphs.set(next);
+    return !shouldClose;
+  }
+
   public linkGraphs(metric1: string, metric2: string): void {
     const groups = this.$linkedGraphGroups.get();
     const existingGroupIndex = groups.findIndex(

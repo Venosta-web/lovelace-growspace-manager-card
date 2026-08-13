@@ -121,6 +121,25 @@ describe('GrowspaceManagerCard', () => {
     expect(element.store.ui.$viewMode.get()).toBe(ViewMode.STANDARD);
   });
 
+  test('scoped Escape cancels Compare and announces that prior state was restored', async () => {
+    element.store.ui.startCompare(0);
+    (element as any)._handleKeyboardNav(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await element.updateComplete;
+
+    expect(element.store.ui.$taskState.get()).toEqual({ kind: 'idle' });
+    expect(element.store.ui.$announcement.get().message).toContain('Compare cancelled');
+  });
+
+  test('Done exits Select plants and clears its provisional selection state', async () => {
+    element.store.ui.startSelectPlants();
+    element.store.ui.togglePlantSelection('plant-1');
+    await (element as any)._handleTaskDone();
+
+    expect(element.store.ui.$taskState.get()).toEqual({ kind: 'idle' });
+    expect(element.store.ui.$selectedPlants.get().size).toBe(0);
+    expect(element.store.ui.$announcement.get().message).toContain('Select plants complete');
+  });
+
   describe('harness tracer', () => {
     let handle: Awaited<ReturnType<typeof renderCard<GrowspaceManagerCard>>>;
 
@@ -159,7 +178,9 @@ describe('GrowspaceManagerCard', () => {
     test('linkChips groups two metrics in linkedGraphGroups', () => {
       handle.linkChips(MetricKey.TEMPERATURE, MetricKey.HUMIDITY);
       const groups: string[][] = handle.element.store.history.$linkedGraphGroups.get();
-      expect(groups.some((g) => g.includes(MetricKey.TEMPERATURE) && g.includes(MetricKey.HUMIDITY))).toBe(true);
+      expect(
+        groups.some((g) => g.includes(MetricKey.TEMPERATURE) && g.includes(MetricKey.HUMIDITY))
+      ).toBe(true);
     });
 
     test('openGrowmaster opens the Growmaster Dialog', () => {
