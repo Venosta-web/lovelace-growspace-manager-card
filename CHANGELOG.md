@@ -1,3 +1,10 @@
+# [1.1.0-next.112](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.111...v1.1.0-next.112) (2026-08-13)
+
+
+### Features
+
+* **header:** unify mobile growspace reading flow ([#536](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/536)) ([503b9c6](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/503b9c63a869d6d7f564a8df5b5634addd8a7afb))
+
 # [1.1.0-next.111](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.110...v1.1.0-next.111) (2026-08-13)
 
 
