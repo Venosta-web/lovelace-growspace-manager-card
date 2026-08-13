@@ -44,6 +44,18 @@ colors:
   # Warning — functional state, distinct from the Flowering stage
   warning: '#ffa726'
   on-warning: '#1e1e1e'
+  # Operational status — the three StatusLevel levels, as consumed by
+  # src/styles/status.styles.ts. Each level is hue + fill + outline; status text
+  # itself is never tinted, so it survives a light Home Assistant theme.
+  status-optimal: '#4caf50'
+  status-optimal-fill: 'color-mix(in srgb, #4caf50 10%, transparent)'
+  status-optimal-outline: 'color-mix(in srgb, #4caf50 45%, transparent)'
+  status-warning: '#ffa726'
+  status-warning-fill: 'color-mix(in srgb, #ffa726 14%, transparent)'
+  status-warning-outline: 'color-mix(in srgb, #ffa726 60%, transparent)'
+  status-danger: '#f44336'
+  status-danger-fill: 'color-mix(in srgb, #f44336 14%, transparent)'
+  status-danger-outline: 'color-mix(in srgb, #f44336 70%, transparent)'
   # AC Infinity integration conflicts, pre-fill failures, and duplicate ports
   integration-conflict: '#e6a700'
   integration-conflict-container: 'rgba(230,167,0,0.1)'
@@ -365,7 +377,25 @@ Breakpoints: 600px (mobile reflow), 450px (dialog full-screen). The system is **
 
 Touch targets: checkbox overlays use 44×44px touch area (24px icon + 10px padding all sides). Status icons use `::before { inset: -10px }` to achieve 44px tap area without visual size change — WCAG 2.5.8 compliant. FAB is 56×56px. All interactive buttons 40px height minimum.
 
-`@media (prefers-reduced-motion: reduce)` is applied globally: all animation-duration collapsed to `0.01ms`, transforms on hover disabled. Every interactive component respects this.
+`@media (prefers-reduced-motion: reduce)` is applied globally: all animation-duration collapsed to `0.01ms`, transforms on hover disabled. Every interactive component respects this — components with their own constructed stylesheet (they do not inherit the global block through shadow DOM) carry their own `reduce` block: `growspace-chip`, `growspace-header-hero-ui`, `growspace-header-actions-ui`, `plant-card`, `base-dialog`.
+
+### Contrast Target
+
+**WCAG 2.1 AA** is the project target: 4.5:1 for body text, 3:1 for large text and non-text UI (icons, outlines, focus rings). Home Assistant themes may flip the shell to a light surface, so a color that passes only against `#1e1e1e` does not pass.
+
+The rule that makes this survivable: **never tint the text**. Status text stays at `--primary-text-color`, which the active theme guarantees against its own surface. The status hue rides on the outline, a low-alpha fill, and the cue icon — roles that only need the 3:1 non-text ratio.
+
+### Status Perception
+
+`StatusLevel` (optimal / warning / danger) is never carried by hue or animation alone. Any surface that tints itself by status also renders its `STATUS_CUES` entry:
+
+| Level   | Icon                    | Word       |
+| :------ | :---------------------- | :--------- |
+| optimal | `mdiCheckCircleOutline` | — (quiet)  |
+| warning | `mdiAlert`              | "Warning"  |
+| danger  | `mdiAlertOctagon`       | "Critical" |
+
+Warning and danger differ by icon _and_ word, so the pair a reader must tell apart stays distinct with color removed and with the danger pulse stopped. Optimal is icon-only so a healthy chip does not shout. Crop-stage and phase colors are a separate, intentional language and are unaffected — where a stage color meets text (the mobile stage context), the color stays on the dot and the label reads at full contrast.
 
 ## 6. Design System Notes for Stitch Generation
 
@@ -404,7 +434,7 @@ When prompting Stitch for screens in this system, use vocabulary like:
 
 **Dashboard header:**
 
-> "A two-column dashboard header on dark background. Left: a large 1.75rem white gradient-clipped grow-room name selector. Below it a row of small muted meta stats. Right: a horizontal scrollable row of compact stat chips showing plant counts, alert counts, and environmental readings. Chips turn amber-orange on warning, red with a pulse animation on danger."
+> "A two-column dashboard header on dark background. Left: a large 1.75rem white gradient-clipped grow-room name selector. Below it a row of small muted meta stats. Right: a horizontal scrollable row of compact stat chips showing plant counts, alert counts, and environmental readings. A chip in warning gets an amber outline, an amber triangle icon, and the word WARNING; a chip in danger gets a heavier red outline, a red octagon icon, and the word CRITICAL. Chip text stays white in every state."
 
 **Plant detail dialog:**
 

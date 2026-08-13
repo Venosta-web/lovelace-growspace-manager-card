@@ -20,6 +20,9 @@ import {
   mdiPh,
   mdiLightningBolt,
   mdiWaterPump,
+  mdiCheckCircleOutline,
+  mdiAlert,
+  mdiAlertOctagon,
 } from '@mdi/js';
 
 export enum MetricKey {
@@ -242,11 +245,41 @@ export enum StatusLevel {
   DANGER = 'danger',
 }
 
+/**
+ * Status hues for chart strokes. Token-first, but each keeps the literal fallback
+ * chain because charts render in components that do not inherit `statusTokens`.
+ */
 export const STATUS_COLORS = {
-  [StatusLevel.OPTIMAL]: 'var(--success-color, #4caf50)',
-  [StatusLevel.WARNING]: 'var(--warning-color, #ff9800)',
-  [StatusLevel.DANGER]: 'var(--error-color, #f44336)',
+  [StatusLevel.OPTIMAL]: 'var(--gm-status-optimal, var(--success-color, #4caf50))',
+  [StatusLevel.WARNING]: 'var(--gm-status-warning, var(--warning-color, #ffa726))',
+  [StatusLevel.DANGER]: 'var(--gm-status-danger, var(--error-color, #f44336))',
 } as const;
+
+/**
+ * The non-color half of a status signal.
+ *
+ * Every surface that tints itself by `StatusLevel` renders the matching icon, so
+ * status survives both colorblindness and a stopped animation. Warning and danger
+ * additionally carry a word, because they are the pair a reader must be able to
+ * tell apart at a glance; optimal stays icon-only to keep quiet chips quiet.
+ */
+export const STATUS_CUES: Record<StatusLevel, { icon: string; label: string }> = {
+  [StatusLevel.OPTIMAL]: { icon: mdiCheckCircleOutline, label: 'OK' },
+  [StatusLevel.WARNING]: { icon: mdiAlert, label: 'Warning' },
+  [StatusLevel.DANGER]: { icon: mdiAlertOctagon, label: 'Critical' },
+};
+
+/** Narrows a loosely-typed status string to a `StatusLevel`, or `null`. */
+export function toStatusLevel(status: string | null | undefined): StatusLevel | null {
+  switch (status) {
+    case StatusLevel.OPTIMAL:
+    case StatusLevel.WARNING:
+    case StatusLevel.DANGER:
+      return status;
+    default:
+      return null;
+  }
+}
 
 export enum ScrollDirection {
   LEFT = 'left',

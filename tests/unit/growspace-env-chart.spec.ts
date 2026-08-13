@@ -14,7 +14,7 @@ import { GrowspaceEnvChart } from '../../src/growspace-env-chart';
 import { hassContext } from '../../src/context';
 import { ContextProvider } from '@lit/context';
 import { computeMetricDescriptors } from '../../src/slices/metric-descriptors';
-import { MetricKey } from '../../src/features/environment/constants';
+import { MetricKey, StatusLevel, STATUS_COLORS } from '../../src/features/environment/constants';
 
 const OVERVIEW_ENTITY = {
   attributes: {
@@ -219,13 +219,13 @@ describe('GrowspaceEnvChart', () => {
       await element.updateComplete;
 
       expect(
-        element.shadowRoot?.querySelector('path[stroke="var(--success-color, #4caf50)"]')
+        element.shadowRoot?.querySelector(`path[stroke="${STATUS_COLORS[StatusLevel.OPTIMAL]}"]`)
       ).toBeTruthy();
     });
 
     it('falls back to the VPD colour for an unknown status', () => {
       expect((element as any)._getVpdStatusColor('unknown')).toBe('#9c27b0');
-      expect((element as any)._getVpdStatusColor('danger')).toBe('var(--error-color, #f44336)');
+      expect((element as any)._getVpdStatusColor('danger')).toBe(STATUS_COLORS[StatusLevel.DANGER]);
     });
 
     it('labels the Y axis numerically, and as ON/OFF for binary ranges', async () => {
