@@ -1,3 +1,10 @@
+# [1.1.0-next.105](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.104...v1.1.0-next.105) (2026-08-13)
+
+
+### Features
+
+* **config:** compose environment saves from dirty groups ([#521](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/521)) ([4ac1b54](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/4ac1b54779ff28613f580abc19f9b3c72e354ac8)), closes [growspace_manager#586](https://github.com/growspace_manager/issues/586) [#505](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/505) [#519](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/519)
+
 # [1.1.0-next.104](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.103...v1.1.0-next.104) (2026-08-12)
 
 
