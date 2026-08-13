@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+import { userEvent } from 'vitest/browser';
 import { StatusLevel } from '../../environment/constants';
 import './growspace-chip';
 
@@ -139,5 +140,39 @@ describe('growspace-chip – reduced motion', () => {
     const width = (root: ShadowRoot) =>
       getComputedStyle(root.querySelector('.stat-chip') as HTMLElement).borderTopWidth;
     expect(width(warning)).not.toBe(width(danger));
+  });
+});
+
+describe('growspace-chip – operable graph state', () => {
+  it('uses a named native toggle button and activates it from the keyboard', async () => {
+    const el = await fixture(
+      html`<growspace-chip
+        icon="${DOT_ICON}"
+        label="VPD"
+        value="1.1 kPa"
+        .toggle=${true}
+        .active=${true}
+        actionLabel="Toggle VPD graph"
+      ></growspace-chip>`
+    );
+    const clicks: Event[] = [];
+    el.addEventListener('click', (event) => clicks.push(event));
+    const button = el.shadowRoot!.querySelector('.stat-chip') as HTMLButtonElement;
+
+    expect(button.getAttribute('aria-label')).toBe('Toggle VPD graph');
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    button.focus();
+    await userEvent.keyboard('{Enter}');
+
+    expect(clicks).toHaveLength(1);
+  });
+
+  it('exposes linked state as a separately named unlink button', async () => {
+    const el = await fixture(
+      html`<growspace-chip label="Humidity" .linked=${true}></growspace-chip>`
+    );
+    const unlink = el.shadowRoot!.querySelector('.link-icon') as HTMLButtonElement;
+    expect(unlink).toBeInstanceOf(HTMLButtonElement);
+    expect(unlink.getAttribute('aria-label')).toBe('Unlink Humidity graph');
   });
 });

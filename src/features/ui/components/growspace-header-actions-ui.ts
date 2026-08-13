@@ -38,6 +38,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
   @property({ attribute: false }) public device?: GrowspaceDevice;
 
   @state() private _draggedMetric: string | null = null;
+  @state() private _menuOpen = false;
 
   private get _chipDraggable(): string {
     if (this.isMobile) {
@@ -65,6 +66,72 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         composed: true,
       })
     );
+  }
+
+  private _handleMenuToggle(event: Event) {
+    const toggleEvent = event as ToggleEvent;
+    this._menuOpen = toggleEvent.newState === 'open';
+
+    if (this._menuOpen) {
+      requestAnimationFrame(() => {
+        if (this._menuOpen) this._menuItems()[0]?.focus();
+      });
+      return;
+    }
+
+    (this.shadowRoot?.getElementById('menu-trigger') as HTMLButtonElement | null)?.focus();
+  }
+
+  private _menuItems(): HTMLButtonElement[] {
+    return Array.from(
+      this.shadowRoot?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? []
+    );
+  }
+
+  private _handleMenuKeydown(event: KeyboardEvent) {
+    const items = this._menuItems();
+    const currentIndex = items.indexOf(this.shadowRoot?.activeElement as HTMLButtonElement);
+    let nextIndex: number | undefined;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+        break;
+      case 'ArrowUp':
+        nextIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = items.length - 1;
+        break;
+      case 'Escape':
+      case 'Tab':
+        (event.currentTarget as HTMLElement & { hidePopover: () => void }).hidePopover();
+        if (event.key === 'Escape') event.preventDefault();
+        return;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    items[nextIndex]?.focus();
+  }
+
+  private _menuItem(icon: string, label: string, action: string) {
+    return html`
+      <button
+        class="menu-item"
+        role="menuitem"
+        tabindex="-1"
+        type="button"
+        @click=${() => this._triggerAction(action)}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icon}"></path></svg>
+        <span class="menu-item-label">${label}</span>
+      </button>
+    `;
   }
 
   private _handleChipDragStart(e: DragEvent, metric: string) {
@@ -111,7 +178,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     );
   }
 
-  private _iconButton(icon: string, action: string, label: string, help: string, active = false) {
+  private _iconButton(icon: string, action: string, label: string, help: string, active?: boolean) {
     return html`
       <div style="position:relative;display:inline-flex;align-items:center;">
         <button
@@ -119,7 +186,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
           @click=${() => this._triggerAction(action)}
           title="${label}"
           aria-label="${label}"
-          aria-pressed="${active}"
+          aria-pressed=${active === undefined ? nothing : String(active)}
           type="button"
         >
           <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
@@ -225,16 +292,26 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     }
 
     .menu-item {
+      width: 100%;
+      border: 0;
+      background: transparent;
       padding: 12px 16px;
       display: flex;
       align-items: center;
       gap: 12px;
       cursor: pointer;
       color: var(--primary-text-color, #ddd);
+      font: inherit;
+      text-align: start;
     }
     .menu-item:hover {
       background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
       color: var(--primary-text-color, #fff);
+    }
+    .menu-item:focus-visible {
+      outline: 2px solid var(--primary-color, #2196f3);
+      outline-offset: -3px;
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
     }
     .menu-item svg {
       width: 20px;
@@ -328,6 +405,8 @@ export class GrowspaceHeaderActionsUI extends LitElement {
                         .active=${chip.active}
                         .linked=${chip.linked}
                         .tooltip=${chip.tooltip}
+                        .toggle=${true}
+                        .actionLabel=${`Toggle ${chip.label} graph`}
                         draggable="${this._chipDraggable}"
                         @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
                         @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
@@ -391,6 +470,11 @@ export class GrowspaceHeaderActionsUI extends LitElement {
           style="anchor-name: --menu-trigger"
           popovertarget="header-menu"
           title="Open Menu"
+          type="button"
+          aria-label="Open growspace actions menu"
+          aria-haspopup="menu"
+          aria-controls="header-menu"
+          aria-expanded=${this._menuOpen}
         >
           <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
         </button>
@@ -402,77 +486,55 @@ export class GrowspaceHeaderActionsUI extends LitElement {
   private _renderMenu() {
     const selectedCount = this.selectedPlants?.size || 0;
     return html`
-      <div id="header-menu" popover="auto" class="menu-dropdown">
-        <div class="drag-handle"></div>
+      <div
+        id="header-menu"
+        popover="auto"
+        class="menu-dropdown"
+        role="menu"
+        aria-label="Growspace actions"
+        @toggle=${this._handleMenuToggle}
+        @keydown=${this._handleMenuKeydown}
+      >
+        <div class="drag-handle" aria-hidden="true"></div>
         ${this.isMobile
           ? html`
-              <div class="menu-header">Growspace</div>
-              <div class="menu-item" @click=${() => this._triggerAction('config')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                <span class="menu-item-label">Settings</span>
-              </div>
-              <div class="menu-item" @click=${() => this._triggerAction('heatmap')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiCube}"></path></svg>
-                <span class="menu-item-label">3D Heatmap</span>
-              </div>
-              <div class="menu-divider"></div>
+              <div class="menu-header" aria-hidden="true">Growspace</div>
+              ${this._menuItem(mdiCog, 'Settings', 'config')}
+              ${this._menuItem(mdiCube, '3D Heatmap', 'heatmap')}
+              <div class="menu-divider" role="separator"></div>
             `
           : nothing}
-        <div class="menu-header">Plant Actions</div>
-        <div class="menu-item" @click=${() => this._triggerAction('add_plant')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
-          <span class="menu-item-label">Add Plant</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('water')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
-          <span class="menu-item-label"
-            >${selectedCount > 0 ? 'Water Selected' : 'Water Growspace'}</span
-          >
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('ipm')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-          <span class="menu-item-label"
-            >${selectedCount > 0 ? 'Apply IPM to Selected' : 'Log / Manage IPM'}</span
-          >
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('training')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
-          <span class="menu-item-label"
-            >${selectedCount > 0 ? 'Train Selected' : 'Log Training'}</span
-          >
-        </div>
+        <div class="menu-header" aria-hidden="true">Plant Actions</div>
+        ${this._menuItem(mdiPlus, 'Add Plant', 'add_plant')}
+        ${this._menuItem(
+          mdiWaterPlus,
+          selectedCount > 0 ? 'Water Selected' : 'Water Growspace',
+          'water'
+        )}
+        ${this._menuItem(
+          mdiBug,
+          selectedCount > 0 ? 'Apply IPM to Selected' : 'Log / Manage IPM',
+          'ipm'
+        )}
+        ${this._menuItem(
+          mdiDumbbell,
+          selectedCount > 0 ? 'Train Selected' : 'Log Training',
+          'training'
+        )}
 
-        <div class="menu-divider"></div>
+        <div class="menu-divider" role="separator"></div>
 
-        <div class="menu-header">Setup</div>
-        <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-          <span class="menu-item-label">Irrigation</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
-          <span class="menu-item-label">Nutrients</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('strains')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-          <span class="menu-item-label">Strains</span>
-        </div>
+        <div class="menu-header" aria-hidden="true">Setup</div>
+        ${this._menuItem(mdiWater, 'Irrigation', 'irrigation')}
+        ${this._menuItem(mdiBottleTonicPlus, 'Nutrients', 'nutrients')}
+        ${this._menuItem(mdiDna, 'Strains', 'strains')}
 
-        <div class="menu-divider"></div>
+        <div class="menu-divider" role="separator"></div>
 
-        <div class="menu-header">Insights</div>
-        <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
-          <span class="menu-item-label">Logbook</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('snapshots')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
-          <span class="menu-item-label">Camera Snapshots</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('ai')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-          <span class="menu-item-label">Ask AI</span>
-        </div>
+        <div class="menu-header" aria-hidden="true">Insights</div>
+        ${this._menuItem(mdiClipboardTextClock, 'Logbook', 'logbook')}
+        ${this._menuItem(mdiCamera, 'Camera Snapshots', 'snapshots')}
+        ${this._menuItem(mdiBrain, 'Ask AI', 'ai')}
       </div>
     `;
   }

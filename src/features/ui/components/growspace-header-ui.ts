@@ -185,6 +185,7 @@ export class GrowspaceHeaderUI extends LitElement {
                     <div class="select-sizer">${this.device.name || 'Select Growspace'}</div>
                     <select
                       class="growspace-select-header"
+                      aria-label="Select growspace"
                       .value=${this.deviceId}
                       @change=${this._handleDeviceChange}
                     >
