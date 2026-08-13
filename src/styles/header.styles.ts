@@ -37,7 +37,8 @@ export const headerStyles = css`
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    white-space: pre;
+    white-space: normal;
+    overflow-wrap: anywhere;
     pointer-events: none;
     visibility: visible;
   }
@@ -90,6 +91,7 @@ export const headerStyles = css`
     display: flex;
     align-items: center;
     gap: 10px;
+    max-width: 100%;
   }
 
   .gs-title {
@@ -105,6 +107,7 @@ export const headerStyles = css`
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    overflow-wrap: anywhere;
   }
 
   .header-meta-row {
@@ -271,6 +274,7 @@ export const headerStyles = css`
 
     .header-title-area {
       flex: 1;
+      width: 100%;
       min-width: 0;
       max-width: none;
     }
@@ -278,6 +282,11 @@ export const headerStyles = css`
     .header-actions {
       width: 100%;
       align-self: stretch;
+    }
+
+    .operational-summary > span {
+      flex-direction: column;
+      gap: 2px;
     }
 
     .header-stage-area-wrapper,

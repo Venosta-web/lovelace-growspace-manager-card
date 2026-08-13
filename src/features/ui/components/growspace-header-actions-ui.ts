@@ -227,7 +227,11 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     }
 
     if (this.problemPlantCount > 0 && plants.length > 0) {
-      return this._primaryAction(mdiCheckboxMultipleMarkedOutline, 'Review plants', 'select_plants');
+      return this._primaryAction(
+        mdiCheckboxMultipleMarkedOutline,
+        'Review plants',
+        'select_plants'
+      );
     }
 
     if (plants.length === 0 && hasGrowspace) {
@@ -322,7 +326,9 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       font-size: 0.875rem;
       font-weight: 500;
       cursor: pointer;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.3),
+        0 1px 3px 1px rgba(0, 0, 0, 0.15);
     }
     .primary-action:hover {
       filter: brightness(1.08);
@@ -429,6 +435,22 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     }
 
     @media (max-width: 600px) {
+      :host {
+        width: 100%;
+        gap: 8px;
+      }
+
+      .primary-action {
+        min-height: 48px;
+        border-radius: 9999px;
+        flex: 1;
+      }
+
+      .icon-button {
+        width: 48px;
+        height: 48px;
+      }
+
       .menu-dropdown:popover-open {
         inset: auto 0 0 0;
         width: 100%;
@@ -527,7 +549,6 @@ export class GrowspaceHeaderActionsUI extends LitElement {
             )}
           `
         : nothing}
-
       ${this._renderPrimaryAction()}
 
       <div class="menu-container">

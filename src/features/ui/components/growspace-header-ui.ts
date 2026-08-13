@@ -166,8 +166,10 @@ export class GrowspaceHeaderUI extends LitElement {
     if (plantCount === 0) {
       return html`
         <div class="operational-summary empty" role="status">
-          <strong>Ready for plants</strong>
-          <span class="operational-detail">No plants are assigned to this growspace.</span>
+          <span>
+            <strong>Ready for plants</strong>
+            <span class="operational-detail">No plants are assigned to this growspace.</span>
+          </span>
         </div>
       `;
     }
@@ -242,8 +244,7 @@ export class GrowspaceHeaderUI extends LitElement {
                   </div>`
                 : html`<h1 class="gs-title">${this.device.name}</h1>`}
             </div>
-            ${this._renderOperationalSummary()}
-            ${this._renderMetaRow()}
+            ${this._renderOperationalSummary()} ${this._renderMetaRow()}
           </div>
 
           <!-- Row 1 Right: Actions & Device Chips -->
@@ -303,11 +304,12 @@ export class GrowspaceHeaderUI extends LitElement {
         </div>
 
         <!-- HERO GRID (Vital Stats) -->
-        ${this.heroChips.length > 0
+        ${this.heroChips.length + this.secondaryChips.length + this.deviceChips.length > 0
           ? html`
               <growspace-header-hero-ui
                 .hass=${this.hass}
                 .chips=${this.heroChips}
+                .additionalChips=${[...this.secondaryChips, ...this.deviceChips]}
                 .device=${this.device}
                 .isMobile=${this._resizeController.isMobile}
                 .historyCache=${this.historyCache}
@@ -315,26 +317,6 @@ export class GrowspaceHeaderUI extends LitElement {
                 .irrigationStrategy=${this.irrigationStrategy}
                 .irrigationConfig=${this.irrigationConfig}
                 .isFlower=${this.isFlower}
-                @toggle-graph=${(e: CustomEvent) => {
-                  e.stopPropagation();
-                  this._toggleEnvGraph(e.detail.metric);
-                }}
-                @chip-drag-start=${(e: CustomEvent) =>
-                  this._handleChipDragStart(null, e.detail.metric)}
-                @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
-              ></growspace-header-hero-ui>
-            `
-          : nothing}
-        ${this._resizeController.isMobile && this.secondaryChips.length > 0
-          ? html`
-              <!-- SECONDARY STAT DECK (mobile only) -->
-              <growspace-header-hero-ui
-                .hass=${this.hass}
-                .chips=${this.secondaryChips}
-                .device=${this.device}
-                .isMobile=${true}
-                .historyCache=${this.historyCache}
-                .timeRange=${this.timeRange}
                 @toggle-graph=${(e: CustomEvent) => {
                   e.stopPropagation();
                   this._toggleEnvGraph(e.detail.metric);

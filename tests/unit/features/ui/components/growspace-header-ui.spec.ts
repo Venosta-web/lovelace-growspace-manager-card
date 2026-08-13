@@ -41,10 +41,14 @@ describe('growspace-header-ui', () => {
         @toggle-graph=${handler}
       ></growspace-header-ui>
     `);
-    
+
     // Test direct dispatch to simulate sub-component bubbling/forwarding
-    el.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'temperature' }, bubbles: true }));
-    expect(handler).toHaveBeenCalledWith(expect.objectContaining({ detail: { metric: 'temperature' } }));
+    el.dispatchEvent(
+      new CustomEvent('toggle-graph', { detail: { metric: 'temperature' }, bubbles: true })
+    );
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: { metric: 'temperature' } })
+    );
   });
 
   it('emits device-changed when select value changes', async () => {
@@ -64,9 +68,11 @@ describe('growspace-header-ui', () => {
     select.value = 'gs2';
     select.dispatchEvent(new Event('change'));
 
-    expect(handler).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { value: 'gs2' }
-    }));
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { value: 'gs2' },
+      })
+    );
   });
 
   it('handles chip-drag-start and chip-drop forwarding', async () => {
@@ -84,15 +90,21 @@ describe('growspace-header-ui', () => {
     // Test drag start forwarding
     const actionsUi = el.shadowRoot!.querySelector('growspace-header-actions-ui');
     actionsUi!.dispatchEvent(new CustomEvent('chip-drag-start', { detail: { metric: 'temp' } }));
-    expect(startHandler).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { metric: 'temp', event: null }
-    }));
+    expect(startHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { metric: 'temp', event: null },
+      })
+    );
 
     // Test drop forwarding
-    actionsUi!.dispatchEvent(new CustomEvent('chip-drop', { detail: { targetMetric: 'humidity' } }));
-    expect(dropHandler).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { targetMetric: 'humidity', event: null }
-    }));
+    actionsUi!.dispatchEvent(
+      new CustomEvent('chip-drop', { detail: { targetMetric: 'humidity' } })
+    );
+    expect(dropHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { targetMetric: 'humidity', event: null },
+      })
+    );
   });
 
   it('forwards inventory nutrients and graph events', async () => {
@@ -118,20 +130,30 @@ describe('growspace-header-ui', () => {
     const toggleHandler = vi.fn();
     el.addEventListener('toggle-graph', toggleHandler);
     secondaryUi!.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'temp' } }));
-    expect(toggleHandler).toHaveBeenCalledWith(expect.objectContaining({ detail: { metric: 'temp' } }));
+    expect(toggleHandler).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: { metric: 'temp' } })
+    );
 
     // Test chip-drag-start from secondary UI (passes event)
     const startHandler = vi.fn();
     el.addEventListener('chip-drag-start', startHandler);
     const mockEvent = { type: 'dragstart' } as any;
-    secondaryUi!.dispatchEvent(new CustomEvent('chip-drag-start', { detail: { metric: 'humidity', event: mockEvent } }));
-    expect(startHandler).toHaveBeenCalledWith(expect.objectContaining({ detail: { metric: 'humidity', event: mockEvent } }));
+    secondaryUi!.dispatchEvent(
+      new CustomEvent('chip-drag-start', { detail: { metric: 'humidity', event: mockEvent } })
+    );
+    expect(startHandler).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: { metric: 'humidity', event: mockEvent } })
+    );
 
     // Test chip-drop from secondary UI (passes event)
     const dropHandler = vi.fn();
     el.addEventListener('chip-drop', dropHandler);
-    secondaryUi!.dispatchEvent(new CustomEvent('chip-drop', { detail: { targetMetric: 'vpd', event: mockEvent } }));
-    expect(dropHandler).toHaveBeenCalledWith(expect.objectContaining({ detail: { targetMetric: 'vpd', event: mockEvent } }));
+    secondaryUi!.dispatchEvent(
+      new CustomEvent('chip-drop', { detail: { targetMetric: 'vpd', event: mockEvent } })
+    );
+    expect(dropHandler).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: { targetMetric: 'vpd', event: mockEvent } })
+    );
   });
 
   it('handles action-triggered and unlink-graphs forwarding', async () => {
@@ -149,16 +171,20 @@ describe('growspace-header-ui', () => {
     // Test action-triggered from actions UI
     const actionsUi = el.shadowRoot!.querySelector('growspace-header-actions-ui');
     actionsUi!.dispatchEvent(new CustomEvent('action-triggered', { detail: { action: 'test' } }));
-    expect(actionHandler).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { action: 'test' }
-    }));
+    expect(actionHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { action: 'test' },
+      })
+    );
 
     // Test unlink-graphs from secondary UI
     const secondaryUi = el.shadowRoot!.querySelector('growspace-header-secondary-ui');
     secondaryUi!.dispatchEvent(new CustomEvent('unlink-graphs', { detail: { groupIndex: 1 } }));
-    expect(unlinkHandler).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { groupIndex: 1 }
-    }));
+    expect(unlinkHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { groupIndex: 1 },
+      })
+    );
   });
 
   it('renders title instead of select when default_growspace is configured', async () => {
@@ -191,51 +217,53 @@ describe('growspace-header-ui', () => {
     `);
 
     const heroUi = el.shadowRoot!.querySelector('growspace-header-hero-ui');
-    
+
     // Toggle graph
     heroUi!.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'vpd' } }));
-    expect(toggleHandler).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { metric: 'vpd' }
-    }));
+    expect(toggleHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { metric: 'vpd' },
+      })
+    );
 
     // Drag start (should pass null event)
     heroUi!.dispatchEvent(new CustomEvent('chip-drag-start', { detail: { metric: 'vpd' } }));
-    expect(dragHandler).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { metric: 'vpd', event: null }
-    }));
+    expect(dragHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { metric: 'vpd', event: null },
+      })
+    );
 
     // Drop (should pass null event)
     heroUi!.dispatchEvent(new CustomEvent('chip-drop', { detail: { targetMetric: 'co2' } }));
-    expect(dropHandler).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { targetMetric: 'co2', event: null }
-    }));
+    expect(dropHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { targetMetric: 'co2', event: null },
+      })
+    );
   });
 
   it('handles toggle-graph from actions UI', async () => {
     const toggleHandler = vi.fn();
     const device = { deviceId: 'gs1', name: 'Tent 1' } as any;
     const el = await fixture<GrowspaceHeaderUI>(html`
-      <growspace-header-ui
-        .device=${device}
-        @toggle-graph=${toggleHandler}
-      ></growspace-header-ui>
+      <growspace-header-ui .device=${device} @toggle-graph=${toggleHandler}></growspace-header-ui>
     `);
 
     const actionsUi = el.shadowRoot!.querySelector('growspace-header-actions-ui');
     actionsUi!.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'humidity' } }));
-    
-    expect(toggleHandler).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { metric: 'humidity' }
-    }));
+
+    expect(toggleHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { metric: 'humidity' },
+      })
+    );
   });
 
   it('renders default text when device has no name and config is null', async () => {
     const device = { deviceId: 'gs1' } as any;
     const el = await fixture<GrowspaceHeaderUI>(html`
-      <growspace-header-ui
-        .device=${device}
-        .config=${null}
-      ></growspace-header-ui>
+      <growspace-header-ui .device=${device} .config=${null}></growspace-header-ui>
     `);
 
     const sizer = el.shadowRoot!.querySelector('.select-sizer');
@@ -247,13 +275,13 @@ describe('growspace-header-ui', () => {
     const el = await fixture<GrowspaceHeaderUI>(html`
       <growspace-header-ui .device=${device}></growspace-header-ui>
     `);
-    
+
     // Simulate window resize which should trigger the controller's callback
     window.dispatchEvent(new Event('resize'));
-    
+
     // Explicitly call the empty callback in resize controller to cover it 100%
     (el as any)._resizeController._callback?.();
-    
+
     // Since the callback is () => {}, we just verify it doesn't crash
     expect(el).toBeDefined();
   });
@@ -270,14 +298,15 @@ describe('growspace-header-ui', () => {
 
   it('renders mobile stage context with various dominant stage and plant count combinations', async () => {
     const deviceOnePlant = { deviceId: 'gs1', name: 'Tent 1', plants: [{ id: 'p1' }] } as any;
-    const deviceTwoPlants = { deviceId: 'gs1', name: 'Tent 1', plants: [{ id: 'p1' }, { id: 'p2' }] } as any;
+    const deviceTwoPlants = {
+      deviceId: 'gs1',
+      name: 'Tent 1',
+      plants: [{ id: 'p1' }, { id: 'p2' }],
+    } as any;
     const dominantStage = { color: '#00ff00', daysLabel: 'Veg Day 5' } as any;
 
     const el1 = await fixture<GrowspaceHeaderUI>(html`
-      <growspace-header-ui
-        .device=${deviceOnePlant}
-        .dominant=${undefined}
-      ></growspace-header-ui>
+      <growspace-header-ui .device=${deviceOnePlant} .dominant=${undefined}></growspace-header-ui>
     `);
     const ctx1 = el1.shadowRoot!.querySelector('.mobile-stage-context');
     expect(ctx1).not.toBeNull();
@@ -312,7 +341,11 @@ describe('growspace-header-ui', () => {
 
   it('renders metadata separately from the operational attention summary', async () => {
     const deviceOnePlant = { deviceId: 'gs1', name: 'Tent 1', plants: [{ id: 'p1' }] } as any;
-    const deviceTwoPlants = { deviceId: 'gs1', name: 'Tent 1', plants: [{ id: 'p1' }, { id: 'p2' }] } as any;
+    const deviceTwoPlants = {
+      deviceId: 'gs1',
+      name: 'Tent 1',
+      plants: [{ id: 'p1' }, { id: 'p2' }],
+    } as any;
     const dominantStage = { color: '#00ff00', daysLabel: 'Veg Day 5' } as any;
 
     const el1 = await fixture<GrowspaceHeaderUI>(html`
@@ -360,21 +393,22 @@ describe('growspace-header-ui', () => {
     expect(meta3!.textContent).not.toContain('attention');
   });
 
-
-  it('renders secondary mobile stat deck and handles forwarded events', async () => {
+  it('combines mobile readings into one deck and handles forwarded events', async () => {
     const toggleHandler = vi.fn();
     const dragHandler = vi.fn();
     const dropHandler = vi.fn();
 
     const device = { deviceId: 'gs1', name: 'Tent 1' } as any;
-    const heroChips = [{ id: 'temperature', label: 'Temp', value: '24' }] as any;
-    const secondaryChips = [{ id: 'vpd', label: 'VPD', value: '1.2' }] as any;
+    const heroChips = [{ key: 'temperature', label: 'Temp', value: '24' }] as any;
+    const secondaryChips = [{ key: 'vpd', label: 'VPD', value: '1.2' }] as any;
+    const deviceChips = [{ key: 'light', label: 'Lights', value: 'On' }] as any;
 
     const el = await fixture<GrowspaceHeaderUI>(html`
       <growspace-header-ui
         .device=${device}
         .heroChips=${heroChips}
         .secondaryChips=${secondaryChips}
+        .deviceChips=${deviceChips}
         @toggle-graph=${toggleHandler}
         @chip-drag-start=${dragHandler}
         @chip-drop=${dropHandler}
@@ -386,23 +420,30 @@ describe('growspace-header-ui', () => {
     await el.updateComplete;
 
     const heroComponents = el.shadowRoot!.querySelectorAll('growspace-header-hero-ui');
-    expect(heroComponents.length).toBe(2);
+    expect(heroComponents.length).toBe(1);
 
-    const mobileHero = heroComponents[1];
+    const mobileHero = heroComponents[0];
+    expect(mobileHero.additionalChips).toEqual([...secondaryChips, ...deviceChips]);
 
     mobileHero.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'vpd' } }));
-    expect(toggleHandler).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { metric: 'vpd' }
-    }));
+    expect(toggleHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { metric: 'vpd' },
+      })
+    );
 
     mobileHero.dispatchEvent(new CustomEvent('chip-drag-start', { detail: { metric: 'vpd' } }));
-    expect(dragHandler).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { metric: 'vpd', event: null }
-    }));
+    expect(dragHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { metric: 'vpd', event: null },
+      })
+    );
 
     mobileHero.dispatchEvent(new CustomEvent('chip-drop', { detail: { targetMetric: 'co2' } }));
-    expect(dropHandler).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { targetMetric: 'co2', event: null }
-    }));
+    expect(dropHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { targetMetric: 'co2', event: null },
+      })
+    );
   });
 });

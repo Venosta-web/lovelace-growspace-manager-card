@@ -1,5 +1,13 @@
 # Lovelace Growspace Manager Card — Domain Glossary
 
+## Repository workflow
+
+**Pull request title**
+Before creating or updating a pull request, read `.github/workflows/pr-title.yml` and format
+the title as `<type>(<optional-scope>): <description>` using a type accepted there. Derive
+the type and scope from the release-bearing change, then verify the final title satisfies
+that workflow before handoff.
+
 ## Cards
 
 **Growspace Manager Card** (`growspace-manager-card`)
