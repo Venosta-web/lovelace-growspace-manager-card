@@ -41,6 +41,7 @@ export class NutrientStockChip extends LitElement {
         .label=${this.compact ? undefined : name}
         .value=${value}
         .status=${status}
+        .actionLabel=${`Open ${name} nutrient stock`}
         .tooltip=${`Capacity: ${initialMl}ml\nLast Updated: ${new Date(this.stock.last_updated).toLocaleDateString()}`}
       ></growspace-chip>
     `;

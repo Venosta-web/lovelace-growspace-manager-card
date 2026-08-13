@@ -603,6 +603,8 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                             .active=${chip.active}
                             .linked=${chip.linked}
                             .tooltip=${chip.tooltip}
+                            .toggle=${true}
+                            .actionLabel=${`Toggle ${chip.label} graph`}
                             @click=${() => this._toggleMetricGraph(chip.key)}
                           ></growspace-chip>
                         `

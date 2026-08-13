@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+import { userEvent } from 'vitest/browser';
 import { StatusLevel } from '../../environment/constants';
 import type { HeaderChip } from '../../../slices/header-metrics';
 import type { GrowspaceDevice } from '../../../types';
@@ -80,5 +81,29 @@ describe('growspace-header-hero-ui – status badge', () => {
     const danger = badgeOf(await renderHero(StatusLevel.DANGER));
     expect(warning?.icon).not.toBe(danger?.icon);
     expect(warning?.text).not.toBe(danger?.text);
+  });
+});
+
+describe('growspace-header-hero-ui – graph toggle accessibility', () => {
+  it('exposes graph state and supports keyboard activation', async () => {
+    const activeChip = { ...chip(), active: true, linked: true };
+    const el = await fixture(
+      html`<growspace-header-hero-ui
+        .device=${DEVICE}
+        .chips=${[activeChip]}
+        .historyCache=${{}}
+      ></growspace-header-hero-ui>`
+    );
+    const events: CustomEvent[] = [];
+    el.addEventListener('toggle-graph', (event) => events.push(event as CustomEvent));
+    const button = el.shadowRoot!.querySelector('.hero-card') as HTMLButtonElement;
+
+    expect(button).toBeInstanceOf(HTMLButtonElement);
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(button.getAttribute('aria-label')).toContain('linked');
+    button.focus();
+    await userEvent.keyboard('{Enter}');
+
+    expect(events[0]?.detail).toEqual({ metric: 'vpd' });
   });
 });

@@ -15,6 +15,8 @@ export class GrowspaceChip extends LitElement {
   @property({ type: Boolean, reflect: true }) active = false;
   @property({ type: Boolean }) linked = false;
   @property({ type: String }) tooltip = '';
+  @property({ type: Boolean }) toggle = false;
+  @property({ type: String }) actionLabel = '';
 
   static styles = [
     sharedStyles,
@@ -23,7 +25,7 @@ export class GrowspaceChip extends LitElement {
       :host {
         display: inline-flex;
         vertical-align: middle;
-        outline: none;
+        position: relative;
         -webkit-tap-highlight-color: transparent;
       }
 
@@ -46,6 +48,18 @@ export class GrowspaceChip extends LitElement {
         flex-shrink: 0;
         white-space: nowrap;
         touch-action: auto;
+        font: inherit;
+        text-align: start;
+      }
+
+      .stat-chip:focus-visible,
+      .link-icon:focus-visible {
+        outline: 2px solid var(--primary-color, #4caf50);
+        outline-offset: 2px;
+      }
+
+      .stat-chip.has-link {
+        padding-inline-end: 32px;
       }
 
       /*
@@ -94,6 +108,10 @@ export class GrowspaceChip extends LitElement {
         animation: pulse-danger 2s infinite;
       }
 
+      .stat-chip.status-danger.has-link {
+        padding-inline-end: 31px;
+      }
+
       .stat-chip:hover {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
         border-color: var(--divider-color, rgba(255, 255, 255, 0.2));
@@ -131,10 +149,16 @@ export class GrowspaceChip extends LitElement {
         justify-content: center;
         width: 16px;
         height: 16px;
-        margin-left: -8px;
-        margin-right: -8px;
+        position: absolute;
+        inset-inline-end: 8px;
+        top: 50%;
+        transform: translateY(-50%);
         opacity: 0.8;
         cursor: pointer;
+        color: var(--primary-color, #03a9f4);
+        padding: 0;
+        border: 0;
+        background: transparent;
       }
 
       .link-icon svg {
@@ -183,7 +207,13 @@ export class GrowspaceChip extends LitElement {
     const statusClass = this.status ? `status-${this.status}` : '';
 
     return html`
-      <div class="stat-chip ${statusClass}" title="${this.tooltip}">
+      <button
+        class="stat-chip ${statusClass} ${this.linked ? 'has-link' : ''}"
+        title="${this.tooltip}"
+        type="button"
+        aria-label=${this.actionLabel || nothing}
+        aria-pressed=${this.toggle ? String(this.active) : nothing}
+      >
         <div class="icon">
           <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
         </div>
@@ -200,14 +230,20 @@ export class GrowspaceChip extends LitElement {
             </div>`
           : this.value}
         ${this._renderStatusCue()}
-        ${this.linked
-          ? html`
-              <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
-                <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
-              </div>
-            `
-          : ''}
-      </div>
+      </button>
+      ${this.linked
+        ? html`
+            <button
+              class="link-icon"
+              @click=${this._handleLinkClick}
+              title="Unlink Graph"
+              aria-label="Unlink ${this.label || 'metric'} graph"
+              type="button"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="${mdiLink}"></path></svg>
+            </button>
+          `
+        : nothing}
     `;
   }
 

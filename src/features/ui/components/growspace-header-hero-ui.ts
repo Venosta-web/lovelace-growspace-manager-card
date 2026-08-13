@@ -43,7 +43,13 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
   private _renderDeck() {
     return html`
-      <div class="deck-scroll" @scroll=${this._onDeckScroll}>
+      <div
+        class="deck-scroll"
+        role="region"
+        aria-label="Header metrics"
+        tabindex="0"
+        @scroll=${this._onDeckScroll}
+      >
         ${repeat(
           this.chips,
           (chip) => chip.key,
@@ -143,6 +149,16 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
         overflow: hidden;
         min-height: 110px;
+        width: 100%;
+        color: inherit;
+        font: inherit;
+        text-align: start;
+        appearance: none;
+      }
+
+      .hero-card:focus-visible {
+        outline: 3px solid var(--primary-color, #2196f3);
+        outline-offset: 3px;
       }
 
       .hero-card:active {
@@ -271,6 +287,11 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
         .deck-scroll::-webkit-scrollbar {
           display: none;
+        }
+
+        .deck-scroll:focus-visible {
+          outline: 3px solid var(--primary-color, #4caf50);
+          outline-offset: 2px;
         }
 
         .deck-item {
@@ -827,8 +848,11 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         : [];
 
     return html`
-      <div
+      <button
         class="hero-card ${chip.active ? 'active' : ''} phase-hero-card"
+        type="button"
+        aria-label="Toggle ${chip.label ?? 'phase'} graph${chip.linked ? ', linked' : ''}"
+        aria-pressed=${chip.active}
         draggable="${!this.isMobile || this.mobileLink}"
         @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
         @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
@@ -1028,7 +1052,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
               </div>
             `
           : nothing}
-      </div>
+      </button>
     `;
   }
 
@@ -1116,10 +1140,13 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     }
 
     return html`
-      <div
+      <button
         class="hero-card ${chip.status ? `status-${chip.status}` : ''} ${chip.active
           ? 'active'
           : ''} ${chip.linked ? 'linked' : ''}"
+        type="button"
+        aria-label="Toggle ${chip.label || chip.key} graph${chip.linked ? ', linked' : ''}"
+        aria-pressed=${chip.active}
         draggable="${!this.isMobile || this.mobileLink}"
         @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
         @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
@@ -1216,7 +1243,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
                 <span class="hero-unit">${unit}</span>
               `}
         </div>
-      </div>
+      </button>
     `;
   }
 }

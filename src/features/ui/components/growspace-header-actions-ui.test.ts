@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+import { userEvent } from 'vitest/browser';
 import { GrowspaceHeaderActionsUI } from './growspace-header-actions-ui';
 import './growspace-header-actions-ui';
 
@@ -61,8 +62,8 @@ describe('GrowspaceHeaderActionsUI – EC Ramp Curves menu item', () => {
         }}
       ></growspace-header-actions-ui>
     `);
-    const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(
-      (i) => i.textContent?.trim()
+    const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map((i) =>
+      i.textContent?.trim()
     );
     expect(labels).not.toContain('EC Ramp Curves');
   });
@@ -233,6 +234,23 @@ describe('GrowspaceHeaderActionsUI – events', () => {
     expect(events[0].detail).toEqual({ action: 'edit' });
   });
 
+  it('activates toolbar actions from the keyboard and exposes toggle state', async () => {
+    const el = await fixture<GrowspaceHeaderActionsUI>(html`
+      <growspace-header-actions-ui .isEditMode=${true}></growspace-header-actions-ui>
+    `);
+    const events: CustomEvent[] = [];
+    el.addEventListener('action-triggered', (event) => events.push(event as CustomEvent));
+    const editButton = Array.from(el.shadowRoot!.querySelectorAll('.icon-button')).find(
+      (button) => (button as HTMLElement).title === 'Edit Mode'
+    ) as HTMLButtonElement;
+
+    expect(editButton.getAttribute('aria-pressed')).toBe('true');
+    editButton.focus();
+    await userEvent.keyboard('{Enter}');
+
+    expect(events[events.length - 1]?.detail).toEqual({ action: 'edit' });
+  });
+
   it('edit button has active class when isEditMode is true', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui
@@ -270,5 +288,52 @@ describe('GrowspaceHeaderActionsUI – events', () => {
       i.textContent?.includes('Water Growspace')
     );
     expect(waterItem).not.toBeNull();
+  });
+});
+
+describe('GrowspaceHeaderActionsUI – overflow menu accessibility', () => {
+  it('uses menu semantics and moves focus with arrow keys', async () => {
+    const el = await fixture<GrowspaceHeaderActionsUI>(html`
+      <growspace-header-actions-ui></growspace-header-actions-ui>
+    `);
+    const trigger = el.shadowRoot!.querySelector('#menu-trigger') as HTMLButtonElement;
+    const menu = el.shadowRoot!.querySelector('#header-menu') as HTMLElement;
+    const items = Array.from(menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'));
+
+    expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
+    expect(menu.getAttribute('role')).toBe('menu');
+    await userEvent.click(trigger);
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    expect(el.shadowRoot!.activeElement).toBe(items[0]);
+    await userEvent.keyboard('{ArrowDown}');
+    expect(el.shadowRoot!.activeElement).toBe(items[1]);
+    await userEvent.keyboard('{End}');
+    expect(el.shadowRoot!.activeElement).toBe(items[items.length - 1]);
+  });
+
+  it('closes with Escape and returns focus to the trigger', async () => {
+    const el = await fixture<GrowspaceHeaderActionsUI>(html`
+      <growspace-header-actions-ui></growspace-header-actions-ui>
+    `);
+    const trigger = el.shadowRoot!.querySelector('#menu-trigger') as HTMLButtonElement;
+
+    await userEvent.click(trigger);
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await userEvent.keyboard('{Escape}');
+    await el.updateComplete;
+
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    expect(el.shadowRoot!.activeElement).toBe(trigger);
+  });
+
+  it('renders every overflow action as a native button', async () => {
+    const el = await fixture<GrowspaceHeaderActionsUI>(html`
+      <growspace-header-actions-ui .isMobile=${true}></growspace-header-actions-ui>
+    `);
+    const menuItems = el.shadowRoot!.querySelectorAll('[role="menuitem"]');
+    expect(menuItems.length).toBeGreaterThan(0);
+    expect(Array.from(menuItems).every((item) => item instanceof HTMLButtonElement)).toBe(true);
   });
 });

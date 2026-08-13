@@ -94,6 +94,8 @@ export class GrowspaceHeaderSecondaryUI extends LitElement {
                 .active=${chip.active}
                 .linked=${chip.linked}
                 .tooltip=${chip.tooltip}
+                .toggle=${true}
+                .actionLabel=${`Toggle ${chip.label} graph`}
                 draggable="${this._chipDraggable}"
                 @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
                 @dragover=${(e: DragEvent) => e.preventDefault()}

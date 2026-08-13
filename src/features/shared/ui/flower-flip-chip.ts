@@ -42,6 +42,7 @@ export class FlowerFlipChip extends LitElement {
       <growspace-chip
         .icon=${mdiFlower}
         .status=${'warning'}
+        actionLabel="Open flower flip details"
         .tooltip=${this._buildTooltip()}
         .value=${'Flower Flip'}
         @click=${this._handleClick}

@@ -62,6 +62,12 @@ export const headerStyles = css`
     background-color: initial;
   }
 
+  .select-wrapper:has(.growspace-select-header:focus-visible) {
+    outline: 3px solid var(--primary-color, #4caf50);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+
   /* --- Header Top Section --- */
   .gs-header-top {
     display: grid;
