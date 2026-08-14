@@ -131,7 +131,7 @@ export class ChartUtils {
         case 'optimal':
           return '#4caf50'; // Green
         case 'warning':
-          return '#ff9800'; // Orange
+          return 'var(--gm-warning-color, #ff9800)'; // Orange
         case 'danger':
           return '#f44336'; // Red
       }
