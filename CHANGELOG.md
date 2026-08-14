@@ -1,3 +1,10 @@
+# [1.1.0-next.120](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.119...v1.1.0-next.120) (2026-08-14)
+
+
+### Bug Fixes
+
+* keep failed strain saves recoverable ([#585](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/585)) ([a942794](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/a9427943314d54c6bbf96e29fa0a159b76515922))
+
 # [1.1.0-next.119](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.118...v1.1.0-next.119) (2026-08-14)
 
 
