@@ -1,5 +1,6 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { live } from 'lit/directives/live.js';
 import {
   mdiClose,
   mdiCog,
@@ -1943,6 +1944,50 @@ export class ConfigDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   };
 
+  private _growspaceName(growspaceId: string): string | undefined {
+    return this.growspaceOptions[growspaceId] || undefined;
+  }
+
+  /**
+   * The growspace whose edits the discard prompt is about. The Growspaces tab
+   * hides the context bar and edits its own selection, so the environment
+   * draft's growspace is stale there — naming it would be confidently wrong.
+   */
+  private _dirtyGrowspaceId(): string | undefined {
+    if (this._sm.activeTab !== ConfigTab.GROWSPACES) {
+      return this._sm.environmentDraft.selectedGrowspaceId;
+    }
+    const sub = this._sm.tabs.growspaces.sub;
+    return sub.kind === 'editing' ? sub.growspaceId : undefined;
+  }
+
+  /**
+   * Name the growspace whose edits are at stake — and, when the prompt guards a
+   * growspace switch, the one being switched to. Installs routinely run 20+
+   * growspaces with repeated labels, so "your unsaved changes" alone leaves the
+   * grower guessing which one they are about to discard.
+   */
+  private _discardDescription() {
+    const { status } = this._sm;
+    const dirtyId = this._dirtyGrowspaceId();
+    const editing = dirtyId ? this._growspaceName(dirtyId) : undefined;
+    const generic = 'You have unsaved changes. If you continue now, your edits will be lost.';
+    if (!editing) return generic;
+
+    if (status.kind === 'confirm-discard' && !('pendingTab' in status)) {
+      if (status.pendingAction === 'change-growspace') {
+        const target = this._growspaceName(status.growspaceId);
+        if (target) {
+          return html`Discard your unsaved changes to <strong>${editing}</strong> and switch to
+            <strong>${target}</strong>?`;
+        }
+      }
+    }
+
+    return html`Discard your unsaved changes to <strong>${editing}</strong>? If you continue now,
+      your edits will be lost.`;
+  }
+
   private _renderConfirmDiscard() {
     return html`
       <div class="confirm-discard-overlay">
@@ -1954,9 +1999,7 @@ export class ConfigDialog extends LitElement {
           aria-describedby="config-discard-description"
         >
           <h3 id="config-discard-title">Discard changes?</h3>
-          <p id="config-discard-description">
-            You have unsaved changes. If you continue now, your edits will be lost.
-          </p>
+          <p id="config-discard-description">${this._discardDescription()}</p>
           <div class="confirm-discard-actions">
             <button class="md3-button tonal" @click=${this._cancelDiscard}>Keep editing</button>
             <button class="md3-button primary error" @click=${this._confirmDiscard}>Discard</button>
@@ -2521,9 +2564,17 @@ export class ConfigDialog extends LitElement {
                 ? html`
                     <div class="cfg-context-bar">
                       <span class="cfg-context-label">Growspace</span>
+                      <!--
+                        live(): a refused switch deliberately leaves the draft untouched,
+                        so the bound id never changes and a plain .value binding would let
+                        the select keep displaying the growspace the user backed out of.
+                        Dirty-checking against the live DOM value forces it back. ?selected
+                        below still carries first render, where .value commits before the
+                        options exist.
+                      -->
                       <select
                         class="cfg-context-select"
-                        .value=${this._sm.environmentDraft.selectedGrowspaceId}
+                        .value=${live(this._sm.environmentDraft.selectedGrowspaceId)}
                         @change=${this._handleEnvGrowspaceChange}
                       >
                         <option value="">Select...</option>
