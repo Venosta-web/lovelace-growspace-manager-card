@@ -299,6 +299,42 @@ export class StrainBrowseView extends LitElement {
       }
 
       @media (max-width: 600px) {
+        .dialog-header {
+          gap: 8px;
+          padding: 12px 16px;
+        }
+
+        .dialog-icon {
+          width: 32px;
+          height: 32px;
+          margin-right: 0;
+          flex-shrink: 0;
+        }
+
+        .dialog-title-group {
+          min-width: 0;
+        }
+
+        .dialog-title {
+          font-size: 1.05rem;
+          white-space: nowrap;
+        }
+
+        .header-actions {
+          flex: 0 0 auto;
+          gap: 0 !important;
+          margin-left: auto;
+        }
+
+        .header-actions .md3-button {
+          flex: 0 0 44px !important;
+          width: 44px;
+          min-width: 44px !important;
+          height: 44px;
+          margin-left: 0 !important;
+          padding: 10px !important;
+        }
+
         .sd-grid {
           grid-template-columns: 1fr;
         }

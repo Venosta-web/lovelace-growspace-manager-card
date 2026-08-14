@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import '../../../../../src/features/shared/ui/genetics-tree-view';
-import type { GeneticsTreeView } from '../../../../../src/features/shared/ui/genetics-tree-view';
+import {
+  shouldStartCompactLineage,
+  type GeneticsTreeView,
+} from '../../../../../src/features/shared/ui/genetics-tree-view';
 import type { TreeNode } from '../../../../../src/features/shared/ui/genetics-tree-layout';
 
 const mockNodes: TreeNode[] = [
@@ -13,7 +16,7 @@ const mockNodes: TreeNode[] = [
     pheno: 'P1',
     gen: 'P1',
     type: 'strain',
-    parents: { mother: null, father: null }
+    parents: { mother: null, father: null },
   },
   {
     id: 'p2',
@@ -23,7 +26,7 @@ const mockNodes: TreeNode[] = [
     pheno: 'P2',
     gen: 'P1',
     type: 'strain',
-    parents: { mother: null, father: null }
+    parents: { mother: null, father: null },
   },
   {
     id: 'f1',
@@ -33,7 +36,7 @@ const mockNodes: TreeNode[] = [
     pheno: 'F1',
     gen: 'F1',
     type: 'batch',
-    parents: { mother: 'p1', father: 'p2' }
+    parents: { mother: 'p1', father: 'p2' },
   },
   {
     id: 'f2',
@@ -43,7 +46,7 @@ const mockNodes: TreeNode[] = [
     pheno: 'F2',
     gen: 'F2',
     type: 'strain',
-    parents: { mother: 'f1', father: null }
+    parents: { mother: 'f1', father: null },
   },
   {
     id: 'f3',
@@ -53,7 +56,7 @@ const mockNodes: TreeNode[] = [
     pheno: 'F3',
     gen: 'F3',
     type: 'batch',
-    parents: { mother: 'f2', father: null }
+    parents: { mother: 'f2', father: null },
   },
   {
     id: 'p3',
@@ -63,20 +66,68 @@ const mockNodes: TreeNode[] = [
     pheno: 'P3',
     gen: 'P1',
     type: 'strain',
-    parents: { mother: null, father: 'p1' }
-  }
+    parents: { mother: null, father: 'p1' },
+  },
 ];
+
+describe('shouldStartCompactLineage', () => {
+  it('starts a focused lineage for a large tree on a compact viewport', () => {
+    expect(
+      shouldStartCompactLineage({
+        width: 390,
+        nodeCount: 282,
+        mode: 'tree',
+        focalId: null,
+        alreadyAdapted: false,
+      })
+    ).toBe(true);
+  });
+
+  it('preserves the full tree on desktop', () => {
+    expect(
+      shouldStartCompactLineage({
+        width: 1024,
+        nodeCount: 282,
+        mode: 'tree',
+        focalId: null,
+        alreadyAdapted: false,
+      })
+    ).toBe(false);
+  });
+});
 
 describe('GeneticsTreeView', () => {
   let element: GeneticsTreeView;
 
   beforeEach(async () => {
-    element = await fixture(html`
-      <genetics-tree-view .nodes=${mockNodes}></genetics-tree-view>
-    `);
+    element = await fixture(html` <genetics-tree-view .nodes=${mockNodes}></genetics-tree-view> `);
     element['_viewW'] = 1000;
     element['_viewH'] = 800;
     await element.updateComplete;
+  });
+
+  it('adapts when a large tree arrives after the compact viewport is measured', async () => {
+    const compactElement = await fixture<GeneticsTreeView>(
+      html`<genetics-tree-view></genetics-tree-view>`
+    );
+    compactElement['_viewW'] = 390;
+    compactElement.nodes = Array.from(
+      { length: 51 },
+      (_, index): TreeNode => ({
+        id: `node-${index}`,
+        name: `Node ${index}`,
+        strain: `Strain ${index}`,
+        breeder: 'Breeder',
+        pheno: 'P1',
+        gen: 'P1',
+        type: 'strain',
+        parents: { mother: index === 1 ? 'node-0' : null, father: null },
+      })
+    );
+    await compactElement.updateComplete;
+
+    expect(compactElement['_sm'].mode).toBe('lineage');
+    expect(compactElement['_sm'].focalId).toBe('node-1');
   });
 
   it('should render all node types with correct icons', () => {
@@ -90,11 +141,14 @@ describe('GeneticsTreeView', () => {
     searchInput.dispatchEvent(new InputEvent('input'));
     await element.updateComplete;
 
-    const p1Elem = Array.from(element.shadowRoot?.querySelectorAll('.tree-node') ?? [])
-      .find(n => n.querySelector('.pn-name')?.textContent === 'Parent 1');
+    const p1Elem = Array.from(element.shadowRoot?.querySelectorAll('.tree-node') ?? []).find(
+      (n) => n.querySelector('.pn-name')?.textContent === 'Parent 1'
+    );
     expect(p1Elem?.classList.contains('dim')).toBe(true);
 
-    const clearSearchBtn = element.shadowRoot?.querySelector('.search-bar .icon-btn') as HTMLElement;
+    const clearSearchBtn = element.shadowRoot?.querySelector(
+      '.search-bar .icon-btn'
+    ) as HTMLElement;
     clearSearchBtn.click();
     await element.updateComplete;
     expect(element['_sm'].search).toBe('');
@@ -117,8 +171,9 @@ describe('GeneticsTreeView', () => {
     await element.updateComplete;
 
     // Select a different node (p1)
-    const p1Node = Array.from(element.shadowRoot?.querySelectorAll('.tree-node') ?? [])
-      .find(n => n.querySelector('.pn-name')?.textContent === 'Parent 1') as HTMLElement;
+    const p1Node = Array.from(element.shadowRoot?.querySelectorAll('.tree-node') ?? []).find(
+      (n) => n.querySelector('.pn-name')?.textContent === 'Parent 1'
+    ) as HTMLElement;
     p1Node.click();
     await element.updateComplete;
     expect(element['_sm'].selectedId).toBe('p1');
@@ -151,8 +206,9 @@ describe('GeneticsTreeView', () => {
   });
 
   it('should enter lineage mode on double-click', async () => {
-    const f1Node = Array.from(element.shadowRoot?.querySelectorAll('.tree-node') ?? [])
-      .find(n => n.querySelector('.pn-name')?.textContent === 'Child F1') as HTMLElement;
+    const f1Node = Array.from(element.shadowRoot?.querySelectorAll('.tree-node') ?? []).find(
+      (n) => n.querySelector('.pn-name')?.textContent === 'Child F1'
+    ) as HTMLElement;
 
     f1Node.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 }));
     await element.updateComplete;
@@ -163,8 +219,9 @@ describe('GeneticsTreeView', () => {
   });
 
   it('should handle node folding and descendant counts', async () => {
-    const f1Node = Array.from(element.shadowRoot?.querySelectorAll('.tree-node') ?? [])
-      .find(n => n.querySelector('.pn-name')?.textContent === 'Child F1') as HTMLElement;
+    const f1Node = Array.from(element.shadowRoot?.querySelectorAll('.tree-node') ?? []).find(
+      (n) => n.querySelector('.pn-name')?.textContent === 'Child F1'
+    ) as HTMLElement;
 
     const foldBtn = f1Node.querySelector('.fold-btn') as HTMLElement;
     foldBtn.click();
@@ -183,7 +240,15 @@ describe('GeneticsTreeView', () => {
   it('should handle complex panning and zooming', async () => {
     const shell = element.shadowRoot?.querySelector('.shell') as HTMLElement;
     vi.spyOn(shell, 'getBoundingClientRect').mockReturnValue({
-      left: 0, top: 0, width: 1000, height: 800, bottom: 800, right: 1000, x: 0, y: 0, toJSON: () => { }
+      left: 0,
+      top: 0,
+      width: 1000,
+      height: 800,
+      bottom: 800,
+      right: 1000,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
     });
 
     // Panning
@@ -209,7 +274,9 @@ describe('GeneticsTreeView', () => {
 
     // Mousedown on node should not start dragging
     const node = element.shadowRoot?.querySelector('.tree-node') as HTMLElement;
-    node.dispatchEvent(new MouseEvent('mousedown', { clientX: 100, clientY: 100, button: 0, bubbles: true }));
+    node.dispatchEvent(
+      new MouseEvent('mousedown', { clientX: 100, clientY: 100, button: 0, bubbles: true })
+    );
     expect(element['_dragging']).toBeNull();
   });
 
@@ -278,7 +345,9 @@ describe('GeneticsTreeView', () => {
     element['_sm'] = { ...element['_sm'], selectedId: 'p1' };
     await element.updateComplete;
 
-    const offspringLink = element.shadowRoot?.querySelector('.detail-panel .detail-parent') as HTMLElement;
+    const offspringLink = element.shadowRoot?.querySelector(
+      '.detail-panel .detail-parent'
+    ) as HTMLElement;
     expect(offspringLink).not.toBeNull();
     offspringLink.click();
     await element.updateComplete;
@@ -290,7 +359,9 @@ describe('GeneticsTreeView', () => {
     element['_sm'] = { ...element['_sm'], selectedId: 'f1' };
     await element.updateComplete;
 
-    const isolateBtn = element.shadowRoot?.querySelector('.detail-actions .pill-btn.active') as HTMLElement;
+    const isolateBtn = element.shadowRoot?.querySelector(
+      '.detail-actions .pill-btn.active'
+    ) as HTMLElement;
     expect(isolateBtn).not.toBeNull();
     isolateBtn.click();
     await element.updateComplete;
@@ -316,7 +387,9 @@ describe('GeneticsTreeView', () => {
     await element.updateComplete;
     expect(element['_scale']).toBeCloseTo(1.0, 2);
 
-    const fitBtn = element.shadowRoot?.querySelector('.zoom-controls button[title="Fit to screen"]') as HTMLElement;
+    const fitBtn = element.shadowRoot?.querySelector(
+      '.zoom-controls button[title="Fit to screen"]'
+    ) as HTMLElement;
     expect(fitBtn).not.toBeNull();
     element['_panX'] = 999;
     fitBtn.click();
@@ -338,7 +411,9 @@ describe('GeneticsTreeView', () => {
   });
 
   it('should handle families mode layout', async () => {
-    const familiesBtn = element.shadowRoot?.querySelector('.seg button:nth-child(3)') as HTMLElement;
+    const familiesBtn = element.shadowRoot?.querySelector(
+      '.seg button:nth-child(3)'
+    ) as HTMLElement;
     familiesBtn.click();
     await element.updateComplete;
     expect(element['_sm'].mode).toBe('families');
@@ -363,8 +438,9 @@ describe('GeneticsTreeView', () => {
   });
 
   it('should handle generation filter', async () => {
-    const genChipP1 = Array.from(element.shadowRoot?.querySelectorAll('.gen-chip') ?? [])
-      .find(c => c.textContent?.trim() === 'P1') as HTMLElement;
+    const genChipP1 = Array.from(element.shadowRoot?.querySelectorAll('.gen-chip') ?? []).find(
+      (c) => c.textContent?.trim() === 'P1'
+    ) as HTMLElement;
     genChipP1.click();
     await element.updateComplete;
     expect(element['_sm'].genFilter).toBe('P1');
@@ -458,7 +534,9 @@ describe('GeneticsTreeView', () => {
     const events: CustomEvent[] = [];
     element.addEventListener('open-strain-editor', (e) => events.push(e as CustomEvent));
 
-    const libraryBtn = element.shadowRoot?.querySelector('.detail-actions .pill-btn:not(.active)') as HTMLElement;
+    const libraryBtn = element.shadowRoot?.querySelector(
+      '.detail-actions .pill-btn:not(.active)'
+    ) as HTMLElement;
     expect(libraryBtn).not.toBeNull();
     libraryBtn.click();
 
@@ -472,8 +550,15 @@ describe('GeneticsTreeView', () => {
     const minimap = element.shadowRoot?.querySelector('.minimap') as SVGElement;
     expect(minimap).not.toBeNull();
     vi.spyOn(minimap, 'getBoundingClientRect').mockReturnValue({
-      left: 0, top: 0, width: 120, height: 80,
-      bottom: 80, right: 120, x: 0, y: 0, toJSON: () => {},
+      left: 0,
+      top: 0,
+      width: 120,
+      height: 80,
+      bottom: 80,
+      right: 120,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
     });
 
     const before = { panX: element['_panX'], panY: element['_panY'] };
@@ -528,7 +613,9 @@ describe('GeneticsTreeView', () => {
     await element.updateComplete;
 
     const detailParents = element.shadowRoot?.querySelectorAll('.detail-panel .detail-parent');
-    const roles = Array.from(detailParents ?? []).map((el) => el.querySelector('.role')?.textContent);
+    const roles = Array.from(detailParents ?? []).map(
+      (el) => el.querySelector('.role')?.textContent
+    );
     expect(roles).not.toContain('Father');
     expect(roles).toContain('Mother');
   });
@@ -539,7 +626,9 @@ describe('GeneticsTreeView', () => {
     await element.updateComplete;
 
     const detailParents = element.shadowRoot?.querySelectorAll('.detail-panel .detail-parent');
-    const roles = Array.from(detailParents ?? []).map((el) => el.querySelector('.role')?.textContent);
+    const roles = Array.from(detailParents ?? []).map(
+      (el) => el.querySelector('.role')?.textContent
+    );
     expect(roles).not.toContain('Mother');
     expect(roles).toContain('Father');
   });
@@ -557,7 +646,16 @@ describe('GeneticsTreeView', () => {
 
   it('should show overflow count when node has more than 5 children', async () => {
     const manyKidsNodes: TreeNode[] = [
-      { id: 'root', name: 'Root', strain: 'S', breeder: 'B', pheno: 'P1', gen: 'P1', type: 'strain', parents: { mother: null, father: null } },
+      {
+        id: 'root',
+        name: 'Root',
+        strain: 'S',
+        breeder: 'B',
+        pheno: 'P1',
+        gen: 'P1',
+        type: 'strain',
+        parents: { mother: null, father: null },
+      },
       ...Array.from({ length: 6 }, (_, i) => ({
         id: `k${i}`,
         name: `Kid ${i}`,

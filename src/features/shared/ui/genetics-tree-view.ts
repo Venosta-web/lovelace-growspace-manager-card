@@ -44,6 +44,25 @@ const GEN_COLORS: Record<string, string> = {
   CL: '#e91e63',
 };
 
+const COMPACT_VIEW_MAX_WIDTH = 600;
+const LARGE_TREE_NODE_COUNT = 50;
+
+export function shouldStartCompactLineage(options: {
+  width: number;
+  nodeCount: number;
+  mode: ViewMode;
+  focalId: string | null;
+  alreadyAdapted: boolean;
+}): boolean {
+  return (
+    options.width <= COMPACT_VIEW_MAX_WIDTH &&
+    options.nodeCount > LARGE_TREE_NODE_COUNT &&
+    options.mode === 'tree' &&
+    options.focalId === null &&
+    !options.alreadyAdapted
+  );
+}
+
 function genColor(gen: string): string {
   return GEN_COLORS[gen] ?? '#555';
 }
@@ -70,6 +89,7 @@ export class GeneticsTreeView extends LitElement {
   private _childrenOf: Record<string, string[]> = {};
   private _byId: Record<string, TreeNode> = {};
   private _resizeObs?: ResizeObserver;
+  private _adaptedForCompactViewport = false;
   /**
    * The `sm.reframeGen` value pinned by the last pan/zoom gesture. Auto-refit is
    * armed while `sm.reframeGen > _panGen`. Starts at -1 so the first layout is
@@ -102,6 +122,7 @@ export class GeneticsTreeView extends LitElement {
         }
       }
       if (changed) {
+        this._adaptForCompactViewport();
         this._fitToScreen();
         this.requestUpdate();
       }
@@ -115,6 +136,7 @@ export class GeneticsTreeView extends LitElement {
           if (rect.width > 0) {
             this._viewW = rect.width;
             this._viewH = rect.height;
+            this._adaptForCompactViewport();
             this._fitToScreen();
             this.requestUpdate();
           }
@@ -142,6 +164,7 @@ export class GeneticsTreeView extends LitElement {
       const { byId, childrenOf } = buildIndex(this.nodes);
       this._byId = byId;
       this._childrenOf = childrenOf;
+      this._adaptForCompactViewport();
     }
 
     // Recompute keys off the relayout-affecting SM/nodes identity — not an
@@ -164,6 +187,27 @@ export class GeneticsTreeView extends LitElement {
     ) {
       this._fitToScreen();
     }
+  }
+
+  private _adaptForCompactViewport(): void {
+    if (
+      !shouldStartCompactLineage({
+        width: this._viewW,
+        nodeCount: this.nodes.length,
+        mode: this._sm.mode,
+        focalId: this._sm.focalId,
+        alreadyAdapted: this._adaptedForCompactViewport,
+      })
+    ) {
+      return;
+    }
+
+    this._sm = transition(this._sm, {
+      type: 'SET_MODE',
+      mode: 'lineage',
+      nodes: this.nodes,
+    });
+    this._adaptedForCompactViewport = true;
   }
 
   /**
@@ -435,7 +479,11 @@ export class GeneticsTreeView extends LitElement {
           <button
             class="${this._sm.mode === 'tree' ? 'active' : ''}"
             @click=${() => {
-              this._sm = transition(this._sm, { type: 'SET_MODE', mode: 'tree', nodes: this.nodes });
+              this._sm = transition(this._sm, {
+                type: 'SET_MODE',
+                mode: 'tree',
+                nodes: this.nodes,
+              });
             }}
           >
             Tree
