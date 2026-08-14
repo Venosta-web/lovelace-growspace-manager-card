@@ -120,7 +120,7 @@ export class Heatmap3D extends LitElement {
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       color: rgba(255, 255, 255, 0.7);
       text-transform: uppercase;
       font-weight: 500;
@@ -209,7 +209,7 @@ export class Heatmap3D extends LitElement {
     .legend-labels {
       display: flex;
       justify-content: space-between;
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       color: #9e9e9e;
     }
 
@@ -231,7 +231,7 @@ export class Heatmap3D extends LitElement {
       grid-column: 1 / span 3;
       display: flex;
       justify-content: space-between;
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       color: #757575;
       margin-top: -8px;
       margin-bottom: 4px;
@@ -293,7 +293,7 @@ export class Heatmap3D extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 8px;
+      font-size: var(--font-size-xs);
     }
     /* Side Panel Styles */
     .side-panel {
@@ -324,7 +324,7 @@ export class Heatmap3D extends LitElement {
     }
     .side-panel h3 {
       margin: 0;
-      font-size: 0.9rem;
+      font-size: var(--font-size-sm);
       font-weight: 600;
       color: #448aff;
       letter-spacing: 0.5px;
@@ -339,7 +339,7 @@ export class Heatmap3D extends LitElement {
       gap: 8px;
     }
     .sensor-header {
-      font-size: 0.8rem;
+      font-size: var(--font-size-supporting);
       font-weight: 500;
       color: #e0e0e0;
       display: flex;
@@ -357,7 +357,7 @@ export class Heatmap3D extends LitElement {
       gap: 8px;
     }
     .slider-row label {
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       color: #757575;
       width: 10px;
       font-weight: bold;
@@ -378,7 +378,7 @@ export class Heatmap3D extends LitElement {
       cursor: pointer;
     }
     .slider-val {
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       color: #9e9e9e;
       text-align: right;
       width: 25px;
@@ -400,7 +400,7 @@ export class Heatmap3D extends LitElement {
       padding: 6px 2px;
       border-radius: var(--border-radius-sm, 8px);
       cursor: pointer;
-      font-size: 9px;
+      font-size: var(--font-size-xs);
       font-weight: 600;
       text-transform: uppercase;
       transition: all 0.2s ease;
@@ -443,7 +443,7 @@ export class Heatmap3D extends LitElement {
     }
     .tooltip-strain {
       font-weight: 700;
-      font-size: 13px;
+      font-size: var(--font-size-supporting);
       color: #448aff;
       display: block;
     }
@@ -462,7 +462,7 @@ export class Heatmap3D extends LitElement {
       color: #757575;
       font-weight: 500;
       text-transform: uppercase;
-      font-size: 9px;
+      font-size: var(--font-size-xs);
       letter-spacing: 0.5px;
     }
     .tooltip-value {
@@ -472,7 +472,7 @@ export class Heatmap3D extends LitElement {
     .tooltip-stage-pill {
       padding: 2px 8px;
       border-radius: var(--border-radius-md, 12px);
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       font-weight: 600;
       text-transform: uppercase;
     }

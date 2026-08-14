@@ -680,7 +680,7 @@ export class GrowspaceEnvChart extends LitElement {
       position: absolute;
       bottom: 19px;
       z-index: 2;
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       font-weight: 500;
       letter-spacing: 0.04em;
       color: var(--secondary-text-color, #aaa);
@@ -699,7 +699,7 @@ export class GrowspaceEnvChart extends LitElement {
       position: absolute;
       left: 8px;
       z-index: 2;
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       font-weight: 600;
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.02em;
