@@ -1,5 +1,6 @@
 import { LitElement, html, css, PropertyValues, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import {
   mdiClose,
   mdiCloudUpload,
@@ -786,6 +787,19 @@ export class StrainLibraryDialog extends LitElement {
         overflow: hidden;
       }
 
+      /*
+       * Layout-transparent wrapper: exists to carry the tabpanel semantics for the
+       * workspace tablist, so it must pass the container's flex sizing straight
+       * through to whichever tab content it holds.
+       */
+      .workspace-panel {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
       /* Main tab bar */
       .main-tab-bar {
         display: flex;
@@ -815,6 +829,11 @@ export class StrainLibraryDialog extends LitElement {
       }
       .tab-btn:hover:not(.active) {
         color: var(--primary-text-color);
+      }
+      .tab-btn:focus-visible,
+      .tab-maximize-btn:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: -2px;
       }
       .tab-maximize-btn {
         display: flex;
@@ -1159,131 +1178,149 @@ export class StrainLibraryDialog extends LitElement {
       >
         <div class="glass-dialog-container">
           ${this._renderTabBar()}
-          ${this._activeMainTab === 'tree'
-            ? this._renderTreeViewTab()
-            : this._activeMainTab === 'seeds'
-              ? html`
-                  <seeds-genetics-tab
-                    .strains=${this.strains}
-                    .seedBatches=${this.seedBatches}
-                    .pollinationEvents=${this.pollinationEvents}
-                    .plants=${this.plants}
-                    .onSeedDataChanged=${this.onSeedDataChanged}
-                    .onAddSeedBatch=${this.onAddSeedBatch}
-                    .onUpdateSeedBatch=${this.onUpdateSeedBatch}
-                    .onLogPollination=${this.onLogPollination}
-                    .onHarvestSeeds=${this.onHarvestSeeds}
-                    .onUpdatePollination=${this.onUpdatePollination}
-                    .onDeletePollination=${this.onDeletePollination}
-                    .onDeleteSeedBatch=${this.onDeleteSeedBatch}
-                    .onSowSeeds=${this.onSowSeeds}
-                    .initialSubView=${this.initialSubView}
-                    .prefilledReceiverId=${this.prefilledReceiverId}
-                    @close=${() => this.dispatchEvent(new CustomEvent('close'))}
-                  ></seeds-genetics-tab>
-                `
-              : this._view === 'browse'
+          <div
+            class="workspace-panel"
+            role="tabpanel"
+            id="workspace-panel-${this._activeMainTab}"
+            aria-labelledby="workspace-tab-${this._activeMainTab}"
+          >
+            ${this._activeMainTab === 'tree'
+              ? this._renderTreeViewTab()
+              : this._activeMainTab === 'seeds'
                 ? html`
-                    <strain-browse-view
-                      .hass=${this.hass}
+                    <seeds-genetics-tab
                       .strains=${this.strains}
-                      .activePlantCounts=${this.activePlantCounts}
-                      .libraryFilter=${this._libraryFilter}
-                      @strain-selected=${(e: CustomEvent) => {
-                        this._editingStrain = e.detail.strain;
-                        this._view = 'editor';
-                      }}
-                      @new-strain=${() => {
-                        this._editingStrain = undefined;
-                        this._view = 'editor';
-                      }}
-                      @filter-changed=${(e: CustomEvent) => {
-                        this._libraryFilter = e.detail.filter;
-                      }}
-                      @manage-breeders-requested=${() => {
-                        this._breederDialogOpen = true;
-                      }}
-                      @import-requested=${() => {
-                        this._importDialogOpen = true;
-                      }}
-                      @get-recommendation=${() =>
-                        this.dispatchEvent(new CustomEvent('get-recommendation'))}
-                      @export-library=${() => this.dispatchEvent(new CustomEvent('export-library'))}
-                      @strain-delete-confirmed=${(e: CustomEvent) =>
-                        this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }))}
+                      .seedBatches=${this.seedBatches}
+                      .pollinationEvents=${this.pollinationEvents}
+                      .plants=${this.plants}
+                      .onSeedDataChanged=${this.onSeedDataChanged}
+                      .onAddSeedBatch=${this.onAddSeedBatch}
+                      .onUpdateSeedBatch=${this.onUpdateSeedBatch}
+                      .onLogPollination=${this.onLogPollination}
+                      .onHarvestSeeds=${this.onHarvestSeeds}
+                      .onUpdatePollination=${this.onUpdatePollination}
+                      .onDeletePollination=${this.onDeletePollination}
+                      .onDeleteSeedBatch=${this.onDeleteSeedBatch}
+                      .onSowSeeds=${this.onSowSeeds}
+                      .initialSubView=${this.initialSubView}
+                      .prefilledReceiverId=${this.prefilledReceiverId}
                       @close=${() => this.dispatchEvent(new CustomEvent('close'))}
-                    ></strain-browse-view>
+                    ></seeds-genetics-tab>
                   `
-                : html`
-                    <strain-editor-view
-                      .editingStrain=${this._editingStrain}
-                      .strains=${this.strains}
-                      .store=${this.store}
-                      .hass=${this.hass}
-                      .source=${this.source}
-                      .returnPayload=${this.returnPayload}
-                      .onSave=${async (strain: import('../types').StrainEntry) => {
-                        try {
-                          await updateStrainMeta(strain);
-                          showToast('Strain updated successfully!', 'success');
-                          await fetchStrainLibrary({ cache: true, force: true });
-                        } catch (e) {
-                          showError(e, 'Failed to update strain');
-                        }
-                        this._view = 'browse';
-                        this._editingStrain = undefined;
-                        this.dispatchEvent(new CustomEvent('data-changed'));
-                      }}
-                      @view-lineage=${(_e: CustomEvent) => {
-                        this.focusLineage = true;
-                        this._cameFromEditor = true;
-                        this._activeMainTab = 'tree';
-                      }}
-                      @editing-strain-changed=${(e: CustomEvent) => {
-                        this._editingStrain = e.detail.strain;
-                      }}
-                      @editor-back=${() => {
-                        this._view = 'browse';
-                        this._editingStrain = undefined;
-                      }}
-                      @delete-strain=${(e: CustomEvent) => {
-                        this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }));
-                        this._view = 'browse';
-                        this._editingStrain = undefined;
-                      }}
-                      @strain-created-at-source=${(e: CustomEvent) => {
-                        this.dispatchEvent(
-                          new CustomEvent('strain-created-at-source', {
-                            detail: e.detail,
-                            bubbles: true,
-                            composed: true,
-                          })
-                        );
-                      }}
-                      @open-print-label=${(e: CustomEvent) => {
-                        this.dispatchEvent(
-                          new CustomEvent('open-print-label', {
-                            detail: e.detail,
-                            bubbles: true,
-                            composed: true,
-                          })
-                        );
-                      }}
-                      @import-library=${(e: CustomEvent) => {
-                        this.dispatchEvent(new CustomEvent('import-library', { detail: e.detail }));
-                      }}
-                      @update-breeder=${(e: CustomEvent) => {
-                        this.dispatchEvent(new CustomEvent('update-breeder', { detail: e.detail }));
-                      }}
-                      @save-breeder=${(e: CustomEvent) => {
-                        this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }));
-                      }}
-                      @delete-breeder=${(e: CustomEvent) => {
-                        this.dispatchEvent(new CustomEvent('delete-breeder', { detail: e.detail }));
-                      }}
-                      @close=${() => this.dispatchEvent(new CustomEvent('close'))}
-                    ></strain-editor-view>
-                  `}
+                : this._view === 'browse'
+                  ? html`
+                      <strain-browse-view
+                        .hass=${this.hass}
+                        .strains=${this.strains}
+                        .activePlantCounts=${this.activePlantCounts}
+                        .libraryFilter=${this._libraryFilter}
+                        @strain-selected=${(e: CustomEvent) => {
+                          this._editingStrain = e.detail.strain;
+                          this._view = 'editor';
+                        }}
+                        @new-strain=${() => {
+                          this._editingStrain = undefined;
+                          this._view = 'editor';
+                        }}
+                        @filter-changed=${(e: CustomEvent) => {
+                          this._libraryFilter = e.detail.filter;
+                        }}
+                        @manage-breeders-requested=${() => {
+                          this._breederDialogOpen = true;
+                        }}
+                        @import-requested=${() => {
+                          this._importDialogOpen = true;
+                        }}
+                        @get-recommendation=${() =>
+                          this.dispatchEvent(new CustomEvent('get-recommendation'))}
+                        @export-library=${() =>
+                          this.dispatchEvent(new CustomEvent('export-library'))}
+                        @strain-delete-confirmed=${(e: CustomEvent) =>
+                          this.dispatchEvent(
+                            new CustomEvent('delete-strain', { detail: e.detail })
+                          )}
+                        @close=${() => this.dispatchEvent(new CustomEvent('close'))}
+                      ></strain-browse-view>
+                    `
+                  : html`
+                      <strain-editor-view
+                        .editingStrain=${this._editingStrain}
+                        .strains=${this.strains}
+                        .store=${this.store}
+                        .hass=${this.hass}
+                        .source=${this.source}
+                        .returnPayload=${this.returnPayload}
+                        .onSave=${async (strain: import('../types').StrainEntry) => {
+                          try {
+                            await updateStrainMeta(strain);
+                            showToast('Strain updated successfully!', 'success');
+                            await fetchStrainLibrary({ cache: true, force: true });
+                          } catch (e) {
+                            showError(e, 'Failed to update strain');
+                          }
+                          this._view = 'browse';
+                          this._editingStrain = undefined;
+                          this.dispatchEvent(new CustomEvent('data-changed'));
+                        }}
+                        @view-lineage=${(_e: CustomEvent) => {
+                          this.focusLineage = true;
+                          this._cameFromEditor = true;
+                          this._activeMainTab = 'tree';
+                        }}
+                        @editing-strain-changed=${(e: CustomEvent) => {
+                          this._editingStrain = e.detail.strain;
+                        }}
+                        @editor-back=${() => {
+                          this._view = 'browse';
+                          this._editingStrain = undefined;
+                        }}
+                        @delete-strain=${(e: CustomEvent) => {
+                          this.dispatchEvent(
+                            new CustomEvent('delete-strain', { detail: e.detail })
+                          );
+                          this._view = 'browse';
+                          this._editingStrain = undefined;
+                        }}
+                        @strain-created-at-source=${(e: CustomEvent) => {
+                          this.dispatchEvent(
+                            new CustomEvent('strain-created-at-source', {
+                              detail: e.detail,
+                              bubbles: true,
+                              composed: true,
+                            })
+                          );
+                        }}
+                        @open-print-label=${(e: CustomEvent) => {
+                          this.dispatchEvent(
+                            new CustomEvent('open-print-label', {
+                              detail: e.detail,
+                              bubbles: true,
+                              composed: true,
+                            })
+                          );
+                        }}
+                        @import-library=${(e: CustomEvent) => {
+                          this.dispatchEvent(
+                            new CustomEvent('import-library', { detail: e.detail })
+                          );
+                        }}
+                        @update-breeder=${(e: CustomEvent) => {
+                          this.dispatchEvent(
+                            new CustomEvent('update-breeder', { detail: e.detail })
+                          );
+                        }}
+                        @save-breeder=${(e: CustomEvent) => {
+                          this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }));
+                        }}
+                        @delete-breeder=${(e: CustomEvent) => {
+                          this.dispatchEvent(
+                            new CustomEvent('delete-breeder', { detail: e.detail })
+                          );
+                        }}
+                        @close=${() => this.dispatchEvent(new CustomEvent('close'))}
+                      ></strain-editor-view>
+                    `}
+          </div>
         </div>
       </ha-dialog>
 
@@ -1328,10 +1365,15 @@ export class StrainLibraryDialog extends LitElement {
             </div>
             <button
               class="md3-button text close"
+              aria-label="Close import strains"
               @click=${close}
               style="min-width:auto; padding:8px; margin-left: auto;"
             >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <svg
+                aria-hidden="true"
+                style="width:24px;height:24px;fill:currentColor;"
+                viewBox="0 0 24 24"
+              >
                 <path d="${mdiClose}"></path>
               </svg>
             </button>
@@ -1417,49 +1459,52 @@ export class StrainLibraryDialog extends LitElement {
     `;
   }
 
+  /**
+   * `aria-controls` is set only on the selected tab: panels render conditionally,
+   * so pointing at a panel id that isn't in the DOM would dangle.
+   */
+  private _renderWorkspaceTab(tab: 'strains' | 'seeds' | 'tree', label: string): TemplateResult {
+    const selected = this._activeMainTab === tab;
+    return html`
+      <button
+        class="tab-btn ${selected ? 'active' : ''}"
+        role="tab"
+        id="workspace-tab-${tab}"
+        aria-selected=${selected ? 'true' : 'false'}
+        aria-controls=${ifDefined(selected ? `workspace-panel-${tab}` : undefined)}
+        @click=${() => {
+          this._activeMainTab = tab;
+          this.focusLineage = false;
+          this._cameFromEditor = false;
+        }}
+      >
+        ${label}
+      </button>
+    `;
+  }
+
   private _renderTabBar(): TemplateResult {
     return html`
-      <div class="main-tab-bar">
-        <button
-          class="tab-btn ${this._activeMainTab === 'strains' ? 'active' : ''}"
-          @click=${() => {
-            this._activeMainTab = 'strains';
-            this.focusLineage = false;
-            this._cameFromEditor = false;
-          }}
-        >
-          Strains
-        </button>
-        <button
-          class="tab-btn ${this._activeMainTab === 'seeds' ? 'active' : ''}"
-          @click=${() => {
-            this._activeMainTab = 'seeds';
-            this.focusLineage = false;
-            this._cameFromEditor = false;
-          }}
-        >
-          Seeds &amp; Genetics
-        </button>
-        <button
-          class="tab-btn ${this._activeMainTab === 'tree' ? 'active' : ''}"
-          @click=${() => {
-            this._activeMainTab = 'tree';
-            this.focusLineage = false;
-            this._cameFromEditor = false;
-          }}
-        >
-          Tree View
-        </button>
+      <div class="main-tab-bar" role="tablist" aria-label="Strain library workspace">
+        ${this._renderWorkspaceTab('strains', 'Strains')}
+        ${this._renderWorkspaceTab('seeds', 'Seeds & Genetics')}
+        ${this._renderWorkspaceTab('tree', 'Tree View')}
         ${this._activeMainTab === 'tree'
           ? html`
               <button
                 class="tab-maximize-btn"
+                aria-label="${this._treeMaximized ? 'Restore tree view' : 'Maximize tree view'}"
+                aria-pressed=${this._treeMaximized ? 'true' : 'false'}
                 title="${this._treeMaximized ? 'Restore' : 'Maximize'}"
                 @click=${() => {
                   this._treeMaximized = !this._treeMaximized;
                 }}
               >
-                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <svg
+                  aria-hidden="true"
+                  style="width:18px;height:18px;fill:currentColor;"
+                  viewBox="0 0 24 24"
+                >
                   <path d="${this._treeMaximized ? mdiArrowCollapse : mdiArrowExpand}"></path>
                 </svg>
               </button>

@@ -1,5 +1,6 @@
 import { LitElement, html, css, nothing, svg, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import {
   mdiMagnify,
   mdiClose,
@@ -381,7 +382,12 @@ export class GeneticsTreeView extends LitElement {
         }}
       >
         ${this._renderToolbar(visible, breeders)} ${this._renderFilterRow(gens)}
-        <div class="canvas-wrap">
+        <div
+          class="canvas-wrap"
+          role="tabpanel"
+          id="genetics-mode-panel"
+          aria-labelledby="genetics-mode-tab-${this._sm.mode}"
+        >
           <div class="bg-grid"></div>
           <div
             class="canvas"
@@ -431,39 +437,9 @@ export class GeneticsTreeView extends LitElement {
             : nothing}
         </div>
 
-        <div class="seg" role="tablist" aria-label="View mode">
-          <button
-            class="${this._sm.mode === 'tree' ? 'active' : ''}"
-            @click=${() => {
-              this._sm = transition(this._sm, { type: 'SET_MODE', mode: 'tree', nodes: this.nodes });
-            }}
-          >
-            Tree
-          </button>
-          <button
-            class="${this._sm.mode === 'lineage' ? 'active' : ''}"
-            @click=${() => {
-              this._sm = transition(this._sm, {
-                type: 'SET_MODE',
-                mode: 'lineage',
-                nodes: this.nodes,
-              });
-            }}
-          >
-            Lineage
-          </button>
-          <button
-            class="${this._sm.mode === 'families' ? 'active' : ''}"
-            @click=${() => {
-              this._sm = transition(this._sm, {
-                type: 'SET_MODE',
-                mode: 'families',
-                nodes: this.nodes,
-              });
-            }}
-          >
-            Families
-          </button>
+        <div class="seg" role="tablist" aria-label="Genetics view mode">
+          ${this._renderModeTab('tree', 'Tree')} ${this._renderModeTab('lineage', 'Lineage')}
+          ${this._renderModeTab('families', 'Families')}
         </div>
 
         ${breeders.length > 1
@@ -844,18 +820,18 @@ export class GeneticsTreeView extends LitElement {
                 <div class="detail-section-label">Parents</div>
                 ${motherNode
                   ? html`
-                      <div class="detail-parent" @click=${() => this._jumpTo(motherNode.id)}>
+                      <button class="detail-parent" @click=${() => this._jumpTo(motherNode.id)}>
                         <span class="role mother">Mother</span>
                         <span class="pname" title="${motherNode.name}">${motherNode.name}</span>
-                      </div>
+                      </button>
                     `
                   : nothing}
                 ${fatherNode
                   ? html`
-                      <div class="detail-parent" @click=${() => this._jumpTo(fatherNode.id)}>
+                      <button class="detail-parent" @click=${() => this._jumpTo(fatherNode.id)}>
                         <span class="role father">Father</span>
                         <span class="pname" title="${fatherNode.name}">${fatherNode.name}</span>
-                      </div>
+                      </button>
                     `
                   : nothing}
               </div>
@@ -869,10 +845,10 @@ export class GeneticsTreeView extends LitElement {
                 </div>
                 ${kidsShown.map(
                   (k) => html`
-                    <div class="detail-parent" @click=${() => this._jumpTo(k.id)}>
+                    <button class="detail-parent" @click=${() => this._jumpTo(k.id)}>
                       <span class="role" style="color:${genColor(k.gen)}">${k.gen}</span>
                       <span class="pname" title="${k.name}">${k.name}</span>
-                    </div>
+                    </button>
                   `
                 )}
               </div>
@@ -901,30 +877,55 @@ export class GeneticsTreeView extends LitElement {
   // Render: zoom controls
   // ---------------------------------------------------------------------------
 
+  private _renderModeTab(mode: ViewMode, label: string): TemplateResult {
+    const selected = this._sm.mode === mode;
+    return html`
+      <button
+        class="${selected ? 'active' : ''}"
+        role="tab"
+        id="genetics-mode-tab-${mode}"
+        aria-selected=${selected ? 'true' : 'false'}
+        aria-controls=${ifDefined(selected ? 'genetics-mode-panel' : undefined)}
+        @click=${() => {
+          this._sm = transition(this._sm, { type: 'SET_MODE', mode, nodes: this.nodes });
+        }}
+      >
+        ${label}
+      </button>
+    `;
+  }
+
   private _renderZoomControls(): TemplateResult {
     return html`
       <div class="zoom-controls">
         <button
           class="icon-btn"
+          aria-label="Zoom in"
           @click=${() => {
             this._panGen = this._sm.reframeGen;
             this._scale = Math.min(this._scale * 1.2, 4.0);
           }}
         >
-          <svg viewBox="0 0 24 24"><path d="${mdiPlus}" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="${mdiPlus}" /></svg>
         </button>
-        <span class="zoom-pct">${Math.round(this._scale * 100)}%</span>
+        <span class="zoom-pct" aria-live="polite">${Math.round(this._scale * 100)}%</span>
         <button
           class="icon-btn"
+          aria-label="Zoom out"
           @click=${() => {
             this._panGen = this._sm.reframeGen;
             this._scale = Math.max(this._scale / 1.2, 0.08);
           }}
         >
-          <svg viewBox="0 0 24 24"><path d="${mdiMinus}" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="${mdiMinus}" /></svg>
         </button>
-        <button class="icon-btn" @click=${() => this._fitToScreen()} title="Fit to screen">
-          <svg viewBox="0 0 24 24"><path d="${mdiFitToPageOutline}" /></svg>
+        <button
+          class="icon-btn"
+          aria-label="Fit to screen"
+          title="Fit to screen"
+          @click=${() => this._fitToScreen()}
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="${mdiFitToPageOutline}" /></svg>
         </button>
       </div>
     `;
@@ -1650,6 +1651,16 @@ export class GeneticsTreeView extends LitElement {
       padding: 3px 0;
       cursor: pointer;
       border-radius: 4px;
+      width: 100%;
+      background: none;
+      border: none;
+      font: inherit;
+      color: inherit;
+      text-align: left;
+    }
+    .detail-parent:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
     }
     .detail-parent:hover {
       background: rgba(255, 255, 255, 0.04);

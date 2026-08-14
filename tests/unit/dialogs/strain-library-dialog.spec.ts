@@ -118,8 +118,10 @@ describe('StrainLibraryDialog', () => {
         });
 
         it('should switch to editor when a card is clicked', async () => {
-            const card = browseView?.shadowRoot?.querySelector('.strain-card');
-            (card as HTMLElement)?.click();
+            // The card container is non-interactive; the title button carries the
+            // activation and stretches its hit area over the whole card.
+            const openBtn = browseView?.shadowRoot?.querySelector('.strain-card .sc-open-btn');
+            (openBtn as HTMLElement)?.click();
             await element.updateComplete;
 
             expect((element as any)._view).toBe('editor');

@@ -87,7 +87,8 @@ export class StrainEditorView extends LitElement {
             };
         // Preserve overlay sub-state across strain switches, but reset lineage-editing
         // since lineage tree is strain-specific.
-        const sub = this._sm.sub.kind === 'lineage-editing' ? { kind: 'idle' as const } : this._sm.sub;
+        const sub =
+          this._sm.sub.kind === 'lineage-editing' ? { kind: 'idle' as const } : this._sm.sub;
         this._sm = { ...createInitialSM(draft), sub };
         this._lineageTree = null;
         this._dispatchStateChange();
@@ -304,9 +305,7 @@ export class StrainEditorView extends LitElement {
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        this.dispatchEvent(
-          new CustomEvent('import-library', { detail: { file, replace } })
-        );
+        this.dispatchEvent(new CustomEvent('import-library', { detail: { file, replace } }));
         this._sm = transition(this._sm, { type: 'ImportCompleted' });
       }
     };
@@ -378,9 +377,7 @@ export class StrainEditorView extends LitElement {
 
   private _confirmDeleteBreeder() {
     if (this._sm.sub.kind !== 'breeder-confirm-delete') return;
-    this.dispatchEvent(
-      new CustomEvent('delete-breeder', { detail: { name: this._sm.sub.name } })
-    );
+    this.dispatchEvent(new CustomEvent('delete-breeder', { detail: { name: this._sm.sub.name } }));
     this._sm = transition(this._sm, { type: 'BreederDeleteConfirmed' });
   }
 
@@ -403,7 +400,9 @@ export class StrainEditorView extends LitElement {
     };
     // Apply merged fields individually via DraftFieldChanged
     for (const [key, value] of Object.entries(merged)) {
-      if (merged[key as keyof typeof merged] !== this._sm.draft[key as keyof typeof this._sm.draft]) {
+      if (
+        merged[key as keyof typeof merged] !== this._sm.draft[key as keyof typeof this._sm.draft]
+      ) {
         this._sm = transition(this._sm, {
           type: 'DraftFieldChanged',
           field: key as keyof StrainEntry,
@@ -466,7 +465,11 @@ export class StrainEditorView extends LitElement {
     const gallery = this._gallery().map((img, i) => ({ ...img, is_thumbnail: i === index }));
     const thumb = gallery[index];
     this._sm = transition(this._sm, { type: 'DraftFieldChanged', field: 'images', value: gallery });
-    this._sm = transition(this._sm, { type: 'DraftFieldChanged', field: 'image', value: thumb.path });
+    this._sm = transition(this._sm, {
+      type: 'DraftFieldChanged',
+      field: 'image',
+      value: thumb.path,
+    });
     this._sm = transition(this._sm, {
       type: 'DraftFieldChanged',
       field: 'image_crop_meta',
@@ -500,10 +503,11 @@ export class StrainEditorView extends LitElement {
   render() {
     const sub = this._sm.sub;
     return html`
-      ${this.renderEditorView()}
-      ${sub.kind === 'cropping' ? this.renderCropOverlay() : nothing}
+      ${this.renderEditorView()} ${sub.kind === 'cropping' ? this.renderCropOverlay() : nothing}
       ${sub.kind === 'importing' ? this.renderImportDialog() : nothing}
-      ${sub.kind === 'breeder-list' || sub.kind === 'breeder-editing' ? this.renderBreederDialog() : nothing}
+      ${sub.kind === 'breeder-list' || sub.kind === 'breeder-editing'
+        ? this.renderBreederDialog()
+        : nothing}
       ${sub.kind === 'breeder-confirm-delete' ? this.renderBreederDeleteConfirmation() : nothing}
       ${sub.kind === 'seedfinder' ? this.renderSeedfinderDialog() : nothing}
     `;
@@ -548,11 +552,16 @@ export class StrainEditorView extends LitElement {
         </div>
         <button
           class="md3-button text close"
+          aria-label="Close strain editor"
           @click=${() =>
             this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }))}
           style="min-width:auto; padding:8px; margin-left: auto;"
         >
-          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+          <svg
+            aria-hidden="true"
+            style="width:24px;height:24px;fill:currentColor;"
+            viewBox="0 0 24 24"
+          >
             <path d="${mdiClose}"></path>
           </svg>
         </button>
@@ -572,7 +581,9 @@ export class StrainEditorView extends LitElement {
                 <button
                   class="md3-button text"
                   style="height:24px; padding:0 8px; font-size:0.75rem; color:var(--accent-green); min-width:auto;"
-                  @click=${() => { this._sm = transition(this._sm, { type: 'SeedfinderOpened' }); }}
+                  @click=${() => {
+                    this._sm = transition(this._sm, { type: 'SeedfinderOpened' });
+                  }}
                 >
                   <svg
                     style="width:14px;height:14px;fill:currentColor; margin-right:4px;"
@@ -686,8 +697,8 @@ export class StrainEditorView extends LitElement {
           <!-- RIGHT COL: GENETICS -->
           <div class="editor-col">
             <div class="sd-form-group">
-              <label class="sd-label">Type *</label>
-              <div class="type-selector-grid">
+              <label class="sd-label" id="strain-type-label">Type *</label>
+              <div class="type-selector-grid" role="radiogroup" aria-labelledby="strain-type-label">
                 ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map((t) => {
                   let icon = mdiLeaf;
                   if (t === 'Indica') icon = mdiWeatherNight;
@@ -696,15 +707,18 @@ export class StrainEditorView extends LitElement {
 
                   const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
                   return html`
-                    <div
+                    <button
+                      type="button"
                       class="type-option ${isActive ? 'active' : ''}"
+                      role="radio"
+                      aria-checked=${isActive ? 'true' : 'false'}
                       @click=${() => this._handleEditorChange('type', t)}
                     >
-                      <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+                      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
                       <span class="type-label" style="font-size:0.85rem; font-weight:500;"
                         >${t}</span
                       >
-                    </div>
+                    </button>
                   `;
                 })}
               </div>
@@ -1166,7 +1180,8 @@ export class StrainEditorView extends LitElement {
 
           <!-- Add button — opens choice menu -->
           <button
-            style="aspect-ratio:1; border-radius:8px; border:2px dashed rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:${this._sm.status.kind === 'applying'
+            style="aspect-ratio:1; border-radius:8px; border:2px dashed rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:${this
+              ._sm.status.kind === 'applying'
               ? 'wait'
               : 'pointer'}; color:var(--secondary-text-color); font-size:0.75rem; background:none;"
             ?disabled=${this._sm.status.kind === 'applying'}
@@ -1198,13 +1213,14 @@ export class StrainEditorView extends LitElement {
               </div>
             `
           : nothing}
-
       </div>
     `;
   }
 
   private renderImportDialog(): TemplateResult {
-    const close = () => { this._sm = transition(this._sm, { type: 'ImportCancelled' }); };
+    const close = () => {
+      this._sm = transition(this._sm, { type: 'ImportCancelled' });
+    };
     return html`
       <ha-dialog
         open
@@ -1225,10 +1241,15 @@ export class StrainEditorView extends LitElement {
             </div>
             <button
               class="md3-button text close"
+              aria-label="Close import strains"
               @click=${close}
               style="min-width:auto; padding:8px; margin-left: auto;"
             >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <svg
+                aria-hidden="true"
+                style="width:24px;height:24px;fill:currentColor;"
+                viewBox="0 0 24 24"
+              >
                 <path d="${mdiClose}"></path>
               </svg>
             </button>
@@ -1250,7 +1271,10 @@ export class StrainEditorView extends LitElement {
                   type="radio"
                   name="import_mode"
                   .checked=${this._sm.sub.kind === 'importing' && !this._sm.sub.replace}
-                  @change=${() => { if (this._sm.sub.kind === 'importing' && this._sm.sub.replace) this._sm = transition(this._sm, { type: 'ImportReplaceToggled' }); }}
+                  @change=${() => {
+                    if (this._sm.sub.kind === 'importing' && this._sm.sub.replace)
+                      this._sm = transition(this._sm, { type: 'ImportReplaceToggled' });
+                  }}
                   style="accent-color: var(--accent-green); transform: scale(1.2);"
                 />
                 <div>
@@ -1268,7 +1292,10 @@ export class StrainEditorView extends LitElement {
                   type="radio"
                   name="import_mode"
                   .checked=${this._sm.sub.kind === 'importing' && this._sm.sub.replace}
-                  @change=${() => { if (this._sm.sub.kind === 'importing' && !this._sm.sub.replace) this._sm = transition(this._sm, { type: 'ImportReplaceToggled' }); }}
+                  @change=${() => {
+                    if (this._sm.sub.kind === 'importing' && !this._sm.sub.replace)
+                      this._sm = transition(this._sm, { type: 'ImportReplaceToggled' });
+                  }}
                   style="accent-color: var(--accent-green); transform: scale(1.2);"
                 />
                 <div>
@@ -1297,7 +1324,9 @@ export class StrainEditorView extends LitElement {
 
   private renderBreederDialog(): TemplateResult {
     const breeders = this._getUniqueBreeders();
-    const close = () => { this._sm = transition(this._sm, { type: 'BreederDialogClosed' }); };
+    const close = () => {
+      this._sm = transition(this._sm, { type: 'BreederDialogClosed' });
+    };
 
     return html`
       <ha-dialog
@@ -1328,10 +1357,15 @@ export class StrainEditorView extends LitElement {
             </div>
             <button
               class="md3-button text close"
+              aria-label="Close breeder manager"
               @click=${close}
               style="min-width:auto; padding:8px; margin-left: auto;"
             >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <svg
+                aria-hidden="true"
+                style="width:24px;height:24px;fill:currentColor;"
+                viewBox="0 0 24 24"
+              >
                 <path d="${mdiClose}"></path>
               </svg>
             </button>
@@ -1451,7 +1485,9 @@ export class StrainEditorView extends LitElement {
           <button
             class="md3-button tonal"
             style="padding:0 12px; height:32px;"
-            @click=${() => { this._sm = transition(this._sm, { type: 'BreederSaved' }); }}
+            @click=${() => {
+              this._sm = transition(this._sm, { type: 'BreederSaved' });
+            }}
           >
             <svg
               style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
@@ -1525,7 +1561,11 @@ export class StrainEditorView extends LitElement {
                       class="md3-button text"
                       style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);"
                       @click=${() => {
-                        this._sm = transition(this._sm, { type: 'BreederEditFieldChanged', field: 'logo', value: '' });
+                        this._sm = transition(this._sm, {
+                          type: 'BreederEditFieldChanged',
+                          field: 'logo',
+                          value: '',
+                        });
                       }}
                     >
                       <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
@@ -1562,7 +1602,12 @@ export class StrainEditorView extends LitElement {
           : nothing}
 
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
-          <button class="md3-button tonal" @click=${() => { this._sm = transition(this._sm, { type: 'BreederSaved' }); }}>
+          <button
+            class="md3-button tonal"
+            @click=${() => {
+              this._sm = transition(this._sm, { type: 'BreederSaved' });
+            }}
+          >
             Cancel
           </button>
           <button
@@ -1581,7 +1626,9 @@ export class StrainEditorView extends LitElement {
   }
 
   private renderBreederDeleteConfirmation(): TemplateResult {
-    const breederName = (this._sm.sub as Extract<typeof this._sm.sub, { kind: 'breeder-confirm-delete' }>).name;
+    const breederName = (
+      this._sm.sub as Extract<typeof this._sm.sub, { kind: 'breeder-confirm-delete' }>
+    ).name;
     const affectedCount = this.strains.filter((s) => s.breeder === breederName).length;
 
     return html`
@@ -1633,7 +1680,9 @@ export class StrainEditorView extends LitElement {
         .open=${this._sm.sub.kind === 'seedfinder'}
         .initialStrain=${this._sm.draft.strain}
         .initialPheno=${this._sm.draft.phenotype}
-        @close=${() => { this._sm = transition(this._sm, { type: 'SeedfinderClosed' }); }}
+        @close=${() => {
+          this._sm = transition(this._sm, { type: 'SeedfinderClosed' });
+        }}
         @import=${this._handleSeedfinderImport}
       ></strain-import-dialog>
     `;
@@ -1837,9 +1886,15 @@ export class StrainEditorView extends LitElement {
         gap: 8px;
         transition: all 0.2s;
         text-align: center;
+        font: inherit;
+        color: inherit;
       }
       .type-option:hover {
         border-color: #666;
+      }
+      .type-option:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
       .type-option.active {
         background: var(--secondary-background-color, rgba(76, 175, 80, 0.1));
