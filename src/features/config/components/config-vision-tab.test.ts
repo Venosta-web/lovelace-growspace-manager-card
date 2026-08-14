@@ -48,7 +48,8 @@ describe('ConfigVisionTab — render', () => {
     const el = await mount(makeVm({ hasCameras: true, cameraEntities: ['camera.a'] }));
     expect(el.shadowRoot!.querySelector('.form-section')).not.toBeNull();
     expect(el.shadowRoot!.querySelectorAll('md3-number-input').length).toBe(3);
-    expect(el.shadowRoot!.querySelector('.chip')!.textContent).toContain('camera.a');
+    const picker = el.shadowRoot!.querySelector('config-entity-multi-select')!;
+    expect(picker.shadowRoot!.querySelector('.chip')!.textContent).toContain('camera.a');
   });
 });
 
@@ -56,7 +57,8 @@ describe('ConfigVisionTab — intents out', () => {
   it('emits env-draft-changed adding a camera entity', async () => {
     const el = await mount(makeVm());
     const received = listenPartials(el);
-    const input = el.shadowRoot!.querySelector<HTMLInputElement>('input.search-input-inner')!;
+    const picker = el.shadowRoot!.querySelector('config-entity-multi-select')!;
+    const input = picker.shadowRoot!.querySelector<HTMLInputElement>('input')!;
     input.value = 'camera.new';
     input.dispatchEvent(new Event('change'));
     expect(received).toEqual([{ cameraEntities: ['camera.new'] }]);

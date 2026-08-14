@@ -60,7 +60,7 @@ afterEach(() => {
 describe('ConfigSensorsTab — render', () => {
   it('renders seven entity pickers (3 multi-select rows + a single soil + co2 + substrate)', async () => {
     const el = await mount(makeVm());
-    const multi = el.shadowRoot!.querySelectorAll('.multi-select-container');
+    const multi = el.shadowRoot!.querySelectorAll('config-entity-multi-select');
     const single = el.shadowRoot!.querySelectorAll('.entity-select-container');
     expect(multi.length).toBe(5); // temp, humidity, vpd, light, substrate
     expect(single.length).toBe(2); // soil moisture, co2
@@ -74,7 +74,8 @@ describe('ConfigSensorsTab — render', () => {
         ),
       })
     );
-    expect(el.shadowRoot!.querySelectorAll('.chip').length).toBe(2);
+    const picker = el.shadowRoot!.querySelector('config-entity-multi-select')!;
+    expect(picker.shadowRoot!.querySelectorAll('.chip').length).toBe(2);
   });
 
   it('populates each picker datalist from options', async () => {
@@ -102,9 +103,8 @@ describe('ConfigSensorsTab — intents out', () => {
   it('emits env-draft-changed adding an entity to a multi-select', async () => {
     const el = await mount(makeVm());
     const received = listenPartials(el);
-    const input = el.shadowRoot!.querySelector<HTMLInputElement>(
-      '.multi-select-container input.search-input-inner'
-    )!;
+    const picker = el.shadowRoot!.querySelector('config-entity-multi-select')!;
+    const input = picker.shadowRoot!.querySelector<HTMLInputElement>('input')!;
     input.value = 'sensor.new';
     input.dispatchEvent(new Event('change'));
     expect(received).toEqual([{ temperatureSensors: ['sensor.new'] }]);
@@ -119,7 +119,8 @@ describe('ConfigSensorsTab — intents out', () => {
       })
     );
     const received = listenPartials(el);
-    const remove = el.shadowRoot!.querySelector<HTMLButtonElement>('.chip .chip-remove')!;
+    const picker = el.shadowRoot!.querySelector('config-entity-multi-select')!;
+    const remove = picker.shadowRoot!.querySelector<HTMLButtonElement>('.chip .chip-remove')!;
     expect(remove.tagName).toBe('BUTTON');
     expect(remove.getAttribute('aria-label')).toBe('Remove sensor.a');
     expect(getComputedStyle(remove).minWidth).toBe('44px');

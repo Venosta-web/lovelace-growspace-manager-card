@@ -21,6 +21,8 @@ import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui/md3-number-input';
 import '../../shared/ui/md3-text-input';
 import { renderGrowlightAcInfinityDevices } from './ac-infinity-growlight-editor';
+import './config-entity-multi-select';
+import './config-section-header';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
 import type { GrowLightConfig, AcInfinityGrowLight } from '../../../slices/growspace/schema';
 import type { GrowlightTabViewModel } from '../viewmodels/growlight-tab.viewmodel';
@@ -80,53 +82,6 @@ export class ConfigGrowlightTab extends LitElement {
         opacity: 0.5;
         pointer-events: none;
       }
-      .multi-select-container {
-        position: relative;
-      }
-      .multi-select-box {
-        border-radius: 4px 4px 0 0;
-        border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        padding: 8px;
-        min-height: 40px;
-      }
-      .chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
-        padding: 0 4px 0 12px;
-        font-size: 0.8rem;
-        min-height: 44px;
-      }
-      .chip-remove {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 44px;
-        min-height: 44px;
-        padding: 0;
-        border: 0;
-        background: transparent;
-        color: inherit;
-        font: inherit;
-        cursor: pointer;
-      }
-      .chip-remove:focus-visible {
-        outline: 2px solid var(--primary-text-color, #fff);
-        outline-offset: -4px;
-      }
-      .search-input-inner {
-        flex: 1;
-        min-width: 120px;
-        background: transparent;
-        border: none;
-        color: inherit;
-        outline: none;
-      }
     `,
   ];
 
@@ -179,10 +134,10 @@ export class ConfigGrowlightTab extends LitElement {
     const vm = this.vm;
     return html`
       <div class="detail-card">
-        <div class="section-header">
-          <ha-svg-icon .path=${mdiWhiteBalanceSunny}></ha-svg-icon>
-          <span>Grow Light Controller</span>
-        </div>
+        <config-section-header
+          .icon=${mdiWhiteBalanceSunny}
+          label="Grow Light Controller"
+        ></config-section-header>
         <div class="form-section">
           <label class="checkbox-label">
             <input
@@ -271,45 +226,15 @@ export class ConfigGrowlightTab extends LitElement {
   }
 
   private _multiSelect(label: string, values: string[], options: string[]): TemplateResult {
-    const listId = 'list-growlight-entities';
     return html`
-      <div class="multi-select-container">
-        <label class="md3-label-multi">${label}</label>
-        <div class="multi-select-box">
-          ${values.map(
-            (val) => html`
-              <div class="chip">
-                ${val}
-                <button
-                  type="button"
-                  class="chip-remove"
-                  aria-label=${`Remove ${val}`}
-                  title=${`Remove ${val}`}
-                  @click=${() =>
-                    this._update({ growlightEntities: values.filter((v) => v !== val) })}
-                >
-                  ×
-                </button>
-              </div>
-            `
-          )}
-          <input
-            class="search-input-inner"
-            list="${listId}"
-            placeholder=${values.length === 0 ? 'Add Entity...' : ''}
-            @change=${(e: Event) => {
-              const input = e.target as HTMLInputElement;
-              const val = input.value;
-              if (val && !values.includes(val))
-                this._update({ growlightEntities: [...values, val] });
-              input.value = '';
-            }}
-          />
-        </div>
-        <datalist id="${listId}">
-          ${options.map((eid) => html`<option value="${eid}"></option>`)}
-        </datalist>
-      </div>
+      <config-entity-multi-select
+        .label=${label}
+        .values=${values}
+        .options=${options}
+        list-id="list-growlight-entities"
+        @entity-values-changed=${(event: CustomEvent<{ values: string[] }>) =>
+          this._update({ growlightEntities: event.detail.values })}
+      ></config-entity-multi-select>
     `;
   }
 }

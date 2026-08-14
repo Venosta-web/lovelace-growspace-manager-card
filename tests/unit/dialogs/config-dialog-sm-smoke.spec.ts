@@ -105,8 +105,8 @@ describe('ConfigDialog — SM smoke test', () => {
 
         expect((element as any).editSelectedId).to.equal('gs1');
         expect((element as any).editName).to.equal('Growspace 1');
-        // Edit form contains multi-select containers for lungroom / camera rows
-        const containers = (await gsShadow(element)).querySelectorAll('.multi-select-container');
+        // Edit form contains shared multi-selects for lungroom / camera rows
+        const containers = (await gsShadow(element)).querySelectorAll('config-entity-multi-select');
         expect(containers?.length).to.be.greaterThan(0);
     });
 

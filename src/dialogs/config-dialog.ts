@@ -1047,85 +1047,6 @@ export class ConfigDialog extends LitElement {
         cursor: pointer;
       }
 
-      /* ── Multi-entity select ─────────────────────────────── */
-      .multi-select-container {
-        position: relative;
-        margin-bottom: 0;
-      }
-
-      .multi-select-box {
-        background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border-radius: 4px 4px 0 0;
-        border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-        padding: 26px 16px 6px;
-        min-height: 56px;
-        box-sizing: border-box;
-        position: relative;
-        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-      }
-
-      .multi-select-box:hover {
-        background: rgba(var(--secondary-background-color, 255, 255, 255), 0.08);
-        border-bottom-color: var(--primary-light-color-hover, rgba(255, 255, 255, 0.6));
-      }
-
-      .multi-select-box:focus-within {
-        background: rgba(var(--secondary-background-color, 255, 255, 255), 0.12);
-        border-bottom: 2px solid var(--primary-light-color-active, rgba(255, 255, 255, 0.6));
-        padding-bottom: 5px;
-      }
-
-      .md3-label-multi {
-        position: absolute;
-        top: 8px;
-        left: 16px;
-        font-size: 0.75rem;
-        color: var(--secondary-text-color);
-        pointer-events: none;
-        z-index: 10;
-      }
-
-      .chip {
-        display: inline-flex;
-        align-items: center;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-        border-radius: 16px;
-        padding: 4px 12px;
-        font-size: 0.9rem;
-        height: 24px;
-      }
-
-      .chip-remove {
-        cursor: pointer;
-        margin-left: 6px;
-        font-weight: bold;
-        opacity: 0.7;
-      }
-
-      .chip-remove:hover {
-        opacity: 1;
-      }
-
-      .search-input-inner {
-        flex: 1;
-        min-width: 100px;
-        border: none;
-        background: transparent;
-        color: var(--primary-text-color);
-        font-family: inherit;
-        font-size: 1rem;
-        padding: 0;
-        margin: 0;
-        height: 24px;
-        outline: none;
-      }
-
       /* Matches the feed-and-water discard pattern on the configuration glass sheet. */
       .confirm-discard-overlay {
         position: absolute;
@@ -1205,8 +1126,7 @@ export class ConfigDialog extends LitElement {
         margin-bottom: 0;
       }
 
-      .form-section .entity-select-container,
-      .form-section .multi-select-container {
+      .form-section .entity-select-container {
         margin-bottom: 0;
       }
 

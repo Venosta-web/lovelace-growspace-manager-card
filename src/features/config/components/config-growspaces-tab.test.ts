@@ -88,7 +88,7 @@ describe('ConfigGrowspacesTab — render', () => {
       })
     );
     expect(el.shadowRoot!.textContent).toContain('Edit Details');
-    expect(el.shadowRoot!.querySelectorAll('.multi-select-container').length).toBe(2);
+    expect(el.shadowRoot!.querySelectorAll('config-entity-multi-select').length).toBe(2);
   });
 
   it('shows the confirm-delete full view (no list) and the name', async () => {
@@ -145,10 +145,10 @@ describe('ConfigGrowspacesTab — intents out', () => {
     );
     expect(drafts).toEqual([{ partial: { name: 'Edited' } }]);
 
-    const lungroomInput = el
-      .shadowRoot!.querySelector('#list-multi-lungroomTempSensors')!
-      .closest('.multi-select-container')!
-      .querySelector<HTMLInputElement>('input.search-input-inner')!;
+    const lungroomPicker = el.shadowRoot!.querySelector(
+      'config-entity-multi-select[list-id="list-multi-lungroomTempSensors"]'
+    )!;
+    const lungroomInput = lungroomPicker.shadowRoot!.querySelector<HTMLInputElement>('input')!;
     lungroomInput.value = 'sensor.lr';
     lungroomInput.dispatchEvent(new Event('change'));
     expect(env).toEqual([{ partial: { lungroomTempSensors: ['sensor.lr'] } }]);

@@ -73,7 +73,7 @@ afterEach(() => {
 describe('ConfigHumidityTab — render', () => {
   it('renders both device pickers and an accordion row per stage', async () => {
     const el = await mount(makeVm({ stages: [stage({ id: 'veg' }), stage({ id: 'seedling' })] }));
-    expect(el.shadowRoot!.querySelectorAll('.multi-select-container').length).toBe(2);
+    expect(el.shadowRoot!.querySelectorAll('config-entity-multi-select').length).toBe(2);
     expect(el.shadowRoot!.querySelectorAll('.acc-card').length).toBe(2);
   });
 
@@ -114,9 +114,8 @@ describe('ConfigHumidityTab — intents out', () => {
   it('emits env-draft-changed when adding a humidifier entity', async () => {
     const el = await mount(makeVm());
     const received = listen<{ partial: Record<string, unknown> }>(el, 'env-draft-changed');
-    const input = el.shadowRoot!.querySelector<HTMLInputElement>(
-      '.multi-select-container input.search-input-inner'
-    )!;
+    const picker = el.shadowRoot!.querySelector('config-entity-multi-select')!;
+    const input = picker.shadowRoot!.querySelector<HTMLInputElement>('input')!;
     input.value = 'switch.new';
     input.dispatchEvent(new Event('change'));
     expect(received).toEqual([{ partial: { humidifierEntities: ['switch.new'] } }]);

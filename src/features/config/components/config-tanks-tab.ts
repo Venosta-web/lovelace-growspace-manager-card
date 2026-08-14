@@ -20,6 +20,7 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiWater, mdiPlus, mdiPencil, mdiDelete } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import './config-section-header';
 import type { TankDraftFields } from '../../../dialogs/config-dialog-sm';
 import type { TankEditVM, TankRowVM, TanksTabViewModel } from '../viewmodels/tanks-tab.viewmodel';
 
@@ -49,13 +50,7 @@ export class ConfigTanksTab extends LitElement {
   render(): TemplateResult {
     return html`
       <div class="detail-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <svg style="width:20px;height:20px;fill:var(--primary-color,#4caf50);" viewBox="0 0 24 24">
-              <path d="${mdiWater}"></path>
-            </svg>
-            <h3 style="margin:0;border:none;padding:0;">Irrigation Tanks</h3>
-          </div>
+        <config-section-header .icon=${mdiWater} label="Irrigation Tanks">
           <button
             class="md3-button tonal"
             @click=${() => this._emit('add-tank-requested')}
@@ -66,7 +61,7 @@ export class ConfigTanksTab extends LitElement {
             </svg>
             Add Tank
           </button>
-        </div>
+        </config-section-header>
 
         ${this.vm.showEmpty
           ? html`<div style="font-size:0.85rem;color:var(--secondary-text-color);padding:8px 0;">

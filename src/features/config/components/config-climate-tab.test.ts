@@ -108,7 +108,9 @@ afterEach(() => {
 describe('ConfigClimateTab — render', () => {
   it('renders the three section headers', async () => {
     const el = await mount(makeVm());
-    const headers = [...el.shadowRoot!.querySelectorAll('h3')].map((h) => h.textContent);
+    const headers = [...el.shadowRoot!.querySelectorAll('config-section-header')].map(
+      (header) => header.label
+    );
     expect(headers).toEqual(['Climate Control', 'Fan Controller', 'Exhaust Fan Controller']);
   });
 

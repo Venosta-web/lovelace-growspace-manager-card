@@ -22,6 +22,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { mdiTune, mdiWhiteBalanceSunny, mdiWeatherNight } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui/md3-number-input';
+import './config-section-header';
 import {
   stageAccordionInteriorSlot,
   stageAccordionSummarySlot,
@@ -75,17 +76,10 @@ export class ConfigVpdTargetsTab extends LitElement {
   render(): TemplateResult {
     return html`
       <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiTune}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">VPD Optimal Targets</h3>
-        </div>
+        <config-section-header
+          .icon=${mdiTune}
+          label="VPD Optimal Targets"
+        ></config-section-header>
         ${this._renderStages()}
         <button
           class="md3-button text"
