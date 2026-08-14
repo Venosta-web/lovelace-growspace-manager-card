@@ -44,6 +44,8 @@ colors:
   # Warning — functional state, distinct from the Flowering stage
   warning: '#ffa726'
   on-warning: '#1e1e1e'
+  # Mid-flower crop phase and Bulk EC trace
+  mid-flower: '#ff7043'
   # Operational status — the three StatusLevel levels, as consumed by
   # src/styles/status.styles.ts. Each level is hue + fill + outline; status text
   # itself is never tinted, so it survives a light Home Assistant theme.
@@ -189,6 +191,7 @@ The depth model is a layered **Glassmorphism 2.0** — not the heavy frosted-gla
 - **Alert Red** `#f44336` (gradient: `linear-gradient(135deg, #f44336, #d32f2f)`) — Destructive actions, error states, pulsing alert dots on sick plants.
 - **Amber Light** `#ffeb3b` — Light cycle controller, `--primary-light-color`. SVG chart lines for sensor data. Creates visual warmth in an otherwise cool palette.
 - **Warning Amber** `#ffa726` — Functional warnings such as unknown notification triggers, PHI countdown warnings, training icons, and stat-chip warning states. It is deliberately distinct from Flowering Orange.
+- **Mid Flower** `#ff7043` — Mid-flower crop-phase guidance and the Bulk EC trace. It is distinct from both general Warning Amber and the broader Flowering Orange stage color.
 - **Integration Conflict Amber** `#e6a700` — A passive AC Infinity notice for an automated-mode conflict, a failed port pre-fill, or a duplicate port assignment. Its container is `rgba(230,167,0,0.1)` and outline is `rgba(230,167,0,0.35)`; this integration-specific state must not be represented as a plant stage or a general urgency warning.
 
 ### Plant Stage Indicators
@@ -243,16 +246,33 @@ Numeric data — sensor readings, plant age, timestamps — uses `font-variant-n
 
 ### Config Dialog Token Contract
 
-The Config Dialog uses only four body-scale steps. Nearby literals map to the nearest role rather than extending the ramp:
+#### Font-size basis decision
 
-| Existing literal                | Committed step | Role                             |
-| :------------------------------ | :------------- | :------------------------------- |
-| `0.65rem`, `0.7rem`             | `0.6875rem`    | Caption or uppercase micro-label |
-| `0.75rem`, `0.775rem`, `0.8rem` | `0.75rem`      | Compact supporting text          |
-| `0.85rem`, `0.875rem`, `0.9rem` | `0.875rem`     | Navigation or body-small         |
-| `1rem`                          | `1rem`         | Standard body or compact heading |
+The Config Dialog preserves Home Assistant's inherited font-size instead of pinning its host
+to 16px. Measurements show a 14px root on this surface. Preserving inheritance keeps the
+dialog aligned with the host and with user-selected typography; pinning would make this one
+surface opt out of that contract.
 
-Weight, case, spacing, and color distinguish roles within a step. A fractional size between these steps is not a new token.
+The canonical typography table records intended rendered pixel sizes. Config Dialog rem
+values are therefore calibrated against its measured 14px root rather than the conventional
+16px root used by the rem equivalents in the general hierarchy table. If Home Assistant's
+root changes, this calibration must be revisited; the rendered pixel targets and the 11px
+legibility floor do not change.
+
+The Config Dialog uses only four body-scale steps. Nearby literals map to the nearest role
+rather than extending the ramp:
+
+| Existing literal                | Config Dialog step | Rendered target | Role                             |
+| :------------------------------ | :----------------- | :-------------- | :------------------------------- |
+| `0.65rem`, `0.7rem`             | `0.785714rem`      | 11px            | Caption or uppercase micro-label |
+| `0.75rem`, `0.775rem`, `0.8rem` | `0.857143rem`      | 12px            | Compact supporting text          |
+| `0.85rem`, `0.875rem`, `0.9rem` | `1rem`             | 14px            | Navigation or body-small         |
+| `1rem`                          | `1.142857rem`      | 16px            | Standard body or compact heading |
+
+At the measured 14px root, these values compute to 11px, 12px, 14px, and 16px
+respectively; no committed Config Dialog step renders below 11px. Weight, case, spacing,
+and color distinguish roles within a step. A fractional size between these steps is not a
+new token.
 
 The Config Dialog also applies these literal-to-token rules:
 
@@ -419,6 +439,7 @@ When prompting Stitch for screens in this system, use vocabulary like:
 | Alert Red                  | `#f44336`                | Error, destructive, sick plant      |
 | Amber Light                | `#ffeb3b`                | Light cycle, chart data line        |
 | Warning Amber              | `#ffa726`                | Functional warning                  |
+| Mid Flower                 | `#ff7043`                | Mid-flower phase / Bulk EC trace    |
 | Integration Conflict Amber | `#e6a700`                | AC Infinity integration notice      |
 | Flowering Orange           | `#ff9800`                | Flowering stage                     |
 | Drying Purple              | `#9c27b0`                | Dry stage, IPM activity             |
