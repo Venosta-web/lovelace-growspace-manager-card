@@ -52,8 +52,10 @@ describe('ConfigIrrigationTab — render', () => {
   it('renders two section cards and a picker for every field (7 + 2)', async () => {
     const el = await mount(makeVm());
     expect(el.shadowRoot!.querySelectorAll('.detail-card').length).toBe(2);
-    expect(el.shadowRoot!.querySelectorAll('.multi-select-container').length).toBe(9);
-    const headers = [...el.shadowRoot!.querySelectorAll('h3')].map((h) => h.textContent);
+    expect(el.shadowRoot!.querySelectorAll('config-entity-multi-select').length).toBe(9);
+    const headers = [...el.shadowRoot!.querySelectorAll('config-section-header')].map(
+      (header) => header.label
+    );
     expect(headers).toEqual(['Irrigation Monitoring', 'Substrate EC']);
   });
 
@@ -66,8 +68,11 @@ describe('ConfigIrrigationTab — render', () => {
         ],
       })
     );
-    expect(el.shadowRoot!.querySelectorAll('#list-multi-bulkEcSensors option').length).toBe(3);
-    expect(el.shadowRoot!.querySelectorAll('.multi-select-container')[7].querySelectorAll('.chip').length).toBe(2);
+    const bulk = el.shadowRoot!.querySelector(
+      'config-entity-multi-select[list-id="list-multi-bulkEcSensors"]'
+    )!;
+    expect(bulk.shadowRoot!.querySelectorAll('datalist option').length).toBe(3);
+    expect(bulk.shadowRoot!.querySelectorAll('.chip').length).toBe(2);
   });
 });
 
@@ -75,10 +80,10 @@ describe('ConfigIrrigationTab — intents out', () => {
   it('emits env-draft-changed adding an entity to a monitoring field', async () => {
     const el = await mount(makeVm());
     const received = listenPartials(el);
-    const phInput = el.shadowRoot!
-      .querySelector('#list-multi-phSensors')!
-      .closest('.multi-select-container')!
-      .querySelector<HTMLInputElement>('input.search-input-inner')!;
+    const ph = el.shadowRoot!.querySelector(
+      'config-entity-multi-select[list-id="list-multi-phSensors"]'
+    )!;
+    const phInput = ph.shadowRoot!.querySelector<HTMLInputElement>('input')!;
     phInput.value = 'sensor.ph1';
     phInput.dispatchEvent(new Event('change'));
     expect(received).toEqual([{ phSensors: ['sensor.ph1'] }]);
@@ -91,8 +96,10 @@ describe('ConfigIrrigationTab — intents out', () => {
       })
     );
     const received = listenPartials(el);
-    const bulk = el.shadowRoot!.querySelector('#list-multi-bulkEcSensors')!.closest('.multi-select-container')!;
-    bulk.querySelector<HTMLElement>('.chip .chip-remove')!.click();
+    const bulk = el.shadowRoot!.querySelector(
+      'config-entity-multi-select[list-id="list-multi-bulkEcSensors"]'
+    )!;
+    bulk.shadowRoot!.querySelector<HTMLElement>('.chip .chip-remove')!.click();
     expect(received).toEqual([{ bulkEcSensors: ['sensor.b'] }]);
   });
 });

@@ -25,6 +25,16 @@ async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     return element.shadowRoot!;
 }
 
+type EntityMultiSelectElement = HTMLElement & {
+    label: string;
+    shadowRoot: ShadowRoot;
+};
+
+function entityPicker(root: ShadowRoot, label: string): EntityMultiSelectElement | undefined {
+    return Array.from(root.querySelectorAll<EntityMultiSelectElement>('config-entity-multi-select'))
+        .find((picker) => picker.label === label);
+}
+
 class HaEntityPickerMock extends HTMLElement {
     get value() { return this.getAttribute('value') || ''; }
     set value(v) { this.setAttribute('value', v); }
@@ -282,10 +292,9 @@ describe('ConfigDialog', () => {
 
         it('should render native input with datalist', async () => {
             // Temperature is now a multi-select with datalist
-            const containers = Array.from((await sensorsShadow(element)).querySelectorAll('.multi-select-container'));
-            const container = containers.find(c => c.querySelector('label')?.textContent?.trim() === 'Temperature Sensors');
-            const input = container?.querySelector('input');
-            const datalist = container?.querySelector('datalist');
+            const picker = entityPicker(await sensorsShadow(element), 'Temperature Sensors');
+            const input = picker?.shadowRoot.querySelector('input');
+            const datalist = picker?.shadowRoot.querySelector('datalist');
 
             expect(input).toBeTruthy();
             expect(datalist).toBeTruthy();
@@ -321,9 +330,8 @@ describe('ConfigDialog', () => {
 
         it('should update all environment sensors', async () => {
             const updateMultiPicker = async (label: string, value: string) => {
-                const containers = Array.from((await sensorsShadow(element)).querySelectorAll('.multi-select-container'));
-                const container = containers.find(c => c.querySelector('label')?.textContent?.trim() === label);
-                const input = container?.querySelector('input');
+                const picker = entityPicker(await sensorsShadow(element), label);
+                const input = picker?.shadowRoot.querySelector('input');
 
                 if (input) {
                     input.value = value;
@@ -930,7 +938,8 @@ describe('ConfigDialog', () => {
             (element as any).envLightSensors = ['sensor.1', 'sensor.2'];
             await element.updateComplete;
 
-            const removeBtn = (await sensorsShadow(element)).querySelector('.chip-remove');
+            const picker = entityPicker(await sensorsShadow(element), 'Light Source / Sensor');
+            const removeBtn = picker?.shadowRoot.querySelector('.chip-remove');
             (removeBtn as HTMLElement)?.click();
             await element.updateComplete;
 
@@ -942,7 +951,8 @@ describe('ConfigDialog', () => {
             (element as any).envLightSensors = ['sensor.1'];
             await element.updateComplete;
 
-            const input = (await sensorsShadow(element)).querySelector('.search-input-inner') as HTMLInputElement;
+            const picker = entityPicker(await sensorsShadow(element), 'Light Source / Sensor');
+            const input = picker!.shadowRoot.querySelector('input')!;
             input.value = ''; // Empty string
             input.dispatchEvent(new Event('change'));
             await element.updateComplete;

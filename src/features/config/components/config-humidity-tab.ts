@@ -35,6 +35,8 @@ import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui/md3-number-input';
 import '../../shared/ui/md3-select';
 import { renderAcInfinityDevices } from './ac-infinity-device-editor';
+import './config-entity-multi-select';
+import './config-section-header';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
 import type {
   HumidityTabViewModel,
@@ -70,82 +72,6 @@ export class ConfigHumidityTab extends LitElement {
         width: 20px;
         height: 20px;
         cursor: pointer;
-      }
-      /* ── multi-select pickers ── */
-      .multi-select-container {
-        position: relative;
-        margin-bottom: 0;
-      }
-      .multi-select-box {
-        background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border-radius: 4px 4px 0 0;
-        border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-        padding: 26px 16px 6px;
-        min-height: 56px;
-        box-sizing: border-box;
-        position: relative;
-        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-      }
-      .md3-label-multi {
-        position: absolute;
-        top: 8px;
-        left: 16px;
-        font-size: 0.75rem;
-        color: var(--secondary-text-color);
-        pointer-events: none;
-        z-index: 10;
-      }
-      .chip {
-        display: inline-flex;
-        align-items: center;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-        border-radius: 16px;
-        padding: 0 4px 0 12px;
-        font-size: 0.9rem;
-        min-height: 44px;
-      }
-      .chip-remove {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 44px;
-        min-height: 44px;
-        padding: 0;
-        border: 0;
-        background: transparent;
-        color: inherit;
-        font: inherit;
-        cursor: pointer;
-        margin-left: 2px;
-        font-weight: bold;
-        opacity: 0.7;
-      }
-      .chip-remove:hover {
-        opacity: 1;
-      }
-      .chip-remove:focus-visible {
-        outline: 2px solid var(--primary-text-color, #fff);
-        outline-offset: -4px;
-        opacity: 1;
-      }
-      .search-input-inner {
-        flex: 1;
-        min-width: 100px;
-        border: none;
-        background: transparent;
-        color: var(--primary-text-color);
-        font-family: inherit;
-        font-size: 1rem;
-        padding: 0;
-        margin: 0;
-        height: 24px;
-        outline: none;
       }
       /* ── thresholds accordion — copied from config-dialog ── */
       .acc-card {
@@ -264,17 +190,10 @@ export class ConfigHumidityTab extends LitElement {
   private _renderDevices(): TemplateResult {
     return html`
       <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiAirHumidifier}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Humidity Devices</h3>
-        </div>
+        <config-section-header
+          .icon=${mdiAirHumidifier}
+          label="Humidity Devices"
+        ></config-section-header>
         <div class="form-section">
           <div class="row-col-grid">
             ${this._multiSelect(
@@ -355,43 +274,15 @@ export class ConfigHumidityTab extends LitElement {
     values: string[],
     options: string[]
   ): TemplateResult {
-    const listId = `list-multi-${key}`;
     return html`
-      <div class="multi-select-container">
-        <label class="md3-label-multi">${label}</label>
-        <div class="multi-select-box">
-          ${values.map(
-            (val) => html`
-              <div class="chip">
-                ${val}
-                <button
-                  type="button"
-                  class="chip-remove"
-                  aria-label=${`Remove ${val}`}
-                  title=${`Remove ${val}`}
-                  @click=${() => this._update({ [key]: values.filter((v) => v !== val) })}
-                >
-                  ×
-                </button>
-              </div>
-            `
-          )}
-          <input
-            class="search-input-inner"
-            list="${listId}"
-            placeholder=${values.length === 0 ? 'Add Entity...' : ''}
-            @change=${(e: Event) => {
-              const input = e.target as HTMLInputElement;
-              const val = input.value;
-              if (val && !values.includes(val)) this._update({ [key]: [...values, val] });
-              input.value = '';
-            }}
-          />
-        </div>
-        <datalist id="${listId}">
-          ${options.map((eid) => html`<option value="${eid}"></option>`)}
-        </datalist>
-      </div>
+      <config-entity-multi-select
+        .label=${label}
+        .values=${values}
+        .options=${options}
+        list-id=${`list-multi-${key}`}
+        @entity-values-changed=${(event: CustomEvent<{ values: string[] }>) =>
+          this._update({ [key]: event.detail.values })}
+      ></config-entity-multi-select>
     `;
   }
 
@@ -400,17 +291,10 @@ export class ConfigHumidityTab extends LitElement {
   private _renderThresholds(): TemplateResult {
     return html`
       <div class="detail-card">
-        <div
-          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
-        >
-          <svg
-            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiWaterPercent}"></path>
-          </svg>
-          <h3 style="margin:0;border:none;padding:0;">Thresholds per Stage</h3>
-        </div>
+        <config-section-header
+          .icon=${mdiWaterPercent}
+          label="Thresholds per Stage"
+        ></config-section-header>
         <div style="display:flex;flex-direction:column;gap:6px;">
           ${this.vm.stages.map((stage) => this._renderStage(stage))}
         </div>

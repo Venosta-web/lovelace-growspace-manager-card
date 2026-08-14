@@ -13,6 +13,25 @@ async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
     return tab.shadowRoot!;
 }
 
+type EntityMultiSelectElement = HTMLElement & {
+    label: string;
+    shadowRoot: ShadowRoot;
+};
+
+type SectionHeaderElement = HTMLElement & { label: string };
+
+function entityPickers(root: ShadowRoot): EntityMultiSelectElement[] {
+    return Array.from(root.querySelectorAll<EntityMultiSelectElement>('config-entity-multi-select'));
+}
+
+function entityPicker(root: ShadowRoot, label: string): EntityMultiSelectElement | undefined {
+    return entityPickers(root).find((picker) => picker.label === label);
+}
+
+function sectionHeaders(root: ShadowRoot): SectionHeaderElement[] {
+    return Array.from(root.querySelectorAll<SectionHeaderElement>('config-section-header'));
+}
+
 vi.mock('../../../src/slices/subarea', () => ({
     getSubareas: vi.fn().mockResolvedValue([]),
     addSubarea: vi.fn().mockResolvedValue({ id: 'sa-new', name: '', environment_config: {} }),
@@ -207,8 +226,8 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
 
         // Verify it's rendering (humidity tab is now a nested dumb component).
         const root = await sensorsShadow(element);
-        const humidifierHeader = Array.from(root.querySelectorAll('h3'))
-            .find(h => h.textContent?.includes('Humidity'));
+        const humidifierHeader = sectionHeaders(root)
+            .find((header) => header.label.includes('Humidity'));
         expect(humidifierHeader).to.exist;
 
         // Exercise the component's intent handlers through to the shell.
@@ -411,8 +430,8 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envVisionCameraEntities = ['camera.tent'];
         await element.updateComplete;
 
-        // The edit form is rendered; both multi-select containers should be present
-        const containers = (await sensorsShadow(element)).querySelectorAll('.multi-select-container');
+        // The edit form is rendered; both shared multi-selects should be present
+        const containers = entityPickers(await sensorsShadow(element));
         expect(containers.length).toBeGreaterThanOrEqual(2);
     });
 
@@ -422,8 +441,8 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envSubstrateTemperatureSensors = ['sensor.substrate_temp'];
         await element.updateComplete;
 
-        const labels = Array.from((await sensorsShadow(element)).querySelectorAll('.md3-label-multi'));
-        const substrateLabel = labels.find((l) => l.textContent?.includes('Substrate'));
+        const substrateLabel = entityPickers(await sensorsShadow(element))
+            .find((picker) => picker.label.includes('Substrate'));
         expect(substrateLabel).toBeDefined();
     });
 
@@ -460,8 +479,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         await element.updateComplete;
 
         const root = await sensorsShadow(element);
-        const labels = Array.from(root.querySelectorAll('.md3-label-multi'));
-        const labelTexts = labels.map((l) => l.textContent?.trim());
+        const labelTexts = entityPickers(root).map((picker) => picker.label);
         expect(labelTexts).toContain('pH Sensors');
         expect(labelTexts).toContain('Feed EC Sensors');
         expect(labelTexts).toContain('Bulk EC Sensors');
@@ -470,7 +488,9 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         expect(labelTexts).toContain('Energy Sensors');
 
         // Click every chip-remove × to invoke all changeHandler arrow fns
-        const chipRemoves = Array.from((await sensorsShadow(element)).querySelectorAll('.chip-remove')) as HTMLElement[];
+        const chipRemoves = entityPickers(await sensorsShadow(element)).flatMap(
+            (picker) => Array.from(picker.shadowRoot.querySelectorAll<HTMLElement>('.chip-remove'))
+        );
         for (const chip of chipRemoves) {
             chip.click();
         }
@@ -489,8 +509,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envSelectedId = 'gs1';
         await element.updateComplete;
 
-        const h3s = Array.from((await sensorsShadow(element)).querySelectorAll('h3'));
-        const headings = h3s.map((h) => h.textContent?.trim());
+        const headings = sectionHeaders(await sensorsShadow(element)).map((header) => header.label);
         expect(headings).toContain('Substrate EC');
     });
 
@@ -606,12 +625,12 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         // With cameras: camera entities multi-select renders
         (element as any).envVisionCameraEntities = ['camera.tent'];
 
-        const labels = Array.from((await sensorsShadow(element)).querySelectorAll('.md3-label-multi'));
-        const cameraLabel = labels.find((l) => l.textContent?.includes('Camera'));
+        const cameraPicker = entityPicker(await sensorsShadow(element), 'Camera Entities');
+        const cameraLabel = cameraPicker?.label;
         expect(cameraLabel).toBeDefined();
 
         // Click the chip-remove × to trigger the changeHandler arrow fn
-        const chipRemove = (await sensorsShadow(element)).querySelector('.chip-remove') as HTMLElement | null;
+        const chipRemove = cameraPicker?.shadowRoot.querySelector<HTMLElement>('.chip-remove');
         if (chipRemove) {
             chipRemove.click();
             await element.updateComplete;
@@ -846,7 +865,9 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envVisionCameraEntities = ['camera.tent'];
         await element.updateComplete;
 
-        const chipRemoves = Array.from((await sensorsShadow(element)).querySelectorAll('.chip-remove')) as HTMLElement[];
+        const chipRemoves = entityPickers(await sensorsShadow(element)).flatMap(
+            (picker) => Array.from(picker.shadowRoot.querySelectorAll<HTMLElement>('.chip-remove'))
+        );
         for (const cr of chipRemoves) cr.click();
         await element.updateComplete;
 
@@ -860,7 +881,11 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envSubstrateTemperatureSensors = ['sensor.substrate'];
         await element.updateComplete;
 
-        const chipRemove = (await sensorsShadow(element)).querySelector('.chip-remove') as HTMLElement | null;
+        const substratePicker = entityPicker(
+            await sensorsShadow(element),
+            'Substrate Temperature Sensors'
+        );
+        const chipRemove = substratePicker?.shadowRoot.querySelector<HTMLElement>('.chip-remove');
         chipRemove?.click();
         await element.updateComplete;
 
@@ -1009,7 +1034,10 @@ describe('ConfigDialog - Fan Controller Panel coverage', () => {
         // Fan Controller panel* — scope to that card so the sibling Exhaust Fan
         // Controller panel (rendered below it) doesn't shadow the global selector.
         const fanCard = Array.from(root.querySelectorAll('.detail-card'))
-            .find((c) => c.querySelector('h3')?.textContent?.trim() === 'Fan Controller');
+            .find((card) =>
+                (card.querySelector('config-section-header') as SectionHeaderElement | null)
+                    ?.label === 'Fan Controller'
+            );
         expect(fanCard).toBeDefined();
         const marginGrids = Array.from(
             fanCard!.querySelectorAll('.row-col-grid[style*="margin-top"]')
