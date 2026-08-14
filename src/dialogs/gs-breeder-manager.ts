@@ -67,7 +67,7 @@ export class GsBreederManager extends LitElement {
         width: 100%;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 12px 16px;
         color: var(--primary-text-color, #fff);
         font-size: 0.95rem;
@@ -93,7 +93,7 @@ export class GsBreederManager extends LitElement {
         padding: 16px;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         cursor: pointer;
         transition: all 0.2s;
       }
@@ -106,7 +106,7 @@ export class GsBreederManager extends LitElement {
       .breeder-logo-preview {
         width: 56px;
         height: 56px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         object-fit: contain;
         background: rgba(255, 255, 255, 0.05);
         padding: 4px;
@@ -116,7 +116,7 @@ export class GsBreederManager extends LitElement {
       .breeder-logo-placeholder {
         width: 56px;
         height: 56px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         border: 1px dashed var(--divider-color);
         display: flex;
         align-items: center;
@@ -378,10 +378,10 @@ export class GsBreederManager extends LitElement {
             ${draft.logo
               ? html`<img
                   src="${draft.logo}"
-                  style="width:64px; height:64px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.05); padding:4px;"
+                  style="width:64px; height:64px; object-fit:contain; border-radius: var(--border-radius-sm, 8px); background:rgba(255,255,255,0.05); padding:4px;"
                 />`
               : html`<div
-                  style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);"
+                  style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius: var(--border-radius-sm, 8px); display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);"
                 >
                   <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                     <path d="${mdiImage}"></path>
@@ -435,7 +435,7 @@ export class GsBreederManager extends LitElement {
         ${isEdit && affectedStrains.length > 0
           ? html`
               <div
-                style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius:8px; padding:16px;"
+                style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius: var(--border-radius-sm, 8px); padding:16px;"
               >
                 <label class="sd-label" style="margin-bottom:8px;"
                   >Strains using this breeder (${affectedStrains.length})</label
@@ -444,7 +444,7 @@ export class GsBreederManager extends LitElement {
                   ${affectedStrains.map(
                     (s) => html`
                       <span
-                        style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius:16px; font-size:0.8rem; font-weight:500;"
+                        style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius: var(--border-radius-lg, 16px); font-size:0.8rem; font-weight:500;"
                       >
                         ${s.strain}${s.phenotype ? ` (${s.phenotype})` : ''}
                       </span>

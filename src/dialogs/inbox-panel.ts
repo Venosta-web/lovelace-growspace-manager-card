@@ -373,7 +373,7 @@ export class GmInboxPanel extends LitElement {
     /* ── Reasoning ──────────────────────────────────────────── */
     .reasoning {
       background: rgba(255, 255, 255, 0.04);
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 14px 16px;
     }
 
@@ -403,7 +403,7 @@ export class GmInboxPanel extends LitElement {
     /* ── Evidence photo ─────────────────────────────────────── */
     .photo-evid {
       background: rgba(255, 255, 255, 0.03);
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 12px;
       display: flex;
       flex-direction: column;
@@ -421,7 +421,7 @@ export class GmInboxPanel extends LitElement {
       width: 100%;
       height: 100px;
       background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -480,7 +480,7 @@ export class GmInboxPanel extends LitElement {
       background: rgba(76, 175, 80, 0.15);
       color: var(--success-color, #4caf50);
       border: none;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       padding: 6px 14px;
       cursor: pointer;
       font-size: 0.82rem;
@@ -494,7 +494,7 @@ export class GmInboxPanel extends LitElement {
     /* ── Confirm overlay ────────────────────────────────────── */
     .confirm-overlay {
       background: rgba(255, 255, 255, 0.04);
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -515,7 +515,7 @@ export class GmInboxPanel extends LitElement {
     .confirm-cancel-btn {
       background: none;
       border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       padding: 6px 14px;
       cursor: pointer;
       font-size: 0.82rem;
@@ -527,7 +527,7 @@ export class GmInboxPanel extends LitElement {
       background: rgba(76, 175, 80, 0.15);
       color: var(--success-color, #4caf50);
       border: 1px solid var(--success-color, #4caf50);
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       padding: 6px 14px;
       cursor: pointer;
       font-size: 0.82rem;
@@ -541,7 +541,7 @@ export class GmInboxPanel extends LitElement {
       gap: 8px;
       padding: 12px 16px;
       background: rgba(255, 255, 255, 0.03);
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       flex-wrap: wrap;
     }
 
@@ -556,7 +556,7 @@ export class GmInboxPanel extends LitElement {
     .resolve-btn {
       background: none;
       border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       padding: 6px 14px;
       cursor: pointer;
       font-size: 0.82rem;
@@ -585,7 +585,7 @@ export class GmInboxPanel extends LitElement {
       flex: 1;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       padding: 8px 12px;
       color: #fff;
       font-family: inherit;
@@ -597,7 +597,7 @@ export class GmInboxPanel extends LitElement {
       background: rgba(76, 175, 80, 0.15);
       color: var(--success-color, #4caf50);
       border: 1px solid var(--success-color, #4caf50);
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       padding: 6px 14px;
       cursor: pointer;
       font-family: inherit;

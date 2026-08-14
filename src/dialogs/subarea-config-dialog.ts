@@ -80,7 +80,7 @@ export class SubareaConfigDialog extends LitElement {
         display: inline-flex;
         align-items: center;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-        border-radius: 16px;
+        border-radius: var(--border-radius-lg, 16px);
         padding: 4px 12px;
         font-size: 0.9rem;
         height: 24px;

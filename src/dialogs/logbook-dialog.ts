@@ -149,7 +149,7 @@ export class LogbookDialog extends LitElement {
       .summary-section {
         background: var(--card-background-color);
         padding: 16px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         border: 1px solid var(--divider-color);
       }
 

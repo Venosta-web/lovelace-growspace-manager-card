@@ -51,7 +51,7 @@ export class SnapshotsDialog extends LitElement {
       }
       .snapshot-card {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         overflow: hidden;
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         display: flex;
@@ -69,7 +69,7 @@ export class SnapshotsDialog extends LitElement {
         gap: 8px;
       }
       .vision-snapshot-grid .snapshot-image {
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
       }
       .snapshot-info {
         padding: 12px;
@@ -84,7 +84,7 @@ export class SnapshotsDialog extends LitElement {
         padding: 48px 24px;
         opacity: 0.6;
         background: rgba(255, 255, 255, 0.02);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         margin-top: 16px;
       }
       .header-actions {
@@ -128,7 +128,7 @@ export class SnapshotsDialog extends LitElement {
         max-width: 95%;
         max-height: 95%;
         object-fit: contain;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         cursor: default;
       }
       .lightbox-close {
@@ -338,7 +338,7 @@ export class SnapshotsDialog extends LitElement {
                     <span
                       class="severity-chip"
                       style="background:${SEVERITY_COLORS[r.severity] ??
-                      'gray'};color:#fff;padding:4px 10px;border-radius:12px;font-size:0.8rem;font-weight:600;"
+                      'gray'};color:#fff;padding:4px 10px;border-radius: var(--border-radius-md, 12px);font-size:0.8rem;font-weight:600;"
                       >${r.severity}</span
                     >
                     <span style="text-transform:capitalize;opacity:0.7;"
@@ -398,7 +398,7 @@ export class SnapshotsDialog extends LitElement {
                           (entry) => html`
                             <div
                               class="history-row"
-                              style="display:flex;align-items:center;gap:12px;padding:8px 4px;cursor:pointer;border-radius:8px;background:${this
+                              style="display:flex;align-items:center;gap:12px;padding:8px 4px;cursor:pointer;border-radius: var(--border-radius-sm, 8px);background:${this
                                 ._selectedResult === entry
                                 ? 'rgba(255,255,255,0.05)'
                                 : 'transparent'};"

@@ -846,7 +846,7 @@ export class ConfigDialog extends LitElement {
         align-items: center;
         gap: 10px;
         padding: 8px 10px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         border: 1px solid transparent;
         cursor: pointer;
         transition: all 0.15s;
@@ -884,7 +884,7 @@ export class ConfigDialog extends LitElement {
         height: 38px;
         margin-top: 8px;
         border: 1px dashed var(--divider-color, rgba(255, 255, 255, 0.2));
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         background: transparent;
         color: var(--primary-color, #4caf50);
         font-family: inherit;
@@ -1067,7 +1067,7 @@ export class ConfigDialog extends LitElement {
         width: min(100%, 360px);
         padding: 24px;
         box-sizing: border-box;
-        border-radius: 16px;
+        border-radius: var(--border-radius-lg, 16px);
         background: var(--card-background-color, #1e1e1e);
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
       }

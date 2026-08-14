@@ -74,7 +74,7 @@ export class GmChatPanel extends LitElement {
 
     .ai-model-card {
       background: rgba(255,255,255,0.04);
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 10px 12px;
       display: flex;
       align-items: center;
@@ -90,7 +90,7 @@ export class GmChatPanel extends LitElement {
       gap: 6px;
       width: 100%;
       padding: 7px 10px;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       background: none;
       border: 1px dashed var(--divider-color, rgba(255,255,255,0.18));
       cursor: pointer;
@@ -121,7 +121,7 @@ export class GmChatPanel extends LitElement {
       align-items: flex-start;
       gap: 8px;
       padding: 7px 8px;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       background: none;
       border: none;
       cursor: pointer;
@@ -181,7 +181,7 @@ export class GmChatPanel extends LitElement {
     .prompt-card {
       background: rgba(255,255,255,0.05);
       border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 12px 14px;
       cursor: pointer;
       font-size: 0.82rem;
@@ -252,7 +252,7 @@ export class GmChatPanel extends LitElement {
 
     .msg-bubble {
       background: rgba(255,255,255,0.06);
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 10px 14px;
       font-size: 0.9rem;
       line-height: 1.5;
@@ -289,7 +289,7 @@ export class GmChatPanel extends LitElement {
       gap: 6px;
       margin-top: 10px;
       background: rgba(255,255,255,0.04);
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       padding: 8px;
     }
     .snap-cell { text-align: center; }
@@ -433,7 +433,7 @@ export class GmChatPanel extends LitElement {
       flex: 1;
       background: rgba(255,255,255,0.05);
       border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 10px 12px;
       color: var(--primary-text-color, #fff);
       font-family: inherit;
@@ -494,7 +494,7 @@ export class GmChatPanel extends LitElement {
       width: 64px;
       height: 64px;
       object-fit: cover;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       border: 1px solid var(--divider-color, rgba(255,255,255,0.12));
     }
     .remove-attachment {
@@ -571,7 +571,7 @@ export class GmChatPanel extends LitElement {
       display: flex;
       align-items: center;
       padding: 2px;
-      border-radius: 4px;
+      border-radius: var(--border-radius-xs, 4px);
       flex-shrink: 0;
       opacity: 0;
       transition: opacity 150ms, color 150ms;
@@ -585,7 +585,7 @@ export class GmChatPanel extends LitElement {
     .msg-image {
       display: block;
       max-width: 200px;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       margin-top: 6px;
       border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
     }

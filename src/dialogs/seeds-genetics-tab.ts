@@ -222,7 +222,7 @@ export class SeedsGeneticsTab extends LitElement {
         margin-top: 8px;
         padding: 10px 12px;
         background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
       }
       .sow-select {
         flex: 1;
@@ -284,7 +284,7 @@ export class SeedsGeneticsTab extends LitElement {
         color: var(--text-primary-color);
         fill: currentColor;
         padding: 2px;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         display: flex;
         align-items: center;
       }
@@ -303,7 +303,7 @@ export class SeedsGeneticsTab extends LitElement {
       .badge {
         display: inline-block;
         padding: 2px 10px;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         font-size: 0.78rem;
         font-weight: 600;
         margin-top: 4px;
@@ -361,7 +361,7 @@ export class SeedsGeneticsTab extends LitElement {
       .form-view select {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 10px 14px;
         color: var(--primary-text-color, #fff);
         font-size: 0.95rem;
@@ -384,7 +384,7 @@ export class SeedsGeneticsTab extends LitElement {
       .checkbox-label input[type='checkbox'] {
         width: 16px;
         height: 16px;
-        border-radius: 4px !important;
+        border-radius: var(--border-radius-xs, 4px) !important;
         padding: 0 !important;
         accent-color: var(--accent-green, #4caf50);
         cursor: pointer;

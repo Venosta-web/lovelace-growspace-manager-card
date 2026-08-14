@@ -265,7 +265,7 @@ export class StrainImportDialog extends LitElement {
         padding: 12px 16px;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         cursor: pointer;
         transition: all 0.2s;
       }
@@ -291,7 +291,7 @@ export class StrainImportDialog extends LitElement {
       .details-preview {
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 16px;
+        border-radius: var(--border-radius-lg, 16px);
         padding: 20px;
         display: flex;
         flex-direction: column;
@@ -314,7 +314,7 @@ export class StrainImportDialog extends LitElement {
         gap: 12px;
         padding: 12px;
         background: rgba(255, 255, 255, 0.02);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         cursor: pointer;
         transition: background 0.2s;
       }
@@ -324,7 +324,7 @@ export class StrainImportDialog extends LitElement {
       .field-checkbox {
         width: 20px;
         height: 20px;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         border: 2px solid var(--divider-color);
         display: flex;
         align-items: center;
@@ -390,7 +390,7 @@ export class StrainImportDialog extends LitElement {
         background: rgba(244, 67, 54, 0.1);
         border: 1px solid rgba(244, 67, 54, 0.3);
         color: #ff5252;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         font-size: 0.9rem;
       }
       .description-text {
@@ -404,7 +404,7 @@ export class StrainImportDialog extends LitElement {
         width: 100%;
         height: 180px;
         object-fit: cover;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         margin-bottom: 12px;
         background: rgba(255, 255, 255, 0.05);
       }

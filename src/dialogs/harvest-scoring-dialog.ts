@@ -191,7 +191,7 @@ export class HarvestScoringDialog extends LitElement {
       .header-stage {
         display: inline-block;
         padding: 2px 10px;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         font-size: 0.75rem;
         font-weight: 600;
         text-transform: uppercase;
@@ -235,7 +235,7 @@ export class HarvestScoringDialog extends LitElement {
       .metric-field textarea {
         background: var(--card-background-color, rgba(255, 255, 255, 0.06));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         color: var(--primary-text-color);
         font-size: 0.9rem;
         padding: 6px 10px;

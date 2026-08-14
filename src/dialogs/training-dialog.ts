@@ -41,7 +41,7 @@ export class TrainingDialog extends LitElement {
       .apply-summary {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         padding: 16px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         margin-top: 16px;
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       }

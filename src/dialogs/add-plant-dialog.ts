@@ -121,7 +121,7 @@ export class AddPlantDialog extends LitElement {
         padding: 12px 8px;
         background: transparent;
         border: none;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         color: var(--secondary-text-color);
         cursor: pointer;
         transition: all 0.2s ease;
@@ -220,7 +220,7 @@ export class AddPlantDialog extends LitElement {
         z-index: 100;
         background: var(--card-background-color, #2c2c2c);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         max-height: 200px;
         overflow-y: auto;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
@@ -257,7 +257,7 @@ export class AddPlantDialog extends LitElement {
 
       .source-btn {
         padding: 12px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         background: rgba(255, 255, 255, 0.04);
         color: var(--secondary-text-color);
@@ -287,7 +287,7 @@ export class AddPlantDialog extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 10px 12px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         border: 1px solid rgba(255, 255, 255, 0.08);
         background: rgba(255, 255, 255, 0.03);
         cursor: pointer;
@@ -317,7 +317,7 @@ export class AddPlantDialog extends LitElement {
         gap: 8px 16px;
         padding: 12px;
         background: rgba(255, 255, 255, 0.03);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         margin-top: 12px;
       }
 
@@ -710,7 +710,7 @@ export class AddPlantDialog extends LitElement {
                 style="
             margin-top: 10px;
             padding: 10px 12px;
-            border-radius: 8px;
+            border-radius: var(--border-radius-sm, 8px);
             background: rgba(76,175,80,0.06);
             border: 1px solid rgba(76,175,80,0.2);
             font-size: 0.8rem;

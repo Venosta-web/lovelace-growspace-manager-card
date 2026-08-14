@@ -200,7 +200,7 @@ export class GmBriefingPanel extends LitElement {
     }
     .conf-bar {
       height: 4px;
-      border-radius: 4px;
+      border-radius: var(--border-radius-xs, 4px);
       background: rgba(255, 255, 255, 0.1);
       width: 60px;
       overflow: hidden;
@@ -208,7 +208,7 @@ export class GmBriefingPanel extends LitElement {
     .conf-fill {
       height: 100%;
       background: var(--ai-violet, #9c27b0);
-      border-radius: 4px;
+      border-radius: var(--border-radius-xs, 4px);
     }
     .drawn-from {
       font-size: 0.7rem;
@@ -225,7 +225,7 @@ export class GmBriefingPanel extends LitElement {
       flex: 1;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 12px 14px;
       display: flex;
       flex-direction: column;
@@ -302,7 +302,7 @@ export class GmBriefingPanel extends LitElement {
       align-items: flex-start;
       gap: 12px;
       padding: 12px 14px;
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
     }

@@ -33,7 +33,7 @@ export class StrainRecommendationDialog extends LitElement {
         width: 100%;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         color: #fff;
         padding: 12px;
         font-family: inherit;
@@ -65,7 +65,7 @@ export class StrainRecommendationDialog extends LitElement {
       }
       .gm-response-box {
         background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 16px;
         line-height: 1.5;
         white-space: pre-wrap;

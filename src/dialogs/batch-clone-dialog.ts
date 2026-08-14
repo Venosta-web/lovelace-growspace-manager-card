@@ -43,7 +43,7 @@ export class BatchCloneDialog extends LitElement {
         width: 80px;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         color: var(--primary-text-color, #fff);
         font-size: 1rem;
         padding: 8px 12px;
@@ -55,7 +55,7 @@ export class BatchCloneDialog extends LitElement {
       }
       .progress-bar-wrap {
         background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         height: 6px;
         margin-top: 16px;
         overflow: hidden;
