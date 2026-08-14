@@ -195,7 +195,7 @@ export class GrowMasterDialog extends LitElement {
         border-radius: var(--border-radius-lg, 16px);
         padding: 20px;
         line-height: 1.6;
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         white-space: pre-wrap;
         position: relative;
         margin-top: 20px;

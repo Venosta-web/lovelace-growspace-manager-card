@@ -89,7 +89,7 @@ export class LogbookDialog extends LitElement {
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
         cursor: pointer;
         transition: all 0.2s;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
       }
 
       .tab svg {

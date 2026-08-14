@@ -112,7 +112,7 @@ export class StrainBrowseView extends LitElement {
       }
 
       .sc-title {
-        font-size: 1.1rem;
+        font-size: var(--font-size-md);
         font-weight: 700;
         margin: 0 0 4px 0;
         color: var(--primary-text-color, #fff);
@@ -132,7 +132,7 @@ export class StrainBrowseView extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 4px;
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
       }
 
@@ -231,7 +231,7 @@ export class StrainBrowseView extends LitElement {
 
       .pagination-text {
         color: var(--secondary-text-color);
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         font-weight: 500;
       }
 
@@ -606,7 +606,7 @@ export class StrainBrowseView extends LitElement {
               position: absolute; top: 8px; right: 8px;
               background: rgba(76,175,80,0.85); color: #fff;
               border-radius: var(--border-radius-full, 9999px); padding: 2px 8px;
-              font-size: 0.65rem; font-weight: 600;
+              font-size: var(--font-size-xs); font-weight: 600;
               backdrop-filter: blur(4px);
             "
                 >

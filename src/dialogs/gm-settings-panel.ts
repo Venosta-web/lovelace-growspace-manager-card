@@ -51,7 +51,7 @@ export class GmSettingsPanel extends LitElement {
       gap: 16px;
     }
     .field-label {
-      font-size: 0.9rem;
+      font-size: var(--font-size-sm);
       color: var(--primary-text-color);
     }
     .field-hint {

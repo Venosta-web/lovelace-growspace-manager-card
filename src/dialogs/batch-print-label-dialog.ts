@@ -48,7 +48,7 @@ export class BatchPrintLabelDialog extends LitElement {
         margin-top: 16px;
       }
       .copies-row label {
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         opacity: 0.7;
         white-space: nowrap;
       }
@@ -90,7 +90,7 @@ export class BatchPrintLabelDialog extends LitElement {
         border-radius: var(--border-radius-sm, 8px);
         padding: 4px 10px;
         cursor: pointer;
-        font-size: 0.82rem;
+        font-size: var(--font-size-supporting);
         color: var(--primary-text-color, #fff);
         transition: background 0.15s;
       }
@@ -111,7 +111,7 @@ export class BatchPrintLabelDialog extends LitElement {
         color: var(--primary-text-color, #fff);
         padding: 4px 10px;
         cursor: pointer;
-        font-size: 0.82rem;
+        font-size: var(--font-size-supporting);
         opacity: 0.6;
         transition: background 0.15s, opacity 0.15s;
       }

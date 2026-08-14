@@ -32,7 +32,7 @@ export class CloneDialog extends LitElement {
       }
       .form-section h3 {
         margin-top: 0;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         text-transform: uppercase;
         opacity: 0.6;
         letter-spacing: 1px;

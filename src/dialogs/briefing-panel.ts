@@ -76,7 +76,7 @@ export class GmBriefingPanel extends LitElement {
       border: none;
       cursor: pointer;
       color: var(--primary-text-color);
-      font-size: 0.82rem;
+      font-size: var(--font-size-supporting);
       font-family: inherit;
       text-align: left;
       width: 100%;
@@ -109,7 +109,7 @@ export class GmBriefingPanel extends LitElement {
     }
     .briefing-breadcrumb {
       flex: 1;
-      font-size: 0.82rem;
+      font-size: var(--font-size-supporting);
       color: var(--secondary-text-color);
     }
     .briefing-regenerate {
@@ -147,7 +147,7 @@ export class GmBriefingPanel extends LitElement {
       flex: 1;
       gap: 12px;
       color: var(--secondary-text-color);
-      font-size: 0.9rem;
+      font-size: var(--font-size-sm);
     }
     @keyframes spin {
       100% { transform: rotate(360deg); }
@@ -182,7 +182,7 @@ export class GmBriefingPanel extends LitElement {
     }
     .insight-head p {
       margin: 0;
-      font-size: 0.88rem;
+      font-size: var(--font-size-sm);
       line-height: 1.6;
       color: var(--secondary-text-color);
     }
@@ -238,7 +238,7 @@ export class GmBriefingPanel extends LitElement {
       letter-spacing: 0.05em;
     }
     .kpi-value {
-      font-size: 1.3rem;
+      font-size: var(--font-size-lg);
       font-weight: 700;
       line-height: 1;
     }
@@ -291,7 +291,7 @@ export class GmBriefingPanel extends LitElement {
 
     /* ── Recommendations ──────────────────────────────────────── */
     .reco-section-title {
-      font-size: 0.82rem;
+      font-size: var(--font-size-supporting);
       font-weight: 600;
       color: var(--secondary-text-color);
       text-transform: uppercase;
@@ -308,12 +308,12 @@ export class GmBriefingPanel extends LitElement {
     }
     .reco-body { flex: 1; }
     .reco-title {
-      font-size: 0.88rem;
+      font-size: var(--font-size-sm);
       font-weight: 600;
       margin: 0 0 3px;
     }
     .reco-desc {
-      font-size: 0.8rem;
+      font-size: var(--font-size-supporting);
       color: var(--secondary-text-color);
       margin: 0;
     }
@@ -368,7 +368,7 @@ export class GmBriefingPanel extends LitElement {
       padding: 9px 16px;
       color: var(--primary-text-color, #fff);
       font-family: inherit;
-      font-size: 0.88rem;
+      font-size: var(--font-size-sm);
       box-sizing: border-box;
     }
     .follow-up:focus {
@@ -394,7 +394,7 @@ export class GmBriefingPanel extends LitElement {
     }
     .agent-setup p {
       margin: 0;
-      font-size: 0.88rem;
+      font-size: var(--font-size-sm);
       color: var(--secondary-text-color);
     }
     .agent-setup-row {
@@ -439,7 +439,7 @@ export class GmBriefingPanel extends LitElement {
     }
     .briefing-error p {
       margin: 0;
-      font-size: 0.88rem;
+      font-size: var(--font-size-sm);
       color: var(--error-color, #f44336);
     }
     .briefing-error-retry {
@@ -462,7 +462,7 @@ export class GmBriefingPanel extends LitElement {
       flex: 1;
       gap: 12px;
       color: var(--secondary-text-color);
-      font-size: 0.9rem;
+      font-size: var(--font-size-sm);
       padding: 32px 20px;
       text-align: center;
     }

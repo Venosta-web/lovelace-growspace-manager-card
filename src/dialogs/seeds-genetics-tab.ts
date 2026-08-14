@@ -174,7 +174,7 @@ export class SeedsGeneticsTab extends LitElement {
         fill: currentColor;
       }
       .seed-batch-meta {
-        font-size: 0.82rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
         margin-bottom: 4px;
       }
@@ -198,12 +198,12 @@ export class SeedsGeneticsTab extends LitElement {
         font-weight: 600;
       }
       .seed-batch-lineage {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--accent-green, #4caf50);
         margin-bottom: 4px;
       }
       .seed-batch-notes {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
         font-style: italic;
       }
@@ -232,7 +232,7 @@ export class SeedsGeneticsTab extends LitElement {
         border: 1px solid var(--divider-color);
         background: var(--card-background-color);
         color: var(--primary-text-color);
-        font-size: 13px;
+        font-size: var(--font-size-supporting);
       }
       .sow-qty {
         width: 64px;
@@ -241,7 +241,7 @@ export class SeedsGeneticsTab extends LitElement {
         border: 1px solid var(--divider-color);
         background: var(--card-background-color);
         color: var(--primary-text-color);
-        font-size: 13px;
+        font-size: var(--font-size-supporting);
         text-align: center;
       }
       .pollination-card {
@@ -256,7 +256,7 @@ export class SeedsGeneticsTab extends LitElement {
       }
       .pollination-date {
         font-weight: 600;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         color: var(--primary-text-color);
       }
       .pollination-plants {
@@ -264,7 +264,7 @@ export class SeedsGeneticsTab extends LitElement {
         color: var(--secondary-text-color);
       }
       .pollination-notes {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
         font-style: italic;
       }
@@ -324,7 +324,7 @@ export class SeedsGeneticsTab extends LitElement {
       }
       .empty-state {
         color: var(--secondary-text-color);
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         margin: 8px 0 16px 0;
       }
 
@@ -345,7 +345,7 @@ export class SeedsGeneticsTab extends LitElement {
       }
       .form-header h3 {
         margin: 0;
-        font-size: 1.1rem;
+        font-size: var(--font-size-md);
         font-weight: 600;
         color: var(--primary-text-color);
       }
@@ -364,7 +364,7 @@ export class SeedsGeneticsTab extends LitElement {
         border-radius: var(--border-radius-sm, 8px);
         padding: 10px 14px;
         color: var(--primary-text-color, #fff);
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         outline: none;
         font-family: inherit;
       }

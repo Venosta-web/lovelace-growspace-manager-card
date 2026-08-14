@@ -35,7 +35,7 @@ export class BatchCloneDialog extends LitElement {
         margin-top: 16px;
       }
       .clones-row label {
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         opacity: 0.7;
         white-space: nowrap;
       }

@@ -105,7 +105,7 @@ export class SnapshotsDialog extends LitElement {
         border-bottom: 2px solid transparent;
         color: var(--secondary-text-color);
         cursor: pointer;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         font-weight: 500;
         transition: all 0.2s;
       }
@@ -338,13 +338,13 @@ export class SnapshotsDialog extends LitElement {
                     <span
                       class="severity-chip"
                       style="background:${SEVERITY_COLORS[r.severity] ??
-                      'gray'};color:#fff;padding:4px 10px;border-radius: var(--border-radius-md, 12px);font-size:0.8rem;font-weight:600;"
+                      'gray'};color:#fff;padding:4px 10px;border-radius: var(--border-radius-md, 12px);font-size:var(--font-size-supporting);font-weight:600;"
                       >${r.severity}</span
                     >
                     <span style="text-transform:capitalize;opacity:0.7;"
                       >${r.check_type} check</span
                     >
-                    <span style="opacity:0.5;font-size:0.8rem;"
+                    <span style="opacity:0.5;font-size:var(--font-size-supporting);"
                       >${this._formatDate(r.timestamp)}</span
                     >
                   </div>
@@ -360,7 +360,7 @@ export class SnapshotsDialog extends LitElement {
                               (i: string) =>
                                 html`<span
                                   class="issue-chip"
-                                  style="background:rgba(244,67,54,0.15);color:var(--error-color,#f44336);border-radius: var(--border-radius-md, 12px);padding:2px 10px;font-size:0.8rem;"
+                                  style="background:rgba(244,67,54,0.15);color:var(--error-color,#f44336);border-radius: var(--border-radius-md, 12px);padding:2px 10px;font-size:var(--font-size-supporting);"
                                   >${i}</span
                                 >`
                             )}
@@ -377,7 +377,7 @@ export class SnapshotsDialog extends LitElement {
                               (rec: string) =>
                                 html`<li
                                   class="recommendation-item"
-                                  style="margin-bottom:4px;font-size:0.9rem;"
+                                  style="margin-bottom:4px;font-size:var(--font-size-sm);"
                                 >
                                   ${rec}
                                 </li>`
@@ -406,10 +406,10 @@ export class SnapshotsDialog extends LitElement {
                                 this._selectedResult = entry;
                               }}
                             >
-                              <span style="font-size:0.8rem;opacity:0.6;"
+                              <span style="font-size:var(--font-size-supporting);opacity:0.6;"
                                 >${this._formatDate(entry.timestamp)}</span
                               >
-                              <span style="text-transform:capitalize;font-size:0.8rem;opacity:0.7;"
+                              <span style="text-transform:capitalize;font-size:var(--font-size-supporting);opacity:0.7;"
                                 >${entry.check_type}</span
                               >
                               <span

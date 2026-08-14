@@ -96,7 +96,7 @@ export class GmChatPanel extends LitElement {
       cursor: pointer;
       color: var(--secondary-text-color);
       font-family: inherit;
-      font-size: 0.8rem;
+      font-size: var(--font-size-supporting);
       transition: background 150ms, color 150ms, border-color 150ms;
     }
     .new-chat-btn:hover {
@@ -167,8 +167,8 @@ export class GmChatPanel extends LitElement {
       gap: 12px;
       text-align: center;
     }
-    .welcome-title { font-size: 1.3rem; font-weight: 500; margin: 0; }
-    .welcome-lede { font-size: 0.9rem; color: var(--secondary-text-color); margin: 0; }
+    .welcome-title { font-size: var(--font-size-lg); font-weight: 500; margin: 0; }
+    .welcome-lede { font-size: var(--font-size-sm); color: var(--secondary-text-color); margin: 0; }
 
     .prompt-grid {
       display: grid;
@@ -184,7 +184,7 @@ export class GmChatPanel extends LitElement {
       border-radius: var(--border-radius-md, 12px);
       padding: 12px 14px;
       cursor: pointer;
-      font-size: 0.82rem;
+      font-size: var(--font-size-supporting);
       line-height: 1.4;
       color: var(--primary-text-color);
       text-align: left;
@@ -254,7 +254,7 @@ export class GmChatPanel extends LitElement {
       background: rgba(255,255,255,0.06);
       border-radius: var(--border-radius-md, 12px);
       padding: 10px 14px;
-      font-size: 0.9rem;
+      font-size: var(--font-size-sm);
       line-height: 1.5;
     }
     .msg.user .msg-bubble {
@@ -308,8 +308,8 @@ export class GmChatPanel extends LitElement {
       border-radius: var(--border-radius-md, 12px);
       padding: 10px 12px;
     }
-    .act-title { font-size: 0.82rem; font-weight: 600; }
-    .act-desc { font-size: 0.8rem; color: var(--secondary-text-color); }
+    .act-title { font-size: var(--font-size-supporting); font-weight: 600; }
+    .act-desc { font-size: var(--font-size-supporting); color: var(--secondary-text-color); }
     .act-buttons { display: flex; gap: 8px; margin-top: 4px; }
     .apply-btn, .dismiss-btn {
       font-size: 0.78rem;
@@ -437,7 +437,7 @@ export class GmChatPanel extends LitElement {
       padding: 10px 12px;
       color: var(--primary-text-color, #fff);
       font-family: inherit;
-      font-size: 0.9rem;
+      font-size: var(--font-size-sm);
       resize: none;
       min-height: 40px;
       max-height: 140px;

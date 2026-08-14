@@ -670,7 +670,7 @@ export class StrainEditorView extends LitElement {
                     `}
                 <button
                   class="md3-button tonal"
-                  style="height: 32px; padding: 0 12px; font-size: 0.8rem;"
+                  style="height: 32px; padding: 0 12px; font-size: var(--font-size-supporting);"
                   @click=${(e: Event) =>
                     (
                       (e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement
@@ -1085,7 +1085,7 @@ export class StrainEditorView extends LitElement {
         </div>
 
         <div class="crop-controls">
-          <div style="display:flex; justify-content:space-between; color:#ccc; font-size:0.8rem;">
+          <div style="display:flex; justify-content:space-between; color:#ccc; font-size:var(--font-size-supporting);">
             <span>Zoom: ${(meta.scale * 100).toFixed(0)}%</span>
           </div>
           <input
@@ -1111,7 +1111,7 @@ export class StrainEditorView extends LitElement {
               Done
             </button>
           </div>
-          <div style="text-align:center; font-size:0.8rem; color:#888; margin-top:8px;">
+          <div style="text-align:center; font-size:var(--font-size-supporting); color:#888; margin-top:8px;">
             Drag to pan • Scroll to zoom
           </div>
         </div>
@@ -1282,7 +1282,7 @@ export class StrainEditorView extends LitElement {
 
           <div style="padding: 24px;">
             <div
-              style="font-size: 0.9rem; color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 20px;"
+              style="font-size: var(--font-size-sm); color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 20px;"
             >
               Select a ZIP file containing your strain library export. You can either merge the new
               strains with your existing library or replace it entirely.
@@ -1304,7 +1304,7 @@ export class StrainEditorView extends LitElement {
                 />
                 <div>
                   <div style="font-weight: 600;">Merge</div>
-                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
+                  <div style="font-size: var(--font-size-supporting); color: var(--secondary-text-color);">
                     Add new strains, keep existing ones.
                   </div>
                 </div>
@@ -1325,7 +1325,7 @@ export class StrainEditorView extends LitElement {
                 />
                 <div>
                   <div style="font-weight: 600;">Replace</div>
-                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
+                  <div style="font-size: var(--font-size-supporting); color: var(--secondary-text-color);">
                     Overwrite entire library with import.
                   </div>
                 </div>
@@ -1406,7 +1406,7 @@ export class StrainEditorView extends LitElement {
             ? html`
                 <div class="sd-footer">
                   <span
-                    style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px;"
+                    style="font-size:var(--font-size-supporting); color:var(--secondary-text-color); padding: 0 8px;"
                   >
                     Breeders appear automatically when strains with breeder info are saved.
                   </span>
@@ -1615,7 +1615,7 @@ export class StrainEditorView extends LitElement {
                   ${affectedStrains.map(
                     (s) => html`
                       <span
-                        style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius: var(--border-radius-lg, 16px); font-size:0.8rem; font-weight:500;"
+                        style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius: var(--border-radius-lg, 16px); font-size:var(--font-size-supporting); font-weight:500;"
                       >
                         ${s.strain}${s.phenotype ? ` (${s.phenotype})` : ''}
                       </span>
@@ -1764,7 +1764,7 @@ export class StrainEditorView extends LitElement {
       }
       .field-error {
         color: var(--error-color, #f44336);
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         margin-top: 6px;
       }
       .sd-input[aria-invalid='true'] {
@@ -1786,7 +1786,7 @@ export class StrainEditorView extends LitElement {
         border-radius: var(--border-radius-sm, 8px);
         padding: 12px 16px;
         color: var(--primary-text-color, #fff);
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         outline: none;
         transition: border-color 0.2s;
         box-sizing: border-box;
@@ -1819,7 +1819,7 @@ export class StrainEditorView extends LitElement {
         background: none;
         border: none;
         color: var(--accent-green, #4caf50);
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         cursor: pointer;
         padding: 4px 8px;
         border-radius: var(--border-radius-xs, 4px);
@@ -2072,7 +2072,7 @@ export class StrainEditorView extends LitElement {
         margin: 0 0 4px 0;
       }
       .breeder-strain-count {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
       }
       .breeder-actions {

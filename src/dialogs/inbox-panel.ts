@@ -331,7 +331,7 @@ export class GmInboxPanel extends LitElement {
 
     .inbox-detail-head h3 {
       margin: 0;
-      font-size: 1.1rem;
+      font-size: var(--font-size-md);
       font-weight: 500;
     }
 
@@ -386,7 +386,7 @@ export class GmInboxPanel extends LitElement {
     }
 
     .reasoning-text {
-      font-size: 0.88rem;
+      font-size: var(--font-size-sm);
       line-height: 1.6;
     }
 
@@ -426,7 +426,7 @@ export class GmInboxPanel extends LitElement {
       align-items: center;
       justify-content: center;
       color: var(--secondary-text-color);
-      font-size: 0.8rem;
+      font-size: var(--font-size-supporting);
     }
 
     /* ── KPI cards ──────────────────────────────────────────── */
@@ -483,7 +483,7 @@ export class GmInboxPanel extends LitElement {
       border-radius: var(--border-radius-sm, 8px);
       padding: 6px 14px;
       cursor: pointer;
-      font-size: 0.82rem;
+      font-size: var(--font-size-supporting);
       font-family: inherit;
     }
 
@@ -518,7 +518,7 @@ export class GmInboxPanel extends LitElement {
       border-radius: var(--border-radius-sm, 8px);
       padding: 6px 14px;
       cursor: pointer;
-      font-size: 0.82rem;
+      font-size: var(--font-size-supporting);
       font-family: inherit;
       color: var(--primary-text-color, #fff);
     }
@@ -530,7 +530,7 @@ export class GmInboxPanel extends LitElement {
       border-radius: var(--border-radius-sm, 8px);
       padding: 6px 14px;
       cursor: pointer;
-      font-size: 0.82rem;
+      font-size: var(--font-size-supporting);
       font-family: inherit;
     }
 
@@ -547,7 +547,7 @@ export class GmInboxPanel extends LitElement {
 
     .action-ribbon-hint {
       flex: 1;
-      font-size: 0.8rem;
+      font-size: var(--font-size-supporting);
       color: var(--secondary-text-color);
       min-width: 160px;
     }
@@ -559,7 +559,7 @@ export class GmInboxPanel extends LitElement {
       border-radius: var(--border-radius-sm, 8px);
       padding: 6px 14px;
       cursor: pointer;
-      font-size: 0.82rem;
+      font-size: var(--font-size-supporting);
       font-family: inherit;
       color: var(--primary-text-color, #fff);
     }
@@ -589,7 +589,7 @@ export class GmInboxPanel extends LitElement {
       padding: 8px 12px;
       color: #fff;
       font-family: inherit;
-      font-size: 0.88rem;
+      font-size: var(--font-size-sm);
       resize: none;
     }
 
@@ -601,7 +601,7 @@ export class GmInboxPanel extends LitElement {
       padding: 6px 14px;
       cursor: pointer;
       font-family: inherit;
-      font-size: 0.82rem;
+      font-size: var(--font-size-supporting);
     }
 
     /* ── Error banner ───────────────────────────────────────── */
@@ -623,7 +623,7 @@ export class GmInboxPanel extends LitElement {
       border: none;
       color: inherit;
       cursor: pointer;
-      font-size: 0.82rem;
+      font-size: var(--font-size-supporting);
       font-family: inherit;
       padding: 2px 6px;
     }
