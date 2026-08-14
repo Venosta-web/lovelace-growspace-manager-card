@@ -8,7 +8,12 @@ export class Md3NumberInput extends LitElement {
   @property({ type: Number }) value = 0;
   @property({ type: Number }) min = 0;
   @property({ type: Number }) max: number | undefined;
+  @property() step = '1';
   @property() placeholder = '';
+  @property({ attribute: 'input-aria-label' }) inputAriaLabel = '';
+
+  private static _nextInputId = 0;
+  private readonly _inputId = `md3-number-input-${Md3NumberInput._nextInputId++}`;
 
   static styles = [
     dialogStyles,
@@ -31,13 +36,16 @@ export class Md3NumberInput extends LitElement {
   render() {
     return html`
       <div class="md3-input-group">
-        <label class="md3-label">${this.label}</label>
+        <label class="md3-label" for=${this._inputId}>${this.label}</label>
         <div style="display: flex; align-items: center;">
           <input
             type="number"
+            id=${this._inputId}
             class="md3-input"
+            aria-label=${this.inputAriaLabel || nothing}
             .min=${this.min}
             .max=${this.max}
+            .step=${this.step}
             .value=${this.value}
             .placeholder=${this.placeholder}
             @input=${this._handleInput}

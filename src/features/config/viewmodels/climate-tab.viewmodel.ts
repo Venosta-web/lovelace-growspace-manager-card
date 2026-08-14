@@ -10,7 +10,7 @@
  *
  * Two hass/shell dependencies are injected so the dumb component stays free of
  * both: `entityOptions` (the shell's hass-reading `_getEntities`) supplies the
- * fan-entity picker lists, and `expand` carries the two collapsible-section
+ * fan-entity picker lists, and `expand` carries the collapsible-section
  * toggles. Those toggles are **Shell `@state`**, not SM state — ephemeral
  * accordion/expander state stays on the shell and is projected in here, the
  * same pattern the still-inline humidity/VPD accordions use
@@ -18,6 +18,13 @@
  */
 
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
+import {
+  FAN_VPD_STAGE_COLORS,
+  FAN_VPD_STAGE_DEFAULTS,
+  FAN_VPD_STAGE_KEYS,
+  FAN_VPD_STAGE_LABELS,
+  type FanVpdStageKey,
+} from '../../environment/constants';
 import type { AcInfinityConflict } from '../components/ac-infinity-conflict';
 import {
   buildAcInfinityConflicts,
@@ -34,7 +41,14 @@ import type {
 export type FanRegulationMode = 'vpd' | 'humidity' | 'temperature';
 
 /** Entity domains for the two Climate-tab fan pickers (deviceClass is null). */
-const EXHAUST_FAN_DOMAINS = ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'];
+const EXHAUST_FAN_DOMAINS = [
+  'fan',
+  'switch',
+  'input_boolean',
+  'sensor',
+  'binary_sensor',
+  'input_number',
+];
 const CIRCULATION_FAN_DOMAINS = ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'];
 
 /** Climate Control section: fan entity pickers, thresholds, remove-environment gate. */
@@ -74,8 +88,6 @@ export interface FanPanelVM {
   mode: FanRegulationMode;
   /** The Stage-Aware VPD toggle shows only in VPD mode. */
   showStageVpd: boolean;
-  /** The stage-vpd-overrides-table shows in VPD mode with the toggle on. */
-  showStageVpdTable: boolean;
   /** "Fallback VPD Target (kPa)" when stage-aware, else "VPD Target (kPa)". */
   vpdTargetLabel: string;
   /** The VPD target field is dimmed while stage-aware overrides drive it. */
@@ -92,18 +104,32 @@ export interface FanPanelVM {
 export interface ExhaustPanelVM {
   config: ExhaustFanConfig;
   disabled: boolean;
-  /** Stage-Aware VPD is always available here (no VPD-mode gate). */
-  showStageVpdTable: boolean;
   vpdTargetLabel: string;
   vpdTargetDimmed: boolean;
   /** Critical-Temperature expander open state — Shell `@state`, projected in. */
   criticalTempExpanded: boolean;
 }
 
+export interface ClimateStageVpdStageVM {
+  id: FanVpdStageKey;
+  label: string;
+  color: string;
+  open: boolean;
+  current: boolean;
+  fan: { day: number; night: number };
+  exhaust: { day: number; night: number };
+}
+
+export interface ClimateStageVpdVM {
+  visible: boolean;
+  stages: ClimateStageVpdStageVM[];
+}
+
 /** Complete render input for `<config-climate-tab>`. */
 export interface ClimateTabViewModel {
   control: ClimateControlVM;
   fan: FanPanelVM;
+  stageVpd: ClimateStageVpdVM;
   exhaust: ExhaustPanelVM;
 }
 
@@ -118,20 +144,30 @@ export interface ClimateTabDeps {
   acInfinityPortDeviceId: (modeEntity: string) => string;
   /** Shell-state read: the roles a port's last pick failed to resolve. */
   acInfinityPrefillWarning: (field: string, index: number) => string[];
+  /** Backend-derived current stage for the selected growspace. */
+  currentStage?: string;
 }
 
-/** The two Shell-`@state` expander flags, projected into the VM. */
+/** Shell-`@state` expander flags projected into the VM. */
 export interface ClimateExpandState {
   fanTempOverrideExpanded: boolean;
   exhaustCriticalTempExpanded: boolean;
+  openStageVpdId?: FanVpdStageKey | '';
 }
 
 function vpdLabel(stageVpdEnabled: boolean): string {
   return stageVpdEnabled ? 'Fallback VPD Target (kPa)' : 'VPD Target (kPa)';
 }
 
+function stageVpdValues(
+  overrides: Record<string, { day: number; night: number }> | undefined,
+  key: FanVpdStageKey
+): { day: number; night: number } {
+  return overrides?.[key] ?? FAN_VPD_STAGE_DEFAULTS[key];
+}
+
 /**
- * Pure factory: the Config Dialog SM + injected hass adapter + the Shell's two
+ * Pure factory: the Config Dialog SM + injected hass adapter + the Shell's
  * expander flags → one Climate tab ViewModel. Testable with no DOM and no host.
  */
 export function createClimateTabViewModel(
@@ -182,17 +218,27 @@ export function createClimateTabViewModel(
       disabled: !fan.enabled,
       mode,
       showStageVpd: mode === 'vpd',
-      showStageVpdTable: mode === 'vpd' && fan.stage_vpd_enabled,
       vpdTargetLabel: vpdLabel(fan.stage_vpd_enabled),
       vpdTargetDimmed: fan.stage_vpd_enabled,
       showTempOverride: mode === 'vpd',
       tempOverrideExpanded: expand.fanTempOverrideExpanded,
       showWind: fan.wind_enabled,
     },
+    stageVpd: {
+      visible: (mode === 'vpd' && fan.stage_vpd_enabled) || exhaust.stage_vpd_enabled,
+      stages: FAN_VPD_STAGE_KEYS.map((key) => ({
+        id: key,
+        label: FAN_VPD_STAGE_LABELS[key],
+        color: FAN_VPD_STAGE_COLORS[key],
+        open: expand.openStageVpdId === key,
+        current: deps.currentStage === key,
+        fan: stageVpdValues(fan.stage_vpd_overrides, key),
+        exhaust: stageVpdValues(exhaust.stage_vpd_overrides, key),
+      })),
+    },
     exhaust: {
       config: exhaust,
       disabled: !exhaust.enabled,
-      showStageVpdTable: exhaust.stage_vpd_enabled,
       vpdTargetLabel: vpdLabel(exhaust.stage_vpd_enabled),
       vpdTargetDimmed: exhaust.stage_vpd_enabled,
       criticalTempExpanded: expand.exhaustCriticalTempExpanded,
