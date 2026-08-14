@@ -15,24 +15,12 @@
 import {
   FAN_VPD_STAGE_KEYS,
   FAN_VPD_STAGE_LABELS,
+  FAN_VPD_STAGE_COLORS,
   VPD_OPTIMAL_STAGE_DEFAULTS,
   type FanVpdStageKey,
   type VpdOptimalOverrides,
 } from '../../../features/environment/constants';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
-
-/** Stage-dot colours for the accordion, keyed by [[Fan VPD Stage]]. */
-export const VPD_STAGE_COLORS: Record<FanVpdStageKey, string> = {
-  seedling: '#8bc34a',
-  clone: '#26c6da',
-  mother: '#e91e63',
-  veg: '#4caf50',
-  flower_early: '#ff9800',
-  flower_mid: '#ff7043',
-  flower_late: '#f44336',
-  dry: '#9c27b0',
-  cure: '#2196f3',
-};
 
 /**
  * One VPD-optimal value: the draft override if present, else the stage default.
@@ -86,7 +74,7 @@ export function createVpdTargetsTabViewModel(
     stages: FAN_VPD_STAGE_KEYS.map((key) => ({
       key,
       label: FAN_VPD_STAGE_LABELS[key],
-      color: VPD_STAGE_COLORS[key],
+      color: FAN_VPD_STAGE_COLORS[key],
       open: expand.openStageId === key,
       day: {
         low: getVpdOptimal(overrides, key, 'day', 'low'),

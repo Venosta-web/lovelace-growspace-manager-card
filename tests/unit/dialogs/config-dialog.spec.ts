@@ -6,6 +6,7 @@ import { needsExhaustCall } from '../../../src/features/config/environment-save'
 import {
     readThreshold,
     DEFAULT_DEHUM_THRESHOLDS,
+    HUMIDITY_STAGES,
 } from '../../../src/features/config/viewmodels/humidity-tab.viewmodel';
 import { html } from 'lit';
 
@@ -471,11 +472,11 @@ describe('ConfigDialog', () => {
         });
 
         it('should initialize stage if missing during write', async () => {
-            (element as any)._openHumidityStageId = 'drying';
+            (element as any)._openHumidityStageId = 'dry';
             await element.updateComplete;
 
             const inputs = Array.from((await sensorsShadow(element)).querySelectorAll('md3-number-input'));
-            // Write to Day On (first input in drying accordion)
+            // Write to Day On (first input in dry accordion)
             inputs[0]?.dispatchEvent(new CustomEvent('change', { detail: '0.5' }));
             await element.updateComplete;
 
@@ -736,8 +737,7 @@ describe('ConfigDialog', () => {
         it('should render humidity accordion with all stages', async () => {
             element.currentTab = ConfigTab.HUMIDITY;
             const accCards = (await sensorsShadow(element)).querySelectorAll('.acc-card');
-            // All 8 stages rendered as accordion items
-            expect(accCards?.length).toBe(8);
+            expect(accCards?.length).toBe(HUMIDITY_STAGES.length);
         });
 
         it('should handle null thresholds during _updateThreshold', () => {

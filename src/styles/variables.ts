@@ -83,8 +83,11 @@ export const variables: CSSResult = css`
     --stage-dry: #9c27b0;
     --stage-cure: #2196f3;
     --stage-seedling: #8bc34a;
-    --stage-clone: #8bc34a;
+    --stage-clone: #26c6da;
     --stage-mother: #e91e63;
+    --stage-flower-early: #ff9800;
+    --stage-flower-mid: #fb8c00;
+    --stage-flower-late: #ef6c00;
 
     /* Error/Warning Colors */
     --error-color: #f44336;

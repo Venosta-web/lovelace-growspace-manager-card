@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { createVpdTargetsTabViewModel, getVpdOptimal } from './vpd-targets-tab.viewmodel';
 import {
-  createVpdTargetsTabViewModel,
-  getVpdOptimal,
-  VPD_STAGE_COLORS,
-} from './vpd-targets-tab.viewmodel';
-import {
+  FAN_VPD_STAGE_COLORS,
   FAN_VPD_STAGE_KEYS,
   VPD_OPTIMAL_STAGE_DEFAULTS,
   type VpdOptimalOverrides,
@@ -22,7 +19,9 @@ describe('getVpdOptimal', () => {
   });
 
   it('returns the override when present', () => {
-    const overrides = { veg: { day: { low: 0.91, high: 1.2 }, night: { low: 0.8, high: 1.0 } } } as VpdOptimalOverrides;
+    const overrides = {
+      veg: { day: { low: 0.91, high: 1.2 }, night: { low: 0.8, high: 1.0 } },
+    } as VpdOptimalOverrides;
     expect(getVpdOptimal(overrides, 'veg', 'day', 'low')).toBe(0.91);
   });
 });
@@ -32,7 +31,7 @@ describe('createVpdTargetsTabViewModel', () => {
     const vm = createVpdTargetsTabViewModel(sm(), { openStageId: '' });
     expect(vm.stages.map((s) => s.key)).toEqual([...FAN_VPD_STAGE_KEYS]);
     const veg = vm.stages.find((s) => s.key === 'veg')!;
-    expect(veg.color).toBe(VPD_STAGE_COLORS.veg);
+    expect(veg.color).toBe(FAN_VPD_STAGE_COLORS.veg);
     expect(veg.label.length).toBeGreaterThan(0);
   });
 
@@ -43,14 +42,22 @@ describe('createVpdTargetsTabViewModel', () => {
   });
 
   it('projects defaults until overridden, then the override', () => {
-    const veg0 = createVpdTargetsTabViewModel(sm(), { openStageId: '' }).stages.find((s) => s.key === 'veg')!;
+    const veg0 = createVpdTargetsTabViewModel(sm(), { openStageId: '' }).stages.find(
+      (s) => s.key === 'veg'
+    )!;
     expect(veg0.day.low).toBe(VPD_OPTIMAL_STAGE_DEFAULTS.veg.day.low);
 
     const s = transition(sm(), {
       type: 'UPDATE_ENV_DRAFT',
-      partial: { vpdOptimalOverrides: { veg: { day: { low: 0.95, high: 1.3 }, night: { low: 0.7, high: 0.9 } } } },
+      partial: {
+        vpdOptimalOverrides: {
+          veg: { day: { low: 0.95, high: 1.3 }, night: { low: 0.7, high: 0.9 } },
+        },
+      },
     });
-    const veg1 = createVpdTargetsTabViewModel(s, { openStageId: '' }).stages.find((st) => st.key === 'veg')!;
+    const veg1 = createVpdTargetsTabViewModel(s, { openStageId: '' }).stages.find(
+      (st) => st.key === 'veg'
+    )!;
     expect(veg1.day.low).toBe(0.95);
     expect(veg1.night.high).toBe(0.9);
   });
