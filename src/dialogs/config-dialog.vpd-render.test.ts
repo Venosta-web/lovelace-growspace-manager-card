@@ -40,7 +40,7 @@ async function mountVpdTab(): Promise<ConfigDialog> {
   return el;
 }
 
-// The VPD Targets tab is now a nested dumb component (ADR-0019); pierce it.
+// The VPD Targets tab and shared accordion are nested dumb components; pierce them.
 async function vpdShadow(el: ConfigDialog): Promise<ShadowRoot> {
   await el.updateComplete;
   const tab = el.shadowRoot!.querySelector('config-vpd-targets-tab') as HTMLElement & {
@@ -50,30 +50,40 @@ async function vpdShadow(el: ConfigDialog): Promise<ShadowRoot> {
   return tab.shadowRoot!;
 }
 
+async function accordionShadow(el: ConfigDialog): Promise<ShadowRoot> {
+  const tabRoot = await vpdShadow(el);
+  const accordion = tabRoot.querySelector('config-stage-accordion') as HTMLElement & {
+    updateComplete: Promise<boolean>;
+  };
+  await accordion.updateComplete;
+  return accordion.shadowRoot!;
+}
+
 describe('ConfigDialog VPD Targets tab — render', () => {
   it('renders one accordion card per fan VPD stage', async () => {
     const el = await mountVpdTab();
-    const cards = (await vpdShadow(el)).querySelectorAll('.acc-card');
+    const cards = (await accordionShadow(el)).querySelectorAll('.acc-card');
     expect(cards.length).toBe(FAN_VPD_STAGE_KEYS.length);
   });
 
   it('shows a collapsed summary line and hides the body until a stage is opened', async () => {
     const el = await mountVpdTab();
-    const root = await vpdShadow(el);
+    const root = await accordionShadow(el);
     // Nothing open by default → no body, but each head has a summary line.
     expect(root.querySelectorAll('.acc-body').length).toBe(0);
-    expect(root.querySelectorAll('.acc-head-desc').length).toBe(FAN_VPD_STAGE_KEYS.length);
+    expect((await vpdShadow(el)).querySelectorAll('.acc-head-desc').length).toBe(
+      FAN_VPD_STAGE_KEYS.length
+    );
   });
 
   it('reveals Day/Night md3-number-inputs when a stage head is clicked', async () => {
     const el = await mountVpdTab();
-    (await vpdShadow(el)).querySelector<HTMLElement>('.acc-head')!.click();
+    (await accordionShadow(el)).querySelector<HTMLElement>('.acc-head')!.click();
 
-    const root = await vpdShadow(el);
-    const body = root.querySelector('.acc-body');
+    const body = (await accordionShadow(el)).querySelector('.acc-body');
     expect(body).not.toBeNull();
     // Day low/high + Night low/high = 4 inputs.
-    expect(body!.querySelectorAll('md3-number-input').length).toBe(4);
+    expect((await vpdShadow(el)).querySelectorAll('md3-number-input').length).toBe(4);
   });
 
   it('renders a reset-all button', async () => {
