@@ -170,14 +170,11 @@ export class ConfigDialog extends LitElement {
   private _entityOptionsStates?: HomeAssistant['states'];
   private _entityOptionsRegistry?: EntityRegistrySnapshot;
   private _entityOptionsCache = new Map<string, string[]>();
-
-  connectedCallback(): void {
-    super.connectedCallback();
-    window.addEventListener('keydown', this._onKeydown, true);
-  }
+  private _cancelGuardTarget?: HTMLElement;
 
   disconnectedCallback(): void {
-    window.removeEventListener('keydown', this._onKeydown, true);
+    this._cancelGuardTarget?.removeEventListener('cancel', this._onDialogCancel, true);
+    this._cancelGuardTarget = undefined;
     super.disconnectedCallback();
   }
 
@@ -1207,6 +1204,7 @@ export class ConfigDialog extends LitElement {
     if (changedProperties.has('open') && !this.open) {
       this._initialStateApplied = false;
     }
+    if (this.open) this._bindDialogCancelGuard();
   }
 
   private _seedFromDevice(device?: GrowspaceDevice) {
@@ -1240,10 +1238,36 @@ export class ConfigDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   };
 
-  private _onKeydown = (event: KeyboardEvent): void => {
-    if (!this.open || event.key !== 'Escape') return;
+  /**
+   * `ha-dialog` wraps Web Awesome's native `<dialog>`. Its `cancel` event neither bubbles
+   * nor crosses shadow roots, so the guard must live on that native element instead of
+   * `window` or `<wa-dialog>`. Capture also runs before Web Awesome's own cancel handler.
+   */
+  private _bindDialogCancelGuard(): void {
+    const nativeDialog = this._nativeDialogElement();
+    if (!nativeDialog || nativeDialog === this._cancelGuardTarget) return;
+    this._cancelGuardTarget?.removeEventListener('cancel', this._onDialogCancel, true);
+    nativeDialog.addEventListener('cancel', this._onDialogCancel, true);
+    this._cancelGuardTarget = nativeDialog;
+  }
+
+  private _nativeDialogElement(): HTMLDialogElement | null {
+    const haDialog = this.shadowRoot?.querySelector('ha-dialog');
+    const waDialog = haDialog?.shadowRoot?.querySelector<
+      HTMLElement & { dialog?: HTMLDialogElement }
+    >('wa-dialog');
+    return (
+      waDialog?.dialog ??
+      waDialog?.shadowRoot?.querySelector<HTMLDialogElement>('dialog') ??
+      haDialog?.shadowRoot?.querySelector<HTMLDialogElement>('dialog') ??
+      null
+    );
+  }
+
+  private _onDialogCancel = (event: Event): void => {
+    if (!this.open) return;
     event.preventDefault();
-    event.stopPropagation();
+    event.stopImmediatePropagation();
     this._close();
   };
 
@@ -2415,6 +2439,8 @@ export class ConfigDialog extends LitElement {
       <!-- Scrim dismissal stays disabled so an incidental backdrop tap cannot destroy a mobile form. -->
       <ha-dialog
         open
+        .preventScrimClose=${true}
+        @opened=${this._bindDialogCancelGuard}
         @closed=${this._close}
         without-header
         scrimClickAction=""

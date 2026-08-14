@@ -18,6 +18,30 @@ function contextSelect(element: ConfigDialog): HTMLSelectElement {
   return element.shadowRoot!.querySelector<HTMLSelectElement>('select.cfg-context-select')!;
 }
 
+async function installEscapeHarness(element: ConfigDialog) {
+  const haDialog = element.shadowRoot!.querySelector('ha-dialog')!;
+  const haDialogRoot = haDialog.shadowRoot ?? haDialog.attachShadow({ mode: 'open' });
+  const waDialog = document.createElement('wa-dialog') as HTMLElement & {
+    dialog?: HTMLDialogElement;
+  };
+  const nativeDialog = document.createElement('dialog');
+  waDialog.dialog = nativeDialog;
+  waDialog.attachShadow({ mode: 'open' }).append(nativeDialog);
+  haDialogRoot.append(waDialog);
+
+  const addEventListener = vi.spyOn(nativeDialog, 'addEventListener');
+  element.requestUpdate();
+  await element.updateComplete;
+
+  return {
+    addEventListener,
+    pressEscape() {
+      const cancel = new Event('cancel', { cancelable: true });
+      if (nativeDialog.dispatchEvent(cancel)) element.remove();
+    },
+  };
+}
+
 describe('config dialog unsaved-changes gestures', () => {
   let element: ConfigDialog;
 
@@ -60,30 +84,80 @@ describe('config dialog unsaved-changes gestures', () => {
     expect((element as any).envTemperatureSensors).toEqual([]);
   });
 
-  it('closes immediately when Escape is pressed with a clean draft', () => {
+  it('closes immediately when Escape is pressed with a clean draft', async () => {
     const close = vi.fn();
-    element.addEventListener('close', close);
+    element.addEventListener('close', () => {
+      close();
+      element.remove();
+    });
+    const escape = await installEscapeHarness(element);
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    escape.pressEscape();
 
     expect(close).toHaveBeenCalledOnce();
+    expect(element.isConnected).toBe(false);
     expect((element as any)._sm.status.kind).toBe('idle');
   });
 
-  it('prompts instead of closing on Escape when dirty and closes after discard', async () => {
+  it('renders the discard prompt without unmounting and Keep editing preserves the draft', async () => {
     const close = vi.fn();
     element.addEventListener('close', close);
     (element as any).envTemperatureSensors = ['sensor.changed'];
+    const activeTab = element.currentTab;
+    const escape = await installEscapeHarness(element);
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    escape.pressEscape();
     await element.updateComplete;
 
     expect(close).not.toHaveBeenCalled();
+    expect(element.isConnected).toBe(true);
     expect(element.shadowRoot!.querySelector('.confirm-discard-overlay')).toBeTruthy();
 
-    (element as any)._confirmDiscard();
+    buttonByText(element, 'Keep editing')!.click();
+    await element.updateComplete;
 
-    expect(close).toHaveBeenCalledOnce();
+    expect(element.isConnected).toBe(true);
+    expect(element.currentTab).toBe(activeTab);
+    expect((element as any).envTemperatureSensors).toEqual(['sensor.changed']);
+    expect(element.shadowRoot!.querySelector('.confirm-discard-overlay')).toBeNull();
+    expect(close).not.toHaveBeenCalled();
+  });
+
+  it('binds one cancel guard to each rendered dialog instance', async () => {
+    const escape = await installEscapeHarness(element);
+
+    element.requestUpdate();
+    await element.updateComplete;
+
+    expect(escape.addEventListener.mock.calls.filter(([type]) => type === 'cancel')).toHaveLength(
+      1
+    );
+  });
+
+  it('scopes Escape to the active dialog when several instances are mounted', async () => {
+    const other = new ConfigDialog();
+    other.hass = { states: {}, services: {} } as any;
+    other.devices = [device('gs2')];
+    other.growspaceOptions = { gs2: 'Growspace 2' };
+    other.growspaceId = 'gs2';
+    other.initialTab = ConfigTab.SENSORS;
+    other.open = true;
+    document.body.appendChild(other);
+    await other.updateComplete;
+
+    (element as any).envTemperatureSensors = ['sensor.changed'];
+    const escape = await installEscapeHarness(element);
+    await installEscapeHarness(other);
+
+    escape.pressEscape();
+    await element.updateComplete;
+
+    expect(element.isConnected).toBe(true);
+    expect(element.shadowRoot!.querySelector('.confirm-discard-overlay')).toBeTruthy();
+    expect(other.isConnected).toBe(true);
+    expect((other as any)._sm.status.kind).toBe('idle');
+
+    other.remove();
   });
 
   it('changes growspace immediately when the environment draft is clean', () => {
@@ -200,7 +274,8 @@ describe('config dialog unsaved-changes gestures', () => {
   it('names the growspace losing its changes in the close guard prompt', async () => {
     (element as any).envTemperatureSensors = ['sensor.changed'];
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    const escape = await installEscapeHarness(element);
+    escape.pressEscape();
     await element.updateComplete;
 
     const prompt = element.shadowRoot!.querySelector('#config-discard-description')!;
