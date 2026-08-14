@@ -14,6 +14,10 @@ function buttonByText(element: ConfigDialog, text: string): HTMLButtonElement | 
   );
 }
 
+function contextSelect(element: ConfigDialog): HTMLSelectElement {
+  return element.shadowRoot!.querySelector<HTMLSelectElement>('select.cfg-context-select')!;
+}
+
 describe('config dialog unsaved-changes gestures', () => {
   let element: ConfigDialog;
 
@@ -112,6 +116,81 @@ describe('config dialog unsaved-changes gestures', () => {
     expect((element as any).envSelectedId).toBe('gs2');
     expect((element as any).envTemperatureSensors).toEqual([]);
     expect((element as any)._sm.status.kind).toBe('idle');
+  });
+
+  // The context bar's one job is naming the growspace the form writes to, so it is
+  // asserted through the rendered <select>: the draft never moves on a refused
+  // switch, so a state-machine-only assertion passes while the DOM keeps showing
+  // the growspace the user backed out of.
+  it('keeps the context bar on the edited growspace while the discard prompt is open', async () => {
+    (element as any).envTemperatureSensors = ['sensor.changed'];
+    await element.updateComplete;
+
+    const select = contextSelect(element);
+    select.value = 'gs2';
+    select.dispatchEvent(new Event('change'));
+    await element.updateComplete;
+
+    expect(element.shadowRoot!.querySelector('.confirm-discard-overlay')).toBeTruthy();
+    expect(contextSelect(element).value).toBe('gs1');
+  });
+
+  it('restores the context bar to the edited growspace after Keep editing', async () => {
+    (element as any).envTemperatureSensors = ['sensor.changed'];
+    await element.updateComplete;
+
+    const select = contextSelect(element);
+    select.value = 'gs2';
+    select.dispatchEvent(new Event('change'));
+    await element.updateComplete;
+
+    buttonByText(element, 'Keep editing')!.click();
+    await element.updateComplete;
+
+    expect(element.shadowRoot!.querySelector('.confirm-discard-overlay')).toBeNull();
+    expect(contextSelect(element).value).toBe('gs1');
+    expect((element as any).envTemperatureSensors).toEqual(['sensor.changed']);
+  });
+
+  it('moves the context bar to the new growspace when the switch is confirmed', async () => {
+    (element as any).envTemperatureSensors = ['sensor.changed'];
+    await element.updateComplete;
+
+    const select = contextSelect(element);
+    select.value = 'gs2';
+    select.dispatchEvent(new Event('change'));
+    await element.updateComplete;
+
+    buttonByText(element, 'Discard')!.click();
+    await element.updateComplete;
+
+    expect(contextSelect(element).value).toBe('gs2');
+    expect((element as any).envSelectedId).toBe('gs2');
+  });
+
+  it('names both growspaces in the discard prompt for a refused switch', async () => {
+    (element as any).envTemperatureSensors = ['sensor.changed'];
+    await element.updateComplete;
+
+    const select = contextSelect(element);
+    select.value = 'gs2';
+    select.dispatchEvent(new Event('change'));
+    await element.updateComplete;
+
+    const prompt = element.shadowRoot!.querySelector('#config-discard-description')!;
+    expect(prompt.textContent).toContain('Growspace 1');
+    expect(prompt.textContent).toContain('Growspace 2');
+  });
+
+  it('names the growspace losing its changes in the close guard prompt', async () => {
+    (element as any).envTemperatureSensors = ['sensor.changed'];
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await element.updateComplete;
+
+    const prompt = element.shadowRoot!.querySelector('#config-discard-description')!;
+    expect(prompt.textContent).toContain('Growspace 1');
+    expect(prompt.textContent).not.toContain('Growspace 2');
   });
 });
 
