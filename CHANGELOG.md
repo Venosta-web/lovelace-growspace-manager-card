@@ -1,3 +1,10 @@
+# [1.1.0-next.116](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.115...v1.1.0-next.116) (2026-08-14)
+
+
+### Bug Fixes
+
+* **config:** guard dirty drafts on Escape ([#556](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/556)) ([408a77c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/408a77cec4a355b4b5cdb7ed737b3b6ddad4c1a5)), closes [#549](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/549)
+
 # [1.1.0-next.115](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.114...v1.1.0-next.115) (2026-08-14)
 
 
