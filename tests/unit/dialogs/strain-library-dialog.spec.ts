@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { StrainLibraryDialog } from '../../../src/dialogs/strain-library-dialog';
 import { StrainEntry } from '../../../src/types';
 import { PlantUtils } from '../../../src/utils/plant-utils';
+import { setHass } from '../../../src/services/hass-call';
 
 // Mock PlantUtils for logic isolation in browser testing
 vi.mock('../../../src/utils/plant-utils', () => ({
@@ -256,6 +257,10 @@ describe('StrainLibraryDialog', () => {
     // Dialog-level: verify save-strain event causes view to return to browse
     describe('Validation (dialog-level)', () => {
         it('should return to browse view when onSave callback is invoked by strain-editor-view', async () => {
+            setHass({
+                callService: vi.fn().mockResolvedValue(undefined),
+                callWS: vi.fn().mockResolvedValue({ strains: {} }),
+            } as never);
             (element as any)._view = 'editor';
             await element.updateComplete;
 

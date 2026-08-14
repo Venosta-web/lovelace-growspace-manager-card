@@ -50,6 +50,7 @@ export class StrainEditorView extends LitElement {
   @state() private _lineageTree: LineageNode | null = null;
 
   @query('camera-capture') private _camera!: CameraCapture;
+  @query('#strain-name') private _strainNameInput!: HTMLInputElement;
 
   private _dispatchStateChange() {
     this.dispatchEvent(
@@ -123,9 +124,12 @@ export class StrainEditorView extends LitElement {
   }
 
   private async _handleSave() {
-    if (!this._sm.draft.strain) return;
-
     this._sm = transition(this._sm, { type: 'SaveRequested' });
+    if (this._sm.status.kind === 'error' && this._sm.status.source === 'validation') {
+      await this.updateComplete;
+      this._strainNameInput.focus();
+      return;
+    }
 
     try {
       const images = this._sm.draft.images ?? [];
@@ -426,7 +430,7 @@ export class StrainEditorView extends LitElement {
   }
 
   private async _handleGalleryUpload(file: File): Promise<void> {
-    this._sm = transition(this._sm, { type: 'SaveRequested' });
+    this._sm = transition(this._sm, { type: 'GalleryUploadRequested' });
     try {
       const base64 = await PlantUtils.compressImage(file);
       const strain = this._sm.draft.strain ?? 'unknown';
@@ -457,7 +461,7 @@ export class StrainEditorView extends LitElement {
     } catch (err) {
       console.error('Gallery upload failed:', err);
     } finally {
-      this._sm = transition(this._sm, { type: 'SaveResolved' });
+      this._sm = transition(this._sm, { type: 'GalleryUploadResolved' });
     }
   }
 
@@ -515,6 +519,14 @@ export class StrainEditorView extends LitElement {
 
   private renderEditorView(): TemplateResult {
     const s = this._sm.draft;
+    const nameError =
+      this._sm.status.kind === 'error' && this._sm.status.source === 'validation'
+        ? this._sm.status.message
+        : undefined;
+    const saveError =
+      this._sm.status.kind === 'error' && this._sm.status.source === 'persistence'
+        ? this._sm.status.message
+        : undefined;
     const isEdit =
       !!s.strain &&
       this.strains.some((ex) => ex.strain === s.strain && ex.phenotype === s.phenotype);
@@ -577,7 +589,9 @@ export class StrainEditorView extends LitElement {
               <div
                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;"
               >
-                <label class="sd-label" style="margin-bottom:0;">Strain Name *</label>
+                <label class="sd-label" for="strain-name" style="margin-bottom:0;"
+                  >Strain Name *</label
+                >
                 <button
                   class="md3-button text"
                   style="height:24px; padding:0 8px; font-size:0.75rem; color:var(--accent-green); min-width:auto;"
@@ -595,13 +609,19 @@ export class StrainEditorView extends LitElement {
                 </button>
               </div>
               <input
+                id="strain-name"
                 type="text"
                 class="sd-input"
                 list="strain-suggestions"
+                aria-invalid=${nameError ? 'true' : 'false'}
+                aria-describedby=${nameError ? 'strain-name-error' : nothing}
                 .value=${s.strain || ''}
                 @input=${(e: InputEvent) =>
                   this._handleEditorChange('strain', (e.target as HTMLInputElement).value)}
               />
+              ${nameError
+                ? html`<div id="strain-name-error" class="field-error">${nameError}</div>`
+                : nothing}
             </div>
 
             <div class="sd-form-group">
@@ -934,6 +954,7 @@ export class StrainEditorView extends LitElement {
               <label class="sd-label">Description</label>
               <textarea
                 class="sd-textarea"
+                data-field="description"
                 .value=${s.description || ''}
                 @input=${(e: InputEvent) =>
                   this._handleEditorChange('description', (e.target as HTMLTextAreaElement).value)}
@@ -943,7 +964,7 @@ export class StrainEditorView extends LitElement {
         </div>
       </div>
 
-      <div class="sd-footer" style="justify-content: space-between;">
+      <div class="sd-footer">
         ${s.key
           ? html`
               <button
@@ -957,9 +978,12 @@ export class StrainEditorView extends LitElement {
                 Delete
               </button>
             `
-          : html`<div></div>`}
+          : nothing}
+        ${saveError
+          ? html` <div class="save-error" role="status" aria-live="polite">${saveError}</div> `
+          : nothing}
 
-        <div style="display:flex; gap:12px;">
+        <div class="sd-footer-actions">
           ${s.strain
             ? html`
                 <button class="md3-button outlined" @click=${this._handlePrintLabel}>
@@ -982,6 +1006,7 @@ export class StrainEditorView extends LitElement {
           </button>
           <button
             class="md3-button primary"
+            data-action="save-strain"
             ?disabled=${this._sm.status.kind === 'applying'}
             @click=${() => this._handleSave()}
           >
@@ -1716,12 +1741,34 @@ export class StrainEditorView extends LitElement {
         border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         display: flex;
         justify-content: flex-end;
+        align-items: center;
+        flex-wrap: wrap;
         gap: 12px;
+      }
+
+      .sd-footer-actions {
+        display: flex;
+        gap: 12px;
+        margin-left: auto;
+      }
+
+      .save-error {
+        flex: 1 1 240px;
+        color: var(--error-color, #f44336);
+        font-size: 0.875rem;
       }
 
       /* FORMS */
       .sd-form-group {
         margin-bottom: 20px;
+      }
+      .field-error {
+        color: var(--error-color, #f44336);
+        font-size: 0.8rem;
+        margin-top: 6px;
+      }
+      .sd-input[aria-invalid='true'] {
+        border-color: var(--error-color, #f44336);
       }
       .sd-label {
         display: block;
@@ -2063,7 +2110,17 @@ export class StrainEditorView extends LitElement {
           grid-template-columns: 1fr;
         }
         .sd-footer {
-          display: none;
+          align-items: stretch;
+          padding: 12px 16px;
+        }
+        .save-error {
+          flex-basis: 100%;
+        }
+        .sd-footer-actions {
+          flex: 1 1 100%;
+          justify-content: flex-end;
+          margin-left: 0;
+          flex-wrap: wrap;
         }
       }
     `,

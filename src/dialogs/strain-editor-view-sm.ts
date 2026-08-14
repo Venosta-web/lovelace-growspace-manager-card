@@ -24,7 +24,7 @@ export type Status =
   | { kind: 'idle' }
   | { kind: 'applying' }
   | { kind: 'done' }
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; source: 'validation' | 'persistence'; message: string };
 
 // ─── Sub-state ────────────────────────────────────────────────────────────────
 
@@ -55,6 +55,8 @@ export type EditorEvent =
   | { type: 'SaveRequested' }
   | { type: 'SaveResolved' }
   | { type: 'SaveFailed'; message: string }
+  | { type: 'GalleryUploadRequested' }
+  | { type: 'GalleryUploadResolved' }
   | { type: 'NavigateToRelated'; strain: Partial<StrainEntry> }
   | { type: 'NavigateBack' }
   | { type: 'CropRequested' }
@@ -95,16 +97,45 @@ export function createInitialSM(draft: Partial<StrainEntry> = {}): StrainEditorS
 export function transition(sm: StrainEditorSM, event: EditorEvent): StrainEditorSM {
   switch (event.type) {
     case 'DraftFieldChanged':
-      return { ...sm, draft: { ...sm.draft, [event.field]: event.value } };
+      return {
+        ...sm,
+        draft: { ...sm.draft, [event.field]: event.value },
+        status:
+          event.field === 'strain' &&
+          sm.status.kind === 'error' &&
+          sm.status.source === 'validation'
+            ? { kind: 'idle' }
+            : sm.status,
+      };
 
     case 'SaveRequested':
-      return { ...sm, status: { kind: 'applying' } };
+      if (!sm.draft.strain?.trim()) {
+        return {
+          ...sm,
+          status: {
+            kind: 'error',
+            source: 'validation',
+            message: 'Strain name is required.',
+          },
+        };
+      }
+      return { ...sm, status: { kind: 'applying' }, toast: undefined };
 
     case 'SaveResolved':
       return { ...sm, status: { kind: 'done' } };
 
     case 'SaveFailed':
-      return { ...sm, status: { kind: 'error', message: event.message }, toast: event.message };
+      return {
+        ...sm,
+        status: { kind: 'error', source: 'persistence', message: event.message },
+        toast: event.message,
+      };
+
+    case 'GalleryUploadRequested':
+      return { ...sm, status: { kind: 'applying' } };
+
+    case 'GalleryUploadResolved':
+      return { ...sm, status: { kind: 'done' } };
 
     case 'NavigateToRelated':
       return { ...sm, draft: event.strain, history: [...sm.history, sm.draft] };
@@ -193,7 +224,9 @@ export function isEditorDirty(sm: StrainEditorSM, original?: Partial<StrainEntry
   if (!original) {
     return Object.keys(sm.draft).length > 0;
   }
-  const keys = new Set([...Object.keys(sm.draft), ...Object.keys(original)]) as Set<keyof StrainEntry>;
+  const keys = new Set([...Object.keys(sm.draft), ...Object.keys(original)]) as Set<
+    keyof StrainEntry
+  >;
   for (const key of keys) {
     if (sm.draft[key] !== original[key]) return true;
   }

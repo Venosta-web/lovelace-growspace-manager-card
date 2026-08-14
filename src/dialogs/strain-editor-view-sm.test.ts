@@ -4,11 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  createInitialSM,
-  transition,
-  isEditorDirty,
-} from './strain-editor-view-sm';
+import { createInitialSM, transition, isEditorDirty } from './strain-editor-view-sm';
 import type { StrainEntry } from '../features/plants/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -82,6 +78,19 @@ describe('SaveRequested', () => {
     const next = transition(sm, { type: 'SaveRequested' });
     expect(next.status.kind).toBe('applying');
   });
+
+  it('rejects a whitespace-only strain name without changing the draft', () => {
+    const draft = aStrain({ strain: '   ', description: 'Keep this draft' });
+    const sm = createInitialSM(draft);
+    const next = transition(sm, { type: 'SaveRequested' });
+
+    expect(next.status).toEqual({
+      kind: 'error',
+      source: 'validation',
+      message: 'Strain name is required.',
+    });
+    expect(next.draft).toEqual(draft);
+  });
 });
 
 describe('SaveResolved', () => {
@@ -109,6 +118,41 @@ describe('SaveFailed', () => {
     sm = transition(sm, { type: 'SaveRequested' });
     const next = transition(sm, { type: 'SaveFailed', message: 'Network error' });
     expect(next.toast).toBe('Network error');
+  });
+
+  it('preserves the complete draft and allows a retry', () => {
+    const draft = aStrain({
+      description: 'Keep all of this',
+      flowering_days_min: 61,
+      flowering_days_max: 73,
+    });
+    let sm = createInitialSM(draft);
+    sm = transition(sm, { type: 'SaveRequested' });
+    sm = transition(sm, { type: 'SaveFailed', message: 'Backend unavailable' });
+
+    expect(sm.draft).toEqual(draft);
+    expect(sm.status).toEqual({
+      kind: 'error',
+      source: 'persistence',
+      message: 'Backend unavailable',
+    });
+
+    const retrying = transition(sm, { type: 'SaveRequested' });
+    expect(retrying.status.kind).toBe('applying');
+    expect(retrying.draft).toEqual(draft);
+    expect(retrying.toast).toBeUndefined();
+  });
+});
+
+describe('Gallery upload lifecycle', () => {
+  it('does not apply save validation to an unnamed draft', () => {
+    let sm = createInitialSM({ strain: '   ' });
+
+    sm = transition(sm, { type: 'GalleryUploadRequested' });
+    expect(sm.status.kind).toBe('applying');
+
+    sm = transition(sm, { type: 'GalleryUploadResolved' });
+    expect(sm.status.kind).toBe('done');
   });
 });
 
