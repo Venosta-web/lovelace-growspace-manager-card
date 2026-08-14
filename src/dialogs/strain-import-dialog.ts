@@ -420,7 +420,7 @@ export class StrainImportDialog extends LitElement {
         background: rgba(255, 193, 7, 0.1);
         color: #ffc107;
         border: 1px solid rgba(255, 193, 7, 0.3);
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         display: flex;
         align-items: center;
         gap: 4px;

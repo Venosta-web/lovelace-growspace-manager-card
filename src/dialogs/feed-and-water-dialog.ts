@@ -185,7 +185,7 @@ export class FeedAndWaterDialog extends LitElement {
         background: rgba(0, 0, 0, 0.85);
         color: #fff;
         padding: 8px 16px;
-        border-radius: 20px;
+        border-radius: var(--border-radius-full, 9999px);
         font-size: 0.875rem;
         pointer-events: none;
         z-index: 20;
@@ -209,7 +209,7 @@ export class FeedAndWaterDialog extends LitElement {
         background: rgba(255, 152, 0, 0.15);
         color: var(--gm-phi-color, #ff9800);
         border: 1px solid var(--gm-phi-color, #ff9800);
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 10px 14px;
         margin-bottom: 20px;
         font-size: 0.875rem;

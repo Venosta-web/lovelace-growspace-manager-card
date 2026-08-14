@@ -133,7 +133,7 @@ export class SeedsGeneticsTab extends LitElement {
       .seed-batch-card {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 14px 16px;
         margin-bottom: 10px;
       }
@@ -189,7 +189,7 @@ export class SeedsGeneticsTab extends LitElement {
         font-size: 0.78rem;
         color: var(--primary-text-color);
         background: var(--divider-color, rgba(255, 255, 255, 0.08));
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 2px 7px;
       }
       .seed-batch-parent-sep {
@@ -228,7 +228,7 @@ export class SeedsGeneticsTab extends LitElement {
         flex: 1;
         min-width: 120px;
         padding: 6px 8px;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         border: 1px solid var(--divider-color);
         background: var(--card-background-color);
         color: var(--primary-text-color);
@@ -237,7 +237,7 @@ export class SeedsGeneticsTab extends LitElement {
       .sow-qty {
         width: 64px;
         padding: 6px 8px;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         border: 1px solid var(--divider-color);
         background: var(--card-background-color);
         color: var(--primary-text-color);
@@ -247,7 +247,7 @@ export class SeedsGeneticsTab extends LitElement {
       .pollination-card {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 14px 16px;
         margin-bottom: 10px;
         display: flex;

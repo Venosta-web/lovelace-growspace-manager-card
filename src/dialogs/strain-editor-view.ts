@@ -1818,7 +1818,7 @@ export class StrainEditorView extends LitElement {
         border: 1px solid rgba(255, 255, 255, 0.2);
         color: #fff;
         padding: 6px 12px;
-        border-radius: 20px;
+        border-radius: var(--border-radius-full, 9999px);
         font-size: 0.75rem;
         display: flex;
         align-items: center;

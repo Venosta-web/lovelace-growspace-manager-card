@@ -360,7 +360,7 @@ export class SnapshotsDialog extends LitElement {
                               (i: string) =>
                                 html`<span
                                   class="issue-chip"
-                                  style="background:rgba(244,67,54,0.15);color:var(--error-color,#f44336);border-radius:10px;padding:2px 10px;font-size:0.8rem;"
+                                  style="background:rgba(244,67,54,0.15);color:var(--error-color,#f44336);border-radius: var(--border-radius-md, 12px);padding:2px 10px;font-size:0.8rem;"
                                   >${i}</span
                                 >`
                             )}
@@ -415,7 +415,7 @@ export class SnapshotsDialog extends LitElement {
                               <span
                                 style="background:${SEVERITY_COLORS[
                                   entry.severity
-                                ]};color:#fff;padding:2px 8px;border-radius:10px;font-size:0.75rem;"
+                                ]};color:#fff;padding:2px 8px;border-radius: var(--border-radius-md, 12px);font-size:0.75rem;"
                                 >${entry.severity}</span
                               >
                             </div>

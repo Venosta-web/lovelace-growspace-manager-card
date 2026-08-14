@@ -273,7 +273,7 @@ export class GmChatPanel extends LitElement {
     .conf {
       font-size: 0.68rem;
       padding: 1px 6px;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       background: rgba(76,175,80,0.25);
       color: var(--ai-accent, #4caf50);
     }
@@ -305,7 +305,7 @@ export class GmChatPanel extends LitElement {
       margin-top: 10px;
       background: rgba(255,255,255,0.06);
       border: 1px solid var(--divider-color, rgba(255,255,255,0.12));
-      border-radius: 10px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 10px 12px;
     }
     .act-title { font-size: 0.82rem; font-weight: 600; }
@@ -314,7 +314,7 @@ export class GmChatPanel extends LitElement {
     .apply-btn, .dismiss-btn {
       font-size: 0.78rem;
       padding: 4px 12px;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       border: none;
       cursor: pointer;
       font-family: inherit;
@@ -338,7 +338,7 @@ export class GmChatPanel extends LitElement {
     .cite-chip {
       font-size: 0.7rem;
       padding: 2px 8px;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       background: rgba(255,255,255,0.07);
       color: var(--secondary-text-color);
       border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
@@ -385,7 +385,7 @@ export class GmChatPanel extends LitElement {
       flex-shrink: 0;
       font-size: 0.75rem;
       padding: 4px 10px;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       border: 1px solid var(--divider-color, rgba(255,255,255,0.12));
       background: rgba(255,255,255,0.05);
       color: var(--primary-text-color);
@@ -407,7 +407,7 @@ export class GmChatPanel extends LitElement {
       gap: 4px;
       font-size: 0.75rem;
       padding: 3px 8px 3px 10px;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       background: rgba(76,175,80,0.12);
       border: 1px solid rgba(76,175,80,0.3);
       color: var(--ai-accent, #4caf50);
@@ -536,7 +536,7 @@ export class GmChatPanel extends LitElement {
       flex-shrink: 0;
       font-size: 0.78rem;
       padding: 6px 14px;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       border: none;
       cursor: pointer;
       font-family: inherit;

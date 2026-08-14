@@ -131,7 +131,7 @@ export class GmInboxPanel extends LitElement {
       align-items: center;
       gap: 4px;
       padding: 4px 10px;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       border: 1px solid rgba(255, 255, 255, 0.15);
       background: none;
       color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
@@ -149,7 +149,7 @@ export class GmInboxPanel extends LitElement {
 
     .pill-count {
       background: rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 0 5px;
       font-size: 0.7rem;
       min-width: 16px;
@@ -258,7 +258,7 @@ export class GmInboxPanel extends LitElement {
       font-family: inherit;
       cursor: pointer;
       padding: 4px 8px;
-      border-radius: 6px;
+      border-radius: var(--border-radius-sm, 8px);
       transition: color 150ms, background 150ms;
     }
 
@@ -344,7 +344,7 @@ export class GmInboxPanel extends LitElement {
 
     .inbox-severity-pill {
       padding: 2px 8px;
-      border-radius: 10px;
+      border-radius: var(--border-radius-md, 12px);
       font-size: 0.75rem;
       font-weight: 600;
       text-transform: uppercase;
@@ -438,7 +438,7 @@ export class GmInboxPanel extends LitElement {
     .kpi-card {
       flex: 1;
       background: rgba(255, 255, 255, 0.04);
-      border-radius: 10px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 10px 12px;
     }
 
@@ -468,7 +468,7 @@ export class GmInboxPanel extends LitElement {
       gap: 12px;
       padding: 10px 12px;
       background: rgba(255, 255, 255, 0.04);
-      border-radius: 10px;
+      border-radius: var(--border-radius-md, 12px);
     }
 
     .reco-row-body {
@@ -612,7 +612,7 @@ export class GmInboxPanel extends LitElement {
       padding: 10px 14px;
       background: rgba(244, 67, 54, 0.1);
       border: 1px solid rgba(244, 67, 54, 0.3);
-      border-radius: 10px;
+      border-radius: var(--border-radius-md, 12px);
       font-size: 0.85rem;
       color: var(--error-color, #f44336);
     }

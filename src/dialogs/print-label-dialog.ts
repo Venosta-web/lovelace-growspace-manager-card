@@ -90,7 +90,7 @@ export class PrintLabelDialog extends LitElement {
         position: relative;
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 16px;
         display: flex;
         align-items: center;
@@ -198,7 +198,7 @@ export class PrintLabelDialog extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 6px 8px;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         cursor: pointer;
         transition: background 0.15s;
       }
@@ -268,7 +268,7 @@ export class PrintLabelDialog extends LitElement {
       .copies-stepper button {
         background: rgba(255, 255, 255, 0.08);
         border: none;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         color: var(--primary-text-color, #fff);
         width: 28px;
         height: 28px;
@@ -286,7 +286,7 @@ export class PrintLabelDialog extends LitElement {
       .density-seg {
         display: flex;
         border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         overflow: hidden;
       }
       .density-seg button {
@@ -313,7 +313,7 @@ export class PrintLabelDialog extends LitElement {
       .size-chip {
         background: rgba(255, 255, 255, 0.06);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 4px 10px;
         cursor: pointer;
         font-size: 0.82rem;

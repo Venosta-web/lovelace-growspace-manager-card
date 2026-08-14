@@ -423,7 +423,7 @@ export class StrainLibraryDialog extends LitElement {
         border: 1px solid rgba(255, 255, 255, 0.2);
         color: #fff;
         padding: 6px 12px;
-        border-radius: 20px;
+        border-radius: var(--border-radius-full, 9999px);
         font-size: 0.75rem;
         display: flex;
         align-items: center;
@@ -901,7 +901,7 @@ export class StrainLibraryDialog extends LitElement {
       .seed-batch-card {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 14px 16px;
         margin-bottom: 10px;
       }
@@ -957,7 +957,7 @@ export class StrainLibraryDialog extends LitElement {
         font-size: 0.78rem;
         color: var(--primary-text-color);
         background: var(--divider-color, rgba(255, 255, 255, 0.08));
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 2px 7px;
       }
       .seed-batch-parent-sep {
@@ -996,7 +996,7 @@ export class StrainLibraryDialog extends LitElement {
         flex: 1;
         min-width: 120px;
         padding: 6px 8px;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         border: 1px solid var(--divider-color);
         background: var(--card-background-color);
         color: var(--primary-text-color);
@@ -1005,7 +1005,7 @@ export class StrainLibraryDialog extends LitElement {
       .sow-qty {
         width: 64px;
         padding: 6px 8px;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         border: 1px solid var(--divider-color);
         background: var(--card-background-color);
         color: var(--primary-text-color);
@@ -1015,7 +1015,7 @@ export class StrainLibraryDialog extends LitElement {
       .pollination-card {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 14px 16px;
         margin-bottom: 10px;
         display: flex;
@@ -1546,7 +1546,7 @@ export class StrainLibraryDialog extends LitElement {
                       this._cameFromEditor = false;
                       this._activeMainTab = 'strains';
                     }}
-                    style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(76, 175, 80, 0.15); border: 1px solid var(--accent-green, #4caf50); border-radius: 20px; color: var(--accent-green, #4caf50); font-weight: 500; font-size: 13px; cursor: pointer; transition: all 0.2s ease-in-out; outline: none; margin-right: 0;"
+                    style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(76, 175, 80, 0.15); border: 1px solid var(--accent-green, #4caf50); border-radius: var(--border-radius-full, 9999px); color: var(--accent-green, #4caf50); font-weight: 500; font-size: 13px; cursor: pointer; transition: all 0.2s ease-in-out; outline: none; margin-right: 0;"
                     onmouseover="this.style.background='rgba(76, 175, 80, 0.25)'"
                     onmouseout="this.style.background='rgba(76, 175, 80, 0.15)'"
                   >
