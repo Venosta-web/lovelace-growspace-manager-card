@@ -1,3 +1,10 @@
+# [1.1.0-next.114](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.113...v1.1.0-next.114) (2026-08-14)
+
+
+### Bug Fixes
+
+* **config-dialog:** keep the context bar on the growspace being edited ([#553](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/553)) ([2d80f9c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/2d80f9c449b4ed6144ec06e044438b6b883d0a22)), closes [#548](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/548)
+
 # [1.1.0-next.113](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.112...v1.1.0-next.113) (2026-08-14)
 
 
