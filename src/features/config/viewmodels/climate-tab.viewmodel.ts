@@ -10,10 +10,10 @@
  *
  * Two hass/shell dependencies are injected so the dumb component stays free of
  * both: `entityOptions` (the shell's hass-reading `_getEntities`) supplies the
- * fan-entity picker lists, and `expand` carries the collapsible-section
- * toggles. Those toggles are **Shell `@state`**, not SM state — ephemeral
- * accordion/expander state stays on the shell and is projected in here, the
- * same pattern the still-inline humidity/VPD accordions use
+ * fan-entity picker lists, and `expand` carries the stage-accordion state.
+ * That toggle is **Shell `@state`**, not SM state — ephemeral accordion state
+ * stays on the shell and is projected in here, the same pattern the still-inline
+ * humidity/VPD accordions use
  * (`_openHumidityStageId`); only draft/edit state goes to the SM. See ADR-0019.
  */
 
@@ -37,6 +37,12 @@ import type {
   CirculationFanConfig,
   ExhaustFanConfig,
 } from '../../../slices/growspace/schema';
+import {
+  normalizedPressureUnit,
+  normalizedTemperatureUnit,
+  temperatureFromCelsius,
+  temperatureToCelsius,
+} from '../critical-temperature';
 
 export type FanRegulationMode = 'vpd' | 'humidity' | 'temperature';
 
@@ -94,8 +100,6 @@ export interface FanPanelVM {
   vpdTargetDimmed: boolean;
   /** The Temperature Override expander shows only in VPD mode. */
   showTempOverride: boolean;
-  /** Expander open state — Shell `@state`, projected in. */
-  tempOverrideExpanded: boolean;
   /** The wind period/amplitude pair shows when wind is enabled. */
   showWind: boolean;
 }
@@ -106,8 +110,6 @@ export interface ExhaustPanelVM {
   disabled: boolean;
   vpdTargetLabel: string;
   vpdTargetDimmed: boolean;
-  /** Critical-Temperature expander open state — Shell `@state`, projected in. */
-  criticalTempExpanded: boolean;
 }
 
 export interface ClimateStageVpdStageVM {
@@ -125,12 +127,20 @@ export interface ClimateStageVpdVM {
   stages: ClimateStageVpdStageVM[];
 }
 
+export interface ClimateUnitsVM {
+  temperature: string;
+  pressure: string;
+  currentTemperature: string;
+}
+
 /** Complete render input for `<config-climate-tab>`. */
 export interface ClimateTabViewModel {
   control: ClimateControlVM;
   fan: FanPanelVM;
   stageVpd: ClimateStageVpdVM;
   exhaust: ExhaustPanelVM;
+  units: ClimateUnitsVM;
+  language: string;
 }
 
 /** Hass adapter the shell injects so the component stays hass-free. */
@@ -146,17 +156,30 @@ export interface ClimateTabDeps {
   acInfinityPrefillWarning: (field: string, index: number) => string[];
   /** Backend-derived current stage for the selected growspace. */
   currentStage?: string;
+  /** Home Assistant's configured display units. */
+  unitSystem?: { temperature?: string; pressure?: string };
+  /** Current reading from the configured temperature sensors. */
+  currentTemperature?: { value: number; unit?: string | null } | null;
+  language?: string;
 }
 
-/** Shell-`@state` expander flags projected into the VM. */
+/** Shell-`@state` accordion state projected into the VM. */
 export interface ClimateExpandState {
-  fanTempOverrideExpanded: boolean;
-  exhaustCriticalTempExpanded: boolean;
   openStageVpdId?: FanVpdStageKey | '';
 }
 
-function vpdLabel(stageVpdEnabled: boolean): string {
-  return stageVpdEnabled ? 'Fallback VPD Target (kPa)' : 'VPD Target (kPa)';
+function vpdLabel(stageVpdEnabled: boolean, unit: string): string {
+  return stageVpdEnabled ? `Fallback VPD Target (${unit})` : `VPD Target (${unit})`;
+}
+
+function currentTemperatureDisplay(
+  reading: ClimateTabDeps['currentTemperature'],
+  targetUnit: string
+): string {
+  if (!reading || !Number.isFinite(reading.value)) return '—';
+  const sourceUnit = normalizedTemperatureUnit(reading.unit ?? targetUnit);
+  const celsius = temperatureToCelsius(reading.value, sourceUnit);
+  return `${temperatureFromCelsius(celsius, targetUnit).toFixed(1)} ${targetUnit}`;
 }
 
 function stageVpdValues(
@@ -180,6 +203,8 @@ export function createClimateTabViewModel(
   const exhaust = d.exhaustFanConfig;
   const mode = fan.regulation_mode as FanRegulationMode;
   const duplicates = buildDuplicatePortWarnings(acInfinityRoleLists(d));
+  const temperatureUnit = normalizedTemperatureUnit(deps.unitSystem?.temperature);
+  const pressureUnit = normalizedPressureUnit(deps.unitSystem?.pressure);
 
   return {
     control: {
@@ -218,10 +243,9 @@ export function createClimateTabViewModel(
       disabled: !fan.enabled,
       mode,
       showStageVpd: mode === 'vpd',
-      vpdTargetLabel: vpdLabel(fan.stage_vpd_enabled),
+      vpdTargetLabel: vpdLabel(fan.stage_vpd_enabled, pressureUnit),
       vpdTargetDimmed: fan.stage_vpd_enabled,
       showTempOverride: mode === 'vpd',
-      tempOverrideExpanded: expand.fanTempOverrideExpanded,
       showWind: fan.wind_enabled,
     },
     stageVpd: {
@@ -239,9 +263,14 @@ export function createClimateTabViewModel(
     exhaust: {
       config: exhaust,
       disabled: !exhaust.enabled,
-      vpdTargetLabel: vpdLabel(exhaust.stage_vpd_enabled),
+      vpdTargetLabel: vpdLabel(exhaust.stage_vpd_enabled, pressureUnit),
       vpdTargetDimmed: exhaust.stage_vpd_enabled,
-      criticalTempExpanded: expand.exhaustCriticalTempExpanded,
     },
+    units: {
+      temperature: temperatureUnit,
+      pressure: pressureUnit,
+      currentTemperature: currentTemperatureDisplay(deps.currentTemperature, temperatureUnit),
+    },
+    language: deps.language ?? 'en',
   };
 }

@@ -83,6 +83,11 @@ const AC_INFINITY_BUNDLE_FIELDS = [
   'growlightAcInfinityDevices',
 ] as const;
 import { createClimateTabViewModel } from '../features/config/viewmodels/climate-tab.viewmodel';
+import {
+  normalizedTemperatureUnit,
+  temperatureFromCelsius,
+  temperatureToCelsius,
+} from '../features/config/critical-temperature';
 import '../features/config/components/config-humidity-tab';
 import {
   createHumidityTabViewModel,
@@ -2042,8 +2047,24 @@ export class ConfigDialog extends LitElement {
     return count > 0 ? sum / count : null;
   }
 
-  @state() private _fanTempOverrideExpanded = false;
-  @state() private _exhaustCriticalTempExpanded = false;
+  private _averageTemperatureReading(entityIds: string[]): { value: number; unit: string } | null {
+    if (!entityIds.length || !this.hass) return null;
+    const targetUnit = normalizedTemperatureUnit(this.hass.config?.unit_system?.temperature);
+    let sum = 0;
+    let count = 0;
+    for (const id of entityIds) {
+      const state = this.hass.states[id];
+      if (!state || state.state === 'unavailable' || state.state === 'unknown') continue;
+      const value = Number.parseFloat(state.state);
+      if (!Number.isFinite(value)) continue;
+      const reportedUnit = state.attributes?.unit_of_measurement;
+      const sourceUnit = reportedUnit === '°C' || reportedUnit === '°F' ? reportedUnit : targetUnit;
+      sum += temperatureFromCelsius(temperatureToCelsius(value, sourceUnit), targetUnit);
+      count++;
+    }
+    return count ? { value: sum / count, unit: targetUnit } : null;
+  }
+
   @state() private _openClimateStageVpdId: FanVpdStageKey | '' = '';
 
   // Fan/exhaust edits forward a partial; merge against the live draft so
@@ -2080,12 +2101,15 @@ export class ConfigDialog extends LitElement {
       acInfinityPrefillWarning: (field: string, index: number) =>
         this._acInfinityPrefillWarnings[`${field}:${index}`] ?? [],
       currentStage: this._deviceForDirtyCheck()?.biologicalMetrics?.granularStage,
+      unitSystem: this.hass?.config?.unit_system,
+      currentTemperature: this._averageTemperatureReading(
+        this._sm.environmentDraft.temperatureSensors
+      ),
+      language: this.hass?.language,
     };
     return html`
       <config-climate-tab
         .vm=${createClimateTabViewModel(this._sm, deps, {
-          fanTempOverrideExpanded: this._fanTempOverrideExpanded,
-          exhaustCriticalTempExpanded: this._exhaustCriticalTempExpanded,
           openStageVpdId: this._openClimateStageVpdId,
         })}
         @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
@@ -2097,12 +2121,6 @@ export class ConfigDialog extends LitElement {
         @toggle-stage-vpd=${(e: CustomEvent<{ stageId: FanVpdStageKey }>) => {
           this._openClimateStageVpdId =
             this._openClimateStageVpdId === e.detail.stageId ? '' : e.detail.stageId;
-        }}
-        @toggle-fan-temp-override=${() => {
-          this._fanTempOverrideExpanded = !this._fanTempOverrideExpanded;
-        }}
-        @toggle-exhaust-critical-temp=${() => {
-          this._exhaustCriticalTempExpanded = !this._exhaustCriticalTempExpanded;
         }}
       ></config-climate-tab>
     `;

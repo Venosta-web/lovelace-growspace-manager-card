@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import './config-climate-tab';
 import type { ConfigClimateTab } from './config-climate-tab';
+import type { Md3NumberInput } from '../../shared/ui/md3-number-input';
 import { createInitialSM } from '../../../dialogs/config-dialog-sm';
 import type { ClimateTabViewModel } from '../viewmodels/climate-tab.viewmodel';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
@@ -44,7 +45,6 @@ function makeVm(over: Partial<ClimateTabViewModel> = {}): ClimateTabViewModel {
       vpdTargetLabel: 'VPD Target (kPa)',
       vpdTargetDimmed: false,
       showTempOverride: true,
-      tempOverrideExpanded: false,
       showWind: false,
       ...over.fan,
     },
@@ -66,9 +66,15 @@ function makeVm(over: Partial<ClimateTabViewModel> = {}): ClimateTabViewModel {
       disabled: false,
       vpdTargetLabel: 'VPD Target (kPa)',
       vpdTargetDimmed: false,
-      criticalTempExpanded: false,
       ...over.exhaust,
     },
+    units: {
+      temperature: '°C',
+      pressure: 'kPa',
+      currentTemperature: '24.0 °C',
+      ...over.units,
+    },
+    language: over.language ?? 'en',
   };
 }
 
@@ -269,18 +275,73 @@ describe('ConfigClimateTab — intents out', () => {
     expect(received).toEqual([{ partial: { enabled: true } }]);
   });
 
-  it('emits the two expander toggle intents', async () => {
+  it('promotes both safety cutoffs out of disclosures', async () => {
     const el = await mount(makeVm());
-    let fanToggle = 0;
-    let exhaustToggle = 0;
-    el.addEventListener('toggle-fan-temp-override', () => fanToggle++);
-    el.addEventListener('toggle-exhaust-critical-temp', () => exhaustToggle++);
-    const btn = (t: string) =>
-      [...el.shadowRoot!.querySelectorAll('button')].find((b) => b.textContent?.includes(t))!;
-    btn('Temperature Override').click();
-    btn('Critical Temperature').click();
-    expect(fanToggle).toBe(1);
-    expect(exhaustToggle).toBe(1);
+    const safetyBands = el.shadowRoot!.querySelectorAll('.critical-temperature');
+    expect(safetyBands).toHaveLength(2);
+    expect(el.shadowRoot!.textContent).toContain('leaving both empty disables this safety cutoff.');
+    expect(el.shadowRoot!.textContent).toContain('Current 24.0 °C');
+    expect(el.shadowRoot!.querySelector('button[aria-expanded]')).toBeNull();
+  });
+
+  it('emits a complete pair when the first critical bound is entered', async () => {
+    const el = await mount(makeVm());
+    const changes = listen<{ partial: Record<string, unknown> }>(el, 'fan-config-changed');
+    const low = el.shadowRoot!.querySelector<Md3NumberInput>(
+      '.critical-temperature[data-controller="fan"] md3-number-input[label="Low cutoff"]'
+    )!;
+
+    low.dispatchEvent(new CustomEvent('change', { detail: '20' }));
+
+    expect(changes).toEqual([{ partial: { critical_temp_low: 20, critical_temp_high: 32 } }]);
+  });
+
+  it('attaches an inverted-bound error to the field that caused it', async () => {
+    const base = makeVm();
+    const el = await mount(
+      makeVm({
+        fan: {
+          ...base.fan,
+          config: {
+            ...base.fan.config,
+            critical_temp_low: 18,
+            critical_temp_high: 32,
+          },
+        },
+      })
+    );
+    const changes = listen(el, 'fan-config-changed');
+    const high = el.shadowRoot!.querySelector<Md3NumberInput>(
+      '.critical-temperature[data-controller="fan"] md3-number-input[label="High cutoff"]'
+    )!;
+
+    high.dispatchEvent(new CustomEvent('change', { detail: '17' }));
+    await high.updateComplete;
+
+    expect(changes).toEqual([]);
+    expect(high.error).toBe('High cutoff must be higher than the low cutoff.');
+  });
+
+  it('converts Home Assistant display units back to the canonical save payload', async () => {
+    const el = await mount(
+      makeVm({
+        units: { temperature: '°F', pressure: 'Pa', currentTemperature: '75.2 °F' },
+      })
+    );
+    const changes = listen<{ partial: Record<string, unknown> }>(el, 'fan-config-changed');
+    const low = el.shadowRoot!.querySelector<Md3NumberInput>(
+      '.critical-temperature[data-controller="fan"] md3-number-input[label="Low cutoff"]'
+    )!;
+    low.dispatchEvent(new CustomEvent('change', { detail: '68' }));
+
+    expect(changes[0].partial).toEqual({ critical_temp_low: 20, critical_temp_high: 32 });
+    expect(low.getAttribute('unit')).toBe('°F');
+    expect(el.shadowRoot!.textContent).toContain('Current 75.2 °F');
+    expect(
+      [...el.shadowRoot!.querySelectorAll<Md3NumberInput>('md3-number-input')].some(
+        (input) => input.getAttribute('label') === 'VPD Tolerance (Pa)'
+      )
+    ).toBe(true);
   });
 
   it('does not expose growspace-wide environment removal', async () => {
@@ -333,10 +394,10 @@ describe('ConfigClimateTab — intents out', () => {
     );
     const inputs = [...el.shadowRoot!.querySelectorAll('md3-number-input')];
     const fanDay = inputs.find(
-      (input) => input.getAttribute('input-aria-label') === 'Veg Fan day VPD in kilopascals'
+      (input) => input.getAttribute('input-aria-label') === 'Veg Fan day VPD in kPa'
     )!;
     const exhaustNight = inputs.find(
-      (input) => input.getAttribute('input-aria-label') === 'Veg Exhaust night VPD in kilopascals'
+      (input) => input.getAttribute('input-aria-label') === 'Veg Exhaust night VPD in kPa'
     )!;
 
     fanDay.dispatchEvent(new CustomEvent('change', { detail: '0.91' }));
@@ -384,10 +445,10 @@ describe('ConfigClimateTab — intents out', () => {
     expect(inputs).toHaveLength(4);
     expect(inputs.map((input) => input.getAttribute('unit'))).toEqual(['kPa', 'kPa', 'kPa', 'kPa']);
     expect(inputs.map((input) => input.getAttribute('input-aria-label'))).toEqual([
-      'Veg Fan day VPD in kilopascals',
-      'Veg Fan night VPD in kilopascals',
-      'Veg Exhaust day VPD in kilopascals',
-      'Veg Exhaust night VPD in kilopascals',
+      'Veg Fan day VPD in kPa',
+      'Veg Fan night VPD in kPa',
+      'Veg Exhaust day VPD in kPa',
+      'Veg Exhaust night VPD in kPa',
     ]);
   });
 });
