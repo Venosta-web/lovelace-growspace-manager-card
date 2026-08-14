@@ -1,3 +1,10 @@
+# [1.1.0-next.115](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.114...v1.1.0-next.115) (2026-08-14)
+
+
+### Features
+
+* **climate:** consolidate stage VPD overrides ([#554](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/554)) ([e97584a](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e97584ad58b2ff8676a6b0fa763aa7da6c2a16cb))
+
 # [1.1.0-next.114](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.113...v1.1.0-next.114) (2026-08-14)
 
 
