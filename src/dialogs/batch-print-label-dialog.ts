@@ -56,7 +56,7 @@ export class BatchPrintLabelDialog extends LitElement {
         width: 80px;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         color: var(--primary-text-color, #fff);
         font-size: 1rem;
         padding: 8px 12px;
@@ -68,7 +68,7 @@ export class BatchPrintLabelDialog extends LitElement {
       }
       .progress-bar-wrap {
         background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         height: 6px;
         margin-top: 16px;
         overflow: hidden;
@@ -87,7 +87,7 @@ export class BatchPrintLabelDialog extends LitElement {
       .size-chip {
         background: rgba(255, 255, 255, 0.06);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 4px 10px;
         cursor: pointer;
         font-size: 0.82rem;
@@ -101,7 +101,7 @@ export class BatchPrintLabelDialog extends LitElement {
       .density-seg {
         display: flex;
         border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         overflow: hidden;
         margin-top: 8px;
       }

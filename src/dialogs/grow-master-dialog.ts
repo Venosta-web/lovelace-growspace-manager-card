@@ -62,7 +62,7 @@ export class GrowMasterDialog extends LitElement {
       .gm-header-icon {
         width: 40px;
         height: 40px;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         display: flex;
         align-items: center;
@@ -98,7 +98,7 @@ export class GrowMasterDialog extends LitElement {
         cursor: pointer;
         color: var(--primary-text-color, #fff);
         padding: 8px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -133,7 +133,7 @@ export class GrowMasterDialog extends LitElement {
         align-items: center;
         gap: 4px;
         padding: 8px 6px;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         background: none;
         border: none;
         cursor: pointer;
@@ -192,7 +192,7 @@ export class GrowMasterDialog extends LitElement {
       /* ── Legacy chat widgets (preserved) ─────────────────────── */
       .gm-response-box {
         background: rgba(255, 255, 255, 0.05);
-        border-radius: 16px;
+        border-radius: var(--border-radius-lg, 16px);
         padding: 20px;
         line-height: 1.6;
         font-size: 0.95rem;
@@ -222,7 +222,7 @@ export class GrowMasterDialog extends LitElement {
         width: 100%;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 12px;
         color: #fff;
         font-family: inherit;

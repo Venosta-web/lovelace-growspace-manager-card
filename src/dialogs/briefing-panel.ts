@@ -71,7 +71,7 @@ export class GmBriefingPanel extends LitElement {
       align-items: center;
       gap: 10px;
       padding: 8px 10px;
-      border-radius: 10px;
+      border-radius: var(--border-radius-md, 12px);
       background: none;
       border: none;
       cursor: pointer;
@@ -118,7 +118,7 @@ export class GmBriefingPanel extends LitElement {
       gap: 6px;
       font-size: 0.78rem;
       padding: 5px 12px;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
       background: none;
       cursor: pointer;
@@ -162,7 +162,7 @@ export class GmBriefingPanel extends LitElement {
     .insight-head {
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      border-radius: 14px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 16px 18px;
       display: flex;
       flex-direction: column;
@@ -200,7 +200,7 @@ export class GmBriefingPanel extends LitElement {
     }
     .conf-bar {
       height: 4px;
-      border-radius: 4px;
+      border-radius: var(--border-radius-xs, 4px);
       background: rgba(255, 255, 255, 0.1);
       width: 60px;
       overflow: hidden;
@@ -208,7 +208,7 @@ export class GmBriefingPanel extends LitElement {
     .conf-fill {
       height: 100%;
       background: var(--ai-violet, #9c27b0);
-      border-radius: 4px;
+      border-radius: var(--border-radius-xs, 4px);
     }
     .drawn-from {
       font-size: 0.7rem;
@@ -225,7 +225,7 @@ export class GmBriefingPanel extends LitElement {
       flex: 1;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 12px 14px;
       display: flex;
       flex-direction: column;
@@ -257,7 +257,7 @@ export class GmBriefingPanel extends LitElement {
     .evidence-card {
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      border-radius: 14px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 14px 16px;
     }
     .evidence-title {
@@ -302,7 +302,7 @@ export class GmBriefingPanel extends LitElement {
       align-items: flex-start;
       gap: 12px;
       padding: 12px 14px;
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
     }
@@ -326,7 +326,7 @@ export class GmBriefingPanel extends LitElement {
     .impact-badge {
       font-size: 0.68rem;
       padding: 2px 8px;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.04em;
@@ -346,7 +346,7 @@ export class GmBriefingPanel extends LitElement {
     .reco-apply {
       font-size: 0.75rem;
       padding: 4px 12px;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       border: none;
       cursor: pointer;
       font-family: inherit;
@@ -364,7 +364,7 @@ export class GmBriefingPanel extends LitElement {
       width: 100%;
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       padding: 9px 16px;
       color: var(--primary-text-color, #fff);
       font-family: inherit;
@@ -411,7 +411,7 @@ export class GmBriefingPanel extends LitElement {
       flex-shrink: 0;
       font-size: 0.78rem;
       padding: 6px 14px;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       border: none;
       cursor: pointer;
       font-family: inherit;
@@ -445,7 +445,7 @@ export class GmBriefingPanel extends LitElement {
     .briefing-error-retry {
       font-size: 0.78rem;
       padding: 6px 18px;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       border: none;
       cursor: pointer;
       font-family: inherit;

@@ -73,7 +73,7 @@ export class StrainBrowseView extends LitElement {
 
       .strain-card {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         overflow: hidden;
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
         transition: all 0.3s ease;
@@ -273,7 +273,7 @@ export class StrainBrowseView extends LitElement {
         top: 60px;
         right: 16px;
         background: var(--card-background-color, #2d2d2d);
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         padding: 8px 0;
         min-width: 200px;
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
@@ -322,7 +322,7 @@ export class StrainBrowseView extends LitElement {
         right: 24px;
         width: 56px;
         height: 56px;
-        border-radius: 16px;
+        border-radius: var(--border-radius-lg, 16px);
         background: var(--accent-green);
         color: #fff;
         border: none;
@@ -605,7 +605,7 @@ export class StrainBrowseView extends LitElement {
                   style="
               position: absolute; top: 8px; right: 8px;
               background: rgba(76,175,80,0.85); color: #fff;
-              border-radius: 999px; padding: 2px 8px;
+              border-radius: var(--border-radius-full, 9999px); padding: 2px 8px;
               font-size: 0.65rem; font-weight: 600;
               backdrop-filter: blur(4px);
             "

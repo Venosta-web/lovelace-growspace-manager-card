@@ -53,7 +53,7 @@ export class AddPlantsDialog extends LitElement {
       }
       .explanation-card {
         background: rgba(var(--md3-sys-color-primary-container-rgb, 103, 80, 164), 0.1);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 16px;
         display: flex;
         gap: 12px;

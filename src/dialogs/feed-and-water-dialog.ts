@@ -76,7 +76,7 @@ export class FeedAndWaterDialog extends LitElement {
         align-items: center;
         gap: 4px;
         padding: 8px 6px;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         background: none;
         border: none;
         cursor: pointer;
@@ -114,7 +114,7 @@ export class FeedAndWaterDialog extends LitElement {
 
       .btn-record {
         padding: 10px 20px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         border: none;
         cursor: pointer;
         font-size: 0.875rem;
@@ -145,7 +145,7 @@ export class FeedAndWaterDialog extends LitElement {
 
       .confirm-discard-box {
         background: var(--card-background-color, #1c1c1c);
-        border-radius: 16px;
+        border-radius: var(--border-radius-lg, 16px);
         padding: 24px;
         max-width: 360px;
         width: 100%;
@@ -163,7 +163,7 @@ export class FeedAndWaterDialog extends LitElement {
 
       .btn {
         padding: 8px 16px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         border: none;
         cursor: pointer;
         font-size: 0.875rem;
@@ -185,7 +185,7 @@ export class FeedAndWaterDialog extends LitElement {
         background: rgba(0, 0, 0, 0.85);
         color: #fff;
         padding: 8px 16px;
-        border-radius: 20px;
+        border-radius: var(--border-radius-full, 9999px);
         font-size: 0.875rem;
         pointer-events: none;
         z-index: 20;
@@ -209,7 +209,7 @@ export class FeedAndWaterDialog extends LitElement {
         background: rgba(255, 152, 0, 0.15);
         color: var(--gm-phi-color, #ff9800);
         border: 1px solid var(--gm-phi-color, #ff9800);
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 10px 14px;
         margin-bottom: 20px;
         font-size: 0.875rem;
@@ -218,7 +218,7 @@ export class FeedAndWaterDialog extends LitElement {
       .targeting-summary {
         background: rgba(255, 255, 255, 0.04);
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 12px 16px;
         font-size: 0.875rem;
         margin-top: 8px;

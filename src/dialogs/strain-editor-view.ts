@@ -636,12 +636,12 @@ export class StrainEditorView extends LitElement {
                   ? html`
                       <img
                         src="${s.breeder_logo}"
-                        style="width: 48px; height: 48px; object-fit: contain; border-radius: 4px; background: rgba(255,255,255,0.05); padding: 4px;"
+                        style="width: 48px; height: 48px; object-fit: contain; border-radius: var(--border-radius-xs, 4px); background: rgba(255,255,255,0.05); padding: 4px;"
                       />
                     `
                   : html`
                       <div
-                        style="width: 48px; height: 48px; border: 1px dashed var(--divider-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color);"
+                        style="width: 48px; height: 48px; border: 1px dashed var(--divider-color); border-radius: var(--border-radius-xs, 4px); display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color);"
                       >
                         <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
                           <path d="${mdiImage}"></path>
@@ -730,7 +730,7 @@ export class StrainEditorView extends LitElement {
                     <label class="sd-label">Hybrid Composition (%)</label>
                     <div
                       class="hg-container"
-                      style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;"
+                      style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: var(--border-radius-sm, 8px);"
                     >
                       <div class="hg-labels">
                         <div
@@ -1120,7 +1120,7 @@ export class StrainEditorView extends LitElement {
           ${gallery.map(
             (img, i) => html`
               <div
-                style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 2px solid ${img.is_thumbnail
+                style="position: relative; aspect-ratio: 1; border-radius: var(--border-radius-sm, 8px); overflow: hidden; border: 2px solid ${img.is_thumbnail
                   ? 'var(--accent-green, #4caf50)'
                   : 'rgba(255,255,255,0.1)'};"
               >
@@ -1180,7 +1180,7 @@ export class StrainEditorView extends LitElement {
 
           <!-- Add button — opens choice menu -->
           <button
-            style="aspect-ratio:1; border-radius:8px; border:2px dashed rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:${this
+            style="aspect-ratio:1; border-radius: var(--border-radius-sm, 8px); border:2px dashed rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:${this
               ._sm.status.kind === 'applying'
               ? 'wait'
               : 'pointer'}; color:var(--secondary-text-color); font-size:0.75rem; background:none;"
@@ -1264,7 +1264,7 @@ export class StrainEditorView extends LitElement {
             </div>
 
             <div
-              style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"
+              style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: var(--border-radius-sm, 8px); border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"
             >
               <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
                 <input
@@ -1525,10 +1525,10 @@ export class StrainEditorView extends LitElement {
             ${state.logo
               ? html`<img
                   src="${state.logo}"
-                  style="width:64px; height:64px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.05); padding:4px;"
+                  style="width:64px; height:64px; object-fit:contain; border-radius: var(--border-radius-sm, 8px); background:rgba(255,255,255,0.05); padding:4px;"
                 />`
               : html`<div
-                  style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);"
+                  style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius: var(--border-radius-sm, 8px); display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);"
                 >
                   <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                     <path d="${mdiImage}"></path>
@@ -1581,7 +1581,7 @@ export class StrainEditorView extends LitElement {
         ${isEdit && affectedStrains.length > 0
           ? html`
               <div
-                style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius:8px; padding:16px;"
+                style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius: var(--border-radius-sm, 8px); padding:16px;"
               >
                 <label class="sd-label" style="margin-bottom:8px;"
                   >Strains using this breeder (${affectedStrains.length})</label
@@ -1590,7 +1590,7 @@ export class StrainEditorView extends LitElement {
                   ${affectedStrains.map(
                     (s) => html`
                       <span
-                        style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius:16px; font-size:0.8rem; font-weight:500;"
+                        style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius: var(--border-radius-lg, 16px); font-size:0.8rem; font-weight:500;"
                       >
                         ${s.strain}${s.phenotype ? ` (${s.phenotype})` : ''}
                       </span>
@@ -1736,7 +1736,7 @@ export class StrainEditorView extends LitElement {
         width: 100%;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 12px 16px;
         color: var(--primary-text-color, #fff);
         font-size: 0.95rem;
@@ -1755,7 +1755,7 @@ export class StrainEditorView extends LitElement {
         width: 100%;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 12px;
         color: var(--primary-text-color, #fff);
         font-family: inherit;
@@ -1775,7 +1775,7 @@ export class StrainEditorView extends LitElement {
         font-size: 0.8rem;
         cursor: pointer;
         padding: 4px 8px;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         font-family: inherit;
       }
       .sd-btn-text:hover {
@@ -1792,7 +1792,7 @@ export class StrainEditorView extends LitElement {
       /* PHOTO UPLOAD */
       .photo-upload-area {
         border: 2px dashed var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.02));
         height: 240px;
         display: flex;
@@ -1818,7 +1818,7 @@ export class StrainEditorView extends LitElement {
         border: 1px solid rgba(255, 255, 255, 0.2);
         color: #fff;
         padding: 6px 12px;
-        border-radius: 20px;
+        border-radius: var(--border-radius-full, 9999px);
         font-size: 0.75rem;
         display: flex;
         align-items: center;
@@ -1877,7 +1877,7 @@ export class StrainEditorView extends LitElement {
       .type-option {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 16px;
         cursor: pointer;
         display: flex;
@@ -1986,7 +1986,7 @@ export class StrainEditorView extends LitElement {
         padding: 16px;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         cursor: pointer;
         transition: all 0.2s;
       }
@@ -1997,7 +1997,7 @@ export class StrainEditorView extends LitElement {
       .breeder-logo-preview {
         width: 56px;
         height: 56px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         object-fit: contain;
         background: rgba(255, 255, 255, 0.05);
         padding: 4px;
@@ -2006,7 +2006,7 @@ export class StrainEditorView extends LitElement {
       .breeder-logo-placeholder {
         width: 56px;
         height: 56px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         border: 1px dashed var(--divider-color);
         display: flex;
         align-items: center;
@@ -2054,7 +2054,7 @@ export class StrainEditorView extends LitElement {
         display: flex;
         flex-direction: column;
         background: var(--card-background-color, #1e1e1e);
-        border-radius: 16px;
+        border-radius: var(--border-radius-lg, 16px);
         overflow: hidden;
       }
 

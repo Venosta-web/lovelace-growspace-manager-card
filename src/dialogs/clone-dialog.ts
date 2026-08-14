@@ -41,7 +41,7 @@ export class CloneDialog extends LitElement {
       .source-info {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         padding: 16px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         margin-bottom: 24px;
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       }
