@@ -863,6 +863,6 @@ describe('StrainLibraryDialog', () => {
         browseView.requestUpdate?.();
         await browseView?.updateComplete;
         const content = browseView?.shadowRoot?.querySelector('.sd-content');
-        expect(content?.textContent).toContain(`No strains found matching "${query}"`);
+        expect(content?.textContent).toContain(`No strains match "${query}" in Library`);
     });
 });
