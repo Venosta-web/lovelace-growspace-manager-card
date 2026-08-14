@@ -31,10 +31,18 @@ export const variables: CSSResult = css`
     --border-radius-md: 12px;
     --border-radius-lg: 16px;
     --border-radius-xl: 28px;
+    /* DESIGN.md rounded.full: pills and fully-round badges. Documented in the
+       design system but previously unimplemented, so pills drifted to ad-hoc
+       20px/999px values. */
+    --border-radius-full: 9999px;
     --border-radius: 12px; /* Default */
 
     /* MD3 Typography Scale */
     --font-size-xs: 0.6875rem; /* 11px */
+    /* DESIGN.md supporting-sm: dense hints, field support, compact status text.
+       Documented in the design system but previously unimplemented, which is why
+       call sites drifted to ad-hoc 0.8rem/13px values. */
+    --font-size-supporting: 0.75rem; /* 12px - Supporting Small */
     --font-size-sm: 0.875rem; /* 14px - Body Small */
     --font-size-md: 1rem; /* 16px - Body Medium */
     --font-size-lg: 1.25rem; /* 20px - Title Large */
