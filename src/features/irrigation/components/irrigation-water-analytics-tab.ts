@@ -53,14 +53,16 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
   ): TemplateResult {
     return html`
       <div
-        style="background:rgba(255,255,255,0.05);border-radius:12px;padding:16px 20px;display:flex;flex-direction:column;gap:4px;"
+        style="background:rgba(255,255,255,0.05);border-radius:var(--border-radius-md);padding:16px 20px;display:flex;flex-direction:column;gap:4px;"
       >
         <div style="font-size:0.78rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;">
           ${label}
         </div>
         <div style="display:flex;align-items:baseline;gap:4px;">
-          <span style="font-size:1.6rem;font-weight:700;color:${color};">${value}</span>
-          <span style="font-size:0.82rem;opacity:0.6;">${unit}</span>
+          <span style="font-size:var(--font-size-xl);font-weight:700;color:${color};"
+            >${value}</span
+          >
+          <span style="font-size:var(--font-size-supporting);opacity:0.6;">${unit}</span>
         </div>
         ${sub ? html`<div style="font-size:0.75rem;opacity:0.5;">${sub}</div>` : nothing}
       </div>
@@ -85,14 +87,10 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
     const nextCycle = this._fmtCycle(vm.nextScheduledCycle);
 
     return html`
-      ${this._renderCycleTelemetry(vm, lastCycle, nextCycle)}
-      ${this._renderTodaysUsage(vm)}
-      ${this._renderTankLevels(vm)}
-      ${this._renderTankDerivedUsage(vm)}
-      ${this._renderScheduleSummary(vm)}
-      ${this._renderStageAggregates(vm)}
-      ${this._renderVolumeHistory(vm)}
-      ${this._renderMaintenance()}
+      ${this._renderCycleTelemetry(vm, lastCycle, nextCycle)} ${this._renderTodaysUsage(vm)}
+      ${this._renderTankLevels(vm)} ${this._renderTankDerivedUsage(vm)}
+      ${this._renderScheduleSummary(vm)} ${this._renderStageAggregates(vm)}
+      ${this._renderVolumeHistory(vm)} ${this._renderMaintenance()}
     `;
   }
 
@@ -138,7 +136,9 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
     return html`
       <div class="detail-card">
         <h3 style="margin-top:0;margin-bottom:16px;">Today's Usage</h3>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;">
+        <div
+          style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;"
+        >
           ${wu?.litersToday != null
             ? this._kpiCard('Liters today', wu.litersToday.toFixed(1), 'L', '#4fc3f7')
             : this._kpiCard('Liters today', '—', '', 'rgba(255,255,255,0.4)')}
@@ -186,19 +186,21 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
     if (vm.tanks.length === 0) return nothing;
     return html`
       <div class="detail-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
+        >
           <h3 style="margin:0;">Tank Levels</h3>
           ${vm.warningTankCount > 0
             ? html`
                 <span
-                  style="background:rgba(244,67,54,0.2);color:#f44336;border:1px solid rgba(244,67,54,0.4);border-radius:20px;padding:3px 10px;font-size:0.78rem;font-weight:600;"
+                  style="background:rgba(244,67,54,0.2);color:#f44336;border:1px solid rgba(244,67,54,0.4);border-radius:var(--border-radius-full);padding:3px 10px;font-size:0.78rem;font-weight:600;"
                 >
                   ⚠ ${vm.warningTankCount} tank${vm.warningTankCount > 1 ? 's' : ''} low
                 </span>
               `
             : vm.avgTankLevel !== null
               ? html`
-                  <span style="font-size:0.82rem;opacity:0.5;"
+                  <span style="font-size:var(--font-size-supporting);opacity:0.5;"
                     >Avg ${vm.avgTankLevel.toFixed(0)}%</span
                   >
                 `
@@ -214,18 +216,22 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                 : '#4caf50';
             return html`
               <div>
-                <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px;">
+                <div
+                  style="display:flex;justify-content:space-between;font-size:var(--font-size-supporting);margin-bottom:4px;"
+                >
                   <span style="font-weight:500;">${tank.name}</span>
                   <span style="color:${c};font-weight:600;"
                     >${tank.fillLevel !== null ? pct.toFixed(0) + '%' : '—'}</span
                   >
                 </div>
-                <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;">
+                <div
+                  style="height:6px;background:rgba(255,255,255,0.1);border-radius:var(--border-radius-xs);overflow:hidden;"
+                >
                   <div
                     style="height:100%;width:${Math.max(
                       0,
                       Math.min(100, pct)
-                    )}%;background:${c};border-radius:3px;transition:width 0.4s ease;"
+                    )}%;background:${c};border-radius:var(--border-radius-xs);transition:width 0.4s ease;"
                   ></div>
                 </div>
               </div>
@@ -236,9 +242,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
     `;
   }
 
-  private _renderTankDerivedUsage(
-    vm: WaterAnalyticsTabViewModel
-  ): TemplateResult | typeof nothing {
+  private _renderTankDerivedUsage(vm: WaterAnalyticsTabViewModel): TemplateResult | typeof nothing {
     if (!(vm.hasTankSensors && vm.hasTankHistory)) return nothing;
 
     // Build the 96-slot 15-min grid aligned to the current clock, then place the
@@ -264,10 +268,12 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
 
     return html`
       <div class="detail-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
+        >
           <h3 style="margin:0;">Tank-Derived Water Usage</h3>
           <span
-            style="font-size:0.78rem;opacity:0.5;background:rgba(79,195,247,0.1);border:1px solid rgba(79,195,247,0.25);border-radius:20px;padding:2px 10px;"
+            style="font-size:0.78rem;opacity:0.5;background:rgba(79,195,247,0.1);border:1px solid rgba(79,195,247,0.25);border-radius:var(--border-radius-full);padding:2px 10px;"
             >inferred from tank level</span
           >
         </div>
@@ -306,7 +312,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
             Consumption — last 24 hours (15 min buckets)
           </div>
           <div
-            style="display:flex;align-items:flex-end;gap:1px;height:60px;background:rgba(255,255,255,0.03);border-radius:6px;padding:6px 4px 0;"
+            style="display:flex;align-items:flex-end;gap:1px;height:60px;background:rgba(255,255,255,0.03);border-radius:var(--border-radius-sm);padding:6px 4px 0;"
           >
             ${consumptionBuckets24h.map((b) => {
               const hp = (b.liters / maxBucketLiters) * 100;
@@ -343,7 +349,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                   ${recentRefills.map(
                     (ev) => html`
                       <div
-                        style="display:flex;justify-content:space-between;align-items:center;background:rgba(129,199,132,0.08);border-radius:6px;padding:5px 10px;font-size:0.82rem;"
+                        style="display:flex;justify-content:space-between;align-items:center;background:rgba(129,199,132,0.08);border-radius:var(--border-radius-sm);padding:5px 10px;font-size:var(--font-size-supporting);"
                       >
                         <span style="opacity:0.65;"
                           >${new Date(ev.timestamp).toLocaleString(undefined, {
@@ -353,7 +359,9 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                             minute: '2-digit',
                           })}</span
                         >
-                        <span style="color:#81c784;font-weight:600;">+${ev.liters.toFixed(1)} L</span>
+                        <span style="color:#81c784;font-weight:600;"
+                          >+${ev.liters.toFixed(1)} L</span
+                        >
                       </div>
                     `
                   )}
@@ -368,7 +376,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
   private _renderScheduleRow(row: WaterAnalyticsScheduleRow, bg: string): TemplateResult {
     return html`
       <div
-        style="display:flex;justify-content:space-between;background:${bg};border-radius:6px;padding:4px 10px;font-size:0.8rem;"
+        style="display:flex;justify-content:space-between;background:${bg};border-radius:var(--border-radius-sm);padding:4px 10px;font-size:var(--font-size-supporting);"
       >
         <span style="font-weight:500;">${row.time.substring(0, 5)}</span>
         <span style="opacity:0.5;">${row.duration}s</span>
@@ -392,14 +400,14 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div>
             <div
-              style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
+              style="font-size:var(--font-size-supporting);opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
             >
               Irrigation
             </div>
             ${cs.shots.length === 0
               ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">No strategy configured</p>`
               : html`
-                  <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
+                  <div style="font-size:var(--font-size-lg);font-weight:700;color:#4fc3f7;">
                     ${cs.shots.length}
                     <span style="font-size:0.85rem;font-weight:400;opacity:0.7;">shots/day</span>
                   </div>
@@ -419,7 +427,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                     ${cs.shots.slice(0, 5).map(
                       (s) => html`
                         <div
-                          style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
+                          style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:var(--border-radius-sm);padding:4px 10px;font-size:var(--font-size-supporting);"
                         >
                           <span style="font-weight:500;">${s.time.substring(0, 5)}</span>
                           <span style="opacity:0.5;">${s.duration}s</span>
@@ -436,19 +444,21 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
           </div>
           <div>
             <div
-              style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
+              style="font-size:var(--font-size-supporting);opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
             >
               Drain
             </div>
             ${cs.totalDrain === 0
               ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">No events scheduled</p>`
               : html`
-                  <div style="font-size:1.3rem;font-weight:700;color:#a5d6a7;">
+                  <div style="font-size:var(--font-size-lg);font-weight:700;color:#a5d6a7;">
                     ${cs.totalDrain}
                     <span style="font-size:0.85rem;font-weight:400;opacity:0.7;">events/day</span>
                   </div>
                   ${drainDuration
-                    ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
+                    ? html`<div
+                        style="font-size:var(--font-size-supporting);opacity:0.6;margin-top:2px;"
+                      >
                         ${drainDuration}s per event
                       </div>`
                     : nothing}
@@ -477,19 +487,21 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div>
             <div
-              style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
+              style="font-size:var(--font-size-supporting);opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
             >
               Irrigation
             </div>
             ${s.totalIrrig === 0
               ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">No events scheduled</p>`
               : html`
-                  <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
+                  <div style="font-size:var(--font-size-lg);font-weight:700;color:#4fc3f7;">
                     ${s.totalIrrig}
                     <span style="font-size:0.85rem;font-weight:400;opacity:0.7;">events/day</span>
                   </div>
                   ${s.irrigDuration
-                    ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
+                    ? html`<div
+                        style="font-size:var(--font-size-supporting);opacity:0.6;margin-top:2px;"
+                      >
                         ${s.irrigDuration}s per event
                       </div>`
                     : nothing}
@@ -507,19 +519,21 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
           </div>
           <div>
             <div
-              style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
+              style="font-size:var(--font-size-supporting);opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
             >
               Drain
             </div>
             ${s.totalDrain === 0
               ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">No events scheduled</p>`
               : html`
-                  <div style="font-size:1.3rem;font-weight:700;color:#a5d6a7;">
+                  <div style="font-size:var(--font-size-lg);font-weight:700;color:#a5d6a7;">
                     ${s.totalDrain}
                     <span style="font-size:0.85rem;font-weight:400;opacity:0.7;">events/day</span>
                   </div>
                   ${s.drainDuration
-                    ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
+                    ? html`<div
+                        style="font-size:var(--font-size-supporting);opacity:0.6;margin-top:2px;"
+                      >
                         ${s.drainDuration}s per event
                       </div>`
                     : nothing}
@@ -552,7 +566,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
             .map(
               ([stage, liters]) => html`
                 <div
-                  style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 14px;font-size:0.88rem;"
+                  style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border-radius:var(--border-radius-sm);padding:8px 14px;font-size:0.88rem;"
                 >
                   <span style="text-transform:capitalize;font-weight:500;">${stage}</span>
                   <span style="color:#4fc3f7;font-weight:600;">${liters.toFixed(1)} L</span>
@@ -569,22 +583,26 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
     const avgRunoff = vm.avgRunoff;
     return html`
       <div class="detail-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
+        >
           <h3 style="margin:0;">Volume History</h3>
-          <span style="font-size:0.8rem;opacity:0.5;">from drain EC readings</span>
+          <span style="font-size:var(--font-size-supporting);opacity:0.5;"
+            >from drain EC readings</span
+          >
         </div>
         ${vm.volumeRows.length === 0
           ? html`
               <p style="opacity:0.6;text-align:center;padding:20px 0;font-size:0.9rem;">
                 No volume data logged yet.<br />
-                <span style="font-size:0.8rem;opacity:0.7;"
+                <span style="font-size:var(--font-size-supporting);opacity:0.7;"
                   >Log feed and drain volumes in the <strong>Drain EC</strong> tab.</span
                 >
               </p>
             `
           : html`
               <div
-                style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;background:rgba(255,255,255,0.04);border-radius:10px;padding:12px 16px;font-size:0.88rem;"
+                style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;background:rgba(255,255,255,0.04);border-radius:var(--border-radius-md);padding:12px 16px;font-size:0.88rem;"
               >
                 <div style="text-align:center;">
                   <div style="opacity:0.5;font-size:0.75rem;">Total feed</div>
