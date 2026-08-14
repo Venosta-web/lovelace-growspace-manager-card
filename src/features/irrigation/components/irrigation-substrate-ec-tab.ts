@@ -22,11 +22,7 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiLockOutline } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
-import type {
-  SubstrateMediaType,
-  ShotSizingMode,
-  ECTargetRange,
-} from '../../../services/types';
+import type { SubstrateMediaType, ShotSizingMode, ECTargetRange } from '../../../services/types';
 import type { SubstrateEcTabViewModel } from '../viewmodels/substrate-ec-tab.viewmodel';
 import '../../../features/shared/ui/md3-number-input';
 import '../../../features/shared/ui/md3-switch';
@@ -112,7 +108,9 @@ export class IrrigationSubstrateEcTab extends LitElement {
               .value=${profile.mediaType}
               @change=${(e: Event) =>
                 this._emit('substrate-ec-profile-changed', {
-                  partial: { mediaType: (e.target as HTMLSelectElement).value as SubstrateMediaType },
+                  partial: {
+                    mediaType: (e.target as HTMLSelectElement).value as SubstrateMediaType,
+                  },
                 })}
             >
               ${MEDIA_OPTIONS.map(
@@ -138,7 +136,7 @@ export class IrrigationSubstrateEcTab extends LitElement {
       <!-- Shot Sizing Mode -->
       <div class="detail-card">
         <h3 style="margin:0 0 8px;">Shot Sizing Mode</h3>
-        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
+        <p style="font-size:var(--font-size-supporting);opacity:0.7;margin:0 0 12px;">
           How P1/P2 shot sizes are expressed. Volume Mode sizes shots as a percent of substrate
           volume.
         </p>
@@ -170,7 +168,7 @@ export class IrrigationSubstrateEcTab extends LitElement {
       <!-- Pore EC Target Band -->
       <div class="detail-card">
         <h3 style="margin:0 0 8px;">Pore EC Target Band</h3>
-        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
+        <p style="font-size:var(--font-size-supporting);opacity:0.7;margin:0 0 12px;">
           The substrate (pore) EC range EC Modulation steers toward — distinct from the per-stage
           feed-EC ranges below. Save with the footer button.
         </p>
@@ -208,7 +206,7 @@ export class IrrigationSubstrateEcTab extends LitElement {
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <div>
             <h3 style="margin:0 0 4px;">EC Modulation</h3>
-            <p style="font-size:0.8rem;opacity:0.7;margin:0;">
+            <p style="font-size:var(--font-size-supporting);opacity:0.7;margin:0;">
               Nudge feed EC toward the pore-EC band above.
             </p>
           </div>
@@ -235,7 +233,10 @@ export class IrrigationSubstrateEcTab extends LitElement {
   /** Per-stage feed-EC target ranges (buffered draft → footer save-all). */
   private _renderFeedEcRanges(ranges: ECTargetRange[]): TemplateResult {
     return html`
-      <div class="detail-card" style="border-top:2px solid var(--divider-color,rgba(255,255,255,0.12));">
+      <div
+        class="detail-card"
+        style="border-top:2px solid var(--divider-color,rgba(255,255,255,0.12));"
+      >
         <div
           style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
         >
@@ -247,13 +248,19 @@ export class IrrigationSubstrateEcTab extends LitElement {
         <table style="width:100%;border-collapse:collapse;">
           <thead>
             <tr>
-              <th style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);">
+              <th
+                style="text-align:left;padding:6px 8px;font-size:var(--font-size-supporting);color:var(--secondary-text-color);"
+              >
                 Stage
               </th>
-              <th style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);">
+              <th
+                style="text-align:left;padding:6px 8px;font-size:var(--font-size-supporting);color:var(--secondary-text-color);"
+              >
                 Min EC (mS/cm)
               </th>
-              <th style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);">
+              <th
+                style="text-align:left;padding:6px 8px;font-size:var(--font-size-supporting);color:var(--secondary-text-color);"
+              >
                 Max EC (mS/cm)
               </th>
             </tr>
@@ -261,7 +268,10 @@ export class IrrigationSubstrateEcTab extends LitElement {
           <tbody>
             ${ranges.map(
               (range, idx) => html`
-                <tr class="ec-target-row" style="border-top:1px solid var(--divider-color,rgba(255,255,255,0.07));">
+                <tr
+                  class="ec-target-row"
+                  style="border-top:1px solid var(--divider-color,rgba(255,255,255,0.07));"
+                >
                   <td style="padding:8px;">
                     <span class="ec-stage-label" style="font-weight:500;"
                       >${STAGE_LABELS[range.stage] ?? range.stage}</span

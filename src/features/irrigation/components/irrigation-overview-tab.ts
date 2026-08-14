@@ -143,8 +143,7 @@ export class IrrigationOverviewTab extends LitElement {
       ${this._renderScoreHeader(vm)}
       <div class="cs-metric-grid">
         ${this._renderOvernightDrybackCard(vm.overnightDryback)}
-        ${this._renderInCycleDrybackCard(vm.inCycleDryback)}
-        ${this._renderEcTrendCard(vm.ecTrend)}
+        ${this._renderInCycleDrybackCard(vm.inCycleDryback)} ${this._renderEcTrendCard(vm.ecTrend)}
       </div>
       ${this._renderShotComposition(vm.shotComposition)}
     `;
@@ -173,16 +172,14 @@ export class IrrigationOverviewTab extends LitElement {
         <div
           style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;"
         >
-          <div style="font-size: 36px; font-weight: bold;">${scoreText}</div>
+          <div style="font-size: var(--font-size-xl); font-weight: bold;">${scoreText}</div>
           <gs-help-tooltip
             content="Measured crop steering score (−1…+1): positive = generative (promoting flowering), negative = vegetative (promoting growth). This is a measurement of how the substrate is actually behaving, not a setting."
             placement="right"
             label="Crop Steering Score"
           ></gs-help-tooltip>
         </div>
-        <div
-          style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;"
-        >
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;">
           ${declared
             ? html`<div class="cs-mode-badge cs-mode-${declared}">
                 Declared: ${declared.toUpperCase()}
@@ -341,7 +338,8 @@ export class IrrigationOverviewTab extends LitElement {
               class="cs-shot-suppression"
               data-metric="shot-suppression"
               data-held=${panel.suppression.held ? 'true' : 'false'}
-              style="font-size:0.8rem;margin:0 0 12px;color:${panel.suppression.held
+              style="font-size:var(--font-size-supporting);margin:0 0 12px;color:${panel.suppression
+                .held
                 ? 'var(--warning-color, #FF9800)'
                 : 'var(--secondary-text-color)'};"
             >
@@ -360,7 +358,7 @@ export class IrrigationOverviewTab extends LitElement {
                     </div>`
               )}
             `
-          : html`<p style="font-size:0.8rem;opacity:0.6;margin:0;">
+          : html`<p style="font-size:var(--font-size-supporting);opacity:0.6;margin:0;">
               No shot fired yet this session — modulation capability shown above.
             </p>`}
       </div>

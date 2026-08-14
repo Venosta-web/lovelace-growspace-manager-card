@@ -94,7 +94,7 @@ export class IrrigationSteeringTab extends LitElement {
         cursor: not-allowed;
       }
       .phase-card .phase-num {
-        font-size: 10px;
+        font-size: var(--font-size-xs);
         font-weight: 600;
         letter-spacing: 0.08em;
         text-transform: uppercase;
@@ -110,7 +110,7 @@ export class IrrigationSteeringTab extends LitElement {
         line-height: 1.4;
       }
       .stub-row-label {
-        font-size: 13px;
+        font-size: var(--font-size-supporting);
       }
       .stub-row-desc {
         font-size: 11px;
@@ -128,7 +128,7 @@ export class IrrigationSteeringTab extends LitElement {
         color: rgba(255, 255, 255, 0.5);
       }
       .lights-on-readonly .ro-value {
-        font-size: 15px;
+        font-size: var(--font-size-sm);
         font-weight: 500;
       }
       .lights-on-hint {
@@ -213,7 +213,7 @@ export class IrrigationSteeringTab extends LitElement {
       <!-- VWC strategy parameters -->
       <div class="detail-card">
         <h3 style="margin-top:0;">VWC Strategy Configuration</h3>
-        <p style="font-size:0.8rem;opacity:0.7;margin-bottom:20px;">
+        <p style="font-size:var(--font-size-supporting);opacity:0.7;margin-bottom:20px;">
           Enable logic-based irrigation based on volumetric water content (VWC) targets. Overrides
           basic schedules when active.
         </p>
@@ -283,9 +283,7 @@ export class IrrigationSteeringTab extends LitElement {
             <md3-number-input
               label="P2 Direct Trigger (%)"
               placeholder="Off"
-              .value=${
-                vm.soilTriggerPercent != null ? String(vm.soilTriggerPercent) : ''
-              }
+              .value=${vm.soilTriggerPercent != null ? String(vm.soilTriggerPercent) : ''}
               @change=${(e: CustomEvent) => {
                 const v = e.detail;
                 this._updateConfigField({
@@ -305,9 +303,7 @@ export class IrrigationSteeringTab extends LitElement {
             </div>
             ${
               vm.detectedLightsOnTime
-                ? html`
-                    <span class="auto-lights-badge">auto: ${vm.detectedLightsOnTime}</span>
-                  `
+                ? html` <span class="auto-lights-badge">auto: ${vm.detectedLightsOnTime}</span> `
                 : ''
             }
           </div>
@@ -347,7 +343,9 @@ export class IrrigationSteeringTab extends LitElement {
               data-field="autoAdvanceP1ToP2"
               .checked=${vm.autoAdvanceP1ToP2}
               @change=${(e: Event) => {
-                this._updateConfigField({ autoAdvanceP1ToP2: (e.target as HTMLInputElement).checked });
+                this._updateConfigField({
+                  autoAdvanceP1ToP2: (e.target as HTMLInputElement).checked,
+                });
               }}
             ></md3-switch>
           </div>
@@ -362,7 +360,9 @@ export class IrrigationSteeringTab extends LitElement {
               data-field="autoAdvanceP2ToP3"
               .checked=${vm.autoAdvanceP2ToP3}
               @change=${(e: Event) => {
-                this._updateConfigField({ autoAdvanceP2ToP3: (e.target as HTMLInputElement).checked });
+                this._updateConfigField({
+                  autoAdvanceP2ToP3: (e.target as HTMLInputElement).checked,
+                });
               }}
             ></md3-switch>
           </div>
@@ -421,7 +421,9 @@ export class IrrigationSteeringTab extends LitElement {
             <strong>${vm.activePhase.toUpperCase()}</strong> to
             <strong>${(vm.confirmPhase ?? '').toUpperCase()}</strong>?
           </p>
-          <p style="margin: 0; font-size: 0.9rem; opacity: 0.8; line-height: 1.4;">
+          <p
+            style="margin: 0; font-size: var(--font-size-sm); opacity: 0.8; line-height: 1.4;"
+          >
             Manually shifting phases overrides the current schedule instantly. This is a severe
             change that will disrupt timing and dosing parameters.
           </p>
@@ -477,7 +479,7 @@ export class IrrigationSteeringTab extends LitElement {
             content="Selecting a mode stamps recommended setpoints (dryback, P2-stop offset, pore-EC band, shot sizes) into the editable fields below. You can fine-tune afterwards."
           ></gs-help-tooltip>
         </div>
-        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
+        <p style="font-size:var(--font-size-supporting);opacity:0.7;margin:0 0 12px;">
           ${declared
             ? html`Declared intent: <strong>${declared}</strong>`
             : 'No mode declared yet.'}
@@ -516,7 +518,7 @@ export class IrrigationSteeringTab extends LitElement {
             recommended values:
           </p>
           <ul
-            style="margin: 0; padding-left: 20px; font-size: 0.9rem; opacity: 0.85; line-height: 1.5;"
+            style="margin: 0; padding-left: 20px; font-size: var(--font-size-sm); opacity: 0.85; line-height: 1.5;"
           >
             <li>Maintenance Dryback</li>
             <li>P2 Stop Buffer</li>
@@ -587,7 +589,10 @@ export class IrrigationSteeringTab extends LitElement {
             data-field="dynamicShotEnabled"
             .checked=${enabled}
             @change=${(e: Event) =>
-              this._updateStrategyField('dynamicShotEnabled', (e.target as HTMLInputElement).checked)}
+              this._updateStrategyField(
+                'dynamicShotEnabled',
+                (e.target as HTMLInputElement).checked
+              )}
           ></md3-switch>
         </div>
         ${enabled
