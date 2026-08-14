@@ -43,3 +43,40 @@ export function paginateStrains(
   const start = (currentPage - 1) * itemsPerPage;
   return { paged: strains.slice(start, start + itemsPerPage), totalPages, currentPage };
 }
+
+export type EmptyStateReason = 'first-use' | 'filter-empty' | 'search-empty' | 'combined-empty';
+
+/**
+ * Determines why the strain result set is empty so the UI can render
+ * a context-aware empty state with the right recovery action.
+ *
+ * Returns `null` when the filtered result set is non-empty.
+ */
+export function classifyEmptyState(
+  allStrains: StrainEntry[],
+  filteredCount: number,
+  query: string,
+  filter: LibraryFilter,
+  activePlantCounts: Record<string, number>
+): EmptyStateReason | null {
+  if (filteredCount > 0) return null;
+  if (allStrains.length === 0) return 'first-use';
+
+  const hasSearch = query.trim().length > 0;
+  const hasFilter = filter !== 'all';
+
+  if (hasSearch && hasFilter) {
+    return 'combined-empty';
+  }
+  if (hasSearch) {
+    return 'search-empty';
+  }
+  if (hasFilter) {
+    // Confirm the filter itself is what narrows to zero
+    const filterAloneCount = applyLibraryFilter(allStrains, filter, activePlantCounts).length;
+    if (filterAloneCount === 0) return 'filter-empty';
+    return 'search-empty';
+  }
+
+  return 'first-use';
+}

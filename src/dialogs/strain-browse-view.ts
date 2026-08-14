@@ -16,13 +16,20 @@ import {
   mdiChevronRight,
   mdiDotsVertical,
   mdiAccountGroup,
+  mdiSprout,
+  mdiFilterRemoveOutline,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { StrainEntry } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { LibraryFilter } from './gs-filter-chips';
-import { filterAndSortStrains, paginateStrains } from './strain-browse-view-logic';
+import {
+  filterAndSortStrains,
+  paginateStrains,
+  classifyEmptyState,
+  type EmptyStateReason,
+} from './strain-browse-view-logic';
 import './gs-filter-chips';
 import '../features/shared/ui/md3-text-input';
 import '../features/shared/ui/gs-help-tooltip';
@@ -350,6 +357,48 @@ export class StrainBrowseView extends LitElement {
         padding: 20px;
       }
 
+      /* Empty state */
+      .empty-state-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 56px 24px;
+        gap: 8px;
+      }
+
+      .empty-state-icon {
+        width: 56px;
+        height: 56px;
+        fill: var(--secondary-text-color);
+        opacity: 0.45;
+        margin-bottom: 8px;
+      }
+
+      .empty-state-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-text-color, #fff);
+        margin: 0;
+      }
+
+      .empty-state-subtitle {
+        font-size: 0.9rem;
+        color: var(--secondary-text-color);
+        margin: 0 0 12px 0;
+        max-width: 380px;
+        line-height: 1.5;
+      }
+
+      .empty-state-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 4px;
+      }
+
       @media (max-width: 600px) {
         .sd-grid {
           grid-template-columns: 1fr;
@@ -371,6 +420,13 @@ export class StrainBrowseView extends LitElement {
     const filteredStrains = filterAndSortStrains(
       this.strains,
       query,
+      this.libraryFilter,
+      this.activePlantCounts
+    );
+    const emptyReason = classifyEmptyState(
+      this.strains,
+      filteredStrains.length,
+      this._searchQuery,
       this.libraryFilter,
       this.activePlantCounts
     );
@@ -452,19 +508,7 @@ export class StrainBrowseView extends LitElement {
 
         <div class="sd-grid">${paged.map((strain) => this._renderStrainCard(strain))}</div>
 
-        ${filteredStrains.length === 0
-          ? html`
-              <div style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
-                <svg
-                  style="width:48px;height:48px;fill:currentColor; opacity:0.5;"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="${mdiMagnify}"></path>
-                </svg>
-                <p>No strains found matching "${query}"</p>
-              </div>
-            `
-          : nothing}
+        ${emptyReason ? this._renderEmptyState(emptyReason) : nothing}
         ${totalPages > 1
           ? html`
               <div class="pagination-container">
@@ -783,6 +827,113 @@ export class StrainBrowseView extends LitElement {
       this._pendingDeleteKey = null;
       this._restoreDeleteFocus();
     }
+  }
+
+  private static readonly FILTER_LABELS: Record<LibraryFilter, string> = {
+    library: 'Library',
+    active: 'Active',
+    all: 'All',
+  };
+
+  private _renderEmptyState(reason: EmptyStateReason): TemplateResult {
+    switch (reason) {
+      case 'first-use':
+        return html`
+          <div class="empty-state-container">
+            <svg class="empty-state-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="${mdiSprout}"></path>
+            </svg>
+            <p class="empty-state-title">Your Strain Library is empty</p>
+            <p class="empty-state-subtitle">
+              Start by creating your first strain or importing an existing library.
+            </p>
+            <div class="empty-state-actions">
+              <button class="md3-button primary" @click=${() => this._emit('new-strain')}>
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="${mdiPlus}"></path>
+                </svg>
+                Create first strain
+              </button>
+              <button class="md3-button tonal" @click=${() => this._emit('import-requested')}>
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="${mdiCloudUpload}"></path>
+                </svg>
+                Import library
+              </button>
+            </div>
+          </div>
+        `;
+
+      case 'filter-empty':
+        return html`
+          <div class="empty-state-container">
+            <svg class="empty-state-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="${mdiFilterRemoveOutline}"></path>
+            </svg>
+            <p class="empty-state-title">No strains match the "${StrainBrowseView.FILTER_LABELS[this.libraryFilter]}" filter</p>
+            <p class="empty-state-subtitle">
+              Try a different filter to see your strains.
+            </p>
+            <div class="empty-state-actions">
+              <button class="md3-button tonal" @click=${() => this._resetFilter()}>
+                Show all strains
+              </button>
+            </div>
+          </div>
+        `;
+
+      case 'search-empty':
+        return html`
+          <div class="empty-state-container">
+            <svg class="empty-state-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="${mdiMagnify}"></path>
+            </svg>
+            <p class="empty-state-title">No strains match "${this._searchQuery}"</p>
+            <p class="empty-state-subtitle">
+              Check spelling or try a broader search term.
+            </p>
+            <div class="empty-state-actions">
+              <button class="md3-button tonal" @click=${() => this._clearSearch()}>
+                Clear search
+              </button>
+            </div>
+          </div>
+        `;
+
+      case 'combined-empty':
+        return html`
+          <div class="empty-state-container">
+            <svg class="empty-state-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="${mdiFilterRemoveOutline}"></path>
+            </svg>
+            <p class="empty-state-title">No strains match "${this._searchQuery}" in ${StrainBrowseView.FILTER_LABELS[this.libraryFilter]}</p>
+            <p class="empty-state-subtitle">
+              Remove the filter or broaden your search.
+            </p>
+            <div class="empty-state-actions">
+              <button class="md3-button tonal" @click=${() => this._clearSearch()}>
+                Clear search
+              </button>
+              <button class="md3-button tonal" @click=${() => this._resetFilter()}>
+                Show all strains
+              </button>
+            </div>
+          </div>
+        `;
+    }
+  }
+
+  private _clearSearch(): void {
+    this._searchQuery = '';
+    this._currentPage = 1;
+    requestAnimationFrame(() => {
+      this.shadowRoot?.querySelector<HTMLElement>('md3-text-input')?.focus();
+    });
+  }
+
+  private _resetFilter(): void {
+    this._currentPage = 1;
+    this.dispatchEvent(new CustomEvent('filter-changed', { detail: { filter: 'all' } }));
   }
 
   private _emit(event: string) {
