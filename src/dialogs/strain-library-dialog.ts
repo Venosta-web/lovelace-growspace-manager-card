@@ -16,7 +16,7 @@ import './strain-import-dialog';
 import './seeds-genetics-tab';
 import './strain-editor-view';
 import { updateStrainMeta, fetchStrainLibrary } from '../slices/strain';
-import { showToast, showError } from '../slices/ui';
+import { showToast } from '../slices/ui';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, StrainEntry, SeedBatch, PollinationEvent } from '../types';
 import type { GrowspaceStore } from '../store/core/growspace-store';
@@ -1251,16 +1251,12 @@ export class StrainLibraryDialog extends LitElement {
                         .source=${this.source}
                         .returnPayload=${this.returnPayload}
                         .onSave=${async (strain: import('../types').StrainEntry) => {
-                          try {
-                            await updateStrainMeta(strain);
-                            showToast('Strain updated successfully!', 'success');
-                            await fetchStrainLibrary({ cache: true, force: true });
-                          } catch (e) {
-                            showError(e, 'Failed to update strain');
-                          }
+                          await updateStrainMeta(strain);
+                          await fetchStrainLibrary({ cache: true, force: true });
+                          this.dispatchEvent(new CustomEvent('data-changed'));
+                          showToast('Strain updated successfully!', 'success');
                           this._view = 'browse';
                           this._editingStrain = undefined;
-                          this.dispatchEvent(new CustomEvent('data-changed'));
                         }}
                         @view-lineage=${(_e: CustomEvent) => {
                           this.focusLineage = true;
