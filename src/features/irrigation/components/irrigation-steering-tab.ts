@@ -56,7 +56,7 @@ export class IrrigationSteeringTab extends LitElement {
       .phase-card {
         padding: 12px 14px;
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         background: rgba(255, 255, 255, 0.02);
         display: flex;
         flex-direction: column;
@@ -78,7 +78,7 @@ export class IrrigationSteeringTab extends LitElement {
         flex: 1;
         padding: 10px 12px;
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         background: rgba(255, 255, 255, 0.04);
         color: var(--primary-text-color);
         font-size: 0.85rem;
@@ -219,7 +219,7 @@ export class IrrigationSteeringTab extends LitElement {
         </p>
 
         <div
-          style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;"
+          style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius: var(--border-radius-sm, 8px);margin-bottom:12px;"
         >
           <span>Enable VWC Steering</span>
           <md3-switch
@@ -234,7 +234,7 @@ export class IrrigationSteeringTab extends LitElement {
           vm.hasLightSensors
             ? html`
                 <div
-                  style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;"
+                  style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius: var(--border-radius-sm, 8px);margin-bottom:12px;"
                 >
                   <span>Auto Track from Light Sensor</span>
                   <md3-switch
@@ -575,7 +575,7 @@ export class IrrigationSteeringTab extends LitElement {
     return html`
       <div style="grid-column:span 2;margin-top:12px;">
         <div
-          style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
+          style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius: var(--border-radius-sm, 8px);"
         >
           <div style="display:flex;align-items:center;gap:6px;">
             <span>Adaptive Shot Control</span>

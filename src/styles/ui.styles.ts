@@ -5,7 +5,7 @@ export const uiStyles = css`
   .md3-button {
     height: 40px;
     padding: 0 24px;
-    border-radius: 20px; /* Full-rounded MD3 style */
+    border-radius: var(--border-radius-full, 9999px); /* Full-rounded MD3 style */
     border: none;
     font-family: 'Roboto', sans-serif;
     font-weight: 500;
@@ -257,7 +257,7 @@ export const uiStyles = css`
     background: #323232;
     color: #fff;
     padding: 12px 24px;
-    border-radius: 24px;
+    border-radius: var(--border-radius-full, 9999px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     z-index: 100;
     font-weight: 500;

@@ -77,7 +77,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         padding: 12px 16px;
         background: rgba(255, 255, 255, 0.04);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         cursor: pointer;
         transition: background 0.15s;
       }
@@ -115,7 +115,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         padding: 10px 16px;
         background: rgba(255, 255, 255, 0.05);
         border: 1px dashed rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         color: var(--primary-text-color);
         cursor: pointer;
         font-size: 0.875rem;
@@ -148,7 +148,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         cursor: pointer;
         color: var(--secondary-text-color);
         padding: 6px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         display: flex;
         align-items: center;
         transition: background 0.15s;
@@ -165,7 +165,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         border: none;
         cursor: pointer;
         padding: 6px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         display: flex;
         align-items: center;
         color: var(--primary-text-color);
@@ -177,7 +177,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
 
       .detail-section {
         background: rgba(255, 255, 255, 0.04);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 16px;
         margin-bottom: 12px;
       }
@@ -217,7 +217,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         font-size: 0.7rem;
         background: rgba(255, 152, 0, 0.15);
         color: var(--gm-warning-color, #ff9800);
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         padding: 2px 6px;
         text-decoration: line-through;
       }
@@ -245,7 +245,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         padding: 8px 12px;
         background: rgba(255, 255, 255, 0.06);
         border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         color: var(--primary-text-color);
         font-size: 0.875rem;
         font-family: inherit;
@@ -261,7 +261,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         padding: 8px 12px;
         background: rgba(255, 255, 255, 0.06);
         border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         color: var(--primary-text-color);
         font-size: 0.875rem;
         font-family: inherit;
@@ -302,7 +302,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         cursor: pointer;
         padding: 4px;
         color: var(--error-color, #f44336);
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         display: flex;
         align-items: center;
         flex-shrink: 0;
@@ -316,7 +316,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         gap: 6px;
         background: none;
         border: 1px dashed rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 6px 12px;
         color: var(--secondary-text-color);
         cursor: pointer;
@@ -338,7 +338,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
 
       .btn {
         padding: 8px 16px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         border: none;
         cursor: pointer;
         font-size: 0.875rem;
@@ -369,7 +369,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
       .confirm-box {
         background: rgba(244, 67, 54, 0.1);
         border: 1px solid rgba(244, 67, 54, 0.3);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 20px;
         text-align: center;
       }
@@ -754,7 +754,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
 
   private _renderError(sub: { kind: 'error'; draft: NutrientPresetDraft; message: string }) {
     return html`
-      <div style="display:flex;align-items:center;gap:8px;background:rgba(244,67,54,0.1);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.875rem;color:var(--error-color,#f44336)">
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(244,67,54,0.1);border-radius: var(--border-radius-sm, 8px);padding:10px 14px;margin-bottom:12px;font-size:0.875rem;color:var(--error-color,#f44336)">
         <ha-svg-icon .path=${mdiAlertCircle} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
         ${sub.message}
       </div>

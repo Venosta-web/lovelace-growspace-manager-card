@@ -27,7 +27,7 @@ export class LineageTree extends LitElement {
     }
     .skeleton {
       height: 36px;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       background: var(--divider-color, #e0e0e0);
       animation: pulse 1.4s ease-in-out infinite;
     }
@@ -76,7 +76,7 @@ export class LineageTree extends LitElement {
       align-items: center;
       gap: 2px;
       padding: 6px 10px;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       background: var(--card-background-color, #fff);
       border: 1px solid var(--divider-color, #e0e0e0);
       min-width: 80px;
@@ -111,7 +111,7 @@ export class LineageTree extends LitElement {
     .gen-badge {
       background: var(--primary-color);
       color: var(--text-primary-color, #fff);
-      border-radius: 4px;
+      border-radius: var(--border-radius-xs, 4px);
       padding: 0 4px;
       font-size: 10px;
     }
@@ -251,7 +251,7 @@ export class LineageTreeEditor extends LitElement {
       font-weight: 600;
       font-size: 14px;
       padding: 8px 16px;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       background: var(--primary-color);
       color: var(--text-primary-color, #fff);
     }
@@ -271,7 +271,7 @@ export class LineageTreeEditor extends LitElement {
       align-items: center;
       gap: 4px;
       padding: 8px 12px;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       border: 1px solid var(--divider-color);
       position: relative;
       min-width: 100px;
@@ -305,7 +305,7 @@ export class LineageTreeEditor extends LitElement {
     }
     .lte-add-btn {
       padding: 6px 12px;
-      border-radius: 6px;
+      border-radius: var(--border-radius-sm, 8px);
       border: 1px dashed var(--divider-color);
       background: transparent;
       cursor: pointer;
@@ -323,7 +323,7 @@ export class LineageTreeEditor extends LitElement {
     .lte-search {
       width: 100%;
       padding: 6px 8px;
-      border-radius: 6px;
+      border-radius: var(--border-radius-sm, 8px);
       border: 1px solid var(--primary-color);
       font-size: 12px;
       box-sizing: border-box;
@@ -336,7 +336,7 @@ export class LineageTreeEditor extends LitElement {
       z-index: 100;
       background: var(--card-background-color, #fff);
       border: 1px solid var(--divider-color);
-      border-radius: 6px;
+      border-radius: var(--border-radius-sm, 8px);
       max-height: 200px;
       overflow-y: auto;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);

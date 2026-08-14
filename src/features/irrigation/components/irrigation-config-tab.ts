@@ -47,7 +47,7 @@ export class IrrigationConfigTab extends LitElement {
         align-items: center;
         gap: 6px;
         padding: 8px 18px;
-        border-radius: 20px;
+        border-radius: var(--border-radius-full, 9999px);
         border: 1px solid rgba(79, 195, 247, 0.4);
         background: rgba(79, 195, 247, 0.1);
         color: #4fc3f7;
@@ -79,7 +79,7 @@ export class IrrigationConfigTab extends LitElement {
         justify-content: space-between;
         padding: 10px 12px;
         background: rgba(255, 255, 255, 0.03);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         opacity: 0.55;
       }
       .stub-row-label {

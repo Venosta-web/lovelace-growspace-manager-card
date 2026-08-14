@@ -70,7 +70,7 @@ export class PlantTimeline extends LitElement {
       .event {
         position: relative;
         padding: 12px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
       }
@@ -143,7 +143,7 @@ export class PlantTimeline extends LitElement {
         align-items: center;
         gap: 4px;
         padding: 2px 8px;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         background: rgba(255, 255, 255, 0.1);
         font-size: 0.75rem;
         color: var(--secondary-text-color);
@@ -173,7 +173,7 @@ export class PlantTimeline extends LitElement {
         width: 100%;
         aspect-ratio: 1;
         object-fit: cover;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         cursor: pointer;
         transition: transform 0.2s;
         border: 1px solid var(--divider-color);
@@ -195,7 +195,7 @@ export class PlantTimeline extends LitElement {
         gap: 4px;
         font-size: 0.7rem;
         padding: 1px 6px;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         background: var(--divider-color);
         color: var(--secondary-text-color);
       }
@@ -297,7 +297,7 @@ export class PlantTimeline extends LitElement {
         padding: 8px 12px;
         background: rgba(var(--rgb-warning-color), 0.1);
         border: 1px solid rgba(var(--rgb-warning-color), 0.2);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         font-size: 0.85rem;
         display: flex;
         align-items: center;
@@ -312,7 +312,7 @@ export class PlantTimeline extends LitElement {
         color: white;
         font-size: 0.65rem;
         padding: 1px 4px;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         margin-left: 8px;
         vertical-align: middle;
       }
@@ -327,7 +327,7 @@ export class PlantTimeline extends LitElement {
         z-index: 9999;
         pointer-events: none;
         background: rgba(0, 0, 0, 0.9);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 4px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         max-width: 90vw;
@@ -339,7 +339,7 @@ export class PlantTimeline extends LitElement {
       .image-hover-overlay img {
         max-width: 100%;
         max-height: 100%;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         object-fit: contain;
       }
     `,
@@ -634,7 +634,7 @@ export class PlantTimeline extends LitElement {
             ${event.reasons?.map(
               (r: string) =>
                 html`<span
-                  style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;"
+                  style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: var(--border-radius-xs, 4px);"
                   >${r}</span
                 >`
             )}
@@ -646,7 +646,7 @@ export class PlantTimeline extends LitElement {
             return temperature !== undefined && humidity !== undefined
               ? html`
                   <div
-                    style="margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; border: 1px solid var(--divider-color);"
+                    style="margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: var(--border-radius-sm, 8px); padding: 12px; border: 1px solid var(--divider-color);"
                   >
                     <vpd-heatmap
                       .temperature=${temperature}

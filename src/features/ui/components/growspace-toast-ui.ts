@@ -26,7 +26,7 @@ export class GrowspaceToastUI extends LitElement {
       background: var(--ha-card-background, var(--card-background-color, white));
       color: var(--primary-text-color);
       padding: 8px 16px 8px 24px;
-      border-radius: 24px;
+      border-radius: var(--border-radius-full, 9999px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       font-size: 14px;
       font-weight: 500;
@@ -72,7 +72,7 @@ export class GrowspaceToastUI extends LitElement {
       text-transform: uppercase;
       cursor: pointer;
       padding: 8px 12px;
-      border-radius: 4px;
+      border-radius: var(--border-radius-xs, 4px);
       transition: background 0.2s ease;
       font-size: 12px;
       letter-spacing: 0.5px;

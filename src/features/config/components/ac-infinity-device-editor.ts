@@ -56,7 +56,7 @@ function renderConflict(conflict: AcInfinityConflict | undefined): TemplateResul
     <div
       class="ac-infinity-mode-conflict"
       role="alert"
-      style="display:flex;gap:6px;margin-top:6px;padding:8px;font-size:0.75rem;line-height:1.35;border-radius:6px;color:var(--warning-color,#e6a700);background:rgba(230,167,0,0.10);border:1px solid rgba(230,167,0,0.35);"
+      style="display:flex;gap:6px;margin-top:6px;padding:8px;font-size:0.75rem;line-height:1.35;border-radius: var(--border-radius-sm, 8px);color:var(--warning-color,#e6a700);background:rgba(230,167,0,0.10);border:1px solid rgba(230,167,0,0.35);"
     >
       <span aria-hidden="true">⚠</span>
       <span>
@@ -102,7 +102,7 @@ export function renderAcInfinityDevices(p: AcInfinityEditorProps): TemplateResul
         return html`
           <div
             class="ac-infinity-device detail-card"
-            style="padding:12px;margin-bottom:8px;border:1px solid var(--divider-color,rgba(255,255,255,0.12));border-radius:8px;"
+            style="padding:12px;margin-bottom:8px;border:1px solid var(--divider-color,rgba(255,255,255,0.12));border-radius: var(--border-radius-sm, 8px);"
           >
             <div
               style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"

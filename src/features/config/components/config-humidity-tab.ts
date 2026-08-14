@@ -77,7 +77,7 @@ export class ConfigHumidityTab extends LitElement {
       .acc-card {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         overflow: hidden;
       }
       .acc-head {
@@ -132,7 +132,7 @@ export class ConfigHumidityTab extends LitElement {
       }
       .acc-device-block {
         background: rgba(0, 0, 0, 0.15);
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 14px;
         display: flex;
         flex-direction: column;

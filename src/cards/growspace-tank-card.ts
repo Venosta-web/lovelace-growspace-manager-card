@@ -88,7 +88,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         background: rgba(244, 67, 54, 0.2);
         color: #f44336;
         border: 1px solid rgba(244, 67, 54, 0.4);
-        border-radius: 20px;
+        border-radius: var(--border-radius-full, 9999px);
         padding: 3px 10px;
         font-size: 0.78rem;
         font-weight: 600;
@@ -116,7 +116,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
       .tank-card {
         background: #1e1e1e;
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
+        border-radius: var(--border-radius-lg, 16px);
         padding: 16px;
         transition: all 0.3s;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -193,7 +193,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         width: 100%;
         height: 100%;
         background: linear-gradient(135deg, #34495e, #2c3e50);
-        border-radius: 14px;
+        border-radius: var(--border-radius-md, 12px);
         box-shadow:
           inset 2px 2px 5px rgba(255, 255, 255, 0.1),
           inset -2px -2px 5px rgba(0, 0, 0, 0.5),
@@ -214,7 +214,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         width: 126px;
         height: 10px;
         background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.2));
-        border-radius: 5px;
+        border-radius: var(--border-radius-xs, 4px);
         z-index: 2;
       }
 
@@ -245,7 +245,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         width: 78%;
         height: 68%;
         background: rgba(0, 0, 0, 0.4);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         position: relative;
         overflow: hidden;
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -362,7 +362,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
       .depletion-label {
         display: inline-block;
         font-size: 0.72rem;
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 2px 7px;
         margin-top: 4px;
         background: rgba(255, 255, 255, 0.07);

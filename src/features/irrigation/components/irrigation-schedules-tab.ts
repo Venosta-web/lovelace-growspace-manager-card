@@ -63,7 +63,7 @@ export class IrrigationSchedulesTab extends LitElement {
         position: relative;
         height: 96px;
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         background: rgba(0, 0, 0, 0.2);
         overflow: hidden;
         cursor: crosshair;
@@ -92,7 +92,7 @@ export class IrrigationSchedulesTab extends LitElement {
         position: absolute;
         top: 10px;
         height: 52px;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         cursor: pointer;
         display: flex;
         align-items: flex-end;
@@ -159,7 +159,7 @@ export class IrrigationSchedulesTab extends LitElement {
         gap: 6px;
         height: 28px;
         padding: 0 4px 0 10px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         font-size: 12.5px;
         font-variant-numeric: tabular-nums;
       }
@@ -179,7 +179,7 @@ export class IrrigationSchedulesTab extends LitElement {
         color: rgba(255, 255, 255, 0.4);
         cursor: pointer;
         padding: 0 12px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
       }
       .time-chip.new-chip:hover {
         border-color: rgba(255, 255, 255, 0.35);
@@ -192,7 +192,7 @@ export class IrrigationSchedulesTab extends LitElement {
       .chip-remove {
         width: 20px;
         height: 20px;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         background: transparent;
         border: none;
         color: rgba(255, 255, 255, 0.4);
@@ -217,7 +217,7 @@ export class IrrigationSchedulesTab extends LitElement {
         padding: 10px 14px;
         background: rgba(33, 150, 243, 0.07);
         border: 1px solid rgba(33, 150, 243, 0.2);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         font-size: 12.5px;
         color: rgba(255, 255, 255, 0.65);
         line-height: 1.5;
@@ -281,7 +281,7 @@ export class IrrigationSchedulesTab extends LitElement {
         background: linear-gradient(135deg, rgba(76, 175, 80, 0.18), rgba(33, 150, 243, 0.18));
         border: 1px solid rgba(76, 175, 80, 0.4);
         color: #4caf50;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
       }
       .auto-pill .pulse-dot {
         width: 6px;
@@ -310,7 +310,7 @@ export class IrrigationSchedulesTab extends LitElement {
         padding: 0 10px;
         background: rgba(255, 255, 255, 0.025);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         font-size: 11.5px;
         color: rgba(255, 255, 255, 0.6);
         font-variant-numeric: tabular-nums;

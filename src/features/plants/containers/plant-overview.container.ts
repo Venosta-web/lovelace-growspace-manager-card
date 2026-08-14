@@ -160,7 +160,7 @@ export class PlantOverviewContainer extends LitElement {
         min-width: 18px;
         height: 18px;
         padding: 0 5px;
-        border-radius: 999px;
+        border-radius: var(--border-radius-full, 9999px);
         font-size: 0.65rem;
         font-weight: 600;
         background: var(--primary-color, #4caf50);
@@ -199,7 +199,7 @@ export class PlantOverviewContainer extends LitElement {
         gap: 6px;
         height: 32px;
         padding: 0 12px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         background: rgba(255, 255, 255, 0.05);
         color: var(--primary-text-color);
@@ -238,7 +238,7 @@ export class PlantOverviewContainer extends LitElement {
 
       .delete-confirm-card {
         background: var(--card-background-color, #2c2c2c);
-        border-radius: 16px;
+        border-radius: var(--border-radius-lg, 16px);
         padding: 32px;
         max-width: 400px;
         text-align: center;
@@ -621,7 +621,7 @@ export class PlantOverviewContainer extends LitElement {
         display: flex; align-items: stretch; gap: 0;
         background: rgba(0,0,0,0.2);
         border: 1px solid rgba(255,255,255,0.06);
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 4px;
         margin-bottom: 16px;
         overflow: hidden;
@@ -640,7 +640,7 @@ export class PlantOverviewContainer extends LitElement {
           return html`
             <div
               style="
-              flex: 1; text-align: center; padding: 6px 4px; border-radius: 7px;
+              flex: 1; text-align: center; padding: 6px 4px; border-radius: var(--border-radius-sm, 8px);
               font-size: 0.7rem; line-height: 1.3;
               background: ${isCurrentStage ? 'rgba(255,152,0,0.15)' : 'transparent'};
               color: ${isCurrentStage

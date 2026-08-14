@@ -32,7 +32,7 @@ export const growspaceCardStyles = css`
   .edit-mode-banner {
     background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
     border: 1px solid rgba(76, 175, 80, 0.4);
-    border-radius: 12px;
+    border-radius: var(--border-radius-md, 12px);
     padding: 12px 16px;
     display: flex;
     justify-content: space-between;
@@ -142,7 +142,7 @@ export const growspaceCardStyles = css`
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid transparent;
     color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-    border-radius: 8px; /* Small rounding for compact look */
+    border-radius: var(--border-radius-sm, 8px); /* Small rounding for compact look */
     padding: 6px 12px;
     font-size: 0.75rem;
     font-weight: 500;
@@ -194,7 +194,7 @@ export const growspaceCardStyles = css`
     background: rgba(30, 30, 35, 0.9);
     color: var(--primary-text-color, #fff);
     padding: 8px 12px;
-    border-radius: 8px;
+    border-radius: var(--border-radius-sm, 8px);
     font-size: 0.75rem;
     pointer-events: none;
     transform: translate(-50%, 0);
@@ -226,7 +226,7 @@ export const growspaceCardStyles = css`
   /* Light Cycle Card Nested */
   .gs-light-cycle-card {
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 16px;
+    border-radius: var(--border-radius-lg, 16px);
     padding: 20px;
     border: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
@@ -264,7 +264,7 @@ export const growspaceCardStyles = css`
   .gs-icon-box {
     background: var(--secondary-background-color, rgba(255, 235, 59, 0.05));
     border: 1px solid var(--divider-color, rgba(255, 235, 59, 0.2));
-    border-radius: 14px;
+    border-radius: var(--border-radius-md, 12px);
     width: 48px;
     height: 48px;
     display: flex;
@@ -316,7 +316,7 @@ export const growspaceCardStyles = css`
     flex: 1;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
+    border-radius: var(--border-radius-lg, 16px);
     padding: 16px;
     display: flex;
     align-items: center;
@@ -452,7 +452,7 @@ export const growspaceCardStyles = css`
     height: 100%;
     aspect-ratio: 1;
     border: 2px dashed rgba(255, 255, 255, 0.2);
-    border-radius: 16px;
+    border-radius: var(--border-radius-lg, 16px);
     color: var(--secondary-text-color);
     cursor: pointer;
     transition: all 0.2s ease;
@@ -482,7 +482,7 @@ export const growspaceCardStyles = css`
     width: 100%;
     padding: var(--spacing-sm) var(--spacing-lg);
     padding-left: 40px;
-    border-radius: 24px;
+    border-radius: var(--border-radius-full, 9999px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(255, 255, 255, 0.05);
     color: var(--primary-text-color);
@@ -508,7 +508,7 @@ export const growspaceCardStyles = css`
 
   .strain-table-container {
     background: rgba(255, 255, 255, 0.02);
-    border-radius: 16px;
+    border-radius: var(--border-radius-lg, 16px);
     border: 1px solid rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
     overflow: hidden;
@@ -606,7 +606,7 @@ export const growspaceCardStyles = css`
     width: 300px;
     background: var(--card-background-color);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
+    border-radius: var(--border-radius-lg, 16px);
     padding: var(--spacing-md);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(12px);
@@ -627,7 +627,7 @@ export const growspaceCardStyles = css`
   .badge {
     background: rgba(255, 255, 255, 0.1);
     padding: 2px 8px;
-    border-radius: 12px;
+    border-radius: var(--border-radius-md, 12px);
     font-size: 0.8em;
     margin-left: 8px;
     color: var(--secondary-text-color);
@@ -641,7 +641,7 @@ export const growspaceCardStyles = css`
     background: var(--error-bg);
     border: 1px solid var(--error-border);
     padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: 24px;
+    border-radius: var(--border-radius-full, 9999px);
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
@@ -685,7 +685,7 @@ export const growspaceCardStyles = css`
     position: relative;
     width: 64px;
     height: 64px;
-    border-radius: 8px;
+    border-radius: var(--border-radius-sm, 8px);
     flex-shrink: 0;
     background-color: rgba(0, 0, 0, 0.2);
   }
@@ -782,7 +782,7 @@ export const growspaceCardStyles = css`
       position: relative !important;
       width: 64px !important;
       height: 64px !important;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       flex-shrink: 0;
       background-color: rgba(0, 0, 0, 0.2);
       object-fit: cover !important;
@@ -934,7 +934,7 @@ export const growspaceCardStyles = css`
     width: 48px;
     height: 48px;
     padding: 12px;
-    border-radius: 16px; /* MD3 medium shape */
+    border-radius: var(--border-radius-lg, 16px); /* MD3 medium shape */
     background: rgba(var(--stage-color-rgb, 76, 175, 80), 0.2);
     color: var(--stage-color, #4caf50);
     display: flex;
@@ -963,7 +963,7 @@ export const growspaceCardStyles = css`
   /* MD3 Cards inside Dialog */
   .detail-card {
     background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-    border-radius: 12px;
+    border-radius: var(--border-radius-md, 12px);
     padding: var(--spacing-md);
     margin-bottom: var(--spacing-md);
     border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
@@ -1020,7 +1020,7 @@ export const growspaceCardStyles = css`
     justify-content: center;
     cursor: pointer;
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 12px; /* Match collapse handle */
+    border-radius: var(--border-radius-md, 12px); /* Match collapse handle */
     margin-top: 8px; /* Match collapse handle spacing */
     transition: all 0.2s;
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -1043,7 +1043,7 @@ export const growspaceCardStyles = css`
     justify-content: center;
     cursor: pointer;
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 12px; /* Rounded top and bottom for visual separation */
+    border-radius: var(--border-radius-md, 12px); /* Rounded top and bottom for visual separation */
     margin-top: 8px; /* Spacing from grid */
     transition: all 0.2s;
     border: 1px solid rgba(255, 255, 255, 0.05);

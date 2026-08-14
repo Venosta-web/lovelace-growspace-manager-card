@@ -45,7 +45,7 @@ export class IrrigationTanksTab extends LitElement {
         gap: 12px;
         padding: 10px 14px;
         border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         background: rgba(255, 255, 255, 0.02);
         transition: border-color 0.2s;
       }
@@ -64,13 +64,13 @@ export class IrrigationTanksTab extends LitElement {
       .tank-bar-track {
         height: 5px;
         background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
+        border-radius: var(--border-radius-xs, 4px);
         overflow: hidden;
         margin-top: 5px;
       }
       .tank-bar-fill {
         height: 100%;
-        border-radius: 3px;
+        border-radius: var(--border-radius-xs, 4px);
         transition: width 0.4s ease;
       }
       .tank-row-stat {
@@ -160,7 +160,7 @@ export class IrrigationTanksTab extends LitElement {
     return html`
       <div
         class="tank-edit-form"
-        style="margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--divider-color,rgba(255,255,255,0.15));border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;"
+        style="margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--divider-color,rgba(255,255,255,0.15));border-radius: var(--border-radius-sm, 8px);padding:16px;display:flex;flex-direction:column;gap:12px;"
       >
         <div class="md3-input-group">
           <label class="md3-label">Sensor Entity *</label>

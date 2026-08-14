@@ -59,15 +59,15 @@ export class GrowspaceLogbook extends LitElement {
       .log-container::-webkit-scrollbar {
         width: 8px;
         background: rgba(255, 255, 255, 0.05);
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
       }
       .log-container::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.15);
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
       }
       .event-card {
         background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 16px;
         margin-bottom: 12px;
         border: 1px solid rgba(255, 255, 255, 0.05);
@@ -107,7 +107,7 @@ export class GrowspaceLogbook extends LitElement {
         opacity: 0.6;
         background: rgba(255, 255, 255, 0.1);
         padding: 2px 8px;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
       }
       .event-details {
         display: grid;
@@ -137,7 +137,7 @@ export class GrowspaceLogbook extends LitElement {
         display: inline-block;
         background: rgba(255, 255, 255, 0.08);
         padding: 2px 8px;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         margin-right: 6px;
         margin-bottom: 4px;
       }
@@ -158,7 +158,7 @@ export class GrowspaceLogbook extends LitElement {
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
         padding: 6px 16px;
-        border-radius: 20px;
+        border-radius: var(--border-radius-full, 9999px);
         font-size: 0.9rem;
         cursor: pointer;
         transition: all 0.2s ease;

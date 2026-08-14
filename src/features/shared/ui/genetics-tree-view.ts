@@ -1089,7 +1089,7 @@ export class GeneticsTreeView extends LitElement {
       gap: 6px;
       background: var(--bg-input);
       border: 1px solid var(--bg-input-border);
-      border-radius: 999px;
+      border-radius: var(--border-radius-full, 9999px);
       padding: 4px 10px;
       flex: 1;
       min-width: 130px;
@@ -1121,7 +1121,7 @@ export class GeneticsTreeView extends LitElement {
     /* Mode segmented control */
     .seg {
       display: flex;
-      border-radius: 999px;
+      border-radius: var(--border-radius-full, 9999px);
       overflow: hidden;
       border: 1px solid var(--bg-input-border);
       flex-shrink: 0;
@@ -1154,7 +1154,7 @@ export class GeneticsTreeView extends LitElement {
       background: var(--bg-input);
       color: var(--fg-2);
       border: 1px solid var(--bg-input-border);
-      border-radius: 999px;
+      border-radius: var(--border-radius-full, 9999px);
       padding: 5px 12px;
       font-size: 12px;
       cursor: pointer;
@@ -1172,7 +1172,7 @@ export class GeneticsTreeView extends LitElement {
       background: var(--bg-input);
       color: var(--fg-2);
       border: 1px solid var(--bg-input-border);
-      border-radius: 999px;
+      border-radius: var(--border-radius-full, 9999px);
       padding: 5px 12px;
       font-size: 12px;
       cursor: pointer;
@@ -1243,7 +1243,7 @@ export class GeneticsTreeView extends LitElement {
       background: var(--bg-input);
       border: 1px solid var(--chip-c, var(--bg-input-border));
       color: var(--fg-2);
-      border-radius: 999px;
+      border-radius: var(--border-radius-full, 9999px);
       padding: 2px 10px;
       font-size: 11px;
       cursor: pointer;
@@ -1264,7 +1264,7 @@ export class GeneticsTreeView extends LitElement {
       background: rgba(229, 57, 53, 0.1);
       border: 1px solid rgba(229, 57, 53, 0.4);
       color: #ef5350;
-      border-radius: 999px;
+      border-radius: var(--border-radius-full, 9999px);
       padding: 2px 10px;
       font-size: 11px;
       cursor: pointer;
@@ -1304,7 +1304,7 @@ export class GeneticsTreeView extends LitElement {
     .band {
       position: absolute;
       border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       background: rgba(255, 255, 255, 0.02);
       pointer-events: none;
     }
@@ -1324,7 +1324,7 @@ export class GeneticsTreeView extends LitElement {
       font-size: 11px;
       color: var(--fg-4);
       background: rgba(255, 255, 255, 0.06);
-      border-radius: 999px;
+      border-radius: var(--border-radius-full, 9999px);
       padding: 1px 6px;
     }
 
@@ -1370,7 +1370,7 @@ export class GeneticsTreeView extends LitElement {
       position: absolute;
       background: var(--bg-card-elev);
       border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       overflow: hidden;
       cursor: pointer;
       box-sizing: border-box;
@@ -1448,7 +1448,7 @@ export class GeneticsTreeView extends LitElement {
       font-size: 9px;
       font-weight: 700;
       color: #fff;
-      border-radius: 4px;
+      border-radius: var(--border-radius-xs, 4px);
       padding: 1px 5px;
       flex-shrink: 0;
       letter-spacing: 0.4px;
@@ -1472,7 +1472,7 @@ export class GeneticsTreeView extends LitElement {
       gap: 2px;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 5px;
+      border-radius: var(--border-radius-xs, 4px);
       padding: 1px 3px;
       cursor: pointer;
       color: var(--fg-3);
@@ -1507,7 +1507,7 @@ export class GeneticsTreeView extends LitElement {
       gap: 8px;
       background: var(--bg-glass);
       border: 1px solid rgba(76, 175, 80, 0.3);
-      border-radius: 999px;
+      border-radius: var(--border-radius-full, 9999px);
       padding: 6px 14px 6px 10px;
       font-size: 12px;
       color: var(--fg-1);
@@ -1531,7 +1531,7 @@ export class GeneticsTreeView extends LitElement {
     .focus-banner button {
       background: rgba(76, 175, 80, 0.15);
       border: 1px solid rgba(76, 175, 80, 0.3);
-      border-radius: 999px;
+      border-radius: var(--border-radius-full, 9999px);
       color: var(--gv-primary);
       font-size: 11px;
       padding: 2px 10px;
@@ -1550,7 +1550,7 @@ export class GeneticsTreeView extends LitElement {
       width: 220px;
       background: var(--bg-glass);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       box-shadow: var(--elev-glass);
       backdrop-filter: blur(12px);
       display: flex;
@@ -1650,7 +1650,7 @@ export class GeneticsTreeView extends LitElement {
       gap: 6px;
       padding: 3px 0;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: var(--border-radius-xs, 4px);
       width: 100%;
       background: none;
       border: none;
@@ -1710,7 +1710,7 @@ export class GeneticsTreeView extends LitElement {
       gap: 2px;
       background: var(--bg-glass);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 999px;
+      border-radius: var(--border-radius-full, 9999px);
       padding: 4px 6px;
       box-shadow: var(--elev-glass);
       backdrop-filter: blur(8px);
@@ -1743,7 +1743,7 @@ export class GeneticsTreeView extends LitElement {
       display: inline-block;
       width: 20px;
       height: 2px;
-      border-radius: 1px;
+      border-radius: var(--border-radius-xs, 4px);
     }
     .legend-line.mother {
       background: var(--gv-primary);
@@ -1769,7 +1769,7 @@ export class GeneticsTreeView extends LitElement {
       right: 14px;
       background: var(--bg-glass);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       box-shadow: var(--elev-glass);
       backdrop-filter: blur(8px);
       cursor: crosshair;

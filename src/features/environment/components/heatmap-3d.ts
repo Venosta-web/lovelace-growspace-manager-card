@@ -170,7 +170,7 @@ export class Heatmap3D extends LitElement {
     .metric-selector {
       background: rgba(30, 30, 30, 0.9);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 4px;
       display: flex;
       gap: 4px;
@@ -182,7 +182,7 @@ export class Heatmap3D extends LitElement {
       border: none;
       color: #9e9e9e;
       padding: 6px 2px;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       cursor: pointer;
       font-size: 11px;
       font-weight: 500;
@@ -202,7 +202,7 @@ export class Heatmap3D extends LitElement {
       width: 100%;
       height: 8px;
       background: linear-gradient(to right, #0d47a1, #2196f3, #4caf50, #ff9800, #f44336);
-      border-radius: 4px;
+      border-radius: var(--border-radius-xs, 4px);
       position: relative;
       box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
     }
@@ -274,7 +274,7 @@ export class Heatmap3D extends LitElement {
       background: rgba(10, 10, 10, 0.9);
       border: 1px solid rgba(255, 255, 255, 0.15);
       padding: 4px 10px;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       color: white;
       font-size: 11px;
       font-weight: 500;
@@ -304,7 +304,7 @@ export class Heatmap3D extends LitElement {
       max-height: calc(100% - 200px);
       background: rgba(30, 30, 30, 0.85);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -332,7 +332,7 @@ export class Heatmap3D extends LitElement {
     }
     .sensor-item {
       background: rgba(255, 255, 255, 0.03);
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       padding: 10px;
       display: flex;
       flex-direction: column;
@@ -388,7 +388,7 @@ export class Heatmap3D extends LitElement {
     .sensor-tabs {
       display: flex;
       background: rgba(0, 0, 0, 0.2);
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       padding: 2px;
       margin-bottom: 8px;
     }
@@ -398,7 +398,7 @@ export class Heatmap3D extends LitElement {
       border: none;
       color: #757575;
       padding: 6px 2px;
-      border-radius: 6px;
+      border-radius: var(--border-radius-sm, 8px);
       cursor: pointer;
       font-size: 9px;
       font-weight: 600;
@@ -421,7 +421,7 @@ export class Heatmap3D extends LitElement {
       position: absolute;
       background: rgba(15, 15, 15, 0.95);
       border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       padding: 12px;
       color: white;
       pointer-events: none;
@@ -471,7 +471,7 @@ export class Heatmap3D extends LitElement {
     }
     .tooltip-stage-pill {
       padding: 2px 8px;
-      border-radius: 10px;
+      border-radius: var(--border-radius-md, 12px);
       font-size: 10px;
       font-weight: 600;
       text-transform: uppercase;
