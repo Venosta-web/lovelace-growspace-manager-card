@@ -1,3 +1,10 @@
+# [1.1.0-next.117](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.116...v1.1.0-next.117) (2026-08-14)
+
+
+### Features
+
+* **config:** unify notification settings design ([#562](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/562)) ([abe1a3c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/abe1a3c10fad03a64314ea1d1ac26a28f32d3078))
+
 # [1.1.0-next.116](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.115...v1.1.0-next.116) (2026-08-14)
 
 
