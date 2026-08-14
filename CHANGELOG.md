@@ -1,3 +1,10 @@
+# [1.1.0-next.122](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.121...v1.1.0-next.122) (2026-08-14)
+
+
+### Features
+
+* **strain-library:** add actionable empty states ([#561](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/561)) ([#588](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/588)) ([063ebe6](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/063ebe6bf7850a77d2de3e8f3f30ff6be3abfe90))
+
 # [1.1.0-next.121](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.120...v1.1.0-next.121) (2026-08-14)
 
 
