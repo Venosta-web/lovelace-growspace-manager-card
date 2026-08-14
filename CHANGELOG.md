@@ -1,3 +1,10 @@
+# [1.1.0-next.113](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.112...v1.1.0-next.113) (2026-08-14)
+
+
+### Bug Fixes
+
+* **config:** unify stage colours and restore clone ([#551](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/551)) ([4e696a7](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/4e696a7c93014263ad457264502d6260c7810aad))
+
 # [1.1.0-next.112](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.111...v1.1.0-next.112) (2026-08-13)
 
 
