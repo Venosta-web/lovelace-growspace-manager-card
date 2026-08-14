@@ -75,7 +75,7 @@ describe('ChartUtils', () => {
     describe('getSparklineColor', () => {
         it('should return VPD status colors', () => {
             expect(ChartUtils.getSparklineColor('vpd', 'optimal')).toBe('#4caf50');
-            expect(ChartUtils.getSparklineColor('vpd', 'warning')).toBe('#ff9800');
+            expect(ChartUtils.getSparklineColor('vpd', 'warning')).toBe('var(--gm-warning-color, #ff9800)');
             expect(ChartUtils.getSparklineColor('vpd', 'danger')).toBe('#f44336');
         });
 
@@ -132,7 +132,7 @@ describe('ChartUtils', () => {
                 data, 100, 50, dnThresholds,
                 [{ state: 'on', last_changed: '2023-01-01T09:00:00Z' }] // Always ON
             );
-            expect(segmentsDay[0].color).toBe('#ff9800'); // Warning
+            expect(segmentsDay[0].color).toBe('var(--gm-warning-color, #ff9800)'); // Warning
 
             // Case 2: All Night (Light OFF) -> Expect Optimal (Green)
             const segmentsNight = ChartUtils.generateVpdSparklineSegments(
@@ -499,9 +499,9 @@ describe('ChartUtils', () => {
 
                     expect(segments.length).toBeGreaterThanOrEqual(4);
                     expect(segments[0].color).toBe('#f44336'); // Danger
-                    expect(segments[1].color).toBe('#ff9800'); // Warning
+                    expect(segments[1].color).toBe('var(--gm-warning-color, #ff9800)'); // Warning
                     expect(segments[2].color).toBe('#4caf50'); // Optimal
-                    expect(segments[3].color).toBe('#ff9800'); // Warning
+                    expect(segments[3].color).toBe('var(--gm-warning-color, #ff9800)'); // Warning
                 });
             });
         });

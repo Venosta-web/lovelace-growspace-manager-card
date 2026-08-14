@@ -62,7 +62,7 @@ function deriveRow(tank: IrrigationTank, index: number): TankRowVM {
   const color = isWarning
     ? '#f44336'
     : (tank.hoursRemaining ?? 999) < 24
-      ? '#FF9800'
+      ? 'var(--gm-warning-color, #FF9800)'
       : '#4caf50';
 
   const depletionLabel =

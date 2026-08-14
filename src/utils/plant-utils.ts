@@ -26,12 +26,12 @@ export const PLANT_STAGES: PlantStage[] = [
 
 export class PlantUtils {
   private static readonly stageColors: Record<PlantStage, string> = {
-    [PlantStage.MOTHER]: '#E91E63',
+    [PlantStage.MOTHER]: 'var(--stage-mother, #E91E63)',
     [PlantStage.CLONE]: '#FF5722',
     [PlantStage.SEEDLING]: '#4CAF50',
     [PlantStage.VEG]: '#8BC34A',
-    [PlantStage.FLOWER]: '#FF9800',
-    [PlantStage.DRY]: '#9c27b0',
+    [PlantStage.FLOWER]: 'var(--stage-flower, #FF9800)',
+    [PlantStage.DRY]: 'var(--stage-dry, #9c27b0)',
     [PlantStage.CURE]: '#2196f3',
   };
 

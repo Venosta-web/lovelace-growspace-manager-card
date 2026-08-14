@@ -207,8 +207,8 @@ export class FeedAndWaterDialog extends LitElement {
         align-items: center;
         gap: 8px;
         background: rgba(255, 152, 0, 0.15);
-        color: #ff9800;
-        border: 1px solid #ff9800;
+        color: var(--gm-phi-color, #ff9800);
+        border: 1px solid var(--gm-phi-color, #ff9800);
         border-radius: 6px;
         padding: 10px 14px;
         margin-bottom: 20px;

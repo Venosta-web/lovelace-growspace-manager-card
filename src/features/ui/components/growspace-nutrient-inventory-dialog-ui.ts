@@ -148,7 +148,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         transition: width 0.3s ease;
       }
 
-      .fill-bar.warning { background: #ff9800; }
+      .fill-bar.warning { background: var(--gm-warning-color, #ff9800); }
       .fill-bar.danger  { background: #f44336; }
 
       .add-btn {

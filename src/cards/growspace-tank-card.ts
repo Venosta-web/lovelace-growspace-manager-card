@@ -369,7 +369,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
       }
 
       .depletion-label.depleting {
-        color: #ff9800;
+        color: var(--gm-warning-color, #ff9800);
         background: rgba(255, 152, 0, 0.1);
       }
 

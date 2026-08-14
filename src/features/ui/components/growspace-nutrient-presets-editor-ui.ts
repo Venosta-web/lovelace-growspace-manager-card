@@ -216,7 +216,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
       .orphan-badge {
         font-size: 0.7rem;
         background: rgba(255, 152, 0, 0.15);
-        color: #ff9800;
+        color: var(--gm-warning-color, #ff9800);
         border-radius: 4px;
         padding: 2px 6px;
         text-decoration: line-through;
@@ -688,7 +688,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
       <div class="nutrient-row-item" data-nutrient-row>
         <select
           class="form-select"
-          style="${isOrphan ? 'border-color:#ff9800' : ''}"
+          style="${isOrphan ? 'border-color:var(--gm-warning-color, #ff9800)' : ''}"
           @change=${(e: Event) => {
             const nutrient_id = (e.target as HTMLSelectElement).value;
             const name = this.inventory?.stocks[nutrient_id]?.name ?? '';
