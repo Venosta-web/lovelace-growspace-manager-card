@@ -169,6 +169,7 @@ export class ConfigHumidityTab extends LitElement {
       .acc-stage-dot {
         width: 10px;
         height: 10px;
+        border: 1px solid var(--primary-text-color, #fff);
         border-radius: 50%;
         flex-shrink: 0;
       }

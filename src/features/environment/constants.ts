@@ -415,6 +415,19 @@ export const FAN_VPD_STAGE_LABELS: Record<FanVpdStageKey, string> = {
   cure: 'Cure',
 };
 
+/** Theme-aware stage identity colours, in the canonical fan VPD stage order. */
+export const FAN_VPD_STAGE_COLORS: Record<FanVpdStageKey, string> = {
+  seedling: 'var(--stage-seedling, #8bc34a)',
+  clone: 'var(--stage-clone, #26c6da)',
+  mother: 'var(--stage-mother, #e91e63)',
+  veg: 'var(--stage-veg, #4caf50)',
+  flower_early: 'var(--stage-flower-early, var(--stage-flower, #ff9800))',
+  flower_mid: 'var(--stage-flower-mid, #fb8c00)',
+  flower_late: 'var(--stage-flower-late, #ef6c00)',
+  dry: 'var(--stage-dry, #9c27b0)',
+  cure: 'var(--stage-cure, #2196f3)',
+};
+
 export const FAN_VPD_STAGE_DEFAULTS: Record<FanVpdStageKey, { day: number; night: number }> = {
   seedling: { day: 0.6, night: 0.6 },
   clone: { day: 0.5, night: 0.5 },

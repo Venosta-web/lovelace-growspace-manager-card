@@ -19,6 +19,11 @@
 
 import { DehumidifierStage, HumidifierStage } from '../../../types';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
+import {
+  FAN_VPD_STAGE_COLORS,
+  FAN_VPD_STAGE_KEYS,
+  type FanVpdStageKey,
+} from '../../../features/environment/constants';
 import type { AcInfinityConflict } from '../components/ac-infinity-conflict';
 import {
   buildAcInfinityConflicts,
@@ -32,6 +37,7 @@ export type StageThresholds = Record<string, Record<string, { on: number; off: n
 
 export const DEFAULT_DEHUM_THRESHOLDS: StageThresholds = {
   seedling: { day: { on: 0.5, off: 0.6 }, night: { on: 0.55, off: 0.65 } },
+  clone: { day: { on: 0.5, off: 0.6 }, night: { on: 0.55, off: 0.65 } },
   mother: { day: { on: 0.6, off: 0.7 }, night: { on: 0.65, off: 0.75 } },
   veg: { day: { on: 0.6, off: 0.7 }, night: { on: 0.65, off: 0.75 } },
   flower_early: { day: { on: 1.1, off: 1.2 }, night: { on: 0.7, off: 0.9 } },
@@ -43,6 +49,7 @@ export const DEFAULT_DEHUM_THRESHOLDS: StageThresholds = {
 
 export const DEFAULT_HUM_THRESHOLDS: StageThresholds = {
   seedling: { day: { on: 0.7, off: 0.5 }, night: { on: 0.75, off: 0.55 } },
+  clone: { day: { on: 0.7, off: 0.5 }, night: { on: 0.75, off: 0.55 } },
   mother: { day: { on: 0.9, off: 0.7 }, night: { on: 0.85, off: 0.65 } },
   veg: { day: { on: 1.0, off: 0.8 }, night: { on: 0.85, off: 0.65 } },
   flower_early: { day: { on: 1.4, off: 1.2 }, night: { on: 1.0, off: 0.8 } },
@@ -52,17 +59,50 @@ export const DEFAULT_HUM_THRESHOLDS: StageThresholds = {
   cure: { day: { on: 1.2, off: 1.0 }, night: { on: 1.2, off: 1.0 } },
 };
 
-/** Stage list for the accordion — maps display id → both stage enums + colour. */
-export const HUMIDITY_STAGES = [
-  { id: 'seedling', label: 'Seedling', dehum: DehumidifierStage.SEEDLING, hum: HumidifierStage.SEEDLING, color: '#8bc34a' },
-  { id: 'mother', label: 'Mother', dehum: DehumidifierStage.MOTHER, hum: HumidifierStage.MOTHER, color: '#e91e63' },
-  { id: 'veg', label: 'Vegetative', dehum: DehumidifierStage.VEG, hum: HumidifierStage.VEG, color: '#4caf50' },
-  { id: 'early_flower', label: 'Early Flower', dehum: DehumidifierStage.EARLY_FLOWER, hum: HumidifierStage.EARLY_FLOWER, color: '#ff9800' },
-  { id: 'mid_flower', label: 'Mid Flower', dehum: DehumidifierStage.MID_FLOWER, hum: HumidifierStage.MID_FLOWER, color: '#ff7043' },
-  { id: 'late_flower', label: 'Late Flower', dehum: DehumidifierStage.LATE_FLOWER, hum: HumidifierStage.LATE_FLOWER, color: '#f44336' },
-  { id: 'drying', label: 'Drying', dehum: DehumidifierStage.DRY, hum: HumidifierStage.DRY, color: '#9c27b0' },
-  { id: 'curing', label: 'Curing', dehum: DehumidifierStage.CURE, hum: HumidifierStage.CURE, color: '#2196f3' },
-] as const;
+const DEHUMIDIFIER_STAGE_BY_KEY = {
+  seedling: DehumidifierStage.SEEDLING,
+  clone: DehumidifierStage.CLONE,
+  mother: DehumidifierStage.MOTHER,
+  veg: DehumidifierStage.VEG,
+  flower_early: DehumidifierStage.EARLY_FLOWER,
+  flower_mid: DehumidifierStage.MID_FLOWER,
+  flower_late: DehumidifierStage.LATE_FLOWER,
+  dry: DehumidifierStage.DRY,
+  cure: DehumidifierStage.CURE,
+} as const;
+
+const HUMIDIFIER_STAGE_BY_KEY = {
+  seedling: HumidifierStage.SEEDLING,
+  clone: HumidifierStage.CLONE,
+  mother: HumidifierStage.MOTHER,
+  veg: HumidifierStage.VEG,
+  flower_early: HumidifierStage.EARLY_FLOWER,
+  flower_mid: HumidifierStage.MID_FLOWER,
+  flower_late: HumidifierStage.LATE_FLOWER,
+  dry: HumidifierStage.DRY,
+  cure: HumidifierStage.CURE,
+} as const;
+
+const HUMIDITY_STAGE_LABELS: Record<FanVpdStageKey, string> = {
+  seedling: 'Seedling',
+  clone: 'Clone',
+  mother: 'Mother',
+  veg: 'Vegetative',
+  flower_early: 'Early Flower',
+  flower_mid: 'Mid Flower',
+  flower_late: 'Late Flower',
+  dry: 'Drying',
+  cure: 'Curing',
+};
+
+/** Stage list for the accordion, derived in canonical glossary order. */
+export const HUMIDITY_STAGES = FAN_VPD_STAGE_KEYS.map((id) => ({
+  id,
+  label: HUMIDITY_STAGE_LABELS[id],
+  dehum: DEHUMIDIFIER_STAGE_BY_KEY[id],
+  hum: HUMIDIFIER_STAGE_BY_KEY[id],
+  color: FAN_VPD_STAGE_COLORS[id],
+}));
 
 export type HumidityStageId = (typeof HUMIDITY_STAGES)[number]['id'];
 
@@ -133,7 +173,14 @@ export interface HumidityExpandState {
   openStageId: HumidityStageId | '';
 }
 
-const HUMIDIFIER_DOMAINS = ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'];
+const HUMIDIFIER_DOMAINS = [
+  'humidifier',
+  'switch',
+  'input_boolean',
+  'sensor',
+  'binary_sensor',
+  'input_number',
+];
 const DEHUMIDIFIER_DOMAINS = ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'];
 
 /**
