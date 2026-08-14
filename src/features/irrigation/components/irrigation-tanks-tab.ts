@@ -22,11 +22,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { mdiPencil } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import type { TankDraft } from '../../../dialogs/irrigation-dialog-sm';
-import type {
-  TanksTabViewModel,
-  TankRowVM,
-  TankEditVM,
-} from '../viewmodels/tanks-tab.viewmodel';
+import type { TanksTabViewModel, TankRowVM, TankEditVM } from '../viewmodels/tanks-tab.viewmodel';
 
 @customElement('irrigation-tanks-tab')
 export class IrrigationTanksTab extends LitElement {
@@ -58,7 +54,7 @@ export class IrrigationTanksTab extends LitElement {
         min-width: 0;
       }
       .tank-row-name {
-        font-size: 13px;
+        font-size: var(--font-size-supporting);
         font-weight: 500;
       }
       .tank-bar-track {
@@ -100,7 +96,7 @@ export class IrrigationTanksTab extends LitElement {
       return html`
         <div class="detail-card" style="text-align:center;padding:40px;">
           <p style="opacity:0.7;">No irrigation tanks configured for this growspace.</p>
-          <p style="font-size:0.9rem;opacity:0.5;">
+          <p style="font-size:var(--font-size-sm);opacity:0.5;">
             Configure tank sensors in the Environment Settings to monitor tank levels.
           </p>
         </div>

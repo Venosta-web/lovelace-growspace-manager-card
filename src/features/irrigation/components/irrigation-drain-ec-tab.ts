@@ -69,7 +69,7 @@ export class IrrigationDrainEcTab extends LitElement {
             <div style="font-weight:600;font-size:1rem;">${status.text}</div>
             ${lastReading
               ? html`
-                  <div style="font-size:0.8rem;opacity:0.6;margin-top:2px;">
+                  <div style="font-size:var(--font-size-supporting);opacity:0.6;margin-top:2px;">
                     Last reading: Feed ${lastReading.feedEc.toFixed(2)} → Drain
                     ${lastReading.drainEc.toFixed(2)} mS/cm at
                     ${new Date(lastReading.timestamp).toLocaleString()}
@@ -86,10 +86,10 @@ export class IrrigationDrainEcTab extends LitElement {
         >
           <h3 style="margin:0;">Monitoring Configuration</h3>
           ${vm.sub.kind === 'saving'
-            ? html`<span style="font-size:0.8rem;opacity:0.6;">Saving…</span>`
+            ? html`<span style="font-size:var(--font-size-supporting);opacity:0.6;">Saving…</span>`
             : nothing}
         </div>
-        <p style="font-size:0.82rem;opacity:0.7;margin-bottom:20px;">
+        <p style="font-size:var(--font-size-supporting);opacity:0.7;margin-bottom:20px;">
           Alert when drain EC exceeds feed EC by more than the max delta.
         </p>
         <div
@@ -130,7 +130,7 @@ export class IrrigationDrainEcTab extends LitElement {
 
       <div class="detail-card">
         <h3 style="margin-top:0;">Log Drain Reading</h3>
-        <p style="font-size:0.82rem;opacity:0.7;margin-bottom:20px;">
+        <p style="font-size:var(--font-size-supporting);opacity:0.7;margin-bottom:20px;">
           Manually log feed EC and drain EC values measured with a handheld meter. Volumes are
           optional.
         </p>
@@ -175,7 +175,7 @@ export class IrrigationDrainEcTab extends LitElement {
         ${draft.logFeedEc > 0 && draft.logDrainEc > 0
           ? html`
               <div
-                style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;gap:24px;align-items:center;font-size:0.9rem;"
+                style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;gap:24px;align-items:center;font-size:var(--font-size-sm);"
               >
                 <span
                   >EC Delta:
@@ -217,7 +217,9 @@ export class IrrigationDrainEcTab extends LitElement {
           style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"
         >
           <h3 style="margin:0;">Recent Readings</h3>
-          <span style="font-size:0.8rem;opacity:0.5;">${vm.totalReadings} total</span>
+          <span style="font-size:var(--font-size-supporting);opacity:0.5;"
+            >${vm.totalReadings} total</span
+          >
         </div>
         ${vm.recent.length === 0
           ? html`
@@ -225,7 +227,7 @@ export class IrrigationDrainEcTab extends LitElement {
             `
           : html`
               <div style="overflow-x:auto;">
-                <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
+                <table style="width:100%;border-collapse:collapse;font-size:var(--font-size-sm);">
                   <thead>
                     <tr style="border-bottom:1px solid rgba(255,255,255,0.15);opacity:0.7;">
                       <th style="text-align:left;padding:6px 8px;font-weight:500;">Time</th>

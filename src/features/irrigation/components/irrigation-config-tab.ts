@@ -51,7 +51,7 @@ export class IrrigationConfigTab extends LitElement {
         border: 1px solid rgba(79, 195, 247, 0.4);
         background: rgba(79, 195, 247, 0.1);
         color: #4fc3f7;
-        font-size: 13px;
+        font-size: var(--font-size-supporting);
         font-weight: 600;
         cursor: pointer;
         transition: background 0.15s;
@@ -83,7 +83,7 @@ export class IrrigationConfigTab extends LitElement {
         opacity: 0.55;
       }
       .stub-row-label {
-        font-size: 13px;
+        font-size: var(--font-size-supporting);
       }
       .stub-row-desc {
         font-size: 11px;
@@ -142,9 +142,8 @@ export class IrrigationConfigTab extends LitElement {
         <div class="section-header"><h3>Pump Configuration</h3></div>
         ${isTank
           ? html`<p class="section-note">
-              Optional — this growspace runs tank-based (gravity or manual). Add an
-              irrigation pump to enable automated schedules, manual run controls, and
-              Crop Steering.
+              Optional — this growspace runs tank-based (gravity or manual). Add an irrigation pump
+              to enable automated schedules, manual run controls, and Crop Steering.
             </p>`
           : nothing}
         <div class="section-content">

@@ -61,7 +61,7 @@ export class IrrigationEcRampTab extends LitElement {
         color: var(--error-color, #f44336);
         border-radius: var(--border-radius-sm, 8px);
         padding: 10px 14px;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
       }
       .empty-state {
         text-align: center;
@@ -161,7 +161,7 @@ export class IrrigationEcRampTab extends LitElement {
         <div class="empty-state">
           <ha-svg-icon .path=${mdiInformation}></ha-svg-icon>
           <p>No EC ramp curves defined yet.</p>
-          <p style="font-size: 0.9rem;">
+          <p style="font-size: var(--font-size-sm);">
             Create curves to schedule EC targets across your grow cycle.
           </p>
         </div>
@@ -178,7 +178,10 @@ export class IrrigationEcRampTab extends LitElement {
       <div class="curves-list">
         ${curves.map(
           (curve) => html`
-            <div class="curve-item" @click=${() => this._emit('ec-ramp-edit-curve', { id: curve.id })}>
+            <div
+              class="curve-item"
+              @click=${() => this._emit('ec-ramp-edit-curve', { id: curve.id })}
+            >
               <div class="curve-info">
                 <div class="curve-name">${curve.name}</div>
                 <div class="curve-details">${curve.summary}</div>
@@ -231,7 +234,8 @@ export class IrrigationEcRampTab extends LitElement {
             <md3-text-input
               label="Curve Name"
               .value=${curve.name ?? ''}
-              @change=${(e: CustomEvent) => this._emit('ec-ramp-curve-changed', { partial: { name: e.detail } })}
+              @change=${(e: CustomEvent) =>
+                this._emit('ec-ramp-curve-changed', { partial: { name: e.detail } })}
               placeholder="e.g. Veg Ramp, Bloom Progression"
             ></md3-text-input>
             <md3-select
@@ -244,7 +248,8 @@ export class IrrigationEcRampTab extends LitElement {
                 { label: 'Flower', value: 'flower' },
                 { label: 'Cure', value: 'cure' },
               ]}
-              @change=${(e: CustomEvent) => this._emit('ec-ramp-curve-changed', { partial: { stage: e.detail } })}
+              @change=${(e: CustomEvent) =>
+                this._emit('ec-ramp-curve-changed', { partial: { stage: e.detail } })}
             ></md3-select>
           </div>
         </div>
@@ -265,7 +270,10 @@ export class IrrigationEcRampTab extends LitElement {
                     label="Day"
                     .value=${point.day}
                     @change=${(e: CustomEvent) =>
-                      this._emit('ec-ramp-update-point', { index, partial: { day: parseInt(e.detail) || 0 } })}
+                      this._emit('ec-ramp-update-point', {
+                        index,
+                        partial: { day: parseInt(e.detail) || 0 },
+                      })}
                     min="0"
                   ></md3-number-input>
                   <md3-number-input

@@ -83,7 +83,7 @@ export class IrrigationSchedulesTab extends LitElement {
         position: absolute;
         bottom: 4px;
         transform: translateX(-50%);
-        font-size: 10px;
+        font-size: var(--font-size-xs);
         color: rgba(255, 255, 255, 0.35);
         font-variant-numeric: tabular-nums;
         pointer-events: none;
@@ -119,7 +119,7 @@ export class IrrigationSchedulesTab extends LitElement {
         pointer-events: none;
       }
       .timeline-event .event-lbl {
-        font-size: 9.5px;
+        font-size: var(--font-size-xs);
         color: rgba(0, 0, 0, 0.78);
         font-weight: 600;
         white-space: nowrap;
@@ -274,7 +274,7 @@ export class IrrigationSchedulesTab extends LitElement {
         gap: 4px;
         height: 22px;
         padding: 0 8px;
-        font-size: 10px;
+        font-size: var(--font-size-xs);
         font-weight: 600;
         letter-spacing: 0.05em;
         text-transform: uppercase;
@@ -405,7 +405,9 @@ export class IrrigationSchedulesTab extends LitElement {
           >
             <h3 style="margin:0;">Crop Steering Schedule</h3>
           </div>
-          <p style="font-size:0.8rem;opacity:0.6;text-align:center;margin-top:12px;">
+          <p
+            style="font-size:var(--font-size-supporting);opacity:0.6;text-align:center;margin-top:12px;"
+          >
             No strategy configured — set Lights On Time in the Steering tab.
           </p>
         </div>
@@ -480,7 +482,9 @@ export class IrrigationSchedulesTab extends LitElement {
 
           ${p2ShotCount === 0
             ? html`
-                <p style="font-size:0.8rem;opacity:0.6;text-align:center;margin-top:4px;">
+                <p
+                  style="font-size:var(--font-size-supporting);opacity:0.6;text-align:center;margin-top:4px;"
+                >
                   No shots computed — check lights-on time and interval in the Steering tab.
                 </p>
               `
