@@ -63,7 +63,7 @@ export class GrowspaceIPMDialogUI extends LitElement {
         font-size: 1rem;
       }
       .preset-details {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         opacity: 0.7;
       }
       .preset-actions {

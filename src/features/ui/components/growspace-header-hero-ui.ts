@@ -364,7 +364,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
       }
 
       .hero-value {
-        font-size: 2rem;
+        font-size: var(--font-size-xl);
         font-weight: 400;
         color: var(--primary-text-color, #fff);
         line-height: 1;
@@ -728,7 +728,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         align-items: center;
         padding: 2px 7px;
         border-radius: var(--border-radius-full, 9999px);
-        font-size: 0.62rem;
+        font-size: var(--font-size-xs);
         font-weight: 600;
         letter-spacing: 0.05em;
         text-transform: uppercase;
@@ -866,7 +866,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
       .phase-bar-label {
         position: absolute;
         transform: translateX(-50%);
-        font-size: 0.55rem;
+        font-size: var(--font-size-xs);
         font-weight: 600;
         letter-spacing: 0.05em;
         opacity: 0.85;

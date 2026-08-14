@@ -320,7 +320,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         padding: 6px 12px;
         color: var(--secondary-text-color);
         cursor: pointer;
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         font-family: inherit;
         transition: background 0.15s;
         width: 100%;

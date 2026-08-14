@@ -126,7 +126,9 @@ export class ConfigSubareasTab extends LitElement {
       >
         <div>
           <div style="font-weight:500;">${subarea.name}</div>
-          <div style="font-size:0.8rem;color:var(--secondary-text-color);">ID: ${subarea.id}</div>
+          <div style="font-size:var(--font-size-supporting);color:var(--secondary-text-color);">
+            ID: ${subarea.id}
+          </div>
         </div>
         <div style="display:flex;gap:4px;align-items:center;">
           ${row.confirmingDelete
@@ -137,14 +139,14 @@ export class ConfigSubareasTab extends LitElement {
                 <button
                   class="md3-button primary error"
                   @click=${() => this._emit('confirm-delete-subarea', { id: subarea.id })}
-                  style="padding:6px 10px;min-width:auto;font-size:0.8rem;"
+                  style="padding:6px 10px;min-width:auto;font-size:var(--font-size-supporting);"
                 >
                   Yes
                 </button>
                 <button
                   class="md3-button tonal"
                   @click=${() => this._emit('cancel-delete-subarea')}
-                  style="padding:6px 10px;min-width:auto;font-size:0.8rem;"
+                  style="padding:6px 10px;min-width:auto;font-size:var(--font-size-supporting);"
                 >
                   No
                 </button>

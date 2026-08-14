@@ -185,7 +185,7 @@ export class GrowspaceTimeline extends LitElement {
       }
 
       .tooltip-time {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
         margin-bottom: 8px;
       }

@@ -56,8 +56,7 @@ export class ConfigVpdTargetsTab extends LitElement {
         display: flex;
         align-items: center;
         gap: 8px;
-        /* Preserve the reference VPD editor typography during this enabling extraction. */
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
       }
       .acc-cycle-row svg {

@@ -1110,7 +1110,7 @@ export class GeneticsTreeView extends LitElement {
       border: none;
       outline: none;
       color: var(--fg-1);
-      font-size: 13px;
+      font-size: var(--font-size-supporting);
       flex: 1;
       min-width: 0;
     }
@@ -1331,7 +1331,7 @@ export class GeneticsTreeView extends LitElement {
     /* ---- Gen gutter labels (tree mode) ---- */
     .gen-gutter {
       position: absolute;
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       color: var(--fg-4);
       white-space: nowrap;
       pointer-events: none;
@@ -1445,7 +1445,7 @@ export class GeneticsTreeView extends LitElement {
       gap: 5px;
     }
     .gen-badge {
-      font-size: 9px;
+      font-size: var(--font-size-xs);
       font-weight: 700;
       color: #fff;
       border-radius: var(--border-radius-xs, 4px);
@@ -1454,7 +1454,7 @@ export class GeneticsTreeView extends LitElement {
       letter-spacing: 0.4px;
     }
     .pn-breeder {
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       color: var(--fg-3);
       white-space: nowrap;
       overflow: hidden;
@@ -1476,7 +1476,7 @@ export class GeneticsTreeView extends LitElement {
       padding: 1px 3px;
       cursor: pointer;
       color: var(--fg-3);
-      font-size: 9px;
+      font-size: var(--font-size-xs);
     }
     .fold-btn svg {
       width: 11px;
@@ -1492,7 +1492,7 @@ export class GeneticsTreeView extends LitElement {
       border-color: var(--gv-primary);
     }
     .desc-count {
-      font-size: 9px;
+      font-size: var(--font-size-xs);
       font-weight: 600;
     }
 
@@ -1586,7 +1586,7 @@ export class GeneticsTreeView extends LitElement {
     }
     .detail-eyebrow {
       padding: 12px 14px 0;
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -1628,7 +1628,7 @@ export class GeneticsTreeView extends LitElement {
       line-height: 1;
     }
     .detail-stat .l {
-      font-size: 9px;
+      font-size: var(--font-size-xs);
       color: var(--fg-3);
       text-align: center;
     }
@@ -1637,7 +1637,7 @@ export class GeneticsTreeView extends LitElement {
       border-bottom: 1px solid var(--divider-faint);
     }
     .detail-section-label {
-      font-size: 9px;
+      font-size: var(--font-size-xs);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -1668,7 +1668,7 @@ export class GeneticsTreeView extends LitElement {
       padding: 3px 4px;
     }
     .role {
-      font-size: 9px;
+      font-size: var(--font-size-xs);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;

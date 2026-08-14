@@ -68,7 +68,7 @@ export class ConfigHeatmapTab extends LitElement {
       >
         <div>
           <div style="font-weight:500;">${group.name}</div>
-          <div style="font-size:0.8rem;color:var(--secondary-text-color);">
+          <div style="font-size:var(--font-size-supporting);color:var(--secondary-text-color);">
             X: ${group.x}, Y: ${group.y}, Z: ${group.z}
           </div>
         </div>
