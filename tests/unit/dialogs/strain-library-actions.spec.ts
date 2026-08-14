@@ -21,8 +21,8 @@ const MANAGED_ACTIONS = [
 ] as const;
 
 const mockStrains: StrainEntry[] = [
-  { key: '1', strain: 'Blue Dream', type: 'Sativa', breeder: 'HSO' },
-  { key: '2', strain: 'OG Kush', type: 'Indica', breeder: 'Dinafem' },
+  { key: '1', strain: 'Blue Dream', phenotype: 'Original', type: 'Sativa', breeder: 'HSO' },
+  { key: '2', strain: 'OG Kush', phenotype: '#18', type: 'Indica', breeder: 'Dinafem' },
 ];
 
 describe.each([
