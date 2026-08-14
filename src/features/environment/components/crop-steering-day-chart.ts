@@ -111,7 +111,7 @@ export class CropSteeringDayChart extends LitElement {
       top: 6px;
       left: 10px;
       z-index: 2;
-      font-size: 9.5px;
+      font-size: var(--font-size-xs);
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -148,7 +148,7 @@ export class CropSteeringDayChart extends LitElement {
       position: absolute;
       bottom: 3px;
       z-index: 2;
-      font-size: 9px;
+      font-size: var(--font-size-xs);
       font-weight: 500;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -167,7 +167,7 @@ export class CropSteeringDayChart extends LitElement {
       left: 44px;
       z-index: 2;
       transform: translateY(-50%);
-      font-size: 9.5px;
+      font-size: var(--font-size-xs);
       font-weight: 600;
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.02em;
@@ -186,7 +186,7 @@ export class CropSteeringDayChart extends LitElement {
       position: absolute;
       z-index: 2;
       transform: translateY(-50%);
-      font-size: 9px;
+      font-size: var(--font-size-xs);
       font-variant-numeric: tabular-nums;
       color: rgba(255, 255, 255, 0.32);
       pointer-events: none;
@@ -201,7 +201,7 @@ export class CropSteeringDayChart extends LitElement {
       padding: 32px;
       text-align: center;
       color: var(--secondary-text-color, #666);
-      font-size: 13px;
+      font-size: var(--font-size-supporting);
     }
     .cs-phase-strip {
       position: relative;
@@ -228,7 +228,7 @@ export class CropSteeringDayChart extends LitElement {
       border-left: 1px solid rgba(255, 255, 255, 0.06);
     }
     .cs-phase-num {
-      font-size: 9.5px;
+      font-size: var(--font-size-xs);
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -242,7 +242,7 @@ export class CropSteeringDayChart extends LitElement {
       color: rgba(255, 255, 255, 0.85);
     }
     .cs-phase-meta {
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       color: rgba(255, 255, 255, 0.4);
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
@@ -273,7 +273,7 @@ export class CropSteeringDayChart extends LitElement {
       position: absolute;
       bottom: 4px;
       transform: translateX(-50%);
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       color: rgba(255, 255, 255, 0.35);
       font-variant-numeric: tabular-nums;
     }
@@ -298,7 +298,7 @@ export class CropSteeringDayChart extends LitElement {
       position: absolute;
       top: 5px;
       left: 7px;
-      font-size: 9px;
+      font-size: var(--font-size-xs);
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;

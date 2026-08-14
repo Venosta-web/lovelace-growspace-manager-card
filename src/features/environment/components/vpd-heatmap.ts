@@ -71,7 +71,7 @@ export class VPDHeatmap extends LitElement {
         justify-content: center;
         gap: 12px;
         margin-top: 8px;
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
       }
 

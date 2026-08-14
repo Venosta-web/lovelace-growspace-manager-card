@@ -34,7 +34,7 @@ export class TankWaterChart extends LitElement {
       padding: 16px;
     }
     .chart-title {
-      font-size: 13px;
+      font-size: var(--font-size-supporting);
       color: var(--secondary-text-color, #9e9e9e);
       margin-bottom: 12px;
     }
@@ -61,7 +61,7 @@ export class TankWaterChart extends LitElement {
       padding: 32px;
       text-align: center;
       color: var(--secondary-text-color, #666);
-      font-size: 13px;
+      font-size: var(--font-size-supporting);
     }
     svg {
       width: 100%;
@@ -75,7 +75,7 @@ export class TankWaterChart extends LitElement {
       opacity: 1;
     }
     .axis-label {
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       fill: var(--secondary-text-color, #9e9e9e);
     }
   `;
