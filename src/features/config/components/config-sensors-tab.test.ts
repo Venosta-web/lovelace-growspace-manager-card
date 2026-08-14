@@ -234,6 +234,8 @@ describe('ConfigSensorsTab — acceptable moisture band', () => {
     const el = await mount(makeVm({ moistureBand: band({ isCustom: false }) }));
     const reset = el.shadowRoot!.querySelector('.moisture-band__reset') as HTMLButtonElement;
     expect(reset.disabled).toBe(true);
+    expect(reset.title).toBe('Nothing to reset — this moisture band already uses the defaults.');
+    expect(reset.classList.contains('config-reset-button')).toBe(true);
   });
 
   it('materialises both bounds when only one is edited from an inherited band', async () => {

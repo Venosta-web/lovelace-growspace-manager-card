@@ -59,9 +59,26 @@ afterEach(() => {
 });
 
 describe('ConfigNotificationsTab — render', () => {
-  it('renders 6 cooldown inputs and the AI auto-alerts toggle from the draft', async () => {
+  it('groups all six timing fields in standard cards with iconed headers', async () => {
     const el = await mount(makeVm());
     expect(el.shadowRoot!.querySelectorAll('md3-number-input[data-notif]').length).toBe(6);
+    expect(el.shadowRoot!.querySelectorAll('.detail-card')).toHaveLength(2);
+    expect(
+      [...el.shadowRoot!.querySelectorAll('config-section-header')].map((header) => header.label)
+    ).toEqual(['Notification settings', 'Timed notifications']);
+    const groups = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[data-settings-group]')];
+    expect(groups.map((group) => group.dataset.settingsGroup)).toEqual([
+      'alert-timing',
+      'stress-detection',
+    ]);
+    expect(groups[0].querySelectorAll('md3-number-input')).toHaveLength(4);
+    expect(groups[1].querySelectorAll('md3-number-input')).toHaveLength(2);
+    expect(groups[0].querySelector('.settings-group__description')!.textContent!.trim()).not.toBe(
+      ''
+    );
+    expect(groups[1].querySelector('.settings-group__description')!.textContent!.trim()).not.toBe(
+      ''
+    );
     const toggle = el.shadowRoot!.querySelector<HTMLInputElement>(
       'input[type="checkbox"][data-notif="aiAutoAlerts"]'
     )!;
@@ -75,7 +92,13 @@ describe('ConfigNotificationsTab — render', () => {
 
   it('marks an unrecognised trigger in the list row instead of showing a stage', async () => {
     const items: TimedNotification[] = [
-      { id: 'n1', message: 'A', triggerType: { raw: 'days_since_germination' }, day: 1, growspaceIds: [] },
+      {
+        id: 'n1',
+        message: 'A',
+        triggerType: { raw: 'days_since_germination' },
+        day: 1,
+        growspaceIds: [],
+      },
     ];
     const el = await mount(makeVm({ timedNotifications: items }));
     const row = el.shadowRoot!.querySelector('[data-timed-id="n1"]')!;
@@ -120,6 +143,25 @@ describe('ConfigNotificationsTab — render', () => {
     const el = await mount(makeVm({ timedNotifications: items }));
     expect(el.shadowRoot!.querySelectorAll('[data-timed-id]').length).toBe(2);
   });
+
+  it('uses accessible icon buttons for timed notification row actions', async () => {
+    const item: TimedNotification = {
+      id: 'n1',
+      message: 'Lights on',
+      triggerType: 'veg',
+      day: 1,
+      growspaceIds: [],
+    };
+    const el = await mount(makeVm({ timedNotifications: [item] }));
+    const edit = el.shadowRoot!.querySelector<HTMLButtonElement>('[data-timed-edit="n1"]')!;
+    const remove = el.shadowRoot!.querySelector<HTMLButtonElement>('[data-timed-delete="n1"]')!;
+    expect(edit.getAttribute('aria-label')).toBe('Edit Lights on');
+    expect(remove.getAttribute('aria-label')).toBe('Delete Lights on');
+    expect(edit.querySelector('svg')).not.toBeNull();
+    expect(remove.querySelector('svg')).not.toBeNull();
+    expect(edit.textContent!.trim()).toBe('');
+    expect(remove.textContent!.trim()).toBe('');
+  });
 });
 
 describe('ConfigNotificationsTab — intents out', () => {
@@ -131,6 +173,17 @@ describe('ConfigNotificationsTab — intents out', () => {
     )!;
     input.dispatchEvent(new CustomEvent('change', { detail: 120, bubbles: true, composed: true }));
     expect(received).toEqual([{ partial: { criticalCooldownMinutes: 120 } }]);
+  });
+
+  it('shows stress duration in minutes and stores it in seconds', async () => {
+    const el = await mount(makeVm());
+    const received = listen<{ partial: Partial<NotificationsDraft> }>(el, 'notif-draft-changed');
+    const input = el.shadowRoot!.querySelector(
+      'md3-number-input[data-notif="minStressDurationSeconds"]'
+    )!;
+    expect((input as unknown as { value: number }).value).toBe(2);
+    input.dispatchEvent(new CustomEvent('change', { detail: 5, bubbles: true, composed: true }));
+    expect(received).toEqual([{ partial: { minStressDurationSeconds: 300 } }]);
   });
 
   it('emits notif-draft-changed when the AI toggle changes', async () => {
@@ -186,7 +239,10 @@ describe('ConfigNotificationsTab — intents out', () => {
       draft: { ...timedDraft, triggerType: { raw: 'days_since_germination' } },
     };
     const el = await mount(makeVm({ sub }));
-    const received = listen<{ partial: Partial<TimedNotificationDraft> }>(el, 'timed-draft-changed');
+    const received = listen<{ partial: Partial<TimedNotificationDraft> }>(
+      el,
+      'timed-draft-changed'
+    );
     const select = el.shadowRoot!.querySelector<HTMLSelectElement>(
       'select[data-timed-field="triggerType"]'
     )!;

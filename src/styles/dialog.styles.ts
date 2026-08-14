@@ -106,6 +106,15 @@ export const dialogStyles = [
       min-width: 0;
     }
 
+    .config-reset-button {
+      align-self: flex-start;
+      height: 40px;
+      min-width: 0;
+      padding: 0 16px;
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.2));
+      color: var(--primary-text-color, #fff);
+    }
+
     .vwc-targets-group {
       grid-column: span 2;
       background: rgba(255, 255, 255, 0.03);

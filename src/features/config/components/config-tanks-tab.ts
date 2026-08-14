@@ -56,7 +56,10 @@ export class ConfigTanksTab extends LitElement {
             @click=${() => this._emit('add-tank-requested')}
             style="padding:6px 12px;"
           >
-            <svg style="width:16px;height:16px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+            <svg
+              style="width:16px;height:16px;fill:currentColor;margin-right:4px;"
+              viewBox="0 0 24 24"
+            >
               <path d="${mdiPlus}"></path>
             </svg>
             Add Tank
@@ -96,8 +99,14 @@ export class ConfigTanksTab extends LitElement {
             class="md3-button text"
             @click=${() => this._emit('edit-tank-requested', { index: tank.index })}
             style="padding:6px;min-width:auto;"
+            aria-label=${`Edit ${tank.displayName}`}
+            title=${`Edit ${tank.displayName}`}
           >
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+            <svg
+              style="width:18px;height:18px;fill:currentColor;"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
               <path d="${mdiPencil}"></path>
             </svg>
           </button>
@@ -105,8 +114,14 @@ export class ConfigTanksTab extends LitElement {
             class="md3-button text error"
             @click=${() => this._emit('delete-tank-requested', { index: tank.index })}
             style="padding:6px;min-width:auto;"
+            aria-label=${`Delete ${tank.displayName}`}
+            title=${`Delete ${tank.displayName}`}
           >
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+            <svg
+              style="width:18px;height:18px;fill:currentColor;"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
               <path d="${mdiDelete}"></path>
             </svg>
           </button>
@@ -140,7 +155,8 @@ export class ConfigTanksTab extends LitElement {
             class="md3-input"
             type="text"
             .value=${draft.name}
-            @input=${(e: Event) => this._updateDraft({ name: (e.target as HTMLInputElement).value })}
+            @input=${(e: Event) =>
+              this._updateDraft({ name: (e.target as HTMLInputElement).value })}
             placeholder="e.g. Main Tank"
           />
         </div>

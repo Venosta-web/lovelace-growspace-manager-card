@@ -173,9 +173,7 @@ export class ConfigClimateTab extends LitElement {
   }
 
   private _sectionHeader(title: string): TemplateResult {
-    return html`
-      <config-section-header .icon=${mdiFan} .label=${title}></config-section-header>
-    `;
+    return html` <config-section-header .icon=${mdiFan} .label=${title}></config-section-header> `;
   }
 
   // ── Climate Control ─────────────────────────────────────────────────────────
@@ -458,10 +456,7 @@ export class ConfigClimateTab extends LitElement {
     const stages: ClimateStageAccordionStage[] = vm.stages;
     return html`
       <div class="detail-card">
-        <config-section-header
-          .icon=${mdiTune}
-          label="Stage VPD Overrides"
-        ></config-section-header>
+        <config-section-header .icon=${mdiTune} label="Stage VPD Overrides"></config-section-header>
         <config-stage-accordion
           compact
           .stages=${stages}
@@ -486,16 +481,16 @@ export class ConfigClimateTab extends LitElement {
         </config-stage-accordion>
         <div class="stage-vpd-actions">
           <button
-            class="md3-button text"
+            class="md3-button config-reset-button"
             @click=${() => this._updateFan({ stage_vpd_overrides: {} })}
           >
-            Reset Fan defaults
+            Reset Fan to defaults
           </button>
           <button
-            class="md3-button text"
+            class="md3-button config-reset-button"
             @click=${() => this._updateExhaust({ stage_vpd_overrides: {} })}
           >
-            Reset Exhaust defaults
+            Reset Exhaust to defaults
           </button>
         </div>
       </div>

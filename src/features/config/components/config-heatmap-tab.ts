@@ -40,7 +40,9 @@ export class ConfigHeatmapTab extends LitElement {
   render(): TemplateResult {
     return html`
       <div class="detail-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
+        >
           <h3>Sensor Groups</h3>
           <button class="md3-button tonal" @click=${() => this._emit('add-group-requested')}>
             Add Group
@@ -75,6 +77,8 @@ export class ConfigHeatmapTab extends LitElement {
             class="md3-button text"
             @click=${() => this._emit('edit-group-requested', { group })}
             style="padding:8px;min-width:auto;"
+            aria-label=${`Edit ${group.name}`}
+            title=${`Edit ${group.name}`}
           >
             <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${mdiPencil}"></path>
@@ -84,6 +88,8 @@ export class ConfigHeatmapTab extends LitElement {
             class="md3-button text error"
             @click=${() => this._emit('delete-group-requested', { id: group.id })}
             style="padding:8px;min-width:auto;"
+            aria-label=${`Delete ${group.name}`}
+            title=${`Delete ${group.name}`}
           >
             <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${mdiDelete}"></path>
