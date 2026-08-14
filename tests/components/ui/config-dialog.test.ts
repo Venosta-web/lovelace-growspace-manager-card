@@ -182,6 +182,21 @@ describe('config dialog unsaved-changes gestures', () => {
     expect(prompt.textContent).toContain('Growspace 2');
   });
 
+  it('names the growspace the Growspaces tab is editing, not the stale context selection', async () => {
+    element.currentTab = ConfigTab.GROWSPACES;
+    (element as any)._sm = { ...(element as any)._sm, activeTab: ConfigTab.GROWSPACES };
+    (element as any)._populateEditFields('gs2');
+    (element as any)._t({ type: 'UPDATE_EDIT_DRAFT', partial: { name: 'Renamed' } });
+    await element.updateComplete;
+
+    (element as any)._switchTab(ConfigTab.SENSORS);
+    await element.updateComplete;
+
+    const prompt = element.shadowRoot!.querySelector('#config-discard-description')!;
+    expect(prompt.textContent).toContain('Growspace 2');
+    expect(prompt.textContent).not.toContain('Growspace 1');
+  });
+
   it('names the growspace losing its changes in the close guard prompt', async () => {
     (element as any).envTemperatureSensors = ['sensor.changed'];
 

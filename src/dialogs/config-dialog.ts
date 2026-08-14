@@ -1949,6 +1949,19 @@ export class ConfigDialog extends LitElement {
   }
 
   /**
+   * The growspace whose edits the discard prompt is about. The Growspaces tab
+   * hides the context bar and edits its own selection, so the environment
+   * draft's growspace is stale there — naming it would be confidently wrong.
+   */
+  private _dirtyGrowspaceId(): string | undefined {
+    if (this._sm.activeTab !== ConfigTab.GROWSPACES) {
+      return this._sm.environmentDraft.selectedGrowspaceId;
+    }
+    const sub = this._sm.tabs.growspaces.sub;
+    return sub.kind === 'editing' ? sub.growspaceId : undefined;
+  }
+
+  /**
    * Name the growspace whose edits are at stake — and, when the prompt guards a
    * growspace switch, the one being switched to. Installs routinely run 20+
    * growspaces with repeated labels, so "your unsaved changes" alone leaves the
@@ -1956,7 +1969,8 @@ export class ConfigDialog extends LitElement {
    */
   private _discardDescription() {
     const { status } = this._sm;
-    const editing = this._growspaceName(this._sm.environmentDraft.selectedGrowspaceId);
+    const dirtyId = this._dirtyGrowspaceId();
+    const editing = dirtyId ? this._growspaceName(dirtyId) : undefined;
     const generic = 'You have unsaved changes. If you continue now, your edits will be lost.';
     if (!editing) return generic;
 
