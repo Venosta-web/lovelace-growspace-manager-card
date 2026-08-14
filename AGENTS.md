@@ -113,3 +113,6 @@ bypass only for the GitHub Actions app (semantic-release). Cross-repo features l
 **GSM-first** — the integration releases before the card PR merges — unless the
 change is a Backward-Safe Card Change (release-ref contract fixture parse passes;
 see `docs/adr/0029` and CONTEXT.md).
+
+Before opening or updating a PR, inspect `.github/workflows/pr-title.yml` and format the
+title as a Conventional Commit (`type(optional-scope): description`) using an allowed type.
