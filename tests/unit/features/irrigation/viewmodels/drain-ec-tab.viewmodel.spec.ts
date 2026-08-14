@@ -106,7 +106,7 @@ describe('createDrainEcTabViewModel', () => {
     });
     // delta 0.8 > 0.7 (=0.7*1.0) and not > 1.0 → orange
     const vm = build(sm, device([reading({ feedEc: 2.0, drainEc: 2.8 })]));
-    expect(vm.status.color).toBe('#FF9800');
+    expect(vm.status.color).toBe('var(--gm-warning-color, #FF9800)');
   });
 
   it('reads readings from device.drainConfig, most-recent-first, capped at 20', () => {

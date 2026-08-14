@@ -255,10 +255,10 @@ export class PlantTimeline extends LitElement {
 
       /* Action specific styling */
       .action-ipm .icon-wrapper {
-        border-color: #9c27b0;
+        border-color: var(--gm-ipm-color, #9c27b0);
       }
       .action-ipm .icon-wrapper svg {
-        fill: #9c27b0;
+        fill: var(--gm-ipm-color, #9c27b0);
       }
       .action-training .icon-wrapper {
         border-color: var(--gm-warning-color, #ff9800);
@@ -387,7 +387,7 @@ export class PlantTimeline extends LitElement {
       case 'veg':
         return '#4caf50';
       case 'seedling':
-        return '#8bc34a';
+        return 'var(--stage-seedling, #8bc34a)';
       case 'clone':
         return '#66bb6a';
       case 'mother':

@@ -357,7 +357,7 @@ export class GmInboxPanel extends LitElement {
 
     .inbox-severity-pill[data-severity='warning'] {
       background: rgba(255, 152, 0, 0.15);
-      color: #ff9800;
+      color: var(--gm-warning-color, #ff9800);
     }
 
     .inbox-severity-pill[data-severity='info'] {

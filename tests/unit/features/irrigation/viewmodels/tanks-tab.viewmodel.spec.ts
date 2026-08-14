@@ -55,7 +55,7 @@ describe('createTanksTabViewModel', () => {
       index: 0,
       name: 'Tank A',
       isWarning: false,
-      color: '#FF9800', // hoursRemaining 10 < 24 → amber
+      color: 'var(--gm-warning-color, #FF9800)', // hoursRemaining 10 < 24 → amber
       barWidthPct: 73,
       fillLabel: '73%',
       subLine: '↓ Depleting · 10h left',

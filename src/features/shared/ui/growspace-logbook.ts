@@ -196,7 +196,7 @@ export class GrowspaceLogbook extends LitElement {
       return '#ffc107'; // Amber for Day
     }
 
-    if (t.includes('ipm')) return '#9c27b0';
+    if (t.includes('ipm')) return 'var(--gm-ipm-color, #9c27b0)';
     if (cat === 'training' || t.includes('training')) return 'var(--gm-warning-color, #ff9800)';
     if (t.includes('water') || t.includes('irrigation') || t.includes('nutrient'))
       return 'var(--gm-info-color, #2196f3)';

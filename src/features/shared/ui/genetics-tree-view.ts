@@ -1052,7 +1052,7 @@ export class GeneticsTreeView extends LitElement {
       --divider-faint: rgba(255, 255, 255, 0.05);
       --gv-primary: #4caf50;
       --gv-secondary: #2196f3;
-      --gv-mother: #e91e63;
+      --gv-mother: var(--stage-mother, #e91e63);
       --elev-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
 

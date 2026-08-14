@@ -151,7 +151,7 @@ describe('PlantTimeline', () => {
     it('handles stage color mapping for all stages', () => {
       expect((element as any)._getStageColor('flower')).to.equal('#e91e63');
       expect((element as any)._getStageColor('veg')).to.equal('#4caf50');
-      expect((element as any)._getStageColor('seedling')).to.equal('#8bc34a');
+      expect((element as any)._getStageColor('seedling')).to.equal('var(--stage-seedling, #8bc34a)');
       expect((element as any)._getStageColor('clone')).to.equal('#66bb6a');
       expect((element as any)._getStageColor('mother')).to.equal('#2e7d32');
       expect((element as any)._getStageColor('dry')).to.equal('#ff9800');

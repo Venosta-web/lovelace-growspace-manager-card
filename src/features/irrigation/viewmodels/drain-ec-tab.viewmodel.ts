@@ -82,7 +82,7 @@ export function createDrainEcTabViewModel(
       : isOverThreshold
         ? '#f44336'
         : lastDelta !== null && lastDelta > draft.maxEcDelta * 0.7
-          ? '#FF9800'
+          ? 'var(--gm-warning-color, #FF9800)'
           : '#4caf50';
 
     const text = !draft.enabled

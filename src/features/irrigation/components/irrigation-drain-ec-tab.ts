@@ -258,7 +258,7 @@ export class IrrigationDrainEcTab extends LitElement {
                             style="text-align:right;padding:6px 8px;color:${overThreshold
                               ? '#f44336'
                               : delta > this.vm.draft.maxEcDelta * 0.7
-                                ? '#FF9800'
+                                ? 'var(--gm-warning-color, #FF9800)'
                                 : '#4caf50'};font-weight:500;"
                           >
                             ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
