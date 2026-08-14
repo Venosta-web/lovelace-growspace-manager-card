@@ -1,3 +1,10 @@
+# [1.1.0-next.118](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.117...v1.1.0-next.118) (2026-08-14)
+
+
+### Features
+
+* **a11y:** make the Strain Library browse-to-save flow accessible ([#563](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/563)) ([fa01bda](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/fa01bda1cadaa4444dc064adff97ae2ec383fcde)), closes [#558](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/558)
+
 # [1.1.0-next.117](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.116...v1.1.0-next.117) (2026-08-14)
 
 
