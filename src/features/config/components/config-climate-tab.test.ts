@@ -4,6 +4,12 @@ import type { ConfigClimateTab } from './config-climate-tab';
 import { createInitialSM } from '../../../dialogs/config-dialog-sm';
 import type { ClimateTabViewModel } from '../viewmodels/climate-tab.viewmodel';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
+import {
+  FAN_VPD_STAGE_COLORS,
+  FAN_VPD_STAGE_DEFAULTS,
+  FAN_VPD_STAGE_KEYS,
+  FAN_VPD_STAGE_LABELS,
+} from '../../environment/constants';
 
 const defaults = createInitialSM().environmentDraft;
 
@@ -35,7 +41,6 @@ function makeVm(over: Partial<ClimateTabViewModel> = {}): ClimateTabViewModel {
       disabled: false,
       mode: 'vpd',
       showStageVpd: true,
-      showStageVpdTable: false,
       vpdTargetLabel: 'VPD Target (kPa)',
       vpdTargetDimmed: false,
       showTempOverride: true,
@@ -43,10 +48,22 @@ function makeVm(over: Partial<ClimateTabViewModel> = {}): ClimateTabViewModel {
       showWind: false,
       ...over.fan,
     },
+    stageVpd: {
+      visible: false,
+      stages: FAN_VPD_STAGE_KEYS.map((id) => ({
+        id,
+        label: FAN_VPD_STAGE_LABELS[id],
+        color: FAN_VPD_STAGE_COLORS[id],
+        open: false,
+        current: false,
+        fan: FAN_VPD_STAGE_DEFAULTS[id],
+        exhaust: FAN_VPD_STAGE_DEFAULTS[id],
+      })),
+      ...over.stageVpd,
+    },
     exhaust: {
       config: defaults.exhaustFanConfig,
       disabled: false,
-      showStageVpdTable: false,
       vpdTargetLabel: 'VPD Target (kPa)',
       vpdTargetDimmed: false,
       criticalTempExpanded: false,
@@ -95,12 +112,50 @@ describe('ConfigClimateTab — render', () => {
     expect(headers).toEqual(['Climate Control', 'Fan Controller', 'Exhaust Fan Controller']);
   });
 
-  it('shows the stage-vpd table only when the fan VM says so', async () => {
+  it('shows the shared stage accordion only when a stage-aware controller is active', async () => {
     const without = await mount(makeVm());
-    expect(without.shadowRoot!.querySelector('stage-vpd-overrides-table')).toBeNull();
+    expect(without.shadowRoot!.querySelector('config-stage-accordion')).toBeNull();
     document.body.innerHTML = '';
-    const withTable = await mount(makeVm({ fan: { ...makeVm().fan, showStageVpdTable: true } }));
-    expect(withTable.shadowRoot!.querySelector('stage-vpd-overrides-table')).not.toBeNull();
+    const withAccordion = await mount(
+      makeVm({ stageVpd: { ...makeVm().stageVpd, visible: true } })
+    );
+    expect(withAccordion.shadowRoot!.querySelector('config-stage-accordion')).not.toBeNull();
+    expect(withAccordion.shadowRoot!.querySelector('stage-vpd-overrides-table')).toBeNull();
+  });
+
+  it('summarizes both controllers and marks the current stage', async () => {
+    const vm = makeVm({ stageVpd: { ...makeVm().stageVpd, visible: true } });
+    vm.stageVpd.stages[3] = {
+      ...vm.stageVpd.stages[3],
+      current: true,
+      fan: { day: 0.7, night: 0.6 },
+      exhaust: { day: 0.8, night: 0.65 },
+    };
+    const el = await mount(vm);
+    const accordion = el.shadowRoot!.querySelector('config-stage-accordion')!;
+
+    expect(accordion.textContent?.replaceAll(/\s+/g, ' ')).toContain(
+      'Fan 0.70 / 0.60 · Exhaust 0.80 / 0.65 kPa'
+    );
+    expect(accordion.stages.find((stage) => stage.id === 'veg')?.current).toBe(true);
+    expect(accordion.shadowRoot!.querySelector('.current-stage')).not.toBeNull();
+  });
+
+  it('keeps the desktop Climate tab below 1200px with stage rows collapsed', async () => {
+    const el = await mount(makeVm({ stageVpd: { ...makeVm().stageVpd, visible: true } }));
+    el.style.width = '648px';
+
+    const cards = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.detail-card')].map(
+      (card) => card.getBoundingClientRect().height
+    );
+    const accordion = el.shadowRoot!.querySelector('config-stage-accordion')!;
+    const headersFit = [...accordion.shadowRoot!.querySelectorAll<HTMLElement>('.acc-head')].every(
+      (header) => header.scrollWidth <= header.clientWidth
+    );
+    expect(el.getBoundingClientRect().height, `section heights: ${cards.join(', ')}`).toBeLessThan(
+      1200
+    );
+    expect(headersFit).toBe(true);
   });
 
   it('uses the Fallback label the VM provides', async () => {
@@ -231,6 +286,97 @@ describe('ConfigClimateTab — intents out', () => {
       new CustomEvent('change', { detail: '0.9', bubbles: true, composed: true })
     );
     expect(received).toEqual([{ stressThreshold: 0.9 }]);
+  });
+
+  it('keeps both controllers save-equivalent to the previous sparse override layout', async () => {
+    const base = makeVm();
+    const vm = makeVm({
+      fan: {
+        ...base.fan,
+        config: {
+          ...base.fan.config,
+          stage_vpd_overrides: { flower_mid: { day: 1.3, night: 1.1 } },
+        },
+      },
+      exhaust: {
+        ...base.exhaust,
+        config: {
+          ...base.exhaust.config,
+          stage_vpd_overrides: { dry: { day: 0.9, night: 0.85 } },
+        },
+      },
+      stageVpd: {
+        ...base.stageVpd,
+        visible: true,
+        stages: base.stageVpd.stages.map((stage) =>
+          stage.id === 'veg' ? { ...stage, open: true } : stage
+        ),
+      },
+    });
+    const el = await mount(vm);
+    const fanChanges = listen<{ partial: Record<string, unknown> }>(el, 'fan-config-changed');
+    const exhaustChanges = listen<{ partial: Record<string, unknown> }>(
+      el,
+      'exhaust-config-changed'
+    );
+    const inputs = [...el.shadowRoot!.querySelectorAll('md3-number-input')];
+    const fanDay = inputs.find(
+      (input) => input.getAttribute('input-aria-label') === 'Veg Fan day VPD in kilopascals'
+    )!;
+    const exhaustNight = inputs.find(
+      (input) => input.getAttribute('input-aria-label') === 'Veg Exhaust night VPD in kilopascals'
+    )!;
+
+    fanDay.dispatchEvent(new CustomEvent('change', { detail: '0.91' }));
+    exhaustNight.dispatchEvent(new CustomEvent('change', { detail: '0.77' }));
+
+    expect(fanChanges).toEqual([
+      {
+        partial: {
+          stage_vpd_overrides: {
+            flower_mid: { day: 1.3, night: 1.1 },
+            veg: { day: 0.91, night: 0.6 },
+          },
+        },
+      },
+    ]);
+    expect(exhaustChanges).toEqual([
+      {
+        partial: {
+          stage_vpd_overrides: {
+            dry: { day: 0.9, night: 0.85 },
+            veg: { day: 0.7, night: 0.77 },
+          },
+        },
+      },
+    ]);
+  });
+
+  it('gives each expanded input a unit and stage/controller/day-night accessible name', async () => {
+    const base = makeVm();
+    const el = await mount(
+      makeVm({
+        stageVpd: {
+          ...base.stageVpd,
+          visible: true,
+          stages: base.stageVpd.stages.map((stage) =>
+            stage.id === 'veg' ? { ...stage, open: true } : stage
+          ),
+        },
+      })
+    );
+    const inputs = [...el.shadowRoot!.querySelectorAll('md3-number-input')].filter((input) =>
+      input.getAttribute('input-aria-label')?.startsWith('Veg ')
+    );
+
+    expect(inputs).toHaveLength(4);
+    expect(inputs.map((input) => input.getAttribute('unit'))).toEqual(['kPa', 'kPa', 'kPa', 'kPa']);
+    expect(inputs.map((input) => input.getAttribute('input-aria-label'))).toEqual([
+      'Veg Fan day VPD in kilopascals',
+      'Veg Fan night VPD in kilopascals',
+      'Veg Exhaust day VPD in kilopascals',
+      'Veg Exhaust night VPD in kilopascals',
+    ]);
   });
 });
 

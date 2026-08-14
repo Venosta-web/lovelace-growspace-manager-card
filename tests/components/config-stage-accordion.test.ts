@@ -42,6 +42,15 @@ describe('ConfigStageAccordion', () => {
     expect(element.textContent).toContain('Day 0.80–1.20 kPa');
   });
 
+  it('marks the current stage with visible text and aria-current', async () => {
+    const element = await mount([stage({ current: true })]);
+    const header = element.shadowRoot!.querySelector<HTMLElement>('.acc-head')!;
+
+    expect(header.getAttribute('aria-current')).toBe('step');
+    expect(element.shadowRoot!.querySelector('.current-stage')).not.toBeNull();
+    expect(element.shadowRoot!.textContent).toContain('Current');
+  });
+
   it('renders the expanded interior and scrolls the opened row into view', async () => {
     const element = await mount([stage()]);
     const card = element.shadowRoot!.querySelector<HTMLElement>('.acc-card')!;

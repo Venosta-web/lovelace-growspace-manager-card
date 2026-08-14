@@ -6,10 +6,10 @@
  * panel. `@property .vm: ClimateTabViewModel` in, semantic Tab Intents out,
  * **no `@state()` and no `hass`**: the fan-entity option lists and the two
  * collapsible-section toggles are projected into the VM by the shell. Markup is
- * transcribed verbatim from the former inline `_renderClimateSection` /
+ * transcribed from the former inline `_renderClimateSection` /
  * `_renderFanControllerPanel` / `_renderExhaustFanControllerPanel`; the panels
- * are private render methods here (one consumer each → no new custom element),
- * while `<stage-vpd-overrides-table>` stays a shared sub-component.
+ * are private render methods here (one consumer each → no new custom element).
+ * Both controllers' stage VPD values share one stage-accordion editor.
  *
  * Fan-config edits merge against the VM's config (never the SM) and emit the
  * whole merged config, so the shell's `UPDATE_ENV_DRAFT` replaces it wholesale.
@@ -28,13 +28,18 @@
 
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { mdiFan, mdiChevronDown } from '@mdi/js';
+import { mdiFan, mdiChevronDown, mdiTune } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui/md3-number-input';
 import '../../shared/ui/md3-select';
-import '../../environment/components/stage-vpd-overrides-table';
 import { renderAcInfinityDevices } from './ac-infinity-device-editor';
-import type { StageVpdOverrides } from '../../environment/components/stage-vpd-overrides-table';
+import { FAN_VPD_STAGE_DEFAULTS, type FanVpdStageKey } from '../../environment/constants';
+import {
+  stageAccordionInteriorSlot,
+  stageAccordionSummarySlot,
+  type ConfigStageAccordionStage,
+  type ConfigStageAccordionToggleDetail,
+} from './config-stage-accordion';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
 import type { CirculationFanConfig, ExhaustFanConfig } from '../../../slices/growspace/schema';
 import type {
@@ -42,8 +47,13 @@ import type {
   FanPanelVM,
   ExhaustPanelVM,
   ClimateControlVM,
+  ClimateStageVpdStageVM,
+  ClimateStageVpdVM,
   FanRegulationMode,
 } from '../viewmodels/climate-tab.viewmodel';
+
+type StageVpdOverrides = Record<string, { day: number; night: number }>;
+type ClimateStageAccordionStage = ClimateStageVpdStageVM & ConfigStageAccordionStage;
 
 @customElement('config-climate-tab')
 export class ConfigClimateTab extends LitElement {
@@ -54,6 +64,14 @@ export class ConfigClimateTab extends LitElement {
     css`
       :host {
         display: block;
+      }
+      .climate-layout {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+      .climate-layout > .detail-card {
+        margin: 0;
       }
       .form-section {
         display: flex;
@@ -153,6 +171,47 @@ export class ConfigClimateTab extends LitElement {
         height: 24px;
         outline: none;
       }
+      .stage-vpd-summary {
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        font-size: 0.6875rem;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        white-space: nowrap;
+      }
+      .stage-vpd-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+      .stage-vpd-controller {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .stage-vpd-controller h4 {
+        margin: 0;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+      .stage-vpd-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      @media (max-width: 600px) {
+        .climate-layout {
+          grid-template-columns: 1fr;
+        }
+        .stage-vpd-summary {
+          max-width: 48%;
+          text-align: left;
+        }
+        .stage-vpd-grid {
+          grid-template-columns: 1fr;
+        }
+      }
     `,
   ];
 
@@ -177,9 +236,14 @@ export class ConfigClimateTab extends LitElement {
   }
 
   render(): TemplateResult {
-    return html`${this._renderControl(this.vm.control)}${this._renderFanPanel(
-      this.vm.fan
-    )}${this._renderExhaustPanel(this.vm.exhaust)}`;
+    return html`
+      <div class="climate-layout">
+        ${this._renderControl(this.vm.control)}${this._renderFanPanel(this.vm.fan)}${this.vm
+          .stageVpd.visible
+          ? this._renderStageVpd(this.vm.stageVpd)
+          : nothing}${this._renderExhaustPanel(this.vm.exhaust)}
+      </div>
+    `;
   }
 
   private _sectionHeader(title: string): TemplateResult {
@@ -360,17 +424,6 @@ export class ConfigClimateTab extends LitElement {
                     <span>Stage-Aware VPD</span>
                   </label>
                 </div>
-                ${vm.showStageVpdTable
-                  ? html`
-                      <div style="margin-top:12px;">
-                        <stage-vpd-overrides-table
-                          .overrides=${(fan.stage_vpd_overrides ?? {}) as StageVpdOverrides}
-                          @overrides-change=${(e: CustomEvent<StageVpdOverrides>) =>
-                            this._updateFan({ stage_vpd_overrides: e.detail })}
-                        ></stage-vpd-overrides-table>
-                      </div>
-                    `
-                  : nothing}
               `
             : nothing}
 
@@ -510,6 +563,109 @@ export class ConfigClimateTab extends LitElement {
     `;
   }
 
+  private _renderStageVpd(vm: ClimateStageVpdVM): TemplateResult {
+    const stages: ClimateStageAccordionStage[] = vm.stages;
+    return html`
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
+            <path d="${mdiTune}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">Stage VPD Overrides</h3>
+        </div>
+        <config-stage-accordion
+          compact
+          .stages=${stages}
+          @stage-accordion-toggle=${(event: CustomEvent<ConfigStageAccordionToggleDetail>) =>
+            this._emit('toggle-stage-vpd', { stageId: event.detail.stage.id })}
+        >
+          ${stages.map((stage) =>
+            stage.open
+              ? html`
+                  <div slot=${stageAccordionInteriorSlot(stage.id)} class="stage-vpd-grid">
+                    ${this._stageVpdController(stage, 'fan', 'Fan')}
+                    ${this._stageVpdController(stage, 'exhaust', 'Exhaust')}
+                  </div>
+                `
+              : html`
+                  <div slot=${stageAccordionSummarySlot(stage.id)} class="stage-vpd-summary">
+                    Fan ${stage.fan.day.toFixed(2)} / ${stage.fan.night.toFixed(2)} · Exhaust
+                    ${stage.exhaust.day.toFixed(2)} / ${stage.exhaust.night.toFixed(2)} kPa
+                  </div>
+                `
+          )}
+        </config-stage-accordion>
+        <div class="stage-vpd-actions">
+          <button
+            class="md3-button text"
+            @click=${() => this._updateFan({ stage_vpd_overrides: {} })}
+          >
+            Reset Fan defaults
+          </button>
+          <button
+            class="md3-button text"
+            @click=${() => this._updateExhaust({ stage_vpd_overrides: {} })}
+          >
+            Reset Exhaust defaults
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  private _stageVpdController(
+    stage: ClimateStageVpdStageVM,
+    controller: 'fan' | 'exhaust',
+    label: string
+  ): TemplateResult {
+    const values = stage[controller];
+    return html`
+      <div class="stage-vpd-controller">
+        <h4>${label} Controller</h4>
+        ${(['day', 'night'] as const).map(
+          (period) => html`
+            <md3-number-input
+              label=${period === 'day' ? 'Day' : 'Night'}
+              input-aria-label=${`${stage.label} ${label} ${period} VPD in kilopascals`}
+              .value=${values[period]}
+              min="0.1"
+              max="3"
+              step="0.01"
+              unit="kPa"
+              @change=${(event: CustomEvent<string>) =>
+                this._updateStageVpd(controller, stage.id, period, event.detail)}
+            ></md3-number-input>
+          `
+        )}
+      </div>
+    `;
+  }
+
+  private _updateStageVpd(
+    controller: 'fan' | 'exhaust',
+    key: FanVpdStageKey,
+    period: 'day' | 'night',
+    raw: string
+  ): void {
+    const config = controller === 'fan' ? this.vm.fan.config : this.vm.exhaust.config;
+    const overrides = (config.stage_vpd_overrides ?? {}) as StageVpdOverrides;
+    const value = Number.isNaN(parseFloat(raw))
+      ? FAN_VPD_STAGE_DEFAULTS[key][period]
+      : parseFloat(raw);
+    const existing = overrides[key] ?? FAN_VPD_STAGE_DEFAULTS[key];
+    const updated = { ...overrides, [key]: { ...existing, [period]: value } };
+    if (controller === 'fan') {
+      this._updateFan({ stage_vpd_overrides: updated });
+    } else {
+      this._updateExhaust({ stage_vpd_overrides: updated });
+    }
+  }
+
   // ── Exhaust Fan Controller ──────────────────────────────────────────────────
 
   private _renderExhaustPanel(vm: ExhaustPanelVM): TemplateResult {
@@ -543,18 +699,6 @@ export class ConfigClimateTab extends LitElement {
               <span>Stage-Aware VPD</span>
             </label>
           </div>
-          ${vm.showStageVpdTable
-            ? html`
-                <div style="margin-top:12px;">
-                  <stage-vpd-overrides-table
-                    .overrides=${(fan.stage_vpd_overrides ?? {}) as StageVpdOverrides}
-                    @overrides-change=${(e: CustomEvent<StageVpdOverrides>) =>
-                      this._updateExhaust({ stage_vpd_overrides: e.detail })}
-                  ></stage-vpd-overrides-table>
-                </div>
-              `
-            : nothing}
-
           <div class="row-col-grid" style="margin-top:8px;">
             <md3-number-input
               label="Temperature Target (°C)"

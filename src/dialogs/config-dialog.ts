@@ -2100,6 +2100,7 @@ export class ConfigDialog extends LitElement {
 
   @state() private _fanTempOverrideExpanded = false;
   @state() private _exhaustCriticalTempExpanded = false;
+  @state() private _openClimateStageVpdId: FanVpdStageKey | '' = '';
 
   // Fan/exhaust edits forward a partial; merge against the live draft so
   // synchronous multi-field edits accumulate (the component never reads the SM).
@@ -2134,12 +2135,14 @@ export class ConfigDialog extends LitElement {
       acInfinityPortDeviceId: (modeEntity: string) => this._acInfinityPortDeviceId(modeEntity),
       acInfinityPrefillWarning: (field: string, index: number) =>
         this._acInfinityPrefillWarnings[`${field}:${index}`] ?? [],
+      currentStage: this._deviceForDirtyCheck()?.biologicalMetrics?.granularStage,
     };
     return html`
       <config-climate-tab
         .vm=${createClimateTabViewModel(this._sm, deps, {
           fanTempOverrideExpanded: this._fanTempOverrideExpanded,
           exhaustCriticalTempExpanded: this._exhaustCriticalTempExpanded,
+          openStageVpdId: this._openClimateStageVpdId,
         })}
         @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
         @pick-ac-infinity-device=${(e: CustomEvent) =>
@@ -2147,6 +2150,10 @@ export class ConfigDialog extends LitElement {
         @fan-config-changed=${(e: CustomEvent) => this._updateFanConfig(e.detail.partial)}
         @exhaust-config-changed=${(e: CustomEvent) =>
           this._updateExhaustFanConfig(e.detail.partial)}
+        @toggle-stage-vpd=${(e: CustomEvent<{ stageId: FanVpdStageKey }>) => {
+          this._openClimateStageVpdId =
+            this._openClimateStageVpdId === e.detail.stageId ? '' : e.detail.stageId;
+        }}
         @toggle-fan-temp-override=${() => {
           this._fanTempOverrideExpanded = !this._fanTempOverrideExpanded;
         }}
