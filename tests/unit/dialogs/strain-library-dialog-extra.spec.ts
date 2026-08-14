@@ -39,14 +39,12 @@ describe('StrainLibraryDialog Extra Coverage', () => {
         const getBreederManagerSR = () => getBreederManager()?.shadowRoot;
 
         it('should open and close breeder manager', async () => {
-            // Open via browse view mobile menu → Manage Breeders
+            // Open via browse view Manage menu → Manage Breeders
             const browseView = element.shadowRoot?.querySelector('strain-browse-view') as any;
-            const menuBtn = (Array.from(browseView?.shadowRoot?.querySelectorAll('.header-actions button') || []) as HTMLElement[])
-                .find(b => !b.classList.contains('close'));
-            (menuBtn as HTMLElement)?.click();
+            (browseView?.shadowRoot?.querySelector('.manage-menu-trigger') as HTMLElement)?.click();
             await browseView?.updateComplete;
 
-            const menuItems = browseView?.shadowRoot?.querySelectorAll('.mobile-menu-item');
+            const menuItems = browseView?.shadowRoot?.querySelectorAll('.manage-menu-item');
             const breederBtn = (Array.from(menuItems || []) as HTMLElement[]).find(i => i.textContent?.includes('Breeders'));
             (breederBtn as HTMLElement)?.click();
             await element.updateComplete;

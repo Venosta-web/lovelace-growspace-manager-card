@@ -14,7 +14,7 @@ import {
   mdiBrain,
   mdiChevronLeft,
   mdiChevronRight,
-  mdiDotsVertical,
+  mdiCog,
   mdiAccountGroup,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
@@ -27,6 +27,8 @@ import './gs-filter-chips';
 import '../features/shared/ui/md3-text-input';
 import '../features/shared/ui/gs-help-tooltip';
 
+const MANAGE_MENU_ID = 'strain-library-manage-menu';
+
 @customElement('strain-browse-view')
 export class StrainBrowseView extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
@@ -36,7 +38,7 @@ export class StrainBrowseView extends LitElement {
 
   @state() private _searchQuery = '';
   @state() private _currentPage = 1;
-  @state() private _mobileMenuOpen = false;
+  @state() private _manageMenuOpen = false;
   @state() private _pendingDeleteKey: string | null = null;
 
   static styles = [
@@ -62,6 +64,7 @@ export class StrainBrowseView extends LitElement {
         display: flex;
         justify-content: flex-end;
         gap: 12px;
+        flex-wrap: wrap;
       }
 
       /* GRID & CARDS */
@@ -261,14 +264,13 @@ export class StrainBrowseView extends LitElement {
         border-color: transparent;
       }
 
-      .pagination-btn:focus-visible,
-      .fab-btn:focus-visible {
+      .pagination-btn:focus-visible {
         outline: 2px solid var(--primary-color);
         outline-offset: 2px;
       }
 
-      /* MOBILE MENU */
-      .mobile-menu {
+      /* MANAGE MENU */
+      .manage-menu {
         position: absolute;
         top: 60px;
         right: 16px;
@@ -280,7 +282,7 @@ export class StrainBrowseView extends LitElement {
         z-index: 30;
       }
 
-      .mobile-menu-item {
+      .manage-menu-item {
         padding: 12px 16px;
         display: flex;
         align-items: center;
@@ -294,16 +296,16 @@ export class StrainBrowseView extends LitElement {
         text-align: left;
       }
 
-      .mobile-menu-item:hover {
+      .manage-menu-item:hover {
         background: rgba(255, 255, 255, 0.08);
       }
 
-      .mobile-menu-item:focus-visible {
+      .manage-menu-item:focus-visible {
         outline: 2px solid var(--primary-color);
         outline-offset: -2px;
       }
 
-      .mobile-menu-item svg {
+      .manage-menu-item svg {
         width: 20px;
         height: 20px;
         fill: var(--secondary-text-color);
@@ -313,25 +315,6 @@ export class StrainBrowseView extends LitElement {
         position: absolute;
         inset: 0;
         z-index: 25;
-      }
-
-      /* FAB */
-      .fab-btn {
-        position: absolute;
-        bottom: 24px;
-        right: 24px;
-        width: 56px;
-        height: 56px;
-        border-radius: var(--border-radius-lg, 16px);
-        background: var(--accent-green);
-        color: #fff;
-        border: none;
-        box-shadow: 0 4px 8px 3px rgba(0, 0, 0, 0.15);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 20;
       }
 
       /* DELETE OVERLAY */
@@ -355,12 +338,21 @@ export class StrainBrowseView extends LitElement {
           grid-template-columns: 1fr;
         }
 
+        /* Same two actions as desktop, stacked so neither is truncated. */
         .sd-footer {
-          display: none;
+          padding: 12px 16px;
+          flex-direction: column-reverse;
         }
 
-        .fab-btn {
-          display: flex;
+        .sd-footer .md3-button {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .manage-menu {
+          right: 8px;
+          left: 8px;
+          min-width: 0;
         }
       }
     `,
@@ -396,20 +388,21 @@ export class StrainBrowseView extends LitElement {
         </div>
         <div class="header-actions" style="display:flex; gap:8px;">
           <button
-            class="md3-button text"
-            aria-label="More library actions"
+            class="md3-button text manage-menu-trigger"
             aria-haspopup="menu"
-            aria-expanded=${this._mobileMenuOpen ? 'true' : 'false'}
-            @click=${() => (this._mobileMenuOpen = !this._mobileMenuOpen)}
-            style="min-width:auto; padding:8px; margin-left: auto;"
+            aria-expanded=${this._manageMenuOpen ? 'true' : 'false'}
+            aria-controls=${this._manageMenuOpen ? MANAGE_MENU_ID : nothing}
+            @click=${() => this._toggleManageMenu()}
+            style="margin-left: auto;"
           >
             <svg
               aria-hidden="true"
-              style="width:24px;height:24px;fill:currentColor;"
+              style="width:20px;height:20px;fill:currentColor;"
               viewBox="0 0 24 24"
             >
-              <path d="${mdiDotsVertical}"></path>
+              <path d="${mdiCog}"></path>
             </svg>
+            Manage
           </button>
           <button
             class="md3-button text close"
@@ -504,12 +497,16 @@ export class StrainBrowseView extends LitElement {
           : nothing}
       </div>
 
-      ${this._mobileMenuOpen
+      ${this._manageMenuOpen
         ? html`
-            <div class="menu-overlay" @click=${() => (this._mobileMenuOpen = false)}></div>
-            <div class="mobile-menu" role="menu" aria-label="Library actions">
-              ${this._renderMenuItem(mdiPlus, 'New Strain', 'new-strain')}
-              ${this._renderMenuItem(mdiBrain, 'Get Recommendation', 'get-recommendation')}
+            <div class="menu-overlay" @click=${() => this._closeManageMenu()}></div>
+            <div
+              id=${MANAGE_MENU_ID}
+              class="manage-menu"
+              role="menu"
+              aria-label="Manage library"
+              @keydown=${this._onManageMenuKeydown}
+            >
               ${this._renderMenuItem(mdiCloudUpload, 'Import Strains', 'import-requested')}
               ${this._renderMenuItem(mdiDownload, 'Export Strains', 'export-library')}
               ${this._renderMenuItem(
@@ -521,43 +518,23 @@ export class StrainBrowseView extends LitElement {
           `
         : nothing}
 
-      <button class="fab-btn" aria-label="New Strain" @click=${() => this._emit('new-strain')}>
-        <svg
-          aria-hidden="true"
-          style="fill:currentColor; width: 24px; height: 24px;"
-          viewBox="0 0 24 24"
-        >
-          <path d="${mdiPlus}"></path>
-        </svg>
-      </button>
-
       <div class="sd-footer">
         <button class="md3-button tonal" @click=${() => this._emit('get-recommendation')}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+          <svg
+            aria-hidden="true"
+            style="width:18px;height:18px;fill:currentColor;"
+            viewBox="0 0 24 24"
+          >
             <path d="${mdiBrain}"></path>
           </svg>
           Get Recommendation
         </button>
-        <button class="md3-button tonal" @click=${() => this._emit('manage-breeders-requested')}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiAccountGroup}"></path>
-          </svg>
-          Manage Breeders
-        </button>
-        <button class="md3-button tonal" @click=${() => this._emit('import-requested')}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiCloudUpload}"></path>
-          </svg>
-          Import Strains
-        </button>
-        <button class="md3-button tonal" @click=${() => this._emit('export-library')}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiDownload}"></path>
-          </svg>
-          Export Strains
-        </button>
         <button class="md3-button primary" @click=${() => this._emit('new-strain')}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+          <svg
+            aria-hidden="true"
+            style="width:18px;height:18px;fill:currentColor;"
+            viewBox="0 0 24 24"
+          >
             <path d="${mdiPlus}"></path>
           </svg>
           New Strain
@@ -690,17 +667,35 @@ export class StrainBrowseView extends LitElement {
   private _renderMenuItem(icon: string, label: string, event: string): TemplateResult {
     return html`
       <button
-        class="mobile-menu-item"
+        class="manage-menu-item"
         role="menuitem"
         @click=${() => {
           this._emit(event);
-          this._mobileMenuOpen = false;
+          this._closeManageMenu();
         }}
       >
         <svg aria-hidden="true" viewBox="0 0 24 24"><path d="${icon}"></path></svg> ${label}
       </button>
     `;
   }
+
+  private _toggleManageMenu() {
+    if (this._manageMenuOpen) this._closeManageMenu();
+    else this._manageMenuOpen = true;
+  }
+
+  private _closeManageMenu() {
+    if (!this._manageMenuOpen) return;
+    this._manageMenuOpen = false;
+    this.shadowRoot?.querySelector<HTMLElement>('.manage-menu-trigger')?.focus();
+  }
+
+  private _onManageMenuKeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      this._closeManageMenu();
+    }
+  };
 
   private _renderDeleteConfirmation(): TemplateResult {
     return html`
@@ -754,6 +749,9 @@ export class StrainBrowseView extends LitElement {
     // whenever an unrelated re-render lands while the prompt is up.
     if (changedProperties.has('_pendingDeleteKey') && this._pendingDeleteKey) {
       this.shadowRoot?.querySelector<HTMLElement>('.delete-cancel-btn')?.focus();
+    }
+    if (changedProperties.has('_manageMenuOpen') && this._manageMenuOpen) {
+      this.shadowRoot?.querySelector<HTMLElement>('.manage-menu-item')?.focus();
     }
   }
 
