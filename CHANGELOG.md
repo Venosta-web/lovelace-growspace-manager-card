@@ -1,3 +1,10 @@
+# [1.1.0-next.119](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.118...v1.1.0-next.119) (2026-08-14)
+
+
+### Bug Fixes
+
+* **climate:** harden critical temperature cutoff ([#578](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/578)) ([eee23a6](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/eee23a6bd239626b8c3feef043aa76adcfbe34e2))
+
 # [1.1.0-next.118](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.117...v1.1.0-next.118) (2026-08-14)
 
 
