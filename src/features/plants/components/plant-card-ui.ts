@@ -181,7 +181,7 @@ export class PlantCardUI extends LitElement {
     return html`
       <span
         class="status-icon"
-        style="font-size:13px; font-weight:bold; color:${color}; line-height:1; display:flex; align-items:center;"
+        style="font-size:var(--font-size-supporting); font-weight:bold; color:${color}; line-height:1; display:flex; align-items:center;"
         title="Sex: ${sex}"
         role="img"
         aria-label="Sex: ${sex}"

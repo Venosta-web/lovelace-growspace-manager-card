@@ -118,7 +118,7 @@ export class PlantTimeline extends LitElement {
         margin-bottom: 4px;
       }
       .content {
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         color: var(--primary-text-color, #fff);
         font-weight: 600;
       }
@@ -210,7 +210,7 @@ export class PlantTimeline extends LitElement {
         );
       }
       .event.type-milestone .content {
-        font-size: 1.05rem;
+        font-size: var(--font-size-md);
         letter-spacing: 0.5px;
         color: var(--success-color);
       }
@@ -310,7 +310,7 @@ export class PlantTimeline extends LitElement {
         gap: 4px;
         background: var(--success-color);
         color: white;
-        font-size: 0.65rem;
+        font-size: var(--font-size-xs);
         padding: 1px 4px;
         border-radius: var(--border-radius-xs, 4px);
         margin-left: 8px;

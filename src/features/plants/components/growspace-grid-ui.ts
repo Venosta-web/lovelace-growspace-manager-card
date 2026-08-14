@@ -341,13 +341,13 @@ export class GrowspaceGridUI extends LitElement {
         }
 
         .pc-pheno {
-          font-size: 0.8rem;
+          font-size: var(--font-size-supporting);
           color: rgba(255, 255, 255, 0.7) !important;
         }
 
         .pc-stage {
           margin-top: 2px;
-          font-size: 0.8rem;
+          font-size: var(--font-size-supporting);
           color: var(--stage-color, #fff) !important;
           font-weight: 600;
         }
