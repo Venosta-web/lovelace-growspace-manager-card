@@ -136,6 +136,34 @@ export class StrainBrowseView extends LitElement {
         color: var(--secondary-text-color);
       }
 
+      /*
+       * The card title carries the primary "open strain" activation and stretches
+       * its hit area over the whole card via ::after. The card itself stays a
+       * non-interactive container so the delete button is a sibling target rather
+       * than nested inside another control.
+       */
+      .sc-open-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        font: inherit;
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .sc-open-btn::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+      }
+
+      .sc-open-btn:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
+
       .sc-actions {
         position: absolute;
         top: 8px;
@@ -144,9 +172,12 @@ export class StrainBrowseView extends LitElement {
         gap: 8px;
         opacity: 0;
         transition: opacity 0.2s;
+        /* Sits above the title's stretched hit area so it stays clickable. */
+        z-index: 1;
       }
 
-      .strain-card:hover .sc-actions {
+      .strain-card:hover .sc-actions,
+      .strain-card:focus-within .sc-actions {
         opacity: 1;
       }
 
@@ -171,6 +202,11 @@ export class StrainBrowseView extends LitElement {
 
       .sc-action-btn:hover {
         background: var(--accent-green);
+      }
+
+      .sc-action-btn:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
       /* SEARCH BAR */
@@ -225,6 +261,12 @@ export class StrainBrowseView extends LitElement {
         border-color: transparent;
       }
 
+      .pagination-btn:focus-visible,
+      .fab-btn:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
+
       /* MOBILE MENU */
       .mobile-menu {
         position: absolute;
@@ -245,10 +287,20 @@ export class StrainBrowseView extends LitElement {
         gap: 12px;
         color: var(--primary-text-color, #fff);
         cursor: pointer;
+        width: 100%;
+        background: none;
+        border: none;
+        font: inherit;
+        text-align: left;
       }
 
       .mobile-menu-item:hover {
         background: rgba(255, 255, 255, 0.08);
+      }
+
+      .mobile-menu-item:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: -2px;
       }
 
       .mobile-menu-item svg {
@@ -345,19 +397,31 @@ export class StrainBrowseView extends LitElement {
         <div class="header-actions" style="display:flex; gap:8px;">
           <button
             class="md3-button text"
+            aria-label="More library actions"
+            aria-haspopup="menu"
+            aria-expanded=${this._mobileMenuOpen ? 'true' : 'false'}
             @click=${() => (this._mobileMenuOpen = !this._mobileMenuOpen)}
             style="min-width:auto; padding:8px; margin-left: auto;"
           >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+            <svg
+              aria-hidden="true"
+              style="width:24px;height:24px;fill:currentColor;"
+              viewBox="0 0 24 24"
+            >
               <path d="${mdiDotsVertical}"></path>
             </svg>
           </button>
           <button
             class="md3-button text close"
+            aria-label="Close strain library"
             @click=${() => this.dispatchEvent(new CustomEvent('close'))}
             style="min-width:auto; padding:8px; margin-left: auto;"
           >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+            <svg
+              aria-hidden="true"
+              style="width:24px;height:24px;fill:currentColor;"
+              viewBox="0 0 24 24"
+            >
               <path d="${mdiClose}"></path>
             </svg>
           </button>
@@ -406,20 +470,32 @@ export class StrainBrowseView extends LitElement {
               <div class="pagination-container">
                 <button
                   class="pagination-btn"
+                  aria-label="Previous page"
                   ?disabled=${this._currentPage === 1}
                   @click=${() => this._currentPage--}
                 >
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                  <svg
+                    aria-hidden="true"
+                    style="width:24px;height:24px;fill:currentColor;"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="${mdiChevronLeft}"></path>
                   </svg>
                 </button>
-                <span class="pagination-text">Page ${this._currentPage} of ${totalPages}</span>
+                <span class="pagination-text" aria-live="polite"
+                  >Page ${this._currentPage} of ${totalPages}</span
+                >
                 <button
                   class="pagination-btn"
+                  aria-label="Next page"
                   ?disabled=${this._currentPage === totalPages}
                   @click=${() => this._currentPage++}
                 >
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                  <svg
+                    aria-hidden="true"
+                    style="width:24px;height:24px;fill:currentColor;"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="${mdiChevronRight}"></path>
                   </svg>
                 </button>
@@ -431,58 +507,26 @@ export class StrainBrowseView extends LitElement {
       ${this._mobileMenuOpen
         ? html`
             <div class="menu-overlay" @click=${() => (this._mobileMenuOpen = false)}></div>
-            <div class="mobile-menu">
-              <div
-                class="mobile-menu-item"
-                @click=${() => {
-                  this._emit('new-strain');
-                  this._mobileMenuOpen = false;
-                }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg> New Strain
-              </div>
-              <div
-                class="mobile-menu-item"
-                @click=${() => {
-                  this._emit('get-recommendation');
-                  this._mobileMenuOpen = false;
-                }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg> Get Recommendation
-              </div>
-              <div
-                class="mobile-menu-item"
-                @click=${() => {
-                  this._emit('import-requested');
-                  this._mobileMenuOpen = false;
-                }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg> Import Strains
-              </div>
-              <div
-                class="mobile-menu-item"
-                @click=${() => {
-                  this._emit('export-library');
-                  this._mobileMenuOpen = false;
-                }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg> Export Strains
-              </div>
-              <div
-                class="mobile-menu-item"
-                @click=${() => {
-                  this._emit('manage-breeders-requested');
-                  this._mobileMenuOpen = false;
-                }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiAccountGroup}"></path></svg> Manage Breeders
-              </div>
+            <div class="mobile-menu" role="menu" aria-label="Library actions">
+              ${this._renderMenuItem(mdiPlus, 'New Strain', 'new-strain')}
+              ${this._renderMenuItem(mdiBrain, 'Get Recommendation', 'get-recommendation')}
+              ${this._renderMenuItem(mdiCloudUpload, 'Import Strains', 'import-requested')}
+              ${this._renderMenuItem(mdiDownload, 'Export Strains', 'export-library')}
+              ${this._renderMenuItem(
+                mdiAccountGroup,
+                'Manage Breeders',
+                'manage-breeders-requested'
+              )}
             </div>
           `
         : nothing}
 
-      <button class="fab-btn" @click=${() => this._emit('new-strain')}>
-        <svg style="fill:currentColor; width: 24px; height: 24px;" viewBox="0 0 24 24">
+      <button class="fab-btn" aria-label="New Strain" @click=${() => this._emit('new-strain')}>
+        <svg
+          aria-hidden="true"
+          style="fill:currentColor; width: 24px; height: 24px;"
+          viewBox="0 0 24 24"
+        >
           <path d="${mdiPlus}"></path>
         </svg>
       </button>
@@ -538,11 +582,7 @@ export class StrainBrowseView extends LitElement {
     const avgFlowerDays = analytics?.avg_flower_days;
 
     return html`
-      <div
-        class="strain-card"
-        @click=${() =>
-          this.dispatchEvent(new CustomEvent('strain-selected', { detail: { strain } }))}
-      >
+      <div class="strain-card">
         <div class="sc-thumb">
           ${strain.image
             ? html`<img
@@ -577,12 +617,18 @@ export class StrainBrowseView extends LitElement {
           <div class="sc-actions">
             <button
               class="sc-action-btn"
+              aria-label="Delete ${strain.strain}"
               @click=${(e: Event) => {
                 e.stopPropagation();
+                this._deleteTrigger = e.currentTarget as HTMLElement;
                 this._pendingDeleteKey = strain.key;
               }}
             >
-              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+              <svg
+                aria-hidden="true"
+                style="width:16px;height:16px;fill:currentColor;"
+                viewBox="0 0 24 24"
+              >
                 <path d="${mdiDelete}"></path>
               </svg>
             </button>
@@ -590,10 +636,20 @@ export class StrainBrowseView extends LitElement {
         </div>
         <div class="sc-content">
           <h3 class="sc-title">
-            ${strain.strain} ${strain.phenotype ? `(${strain.phenotype})` : ''}
+            <button
+              class="sc-open-btn"
+              @click=${() =>
+                this.dispatchEvent(new CustomEvent('strain-selected', { detail: { strain } }))}
+            >
+              ${strain.strain} ${strain.phenotype ? `(${strain.phenotype})` : ''}
+            </button>
           </h3>
           <div class="sc-type-row">
-            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+            <svg
+              aria-hidden="true"
+              style="width:16px;height:16px;fill:currentColor;"
+              viewBox="0 0 24 24"
+            >
               <path d="${typeIcon}"></path>
             </svg>
             <span>${typeLabel}</span>
@@ -612,6 +668,7 @@ export class StrainBrowseView extends LitElement {
                     ${strain.breeder_logo
                       ? html`<img
                           src="${strain.breeder_logo}"
+                          alt=""
                           style="width: 20px; height: 20px; object-fit: contain; border-radius: 2px; background: rgba(255,255,255,0.05); padding: 2px;"
                         />`
                       : nothing}
@@ -630,26 +687,39 @@ export class StrainBrowseView extends LitElement {
     `;
   }
 
+  private _renderMenuItem(icon: string, label: string, event: string): TemplateResult {
+    return html`
+      <button
+        class="mobile-menu-item"
+        role="menuitem"
+        @click=${() => {
+          this._emit(event);
+          this._mobileMenuOpen = false;
+        }}
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="${icon}"></path></svg> ${label}
+      </button>
+    `;
+  }
+
   private _renderDeleteConfirmation(): TemplateResult {
     return html`
-      <div class="crop-overlay">
+      <div class="crop-overlay" @keydown=${this._onDeleteKeydown}>
         <div
           class="glass-dialog-container"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-strain-title"
           style="width: 400px; height: auto; padding: 24px; display: flex; flex-direction: column;"
         >
-          <h2 class="dialog-title">Delete Strain?</h2>
+          <h2 class="dialog-title" id="delete-strain-title">Delete Strain?</h2>
           <p
             style="color: var(--secondary-text-color); margin: 16px 0; font-size: 1rem; line-height: 1.5;"
           >
             Are you sure you want to delete this strain? This action cannot be undone.
           </p>
           <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
-            <button
-              class="md3-button tonal"
-              @click=${() => {
-                this._pendingDeleteKey = null;
-              }}
-            >
+            <button class="md3-button tonal delete-cancel-btn" @click=${() => this._cancelDelete()}>
               Cancel
             </button>
             <button
@@ -658,6 +728,7 @@ export class StrainBrowseView extends LitElement {
               @click=${() => this._confirmDelete()}
             >
               <svg
+                aria-hidden="true"
                 style="width:18px;height:18px;fill:currentColor;margin-right:8px;"
                 viewBox="0 0 24 24"
               >
@@ -671,12 +742,46 @@ export class StrainBrowseView extends LitElement {
     `;
   }
 
+  /**
+   * The delete button that opened the confirmation, so focus can return to it
+   * once the prompt closes. Cards re-render on delete, so the element may be
+   * gone by then — `isConnected` guards that.
+   */
+  private _deleteTrigger: HTMLElement | null = null;
+
+  updated(changedProperties: Map<string, unknown>) {
+    // Only on open — refocusing on every render would yank focus back to Cancel
+    // whenever an unrelated re-render lands while the prompt is up.
+    if (changedProperties.has('_pendingDeleteKey') && this._pendingDeleteKey) {
+      this.shadowRoot?.querySelector<HTMLElement>('.delete-cancel-btn')?.focus();
+    }
+  }
+
+  private _onDeleteKeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      this._cancelDelete();
+    }
+  };
+
+  private _restoreDeleteFocus() {
+    const trigger = this._deleteTrigger;
+    this._deleteTrigger = null;
+    if (trigger?.isConnected) trigger.focus();
+  }
+
+  private _cancelDelete() {
+    this._pendingDeleteKey = null;
+    this._restoreDeleteFocus();
+  }
+
   private _confirmDelete() {
     if (this._pendingDeleteKey) {
       this.dispatchEvent(
         new CustomEvent('strain-delete-confirmed', { detail: { key: this._pendingDeleteKey } })
       );
       this._pendingDeleteKey = null;
+      this._restoreDeleteFocus();
     }
   }
 
