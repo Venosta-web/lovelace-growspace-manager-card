@@ -979,43 +979,35 @@ describe('ConfigDialog - Fan Controller Panel coverage', () => {
         expect(fanCfg().temperature_tolerance).toBeCloseTo(26);
     });
 
-    it('temperature override toggle expands section (line 1944) and wires critical temp handlers with null branch (lines 1961–1984)', async () => {
-        // VPD mode (default) — override button present
+    it('renders the promoted critical-temperature editor and wires paired bounds plus hysteresis', async () => {
         let root = await sensorsShadow(element);
-        const overrideBtn = Array.from(root.querySelectorAll('button.md3-button.tonal'))
-            .find((b) => b.textContent?.includes('Temperature Override')) as HTMLElement | undefined;
-        expect(overrideBtn).toBeDefined();
-
-        overrideBtn!.click();
-        root = await sensorsShadow(element);
-        expect((element as any)._fanTempOverrideExpanded).toBe(true);
-
-        // Find the override row-col-grid: first `.row-col-grid` with margin-top style
-        const overrideGrids = Array.from(
-            root.querySelectorAll('.row-col-grid[style*="margin-top"]')
-        );
-        expect(overrideGrids.length).toBeGreaterThanOrEqual(1);
-        const overrideInputs = Array.from(overrideGrids[0].querySelectorAll('md3-number-input'));
+        let editor = root.querySelector('.critical-temperature[data-controller="fan"]')!;
+        expect(editor).toBeDefined();
+        let overrideInputs = Array.from(editor.querySelectorAll('md3-number-input'));
         expect(overrideInputs.length).toBe(3);
 
-        // non-empty detail → parseFloat
         overrideInputs[0].dispatchEvent(new CustomEvent('change', { detail: '18' }));
         expect(fanCfg().critical_temp_low).toBeCloseTo(18);
+        expect(fanCfg().critical_temp_high).toBeCloseTo(32);
+
+        root = await sensorsShadow(element);
+        editor = root.querySelector('.critical-temperature[data-controller="fan"]')!;
+        overrideInputs = Array.from(editor.querySelectorAll('md3-number-input'));
         overrideInputs[1].dispatchEvent(new CustomEvent('change', { detail: '30' }));
         expect(fanCfg().critical_temp_high).toBeCloseTo(30);
+
+        root = await sensorsShadow(element);
+        editor = root.querySelector('.critical-temperature[data-controller="fan"]')!;
+        overrideInputs = Array.from(editor.querySelectorAll('md3-number-input'));
         overrideInputs[2].dispatchEvent(new CustomEvent('change', { detail: '2' }));
         expect(fanCfg().critical_temp_hysteresis).toBeCloseTo(2);
 
-        // empty detail → null (covers the else-branch at lines 1963 and 1972)
+        root = await sensorsShadow(element);
+        editor = root.querySelector('.critical-temperature[data-controller="fan"]')!;
+        overrideInputs = Array.from(editor.querySelectorAll('md3-number-input'));
         overrideInputs[0].dispatchEvent(new CustomEvent('change', { detail: '' }));
         expect(fanCfg().critical_temp_low).toBeNull();
-        overrideInputs[1].dispatchEvent(new CustomEvent('change', { detail: '' }));
         expect(fanCfg().critical_temp_high).toBeNull();
-
-        // Collapse
-        overrideBtn!.click();
-        await element.updateComplete;
-        expect((element as any)._fanTempOverrideExpanded).toBe(false);
     });
 
     it('wind_enabled toggle (lines 2014–2015) expands wind settings; period/amplitude handlers fire (lines 2025–2033)', async () => {

@@ -14,10 +14,7 @@ const deps: ClimateTabDeps = {
   acInfinityPortDeviceId: () => '',
   acInfinityPrefillWarning: () => [],
 };
-const collapsed: ClimateExpandState = {
-  fanTempOverrideExpanded: false,
-  exhaustCriticalTempExpanded: false,
-};
+const collapsed: ClimateExpandState = {};
 
 function sm(): ConfigDialogSM {
   return createInitialSM();
@@ -84,28 +81,39 @@ describe('createClimateTabViewModel — circulation fan panel', () => {
     expect(off.vpdTargetDimmed).toBe(false);
   });
 
-  it('projects the Shell expander flag and the wind toggle', () => {
-    const expanded: ClimateExpandState = {
-      fanTempOverrideExpanded: true,
-      exhaustCriticalTempExpanded: false,
-    };
-    expect(
-      createClimateTabViewModel(withFan({ regulation_mode: 'vpd' }), deps, expanded).fan
-        .tempOverrideExpanded
-    ).toBe(true);
+  it('projects the wind toggle', () => {
     expect(
       createClimateTabViewModel(withFan({ wind_enabled: true }), deps, collapsed).fan.showWind
     ).toBe(true);
   });
 });
 
-describe('createClimateTabViewModel — exhaust fan panel', () => {
-  it('projects the Shell critical-temp expander flag', () => {
-    const expanded: ClimateExpandState = {
-      fanTempOverrideExpanded: false,
-      exhaustCriticalTempExpanded: true,
-    };
-    expect(createClimateTabViewModel(sm(), deps, expanded).exhaust.criticalTempExpanded).toBe(true);
+describe('createClimateTabViewModel — Home Assistant units', () => {
+  it('projects configured units and converts the live reading', () => {
+    const vm = createClimateTabViewModel(
+      sm(),
+      {
+        ...deps,
+        unitSystem: { temperature: '°F', pressure: 'inHg' },
+        currentTemperature: { value: 24, unit: '°C' },
+      },
+      collapsed
+    );
+
+    expect(vm.units).toEqual({
+      temperature: '°F',
+      pressure: 'inHg',
+      currentTemperature: '75.2 °F',
+    });
+    expect(vm.fan.vpdTargetLabel).toBe('VPD Target (inHg)');
+  });
+
+  it('uses canonical units and an empty readout when Home Assistant has no data', () => {
+    expect(createClimateTabViewModel(sm(), deps, collapsed).units).toEqual({
+      temperature: '°C',
+      pressure: 'kPa',
+      currentTemperature: '—',
+    });
   });
 });
 

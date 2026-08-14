@@ -18,8 +18,6 @@
  *   - `env-draft-changed`            detail: { partial: Partial<EnvironmentDraft> }   (top-level fields)
  *   - `fan-config-changed`           detail: { partial: Partial<CirculationFanConfig> }
  *   - `exhaust-config-changed`       detail: { partial: Partial<ExhaustFanConfig> }
- *   - `toggle-fan-temp-override`     (no detail)
- *   - `toggle-exhaust-critical-temp` (no detail)
  *
  * Fan/exhaust edits forward only the changed field; the Shell merges it against
  * the live draft (so synchronous multi-field edits accumulate). The component
@@ -28,9 +26,10 @@
 
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { mdiFan, mdiChevronDown, mdiTune } from '@mdi/js';
+import { mdiFan, mdiThermometerAlert, mdiTune } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
-import '../../shared/ui/md3-number-input';
+import { localizeWithParams } from '../../../localize/localize';
+import { Md3NumberInput } from '../../shared/ui/md3-number-input';
 import '../../shared/ui/md3-select';
 import { renderAcInfinityDevices } from './ac-infinity-device-editor';
 import './config-entity-multi-select';
@@ -53,6 +52,19 @@ import type {
   ClimateStageVpdVM,
   FanRegulationMode,
 } from '../viewmodels/climate-tab.viewmodel';
+import {
+  DEFAULT_CRITICAL_TEMP_HIGH_C,
+  DEFAULT_CRITICAL_TEMP_LOW_C,
+  displayTemperature,
+  editCriticalTemperatureBound,
+  pressureFromKpa,
+  pressureStep,
+  pressureToKpa,
+  temperatureFromCelsius,
+  temperatureStep,
+  temperatureToCelsius,
+  type CriticalTemperatureBound,
+} from '../critical-temperature';
 
 type StageVpdOverrides = Record<string, { day: number; night: number }>;
 type ClimateStageAccordionStage = ClimateStageVpdStageVM & ConfigStageAccordionStage;
@@ -126,6 +138,65 @@ export class ConfigClimateTab extends LitElement {
         gap: 8px;
         margin-top: 12px;
       }
+      .critical-temperature {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+        border-radius: 12px;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+      }
+      .critical-temperature__heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .critical-temperature__title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        margin: 0;
+        color: var(--primary-text-color, #fff);
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+      .critical-temperature__title svg {
+        width: 20px;
+        height: 20px;
+        flex: none;
+        fill: var(--error-color, #f44336);
+      }
+      .critical-temperature__reading {
+        flex: none;
+        color: var(--primary-text-color, #fff);
+        font-size: 0.75rem;
+        font-variant-numeric: tabular-nums;
+      }
+      .critical-temperature__note {
+        margin: 0;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        font-size: 0.75rem;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+      .critical-temperature__bounds {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .critical-temperature__footer {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 12px;
+      }
+      .critical-temperature__disable {
+        min-height: 40px;
+        white-space: nowrap;
+      }
       @media (max-width: 600px) {
         .climate-layout {
           grid-template-columns: 1fr;
@@ -136,6 +207,18 @@ export class ConfigClimateTab extends LitElement {
         }
         .stage-vpd-grid {
           grid-template-columns: 1fr;
+        }
+        .critical-temperature__heading {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .critical-temperature__bounds,
+        .critical-temperature__footer {
+          grid-template-columns: 1fr;
+        }
+        .critical-temperature__disable {
+          width: 100%;
         }
       }
     `,
@@ -159,6 +242,21 @@ export class ConfigClimateTab extends LitElement {
 
   private _updateExhaust(partial: Partial<ExhaustFanConfig>): void {
     this._emit('exhaust-config-changed', { partial });
+  }
+
+  private _copy(key: string, params: Record<string, string | number> = {}): string {
+    return localizeWithParams(`config.${key}`, params, this.vm.language);
+  }
+
+  private _pressure(value: number): number {
+    return pressureFromKpa(value, this.vm.units.pressure);
+  }
+
+  private _formatPressure(value: number): string {
+    const unit = this.vm.units.pressure;
+    const digits =
+      unit === 'Pa' ? 0 : unit === 'hPa' || unit === 'mbar' ? 1 : unit === 'kPa' ? 2 : 3;
+    return this._pressure(value).toFixed(digits);
   }
 
   render(): TemplateResult {
@@ -322,17 +420,21 @@ export class ConfigClimateTab extends LitElement {
                   <md3-number-input
                     label="${vm.vpdTargetLabel}"
                     style="${vm.vpdTargetDimmed ? 'opacity:0.5;' : ''}"
-                    .value=${fan.vpd_target}
+                    .value=${this._pressure(fan.vpd_target)}
                     @change=${(e: CustomEvent) =>
-                      this._updateFan({ vpd_target: parseFloat(e.detail) })}
-                    step="0.01"
+                      this._updateFan({
+                        vpd_target: pressureToKpa(parseFloat(e.detail), this.vm.units.pressure),
+                      })}
+                    step=${pressureStep(this.vm.units.pressure)}
                   ></md3-number-input>
                   <md3-number-input
-                    label="VPD Tolerance (kPa)"
-                    .value=${fan.vpd_tolerance}
+                    label=${`VPD Tolerance (${this.vm.units.pressure})`}
+                    .value=${this._pressure(fan.vpd_tolerance)}
                     @change=${(e: CustomEvent) =>
-                      this._updateFan({ vpd_tolerance: parseFloat(e.detail) })}
-                    step="0.01"
+                      this._updateFan({
+                        vpd_tolerance: pressureToKpa(parseFloat(e.detail), this.vm.units.pressure),
+                      })}
+                    step=${pressureStep(this.vm.units.pressure)}
                   ></md3-number-input>
                 `
               : nothing}
@@ -357,48 +459,40 @@ export class ConfigClimateTab extends LitElement {
             ${vm.mode === 'temperature'
               ? html`
                   <md3-number-input
-                    label="Temperature Target (°C)"
-                    .value=${fan.temperature_target}
+                    label=${`Temperature Target (${this.vm.units.temperature})`}
+                    .value=${displayTemperature(fan.temperature_target, this.vm.units.temperature)}
                     @change=${(e: CustomEvent) =>
-                      this._updateFan({ temperature_target: parseFloat(e.detail) })}
-                    step="0.1"
+                      this._updateFan({
+                        temperature_target: temperatureToCelsius(
+                          parseFloat(e.detail),
+                          this.vm.units.temperature
+                        ),
+                      })}
+                    step=${temperatureStep(this.vm.units.temperature)}
                   ></md3-number-input>
                   <md3-number-input
-                    label="Temperature Tolerance (°C)"
-                    .value=${fan.temperature_tolerance}
+                    label=${`Temperature Tolerance (${this.vm.units.temperature})`}
+                    .value=${displayTemperature(
+                      fan.temperature_tolerance,
+                      this.vm.units.temperature,
+                      true
+                    )}
                     @change=${(e: CustomEvent) =>
-                      this._updateFan({ temperature_tolerance: parseFloat(e.detail) })}
-                    step="0.1"
+                      this._updateFan({
+                        temperature_tolerance: temperatureToCelsius(
+                          parseFloat(e.detail),
+                          this.vm.units.temperature,
+                          true
+                        ),
+                      })}
+                    step=${temperatureStep(this.vm.units.temperature)}
                   ></md3-number-input>
                 `
               : nothing}
           </div>
 
           ${vm.showTempOverride
-            ? html`
-                <div style="margin-top:8px;">
-                  <button
-                    class="md3-button tonal"
-                    style="display:flex;align-items:center;gap:4px;width:100%;justify-content:space-between;"
-                    @click=${() => this._emit('toggle-fan-temp-override')}
-                  >
-                    <span>Temperature Override</span>
-                    <svg
-                      style="width:18px;height:18px;transition:transform 0.2s;transform:rotate(${vm.tempOverrideExpanded
-                        ? '180deg'
-                        : '0deg'});"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="${mdiChevronDown}"></path>
-                    </svg>
-                  </button>
-                  ${vm.tempOverrideExpanded
-                    ? html`<div class="row-col-grid" style="margin-top:8px;">
-                        ${this._criticalTempInputs(fan, this._updateFan.bind(this))}
-                      </div>`
-                    : nothing}
-                </div>
-              `
+            ? this._criticalTempInputs('fan', fan, this._updateFan.bind(this))
             : nothing}
 
           <div class="row-col-grid" style="margin-top:8px;">
@@ -473,8 +567,10 @@ export class ConfigClimateTab extends LitElement {
                 `
               : html`
                   <div slot=${stageAccordionSummarySlot(stage.id)} class="stage-vpd-summary">
-                    Fan ${stage.fan.day.toFixed(2)} / ${stage.fan.night.toFixed(2)} · Exhaust
-                    ${stage.exhaust.day.toFixed(2)} / ${stage.exhaust.night.toFixed(2)} kPa
+                    Fan ${this._formatPressure(stage.fan.day)} /
+                    ${this._formatPressure(stage.fan.night)} · Exhaust
+                    ${this._formatPressure(stage.exhaust.day)} /
+                    ${this._formatPressure(stage.exhaust.night)} ${this.vm.units.pressure}
                   </div>
                 `
           )}
@@ -510,12 +606,12 @@ export class ConfigClimateTab extends LitElement {
           (period) => html`
             <md3-number-input
               label=${period === 'day' ? 'Day' : 'Night'}
-              input-aria-label=${`${stage.label} ${label} ${period} VPD in kilopascals`}
-              .value=${values[period]}
-              min="0.1"
-              max="3"
-              step="0.01"
-              unit="kPa"
+              input-aria-label=${`${stage.label} ${label} ${period} VPD in ${this.vm.units.pressure}`}
+              .value=${this._pressure(values[period])}
+              .min=${this._pressure(0.1)}
+              .max=${this._pressure(3)}
+              step=${pressureStep(this.vm.units.pressure)}
+              unit=${this.vm.units.pressure}
               @change=${(event: CustomEvent<string>) =>
                 this._updateStageVpd(controller, stage.id, period, event.detail)}
             ></md3-number-input>
@@ -535,7 +631,7 @@ export class ConfigClimateTab extends LitElement {
     const overrides = (config.stage_vpd_overrides ?? {}) as StageVpdOverrides;
     const value = Number.isNaN(parseFloat(raw))
       ? FAN_VPD_STAGE_DEFAULTS[key][period]
-      : parseFloat(raw);
+      : pressureToKpa(parseFloat(raw), this.vm.units.pressure);
     const existing = overrides[key] ?? FAN_VPD_STAGE_DEFAULTS[key];
     const updated = { ...overrides, [key]: { ...existing, [period]: value } };
     if (controller === 'fan') {
@@ -580,18 +676,33 @@ export class ConfigClimateTab extends LitElement {
           </div>
           <div class="row-col-grid" style="margin-top:8px;">
             <md3-number-input
-              label="Temperature Target (°C)"
-              .value=${fan.temperature_target}
+              label=${`Temperature Target (${this.vm.units.temperature})`}
+              .value=${displayTemperature(fan.temperature_target, this.vm.units.temperature)}
               @change=${(e: CustomEvent) =>
-                this._updateExhaust({ temperature_target: parseFloat(e.detail) })}
-              step="0.1"
+                this._updateExhaust({
+                  temperature_target: temperatureToCelsius(
+                    parseFloat(e.detail),
+                    this.vm.units.temperature
+                  ),
+                })}
+              step=${temperatureStep(this.vm.units.temperature)}
             ></md3-number-input>
             <md3-number-input
-              label="Temperature Tolerance (°C)"
-              .value=${fan.temperature_tolerance}
+              label=${`Temperature Tolerance (${this.vm.units.temperature})`}
+              .value=${displayTemperature(
+                fan.temperature_tolerance,
+                this.vm.units.temperature,
+                true
+              )}
               @change=${(e: CustomEvent) =>
-                this._updateExhaust({ temperature_tolerance: parseFloat(e.detail) })}
-              step="0.1"
+                this._updateExhaust({
+                  temperature_tolerance: temperatureToCelsius(
+                    parseFloat(e.detail),
+                    this.vm.units.temperature,
+                    true
+                  ),
+                })}
+              step=${temperatureStep(this.vm.units.temperature)}
             ></md3-number-input>
           </div>
 
@@ -616,17 +727,21 @@ export class ConfigClimateTab extends LitElement {
             <md3-number-input
               label="${vm.vpdTargetLabel}"
               style="${vm.vpdTargetDimmed ? 'opacity:0.5;' : ''}"
-              .value=${fan.vpd_target}
+              .value=${this._pressure(fan.vpd_target)}
               @change=${(e: CustomEvent) =>
-                this._updateExhaust({ vpd_target: parseFloat(e.detail) })}
-              step="0.01"
+                this._updateExhaust({
+                  vpd_target: pressureToKpa(parseFloat(e.detail), this.vm.units.pressure),
+                })}
+              step=${pressureStep(this.vm.units.pressure)}
             ></md3-number-input>
             <md3-number-input
-              label="VPD Tolerance (kPa)"
-              .value=${fan.vpd_tolerance}
+              label=${`VPD Tolerance (${this.vm.units.pressure})`}
+              .value=${this._pressure(fan.vpd_tolerance)}
               @change=${(e: CustomEvent) =>
-                this._updateExhaust({ vpd_tolerance: parseFloat(e.detail) })}
-              step="0.01"
+                this._updateExhaust({
+                  vpd_tolerance: pressureToKpa(parseFloat(e.detail), this.vm.units.pressure),
+                })}
+              step=${pressureStep(this.vm.units.pressure)}
             ></md3-number-input>
           </div>
 
@@ -647,35 +762,15 @@ export class ConfigClimateTab extends LitElement {
             ></md3-number-input>
           </div>
 
-          <div style="margin-top:8px;">
-            <button
-              class="md3-button tonal"
-              style="display:flex;align-items:center;gap:4px;width:100%;justify-content:space-between;"
-              @click=${() => this._emit('toggle-exhaust-critical-temp')}
-            >
-              <span>Critical Temperature</span>
-              <svg
-                style="width:18px;height:18px;transition:transform 0.2s;transform:rotate(${vm.criticalTempExpanded
-                  ? '180deg'
-                  : '0deg'});"
-                viewBox="0 0 24 24"
-              >
-                <path d="${mdiChevronDown}"></path>
-              </svg>
-            </button>
-            ${vm.criticalTempExpanded
-              ? html`<div class="row-col-grid" style="margin-top:8px;">
-                  ${this._criticalTempInputs(fan, this._updateExhaust.bind(this))}
-                </div>`
-              : nothing}
-          </div>
+          ${this._criticalTempInputs('exhaust', fan, this._updateExhaust.bind(this))}
         </div>
       </div>
     `;
   }
 
-  /** Shared low/high/hysteresis inputs — `update` targets fan or exhaust. */
+  /** Shared paired safety-cutoff editor — `update` targets fan or exhaust. */
   private _criticalTempInputs(
+    controller: 'fan' | 'exhaust',
     fan: CirculationFanConfig | ExhaustFanConfig,
     update: (partial: {
       critical_temp_low?: number | null;
@@ -683,28 +778,109 @@ export class ConfigClimateTab extends LitElement {
       critical_temp_hysteresis?: number;
     }) => void
   ): TemplateResult {
+    const unit = this.vm.units.temperature;
+    const enabled = fan.critical_temp_low != null || fan.critical_temp_high != null;
+    const lowPlaceholder = temperatureFromCelsius(DEFAULT_CRITICAL_TEMP_LOW_C, unit).toFixed(1);
+    const highPlaceholder = temperatureFromCelsius(DEFAULT_CRITICAL_TEMP_HIGH_C, unit).toFixed(1);
     return html`
-      <md3-number-input
-        label="Critical Temp Low (°C)"
-        .value=${fan.critical_temp_low ?? ''}
-        @change=${(e: CustomEvent) =>
-          update({ critical_temp_low: e.detail !== '' ? parseFloat(e.detail) : null })}
-        step="0.1"
-      ></md3-number-input>
-      <md3-number-input
-        label="Critical Temp High (°C)"
-        .value=${fan.critical_temp_high ?? ''}
-        @change=${(e: CustomEvent) =>
-          update({ critical_temp_high: e.detail !== '' ? parseFloat(e.detail) : null })}
-        step="0.1"
-      ></md3-number-input>
-      <md3-number-input
-        label="Critical Temp Hysteresis (°C)"
-        .value=${fan.critical_temp_hysteresis}
-        @change=${(e: CustomEvent) => update({ critical_temp_hysteresis: parseFloat(e.detail) })}
-        step="0.1"
-      ></md3-number-input>
+      <section class="critical-temperature" data-controller=${controller}>
+        <div class="critical-temperature__heading">
+          <h4 class="critical-temperature__title">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d=${mdiThermometerAlert}></path></svg>
+            Critical Temperature
+          </h4>
+          <span class="critical-temperature__reading">
+            ${this._copy('current_temperature', {
+              value: this.vm.units.currentTemperature,
+            })}
+          </span>
+        </div>
+        <p class="critical-temperature__note">${this._copy('critical_temperature_description')}</p>
+        <div class="critical-temperature__bounds">
+          <md3-number-input
+            label="Low cutoff"
+            input-aria-label=${`Low critical temperature in ${unit}`}
+            .value=${displayTemperature(fan.critical_temp_low, unit)}
+            .placeholder=${lowPlaceholder}
+            .min=${temperatureFromCelsius(10, unit)}
+            .max=${temperatureFromCelsius(40, unit)}
+            step=${temperatureStep(unit)}
+            unit=${unit}
+            @change=${(event: CustomEvent<string>) =>
+              this._editCriticalTemp(controller, fan, 'low', event, update)}
+          ></md3-number-input>
+          <md3-number-input
+            label="High cutoff"
+            input-aria-label=${`High critical temperature in ${unit}`}
+            .value=${displayTemperature(fan.critical_temp_high, unit)}
+            .placeholder=${highPlaceholder}
+            .min=${temperatureFromCelsius(10, unit)}
+            .max=${temperatureFromCelsius(50, unit)}
+            step=${temperatureStep(unit)}
+            unit=${unit}
+            @change=${(event: CustomEvent<string>) =>
+              this._editCriticalTemp(controller, fan, 'high', event, update)}
+          ></md3-number-input>
+        </div>
+        <div class="critical-temperature__footer">
+          <md3-number-input
+            label="Recovery hysteresis"
+            input-aria-label=${`Critical temperature recovery hysteresis in ${unit}`}
+            .value=${displayTemperature(fan.critical_temp_hysteresis, unit, true)}
+            .min=${temperatureFromCelsius(0.1, unit, true)}
+            .max=${temperatureFromCelsius(5, unit, true)}
+            step=${temperatureStep(unit)}
+            unit=${unit}
+            @change=${(event: CustomEvent<string>) =>
+              update({
+                critical_temp_hysteresis: temperatureToCelsius(
+                  parseFloat(event.detail),
+                  unit,
+                  true
+                ),
+              })}
+          ></md3-number-input>
+          <button
+            class="md3-button tonal critical-temperature__disable"
+            ?disabled=${!enabled}
+            title=${enabled ? nothing : this._copy('critical_temperature_already_disabled')}
+            @click=${() => update({ critical_temp_low: null, critical_temp_high: null })}
+          >
+            Disable cutoff
+          </button>
+        </div>
+      </section>
     `;
+  }
+
+  private _editCriticalTemp(
+    controller: 'fan' | 'exhaust',
+    fan: CirculationFanConfig | ExhaustFanConfig,
+    bound: CriticalTemperatureBound,
+    event: CustomEvent<string>,
+    update: (partial: {
+      critical_temp_low?: number | null;
+      critical_temp_high?: number | null;
+    }) => void
+  ): void {
+    const input = event.currentTarget as Md3NumberInput;
+    const result = editCriticalTemperatureBound(
+      fan,
+      bound,
+      String(event.detail),
+      this.vm.units.temperature
+    );
+    input.error = result.error ?? '';
+    if (!result.patch) return;
+
+    this.shadowRoot
+      ?.querySelectorAll<Md3NumberInput>(
+        `.critical-temperature[data-controller="${controller}"] md3-number-input`
+      )
+      .forEach((field) => {
+        field.error = '';
+      });
+    update(result.patch);
   }
 }
 
