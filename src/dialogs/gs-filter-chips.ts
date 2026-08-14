@@ -20,7 +20,7 @@ export class GsFilterChips extends LitElement {
       border: 1px solid var(--divider-color, #e0e0e0);
       background: transparent;
       color: var(--primary-text-color);
-      font-size: 13px;
+      font-size: var(--font-size-supporting);
       cursor: pointer;
       transition:
         background 0.15s,

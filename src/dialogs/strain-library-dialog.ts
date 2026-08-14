@@ -263,7 +263,7 @@ export class StrainLibraryDialog extends LitElement {
         flex: 1;
       }
       .sc-title {
-        font-size: 1.1rem;
+        font-size: var(--font-size-md);
         font-weight: 700;
         margin: 0 0 4px 0;
         color: var(--primary-text-color, #fff);
@@ -281,7 +281,7 @@ export class StrainLibraryDialog extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 4px;
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
       }
       .sc-actions {
@@ -372,7 +372,7 @@ export class StrainLibraryDialog extends LitElement {
         border-radius: var(--border-radius-sm, 8px);
         padding: 12px 16px;
         color: var(--primary-text-color, #fff);
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         outline: none;
         transition: border-color 0.2s;
         box-sizing: border-box;
@@ -584,7 +584,7 @@ export class StrainLibraryDialog extends LitElement {
       }
       .pagination-text {
         color: var(--secondary-text-color);
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         font-weight: 500;
       }
       .pagination-btn {
@@ -770,7 +770,7 @@ export class StrainLibraryDialog extends LitElement {
         margin: 0 0 4px 0;
       }
       .breeder-strain-count {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
       }
       .breeder-actions {
@@ -815,7 +815,7 @@ export class StrainLibraryDialog extends LitElement {
         border: none;
         border-bottom: 3px solid transparent;
         color: var(--secondary-text-color);
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         font-weight: 500;
         cursor: pointer;
         transition:
@@ -942,7 +942,7 @@ export class StrainLibraryDialog extends LitElement {
         fill: currentColor;
       }
       .seed-batch-meta {
-        font-size: 0.82rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
         margin-bottom: 4px;
       }
@@ -966,12 +966,12 @@ export class StrainLibraryDialog extends LitElement {
         font-weight: 600;
       }
       .seed-batch-lineage {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--accent-green, #4caf50);
         margin-bottom: 4px;
       }
       .seed-batch-notes {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
         font-style: italic;
       }
@@ -1000,7 +1000,7 @@ export class StrainLibraryDialog extends LitElement {
         border: 1px solid var(--divider-color);
         background: var(--card-background-color);
         color: var(--primary-text-color);
-        font-size: 13px;
+        font-size: var(--font-size-supporting);
       }
       .sow-qty {
         width: 64px;
@@ -1009,7 +1009,7 @@ export class StrainLibraryDialog extends LitElement {
         border: 1px solid var(--divider-color);
         background: var(--card-background-color);
         color: var(--primary-text-color);
-        font-size: 13px;
+        font-size: var(--font-size-supporting);
         text-align: center;
       }
       .pollination-card {
@@ -1024,7 +1024,7 @@ export class StrainLibraryDialog extends LitElement {
       }
       .pollination-date {
         font-weight: 600;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         color: var(--primary-text-color);
       }
       .pollination-plants {
@@ -1032,7 +1032,7 @@ export class StrainLibraryDialog extends LitElement {
         color: var(--secondary-text-color);
       }
       .pollination-notes {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
         font-style: italic;
       }
@@ -1081,7 +1081,7 @@ export class StrainLibraryDialog extends LitElement {
       }
       .empty-state {
         color: var(--secondary-text-color);
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         margin: 8px 0 16px 0;
       }
 
@@ -1102,7 +1102,7 @@ export class StrainLibraryDialog extends LitElement {
       }
       .form-header h3 {
         margin: 0;
-        font-size: 1.1rem;
+        font-size: var(--font-size-md);
         font-weight: 600;
         color: var(--primary-text-color);
       }
@@ -1120,7 +1120,7 @@ export class StrainLibraryDialog extends LitElement {
         border-radius: var(--border-radius-sm, 8px);
         padding: 10px 14px;
         color: var(--primary-text-color, #fff);
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         outline: none;
         font-family: inherit;
       }
@@ -1149,7 +1149,7 @@ export class StrainLibraryDialog extends LitElement {
         border: 1px solid var(--divider-color, #e0e0e0);
         background: transparent;
         color: var(--primary-text-color);
-        font-size: 13px;
+        font-size: var(--font-size-supporting);
         cursor: pointer;
         transition:
           background 0.15s,
@@ -1377,7 +1377,7 @@ export class StrainLibraryDialog extends LitElement {
 
           <div style="padding: 24px;">
             <div
-              style="font-size: 0.9rem; color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 20px;"
+              style="font-size: var(--font-size-sm); color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 20px;"
             >
               Select a ZIP file containing your strain library export. You can either merge the new
               strains with your existing library or replace it entirely.
@@ -1396,7 +1396,7 @@ export class StrainLibraryDialog extends LitElement {
                 />
                 <div>
                   <div style="font-weight: 600;">Merge</div>
-                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
+                  <div style="font-size: var(--font-size-supporting); color: var(--secondary-text-color);">
                     Add new strains, keep existing ones.
                   </div>
                 </div>
@@ -1414,7 +1414,7 @@ export class StrainLibraryDialog extends LitElement {
                 />
                 <div>
                   <div style="font-weight: 600;">Replace</div>
-                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
+                  <div style="font-size: var(--font-size-supporting); color: var(--secondary-text-color);">
                     Overwrite entire library with import.
                   </div>
                 </div>
@@ -1542,7 +1542,7 @@ export class StrainLibraryDialog extends LitElement {
                       this._cameFromEditor = false;
                       this._activeMainTab = 'strains';
                     }}
-                    style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(76, 175, 80, 0.15); border: 1px solid var(--accent-green, #4caf50); border-radius: var(--border-radius-full, 9999px); color: var(--accent-green, #4caf50); font-weight: 500; font-size: 13px; cursor: pointer; transition: all 0.2s ease-in-out; outline: none; margin-right: 0;"
+                    style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(76, 175, 80, 0.15); border: 1px solid var(--accent-green, #4caf50); border-radius: var(--border-radius-full, 9999px); color: var(--accent-green, #4caf50); font-weight: 500; font-size: var(--font-size-supporting); cursor: pointer; transition: all 0.2s ease-in-out; outline: none; margin-right: 0;"
                     onmouseover="this.style.background='rgba(76, 175, 80, 0.25)'"
                     onmouseout="this.style.background='rgba(76, 175, 80, 0.15)'"
                   >

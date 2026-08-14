@@ -49,7 +49,7 @@ export class SensorGroupDialog extends LitElement {
         gap: 8px;
       }
       .column-title {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         font-weight: 500;
         color: var(--secondary-text-color);
         padding-bottom: 4px;

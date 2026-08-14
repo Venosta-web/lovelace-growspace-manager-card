@@ -126,22 +126,22 @@ export class HarvestScoringDialog extends LitElement {
         align-items: center;
         gap: 8px;
         font-weight: 500;
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
       }
 
       .score-emoji {
-        font-size: 1.2rem;
+        font-size: var(--font-size-lg);
       }
 
       .score-value {
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         opacity: 0.7;
         min-width: 30px;
         text-align: right;
       }
 
       .score-description {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         opacity: 0.5;
         margin: 0;
       }
@@ -157,7 +157,7 @@ export class HarvestScoringDialog extends LitElement {
         border: none;
         padding: 0;
         cursor: pointer;
-        font-size: 1.6rem;
+        font-size: var(--font-size-xl);
         line-height: 1;
         transition:
           transform 0.1s,
@@ -176,7 +176,7 @@ export class HarvestScoringDialog extends LitElement {
       }
 
       .skip-hint {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         opacity: 0.45;
         margin-top: 8px;
         text-align: center;
@@ -237,7 +237,7 @@ export class HarvestScoringDialog extends LitElement {
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
         border-radius: var(--border-radius-sm, 8px);
         color: var(--primary-text-color);
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         padding: 6px 10px;
         width: 100%;
         box-sizing: border-box;

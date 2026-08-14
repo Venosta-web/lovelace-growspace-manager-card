@@ -360,7 +360,7 @@ export class StrainImportDialog extends LitElement {
         fill: currentColor;
       }
       .field-value {
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         word-break: break-word;
       }
       .loading-spinner {
@@ -391,10 +391,10 @@ export class StrainImportDialog extends LitElement {
         border: 1px solid rgba(244, 67, 54, 0.3);
         color: #ff5252;
         border-radius: var(--border-radius-sm, 8px);
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
       }
       .description-text {
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         line-height: 1.5;
         max-height: 100px;
         overflow-y: auto;
@@ -476,7 +476,7 @@ export class StrainImportDialog extends LitElement {
                   ? html`
                       <div class="results-list">
                         <div
-                          style="font-size:0.8rem; color:var(--secondary-text-color); margin-bottom:4px;"
+                          style="font-size:var(--font-size-supporting); color:var(--secondary-text-color); margin-bottom:4px;"
                         >
                           Select a match:
                         </div>

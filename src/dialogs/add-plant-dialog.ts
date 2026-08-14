@@ -158,7 +158,7 @@ export class AddPlantDialog extends LitElement {
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         font-weight: 500;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.4));
         white-space: nowrap;
@@ -233,7 +233,7 @@ export class AddPlantDialog extends LitElement {
         justify-content: space-between;
         padding: 10px 14px;
         cursor: pointer;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         transition: background 0.1s;
       }
 
@@ -323,7 +323,7 @@ export class AddPlantDialog extends LitElement {
 
       .info-label {
         color: var(--secondary-text-color);
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
       }
 
       .info-value {
@@ -713,7 +713,7 @@ export class AddPlantDialog extends LitElement {
             border-radius: var(--border-radius-sm, 8px);
             background: rgba(76,175,80,0.06);
             border: 1px solid rgba(76,175,80,0.2);
-            font-size: 0.8rem;
+            font-size: var(--font-size-supporting);
             color: rgba(255,255,255,0.7);
             display: flex; gap: 16px;
           "
@@ -737,7 +737,7 @@ export class AddPlantDialog extends LitElement {
           class="toggle-container"
           style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
         >
-          <span style="font-size: 0.9rem; color: var(--secondary-text-color);"
+          <span style="font-size: var(--font-size-sm); color: var(--secondary-text-color);"
             >Add to Strain Library</span
           >
           <md3-switch
@@ -797,7 +797,7 @@ export class AddPlantDialog extends LitElement {
         ${draft.sourceType === 'clone' && clonable.length > 0
           ? html`
               <div
-                style="font-size: 0.82rem; color: var(--secondary-text-color); margin-bottom: 8px;"
+                style="font-size: var(--font-size-supporting); color: var(--secondary-text-color); margin-bottom: 8px;"
               >
                 Select mother plant to clone settings from:
               </div>

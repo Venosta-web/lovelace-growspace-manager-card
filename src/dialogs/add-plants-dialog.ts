@@ -58,7 +58,7 @@ export class AddPlantsDialog extends LitElement {
         display: flex;
         gap: 12px;
         align-items: flex-start;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         color: var(--md3-sys-color-on-surface-variant);
         border: 1px solid rgba(var(--md3-sys-color-primary-rgb), 0.1);
       }
@@ -258,7 +258,7 @@ export class AddPlantsDialog extends LitElement {
                 class="toggle-container"
                 style="margin-top: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
               >
-                <span style="font-size: 0.95rem; color: var(--secondary-text-color);"
+                <span style="font-size: var(--font-size-md); color: var(--secondary-text-color);"
                   >Add to Strain Library</span
                 >
                 <md3-switch

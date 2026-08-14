@@ -70,7 +70,7 @@ export class GsBreederManager extends LitElement {
         border-radius: var(--border-radius-sm, 8px);
         padding: 12px 16px;
         color: var(--primary-text-color, #fff);
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         outline: none;
         transition: border-color 0.2s;
         box-sizing: border-box;
@@ -138,7 +138,7 @@ export class GsBreederManager extends LitElement {
       }
 
       .breeder-strain-count {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
       }
 
@@ -201,7 +201,7 @@ export class GsBreederManager extends LitElement {
           ? html`
               <div class="sd-footer">
                 <span
-                  style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px; flex:1;"
+                  style="font-size:var(--font-size-supporting); color:var(--secondary-text-color); padding: 0 8px; flex:1;"
                 >
                   Breeders appear automatically when strains with breeder info are saved.
                 </span>
@@ -444,7 +444,7 @@ export class GsBreederManager extends LitElement {
                   ${affectedStrains.map(
                     (s) => html`
                       <span
-                        style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius: var(--border-radius-lg, 16px); font-size:0.8rem; font-weight:500;"
+                        style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius: var(--border-radius-lg, 16px); font-size:var(--font-size-supporting); font-weight:500;"
                       >
                         ${s.strain}${s.phenotype ? ` (${s.phenotype})` : ''}
                       </span>

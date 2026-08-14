@@ -715,7 +715,7 @@ export class ConfigDialog extends LitElement {
       }
 
       .cfg-rail-caps {
-        font-size: 0.65rem;
+        font-size: var(--font-size-xs);
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.08em;
@@ -940,7 +940,7 @@ export class ConfigDialog extends LitElement {
 
       .acc-head-title {
         flex: 1;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         font-weight: 500;
       }
 
@@ -1005,7 +1005,7 @@ export class ConfigDialog extends LitElement {
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
       }
 

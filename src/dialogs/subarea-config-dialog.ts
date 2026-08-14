@@ -82,7 +82,7 @@ export class SubareaConfigDialog extends LitElement {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
         border-radius: var(--border-radius-lg, 16px);
         padding: 4px 12px;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         height: 24px;
       }
       .chip-remove {

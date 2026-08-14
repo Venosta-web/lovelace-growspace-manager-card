@@ -151,14 +151,14 @@ export class PrintLabelDialog extends LitElement {
           border: none;
           color: var(--primary-text-color, #fff);
           cursor: pointer;
-          font-size: 0.88rem;
+          font-size: var(--font-size-sm);
           font-weight: 500;
         }
         .mobile-pill-toggle.open {
           border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
         .pill-chevron {
-          font-size: 1.1rem;
+          font-size: var(--font-size-md);
           opacity: 0.5;
           display: inline-block;
           transform: rotate(90deg);
@@ -210,7 +210,7 @@ export class PrintLabelDialog extends LitElement {
         opacity: 0.5;
       }
       .field-toggle-label {
-        font-size: 0.88rem;
+        font-size: var(--font-size-sm);
       }
       .toggle-dot {
         width: 28px;
@@ -281,7 +281,7 @@ export class PrintLabelDialog extends LitElement {
       .copies-value {
         min-width: 28px;
         text-align: center;
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
       }
       .density-seg {
         display: flex;
@@ -295,7 +295,7 @@ export class PrintLabelDialog extends LitElement {
         color: var(--primary-text-color, #fff);
         padding: 4px 10px;
         cursor: pointer;
-        font-size: 0.82rem;
+        font-size: var(--font-size-supporting);
         opacity: 0.6;
         transition: background 0.15s, opacity 0.15s;
       }
@@ -316,7 +316,7 @@ export class PrintLabelDialog extends LitElement {
         border-radius: var(--border-radius-sm, 8px);
         padding: 4px 10px;
         cursor: pointer;
-        font-size: 0.82rem;
+        font-size: var(--font-size-supporting);
         color: var(--primary-text-color, #fff);
         transition: background 0.15s;
       }
@@ -335,7 +335,7 @@ export class PrintLabelDialog extends LitElement {
         margin-bottom: 12px;
       }
       .footer-meta {
-        font-size: 0.82rem;
+        font-size: var(--font-size-supporting);
         opacity: 0.6;
         flex: 1;
       }
@@ -354,7 +354,7 @@ export class PrintLabelDialog extends LitElement {
         border-radius: var(--border-radius-sm, 8px);
         padding: 8px 18px;
         cursor: pointer;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         display: flex;
         align-items: center;
         gap: 6px;
