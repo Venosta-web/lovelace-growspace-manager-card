@@ -50,7 +50,7 @@ export class PlantGeneticsTab extends LitElement {
         <!-- Seed batch origin -->
         <div>
           <h4
-            style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;"
+            style="margin: 0 0 12px; font-size: var(--font-size-supporting); color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;"
           >
             Origin
           </h4>
@@ -63,7 +63,7 @@ export class PlantGeneticsTab extends LitElement {
                     border: 1px solid #8bc34a;
                     border-radius: 16px;
                     padding: 4px 12px;
-                    font-size: 13px;
+                    font-size: var(--font-size-supporting);
                   "
                     >🌱 ${seedBatchId}${generation ? ` · ${generation}` : ''}</span
                   >
@@ -89,7 +89,7 @@ export class PlantGeneticsTab extends LitElement {
                 <div>
                   <button
                     class="md3-button tonal"
-                    style="font-size: 13px;"
+                    style="font-size: var(--font-size-supporting);"
                     @click=${() => {
                       this._seedBatchSearchOpen = !this._seedBatchSearchOpen;
                     }}
@@ -117,7 +117,7 @@ export class PlantGeneticsTab extends LitElement {
         <!-- Sex -->
         <div>
           <h4
-            style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;"
+            style="margin: 0 0 12px; font-size: var(--font-size-supporting); color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;"
           >
             Sex
           </h4>
@@ -127,10 +127,14 @@ export class PlantGeneticsTab extends LitElement {
                 <button
                   class="md3-chip ${sex === opt.value ? 'selected' : ''}"
                   style="
-                    border: 1px solid ${sex === opt.value ? 'var(--primary-color)' : 'var(--divider-color)'};
+                    border: 1px solid ${sex === opt.value
+                    ? 'var(--primary-color)'
+                    : 'var(--divider-color)'};
                     background: ${sex === opt.value ? 'var(--primary-color)' : 'transparent'};
-                    color: ${sex === opt.value ? 'var(--primary-text-color)' : 'var(--secondary-text-color)'};
-                    border-radius: 16px; padding: 4px 12px; font-size: 13px; cursor: pointer;
+                    color: ${sex === opt.value
+                    ? 'var(--primary-text-color)'
+                    : 'var(--secondary-text-color)'};
+                    border-radius: 16px; padding: 4px 12px; font-size: var(--font-size-supporting); cursor: pointer;
                   "
                   ?disabled=${this._sexSaving}
                   @click=${async () => {
@@ -157,7 +161,7 @@ export class PlantGeneticsTab extends LitElement {
         <!-- Lineage tree -->
         <div>
           <h4
-            style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; display:flex; align-items:center; justify-content:space-between;"
+            style="margin: 0 0 12px; font-size: var(--font-size-supporting); color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; display:flex; align-items:center; justify-content:space-between;"
           >
             Lineage
             <button

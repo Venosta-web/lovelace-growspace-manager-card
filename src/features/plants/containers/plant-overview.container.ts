@@ -161,7 +161,7 @@ export class PlantOverviewContainer extends LitElement {
         height: 18px;
         padding: 0 5px;
         border-radius: var(--border-radius-full, 9999px);
-        font-size: 0.65rem;
+        font-size: var(--font-size-xs);
         font-weight: 600;
         background: var(--primary-color, #4caf50);
         color: #fff;

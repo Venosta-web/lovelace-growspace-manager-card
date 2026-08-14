@@ -83,7 +83,7 @@ export class PlantDryingTab extends LitElement {
           >
             Visual tag
           </p>
-          <p style="font-size:0.8rem; opacity:0.5; margin:0 0 10px;">
+          <p style="font-size:var(--font-size-supporting); opacity:0.5; margin:0 0 10px;">
             Physical identifier tied to the plant (e.g. "Red Velcro").
           </p>
           <div style="display:flex; gap:8px; align-items:center;">
