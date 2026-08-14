@@ -193,12 +193,12 @@ describe('Strain Library accessibility', () => {
     });
 
     it('hides decorative icons from assistive technology', async () => {
-      const labelled = browseRoot.querySelector('.fab-btn')!;
+      const labelled = browseRoot.querySelector('.md3-button.close')!;
       expect(labelled.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
     });
   });
 
-  describe('overflow menu (AC 1)', () => {
+  describe('manage menu (AC 1)', () => {
     it('exposes menu semantics and native buttons for each action', async () => {
       const trigger = browseRoot.querySelector('button[aria-haspopup="menu"]') as HTMLElement;
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
@@ -210,24 +210,24 @@ describe('Strain Library accessibility', () => {
         browseRoot.querySelector('button[aria-haspopup="menu"]')?.getAttribute('aria-expanded')
       ).toBe('true');
 
-      const menu = browseRoot.querySelector('.mobile-menu')!;
+      const menu = browseRoot.querySelector('.manage-menu')!;
       expect(menu.getAttribute('role')).toBe('menu');
 
-      const items = Array.from(menu.querySelectorAll('.mobile-menu-item'));
-      expect(items).toHaveLength(5);
+      const items = Array.from(menu.querySelectorAll('.manage-menu-item'));
+      expect(items).toHaveLength(3);
       expect(items.every((i) => i.tagName === 'BUTTON')).toBe(true);
       expect(items.every((i) => i.getAttribute('role') === 'menuitem')).toBe(true);
     });
 
     it('emits the action when a menu item is activated', async () => {
-      const onNew = vi.fn();
-      browseRoot.host.addEventListener('new-strain', onNew);
+      const onImport = vi.fn();
+      browseRoot.host.addEventListener('import-requested', onImport);
 
       (browseRoot.querySelector('button[aria-haspopup="menu"]') as HTMLElement).click();
       await (browseRoot.host as unknown as { updateComplete: Promise<unknown> }).updateComplete;
 
-      (browseRoot.querySelector('.mobile-menu-item') as HTMLElement).click();
-      expect(onNew).toHaveBeenCalledTimes(1);
+      (browseRoot.querySelector('.manage-menu-item') as HTMLElement).click();
+      expect(onImport).toHaveBeenCalledTimes(1);
     });
   });
 

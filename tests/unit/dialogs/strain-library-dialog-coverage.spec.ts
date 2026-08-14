@@ -297,17 +297,17 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
   });
 
   describe('UI Interactions', () => {
-    it('toggles mobile menu', async () => {
+    it('toggles manage menu', async () => {
       const browseView = element.shadowRoot?.querySelector('strain-browse-view') as any;
       const menuBtn = browseView?.shadowRoot?.querySelector('.header-actions button') as HTMLElement;
       menuBtn?.click();
-      expect(browseView?._mobileMenuOpen).toBe(true);
+      expect(browseView?._manageMenuOpen).toBe(true);
 
       menuBtn?.click();
-      expect(browseView?._mobileMenuOpen).toBe(false);
+      expect(browseView?._manageMenuOpen).toBe(false);
     });
 
-    it('renders dots menu in browse view', async () => {
+    it('renders the manage menu trigger in browse view', async () => {
       (element as any)._view = 'browse';
       await element.updateComplete;
 
@@ -382,7 +382,10 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       (element as any)._activeMainTab = 'strains';
       await element.updateComplete;
 
-      const browseView = element.shadowRoot?.querySelector('strain-browse-view');
+      const browseView = element.shadowRoot?.querySelector('strain-browse-view') as any;
+      (browseView.shadowRoot?.querySelector('.manage-menu-trigger') as HTMLElement).click();
+      await browseView.updateComplete;
+
       const manageBtn = (Array.from(browseView?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[])
         .find(b => b.textContent?.includes('Manage Breeders'));
       expect(manageBtn).toBeTruthy();
