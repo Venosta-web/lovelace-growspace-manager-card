@@ -51,7 +51,7 @@ export class ConfirmDeleteDialog extends LitElement {
     p {
       margin: 0 0 var(--spacing-lg) 0;
       color: var(--secondary-text-color);
-      font-size: 0.95rem;
+      font-size: var(--font-size-md);
       line-height: 1.5;
     }
 
@@ -67,7 +67,7 @@ export class ConfirmDeleteDialog extends LitElement {
       gap: 6px;
       padding: 10px 20px;
       border-radius: var(--border-radius-sm);
-      font-size: 0.95rem;
+      font-size: var(--font-size-md);
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s;

@@ -12,7 +12,7 @@ export class LineageTree extends LitElement {
   static override styles = css`
     :host {
       display: block;
-      font-size: 13px;
+      font-size: var(--font-size-supporting);
     }
     .tree-empty {
       color: var(--secondary-text-color);
@@ -97,7 +97,7 @@ export class LineageTree extends LitElement {
       word-break: break-word;
     }
     .node-phenotype {
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       color: var(--secondary-text-color);
       font-style: italic;
     }
@@ -113,7 +113,7 @@ export class LineageTree extends LitElement {
       color: var(--text-primary-color, #fff);
       border-radius: var(--border-radius-xs, 4px);
       padding: 0 4px;
-      font-size: 10px;
+      font-size: var(--font-size-xs);
     }
     .cross-label {
       font-size: 12px;
@@ -239,7 +239,7 @@ export class LineageTreeEditor extends LitElement {
   static override styles = css`
     :host {
       display: block;
-      font-size: 13px;
+      font-size: var(--font-size-supporting);
     }
     .lte-root {
       display: flex;

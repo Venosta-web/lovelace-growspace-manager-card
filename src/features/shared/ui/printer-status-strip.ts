@@ -112,7 +112,7 @@ export class PrinterStatusStrip extends LitElement {
 
     .printer-name {
       font-family: monospace;
-      font-size: 0.8rem;
+      font-size: var(--font-size-supporting);
       opacity: 0.9;
     }
 

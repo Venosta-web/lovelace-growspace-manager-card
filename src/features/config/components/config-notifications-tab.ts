@@ -64,14 +64,14 @@ export class ConfigNotificationsTab extends LitElement {
       .settings-group h4 {
         margin: 0;
         color: var(--primary-text-color, #fff);
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         font-weight: 500;
       }
       .settings-group__description {
         min-height: 2.8em;
         margin: 4px 0 12px;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         line-height: 1.4;
         overflow-wrap: anywhere;
       }

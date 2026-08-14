@@ -57,7 +57,7 @@ export class ErrorBoundary extends LitElement {
     }
 
     .error-title {
-      font-size: 1.2rem;
+      font-size: var(--font-size-lg);
       font-weight: 500;
       margin: 0;
     }

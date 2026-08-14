@@ -119,7 +119,7 @@ export class CameraCapture extends LitElement {
 
     .overlay-error-message {
       max-width: 320px;
-      font-size: 0.95rem;
+      font-size: var(--font-size-md);
     }
 
     video {
@@ -185,7 +185,7 @@ export class CameraCapture extends LitElement {
       background: rgba(255, 255, 255, 0.1);
       color: #fff;
       font-family: inherit;
-      font-size: 0.95rem;
+      font-size: var(--font-size-md);
       cursor: pointer;
     }
 

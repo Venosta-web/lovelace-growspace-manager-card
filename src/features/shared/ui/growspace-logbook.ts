@@ -474,7 +474,7 @@ export class GrowspaceLogbook extends LitElement {
                             ? html`
                                 <div
                                   class="note-text"
-                                  style="font-size: 0.95rem; opacity: 1; margin-bottom: 8px;"
+                                  style="font-size: var(--font-size-md); opacity: 1; margin-bottom: 8px;"
                                 >
                                   ${(event as GrowspaceEvent & { notes?: string }).notes}
                                 </div>
@@ -500,7 +500,7 @@ export class GrowspaceLogbook extends LitElement {
                                 (event as GrowspaceEvent & { images?: string[] }).images!.length > 0
                                   ? html`
                                       <div
-                                        style="font-size: 0.8rem; opacity: 0.6; font-style: italic;"
+                                        style="font-size: var(--font-size-supporting); opacity: 0.6; font-style: italic;"
                                       >
                                         ${(event as GrowspaceEvent & { images?: string[] }).images!
                                           .length}
