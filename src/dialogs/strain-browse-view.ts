@@ -749,8 +749,10 @@ export class StrainBrowseView extends LitElement {
    */
   private _deleteTrigger: HTMLElement | null = null;
 
-  updated() {
-    if (this._pendingDeleteKey) {
+  updated(changedProperties: Map<string, unknown>) {
+    // Only on open — refocusing on every render would yank focus back to Cancel
+    // whenever an unrelated re-render lands while the prompt is up.
+    if (changedProperties.has('_pendingDeleteKey') && this._pendingDeleteKey) {
       this.shadowRoot?.querySelector<HTMLElement>('.delete-cancel-btn')?.focus();
     }
   }

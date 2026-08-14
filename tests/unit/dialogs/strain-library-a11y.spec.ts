@@ -156,6 +156,19 @@ describe('Strain Library accessibility', () => {
       await vi.waitFor(() => expect(getComputedStyle(actions).opacity).toBe('1'));
     });
 
+    it('opens the strain when the thumbnail area is clicked', async () => {
+      const selected = vi.fn();
+      browseRoot.host.addEventListener('strain-selected', selected);
+
+      const thumb = browseRoot.querySelector('.sc-thumb') as HTMLElement;
+      const r = thumb.getBoundingClientRect();
+      // Left-centre of the thumb: inside the card, away from .sc-actions.
+      const hit = browseRoot.elementFromPoint(r.left + 10, r.top + r.height / 2);
+      hit?.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+
+      expect(selected).toHaveBeenCalledTimes(1);
+    });
+
     it('selects the strain on keyboard activation of the title button', async () => {
       const selected = vi.fn();
       browseRoot.host.addEventListener('strain-selected', selected);
@@ -242,6 +255,24 @@ describe('Strain Library accessibility', () => {
 
       expect(browseRoot.querySelector('[role="dialog"]')).toBeNull();
       expect(browseRoot.activeElement).toBe(browseRoot.querySelector('.sc-action-btn'));
+    });
+
+    it('does not steal focus back to Cancel on an unrelated re-render', async () => {
+      const view = browseRoot.host as unknown as {
+        updateComplete: Promise<unknown>;
+        requestUpdate: () => void;
+      };
+      (browseRoot.querySelector('.sc-action-btn') as HTMLElement).click();
+      await view.updateComplete;
+
+      const del = browseRoot.querySelector('.md3-button.text') as HTMLElement;
+      del.focus();
+      expect(browseRoot.activeElement).toBe(del);
+
+      view.requestUpdate();
+      await view.updateComplete;
+
+      expect(browseRoot.activeElement).toBe(del);
     });
 
     it('dismisses the prompt on Escape without deleting', async () => {
