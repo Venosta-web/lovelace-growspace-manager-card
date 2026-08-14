@@ -56,7 +56,7 @@ export class CropSteeringDayChart extends LitElement {
       position: relative;
       height: 300px;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
+      border-radius: var(--border-radius-md, 12px);
       background: rgba(0, 0, 0, 0.2);
       overflow: hidden;
       cursor: crosshair;
@@ -77,7 +77,7 @@ export class CropSteeringDayChart extends LitElement {
       background: rgba(20, 20, 20, 0.9);
       backdrop-filter: blur(6px);
       border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 6px;
+      border-radius: var(--border-radius-sm, 8px);
       padding: 6px 8px;
       pointer-events: none;
       font-size: 10.5px;
@@ -208,7 +208,7 @@ export class CropSteeringDayChart extends LitElement {
       height: 52px;
       margin-bottom: 10px;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
+      border-radius: var(--border-radius-md, 12px);
       background: rgba(0, 0, 0, 0.2);
       overflow: hidden;
     }
@@ -254,7 +254,7 @@ export class CropSteeringDayChart extends LitElement {
       height: 108px;
       margin-bottom: 10px;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
+      border-radius: var(--border-radius-md, 12px);
       background: rgba(0, 0, 0, 0.2);
       overflow: hidden;
     }
@@ -309,7 +309,7 @@ export class CropSteeringDayChart extends LitElement {
       position: absolute;
       top: 22px;
       height: 56px;
-      border-radius: 3px;
+      border-radius: var(--border-radius-xs, 4px);
       opacity: 0.9;
       cursor: default;
       transition: transform 0.15s;

@@ -32,7 +32,7 @@ export class VPDHeatmap extends LitElement {
       canvas {
         width: 100%;
         height: auto;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         background: var(--card-background-color, #202020);
       }
 
@@ -55,7 +55,7 @@ export class VPDHeatmap extends LitElement {
         backdrop-filter: blur(4px);
         color: white;
         padding: 4px 8px;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         font-size: 0.75rem;
         font-weight: 600;
         white-space: nowrap;

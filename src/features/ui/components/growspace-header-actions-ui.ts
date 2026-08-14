@@ -313,7 +313,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     .primary-action {
       min-height: 40px;
       border: 0;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       padding: 0 16px;
       display: inline-flex;
       align-items: center;
@@ -353,7 +353,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       margin-top: 8px;
       background: var(--card-background-color, #2a2a2a);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       font-size: 0.9rem;
       min-width: 180px;
       padding: 0;
@@ -442,7 +442,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
 
       .primary-action {
         min-height: 48px;
-        border-radius: 9999px;
+        border-radius: var(--border-radius-full, 9999px);
         flex: 1;
       }
 
@@ -455,7 +455,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         inset: auto 0 0 0;
         width: 100%;
         position-anchor: none;
-        border-radius: 20px 20px 0 0;
+        border-radius: var(--border-radius-lg, 16px) var(--border-radius-lg, 16px) 0 0;
         margin: 0;
         max-height: calc(100dvh - env(safe-area-inset-top, 0px));
         overflow-y: auto;

@@ -59,7 +59,7 @@ export class IrrigationEcRampTab extends LitElement {
         background: rgba(244, 67, 54, 0.12);
         border: 1px solid rgba(244, 67, 54, 0.4);
         color: var(--error-color, #f44336);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 10px 14px;
         font-size: 0.9rem;
       }
@@ -84,7 +84,7 @@ export class IrrigationEcRampTab extends LitElement {
         gap: 12px;
         padding: 12px 14px;
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         background: rgba(255, 255, 255, 0.02);
         cursor: pointer;
         transition: border-color 0.2s;

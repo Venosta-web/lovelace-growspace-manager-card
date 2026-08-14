@@ -1,8 +1,8 @@
 declare const __VERSION__: string;
 console.info(
   `%c GrowSpace Manager Card %c v${__VERSION__} `,
-  'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;',
-  'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;'
+  'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:4px 0 0 4px;',
+  'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 4px 4px 0;'
 );
 
 // Export all types

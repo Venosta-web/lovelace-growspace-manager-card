@@ -46,7 +46,7 @@ export class ConfigStageAccordion extends LitElement {
       background: rgba(255, 255, 255, 0.02);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
       /* Preserve the reference VPD row geometry during this enabling extraction. */
-      border-radius: 10px;
+      border-radius: var(--border-radius-md, 12px);
       overflow: hidden;
     }
     .acc-head {

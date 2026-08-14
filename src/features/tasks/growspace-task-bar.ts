@@ -39,7 +39,7 @@ export class GrowspaceTaskBar extends LitElement {
       color: var(--primary-text-color, #fff);
       background: color-mix(in srgb, var(--card-background-color, #1e1e1e) 94%, transparent);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
       backdrop-filter: blur(12px);
     }
@@ -57,7 +57,7 @@ export class GrowspaceTaskBar extends LitElement {
     }
 
     h2:focus-visible {
-      border-radius: 4px;
+      border-radius: var(--border-radius-xs, 4px);
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color, #4caf50) 55%, transparent);
     }
 
@@ -90,7 +90,7 @@ export class GrowspaceTaskBar extends LitElement {
       min-height: 40px;
       padding: 0 14px;
       border: 0;
-      border-radius: 20px;
+      border-radius: var(--border-radius-full, 9999px);
       color: var(--primary-text-color, #fff);
       background: color-mix(in srgb, var(--primary-text-color, #fff) 8%, transparent);
       font:

@@ -51,7 +51,7 @@ export class ConfigSensorsTab extends LitElement {
         flex-direction: column;
         gap: 8px;
         padding: 12px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         background: rgba(var(--rgb-primary-text-color, 255, 255, 255), 0.04);
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       }
@@ -65,7 +65,7 @@ export class ConfigSensorsTab extends LitElement {
         font-size: 0.75em;
         font-weight: 400;
         padding: 2px 8px;
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         background: rgba(var(--rgb-primary-text-color, 255, 255, 255), 0.1);
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
       }

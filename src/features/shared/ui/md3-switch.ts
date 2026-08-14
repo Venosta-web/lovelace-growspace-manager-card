@@ -23,7 +23,7 @@ export class Md3Switch extends LitElement {
       position: relative;
       width: var(--md-switch-width);
       height: var(--md-switch-height);
-      border-radius: calc(var(--md-switch-height) / 2);
+      border-radius: var(--border-radius-full, 9999px);
       background: var(--md-switch-track-color-off);
       cursor: pointer;
       transition: background-color 0.2s;

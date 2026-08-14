@@ -294,7 +294,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
           0 4px 24px -1px rgba(0, 0, 0, 0.2),
           0 0 0 1px rgba(255, 255, 255, 0.02) inset;
 
-        border-radius: 24px;
+        border-radius: var(--border-radius-xl, 28px);
         padding: 20px 24px;
         display: flex;
         flex-direction: column;
@@ -438,7 +438,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
           scroll-snap-type: x mandatory;
           scrollbar-width: none;
           padding: 3px;
-          border-radius: 16px;
+          border-radius: var(--border-radius-lg, 16px);
         }
 
         .deck-scroll::-webkit-scrollbar {
@@ -541,7 +541,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
           position: relative;
           width: 28px;
           height: 44px;
-          border-radius: 12px;
+          border-radius: var(--border-radius-md, 12px);
         }
 
         .deck-dot::before {
@@ -551,7 +551,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
           left: 9px;
           height: 6px;
           width: 10px;
-          border-radius: 9999px;
+          border-radius: var(--border-radius-full, 9999px);
           background: var(--divider-color, rgba(255, 255, 255, 0.24));
           transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
         }
@@ -583,7 +583,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
           min-width: 24px;
           height: 24px;
           padding: 0 7px;
-          border-radius: 12px;
+          border-radius: var(--border-radius-md, 12px);
           display: inline-grid;
           place-items: center;
           background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
@@ -611,7 +611,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
         .more-readings-grid .hero-card {
           min-height: 96px;
-          border-radius: 16px;
+          border-radius: var(--border-radius-lg, 16px);
           padding: 16px;
         }
 
@@ -642,7 +642,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
        */
       .hero-status-badge {
         padding: 2px 8px;
-        border-radius: 999px;
+        border-radius: var(--border-radius-full, 9999px);
         border: 1px solid transparent;
         margin-left: auto;
       }
@@ -727,7 +727,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         display: inline-flex;
         align-items: center;
         padding: 2px 7px;
-        border-radius: 999px;
+        border-radius: var(--border-radius-full, 9999px);
         font-size: 0.62rem;
         font-weight: 600;
         letter-spacing: 0.05em;
@@ -801,7 +801,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         top: -4px;
         transform: translateX(-50%);
         padding: 3px 7px;
-        border-radius: 7px;
+        border-radius: var(--border-radius-sm, 8px);
         pointer-events: none;
         background: rgba(20, 20, 24, 0.85);
         backdrop-filter: blur(8px);
@@ -835,7 +835,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
       .phase-bar-track {
         position: relative;
         height: 6px;
-        border-radius: 3px;
+        border-radius: var(--border-radius-xs, 4px);
         overflow: hidden;
         background: rgba(255, 255, 255, 0.05);
       }
@@ -852,7 +852,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         width: 2px;
         height: 10px;
         background: #fff;
-        border-radius: 1px;
+        border-radius: var(--border-radius-xs, 4px);
         transform: translateX(-50%);
         box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
       }

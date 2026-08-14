@@ -118,7 +118,7 @@ export class BaseDialogLayout extends LitElement {
         width: 100%;
         max-width: 100%;
         max-height: 92vh;
-        border-radius: 20px 20px 0 0;
+        border-radius: var(--border-radius-lg, 16px) var(--border-radius-lg, 16px) 0 0;
         animation: slideUpFromBottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
@@ -199,7 +199,7 @@ export class BaseDialogLayout extends LitElement {
       color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
       cursor: pointer;
       padding: 12px; /* Was 8px — 20px icon + 24px padding = 44px total (WCAG minimum) */
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       display: flex;
       align-items: center;
       justify-content: center;

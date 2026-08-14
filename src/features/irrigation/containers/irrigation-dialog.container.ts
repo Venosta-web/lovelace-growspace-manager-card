@@ -477,7 +477,7 @@ export class IrrigationDialog extends LitElement {
         font-size: 10px;
         font-weight: 700;
         padding: 1px 6px;
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         min-width: 18px;
         text-align: center;
       }
@@ -514,7 +514,7 @@ export class IrrigationDialog extends LitElement {
         padding: 3px 10px;
         background: rgba(255, 255, 255, 0.06);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
+        border-radius: var(--border-radius-full, 9999px);
         font-size: 12px;
         font-weight: 500;
       }
@@ -574,7 +574,7 @@ export class IrrigationDialog extends LitElement {
         background: rgba(50, 50, 50, 0.95);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 12px 16px;
         display: flex;
         align-items: center;
@@ -610,7 +610,7 @@ export class IrrigationDialog extends LitElement {
         padding: 12px 16px;
         background: rgba(255, 255, 255, 0.04);
         border: 1px dashed rgba(255, 255, 255, 0.12);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
       }
       .setup-hint {
         display: flex;

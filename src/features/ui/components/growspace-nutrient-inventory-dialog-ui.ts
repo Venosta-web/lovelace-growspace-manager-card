@@ -95,7 +95,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         padding: 12px 16px;
         background: rgba(255, 255, 255, 0.04);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         cursor: pointer;
         transition: background 0.15s;
       }
@@ -107,7 +107,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
       .type-icon {
         width: 36px;
         height: 36px;
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -159,7 +159,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         padding: 10px 16px;
         background: rgba(255, 255, 255, 0.05);
         border: 1px dashed rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         color: var(--primary-text-color);
         cursor: pointer;
         font-size: 0.875rem;
@@ -192,7 +192,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         cursor: pointer;
         color: var(--secondary-text-color);
         padding: 6px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         display: flex;
         align-items: center;
         transition: background 0.15s;
@@ -217,7 +217,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         border: none;
         cursor: pointer;
         padding: 6px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         display: flex;
         align-items: center;
         transition: background 0.15s;
@@ -229,7 +229,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
 
       .detail-section {
         background: rgba(255, 255, 255, 0.04);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 16px;
         margin-bottom: 12px;
       }
@@ -257,7 +257,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
       .detail-fill-bar-wrap {
         height: 6px;
         background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
+        border-radius: var(--border-radius-xs, 4px);
         margin-top: 8px;
         overflow: hidden;
       }
@@ -289,7 +289,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         padding: 8px 12px;
         background: rgba(255, 255, 255, 0.06);
         border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         color: var(--primary-text-color);
         font-size: 0.875rem;
         font-family: inherit;
@@ -305,7 +305,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         padding: 8px 12px;
         background: rgba(255, 255, 255, 0.06);
         border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         color: var(--primary-text-color);
         font-size: 0.875rem;
         font-family: inherit;
@@ -325,7 +325,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
 
       .btn {
         padding: 8px 16px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         border: none;
         cursor: pointer;
         font-size: 0.875rem;
@@ -356,7 +356,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
       .confirm-box {
         background: rgba(244, 67, 54, 0.1);
         border: 1px solid rgba(244, 67, 54, 0.3);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 20px;
         text-align: center;
       }
@@ -387,7 +387,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         align-items: center;
         gap: 8px;
         background: rgba(244, 67, 54, 0.1);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 10px 14px;
         margin-bottom: 12px;
         font-size: 0.875rem;
