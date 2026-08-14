@@ -153,7 +153,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                 wu.waterEfficiency >= 0.85
                   ? '#4caf50'
                   : wu.waterEfficiency >= 0.65
-                    ? '#FF9800'
+                    ? 'var(--gm-warning-color, #FF9800)'
                     : '#f44336',
                 wu.waterEfficiency >= 0.85
                   ? 'Excellent'
@@ -212,7 +212,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
             const c = tank.isWarning
               ? '#f44336'
               : (tank.hoursRemaining ?? 999) < 24
-                ? '#FF9800'
+                ? 'var(--gm-warning-color, #FF9800)'
                 : '#4caf50';
             return html`
               <div>
@@ -623,7 +623,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                     avgRunoff >= 15 &&
                     avgRunoff <= 35
                       ? '#4caf50'
-                      : '#FF9800'};"
+                      : 'var(--gm-warning-color, #FF9800)'};"
                   >
                     ${avgRunoff !== null ? avgRunoff.toFixed(1) + '%' : '—'}
                   </div>
@@ -658,7 +658,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                           <td
                             style="text-align:right;padding:5px 8px;font-weight:600;color:${runoffOk
                               ? '#4caf50'
-                              : '#FF9800'};"
+                              : 'var(--gm-warning-color, #FF9800)'};"
                           >
                             ${r.runoff !== null ? r.runoff.toFixed(1) + '%' : '—'}
                           </td>
