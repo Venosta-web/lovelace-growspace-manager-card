@@ -1,3 +1,10 @@
+# [1.1.0-next.121](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.120...v1.1.0-next.121) (2026-08-14)
+
+
+### Features
+
+* **strains:** give Strain Library actions a clear hierarchy ([#587](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/587)) ([18ce169](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/18ce169568d257569fe878898ab062f201981290)), closes [#560](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/560) [#560](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/560)
+
 # [1.1.0-next.120](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.119...v1.1.0-next.120) (2026-08-14)
 
 
