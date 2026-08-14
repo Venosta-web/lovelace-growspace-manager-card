@@ -3,7 +3,7 @@
  *
  * The dumb presentational element for the Config Dialog's VPD Targets tab — a
  * per-stage accordion of day/night low/high VPD-optimal windows plus a
- * "Reset all to defaults" button. `@property .vm: VpdTargetsTabViewModel` in,
+ * "Reset to defaults" button. `@property .vm: VpdTargetsTabViewModel` in,
  * semantic Tab Intents out, **no `@state()` and no `hass`**. The shared
  * `<config-stage-accordion>` owns disclosure behavior while this tab projects
  * its VPD-specific summaries and Day/Night editor interiors.
@@ -76,17 +76,14 @@ export class ConfigVpdTargetsTab extends LitElement {
   render(): TemplateResult {
     return html`
       <div class="detail-card">
-        <config-section-header
-          .icon=${mdiTune}
-          label="VPD Optimal Targets"
-        ></config-section-header>
+        <config-section-header .icon=${mdiTune} label="VPD Optimal Targets"></config-section-header>
         ${this._renderStages()}
         <button
-          class="md3-button text"
+          class="md3-button config-reset-button"
           @click=${() => this._emit('reset-vpd-optimal')}
           style="margin-top:12px;"
         >
-          Reset all to defaults
+          Reset to defaults
         </button>
       </div>
     `;

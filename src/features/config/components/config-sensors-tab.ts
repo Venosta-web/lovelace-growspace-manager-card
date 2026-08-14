@@ -90,20 +90,6 @@ export class ConfigSensorsTab extends LitElement {
       .moisture-band__preview[data-classification='too_wet'] {
         color: var(--info-color, #2196f3);
       }
-      .moisture-band__reset {
-        align-self: flex-start;
-        background: none;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.2));
-        border-radius: 4px;
-        color: var(--primary-text-color, #fff);
-        cursor: pointer;
-        font-size: 0.85em;
-        padding: 6px 12px;
-      }
-      .moisture-band__reset[disabled] {
-        cursor: default;
-        opacity: 0.4;
-      }
       .entity-select-container {
         position: relative;
         z-index: 5;
@@ -245,8 +231,11 @@ export class ConfigSensorsTab extends LitElement {
             </div>`
           : nothing}
         <button
-          class="moisture-band__reset"
+          class="md3-button config-reset-button moisture-band__reset"
           ?disabled=${!band.isCustom}
+          title=${band.isCustom
+            ? nothing
+            : 'Nothing to reset — this moisture band already uses the defaults.'}
           @click=${() => {
             const cleared = resetBand();
             this._emit({ soilMoistureMin: cleared.min, soilMoistureMax: cleared.max });

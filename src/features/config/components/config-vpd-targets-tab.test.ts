@@ -44,10 +44,9 @@ describe('ConfigVpdTargetsTab — render', () => {
     );
     const accordion = el.shadowRoot!.querySelector('config-stage-accordion')!;
     expect(accordion.stages).toHaveLength(2);
-    const reset = [...el.shadowRoot!.querySelectorAll('button')].find((b) =>
-      b.textContent?.includes('Reset all')
-    );
+    const reset = el.shadowRoot!.querySelector('.config-reset-button');
     expect(reset).toBeDefined();
+    expect(reset!.textContent).toContain('Reset to defaults');
   });
 
   it('shows the collapsed day/night summary closed, four inputs open', async () => {
@@ -74,7 +73,7 @@ describe('ConfigVpdTargetsTab — intents out', () => {
     let fired = 0;
     el.addEventListener('reset-vpd-optimal', () => fired++);
     [...el.shadowRoot!.querySelectorAll('button')]
-      .find((b) => b.textContent?.includes('Reset all'))!
+      .find((b) => b.textContent?.includes('Reset to defaults'))!
       .click();
     expect(fired).toBe(1);
   });

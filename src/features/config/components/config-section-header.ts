@@ -36,6 +36,7 @@ export class ConfigSectionHeader extends LitElement {
     }
 
     slot {
+      display: flex;
       margin-left: auto;
     }
   `;

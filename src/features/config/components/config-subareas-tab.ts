@@ -55,10 +55,15 @@ export class ConfigSubareasTab extends LitElement {
     }
     return html`
       <div class="detail-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
+        >
           <h3 style="margin:0;">Subareas</h3>
           <button class="md3-button tonal" @click=${() => this._emit('add-subarea-requested')}>
-            <svg style="width:18px;height:18px;fill:currentColor;margin-right:6px;" viewBox="0 0 24 24">
+            <svg
+              style="width:18px;height:18px;fill:currentColor;margin-right:6px;"
+              viewBox="0 0 24 24"
+            >
               <path d="${mdiPlus}"></path>
             </svg>
             Add Subarea
@@ -149,6 +154,7 @@ export class ConfigSubareasTab extends LitElement {
                   class="md3-button text"
                   @click=${() => this._emit('edit-subarea-requested', { subarea })}
                   style="padding:8px;min-width:auto;"
+                  aria-label=${`Edit sensors for ${subarea.name}`}
                   title="Edit sensors"
                 >
                   <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
@@ -159,6 +165,7 @@ export class ConfigSubareasTab extends LitElement {
                   class="md3-button text error"
                   @click=${() => this._emit('delete-subarea-requested', { id: subarea.id })}
                   style="padding:8px;min-width:auto;"
+                  aria-label=${`Delete ${subarea.name}`}
                   title="Delete subarea"
                 >
                   <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">

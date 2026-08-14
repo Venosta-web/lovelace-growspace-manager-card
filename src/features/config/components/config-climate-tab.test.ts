@@ -169,6 +169,16 @@ describe('ConfigClimateTab — render', () => {
     );
     expect(labels).toContain('Fallback VPD Target (kPa)');
   });
+
+  it('uses the shared reset treatment for both stage override actions', async () => {
+    const el = await mount(makeVm({ stageVpd: { ...makeVm().stageVpd, visible: true } }));
+    const resets = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.config-reset-button')];
+    expect(resets).toHaveLength(2);
+    expect(resets.map((button) => button.textContent!.trim())).toEqual([
+      'Reset Fan to defaults',
+      'Reset Exhaust to defaults',
+    ]);
+  });
 });
 
 function devicePickers(el: ConfigClimateTab): Element[] {

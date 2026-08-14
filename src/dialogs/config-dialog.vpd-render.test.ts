@@ -86,9 +86,9 @@ describe('ConfigDialog VPD Targets tab — render', () => {
     expect((await vpdShadow(el)).querySelectorAll('md3-number-input').length).toBe(4);
   });
 
-  it('renders a reset-all button', async () => {
+  it('renders the shared reset button', async () => {
     const el = await mountVpdTab();
     const buttons = [...(await vpdShadow(el)).querySelectorAll('button')];
-    expect(buttons.some((b) => /reset all to defaults/i.test(b.textContent ?? ''))).toBe(true);
+    expect(buttons.some((b) => /reset to defaults/i.test(b.textContent ?? ''))).toBe(true);
   });
 });
