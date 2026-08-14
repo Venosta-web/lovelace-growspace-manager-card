@@ -39,8 +39,11 @@ afterEach(() => {
 
 describe('ConfigVpdTargetsTab — render', () => {
   it('renders an accordion row per stage and a reset button', async () => {
-    const el = await mount(makeVm({ stages: [stage({ key: 'veg' }), stage({ key: 'flower_mid' })] }));
-    expect(el.shadowRoot!.querySelectorAll('.acc-card').length).toBe(2);
+    const el = await mount(
+      makeVm({ stages: [stage({ key: 'veg' }), stage({ key: 'flower_mid' })] })
+    );
+    const accordion = el.shadowRoot!.querySelector('config-stage-accordion')!;
+    expect(accordion.stages).toHaveLength(2);
     const reset = [...el.shadowRoot!.querySelectorAll('button')].find((b) =>
       b.textContent?.includes('Reset all')
     );
@@ -50,7 +53,7 @@ describe('ConfigVpdTargetsTab — render', () => {
   it('shows the collapsed day/night summary closed, four inputs open', async () => {
     const closed = await mount(makeVm({ stages: [stage({ open: false })] }));
     expect(closed.shadowRoot!.querySelector('.acc-head-desc')).not.toBeNull();
-    expect(closed.shadowRoot!.querySelector('.acc-body')).toBeNull();
+    expect(closed.shadowRoot!.querySelector('md3-number-input')).toBeNull();
     document.body.innerHTML = '';
     const open = await mount(makeVm({ stages: [stage({ open: true })] }));
     expect(open.shadowRoot!.querySelectorAll('md3-number-input').length).toBe(4);
@@ -61,7 +64,8 @@ describe('ConfigVpdTargetsTab — intents out', () => {
   it('emits toggle-stage with the stage key', async () => {
     const el = await mount(makeVm({ stages: [stage({ key: 'flower_late' })] }));
     const received = listen<{ key: string }>(el, 'toggle-stage');
-    el.shadowRoot!.querySelector<HTMLElement>('.acc-head')!.click();
+    const accordion = el.shadowRoot!.querySelector('config-stage-accordion')!;
+    accordion.shadowRoot!.querySelector<HTMLElement>('.acc-head')!.click();
     expect(received).toEqual([{ key: 'flower_late' }]);
   });
 
@@ -69,7 +73,9 @@ describe('ConfigVpdTargetsTab — intents out', () => {
     const el = await mount(makeVm());
     let fired = 0;
     el.addEventListener('reset-vpd-optimal', () => fired++);
-    [...el.shadowRoot!.querySelectorAll('button')].find((b) => b.textContent?.includes('Reset all'))!.click();
+    [...el.shadowRoot!.querySelectorAll('button')]
+      .find((b) => b.textContent?.includes('Reset all'))!
+      .click();
     expect(fired).toBe(1);
   });
 
@@ -81,7 +87,9 @@ describe('ConfigVpdTargetsTab — intents out', () => {
     );
     // First md3-number-input under the open stage = Day / Low.
     const first = el.shadowRoot!.querySelector('md3-number-input')!;
-    first.dispatchEvent(new CustomEvent('change', { detail: '0.95', bubbles: true, composed: true }));
+    first.dispatchEvent(
+      new CustomEvent('change', { detail: '0.95', bubbles: true, composed: true })
+    );
     expect(received).toEqual([{ key: 'veg', period: 'day', slot: 'low', value: '0.95' }]);
   });
 });
