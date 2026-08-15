@@ -133,7 +133,7 @@ export class ConfigSubareasTab extends LitElement {
         <div style="display:flex;gap:4px;align-items:center;">
           ${row.confirmingDelete
             ? html`
-                <span style="font-size:0.85rem;color:var(--secondary-text-color);margin-right:4px;"
+                <span style="font-size:1rem;color:var(--secondary-text-color);margin-right:4px;"
                   >Remove ${subarea.name}?</span
                 >
                 <button

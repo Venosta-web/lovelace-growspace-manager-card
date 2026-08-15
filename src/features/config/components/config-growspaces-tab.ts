@@ -69,7 +69,7 @@ export class ConfigGrowspacesTab extends LitElement {
         border: 1px solid transparent;
         cursor: pointer;
         transition: all 0.15s;
-        font-size: 0.875rem;
+        font-size: 1rem;
       }
       .cfg-gs-row:hover {
         background: rgba(255, 255, 255, 0.04);
@@ -97,7 +97,7 @@ export class ConfigGrowspacesTab extends LitElement {
         background: transparent;
         color: var(--primary-color, #4caf50);
         font-family: inherit;
-        font-size: 0.85rem;
+        font-size: 1rem;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.15s;
@@ -133,7 +133,7 @@ export class ConfigGrowspacesTab extends LitElement {
         gap: 8px;
         margin: 0 0 8px;
         color: var(--error-color, #f44336);
-        font-size: 1rem;
+        font-size: 1.142857rem;
         font-weight: 600;
       }
       .danger-zone-heading svg {
@@ -146,7 +146,7 @@ export class ConfigGrowspacesTab extends LitElement {
         max-width: 65ch;
         margin: 0 0 16px;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-        font-size: 0.875rem;
+        font-size: 1rem;
         line-height: 1.5;
         overflow-wrap: anywhere;
       }
@@ -180,7 +180,7 @@ export class ConfigGrowspacesTab extends LitElement {
       return html`
         <div class="cfg-master-detail" style="grid-template-columns:1fr;">
           <div class="detail-card" style="text-align:center;padding:40px 20px;">
-            <h3 style="color:var(--error-color,#ff5252);">Delete Growspace?</h3>
+            <h3 style="color:var(--error-color,#f44336);">Delete Growspace?</h3>
             <p style="margin-bottom:30px;color:var(--secondary-text-color);">
               Are you sure you want to delete "<strong>${state.name}</strong>"?<br />
               This will remove all associated plants and history.<br />
@@ -216,7 +216,7 @@ export class ConfigGrowspacesTab extends LitElement {
       <div class="cfg-master-detail">
         <div class="cfg-master-list">
           <div
-            style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--secondary-text-color,rgba(255,255,255,0.5));padding:0 4px 8px;"
+            style="font-size:0.785714rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--secondary-text-color,rgba(255,255,255,0.5));padding:0 4px 8px;"
           >
             All Growspaces
           </div>

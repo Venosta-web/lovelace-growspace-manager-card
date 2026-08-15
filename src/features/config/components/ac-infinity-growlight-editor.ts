@@ -66,7 +66,7 @@ export function renderGrowlightAcInfinityDevices(
     <div class="ac-infinity-editor" style="position:relative;margin-top:12px;">
       <div
         class="ac-infinity-editor-label"
-        style="font-size:0.75rem;color:var(--secondary-text-color);margin-bottom:8px;"
+        style="font-size:0.857143rem;color:var(--secondary-text-color);margin-bottom:8px;"
       >
         AC Infinity Grow Lights
       </div>

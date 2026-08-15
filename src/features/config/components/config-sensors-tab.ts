@@ -62,7 +62,7 @@ export class ConfigSensorsTab extends LitElement {
         font-weight: 500;
       }
       .moisture-band__badge {
-        font-size: 0.75em;
+        font-size: 0.785714rem;
         font-weight: 400;
         padding: 2px 8px;
         border-radius: var(--border-radius-md, 12px);
@@ -70,22 +70,22 @@ export class ConfigSensorsTab extends LitElement {
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
       }
       .moisture-band__note {
-        font-size: 0.85em;
+        font-size: 0.857143rem;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
       }
       .moisture-band__error {
-        font-size: 0.85em;
+        font-size: 0.857143rem;
         color: var(--error-color, #f44336);
       }
       .moisture-band__preview {
-        font-size: 0.9em;
+        font-size: 0.857143rem;
         font-weight: 500;
       }
       .moisture-band__preview[data-classification='in_band'] {
         color: var(--success-color, #4caf50);
       }
       .moisture-band__preview[data-classification='too_dry'] {
-        color: var(--warning-color, #ff9800);
+        color: var(--warning-color, #ffa726);
       }
       .moisture-band__preview[data-classification='too_wet'] {
         color: var(--info-color, #2196f3);
@@ -260,7 +260,7 @@ export class ConfigSensorsTab extends LitElement {
           suffix="°C"
         ></md3-number-input>
         <div
-          style="margin-top:4px;font-size:0.85em;color:var(--secondary-text-color,rgba(255,255,255,0.5));"
+          style="margin-top:4px;font-size:0.857143rem;color:var(--secondary-text-color,rgba(255,255,255,0.5));"
         >
           Current VPD: ${lst.vpdDisplay}
         </div>

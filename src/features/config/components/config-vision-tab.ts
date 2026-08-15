@@ -52,7 +52,7 @@ export class ConfigVisionTab extends LitElement {
         <config-section-header .icon=${mdiCamera} label="Vision Checkup"></config-section-header>
         ${this._cameraSelect(vm)}
         ${!vm.hasCameras
-          ? html`<p style="opacity:0.6;font-size:0.85rem;margin:8px 0 0;">
+          ? html`<p style="opacity:0.6;font-size:1rem;margin:8px 0 0;">
               Add camera entities above to enable vision checkups.
             </p>`
           : html`

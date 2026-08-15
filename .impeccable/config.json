@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font-size",
+        "value": "0.785714rem",
+        "createdAt": "2026-08-15T19:54:41.632Z",
+        "reason": "Config Dialog Token Contract 11px step; the detector assumes a 16px root, this surface computes against 14px (DESIGN.md, #539)"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "1.142857rem",
+        "createdAt": "2026-08-15T19:54:41.665Z",
+        "reason": "Config Dialog Token Contract 16px step; the detector assumes a 16px root, this surface computes against 14px (DESIGN.md, #539)"
+      }
+    ]
+  }
+}

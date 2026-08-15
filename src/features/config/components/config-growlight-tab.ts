@@ -46,7 +46,7 @@ export class ConfigGrowlightTab extends LitElement {
         gap: 16px;
       }
       .anchor-note {
-        font-size: 0.75rem;
+        font-size: 0.857143rem;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
         line-height: 1.4;
       }

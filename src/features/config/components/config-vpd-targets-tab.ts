@@ -44,7 +44,7 @@ export class ConfigVpdTargetsTab extends LitElement {
         display: block;
       }
       .acc-head-desc {
-        font-size: 0.775rem;
+        font-size: 0.857143rem;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
       }
       .acc-cycle-grid {

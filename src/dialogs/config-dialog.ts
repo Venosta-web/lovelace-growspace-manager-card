@@ -735,7 +735,7 @@ export class ConfigDialog extends LitElement {
         border-left: 2px solid transparent;
         background: transparent;
         font-family: inherit;
-        font-size: 0.85rem;
+        font-size: 1rem;
         text-align: left;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
         cursor: pointer;
@@ -789,7 +789,7 @@ export class ConfigDialog extends LitElement {
       }
 
       .cfg-context-label {
-        font-size: 0.7rem;
+        font-size: 0.785714rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.08em;
@@ -805,7 +805,7 @@ export class ConfigDialog extends LitElement {
         border: 1px solid rgba(255, 255, 255, 0.15);
         color: var(--primary-text-color, #fff);
         font-family: inherit;
-        font-size: 0.875rem;
+        font-size: 1rem;
         outline: none;
         min-width: 160px;
       }
@@ -850,7 +850,7 @@ export class ConfigDialog extends LitElement {
         border: 1px solid transparent;
         cursor: pointer;
         transition: all 0.15s;
-        font-size: 0.875rem;
+        font-size: 1rem;
       }
 
       .cfg-gs-row:hover {
@@ -871,7 +871,7 @@ export class ConfigDialog extends LitElement {
       }
 
       .cfg-gs-row .gs-meta {
-        font-size: 0.75rem;
+        font-size: 0.857143rem;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
         white-space: nowrap;
       }
@@ -888,7 +888,7 @@ export class ConfigDialog extends LitElement {
         background: transparent;
         color: var(--primary-color, #4caf50);
         font-family: inherit;
-        font-size: 0.85rem;
+        font-size: 1rem;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.15s;
@@ -945,7 +945,7 @@ export class ConfigDialog extends LitElement {
       }
 
       .acc-head-desc {
-        font-size: 0.775rem;
+        font-size: 0.857143rem;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
       }
 
@@ -988,7 +988,7 @@ export class ConfigDialog extends LitElement {
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 0.875rem;
+        font-size: 1rem;
         font-weight: 500;
         padding-bottom: 8px;
         border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.06));
@@ -1039,7 +1039,7 @@ export class ConfigDialog extends LitElement {
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 0.875rem;
+        font-size: 1rem;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
       }
 
@@ -1074,14 +1074,14 @@ export class ConfigDialog extends LitElement {
 
       .confirm-discard-box h3 {
         margin: 0 0 8px;
-        font-size: 1rem;
+        font-size: 1.142857rem;
         font-weight: 500;
       }
 
       .confirm-discard-box p {
         margin: 0 0 20px;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-        font-size: 0.875rem;
+        font-size: 1rem;
         line-height: 1.5;
       }
 
@@ -1101,7 +1101,7 @@ export class ConfigDialog extends LitElement {
         border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-        font-size: 0.875rem;
+        font-size: 1rem;
         line-height: 1.4;
         flex-wrap: wrap;
       }
@@ -1177,7 +1177,7 @@ export class ConfigDialog extends LitElement {
       .md3-label {
         text-transform: uppercase;
         letter-spacing: 0.4px;
-        font-size: 0.7rem;
+        font-size: 0.785714rem;
       }
       .cfg-context-select {
         border-radius: 8px 8px 2px 2px;
@@ -1185,7 +1185,7 @@ export class ConfigDialog extends LitElement {
       .cfg-context-select option,
       .md3-input option,
       select option {
-        background: var(--card-background-color, #1e2127);
+        background: var(--card-background-color, #1e1e1e);
         color: var(--primary-text-color, #fff);
       }
     `,
