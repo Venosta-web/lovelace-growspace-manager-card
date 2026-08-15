@@ -665,6 +665,12 @@ Pure pass-through container that subscribes to `nutrientInventory$` and threads 
 **Design Token**
 A named design value — colour, type step, radius, elevation, spacing — authored **exactly once** in `src/styles/tokens.ts` as a typed TypeScript constant. Both consumers are generated from it: the lit `css` custom-property block the components read at runtime, and the YAML frontmatter palette in `DESIGN.md` that documents it. Generation runs one way, TypeScript → CSS and TypeScript → YAML, so the doc is a derived artifact and cannot drift from the runtime — the drift that caused #564 and everything after it. A token is reachable from CSS declarations, inline `style=` attributes and gradient stops; reaching it from plain TypeScript means importing the constant, not writing `var()`. See ADR 0035.
 
+**Motion Token**
+A duration or easing curve, authored in `tokens.ts` alongside every other [[Design Token]]. Three exist — `--motion-duration-short` (200ms), `--motion-duration-medium` (300ms) and `--motion-easing-standard`, the MD3 standard curve. Deliberately smaller than MD3's twelve-step system: the scale grows only when a call site cannot reach what it needs, since that inability is the same signal that produced #564. See ADR 0037.
+
+**Fill Bar**
+A proportional readout drawn as a fixed **track** with a scaled **fill** inside it. The track owns the geometry — height, `overflow: hidden`, radius — and the fill is `transform: scaleX(<fraction>)` from `transform-origin: left`, never a `width` percentage; the fill carries no radius of its own, because the track already clips to shape and `scaleX` would distort one. Three sites deviate for reasons recorded at the call site, not here: the tank card's liquid (children pinned to the animated edge), the strain hue-genetics bar (two flex segments splitting one track, so there is no fixed track to scale against), and anything driven once per user gesture rather than per sensor tick. See ADR 0037.
+
 **Binding Context**
 Where a colour literal sits in the code, which decides whether a [[Design Token]] can reach it at all: a CSS declaration inside a `css` template, an inline `style=` attribute in a template, a gradient stop, or a plain JS data string in a viewmodel, constants file or model. The axis colour work is sorted by — hue tells you *which* token a site wants, binding context tells you whether a token is even available, and only the second predicts whether a migration is mechanical. `var()` is inert in the JS-data context, so those sites import from `tokens.ts` instead.
 
