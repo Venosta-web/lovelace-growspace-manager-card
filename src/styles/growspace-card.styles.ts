@@ -58,7 +58,7 @@ export const growspaceCardStyles = css`
     gap: 12px;
     color: var(--primary-text-color, #fff);
     font-weight: 500;
-    font-size: 0.95rem;
+    font-size: var(--font-size-md);
   }
 
   .banner-content svg {
@@ -358,7 +358,7 @@ export const growspaceCardStyles = css`
   }
 
   .ac-text .time {
-    font-size: 1.2rem;
+    font-size: var(--font-size-lg);
     font-weight: 600;
     color: var(--primary-text-color, #fff);
   }
@@ -824,13 +824,13 @@ export const growspaceCardStyles = css`
     }
 
     .pc-pheno {
-      font-size: 0.8rem;
+      font-size: var(--font-size-supporting);
       color: var(--secondary-text-color, rgba(255, 255, 255, 0.7)) !important;
     }
 
     .pc-stage {
       margin-top: 2px;
-      font-size: 0.8rem;
+      font-size: var(--font-size-supporting);
       color: var(--stage-color, var(--primary-text-color, #fff)) !important;
       font-weight: 600;
     }
