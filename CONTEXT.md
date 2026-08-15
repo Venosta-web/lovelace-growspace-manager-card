@@ -297,15 +297,15 @@ The Config Dialog's [[Dialog Shell]] (the reduced `config-dialog.ts` host after 
 **Entity Field** _(decided — ADR-0034, not yet built)_
 Any config-dialog field whose value is one or more Home Assistant entity IDs — single-valued (a
 growspace's overview entity) or multi-valued (its temperature sensors). Today every one is a raw text
-input over a `<datalist>` of entity IDs. They are to *choose* entities through Home Assistant's
-`ha-entity-picker`, so the grower reads friendly names, icons and area context rather than entity IDs
-and cannot commit a value that names no entity — while a multi-valued field still *holds* its values
-as the chip list. The picker is the add affordance, not the field — though whether a multi-valued
-field should instead *be* an `ha-entities-picker` is an open fork (ADR-0034's correction: both
-pickers are registrable, so this is a preference, not a constraint). An Entity Field owns forcing the picker's
-chunk to register, and falls back to the plain datalist add affordance if it never arrives.
-Candidate entities come from `entityOptions(domains, deviceClass)`, never from the picker's own
-domain filtering, so the picker and the fallback cannot disagree about what is eligible.
+input over a `<datalist>` of entity IDs. Each is to *become* the corresponding Home Assistant picker —
+`ha-entity-picker` single-valued, `ha-entities-picker` multi-valued — so the grower reads friendly
+names, icons and area context rather than entity IDs, and cannot commit a value that names no entity.
+The picker is the field, not an affordance bolted onto one; the #541 chip list is retired from the
+primary path and survives only as the fallback. An Entity Field owns forcing the picker's chunk to
+register (a card-editor `getConfigElement()` round trip) and falls back to the whole datalist chip
+control if it never arrives. Candidate entities come from `entityOptions(domains, deviceClass)`,
+passed as `entityFilter`, never from the picker's own domain filtering, so the picker and the
+fallback cannot disagree about what is eligible.
 
 **Unresolved Entity Reference** _(decided — ADR-0034, not yet built)_
 A saved entity ID that no longer names a live entity — renamed, removed, or belonging to an
@@ -313,10 +313,9 @@ integration that is currently unavailable. An [[Entity Field]] is to display the
 drop them**: only the grower removes a reference. Silently discarding one on save would lose
 configuration the grower never touched. [[AC Infinity Device]] pickers already follow this rule by
 keeping an already-saved entity in their option list even when it no longer matches the platform
-filter. Home Assistant's picker cannot show one — it derives its candidates from `hass.states`, where
-a renamed or deleted entity is not present at all — which is a further reason the chip list holds the
-values: an unresolvable reference is simply a chip showing its raw entity ID and a flag rather than a
-friendly name, removable like any other.
+filter. Home Assistant's picker handles this natively: a row whose value resolves to nothing renders
+*"Unknown entity selected"* rather than a blank box, and the value passes through every mutation
+untouched, so the grower removes it deliberately — by clearing its row — or not at all.
 
 **Shared Environment Draft**
 The single `environmentDraft: EnvironmentDraft` field on `ConfigDialogSM`, seeded up-front from the device by `envDraftFromDevice` with **every** environment field (sensors, climate, humidity, irrigation, vision, VPD targets, circulation + exhaust fan configs). The six env-group tabs each project their own slice of it and emit `UPDATE_ENV_DRAFT` intents; none owns an independent draft. It remains complete for display, validation, reset, and discard comparison, while ADR-0032 adds a separate [[Dirty Write Set]] so seeded defaults do not become writes.
