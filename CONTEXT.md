@@ -294,6 +294,29 @@ The Config Dialog (`dialogs/config-dialog.ts`, ~3,959 lines, 13 tabs) is the nex
 **Config Dialog Shell**
 The Config Dialog's [[Dialog Shell]] (the reduced `config-dialog.ts` host after decomposition): owns the `ConfigDialogSM` atom, the nav rail (13 tabs), the tab-switch dirty guard, and the per-tab Save dispatch. For the env cluster it calls the pure [[Environment Save Composer]] and **dispatches** `configure-environment-submit` — the actual `configure_environment` (+ conditional `configure_exhaust_fan`) backend orchestration is the [[Growspace Dialog Host]]'s, not the Shell's (config-dialog uses events, not a [[MutationRunController]]). Like the Irrigation [[Dialog Shell]], during migration it renders extracted `<config-x-tab .vm=…>` components alongside still-inline `_renderXSection()` methods, tab-by-tab, both forms coexisting.
 
+**Entity Field** _(decided — ADR-0034, not yet built)_
+Any config-dialog field whose value is one or more Home Assistant entity IDs — single-valued (a
+growspace's overview entity) or multi-valued (its temperature sensors). Today every one is a raw text
+input over a `<datalist>` of entity IDs. Each is to *become* the corresponding Home Assistant picker —
+`ha-entity-picker` single-valued, `ha-entities-picker` multi-valued — so the grower reads friendly
+names, icons and area context rather than entity IDs, and cannot commit a value that names no entity.
+The picker is the field, not an affordance bolted onto one; the #541 chip list is retired from the
+primary path and survives only as the fallback. An Entity Field owns forcing the picker's chunk to
+register (a card-editor `getConfigElement()` round trip) and falls back to the whole datalist chip
+control if it never arrives. Candidate entities come from `entityOptions(domains, deviceClass)`,
+passed as `entityFilter`, never from the picker's own domain filtering, so the picker and the
+fallback cannot disagree about what is eligible.
+
+**Unresolved Entity Reference** _(decided — ADR-0034, not yet built)_
+A saved entity ID that no longer names a live entity — renamed, removed, or belonging to an
+integration that is currently unavailable. An [[Entity Field]] is to display these flagged but **never
+drop them**: only the grower removes a reference. Silently discarding one on save would lose
+configuration the grower never touched. [[AC Infinity Device]] pickers already follow this rule by
+keeping an already-saved entity in their option list even when it no longer matches the platform
+filter. Home Assistant's picker handles this natively: a row whose value resolves to nothing renders
+*"Unknown entity selected"* rather than a blank box, and the value passes through every mutation
+untouched, so the grower removes it deliberately — by clearing its row — or not at all.
+
 **Shared Environment Draft**
 The single `environmentDraft: EnvironmentDraft` field on `ConfigDialogSM`, seeded up-front from the device by `envDraftFromDevice` with **every** environment field (sensors, climate, humidity, irrigation, vision, VPD targets, circulation + exhaust fan configs). The six env-group tabs each project their own slice of it and emit `UPDATE_ENV_DRAFT` intents; none owns an independent draft. It remains complete for display, validation, reset, and discard comparison, while ADR-0032 adds a separate [[Dirty Write Set]] so seeded defaults do not become writes.
 
