@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 @customElement('md3-switch')
 export class Md3Switch extends LitElement {
@@ -52,6 +53,8 @@ export class Md3Switch extends LitElement {
     :host([checked]) .handle {
       transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
     }
+
+    ${reducedMotion}
   `;
 
   private _handleClick() {

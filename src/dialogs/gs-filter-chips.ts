@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { reducedMotion } from '../styles/reduced-motion.styles';
 
 export type LibraryFilter = 'library' | 'active' | 'all';
 
@@ -32,6 +33,8 @@ export class GsFilterChips extends LitElement {
       color: var(--text-primary-color, #fff);
       border-color: var(--primary-color);
     }
+
+    ${reducedMotion}
   `;
 
   private static readonly OPTS: Array<{ key: LibraryFilter; label: string }> = [

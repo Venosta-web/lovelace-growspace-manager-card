@@ -24,6 +24,7 @@ import {
 import { PlantCardUI } from '../components/plant-card-ui';
 import { localizeWithParams } from '../../../localize/localize';
 import '../components/plant-card-ui';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 /**
  * Container component for plant card
@@ -46,6 +47,8 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
         opacity: 0.8;
       }
     }
+
+    ${reducedMotion}
   `;
 
   // Input props

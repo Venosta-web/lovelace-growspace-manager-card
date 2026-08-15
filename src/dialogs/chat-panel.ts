@@ -1,7 +1,16 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { mdiBrain, mdiSend, mdiClose, mdiPin, mdiPinOff, mdiMessageOutline, mdiPaperclip, mdiPlus } from '@mdi/js';
+import {
+  mdiBrain,
+  mdiSend,
+  mdiClose,
+  mdiPin,
+  mdiPinOff,
+  mdiMessageOutline,
+  mdiPaperclip,
+  mdiPlus,
+} from '@mdi/js';
 import { StoreController } from '@nanostores/lit';
 import type { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -16,12 +25,13 @@ import {
   applyAction,
   saveAiAgent,
 } from '../slices/ai-insight';
-import type { ConversationThread, ConversationMessage, SuggestedAction } from '../slices/ai-insight/schema';
-import {
-  createInitialSM,
-  transition,
-  type ChatSM,
-} from './chat-panel-sm';
+import type {
+  ConversationThread,
+  ConversationMessage,
+  SuggestedAction,
+} from '../slices/ai-insight/schema';
+import { reducedMotion } from '../styles/reduced-motion.styles';
+import { createInitialSM, transition, type ChatSM } from './chat-panel-sm';
 
 const SUGGESTION_PROMPTS = [
   'What is the current VPD?',
@@ -68,21 +78,29 @@ export class GmChatPanel extends LitElement {
       flex-direction: column;
       gap: 8px;
       padding: 12px 8px;
-      border-right: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       overflow-y: auto;
     }
 
     .ai-model-card {
-      background: rgba(255,255,255,0.04);
+      background: rgba(255, 255, 255, 0.04);
       border-radius: var(--border-radius-md, 12px);
       padding: 10px 12px;
       display: flex;
       align-items: center;
       gap: 10px;
     }
-    .ai-model-card .model-info { flex: 1; }
-    .ai-model-card .model-name { font-size: 0.85rem; font-weight: 500; }
-    .ai-model-card .model-cap { font-size: 0.7rem; color: var(--secondary-text-color); }
+    .ai-model-card .model-info {
+      flex: 1;
+    }
+    .ai-model-card .model-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .ai-model-card .model-cap {
+      font-size: 0.7rem;
+      color: var(--secondary-text-color);
+    }
 
     .new-chat-btn {
       display: flex;
@@ -92,17 +110,20 @@ export class GmChatPanel extends LitElement {
       padding: 7px 10px;
       border-radius: var(--border-radius-sm, 8px);
       background: none;
-      border: 1px dashed var(--divider-color, rgba(255,255,255,0.18));
+      border: 1px dashed var(--divider-color, rgba(255, 255, 255, 0.18));
       cursor: pointer;
       color: var(--secondary-text-color);
       font-family: inherit;
       font-size: var(--font-size-supporting);
-      transition: background 150ms, color 150ms, border-color 150ms;
+      transition:
+        background 150ms,
+        color 150ms,
+        border-color 150ms;
     }
     .new-chat-btn:hover {
-      background: rgba(76,175,80,0.08);
+      background: rgba(76, 175, 80, 0.08);
       color: var(--ai-accent, #4caf50);
-      border-color: rgba(76,175,80,0.4);
+      border-color: rgba(76, 175, 80, 0.4);
     }
 
     .rail-section-label {
@@ -114,7 +135,11 @@ export class GmChatPanel extends LitElement {
       margin-top: 8px;
     }
 
-    .rail-recent { display: flex; flex-direction: column; gap: 2px; }
+    .rail-recent {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
 
     .thread-row {
       display: flex;
@@ -131,9 +156,11 @@ export class GmChatPanel extends LitElement {
       width: 100%;
       transition: background 150ms;
     }
-    .thread-row:hover { background: rgba(255,255,255,0.05); }
+    .thread-row:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
     .thread-row[aria-pressed='true'] {
-      background: rgba(76,175,80,0.12);
+      background: rgba(76, 175, 80, 0.12);
       color: var(--ai-accent, #4caf50);
     }
     .thread-title {
@@ -145,7 +172,11 @@ export class GmChatPanel extends LitElement {
       overflow: hidden;
       flex: 1;
     }
-    .thread-time { font-size: 0.68rem; color: var(--secondary-text-color); margin-top: 2px; }
+    .thread-time {
+      font-size: 0.68rem;
+      color: var(--secondary-text-color);
+      margin-top: 2px;
+    }
 
     /* ── Content area ─────────────────────────────────────────── */
     .chat-content {
@@ -167,8 +198,16 @@ export class GmChatPanel extends LitElement {
       gap: 12px;
       text-align: center;
     }
-    .welcome-title { font-size: var(--font-size-lg); font-weight: 500; margin: 0; }
-    .welcome-lede { font-size: var(--font-size-sm); color: var(--secondary-text-color); margin: 0; }
+    .welcome-title {
+      font-size: var(--font-size-lg);
+      font-weight: 500;
+      margin: 0;
+    }
+    .welcome-lede {
+      font-size: var(--font-size-sm);
+      color: var(--secondary-text-color);
+      margin: 0;
+    }
 
     .prompt-grid {
       display: grid;
@@ -179,8 +218,8 @@ export class GmChatPanel extends LitElement {
       margin-top: 16px;
     }
     .prompt-card {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       border-radius: var(--border-radius-md, 12px);
       padding: 12px 14px;
       cursor: pointer;
@@ -189,10 +228,12 @@ export class GmChatPanel extends LitElement {
       color: var(--primary-text-color);
       text-align: left;
       font-family: inherit;
-      transition: background 150ms, border-color 150ms;
+      transition:
+        background 150ms,
+        border-color 150ms;
     }
     .prompt-card:hover {
-      background: rgba(76,175,80,0.1);
+      background: rgba(76, 175, 80, 0.1);
       border-color: var(--ai-accent, #4caf50);
     }
 
@@ -202,10 +243,14 @@ export class GmChatPanel extends LitElement {
       align-items: center;
       gap: 8px;
       padding: 10px 16px;
-      border-bottom: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       flex-shrink: 0;
     }
-    .thread-breadcrumb { flex: 1; font-size: 0.85rem; color: var(--secondary-text-color); }
+    .thread-breadcrumb {
+      flex: 1;
+      font-size: 0.85rem;
+      color: var(--secondary-text-color);
+    }
 
     /* ── Chat area ────────────────────────────────────────────── */
     .chat-area {
@@ -234,13 +279,15 @@ export class GmChatPanel extends LitElement {
       align-self: flex-end;
       flex-direction: row-reverse;
     }
-    .msg.ai { align-self: flex-start; }
+    .msg.ai {
+      align-self: flex-start;
+    }
 
     .msg-avatar {
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.1);
+      background: rgba(255, 255, 255, 0.1);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -248,20 +295,24 @@ export class GmChatPanel extends LitElement {
       font-size: 0.75rem;
       font-weight: 600;
     }
-    .msg.ai .msg-avatar { color: var(--ai-accent, #4caf50); }
+    .msg.ai .msg-avatar {
+      color: var(--ai-accent, #4caf50);
+    }
 
     .msg-bubble {
-      background: rgba(255,255,255,0.06);
+      background: rgba(255, 255, 255, 0.06);
       border-radius: var(--border-radius-md, 12px);
       padding: 10px 14px;
       font-size: var(--font-size-sm);
       line-height: 1.5;
     }
     .msg.user .msg-bubble {
-      background: rgba(76,175,80,0.18);
+      background: rgba(76, 175, 80, 0.18);
       border-radius: 12px 4px 12px 12px;
     }
-    .msg.ai .msg-bubble { border-radius: 4px 12px 12px 12px; }
+    .msg.ai .msg-bubble {
+      border-radius: 4px 12px 12px 12px;
+    }
 
     .msg-meta {
       display: flex;
@@ -269,16 +320,19 @@ export class GmChatPanel extends LitElement {
       gap: 6px;
       margin-bottom: 6px;
     }
-    .msg-label { font-size: 0.75rem; font-weight: 600; }
+    .msg-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
     .conf {
       font-size: 0.68rem;
       padding: 1px 6px;
       border-radius: var(--border-radius-full, 9999px);
-      background: rgba(76,175,80,0.25);
+      background: rgba(76, 175, 80, 0.25);
       color: var(--ai-accent, #4caf50);
     }
     .conf.mid {
-      background: rgba(255,152,0,0.25);
+      background: rgba(255, 152, 0, 0.25);
       color: var(--ai-amber, #ff9800);
     }
 
@@ -288,14 +342,25 @@ export class GmChatPanel extends LitElement {
       grid-template-columns: repeat(3, 1fr);
       gap: 6px;
       margin-top: 10px;
-      background: rgba(255,255,255,0.04);
+      background: rgba(255, 255, 255, 0.04);
       border-radius: var(--border-radius-sm, 8px);
       padding: 8px;
     }
-    .snap-cell { text-align: center; }
-    .snap-value { font-size: 1rem; font-weight: 600; }
-    .snap-unit { font-size: 0.7rem; color: var(--secondary-text-color); }
-    .snap-delta { font-size: 0.68rem; color: var(--ai-accent, #4caf50); }
+    .snap-cell {
+      text-align: center;
+    }
+    .snap-value {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .snap-unit {
+      font-size: 0.7rem;
+      color: var(--secondary-text-color);
+    }
+    .snap-delta {
+      font-size: 0.68rem;
+      color: var(--ai-accent, #4caf50);
+    }
 
     /* ── Action card ──────────────────────────────────────────── */
     .act-card {
@@ -303,15 +368,26 @@ export class GmChatPanel extends LitElement {
       flex-direction: column;
       gap: 6px;
       margin-top: 10px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid var(--divider-color, rgba(255,255,255,0.12));
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
       border-radius: var(--border-radius-md, 12px);
       padding: 10px 12px;
     }
-    .act-title { font-size: var(--font-size-supporting); font-weight: 600; }
-    .act-desc { font-size: var(--font-size-supporting); color: var(--secondary-text-color); }
-    .act-buttons { display: flex; gap: 8px; margin-top: 4px; }
-    .apply-btn, .dismiss-btn {
+    .act-title {
+      font-size: var(--font-size-supporting);
+      font-weight: 600;
+    }
+    .act-desc {
+      font-size: var(--font-size-supporting);
+      color: var(--secondary-text-color);
+    }
+    .act-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .apply-btn,
+    .dismiss-btn {
       font-size: 0.78rem;
       padding: 4px 12px;
       border-radius: var(--border-radius-full, 9999px);
@@ -324,7 +400,7 @@ export class GmChatPanel extends LitElement {
       color: var(--text-primary);
     }
     .dismiss-btn {
-      background: rgba(255,255,255,0.08);
+      background: rgba(255, 255, 255, 0.08);
       color: var(--primary-text-color);
     }
 
@@ -339,9 +415,9 @@ export class GmChatPanel extends LitElement {
       font-size: 0.7rem;
       padding: 2px 8px;
       border-radius: var(--border-radius-full, 9999px);
-      background: rgba(255,255,255,0.07);
+      background: rgba(255, 255, 255, 0.07);
       color: var(--secondary-text-color);
-      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
     }
 
     /* ── Typing indicator ─────────────────────────────────────── */
@@ -359,11 +435,21 @@ export class GmChatPanel extends LitElement {
       background: currentColor;
       animation: typing-hop 1.2s ease-in-out infinite;
     }
-    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
     @keyframes typing-hop {
-      0%, 80%, 100% { transform: translateY(0); }
-      40% { transform: translateY(-6px); }
+      0%,
+      80%,
+      100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-6px);
+      }
     }
 
     /* ── Composer ─────────────────────────────────────────────── */
@@ -373,7 +459,7 @@ export class GmChatPanel extends LitElement {
       flex-direction: column;
       gap: 6px;
       padding: 10px 16px 12px;
-      border-top: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
     }
     .suggest-strip {
       display: flex;
@@ -386,15 +472,17 @@ export class GmChatPanel extends LitElement {
       font-size: 0.75rem;
       padding: 4px 10px;
       border-radius: var(--border-radius-full, 9999px);
-      border: 1px solid var(--divider-color, rgba(255,255,255,0.12));
-      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+      background: rgba(255, 255, 255, 0.05);
       color: var(--primary-text-color);
       cursor: pointer;
       font-family: inherit;
       white-space: nowrap;
       transition: background 150ms;
     }
-    .suggest-chip:hover { background: rgba(76,175,80,0.12); }
+    .suggest-chip:hover {
+      background: rgba(76, 175, 80, 0.12);
+    }
 
     .composer-chips {
       display: flex;
@@ -408,8 +496,8 @@ export class GmChatPanel extends LitElement {
       font-size: 0.75rem;
       padding: 3px 8px 3px 10px;
       border-radius: var(--border-radius-full, 9999px);
-      background: rgba(76,175,80,0.12);
-      border: 1px solid rgba(76,175,80,0.3);
+      background: rgba(76, 175, 80, 0.12);
+      border: 1px solid rgba(76, 175, 80, 0.3);
       color: var(--ai-accent, #4caf50);
     }
     .remove-chip {
@@ -431,8 +519,8 @@ export class GmChatPanel extends LitElement {
     }
     .composer-textarea {
       flex: 1;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       border-radius: var(--border-radius-md, 12px);
       padding: 10px 12px;
       color: var(--primary-text-color, #fff);
@@ -446,7 +534,7 @@ export class GmChatPanel extends LitElement {
     }
     .composer-textarea:focus {
       outline: none;
-      border-color: rgba(76,175,80,0.5);
+      border-color: rgba(76, 175, 80, 0.5);
     }
     .send {
       width: 38px;
@@ -462,7 +550,10 @@ export class GmChatPanel extends LitElement {
       color: var(--text-primary);
       transition: opacity 150ms;
     }
-    .send:disabled { opacity: 0.4; cursor: default; }
+    .send:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
 
     /* ── Attach button ────────────────────────────────────────── */
     .attach-btn {
@@ -470,18 +561,25 @@ export class GmChatPanel extends LitElement {
       height: 34px;
       border-radius: 50%;
       background: none;
-      border: 1px solid var(--divider-color, rgba(255,255,255,0.15));
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
       color: var(--secondary-text-color);
-      transition: background 150ms, color 150ms;
+      transition:
+        background 150ms,
+        color 150ms;
     }
-    .attach-btn:hover { background: rgba(255,255,255,0.07); color: var(--primary-text-color); }
+    .attach-btn:hover {
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--primary-text-color);
+    }
 
-    input[type='file'] { display: none; }
+    input[type='file'] {
+      display: none;
+    }
 
     /* ── Attachment preview ───────────────────────────────────── */
     .attachment-preview {
@@ -495,10 +593,10 @@ export class GmChatPanel extends LitElement {
       height: 64px;
       object-fit: cover;
       border-radius: var(--border-radius-sm, 8px);
-      border: 1px solid var(--divider-color, rgba(255,255,255,0.12));
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
     }
     .remove-attachment {
-      background: rgba(255,255,255,0.08);
+      background: rgba(255, 255, 255, 0.08);
       border: none;
       border-radius: 50%;
       width: 22px;
@@ -544,7 +642,10 @@ export class GmChatPanel extends LitElement {
       color: var(--text-primary);
       transition: opacity 150ms;
     }
-    .agent-save-btn:disabled { opacity: 0.4; cursor: default; }
+    .agent-save-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
     .agent-setup-error {
       font-size: 0.72rem;
       color: var(--error-color, #f44336);
@@ -567,19 +668,28 @@ export class GmChatPanel extends LitElement {
       background: none;
       border: none;
       cursor: pointer;
-      color: var(--secondary-text-color, rgba(255,255,255,0.4));
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.4));
       display: flex;
       align-items: center;
       padding: 2px;
       border-radius: var(--border-radius-xs, 4px);
       flex-shrink: 0;
       opacity: 0;
-      transition: opacity 150ms, color 150ms;
+      transition:
+        opacity 150ms,
+        color 150ms;
     }
     .thread-row:hover .pin-btn,
-    .thread-header .pin-btn { opacity: 1; }
-    .pin-btn.pinned { color: var(--ai-accent, #4caf50); opacity: 1; }
-    .pin-btn:hover { color: var(--primary-text-color, #fff); }
+    .thread-header .pin-btn {
+      opacity: 1;
+    }
+    .pin-btn.pinned {
+      color: var(--ai-accent, #4caf50);
+      opacity: 1;
+    }
+    .pin-btn:hover {
+      color: var(--primary-text-color, #fff);
+    }
 
     /* ── Message image thumbnail ──────────────────────────────── */
     .msg-image {
@@ -587,8 +697,10 @@ export class GmChatPanel extends LitElement {
       max-width: 200px;
       border-radius: var(--border-radius-sm, 8px);
       margin-top: 6px;
-      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
     }
+
+    ${reducedMotion}
   `;
 
   private _getActiveThread(): ConversationThread | undefined {
@@ -614,7 +726,10 @@ export class GmChatPanel extends LitElement {
   }
 
   private _handleInput(e: Event) {
-    this._dispatch({ type: 'COMPOSER_DRAFT_CHANGED', text: (e.target as HTMLTextAreaElement).value });
+    this._dispatch({
+      type: 'COMPOSER_DRAFT_CHANGED',
+      text: (e.target as HTMLTextAreaElement).value,
+    });
   }
 
   private async _send() {
@@ -676,7 +791,13 @@ export class GmChatPanel extends LitElement {
         aria-pressed=${isActive ? 'true' : 'false'}
         @click=${() => this._setActiveThread(t.thread_id)}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;margin-top:2px">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          style="flex-shrink:0;margin-top:2px"
+        >
           <path d=${mdiMessageOutline}></path>
         </svg>
         <div style="flex:1;min-width:0;">
@@ -686,7 +807,10 @@ export class GmChatPanel extends LitElement {
         <button
           class="pin-btn ${t.pinned ? 'pinned' : ''}"
           aria-label=${t.pinned ? 'Unpin conversation' : 'Pin conversation'}
-          @click=${(e: Event) => { e.stopPropagation(); togglePin(t.thread_id); }}
+          @click=${(e: Event) => {
+            e.stopPropagation();
+            togglePin(t.thread_id);
+          }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
             <path d=${t.pinned ? mdiPinOff : mdiPin}></path>
@@ -707,7 +831,13 @@ export class GmChatPanel extends LitElement {
     return html`
       <div class="chat-rail">
         <div class="ai-model-card">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ai-accent,#4caf50)">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            style="color:var(--ai-accent,#4caf50)"
+          >
             <path d=${mdiBrain}></path>
           </svg>
           <div class="model-info">
@@ -723,19 +853,30 @@ export class GmChatPanel extends LitElement {
           New conversation
         </button>
 
-        ${pinned.length > 0 ? html`
-          <div class="rail-section-label">Pinned</div>
-          <div class="rail-recent">
-            ${repeat(pinned, (t) => t.thread_id, (t) => this._renderThreadRow(t, activeId))}
-          </div>
-        ` : nothing}
-
-        ${recent.length > 0 ? html`
-          <div class="rail-section-label">Recent</div>
-          <div class="rail-recent">
-            ${repeat(recent, (t) => t.thread_id, (t) => this._renderThreadRow(t, activeId))}
-          </div>
-        ` : nothing}
+        ${pinned.length > 0
+          ? html`
+              <div class="rail-section-label">Pinned</div>
+              <div class="rail-recent">
+                ${repeat(
+                  pinned,
+                  (t) => t.thread_id,
+                  (t) => this._renderThreadRow(t, activeId)
+                )}
+              </div>
+            `
+          : nothing}
+        ${recent.length > 0
+          ? html`
+              <div class="rail-section-label">Recent</div>
+              <div class="rail-recent">
+                ${repeat(
+                  recent,
+                  (t) => t.thread_id,
+                  (t) => this._renderThreadRow(t, activeId)
+                )}
+              </div>
+            `
+          : nothing}
       </div>
     `;
   }
@@ -752,15 +893,31 @@ export class GmChatPanel extends LitElement {
   private _renderWelcome(aiUnavailable: boolean) {
     return html`
       <div class="welcome">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ai-accent,#4caf50)">
+        <svg
+          width="40"
+          height="40"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          style="color:var(--ai-accent,#4caf50)"
+        >
           <path d=${mdiBrain}></path>
         </svg>
         <h3 class="welcome-title">Good morning, grower</h3>
-        <p class="welcome-lede">Ask me anything about your grow — I'll analyze your data and suggest actions.</p>
+        <p class="welcome-lede">
+          Ask me anything about your grow — I'll analyze your data and suggest actions.
+        </p>
         <div class="prompt-grid">
-          ${SUGGESTION_PROMPTS.concat('What nutrients should I adjust?').map((p) => html`
-            <button class="prompt-card" ?disabled=${aiUnavailable} @click=${() => this._clickPrompt(p)}>${p}</button>
-          `)}
+          ${SUGGESTION_PROMPTS.concat('What nutrients should I adjust?').map(
+            (p) => html`
+              <button
+                class="prompt-card"
+                ?disabled=${aiUnavailable}
+                @click=${() => this._clickPrompt(p)}
+              >
+                ${p}
+              </button>
+            `
+          )}
         </div>
       </div>
       ${this._renderComposer(aiUnavailable)}
@@ -783,53 +940,74 @@ export class GmChatPanel extends LitElement {
     return html`
       <div class="msg ${msg.role}">
         <div class="msg-avatar">
-          ${isUser ? initials : html`
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d=${mdiBrain}></path>
-            </svg>
-          `}
+          ${isUser
+            ? initials
+            : html`
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d=${mdiBrain}></path>
+                </svg>
+              `}
         </div>
         <div class="msg-bubble">
-          ${!isUser ? html`
-            <div class="msg-meta">
-              <span class="msg-label">Grow Master</span>
-              ${msg.confidence !== undefined ? html`
-                <span class="conf ${confLevel === 'mid' ? 'mid' : ''}">${Math.round(msg.confidence * 100)}%</span>
-              ` : nothing}
-            </div>
-          ` : nothing}
-          ${msg.imageEntityId ? html`
-            <img class="msg-image" src=${msg.imageEntityId} alt="Attached image" />
-          ` : nothing}
-          ${msg.text}
-          ${msg.sensorSnapshot && msg.sensorSnapshot.length > 0 ? html`
-            <div class="data-snap">
-              ${msg.sensorSnapshot.map((s) => html`
-                <div class="snap-cell">
-                  <div class="snap-value">${s.value}</div>
-                  <div class="snap-unit">${s.unit}</div>
-                  ${s.delta ? html`<div class="snap-delta">${s.delta}</div>` : nothing}
+          ${!isUser
+            ? html`
+                <div class="msg-meta">
+                  <span class="msg-label">Grow Master</span>
+                  ${msg.confidence !== undefined
+                    ? html`
+                        <span class="conf ${confLevel === 'mid' ? 'mid' : ''}"
+                          >${Math.round(msg.confidence * 100)}%</span
+                        >
+                      `
+                    : nothing}
                 </div>
-              `)}
-            </div>
-          ` : nothing}
-          ${msg.suggestedAction && !dismissed ? html`
-            <div class="act-card">
-              <div class="act-title">${msg.suggestedAction.description}</div>
-              <div class="act-desc">${msg.suggestedAction.service}</div>
-              <div class="act-buttons">
-                <button class="apply-btn" @click=${() => applyAction(msg.suggestedAction as SuggestedAction)}>Apply</button>
-                <button class="dismiss-btn" @click=${() => this._dismiss(index)}>Dismiss</button>
-              </div>
-            </div>
-          ` : nothing}
-          ${msg.citations && msg.citations.length > 0 ? html`
-            <div class="cite-row">
-              ${msg.citations.map((c) => html`
-                <span class="cite-chip">${c.label}</span>
-              `)}
-            </div>
-          ` : nothing}
+              `
+            : nothing}
+          ${msg.imageEntityId
+            ? html` <img class="msg-image" src=${msg.imageEntityId} alt="Attached image" /> `
+            : nothing}
+          ${msg.text}
+          ${msg.sensorSnapshot && msg.sensorSnapshot.length > 0
+            ? html`
+                <div class="data-snap">
+                  ${msg.sensorSnapshot.map(
+                    (s) => html`
+                      <div class="snap-cell">
+                        <div class="snap-value">${s.value}</div>
+                        <div class="snap-unit">${s.unit}</div>
+                        ${s.delta ? html`<div class="snap-delta">${s.delta}</div>` : nothing}
+                      </div>
+                    `
+                  )}
+                </div>
+              `
+            : nothing}
+          ${msg.suggestedAction && !dismissed
+            ? html`
+                <div class="act-card">
+                  <div class="act-title">${msg.suggestedAction.description}</div>
+                  <div class="act-desc">${msg.suggestedAction.service}</div>
+                  <div class="act-buttons">
+                    <button
+                      class="apply-btn"
+                      @click=${() => applyAction(msg.suggestedAction as SuggestedAction)}
+                    >
+                      Apply
+                    </button>
+                    <button class="dismiss-btn" @click=${() => this._dismiss(index)}>
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              `
+            : nothing}
+          ${msg.citations && msg.citations.length > 0
+            ? html`
+                <div class="cite-row">
+                  ${msg.citations.map((c) => html` <span class="cite-chip">${c.label}</span> `)}
+                </div>
+              `
+            : nothing}
         </div>
       </div>
     `;
@@ -842,41 +1020,63 @@ export class GmChatPanel extends LitElement {
   private _renderComposer(disabled = false) {
     const { composerDraft, contextChips, pendingAttachment, toast } = this._sm;
     const hasText = composerDraft.trim().length > 0;
-    const error = this._error.value ?? (this._sm.status.kind === 'error' ? this._sm.status.message : null);
+    const error =
+      this._error.value ?? (this._sm.status.kind === 'error' ? this._sm.status.message : null);
     return html`
       <div class="composer ${disabled ? 'composer--disabled' : ''}">
         <div class="suggest-strip">
-          ${SUGGESTION_PROMPTS.map((p) => html`
-            <button class="suggest-chip" @click=${() => this._clickSuggest(p)}>${p}</button>
-          `)}
+          ${SUGGESTION_PROMPTS.map(
+            (p) => html`
+              <button class="suggest-chip" @click=${() => this._clickSuggest(p)}>${p}</button>
+            `
+          )}
         </div>
-        ${contextChips.length > 0 ? html`
-          <div class="composer-chips">
-            ${contextChips.map((chip) => html`
-              <div class="ctx-chip" data-chip-id=${chip.id}>
-                ${chip.label}
-                <button class="remove-chip" aria-label="Remove ${chip.label}" @click=${() => this._removeCtxChip(chip.id)}>
+        ${contextChips.length > 0
+          ? html`
+              <div class="composer-chips">
+                ${contextChips.map(
+                  (chip) => html`
+                    <div class="ctx-chip" data-chip-id=${chip.id}>
+                      ${chip.label}
+                      <button
+                        class="remove-chip"
+                        aria-label="Remove ${chip.label}"
+                        @click=${() => this._removeCtxChip(chip.id)}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                          <path d=${mdiClose}></path>
+                        </svg>
+                      </button>
+                    </div>
+                  `
+                )}
+              </div>
+            `
+          : nothing}
+        ${pendingAttachment
+          ? html`
+              <div class="attachment-preview">
+                <img src=${pendingAttachment} alt="Attachment preview" />
+                <button
+                  class="remove-attachment"
+                  aria-label="Remove attachment"
+                  @click=${this._removeAttachment}
+                >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                     <path d=${mdiClose}></path>
                   </svg>
                 </button>
               </div>
-            `)}
-          </div>
-        ` : nothing}
-        ${pendingAttachment ? html`
-          <div class="attachment-preview">
-            <img src=${pendingAttachment} alt="Attachment preview" />
-            <button class="remove-attachment" aria-label="Remove attachment" @click=${this._removeAttachment}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                <path d=${mdiClose}></path>
-              </svg>
-            </button>
-          </div>
-        ` : nothing}
+            `
+          : nothing}
         <div class="composer-input">
           <input type="file" accept="image/*" @change=${this._onFileSelected} />
-          <button class="attach-btn" aria-label="Attach image" ?disabled=${disabled} @click=${this._openFilePicker}>
+          <button
+            class="attach-btn"
+            aria-label="Attach image"
+            ?disabled=${disabled}
+            @click=${this._openFilePicker}
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d=${mdiPaperclip}></path>
             </svg>
@@ -895,7 +1095,12 @@ export class GmChatPanel extends LitElement {
               }
             }}
           ></textarea>
-          <button class="send" ?disabled=${!hasText || disabled} @click=${this._send} aria-label="Send">
+          <button
+            class="send"
+            ?disabled=${!hasText || disabled}
+            @click=${this._send}
+            aria-label="Send"
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d=${mdiSend}></path>
             </svg>
@@ -912,7 +1117,9 @@ export class GmChatPanel extends LitElement {
     return html`
       <div class="chat-area">
         <div class="thread-header">
-          <span class="thread-breadcrumb">Chat / ${thread.messages[0]?.text?.slice(0, 40) ?? 'Conversation'}</span>
+          <span class="thread-breadcrumb"
+            >Chat / ${thread.messages[0]?.text?.slice(0, 40) ?? 'Conversation'}</span
+          >
           <button
             class="pin-btn ${thread.pinned ? 'pinned' : ''}"
             aria-label=${thread.pinned ? 'Unpin conversation' : 'Pin conversation'}
@@ -926,13 +1133,15 @@ export class GmChatPanel extends LitElement {
         </div>
         <div class="chat-scroll">
           ${thread.messages.map((msg, i) => this._renderMessage(msg, i))}
-          ${isLoading ? html`
-            <div class="typing">
-              <div class="typing-dot"></div>
-              <div class="typing-dot"></div>
-              <div class="typing-dot"></div>
-            </div>
-          ` : nothing}
+          ${isLoading
+            ? html`
+                <div class="typing">
+                  <div class="typing-dot"></div>
+                  <div class="typing-dot"></div>
+                  <div class="typing-dot"></div>
+                </div>
+              `
+            : nothing}
         </div>
         ${this._renderComposer(aiUnavailable)}
       </div>
@@ -974,7 +1183,9 @@ export class GmChatPanel extends LitElement {
             class="agent-save-btn"
             ?disabled=${!agentDraft || isSaving}
             @click=${this._saveAgent}
-          >${isSaving ? 'Saving…' : 'Enable AI'}</button>
+          >
+            ${isSaving ? 'Saving…' : 'Enable AI'}
+          </button>
         </div>
         ${saveError ? html`<div class="agent-setup-error">${saveError}</div>` : nothing}
       </div>

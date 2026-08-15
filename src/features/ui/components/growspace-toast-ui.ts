@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 export type ToastNotification = {
   message: string;
@@ -83,6 +84,8 @@ export class GrowspaceToastUI extends LitElement {
     .toast-action:hover {
       background: rgba(var(--rgb-primary-color), 0.1);
     }
+
+    ${reducedMotion}
   `;
 
   render() {

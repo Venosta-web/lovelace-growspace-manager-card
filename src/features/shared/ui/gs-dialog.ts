@@ -1,6 +1,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiClose } from '@mdi/js';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 /**
  * Shell component that owns the ha-dialog wrapper, glass container, and standard header.
@@ -40,7 +41,8 @@ export class GsDialog extends LitElement {
       overflow: hidden;
       position: relative;
       color: var(--primary-text-color, #fff);
-      font-family: 'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
+      font-family:
+        'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
     }
 
     .dialog-header {
@@ -130,6 +132,8 @@ export class GsDialog extends LitElement {
         padding: 12px 16px;
       }
     }
+
+    ${reducedMotion}
   `;
 
   private _dispatchClose(): void {

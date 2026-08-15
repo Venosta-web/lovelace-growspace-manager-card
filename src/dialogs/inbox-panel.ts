@@ -3,14 +3,16 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { mdiInbox } from '@mdi/js';
 import { StoreController } from '@nanostores/lit';
-import { aiAlerts$, aiEnabled$, fetchAlerts, resolveAlert, applyAction } from '../slices/ai-insight';
-import type { TriageAlert } from '../slices/ai-insight/schema';
 import {
-  createInitialSM,
-  transition,
-  type InboxSM,
-  type InboxFilter,
-} from './inbox-panel-sm';
+  aiAlerts$,
+  aiEnabled$,
+  fetchAlerts,
+  resolveAlert,
+  applyAction,
+} from '../slices/ai-insight';
+import type { TriageAlert } from '../slices/ai-insight/schema';
+import { reducedMotion } from '../styles/reduced-motion.styles';
+import { createInitialSM, transition, type InboxSM, type InboxFilter } from './inbox-panel-sm';
 
 function formatRelative(ts: number): string {
   const diff = Math.floor((Date.now() - ts * 1000) / 1000);
@@ -138,7 +140,9 @@ export class GmInboxPanel extends LitElement {
       font-size: 0.78rem;
       cursor: pointer;
       font-family: inherit;
-      transition: background 150ms, color 150ms;
+      transition:
+        background 150ms,
+        color 150ms;
     }
 
     .inbox-filter-pill[aria-pressed='true'] {
@@ -259,7 +263,9 @@ export class GmInboxPanel extends LitElement {
       cursor: pointer;
       padding: 4px 8px;
       border-radius: var(--border-radius-sm, 8px);
-      transition: color 150ms, background 150ms;
+      transition:
+        color 150ms,
+        background 150ms;
     }
 
     .mark-all-read-btn:hover:not(:disabled) {
@@ -627,6 +633,8 @@ export class GmInboxPanel extends LitElement {
       font-family: inherit;
       padding: 2px 6px;
     }
+
+    ${reducedMotion}
   `;
 
   private _renderFilterStrip() {
@@ -643,7 +651,9 @@ export class GmInboxPanel extends LitElement {
             <button
               class="inbox-filter-pill"
               aria-pressed=${this._sm.activeFilter === key ? 'true' : 'false'}
-              @click=${() => { this._sm = transition(this._sm, { type: 'FilterSelected', filter: key }); }}
+              @click=${() => {
+                this._sm = transition(this._sm, { type: 'FilterSelected', filter: key });
+              }}
             >
               ${label}
               <span class="pill-count">${this._countFor(key)}</span>
@@ -679,12 +689,11 @@ export class GmInboxPanel extends LitElement {
               <div
                 class="inbox-row"
                 aria-selected=${this._sm.selectedId === a.id ? 'true' : 'false'}
-                @click=${() => { this._sm = transition(this._sm, { type: 'AlertSelected', id: a.id }); }}
+                @click=${() => {
+                  this._sm = transition(this._sm, { type: 'AlertSelected', id: a.id });
+                }}
               >
-                <div
-                  class="inbox-severity-bar"
-                  data-severity=${a.severity ?? 'info'}
-                ></div>
+                <div class="inbox-severity-bar" data-severity=${a.severity ?? 'info'}></div>
                 <div class="inbox-row-body">
                   <div class="inbox-row-title">
                     ${!isRead ? html`<span class="inbox-unread-dot"></span>` : nothing}
@@ -733,8 +742,12 @@ export class GmInboxPanel extends LitElement {
                 ${status.message}
                 <button
                   class="error-dismiss-btn"
-                  @click=${() => { this._sm = transition(this._sm, { type: 'ErrorDismissed' }); }}
-                >Dismiss</button>
+                  @click=${() => {
+                    this._sm = transition(this._sm, { type: 'ErrorDismissed' });
+                  }}
+                >
+                  Dismiss
+                </button>
               </div>
             `
           : nothing}
@@ -767,7 +780,9 @@ export class GmInboxPanel extends LitElement {
                   (k) => html`
                     <div class="kpi-card">
                       <div class="kpi-card-label">${k.label}</div>
-                      <div class="kpi-card-value">${k.value}${k.unit ? html` <small>${k.unit}</small>` : nothing}</div>
+                      <div class="kpi-card-value">
+                        ${k.value}${k.unit ? html` <small>${k.unit}</small>` : nothing}
+                      </div>
                     </div>
                   `
                 )}
@@ -785,8 +800,12 @@ export class GmInboxPanel extends LitElement {
                     <div class="reco-row-body">${action.description}</div>
                     <button
                       class="apply-btn"
-                      @click=${() => { this._sm = transition(this._sm, { type: 'ActionApplyRequested', action }); }}
-                    >Apply</button>
+                      @click=${() => {
+                        this._sm = transition(this._sm, { type: 'ActionApplyRequested', action });
+                      }}
+                    >
+                      Apply
+                    </button>
                   </div>
                 `
               )}
@@ -801,12 +820,15 @@ export class GmInboxPanel extends LitElement {
                 <div class="confirm-overlay-actions">
                   <button
                     class="confirm-cancel-btn"
-                    @click=${() => { this._sm = transition(this._sm, { type: 'ActionApplyCancelled' }); }}
-                  >Cancel</button>
-                  <button
-                    class="confirm-apply-btn"
-                    @click=${() => this._handleApplyConfirmed()}
-                  >Confirm</button>
+                    @click=${() => {
+                      this._sm = transition(this._sm, { type: 'ActionApplyCancelled' });
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button class="confirm-apply-btn" @click=${() => this._handleApplyConfirmed()}>
+                    Confirm
+                  </button>
                 </div>
               </div>
             `
@@ -832,21 +854,21 @@ export class GmInboxPanel extends LitElement {
                       });
                     }}
                   />
-                  <button
-                    class="note-submit-btn"
-                    @click=${() => this._handleResolve()}
-                  >Submit</button>
+                  <button class="note-submit-btn" @click=${() => this._handleResolve()}>
+                    Submit
+                  </button>
                 </div>
               `
             : html`
                 <button
                   class="add-note-btn"
-                  @click=${() => { this._sm = transition(this._sm, { type: 'AddNoteOpened' }); }}
-                >Add note</button>
-                <button
-                  class="resolve-btn"
-                  @click=${() => this._handleResolve()}
-                >Resolve</button>
+                  @click=${() => {
+                    this._sm = transition(this._sm, { type: 'AddNoteOpened' });
+                  }}
+                >
+                  Add note
+                </button>
+                <button class="resolve-btn" @click=${() => this._handleResolve()}>Resolve</button>
               `}
         </div>
       </div>
@@ -873,7 +895,9 @@ export class GmInboxPanel extends LitElement {
               ids: this._filtered().map((a) => a.id),
             });
           }}
-        >Mark all read</button>
+        >
+          Mark all read
+        </button>
       </div>
     `;
   }
@@ -884,9 +908,7 @@ export class GmInboxPanel extends LitElement {
       <div class="inbox-shell">
         <div class="inbox-rail">
           ${aiAvailable === false ? this._renderAiUnavailableBanner() : nothing}
-          ${this._renderFilterStrip()}
-          ${this._renderAlertList()}
-          ${this._renderRailFooter()}
+          ${this._renderFilterStrip()} ${this._renderAlertList()} ${this._renderRailFooter()}
         </div>
         ${this._renderDetailPane()}
       </div>

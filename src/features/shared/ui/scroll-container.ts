@@ -2,6 +2,7 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property, state, query } from 'lit/decorators.js';
 import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
 import { ResizeController } from '../../../controllers/resize-controller';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 @customElement('scroll-container')
 export class ScrollContainer extends LitElement {
@@ -116,6 +117,8 @@ export class ScrollContainer extends LitElement {
     ::slotted(*) {
       height: 100%;
     }
+
+    ${reducedMotion}
   `;
 
   render() {
