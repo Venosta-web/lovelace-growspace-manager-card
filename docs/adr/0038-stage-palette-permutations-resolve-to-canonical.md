@@ -43,7 +43,7 @@ times in a row. These are copy/paste transpositions of the canonical set.
 The "independent green-family ramp" reading of `_getStageColor` breaks on its own
 arms: `cure: #795548` is brown and `seedling: var(--stage-seedling, #8bc34a)` is
 already the canonical lime token. A ramp with a brown arm and a canonical-token
-arm is not a system; it is four transpositions (`flower`, `dry`) plus two
+arm is not a system; it is two transpositions (`flower`, `dry`) plus two
 darker-green improvisations (`clone: #66bb6a`, `mother: #2e7d32`) around a token
 reference someone already migrated. There is no second palette to preserve.
 
@@ -183,10 +183,23 @@ None of these can be both intent-correct and pixel-identical. Per site, on scree
 | `presets-editor` `clone` | same | purple `#9c27b0` → cyan `#26c6da` |
 | `presets-editor` `seedling` | same | cyan `#00bcd4` → lime `#8bc34a` |
 | `clone-dialog`, `batch-clone-dialog` | dialog header accent + primary button | lime `#8bc34a` → cyan `#26c6da` |
-| `header-metrics` `clone` | stage chip, only when HA defines no `--stage-clone` | lime `#8bc34a` → cyan `#26c6da` |
+| `header-metrics` `clone` | stage chip, only where `--stage-clone` is out of scope (the pre-#610 portal case) | lime `#8bc34a` → cyan `#26c6da` |
 
-No visual change: `plant-utils` `CURE`, `presets-editor` `veg`, `training-dialog`,
-both print-label dialogs.
+**No visual change at all** — `--stage-cure` and `--activity-training` are
+card-owned flat values: `plant-utils` `CURE`, `training-dialog`.
+
+**No visual change under the default theme, theme-dependent after** — both
+targets defer to a Home Assistant variable, so a user running a custom theme sees
+a change where they see none today:
+
+| Site | today | after |
+| --- | --- | --- |
+| `presets-editor` `veg` | the HA theme's `--primary-color` | `--stage-veg`, a flat `#4caf50` |
+| print-label, batch-print-label | a flat `#2196F3` | `--gm-info-color` = `var(--info-color, #2196f3)`, i.e. the HA theme's info colour |
+
+These are the intended direction in both cases — the preset chip should track the
+veg stage rather than the brand, and a print dialog should track the theme's
+informational accent — but they are not pixel-identical for everyone.
 
 The two loudest are the `plant-utils` seedling↔veg swap (it changes the colour of
 the most-seen surface in the card, the plant tile, for two of seven stages) and

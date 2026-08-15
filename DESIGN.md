@@ -273,8 +273,9 @@ These colors are rendered as 3px accent bars at the top of plant tiles and as te
 
 A dialog accent names the thing the dialog acts on: a stage dialog passes its
 stage colour, an activity dialog passes an activity or semantic colour
-(`--warning-color` for IPM, `--activity-training` for training). Reaching for a
-stage colour to accent a non-stage activity is what ADR 0038 exists to stop.
+(`--warning-color` for IPM; ADR 0038 introduces `--activity-training` for
+training, landing with that migration). Reaching for a stage colour to accent a
+non-stage activity is what ADR 0038 exists to stop.
 
 ### Typography & Text Hierarchy
 
