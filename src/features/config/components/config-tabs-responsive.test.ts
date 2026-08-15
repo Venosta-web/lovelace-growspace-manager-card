@@ -20,6 +20,8 @@ import './config-irrigation-tab';
 import './config-tanks-tab';
 import './config-vpd-targets-tab';
 import './config-notifications-tab';
+import './config-heatmap-tab';
+import './config-subareas-tab';
 
 import { createInitialSM } from '../../../dialogs/config-dialog-sm';
 import {
@@ -228,6 +230,25 @@ const notificationsVm = () => ({
   triggerOptions: [...TRIGGER_OPTIONS],
 });
 
+const heatmapVm = () => ({
+  showEmpty: false,
+  groups: [
+    { id: 'g1', name: 'Canopy probes — north bench', x: 1, y: 2, z: 3, sensors: [] },
+    { id: 'g2', name: 'Canopy probes — south bench', x: 4, y: 5, z: 6, sensors: [] },
+  ],
+});
+
+const subareasVm = () => ({
+  hasGrowspace: true,
+  adding: null,
+  loading: false,
+  showEmpty: false,
+  subareas: [
+    { subarea: { id: 'sa1', name: 'Zone A — propagation shelf' }, confirmingDelete: false },
+    { subarea: { id: 'sa2', name: 'Zone B — flowering bench' }, confirmingDelete: true },
+  ],
+});
+
 const TABS: Array<{ name: string; tag: string; vm: () => unknown }> = [
   { name: 'Sensors', tag: 'config-sensors-tab', vm: sensorsVm },
   { name: 'Climate', tag: 'config-climate-tab', vm: climateVm },
@@ -236,14 +257,17 @@ const TABS: Array<{ name: string; tag: string; vm: () => unknown }> = [
   { name: 'Tanks', tag: 'config-tanks-tab', vm: tanksVm },
   { name: 'VPD Targets', tag: 'config-vpd-targets-tab', vm: vpdTargetsVm },
   { name: 'Notifications', tag: 'config-notifications-tab', vm: notificationsVm },
+  // Not named in #545, but they carried the same row-action defect and were fixed with it.
+  { name: 'Heatmap', tag: 'config-heatmap-tab', vm: heatmapVm },
+  { name: 'Subareas', tag: 'config-subareas-tab', vm: subareasVm },
 ];
 
 /* ── harness ───────────────────────────────────────────────────────────── */
 
-async function mountTab(tag: string, vm: unknown): Promise<HTMLElement> {
+async function mountTab(tag: string, vm: unknown, width = PANE_WIDTH): Promise<HTMLElement> {
   const pane = document.createElement('div');
   pane.id = 'pane';
-  pane.style.cssText = `width:${PANE_WIDTH}px;box-sizing:border-box;font-family:Roboto,sans-serif;`;
+  pane.style.cssText = `width:${width}px;box-sizing:border-box;font-family:Roboto,sans-serif;`;
   const el = document.createElement(tag) as HTMLElement & {
     vm: unknown;
     updateComplete: Promise<unknown>;
@@ -310,6 +334,31 @@ function related(a: Element, b: Element): boolean {
   return chain(a).includes(b) || chain(b).includes(a);
 }
 
+/** Pairs of text leaves whose rendered boxes genuinely intersect. */
+function collisionsIn(pane: Element): string[] {
+  const leaves = textLeaves(pane);
+  expect(leaves.length).toBeGreaterThan(0);
+
+  const collisions: string[] = [];
+  for (let i = 0; i < leaves.length; i++) {
+    for (let j = i + 1; j < leaves.length; j++) {
+      const a = leaves[i];
+      const b = leaves[j];
+      if (related(a, b)) continue;
+      // Absolutely-positioned floating labels are a deliberate overlay.
+      if (getComputedStyle(a).position === 'absolute') continue;
+      if (getComputedStyle(b).position === 'absolute') continue;
+      const area = overlapArea(a.getBoundingClientRect(), b.getBoundingClientRect());
+      if (area > 4) {
+        collisions.push(
+          `"${a.textContent?.trim().slice(0, 30)}" overlaps "${b.textContent?.trim().slice(0, 30)}" (${Math.round(area)}px²)`
+        );
+      }
+    }
+  }
+  return collisions;
+}
+
 beforeEach(async () => {
   await page.viewport(PHONE.width, PHONE.height);
 });
@@ -324,31 +373,15 @@ afterEach(async () => {
 describe.each(TABS)('$name tab at 390x844', ({ tag, vm }) => {
   it('renders no overlapping text', async () => {
     const pane = await mountTab(tag, vm());
-    const leaves = textLeaves(pane);
-    expect(leaves.length).toBeGreaterThan(0);
-
-    const collisions: string[] = [];
-    for (let i = 0; i < leaves.length; i++) {
-      for (let j = i + 1; j < leaves.length; j++) {
-        const a = leaves[i];
-        const b = leaves[j];
-        if (related(a, b)) continue;
-        // Absolutely-positioned floating labels are a deliberate overlay.
-        if (getComputedStyle(a).position === 'absolute') continue;
-        if (getComputedStyle(b).position === 'absolute') continue;
-        const area = overlapArea(a.getBoundingClientRect(), b.getBoundingClientRect());
-        if (area > 4) {
-          collisions.push(
-            `"${a.textContent?.trim().slice(0, 30)}" overlaps "${b.textContent?.trim().slice(0, 30)}" (${Math.round(area)}px²)`
-          );
-        }
-      }
-    }
-    expect(collisions).toEqual([]);
+    expect(collisionsIn(pane)).toEqual([]);
   });
 
   it('keeps every control inside the pane and at a 44px tap target', async () => {
     const pane = await mountTab(tag, vm());
+    // The tap floors live behind a 560px media query, which resolves against the
+    // viewport. Without this guard the assertions below would pass vacuously if
+    // the body ever ran at desktop width (every control would simply be smaller).
+    expect(window.innerWidth).toBe(PHONE.width);
     const paneRect = pane.getBoundingClientRect();
 
     const tooSmall: string[] = [];
@@ -367,6 +400,23 @@ describe.each(TABS)('$name tab at 390x844', ({ tag, vm }) => {
     }
     expect(tooSmall).toEqual([]);
     expect(outside).toEqual([]);
+  });
+});
+
+/*
+ * 450px and 560px are both breakpoints; between them the layout is single-column
+ * but still on the dialog's wide padding. Nothing else exercises that band.
+ */
+describe('between the 450px and 560px breakpoints', () => {
+  it.each([
+    { name: 'Sensors', tag: 'config-sensors-tab', vm: sensorsVm },
+    { name: 'Climate', tag: 'config-climate-tab', vm: climateVm },
+  ])('$name renders no overlapping text at 500px', async ({ tag, vm }) => {
+    await page.viewport(500, 844);
+    const pane = await mountTab(tag, vm(), 452);
+    expect(window.innerWidth).toBe(500);
+
+    expect(collisionsIn(pane)).toEqual([]);
   });
 });
 
@@ -417,6 +467,10 @@ describe('phone-viewport appearance', () => {
     for (const [prop, value] of Object.entries(darkTheme)) pane.style.setProperty(prop, value);
     pane.style.background = darkTheme['--card-background-color'];
     pane.style.padding = '16px';
+    // Capture one phone screen rather than the full scroll height: a mostly-blank
+    // tall image is nearly insensitive at the configured mismatch ratio.
+    pane.style.height = `${PHONE.height}px`;
+    pane.style.overflow = 'hidden';
     document.body.style.background = darkTheme['--primary-background-color'];
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
 
