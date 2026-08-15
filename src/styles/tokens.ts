@@ -192,16 +192,27 @@ export const groups: TokenGroup[] = [
   {
     title: 'MD3 Motion Tokens',
     tokens: [
-      { css: '--md3-motion-easing-standard', value: 'cubic-bezier(0.2, 0, 0, 1)', doc: null },
-      { css: '--md3-motion-easing-emphasized', value: 'cubic-bezier(0.2, 0, 0, 1)', doc: null },
-      { css: '--md3-motion-duration-short1', value: '50ms', doc: null },
-      { css: '--md3-motion-duration-short2', value: '100ms', doc: null },
-      { css: '--md3-motion-duration-short3', value: '150ms', doc: null },
-      { css: '--md3-motion-duration-short4', value: '200ms', doc: null },
-      { css: '--md3-motion-duration-medium1', value: '250ms', doc: null },
-      { css: '--md3-motion-duration-medium2', value: '300ms', doc: null },
-      { css: '--md3-motion-duration-long1', value: '400ms', doc: null },
-      { css: '--md3-motion-duration-long2', value: '500ms', doc: null },
+      {
+        css: '--md3-motion-easing-standard',
+        value: 'cubic-bezier(0.2, 0, 0, 1)',
+        doc: 'motion.easing-standard',
+      },
+      {
+        css: '--md3-motion-easing-emphasized',
+        value: 'cubic-bezier(0.2, 0, 0, 1)',
+        doc: 'motion.easing-emphasized',
+        // Same value as standard on purpose: MD3's emphasized curve is a two-part
+        // spline no single cubic-bezier() can express, so Material Web collapses it.
+        note: "Equal to easing-standard by design — MD3's emphasized spline has no single-bezier form",
+      },
+      { css: '--md3-motion-duration-short1', value: '50ms', doc: 'motion.duration-short1' },
+      { css: '--md3-motion-duration-short2', value: '100ms', doc: 'motion.duration-short2' },
+      { css: '--md3-motion-duration-short3', value: '150ms', doc: 'motion.duration-short3' },
+      { css: '--md3-motion-duration-short4', value: '200ms', doc: 'motion.duration-short4' },
+      { css: '--md3-motion-duration-medium1', value: '250ms', doc: 'motion.duration-medium1' },
+      { css: '--md3-motion-duration-medium2', value: '300ms', doc: 'motion.duration-medium2' },
+      { css: '--md3-motion-duration-long1', value: '400ms', doc: 'motion.duration-long1' },
+      { css: '--md3-motion-duration-long2', value: '500ms', doc: 'motion.duration-long2' },
     ],
   },
   {

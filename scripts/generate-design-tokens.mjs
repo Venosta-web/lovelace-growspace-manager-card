@@ -164,7 +164,7 @@ function renderVariables(groups) {
 }
 
 /** Order the frontmatter sections are emitted in, whatever order the groups declare them. */
-const SECTION_ORDER = ['colors', 'typography', 'rounded', 'elevation', 'spacing'];
+const SECTION_ORDER = ['colors', 'typography', 'rounded', 'elevation', 'spacing', 'motion'];
 
 /**
  * Quote only where bare YAML would change the value's type or meaning: numbers

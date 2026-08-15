@@ -1,4 +1,4 @@
-# ADR 0037 — A Minimal Motion Scale, and Fill Bars That Animate Transform
+# ADR 0037 — Fill Bars Animate Transform, Against the Motion Tokens We Already Have
 
 **Status:** Accepted
 **Relates to:** #575 (this decision), #564 (token foundation), #589 (orphaned Strain Library CSS), ADR 0035 (one typed token source)
@@ -11,12 +11,27 @@ dot, a global reduced-motion posture — but it has **no Motion section**. Secti
 1–6 cover theme, colour, typography, components, layout and Stitch guidance;
 easing appears exactly once, inline, in the plant-tile paragraph.
 
-`src/styles/tokens.ts` matched that: **no motion tokens at all**. No duration, no
-easing, no `cubic-bezier` anywhere in the authored source.
+The runtime, however, does **not** match that. `src/styles/tokens.ts` has carried a
+full MD3 motion set since #607 — `--md3-motion-easing-standard` and
+`-emphasized`, four `short` durations, two `medium`, two `long`, plus three
+`--transition*` composites built from them — and they are in live use, 22 call
+sites between the standard easing, `short4` and `medium2`.
 
-The consequence is the shape ADR 0035 and #564 already diagnosed for type and
-radius. With no step to reach for, call sites invented their own. The card's
-eight progress/fill bars carry five different timings between them:
+So this is **not** the shape #564 diagnosed for type and radius. There is no
+missing runtime step. There are three separate problems:
+
+1. The motion tokens are undocumented. Every one carries `doc: null`, so none
+   reaches the `DESIGN.md` frontmatter, and there is no Motion section to explain
+   them. A contributor reading the design system sees no motion scale and
+   reasonably concludes there isn't one.
+2. Consequently the fill bars never adopted it. The card's eight progress/fill
+   bars carry five ad-hoc timings between them, none of them a token.
+3. `DESIGN.md` line 391 documents the plant-tile easing as
+   `cubic-bezier(0.4, 0, 0.2, 1)` — the MD2-legacy curve — while
+   `--md3-motion-easing-standard` is `cubic-bezier(0.2, 0, 0, 1)`. The doc
+   describes a curve the card does not render.
+
+The eight bars:
 
 | Site | Declaration |
 |---|---|
@@ -32,39 +47,51 @@ eight progress/fill bars carry five different timings between them:
 Every one of them animates a layout property. The `impeccable` detector flags all
 eight under `layout-transition`, plus two more in dead code, for ten findings.
 
-Rewriting ten declarations from `width` to `transform` without a token would have
-re-scattered the same five arbitrary literals into a new property. The token gap
-is the cause; the transitions are the symptom.
+Rewriting ten declarations from `width` to `transform` while leaving the literals
+in place would have re-scattered five arbitrary timings into a new property.
 
 ## Decision
 
-### 1. Three motion tokens, not twelve
+### 1. Document the existing scale; mint nothing
 
-`tokens.ts` gains a Motion group with exactly three entries:
+The motion tokens' `doc:` fields are populated so the scale generates into the
+`DESIGN.md` frontmatter like every other token group, and `DESIGN.md` gains a
+Motion section describing it. **No new motion tokens are created.**
 
-```
---motion-duration-short:  200ms
---motion-duration-medium: 300ms
---motion-easing-standard: cubic-bezier(0.4, 0, 0.2, 1)
-```
+An earlier draft of this decision proposed a minimal three-token scale —
+`--motion-duration-short` / `-medium` / `--motion-easing-standard`. That was
+written from a bad reading: a grep of `variables.ts`, which since #607 is only a
+re-export shim, found no motion tokens and was mistaken for the authored source.
+Standing those three up would have created a second motion scale beside one with
+22 live call sites, which is precisely the drift ADR 0035 exists to prevent.
 
-The mapping is 0.2s → `short`, 0.3s → `medium`, 0.4s → `medium`. Only the two
-0.4s sites move at all, and only by 100ms; nothing else is retimed. The easing is
-the MD3 standard curve already used, unnamed, in the plant-tile hover.
+The fill bars map onto the existing steps with no new names:
 
-Both durations have real call sites: `medium` is what every fill bar uses, and
-`short` is the hue-genetics bar's click response. A token with no users would
-contradict the rule below.
+| Was | Becomes |
+|---|---|
+| `0.2s ease` (hue-genetics bar) | `--md3-motion-duration-short4` (200ms) |
+| `0.3s ease` (progress + fill bars) | `--md3-motion-duration-medium2` (300ms) |
+| `0.4s ease` (tank bars) | `--md3-motion-duration-medium2` (300ms) |
 
-**Rejected: the full MD3 motion system** (short1–4, medium1–4, long1–4, plus
-emphasized / decelerate / accelerate easings). It would import twelve steps to
-serve two. #564 made the same call for radius — off-scale values snapped to the
-nearest existing step rather than minting intermediate ones, "keeping the scale
-tight" — and the argument carries here unchanged.
+Only the two 0.4s sites move at all, and only by 100ms. Every site takes
+`--md3-motion-easing-standard`.
 
-The scale grows when a call site genuinely cannot reach what it needs. That
-inability is the signal, and it is the same signal that produced #564: a
-documented character with no runtime step to reach for.
+**`--md3-motion-easing-emphasized` holding the same value as `-standard` is
+correct, not a copy-paste.** MD3's emphasized curve is a two-part spline that a
+single CSS `cubic-bezier()` cannot express, so Material Web defines the
+single-bezier token as `cubic-bezier(0.2, 0, 0, 1)` — identical to standard. The
+Motion section says so, because the next person to notice will otherwise "fix" it.
+
+### 1b. The documented easing is corrected to match the runtime
+
+`DESIGN.md` line 391's `cubic-bezier(0.4, 0, 0.2, 1)` becomes
+`cubic-bezier(0.2, 0, 0, 1)`.
+
+**Rejected: changing the token to match the doc.** The token is what 12 call sites
+actually render today, so the doc is describing a card that does not exist.
+Correcting prose to match shipped behaviour is free; retiming the curve under 12
+sites is a visual change nobody asked for. If the MD2 curve is genuinely preferred,
+that is a deliberate motion-feel change deserving its own issue.
 
 ### 2. Fill bars animate `transform: scaleX()` against a fixed track
 
@@ -72,8 +99,8 @@ The pattern: a track element owns the geometry — fixed height, `overflow: hidd
 its own radius — and the fill inside it is `transform: scaleX(<fraction>)` with
 `transform-origin: left`. The fill does **not** carry its own `border-radius`;
 the track already clips to shape, and `scaleX` would distort a corner radius
-horizontally anyway. The transition runs at `--motion-duration-medium` and
-`--motion-easing-standard`.
+horizontally anyway. The transition runs at `--md3-motion-duration-medium2` and
+`--md3-motion-easing-standard`.
 
 This applies to five sites: both batch-dialog progress bars, the nutrient
 inventory fill bar, the irrigation tanks bar, and the water-analytics tank bar.
@@ -100,11 +127,12 @@ site rather than in this document:
   would visibly flatten as the tank fills. Counter-scaling the children is a
   compounding-transform trick that breaks the moment the markup is touched. A tank
   level changes on a slow sensor cadence, on one element, on one card. The slow
-  rise is the effect; the `1s` stays a deliberate literal rather than minting a
-  `long` step for a single site.
+  rise is the effect; the `1s` stays a deliberate literal — the scale tops out at
+  `long2` (500ms), and adding a 1000ms step for one decorative water animation
+  would stretch the scale to serve a single site.
 
 - **`strain-editor-view` `.hg-bar-indica` keeps `transition: width`,** retimed to
-  `--motion-duration-short`. Two adjacent segments splitting one track is not a
+  `--md3-motion-duration-short4`. Two adjacent segments splitting one track is not a
   fill-against-fixed-track: `.hg-bar-track` is `display: flex` and `.hg-bar-sativa`
   is `flex: 1`, so scaling indica would slide sativa's edge independently and tear
   the seam between them. The animation is driven by a discrete click on the track,
@@ -146,9 +174,15 @@ moment one of those files changes.
   reviewable defect rather than a matter of taste, and the detector enforces it.
 - Three sites deviate, and a reader who runs the detector will see them stay
   flagged-then-suppressed rather than silently disappearing.
-- The scale is deliberately too small to cover motion the card does not yet have.
-  Adding `long` or an emphasized easing is expected, not a failure of this
-  decision — but it should be prompted by a call site, not by symmetry with MD3.
+- Documenting the scale is what makes it reachable. The lesson of this ADR is not
+  about motion: a token that generates into the runtime but carries `doc: null` is
+  invisible to anyone reading the design system, and invisible tokens get
+  reinvented at the call site. Any future group added to `tokens.ts` should get a
+  `doc` path unless there is a reason it must stay runtime-only.
+- Half the scale still has no call sites — `short1`–`short3`, `medium1`, both
+  `long` steps, the `--transition*` composites. That is fine; the scale is MD3's,
+  not one we sized ourselves, and having steps in reserve is the point of adopting
+  a standard scale rather than minting per-site names.
 - **Not covered here:** `src/styles/dialog.styles.ts` declares no
   `prefers-reduced-motion` block, so the 57 files importing it — including seven
   of the eight touched by this work — do not honour the user's motion preference.
