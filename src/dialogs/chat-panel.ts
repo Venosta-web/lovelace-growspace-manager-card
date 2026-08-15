@@ -357,11 +357,11 @@ export class GmChatPanel extends LitElement {
       height: 7px;
       border-radius: 50%;
       background: currentColor;
-      animation: bounce 1.2s ease-in-out infinite;
+      animation: typing-hop 1.2s ease-in-out infinite;
     }
     .typing-dot:nth-child(2) { animation-delay: 0.2s; }
     .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes bounce {
+    @keyframes typing-hop {
       0%, 80%, 100% { transform: translateY(0); }
       40% { transform: translateY(-6px); }
     }

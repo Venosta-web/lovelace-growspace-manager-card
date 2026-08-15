@@ -225,7 +225,7 @@ export class IrrigationSchedulesTab extends LitElement {
       .info-banner.banner-cs {
         background: linear-gradient(90deg, rgba(76, 175, 80, 0.1), rgba(33, 150, 243, 0.06));
         border: 1px solid rgba(76, 175, 80, 0.3);
-        border-left: 3px solid var(--gm-primary-color);
+        border-left: 3px solid var(--gm-primary-color); /* impeccable-disable-line side-tab -- advisory banner, not a content-card side tab */
       }
       .info-banner.banner-cs svg {
         fill: var(--gm-primary-color);

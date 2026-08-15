@@ -1964,7 +1964,7 @@ export class StrainEditorView extends LitElement {
         gap: 4px;
         width: 100%;
         margin-top: 8px;
-        font-family: 'Roboto', sans-serif;
+        font-family: 'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
       }
       .hg-labels {
         display: flex;
@@ -1988,13 +1988,16 @@ export class StrainEditorView extends LitElement {
       .hg-bar-indica {
         background: #8b5cf6;
         height: 100%;
-        transition: width 0.2s ease;
+        /* Two flex segments split one track, so there is no fixed track to scale
+           against; scaling indica would slide sativa's edge and tear the seam.
+           Driven by a click on the track, not a sensor tick. See ADR 0037. */
+        /* impeccable-disable-next-line layout-transition -- flex-split track, click-driven */
+        transition: width var(--md3-motion-duration-short4) var(--md3-motion-easing-standard);
       }
       .hg-bar-sativa {
         background: #eab308;
         height: 100%;
         flex: 1;
-        transition: width 0.2s ease;
       }
       .hg-tick {
         position: absolute;

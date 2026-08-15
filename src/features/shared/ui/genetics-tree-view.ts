@@ -1284,6 +1284,7 @@ export class GeneticsTreeView extends LitElement {
       cursor: grabbing;
     }
 
+    /* impeccable-disable-next-line codex-grid-background -- pan/zoom needs a fixed visual referent; without it a drag across empty canvas has no feedback */
     .bg-grid {
       position: absolute;
       inset: 0;

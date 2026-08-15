@@ -516,7 +516,7 @@ export class StrainLibraryDialog extends LitElement {
         gap: 4px;
         width: 100%;
         margin-top: 8px;
-        font-family: 'Roboto', sans-serif;
+        font-family: 'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
       }
       .hg-labels {
         display: flex;

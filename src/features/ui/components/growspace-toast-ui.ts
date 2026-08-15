@@ -48,16 +48,18 @@ export class GrowspaceToastUI extends LitElement {
       transform: translateY(0);
     }
 
+    /* Left status strip is the conventional toast affordance, not a content-card
+       accent — DESIGN.md names "Toast notification success" as a colour role. */
     .toast-notification.success {
-      border-left: 4px solid var(--success-color, #4caf50);
+      border-left: 4px solid var(--success-color, #4caf50); /* impeccable-disable-line side-tab -- transient notification surface */
     }
 
     .toast-notification.error {
-      border-left: 4px solid var(--error-color, #f44336);
+      border-left: 4px solid var(--error-color, #f44336); /* impeccable-disable-line side-tab -- transient notification surface */
     }
 
     .toast-notification.info {
-      border-left: 4px solid var(--primary-color, #03a9f4);
+      border-left: 4px solid var(--primary-color, #03a9f4); /* impeccable-disable-line side-tab -- transient notification surface */
     }
 
     .toast-message {
