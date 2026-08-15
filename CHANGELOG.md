@@ -1,3 +1,10 @@
+# [1.1.0-next.123](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.122...v1.1.0-next.123) (2026-08-15)
+
+
+### Features
+
+* **design:** generate design tokens from one typed source ([#607](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/607)) ([928e485](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/928e485dcafa885533f9a031753bccae5297e8b5)), closes [#d32f2f](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/d32f2f) [#ef5350](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/ef5350) [#ff5252](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/ff5252) [#69f0ae](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/69f0ae) [#4caf50](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/4caf50)
+
 # [1.1.0-next.122](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.121...v1.1.0-next.122) (2026-08-14)
 
 
