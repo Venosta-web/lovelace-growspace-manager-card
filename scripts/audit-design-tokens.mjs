@@ -47,9 +47,6 @@ const BUCKETS = {
   js: 'JS data strings (viewmodels, constants, models) — `var()` is inert here',
 };
 
-/** `#473` and friends are issue references, not colours. */
-const isIssueRef = (hex) => hex.length === 4 && /^\d+$/.test(hex.slice(1));
-
 function* walk(dir) {
   for (const entry of readdirSync(dir)) {
     const full = path.join(dir, entry);
@@ -93,10 +90,12 @@ async function collect() {
     const text = await readFile(file, 'utf8');
     text.split('\n').forEach((line, i) => {
       const trimmed = line.trim();
+      // Issue references (`#473`) only ever appear in comments, which are already
+      // skipped above. An all-digit hex on a code line is a grey — #333, #666 and
+      // friends are exactly the group ADR 0035 §6 migrates.
       if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) return;
       const bare = line.replace(FALLBACK, (m) => ' '.repeat(m.length));
       for (const match of bare.matchAll(HEX)) {
-        if (isIssueRef(match[0])) continue;
         findings.push({
           file: rel,
           line: i + 1,

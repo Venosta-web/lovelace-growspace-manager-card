@@ -250,7 +250,7 @@ export class Heatmap3D extends LitElement {
       -webkit-appearance: none;
       width: 100%;
       height: 4px;
-      background: #333;
+      background: var(--divider-color);
       border-radius: 2px;
       outline: none;
     }
@@ -367,7 +367,7 @@ export class Heatmap3D extends LitElement {
       flex: 1;
       -webkit-appearance: none;
       height: 2px;
-      background: #333;
+      background: var(--divider-color);
       outline: none;
     }
     .edit-slider::-webkit-slider-thumb {

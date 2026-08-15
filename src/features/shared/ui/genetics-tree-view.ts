@@ -1143,7 +1143,7 @@ export class GeneticsTreeView extends LitElement {
       border-right: none;
     }
     .seg button.active {
-      background: linear-gradient(135deg, #4caf50, #45a049);
+      background: var(--primary-gradient);
       color: var(--text-primary);
     }
     .seg button:hover:not(.active) {
