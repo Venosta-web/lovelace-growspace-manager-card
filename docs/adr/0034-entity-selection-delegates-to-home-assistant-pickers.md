@@ -1,6 +1,6 @@
 # Entity selection uses Home Assistant's picker as an add affordance, not as the field
 
-Status: accepted
+Status: proposed — one fork reopened, see "Correction" below
 
 Every entity field in the config dialog is a plain text `<input>` backed by a `<datalist>` of raw
 entity IDs: no friendly names, no icons, no area context, and a change handler that accepts any typed
@@ -24,7 +24,20 @@ The data-flow layering rule in `CLAUDE.md` is not implicated. It scopes to *grow
 entity registry is not growspace data; `md3-entity-input` has always taken `hass` and read
 `hass.states` directly.
 
-## What decided the shape: only one of the two pickers can be registered
+## Correction: the registration asymmetry does not exist
+
+An earlier revision of this ADR claimed `ha-entities-picker` has no reachable registration path, and
+rested the whole single-vs-multi decision on that. An exhaustive enumeration of every
+`getConfigElement()` call site in the bundle disproved it. `ha-entities-picker` is defined in seven
+chunks; three of them *are* pulled by card editors — `28377` by the calendar card editor, `47011` by
+the logbook card editor, `8695` by the home-dashboard strategy editor. The calendar editor's round
+trip is the cheapest path in the bundle and loads `576` alongside `28377`, so a single
+`createCardElement({ type: 'calendar' })` → `getConfigElement()` registers **both** pickers.
+
+The chip-list-plus-adder shape below is therefore a preference, not a forced hand, and the fork
+between it and a straight `ha-entities-picker` field is reopened pending a human call.
+
+## What is actually verified about registration
 
 Home Assistant's pickers are not in the frontend's main bundle. They live in lazily-loaded chunks,
 which produces the worst kind of failure: the element works during development, because a card editor
@@ -33,23 +46,20 @@ stranger's cold page load. `ha-dialog` and `ha-icon` working is not evidence eit
 main-bundle.
 
 This was checked against the shipped bundle (`home_assistant_frontend-20260729.5`) rather than
-assumed, and the findings decided the design:
+assumed, by enumerating every `getConfigElement()` call site in all 1104 chunks:
 
 - **`loadCardHelpers()` alone registers neither picker.** It resolves three small chunks, none of
   which defines either element. Any warming built on the bare call would be inert — and because the
   fallback below is silent, that inertness would never announce itself; the fallback would simply
   become the permanent path.
-- **`ha-entity-picker` has a reachable registration path.** The entities card's `getConfigElement()`
-  explicitly loads the one chunk in the bundle that defines it. So a round trip through
-  `createCardElement({ type: 'entities', entities: [] })` → `getConfigElement()` registers it.
-- **`ha-entities-picker` has none.** It is defined only in chunks that no card editor's
-  `getConfigElement()` pulls. There is no equivalent round trip for the multi-value picker.
+- **`ha-entity-picker` has a reachable registration path.** It is defined in exactly one chunk,
+  `576`, and ten `getConfigElement()` call sites load it.
+- **`ha-entities-picker` also has one.** Of its seven defining chunks, three are reachable the same
+  way; the calendar card editor pulls `576` and `28377` together in a two-chunk round trip.
 
-That asymmetry is why the chip list stays. A design where `ha-entities-picker` replaces the chip list
-is not buildable on any mechanism that can be verified — it would register only when something else
-in the session happened to render a `multiple: true` entity selector, which is exactly the
-works-in-development, blank-on-cold-load failure this ADR exists to avoid. A design where
-`ha-entity-picker` is the *adder* needs only the picker whose path is confirmed.
+So whichever shape is built, one card-editor round trip registers what it needs. The remaining
+registration risk is identical for both designs: the chunk graph is a Home Assistant implementation
+detail, not a promise, which is why the fallback below stays load-bearing either way.
 
 The stakes justified the check. In the chat and briefing panels the picker sits in an optional setup
 banner; if it fails to register, the user configures the agent elsewhere. In the config dialog,
@@ -104,7 +114,7 @@ inconsistent than the uniformly poor state it replaced.
 
 Out of scope, deferred to follow-up: the one-off dialogs (`ac-infinity-device-editor`,
 `subarea-config-dialog`, `strain-editor-view`, `seeds-genetics-tab`, `irrigation-tanks-tab`), each of
-which has its own option-source quirks. `md3-entities-input` has no consumers and is deleted.
+which has its own option-source quirks. `md3-entities-input` has no consumers and is to be deleted.
 
 ## Consequences
 
@@ -122,6 +132,6 @@ which has its own option-source quirks. `md3-entities-input` has no consumers an
 - **The two setup-banner call sites are a known deviation.** `chat-panel.ts` and `briefing-panel.ts`
   keep `allow-custom-entity`. Changing agent-selection behavior inside an entity-picker refactor
   would be an unrelated behavioral change; it gets its own issue.
-- **`ha-entities-picker` is rejected, not deferred.** If a future reader proposes it to remove the
-  chip list, the blocker is registration, not preference — re-verify the chunk graph before
-  reopening.
+- **`ha-entities-picker` is an open fork, not a rejected one.** The earlier claim that registration
+  blocked it was wrong; see the correction above. Choosing between it and the chip list is a
+  preference call about whether a multi-valued field should *hold* its values as chips.

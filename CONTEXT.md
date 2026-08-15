@@ -300,9 +300,9 @@ growspace's overview entity) or multi-valued (its temperature sensors). Today ev
 input over a `<datalist>` of entity IDs. They are to *choose* entities through Home Assistant's
 `ha-entity-picker`, so the grower reads friendly names, icons and area context rather than entity IDs
 and cannot commit a value that names no entity — while a multi-valued field still *holds* its values
-as the chip list. The picker is the add affordance, not the field. `ha-entities-picker` is
-deliberately not used: it is defined only in frontend chunks that nothing can be made to load, so a
-field built on it would render blank on a cold page load. An Entity Field owns forcing the picker's
+as the chip list. The picker is the add affordance, not the field — though whether a multi-valued
+field should instead *be* an `ha-entities-picker` is an open fork (ADR-0034's correction: both
+pickers are registrable, so this is a preference, not a constraint). An Entity Field owns forcing the picker's
 chunk to register, and falls back to the plain datalist add affordance if it never arrives.
 Candidate entities come from `entityOptions(domains, deviceClass)`, never from the picker's own
 domain filtering, so the picker and the fallback cannot disagree about what is eligible.
