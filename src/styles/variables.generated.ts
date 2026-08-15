@@ -145,6 +145,16 @@ export const variables: CSSResult = css`
     --stage-flower-mid: #fb8c00;
     --stage-flower-late: #ef6c00;
 
+    /* Activity Colors */
+    /* A dialog accent names the thing the dialog acts on. Stage dialogs pass a --stage-*
+       colour; activity dialogs pass one of these or a semantic token (IPM and irrigation
+       steering use --warning-color). See ADR 0038.
+    */
+    /* Shares a value with --stage-dry; training is an activity, not a stage, so the two are
+       free to diverge.
+    */
+    --activity-training: #9c27b0;
+
     /* Error/Warning Colors */
     /* Home Assistant defines this name too — same shadowing as --divider-color, and withheld
        from the portal for the same reason. See ADR 0036.
@@ -335,6 +345,16 @@ export const portalVariables: CSSResult = css`
     --stage-flower-mid: #fb8c00;
     --stage-flower-late: #ef6c00;
 
+    /* Activity Colors */
+    /* A dialog accent names the thing the dialog acts on. Stage dialogs pass a --stage-*
+       colour; activity dialogs pass one of these or a semantic token (IPM and irrigation
+       steering use --warning-color). See ADR 0038.
+    */
+    /* Shares a value with --stage-dry; training is an activity, not a stage, so the two are
+       free to diverge.
+    */
+    --activity-training: #9c27b0;
+
     /* Error/Warning Colors */
     --error-bg: rgba(244, 67, 54, 0.1);
     --error-border: rgba(244, 67, 54, 0.3);
@@ -464,6 +484,7 @@ export const token = {
   '--stage-flower-early': '#ff9800',
   '--stage-flower-mid': '#fb8c00',
   '--stage-flower-late': '#ef6c00',
+  '--activity-training': '#9c27b0',
   '--error-color': '#f44336',
   '--error-bg': 'rgba(244, 67, 54, 0.1)',
   '--error-border': 'rgba(244, 67, 54, 0.3)',

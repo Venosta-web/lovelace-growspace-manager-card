@@ -30,11 +30,11 @@ import { dialogStyles } from '../../../styles/dialog.styles';
 // ─── Stage colors ─────────────────────────────────────────────────────────────
 
 const STAGE_COLOR: Record<string, string> = {
-  veg: 'var(--primary-color, #4caf50)',
-  flower: '#e91e63',
-  seedling: '#00bcd4',
-  clone: '#9c27b0',
-  mother: '#ff9800',
+  veg: 'var(--stage-veg, #4caf50)',
+  flower: 'var(--stage-flower, #ff9800)',
+  seedling: 'var(--stage-seedling, #8bc34a)',
+  clone: 'var(--stage-clone, #26c6da)',
+  mother: 'var(--stage-mother, #e91e63)',
 };
 
 function stageColor(stage?: string): string {

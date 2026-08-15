@@ -149,13 +149,13 @@ describe('PlantTimeline', () => {
     });
 
     it('handles stage color mapping for all stages', () => {
-      expect((element as any)._getStageColor('flower')).to.equal('#e91e63');
-      expect((element as any)._getStageColor('veg')).to.equal('#4caf50');
+      expect((element as any)._getStageColor('flower')).to.equal('var(--stage-flower, #ff9800)');
+      expect((element as any)._getStageColor('veg')).to.equal('var(--stage-veg, #4caf50)');
       expect((element as any)._getStageColor('seedling')).to.equal('var(--stage-seedling, #8bc34a)');
-      expect((element as any)._getStageColor('clone')).to.equal('#66bb6a');
-      expect((element as any)._getStageColor('mother')).to.equal('#2e7d32');
-      expect((element as any)._getStageColor('dry')).to.equal('#ff9800');
-      expect((element as any)._getStageColor('cure')).to.equal('#795548');
+      expect((element as any)._getStageColor('clone')).to.equal('var(--stage-clone, #26c6da)');
+      expect((element as any)._getStageColor('mother')).to.equal('var(--stage-mother, #e91e63)');
+      expect((element as any)._getStageColor('dry')).to.equal('var(--stage-dry, #9c27b0)');
+      expect((element as any)._getStageColor('cure')).to.equal('var(--stage-cure, #2196f3)');
       expect((element as any)._getStageColor('unknown')).to.equal('var(--divider-color)');
       expect((element as any)._getStageColor(undefined)).to.equal('var(--divider-color)');
     });

@@ -529,7 +529,7 @@ export class PrintLabelDialog extends LitElement {
         heading="Print Label"
         .subtitle=${values.name || 'Label'}
         .iconPath=${mdiPrinter}
-        stageColor="#2196F3"
+        stageColor="var(--gm-info-color)"
         @close=${this._close}
       >
         <div class="two-col">

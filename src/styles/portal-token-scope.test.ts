@@ -118,4 +118,21 @@ describe('portalled dialog token scope', () => {
     inner.style.fontSize = 'var(--font-size-sm)';
     expect(getComputedStyle(inner).fontSize).toBe('14px');
   });
+
+  it('resolves the bare dialog-accent names ADR 0038 migrated to', () => {
+    // clone/batch-clone, training and both print-label dialogs now pass bare
+    // references — including one straight into an inline `background-color` on a
+    // button, where a name that does not resolve leaves the fill empty rather
+    // than merely off-colour.
+    const inner = portal.shadowRoot!.querySelector('#inner') as HTMLElement;
+    const expected: Record<string, string> = {
+      '--stage-clone': 'rgb(38, 198, 218)',
+      '--activity-training': 'rgb(156, 39, 176)',
+      '--gm-info-color': 'rgb(33, 150, 243)',
+    };
+    for (const [name, rgb] of Object.entries(expected)) {
+      inner.style.backgroundColor = `var(${name})`;
+      expect(getComputedStyle(inner).backgroundColor).toBe(rgb);
+    }
+  });
 });

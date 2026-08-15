@@ -75,6 +75,12 @@ colors:
   stage-flower-early: '#ff9800'
   stage-flower-mid: '#fb8c00'
   stage-flower-late: '#ef6c00'
+  # Activity Colors — A dialog accent names the thing the dialog acts on. Stage dialogs
+  # pass a --stage-* colour; activity dialogs pass one of these or a semantic token (IPM
+  # and irrigation steering use --warning-color). See ADR 0038.
+  # Shares a value with --stage-dry; training is an activity, not a stage, so the two are
+  # free to diverge.
+  activity-training: '#9c27b0'
   # Error/Warning Colors
   # Home Assistant defines this name too — same shadowing as --divider-color, and withheld
   # from the portal for the same reason. See ADR 0036.

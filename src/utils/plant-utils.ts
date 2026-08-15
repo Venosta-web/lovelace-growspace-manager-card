@@ -26,13 +26,13 @@ export const PLANT_STAGES: PlantStage[] = [
 
 export class PlantUtils {
   private static readonly stageColors: Record<PlantStage, string> = {
-    [PlantStage.MOTHER]: 'var(--stage-mother, #E91E63)',
-    [PlantStage.CLONE]: '#FF5722',
-    [PlantStage.SEEDLING]: '#4CAF50',
-    [PlantStage.VEG]: '#8BC34A',
-    [PlantStage.FLOWER]: 'var(--stage-flower, #FF9800)',
+    [PlantStage.MOTHER]: 'var(--stage-mother, #e91e63)',
+    [PlantStage.CLONE]: 'var(--stage-clone, #26c6da)',
+    [PlantStage.SEEDLING]: 'var(--stage-seedling, #8bc34a)',
+    [PlantStage.VEG]: 'var(--stage-veg, #4caf50)',
+    [PlantStage.FLOWER]: 'var(--stage-flower, #ff9800)',
     [PlantStage.DRY]: 'var(--stage-dry, #9c27b0)',
-    [PlantStage.CURE]: '#2196f3',
+    [PlantStage.CURE]: 'var(--stage-cure, #2196f3)',
   };
 
   private static readonly stageIcons: Record<PlantStage, string> = {

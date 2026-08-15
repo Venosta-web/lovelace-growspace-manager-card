@@ -105,7 +105,7 @@ export class CloneDialog extends LitElement {
     const attrs = this.sourcePlant.attributes;
     const strain = attrs?.strain || 'Unknown Strain';
     const phenotype = attrs?.phenotype || 'No Phenotype';
-    const dialogColor = '#8bc34a'; // Light green for cloning
+    const dialogColor = 'var(--stage-clone)';
     const title = 'Take Clone';
     const subtitle = `Creating clones from ${strain}`;
 

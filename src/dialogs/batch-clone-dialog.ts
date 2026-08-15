@@ -153,7 +153,7 @@ export class BatchCloneDialog extends LitElement {
         heading="Clone Selected Plants"
         .subtitle=${`${plantIds.length} plant(s) selected`}
         .iconPath=${mdiContentCopy}
-        stageColor="#8bc34a"
+        stageColor="var(--stage-clone)"
         .submitting=${this._isSubmitting}
         @close=${this._close}
       >
@@ -200,7 +200,7 @@ export class BatchCloneDialog extends LitElement {
           </button>
           <button
             class="md3-button primary"
-            style="background-color: #8bc34a; --mdc-theme-primary: #8bc34a;"
+            style="background-color: var(--stage-clone); --mdc-theme-primary: var(--stage-clone);"
             @click=${this._submit}
             ?disabled=${this._isSubmitting || !this._targetGrowspaceId}
           >

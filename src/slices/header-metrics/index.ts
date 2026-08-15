@@ -92,7 +92,7 @@ const STAGE_COLORS: Record<string, string> = {
   flower: 'var(--stage-flower, #ff9800)',
   veg: 'var(--stage-veg, #4caf50)',
   seedling: 'var(--stage-seedling, #8bc34a)',
-  clone: 'var(--stage-clone, #8bc34a)',
+  clone: 'var(--stage-clone, #26c6da)',
   mother: 'var(--stage-mother, #e91e63)',
   dry: 'var(--stage-dry, #9c27b0)',
   cure: 'var(--stage-cure, #2196f3)',
