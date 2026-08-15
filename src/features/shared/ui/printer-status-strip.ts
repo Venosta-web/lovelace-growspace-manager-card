@@ -81,7 +81,7 @@ export class PrinterStatusStrip extends LitElement {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #4caf50;
+      background: var(--gm-primary-color);
       animation: pulse 2s infinite;
       flex-shrink: 0;
     }
@@ -122,9 +122,9 @@ export class PrinterStatusStrip extends LitElement {
       gap: 4px;
     }
 
-    .battery.green { color: #4caf50; }
+    .battery.green { color: var(--gm-primary-color); }
     .battery.amber { color: #ffa726; }
-    .battery.red   { color: #ef5350; }
+    .battery.red   { color: var(--danger-chip); }
     .battery.grey  { color: rgba(255, 255, 255, 0.3); }
 
     .paper-indicator {

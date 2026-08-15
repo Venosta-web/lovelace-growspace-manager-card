@@ -149,7 +149,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
       }
 
       .fill-bar.warning { background: var(--gm-warning-color, #ff9800); }
-      .fill-bar.danger  { background: #f44336; }
+      .fill-bar.danger  { background: var(--gm-error-color); }
 
       .add-btn {
         display: flex;
@@ -344,7 +344,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
 
       .btn-primary {
         background: var(--primary-color, #4caf50);
-        color: #fff;
+        color: var(--text-primary);
         display: flex;
         align-items: center;
         gap: 6px;
@@ -376,7 +376,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
 
       .btn-danger {
         background: var(--error-color, #f44336);
-        color: #fff;
+        color: var(--text-primary);
       }
 
       .btn-danger:hover { filter: brightness(1.1); }

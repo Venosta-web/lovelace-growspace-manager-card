@@ -86,7 +86,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
 
       .warning-badge {
         background: rgba(244, 67, 54, 0.2);
-        color: #f44336;
+        color: var(--gm-error-color);
         border: 1px solid rgba(244, 67, 54, 0.4);
         border-radius: var(--border-radius-full, 9999px);
         padding: 3px 10px;
@@ -114,7 +114,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
 
       /* Tank Visualization */
       .tank-card {
-        background: #1e1e1e;
+        background: var(--growspace-card-bg);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--border-radius-lg, 16px);
         padding: 16px;
@@ -333,7 +333,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
 
       .warning-icon {
         font-size: 0.9rem;
-        color: #ffeb3b;
+        color: var(--primary-light-color);
         animation: pulse 2s infinite;
       }
 
@@ -374,7 +374,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
       }
 
       .depletion-label.refilling {
-        color: #4caf50;
+        color: var(--gm-primary-color);
         background: rgba(76, 175, 80, 0.1);
       }
     `,

@@ -121,7 +121,7 @@ export class FeedAndWaterDialog extends LitElement {
         font-family: inherit;
         font-weight: 500;
         background: var(--primary-color, #4caf50);
-        color: #fff;
+        color: var(--text-primary);
         transition: filter 0.15s, opacity 0.15s;
       }
 
@@ -173,7 +173,7 @@ export class FeedAndWaterDialog extends LitElement {
       .btn-text { background: transparent; color: var(--secondary-text-color); }
       .btn-text:hover { background: rgba(255,255,255,0.06); }
 
-      .btn-danger { background: var(--error-color, #f44336); color: #fff; }
+      .btn-danger { background: var(--error-color, #f44336); color: var(--text-primary); }
       .btn-danger:hover { filter: brightness(1.1); }
 
       /* Toast */
@@ -183,7 +183,7 @@ export class FeedAndWaterDialog extends LitElement {
         left: 50%;
         transform: translateX(-50%);
         background: rgba(0, 0, 0, 0.85);
-        color: #fff;
+        color: var(--text-primary);
         padding: 8px 16px;
         border-radius: var(--border-radius-full, 9999px);
         font-size: 0.875rem;

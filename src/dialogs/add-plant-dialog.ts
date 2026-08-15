@@ -187,13 +187,13 @@ export class AddPlantDialog extends LitElement {
       .wizard-step.active .wizard-step-num {
         background: var(--primary-color, #4caf50);
         border-color: var(--primary-color, #4caf50);
-        color: #fff;
+        color: var(--text-primary);
       }
 
       .wizard-step.done .wizard-step-num {
         background: rgba(76, 175, 80, 0.2);
         border-color: rgba(76, 175, 80, 0.4);
-        color: #69f0ae;
+        color: var(--on-primary-container-bright);
       }
 
       .wizard-connector {
@@ -239,7 +239,7 @@ export class AddPlantDialog extends LitElement {
 
       .strain-option:hover {
         background: rgba(76, 175, 80, 0.12);
-        color: #69f0ae;
+        color: var(--on-primary-container-bright);
       }
 
       .strain-option-meta {
@@ -303,7 +303,7 @@ export class AddPlantDialog extends LitElement {
       .sibling-item.selected {
         border-color: var(--primary-color, #4caf50);
         background: rgba(76, 175, 80, 0.1);
-        color: #69f0ae;
+        color: var(--on-primary-container-bright);
       }
 
       .sibling-meta {
@@ -719,7 +719,7 @@ export class AddPlantDialog extends LitElement {
           "
               >
                 ${selectedEntry.breeder
-                  ? html`<span><b style="color:#fff">${selectedEntry.breeder}</b></span>`
+                  ? html`<span><b style="color:var(--text-primary)">${selectedEntry.breeder}</b></span>`
                   : nothing}
                 ${selectedEntry.type ? html`<span>${selectedEntry.type}</span>` : nothing}
                 ${selectedEntry.flowering_days_min
@@ -831,7 +831,7 @@ export class AddPlantDialog extends LitElement {
                       </div>
                       ${isSelected
                         ? html`
-                            <svg style="width:18px;height:18px;fill:#69f0ae;" viewBox="0 0 24 24">
+                            <svg style="width:18px;height:18px;fill:var(--on-primary-container-bright);" viewBox="0 0 24 24">
                               <path d="${mdiCheck}"></path>
                             </svg>
                           `

@@ -381,7 +381,7 @@ export class HarvestScoringDialog extends LitElement {
         .escapeKeyAction=${'close'}
         width="large"
       >
-        <div class="glass-dialog-container" style="--stage-color: #4caf50;">
+        <div class="glass-dialog-container" style="--stage-color: var(--gm-primary-color);">
           <!-- HEADER -->
           <div class="dialog-header">
             <div class="dialog-icon">

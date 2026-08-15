@@ -193,7 +193,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
           ${vm.warningTankCount > 0
             ? html`
                 <span
-                  style="background:rgba(244,67,54,0.2);color:#f44336;border:1px solid rgba(244,67,54,0.4);border-radius:var(--border-radius-full);padding:3px 10px;font-size:0.78rem;font-weight:600;"
+                  style="background:rgba(244,67,54,0.2);color:var(--gm-error-color);border:1px solid rgba(244,67,54,0.4);border-radius:var(--border-radius-full);padding:3px 10px;font-size:0.78rem;font-weight:600;"
                 >
                   ⚠ ${vm.warningTankCount} tank${vm.warningTankCount > 1 ? 's' : ''} low
                 </span>
@@ -359,7 +359,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                             minute: '2-digit',
                           })}</span
                         >
-                        <span style="color:#81c784;font-weight:600;"
+                        <span style="color:var(--series-2);font-weight:600;"
                           >+${ev.liters.toFixed(1)} L</span
                         >
                       </div>
@@ -407,7 +407,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
             ${cs.shots.length === 0
               ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">No strategy configured</p>`
               : html`
-                  <div style="font-size:var(--font-size-lg);font-weight:700;color:#4fc3f7;">
+                  <div style="font-size:var(--font-size-lg);font-weight:700;color:var(--series-1);">
                     ${cs.shots.length}
                     <span style="font-size:0.85rem;font-weight:400;opacity:0.7;">shots/day</span>
                   </div>
@@ -415,7 +415,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                     Managed automatically ·
                     <a
                       href="#"
-                      style="color:#4CAF50;"
+                      style="color:var(--gm-primary-color);"
                       @click=${(e: Event) => {
                         e.preventDefault();
                         this._emit('water-analytics-open-steering');
@@ -451,7 +451,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
             ${cs.totalDrain === 0
               ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">No events scheduled</p>`
               : html`
-                  <div style="font-size:var(--font-size-lg);font-weight:700;color:#a5d6a7;">
+                  <div style="font-size:var(--font-size-lg);font-weight:700;color:var(--series-4);">
                     ${cs.totalDrain}
                     <span style="font-size:0.85rem;font-weight:400;opacity:0.7;">events/day</span>
                   </div>
@@ -494,7 +494,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
             ${s.totalIrrig === 0
               ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">No events scheduled</p>`
               : html`
-                  <div style="font-size:var(--font-size-lg);font-weight:700;color:#4fc3f7;">
+                  <div style="font-size:var(--font-size-lg);font-weight:700;color:var(--series-1);">
                     ${s.totalIrrig}
                     <span style="font-size:0.85rem;font-weight:400;opacity:0.7;">events/day</span>
                   </div>
@@ -526,7 +526,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
             ${s.totalDrain === 0
               ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">No events scheduled</p>`
               : html`
-                  <div style="font-size:var(--font-size-lg);font-weight:700;color:#a5d6a7;">
+                  <div style="font-size:var(--font-size-lg);font-weight:700;color:var(--series-4);">
                     ${s.totalDrain}
                     <span style="font-size:0.85rem;font-weight:400;opacity:0.7;">events/day</span>
                   </div>
@@ -569,7 +569,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                   style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border-radius:var(--border-radius-sm);padding:8px 14px;font-size:0.88rem;"
                 >
                   <span style="text-transform:capitalize;font-weight:500;">${stage}</span>
-                  <span style="color:#4fc3f7;font-weight:600;">${liters.toFixed(1)} L</span>
+                  <span style="color:var(--series-1);font-weight:600;">${liters.toFixed(1)} L</span>
                 </div>
               `
             )}
@@ -606,13 +606,13 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
               >
                 <div style="text-align:center;">
                   <div style="opacity:0.5;font-size:0.75rem;">Total feed</div>
-                  <div style="font-weight:700;color:#4fc3f7;">
+                  <div style="font-weight:700;color:var(--series-1);">
                     ${(vm.totalFeedMl / 1000).toFixed(1)} L
                   </div>
                 </div>
                 <div style="text-align:center;">
                   <div style="opacity:0.5;font-size:0.75rem;">Total drain</div>
-                  <div style="font-weight:700;color:#a5d6a7;">
+                  <div style="font-weight:700;color:var(--series-4);">
                     ${(vm.totalDrainMl / 1000).toFixed(1)} L
                   </div>
                 </div>
@@ -684,7 +684,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
       >
         <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
           <div style="flex:1;">
-            <h3 style="margin:0;color:#f44336;border:none;padding:0;font-size:1.1rem;">
+            <h3 style="margin:0;color:var(--gm-error-color);border:none;padding:0;font-size:1.1rem;">
               Maintenance
             </h3>
             <p style="margin:4px 0 0 0;font-size:0.85rem;opacity:0.7;line-height:1.4;">

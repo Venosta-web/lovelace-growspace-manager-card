@@ -225,10 +225,10 @@ export class IrrigationSchedulesTab extends LitElement {
       .info-banner.banner-cs {
         background: linear-gradient(90deg, rgba(76, 175, 80, 0.1), rgba(33, 150, 243, 0.06));
         border: 1px solid rgba(76, 175, 80, 0.3);
-        border-left: 3px solid #4caf50;
+        border-left: 3px solid var(--gm-primary-color);
       }
       .info-banner.banner-cs svg {
-        fill: #4caf50;
+        fill: var(--gm-primary-color);
       }
       /* ── Overlay ── */
       .overlay-backdrop {
@@ -261,7 +261,7 @@ export class IrrigationSchedulesTab extends LitElement {
       }
       .md3-button.delete-button {
         background: rgba(244, 67, 54, 0.2) !important;
-        color: #f44336 !important;
+        color: var(--gm-error-color) !important;
         border: 1px solid rgba(244, 67, 54, 0.3);
       }
       .md3-button.delete-button:hover {
@@ -280,14 +280,14 @@ export class IrrigationSchedulesTab extends LitElement {
         text-transform: uppercase;
         background: linear-gradient(135deg, rgba(76, 175, 80, 0.18), rgba(33, 150, 243, 0.18));
         border: 1px solid rgba(76, 175, 80, 0.4);
-        color: #4caf50;
+        color: var(--gm-primary-color);
         border-radius: var(--border-radius-sm, 8px);
       }
       .auto-pill .pulse-dot {
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: #4caf50;
+        background: var(--gm-primary-color);
         box-shadow: 0 0 6px rgba(76, 175, 80, 0.9);
         flex-shrink: 0;
       }
@@ -353,7 +353,7 @@ export class IrrigationSchedulesTab extends LitElement {
                 automatically from VWC targets.
                 <a
                   href="#"
-                  style="color:#4CAF50;margin-left:4px;"
+                  style="color:var(--gm-primary-color);margin-left:4px;"
                   @click=${(e: Event) => {
                     e.preventDefault();
                     this._emit('schedules-open-steering');
@@ -608,7 +608,7 @@ export class IrrigationSchedulesTab extends LitElement {
                 ${isPast
                   ? html`
                       <svg
-                        style="width:12px;height:12px;fill:#4caf50;flex-shrink:0;"
+                        style="width:12px;height:12px;fill:var(--gm-primary-color);flex-shrink:0;"
                         viewBox="0 0 24 24"
                       >
                         <path d="${MDI_CHECK}"></path>

@@ -143,7 +143,7 @@ export class SnapshotsDialog extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #fff;
+        color: var(--text-primary);
         cursor: pointer;
       }
     `,
@@ -338,7 +338,7 @@ export class SnapshotsDialog extends LitElement {
                     <span
                       class="severity-chip"
                       style="background:${SEVERITY_COLORS[r.severity] ??
-                      'gray'};color:#fff;padding:4px 10px;border-radius: var(--border-radius-md, 12px);font-size:var(--font-size-supporting);font-weight:600;"
+                      'gray'};color:var(--text-primary);padding:4px 10px;border-radius: var(--border-radius-md, 12px);font-size:var(--font-size-supporting);font-weight:600;"
                       >${r.severity}</span
                     >
                     <span style="text-transform:capitalize;opacity:0.7;"
@@ -415,7 +415,7 @@ export class SnapshotsDialog extends LitElement {
                               <span
                                 style="background:${SEVERITY_COLORS[
                                   entry.severity
-                                ]};color:#fff;padding:2px 8px;border-radius: var(--border-radius-md, 12px);font-size:0.75rem;"
+                                ]};color:var(--text-primary);padding:2px 8px;border-radius: var(--border-radius-md, 12px);font-size:0.75rem;"
                                 >${entry.severity}</span
                               >
                             </div>

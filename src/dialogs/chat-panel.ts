@@ -321,7 +321,7 @@ export class GmChatPanel extends LitElement {
     }
     .apply-btn {
       background: var(--ai-accent, #4caf50);
-      color: #fff;
+      color: var(--text-primary);
     }
     .dismiss-btn {
       background: rgba(255,255,255,0.08);
@@ -459,7 +459,7 @@ export class GmChatPanel extends LitElement {
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      color: #fff;
+      color: var(--text-primary);
       transition: opacity 150ms;
     }
     .send:disabled { opacity: 0.4; cursor: default; }
@@ -541,7 +541,7 @@ export class GmChatPanel extends LitElement {
       cursor: pointer;
       font-family: inherit;
       background: var(--ai-amber, #ff9800);
-      color: #fff;
+      color: var(--text-primary);
       transition: opacity 150ms;
     }
     .agent-save-btn:disabled { opacity: 0.4; cursor: default; }

@@ -153,7 +153,7 @@ export class PlantActionsTab extends LitElement {
       .md3-button.filled {
         background: var(--primary-color, #4caf50);
         border-color: transparent;
-        color: #fff;
+        color: var(--text-primary);
       }
     `,
   ];

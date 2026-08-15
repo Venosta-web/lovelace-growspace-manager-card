@@ -148,7 +148,7 @@ export class StrainLibraryDialog extends LitElement {
     dialogStyles,
     css`
       :host {
-        --accent-green: #4caf50;
+        --accent-green: var(--gm-primary-color);
       }
 
       .btn-close-tree {
@@ -310,7 +310,7 @@ export class StrainLibraryDialog extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #fff;
+        color: var(--text-primary);
         cursor: pointer;
       }
       .sc-action-btn:hover {
@@ -421,7 +421,7 @@ export class StrainLibraryDialog extends LitElement {
         left: 8px;
         background: rgba(0, 0, 0, 0.6);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #fff;
+        color: var(--text-primary);
         padding: 6px 12px;
         border-radius: var(--border-radius-full, 9999px);
         font-size: 0.75rem;
@@ -656,7 +656,7 @@ export class StrainLibraryDialog extends LitElement {
         height: 56px;
         border-radius: var(--border-radius-lg, 16px);
         background: var(--accent-green);
-        color: #fff;
+        color: var(--text-primary);
         border: none;
         box-shadow: 0 4px 8px 3px rgba(0, 0, 0, 0.15);
         display: none; /* Hidden on desktop */

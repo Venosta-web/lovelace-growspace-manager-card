@@ -269,19 +269,19 @@ export class VPDHeatmap extends LitElement {
       </div>
       <div class="legend">
         <div class="legend-item">
-          <div class="legend-color" style="background: #2196f3"></div>
+          <div class="legend-color" style="background: var(--gm-info-color)"></div>
           Wet
         </div>
         <div class="legend-item">
-          <div class="legend-color" style="background: #ff9800"></div>
+          <div class="legend-color" style="background: var(--gm-warning-color)"></div>
           Fair
         </div>
         <div class="legend-item">
-          <div class="legend-color" style="background: #4caf50"></div>
+          <div class="legend-color" style="background: var(--gm-primary-color)"></div>
           Optimal
         </div>
         <div class="legend-item">
-          <div class="legend-color" style="background: #f44336"></div>
+          <div class="legend-color" style="background: var(--gm-error-color)"></div>
           Dry
         </div>
       </div>

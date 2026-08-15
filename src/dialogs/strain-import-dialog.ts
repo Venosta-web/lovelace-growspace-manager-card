@@ -389,7 +389,7 @@ export class StrainImportDialog extends LitElement {
         padding: 12px 16px;
         background: rgba(244, 67, 54, 0.1);
         border: 1px solid rgba(244, 67, 54, 0.3);
-        color: #ff5252;
+        color: var(--danger-chip);
         border-radius: var(--border-radius-sm, 8px);
         font-size: var(--font-size-sm);
       }
@@ -521,7 +521,7 @@ export class StrainImportDialog extends LitElement {
                     ${this._importing
                       ? html`
                           <span
-                            style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"
+                            style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:var(--text-primary);border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"
                           ></span>
                           Downloading...
                         `

@@ -302,7 +302,7 @@ export class BatchPrintLabelDialog extends LitElement {
           </button>
           <button
             class="md3-button primary"
-            style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
+            style="background-color: var(--gm-info-color); --mdc-theme-primary: var(--gm-info-color);"
             @click=${this._submit}
             ?disabled=${this._isSubmitting}
           >

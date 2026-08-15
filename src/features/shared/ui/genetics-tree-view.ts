@@ -1045,13 +1045,13 @@ export class GeneticsTreeView extends LitElement {
       --bg-input: #2a2a2a;
       --bg-input-border: #3a3a3a;
       --bg-glass: rgba(20, 20, 24, 0.88);
-      --fg-1: #fff;
+      --fg-1: var(--text-primary);
       --fg-2: rgba(255, 255, 255, 0.7);
       --fg-3: rgba(255, 255, 255, 0.5);
       --fg-4: rgba(255, 255, 255, 0.3);
       --divider-faint: rgba(255, 255, 255, 0.05);
-      --gv-primary: #4caf50;
-      --gv-secondary: #2196f3;
+      --gv-primary: var(--gm-primary-color);
+      --gv-secondary: var(--gm-info-color);
       --gv-mother: var(--stage-mother, #e91e63);
       --elev-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
@@ -1144,7 +1144,7 @@ export class GeneticsTreeView extends LitElement {
     }
     .seg button.active {
       background: linear-gradient(135deg, #4caf50, #45a049);
-      color: #fff;
+      color: var(--text-primary);
     }
     .seg button:hover:not(.active) {
       background: var(--bg-card-elev);
@@ -1257,13 +1257,13 @@ export class GeneticsTreeView extends LitElement {
     }
     .gen-chip.active {
       background: var(--chip-c, var(--gv-primary));
-      color: #fff;
+      color: var(--text-primary);
       border-color: transparent;
     }
     .clear-btn {
       background: rgba(229, 57, 53, 0.1);
       border: 1px solid rgba(229, 57, 53, 0.4);
-      color: #ef5350;
+      color: var(--danger-chip);
       border-radius: var(--border-radius-full, 9999px);
       padding: 2px 10px;
       font-size: 11px;
@@ -1447,7 +1447,7 @@ export class GeneticsTreeView extends LitElement {
     .gen-badge {
       font-size: var(--font-size-xs);
       font-weight: 700;
-      color: #fff;
+      color: var(--text-primary);
       border-radius: var(--border-radius-xs, 4px);
       padding: 1px 5px;
       flex-shrink: 0;

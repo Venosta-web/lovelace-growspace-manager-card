@@ -94,7 +94,7 @@ export const growspaceCardStyles = css`
   }
 
   .stat-chip.status-danger {
-    color: #ef5350 !important;
+    color: var(--danger-chip) !important;
     border-color: rgba(239, 83, 80, 0.5) !important;
     background: rgba(239, 83, 80, 0.1) !important;
     animation: pulse-red 2s infinite;
@@ -819,7 +819,7 @@ export const growspaceCardStyles = css`
 
     .pc-strain-name {
       font-size: 0.9rem;
-      color: #fff !important;
+      color: var(--text-primary) !important;
       font-weight: 700;
     }
 
@@ -1007,7 +1007,7 @@ export const growspaceCardStyles = css`
   .compact-exit-fab:hover {
     background: rgba(0, 0, 0, 0.8);
     transform: scale(1.1);
-    color: #fff;
+    color: var(--text-primary);
     border-color: var(--primary-color);
   }
 

@@ -31,6 +31,9 @@ const EXEMPT_FILES = [
   'src/styles/tokens.ts',
   'src/styles/variables.generated.ts',
   'src/styles/variables.ts',
+  // Console branding and shader source are not rendered as card CSS.
+  'src/index.ts',
+  'src/utils/three/renderers/vpd-cloud-renderer.ts',
 ];
 
 const HEX = /#[0-9A-Fa-f]{3,8}\b/g;
@@ -64,7 +67,21 @@ function* walk(dir) {
 function classify(before) {
   if (/gradient\([^)]*$/.test(before)) return 'gradient';
   if (/style\s*=\s*(["'])(?:(?!\1).)*$/.test(before)) return 'inline';
-  if (/['"`]$/.test(before)) return 'js';
+  let singleOpen = false;
+  let doubleOpen = false;
+  let escaped = false;
+  for (const char of before) {
+    if (escaped) {
+      escaped = false;
+    } else if (char === '\\') {
+      escaped = true;
+    } else if (char === "'") {
+      singleOpen = !singleOpen;
+    } else if (char === '"') {
+      doubleOpen = !doubleOpen;
+    }
+  }
+  if (singleOpen || doubleOpen) return 'js';
   return 'css';
 }
 

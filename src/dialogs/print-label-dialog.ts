@@ -348,7 +348,7 @@ export class PrintLabelDialog extends LitElement {
         gap: 8px;
       }
       .btn-print {
-        background: #2196f3;
+        background: var(--gm-info-color);
         color: white;
         border: none;
         border-radius: var(--border-radius-sm, 8px);
