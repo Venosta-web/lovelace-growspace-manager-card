@@ -15,7 +15,8 @@ import { applyIPM as mockApplyIPM } from '../../../slices/nutrient';
 import { saveNotificationSettings as mockSaveNotificationSettings } from '../../../slices/notification';
 import { notification$, activeDialog$ } from '../../../slices/ui';
 import './growspace-dialog-host.container';
-import type { GrowspaceDialogHost } from './growspace-dialog-host.container';
+import { GrowspaceDialogHost } from './growspace-dialog-host.container';
+import { portalVariables } from '../../../styles/variables';
 
 // Mock slices/plant so no real API calls are made
 vi.mock('../../../slices/plant', () => ({
@@ -108,6 +109,15 @@ function makeSubmitEvent(detail: Record<string, unknown> = {}): CustomEvent {
     },
   });
 }
+
+describe('GrowspaceDialogHost – token scope', () => {
+  it('adopts the portal token block, not the card one', () => {
+    // The host is portalled to document.body, so it inherits no custom properties
+    // from the card. src/styles/portal-token-scope.test.ts guards what the block
+    // contains; this guards that the host is the element carrying it. ADR 0036.
+    expect(GrowspaceDialogHost.styles).toBe(portalVariables);
+  });
+});
 
 describe('GrowspaceDialogHost – environment removal completion', () => {
   it('resolves with backend state only after the mutation and store refresh finish', async () => {

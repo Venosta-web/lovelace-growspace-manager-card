@@ -63,29 +63,88 @@ const indentComment = (text, pad) => {
     : [`${pad}/* ${lines[0]}`, ...lines.slice(1).map((l) => `${pad}   ${l}`), `${pad}*/`];
 };
 
-function renderVariables(groups) {
-  const out = [
-    BANNER,
-    '',
-    "import { css, CSSResult } from 'lit';",
-    '',
-    'export const variables: CSSResult = css`',
-    '  :host {',
-  ];
+/**
+ * Emits one `:host` block. `portal` drops the `card-only` tokens and resolves any
+ * reference to them, so that what is left cannot depend on a name the block no
+ * longer declares — see `inlineCardOnlyRefs`.
+ */
+function renderBlock(groups, { portal, cardOnly }) {
+  const out = ['  :host {'];
   let first = true;
   for (const group of groups) {
-    const cssTokens = group.tokens.filter((t) => t.css);
+    const cssTokens = group.tokens.filter((t) => t.css && !(portal && t.scope === 'card-only'));
     if (!cssTokens.length) continue;
     if (!first) out.push('');
     first = false;
     out.push(`    /* ${escapeTemplate(group.title)} */`);
     if (group.note) out.push(...indentComment(group.note, '    '));
     for (const t of cssTokens) {
+      const value = portal ? inlineCardOnlyRefs(t.value, cardOnly) : t.value;
       if (t.note) out.push(...indentComment(t.note, '    '));
-      out.push(`    ${t.css}: ${escapeTemplate(t.value)};`);
+      if (portal && value !== t.value) {
+        out.push(
+          ...indentComment(
+            `Resolved from ${t.value} — the referenced token is card-only, and the portal must not depend on a name this block does not declare.`,
+            '    '
+          )
+        );
+      }
+      out.push(`    ${t.css}: ${escapeTemplate(value)};`);
     }
   }
-  out.push('  }', '`;', '');
+  out.push('  }');
+  return out;
+}
+
+/**
+ * Replaces `var(--card-only-token, …)` with that token's card value. Without this
+ * a shared token could silently resolve differently in the two subtrees: in the
+ * card through the card's own declaration, in the portal through Home Assistant's.
+ * `--gm-error-color` is the one token this applies to today.
+ */
+function inlineCardOnlyRefs(value, cardOnly) {
+  let next = value;
+  for (const [name, cardValue] of cardOnly) {
+    next = next.replace(
+      new RegExp(`var\\(\\s*${name}\\s*(?:,[^()]*)?\\)`, 'g'),
+      cardValue.replace(/\$/g, '$$$$')
+    );
+  }
+  return next;
+}
+
+function renderVariables(groups) {
+  const cardOnly = new Map(
+    groups
+      .flatMap((g) => g.tokens.filter((t) => t.css && t.scope === 'card-only'))
+      .map((t) => [t.css, t.value])
+  );
+
+  const out = [
+    BANNER,
+    '',
+    "import { css, CSSResult } from 'lit';",
+    '',
+    'export const variables: CSSResult = css`',
+    ...renderBlock(groups, { portal: false, cardOnly }),
+    '`;',
+    '',
+    '/**',
+    ' * The subset the portalled dialog host declares. `growspace-dialog-host` is',
+    ' * appended to `document.body`, so it is a sibling of the card rather than a',
+    ' * descendant and inherits nothing from the block above — a bare `var(--font-size-sm)`',
+    ' * under `src/dialogs/` resolves to nothing without this. Withholds only the names',
+    " * Home Assistant also defines, so the dialogs keep taking those from the user's",
+    ' * theme. See ADR 0036.',
+    ' */',
+    'export const portalVariables: CSSResult = css`',
+    ...renderBlock(groups, { portal: true, cardOnly }),
+    '`;',
+    '',
+    '/** Tokens deliberately withheld from `portalVariables`, for the guard test. */',
+    `export const cardOnlyTokens = [${[...cardOnly.keys()].map((n) => `'${n}'`).join(', ')}] as const;`,
+    '',
+  ];
 
   out.push(
     '/**',
