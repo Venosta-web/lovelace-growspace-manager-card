@@ -1,3 +1,10 @@
+# [1.1.0-next.125](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.124...v1.1.0-next.125) (2026-08-15)
+
+
+### Bug Fixes
+
+* **design:** resolve the keep-and-document detector findings ([#616](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/616)) ([432782c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/432782c00a36e2854b98c6463370b2a358c532bb))
+
 # [1.1.0-next.124](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.123...v1.1.0-next.124) (2026-08-15)
 
 
