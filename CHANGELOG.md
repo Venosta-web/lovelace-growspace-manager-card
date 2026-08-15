@@ -1,3 +1,10 @@
+# [1.1.0-next.127](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.126...v1.1.0-next.127) (2026-08-15)
+
+
+### Bug Fixes
+
+* **design:** drain EC status card uses the documented top accent bar ([#619](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/619)) ([4d1af34](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/4d1af34062b55c776c273d46674eb4f98801b3b2)), closes [#575](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/575)
+
 # [1.1.0-next.126](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.125...v1.1.0-next.126) (2026-08-15)
 
 
