@@ -107,7 +107,7 @@ The alternative, `unsafeCSS(tokens.surface)` interpolation in a hand-written
 used nowhere in this repo today and it puts every token value behind a call.
 Rejected as a new pattern bought for a problem the no-op check already closes.
 
-### 4. There is a JS-side seam, because ~85 literals are not CSS
+### 4. There is a JS-side seam, because 95 literals are not CSS
 
 `features/environment/constants.ts`, `overview-tab.viewmodel.ts`,
 `schedules-tab.viewmodel.ts`, `crop-steering-model.ts` and
