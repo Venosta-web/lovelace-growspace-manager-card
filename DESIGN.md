@@ -497,9 +497,9 @@ Touch targets: checkbox overlays use 44×44px touch area (24px icon + 10px paddi
 
 `@media (prefers-reduced-motion: reduce)` collapses animation-duration and transition-duration to `0.01ms` and disables hover transforms. Shadow DOM does not inherit a document-level block, so coverage is per-stylesheet, and it is **not yet complete**.
 
-Covered: everything importing `ui.styles.ts`, `plant-card.styles.ts` or `growspace-card.styles.ts`, plus the components carrying their own `reduce` block — `growspace-chip`, `growspace-header-hero-ui`, `growspace-header-actions-ui`, `base-dialog`, `growspace-task-bar`, `config-stage-accordion`.
+The `reduce` block lives in `ui.styles.ts`, and coverage follows composition rather than import. `dialogStyles` is `[sharedStyles, uiStyles, …]`, so **every component composing `dialogStyles` inherits it** — that is the large majority of the card, dialogs included. Also covered: anything composing `ui.styles.ts`, `plant-card.styles.ts` or `growspace-card.styles.ts` directly, plus components carrying their own `reduce` block (`growspace-chip`, `growspace-header-hero-ui`, `growspace-header-actions-ui`, `base-dialog`, `growspace-task-bar`, `config-stage-accordion`).
 
-**Not covered:** `dialog.styles.ts` declares no `reduce` block, so the 57 components whose styles are `[dialogStyles, …]` and nothing else do not honour the preference. `chat-panel` imports no shared stylesheet and is likewise uncovered. This is a WCAG 2.3.3 gap tracked as **#611**; this paragraph will need updating when it closes.
+**Not covered:** roughly 30 components whose `static styles` is a bare `css` template composing no shared stylesheet — among them `chat-panel`, `growspace-toast-ui`, `heatmap-3d`, `env-chart`, `tank-water-chart`, `camera-capture` and the standalone editors. A component that declares its own animation and composes nothing does not honour the preference. This is a WCAG 2.3.3 gap tracked as **#611**; this paragraph will need updating when it closes.
 
 ### Contrast Target
 
