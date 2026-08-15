@@ -10,6 +10,7 @@ import type { CropSteeringHistory } from '../../../schemas/api-schema';
 import { PollingController } from '../../shared/controllers/polling.controller';
 import { METRIC_CONFIG, MetricKey } from '../constants';
 import { metricHistoryKeys, resolveMetricEntityIds } from '../../../slices/metric-descriptors';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 import {
   computeCropSteeringCycle,
   computePhases,
@@ -347,6 +348,8 @@ export class CropSteeringDayChart extends LitElement {
       border-radius: 50%;
       background: #ff9800;
     }
+
+    ${reducedMotion}
   `;
 
   connectedCallback(): void {

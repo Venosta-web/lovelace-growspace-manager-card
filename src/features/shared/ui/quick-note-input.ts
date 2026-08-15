@@ -5,6 +5,7 @@ import { mdiCameraPlus, mdiSend, mdiClose } from '@mdi/js';
 import { PlantUtils } from '../../../utils/plant-utils';
 import './camera-capture';
 import type { CameraCapture } from './camera-capture';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 /**
  * Quick note input component with image upload support
@@ -156,6 +157,8 @@ export class QuickNoteInput extends LitElement {
     .remove-img:hover {
       background: var(--error-color-dark, #d32f2f);
     }
+
+    ${reducedMotion}
   `;
 
   private async _handleCapture(e: CustomEvent<{ files: File[] }>) {
@@ -254,7 +257,10 @@ export class QuickNoteInput extends LitElement {
           <div class="action-buttons">
             ${this.allowImages
               ? html`
-                  <camera-capture .multiple=${true} @capture=${this._handleCapture}></camera-capture>
+                  <camera-capture
+                    .multiple=${true}
+                    @capture=${this._handleCapture}
+                  ></camera-capture>
                   <button
                     @click=${() => this._camera?.open()}
                     ?disabled=${this.disabled || this._isSaving}

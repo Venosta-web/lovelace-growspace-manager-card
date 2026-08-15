@@ -14,6 +14,7 @@ import {
   saveAiAgent,
 } from '../slices/ai-insight';
 import type { AIBriefing, Recommendation } from '../slices/ai-insight/schema';
+import { reducedMotion } from '../styles/reduced-motion.styles';
 
 @customElement('gm-briefing-panel')
 export class GmBriefingPanel extends LitElement {
@@ -150,7 +151,9 @@ export class GmBriefingPanel extends LitElement {
       font-size: var(--font-size-sm);
     }
     @keyframes spin {
-      100% { transform: rotate(360deg); }
+      100% {
+        transform: rotate(360deg);
+      }
     }
     .briefing-spinner {
       animation: spin 1s linear infinite;
@@ -306,7 +309,9 @@ export class GmBriefingPanel extends LitElement {
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
     }
-    .reco-body { flex: 1; }
+    .reco-body {
+      flex: 1;
+    }
     .reco-title {
       font-size: var(--font-size-sm);
       font-weight: 600;
@@ -419,7 +424,10 @@ export class GmBriefingPanel extends LitElement {
       color: var(--text-primary);
       transition: opacity 150ms;
     }
-    .agent-save-btn:disabled { opacity: 0.4; cursor: default; }
+    .agent-save-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
     .agent-setup-error {
       font-size: 0.72rem;
       color: var(--error-color, #f44336);
@@ -472,6 +480,8 @@ export class GmBriefingPanel extends LitElement {
       font-weight: 600;
       color: var(--primary-text-color);
     }
+
+    ${reducedMotion}
   `;
 
   private async _regenerate() {
@@ -500,8 +510,14 @@ export class GmBriefingPanel extends LitElement {
   private _renderLoading() {
     return html`
       <div class="briefing-loading">
-        <svg class="briefing-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2a10 10 0 1 0 10 10" stroke-linecap="round"/>
+        <svg
+          class="briefing-spinner"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M12 2a10 10 0 1 0 10 10" stroke-linecap="round" />
         </svg>
         Fetching briefing…
       </div>
@@ -518,15 +534,19 @@ export class GmBriefingPanel extends LitElement {
     return html`
       <aside class="briefing-rail">
         <div class="rail-section-label">Briefings</div>
-        ${BRIEFING_ITEMS.map((label, i) => html`
-          <button
-            class="v1-nav-item"
-            aria-pressed=${this._activeTab === i ? 'true' : 'false'}
-            @click=${() => { this._activeTab = i; }}
-          >
-            ${label}
-          </button>
-        `)}
+        ${BRIEFING_ITEMS.map(
+          (label, i) => html`
+            <button
+              class="v1-nav-item"
+              aria-pressed=${this._activeTab === i ? 'true' : 'false'}
+              @click=${() => {
+                this._activeTab = i;
+              }}
+            >
+              ${label}
+            </button>
+          `
+        )}
       </aside>
     `;
   }
@@ -535,31 +555,43 @@ export class GmBriefingPanel extends LitElement {
     return html`
       <div class="evidence-card">
         <div class="evidence-title">VPD + Canopy Temp · 24h</div>
-        <svg class="evidence-chart" viewBox="0 0 400 80" preserveAspectRatio="none" aria-hidden="true">
+        <svg
+          class="evidence-chart"
+          viewBox="0 0 400 80"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
           <!-- target band -->
           <rect x="0" y="20" width="400" height="20" fill="rgba(76,175,80,0.08)" />
           <!-- VPD line (purple) -->
           <polyline
             points="0,40 50,35 100,30 150,28 200,25 250,30 300,22 350,18 400,20"
-            fill="none" stroke="var(--ai-violet,#9c27b0)" stroke-width="2"
+            fill="none"
+            stroke="var(--ai-violet,#9c27b0)"
+            stroke-width="2"
           />
           <!-- canopy temp line (amber) -->
           <polyline
             points="0,60 50,55 100,50 150,52 200,48 250,44 300,46 350,40 400,38"
-            fill="none" stroke="var(--ai-amber,#ff9800)" stroke-width="2"
+            fill="none"
+            stroke="var(--ai-amber,#ff9800)"
+            stroke-width="2"
           />
           <!-- spike marker -->
           <circle cx="300" cy="22" r="4" fill="var(--error-color,#f44336)" />
         </svg>
         <div class="evidence-legend">
           <div class="legend-item">
-            <div class="legend-dot" style="background:var(--ai-violet,#9c27b0)"></div>VPD
+            <div class="legend-dot" style="background:var(--ai-violet,#9c27b0)"></div>
+            VPD
           </div>
           <div class="legend-item">
-            <div class="legend-dot" style="background:var(--ai-amber,#ff9800)"></div>Canopy temp
+            <div class="legend-dot" style="background:var(--ai-amber,#ff9800)"></div>
+            Canopy temp
           </div>
           <div class="legend-item">
-            <div class="legend-dot" style="background:rgba(76,175,80,0.4)"></div>Target band
+            <div class="legend-dot" style="background:rgba(76,175,80,0.4)"></div>
+            Target band
           </div>
         </div>
       </div>
@@ -575,7 +607,9 @@ export class GmBriefingPanel extends LitElement {
           <div class="reco-footer">
             <span class="impact-badge" data-impact=${reco.impact}>${reco.impact}</span>
             ${reco.suggested_action
-              ? html`<button class="reco-apply" @click=${() => applyAction(reco.suggested_action!)}>Apply</button>`
+              ? html`<button class="reco-apply" @click=${() => applyAction(reco.suggested_action!)}>
+                  Apply
+                </button>`
               : nothing}
           </div>
         </div>
@@ -608,16 +642,22 @@ export class GmBriefingPanel extends LitElement {
               .value=${this._selectedAgent}
               .includeDomains=${['conversation']}
               allow-custom-entity
-              @value-changed=${(e: CustomEvent) => { this._selectedAgent = e.detail.value ?? ''; }}
+              @value-changed=${(e: CustomEvent) => {
+                this._selectedAgent = e.detail.value ?? '';
+              }}
             ></ha-entity-picker>
           </div>
           <button
             class="agent-save-btn"
             ?disabled=${!this._selectedAgent || this._agentSaving}
             @click=${this._saveAgent}
-          >${this._agentSaving ? 'Saving…' : 'Enable AI'}</button>
+          >
+            ${this._agentSaving ? 'Saving…' : 'Enable AI'}
+          </button>
         </div>
-        ${this._agentSaveError ? html`<div class="agent-setup-error">${this._agentSaveError}</div>` : nothing}
+        ${this._agentSaveError
+          ? html`<div class="agent-setup-error">${this._agentSaveError}</div>`
+          : nothing}
       </div>
     `;
   }
@@ -676,34 +716,49 @@ export class GmBriefingPanel extends LitElement {
         <!-- TL;DR card -->
         <div class="insight-head">
           <div class="insight-head-top">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ai-violet,#9c27b0);flex-shrink:0">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              style="color:var(--ai-violet,#9c27b0);flex-shrink:0"
+            >
               <path d=${mdiBrain}></path>
             </svg>
             <h3>${briefing.headline ?? 'Morning Briefing'}</h3>
           </div>
-          ${briefing.confidence !== undefined ? html`
-            <div class="conf-meter">
-              <div class="conf-bar">
-                <div class="conf-fill" style="width:${Math.round(briefing.confidence * 100)}%"></div>
-              </div>
-              ${Math.round(briefing.confidence * 100)}% confidence
-            </div>
-          ` : nothing}
-          ${briefing.drawn_from ? html`<div class="drawn-from">Drawn from ${briefing.drawn_from}</div>` : nothing}
+          ${briefing.confidence !== undefined
+            ? html`
+                <div class="conf-meter">
+                  <div class="conf-bar">
+                    <div
+                      class="conf-fill"
+                      style="width:${Math.round(briefing.confidence * 100)}%"
+                    ></div>
+                  </div>
+                  ${Math.round(briefing.confidence * 100)}% confidence
+                </div>
+              `
+            : nothing}
+          ${briefing.drawn_from
+            ? html`<div class="drawn-from">Drawn from ${briefing.drawn_from}</div>`
+            : nothing}
           <p>${briefing.summary_text}</p>
         </div>
 
         <!-- KPI row -->
         <div class="kpi-row">
-          ${briefing.kpis.map((kpi) => html`
-            <div class="kpi-card">
-              <div class="kpi-label">${kpi.label}</div>
-              <div class="kpi-value">
-                ${kpi.value}<span class="kpi-unit">${kpi.unit ?? ''}</span>
+          ${briefing.kpis.map(
+            (kpi) => html`
+              <div class="kpi-card">
+                <div class="kpi-label">${kpi.label}</div>
+                <div class="kpi-value">
+                  ${kpi.value}<span class="kpi-unit">${kpi.unit ?? ''}</span>
+                </div>
+                ${kpi.delta ? html`<div class="kpi-delta">${kpi.delta}</div>` : nothing}
               </div>
-              ${kpi.delta ? html`<div class="kpi-delta">${kpi.delta}</div>` : nothing}
-            </div>
-          `)}
+            `
+          )}
         </div>
 
         <!-- Evidence chart -->
@@ -723,7 +778,9 @@ export class GmBriefingPanel extends LitElement {
           type="text"
           placeholder="Ask a follow-up question…"
           .value=${this._followUp}
-          @input=${(e: Event) => { this._followUp = (e.target as HTMLInputElement).value; }}
+          @input=${(e: Event) => {
+            this._followUp = (e.target as HTMLInputElement).value;
+          }}
           @keydown=${(e: KeyboardEvent) => {
             if (e.key === 'Enter') this._submitFollowUp();
           }}
@@ -735,10 +792,14 @@ export class GmBriefingPanel extends LitElement {
   private _renderTabContent(briefing: AIBriefing) {
     if (!briefing.ai_available) return this._renderAiUnavailable();
     switch (this._activeTab) {
-      case 1: return this._renderRiskWatch(briefing);
-      case 2: return this._renderGoingWell(briefing);
-      case 3: return this._renderForecast();
-      default: return this._renderBriefing(briefing);
+      case 1:
+        return this._renderRiskWatch(briefing);
+      case 2:
+        return this._renderGoingWell(briefing);
+      case 3:
+        return this._renderForecast();
+      default:
+        return this._renderBriefing(briefing);
     }
   }
 

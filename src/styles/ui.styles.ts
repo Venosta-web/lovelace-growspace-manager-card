@@ -1,4 +1,5 @@
 import { css } from 'lit';
+import { reducedMotion } from './reduced-motion.styles';
 
 export const uiStyles = css`
   /* --- MD3 Buttons --- */
@@ -7,7 +8,8 @@ export const uiStyles = css`
     padding: 0 24px;
     border-radius: var(--border-radius-full, 9999px); /* Full-rounded MD3 style */
     border: none;
-    font-family: 'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
+    font-family:
+      'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
     font-weight: 500;
     font-size: 0.875rem;
     letter-spacing: 0.1px;
@@ -208,7 +210,8 @@ export const uiStyles = css`
     background: transparent;
     color: var(--primary-text-color, #ffffff);
     font-size: 1rem;
-    font-family: 'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
+    font-family:
+      'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
     box-sizing: border-box;
     outline: none;
   }
@@ -298,14 +301,5 @@ export const uiStyles = css`
     min-height: 200px;
   }
 
-  /* Respect user motion preferences (WCAG 2.3.3) */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
+  ${reducedMotion}
 `;

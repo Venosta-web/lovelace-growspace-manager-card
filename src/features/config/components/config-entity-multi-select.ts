@@ -1,5 +1,6 @@
 import { LitElement, css, html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 export interface ConfigEntityValuesChangedDetail {
   values: string[];
@@ -44,8 +45,7 @@ export class ConfigEntityMultiSelect extends LitElement {
 
     .multi-select-box:focus-within {
       padding-bottom: 5px;
-      border-bottom: 2px solid
-        var(--primary-light-color-active, rgba(255, 255, 255, 0.6));
+      border-bottom: 2px solid var(--primary-light-color-active, rgba(255, 255, 255, 0.6));
       background: rgba(var(--secondary-background-color, 255, 255, 255), 0.12);
     }
 
@@ -109,6 +109,8 @@ export class ConfigEntityMultiSelect extends LitElement {
       font: inherit;
       font-size: 1rem;
     }
+
+    ${reducedMotion}
   `;
 
   render(): TemplateResult {

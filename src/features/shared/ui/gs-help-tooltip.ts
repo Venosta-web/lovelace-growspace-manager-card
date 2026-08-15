@@ -1,11 +1,11 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiInformationOutline } from '@mdi/js';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 // CSS Anchor Positioning is scoped to the shadow tree, but the popover API
 // promotes the popover element to the document top layer (outside all shadow
 // roots), so `position-anchor` silently breaks. We use a JS fallback instead.
-
 
 @customElement('gs-help-tooltip')
 export class GsHelpTooltip extends LitElement {
@@ -88,6 +88,7 @@ export class GsHelpTooltip extends LitElement {
       }
     }
 
+    ${reducedMotion}
   `;
 
   private _popoverId = `gs-help-${Math.random().toString(36).slice(2)}`;
@@ -124,8 +125,10 @@ export class GsHelpTooltip extends LitElement {
   };
 
   override firstUpdated() {
-    this.shadowRoot!.querySelector('.help-popover')
-      ?.addEventListener('toggle', this._positionPopover);
+    this.shadowRoot!.querySelector('.help-popover')?.addEventListener(
+      'toggle',
+      this._positionPopover
+    );
   }
 
   render() {
@@ -140,11 +143,7 @@ export class GsHelpTooltip extends LitElement {
       >
         <svg viewBox="0 0 24 24"><path d="${mdiInformationOutline}"></path></svg>
       </button>
-      <div
-        id="${this._popoverId}"
-        class="help-popover"
-        popover="auto"
-      >
+      <div id="${this._popoverId}" class="help-popover" popover="auto">
         <div class="help-popover-inner">${this.content}</div>
       </div>
     `;

@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiDelete, mdiClose } from '@mdi/js';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 /**
  * Reusable confirmation dialog for delete operations
@@ -98,6 +99,8 @@ export class ConfirmDeleteDialog extends LitElement {
       height: 18px;
       fill: currentColor;
     }
+
+    ${reducedMotion}
   `;
 
   private _handleCancel(e: Event) {

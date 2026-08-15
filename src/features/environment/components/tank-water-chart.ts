@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { GrowspaceDevice } from '../../../services/types';
 import type { HistoryTimeRange } from '../constants';
 import { hassCall } from '../../../services/hass-call';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 const TankWaterBucketSchema = z.object({
   timestamp: z.string(),
@@ -55,7 +56,9 @@ export class TankWaterChart extends LitElement {
       animation: spin 1s linear infinite;
     }
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
     .empty {
       padding: 32px;
@@ -78,6 +81,8 @@ export class TankWaterChart extends LitElement {
       font-size: var(--font-size-xs);
       fill: var(--secondary-text-color, #9e9e9e);
     }
+
+    ${reducedMotion}
   `;
 
   connectedCallback(): void {
@@ -151,15 +156,10 @@ export class TankWaterChart extends LitElement {
           const x = i * barW + gap / 2;
           const y = chartH - barH - 14;
           return html`
-            <rect
-              class="bar"
-              x="${x}"
-              y="${y}"
-              width="${barW - gap}"
-              height="${barH}"
-              rx="1"
-            >
-              <title>${new Date(bucket.timestamp).toLocaleTimeString()} — ${bucket.liters.toFixed(1)} L</title>
+            <rect class="bar" x="${x}" y="${y}" width="${barW - gap}" height="${barH}" rx="1">
+              <title>
+                ${new Date(bucket.timestamp).toLocaleTimeString()} — ${bucket.liters.toFixed(1)} L
+              </title>
             </rect>
           `;
         })}

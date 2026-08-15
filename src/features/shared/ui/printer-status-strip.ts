@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { mdiBluetooth, mdiBattery, mdiPrinter } from '@mdi/js';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 export interface NiimbotPrinter {
   id: string;
@@ -87,9 +88,15 @@ export class PrinterStatusStrip extends LitElement {
     }
 
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-      70% { box-shadow: 0 0 0 6px rgba(76, 175, 80, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+      0% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 6px rgba(76, 175, 80, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+      }
     }
 
     .offline-dot {
@@ -122,10 +129,18 @@ export class PrinterStatusStrip extends LitElement {
       gap: 4px;
     }
 
-    .battery.green { color: var(--gm-primary-color); }
-    .battery.amber { color: #ffa726; }
-    .battery.red   { color: var(--danger-chip); }
-    .battery.grey  { color: rgba(255, 255, 255, 0.3); }
+    .battery.green {
+      color: var(--gm-primary-color);
+    }
+    .battery.amber {
+      color: #ffa726;
+    }
+    .battery.red {
+      color: var(--danger-chip);
+    }
+    .battery.grey {
+      color: rgba(255, 255, 255, 0.3);
+    }
 
     .paper-indicator {
       display: flex;
@@ -136,6 +151,8 @@ export class PrinterStatusStrip extends LitElement {
     .paper-indicator.muted {
       opacity: 0.25;
     }
+
+    ${reducedMotion}
   `;
 
   protected render() {
@@ -165,7 +182,10 @@ export class PrinterStatusStrip extends LitElement {
 
         <div class="divider"></div>
 
-        <ha-svg-icon .path=${mdiBluetooth} style="--mdc-icon-size: 16px; opacity: 0.6;"></ha-svg-icon>
+        <ha-svg-icon
+          .path=${mdiBluetooth}
+          style="--mdc-icon-size: 16px; opacity: 0.6;"
+        ></ha-svg-icon>
 
         <div class="divider"></div>
 

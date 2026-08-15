@@ -23,6 +23,7 @@ import {
 import { consume } from '@lit/context';
 import { hassContext } from '../../../lib/context';
 import '../../shared/ui/error-boundary';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
@@ -824,5 +825,7 @@ export class GrowspaceEnvChart extends LitElement {
         display: none;
       }
     }
+
+    ${reducedMotion}
   `;
 }

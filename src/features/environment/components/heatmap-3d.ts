@@ -15,6 +15,7 @@ import { updateSensorCoordinates } from '../../../slices/growspace';
 import { openPlantOverviewDialog, openAddPlantDialog } from '../../../slices/ui';
 import { getHistoryStats } from '../../../store/history/history-store';
 import { SensorTypeUtils } from '../../../utils/sensor-type-utils';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 @customElement('heatmap-3d')
 export class Heatmap3D extends LitElement {
@@ -476,6 +477,8 @@ export class Heatmap3D extends LitElement {
       font-weight: 600;
       text-transform: uppercase;
     }
+
+    ${reducedMotion}
   `;
 
   connectedCallback() {

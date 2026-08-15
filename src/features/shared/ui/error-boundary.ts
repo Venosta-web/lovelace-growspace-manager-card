@@ -1,6 +1,7 @@
 import { LitElement, html, css, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { mdiAlertCircle, mdiRefresh, mdiRestart } from '@mdi/js';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 /**
  * ErrorBoundary - Catches and handles errors in child components
@@ -125,6 +126,8 @@ export class ErrorBoundary extends LitElement {
       margin-bottom: 8px;
       user-select: none;
     }
+
+    ${reducedMotion}
   `;
 
   connectedCallback() {
