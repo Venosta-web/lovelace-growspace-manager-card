@@ -1,3 +1,10 @@
+# [1.1.0-next.130](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.129...v1.1.0-next.130) (2026-08-15)
+
+
+### Bug Fixes
+
+* **config:** make config tab interiors survive a 390px viewport ([#627](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/627)) ([d464589](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/d4645896a0c849e4006f5656721685458e37adeb)), closes [#540](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/540) [#545](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/545)
+
 # [1.1.0-next.129](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.128...v1.1.0-next.129) (2026-08-15)
 
 
