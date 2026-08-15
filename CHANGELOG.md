@@ -1,3 +1,10 @@
+# [1.1.0-next.124](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.123...v1.1.0-next.124) (2026-08-15)
+
+
+### Features
+
+* **design:** give the portalled dialog host its own token scope ([#610](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/610)) ([73b9831](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/73b983142b3171bfeeaacb9076e13cf2dc36b5f5)), closes [#591](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/591) [#f44336](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/f44336) [#f44336](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/f44336)
+
 # [1.1.0-next.123](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.122...v1.1.0-next.123) (2026-08-15)
 
 
