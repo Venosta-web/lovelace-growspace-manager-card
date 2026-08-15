@@ -66,8 +66,10 @@ export class IrrigationTanksTab extends LitElement {
       }
       .tank-bar-fill {
         height: 100%;
-        border-radius: var(--border-radius-xs, 4px);
-        transition: width 0.4s ease;
+        width: 100%;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
       }
       .tank-row-stat {
         font-size: 12.5px;
@@ -127,7 +129,7 @@ export class IrrigationTanksTab extends LitElement {
           <div class="tank-bar-track">
             <div
               class="tank-bar-fill"
-              style="width:${row.barWidthPct}%;background:${row.color};"
+              style="transform:scaleX(${row.barWidthPct / 100});background:${row.color};"
             ></div>
           </div>
         </div>

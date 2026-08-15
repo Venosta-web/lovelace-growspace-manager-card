@@ -143,9 +143,11 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
 
       .fill-bar {
         height: 100%;
-        border-radius: 2px;
+        width: 100%;
         background: var(--primary-color, #4caf50);
-        transition: width 0.3s ease;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
       }
 
       .fill-bar.warning { background: var(--gm-warning-color, #ff9800); }
@@ -466,7 +468,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
           <div class="item-name">${stock.name}</div>
           <div class="item-meta">${stock.current_ml.toFixed(0)} / ${stock.initial_ml.toFixed(0)} ml</div>
           <div class="fill-bar-wrap">
-            <div class="fill-bar ${fillClass(pct)}" style="width:${pct}%"></div>
+            <div class="fill-bar ${fillClass(pct)}" style="transform:scaleX(${pct / 100})"></div>
           </div>
         </div>
       </div>
@@ -518,7 +520,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
           <span>${stock.initial_ml.toFixed(0)} ml</span>
         </div>
         <div class="detail-fill-bar-wrap" data-fill-bar>
-          <div class="fill-bar ${fillClass(pct)}" style="width:${pct}%;background:${color}"></div>
+          <div class="fill-bar ${fillClass(pct)}" style="transform:scaleX(${pct / 100});background:${color}"></div>
         </div>
       </div>
 
