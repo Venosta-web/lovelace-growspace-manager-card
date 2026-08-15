@@ -701,7 +701,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
             </p>
           </div>
           <button
-            class="md3-button tonal error"
+            class="md3-button tonal danger"
             @click=${() => this._emit('water-analytics-reset-tracking')}
             style="white-space:nowrap;"
           >

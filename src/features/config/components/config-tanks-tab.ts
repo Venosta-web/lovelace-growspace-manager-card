@@ -111,7 +111,7 @@ export class ConfigTanksTab extends LitElement {
             </svg>
           </button>
           <button
-            class="md3-button text error"
+            class="md3-button text danger"
             @click=${() => this._emit('delete-tank-requested', { index: tank.index })}
             style="padding:6px;min-width:auto;"
             aria-label=${`Delete ${tank.displayName}`}
