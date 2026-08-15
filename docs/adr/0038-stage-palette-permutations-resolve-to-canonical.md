@@ -161,6 +161,12 @@ into the consuming component's shadow root, so they keep that form. Where the
 fallback is kept it **must be the token's own value**; a fallback that names one
 token and falls back to another's value is the #608 defect being re-created.
 
+`src/dialogs/*` is the exception, and it goes the other way: ADR 0036 §4 retired
+the fallback-form carve-out there for card-invented names, so the clone, training
+and print-label accents become **bare** `var(--stage-clone)` /
+`var(--activity-training)` / `var(--gm-info-color)`. All three are in
+`portalVariables`, so they resolve at the portalled host.
+
 Case is normalised to lowercase in the fallbacks (`#E91E63` → `#e91e63`) as a
 side effect, not as a separate pass.
 
