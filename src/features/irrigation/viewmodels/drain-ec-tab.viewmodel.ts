@@ -21,7 +21,12 @@
 
 import { computed, type ReadableAtom } from 'nanostores';
 import type { GrowspaceDevice, DrainECReading } from '../../../services/types';
-import type { DialogSM, DrainEcDraft, DrainEcSubState } from '../../../dialogs/irrigation-dialog-sm';
+import type {
+  DialogSM,
+  DrainEcDraft,
+  DrainEcSubState,
+} from '../../../dialogs/irrigation-dialog-sm';
+import { token } from '../../../styles/variables';
 
 /** The status banner state (color + message text, derived from the draft + last reading). */
 export interface DrainEcStatusVM {
@@ -74,16 +79,15 @@ export function createDrainEcTabViewModel(
     const recentReadings = readings.slice(-20).reverse();
     const lastReading = recentReadings[0] ?? null;
     const lastDelta = lastReading ? lastReading.drainEc - lastReading.feedEc : null;
-    const isOverThreshold =
-      lastDelta !== null && draft.enabled && lastDelta > draft.maxEcDelta;
+    const isOverThreshold = lastDelta !== null && draft.enabled && lastDelta > draft.maxEcDelta;
 
     const color = !draft.enabled
       ? 'rgba(255,255,255,0.3)'
       : isOverThreshold
-        ? '#f44336'
+        ? token['--gm-error-color']
         : lastDelta !== null && lastDelta > draft.maxEcDelta * 0.7
-          ? 'var(--gm-warning-color, #FF9800)'
-          : '#4caf50';
+          ? token['--gm-warning-color']
+          : token['--gm-primary-color'];
 
     const text = !draft.enabled
       ? 'Monitoring disabled'

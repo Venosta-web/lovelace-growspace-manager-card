@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { computeEnvSeries } from './env-series';
 import { computeMetricDescriptors } from '../../slices/metric-descriptors';
 import { ChartType, METRIC_CONFIG, MetricKey, StatusLevel, STATUS_COLORS } from './constants';
+import { token } from '../../styles/variables';
 import type { HistorySensorState, SensorHistories } from './types';
 import type { DeviceSnapshot } from '../../slices/device-state';
 import type { GrowspaceDevice } from '../../services/types';
@@ -57,7 +58,7 @@ describe('computeEnvSeries — temperature', () => {
     expect(series.id).toBe(MetricKey.TEMPERATURE);
     expect(series.title).toBe('Temperature');
     expect(series.unit).toBe('°C');
-    expect(series.color).toBe('#ff5252');
+    expect(series.color).toBe(token['--danger-chip']);
     expect(series.chartType).toBe(ChartType.LINE);
   });
 

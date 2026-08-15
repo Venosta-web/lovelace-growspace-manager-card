@@ -15,6 +15,7 @@ import {
   type DialogSM,
 } from '../../../../../src/dialogs/irrigation-dialog-sm';
 import { createDrainEcTabViewModel } from '../../../../../src/features/irrigation/viewmodels/drain-ec-tab.viewmodel';
+import { token } from '../../../../../src/styles/variables';
 
 function reading(overrides: Partial<DrainECReading> = {}): DrainECReading {
   return {
@@ -82,7 +83,7 @@ describe('createDrainEcTabViewModel', () => {
     });
     // delta = 2.5 - 2.0 = 0.5 > 0.3
     const vm = build(sm, device([reading({ feedEc: 2.0, drainEc: 2.5 })]));
-    expect(vm.status.color).toBe('#f44336');
+    expect(vm.status.color).toBe(token['--gm-error-color']);
     expect(vm.status.text).toContain('Salt buildup alert');
     expect(vm.status.text).toContain('Δ0.50');
     expect(vm.status.lastReading?.drainEc).toBe(2.5);
@@ -95,7 +96,7 @@ describe('createDrainEcTabViewModel', () => {
     });
     // delta 0.5 < 0.7 * 2.0 (=1.4) → green
     const vm = build(sm, device([reading({ feedEc: 2.0, drainEc: 2.5 })]));
-    expect(vm.status.color).toBe('#4caf50');
+    expect(vm.status.color).toBe(token['--gm-primary-color']);
     expect(vm.status.text).toBe('EC OK — Δ0.50 mS/cm');
   });
 
@@ -106,7 +107,7 @@ describe('createDrainEcTabViewModel', () => {
     });
     // delta 0.8 > 0.7 (=0.7*1.0) and not > 1.0 → orange
     const vm = build(sm, device([reading({ feedEc: 2.0, drainEc: 2.8 })]));
-    expect(vm.status.color).toBe('var(--gm-warning-color, #FF9800)');
+    expect(vm.status.color).toBe(token['--gm-warning-color']);
   });
 
   it('reads readings from device.drainConfig, most-recent-first, capped at 20', () => {

@@ -22,6 +22,7 @@
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import { token } from '../../../styles/variables';
 import '../../../features/shared/ui/md3-number-input';
 import '../../../features/shared/ui/md3-switch';
 import type { DrainEcDraft } from '../../../dialogs/irrigation-dialog-sm';
@@ -181,8 +182,8 @@ export class IrrigationDrainEcTab extends LitElement {
                   >EC Delta:
                   <strong
                     style="color:${draft.logDrainEc - draft.logFeedEc > draft.maxEcDelta
-                      ? '#f44336'
-                      : '#4caf50'}"
+                      ? token['--gm-error-color']
+                      : token['--gm-primary-color']}"
                   >
                     Δ${(draft.logDrainEc - draft.logFeedEc).toFixed(2)} mS/cm
                   </strong></span
@@ -204,7 +205,7 @@ export class IrrigationDrainEcTab extends LitElement {
           : nothing}
         <button
           class="md3-button primary"
-          style="background:#FF9800;"
+          style="background:var(--gm-warning-color);"
           @click=${() => this._emit('drain-ec-log-reading')}
           ?disabled=${isLogging || draft.logFeedEc <= 0 || draft.logDrainEc <= 0}
         >
@@ -258,10 +259,10 @@ export class IrrigationDrainEcTab extends LitElement {
                           <td style="text-align:right;padding:6px 8px;">${r.drainEc.toFixed(2)}</td>
                           <td
                             style="text-align:right;padding:6px 8px;color:${overThreshold
-                              ? '#f44336'
+                              ? token['--gm-error-color']
                               : delta > this.vm.draft.maxEcDelta * 0.7
-                                ? 'var(--gm-warning-color, #FF9800)'
-                                : '#4caf50'};font-weight:500;"
+                                ? token['--gm-warning-color']
+                                : token['--gm-primary-color']};font-weight:500;"
                           >
                             ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
                           </td>

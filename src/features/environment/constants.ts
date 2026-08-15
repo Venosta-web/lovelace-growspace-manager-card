@@ -24,6 +24,7 @@ import {
   mdiAlert,
   mdiAlertOctagon,
 } from '@mdi/js';
+import { token } from '../../styles/variables';
 
 export enum MetricKey {
   TEMPERATURE = 'temperature',
@@ -104,7 +105,7 @@ export interface MetricConfigItem {
 
 export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
   [MetricKey.TEMPERATURE]: {
-    color: '#ff5252',
+    color: token['--danger-chip'],
     title: 'Temperature',
     unit: '°C',
     icon: mdiThermometer,
@@ -186,7 +187,7 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
   },
   [MetricKey.DLI]: { color: '#ffb300', title: 'DLI', unit: 'mol/m²/d', icon: mdiWeatherSunny },
   [MetricKey.SUBSTRATE_TEMPERATURE]: {
-    color: '#ff5252',
+    color: token['--danger-chip'],
     title: 'Substrate Temp',
     unit: '°C',
     icon: mdiThermometer,
@@ -213,13 +214,13 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     icon: mdiLightningBolt,
   },
   [MetricKey.PORE_EC]: {
-    color: '#ef5350',
+    color: token['--danger-chip'],
     title: 'Pore EC',
     unit: 'mS/cm',
     icon: mdiLightningBolt,
   },
   [MetricKey.RUNOFF_EC]: {
-    color: '#ef5350',
+    color: token['--danger-chip'],
     title: 'Runoff EC',
     unit: 'mS/cm',
     icon: mdiLightningBolt,

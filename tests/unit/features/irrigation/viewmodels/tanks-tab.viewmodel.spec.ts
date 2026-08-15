@@ -19,6 +19,7 @@ import {
   createTanksTabViewModel,
   mergeTankDraft,
 } from '../../../../../src/features/irrigation/viewmodels/tanks-tab.viewmodel';
+import { token } from '../../../../../src/styles/variables';
 
 function tank(overrides: Partial<IrrigationTank> = {}): IrrigationTank {
   return {
@@ -55,7 +56,7 @@ describe('createTanksTabViewModel', () => {
       index: 0,
       name: 'Tank A',
       isWarning: false,
-      color: 'var(--gm-warning-color, #FF9800)', // hoursRemaining 10 < 24 → amber
+      color: token['--gm-warning-color'], // hoursRemaining 10 < 24 → amber
       barWidthPct: 73,
       fillLabel: '73%',
       subLine: '↓ Depleting · 10h left',
@@ -71,9 +72,9 @@ describe('createTanksTabViewModel', () => {
 
   it('colours warning tanks red and days-remaining for long horizons', () => {
     const warn = build(createInitialSM(), [tank({ isWarning: true })]);
-    expect(warn.tanks[0].color).toBe('#f44336');
+    expect(warn.tanks[0].color).toBe(token['--gm-error-color']);
     const long = build(createInitialSM(), [tank({ isWarning: false, hoursRemaining: 72, depletionStatus: 'static' })]);
-    expect(long.tanks[0].color).toBe('#4caf50');
+    expect(long.tanks[0].color).toBe(token['--gm-primary-color']);
     expect(long.tanks[0].subLine).toBe('— Stable · 3d left');
   });
 

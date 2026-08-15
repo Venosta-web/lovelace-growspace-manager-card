@@ -23,6 +23,7 @@
 import { computed, type ReadableAtom } from 'nanostores';
 import type { GrowspaceDevice, IrrigationTank } from '../../../services/types';
 import type { DialogSM, TankDraft } from '../../../dialogs/irrigation-dialog-sm';
+import { token } from '../../../styles/variables';
 
 /** One tank-level row (config identity + live telemetry, formatted for display). */
 export interface TankRowVM {
@@ -60,10 +61,10 @@ function deriveRow(tank: IrrigationTank, index: number): TankRowVM {
   const pct = tank.fillLevel ?? 0;
   const isWarning = tank.isWarning;
   const color = isWarning
-    ? '#f44336'
+    ? token['--gm-error-color']
     : (tank.hoursRemaining ?? 999) < 24
-      ? 'var(--gm-warning-color, #FF9800)'
-      : '#4caf50';
+      ? token['--gm-warning-color']
+      : token['--gm-primary-color'];
 
   const depletionLabel =
     tank.depletionStatus === 'depleting'
@@ -89,7 +90,8 @@ function deriveRow(tank: IrrigationTank, index: number): TankRowVM {
     isWarning,
     color,
     barWidthPct: Math.max(0, Math.min(100, pct)),
-    fillLabel: tank.fillLevel !== null && tank.fillLevel !== undefined ? `${pct.toFixed(0)}%` : 'N/A',
+    fillLabel:
+      tank.fillLevel !== null && tank.fillLevel !== undefined ? `${pct.toFixed(0)}%` : 'N/A',
     subLine: subParts.length > 0 ? subParts.join(' · ') : null,
   };
 }
@@ -134,9 +136,7 @@ export function createTanksTabViewModel(
       return {
         tanks: tanks.map(deriveRow),
         editing:
-          sub.kind === 'editing'
-            ? { index: sub.index, draft: sub.draft, entityOptions }
-            : null,
+          sub.kind === 'editing' ? { index: sub.index, draft: sub.draft, entityOptions } : null,
       };
     }
   );
