@@ -64,12 +64,12 @@ describe('GmSettingsPanel — controls', () => {
     expect(picker?.domains).toContain('ai_task');
   });
 
-  it('renders md3-entities-input for briefing_trigger_entities', async () => {
+  it('renders config-entity-multi-select for briefing_trigger_entities', async () => {
     element.draft = { briefing_trigger_entities: ['sensor.vpd'] };
     await element.updateComplete;
-    const picker = element.shadowRoot?.querySelector('md3-entities-input[data-field="briefing_trigger_entities"]') as any;
+    const picker = element.shadowRoot?.querySelector('config-entity-multi-select[data-field="briefing_trigger_entities"]') as any;
     expect(picker).toBeTruthy();
-    expect(picker?.value).toContain('sensor.vpd');
+    expect(picker?.values).toContain('sensor.vpd');
   });
 
   it('emits draft-change with updated assistant_id when md3-entity-input changes', async () => {
@@ -151,23 +151,23 @@ describe('GmSettingsPanel — controls', () => {
     expect(changes[0]).toMatchObject({ ai_task_entity_id: null });
   });
 
-  it('emits draft-change with updated briefing_trigger_entities when md3-entities-input changes', async () => {
+  it('emits draft-change with updated briefing_trigger_entities when the multi-select changes', async () => {
     element.draft = {};
     await element.updateComplete;
     const changes: any[] = [];
     element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
-    const picker = element.shadowRoot?.querySelector('md3-entities-input[data-field="briefing_trigger_entities"]');
-    picker?.dispatchEvent(new CustomEvent('change', { detail: ['sensor.vpd', 'sensor.temp'], bubbles: true, composed: true }));
+    const picker = element.shadowRoot?.querySelector('config-entity-multi-select[data-field="briefing_trigger_entities"]');
+    picker?.dispatchEvent(new CustomEvent('entity-values-changed', { detail: { values: ['sensor.vpd', 'sensor.temp'] }, bubbles: true, composed: true }));
     expect(changes[0]).toMatchObject({ briefing_trigger_entities: ['sensor.vpd', 'sensor.temp'] });
   });
 
-  it('emits draft-change with empty array for briefing_trigger_entities when picker clears', async () => {
+  it('emits draft-change with empty array for briefing_trigger_entities when the multi-select clears', async () => {
     element.draft = { briefing_trigger_entities: ['sensor.vpd'] };
     await element.updateComplete;
     const changes: any[] = [];
     element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
-    const picker = element.shadowRoot?.querySelector('md3-entities-input[data-field="briefing_trigger_entities"]');
-    picker?.dispatchEvent(new CustomEvent('change', { detail: null, bubbles: true, composed: true }));
+    const picker = element.shadowRoot?.querySelector('config-entity-multi-select[data-field="briefing_trigger_entities"]');
+    picker?.dispatchEvent(new CustomEvent('entity-values-changed', { detail: { values: [] }, bubbles: true, composed: true }));
     expect(changes[0]).toMatchObject({ briefing_trigger_entities: [] });
   });
 
