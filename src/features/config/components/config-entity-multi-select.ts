@@ -62,6 +62,8 @@ export class ConfigEntityMultiSelect extends LitElement {
     .chip {
       display: inline-flex;
       align-items: center;
+      min-width: 0;
+      max-width: 100%;
       min-height: 44px;
       padding: 0 4px 0 12px;
       border-radius: 16px;
@@ -69,8 +71,16 @@ export class ConfigEntityMultiSelect extends LitElement {
       font-size: 1rem;
     }
 
+    /* Entity IDs run long; truncate so the remove control stays reachable. */
+    .chip-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .chip-remove {
       display: inline-flex;
+      flex-shrink: 0;
       align-items: center;
       justify-content: center;
       min-width: 44px;
@@ -110,6 +120,14 @@ export class ConfigEntityMultiSelect extends LitElement {
       font-size: 1rem;
     }
 
+    /* The add-entity input is the only affordance here; give it a real target. */
+    @media (max-width: 560px) {
+      input {
+        height: auto;
+        min-height: 44px;
+      }
+    }
+
     ${reducedMotion}
   `;
 
@@ -120,7 +138,7 @@ export class ConfigEntityMultiSelect extends LitElement {
         ${this.values.map(
           (value) => html`
             <div class="chip">
-              ${value}
+              <span class="chip-label" title=${value}>${value}</span>
               <button
                 type="button"
                 class="chip-remove"
