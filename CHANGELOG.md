@@ -1,3 +1,10 @@
+# [1.1.0-next.129](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.128...v1.1.0-next.129) (2026-08-15)
+
+
+### Bug Fixes
+
+* **design:** make destructive buttons render destructively ([#626](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/626)) ([e1eb96b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e1eb96bc913f931dbbeb61c2b6df4d69eb1cb830)), closes [#f44336](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/f44336) [#550](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/550) [#550](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/550)
+
 # [1.1.0-next.128](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.127...v1.1.0-next.128) (2026-08-15)
 
 
