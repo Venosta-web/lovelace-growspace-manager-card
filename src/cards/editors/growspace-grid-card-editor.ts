@@ -34,7 +34,7 @@ export class GrowspaceGridCardEditor extends LitElement implements LovelaceCardE
       padding: 12px;
       border-radius: 8px;
       font-size: 0.9rem;
-      border-left: 4px solid var(--primary-color);
+      border-left: 4px solid var(--primary-color); /* impeccable-disable-line side-tab -- advisory info box, not a content-card side tab */
     }
   `;
 

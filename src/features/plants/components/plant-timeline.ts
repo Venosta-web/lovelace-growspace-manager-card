@@ -202,7 +202,7 @@ export class PlantTimeline extends LitElement {
 
       /* Milestone Banner */
       .event.type-milestone {
-        border-left: 4px solid var(--success-color);
+        border-left: 4px solid var(--success-color); /* impeccable-disable-line side-tab -- banner accent, not a content-card side tab */
         background: linear-gradient(
           90deg,
           rgba(var(--rgb-success-color), 0.15) 0%,

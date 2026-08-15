@@ -24,7 +24,7 @@ export const dialogStyles = [
       overflow: hidden;
       position: relative;
       color: var(--primary-text-color, #fff);
-      font-family: 'Roboto', sans-serif;
+      font-family: 'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
     }
 
     .dialog-header {

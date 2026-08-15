@@ -3,7 +3,7 @@ import { css } from 'lit';
 export const growspaceCardStyles = css`
   :host {
     display: block;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
     color: var(--growspace-card-text);
   }
 

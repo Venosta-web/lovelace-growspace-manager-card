@@ -23,7 +23,7 @@ export const headerStyles = css`
 
   /* The visible text element that drives width */
   .select-sizer {
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
     font-size: 1.75rem;
     font-weight: 400;
     margin: 0;
