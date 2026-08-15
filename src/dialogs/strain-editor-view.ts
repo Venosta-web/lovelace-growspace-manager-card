@@ -1013,7 +1013,7 @@ export class StrainEditorView extends LitElement {
             ${this._sm.status.kind === 'applying'
               ? html`
                   <span
-                    style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"
+                    style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:var(--text-primary);border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"
                   ></span>
                   Saving...
                 `
@@ -1085,7 +1085,7 @@ export class StrainEditorView extends LitElement {
         </div>
 
         <div class="crop-controls">
-          <div style="display:flex; justify-content:space-between; color:#ccc; font-size:var(--font-size-supporting);">
+          <div style="display:flex; justify-content:space-between; color:var(--text-secondary); font-size:var(--font-size-supporting);">
             <span>Zoom: ${(meta.scale * 100).toFixed(0)}%</span>
           </div>
           <input
@@ -1681,7 +1681,7 @@ export class StrainEditorView extends LitElement {
             <button class="md3-button tonal" @click=${this._cancelDeleteBreeder}>Cancel</button>
             <button
               class="md3-button text"
-              style="color:#f44336;"
+              style="color:var(--gm-error-color);"
               @click=${this._confirmDeleteBreeder}
             >
               <svg
@@ -1717,7 +1717,7 @@ export class StrainEditorView extends LitElement {
     dialogStyles,
     css`
       :host {
-        --accent-green: #4caf50;
+        --accent-green: var(--gm-primary-color);
         display: contents;
       }
 
@@ -1863,7 +1863,7 @@ export class StrainEditorView extends LitElement {
         left: 8px;
         background: rgba(0, 0, 0, 0.6);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #fff;
+        color: var(--text-primary);
         padding: 6px 12px;
         border-radius: var(--border-radius-full, 9999px);
         font-size: 0.75rem;
@@ -2089,7 +2089,7 @@ export class StrainEditorView extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #fff;
+        color: var(--text-primary);
         cursor: pointer;
       }
       .sc-action-btn:hover {

@@ -351,7 +351,7 @@ export class GmBriefingPanel extends LitElement {
       cursor: pointer;
       font-family: inherit;
       background: var(--ai-violet, #9c27b0);
-      color: #fff;
+      color: var(--text-primary);
     }
 
     /* ── Follow-up ────────────────────────────────────────────── */
@@ -416,7 +416,7 @@ export class GmBriefingPanel extends LitElement {
       cursor: pointer;
       font-family: inherit;
       background: var(--ai-violet, #9c27b0);
-      color: #fff;
+      color: var(--text-primary);
       transition: opacity 150ms;
     }
     .agent-save-btn:disabled { opacity: 0.4; cursor: default; }
@@ -450,7 +450,7 @@ export class GmBriefingPanel extends LitElement {
       cursor: pointer;
       font-family: inherit;
       background: var(--primary-color, #2196f3);
-      color: #fff;
+      color: var(--text-primary);
     }
 
     /* ── Per-tab placeholder sections ────────────────────────────── */

@@ -108,15 +108,15 @@ export class IrrigationOverviewTab extends LitElement {
       }
       .cs-mode-vegetative {
         background: rgba(76, 175, 80, 0.2);
-        color: #4caf50;
+        color: var(--gm-primary-color);
       }
       .cs-mode-generative {
         background: rgba(244, 67, 54, 0.2);
-        color: #f44336;
+        color: var(--gm-error-color);
       }
       .cs-mode-balanced {
         background: rgba(33, 150, 243, 0.2);
-        color: #2196f3;
+        color: var(--gm-info-color);
       }
       .cs-intent {
         margin-top: 12px;

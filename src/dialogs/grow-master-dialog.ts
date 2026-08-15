@@ -224,7 +224,7 @@ export class GrowMasterDialog extends LitElement {
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--border-radius-sm, 8px);
         padding: 12px;
-        color: #fff;
+        color: var(--text-primary);
         font-family: inherit;
         resize: vertical;
         box-sizing: border-box;

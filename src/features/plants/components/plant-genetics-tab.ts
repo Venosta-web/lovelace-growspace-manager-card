@@ -60,7 +60,7 @@ export class PlantGeneticsTab extends LitElement {
                   <span
                     style="
                     background: rgba(139,195,74,0.15);
-                    border: 1px solid #8bc34a;
+                    border: 1px solid var(--stage-seedling);
                     border-radius: 16px;
                     padding: 4px 12px;
                     font-size: var(--font-size-supporting);

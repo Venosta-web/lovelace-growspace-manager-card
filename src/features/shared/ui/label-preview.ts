@@ -64,7 +64,7 @@ export class LabelPreview extends LitElement {
       position: relative;
       box-sizing: border-box;
       border: 1px solid #333;
-      background: #fff;
+      background: var(--text-primary, #fff);
       color: #000;
       font-family: sans-serif;
       overflow: hidden;

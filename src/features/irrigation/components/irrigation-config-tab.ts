@@ -50,7 +50,7 @@ export class IrrigationConfigTab extends LitElement {
         border-radius: var(--border-radius-full, 9999px);
         border: 1px solid rgba(79, 195, 247, 0.4);
         background: rgba(79, 195, 247, 0.1);
-        color: #4fc3f7;
+        color: var(--series-1);
         font-size: var(--font-size-supporting);
         font-weight: 600;
         cursor: pointer;

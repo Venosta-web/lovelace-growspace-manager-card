@@ -91,7 +91,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       .ai-icon svg {
         width: 32px;
         height: 32px;
-        fill: #4caf50;
+        fill: var(--gm-primary-color);
       }
       .ai-title {
         margin: 0;
@@ -106,7 +106,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       }
       .gm-response-box {
         background: rgba(255, 255, 255, 0.05);
-        border: 2px solid #4caf50;
+        border: 2px solid var(--gm-primary-color);
         border-radius: 12px;
         padding: 20px;
         line-height: 1.6;
@@ -150,7 +150,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       .sd-textarea:focus {
         outline: none;
         background: rgba(255, 255, 255, 0.08);
-        border-color: #4caf50;
+        border-color: var(--gm-primary-color);
       }
       .button-group {
         display: flex;
@@ -158,7 +158,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
         justify-content: flex-end;
       }
       .error-state {
-        color: #f44336;
+        color: var(--gm-error-color);
         padding: 16px;
         background: rgba(244, 67, 54, 0.1);
         border-radius: 8px;

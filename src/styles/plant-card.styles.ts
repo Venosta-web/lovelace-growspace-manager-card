@@ -183,7 +183,7 @@ export const plantCardStyles = css`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #f44336;
+    background: var(--gm-error-color);
     box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.3);
     flex-shrink: 0;
     animation: pulse-alert 2s infinite;

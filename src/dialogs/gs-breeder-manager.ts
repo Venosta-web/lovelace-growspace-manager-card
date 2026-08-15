@@ -31,7 +31,7 @@ export class GsBreederManager extends LitElement {
     dialogStyles,
     css`
       :host {
-        --accent-green: #4caf50;
+        --accent-green: var(--gm-primary-color);
       }
 
       .sd-content {
@@ -157,7 +157,7 @@ export class GsBreederManager extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #fff;
+        color: var(--text-primary);
         cursor: pointer;
       }
 
@@ -514,7 +514,7 @@ export class GsBreederManager extends LitElement {
             </button>
             <button
               class="md3-button text"
-              style="color:#f44336;"
+              style="color:var(--gm-error-color);"
               @click=${() => this._confirmDelete()}
             >
               <svg

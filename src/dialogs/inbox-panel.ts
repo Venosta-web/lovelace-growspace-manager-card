@@ -352,7 +352,7 @@ export class GmInboxPanel extends LitElement {
 
     .inbox-severity-pill[data-severity='danger'] {
       background: rgba(244, 67, 54, 0.15);
-      color: #f44336;
+      color: var(--gm-error-color);
     }
 
     .inbox-severity-pill[data-severity='warning'] {
@@ -362,7 +362,7 @@ export class GmInboxPanel extends LitElement {
 
     .inbox-severity-pill[data-severity='info'] {
       background: rgba(76, 175, 80, 0.15);
-      color: #4caf50;
+      color: var(--gm-primary-color);
     }
 
     .inbox-detail-time {
@@ -587,7 +587,7 @@ export class GmInboxPanel extends LitElement {
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: var(--border-radius-sm, 8px);
       padding: 8px 12px;
-      color: #fff;
+      color: var(--text-primary);
       font-family: inherit;
       font-size: var(--font-size-sm);
       resize: none;

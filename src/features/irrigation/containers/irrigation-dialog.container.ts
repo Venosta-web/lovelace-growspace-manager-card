@@ -456,7 +456,7 @@ export class IrrigationDialog extends LitElement {
 
       .v1-nav-item.active {
         background: rgba(33, 150, 243, 0.12);
-        color: #2196f3;
+        color: var(--gm-info-color);
       }
 
       .v1-nav-item.active::before {
@@ -466,14 +466,14 @@ export class IrrigationDialog extends LitElement {
         top: 4px;
         bottom: 4px;
         width: 3px;
-        background: #2196f3;
+        background: var(--gm-info-color);
         border-radius: 0 2px 2px 0;
       }
 
       .nav-badge {
         margin-left: auto;
         background: rgba(33, 150, 243, 0.2);
-        color: #2196f3;
+        color: var(--gm-info-color);
         font-size: 10px;
         font-weight: 700;
         padding: 1px 6px;

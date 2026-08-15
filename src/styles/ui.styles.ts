@@ -255,7 +255,7 @@ export const uiStyles = css`
     left: 50%;
     transform: translateX(-50%);
     background: #323232;
-    color: #fff;
+    color: var(--text-primary);
     padding: 12px 24px;
     border-radius: var(--border-radius-full, 9999px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -271,12 +271,12 @@ export const uiStyles = css`
 
   .toast-notification.success {
     background: var(--success-color, #4caf50);
-    color: #fff;
+    color: var(--text-primary);
   }
 
   .toast-notification.error {
     background: var(--error-color, #f44336);
-    color: #fff;
+    color: var(--text-primary);
   }
 
   @keyframes slideUpFade {

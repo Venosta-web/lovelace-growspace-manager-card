@@ -851,7 +851,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         top: -2px;
         width: 2px;
         height: 10px;
-        background: #fff;
+        background: var(--text-primary);
         border-radius: var(--border-radius-xs, 4px);
         transform: translateX(-50%);
         box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);

@@ -53,7 +53,7 @@ export class StrainBrowseView extends LitElement {
     css`
       :host {
         display: contents;
-        --accent-green: #4caf50;
+        --accent-green: var(--gm-primary-color);
       }
 
       .sd-content {
@@ -206,7 +206,7 @@ export class StrainBrowseView extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #fff;
+        color: var(--text-primary);
         cursor: pointer;
       }
 
@@ -625,7 +625,7 @@ export class StrainBrowseView extends LitElement {
                 <div
                   style="
               position: absolute; top: 8px; right: 8px;
-              background: rgba(76,175,80,0.85); color: #fff;
+              background: rgba(76,175,80,0.85); color: var(--text-primary);
               border-radius: var(--border-radius-full, 9999px); padding: 2px 8px;
               font-size: var(--font-size-xs); font-weight: 600;
               backdrop-filter: blur(4px);
@@ -763,7 +763,7 @@ export class StrainBrowseView extends LitElement {
             </button>
             <button
               class="md3-button text"
-              style="color: #f44336;"
+              style="color: var(--gm-error-color);"
               @click=${() => this._confirmDelete()}
             >
               <svg
