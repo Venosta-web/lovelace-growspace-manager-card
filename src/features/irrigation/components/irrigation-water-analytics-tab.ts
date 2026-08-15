@@ -22,6 +22,7 @@
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import { token } from '../../../styles/variables';
 import type {
   WaterAnalyticsTabViewModel,
   WaterAnalyticsScheduleRow,
@@ -107,18 +108,18 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
         <div
           style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:0;"
         >
-          ${this._kpiCard('Cycles today', String(vm.cyclesToday), '', '#4fc3f7')}
+          ${this._kpiCard('Cycles today', String(vm.cyclesToday), '', token['--series-1'])}
           ${this._kpiCard(
             'Dispensed today',
             volToday > 0 ? volToday.toFixed(2) : '—',
             volToday > 0 ? 'L' : '',
-            '#81c784'
+            token['--series-2']
           )}
           ${lastCycle
             ? this._kpiCard('Last cycle', lastCycle, '', 'rgba(255,255,255,0.7)')
             : this._kpiCard('Last cycle', '—', '', 'rgba(255,255,255,0.4)')}
           ${nextCycle
-            ? this._kpiCard('Next cycle', nextCycle, '', '#ce93d8')
+            ? this._kpiCard('Next cycle', nextCycle, '', token['--series-3'])
             : this._kpiCard('Next cycle', '—', '', 'rgba(255,255,255,0.4)')}
         </div>
       </div>
@@ -140,10 +141,15 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
           style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;"
         >
           ${wu?.litersToday != null
-            ? this._kpiCard('Liters today', wu.litersToday.toFixed(1), 'L', '#4fc3f7')
+            ? this._kpiCard('Liters today', wu.litersToday.toFixed(1), 'L', token['--series-1'])
             : this._kpiCard('Liters today', '—', '', 'rgba(255,255,255,0.4)')}
           ${wu?.litersPerPlantPerDay != null
-            ? this._kpiCard('Per plant / day', wu.litersPerPlantPerDay.toFixed(2), 'L', '#81c784')
+            ? this._kpiCard(
+                'Per plant / day',
+                wu.litersPerPlantPerDay.toFixed(2),
+                'L',
+                token['--series-2']
+              )
             : this._kpiCard('Per plant / day', '—', '', 'rgba(255,255,255,0.4)')}
           ${wu?.waterEfficiency != null
             ? this._kpiCard(
@@ -151,10 +157,10 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                 (wu.waterEfficiency * 100).toFixed(0),
                 '%',
                 wu.waterEfficiency >= 0.85
-                  ? '#4caf50'
+                  ? token['--gm-primary-color']
                   : wu.waterEfficiency >= 0.65
-                    ? 'var(--gm-warning-color, #FF9800)'
-                    : '#f44336',
+                    ? token['--gm-warning-color']
+                    : token['--gm-error-color'],
                 wu.waterEfficiency >= 0.85
                   ? 'Excellent'
                   : wu.waterEfficiency >= 0.65
@@ -167,7 +173,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                 'Avg runoff',
                 avgRunoff.toFixed(1),
                 '%',
-                '#ce93d8',
+                token['--series-3'],
                 `from ${vm.readingsWithVolumesCount} reading${vm.readingsWithVolumesCount !== 1 ? 's' : ''}`
               )
             : this._kpiCard(
@@ -210,10 +216,10 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
           ${vm.tanks.map((tank) => {
             const pct = tank.fillLevel ?? 0;
             const c = tank.isWarning
-              ? '#f44336'
+              ? token['--gm-error-color']
               : (tank.hoursRemaining ?? 999) < 24
-                ? 'var(--gm-warning-color, #FF9800)'
-                : '#4caf50';
+                ? token['--gm-warning-color']
+                : token['--gm-primary-color'];
             return html`
               <div>
                 <div
@@ -284,25 +290,25 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
             'Consumed today',
             vm.tankLitersToday > 0 ? vm.tankLitersToday.toFixed(1) : '—',
             vm.tankLitersToday > 0 ? 'L' : '',
-            '#4fc3f7'
+            token['--series-1']
           )}
           ${this._kpiCard(
             'Last 7 days',
             vm.tankLiters7d > 0 ? vm.tankLiters7d.toFixed(1) : '—',
             vm.tankLiters7d > 0 ? 'L' : '',
-            '#81c784'
+            token['--series-2']
           )}
           ${this._kpiCard(
             'Avg per day',
             vm.tankAvgPerDay > 0 ? vm.tankAvgPerDay.toFixed(1) : '—',
             vm.tankAvgPerDay > 0 ? 'L/day' : '',
-            '#ce93d8'
+            token['--series-3']
           )}
           ${this._kpiCard(
             'Per plant / day',
             vm.tankLitersPerPlantPerDay > 0 ? vm.tankLitersPerPlantPerDay.toFixed(2) : '—',
             vm.tankLitersPerPlantPerDay > 0 ? 'L' : '',
-            '#81c784'
+            token['--series-2']
           )}
         </div>
         <div style="margin-bottom:6px;">
@@ -325,7 +331,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                 <div
                   title="${label} — ${b.liters.toFixed(2)} L"
                   style="flex:1;height:${Math.max(2, hp)}%;background:${b.liters > 0
-                    ? '#4fc3f7'
+                    ? token['--series-1']
                     : 'rgba(255,255,255,0.06)'};border-radius:2px 2px 0 0;min-width:0;"
                 ></div>
               `;
@@ -622,8 +628,8 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                     style="font-weight:700;color:${avgRunoff !== null &&
                     avgRunoff >= 15 &&
                     avgRunoff <= 35
-                      ? '#4caf50'
-                      : 'var(--gm-warning-color, #FF9800)'};"
+                      ? token['--gm-primary-color']
+                      : token['--gm-warning-color']};"
                   >
                     ${avgRunoff !== null ? avgRunoff.toFixed(1) + '%' : '—'}
                   </div>
@@ -657,8 +663,8 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                           <td style="text-align:right;padding:5px 8px;">${r.drainVolumeMl}</td>
                           <td
                             style="text-align:right;padding:5px 8px;font-weight:600;color:${runoffOk
-                              ? '#4caf50'
-                              : 'var(--gm-warning-color, #FF9800)'};"
+                              ? token['--gm-primary-color']
+                              : token['--gm-warning-color']};"
                           >
                             ${r.runoff !== null ? r.runoff.toFixed(1) + '%' : '—'}
                           </td>
@@ -684,7 +690,9 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
       >
         <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
           <div style="flex:1;">
-            <h3 style="margin:0;color:var(--gm-error-color);border:none;padding:0;font-size:1.1rem;">
+            <h3
+              style="margin:0;color:var(--gm-error-color);border:none;padding:0;font-size:1.1rem;"
+            >
               Maintenance
             </h3>
             <p style="margin:4px 0 0 0;font-size:0.85rem;opacity:0.7;line-height:1.4;">
