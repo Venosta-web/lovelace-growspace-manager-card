@@ -453,7 +453,7 @@ describe('BatchPrintLabelDialog – render', () => {
     await el.updateComplete;
     const bar = el.shadowRoot!.querySelector('.progress-bar') as HTMLElement;
     expect(bar).not.toBeNull();
-    expect(bar.style.width).toBe('45%');
+    expect(bar.style.transform).toBe('scaleX(0.45)');
   });
 
   it('handles printer selection and copies input', async () => {

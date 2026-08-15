@@ -497,7 +497,7 @@ describe('edge cases and fallback logic', () => {
 
     const item1 = el.shadowRoot!.querySelector('[data-stock-id="n1"]')!;
     const bar1 = item1.querySelector('.fill-bar') as HTMLElement;
-    expect(bar1.style.width).toBe('0%');
+    expect(bar1.style.transform).toBe('scaleX(0)');
 
     const item2 = el.shadowRoot!.querySelector('[data-stock-id="n2"]')!;
     const bar2 = item2.querySelector('.fill-bar') as HTMLElement;
@@ -505,11 +505,11 @@ describe('edge cases and fallback logic', () => {
 
     const item3 = el.shadowRoot!.querySelector('[data-stock-id="n3"]')!;
     const bar3 = item3.querySelector('.fill-bar') as HTMLElement;
-    expect(bar3.style.width).toBe('100%');
+    expect(bar3.style.transform).toBe('scaleX(1)');
 
     const item4 = el.shadowRoot!.querySelector('[data-stock-id="n4"]')!;
     const bar4 = item4.querySelector('.fill-bar') as HTMLElement;
-    expect(bar4.style.width).toBe('0%');
+    expect(bar4.style.transform).toBe('scaleX(0)');
   });
 
   it('handles draftFromStock fallbacks when optional fields are missing', async () => {

@@ -76,7 +76,10 @@ export class BatchPrintLabelDialog extends LitElement {
       .progress-bar {
         background: var(--primary-color, #4caf50);
         height: 100%;
-        transition: width 0.3s ease;
+        width: 100%;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
       }
       .size-chips {
         display: flex;
@@ -290,7 +293,7 @@ export class BatchPrintLabelDialog extends LitElement {
           ${this._isSubmitting
             ? html`
                 <div class="progress-bar-wrap">
-                  <div class="progress-bar" style="width: ${this._progress}%"></div>
+                  <div class="progress-bar" style="transform: scaleX(${this._progress / 100})"></div>
                 </div>
               `
             : nothing}
