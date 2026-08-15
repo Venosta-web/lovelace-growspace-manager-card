@@ -43,9 +43,9 @@ them are "group 1 or 2" by hue. The distribution of the ~341:
 
 | Binding context | Occurrences | Can a CSS token reach it? |
 | --- | --- | --- |
-| CSS declarations in `css` templates | 185 | Yes |
-| JS data strings (viewmodels, constants, models) | 95 | No — `var()` is inert here |
-| Inline `style=` attributes in templates | 34 | Yes, within the component's shadow root |
+| CSS declarations in `css` templates | 145 | Yes |
+| JS data strings (viewmodels, constants, models) | 133 | No — `var()` is inert here |
+| Inline `style=` attributes in templates | 36 | Yes, within the component's shadow root |
 | Gradient stops | 27 | Yes |
 
 These counts are `scripts/audit-design-tokens.mjs`'s output, which is authoritative — re-run it rather than quoting this table.
@@ -107,12 +107,13 @@ The alternative, `unsafeCSS(tokens.surface)` interpolation in a hand-written
 used nowhere in this repo today and it puts every token value behind a call.
 Rejected as a new pattern bought for a problem the no-op check already closes.
 
-### 4. There is a JS-side seam, because 95 literals are not CSS
+### 4. There is a JS-side seam, because 133 literals are not CSS
 
 `features/environment/constants.ts`, `overview-tab.viewmodel.ts`,
 `schedules-tab.viewmodel.ts`, `crop-steering-model.ts` and
 `genetics-tree-view.ts`'s generation map hold colours as plain data. `var()` is
-inert in most of these. Importing named constants from `tokens.ts` is what makes
+inert in most of these. At 133 of 341 they are the second-largest bucket — nearly
+forty percent of the backlog sits where no CSS token can reach. Importing named constants from `tokens.ts` is what makes
 this bucket migratable at all, and it makes the viewmodels testable against names
 instead of hexes.
 
@@ -243,7 +244,7 @@ issues; each should say so, or someone will think it is already done.
   drift from the palette — generation fixes the structured half only.
 - Folding `#ff5252` into `#ef5350` is a visible colour change at 11 sites and
   breaks `env-series.test.ts:60`.
-- The 95 JS-layer literals become imports, so a colour change in `tokens.ts` now
+- The 133 JS-layer literals become imports, so a colour change in `tokens.ts` now
   reaches viewmodel logic and can move snapshot and unit assertions that currently
   hardcode hexes.
 - Until #579 lands, `src/dialogs/*` keeps the `var(--token, #hex)` form and the
