@@ -398,7 +398,7 @@ Three composites exist for whole-element transitions — `--transition` (short4)
 
 **Fill bars.** Any proportional readout — progress bars, tank levels, inventory fills — is a fixed **track** with a scaled **fill**. The track owns the geometry (height, `overflow: hidden`, radius); the fill is `transform: scaleX(<fraction>)` from `transform-origin: left` at `--md3-motion-duration-medium2`, and carries **no radius of its own** — the track already clips to shape, and `scaleX` distorts a corner radius horizontally. Never animate the fill's `width`: it forces layout on every frame, and on a readout that re-renders per sensor tick it restarts the transition each time.
 
-Three sites deviate deliberately and say why at the call site: the tank card's liquid (children pinned to the animated edge), the strain hue-genetics bar (two flex segments splitting one track, so there is no fixed track to scale against), and the alert dot's `pulse-alert` keyframes. See ADR 0037.
+Two sites deviate deliberately and say why at the call site: the tank card's liquid, whose meniscus and wave children are pinned to the animated edge and would flatten under `scaleY`; and the strain hue-genetics bar, where two flex segments split one track so there is no fixed track to scale against. See ADR 0037.
 
 ## 4. Component Stylings
 

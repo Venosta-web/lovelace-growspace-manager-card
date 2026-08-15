@@ -26,7 +26,7 @@ missing runtime step. There are three separate problems:
    reasonably concludes there isn't one.
 2. Consequently the fill bars never adopted it. The card's eight progress/fill
    bars carry five ad-hoc timings between them, none of them a token.
-3. `DESIGN.md` line 391 documents the plant-tile easing as
+3. `DESIGN.md` documents the plant-tile hover easing as
    `cubic-bezier(0.4, 0, 0.2, 1)` — the MD2-legacy curve — while
    `--md3-motion-easing-standard` is `cubic-bezier(0.2, 0, 0, 1)`. The doc
    describes a curve the card does not render.
@@ -84,7 +84,7 @@ Motion section says so, because the next person to notice will otherwise "fix" i
 
 ### 1b. The documented easing is corrected to match the runtime
 
-`DESIGN.md` line 391's `cubic-bezier(0.4, 0, 0.2, 1)` becomes
+The plant-tile hover paragraph's `cubic-bezier(0.4, 0, 0.2, 1)` becomes
 `cubic-bezier(0.2, 0, 0, 1)`.
 
 **Rejected: changing the token to match the doc.** The token is what 12 call sites
@@ -113,9 +113,9 @@ adopt the pattern for **consistency**, so the card has one fill-bar idiom rather
 than two. That is the honest argument for those four, and the PR says so rather
 than claiming a performance win it cannot measure.
 
-### 3. Three named exceptions, documented where they live
+### 3. Two named exceptions, plus one deletion
 
-Not every layout transition should become a transform. Three do not, and each
+Not every layout transition should become a transform. Two keep theirs, and each
 carries its reason as an inline `impeccable-disable-line` comment at the call
 site rather than in this document:
 
@@ -186,7 +186,7 @@ moment one of those files changes.
 - **Not covered here:** `src/styles/dialog.styles.ts` declares no
   `prefers-reduced-motion` block, so the 57 files importing it — including seven
   of the eight touched by this work — do not honour the user's motion preference.
-  `DESIGN.md` line 463 currently claims otherwise. That is a WCAG 2.3.3
+  `DESIGN.md`'s Reduced Motion paragraph claimed otherwise. That is a WCAG 2.3.3
   conformance gap with a far wider blast radius than these findings, tracked as
   **#611** rather than folded in here. This ADR's PR corrects the DESIGN.md claim
   to state the real coverage; #611 closes the gap itself.
