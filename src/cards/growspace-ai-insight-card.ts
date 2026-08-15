@@ -95,7 +95,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       }
       .ai-title {
         margin: 0;
-        font-size: 1.4rem;
+        font-size: var(--font-size-xl);
         font-weight: 600;
         color: var(--primary-text-color, #ffffff);
       }
@@ -110,7 +110,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
         border-radius: 12px;
         padding: 20px;
         line-height: 1.6;
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         white-space: pre-wrap;
         margin-top: 20px;
         color: var(--primary-text-color, #ffffff);

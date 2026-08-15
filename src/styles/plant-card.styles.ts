@@ -169,7 +169,7 @@ export const plantCardStyles = css`
     border: 1px solid rgba(255, 255, 255, 0.12);
     padding: 2px 7px;
     border-radius: 999px;
-    font-size: 0.65rem;
+    font-size: var(--font-size-xs);
     font-variant-numeric: tabular-nums;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.9);

@@ -95,7 +95,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
       }
 
       .avg-badge {
-        font-size: 0.82rem;
+        font-size: var(--font-size-supporting);
         opacity: 0.5;
       }
 
@@ -140,7 +140,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
 
       .tank-header h4 {
         margin: 0 0 4px;
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         font-weight: 500;
         color: rgba(255, 255, 255, 0.9);
       }
@@ -361,7 +361,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
 
       .depletion-label {
         display: inline-block;
-        font-size: 0.72rem;
+        font-size: var(--font-size-xs);
         border-radius: var(--border-radius-md, 12px);
         padding: 2px 7px;
         margin-top: 4px;
@@ -496,7 +496,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
               ? html`
                   <div class="empty-state">
                     No irrigation tanks configured for this growspace.<br />
-                    <span style="font-size: 0.82rem; opacity: 0.7;"
+                    <span style="font-size: var(--font-size-supporting); opacity: 0.7;"
                       >Add tank sensors in Environment Settings to monitor levels.</span
                     >
                   </div>

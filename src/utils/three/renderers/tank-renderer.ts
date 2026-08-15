@@ -153,7 +153,7 @@ export class TankRenderer extends BaseRenderer {
                     <div class="sensor-icon" style="background: ${hex}33; border-color: ${hex}">
                         <ha-icon icon="mdi:barrel" style="color: ${hex}; --mdc-icon-size: 10px"></ha-icon>
                     </div>
-                    <span style="color: white; font-weight: 800; font-size: 13px;">${Math.round(fill)}%</span>
+                    <span style="color: white; font-weight: 800; font-size: var(--font-size-supporting);">${Math.round(fill)}%</span>
                 `;
         if (label.element.innerHTML !== newHTML) label.element.innerHTML = newHTML;
       }
