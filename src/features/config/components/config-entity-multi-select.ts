@@ -106,10 +106,11 @@ export class ConfigEntityMultiSelect extends LitElement {
       opacity: 1;
     }
 
+    /* The add-entity input is the only affordance here; give it a real target. */
     input {
       flex: 1;
       min-width: 100px;
-      height: 24px;
+      min-height: 44px;
       margin: 0;
       padding: 0;
       border: 0;
@@ -118,14 +119,6 @@ export class ConfigEntityMultiSelect extends LitElement {
       color: var(--primary-text-color, #fff);
       font: inherit;
       font-size: 1rem;
-    }
-
-    /* The add-entity input is the only affordance here; give it a real target. */
-    @media (max-width: 560px) {
-      input {
-        height: auto;
-        min-height: 44px;
-      }
     }
 
     ${reducedMotion}

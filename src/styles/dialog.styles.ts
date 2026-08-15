@@ -113,26 +113,17 @@ export const dialogStyles = [
 
     .config-reset-button {
       align-self: flex-start;
-      height: 40px;
+      min-height: 44px;
       min-width: 0;
       padding: 0 16px;
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.2));
       color: var(--primary-text-color, #fff);
     }
 
-    /*
-     * Phone-width tap floors. Scoped to the breakpoint on purpose: the desktop
-     * Climate tab has a height budget (#540) that unconditional 44px floors blow.
-     */
-    @media (max-width: 560px) {
-      .detail-card .md3-button {
-        min-height: 44px;
-        min-width: 44px;
-      }
-      .config-reset-button {
-        height: auto;
-        min-height: 44px;
-      }
+    /* Tap floors hold at every width — a 44px target is not a phone-only need. */
+    .detail-card .md3-button {
+      min-height: 44px;
+      min-width: 44px;
     }
 
     .vwc-targets-group {

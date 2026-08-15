@@ -149,7 +149,12 @@ describe('ConfigClimateTab — render', () => {
     expect(accordion.shadowRoot!.querySelector('.current-stage')).not.toBeNull();
   });
 
-  it('keeps the desktop Climate tab below 1200px with stage rows collapsed', async () => {
+  /*
+   * Raised from 1200px in #545: the 44px tap floors apply at every width, so the
+   * accordion heads, tab buttons and checkbox rows are taller than #540 sized them.
+   * Still a real budget — it holds the tab to roughly two desktop screens.
+   */
+  it('keeps the desktop Climate tab below 1300px with stage rows collapsed', async () => {
     const el = await mount(makeVm({ stageVpd: { ...makeVm().stageVpd, visible: true } }));
     el.style.width = '648px';
 
@@ -161,7 +166,7 @@ describe('ConfigClimateTab — render', () => {
       (header) => header.scrollWidth <= header.clientWidth
     );
     expect(el.getBoundingClientRect().height, `section heights: ${cards.join(', ')}`).toBeLessThan(
-      1200
+      1300
     );
     expect(headersFit).toBe(true);
   });

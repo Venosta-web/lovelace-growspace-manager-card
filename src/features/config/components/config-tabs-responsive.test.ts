@@ -359,6 +359,37 @@ function collisionsIn(pane: Element): string[] {
   return collisions;
 }
 
+/** Interactive controls rendering below the 44x44 floor. */
+function undersizedIn(pane: Element): string[] {
+  const tooSmall: string[] = [];
+  for (const el of interactives(pane)) {
+    const r = el.getBoundingClientRect();
+    // Checkboxes are activated through their 44px-tall label wrapper.
+    if (el instanceof HTMLInputElement && el.type === 'checkbox') continue;
+    if (r.height < TAP_TARGET || r.width < TAP_TARGET) {
+      tooSmall.push(
+        `${el.tagName.toLowerCase()}.${el.className || '-'} ${Math.round(r.width)}x${Math.round(r.height)}`
+      );
+    }
+  }
+  return tooSmall;
+}
+
+/** Controls whose box escapes the pane horizontally. */
+function outsideOf(pane: Element): string[] {
+  const paneRect = pane.getBoundingClientRect();
+  const outside: string[] = [];
+  for (const el of interactives(pane)) {
+    const r = el.getBoundingClientRect();
+    if (r.right > paneRect.right + 1 || r.left < paneRect.left - 1) {
+      outside.push(
+        `${el.tagName.toLowerCase()}.${el.className || '-'} at ${Math.round(r.left)}..${Math.round(r.right)}`
+      );
+    }
+  }
+  return outside;
+}
+
 beforeEach(async () => {
   await page.viewport(PHONE.width, PHONE.height);
 });
@@ -378,28 +409,25 @@ describe.each(TABS)('$name tab at 390x844', ({ tag, vm }) => {
 
   it('keeps every control inside the pane and at a 44px tap target', async () => {
     const pane = await mountTab(tag, vm());
-    // The tap floors live behind a 560px media query, which resolves against the
-    // viewport. Without this guard the assertions below would pass vacuously if
-    // the body ever ran at desktop width (every control would simply be smaller).
     expect(window.innerWidth).toBe(PHONE.width);
-    const paneRect = pane.getBoundingClientRect();
 
-    const tooSmall: string[] = [];
-    const outside: string[] = [];
-    for (const el of interactives(pane)) {
-      const r = el.getBoundingClientRect();
-      const label = `${el.tagName.toLowerCase()}.${el.className || '-'}`;
-      // Checkboxes are activated through their 44px-tall label wrapper.
-      const isCheckbox = el instanceof HTMLInputElement && el.type === 'checkbox';
-      if (!isCheckbox && (r.height < TAP_TARGET || r.width < TAP_TARGET)) {
-        tooSmall.push(`${label} ${Math.round(r.width)}x${Math.round(r.height)}`);
-      }
-      if (r.right > paneRect.right + 1 || r.left < paneRect.left - 1) {
-        outside.push(`${label} at ${Math.round(r.left)}..${Math.round(r.right)}`);
-      }
-    }
-    expect(tooSmall).toEqual([]);
-    expect(outside).toEqual([]);
+    expect(undersizedIn(pane)).toEqual([]);
+    expect(outsideOf(pane)).toEqual([]);
+  });
+});
+
+/*
+ * The tap floors are deliberately unconditional rather than behind the phone
+ * breakpoint, so they must survive at desktop width too. This is the test that
+ * fails if someone reintroduces a media query to win back vertical density.
+ */
+describe.each(TABS)('$name tab at desktop width', ({ tag, vm }) => {
+  it('still meets the 44px tap target', async () => {
+    await page.viewport(1280, 720);
+    const pane = await mountTab(tag, vm(), 648);
+    expect(window.innerWidth).toBe(1280);
+
+    expect(undersizedIn(pane)).toEqual([]);
   });
 });
 
