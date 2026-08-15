@@ -64,6 +64,7 @@ export const variables: CSSResult = css`
 
     /* MD3 Motion Tokens */
     --md3-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+    /* Equal to easing-standard by design — MD3's emphasized spline has no single-bezier form */
     --md3-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
     --md3-motion-duration-short1: 50ms;
     --md3-motion-duration-short2: 100ms;
@@ -260,6 +261,7 @@ export const portalVariables: CSSResult = css`
 
     /* MD3 Motion Tokens */
     --md3-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+    /* Equal to easing-standard by design — MD3's emphasized spline has no single-bezier form */
     --md3-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
     --md3-motion-duration-short1: 50ms;
     --md3-motion-duration-short2: 100ms;

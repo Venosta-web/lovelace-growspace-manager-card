@@ -209,6 +209,19 @@ spacing:
   gutter: 16px
   margin-mobile: 12px
   margin-desktop: 24px
+motion:
+  # MD3 Motion Tokens
+  easing-standard: 'cubic-bezier(0.2, 0, 0, 1)'
+  # Equal to easing-standard by design — MD3's emphasized spline has no single-bezier form
+  easing-emphasized: 'cubic-bezier(0.2, 0, 0, 1)'
+  duration-short1: 50ms
+  duration-short2: 100ms
+  duration-short3: 150ms
+  duration-short4: 200ms
+  duration-medium1: 250ms
+  duration-medium2: 300ms
+  duration-long1: 400ms
+  duration-long2: 500ms
 ---
 
 # Design System: Growspace Manager Card
@@ -375,6 +388,18 @@ Elevation exception for the modal's broader `0 8px 32px rgba(0,0,0,0.37)` shadow
 - Letter-spacing on supporting text / labels: `0.4–0.5px` (slight optical expansion for de-emphasized hierarchy).
 - Line-height on dense header elements: `1.1` (display); body: `1.4–1.5` (readable).
 
+### Motion
+
+Motion is on the **MD3 scale**, generated into the `motion:` frontmatter above from `tokens.ts` like every other token group. Durations run `short1`–`short4` (50/100/150/200ms), `medium1`–`medium2` (250/300ms), `long1`–`long2` (400/500ms). Reach for a step, not a literal — a bare `0.3s` in a transition is drift, the same way a bare `13px` font-size is.
+
+The two easings, `--md3-motion-easing-standard` and `--md3-motion-easing-emphasized`, hold the **same value** — `cubic-bezier(0.2, 0, 0, 1)`. That is deliberate, not a copy-paste: MD3's emphasized curve is a two-part spline that a single CSS `cubic-bezier()` cannot express, so Material Web collapses it to the standard curve. Do not "fix" it.
+
+Three composites exist for whole-element transitions — `--transition` (short4), `--transition-fast` (short2), `--transition-medium` (medium2), each already carrying the standard easing.
+
+**Fill bars.** Any proportional readout — progress bars, tank levels, inventory fills — is a fixed **track** with a scaled **fill**. The track owns the geometry (height, `overflow: hidden`, radius); the fill is `transform: scaleX(<fraction>)` from `transform-origin: left` at `--md3-motion-duration-medium2`, and carries **no radius of its own** — the track already clips to shape, and `scaleX` distorts a corner radius horizontally. Never animate the fill's `width`: it forces layout on every frame, and on a readout that re-renders per sensor tick it restarts the transition each time.
+
+Two sites deviate deliberately and say why at the call site: the tank card's liquid, whose meniscus and wave children are pinned to the animated edge and would flatten under `scaleY`; and the strain hue-genetics bar, where two flex segments split one track so there is no fixed track to scale against. See ADR 0037.
+
 ## 4. Component Stylings
 
 ### Buttons (MD3 `.md3-button` system)
@@ -398,7 +423,7 @@ The hero component. Square aspect-ratio tiles arranged in a CSS grid. Each tile 
 
 The tile's `::before` pseudo-element renders a **3px stage-color accent bar** across the full top edge (rounded top corners matching the card). This is the fastest visual signal for stage — visible at any zoom level.
 
-On hover: `translateY(-4px)` lift + shadow from `0 4px 6px` to `0 8px 16px`. Transition: `0.3s cubic-bezier(0.4, 0, 0.2, 1)`. Status icons (training, watering, IPM, PHI badges) fade in on hover at `opacity: 1`.
+On hover: `translateY(-4px)` lift + shadow from `0 4px 6px` to `0 8px 16px`. Transition: `--md3-motion-duration-medium2` (300ms) at `--md3-motion-easing-standard`, `cubic-bezier(0.2, 0, 0, 1)`. Status icons (training, watering, IPM, PHI badges) fade in on hover at `opacity: 1`.
 
 **Age pill** (top-left): frosted glass pill (`rgba(0,0,0,0.55)`, `backdrop-filter: blur(6px)`), hairline border, pill-radius 999px, 0.6875rem tabular-nums.
 
@@ -470,7 +495,11 @@ Breakpoints: 600px (mobile reflow), 450px (dialog full-screen). The system is **
 
 Touch targets: checkbox overlays use 44×44px touch area (24px icon + 10px padding all sides). Status icons use `::before { inset: -10px }` to achieve 44px tap area without visual size change — WCAG 2.5.8 compliant. FAB is 56×56px. All interactive buttons 40px height minimum.
 
-`@media (prefers-reduced-motion: reduce)` is applied globally: all animation-duration collapsed to `0.01ms`, transforms on hover disabled. Every interactive component respects this — components with their own constructed stylesheet (they do not inherit the global block through shadow DOM) carry their own `reduce` block: `growspace-chip`, `growspace-header-hero-ui`, `growspace-header-actions-ui`, `plant-card`, `base-dialog`.
+`@media (prefers-reduced-motion: reduce)` collapses animation-duration and transition-duration to `0.01ms` and disables hover transforms. Shadow DOM does not inherit a document-level block, so coverage is per-stylesheet, and it is **not yet complete**.
+
+Covered: everything importing `ui.styles.ts`, `plant-card.styles.ts` or `growspace-card.styles.ts`, plus the components carrying their own `reduce` block — `growspace-chip`, `growspace-header-hero-ui`, `growspace-header-actions-ui`, `base-dialog`, `growspace-task-bar`, `config-stage-accordion`.
+
+**Not covered:** `dialog.styles.ts` declares no `reduce` block, so the 57 components whose styles are `[dialogStyles, …]` and nothing else do not honour the preference. `chat-panel` imports no shared stylesheet and is likewise uncovered. This is a WCAG 2.3.3 gap tracked as **#611**; this paragraph will need updating when it closes.
 
 ### Contrast Target
 
