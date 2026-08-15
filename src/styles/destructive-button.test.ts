@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 /**
  * The guard behind #550: a destructive button that renders in the primary accent
  * is indistinguishable from the "go ahead" button next to it, and the class that
