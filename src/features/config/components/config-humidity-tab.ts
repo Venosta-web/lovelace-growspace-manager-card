@@ -91,11 +91,11 @@ export class ConfigHumidityTab extends LitElement {
       }
       .acc-head-title {
         flex: 1;
-        font-size: 0.9rem;
+        font-size: 1rem;
         font-weight: 500;
       }
       .acc-head-desc {
-        font-size: 0.775rem;
+        font-size: 0.857143rem;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
       }
       .acc-chev {
@@ -132,7 +132,7 @@ export class ConfigHumidityTab extends LitElement {
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 0.875rem;
+        font-size: 1rem;
         font-weight: 500;
         padding-bottom: 8px;
         border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.06));

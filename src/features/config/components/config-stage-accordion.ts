@@ -76,7 +76,7 @@ export class ConfigStageAccordion extends LitElement {
     }
     .acc-head-title {
       flex: 1;
-      font-size: 0.9rem;
+      font-size: 1rem;
       font-weight: 500;
     }
     .current-stage {
@@ -85,7 +85,7 @@ export class ConfigStageAccordion extends LitElement {
     }
     .current-label {
       color: var(--primary-text-color, #fff);
-      font-size: 0.6875rem;
+      font-size: 0.785714rem;
       font-weight: 500;
       letter-spacing: 0.5px;
       text-transform: uppercase;
@@ -121,7 +121,7 @@ export class ConfigStageAccordion extends LitElement {
       height: 8px;
     }
     :host([compact]) .acc-head-title {
-      font-size: 0.75rem;
+      font-size: 0.857143rem;
     }
     :host([compact]) .current-label {
       grid-column: 3;

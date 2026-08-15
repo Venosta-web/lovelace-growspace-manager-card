@@ -30,7 +30,7 @@ export class ConfigSectionHeader extends LitElement {
       border: 0;
       color: var(--primary-text-color, #fff);
       font: inherit;
-      font-size: 1rem;
+      font-size: 1.142857rem;
       font-weight: 500;
       line-height: 1.3;
     }

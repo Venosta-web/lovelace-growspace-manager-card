@@ -99,7 +99,7 @@ export class ConfigClimateTab extends LitElement {
       }
       .stage-vpd-summary {
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-        font-size: 0.6875rem;
+        font-size: 0.785714rem;
         font-variant-numeric: tabular-nums;
         text-align: right;
         white-space: nowrap;
@@ -117,7 +117,7 @@ export class ConfigClimateTab extends LitElement {
       .stage-vpd-controller h4 {
         margin: 0;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-        font-size: 0.75rem;
+        font-size: 0.857143rem;
         font-weight: 500;
       }
       .stage-vpd-actions {
@@ -148,7 +148,7 @@ export class ConfigClimateTab extends LitElement {
         min-width: 0;
         margin: 0;
         color: var(--primary-text-color, #fff);
-        font-size: 0.875rem;
+        font-size: 1rem;
         font-weight: 500;
       }
       .critical-temperature__title svg {
@@ -160,13 +160,13 @@ export class ConfigClimateTab extends LitElement {
       .critical-temperature__reading {
         flex: none;
         color: var(--primary-text-color, #fff);
-        font-size: 0.75rem;
+        font-size: 0.857143rem;
         font-variant-numeric: tabular-nums;
       }
       .critical-temperature__note {
         margin: 0;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-        font-size: 0.75rem;
+        font-size: 0.857143rem;
         line-height: 1.5;
         overflow-wrap: anywhere;
       }

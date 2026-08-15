@@ -67,7 +67,7 @@ export class ConfigTanksTab extends LitElement {
         </config-section-header>
 
         ${this.vm.showEmpty
-          ? html`<div style="font-size:0.85rem;color:var(--secondary-text-color);padding:8px 0;">
+          ? html`<div style="font-size:1rem;color:var(--secondary-text-color);padding:8px 0;">
               No tanks configured.
             </div>`
           : nothing}
@@ -91,7 +91,7 @@ export class ConfigTanksTab extends LitElement {
             ${tank.displayName}
           </div>
           <div
-            style="font-size:0.78rem;color:var(--secondary-text-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+            style="font-size:0.857143rem;color:var(--secondary-text-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
             title=${tank.sensorEntity}
           >
             ${tank.sensorEntity}

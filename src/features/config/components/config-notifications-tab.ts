@@ -100,7 +100,7 @@ export class ConfigNotificationsTab extends LitElement {
         border: 1px solid transparent;
         cursor: pointer;
         transition: all 0.15s;
-        font-size: 0.875rem;
+        font-size: 1rem;
       }
       .cfg-gs-row:hover {
         background: rgba(255, 255, 255, 0.04);
@@ -300,7 +300,7 @@ export class ConfigNotificationsTab extends LitElement {
                   </button>
                   <button
                     class="md3-button primary"
-                    style="background:var(--error-color,#ff5252);"
+                    style="background:var(--error-color,#f44336);"
                     @click=${() => this._emit('confirm-delete-timed')}
                   >
                     Delete
@@ -385,7 +385,7 @@ export class ConfigNotificationsTab extends LitElement {
 
     return html`
       <div class="inline-panel" style="margin-bottom:12px;">
-        <h4 style="margin:0 0 12px;font-size:0.9rem;font-weight:600;">
+        <h4 style="margin:0 0 12px;font-size:1rem;font-weight:600;">
           ${isAdding ? 'Add Timed Notification' : 'Edit Timed Notification'}
         </h4>
 
@@ -436,7 +436,7 @@ export class ConfigNotificationsTab extends LitElement {
             : html`
                 <div
                   data-timed-unknown-hint
-                  style="font-size:0.75rem;color:var(--warning-color,#ffa726);margin-top:4px;"
+                  style="font-size:0.857143rem;color:var(--warning-color,#ffa726);margin-top:4px;"
                 >
                   This notification's stored trigger is not one this card recognises. It is kept as
                   is unless you pick a stage.
