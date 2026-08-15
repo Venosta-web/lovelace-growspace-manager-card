@@ -1,7 +1,7 @@
 ---
 name: Growspace Manager Card
 colors:
-  # Primary surfaces — dark carbon shell
+  # Surfaces — dark carbon shell
   surface: '#1e1e1e'
   surface-dim: '#141414'
   surface-bright: '#252525'
@@ -20,11 +20,18 @@ colors:
   surface-overlay-subtle: 'rgba(0,0,0,0.1)'
   surface-overlay-recessed: 'rgba(0,0,0,0.15)'
   surface-overlay-strong: 'rgba(0,0,0,0.2)'
+  background: '#1e1e1e'
+  on-background: '#ffffff'
+  surface-variant: 'rgba(255,255,255,0.05)'
   # Primary — Vitality Green
   primary: '#4caf50'
   on-primary: '#ffffff'
   primary-container: 'rgba(76,175,80,0.15)'
   on-primary-container: '#4caf50'
+  # Foreground on translucent-green containers. `on-primary-container` (#4caf50) over
+  # rgba(76,175,80,0.2) on #1e1e1e is 4.26:1 — below AA for normal text; this is 8.36:1.
+  # Do not "correct" it back to #4caf50.
+  on-primary-container-bright: '#69f0ae'
   inverse-primary: '#45a049'
   # Secondary — Hydro Blue
   secondary: '#2196f3'
@@ -36,19 +43,59 @@ colors:
   on-tertiary: '#1e1e1e'
   tertiary-container: 'rgba(255,235,59,0.05)'
   on-tertiary-container: '#ffeb3b'
-  # Error
+  # Text roles — The documented text hierarchy. Each defers to the Home Assistant theme
+  # first and falls back to the canonical dark-theme value — it is that FORM, not the
+  # alpha value, that survives a light theme, so these are safe to use bare. The alphas
+  # below are the values an ad-hoc fallback should normalise to; a flat grey like #666 is
+  # what they replace. Note --text-muted collapses onto --secondary-text-color under a
+  # custom HA theme: HA has no muted role, and correctness in both themes beats a third
+  # tier that only exists in the default one.
+  # --growspace-card-text is an older alias for this same role; consolidate during the
+  # #574 migration.
+  text-primary: 'var(--primary-text-color, #ffffff)'
+  text-secondary: 'rgba(255,255,255,0.7)'
+  text-muted: 'rgba(255,255,255,0.55)'
+  text-disabled: 'rgba(255,255,255,0.38)'
+  # Series — categorical chart and KPI accents — Ordinal, not semantic: call sites assign
+  # them positionally, not per metric. Use in order. Deliberately not derived from the
+  # primaries with color-mix — see ADR 0035.
+  series-1: '#4fc3f7'
+  series-2: '#81c784'
+  series-3: '#ce93d8'
+  series-4: '#a5d6a7'
+  # Plant Stage Colors
+  stage-veg: '#4caf50'
+  stage-flower: '#ff9800'
+  # Also IPM activity
+  stage-dry: '#9c27b0'
+  stage-cure: '#2196f3'
+  stage-seedling: '#8bc34a'
+  stage-clone: '#26c6da'
+  stage-mother: '#e91e63'
+  stage-flower-early: '#ff9800'
+  stage-flower-mid: '#fb8c00'
+  stage-flower-late: '#ef6c00'
+  # Error/Warning Colors
   error: '#f44336'
-  on-error: '#ffffff'
   error-container: 'rgba(244,67,54,0.1)'
+  # The dark stop of the danger gradient, and the pressed/hover state of destructive
+  # buttons. Two call sites reach for `var(--error-color-dark, …)`, which is not in the HA
+  # theme set the card relies on — confirm against a live instance before dropping their
+  # fallback.
+  error-dark: '#d32f2f'
+  # Lighter danger for chip context, distinct from --error-color. #ff5252 folds into this
+  # — see ADR 0035.
+  danger-chip: '#ef5350'
+  on-error: '#ffffff'
   on-error-container: '#f44336'
-  # Warning — functional state, distinct from the Flowering stage
+  # Functional state, distinct from the Flowering stage
   warning: '#ffa726'
   on-warning: '#1e1e1e'
   # Mid-flower crop phase and Bulk EC trace
   mid-flower: '#ff7043'
-  # Operational status — the three StatusLevel levels, as consumed by
-  # src/styles/status.styles.ts. Each level is hue + fill + outline; status text
-  # itself is never tinted, so it survives a light Home Assistant theme.
+  # Operational status — The three StatusLevel levels, as consumed by
+  # src/styles/status.styles.ts. Each level is hue + fill + outline; status text itself is
+  # never tinted, so it survives a light Home Assistant theme.
   status-optimal: '#4caf50'
   status-optimal-fill: 'color-mix(in srgb, #4caf50 10%, transparent)'
   status-optimal-outline: 'color-mix(in srgb, #4caf50 45%, transparent)'
@@ -58,15 +105,13 @@ colors:
   status-danger: '#f44336'
   status-danger-fill: 'color-mix(in srgb, #f44336 14%, transparent)'
   status-danger-outline: 'color-mix(in srgb, #f44336 70%, transparent)'
-  # AC Infinity integration conflicts, pre-fill failures, and duplicate ports
+  # Integration conflict — AC Infinity integration conflicts, pre-fill failures, and
+  # duplicate ports
   integration-conflict: '#e6a700'
   integration-conflict-container: 'rgba(230,167,0,0.1)'
   integration-conflict-outline: 'rgba(230,167,0,0.35)'
-  # Background / global
-  background: '#1e1e1e'
-  on-background: '#ffffff'
-  surface-variant: 'rgba(255,255,255,0.05)'
 typography:
+  # Typography steps (documented only — composed at call sites)
   display-lg:
     fontFamily: Roboto
     fontSize: 28px
@@ -129,16 +174,20 @@ typography:
     lineHeight: '1.4'
     letterSpacing: '0'
 rounded:
+  # Border Radius (MD3 shape system)
   xs: 0.25rem
   sm: 0.5rem
   DEFAULT: 0.75rem
   md: 0.75rem
   lg: 1rem
   xl: 1.75rem
+  # Pills and fully-round badges. Implemented by #564 after call sites had drifted to
+  # ad-hoc 20px/999px values.
   full: 9999px
   # Named exception: filled fields retain a nearly flat lower edge
   filled-field-bottom: 0.125rem
 elevation:
+  # MD3 Elevation Levels
   level-0: none
   level-1: '0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15)'
   level-2: '0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15)'
@@ -148,6 +197,7 @@ elevation:
   # Named exception: broad, soft modal separation for glass dialogs
   glass-dialog: '0 8px 32px rgba(0,0,0,0.37)'
 spacing:
+  # Spacing (MD3 spacing system)
   unit: 4px
   xs: 4px
   sm: 8px
@@ -212,14 +262,27 @@ These colors are rendered as 3px accent bars at the top of plant tiles and as te
 - **Muted Text** `rgba(255,255,255,0.55)` — Meta-row stats, header secondary context.
 - **Disabled Text** `rgba(255,255,255,0.38)` — Input placeholders, disabled controls.
 
+Each role is implemented as `--text-primary` / `--text-secondary` / `--text-muted` / `--text-disabled`, and each is itself `var(--ha-text-variable, <value above>)`. It is that **form** that survives a light Home Assistant theme, not the alpha value — `rgba(255,255,255,0.7)` is unreadable on a light background, so a call site must never hardcode one. Because the deferral is baked into the token, these are safe to use bare: `color: var(--text-secondary)`. The values above are what an ad-hoc fallback should normalise to, replacing opaque greys like `#666`.
+
+`--text-muted` resolves to the same HA variable as `--text-secondary`, so the two collapse under a custom theme — Home Assistant has no muted role to map onto. Correctness in both themes is worth more than a third tier that only exists in the default one.
+
 ### Functional States
 
 - **Success** `#4caf50` — Toast notification success, health indicators.
 - **Warning** `#ffa726` — Alert stat chips, PHI/IPM icons on plant tiles. Warning variant of amber.
-- **Danger** `#ef5350` — Pulsing stat-chip danger state (distinct from alert red — slightly lighter for chip context).
+- **Danger** `#ef5350` (`--danger-chip`) — Pulsing stat-chip danger state (distinct from alert red — slightly lighter for chip context). `#ff5252` is not a separate red; it folds into this one.
+- **Error Dark** `#d32f2f` (`--error-dark`) — The dark stop of the danger gradient, and the pressed/hover state of destructive buttons.
 - **Info** `#2196f3` — Watering icons, informational context.
 - **Error Surface** `rgba(244,67,54,0.1)` / border `rgba(244,67,54,0.3)` — Error message containers.
 - **Divider** `rgba(255,255,255,0.12)` — Section dividers, dialog header/footer borders.
+
+### Data Series
+
+- **Series ramp** `--series-1` … `--series-4` (`#4fc3f7`, `#81c784`, `#ce93d8`, `#a5d6a7`) — Chart series and KPI tile accents. **Categorical, used in order** — the slots carry no per-metric meaning, because call sites assign them positionally. A fifth series needs a fifth slot added here, not an ad-hoc literal. Empty/no-data states use Disabled Text, not a series colour.
+
+### Contrast Exceptions
+
+- **Bright on-primary-container** `#69f0ae` (`--on-primary-container-bright`) — Foreground text on translucent-green containers (`rgba(76,175,80,0.06–0.2)`), such as completed wizard steps and selected list rows. The documented `on-primary-container` (`#4caf50`) composited over `rgba(76,175,80,0.2)` on `#1e1e1e` measures **4.26:1**, below AA for normal text; this measures **8.36:1**. Do not "normalise" it back to `#4caf50`.
 
 ## 3. Typography Rules
 

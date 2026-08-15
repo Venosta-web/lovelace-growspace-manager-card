@@ -28,6 +28,18 @@ jobs:
     - name: Typecheck
       run: npm run typecheck
 
+    # Fails if variables.generated.ts or DESIGN.md's frontmatter differ from what
+    # src/styles/tokens.ts produces, so a forgotten `npm run tokens:generate`
+    # cannot ship the doc-vs-runtime drift ADR 0035 exists to end.
+    - name: Check generated design tokens
+      run: npm run tokens:check
+
+    # Advisory until the #574 migration issues are cleared: fails only when a PR
+    # adds bare colour literals above the committed baseline, never on the
+    # existing backlog. Ratchet the baseline down as each migration lands.
+    - name: Audit colour literals
+      run: npm run tokens:audit -- --check
+
     - name: Build
       run: npm run build
 
