@@ -48,8 +48,13 @@ is the cause; the transitions are the symptom.
 --motion-easing-standard: cubic-bezier(0.4, 0, 0.2, 1)
 ```
 
-The 0.2s and 0.3s sites collapse to `short`, the 0.4s sites to `medium`. The
-easing is the MD3 standard curve already used, unnamed, in the plant-tile hover.
+The mapping is 0.2s → `short`, 0.3s → `medium`, 0.4s → `medium`. Only the two
+0.4s sites move at all, and only by 100ms; nothing else is retimed. The easing is
+the MD3 standard curve already used, unnamed, in the plant-tile hover.
+
+Both durations have real call sites: `medium` is what every fill bar uses, and
+`short` is the hue-genetics bar's click response. A token with no users would
+contradict the rule below.
 
 **Rejected: the full MD3 motion system** (short1–4, medium1–4, long1–4, plus
 emphasized / decelerate / accelerate easings). It would import twelve steps to
@@ -65,10 +70,10 @@ documented character with no runtime step to reach for.
 
 The pattern: a track element owns the geometry — fixed height, `overflow: hidden`,
 its own radius — and the fill inside it is `transform: scaleX(<fraction>)` with
-`transform-origin: left`, transitioned at `--motion-duration-short` and
-`--motion-easing-standard`. The fill does **not** carry its own `border-radius`;
+`transform-origin: left`. The fill does **not** carry its own `border-radius`;
 the track already clips to shape, and `scaleX` would distort a corner radius
-horizontally anyway.
+horizontally anyway. The transition runs at `--motion-duration-medium` and
+`--motion-easing-standard`.
 
 This applies to five sites: both batch-dialog progress bars, the nutrient
 inventory fill bar, the irrigation tanks bar, and the water-analytics tank bar.
@@ -105,10 +110,11 @@ site rather than in this document:
   the seam between them. The animation is driven by a discrete click on the track,
   not a sensor tick — one animation per user gesture on an 18px bar.
 
-- **`.hg-bar-sativa`'s transition is deleted outright**, in both files. Being
-  `flex: 1` inside a flex track, its width is flex-derived and never set, so
+- **`.hg-bar-sativa`'s transition is deleted outright** in `strain-editor-view`.
+  Being `flex: 1` inside a flex track, its width is flex-derived and never set, so
   `transition: width` on it has always been inert. The honest fix for a
-  declaration that does nothing is to remove it.
+  declaration that does nothing is to remove it. The `strain-library-dialog` copy
+  is left alone — see below.
 
 The two `strain-library-dialog` findings are not addressed here at all: that
 file's entire `.hg-*` block is unreachable — eight `hg-` occurrences, all in the
@@ -147,5 +153,6 @@ moment one of those files changes.
   `prefers-reduced-motion` block, so the 57 files importing it — including seven
   of the eight touched by this work — do not honour the user's motion preference.
   `DESIGN.md` line 463 currently claims otherwise. That is a WCAG 2.3.3
-  conformance gap with a far wider blast radius than these findings, and it is
-  tracked as its own issue rather than folded in here.
+  conformance gap with a far wider blast radius than these findings, tracked as
+  **#611** rather than folded in here. This ADR's PR corrects the DESIGN.md claim
+  to state the real coverage; #611 closes the gap itself.
