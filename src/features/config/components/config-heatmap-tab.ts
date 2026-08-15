@@ -76,7 +76,7 @@ export class ConfigHeatmapTab extends LitElement {
           <button
             class="md3-button text"
             @click=${() => this._emit('edit-group-requested', { group })}
-            style="padding:8px;min-width:auto;"
+            style="padding:8px;"
             aria-label=${`Edit ${group.name}`}
             title=${`Edit ${group.name}`}
           >
@@ -87,7 +87,7 @@ export class ConfigHeatmapTab extends LitElement {
           <button
             class="md3-button text danger"
             @click=${() => this._emit('delete-group-requested', { id: group.id })}
-            style="padding:8px;min-width:auto;"
+            style="padding:8px;"
             aria-label=${`Delete ${group.name}`}
             title=${`Delete ${group.name}`}
           >

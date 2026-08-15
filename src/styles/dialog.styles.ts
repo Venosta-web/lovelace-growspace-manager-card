@@ -101,8 +101,13 @@ export const dialogStyles = [
       flex-wrap: wrap;
       align-items: flex-start;
     }
+    /*
+     * The basis is the wrap floor: line-breaking uses the flex basis, so columns
+     * drop to one-per-row below ~560px. A zero min-width clamps nothing above
+     * the basis, so it still frees children to truncate rather than overflow.
+     */
     .row-col-grid > * {
-      flex: 1;
+      flex: 1 1 272px;
       min-width: 0;
     }
 
@@ -115,6 +120,21 @@ export const dialogStyles = [
       color: var(--primary-text-color, #fff);
     }
 
+    /*
+     * Phone-width tap floors. Scoped to the breakpoint on purpose: the desktop
+     * Climate tab has a height budget (#540) that unconditional 44px floors blow.
+     */
+    @media (max-width: 560px) {
+      .detail-card .md3-button {
+        min-height: 44px;
+        min-width: 44px;
+      }
+      .config-reset-button {
+        height: auto;
+        min-height: 44px;
+      }
+    }
+
     .vwc-targets-group {
       grid-column: span 2;
       background: rgba(255, 255, 255, 0.03);
@@ -123,11 +143,11 @@ export const dialogStyles = [
       padding: 16px;
       margin: 8px 0;
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 16px;
     }
     .vwc-targets-group-title {
-      grid-column: span 3;
+      grid-column: 1 / -1;
       margin: 0 0 4px 0;
       font-size: 0.9rem;
       font-weight: 500;

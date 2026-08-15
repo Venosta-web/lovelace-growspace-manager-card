@@ -139,14 +139,14 @@ export class ConfigSubareasTab extends LitElement {
                 <button
                   class="md3-button danger"
                   @click=${() => this._emit('confirm-delete-subarea', { id: subarea.id })}
-                  style="padding:6px 10px;min-width:auto;font-size:var(--font-size-supporting);"
+                  style="padding:6px 10px;font-size:var(--font-size-supporting);"
                 >
                   Yes
                 </button>
                 <button
                   class="md3-button tonal"
                   @click=${() => this._emit('cancel-delete-subarea')}
-                  style="padding:6px 10px;min-width:auto;font-size:var(--font-size-supporting);"
+                  style="padding:6px 10px;font-size:var(--font-size-supporting);"
                 >
                   No
                 </button>
@@ -155,7 +155,7 @@ export class ConfigSubareasTab extends LitElement {
                 <button
                   class="md3-button text"
                   @click=${() => this._emit('edit-subarea-requested', { subarea })}
-                  style="padding:8px;min-width:auto;"
+                  style="padding:8px;"
                   aria-label=${`Edit sensors for ${subarea.name}`}
                   title="Edit sensors"
                 >
@@ -166,7 +166,7 @@ export class ConfigSubareasTab extends LitElement {
                 <button
                   class="md3-button text danger"
                   @click=${() => this._emit('delete-subarea-requested', { id: subarea.id })}
-                  style="padding:8px;min-width:auto;"
+                  style="padding:8px;"
                   aria-label=${`Delete ${subarea.name}`}
                   title="Delete subarea"
                 >

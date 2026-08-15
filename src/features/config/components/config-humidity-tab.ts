@@ -61,18 +61,6 @@ export class ConfigHumidityTab extends LitElement {
         flex-direction: column;
         gap: 16px;
       }
-      .checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.875rem;
-        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-      }
-      .checkbox-label input[type='checkbox'] {
-        width: 20px;
-        height: 20px;
-        cursor: pointer;
-      }
       /* ── thresholds accordion — copied from config-dialog ── */
       .acc-card {
         background: rgba(255, 255, 255, 0.02);
@@ -84,6 +72,7 @@ export class ConfigHumidityTab extends LitElement {
         display: flex;
         align-items: center;
         gap: 12px;
+        box-sizing: border-box;
         padding: 13px 16px;
         cursor: pointer;
         user-select: none;
@@ -165,6 +154,11 @@ export class ConfigHumidityTab extends LitElement {
         height: 14px;
         fill: currentColor;
         flex-shrink: 0;
+      }
+      @media (max-width: 560px) {
+        .acc-head {
+          min-height: 44px;
+        }
       }
     `,
   ];

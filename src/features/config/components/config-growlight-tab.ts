@@ -45,18 +45,6 @@ export class ConfigGrowlightTab extends LitElement {
         flex-direction: column;
         gap: 16px;
       }
-      .checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.875rem;
-        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-      }
-      .checkbox-label input[type='checkbox'] {
-        width: 20px;
-        height: 20px;
-        cursor: pointer;
-      }
       .anchor-note {
         font-size: 0.75rem;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));

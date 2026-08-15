@@ -86,19 +86,24 @@ export class ConfigTanksTab extends LitElement {
       <div
         style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:10px 12px;border-radius:8px;"
       >
-        <div>
-          <div style="font-weight:500;">${tank.displayName}</div>
-          <div style="font-size:0.78rem;color:var(--secondary-text-color);">
+        <div style="min-width:0;">
+          <div style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            ${tank.displayName}
+          </div>
+          <div
+            style="font-size:0.78rem;color:var(--secondary-text-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+            title=${tank.sensorEntity}
+          >
             ${tank.sensorEntity}
             ${tank.volumeLiters != null ? html` · ${tank.volumeLiters} L` : nothing} · warn at
             ${tank.warningLevel}%
           </div>
         </div>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;flex-shrink:0;">
           <button
             class="md3-button text"
             @click=${() => this._emit('edit-tank-requested', { index: tank.index })}
-            style="padding:6px;min-width:auto;"
+            style="padding:6px;"
             aria-label=${`Edit ${tank.displayName}`}
             title=${`Edit ${tank.displayName}`}
           >
@@ -113,7 +118,7 @@ export class ConfigTanksTab extends LitElement {
           <button
             class="md3-button text danger"
             @click=${() => this._emit('delete-tank-requested', { index: tank.index })}
-            style="padding:6px;min-width:auto;"
+            style="padding:6px;"
             aria-label=${`Delete ${tank.displayName}`}
             title=${`Delete ${tank.displayName}`}
           >
