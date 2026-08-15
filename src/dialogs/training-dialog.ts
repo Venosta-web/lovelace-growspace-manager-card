@@ -101,7 +101,7 @@ export class TrainingDialog extends LitElement {
     const count = plantIds ? plantIds.length : 0;
 
     // Match standard dialog layout
-    const dialogColor = '#9c27b0'; // Purple for learning/training
+    const dialogColor = 'var(--activity-training)';
     const title = 'Log Training';
     const subtitle =
       count > 0

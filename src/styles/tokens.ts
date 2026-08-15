@@ -382,6 +382,18 @@ export const groups: TokenGroup[] = [
     ],
   },
   {
+    title: 'Activity Colors',
+    note: 'A dialog accent names the thing the dialog acts on. Stage dialogs pass a --stage-* colour; activity dialogs pass one of these or a semantic token (IPM and irrigation steering use --warning-color). See ADR 0038.',
+    tokens: [
+      {
+        css: '--activity-training',
+        value: '#9c27b0',
+        doc: 'colors.activity-training',
+        note: 'Shares a value with --stage-dry; training is an activity, not a stage, so the two are free to diverge.',
+      },
+    ],
+  },
+  {
     title: 'Error/Warning Colors',
     tokens: [
       {

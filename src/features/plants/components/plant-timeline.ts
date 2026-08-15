@@ -383,19 +383,19 @@ export class PlantTimeline extends LitElement {
   private _getStageColor(stage?: string): string {
     switch (stage?.toLowerCase()) {
       case 'flower':
-        return '#e91e63';
+        return 'var(--stage-flower, #ff9800)';
       case 'veg':
-        return '#4caf50';
+        return 'var(--stage-veg, #4caf50)';
       case 'seedling':
         return 'var(--stage-seedling, #8bc34a)';
       case 'clone':
-        return '#66bb6a';
+        return 'var(--stage-clone, #26c6da)';
       case 'mother':
-        return '#2e7d32';
+        return 'var(--stage-mother, #e91e63)';
       case 'dry':
-        return '#ff9800';
+        return 'var(--stage-dry, #9c27b0)';
       case 'cure':
-        return '#795548';
+        return 'var(--stage-cure, #2196f3)';
       default:
         return 'var(--divider-color)';
     }

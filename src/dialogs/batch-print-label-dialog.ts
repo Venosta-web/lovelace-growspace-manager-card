@@ -224,7 +224,7 @@ export class BatchPrintLabelDialog extends LitElement {
         heading="Print Labels"
         .subtitle=${`${plantIds.length} plant(s) selected`}
         .iconPath=${mdiPrinter}
-        stageColor="#2196F3"
+        stageColor="var(--gm-info-color)"
         .submitting=${this._isSubmitting}
         @close=${this._close}
       >
