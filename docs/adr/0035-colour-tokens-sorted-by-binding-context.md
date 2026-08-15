@@ -43,10 +43,12 @@ them are "group 1 or 2" by hue. The distribution of the ~341:
 
 | Binding context | Occurrences | Can a CSS token reach it? |
 | --- | --- | --- |
-| CSS declarations in `css` templates | ~180 | Yes |
-| JS data strings (viewmodels, constants, models) | ~85 | No — `var()` is inert here |
-| Inline `style=` attributes in templates | ~42 | Yes, within the component's shadow root |
-| Gradient stops | ~21 | Yes |
+| CSS declarations in `css` templates | 185 | Yes |
+| JS data strings (viewmodels, constants, models) | 95 | No — `var()` is inert here |
+| Inline `style=` attributes in templates | 34 | Yes, within the component's shadow root |
+| Gradient stops | 27 | Yes |
+
+These counts are `scripts/audit-design-tokens.mjs`'s output, which is authoritative — re-run it rather than quoting this table.
 
 **4. No file in `src/dialogs/` imports `styles/variables`.** Verified across the
 whole directory. That is the actual cause of #579 — portalled dialogs inherit
@@ -241,7 +243,7 @@ issues; each should say so, or someone will think it is already done.
   drift from the palette — generation fixes the structured half only.
 - Folding `#ff5252` into `#ef5350` is a visible colour change at 11 sites and
   breaks `env-series.test.ts:60`.
-- The ~85 JS-layer literals become imports, so a colour change in `tokens.ts` now
+- The 95 JS-layer literals become imports, so a colour change in `tokens.ts` now
   reaches viewmodel logic and can move snapshot and unit assertions that currently
   hardcode hexes.
 - Until #579 lands, `src/dialogs/*` keeps the `var(--token, #hex)` form and the
