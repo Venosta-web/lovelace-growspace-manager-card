@@ -267,8 +267,14 @@ These colors are rendered as 3px accent bars at the top of plant tiles and as te
 - **Flowering Orange** `#ff9800`
 - **Drying Purple** `#9c27b0` — Also used for IPM (Integrated Pest Management) activity icons.
 - **Curing Blue** `#2196f3` (same as secondary — curing reinforces water/processing).
-- **Seedling / Clone Lime** `#8bc34a`
+- **Seedling Lime** `#8bc34a`
+- **Clone Cyan** `#26c6da` — clone is its own identity, not a shade of seedling. See ADR 0038; several call sites still render the pre-#551 lime.
 - **Mother Plant Pink** `#e91e63`
+
+A dialog accent names the thing the dialog acts on: a stage dialog passes its
+stage colour, an activity dialog passes an activity or semantic colour
+(`--warning-color` for IPM, `--activity-training` for training). Reaching for a
+stage colour to accent a non-stage activity is what ADR 0038 exists to stop.
 
 ### Typography & Text Hierarchy
 
