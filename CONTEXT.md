@@ -660,6 +660,20 @@ The Inventory and Presets sections each use **drill-down** navigation: selecting
 **Nutrient Presets Container** (`growspace-nutrient-presets-editor.container`)
 Pure pass-through container that subscribes to `nutrientInventory$` and threads the live inventory value into `growspace-nutrient-presets-editor-ui` for dropdown population and [[Nutrient Orphan]] detection. Does not fetch — the [[Nutrient Dialog]] shell owns all fetching (`fetchNutrientInventory`, `fetchNutrientPresets`) on open.
 
+## Design System
+
+**Design Token**
+A named design value — colour, type step, radius, elevation, spacing — authored **exactly once** in `src/styles/tokens.ts` as a typed TypeScript constant. Both consumers are generated from it: the lit `css` custom-property block the components read at runtime, and the YAML frontmatter palette in `DESIGN.md` that documents it. Generation runs one way, TypeScript → CSS and TypeScript → YAML, so the doc is a derived artifact and cannot drift from the runtime — the drift that caused #564 and everything after it. A token is reachable from CSS declarations, inline `style=` attributes and gradient stops; reaching it from plain TypeScript means importing the constant, not writing `var()`. See ADR 0035.
+
+**Binding Context**
+Where a colour literal sits in the code, which decides whether a [[Design Token]] can reach it at all: a CSS declaration inside a `css` template, an inline `style=` attribute in a template, a gradient stop, or a plain JS data string in a viewmodel, constants file or model. The axis colour work is sorted by — hue tells you *which* token a site wants, binding context tells you whether a token is even available, and only the second predicts whether a migration is mechanical. `var()` is inert in the JS-data context, so those sites import from `tokens.ts` instead.
+
+**Token Fallback Form**
+Writing `var(--ha-token, #hex)` rather than a bare token reference, so the site defers to the Home Assistant theme and renders the literal only when HA defines nothing. Correct and intentional wherever the card should follow the user's HA theme, and currently **mandatory** in `src/dialogs/*`, which is portalled to `body` and inherits no card token scope (#579). Two failure modes are distinct and tracked separately: the fallback contradicting the token it backs (`var(--primary-color, #03a9f4)` where primary is `#4caf50`), and a literal that equals a *different* token's value (#580).
+
+**Series Slot**
+One of four ordinal categorical accent colours (`--series-1` … `--series-4`) used in order for chart series and KPI tile accents. Deliberately ordinal rather than semantic, because the call sites — `_kpiCard` in the Water Analytics tab — assign them positionally, not per metric. Not derived from the primaries with `color-mix` the way the status tokens are: derivation is only approximate, would cost pixel-identity across ~30 sites, and would collapse two distinct tints of the same hue.
+
 ## Build
 
 **`__VERSION__`**
