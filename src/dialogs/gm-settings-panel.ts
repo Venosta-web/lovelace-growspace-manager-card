@@ -2,11 +2,11 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { AiSettingsDraft } from '../slices/ai-insight';
+import '../features/config/components/config-entity-multi-select';
 import '../features/shared/ui/md3-select';
 import '../features/shared/ui/md3-number-input';
 import '../features/shared/ui/md3-switch';
 import '../features/shared/ui/md3-entity-input';
-import '../features/shared/ui/md3-entities-input';
 import type { SelectOption } from '../features/shared/ui/md3-select';
 
 const PERSONALITY_OPTIONS: SelectOption[] = [
@@ -60,7 +60,7 @@ export class GmSettingsPanel extends LitElement {
       margin-top: 2px;
     }
     md3-entity-input,
-    md3-entities-input,
+    config-entity-multi-select,
     md3-select,
     md3-number-input {
       flex: 1;
@@ -80,8 +80,13 @@ export class GmSettingsPanel extends LitElement {
     this._emit();
   }
 
+  private _getEntityOptions(): string[] {
+    return Object.keys(this.hass?.states ?? {}).sort();
+  }
+
   render() {
     const d = this.draft;
+    const entityOptions = this._getEntityOptions();
     return html`
       <!-- Core -->
       <div class="section">
@@ -178,13 +183,13 @@ export class GmSettingsPanel extends LitElement {
         </div>
         <div class="field-row">
           <div class="field-label">Trigger Entities</div>
-          <md3-entities-input
+          <config-entity-multi-select
             data-field="briefing_trigger_entities"
             label="Trigger Entities"
-            .hass=${this.hass}
-            .value=${d.briefing_trigger_entities ?? []}
-            @change=${(e: CustomEvent) => this._patch({ briefing_trigger_entities: e.detail ?? [] })}
-          ></md3-entities-input>
+            .values=${d.briefing_trigger_entities ?? []}
+            .options=${entityOptions}
+            @entity-values-changed=${(e: CustomEvent) => this._patch({ briefing_trigger_entities: e.detail.values ?? [] })}
+          ></config-entity-multi-select>
         </div>
       </div>
     `;
