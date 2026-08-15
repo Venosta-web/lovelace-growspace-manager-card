@@ -1,3 +1,10 @@
+# [1.1.0-next.128](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.127...v1.1.0-next.128) (2026-08-15)
+
+
+### Bug Fixes
+
+* **a11y:** give every animating component reduced-motion coverage ([#622](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/622)) ([1b566d4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1b566d4a34289e8a2c0131b9f26d924ce22eb9d9))
+
 # [1.1.0-next.127](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.126...v1.1.0-next.127) (2026-08-15)
 
 
