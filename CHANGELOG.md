@@ -1,3 +1,10 @@
+# [1.1.0-next.126](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.125...v1.1.0-next.126) (2026-08-15)
+
+
+### Performance Improvements
+
+* **design:** fill bars animate transform against a fixed track ([#617](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/617)) ([cb2cc86](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/cb2cc867075c679fd77870c1d015f50fe015a511))
+
 # [1.1.0-next.125](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.124...v1.1.0-next.125) (2026-08-15)
 
 
