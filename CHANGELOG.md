@@ -1,3 +1,10 @@
+# [1.1.0-next.131](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.130...v1.1.0-next.131) (2026-08-15)
+
+
+### Bug Fixes
+
+* **config:** bring config dialog interiors onto the token contract ([#629](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/629)) ([571c4be](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/571c4bef41cd2a39355289e174333eaf64a55fdc)), closes [#539](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/539) [625/#627](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/627) [#546](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/546)
+
 # [1.1.0-next.130](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.129...v1.1.0-next.130) (2026-08-15)
 
 
