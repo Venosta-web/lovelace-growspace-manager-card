@@ -1,7 +1,7 @@
 # ADR 0035 — Colour Tokens: Sort by Binding Context, Generate from One Typed Source
 
 **Status:** Accepted
-**Relates to:** #574 (this decision), #564 (token foundation), #565/#577 (stage migration), #579 (dialog token scope), #580 (literal equals a different token's value)
+**Relates to:** #574 (this decision), #564 (token foundation), #565/#577 (stage migration), #579 (dialog token scope), #580 (literal equals a different token's value), #608 (fallback contradicts its own token)
 
 ## Context
 
@@ -56,8 +56,9 @@ nothing from the `:host` block — and it means the `var(--token, #hex)` fallbac
 form is currently load-bearing there. It is a missing import, not a law.
 
 One class fits neither #574 nor #580 and is called out here so it is not lost:
-**the fallback contradicts the token it backs.** `var(--primary-color, #03a9f4)`
-appears 17 times, but primary is `#4caf50` — an HA theme that does not define
+**the fallback contradicts the token it backs.** `--primary-color` falls back to a
+blue at 25 sites across 13 files (13 × `#2196f3`, 12 × `#03a9f4`), but primary is
+`#4caf50` — an HA theme that does not define
 `--primary-color` renders light blue where the design system says green. Same
 shape as `var(--divider-color, #333)` against a documented
 `rgba(255,255,255,0.12)`. #580 is "the literal equals a *different* token's
@@ -191,10 +192,12 @@ the migration rather than being normalised as a separate pass.
 
 ### 8. What splits off
 
-- **The wrong-fallback class** (`var(--primary-color, #03a9f4)` and friends) gets
-  its own issue, on the precedent #580 already set: the question is "which value
-  is wrong", not "which token maps here", and one of its instances is a live
-  rendering defect rather than tidiness.
+- **The wrong-fallback class** (`var(--primary-color, #03a9f4)` and friends) is
+  **#608**, split off on the precedent #580 already set: the question is "which
+  value is wrong", not "which token maps here", and one of its instances is a live
+  rendering defect rather than tidiness. #608 leaves the per-site choice open
+  between "wrong fallback" (→ `#4caf50`) and "wrong token" (→ `--info-color`),
+  since some of those sites may genuinely want the info accent.
 - **#579 (dialog token scope)** stays its own issue. Adding `variables` to each
   dialog's `static styles` dissolves the fallback-form carve-out and makes the
   migration rule uniform, but it is a ~40-file change with real visual-regression
@@ -221,7 +224,7 @@ that classification anyway to produce the inventory.
        └▶ four migration issues, sliced by binding context
 ```
 
-#580 and the new wrong-fallback issue are independent and land whenever.
+#580 and #608 are independent and land whenever.
 
 #574 goes first despite #579 being described as the prerequisite: #579's fix *is*
 importing `variables`, so that file wants to be in its final generated form before
