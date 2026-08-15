@@ -76,6 +76,8 @@ colors:
   stage-flower-mid: '#fb8c00'
   stage-flower-late: '#ef6c00'
   # Error/Warning Colors
+  # Home Assistant defines this name too — same shadowing as --divider-color, and withheld
+  # from the portal for the same reason. See ADR 0036.
   error: '#f44336'
   error-container: 'rgba(244,67,54,0.1)'
   # The dark stop of the danger gradient, and the pressed/hover state of destructive
@@ -283,6 +285,14 @@ Each role is implemented as `--text-primary` / `--text-secondary` / `--text-mute
 ### Contrast Exceptions
 
 - **Bright on-primary-container** `#69f0ae` (`--on-primary-container-bright`) — Foreground text on translucent-green containers (`rgba(76,175,80,0.06–0.2)`), such as completed wizard steps and selected list rows. The documented `on-primary-container` (`#4caf50`) composited over `rgba(76,175,80,0.2)` on `#1e1e1e` measures **4.26:1**, below AA for normal text; this measures **8.36:1**. Do not "normalise" it back to `#4caf50`.
+
+### Where Tokens Reach
+
+Two `:host` blocks are generated from `src/styles/tokens.ts`. The card adopts all of it; `growspace-dialog-host` is portalled to `document.body`, so it inherits nothing from the card and adopts its own copy — without which a bare token reference under `src/dialogs/` resolves to nothing.
+
+- **Reference tokens bare** anywhere, dialogs included.
+- **Two exceptions**, `--divider-color` and `--error-color`: Home Assistant defines these names too, so the portal deliberately leaves them to the user's theme. A dialog that wants them writes `var(--divider-color, rgba(255,255,255,0.12))`.
+- **Adding a token** means editing `tokens.ts` and running `npm run tokens:generate`; both blocks and the palette above regenerate together. See ADR 0036.
 
 ## 3. Typography Rules
 

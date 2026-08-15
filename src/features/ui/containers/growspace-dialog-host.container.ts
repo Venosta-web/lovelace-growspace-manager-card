@@ -108,9 +108,17 @@ import '../../../dialogs/feed-and-water-dialog';
 import '../../plants/containers/plant-overview.container';
 
 import { HomeAssistant } from 'custom-card-helpers';
+import { portalVariables } from '../../../styles/variables';
 
 @customElement('growspace-dialog-host')
 export class GrowspaceDialogHost extends LitElement {
+  /**
+   * This element is appended to `document.body`, so it is a sibling of the card
+   * and inherits none of the card's `:host` custom properties. Declaring them
+   * here is what lets everything below it reference tokens bare. See ADR 0036.
+   */
+  static styles = portalVariables;
+
   @provide({ context: hassContext })
   @property({ attribute: false })
   public hass!: HomeAssistant;

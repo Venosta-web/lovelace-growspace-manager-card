@@ -34,6 +34,14 @@ export interface TokenDef {
   docValue?: DocValue;
   /** Emitted as a comment above the token in both artifacts. */
   note?: string;
+  /**
+   * `card-only` withholds the token from `portalVariables`, the block the
+   * portalled dialog host declares. Reserved for the two names Home Assistant
+   * also defines: inside the card they shadow the HA theme deliberately, but
+   * re-declaring them on the portal would take the dialogs' dividers and error
+   * colour away from the user's theme. See ADR 0036.
+   */
+  scope?: 'card-only';
 }
 
 export interface TokenGroup {
@@ -337,7 +345,15 @@ export const groups: TokenGroup[] = [
   },
   {
     title: 'Divider',
-    tokens: [{ css: '--divider-color', value: 'rgba(255, 255, 255, 0.12)', doc: null }],
+    tokens: [
+      {
+        css: '--divider-color',
+        value: 'rgba(255, 255, 255, 0.12)',
+        doc: null,
+        scope: 'card-only',
+        note: "Home Assistant defines this name too, so declaring it here shadows the user's theme inside the card. Withheld from the portalled dialog host, where the HA value keeps winning. The shadowing itself is the open question — see ADR 0036 and #608.",
+      },
+    ],
   },
   {
     title: 'Plant Stage Colors',
@@ -357,7 +373,13 @@ export const groups: TokenGroup[] = [
   {
     title: 'Error/Warning Colors',
     tokens: [
-      { css: '--error-color', value: '#f44336', doc: 'colors.error' },
+      {
+        css: '--error-color',
+        value: '#f44336',
+        doc: 'colors.error',
+        scope: 'card-only',
+        note: 'Home Assistant defines this name too — same shadowing as --divider-color, and withheld from the portal for the same reason. See ADR 0036.',
+      },
       {
         css: '--error-bg',
         value: 'rgba(244, 67, 54, 0.1)',
