@@ -72,6 +72,7 @@ export class ConfigHumidityTab extends LitElement {
         display: flex;
         align-items: center;
         gap: 12px;
+        min-height: 44px;
         box-sizing: border-box;
         padding: 13px 16px;
         cursor: pointer;
@@ -154,11 +155,6 @@ export class ConfigHumidityTab extends LitElement {
         height: 14px;
         fill: currentColor;
         flex-shrink: 0;
-      }
-      @media (max-width: 560px) {
-        .acc-head {
-          min-height: 44px;
-        }
       }
     `,
   ];
