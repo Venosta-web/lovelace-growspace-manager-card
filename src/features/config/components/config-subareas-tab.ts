@@ -137,7 +137,7 @@ export class ConfigSubareasTab extends LitElement {
                   >Remove ${subarea.name}?</span
                 >
                 <button
-                  class="md3-button primary error"
+                  class="md3-button danger"
                   @click=${() => this._emit('confirm-delete-subarea', { id: subarea.id })}
                   style="padding:6px 10px;min-width:auto;font-size:var(--font-size-supporting);"
                 >
@@ -164,7 +164,7 @@ export class ConfigSubareasTab extends LitElement {
                   </svg>
                 </button>
                 <button
-                  class="md3-button text error"
+                  class="md3-button text danger"
                   @click=${() => this._emit('delete-subarea-requested', { id: subarea.id })}
                   style="padding:8px;min-width:auto;"
                   aria-label=${`Delete ${subarea.name}`}

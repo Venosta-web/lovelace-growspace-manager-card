@@ -1063,7 +1063,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should delete a group', async () => {
-            const deleteBtn = (await sensorsShadow(element)).querySelector('button.error');
+            const deleteBtn = (await sensorsShadow(element)).querySelector('button.danger');
             (deleteBtn as HTMLElement)?.click();
             await element.updateComplete;
 

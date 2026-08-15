@@ -85,7 +85,7 @@ export class ConfigHeatmapTab extends LitElement {
             </svg>
           </button>
           <button
-            class="md3-button text error"
+            class="md3-button text danger"
             @click=${() => this._emit('delete-group-requested', { id: group.id })}
             style="padding:8px;min-width:auto;"
             aria-label=${`Delete ${group.name}`}

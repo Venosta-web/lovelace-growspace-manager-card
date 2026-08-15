@@ -137,6 +137,39 @@ export const uiStyles = css`
     outline-color: var(--error-color, #f44336);
   }
 
+  /* danger composes with the tonal and text variants: it recolours them without
+     changing their shape, so an inline icon button stays an icon button. Three
+     classes outrank the two-class outlined rule above, so the border is dropped
+     explicitly rather than by source order. --error-color is withheld from the
+     portalled dialog host (ADR 0036), so these keep the fallback form. */
+  .md3-button.tonal.danger {
+    background: var(--error-bg, rgba(244, 67, 54, 0.1));
+    color: var(--error-color, #f44336);
+    border: none;
+  }
+
+  .md3-button.tonal.danger:hover {
+    background: rgba(244, 67, 54, 0.16);
+  }
+
+  .md3-button.tonal.danger:active {
+    background: var(--error-bg, rgba(244, 67, 54, 0.1));
+  }
+
+  .md3-button.text.danger {
+    background: transparent;
+    color: var(--error-color, #f44336);
+    border: none;
+  }
+
+  .md3-button.text.danger:hover {
+    background: rgba(244, 67, 54, 0.08);
+  }
+
+  .md3-button.text.danger:active {
+    background: rgba(244, 67, 54, 0.12);
+  }
+
   /* Disabled state */
   .md3-button:disabled {
     opacity: 0.38;

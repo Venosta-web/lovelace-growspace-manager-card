@@ -1951,7 +1951,7 @@ export class ConfigDialog extends LitElement {
           <p id="config-discard-description">${this._discardDescription()}</p>
           <div class="confirm-discard-actions">
             <button class="md3-button tonal" @click=${this._cancelDiscard}>Keep editing</button>
-            <button class="md3-button primary error" @click=${this._confirmDiscard}>Discard</button>
+            <button class="md3-button danger" @click=${this._confirmDiscard}>Discard</button>
           </div>
         </div>
       </div>
@@ -2622,7 +2622,7 @@ export class ConfigDialog extends LitElement {
                     Keep Environment
                   </button>
                   <button
-                    class="md3-button primary error remove-environment-action"
+                    class="md3-button danger remove-environment-action"
                     @click=${this._confirmRemoveEnvironment}
                     ?disabled=${removing}
                     aria-busy=${removing ? 'true' : 'false'}
@@ -2636,7 +2636,7 @@ export class ConfigDialog extends LitElement {
                   <button class="md3-button tonal" @click=${this._cancelDeleteGrowspace}>
                     No, Keep It
                   </button>
-                  <button class="md3-button primary error" @click=${this._confirmDeleteGrowspace}>
+                  <button class="md3-button danger" @click=${this._confirmDeleteGrowspace}>
                     Confirm Delete
                   </button>
                 `;
@@ -2650,7 +2650,7 @@ export class ConfigDialog extends LitElement {
               }
               if (growspaceSub.kind === 'editing') {
                 return html`
-                  <button class="md3-button tonal error" @click=${this._submitDeleteGrowspace}>
+                  <button class="md3-button tonal danger" @click=${this._submitDeleteGrowspace}>
                     ${this._icon(mdiDelete, 18)} Delete
                   </button>
                   <button

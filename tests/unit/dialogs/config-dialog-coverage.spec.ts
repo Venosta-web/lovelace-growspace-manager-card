@@ -357,7 +357,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any)._showDeleteConfirm = true;
         await element.updateComplete;
 
-        const confirmBtn = element.shadowRoot?.querySelector('.md3-button.primary.error');
+        const confirmBtn = element.shadowRoot?.querySelector('.md3-button.danger');
         expect(confirmBtn).to.exist;
 
         // Cover _confirmDeleteGrowspace
@@ -525,7 +525,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         expect((await sensorsShadow(element)).textContent).toContain('Main Tank');
 
         // Click the edit tank button (arrow fn at line 1667)
-        const editTankBtn = (Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.text:not(.error)') ?? []) as HTMLElement[])
+        const editTankBtn = (Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.text:not(.danger)') ?? []) as HTMLElement[])
             .find((b) => !b.style.minWidth || b.style.padding === '6px')
             ?? (Array.from(element.shadowRoot?.querySelectorAll('button') ?? []) as HTMLElement[])
                 .find((b) => b.style.padding === '6px' && !b.classList.contains('error'));
@@ -587,7 +587,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         expect((element as any)._showTankForm).toBe(false);
 
         // Click the delete tank button (arrow fn at line 1670)
-        const deleteTankBtn = Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.text.error') ?? [])
+        const deleteTankBtn = Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.text.danger') ?? [])
             .find((b) => !b.textContent?.trim()) as HTMLElement | undefined;
         if (deleteTankBtn) {
             deleteTankBtn.click();
@@ -651,7 +651,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         expect(root.textContent).toContain('Group A');
 
         // Click the group's edit button (the non-error text button) to cover its handler.
-        const textButtons = Array.from(root.querySelectorAll('button.md3-button.text:not(.error)'));
+        const textButtons = Array.from(root.querySelectorAll('button.md3-button.text:not(.danger)'));
         const editBtn = textButtons[textButtons.length - 1] as HTMLElement | undefined;
         expect(editBtn).toBeDefined();
         editBtn!.click();
