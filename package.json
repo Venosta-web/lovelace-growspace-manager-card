@@ -22,7 +22,10 @@
     "lint": "eslint 'src/**/*.{ts,js}'",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write 'src/**/*.{ts,js,json,css,md}'",
-    "format:check": "prettier --check 'src/**/*.{ts,js,json,css,md}'"
+    "format:check": "prettier --check 'src/**/*.{ts,js,json,css,md}'",
+    "tokens:generate": "node scripts/generate-design-tokens.mjs",
+    "tokens:check": "node scripts/generate-design-tokens.mjs --check",
+    "tokens:audit": "node scripts/audit-design-tokens.mjs"
   },
   "keywords": [],
   "author": "Venosta-web",
