@@ -41,6 +41,24 @@ export class IrrigationDrainEcTab extends LitElement {
       :host {
         display: block;
       }
+
+      /* Status accent on the documented top edge, not a left strip — see ADR 0037.
+         Colour arrives as --status-accent so the pseudo-element can reach it. */
+      .detail-card.status-accent {
+        position: relative;
+        padding: 16px 20px;
+      }
+
+      .detail-card.status-accent::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--status-accent, transparent);
+        border-radius: var(--border-radius-md, 12px) var(--border-radius-md, 12px) 0 0;
+      }
     `,
   ];
 
@@ -61,7 +79,7 @@ export class IrrigationDrainEcTab extends LitElement {
     const isLogging = vm.sub.kind === 'logging';
 
     return html`
-      <div class="detail-card" style="border-left:4px solid ${status.color};padding:16px 20px;">
+      <div class="detail-card status-accent" style="--status-accent:${status.color};">
         <div style="display:flex;align-items:center;gap:12px;">
           <div
             style="width:14px;height:14px;border-radius:50%;background:${status.color};box-shadow:0 0 8px ${status.color};flex-shrink:0;"
