@@ -1,3 +1,10 @@
+# [1.1.0-next.137](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.136...v1.1.0-next.137) (2026-08-16)
+
+
+### Features
+
+* **subarea:** pick subarea entities with the shared config field ([#651](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/651)) ([7d9a02d](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7d9a02d721aa91c853a43993ac4387adce762910))
+
 # [1.1.0-next.136](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.135...v1.1.0-next.136) (2026-08-16)
 
 
