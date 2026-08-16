@@ -171,9 +171,9 @@ export class PlantCardUI extends LitElement {
     if (!sex || sex === 'unknown') return nothing;
     const symbols: Record<string, string> = { female: '♀', male: '♂', hermaphrodite: '⚥' };
     const colors: Record<string, string> = {
-      female: '#4caf50',
-      male: '#2196f3',
-      hermaphrodite: '#ff9800',
+      female: 'var(--sex-female, #4caf50)',
+      male: 'var(--sex-male, #2196f3)',
+      hermaphrodite: 'var(--sex-hermaphrodite, #ff9800)',
     };
     const symbol = symbols[sex];
     const color = colors[sex];
