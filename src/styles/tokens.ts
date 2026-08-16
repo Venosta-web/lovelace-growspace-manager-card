@@ -255,9 +255,9 @@ export const groups: TokenGroup[] = [
       { css: null, doc: 'colors.primary', docValue: '#4caf50' },
       {
         css: '--on-primary',
-        value: '#ffffff',
+        value: '#1e1e1e',
         doc: 'colors.on-primary',
-        note: 'Foreground on a saturated primary FILL, not on the dark shell. Fixed white on purpose: the fill does not follow the Home Assistant theme, so a theme-deferring text role would invert on top of it. NOT yet safe for normal text — #ffffff on the documented primary #4caf50 is 2.78:1, below AA, which is why the toast fills still use --text-primary. See ADR 0039 §1 and #636.',
+        note: 'Foreground on the primary fill. White measures 2.78:1 against #4caf50; this dark foreground measures 6.00:1 and passes AA for normal text.',
       },
       { css: null, doc: 'colors.primary-container', docValue: 'rgba(76,175,80,0.15)' },
       { css: null, doc: 'colors.on-primary-container', docValue: '#4caf50' },
@@ -279,7 +279,12 @@ export const groups: TokenGroup[] = [
         doc: 'colors.secondary',
         note: 'Documented since ADR 0035 and unreachable until now — the light stop of --secondary-gradient, and the half --info-dark pairs with. Bare on purpose, as the danger pair is, because a gradient whose two stops follow different theming runs between two unrelated hues. Sites meaning "informational" still take the theme-following --gm-info-color.',
       },
-      { css: '--on-secondary', value: '#ffffff', doc: 'colors.on-secondary' },
+      {
+        css: '--on-secondary',
+        value: '#ffffff',
+        doc: 'colors.on-secondary',
+        note: 'Measured at 3.12:1 against #2196f3: suitable for large text and icons, not normal text. Keep white until a normal-text secondary fill is introduced.',
+      },
       { css: null, doc: 'colors.secondary-container', docValue: 'rgba(33,150,243,0.12)' },
       { css: null, doc: 'colors.on-secondary-container', docValue: '#2196f3' },
       {
@@ -520,9 +525,9 @@ export const groups: TokenGroup[] = [
       },
       {
         css: '--on-error',
-        value: '#ffffff',
+        value: '#1e1e1e',
         doc: 'colors.on-error',
-        note: '#ffffff on the documented error #f44336 is 3.68:1, below AA for normal text — same open question as --on-primary. See ADR 0039 §1 and #636.',
+        note: 'Foreground on the error fill. White measures 3.68:1 against #f44336; this dark foreground measures 4.53:1 and passes AA for normal text.',
       },
       { css: null, doc: 'colors.on-error-container', docValue: '#f44336' },
       {

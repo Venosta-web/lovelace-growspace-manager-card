@@ -187,7 +187,7 @@ export class AddPlantDialog extends LitElement {
       .wizard-step.active .wizard-step-num {
         background: var(--primary-color, #4caf50);
         border-color: var(--primary-color, #4caf50);
-        color: var(--text-primary);
+        color: var(--on-primary);
       }
 
       .wizard-step.done .wizard-step-num {

@@ -458,7 +458,7 @@ export class GmBriefingPanel extends LitElement {
       cursor: pointer;
       font-family: inherit;
       background: var(--gm-primary-color);
-      color: var(--text-primary);
+      color: var(--on-primary);
     }
 
     /* ── Per-tab placeholder sections ────────────────────────────── */
