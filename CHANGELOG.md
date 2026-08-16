@@ -1,3 +1,10 @@
+# [1.1.0-next.139](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.138...v1.1.0-next.139) (2026-08-16)
+
+
+### Bug Fixes
+
+* **ai:** drop allow-custom-entity from the agent setup banners ([#653](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/653)) ([3e4bf02](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/3e4bf02145de40a645dc3f25c617b06e3543812a)), closes [#599](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/599) [#642](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/642)
+
 # [1.1.0-next.138](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.137...v1.1.0-next.138) (2026-08-16)
 
 
