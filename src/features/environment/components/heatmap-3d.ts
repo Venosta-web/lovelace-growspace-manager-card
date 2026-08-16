@@ -137,7 +137,7 @@ export class Heatmap3D extends LitElement {
     .toggle-item ha-checkbox {
       --mdc-checkbox-unchecked-color: rgba(255, 255, 255, 0.5);
       --mdc-checkbox-disabled-color: rgba(255, 255, 255, 0.3);
-      --mdc-checkbox-ink-color: #448aff;
+      --mdc-checkbox-ink-color: var(--accent-3d);
     }
     .header-actions {
       display: flex;
@@ -145,18 +145,18 @@ export class Heatmap3D extends LitElement {
       pointer-events: auto;
     }
     .header ha-icon-button {
-      color: #607d8b;
+      color: var(--accent-3d-idle);
       transition: all 0.2s ease;
       --mdc-icon-button-size: 32px;
       --mdc-icon-size: 18px;
     }
     .header ha-icon-button.active {
-      color: #448aff;
-      background: rgba(68, 138, 255, 0.15);
+      color: var(--accent-3d);
+      background: color-mix(in srgb, var(--accent-3d) 15%, transparent);
       border-radius: 50%;
     }
     .header ha-icon-button:hover {
-      color: #64b5f6;
+      color: var(--accent-3d-hover);
     }
     .overlay {
       position: absolute;
@@ -181,7 +181,7 @@ export class Heatmap3D extends LitElement {
       flex: 1;
       background: transparent;
       border: none;
-      color: #9e9e9e;
+      color: var(--on-overlay-secondary);
       padding: 6px 2px;
       border-radius: var(--border-radius-sm, 8px);
       cursor: pointer;
@@ -191,7 +191,7 @@ export class Heatmap3D extends LitElement {
     }
     .metric-selector button.active {
       background: #2c2c2e;
-      color: #448aff;
+      color: var(--accent-3d);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
     .legend-container {
@@ -211,7 +211,7 @@ export class Heatmap3D extends LitElement {
       display: flex;
       justify-content: space-between;
       font-size: var(--font-size-xs);
-      color: #9e9e9e;
+      color: var(--on-overlay-secondary);
     }
 
     /* Timeline Styles */
@@ -233,14 +233,14 @@ export class Heatmap3D extends LitElement {
       display: flex;
       justify-content: space-between;
       font-size: var(--font-size-xs);
-      color: #757575;
+      color: var(--on-overlay-muted);
       margin-top: -8px;
       margin-bottom: 4px;
     }
     .play-btn {
       background: transparent;
       border: none;
-      color: #448aff;
+      color: var(--accent-3d);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -258,10 +258,10 @@ export class Heatmap3D extends LitElement {
       -webkit-appearance: none;
       width: 12px;
       height: 12px;
-      background: #448aff;
+      background: var(--accent-3d);
       border-radius: 50%;
       cursor: pointer;
-      box-shadow: 0 0 10px rgba(68, 138, 255, 0.5);
+      box-shadow: 0 0 10px color-mix(in srgb, var(--accent-3d) 50%, transparent);
     }
     .time-display {
       font-size: 11px;
@@ -327,7 +327,7 @@ export class Heatmap3D extends LitElement {
       margin: 0;
       font-size: var(--font-size-sm);
       font-weight: 600;
-      color: #448aff;
+      color: var(--accent-3d);
       letter-spacing: 0.5px;
       text-transform: uppercase;
     }
@@ -342,7 +342,7 @@ export class Heatmap3D extends LitElement {
     .sensor-header {
       font-size: var(--font-size-supporting);
       font-weight: 500;
-      color: #e0e0e0;
+      color: var(--on-overlay-primary);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -359,7 +359,7 @@ export class Heatmap3D extends LitElement {
     }
     .slider-row label {
       font-size: var(--font-size-xs);
-      color: #757575;
+      color: var(--on-overlay-muted);
       width: 10px;
       font-weight: bold;
     }
@@ -374,13 +374,13 @@ export class Heatmap3D extends LitElement {
       -webkit-appearance: none;
       width: 10px;
       height: 10px;
-      background: #448aff;
+      background: var(--accent-3d);
       border-radius: 50%;
       cursor: pointer;
     }
     .slider-val {
       font-size: var(--font-size-xs);
-      color: #9e9e9e;
+      color: var(--on-overlay-secondary);
       text-align: right;
       width: 25px;
     }
@@ -397,7 +397,7 @@ export class Heatmap3D extends LitElement {
       flex: 1;
       background: transparent;
       border: none;
-      color: #757575;
+      color: var(--on-overlay-muted);
       padding: 6px 2px;
       border-radius: var(--border-radius-sm, 8px);
       cursor: pointer;
@@ -409,11 +409,11 @@ export class Heatmap3D extends LitElement {
     }
     .sensor-tab.active {
       background: #2c2c2e;
-      color: #448aff;
+      color: var(--accent-3d);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
     .sensor-tab:hover:not(.active) {
-      color: #e0e0e0;
+      color: var(--on-overlay-primary);
       background: rgba(255, 255, 255, 0.05);
     }
 
@@ -445,12 +445,12 @@ export class Heatmap3D extends LitElement {
     .tooltip-strain {
       font-weight: 700;
       font-size: var(--font-size-supporting);
-      color: #448aff;
+      color: var(--accent-3d);
       display: block;
     }
     .tooltip-pheno {
       font-size: 11px;
-      color: #9e9e9e;
+      color: var(--on-overlay-secondary);
       font-style: italic;
     }
     .tooltip-row {
@@ -460,14 +460,14 @@ export class Heatmap3D extends LitElement {
       gap: 12px;
     }
     .tooltip-label {
-      color: #757575;
+      color: var(--on-overlay-muted);
       font-weight: 500;
       text-transform: uppercase;
       font-size: var(--font-size-xs);
       letter-spacing: 0.5px;
     }
     .tooltip-value {
-      color: #e0e0e0;
+      color: var(--on-overlay-primary);
       font-weight: 500;
     }
     .tooltip-stage-pill {

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BaseRenderer } from './base-renderer';
+import { token } from '../../../styles/variables.generated';
 import {
   defaultClimateUnitCoords,
   defaultExhaustCoords,
@@ -851,7 +852,7 @@ export class EquipmentRenderer extends BaseRenderer {
     geom.setAttribute('progress', new THREE.BufferAttribute(new Float32Array(count).fill(0), 1));
 
     const mat = new THREE.PointsMaterial({
-      color: 0x448aff,
+      color: token['--accent-3d'],
       size: 2,
       transparent: true,
       opacity: 0.8,
