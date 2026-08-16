@@ -363,6 +363,36 @@ export const variables: CSSResult = css`
        hue, so an unmapped series is visibly not one of the named ones.
     */
     --metric-unknown: #ffffff;
+
+    /* Genetics Generation Palette — one hue per breeding generation */
+    --gen-p1: #9e9e9e;
+    --gen-f1: #4caf50;
+    --gen-f2: #8bc34a;
+    --gen-bx1: #ff9800;
+    --gen-bx2: #f57c00;
+    --gen-s1: #2196f3;
+    --gen-cl: #e91e63;
+    /* For a generation label the card does not recognise. Grey rather than a hue, so an
+       unmapped node is visibly not one of the named generations. Was the shorthand #555.
+    */
+    --gen-unknown: #555555;
+
+    /* Lineage Relation — the genetics tree relative to its focal node */
+    --lineage-focal: #4caf50;
+    --lineage-ancestor: #ff9800;
+    --lineage-descendant: #2196f3;
+
+    /* Nutrient Product Types — one hue per stock type */
+    --nutrient-bloom: #e91e63;
+    --nutrient-calmag: #ff9800;
+    --nutrient-root: #795548;
+    --nutrient-additive: #9c27b0;
+    --nutrient-microbe: #00bcd4;
+
+    /* Plant Sex — one hue per recorded sex */
+    --sex-female: #4caf50;
+    --sex-male: #2196f3;
+    --sex-hermaphrodite: #ff9800;
   }
 `;
 
@@ -727,6 +757,36 @@ export const portalVariables: CSSResult = css`
        hue, so an unmapped series is visibly not one of the named ones.
     */
     --metric-unknown: #ffffff;
+
+    /* Genetics Generation Palette — one hue per breeding generation */
+    --gen-p1: #9e9e9e;
+    --gen-f1: #4caf50;
+    --gen-f2: #8bc34a;
+    --gen-bx1: #ff9800;
+    --gen-bx2: #f57c00;
+    --gen-s1: #2196f3;
+    --gen-cl: #e91e63;
+    /* For a generation label the card does not recognise. Grey rather than a hue, so an
+       unmapped node is visibly not one of the named generations. Was the shorthand #555.
+    */
+    --gen-unknown: #555555;
+
+    /* Lineage Relation — the genetics tree relative to its focal node */
+    --lineage-focal: #4caf50;
+    --lineage-ancestor: #ff9800;
+    --lineage-descendant: #2196f3;
+
+    /* Nutrient Product Types — one hue per stock type */
+    --nutrient-bloom: #e91e63;
+    --nutrient-calmag: #ff9800;
+    --nutrient-root: #795548;
+    --nutrient-additive: #9c27b0;
+    --nutrient-microbe: #00bcd4;
+
+    /* Plant Sex — one hue per recorded sex */
+    --sex-female: #4caf50;
+    --sex-male: #2196f3;
+    --sex-hermaphrodite: #ff9800;
   }
 `;
 
@@ -890,6 +950,25 @@ export const token = {
   '--metric-irrigation-flow': '#26c6da',
   '--metric-power': '#ffee58',
   '--metric-unknown': '#ffffff',
+  '--gen-p1': '#9e9e9e',
+  '--gen-f1': '#4caf50',
+  '--gen-f2': '#8bc34a',
+  '--gen-bx1': '#ff9800',
+  '--gen-bx2': '#f57c00',
+  '--gen-s1': '#2196f3',
+  '--gen-cl': '#e91e63',
+  '--gen-unknown': '#555555',
+  '--lineage-focal': '#4caf50',
+  '--lineage-ancestor': '#ff9800',
+  '--lineage-descendant': '#2196f3',
+  '--nutrient-bloom': '#e91e63',
+  '--nutrient-calmag': '#ff9800',
+  '--nutrient-root': '#795548',
+  '--nutrient-additive': '#9c27b0',
+  '--nutrient-microbe': '#00bcd4',
+  '--sex-female': '#4caf50',
+  '--sex-male': '#2196f3',
+  '--sex-hermaphrodite': '#ff9800',
 } as const;
 
 export type TokenName = keyof typeof token;
