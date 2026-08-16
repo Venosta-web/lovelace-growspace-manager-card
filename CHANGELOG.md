@@ -1,3 +1,10 @@
+# [1.1.0-next.136](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.135...v1.1.0-next.136) (2026-08-16)
+
+
+### Features
+
+* **config:** pick entities with ha-entity-picker instead of a datalist ([#650](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/650)) ([f70edc7](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/f70edc7a8f760ae76ab466f00c3b4b33774fa951)), closes [#544](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/544)
+
 # [1.1.0-next.135](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.134...v1.1.0-next.135) (2026-08-16)
 
 
