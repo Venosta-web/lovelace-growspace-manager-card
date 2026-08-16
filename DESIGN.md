@@ -39,18 +39,24 @@ colors:
   on-primary-container-bright: '#69f0ae'
   inverse-primary: '#45a049'
   # Secondary — Hydro Blue
+  # Documented since ADR 0035 and unreachable until now — the light stop of
+  # --secondary-gradient, and the half --info-dark pairs with. Bare on purpose, as the
+  # danger pair is, because a gradient whose two stops follow different theming runs
+  # between two unrelated hues. Sites meaning "informational" still take the
+  # theme-following --gm-info-color.
   secondary: '#2196f3'
   on-secondary: '#ffffff'
   secondary-container: 'rgba(33,150,243,0.12)'
   on-secondary-container: '#2196f3'
   # The dark stop of --secondary-gradient, mirroring --error-dark. Exists so a gradient
   # that cannot run 135deg — a liquid column runs `to bottom` — can compose the same two
-  # stops without re-authoring them. See ADR 0042 §3.
+  # stops without re-authoring them. Pairs with bare --secondary, not with
+  # --gm-info-color. See ADR 0042 §3.
   info-dark: '#1976d2'
   # Light cycle — day and dark period — One pair for the whole light cycle, wherever it is
   # reported: timeline icons, logbook entries, the humidity tab's day/night columns and
-  # the lights-on/off equipment icon. Four call sites had four different pairs before this
-  # existed. Day carries the Tertiary value, so the cycle a report describes and the
+  # the lights-on/off equipment icon. Three different pairs across five call sites before
+  # this existed. Day carries the Tertiary value, so the cycle a report describes and the
   # controller accent that drives it are one colour. See ADR 0042 §2.
   cycle-day: '#ffeb3b'
   # Indigo 300, not the Indigo 500 (#3f51b5) three sites had drifted to: 500 measures
@@ -380,7 +386,7 @@ Each role is implemented as `--text-primary` / `--text-secondary` / `--text-mute
 - **Day** `#ffeb3b` (`--cycle-day`) — Carries the Tertiary "Amber Light" value, so the grow-light controller accent and every report describing the cycle it drives are one colour.
 - **Night** `#7986cb` (`--cycle-night`) — Indigo 300. Indigo 500 (`#3f51b5`) measures 2.43:1 on `--surface`, under the 3:1 an icon or 1px rule needs; this measures 4.83:1.
 
-One pair everywhere the light cycle is reported — timeline icons, logbook entries, the humidity tab's day/night columns, the lights-on/off equipment icon. Four sites had four different pairs before ADR 0042 §2. `--primary-light-color` keeps this value for the controller accent; `--primary-light-color-hover` and `-active` are unrelated white tints, despite the name.
+One pair everywhere the light cycle is reported — timeline icons, logbook entries, the humidity tab's day/night columns, the lights-on/off equipment icon. Three different pairs across five call sites before ADR 0042 §2. `--primary-light-color` keeps this value for the controller accent; `--primary-light-color-hover` and `-active` are unrelated white tints, despite the name.
 
 ### Crop Steering Phases
 
@@ -388,7 +394,7 @@ One pair everywhere the light cycle is reported — timeline icons, logbook entr
 
 ### Gradients
 
-`--primary-gradient`, `--secondary-gradient` and `--danger-gradient` run `135deg`, and **the direction is part of the token** — it is the card's fill direction for buttons and surfaces. A gradient bound to another direction (a liquid column runs `to bottom`) composes the same stops from the colour tokens instead of re-authoring them: `linear-gradient(to bottom, var(--gm-info-color), var(--info-dark))`. Re-declaring the stops as literals is what ADR 0042 §3 stops. `--primary-gradient` is the filled-button treatment; a filled button must not carry its own gradient.
+`--primary-gradient`, `--secondary-gradient` and `--danger-gradient` run `135deg`, and **the direction is part of the token** — it is the card's fill direction for buttons and surfaces. A gradient bound to another direction (a liquid column runs `to bottom`) composes the same stops from the colour tokens instead of re-authoring them: `linear-gradient(to bottom, var(--secondary), var(--info-dark))`. **Both stops must theme alike** — pairing the theme-following `--gm-info-color` with a literal `--info-dark` runs the gradient between two unrelated hues under a theme that sets `--info-color`. `--secondary` and `--info-dark`, like `--error-color` and `--error-dark`, move together. Re-declaring the stops as literals is what ADR 0042 §3 stops. `--primary-gradient` is the filled-button treatment; a filled button must not carry its own gradient.
 
 ### Data Series
 

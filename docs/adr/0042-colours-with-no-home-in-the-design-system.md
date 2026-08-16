@@ -33,8 +33,18 @@ set is normative:
    showed up next to the CSS ones — and the day value collides with both `--stage-flower`
    and the P3 phase band.
 
-So the light cycle is rendered in **four different pairs across five sites**, not one pair
-across four. AC #4's "all four call sites" is wrong on both ends.
+So the light cycle is rendered in **three different pairs across five call sites in four
+files**, not one pair across four:
+
+| Pair                  | Sites                                                                                      |
+| --------------------- | ------------------------------------------------------------------------------------------ |
+| `#ffc107` / `#3f51b5` | `plant-timeline.ts:244-253` (css) and `:630` (inline), `growspace-logbook.ts:195-196` (js) |
+| `#ff9800` / `#7986cb` | `config-humidity-tab.ts:402-403` (js)                                                      |
+| `#ffeb3b` / `#90a4ae` | `growspace-card.styles.ts:344,349` (css)                                                   |
+
+The documented Tertiary is a fourth _encoding_ but not a fourth pair: it has a day value
+and no night half, which is part of why the reporting sites invented their own.
+AC #4's "all four call sites" is wrong on both ends.
 
 ### The finding that decides §1
 
@@ -75,6 +85,15 @@ warning orange:
 Named visual change: both now-lines, their dots and their glows go orange → white
 (`box-shadow: … rgba(255,152,0,0.5)` becomes `rgba(255,255,255,0.5)`). Applied by #632;
 the phase literals in the slice by #634.
+
+**A constraint on #634: the phase family must move through the generated `token` map, not
+through `var()`.** Six sites concatenate an alpha suffix onto the slice value —
+`crop-steering-day-chart.ts:864,888,926,928` (`${color}22`, `88`, `1a`, `55`, `cc`) and
+`irrigation-schedules-tab.ts:545,580` (`40`, `99`, `55`). A `var(--phase-p3)` substitution
+produces `var(--phase-p3)22`, which is not a colour: the band silently loses its fill and
+border while the label beside it keeps rendering. So `token['--phase-p3']` (ADR 0039 §2)
+is not the convenient option here, it is the only one, and the token must stay a 6-digit
+hex for the 8-digit form to work.
 
 ### 2. One light-cycle pair, for all five sites
 
@@ -126,7 +145,16 @@ gradient compose the same stops:
 
 - `--info-dark` (`#1976d2`) is added, mirroring the existing `--error-dark` (`#d32f2f`).
   Its absence was the only reason the liquid had to re-author the pair.
-- The liquid becomes `linear-gradient(to bottom, var(--gm-info-color), var(--info-dark))`
+- **Both stops of a composed gradient must theme alike, and here that means both are
+  bare.** `--error-color` / `--error-dark` are both literal, so the danger pair moves
+  together. The blue side had no such partner: `--gm-info-color` is
+  `var(--info-color, #2196f3)` and follows the Home Assistant theme, so pairing it with a
+  literal `--info-dark` would, under a theme that sets `--info-color`, run the liquid
+  between two unrelated hues — the shape ADR 0041 exists to catch. `colors.secondary`
+  (`#2196f3`) was documented and `css: null`, the same unreachable-ramp problem ADR 0039
+  §3 fixed for surfaces, so it gets its runtime name `--secondary` here. Sites meaning
+  "informational" keep using `--gm-info-color`; a _gradient stop_ takes `--secondary`.
+- The liquid becomes `linear-gradient(to bottom, var(--secondary), var(--info-dark))`
   and its warning variant `linear-gradient(to bottom, var(--error-color), var(--error-dark))`.
   No visual change; the liquid is semantic (info = normal, danger = low), unlike the shell.
 - This is #633's work, and it is the card-side half of #641's "the 3D tank's liquid and
@@ -206,8 +234,8 @@ the allowlist_ from _out of the matcher's reach_.
 
 ## Consequences
 
-- Nine tokens added: `--phase-p1/-p2/-p3`, `--marker-now`, `--cycle-day`,
-  `--cycle-night`, `--info-dark`, `--genetics-indica`, `--genetics-sativa`.
+- Ten tokens added: `--phase-p1/-p2/-p3`, `--marker-now`, `--cycle-day`, `--cycle-night`,
+  `--info-dark`, `--secondary`, `--genetics-indica`, `--genetics-sativa`.
 - The audit baseline ratchets **148 → 132**, all of it the exception allowlist (16
   literals across three files). No call site is migrated in this ADR's PR — #632/#633/#634
   own that, and this exists so they stop having to ask.

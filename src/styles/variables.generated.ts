@@ -100,19 +100,27 @@ export const variables: CSSResult = css`
     --on-primary-container-bright: #69f0ae;
 
     /* Secondary — Hydro Blue */
+    /* Documented since ADR 0035 and unreachable until now — the light stop of
+       --secondary-gradient, and the half --info-dark pairs with. Bare on purpose, as the
+       danger pair is, because a gradient whose two stops follow different theming runs between
+       two unrelated hues. Sites meaning "informational" still take the theme-following
+       --gm-info-color.
+    */
+    --secondary: #2196f3;
     --on-secondary: #ffffff;
     /* The dark stop of --secondary-gradient, mirroring --error-dark. Exists so a gradient that
        cannot run 135deg — a liquid column runs \`to bottom\` — can compose the same two stops
-       without re-authoring them. See ADR 0042 §3.
+       without re-authoring them. Pairs with bare --secondary, not with --gm-info-color. See
+       ADR 0042 §3.
     */
     --info-dark: #1976d2;
 
     /* Light cycle — day and dark period */
     /* One pair for the whole light cycle, wherever it is reported: timeline icons, logbook
-       entries, the humidity tab's day/night columns and the lights-on/off equipment icon. Four
-       call sites had four different pairs before this existed. Day carries the Tertiary value,
-       so the cycle a report describes and the controller accent that drives it are one colour.
-       See ADR 0042 §2.
+       entries, the humidity tab's day/night columns and the lights-on/off equipment icon.
+       Three different pairs across five call sites before this existed. Day carries the
+       Tertiary value, so the cycle a report describes and the controller accent that drives it
+       are one colour. See ADR 0042 §2.
     */
     --cycle-day: #ffeb3b;
     /* Indigo 300, not the Indigo 500 (#3f51b5) three sites had drifted to: 500 measures 2.43:1
@@ -420,19 +428,27 @@ export const portalVariables: CSSResult = css`
     --on-primary-container-bright: #69f0ae;
 
     /* Secondary — Hydro Blue */
+    /* Documented since ADR 0035 and unreachable until now — the light stop of
+       --secondary-gradient, and the half --info-dark pairs with. Bare on purpose, as the
+       danger pair is, because a gradient whose two stops follow different theming runs between
+       two unrelated hues. Sites meaning "informational" still take the theme-following
+       --gm-info-color.
+    */
+    --secondary: #2196f3;
     --on-secondary: #ffffff;
     /* The dark stop of --secondary-gradient, mirroring --error-dark. Exists so a gradient that
        cannot run 135deg — a liquid column runs \`to bottom\` — can compose the same two stops
-       without re-authoring them. See ADR 0042 §3.
+       without re-authoring them. Pairs with bare --secondary, not with --gm-info-color. See
+       ADR 0042 §3.
     */
     --info-dark: #1976d2;
 
     /* Light cycle — day and dark period */
     /* One pair for the whole light cycle, wherever it is reported: timeline icons, logbook
-       entries, the humidity tab's day/night columns and the lights-on/off equipment icon. Four
-       call sites had four different pairs before this existed. Day carries the Tertiary value,
-       so the cycle a report describes and the controller accent that drives it are one colour.
-       See ADR 0042 §2.
+       entries, the humidity tab's day/night columns and the lights-on/off equipment icon.
+       Three different pairs across five call sites before this existed. Day carries the
+       Tertiary value, so the cycle a report describes and the controller accent that drives it
+       are one colour. See ADR 0042 §2.
     */
     --cycle-day: #ffeb3b;
     /* Indigo 300, not the Indigo 500 (#3f51b5) three sites had drifted to: 500 measures 2.43:1
@@ -691,6 +707,7 @@ export const token = {
   '--surface-container-highest': '#3a3a3a',
   '--on-primary': '#ffffff',
   '--on-primary-container-bright': '#69f0ae',
+  '--secondary': '#2196f3',
   '--on-secondary': '#ffffff',
   '--info-dark': '#1976d2',
   '--cycle-day': '#ffeb3b',
