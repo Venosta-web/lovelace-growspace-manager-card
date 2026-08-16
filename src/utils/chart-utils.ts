@@ -129,11 +129,11 @@ export class ChartUtils {
     if (metricKey === 'vpd' && status) {
       switch (status) {
         case 'optimal':
-          return '#4caf50'; // Green
+          return 'var(--success-color, #4caf50)';
         case 'warning':
           return 'var(--gm-warning-color, #ff9800)'; // Orange
         case 'danger':
-          return '#f44336'; // Red
+          return 'var(--error-color, #f44336)';
       }
     }
     const config = METRIC_CONFIG[metricKey];
