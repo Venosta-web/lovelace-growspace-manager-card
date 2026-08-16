@@ -174,9 +174,23 @@ Two consequences of that table are visible colour changes, and both are delibera
   to it is itself a now-deprecated site that this work repairs. A VPD zone outside
   optimal means *something is drifting*, which is the status role — so `#ff9800`
   becomes `#ffa726` in the gradient and the shader.
+
+  **This one carries a prerequisite.** `--gm-status-warning` is declared in
+  `status.styles.ts:21`, not in `tokens.ts`, and neither `vpd-heatmap` (which
+  composes `sharedStyles` only) nor `heatmap-3d` (a bare `css` tag) adopts that
+  stylesheet — so today the name is out of scope in both components. Both migrations
+  must compose `statusTokens` into `static styles`, and this must be checked against
+  the composed `cssText` rather than the import list.
+
+  The failure mode if it is skipped is exactly the one decision 10 cannot see: the
+  probe read returns empty and takes the descriptor's fallback, the legend swatch
+  resolves to nothing, and the test compares two identically-broken halves and
+  passes. ADR 0039 §4 already flagged the status tokens living outside `tokens.ts`
+  as a contradiction with ADR 0035 §2; consolidating them would dissolve this
+  prerequisite, and is not attempted here.
 - **Stop 1 is derived and does not reproduce `#0d47a1`.** `--gm-info-deep` is
-  `color-mix(in oklab, var(--gm-info-color) 69%, black)`, which measures **`#105994`**
-  against the current literal's `#0d47a1` — about 22 units away, lighter and less
+  `color-mix(in srgb, var(--gm-info-color) 62%, black)`, which measures **`#145d97`**
+  against the current literal's `#0d47a1` — about 25 units away, lighter and less
   saturated. `#0d47a1` is Material Blue 900, a distinct point, not a darkening of Blue
   500; no `color-mix` expression reaches it. ADR 0035 §5 rejected derivation for the
   series palette on exactly this pixel-identity ground, and this decision knowingly
@@ -184,6 +198,16 @@ Two consequences of that table are visible colour changes, and both are delibera
   not**. A frozen navy welded beneath four stops that moved with the theme is no longer
   a ramp, and the stop is a 6px sliver of a gradient nobody reads as an exact colour.
   The value changes; that is the price and it is recorded here rather than papered over.
+
+  **`in srgb`, not `in oklab`, and the reason is decision 5.** Mixing in oklab lands
+  closer (69% → `#105994`, ~22 units) and would be the better choice for a CSS-only
+  token. But a computed `color` whose value is a non-sRGB `color-mix` serialises as
+  `oklab(…)`, and `THREE.Color.setStyle` in the pinned three r184 parses only hex,
+  named colours, `rgb`/`rgba` and `hsl`/`hsla` — see
+  `node_modules/three/src/math/Color.js:286`. It would leave the colour unchanged and
+  warn, putting the shader's deep stop out of step with the legend's: a new asymmetry
+  *inside* the pair this ADR exists to close. Three units of accuracy is a cheap price
+  for the ramp resolving through one syntax everywhere.
 
 ### 7. `tank-renderer`'s label wins, and its alpha suffix becomes `color-mix`
 
@@ -246,6 +270,15 @@ and unmigrated so #576's zero stays honest without this issue's diff growing.
 Under #581's options 2 and 3 this criterion would have been trivially true; it has
 teeth only because the colours are resolved.
 
+**Agreement and freshness are two assertions, not one.** Overriding a custom property
+on the host does not schedule a Lit update, so an agreement test has to call
+`requestUpdate()` by hand — which proves the palette resolves and the halves match,
+and proves nothing about the production trigger. #581's non-negotiable criterion is
+the *other* one: no stale canvas after a theme switch. So the canvas test also sets a
+**new `hass` object** with changed `themes` and asserts the pixel repaints with no
+manual `requestUpdate` — the actual path from decision 3. Without that second
+assertion, AC #3 rests on an untested assumption about `hass` propagation.
+
 ### 11. Landing order
 
 ```
@@ -263,7 +296,7 @@ reviewed together the visual regressions hide behind the plumbing.
 - The heatmap becomes theme-responsive, which it has never been. A card under a custom
   Home Assistant theme repaints its VPD zones in that theme's colours.
 - Three colour values change visibly: the ramp's warm stop (`#ff9800` → `#ffa726`),
-  its deep stop (`#0d47a1` → `#105994`), and the 3D tank liquid
+  its deep stop (`#0d47a1` → `#145d97`), and the 3D tank liquid
   (`0xff4422` → `#f44336`). No pixelmatch snapshot covers any of them.
 - Every painted surface now has a DOM dependency it did not have. A canvas rendered
   before its host's styles are adopted resolves nothing and falls back — which is why

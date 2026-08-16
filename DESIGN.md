@@ -363,7 +363,8 @@ The standing rule, from ADR 0040:
 - **Painted surfaces resolve at draw time**, through a hidden probe element read as `getComputedStyle(probe).color` — never `getPropertyValue`, whose output is whatever syntax the theme author wrote. Resolve once per draw, outside the pixel loop.
 - **Repaint when the resolved palette changes**, not when `hass` changes. Re-resolve on every update, compare against the cached strings, repaint only on a difference.
 - **Ramps are authored once** as role descriptors holding token *names* plus a terminal fallback hex, read by the canvas, the legend, and the shader's uniform feed alike.
-- **Shaders take colour as a uniform**, converted with `new THREE.Color().setStyle()` — three.js renders linear, and a hand-normalised `vec3` comes out wrong.
+- **Shaders take colour as a uniform**, converted with `new THREE.Color().setStyle()` — three.js renders linear, and a hand-normalised `vec3` comes out wrong. `setStyle` parses hex, named colours, `rgb`/`rgba` and `hsl`/`hsla` only, so any token a painted surface reads must resolve to one of those — derive with `color-mix(in srgb, …)`, never `in oklab`, whose computed value serialises as `oklab()`.
+- **Check that the token is in the component's scope**, against the composed `cssText` rather than the import list. The status tokens live in `status.styles.ts`, so a component that does not compose it sees `--gm-status-warning` as undefined — and both halves of a pair then fall back together, which looks like agreement.
 
 **Accepted exceptions**, allowlisted in `scripts/audit-design-tokens.mjs` and excluded from the migration's zero: three.js scene furniture (grid, floor, housings, soil and pot), `vpd-heatmap`'s white/black current-point marker, and the image-only canvases in `plant-utils.ts` and `camera-capture.ts`. **Deferred, not exempt**: `plant-renderer.ts`'s three role-carrying literals (`0x4caf50`, `0x2e7d32`, `0x81c784`).
 
