@@ -1,3 +1,10 @@
+# [1.1.0-next.141](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.140...v1.1.0-next.141) (2026-08-16)
+
+
+### Bug Fixes
+
+* **design:** migrate the gradient stops to the gradient tokens ([#655](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/655)) ([6aedcab](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/6aedcabd57d84bc34268df7feb353df045637f25)), closes [#388e3c](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/388e3c) [#4caf50](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/4caf50) [#632](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/632) [#649](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/649) [#4caf50](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/4caf50) [#1e1e1e](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/1e1e1e) [#45a049](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/45a049) [#4caf50](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/4caf50)
+
 # [1.1.0-next.140](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.139...v1.1.0-next.140) (2026-08-16)
 
 
