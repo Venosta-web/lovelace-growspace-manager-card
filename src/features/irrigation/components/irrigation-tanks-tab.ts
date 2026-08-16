@@ -8,7 +8,9 @@
  * inline `_renderTanksTab` / `_renderTankEditForm` / `_renderTankRow` helpers so
  * the rendered output stays byte-identical; the `.tank-*` styles moved here with
  * it. `md3-*`, `detail-card`, `row-col-grid`, `button-group` come from the
- * shared `dialogStyles`.
+ * shared `dialogStyles`. The sensor field has since moved to `gm-entity-picker`
+ * (ADR-0043) — the picker reaches the entity registry through `hassContext`
+ * itself, so this element still never sees `hass`.
  *
  * Tab Intents (the Dialog Shell owns their translation to SM events):
  *   - `edit-tank-requested`  detail: { index }
@@ -21,6 +23,7 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiPencil } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import '../../shared/ui/gm-entity-picker';
 import type { TankDraft } from '../../../dialogs/irrigation-dialog-sm';
 import type { TanksTabViewModel, TankRowVM, TankEditVM } from '../viewmodels/tanks-tab.viewmodel';
 
@@ -160,19 +163,12 @@ export class IrrigationTanksTab extends LitElement {
         class="tank-edit-form"
         style="margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--divider-color,rgba(255,255,255,0.15));border-radius: var(--border-radius-sm, 8px);padding:16px;display:flex;flex-direction:column;gap:12px;"
       >
-        <div class="md3-input-group">
-          <label class="md3-label">Sensor Entity *</label>
-          <input
-            class="md3-input"
-            list="tank-edit-sensor-datalist"
-            .value=${draft.sensorEntity}
-            @input=${(e: Event) => update({ sensorEntity: (e.target as HTMLInputElement).value })}
-            placeholder="Search entity..."
-          />
-          <datalist id="tank-edit-sensor-datalist">
-            ${editing.entityOptions.map((id) => html`<option value="${id}"></option>`)}
-          </datalist>
-        </div>
+        <gm-entity-picker
+          label="Sensor Entity *"
+          .value=${draft.sensorEntity}
+          .options=${editing.entityOptions}
+          @entity-picked=${(e: CustomEvent<string>) => update({ sensorEntity: e.detail })}
+        ></gm-entity-picker>
         <div class="md3-input-group">
           <label class="md3-label">Name</label>
           <input

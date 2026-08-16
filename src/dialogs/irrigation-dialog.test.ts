@@ -7,6 +7,7 @@ import { cropSteeringHistory$, irrigationConfigs$, setTankLevels, tankLevels$ } 
 import { createGrowspaceDevice } from '../services/types';
 import type { IrrigationDialog } from './irrigation-dialog';
 import './irrigation-dialog';
+import { hassWithEntities, mountWithHass } from '../../tests/harness/entity-picker';
 
 // ADR-0019: the Tanks tab Save effect persists via the Growspace slice's
 // configureEnvironment. Mock it so the inline-edit test can assert the call.
@@ -1785,11 +1786,12 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
   it("edit form pre-populates with the tank's current values", async () => {
     const { el, tab } = await mountTanks();
     await openEditor(tab, el);
+    const picker = tab.shadowRoot.querySelector('gm-entity-picker') as { value: string };
+    expect(picker.value).toBe('sensor.tank_a');
     const inputs = tab.shadowRoot.querySelectorAll('input.md3-input');
-    expect((inputs[0] as HTMLInputElement).value).toBe('sensor.tank_a');
-    expect((inputs[1] as HTMLInputElement).value).toBe('Tank A');
-    expect((inputs[2] as HTMLInputElement).value).toBe('200');
-    expect((inputs[3] as HTMLInputElement).value).toBe('20');
+    expect((inputs[0] as HTMLInputElement).value).toBe('Tank A');
+    expect((inputs[1] as HTMLInputElement).value).toBe('200');
+    expect((inputs[2] as HTMLInputElement).value).toBe('20');
   });
 
   it('clicking Cancel hides the edit form', async () => {
@@ -1805,14 +1807,45 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
     expect(tab.shadowRoot.querySelector('.tank-edit-form')).toBeNull();
   });
 
+  it('reaches the entity registry and the container option list through the dialog tree', async () => {
+    // The picker consumes `hassContext` from outside the dialog, three shadow
+    // roots up (picker → tanks tab → dialog → provider), and its options come
+    // from the container's own hass-derived atom. Neither hop is visible in the
+    // hass-free mounts above, so this one supplies a provider.
+    const device = makeTankDevice();
+    setTankLevels('gs1', device.environmentAttributes!.irrigationTanks as never);
+    const el = document.createElement('irrigation-dialog') as IrrigationDialog;
+    el.open = true;
+    el.device = device;
+    el.initialTab = 'tanks';
+    await mountWithHass(
+      el,
+      hassWithEntities({ 'sensor.tank_a': 'Tank A Level', 'sensor.tank_b': 'Tank B Level' })
+    );
+    const tab = el.shadowRoot!.querySelector('irrigation-tanks-tab') as LitElement & {
+      shadowRoot: ShadowRoot;
+    };
+    await tab.updateComplete;
+    await openEditor(tab, el);
+
+    const picker = tab.shadowRoot.querySelector('gm-entity-picker') as LitElement & {
+      shadowRoot: ShadowRoot;
+    };
+    const inner = picker.shadowRoot.querySelector('ha-entity-picker') as HTMLElement & {
+      includeEntities: string[];
+    };
+    expect(inner).not.toBeNull();
+    expect(inner.includeEntities).toEqual(['sensor.tank_a', 'sensor.tank_b']);
+  });
+
   it('clicking Save calls configureEnvironment with the updated tank and closes the form', async () => {
     vi.mocked(configureEnvironment).mockClear();
     const { el, tab } = await mountTanks();
     await openEditor(tab, el);
 
-    // Change warning level (4th input)
+    // Change warning level (last input — the sensor field is the picker above)
     const form = tab.shadowRoot.querySelector('.tank-edit-form')!;
-    const warningInput = form.querySelectorAll('input.md3-input')[3] as HTMLInputElement;
+    const warningInput = form.querySelectorAll('input.md3-input')[2] as HTMLInputElement;
     warningInput.value = '25';
     warningInput.dispatchEvent(new Event('input'));
     await el.updateComplete;

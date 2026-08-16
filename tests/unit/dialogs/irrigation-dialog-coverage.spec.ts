@@ -269,10 +269,17 @@ describe('IrrigationDialog - Coverage', () => {
       expect(sub.draft.name).toBe('Tank 1');
     });
 
-    it('updates sensorEntity on input', async () => {
-      const input = tankInput('Search entity...');
-      Object.defineProperty(input, 'value', { value: 'sensor.new_entity', writable: true });
-      input.dispatchEvent(new Event('input'));
+    it('updates sensorEntity when the picker commits an entity', async () => {
+      // The picker itself is HA's; what the dialog owns is the `entity-picked`
+      // wiring, so the intent is driven straight from the picker element.
+      const picker = tab.shadowRoot.querySelector('gm-entity-picker')!;
+      picker.dispatchEvent(
+        new CustomEvent('entity-picked', {
+          detail: 'sensor.new_entity',
+          bubbles: true,
+          composed: true,
+        })
+      );
       await element.updateComplete;
       expect(draftOf().sensorEntity).toBe('sensor.new_entity');
     });

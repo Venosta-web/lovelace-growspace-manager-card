@@ -8,8 +8,13 @@
  * holds no `@state()` of its own.
  */
 import { describe, it, expect } from 'vitest';
-import { fixture, html } from '@open-wc/testing-helpers';
 import { IrrigationTanksTab } from '../../../../../src/features/irrigation/components/irrigation-tanks-tab';
+import {
+  hassWithEntities,
+  mountWithHass,
+  pickEntity,
+  pickerOptions,
+} from '../../../../harness/entity-picker';
 import type { TanksTabViewModel, TankRowVM } from '../../../../../src/features/irrigation/viewmodels/tanks-tab.viewmodel';
 import type { TankDraft } from '../../../../../src/dialogs/irrigation-dialog-sm';
 
@@ -39,12 +44,16 @@ function makeVm(overrides: Partial<TanksTabViewModel> = {}): TanksTabViewModel {
   return { tanks: [row()], editing: null, ...overrides };
 }
 
+/** The picker reads the entity registry itself, so the mount supplies one. */
+const HASS = hassWithEntities({
+  'sensor.tank_a': 'Tank A Level',
+  'sensor.tank_b': 'Tank B Level',
+});
+
 async function mount(vm: TanksTabViewModel): Promise<IrrigationTanksTab> {
-  const el = await fixture<IrrigationTanksTab>(
-    html`<irrigation-tanks-tab .vm=${vm}></irrigation-tanks-tab>`
-  );
-  await el.updateComplete;
-  return el;
+  const el = document.createElement('irrigation-tanks-tab') as IrrigationTanksTab;
+  el.vm = vm;
+  return mountWithHass(el, HASS);
 }
 
 const norm = (s: string | null | undefined): string => (s ?? '').replace(/\s+/g, ' ').trim();
@@ -91,16 +100,31 @@ describe('irrigation-tanks-tab', () => {
     expect(evt.detail).toEqual({ index: 2 });
   });
 
-  it('renders the edit form from vm.editing and lists the entity options', async () => {
+  it('renders the edit form from vm.editing and offers the entity options to the picker', async () => {
     const el = await mount(makeVm({ editing: { index: 0, draft, entityOptions: ['sensor.tank_a', 'sensor.tank_b'] } }));
     expect(el.shadowRoot!.querySelector('.tank-edit-form')).toBeTruthy();
-    const options = [...el.shadowRoot!.querySelectorAll('datalist option')].map((o) => o.getAttribute('value'));
-    expect(options).toEqual(['sensor.tank_a', 'sensor.tank_b']);
+    expect(pickerOptions(el.shadowRoot!)).toEqual(['sensor.tank_a', 'sensor.tank_b']);
+  });
+
+  it('emits tank-draft-changed with the picked entity', async () => {
+    const el = await mount(makeVm({ editing: { index: 0, draft, entityOptions: ['sensor.tank_b'] } }));
+    const evt = await captureIntent(el, 'tank-draft-changed', () => {
+      pickEntity(el.shadowRoot!, 'sensor.tank_b');
+    });
+    expect(evt.detail).toEqual({ partial: { sensorEntity: 'sensor.tank_b' } });
+  });
+
+  it('emits an empty sensorEntity when the picker is cleared, never an omitted key', async () => {
+    const el = await mount(makeVm({ editing: { index: 0, draft, entityOptions: ['sensor.tank_b'] } }));
+    const evt = await captureIntent(el, 'tank-draft-changed', () => {
+      pickEntity(el.shadowRoot!, '');
+    });
+    expect(evt.detail).toEqual({ partial: { sensorEntity: '' } });
   });
 
   it('emits tank-draft-changed with the field partial on input', async () => {
     const el = await mount(makeVm({ editing: { index: 0, draft, entityOptions: [] } }));
-    const nameInput = el.shadowRoot!.querySelectorAll<HTMLInputElement>('.md3-input')[1];
+    const nameInput = el.shadowRoot!.querySelectorAll<HTMLInputElement>('.md3-input')[0];
     const evt = await captureIntent(el, 'tank-draft-changed', () => {
       nameInput.value = 'Renamed';
       nameInput.dispatchEvent(new Event('input'));
