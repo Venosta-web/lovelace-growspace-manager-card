@@ -353,6 +353,20 @@ Two `:host` blocks are generated from `src/styles/tokens.ts`. The card adopts al
 - **Two exceptions**, `--divider-color` and `--error-color`: Home Assistant defines these names too, so the portal deliberately leaves them to the user's theme. A dialog that wants them writes `var(--divider-color, rgba(255,255,255,0.12))`.
 - **Adding a token** means editing `tokens.ts` and running `npm run tokens:generate`; both blocks and the palette above regenerate together. See ADR 0036.
 
+### Where Tokens Cannot Reach
+
+`ctx.fillStyle` and a GLSL `vec3` take a resolved colour, so no `var()` reference survives into a canvas or a shader. The generated `token` map covers this for bare-valued tokens (ADR 0039 §2) but not for the `var(--ha-token, #hex)` ones — `token['--gm-info-color']` is the string `'var(--info-color, #2196f3)'`, which is an invalid `fillStyle`.
+
+The standing rule, from ADR 0040:
+
+- **A painted surface and the DOM legend describing it must resolve to the same colour.** This is the invariant; everything below is how it is kept.
+- **Painted surfaces resolve at draw time**, through a hidden probe element read as `getComputedStyle(probe).color` — never `getPropertyValue`, whose output is whatever syntax the theme author wrote. Resolve once per draw, outside the pixel loop.
+- **Repaint when the resolved palette changes**, not when `hass` changes. Re-resolve on every update, compare against the cached strings, repaint only on a difference.
+- **Ramps are authored once** as role descriptors holding token *names* plus a terminal fallback hex, read by the canvas, the legend, and the shader's uniform feed alike.
+- **Shaders take colour as a uniform**, converted with `new THREE.Color().setStyle()` — three.js renders linear, and a hand-normalised `vec3` comes out wrong.
+
+**Accepted exceptions**, allowlisted in `scripts/audit-design-tokens.mjs` and excluded from the migration's zero: three.js scene furniture (grid, floor, housings, soil and pot), `vpd-heatmap`'s white/black current-point marker, and the image-only canvases in `plant-utils.ts` and `camera-capture.ts`. **Deferred, not exempt**: `plant-renderer.ts`'s three role-carrying literals (`0x4caf50`, `0x2e7d32`, `0x81c784`).
+
 ## 3. Typography Rules
 
 ### Family & Character
