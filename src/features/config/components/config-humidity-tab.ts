@@ -326,7 +326,7 @@ export class ConfigHumidityTab extends LitElement {
                 )}
                 ${this._deviceBlock(
                   'Humidifier',
-                  '#00bcd4',
+                  'var(--metric-humidifier, #00bcd4)',
                   mdiAirHumidifier,
                   'update-hum-threshold',
                   stage.humKey,
