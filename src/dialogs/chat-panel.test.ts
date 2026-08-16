@@ -920,6 +920,17 @@ describe('GmChatPanel — agent setup', () => {
     expect(el.shadowRoot!.querySelector<HTMLButtonElement>('.agent-save-btn')!.disabled).toBe(true);
   });
 
+  it('never allows a custom entity, so a typed non-agent cannot be committed', async () => {
+    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    await el.updateComplete;
+
+    const picker = el.shadowRoot!.querySelector('ha-entity-picker')!;
+    expect(picker.hasAttribute('allow-custom-entity')).toBe(false);
+    expect(
+      (picker as unknown as { allowCustomEntity?: boolean }).allowCustomEntity,
+    ).toBeUndefined();
+  });
+
   it('agent-save-btn is enabled after selecting an agent via value-changed', async () => {
     const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
     await el.updateComplete;

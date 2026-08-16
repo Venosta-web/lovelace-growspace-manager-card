@@ -1173,7 +1173,6 @@ export class GmChatPanel extends LitElement {
               .hass=${this.hass}
               .value=${agentDraft}
               .includeDomains=${['conversation']}
-              allow-custom-entity
               @value-changed=${(e: CustomEvent) => {
                 this._dispatch({ type: 'AGENT_DRAFT_CHANGED', entityId: e.detail.value ?? '' });
               }}
