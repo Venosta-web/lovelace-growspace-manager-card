@@ -37,6 +37,38 @@ const EXEMPT_FILES = [
   'src/utils/three/renderers/vpd-cloud-renderer.ts',
 ];
 
+/**
+ * Literals that are permanently correct as literals, excluded from the count so
+ * the migration's zero is reachable. Keyed by file and by the HEXES that carry
+ * the accepted role, never by whole file — a blanket file pass would license the
+ * next role-carrying literal added beside them (ADR 0040), and line numbers drift
+ * on every edit above them. A file listed here is still audited for every other
+ * value. Each entry needs a reason; `--exceptions` prints them.
+ */
+const ACCEPTED_EXCEPTIONS = [
+  {
+    file: 'src/features/shared/ui/label-preview.ts',
+    hexes: ['#000', '#333'],
+    reason:
+      'Ink and rule on a PRINTED label. The preview mirrors what a label printer puts on white stock, so it does not follow the card theme — a token here would be actively wrong. ADR 0042 §6.',
+  },
+  {
+    file: 'src/features/shared/ui/camera-capture.ts',
+    hexes: ['#000'],
+    reason:
+      'Letterbox behind a <video> element. Black is what the absence of frame is, not a surface colour. ADR 0042 §6.',
+  },
+  {
+    file: 'src/cards/growspace-tank-card.ts',
+    hexes: ['#2c3e50', '#4a6fa5', '#34495e', '#3e2723', '#a54a4a', '#4e342e'],
+    reason:
+      "The tank illustration's shell material — slate plastic and its rust warning variant, across the cap and body gradients. Material, not role: nothing else in the card can use these hues, and the warning state is carried semantically by the liquid. Scene furniture in the sense of ADR 0040. ADR 0042 §3.",
+  },
+];
+
+const isAccepted = (file, hex) =>
+  ACCEPTED_EXCEPTIONS.some((e) => e.file === file && e.hexes.includes(hex));
+
 const HEX = /#[0-9A-Fa-f]{3,8}\b/g;
 /** `var(--token, #hex)` — the fallback form, which is correct, not drift. */
 const FALLBACK = /var\(\s*--[A-Za-z0-9-]+\s*,\s*#[0-9A-Fa-f]{3,8}\s*\)/g;
@@ -117,6 +149,7 @@ function classify(before) {
 async function collect() {
   const findings = [];
   const conflicts = [];
+  const excluded = [];
   for (const file of walk(SRC)) {
     const rel = path.relative(root, file);
     if (EXEMPT_FILES.includes(rel) || /\.(test|spec)\.ts$/.test(rel)) continue;
@@ -137,20 +170,23 @@ async function collect() {
       }
       const bare = line.replace(FALLBACK, (m) => ' '.repeat(m.length));
       for (const match of bare.matchAll(HEX)) {
-        findings.push({
+        const hex = match[0].toLowerCase();
+        const site = {
           file: rel,
           line: i + 1,
-          hex: match[0].toLowerCase(),
+          hex,
           bucket: classify(bare.slice(0, match.index)),
           text: trimmed.slice(0, 100),
-        });
+        };
+        if (isAccepted(rel, hex)) excluded.push(site);
+        else findings.push(site);
       }
     });
   }
-  return { findings, conflicts };
+  return { findings, conflicts, excluded };
 }
 
-const { findings, conflicts } = await collect();
+const { findings, conflicts, excluded } = await collect();
 const counts = Object.fromEntries(
   Object.keys(BUCKETS).map((b) => [b, findings.filter((f) => f.bucket === b).length])
 );
@@ -160,6 +196,18 @@ const summary = {
   ...counts,
   fallbackConflicts: conflicts.length,
 };
+
+if (process.argv.includes('--exceptions')) {
+  for (const e of ACCEPTED_EXCEPTIONS) {
+    const sites = excluded.filter((x) => x.file === e.file);
+    console.log(`${e.file}  ${e.hexes.join(' ')}  (${sites.length} site(s))`);
+    console.log(`  ${e.reason}\n`);
+    // A stale entry is worse than none: it hides whatever replaced the literal.
+    if (!sites.length) console.log('  WARNING: matches nothing — the literal is gone, drop it.\n');
+  }
+  console.log(`${excluded.length} literal(s) excluded from the count`);
+  process.exit(0);
+}
 
 if (process.argv.includes('--fallbacks')) {
   for (const c of conflicts) {
@@ -189,6 +237,9 @@ for (const [key, label] of Object.entries(BUCKETS)) {
 }
 console.log(
   `\n  ${String(conflicts.length).padStart(4)}  fallback  \`var(--token, x)\` where x contradicts the token (--fallbacks)`
+);
+console.log(
+  `  ${String(excluded.length).padStart(4)}  excluded  accepted exceptions, not part of the zero (--exceptions)`
 );
 
 if (process.argv.includes('--check')) {
