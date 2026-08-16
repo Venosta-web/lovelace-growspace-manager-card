@@ -69,8 +69,10 @@ export const uiStyles = css`
       0 1px 3px 1px rgba(0, 0, 0, 0.15);
   }
 
+  /* The gradient, not the flat --primary-color of .primary above: this is the fill three
+     harvest buttons used to carry inline, folded here per ADR 0042 §4. */
   .md3-button.filled {
-    background: var(--primary-color, #4caf50);
+    background: var(--primary-gradient);
     color: var(--on-primary);
   }
 
