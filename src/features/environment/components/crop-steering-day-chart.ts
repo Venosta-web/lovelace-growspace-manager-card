@@ -35,6 +35,13 @@ type CsModelTooltip = {
  * Irrigation Dialog's Crop Steering Schedule panel and the promoted Steering Phase
  * Chip's inline graph slot (Custom Graph Routing).
  */
+/**
+ * The chart does not compose `statusTokens`, so the token carries the chain it is
+ * defined as — the same shape `features/environment/constants.ts` uses. `--warning`,
+ * which these sites referenced before, is declared nowhere.
+ */
+const STATUS_WARNING = 'var(--gm-status-warning, var(--warning-color, #ffa726))';
+
 @customElement('crop-steering-day-chart')
 export class CropSteeringDayChart extends LitElement {
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
@@ -333,8 +340,8 @@ export class CropSteeringDayChart extends LitElement {
       top: 12px;
       bottom: 22px;
       width: 1px;
-      background: #ff9800;
-      box-shadow: 0 0 8px rgba(255, 152, 0, 0.5);
+      background: var(--marker-now);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
       pointer-events: none;
       z-index: 8;
     }
@@ -346,7 +353,7 @@ export class CropSteeringDayChart extends LitElement {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #ff9800;
+      background: var(--marker-now);
     }
 
     ${reducedMotion}
@@ -1048,7 +1055,7 @@ export class CropSteeringDayChart extends LitElement {
             x2="${xAt(day)}"
             y1="${p2TriggerY.toFixed(1)}"
             y2="${p2TriggerY.toFixed(1)}"
-            stroke="var(--warning, #ffa726)"
+            stroke="${STATUS_WARNING}"
             stroke-opacity="0.5"
             stroke-dasharray="2 3"
           />
@@ -1105,7 +1112,7 @@ export class CropSteeringDayChart extends LitElement {
                 <line
                   x1="${nowX}" x2="${nowX}"
                   y1="${(padT - 6).toFixed(1)}" y2="${(padT + iH).toFixed(1)}"
-                  stroke="var(--warning, #ffa726)" stroke-dasharray="3 3"
+                  stroke="var(--marker-now)" stroke-dasharray="3 3"
                 />
               `
             : nothing}
@@ -1147,9 +1154,7 @@ export class CropSteeringDayChart extends LitElement {
         <span class="cm-target" style="top:${targetY.toFixed(1)}px;color:${vwcColor};"
           >Target ${target.toFixed(0)}%</span
         >
-        <span
-          class="cm-target"
-          style="top:${p2TriggerY.toFixed(1)}px;color:var(--warning, #ffa726);"
+        <span class="cm-target" style="top:${p2TriggerY.toFixed(1)}px;color:${STATUS_WARNING};"
           >P2 trigger ${p2Trigger.toFixed(0)}%</span
         >
         ${ecTargetMid !== null

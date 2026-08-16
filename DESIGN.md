@@ -138,11 +138,20 @@ colors:
   # Genetics axis — The indica/sativa ratio bar splits one track between two opposed
   # segments, so the pair is read against each other before either is read against the
   # surface. Material equivalents of the violet/yellow the bar had imported from another
-  # palette. The violet it replaces measured 2.98:1 against the #333 track, under the 3:1
-  # a graphical object needs; this measures 3.43:1. Separation between the two segments is
-  # unchanged at 2.2:1. See ADR 0042 §5.
+  # palette. The violet it replaces measured 3.39:1 against the track, under the 3:1 a
+  # graphical object needs once the track lightens; this measures 3.90:1. (ADR 0042 quoted
+  # 2.98:1 and 3.43:1 against the #333 the track was authored as; #632 moved it onto
+  # --surface-container-high.) Separation between the two segments is unchanged at 2.2:1.
+  # See ADR 0042 §5.
   genetics-indica: '#9575cd'
   genetics-sativa: '#fbc02d'
+  # Awards
+  # Amber 500, on the award chips a strain carries from a cannabis cup. Promoted under ADR
+  # 0035 §5a rather than folded: #631 sent this site to #632 as ordinary migration work,
+  # but every amber the system already documents means something else — --cycle-day is the
+  # light cycle, --gm-status-warning is 'something is wrong', and Tertiary's value is now
+  # the cycle's. Value unchanged. See ADR 0042's first premise correction.
+  award: '#ffc107'
   # Error/Warning Colors
   # Home Assistant defines this name too — same shadowing as --divider-color, and withheld
   # from the portal for the same reason. See ADR 0036.
@@ -338,6 +347,7 @@ The depth model is a layered **Glassmorphism 2.0** — not the heavy frosted-gla
 - **Amber Light** `#ffeb3b` — Light cycle controller, `--primary-light-color`. SVG chart lines for sensor data. Creates visual warmth in an otherwise cool palette.
 - **Warning Amber** `#ffa726` — Functional warnings such as unknown notification triggers, PHI countdown warnings, training icons, and stat-chip warning states. It is deliberately distinct from Flowering Orange.
 - **Mid Flower** `#ff7043` — Mid-flower crop-phase guidance and the Bulk EC trace. It is distinct from both general Warning Amber and the broader Flowering Orange stage color.
+- **Award Gold** `#ffc107` (`--award`) — Amber 500, on the award chips a strain carries from a cannabis cup, over a `rgba(255,193,7,0.1)` container. An accolade, not a warning and not the light cycle; the ambers around it all mean something else.
 - **Integration Conflict Amber** `#e6a700` — A passive AC Infinity notice for an automated-mode conflict, a failed port pre-fill, or a duplicate port assignment. Its container is `rgba(230,167,0,0.1)` and outline is `rgba(230,167,0,0.35)`; this integration-specific state must not be represented as a plant stage or a general urgency warning.
 
 ### Plant Stage Indicators
@@ -399,7 +409,7 @@ One pair everywhere the light cycle is reported — timeline icons, logbook entr
 
 - **Series ramp** `--series-1` … `--series-4` (`#4fc3f7`, `#81c784`, `#ce93d8`, `#a5d6a7`) — Chart series and KPI tile accents. **Categorical, used in order** — the slots carry no per-metric meaning, because call sites assign them positionally. A fifth series needs a fifth slot added here, not an ad-hoc literal. Empty/no-data states use Disabled Text, not a series colour.
 - **Now marker** `#ffffff` (`--marker-now`) — The current-time cursor on the day charts. Deliberately outside the data palette: the cursor crosses every phase band, so any data hue reads as a band where it overlaps one. Neutral, and the brightest thing on a dark chart.
-- **Genetics axis** `#9575cd` (`--genetics-indica`) / `#fbc02d` (`--genetics-sativa`) — The two segments of the indica/sativa ratio bar, read against each other. Deep Purple 300 and Yellow 700; the violet they replace measured 2.98:1 on the bar's track, under the 3:1 a graphical object needs.
+- **Genetics axis** `#9575cd` (`--genetics-indica`) / `#fbc02d` (`--genetics-sativa`) — The two segments of the indica/sativa ratio bar, read against each other. Deep Purple 300 and Yellow 700; the violet they replace measured 3.39:1 on the bar's track, under the 3:1 a graphical object needs. (ADR 0042 measured both against the `#333` the track was authored as — 2.98:1 and 3.43:1; #632 moved the track onto `--surface-container-high`.)
 
 ### Contrast Exceptions
 
@@ -671,6 +681,7 @@ When prompting Stitch for screens in this system, use vocabulary like:
 | Warning Amber              | `#ffa726`                | Functional warning                  |
 | Mid Flower                 | `#ff7043`                | Mid-flower phase / Bulk EC trace    |
 | Integration Conflict Amber | `#e6a700`                | AC Infinity integration notice      |
+| Award Gold                 | `#ffc107`                | Strain award chip                   |
 | Flowering Orange           | `#ff9800`                | Flowering stage                     |
 | Drying Purple              | `#9c27b0`                | Dry stage, IPM activity             |
 | Mother Pink                | `#e91e63`                | Mother plant stage                  |

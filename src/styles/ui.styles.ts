@@ -316,7 +316,7 @@ export const uiStyles = css`
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
-    background: #323232;
+    background: var(--surface-container-high);
     color: var(--on-overlay-primary);
     padding: 12px 24px;
     border-radius: var(--border-radius-full, 9999px);

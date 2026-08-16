@@ -418,7 +418,7 @@ export class StrainImportDialog extends LitElement {
         font-size: 0.75rem;
         padding: 4px 8px;
         background: rgba(255, 193, 7, 0.1);
-        color: #ffc107;
+        color: var(--award);
         border: 1px solid rgba(255, 193, 7, 0.3);
         border-radius: var(--border-radius-sm, 8px);
         display: flex;

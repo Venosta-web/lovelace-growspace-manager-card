@@ -84,10 +84,10 @@ export class LineageTree extends LitElement {
     }
     /* Keyed on the node's 'source'; a node without one is the genetics root. */
     .node-card.library {
-      border-color: #9c27b0;
+      border-color: var(--primary-color);
     }
     .node-card.manual {
-      border-color: #8bc34a;
+      border-color: var(--secondary-text-color);
       border-style: dashed;
     }
     .node-label {

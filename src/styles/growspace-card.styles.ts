@@ -87,10 +87,12 @@ export const growspaceCardStyles = css`
     }
   }
 
+  /* This sheet is composed into cards, none of which declare statusTokens, so each
+     status name carries the chain it is defined as in status.styles.ts. */
   .stat-chip.status-warning {
-    color: #ffa726 !important;
-    border-color: rgba(255, 167, 38, 0.5) !important;
-    background: rgba(255, 167, 38, 0.1) !important;
+    color: var(--gm-status-warning, var(--warning-color, #ffa726)) !important;
+    border-color: var(--gm-status-warning-outline, color-mix(in srgb, var(--warning-color, #ffa726) 60%, transparent)) !important;
+    background: var(--gm-status-warning-fill, color-mix(in srgb, var(--warning-color, #ffa726) 14%, transparent)) !important;
   }
 
   .stat-chip.status-danger {
@@ -345,8 +347,8 @@ export const growspaceCardStyles = css`
   }
 
   .ac-icon.off {
-    background: rgba(120, 144, 156, 0.1);
-    color: #90a4ae;
+    background: color-mix(in srgb, var(--cycle-night) 10%, transparent);
+    color: var(--cycle-night);
   }
 
   .ac-text h4 {

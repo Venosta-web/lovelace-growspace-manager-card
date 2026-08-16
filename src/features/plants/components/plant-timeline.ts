@@ -241,16 +241,16 @@ export class PlantTimeline extends LitElement {
         fill: var(--warning-color, #ff9800);
       }
       .type-environmental_report.is-night .icon-wrapper {
-        border-color: #3f51b5;
+        border-color: var(--cycle-night);
       }
       .type-environmental_report.is-night .icon-wrapper svg {
-        fill: #3f51b5;
+        fill: var(--cycle-night);
       }
       .type-environmental_report.is-day .icon-wrapper {
-        border-color: #ffc107;
+        border-color: var(--cycle-day);
       }
       .type-environmental_report.is-day .icon-wrapper svg {
-        fill: #ffc107;
+        fill: var(--cycle-day);
       }
 
       /* Action specific styling */
@@ -627,7 +627,7 @@ export class PlantTimeline extends LitElement {
       case 'environmental_report': {
         const isDay = event.sensor_type !== 'night_report';
         return html`
-          <div class="content" style="color: ${isDay ? '#ffc107' : '#3f51b5'}">
+          <div class="content" style="color: ${isDay ? 'var(--cycle-day)' : 'var(--cycle-night)'}">
             ${isDay ? 'Day' : 'Night'} Environmental Report
           </div>
           <div class="details">
