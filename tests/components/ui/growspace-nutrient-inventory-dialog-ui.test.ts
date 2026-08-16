@@ -459,7 +459,14 @@ describe('edge cases and fallback logic', () => {
     const el = await mountList(aInventory({ n3: unknownStock }));
     const item = el.shadowRoot!.querySelector('[data-stock-id="n3"]')!;
     const iconContainer = item.querySelector('.type-icon') as HTMLElement;
-    expect(iconContainer.style.background).toContain('var(--primary-color, #4caf50)22');
+    // ADR 0044 §3: the chip carries the colour as a custom property and the rule tints
+    // it. The old form concatenated an alpha suffix onto this value, which is why the
+    // assertion used to read `var(--primary-color, #4caf50)22` — a value that never
+    // parsed, so this chip rendered untinted.
+    expect(iconContainer.style.getPropertyValue('--stock-c')).toBe(
+      'var(--primary-color, #4caf50)'
+    );
+    expect(getComputedStyle(iconContainer).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
   });
 
   it('handles fillPercent boundary cases', async () => {
