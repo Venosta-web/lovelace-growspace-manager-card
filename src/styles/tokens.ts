@@ -620,6 +620,12 @@ export const groups: TokenGroup[] = [
         note: 'DEPRECATED. Conflates the status warning with the flowering stage: it defers to the same HA variable as --gm-status-warning but falls back to the stage orange. Each use resolves to --gm-status-warning or --stage-flower per site. See ADR 0039 §4.',
       },
       { css: '--gm-info-color', value: 'var(--info-color, #2196f3)', doc: null },
+      {
+        css: '--gm-info-deep',
+        value: 'color-mix(in srgb, var(--gm-info-color) 62%, black)',
+        doc: null,
+        note: 'The far-low stop of the environment ramp (src/styles/environment-ramp.ts), darker than --gm-info-color so a five-stop scale keeps its direction. Derived rather than authored so it follows a themed --info-color; ADR 0035 §5 rejected derivation for the categorical series palette, and ADR 0040 §6 knowingly departs from that because a ramp has an internal relationship a categorical palette does not. `in srgb`, not `in oklab`: a non-sRGB color-mix serialises as oklab(), which THREE.Color.setStyle (pinned r184) does not parse, and the shader reads this stop through it.',
+      },
       { css: '--gm-error-color', value: 'var(--error-color, #f44336)', doc: null },
       { css: '--gm-ipm-color', value: '#9c27b0', doc: null },
       { css: '--gm-phi-color', value: '#ff9800', doc: null },

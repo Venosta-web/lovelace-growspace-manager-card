@@ -1,3 +1,10 @@
+# [1.1.0-next.144](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.143...v1.1.0-next.144) (2026-08-16)
+
+
+### Bug Fixes
+
+* **design:** resolve the VPD heatmap ramp at draw time ([#639](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/639)) ([#658](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/658)) ([44bc722](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/44bc72273a73f5b4364da67d8dc4c1ef32843aab)), closes [#ff9800](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/ff9800) [#ffa726](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/ffa726)
+
 # [1.1.0-next.143](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.142...v1.1.0-next.143) (2026-08-16)
 
 

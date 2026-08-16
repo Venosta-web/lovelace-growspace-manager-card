@@ -1,0 +1,104 @@
+/**
+ * The environment ramp: one five-stop scale, authored once as token NAMES.
+ *
+ * A painted surface — `ctx.fillStyle`, a GLSL `vec3` — takes a resolved colour, so
+ * no `var()` reference survives into it. This descriptor is what lets a canvas and
+ * the DOM legend that labels it name the same colours: both read it, one through
+ * `resolveRamp` and one through `rampVar`.
+ *
+ * The generated `token` map cannot serve as the paint source. `token['--gm-info-color']`
+ * is the string `'var(--info-color, #2196f3)'`; assigned to `fillStyle` that is invalid
+ * and the canvas silently keeps its previous colour. So the descriptor carries a
+ * terminal hex of its own, used only when a probe read comes back empty.
+ *
+ * See docs/adr/0040-canvas-and-shader-resolve-tokens-at-draw-time.md.
+ */
+
+/** Ordinal position in the scale, low to high. Consumers may use a contiguous subset. */
+export type RampRole = 'farLow' | 'low' | 'optimal' | 'high' | 'farHigh';
+
+export interface RampStop {
+  role: RampRole;
+  /** CSS custom property, written in full. */
+  css: string;
+  /** Used only when the property resolves to nothing — no adopted stylesheet, a detached host. */
+  fallback: string;
+}
+
+export const ENVIRONMENT_RAMP: readonly RampStop[] = [
+  { role: 'farLow', css: '--gm-info-deep', fallback: '#145d97' },
+  { role: 'low', css: '--gm-info-color', fallback: '#2196f3' },
+  { role: 'optimal', css: '--gm-primary-color', fallback: '#4caf50' },
+  { role: 'high', css: '--gm-status-warning', fallback: '#ffa726' },
+  { role: 'farHigh', css: '--gm-error-color', fallback: '#f44336' },
+];
+
+export type RampPalette = Record<RampRole, string>;
+
+const STOPS_BY_ROLE = new Map(ENVIRONMENT_RAMP.map((stop) => [stop.role, stop]));
+
+const stopFor = (role: RampRole): RampStop => {
+  const stop = STOPS_BY_ROLE.get(role);
+  if (!stop) throw new Error(`Unknown ramp role: ${role}`);
+  return stop;
+};
+
+/** The CSS reference a DOM twin binds to — the same token, the same terminal hex. */
+export const rampVar = (role: RampRole): string => {
+  const stop = stopFor(role);
+  return `var(${stop.css}, ${stop.fallback})`;
+};
+
+/**
+ * Reads the ramp out of the DOM through `probe`, which must be attached inside the
+ * scope that declares the tokens — its own shadow root, not `document.body`.
+ *
+ * `getComputedStyle(probe).color` rather than `getPropertyValue`: the latter returns
+ * the token stream in whatever syntax the theme author wrote (`orange`, `#f80`), while
+ * `color` computes it. Every stop then goes through `normalizeColor`, which is what puts
+ * a `getImageData` byte triple and a legend swatch in the same space.
+ *
+ * Call once per draw. `_drawHeatmap` paints 7,500 cells; a read per cell is not viable.
+ */
+let normalizer: CanvasRenderingContext2D | null | undefined;
+
+/**
+ * Forces any computed colour into `rgb(r, g, b)`.
+ *
+ * ADR 0040 §2 assumed `getComputedStyle(el).color` always serialises that way. It
+ * does not: a `color-mix()` value keeps its mixing space — measured in Chromium,
+ * `color-mix(in srgb, magenta 62%, black)` computes to `color(srgb 0.62 0 0.62)`
+ * and the `in oklab` form to `oklab(…)`. Neither is parsed by `THREE.Color.setStyle`
+ * (r184 handles only `rgb`/`rgba`/`hsl`/`hsla`, hex and names), and `fillStyle`
+ * read-back returns the value unchanged, so painting is the only conversion there is.
+ *
+ * Four of the five stops resolve to `rgb()` already; only a derived stop pays for this.
+ */
+export function normalizeColor(value: string): string {
+  if (/^rgba?\(/.test(value)) return value;
+  if (normalizer === undefined) {
+    normalizer = document.createElement('canvas').getContext('2d');
+  }
+  if (!normalizer) return value;
+  normalizer.clearRect(0, 0, 1, 1);
+  normalizer.fillStyle = value;
+  normalizer.fillRect(0, 0, 1, 1);
+  const [r, g, b] = normalizer.getImageData(0, 0, 1, 1).data;
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+export function resolveRamp(probe: HTMLElement | null | undefined): RampPalette {
+  const palette = {} as RampPalette;
+  for (const stop of ENVIRONMENT_RAMP) {
+    if (!probe) {
+      palette[stop.role] = normalizeColor(stop.fallback);
+      continue;
+    }
+    probe.style.color = rampVar(stop.role);
+    palette[stop.role] = normalizeColor(getComputedStyle(probe).color || stop.fallback);
+  }
+  return palette;
+}
+
+export const rampPalettesEqual = (a: RampPalette | undefined, b: RampPalette): boolean =>
+  a !== undefined && ENVIRONMENT_RAMP.every((stop) => a[stop.role] === b[stop.role]);

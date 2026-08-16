@@ -1,9 +1,10 @@
 {
-  "total": 23,
-  "files": 13,
+  "total": 81,
+  "files": 21,
   "css": 0,
   "inline": 0,
   "gradient": 5,
-  "js": 18,
+  "js": 35,
+  "gpu": 41,
   "fallbackConflicts": 0
 }
