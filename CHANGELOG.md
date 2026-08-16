@@ -1,3 +1,10 @@
+# [1.1.0-next.143](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.142...v1.1.0-next.143) (2026-08-16)
+
+
+### Bug Fixes
+
+* **design:** put the sub-floor caption sizes on the xs token ([#657](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/657)) ([b2d0e70](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b2d0e705595db2ee9ddb314ac1e22b072ad10729)), closes [#591](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/591) [#610](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/610) [#590](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/590)
+
 # [1.1.0-next.142](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.141...v1.1.0-next.142) (2026-08-16)
 
 
