@@ -1,3 +1,10 @@
+# [1.1.0-next.142](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.141...v1.1.0-next.142) (2026-08-16)
+
+
+### Bug Fixes
+
+* **design:** migrate the js-held colour data through the token seam ([#656](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/656)) ([b49fd2d](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b49fd2ddfe7bc90fdf4518a76ff6ab7cfbe44627)), closes [#ffeb3b](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/ffeb3b) [#7986cb](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/7986cb) [#632](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/632) [#ffc107](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/ffc107) [#ffeb3b](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/ffeb3b) [#3f51b5](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/3f51b5) [#ff9800](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/ff9800) [#hex](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/hex) [#634](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/634) [#ff9800](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/ff9800) [#4CAF50](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/4CAF50) [#hex](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/hex) [#576](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/576) [#hex](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/hex) [#2196f3](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/2196f3) [#009688](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/009688) [#hex](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/hex)
+
 # [1.1.0-next.141](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.140...v1.1.0-next.141) (2026-08-16)
 
 
