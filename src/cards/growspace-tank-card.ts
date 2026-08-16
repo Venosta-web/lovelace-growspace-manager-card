@@ -258,7 +258,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         bottom: 0;
         width: 100%;
         height: var(--level, 0%);
-        background: linear-gradient(to bottom, #2196f3, #1976d2);
+        background: linear-gradient(to bottom, var(--secondary), var(--info-dark));
         /* scaleY would flatten .liquid-surface and .wave, which are pinned to this
            element's top edge. Level changes on a slow sensor cadence, so the layout
            cost is one animation per reading. See ADR 0037. */
@@ -268,7 +268,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
       }
 
       .tank-card.warning .liquid {
-        background: linear-gradient(to bottom, #f44336, #d32f2f);
+        background: linear-gradient(to bottom, var(--error-color), var(--error-dark));
       }
 
       .liquid-surface {
