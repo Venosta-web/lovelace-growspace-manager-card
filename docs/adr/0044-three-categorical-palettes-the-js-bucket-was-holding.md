@@ -20,7 +20,7 @@ reader learns "F2 is this green" is the opposite of that.
 
 The remaining three groups — the irrigation/drain accents, the two stage-lookup fallbacks
 and four one-offs — are role questions rather than palettes, and are escalated as their
-own decision issue in the #630/#631 shape.
+own decision issue in the #630/#631 shape (#660).
 
 ### The finding that changes one of the three
 
@@ -137,4 +137,4 @@ instead of moving the binding, because the transformation was broken.
   and drain accents (which carry the phase family's alpha-suffix constraint), the two
   stage-lookup `?? fallback` arms that #624's table does not cover, and four one-offs
   (`hero-ui.ts:1010`, `strain-editor-view.ts:1162`, `plant-overview.container.ts:647`,
-  `snapshots-dialog.ts:310`).
+  `snapshots-dialog.ts:310`). They are #660.
