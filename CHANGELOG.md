@@ -1,3 +1,11 @@
+# [1.1.0-next.133](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.132...v1.1.0-next.133) (2026-08-16)
+
+
+### Bug Fixes
+
+* **design:** resolve the fallbacks that contradict the token they back ([#644](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/644)) ([27449bf](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/27449bfbb85c412d6d299c17717df815017bf4aa))
+* strain library save validation error ([#645](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/645)) ([40f60ab](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/40f60abd13fcb41569b69e04054cd0961b8516f7))
+
 # [1.1.0-next.132](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.131...v1.1.0-next.132) (2026-08-16)
 
 
