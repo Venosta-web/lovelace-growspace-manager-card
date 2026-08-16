@@ -7,6 +7,7 @@ import { cropSteeringHistory$, irrigationConfigs$, setTankLevels, tankLevels$ } 
 import { createGrowspaceDevice } from '../services/types';
 import type { IrrigationDialog } from './irrigation-dialog';
 import './irrigation-dialog';
+import { hassWithEntities, mountWithHass } from '../../tests/harness/entity-picker';
 
 // ADR-0019: the Tanks tab Save effect persists via the Growspace slice's
 // configureEnvironment. Mock it so the inline-edit test can assert the call.
@@ -1804,6 +1805,37 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
     await el.updateComplete;
     await tab.updateComplete;
     expect(tab.shadowRoot.querySelector('.tank-edit-form')).toBeNull();
+  });
+
+  it('reaches the entity registry and the container option list through the dialog tree', async () => {
+    // The picker consumes `hassContext` from outside the dialog, three shadow
+    // roots up (picker → tanks tab → dialog → provider), and its options come
+    // from the container's own hass-derived atom. Neither hop is visible in the
+    // hass-free mounts above, so this one supplies a provider.
+    const device = makeTankDevice();
+    setTankLevels('gs1', device.environmentAttributes!.irrigationTanks as never);
+    const el = document.createElement('irrigation-dialog') as IrrigationDialog;
+    el.open = true;
+    el.device = device;
+    el.initialTab = 'tanks';
+    await mountWithHass(
+      el,
+      hassWithEntities({ 'sensor.tank_a': 'Tank A Level', 'sensor.tank_b': 'Tank B Level' })
+    );
+    const tab = el.shadowRoot!.querySelector('irrigation-tanks-tab') as LitElement & {
+      shadowRoot: ShadowRoot;
+    };
+    await tab.updateComplete;
+    await openEditor(tab, el);
+
+    const picker = tab.shadowRoot.querySelector('gm-entity-picker') as LitElement & {
+      shadowRoot: ShadowRoot;
+    };
+    const inner = picker.shadowRoot.querySelector('ha-entity-picker') as HTMLElement & {
+      includeEntities: string[];
+    };
+    expect(inner).not.toBeNull();
+    expect(inner.includeEntities).toEqual(['sensor.tank_a', 'sensor.tank_b']);
   });
 
   it('clicking Save calls configureEnvironment with the updated tank and closes the form', async () => {
