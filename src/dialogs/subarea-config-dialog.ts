@@ -7,6 +7,8 @@ import { updateSubarea } from '../slices/subarea';
 import type { Subarea, EnvironmentConfig } from '../slices/subarea';
 import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/gs-help-tooltip';
+import '../features/config/components/config-entity-multi-select';
+import type { ConfigEntityValuesChangedDetail } from '../features/config/components/config-entity-multi-select';
 
 @customElement('subarea-config-dialog')
 export class SubareaConfigDialog extends LitElement {
@@ -37,75 +39,6 @@ export class SubareaConfigDialog extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 16px;
-      }
-      .multi-select-container {
-        position: relative;
-        margin-bottom: 0;
-      }
-      .multi-select-box {
-        background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border-radius: 4px 4px 0 0;
-        border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-        padding: 26px 16px 6px;
-        min-height: 56px;
-        box-sizing: border-box;
-        position: relative;
-        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-      }
-      .multi-select-box:hover {
-        background: rgba(var(--secondary-background-color, 255, 255, 255), 0.08);
-        border-bottom-color: var(--primary-light-color-hover, rgba(255, 255, 255, 0.6));
-      }
-      .multi-select-box:focus-within {
-        background: rgba(var(--secondary-background-color, 255, 255, 255), 0.12);
-        border-bottom: 2px solid var(--primary-light-color-active, rgba(255, 255, 255, 0.6));
-        padding-bottom: 5px;
-      }
-      .md3-label-multi {
-        position: absolute;
-        top: 8px;
-        left: 16px;
-        font-size: 0.75rem;
-        color: var(--secondary-text-color);
-        pointer-events: none;
-        z-index: 10;
-      }
-      .chip {
-        display: inline-flex;
-        align-items: center;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-        border-radius: var(--border-radius-lg, 16px);
-        padding: 4px 12px;
-        font-size: var(--font-size-sm);
-        height: 24px;
-      }
-      .chip-remove {
-        cursor: pointer;
-        margin-left: 6px;
-        font-weight: bold;
-        opacity: 0.7;
-      }
-      .chip-remove:hover {
-        opacity: 1;
-      }
-      .search-input-inner {
-        flex: 1;
-        min-width: 100px;
-        border: none;
-        background: transparent;
-        color: var(--primary-text-color);
-        font-family: inherit;
-        font-size: 1rem;
-        padding: 0;
-        margin: 0;
-        height: 24px;
-        outline: none;
       }
       .section-header {
         display: flex;
@@ -217,43 +150,15 @@ export class SubareaConfigDialog extends LitElement {
     deviceClass: string | null,
     changeHandler: (values: string[]) => void
   ) {
-    const listId = `list-multi-${label.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
-    const entities = this._getEntities(domains, deviceClass);
-
     return html`
-      <div class="multi-select-container">
-        <label class="md3-label-multi">${label}</label>
-        <div class="multi-select-box">
-          ${values.map(
-            (val) => html`
-              <div class="chip">
-                ${val}
-                <span
-                  class="chip-remove"
-                  @click=${() => changeHandler(values.filter((v) => v !== val))}
-                  >×</span
-                >
-              </div>
-            `
-          )}
-          <input
-            class="search-input-inner"
-            list="${listId}"
-            placeholder=${values.length === 0 ? 'Add Entity...' : ''}
-            @change=${(e: Event) => {
-              const input = e.target as HTMLInputElement;
-              const val = input.value;
-              if (val && !values.includes(val)) {
-                changeHandler([...values, val]);
-              }
-              input.value = '';
-            }}
-          />
-        </div>
-        <datalist id="${listId}">
-          ${entities.map((eid) => html`<option value="${eid}"></option>`)}
-        </datalist>
-      </div>
+      <config-entity-multi-select
+        .hass=${this.hass}
+        .label=${label}
+        .values=${values}
+        .options=${this._getEntities(domains, deviceClass)}
+        @entity-values-changed=${(event: CustomEvent<ConfigEntityValuesChangedDetail>) =>
+          changeHandler(event.detail.values)}
+      ></config-entity-multi-select>
     `;
   }
 
