@@ -248,7 +248,6 @@ export class PlantHarvestTab extends LitElement {
           </button>
           <button
             class="md3-button filled"
-            style="background: linear-gradient(135deg, #388e3c, #4caf50);"
             @click=${() => this._saveHarvestMetrics()}
             ?disabled=${isSaving}
           >
