@@ -641,7 +641,6 @@ export class GmBriefingPanel extends LitElement {
               .hass=${this.hass}
               .value=${this._selectedAgent}
               .includeDomains=${['conversation']}
-              allow-custom-entity
               @value-changed=${(e: CustomEvent) => {
                 this._selectedAgent = e.detail.value ?? '';
               }}

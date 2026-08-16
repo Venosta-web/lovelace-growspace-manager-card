@@ -217,6 +217,13 @@ describe('GmBriefingPanel — agent setup', () => {
     vi.restoreAllMocks();
   });
 
+  it('never allows a custom entity, so a typed non-agent cannot be committed', async () => {
+    const picker = element.shadowRoot?.querySelector('ha-entity-picker');
+
+    expect(picker?.hasAttribute('allow-custom-entity')).toBe(false);
+    expect((picker as unknown as { allowCustomEntity?: boolean }).allowCustomEntity).toBeUndefined();
+  });
+
   it('value-changed on ha-entity-picker enables the save button', async () => {
     const picker = element.shadowRoot?.querySelector('ha-entity-picker');
     picker?.dispatchEvent(new CustomEvent('value-changed', { detail: { value: 'conversation.home_assistant' } }));
