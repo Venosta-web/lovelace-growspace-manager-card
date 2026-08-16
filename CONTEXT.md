@@ -686,6 +686,15 @@ A token withheld from the [[Portal Token Scope]] because Home Assistant defines 
 **Series Slot**
 One of four ordinal categorical accent colours (`--series-1` … `--series-4`) used in order for chart series and KPI tile accents. Deliberately ordinal rather than semantic, because the call sites — `_kpiCard` in the Water Analytics tab — assign them positionally, not per metric. Not derived from the primaries with `color-mix` the way the status tokens are: derivation is only approximate, would cost pixel-identity across ~30 sites, and would collapse two distinct tints of the same hue.
 
+**Painted Surface**
+A surface whose colour is written as a resolved value rather than a CSS reference — a 2D canvas via `ctx.fillStyle`, a GLSL `vec3`, a `THREE` material. The one [[Binding Context]] no `var()` can reach and the generated `token` map only half reaches, since a [[Token Fallback Form]] entry comes back as the literal string `var(--info-color, #2196f3)`. Painted surfaces read their colours from the DOM immediately before painting, so they follow the Home Assistant theme like everything else. See ADR 0040.
+
+**Paired Legend**
+The DOM element that names the colours of a [[Painted Surface]] — a swatch row, a gradient strip, a floating label. The pair is the unit of correctness: a legend and the surface it describes must resolve to the same colour, and because the legend is the reachable half, it is the half that is right whenever they disagree. Tokenising a legend on its own is how the two come apart, which is what happened to the VPD heatmap and the 3D tank before ADR 0040.
+
+**Environment Ramp**
+The five-stop scale every environment visualisation shares — `--gm-info-deep`, `--gm-info-color`, `--gm-primary-color`, `--gm-status-warning`, `--gm-error-color` — running from far-below-target through optimal to far-above. Semantic rather than ordinal, unlike a [[Series Slot]], because each stop means something the call sites act on. The VPD heatmap uses the middle four; the 3D view and its shader use all five. Authored once as role descriptors holding token names, so a canvas, a legend and a uniform cannot hold three opinions about it. Its warm stop is the status warning, not the flowering stage — a component using the ramp has to compose `status.styles.ts` for that name to be in scope.
+
 **Fixed Dark Ground**
 A background the card paints dark _regardless_ of the Home Assistant theme — a glass overlay, a `rgba(0,0,0,x)` scrim, the 3D view's WebGL canvas, or a saturated status fill. It decides which foreground token a site may use: the [[Design Token]]s `--text-primary` … `--text-disabled` defer to the HA theme and resolve to `#212121` under a light one, so on a fixed dark ground they render near-black on near-black. Those grounds take `--on-overlay-primary/-secondary/-muted` and the `--on-primary`/`--on-error` fill roles instead, which hold literal values on purpose. The rule at a call site is not about the hue: look at what the text sits on, and match the foreground's theme-following to the background's. See ADR 0039.
 
