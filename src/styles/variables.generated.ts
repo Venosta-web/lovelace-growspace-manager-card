@@ -296,6 +296,15 @@ export const variables: CSSResult = css`
     */
     --gm-warning-color: var(--warning-color, #ff9800);
     --gm-info-color: var(--info-color, #2196f3);
+    /* The far-low stop of the environment ramp (src/styles/environment-ramp.ts), darker than
+       --gm-info-color so a five-stop scale keeps its direction. Derived rather than authored
+       so it follows a themed --info-color; ADR 0035 §5 rejected derivation for the categorical
+       series palette, and ADR 0040 §6 knowingly departs from that because a ramp has an
+       internal relationship a categorical palette does not. \`in srgb\`, not \`in oklab\`: a
+       non-sRGB color-mix serialises as oklab(), which THREE.Color.setStyle (pinned r184) does
+       not parse, and the shader reads this stop through it.
+    */
+    --gm-info-deep: color-mix(in srgb, var(--gm-info-color) 62%, black);
     --gm-error-color: var(--error-color, #f44336);
     --gm-ipm-color: #9c27b0;
     --gm-phi-color: #ff9800;
@@ -657,6 +666,15 @@ export const portalVariables: CSSResult = css`
     */
     --gm-warning-color: var(--warning-color, #ff9800);
     --gm-info-color: var(--info-color, #2196f3);
+    /* The far-low stop of the environment ramp (src/styles/environment-ramp.ts), darker than
+       --gm-info-color so a five-stop scale keeps its direction. Derived rather than authored
+       so it follows a themed --info-color; ADR 0035 §5 rejected derivation for the categorical
+       series palette, and ADR 0040 §6 knowingly departs from that because a ramp has an
+       internal relationship a categorical palette does not. \`in srgb\`, not \`in oklab\`: a
+       non-sRGB color-mix serialises as oklab(), which THREE.Color.setStyle (pinned r184) does
+       not parse, and the shader reads this stop through it.
+    */
+    --gm-info-deep: color-mix(in srgb, var(--gm-info-color) 62%, black);
     /* Resolved from var(--error-color, #f44336) — the referenced token is card-only, and the
        portal must not depend on a name this block does not declare.
     */
@@ -848,6 +866,7 @@ export const token = {
   '--gm-primary-color': 'var(--primary-color, #4caf50)',
   '--gm-warning-color': 'var(--warning-color, #ff9800)',
   '--gm-info-color': 'var(--info-color, #2196f3)',
+  '--gm-info-deep': 'color-mix(in srgb, var(--gm-info-color) 62%, black)',
   '--gm-error-color': 'var(--error-color, #f44336)',
   '--gm-ipm-color': '#9c27b0',
   '--gm-phi-color': '#ff9800',
