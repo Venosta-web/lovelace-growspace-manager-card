@@ -99,8 +99,8 @@ Read from chunk `28377` rather than assumed, because three of the decisions belo
   regardless.
 - **`allow-custom-entity` is omitted** on single-value fields. That flag permits committing a
   free-typed string, which is precisely the silent-typo failure this change exists to remove. Multi-
-  value fields cannot opt in even by accident. The two setup-banner call sites keep it; see the
-  deviation below.
+  value fields cannot opt in even by accident. The two setup-banner call sites were deferred to #599
+  and now lose the flag too (#642); see the resolution below.
 - **`reorder` is left off.** No config field attaches meaning to the order of its entities, so drag
   handles would offer an interaction that changes nothing. Turning it on later is a one-property
   change if a field ever does care.
@@ -142,6 +142,32 @@ which has its own option-source quirks. `md3-entities-input` has no consumers an
   against one frontend version. This is exactly why the fallback stays load-bearing: it is what
   survives Home Assistant reorganizing its chunks. Reviewers should treat "the fallback is dead code"
   as false.
-- **The two setup-banner call sites are a known deviation.** `chat-panel.ts` and `briefing-panel.ts`
-  keep `allow-custom-entity`. Changing agent-selection behavior inside an entity-picker refactor
-  would be an unrelated behavioral change; it gets its own issue.
+- **The two setup-banner call sites no longer deviate.** `chat-panel.ts` and `briefing-panel.ts` kept
+  `allow-custom-entity` while this ADR was written, because changing agent-selection behavior inside
+  an entity-picker refactor would have been an unrelated behavioral change. #599 resolved that
+  question: growers select an existing conversation agent, so the flag is removed there too and the
+  rule in Decisions holds without exception. Implementation is tracked in #642 — see the resolution
+  below.
+
+## Resolution of the setup-banner deviation (#599)
+
+`allow-custom-entity` is removed from both agent pickers. A grower selects a conversation agent that
+`hass.states` already has, and nothing else.
+
+The counter-argument the issue raised was naming an agent from an integration not yet loaded. It does
+not survive contact with the two call sites. Both banners render only when no agent is configured —
+`_renderAgentSetup()` behind `aiUnavailable`, `_renderAiUnavailable()` behind `!briefing.ai_available`
+— and both pickers are bound to an empty local draft (`agentDraft`, `_selectedAgent = ''`), never to
+a saved entity ID. Removing the flag therefore cannot strand a configuration that already exists; it
+only removes the ability to commit a string naming nothing. The integration-not-loaded case is served
+by loading the integration and reopening the banner, which is one step, versus a typo that saves
+cleanly and disables AI with no error text anywhere.
+
+The low stakes noted in the issue — the picker sits in an optional banner, so a failure means
+configuring the agent elsewhere — were the reason it was safe to defer the question, not a reason to
+answer it differently. Low stakes do not make a silent failure a better failure, and two call sites
+carrying an exception to a rule the rest of the codebase follows is a cost paid on every future read
+of this ADR.
+
+Verification is attribute absence in the rendered template rather than picker behavior, because the
+picker is stubbed in vitest — see the coverage consequence above.
