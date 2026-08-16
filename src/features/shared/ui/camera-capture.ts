@@ -108,7 +108,7 @@ export class CameraCapture extends LitElement {
       gap: 16px;
       padding: 24px;
       text-align: center;
-      color: var(--text-primary);
+      color: var(--on-overlay-primary);
     }
 
     .overlay-error svg {
@@ -147,7 +147,7 @@ export class CameraCapture extends LitElement {
       height: 44px;
       border-radius: 50%;
       cursor: pointer;
-      color: var(--text-primary);
+      color: var(--on-overlay-primary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -174,7 +174,7 @@ export class CameraCapture extends LitElement {
       height: 72px;
       border-radius: 50%;
       border: 4px solid rgba(255, 255, 255, 0.4);
-      background: var(--text-primary);
+      background: var(--on-overlay-primary);
       cursor: pointer;
     }
 
@@ -183,7 +183,7 @@ export class CameraCapture extends LitElement {
       border-radius: 8px;
       border: none;
       background: rgba(255, 255, 255, 0.1);
-      color: var(--text-primary);
+      color: var(--on-overlay-primary);
       font-family: inherit;
       font-size: var(--font-size-md);
       cursor: pointer;

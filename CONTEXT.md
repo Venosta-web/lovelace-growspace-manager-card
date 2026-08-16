@@ -297,7 +297,7 @@ The Config Dialog's [[Dialog Shell]] (the reduced `config-dialog.ts` host after 
 **Entity Field** _(decided — ADR-0034, not yet built)_
 Any config-dialog field whose value is one or more Home Assistant entity IDs — single-valued (a
 growspace's overview entity) or multi-valued (its temperature sensors). Today every one is a raw text
-input over a `<datalist>` of entity IDs. Each is to *become* the corresponding Home Assistant picker —
+input over a `<datalist>` of entity IDs. Each is to _become_ the corresponding Home Assistant picker —
 `ha-entity-picker` single-valued, `ha-entities-picker` multi-valued — so the grower reads friendly
 names, icons and area context rather than entity IDs, and cannot commit a value that names no entity.
 The picker is the field, not an affordance bolted onto one; the #541 chip list is retired from the
@@ -314,7 +314,7 @@ drop them**: only the grower removes a reference. Silently discarding one on sav
 configuration the grower never touched. [[AC Infinity Device]] pickers already follow this rule by
 keeping an already-saved entity in their option list even when it no longer matches the platform
 filter. Home Assistant's picker handles this natively: a row whose value resolves to nothing renders
-*"Unknown entity selected"* rather than a blank box, and the value passes through every mutation
+_"Unknown entity selected"_ rather than a blank box, and the value passes through every mutation
 untouched, so the grower removes it deliberately — by clearing its row — or not at all.
 
 **Shared Environment Draft**
@@ -666,16 +666,16 @@ Pure pass-through container that subscribes to `nutrientInventory$` and threads 
 A named design value — colour, type step, radius, elevation, spacing — authored **exactly once** in `src/styles/tokens.ts` as a typed TypeScript constant. Both consumers are generated from it: the lit `css` custom-property block the components read at runtime, and the YAML frontmatter palette in `DESIGN.md` that documents it. Generation runs one way, TypeScript → CSS and TypeScript → YAML, so the doc is a derived artifact and cannot drift from the runtime — the drift that caused #564 and everything after it. A token is reachable from CSS declarations, inline `style=` attributes and gradient stops; reaching it from plain TypeScript means importing the constant, not writing `var()`. See ADR 0035.
 
 **Motion Token**
-A duration or easing curve, authored in `tokens.ts` alongside every other [[Design Token]] and named on the MD3 scale — `--md3-motion-duration-short1…4` (50/100/150/200ms), `-medium1,2` (250/300ms), `-long1,2` (400/500ms), plus `--md3-motion-easing-standard` and `-emphasized`. The two easings deliberately hold the *same* value: MD3's emphasized curve is a two-part spline no single CSS `cubic-bezier()` can express, so Material Web collapses it to the standard curve. The set has existed since #607 but carried `doc: null`, so it reached the runtime and never the design doc — which is why the [[Fill Bar]]s each invented their own timing instead. See ADR 0037.
+A duration or easing curve, authored in `tokens.ts` alongside every other [[Design Token]] and named on the MD3 scale — `--md3-motion-duration-short1…4` (50/100/150/200ms), `-medium1,2` (250/300ms), `-long1,2` (400/500ms), plus `--md3-motion-easing-standard` and `-emphasized`. The two easings deliberately hold the _same_ value: MD3's emphasized curve is a two-part spline no single CSS `cubic-bezier()` can express, so Material Web collapses it to the standard curve. The set has existed since #607 but carried `doc: null`, so it reached the runtime and never the design doc — which is why the [[Fill Bar]]s each invented their own timing instead. See ADR 0037.
 
 **Fill Bar**
 A proportional readout drawn as a fixed **track** with a scaled **fill** inside it. The track owns the geometry — height, `overflow: hidden`, radius — and the fill is `transform: scaleX(<fraction>)` from `transform-origin: left`, never a `width` percentage; the fill carries no radius of its own, because the track already clips to shape and `scaleX` would distort one. Two sites deviate for reasons recorded at the call site, not here: the tank card's liquid (children pinned to the animated edge) and the strain hue-genetics bar (two flex segments splitting one track, so there is no fixed track to scale against). See ADR 0037.
 
 **Binding Context**
-Where a colour literal sits in the code, which decides whether a [[Design Token]] can reach it at all: a CSS declaration inside a `css` template, an inline `style=` attribute in a template, a gradient stop, or a plain JS data string in a viewmodel, constants file or model. The axis colour work is sorted by — hue tells you *which* token a site wants, binding context tells you whether a token is even available, and only the second predicts whether a migration is mechanical. `var()` is inert in the JS-data context, so those sites import from `tokens.ts` instead.
+Where a colour literal sits in the code, which decides whether a [[Design Token]] can reach it at all: a CSS declaration inside a `css` template, an inline `style=` attribute in a template, a gradient stop, or a plain JS data string in a viewmodel, constants file or model. The axis colour work is sorted by — hue tells you _which_ token a site wants, binding context tells you whether a token is even available, and only the second predicts whether a migration is mechanical. `var()` is inert in the JS-data context, so those sites import from `tokens.ts` instead.
 
 **Token Fallback Form**
-Writing `var(--ha-token, #hex)` rather than a bare token reference, so the site defers to the Home Assistant theme and renders the literal only when HA defines nothing. Correct and intentional wherever the card should follow the user's HA theme. It was also **mandatory** in `src/dialogs/*` until #579 gave the portal a [[Portal Token Scope]]; bare references are fine there now, except for the two [[Card-Only Token]] names. Two failure modes are distinct and tracked separately: the fallback contradicting the token it backs (`var(--primary-color, #03a9f4)` where primary is `#4caf50`, #608), and a literal that equals a *different* token's value (#580).
+Writing `var(--ha-token, #hex)` rather than a bare token reference, so the site defers to the Home Assistant theme and renders the literal only when HA defines nothing. Correct and intentional wherever the card should follow the user's HA theme. It was also **mandatory** in `src/dialogs/*` until #579 gave the portal a [[Portal Token Scope]]; bare references are fine there now, except for the two [[Card-Only Token]] names. Two failure modes are distinct and tracked separately: the fallback contradicting the token it backs (`var(--primary-color, #03a9f4)` where primary is `#4caf50`, #608), and a literal that equals a _different_ token's value (#580).
 
 **Portal Token Scope**
 The `:host` block `growspace-dialog-host` declares, generated from `tokens.ts` as `portalVariables`. The host is appended to `document.body`, so it is a sibling of the card and inherits none of the card's custom properties — without this block a bare `var(--font-size-sm)` under `src/dialogs/` resolves to nothing and the text renders at its inherited size. Carries every token except the [[Card-Only Token]] names, with references to those resolved to their card values so nothing in the block depends on a name it does not declare. See ADR 0036.
@@ -685,6 +685,12 @@ A token withheld from the [[Portal Token Scope]] because Home Assistant defines 
 
 **Series Slot**
 One of four ordinal categorical accent colours (`--series-1` … `--series-4`) used in order for chart series and KPI tile accents. Deliberately ordinal rather than semantic, because the call sites — `_kpiCard` in the Water Analytics tab — assign them positionally, not per metric. Not derived from the primaries with `color-mix` the way the status tokens are: derivation is only approximate, would cost pixel-identity across ~30 sites, and would collapse two distinct tints of the same hue.
+
+**Fixed Dark Ground**
+A background the card paints dark _regardless_ of the Home Assistant theme — a glass overlay, a `rgba(0,0,0,x)` scrim, the 3D view's WebGL canvas, or a saturated status fill. It decides which foreground token a site may use: the [[Design Token]]s `--text-primary` … `--text-disabled` defer to the HA theme and resolve to `#212121` under a light one, so on a fixed dark ground they render near-black on near-black. Those grounds take `--on-overlay-primary/-secondary/-muted` and the `--on-primary`/`--on-error` fill roles instead, which hold literal values on purpose. The rule at a call site is not about the hue: look at what the text sits on, and match the foreground's theme-following to the background's. See ADR 0039.
+
+**3D View Accent**
+`--accent-3d` and its hover and idle steps, the accent shared by the 3D growspace view's DOM chrome and the three.js scene it controls. `THREE.Color` takes a resolved value, so `var()` cannot reach the scene half — both renderers import the generated `token` map instead, which is what keeps a control and the highlight it produces from drifting apart. The narrow case of the canvas/DOM pairing that a shared authored value can close; the VPD ramp is the wide case, where the scene half is GLSL. See ADR 0039 and #581.
 
 ## Build
 

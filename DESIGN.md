@@ -25,6 +25,11 @@ colors:
   surface-variant: 'rgba(255,255,255,0.05)'
   # Primary — Vitality Green
   primary: '#4caf50'
+  # Foreground on a saturated primary FILL, not on the dark shell. Fixed white on purpose:
+  # the fill does not follow the Home Assistant theme, so a theme-deferring text role
+  # would invert on top of it. NOT yet safe for normal text — #ffffff on the documented
+  # primary #4caf50 is 2.78:1, below AA, which is why the toast fills still use
+  # --text-primary. See ADR 0039 §1 and #636.
   on-primary: '#ffffff'
   primary-container: 'rgba(76,175,80,0.15)'
   on-primary-container: '#4caf50'
@@ -56,6 +61,16 @@ colors:
   text-secondary: 'rgba(255,255,255,0.7)'
   text-muted: 'rgba(255,255,255,0.55)'
   text-disabled: 'rgba(255,255,255,0.38)'
+  # Text roles on a fixed dark ground — The same hierarchy as the text roles above, minus
+  # the Home Assistant deferral. For text that sits on a ground the card paints dark
+  # REGARDLESS of theme: glass overlays, scrims, the WebGL canvas, a saturated status
+  # fill. A theme-deferring role inverts on those grounds — under a light theme
+  # --text-primary resolves to #212121, which is near-black on near-black. Use these only
+  # where the backdrop is a literal in the same stylesheet; anywhere the surface follows
+  # the theme, the text must follow it too. See ADR 0039.
+  on-overlay-primary: '#ffffff'
+  on-overlay-secondary: 'rgba(255,255,255,0.7)'
+  on-overlay-muted: 'rgba(255,255,255,0.55)'
   # Series — categorical chart and KPI accents — Ordinal, not semantic: call sites assign
   # them positionally, not per metric. Use in order. Deliberately not derived from the
   # primaries with color-mix — see ADR 0035.
@@ -63,6 +78,11 @@ colors:
   series-2: '#81c784'
   series-3: '#ce93d8'
   series-4: '#a5d6a7'
+  # Divider
+  # The one step UP from --divider-color, for an outline that brightens on hover. Four
+  # call sites had drifted to three different values (0.2 twice, 0.35, #666) before this
+  # existed. See ADR 0039.
+  outline-hover: 'rgba(255,255,255,0.2)'
   # Plant Stage Colors
   stage-veg: '#4caf50'
   stage-flower: '#ff9800'
@@ -94,6 +114,8 @@ colors:
   # Lighter danger for chip context, distinct from --error-color. #ff5252 folds into this
   # — see ADR 0035.
   danger-chip: '#ef5350'
+  # #ffffff on the documented error #f44336 is 3.68:1, below AA for normal text — same
+  # open question as --on-primary. See ADR 0039 §1 and #636.
   on-error: '#ffffff'
   on-error-container: '#f44336'
   # Functional state, distinct from the Flowering stage
@@ -118,6 +140,17 @@ colors:
   integration-conflict: '#e6a700'
   integration-conflict-container: 'rgba(230,167,0,0.1)'
   integration-conflict-outline: 'rgba(230,167,0,0.35)'
+  # 3D View Accent — The accent of the 3D growspace view, shared by its DOM chrome and the
+  # three.js scene it controls. The scene consumes the 0x form (THREE.Color takes a
+  # resolved number, not a custom property), so both halves read the same authored value
+  # rather than repeating a literal — the canvas/DOM pairing ADR 0035 and #581 are about.
+  # See ADR 0039.
+  accent-3d: '#448aff'
+  # Hover step for controls in the 3D view
+  accent-3d-hover: '#64b5f6'
+  # Inactive control chrome in the 3D view — blue-grey, deliberately desaturated against
+  # the accent
+  accent-3d-idle: '#607d8b'
 typography:
   # Typography steps (documented only — composed at call sites)
   display-lg:

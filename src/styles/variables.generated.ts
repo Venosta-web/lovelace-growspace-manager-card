@@ -75,12 +75,35 @@ export const variables: CSSResult = css`
     --md3-motion-duration-long1: 400ms;
     --md3-motion-duration-long2: 500ms;
 
+    /* Surfaces — dark carbon shell */
+    --surface: #1e1e1e;
+    --surface-dim: #141414;
+    --surface-bright: #252525;
+    --surface-container-lowest: #101010;
+    --surface-container-low: #1a1a1a;
+    --surface-container: #1e1e1e;
+    --surface-container-high: #2a2a2a;
+    --surface-container-highest: #3a3a3a;
+
     /* Primary — Vitality Green */
+    /* Foreground on a saturated primary FILL, not on the dark shell. Fixed white on purpose:
+       the fill does not follow the Home Assistant theme, so a theme-deferring text role would
+       invert on top of it. NOT yet safe for normal text — #ffffff on the documented primary
+       #4caf50 is 2.78:1, below AA, which is why the toast fills still use --text-primary. See
+       ADR 0039 §1 and #636.
+    */
+    --on-primary: #ffffff;
     /* Foreground on translucent-green containers. \`on-primary-container\` (#4caf50) over
        rgba(76,175,80,0.2) on #1e1e1e is 4.26:1 — below AA for normal text; this is 8.36:1. Do
        not "correct" it back to #4caf50.
     */
     --on-primary-container-bright: #69f0ae;
+
+    /* Secondary — Hydro Blue */
+    --on-secondary: #ffffff;
+
+    /* Tertiary — Amber Light (light cycle indicator) */
+    --on-tertiary: #1e1e1e;
 
     /* Text roles */
     /* The documented text hierarchy. Each defers to the Home Assistant theme first and falls
@@ -98,6 +121,18 @@ export const variables: CSSResult = css`
     --text-secondary: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
     --text-muted: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
     --text-disabled: var(--disabled-text-color, rgba(255, 255, 255, 0.38));
+
+    /* Text roles on a fixed dark ground */
+    /* The same hierarchy as the text roles above, minus the Home Assistant deferral. For text
+       that sits on a ground the card paints dark REGARDLESS of theme: glass overlays, scrims,
+       the WebGL canvas, a saturated status fill. A theme-deferring role inverts on those
+       grounds — under a light theme --text-primary resolves to #212121, which is near-black on
+       near-black. Use these only where the backdrop is a literal in the same stylesheet;
+       anywhere the surface follows the theme, the text must follow it too. See ADR 0039.
+    */
+    --on-overlay-primary: #ffffff;
+    --on-overlay-secondary: rgba(255, 255, 255, 0.7);
+    --on-overlay-muted: rgba(255, 255, 255, 0.55);
 
     /* Series — categorical chart and KPI accents */
     /* Ordinal, not semantic: call sites assign them positionally, not per metric. Use in
@@ -131,6 +166,11 @@ export const variables: CSSResult = css`
        winning. The shadowing itself is the open question — see ADR 0036 and #608.
     */
     --divider-color: rgba(255, 255, 255, 0.12);
+    /* The one step UP from --divider-color, for an outline that brightens on hover. Four call
+       sites had drifted to three different values (0.2 twice, 0.35, #666) before this existed.
+       See ADR 0039.
+    */
+    --outline-hover: rgba(255, 255, 255, 0.2);
 
     /* Plant Stage Colors */
     --stage-veg: #4caf50;
@@ -172,15 +212,37 @@ export const variables: CSSResult = css`
        see ADR 0035.
     */
     --danger-chip: #ef5350;
+    /* #ffffff on the documented error #f44336 is 3.68:1, below AA for normal text — same open
+       question as --on-primary. See ADR 0039 §1 and #636.
+    */
+    --on-error: #ffffff;
 
     /* Semantic color aliases */
     /* HASS-integrated, used by log/timeline/plant-card */
     --gm-primary-color: var(--primary-color, #4caf50);
+    /* DEPRECATED. Conflates the status warning with the flowering stage: it defers to the same
+       HA variable as --gm-status-warning but falls back to the stage orange. Each use resolves
+       to --gm-status-warning or --stage-flower per site. See ADR 0039 §4.
+    */
     --gm-warning-color: var(--warning-color, #ff9800);
     --gm-info-color: var(--info-color, #2196f3);
     --gm-error-color: var(--error-color, #f44336);
     --gm-ipm-color: #9c27b0;
     --gm-phi-color: #ff9800;
+
+    /* 3D View Accent */
+    /* The accent of the 3D growspace view, shared by its DOM chrome and the three.js scene it
+       controls. The scene consumes the 0x form (THREE.Color takes a resolved number, not a
+       custom property), so both halves read the same authored value rather than repeating a
+       literal — the canvas/DOM pairing ADR 0035 and #581 are about. See ADR 0039.
+    */
+    --accent-3d: #448aff;
+    /* Hover step for controls in the 3D view */
+    --accent-3d-hover: #64b5f6;
+    /* Inactive control chrome in the 3D view — blue-grey, deliberately desaturated against the
+       accent
+    */
+    --accent-3d-idle: #607d8b;
 
     /* AI Assistant Panel Colors */
     /* Chat mode — Vitality Green */
@@ -282,12 +344,35 @@ export const portalVariables: CSSResult = css`
     --md3-motion-duration-long1: 400ms;
     --md3-motion-duration-long2: 500ms;
 
+    /* Surfaces — dark carbon shell */
+    --surface: #1e1e1e;
+    --surface-dim: #141414;
+    --surface-bright: #252525;
+    --surface-container-lowest: #101010;
+    --surface-container-low: #1a1a1a;
+    --surface-container: #1e1e1e;
+    --surface-container-high: #2a2a2a;
+    --surface-container-highest: #3a3a3a;
+
     /* Primary — Vitality Green */
+    /* Foreground on a saturated primary FILL, not on the dark shell. Fixed white on purpose:
+       the fill does not follow the Home Assistant theme, so a theme-deferring text role would
+       invert on top of it. NOT yet safe for normal text — #ffffff on the documented primary
+       #4caf50 is 2.78:1, below AA, which is why the toast fills still use --text-primary. See
+       ADR 0039 §1 and #636.
+    */
+    --on-primary: #ffffff;
     /* Foreground on translucent-green containers. \`on-primary-container\` (#4caf50) over
        rgba(76,175,80,0.2) on #1e1e1e is 4.26:1 — below AA for normal text; this is 8.36:1. Do
        not "correct" it back to #4caf50.
     */
     --on-primary-container-bright: #69f0ae;
+
+    /* Secondary — Hydro Blue */
+    --on-secondary: #ffffff;
+
+    /* Tertiary — Amber Light (light cycle indicator) */
+    --on-tertiary: #1e1e1e;
 
     /* Text roles */
     /* The documented text hierarchy. Each defers to the Home Assistant theme first and falls
@@ -305,6 +390,18 @@ export const portalVariables: CSSResult = css`
     --text-secondary: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
     --text-muted: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
     --text-disabled: var(--disabled-text-color, rgba(255, 255, 255, 0.38));
+
+    /* Text roles on a fixed dark ground */
+    /* The same hierarchy as the text roles above, minus the Home Assistant deferral. For text
+       that sits on a ground the card paints dark REGARDLESS of theme: glass overlays, scrims,
+       the WebGL canvas, a saturated status fill. A theme-deferring role inverts on those
+       grounds — under a light theme --text-primary resolves to #212121, which is near-black on
+       near-black. Use these only where the backdrop is a literal in the same stylesheet;
+       anywhere the surface follows the theme, the text must follow it too. See ADR 0039.
+    */
+    --on-overlay-primary: #ffffff;
+    --on-overlay-secondary: rgba(255, 255, 255, 0.7);
+    --on-overlay-muted: rgba(255, 255, 255, 0.55);
 
     /* Series — categorical chart and KPI accents */
     /* Ordinal, not semantic: call sites assign them positionally, not per metric. Use in
@@ -331,6 +428,13 @@ export const portalVariables: CSSResult = css`
     --transition: all var(--md3-motion-duration-short4) var(--md3-motion-easing-standard);
     --transition-fast: all var(--md3-motion-duration-short2) var(--md3-motion-easing-standard);
     --transition-medium: all var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
+
+    /* Divider */
+    /* The one step UP from --divider-color, for an outline that brightens on hover. Four call
+       sites had drifted to three different values (0.2 twice, 0.35, #666) before this existed.
+       See ADR 0039.
+    */
+    --outline-hover: rgba(255, 255, 255, 0.2);
 
     /* Plant Stage Colors */
     --stage-veg: #4caf50;
@@ -368,10 +472,18 @@ export const portalVariables: CSSResult = css`
        see ADR 0035.
     */
     --danger-chip: #ef5350;
+    /* #ffffff on the documented error #f44336 is 3.68:1, below AA for normal text — same open
+       question as --on-primary. See ADR 0039 §1 and #636.
+    */
+    --on-error: #ffffff;
 
     /* Semantic color aliases */
     /* HASS-integrated, used by log/timeline/plant-card */
     --gm-primary-color: var(--primary-color, #4caf50);
+    /* DEPRECATED. Conflates the status warning with the flowering stage: it defers to the same
+       HA variable as --gm-status-warning but falls back to the stage orange. Each use resolves
+       to --gm-status-warning or --stage-flower per site. See ADR 0039 §4.
+    */
     --gm-warning-color: var(--warning-color, #ff9800);
     --gm-info-color: var(--info-color, #2196f3);
     /* Resolved from var(--error-color, #f44336) — the referenced token is card-only, and the
@@ -380,6 +492,20 @@ export const portalVariables: CSSResult = css`
     --gm-error-color: #f44336;
     --gm-ipm-color: #9c27b0;
     --gm-phi-color: #ff9800;
+
+    /* 3D View Accent */
+    /* The accent of the 3D growspace view, shared by its DOM chrome and the three.js scene it
+       controls. The scene consumes the 0x form (THREE.Color takes a resolved number, not a
+       custom property), so both halves read the same authored value rather than repeating a
+       literal — the canvas/DOM pairing ADR 0035 and #581 are about. See ADR 0039.
+    */
+    --accent-3d: #448aff;
+    /* Hover step for controls in the 3D view */
+    --accent-3d-hover: #64b5f6;
+    /* Inactive control chrome in the 3D view — blue-grey, deliberately desaturated against the
+       accent
+    */
+    --accent-3d-idle: #607d8b;
 
     /* AI Assistant Panel Colors */
     /* Chat mode — Vitality Green */
@@ -453,11 +579,25 @@ export const token = {
   '--md3-motion-duration-medium2': '300ms',
   '--md3-motion-duration-long1': '400ms',
   '--md3-motion-duration-long2': '500ms',
+  '--surface': '#1e1e1e',
+  '--surface-dim': '#141414',
+  '--surface-bright': '#252525',
+  '--surface-container-lowest': '#101010',
+  '--surface-container-low': '#1a1a1a',
+  '--surface-container': '#1e1e1e',
+  '--surface-container-high': '#2a2a2a',
+  '--surface-container-highest': '#3a3a3a',
+  '--on-primary': '#ffffff',
   '--on-primary-container-bright': '#69f0ae',
+  '--on-secondary': '#ffffff',
+  '--on-tertiary': '#1e1e1e',
   '--text-primary': 'var(--primary-text-color, #ffffff)',
   '--text-secondary': 'var(--secondary-text-color, rgba(255, 255, 255, 0.7))',
   '--text-muted': 'var(--secondary-text-color, rgba(255, 255, 255, 0.55))',
   '--text-disabled': 'var(--disabled-text-color, rgba(255, 255, 255, 0.38))',
+  '--on-overlay-primary': '#ffffff',
+  '--on-overlay-secondary': 'rgba(255, 255, 255, 0.7)',
+  '--on-overlay-muted': 'rgba(255, 255, 255, 0.55)',
   '--series-1': '#4fc3f7',
   '--series-2': '#81c784',
   '--series-3': '#ce93d8',
@@ -474,6 +614,7 @@ export const token = {
   '--transition-fast': 'all var(--md3-motion-duration-short2) var(--md3-motion-easing-standard)',
   '--transition-medium': 'all var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard)',
   '--divider-color': 'rgba(255, 255, 255, 0.12)',
+  '--outline-hover': 'rgba(255, 255, 255, 0.2)',
   '--stage-veg': '#4caf50',
   '--stage-flower': '#ff9800',
   '--stage-dry': '#9c27b0',
@@ -490,12 +631,16 @@ export const token = {
   '--error-border': 'rgba(244, 67, 54, 0.3)',
   '--error-dark': '#d32f2f',
   '--danger-chip': '#ef5350',
+  '--on-error': '#ffffff',
   '--gm-primary-color': 'var(--primary-color, #4caf50)',
   '--gm-warning-color': 'var(--warning-color, #ff9800)',
   '--gm-info-color': 'var(--info-color, #2196f3)',
   '--gm-error-color': 'var(--error-color, #f44336)',
   '--gm-ipm-color': '#9c27b0',
   '--gm-phi-color': '#ff9800',
+  '--accent-3d': '#448aff',
+  '--accent-3d-hover': '#64b5f6',
+  '--accent-3d-idle': '#607d8b',
   '--ai-accent': '#4caf50',
   '--ai-violet': '#9c27b0',
   '--ai-amber': '#ff9800',

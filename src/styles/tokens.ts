@@ -218,14 +218,22 @@ export const groups: TokenGroup[] = [
   {
     title: 'Surfaces — dark carbon shell',
     tokens: [
-      { css: null, doc: 'colors.surface', docValue: '#1e1e1e' },
-      { css: null, doc: 'colors.surface-dim', docValue: '#141414' },
-      { css: null, doc: 'colors.surface-bright', docValue: '#252525' },
-      { css: null, doc: 'colors.surface-container-lowest', docValue: '#101010' },
-      { css: null, doc: 'colors.surface-container-low', docValue: '#1a1a1a' },
-      { css: null, doc: 'colors.surface-container', docValue: '#1e1e1e' },
-      { css: null, doc: 'colors.surface-container-high', docValue: '#2a2a2a' },
-      { css: null, doc: 'colors.surface-container-highest', docValue: '#3a3a3a' },
+      { css: '--surface', value: '#1e1e1e', doc: 'colors.surface' },
+      { css: '--surface-dim', value: '#141414', doc: 'colors.surface-dim' },
+      { css: '--surface-bright', value: '#252525', doc: 'colors.surface-bright' },
+      {
+        css: '--surface-container-lowest',
+        value: '#101010',
+        doc: 'colors.surface-container-lowest',
+      },
+      { css: '--surface-container-low', value: '#1a1a1a', doc: 'colors.surface-container-low' },
+      { css: '--surface-container', value: '#1e1e1e', doc: 'colors.surface-container' },
+      { css: '--surface-container-high', value: '#2a2a2a', doc: 'colors.surface-container-high' },
+      {
+        css: '--surface-container-highest',
+        value: '#3a3a3a',
+        doc: 'colors.surface-container-highest',
+      },
       { css: null, doc: 'colors.on-surface', docValue: '#ffffff' },
       { css: null, doc: 'colors.on-surface-variant', docValue: 'rgba(255,255,255,0.7)' },
       { css: null, doc: 'colors.inverse-surface', docValue: '#e8e8e8' },
@@ -245,7 +253,12 @@ export const groups: TokenGroup[] = [
     title: 'Primary — Vitality Green',
     tokens: [
       { css: null, doc: 'colors.primary', docValue: '#4caf50' },
-      { css: null, doc: 'colors.on-primary', docValue: '#ffffff' },
+      {
+        css: '--on-primary',
+        value: '#ffffff',
+        doc: 'colors.on-primary',
+        note: 'Foreground on a saturated primary FILL, not on the dark shell. Fixed white on purpose: the fill does not follow the Home Assistant theme, so a theme-deferring text role would invert on top of it. NOT yet safe for normal text — #ffffff on the documented primary #4caf50 is 2.78:1, below AA, which is why the toast fills still use --text-primary. See ADR 0039 §1 and #636.',
+      },
       { css: null, doc: 'colors.primary-container', docValue: 'rgba(76,175,80,0.15)' },
       { css: null, doc: 'colors.on-primary-container', docValue: '#4caf50' },
       {
@@ -261,7 +274,7 @@ export const groups: TokenGroup[] = [
     title: 'Secondary — Hydro Blue',
     tokens: [
       { css: null, doc: 'colors.secondary', docValue: '#2196f3' },
-      { css: null, doc: 'colors.on-secondary', docValue: '#ffffff' },
+      { css: '--on-secondary', value: '#ffffff', doc: 'colors.on-secondary' },
       { css: null, doc: 'colors.secondary-container', docValue: 'rgba(33,150,243,0.12)' },
       { css: null, doc: 'colors.on-secondary-container', docValue: '#2196f3' },
     ],
@@ -270,7 +283,7 @@ export const groups: TokenGroup[] = [
     title: 'Tertiary — Amber Light (light cycle indicator)',
     tokens: [
       { css: null, doc: 'colors.tertiary', docValue: '#ffeb3b' },
-      { css: null, doc: 'colors.on-tertiary', docValue: '#1e1e1e' },
+      { css: '--on-tertiary', value: '#1e1e1e', doc: 'colors.on-tertiary' },
       { css: null, doc: 'colors.tertiary-container', docValue: 'rgba(255,235,59,0.05)' },
       { css: null, doc: 'colors.on-tertiary-container', docValue: '#ffeb3b' },
     ],
@@ -303,6 +316,25 @@ export const groups: TokenGroup[] = [
         value: 'var(--disabled-text-color, rgba(255, 255, 255, 0.38))',
         doc: 'colors.text-disabled',
         docValue: 'rgba(255,255,255,0.38)',
+      },
+    ],
+  },
+  {
+    title: 'Text roles on a fixed dark ground',
+    note: 'The same hierarchy as the text roles above, minus the Home Assistant deferral. For text that sits on a ground the card paints dark REGARDLESS of theme: glass overlays, scrims, the WebGL canvas, a saturated status fill. A theme-deferring role inverts on those grounds — under a light theme --text-primary resolves to #212121, which is near-black on near-black. Use these only where the backdrop is a literal in the same stylesheet; anywhere the surface follows the theme, the text must follow it too. See ADR 0039.',
+    tokens: [
+      { css: '--on-overlay-primary', value: '#ffffff', doc: 'colors.on-overlay-primary' },
+      {
+        css: '--on-overlay-secondary',
+        value: 'rgba(255, 255, 255, 0.7)',
+        doc: 'colors.on-overlay-secondary',
+        docValue: 'rgba(255,255,255,0.7)',
+      },
+      {
+        css: '--on-overlay-muted',
+        value: 'rgba(255, 255, 255, 0.55)',
+        doc: 'colors.on-overlay-muted',
+        docValue: 'rgba(255,255,255,0.55)',
       },
     ],
   },
@@ -364,6 +396,13 @@ export const groups: TokenGroup[] = [
         scope: 'card-only',
         note: "Home Assistant defines this name too, so declaring it here shadows the user's theme inside the card. Withheld from the portalled dialog host, where the HA value keeps winning. The shadowing itself is the open question — see ADR 0036 and #608.",
       },
+      {
+        css: '--outline-hover',
+        value: 'rgba(255, 255, 255, 0.2)',
+        doc: 'colors.outline-hover',
+        docValue: 'rgba(255,255,255,0.2)',
+        note: 'The one step UP from --divider-color, for an outline that brightens on hover. Four call sites had drifted to three different values (0.2 twice, 0.35, #666) before this existed. See ADR 0039.',
+      },
     ],
   },
   {
@@ -422,7 +461,12 @@ export const groups: TokenGroup[] = [
         doc: 'colors.danger-chip',
         note: 'Lighter danger for chip context, distinct from --error-color. #ff5252 folds into this — see ADR 0035.',
       },
-      { css: null, doc: 'colors.on-error', docValue: '#ffffff' },
+      {
+        css: '--on-error',
+        value: '#ffffff',
+        doc: 'colors.on-error',
+        note: '#ffffff on the documented error #f44336 is 3.68:1, below AA for normal text — same open question as --on-primary. See ADR 0039 §1 and #636.',
+      },
       { css: null, doc: 'colors.on-error-container', docValue: '#f44336' },
       {
         css: null,
@@ -496,11 +540,35 @@ export const groups: TokenGroup[] = [
     note: 'HASS-integrated, used by log/timeline/plant-card',
     tokens: [
       { css: '--gm-primary-color', value: 'var(--primary-color, #4caf50)', doc: null },
-      { css: '--gm-warning-color', value: 'var(--warning-color, #ff9800)', doc: null },
+      {
+        css: '--gm-warning-color',
+        value: 'var(--warning-color, #ff9800)',
+        doc: null,
+        note: 'DEPRECATED. Conflates the status warning with the flowering stage: it defers to the same HA variable as --gm-status-warning but falls back to the stage orange. Each use resolves to --gm-status-warning or --stage-flower per site. See ADR 0039 §4.',
+      },
       { css: '--gm-info-color', value: 'var(--info-color, #2196f3)', doc: null },
       { css: '--gm-error-color', value: 'var(--error-color, #f44336)', doc: null },
       { css: '--gm-ipm-color', value: '#9c27b0', doc: null },
       { css: '--gm-phi-color', value: '#ff9800', doc: null },
+    ],
+  },
+  {
+    title: '3D View Accent',
+    note: 'The accent of the 3D growspace view, shared by its DOM chrome and the three.js scene it controls. The scene consumes the 0x form (THREE.Color takes a resolved number, not a custom property), so both halves read the same authored value rather than repeating a literal — the canvas/DOM pairing ADR 0035 and #581 are about. See ADR 0039.',
+    tokens: [
+      { css: '--accent-3d', value: '#448aff', doc: 'colors.accent-3d' },
+      {
+        css: '--accent-3d-hover',
+        value: '#64b5f6',
+        doc: 'colors.accent-3d-hover',
+        note: 'Hover step for controls in the 3D view',
+      },
+      {
+        css: '--accent-3d-idle',
+        value: '#607d8b',
+        doc: 'colors.accent-3d-idle',
+        note: 'Inactive control chrome in the 3D view — blue-grey, deliberately desaturated against the accent',
+      },
     ],
   },
   {

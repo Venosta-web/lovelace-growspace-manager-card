@@ -312,7 +312,7 @@ export const uiStyles = css`
     left: 50%;
     transform: translateX(-50%);
     background: #323232;
-    color: var(--text-primary);
+    color: var(--on-overlay-primary);
     padding: 12px 24px;
     border-radius: var(--border-radius-full, 9999px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -328,11 +328,13 @@ export const uiStyles = css`
 
   .toast-notification.success {
     background: var(--success-color, #4caf50);
+    /* NOT --on-primary: #ffffff is 2.78:1 on this fill, below AA. See ADR 0039 §1. */
     color: var(--text-primary);
   }
 
   .toast-notification.error {
     background: var(--error-color, #f44336);
+    /* NOT --on-error: #ffffff is 3.68:1 on this fill, below AA. See ADR 0039 §1. */
     color: var(--text-primary);
   }
 

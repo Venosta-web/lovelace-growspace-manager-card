@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { DragControls } from 'three/examples/jsm/controls/DragControls.js';
 import { SceneManager } from './scene-manager';
+import { token } from '../../styles/variables.generated';
 
 export class InteractionManager {
   private sceneManager: SceneManager;
@@ -163,7 +164,7 @@ export class InteractionManager {
         // Add Outline
         const g = new THREE.SphereGeometry(2.5, 16, 16);
         const m = new THREE.MeshBasicMaterial({
-          color: 0x448aff,
+          color: token['--accent-3d'],
           transparent: true,
           opacity: 0.3,
           side: THREE.BackSide,
