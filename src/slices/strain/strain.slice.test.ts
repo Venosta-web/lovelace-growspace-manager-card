@@ -327,13 +327,20 @@ describe('removeStrain', () => {
 
 describe('updateStrainMeta', () => {
   it('calls callService with update_strain_meta and the payload', async () => {
-    await updateStrainMeta({ strain: 'OG', phenotype: 'pheno1', description: 'Nice' });
+    await updateStrainMeta({
+      strain: 'OG',
+      phenotype: 'pheno1',
+      key: 'OG|pheno1',
+      description: 'Nice',
+    });
 
     expect(hassCallModule.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'update_strain_meta',
       expect.objectContaining({ strain: 'OG', description: 'Nice' })
     );
+    const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(payload).not.toHaveProperty('key');
   });
 
   it('applies same image routing as addStrain', async () => {
