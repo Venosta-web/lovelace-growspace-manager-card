@@ -110,7 +110,7 @@ export class LineageTree extends LitElement {
     }
     .gen-badge {
       background: var(--primary-color);
-      color: var(--text-primary-color, #fff);
+      color: var(--on-primary);
       border-radius: var(--border-radius-xs, 4px);
       padding: 0 4px;
       font-size: var(--font-size-xs);
@@ -253,7 +253,7 @@ export class LineageTreeEditor extends LitElement {
       padding: 8px 16px;
       border-radius: var(--border-radius-sm, 8px);
       background: var(--primary-color);
-      color: var(--text-primary-color, #fff);
+      color: var(--on-primary);
     }
     .lte-v-line {
       width: 2px;
@@ -348,7 +348,7 @@ export class LineageTreeEditor extends LitElement {
     }
     .lte-suggestion:hover {
       background: var(--primary-color);
-      color: var(--text-primary-color, #fff);
+      color: var(--on-primary);
     }
     .lte-suggestion.manual {
       font-style: italic;

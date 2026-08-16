@@ -109,7 +109,7 @@ export class GrowspaceTaskBar extends LitElement {
     }
 
     button.primary {
-      color: var(--text-primary-color, #fff);
+      color: var(--on-primary);
       background: var(--primary-color, #4caf50);
     }
 

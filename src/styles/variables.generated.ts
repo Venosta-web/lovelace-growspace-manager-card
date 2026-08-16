@@ -86,13 +86,10 @@ export const variables: CSSResult = css`
     --surface-container-highest: #3a3a3a;
 
     /* Primary — Vitality Green */
-    /* Foreground on a saturated primary FILL, not on the dark shell. Fixed white on purpose:
-       the fill does not follow the Home Assistant theme, so a theme-deferring text role would
-       invert on top of it. NOT yet safe for normal text — #ffffff on the documented primary
-       #4caf50 is 2.78:1, below AA, which is why the toast fills still use --text-primary. See
-       ADR 0039 §1 and #636.
+    /* Foreground on the primary fill. White measures 2.78:1 against #4caf50; this dark
+       foreground measures 6.00:1 and passes AA for normal text.
     */
-    --on-primary: #ffffff;
+    --on-primary: #1e1e1e;
     /* Foreground on translucent-green containers. \`on-primary-container\` (#4caf50) over
        rgba(76,175,80,0.2) on #1e1e1e is 4.26:1 — below AA for normal text; this is 8.36:1. Do
        not "correct" it back to #4caf50.
@@ -107,6 +104,9 @@ export const variables: CSSResult = css`
        --gm-info-color.
     */
     --secondary: #2196f3;
+    /* Measured at 3.12:1 against #2196f3: suitable for large text and icons, not normal text.
+       Keep white until a normal-text secondary fill is introduced.
+    */
     --on-secondary: #ffffff;
     /* The dark stop of --secondary-gradient, mirroring --error-dark. Exists so a gradient that
        cannot run 135deg — a liquid column runs \`to bottom\` — can compose the same two stops
@@ -271,10 +271,10 @@ export const variables: CSSResult = css`
        see ADR 0035.
     */
     --danger-chip: #ef5350;
-    /* #ffffff on the documented error #f44336 is 3.68:1, below AA for normal text — same open
-       question as --on-primary. See ADR 0039 §1 and #636.
+    /* Foreground on the error fill. White measures 3.68:1 against #f44336; this dark
+       foreground measures 4.53:1 and passes AA for normal text.
     */
-    --on-error: #ffffff;
+    --on-error: #1e1e1e;
 
     /* Semantic color aliases */
     /* HASS-integrated, used by log/timeline/plant-card */
@@ -414,13 +414,10 @@ export const portalVariables: CSSResult = css`
     --surface-container-highest: #3a3a3a;
 
     /* Primary — Vitality Green */
-    /* Foreground on a saturated primary FILL, not on the dark shell. Fixed white on purpose:
-       the fill does not follow the Home Assistant theme, so a theme-deferring text role would
-       invert on top of it. NOT yet safe for normal text — #ffffff on the documented primary
-       #4caf50 is 2.78:1, below AA, which is why the toast fills still use --text-primary. See
-       ADR 0039 §1 and #636.
+    /* Foreground on the primary fill. White measures 2.78:1 against #4caf50; this dark
+       foreground measures 6.00:1 and passes AA for normal text.
     */
-    --on-primary: #ffffff;
+    --on-primary: #1e1e1e;
     /* Foreground on translucent-green containers. \`on-primary-container\` (#4caf50) over
        rgba(76,175,80,0.2) on #1e1e1e is 4.26:1 — below AA for normal text; this is 8.36:1. Do
        not "correct" it back to #4caf50.
@@ -435,6 +432,9 @@ export const portalVariables: CSSResult = css`
        --gm-info-color.
     */
     --secondary: #2196f3;
+    /* Measured at 3.12:1 against #2196f3: suitable for large text and icons, not normal text.
+       Keep white until a normal-text secondary fill is introduced.
+    */
     --on-secondary: #ffffff;
     /* The dark stop of --secondary-gradient, mirroring --error-dark. Exists so a gradient that
        cannot run 135deg — a liquid column runs \`to bottom\` — can compose the same two stops
@@ -590,10 +590,10 @@ export const portalVariables: CSSResult = css`
        see ADR 0035.
     */
     --danger-chip: #ef5350;
-    /* #ffffff on the documented error #f44336 is 3.68:1, below AA for normal text — same open
-       question as --on-primary. See ADR 0039 §1 and #636.
+    /* Foreground on the error fill. White measures 3.68:1 against #f44336; this dark
+       foreground measures 4.53:1 and passes AA for normal text.
     */
-    --on-error: #ffffff;
+    --on-error: #1e1e1e;
 
     /* Semantic color aliases */
     /* HASS-integrated, used by log/timeline/plant-card */
@@ -705,7 +705,7 @@ export const token = {
   '--surface-container': '#1e1e1e',
   '--surface-container-high': '#2a2a2a',
   '--surface-container-highest': '#3a3a3a',
-  '--on-primary': '#ffffff',
+  '--on-primary': '#1e1e1e',
   '--on-primary-container-bright': '#69f0ae',
   '--secondary': '#2196f3',
   '--on-secondary': '#ffffff',
@@ -759,7 +759,7 @@ export const token = {
   '--error-border': 'rgba(244, 67, 54, 0.3)',
   '--error-dark': '#d32f2f',
   '--danger-chip': '#ef5350',
-  '--on-error': '#ffffff',
+  '--on-error': '#1e1e1e',
   '--gm-primary-color': 'var(--primary-color, #4caf50)',
   '--gm-warning-color': 'var(--warning-color, #ff9800)',
   '--gm-info-color': 'var(--info-color, #2196f3)',

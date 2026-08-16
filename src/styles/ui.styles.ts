@@ -63,10 +63,15 @@ export const uiStyles = css`
   /* Primary Filled Button */
   .md3-button.primary {
     background: var(--primary-color, #4caf50);
-    color: var(--text-primary-color, #fff);
+    color: var(--on-primary);
     box-shadow:
       0 1px 2px rgba(0, 0, 0, 0.3),
       0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  }
+
+  .md3-button.filled {
+    background: var(--primary-color, #4caf50);
+    color: var(--on-primary);
   }
 
   .md3-button.primary:hover {
@@ -328,14 +333,12 @@ export const uiStyles = css`
 
   .toast-notification.success {
     background: var(--success-color, #4caf50);
-    /* NOT --on-primary: #ffffff is 2.78:1 on this fill, below AA. See ADR 0039 §1. */
-    color: var(--text-primary);
+    color: var(--on-primary);
   }
 
   .toast-notification.error {
     background: var(--error-color, #f44336);
-    /* NOT --on-error: #ffffff is 3.68:1 on this fill, below AA. See ADR 0039 §1. */
-    color: var(--text-primary);
+    color: var(--on-error);
   }
 
   @keyframes slideUpFade {

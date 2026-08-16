@@ -25,12 +25,9 @@ colors:
   surface-variant: 'rgba(255,255,255,0.05)'
   # Primary — Vitality Green
   primary: '#4caf50'
-  # Foreground on a saturated primary FILL, not on the dark shell. Fixed white on purpose:
-  # the fill does not follow the Home Assistant theme, so a theme-deferring text role
-  # would invert on top of it. NOT yet safe for normal text — #ffffff on the documented
-  # primary #4caf50 is 2.78:1, below AA, which is why the toast fills still use
-  # --text-primary. See ADR 0039 §1 and #636.
-  on-primary: '#ffffff'
+  # Foreground on the primary fill. White measures 2.78:1 against #4caf50; this dark
+  # foreground measures 6.00:1 and passes AA for normal text.
+  on-primary: '#1e1e1e'
   primary-container: 'rgba(76,175,80,0.15)'
   on-primary-container: '#4caf50'
   # Foreground on translucent-green containers. `on-primary-container` (#4caf50) over
@@ -45,6 +42,8 @@ colors:
   # between two unrelated hues. Sites meaning "informational" still take the
   # theme-following --gm-info-color.
   secondary: '#2196f3'
+  # Measured at 3.12:1 against #2196f3: suitable for large text and icons, not normal
+  # text. Keep white until a normal-text secondary fill is introduced.
   on-secondary: '#ffffff'
   secondary-container: 'rgba(33,150,243,0.12)'
   on-secondary-container: '#2196f3'
@@ -157,9 +156,9 @@ colors:
   # Lighter danger for chip context, distinct from --error-color. #ff5252 folds into this
   # — see ADR 0035.
   danger-chip: '#ef5350'
-  # #ffffff on the documented error #f44336 is 3.68:1, below AA for normal text — same
-  # open question as --on-primary. See ADR 0039 §1 and #636.
-  on-error: '#ffffff'
+  # Foreground on the error fill. White measures 3.68:1 against #f44336; this dark
+  # foreground measures 4.53:1 and passes AA for normal text.
+  on-error: '#1e1e1e'
   on-error-container: '#f44336'
   # Functional state, distinct from the Flowering stage
   warning: '#ffa726'
@@ -533,7 +532,7 @@ Two sites deviate deliberately and say why at the call site: the tank card's liq
 
 All buttons are 40px tall, fully rounded (`border-radius: 20px`), Roboto Medium 14px. The state-layer interaction model uses a `::before` pseudo-element at `currentColor` that transitions opacity on hover (8%), focus-visible (12%), and active (12%) — no background-color swap, just translucent wash. This produces the MD3 "ripple through opacity" feel without JavaScript.
 
-- **Primary Filled** — `background: var(--primary-color, #4caf50)`, white text. MD3 Level 1 shadow that lifts to Level 2 on hover.
+- **Primary Filled** — `background: var(--primary-color, #4caf50)`, `color: var(--on-primary)`. MD3 Level 1 shadow that lifts to Level 2 on hover.
 - **Tonal** — `background: rgba(76,175,80,0.12)`, green text. Hover lifts to 16% opacity + Level 1 shadow.
 - **Text** — Transparent background, green text, 12px horizontal padding (less than filled). Used for Cancel/Close.
 - **Danger (Outlined)** — Transparent background with red `border: 1px solid currentColor`. Red text. Error-tinted state layers.

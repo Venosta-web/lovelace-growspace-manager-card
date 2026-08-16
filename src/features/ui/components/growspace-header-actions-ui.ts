@@ -321,7 +321,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       gap: 8px;
       flex-shrink: 0;
       background: var(--primary-color, #4caf50);
-      color: var(--text-primary-color, #fff);
+      color: var(--on-primary);
       font: inherit;
       font-size: 0.875rem;
       font-weight: 500;

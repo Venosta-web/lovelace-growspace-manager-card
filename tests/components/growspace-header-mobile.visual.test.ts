@@ -102,6 +102,15 @@ async function renderMobileHeader(
   return { wrapper, header };
 }
 
+// The capture scales CSS pixels by 0.8, so a fractional box height rounds to either of
+// two pixel rows; that shifts every glyph by a row and blows past the mismatch budget.
+// Rounding up to a multiple of 5 CSS px lands the height on a whole captured pixel.
+async function pinToWholePixels(wrapper: HTMLDivElement): Promise<void> {
+  const { height } = wrapper.getBoundingClientRect();
+  wrapper.style.height = `${Math.ceil(height / 5) * 5}px`;
+  await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
+}
+
 afterEach(async () => {
   await page.viewport(1280, 720);
   document.body.style.background = '#111111';
@@ -118,6 +127,8 @@ test.each([
     const readings = header.shadowRoot!.querySelector('growspace-header-hero-ui')!;
     readings.shadowRoot!.querySelector<HTMLDetailsElement>('.more-readings')!.open = true;
   }
+
+  await pinToWholePixels(wrapper);
 
   await expect(page.elementLocator(wrapper)).toMatchScreenshot();
 });

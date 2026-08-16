@@ -357,7 +357,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
 
       .btn-primary {
         background: var(--primary-color, #4caf50);
-        color: var(--text-primary);
+        color: var(--on-primary);
         display: flex;
         align-items: center;
         gap: 6px;
@@ -389,7 +389,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
 
       .btn-danger {
         background: var(--error-color, #f44336);
-        color: var(--text-primary);
+        color: var(--on-error);
       }
 
       .btn-danger:hover { filter: brightness(1.1); }

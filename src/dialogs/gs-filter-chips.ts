@@ -30,7 +30,7 @@ export class GsFilterChips extends LitElement {
 
     .filter-chip.active {
       background: var(--primary-color);
-      color: var(--text-primary-color, #fff);
+      color: var(--on-primary);
       border-color: var(--primary-color);
     }
 
