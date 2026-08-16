@@ -1,3 +1,10 @@
+# [1.1.0-next.132](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.131...v1.1.0-next.132) (2026-08-16)
+
+
+### Features
+
+* **design:** add the colour roles the migration could not invent ([#637](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/637)) ([92d43b0](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/92d43b07bdd6af184c90569d9cb2fffb3b7fa514)), closes [#576](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/576)
+
 # [1.1.0-next.131](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.130...v1.1.0-next.131) (2026-08-15)
 
 
