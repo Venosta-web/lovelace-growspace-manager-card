@@ -1,4 +1,5 @@
 import type { IrrigationConfig, IrrigationStrategy } from '../../services/types';
+import { token } from '../../styles/variables';
 
 export type CropSteeringShot = { time: string; duration: number };
 
@@ -111,7 +112,7 @@ export function computePhases(
         name: 'Saturation',
         start: lightsOnMin,
         end: p1End,
-        color: '#4CAF50',
+        color: token['--phase-p1'],
         target: 'Reach FC',
       },
       {
@@ -120,7 +121,7 @@ export function computePhases(
         name: 'Maintenance',
         start: p1End,
         end: p3Start,
-        color: '#2196F3',
+        color: token['--phase-p2'],
         target: 'Runoff target',
       },
       {
@@ -129,7 +130,7 @@ export function computePhases(
         name: 'Dryback',
         start: p3Start,
         end: lightsOffMin,
-        color: '#FF9800',
+        color: token['--phase-p3'],
         target: `−${strategy.maintenanceDrybackPercent ?? 3}% VWC`,
       },
     ],

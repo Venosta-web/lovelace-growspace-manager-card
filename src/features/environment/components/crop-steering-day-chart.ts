@@ -1119,17 +1119,17 @@ export class CropSteeringDayChart extends LitElement {
 
           <!-- current-value dots -->
           ${bulkEcPts !== null
-            ? svg`<circle cx="${nowX}" cy="${yAtEc(curBulk).toFixed(1)}" r="3" fill="${bulkEcColor}" stroke="#141414" stroke-width="1.5" />`
+            ? svg`<circle cx="${nowX}" cy="${yAtEc(curBulk).toFixed(1)}" r="3" fill="${bulkEcColor}" stroke="var(--surface-dim, #141414)" stroke-width="1.5" />`
             : nothing}
           ${poreEcPts !== null
-            ? svg`<circle cx="${nowX}" cy="${yAtEc(curPore).toFixed(1)}" r="3" fill="${poreEcColor}" stroke="#141414" stroke-width="1.5" />`
+            ? svg`<circle cx="${nowX}" cy="${yAtEc(curPore).toFixed(1)}" r="3" fill="${poreEcColor}" stroke="var(--surface-dim, #141414)" stroke-width="1.5" />`
             : nothing}
           <circle
             cx="${nowX}"
             cy="${yAtVwc(cur.v).toFixed(1)}"
             r="3.4"
             fill="${vwcColor}"
-            stroke="#141414"
+            stroke="var(--surface-dim, #141414)"
             stroke-width="1.5"
           />
         </svg>

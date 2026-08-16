@@ -326,7 +326,7 @@ export class ConfigHumidityTab extends LitElement {
                 )}
                 ${this._deviceBlock(
                   'Humidifier',
-                  '#00bcd4',
+                  'var(--metric-humidifier, #00bcd4)',
                   mdiAirHumidifier,
                   'update-hum-threshold',
                   stage.humKey,
@@ -398,8 +398,8 @@ export class ConfigHumidityTab extends LitElement {
           ${title}
         </div>
         <div class="acc-cycle-grid">
-          ${cycle('day', 'Day', '#ff9800', mdiWhiteBalanceSunny, values.day)}
-          ${cycle('night', 'Night', '#7986cb', mdiWeatherNight, values.night)}
+          ${cycle('day', 'Day', 'var(--cycle-day, #ffeb3b)', mdiWhiteBalanceSunny, values.day)}
+          ${cycle('night', 'Night', 'var(--cycle-night, #7986cb)', mdiWeatherNight, values.night)}
         </div>
       </div>
     `;

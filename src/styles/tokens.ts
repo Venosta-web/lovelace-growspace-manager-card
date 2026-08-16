@@ -669,6 +669,50 @@ export const groups: TokenGroup[] = [
       { css: '--primary-light-color-active', value: 'rgba(255, 255, 255, 0.2)', doc: null },
     ],
   },
+  {
+    // A per-metric assignment, not the ordinal --series-* set: a chart legend names
+    // the metric, so the reader learns "humidity is this blue" and expects it to hold
+    // wherever humidity is plotted. Values are unchanged from the literals they replace.
+    // Some repeat across metrics (#03a9f4 is soil moisture, irrigation and water) and
+    // some coincide with a token meaning something else (drain's #ff9800 is also the
+    // flowering stage); both are why these are named per metric rather than folded.
+    // Temperature, substrate temp, pore EC and runoff EC are absent on purpose — they
+    // already read --danger-chip. See ADR 0035 §5 for why this is not the series palette.
+    title: 'Metric Palette — one hue per plotted metric',
+    tokens: [
+      { css: '--metric-humidity', value: '#2196f3', doc: 'colors.metric-humidity' },
+      { css: '--metric-vpd', value: '#9c27b0', doc: 'colors.metric-vpd' },
+      { css: '--metric-calculated-vpd', value: '#ab47bc', doc: 'colors.metric-calculated-vpd' },
+      { css: '--metric-co2', value: '#e91e63', doc: 'colors.metric-co2' },
+      { css: '--metric-air-exchange', value: '#8d6e63', doc: 'colors.metric-air-exchange' },
+      { css: '--metric-tank-level', value: '#26a69a', doc: 'colors.metric-tank-level' },
+      { css: '--metric-soil-moisture', value: '#03a9f4', doc: 'colors.metric-soil-moisture' },
+      { css: '--metric-light', value: '#ffc107', doc: 'colors.metric-light' },
+      { css: '--metric-irrigation', value: '#03a9f4', doc: 'colors.metric-irrigation' },
+      { css: '--metric-drain', value: '#ff9800', doc: 'colors.metric-drain' },
+      { css: '--metric-exhaust', value: '#795548', doc: 'colors.metric-exhaust' },
+      { css: '--metric-circulation-fan', value: '#243491', doc: 'colors.metric-circulation-fan' },
+      { css: '--metric-humidifier', value: '#00bcd4', doc: 'colors.metric-humidifier' },
+      { css: '--metric-dehumidifier', value: '#009688', doc: 'colors.metric-dehumidifier' },
+      { css: '--metric-optimal', value: '#4caf50', doc: 'colors.metric-optimal' },
+      { css: '--metric-dli', value: '#ffb300', doc: 'colors.metric-dli' },
+      { css: '--metric-crop-steering', value: '#4caf50', doc: 'colors.metric-crop-steering' },
+      { css: '--metric-energy', value: '#fbc02d', doc: 'colors.metric-energy' },
+      { css: '--metric-water', value: '#03a9f4', doc: 'colors.metric-water' },
+      { css: '--metric-ph', value: '#ab47bc', doc: 'colors.metric-ph' },
+      { css: '--metric-feed-ec', value: '#ffa726', doc: 'colors.metric-feed-ec' },
+      { css: '--metric-bulk-ec', value: '#ff7043', doc: 'colors.metric-bulk-ec' },
+      { css: '--metric-drain-volume', value: '#29b6f6', doc: 'colors.metric-drain-volume' },
+      { css: '--metric-irrigation-flow', value: '#26c6da', doc: 'colors.metric-irrigation-flow' },
+      { css: '--metric-power', value: '#ffee58', doc: 'colors.metric-power' },
+      {
+        css: '--metric-unknown',
+        value: '#ffffff',
+        doc: 'colors.metric-unknown',
+        note: 'DEFAULT_METRIC_CONFIG, for a metric key the card does not recognise. White rather than a hue, so an unmapped series is visibly not one of the named ones.',
+      },
+    ],
+  },
 ];
 
 function step(

@@ -107,7 +107,7 @@ export class ConfigVpdTargetsTab extends LitElement {
                     stage.key,
                     'day',
                     'Day',
-                    '#ff9800',
+                    'var(--cycle-day, #ffeb3b)',
                     mdiWhiteBalanceSunny,
                     stage.day
                   )}
@@ -115,7 +115,7 @@ export class ConfigVpdTargetsTab extends LitElement {
                     stage.key,
                     'night',
                     'Night',
-                    '#7986cb',
+                    'var(--cycle-night, #7986cb)',
                     mdiWeatherNight,
                     stage.night
                   )}

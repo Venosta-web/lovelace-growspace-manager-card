@@ -192,8 +192,8 @@ export class GrowspaceLogbook extends LitElement {
     const t = this._normalize(type);
 
     if (cat === 'environmental_report') {
-      if (t.includes('night')) return '#3f51b5'; // Indigo for Night
-      return '#ffc107'; // Amber for Day
+      if (t.includes('night')) return 'var(--cycle-night, #7986cb)';
+      return 'var(--cycle-day, #ffeb3b)';
     }
 
     if (t.includes('ipm')) return 'var(--gm-ipm-color, #9c27b0)';

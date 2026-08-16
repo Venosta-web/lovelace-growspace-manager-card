@@ -202,6 +202,35 @@ colors:
   # Inactive control chrome in the 3D view — blue-grey, deliberately desaturated against
   # the accent
   accent-3d-idle: '#607d8b'
+  # Metric Palette — one hue per plotted metric
+  metric-humidity: '#2196f3'
+  metric-vpd: '#9c27b0'
+  metric-calculated-vpd: '#ab47bc'
+  metric-co2: '#e91e63'
+  metric-air-exchange: '#8d6e63'
+  metric-tank-level: '#26a69a'
+  metric-soil-moisture: '#03a9f4'
+  metric-light: '#ffc107'
+  metric-irrigation: '#03a9f4'
+  metric-drain: '#ff9800'
+  metric-exhaust: '#795548'
+  metric-circulation-fan: '#243491'
+  metric-humidifier: '#00bcd4'
+  metric-dehumidifier: '#009688'
+  metric-optimal: '#4caf50'
+  metric-dli: '#ffb300'
+  metric-crop-steering: '#4caf50'
+  metric-energy: '#fbc02d'
+  metric-water: '#03a9f4'
+  metric-ph: '#ab47bc'
+  metric-feed-ec: '#ffa726'
+  metric-bulk-ec: '#ff7043'
+  metric-drain-volume: '#29b6f6'
+  metric-irrigation-flow: '#26c6da'
+  metric-power: '#ffee58'
+  # DEFAULT_METRIC_CONFIG, for a metric key the card does not recognise. White rather than
+  # a hue, so an unmapped series is visibly not one of the named ones.
+  metric-unknown: '#ffffff'
 typography:
   # Typography steps (documented only — composed at call sites)
   display-lg:

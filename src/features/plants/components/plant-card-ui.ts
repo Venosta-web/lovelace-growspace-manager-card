@@ -264,7 +264,7 @@ export class PlantCardUI extends LitElement {
     }
 
     const isAhead = this.growthDeviation > 0;
-    const color = isAhead ? '#4caf50' : '#f44336';
+    const color = isAhead ? 'var(--success-color, #4caf50)' : 'var(--error-color, #f44336)';
     const bgColor = isAhead ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)';
 
     return html`
