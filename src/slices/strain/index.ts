@@ -105,6 +105,8 @@ function _buildStrainPayload(
   // `parents` is a lineage tree handled out-of-band via importStrainLineageTree,
   // never part of the add/update_strain payload.
   delete payload.parents;
+  // `key` is a read-only composite identifier from the strain read model.
+  delete payload.key;
 
   // Coerce flowering-day ranges to numbers (form inputs deliver strings).
   if (payload.flowering_days_min !== undefined && payload.flowering_days_min !== null) {
