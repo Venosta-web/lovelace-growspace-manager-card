@@ -201,7 +201,7 @@ export class CropSteeringDayChart extends LitElement {
     .placeholder {
       padding: 32px;
       text-align: center;
-      color: var(--secondary-text-color, #666);
+      color: var(--text-muted);
       font-size: var(--font-size-supporting);
     }
     .cs-phase-strip {

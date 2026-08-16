@@ -88,7 +88,7 @@ export class GrowspaceIPMDialogUI extends LitElement {
         flex: 1;
       }
       .error-bar {
-        background: var(--error-color, #ff5252);
+        background: var(--error-color, #f44336);
         color: white;
         padding: 8px 16px;
         border-radius: 4px;

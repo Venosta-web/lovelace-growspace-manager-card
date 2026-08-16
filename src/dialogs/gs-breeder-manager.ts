@@ -413,7 +413,7 @@ export class GsBreederManager extends LitElement {
                 ? html`
                     <button
                       class="md3-button text"
-                      style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);"
+                      style="height:36px; padding:0 12px; color:var(--error-color, #f44336);"
                       @click=${() => {
                         this._sm = transition(this._sm, {
                           type: 'FIELD_CHANGED',

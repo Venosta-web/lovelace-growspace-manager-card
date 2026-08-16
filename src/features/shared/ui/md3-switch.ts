@@ -14,7 +14,7 @@ export class Md3Switch extends LitElement {
       --md-switch-width: 52px;
       --md-switch-height: 32px;
       --md-switch-handle-size: 24px;
-      --md-switch-track-color-on: var(--primary-color, #2196f3);
+      --md-switch-track-color-on: var(--gm-primary-color);
       --md-switch-track-color-off: rgba(255, 255, 255, 0.1);
       --md-switch-handle-color: var(--text-primary);
     }

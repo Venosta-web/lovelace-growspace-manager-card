@@ -94,7 +94,7 @@ export class QuickNoteInput extends LitElement {
     }
 
     button.submit-btn {
-      background: var(--primary-color, #03a9f4);
+      background: var(--gm-primary-color);
       color: white;
     }
 

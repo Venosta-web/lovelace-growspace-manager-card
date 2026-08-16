@@ -101,7 +101,7 @@ export class PlantActionsTab extends LitElement {
       }
 
       .action-card:not(.disabled):hover {
-        background: var(--primary-color, rgba(76, 175, 80, 0.1));
+        background: rgba(76, 175, 80, 0.1);
         border-color: var(--primary-color, #4caf50);
         transform: translateY(-2px);
       }

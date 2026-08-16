@@ -18,7 +18,7 @@ export class GsFilterChips extends LitElement {
     .filter-chip {
       padding: 4px 14px;
       border-radius: var(--border-radius-lg, 16px);
-      border: 1px solid var(--divider-color, #e0e0e0);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
       background: transparent;
       color: var(--primary-text-color);
       font-size: var(--font-size-supporting);

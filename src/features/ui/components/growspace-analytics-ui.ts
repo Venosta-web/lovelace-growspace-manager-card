@@ -55,11 +55,11 @@ export class GrowspaceAnalyticsUI extends LitElement {
         <div class="graphs-container">
           ${this._renderTimeRangeSelector()}
           <div
-            style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--secondary-text-color,#666);"
+            style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-secondary);"
           >
             <div
               class="loading-spinner"
-              style="width:24px;height:24px;border:2px solid var(--primary-color,#03a9f4);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"
+              style="width:24px;height:24px;border:2px solid var(--gm-primary-color);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"
             ></div>
             <span style="margin-left:12px;">Loading history data...</span>
           </div>

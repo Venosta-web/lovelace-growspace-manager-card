@@ -295,7 +295,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
     }
     .icon-button:focus-visible {
-      outline: 2px solid var(--primary-color, #2196f3);
+      outline: 2px solid var(--gm-primary-color);
       outline-offset: 2px;
     }
     .icon-button svg {
@@ -306,8 +306,8 @@ export class GrowspaceHeaderActionsUI extends LitElement {
 
     .icon-button.mobile-link.active,
     .icon-button.active {
-      background: var(--primary-color, #2196f3);
-      border-color: var(--primary-color, #2196f3);
+      background: var(--gm-primary-color);
+      border-color: var(--gm-primary-color);
     }
 
     .primary-action {
@@ -404,7 +404,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       opacity: 0.45;
     }
     .menu-item:focus-visible {
-      outline: 2px solid var(--primary-color, #2196f3);
+      outline: 2px solid var(--gm-primary-color);
       outline-offset: -3px;
       background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
     }

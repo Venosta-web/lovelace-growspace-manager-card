@@ -263,7 +263,7 @@ export const growspaceCardStyles = css`
 
   .gs-icon-box {
     background: var(--secondary-background-color, rgba(255, 235, 59, 0.05));
-    border: 1px solid var(--divider-color, rgba(255, 235, 59, 0.2));
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
     border-radius: var(--border-radius-md, 12px);
     width: 48px;
     height: 48px;

@@ -121,7 +121,7 @@ export class SubareaConfigDialog extends LitElement {
         letter-spacing: 0.5px;
       }
       .error-message {
-        color: var(--error-color, #ff5252);
+        color: var(--error-color, #f44336);
         font-size: 0.85rem;
         padding: 8px 0;
       }

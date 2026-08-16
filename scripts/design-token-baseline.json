@@ -4,5 +4,6 @@
   "css": 33,
   "inline": 4,
   "gradient": 25,
-  "js": 86
+  "js": 86,
+  "fallbackConflicts": 0
 }

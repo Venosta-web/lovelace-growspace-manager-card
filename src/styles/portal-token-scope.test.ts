@@ -136,3 +136,70 @@ describe('portalled dialog token scope', () => {
     }
   });
 });
+
+/**
+ * ADR 0041: `var(--ha-name, <literal>)` renders the literal only when the theme
+ * is silent about the name, which is why a fallback that contradicts the token
+ * it backs is a rendering defect rather than untidiness. The probes stand in for
+ * a theme that omits the names the card reads through.
+ */
+describe('what the card paints when the Home Assistant theme is silent', () => {
+  let card: CardProbe;
+  let portal: PortalProbe;
+
+  beforeAll(async () => {
+    card = document.createElement('token-scope-card-probe') as CardProbe;
+    portal = document.createElement('token-scope-portal-probe') as PortalProbe;
+    document.body.append(card, portal);
+    await Promise.all([card.updateComplete, portal.updateComplete]);
+  });
+
+  afterAll(() => {
+    card.remove();
+    portal.remove();
+  });
+
+  /** tests/setup.ts declares the simulated theme inline on :root, so unsetting is a removal. */
+  function withoutRootTheme(names: string[], body: () => void) {
+    const root = document.documentElement;
+    const previous = names.map((n) => [n, root.style.getPropertyValue(n)] as const);
+    for (const name of names) root.style.removeProperty(name);
+    try {
+      body();
+    } finally {
+      for (const [name, value] of previous) if (value) root.style.setProperty(name, value);
+    }
+  }
+
+  it('paints the accent Vitality Green, not a Home Assistant default blue', () => {
+    withoutRootTheme(['--primary-color'], () => {
+      for (const probe of [card, portal]) {
+        const inner = probe.shadowRoot!.querySelector('#inner') as HTMLElement;
+        inner.style.backgroundColor = 'var(--gm-primary-color)';
+        expect(getComputedStyle(inner).backgroundColor).toBe('rgb(76, 175, 80)');
+      }
+    });
+  });
+
+  it('paints secondary text at the documented alphas', () => {
+    withoutRootTheme(['--secondary-text-color'], () => {
+      const inner = card.shadowRoot!.querySelector('#inner') as HTMLElement;
+      inner.style.color = 'var(--text-secondary)';
+      expect(getComputedStyle(inner).color).toBe('rgba(255, 255, 255, 0.7)');
+      inner.style.color = 'var(--text-muted)';
+      expect(getComputedStyle(inner).color).toBe('rgba(255, 255, 255, 0.55)');
+    });
+  });
+
+  it('keeps the divider and error fallbacks meaningful where the card withholds them', () => {
+    // The two card-only names still reach the portal only through the theme, so
+    // there the fallback is what renders — it has to be the documented value.
+    withoutRootTheme([...cardOnlyTokens], () => {
+      const inner = portal.shadowRoot!.querySelector('#inner') as HTMLElement;
+      inner.style.borderColor = 'var(--divider-color, rgba(255, 255, 255, 0.12))';
+      expect(getComputedStyle(inner).borderColor).toBe('rgba(255, 255, 255, 0.12)');
+      inner.style.color = 'var(--error-color, #f44336)';
+      expect(getComputedStyle(inner).color).toBe('rgb(244, 67, 54)');
+    });
+  });
+});

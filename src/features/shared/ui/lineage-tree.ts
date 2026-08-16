@@ -28,7 +28,7 @@ export class LineageTree extends LitElement {
     .skeleton {
       height: 36px;
       border-radius: var(--border-radius-sm, 8px);
-      background: var(--divider-color, #e0e0e0);
+      background: var(--divider-color, rgba(255, 255, 255, 0.12));
       animation: pulse 1.4s ease-in-out infinite;
     }
     .skeleton.narrow {
@@ -68,7 +68,7 @@ export class LineageTree extends LitElement {
       transform: translateX(-50%);
       width: 2px;
       height: 12px;
-      background: var(--divider-color, #ccc);
+      background: var(--divider-color, rgba(255, 255, 255, 0.12));
     }
     .node-card {
       display: flex;
@@ -78,7 +78,7 @@ export class LineageTree extends LitElement {
       padding: 6px 10px;
       border-radius: var(--border-radius-sm, 8px);
       background: var(--card-background-color, #fff);
-      border: 1px solid var(--divider-color, #e0e0e0);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
       min-width: 80px;
       text-align: center;
     }
@@ -134,7 +134,7 @@ export class LineageTree extends LitElement {
     .v-line {
       width: 2px;
       height: 12px;
-      background: var(--divider-color, #ccc);
+      background: var(--divider-color, rgba(255, 255, 255, 0.12));
     }
     :host([clickable]) .node-card.ancestor {
       cursor: pointer;
@@ -258,7 +258,7 @@ export class LineageTreeEditor extends LitElement {
     .lte-v-line {
       width: 2px;
       height: 16px;
-      background: var(--divider-color, #ccc);
+      background: var(--divider-color, rgba(255, 255, 255, 0.12));
     }
     .lte-parents-row {
       display: flex;
@@ -295,7 +295,7 @@ export class LineageTreeEditor extends LitElement {
       border: none;
       cursor: pointer;
       font-size: 14px;
-      color: var(--error-color, #e53935);
+      color: var(--error-color, #f44336);
       padding: 0;
     }
     .lte-add-slot {

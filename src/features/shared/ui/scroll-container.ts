@@ -65,7 +65,7 @@ export class ScrollContainer extends LitElement {
 
     .scroll-content:focus-visible,
     .scroll-arrow:focus-visible {
-      outline: 2px solid var(--primary-color, #2196f3);
+      outline: 2px solid var(--gm-primary-color);
       outline-offset: 2px;
     }
 

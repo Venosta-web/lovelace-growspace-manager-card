@@ -36,7 +36,7 @@ export class TankWaterChart extends LitElement {
     }
     .chart-title {
       font-size: var(--font-size-supporting);
-      color: var(--secondary-text-color, #9e9e9e);
+      color: var(--text-secondary);
       margin-bottom: 12px;
     }
     .loading {
@@ -44,13 +44,13 @@ export class TankWaterChart extends LitElement {
       align-items: center;
       justify-content: center;
       padding: 40px;
-      color: var(--secondary-text-color, #666);
+      color: var(--text-secondary);
       gap: 12px;
     }
     .spinner {
       width: 20px;
       height: 20px;
-      border: 2px solid var(--primary-color, #03a9f4);
+      border: 2px solid var(--gm-primary-color);
       border-top-color: transparent;
       border-radius: 50%;
       animation: spin 1s linear infinite;
@@ -63,7 +63,7 @@ export class TankWaterChart extends LitElement {
     .empty {
       padding: 32px;
       text-align: center;
-      color: var(--secondary-text-color, #666);
+      color: var(--text-muted);
       font-size: var(--font-size-supporting);
     }
     svg {
@@ -71,7 +71,7 @@ export class TankWaterChart extends LitElement {
       overflow: visible;
     }
     .bar {
-      fill: var(--primary-color, #03a9f4);
+      fill: var(--gm-primary-color);
       opacity: 0.85;
     }
     .bar:hover {
@@ -79,7 +79,7 @@ export class TankWaterChart extends LitElement {
     }
     .axis-label {
       font-size: var(--font-size-xs);
-      fill: var(--secondary-text-color, #9e9e9e);
+      fill: var(--text-muted);
     }
 
     ${reducedMotion}
