@@ -806,7 +806,7 @@ export class IrrigationDialog extends LitElement {
       this._deviceAtom.set(this.device);
     }
     // Mirror the hass-derived sensor/input_number entity list into its atom so the
-    // Tanks Tab ViewModel's edit datalist stays current without the component
+    // Tanks Tab ViewModel's edit picker stays current without the component
     // reading hass.
     if (this.hass && (changedProps.has('hass') || changedProps.has('device'))) {
       this._tankSensorOptions.set(

@@ -1785,11 +1785,12 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
   it("edit form pre-populates with the tank's current values", async () => {
     const { el, tab } = await mountTanks();
     await openEditor(tab, el);
+    const picker = tab.shadowRoot.querySelector('gm-entity-picker') as { value: string };
+    expect(picker.value).toBe('sensor.tank_a');
     const inputs = tab.shadowRoot.querySelectorAll('input.md3-input');
-    expect((inputs[0] as HTMLInputElement).value).toBe('sensor.tank_a');
-    expect((inputs[1] as HTMLInputElement).value).toBe('Tank A');
-    expect((inputs[2] as HTMLInputElement).value).toBe('200');
-    expect((inputs[3] as HTMLInputElement).value).toBe('20');
+    expect((inputs[0] as HTMLInputElement).value).toBe('Tank A');
+    expect((inputs[1] as HTMLInputElement).value).toBe('200');
+    expect((inputs[2] as HTMLInputElement).value).toBe('20');
   });
 
   it('clicking Cancel hides the edit form', async () => {
@@ -1810,9 +1811,9 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
     const { el, tab } = await mountTanks();
     await openEditor(tab, el);
 
-    // Change warning level (4th input)
+    // Change warning level (last input — the sensor field is the picker above)
     const form = tab.shadowRoot.querySelector('.tank-edit-form')!;
-    const warningInput = form.querySelectorAll('input.md3-input')[3] as HTMLInputElement;
+    const warningInput = form.querySelectorAll('input.md3-input')[2] as HTMLInputElement;
     warningInput.value = '25';
     warningInput.dispatchEvent(new Event('input'));
     await el.updateComplete;
