@@ -127,7 +127,7 @@ export class GmChatPanel extends LitElement {
     }
 
     .rail-section-label {
-      font-size: 0.68rem;
+      font-size: var(--font-size-xs);
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--secondary-text-color);
@@ -173,7 +173,7 @@ export class GmChatPanel extends LitElement {
       flex: 1;
     }
     .thread-time {
-      font-size: 0.68rem;
+      font-size: var(--font-size-xs);
       color: var(--secondary-text-color);
       margin-top: 2px;
     }
@@ -325,7 +325,7 @@ export class GmChatPanel extends LitElement {
       font-weight: 600;
     }
     .conf {
-      font-size: 0.68rem;
+      font-size: var(--font-size-xs);
       padding: 1px 6px;
       border-radius: var(--border-radius-full, 9999px);
       background: rgba(76, 175, 80, 0.25);
@@ -358,7 +358,7 @@ export class GmChatPanel extends LitElement {
       color: var(--secondary-text-color);
     }
     .snap-delta {
-      font-size: 0.68rem;
+      font-size: var(--font-size-xs);
       color: var(--ai-accent, #4caf50);
     }
 

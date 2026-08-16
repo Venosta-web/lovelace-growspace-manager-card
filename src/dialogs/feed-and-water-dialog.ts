@@ -81,7 +81,7 @@ export class FeedAndWaterDialog extends LitElement {
         border: none;
         cursor: pointer;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
-        font-size: 0.6875rem;
+        font-size: var(--font-size-xs);
         font-family: inherit;
         width: 56px;
         transition: background 0.15s, color 0.15s;
