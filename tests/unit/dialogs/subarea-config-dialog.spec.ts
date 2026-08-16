@@ -2,6 +2,38 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import '../../../src/dialogs/subarea-config-dialog';
 import { SubareaConfigDialog } from '../../../src/dialogs/subarea-config-dialog';
+import { pickEntityIn } from '../../harness/entity-picker';
+
+/** The nth entity field in the dialog, in render order. */
+function field(element: SubareaConfigDialog, index: number): Element {
+    const fields = element.shadowRoot?.querySelectorAll('config-entity-multi-select') ?? [];
+    const found = fields[index];
+    if (!found) throw new Error(`No entity field at index ${index}`);
+    return found;
+}
+
+/** Pick `entityId` in the nth entity field, the way the HA picker commits one. */
+function pick(element: SubareaConfigDialog, index: number, entityId: string): void {
+    const picker = field(element, index).shadowRoot?.querySelector('gm-entity-picker');
+    if (!picker) throw new Error(`Entity field ${index} rendered no picker`);
+    pickEntityIn(picker, entityId);
+}
+
+/** The entity ids the nth field offers. */
+function options(element: SubareaConfigDialog, index: number): string[] {
+    const inner = field(element, index)
+        .shadowRoot?.querySelector('gm-entity-picker')
+        ?.shadowRoot?.querySelector('ha-entity-picker') as { includeEntities: string[] } | null;
+    if (!inner) throw new Error(`Entity field ${index} rendered no picker`);
+    return inner.includeEntities;
+}
+
+/** Remove the first chip in the nth entity field. */
+function removeFirstChip(element: SubareaConfigDialog, index: number): void {
+    const remove = field(element, index).shadowRoot?.querySelector<HTMLButtonElement>('.chip-remove');
+    if (!remove) throw new Error(`Entity field ${index} has no chip to remove`);
+    remove.click();
+}
 
 // Mock the subarea slice so we can control updateSubarea behaviour
 vi.mock('../../../src/slices/subarea', () => ({
@@ -63,11 +95,19 @@ describe('SubareaConfigDialog', () => {
     });
 
     it('should populate state from subarea on update', async () => {
-        // Internal state check via chips
-        const chips = element.shadowRoot?.querySelectorAll('.chip');
-        const chipTexts = Array.from(chips || []).map(c => c.textContent?.trim().replace('×', '').trim());
-        expect(chipTexts).toContain('sensor.t1');
-        expect(chipTexts).toContain('sensor.h1');
+        expect(field(element, 0).shadowRoot?.querySelector('.chip-name')?.textContent).toBe('sensor.t1');
+        expect(field(element, 1).shadowRoot?.querySelector('.chip-name')?.textContent).toBe('sensor.h1');
+    });
+
+    it('should pass its own filtered option source to the picker', async () => {
+        // sensor.t2 is a free temperature sensor; sensor.t1 is already a chip and
+        // sensor.h1 is the wrong device class.
+        expect(options(element, 0)).toEqual(['sensor.t2']);
+    });
+
+    it('should ignore a pick that names no entity', async () => {
+        pick(element, 0, '');
+        expect((element as any)._temperatureSensors).toEqual(['sensor.t1']);
     });
 
     it('should filter entities correctly', () => {
@@ -78,21 +118,18 @@ describe('SubareaConfigDialog', () => {
         expect(tempEntities).not.toContain('sensor.h1');
     });
 
-    it('should add an entity via search input', async () => {
-        const input = element.shadowRoot?.querySelector('.search-input-inner') as HTMLInputElement;
-        input.value = 'sensor.t2';
-        input.dispatchEvent(new Event('change'));
+    it('should add an entity picked in the picker', async () => {
+        pick(element, 0, 'sensor.t2');
         await element.updateComplete;
 
         expect((element as any)._temperatureSensors).toContain('sensor.t2');
     });
 
     it('should remove an entity when clicking chip-remove', async () => {
-        const chipRemove = element.shadowRoot?.querySelector('.chip-remove') as HTMLElement;
-        chipRemove?.dispatchEvent(new MouseEvent('click'));
+        removeFirstChip(element, 0);
         await element.updateComplete;
 
-        expect((element as any)._temperatureSensors).not.toContain('sensor.t1');
+        expect((element as any)._temperatureSensors).toEqual([]);
     });
 
     it('should close on cancel click', () => {
@@ -135,18 +172,22 @@ describe('SubareaConfigDialog', () => {
         expect(consoleSpy).toHaveBeenCalled();
     });
 
-    it('should ignore duplicate or empty entities in search input', async () => {
-        const input = element.shadowRoot?.querySelector('.search-input-inner') as HTMLInputElement;
+    it('should not offer an entity that is already a chip', async () => {
+        expect(options(element, 0)).not.toContain('sensor.t1');
+    });
 
-        // Duplicate
-        input.value = 'sensor.t1';
-        input.dispatchEvent(new Event('change'));
-        expect((element as any)._temperatureSensors).toHaveLength(1);
+    it('should save a cleared field as an empty list, never an omitted key', async () => {
+        removeFirstChip(element, 0);
+        await element.updateComplete;
 
-        // Empty
-        input.value = '';
-        input.dispatchEvent(new Event('change'));
-        expect((element as any)._temperatureSensors).toHaveLength(1);
+        const saveBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
+            .find(b => b.textContent?.trim() === 'Save Configuration');
+        saveBtn?.click();
+        await new Promise(r => setTimeout(r, 50));
+
+        const config = vi.mocked(subareaSlice.updateSubarea).mock.calls[0][2] as Record<string, unknown>;
+        expect(config).toHaveProperty('temperature_sensors');
+        expect(config.temperature_sensors).toEqual([]);
     });
 
     it('should return early in _save when subarea or growspaceId is missing', async () => {
@@ -163,33 +204,8 @@ describe('SubareaConfigDialog', () => {
         expect(subareaSlice.updateSubarea).not.toHaveBeenCalled();
     });
 
-    it('should handle all sensor type change handlers', async () => {
-        const inputs = element.shadowRoot?.querySelectorAll('.search-input-inner');
-
-        // Humidity (index 1)
-        const humidityInput = inputs?.[1] as HTMLInputElement;
-        humidityInput.value = 'sensor.h2';
-        humidityInput.dispatchEvent(new Event('change'));
-        expect((element as any)._humiditySensors).toContain('sensor.h2');
-
-        // VPD (index 2)
-        const vpdInput = inputs?.[2] as HTMLInputElement;
-        vpdInput.value = 'sensor.v1';
-        vpdInput.dispatchEvent(new Event('change'));
-        expect((element as any)._vpdSensors).toContain('sensor.v1');
-
-        // Light (index 4)
-        const lightInput = inputs?.[4] as HTMLInputElement;
-        lightInput.value = 'light.l1';
-        lightInput.dispatchEvent(new Event('change'));
-        expect((element as any)._lightSensors).toContain('light.l1');
-    });
-
     it('should handle camera entity changes', async () => {
-        const inputs = element.shadowRoot?.querySelectorAll('.search-input-inner');
-        const cameraInput = inputs?.[inputs.length - 1] as HTMLInputElement;
-        cameraInput.value = 'camera.front';
-        cameraInput.dispatchEvent(new Event('change'));
+        pick(element, 9, 'camera.front');
         expect((element as any)._cameraEntities).toContain('camera.front');
     });
 
@@ -206,56 +222,18 @@ describe('SubareaConfigDialog', () => {
         expect(element.shadowRoot?.textContent).not.toContain('Flower Room');
     });
 
-    it('should handle all sensor type change handlers (full set)', async () => {
-        const inputs = element.shadowRoot?.querySelectorAll('.search-input-inner');
-
-        // Humidity (index 1)
-        const humidityInput = inputs?.[1] as HTMLInputElement;
-        humidityInput.value = 'sensor.h2';
-        humidityInput.dispatchEvent(new Event('change'));
-        expect((element as any)._humiditySensors).toContain('sensor.h2');
-
-        // VPD (index 2)
-        const vpdInput = inputs?.[2] as HTMLInputElement;
-        vpdInput.value = 'sensor.v1';
-        vpdInput.dispatchEvent(new Event('change'));
-        expect((element as any)._vpdSensors).toContain('sensor.v1');
-
-        // Substrate Temperature (index 3)
-        const subTempInput = inputs?.[3] as HTMLInputElement;
-        subTempInput.value = 'sensor.st1';
-        subTempInput.dispatchEvent(new Event('change'));
-        expect((element as any)._substrateTemperatureSensors).toContain('sensor.st1');
-
-        // Light (index 4)
-        const lightInput = inputs?.[4] as HTMLInputElement;
-        lightInput.value = 'light.l1';
-        lightInput.dispatchEvent(new Event('change'));
-        expect((element as any)._lightSensors).toContain('light.l1');
-
-        // Exhaust Fan (index 5)
-        const exhaustInput = inputs?.[5] as HTMLInputElement;
-        exhaustInput.value = 'fan.ex2';
-        exhaustInput.dispatchEvent(new Event('change'));
-        expect((element as any)._exhaustFanEntities).toContain('fan.ex2');
-
-        // Circulation Fan (index 6)
-        const circInput = inputs?.[6] as HTMLInputElement;
-        circInput.value = 'fan.circ2';
-        circInput.dispatchEvent(new Event('change'));
-        expect((element as any)._circulationFanEntities).toContain('fan.circ2');
-
-        // Humidifier (index 7)
-        const humidifierInput = inputs?.[7] as HTMLInputElement;
-        humidifierInput.value = 'humidifier.h1';
-        humidifierInput.dispatchEvent(new Event('change'));
-        expect((element as any)._humidifierEntities).toContain('humidifier.h1');
-
-        // Dehumidifier (index 8)
-        const dehumidifierInput = inputs?.[8] as HTMLInputElement;
-        dehumidifierInput.value = 'dehumidifier.dh1';
-        dehumidifierInput.dispatchEvent(new Event('change'));
-        expect((element as any)._dehumidifierEntities).toContain('dehumidifier.dh1');
+    it.each([
+        [1, '_humiditySensors', 'sensor.h2'],
+        [2, '_vpdSensors', 'sensor.v1'],
+        [3, '_substrateTemperatureSensors', 'sensor.st1'],
+        [4, '_lightSensors', 'light.l1'],
+        [5, '_exhaustFanEntities', 'fan.ex2'],
+        [6, '_circulationFanEntities', 'fan.circ2'],
+        [7, '_humidifierEntities', 'humidifier.h1'],
+        [8, '_dehumidifierEntities', 'dehumidifier.dh1'],
+    ] as [number, string, string][])('should route field %i to %s', (index, stateField, entityId) => {
+        pick(element, index, entityId);
+        expect((element as any)[stateField]).toContain(entityId);
     });
 
     it('should remove entities for all fields when clicking chip-remove', async () => {
@@ -278,45 +256,20 @@ describe('SubareaConfigDialog', () => {
         await element.updateComplete;
         await element.updateComplete;
 
-        const boxes = element.shadowRoot?.querySelectorAll('.multi-select-box');
-        expect(boxes).toBeDefined();
+        const fields: [number, string][] = [
+            [3, '_substrateTemperatureSensors'],
+            [5, '_exhaustFanEntities'],
+            [6, '_circulationFanEntities'],
+            [7, '_humidifierEntities'],
+            [8, '_dehumidifierEntities'],
+            [9, '_cameraEntities'],
+        ];
 
-        // Remove substrate temperature chip (index 3)
-        const subTempRemove = boxes?.[3]?.querySelector('.chip-remove');
-        subTempRemove?.dispatchEvent(new MouseEvent('click'));
-        await element.updateComplete;
-        await element.updateComplete;
-        expect((element as any)._substrateTemperatureSensors).toEqual([]);
-
-        // Remove exhaust fan chip (index 5)
-        const exhaustRemove = boxes?.[5]?.querySelector('.chip-remove');
-        exhaustRemove?.dispatchEvent(new MouseEvent('click'));
-        await element.updateComplete;
-        expect((element as any)._exhaustFanEntities).toEqual([]);
-
-        // Remove circulation fan chip (index 6)
-        const circRemove = boxes?.[6]?.querySelector('.chip-remove');
-        circRemove?.dispatchEvent(new MouseEvent('click'));
-        await element.updateComplete;
-        expect((element as any)._circulationFanEntities).toEqual([]);
-
-        // Remove humidifier chip (index 7)
-        const humidifierRemove = boxes?.[7]?.querySelector('.chip-remove');
-        humidifierRemove?.dispatchEvent(new MouseEvent('click'));
-        await element.updateComplete;
-        expect((element as any)._humidifierEntities).toEqual([]);
-
-        // Remove dehumidifier chip (index 8)
-        const dehumidifierRemove = boxes?.[8]?.querySelector('.chip-remove');
-        dehumidifierRemove?.dispatchEvent(new MouseEvent('click'));
-        await element.updateComplete;
-        expect((element as any)._dehumidifierEntities).toEqual([]);
-
-        // Remove camera chip (index 9)
-        const cameraRemove = boxes?.[9]?.querySelector('.chip-remove');
-        cameraRemove?.dispatchEvent(new MouseEvent('click'));
-        await element.updateComplete;
-        expect((element as any)._cameraEntities).toEqual([]);
+        for (const [index, stateField] of fields) {
+            removeFirstChip(element, index);
+            await element.updateComplete;
+            expect((element as any)[stateField]).toEqual([]);
+        }
     });
 
     it('should default missing environment config fields to empty arrays', async () => {
