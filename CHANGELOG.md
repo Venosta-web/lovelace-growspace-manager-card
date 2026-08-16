@@ -1,3 +1,10 @@
+# [1.1.0-next.134](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.133...v1.1.0-next.134) (2026-08-16)
+
+
+### Features
+
+* **design:** decide the colours with no home in the design system ([#646](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/646)) ([38c3b37](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/38c3b37aea1a7bc446762096202846a357612576)), closes [#631](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/631) [#ffc107](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/ffc107) [#90a4ae](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/90a4ae) [#632](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/632) [#3](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/3) [#631](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/631) [#634](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/634)
+
 # [1.1.0-next.133](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.132...v1.1.0-next.133) (2026-08-16)
 
 
