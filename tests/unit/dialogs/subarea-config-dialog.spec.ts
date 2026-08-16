@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import '../../../src/dialogs/subarea-config-dialog';
 import { SubareaConfigDialog } from '../../../src/dialogs/subarea-config-dialog';
-import { pickEntityIn } from '../../harness/entity-picker';
+import { pickEntityIn, pickerOptions } from '../../harness/entity-picker';
 
 /** The nth entity field in the dialog, in render order. */
 function field(element: SubareaConfigDialog, index: number): Element {
@@ -21,11 +21,7 @@ function pick(element: SubareaConfigDialog, index: number, entityId: string): vo
 
 /** The entity ids the nth field offers. */
 function options(element: SubareaConfigDialog, index: number): string[] {
-    const inner = field(element, index)
-        .shadowRoot?.querySelector('gm-entity-picker')
-        ?.shadowRoot?.querySelector('ha-entity-picker') as { includeEntities: string[] } | null;
-    if (!inner) throw new Error(`Entity field ${index} rendered no picker`);
-    return inner.includeEntities;
+    return pickerOptions(field(element, index).shadowRoot!);
 }
 
 /** Remove the first chip in the nth entity field. */
