@@ -138,7 +138,7 @@ export class GrowMasterDialog extends LitElement {
         border: none;
         cursor: pointer;
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
-        font-size: 0.6875rem;
+        font-size: var(--font-size-xs);
         font-family: inherit;
         width: 56px;
         transition: background var(--md3-motion-duration-short4, 200ms),

@@ -59,7 +59,7 @@ export class GmBriefingPanel extends LitElement {
     }
 
     .rail-section-label {
-      font-size: 0.68rem;
+      font-size: var(--font-size-xs);
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--secondary-text-color);
@@ -329,7 +329,7 @@ export class GmBriefingPanel extends LitElement {
       margin-top: 8px;
     }
     .impact-badge {
-      font-size: 0.68rem;
+      font-size: var(--font-size-xs);
       padding: 2px 8px;
       border-radius: var(--border-radius-full, 9999px);
       font-weight: 600;
