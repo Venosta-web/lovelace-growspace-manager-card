@@ -21,7 +21,7 @@ Re-running the sweep at `47c93ad6` reproduces the issue's numbers:
 | `var(--error-color, …)` | 9 | `#ff5252` ×5, `#e53935`, `#d32f2f`, `#ef5350`, `#F44336`, against `#f44336` |
 | `var(--divider-color, <opaque grey>)` | 10 | `#e0e0e0` ×3, `#ccc` ×3, `#333` ×3, `#eee`, against `rgba(255,255,255,0.12)` |
 | `var(--secondary-text-color, <opaque grey>)` | 13 | `#aaa` ×4, `#666` ×4, `#444` ×2, `#9e9e9e` ×2, `#ccc` |
-| Wrong token, not wrong value | 3 | an accent name backing an outline, a container tint and an amber box |
+| Wrong token, not wrong value | 3 | an accent name backing an outline, a container tint and a severity badge |
 
 The blues are not arbitrary. `#03a9f4` is Home Assistant's own default
 `--primary-color` and `#2196f3` is Material Blue — these fallbacks were copied
@@ -112,16 +112,28 @@ own value. All nine error fallbacks become `#f44336`; `error-boundary.ts`'s
 - `plant-card.styles.ts` `.plant-card-rich:hover` backed `--primary-color` with
   `rgba(255, 255, 255, 0.2)` — an accent name holding an outline value. That value
   _is_ `--outline-hover`, so it becomes `var(--outline-hover)`.
-- `growspace-card.styles.ts` `.gs-icon-box` backed `--secondary-background-color`
-  and `--divider-color` with amber tints. The amber is the light section's
-  identity and must not follow the theme, so both derive from the amber token:
-  `color-mix(in srgb, var(--primary-light-color) 5% | 20%, transparent)`.
+- `plant-actions-tab.ts` `.action-card:hover` backed `--primary-color` with
+  `rgba(76, 175, 80, 0.1)` — the documented `primary-container` role, which
+  `DESIGN.md` carries but the runtime never implemented. It keeps the literal that
+  thirteen other sites already spell; implementing `--primary-container` is
+  follow-up work, not a colour decision.
 
-`plant-actions-tab.ts` hover backed `--primary-color` with
-`rgba(76, 175, 80, 0.1)` — the documented `primary-container` role, which
-`DESIGN.md` carries but the runtime never implemented. It keeps the literal that
-thirteen other sites already spell, and implementing `--primary-container` is
-follow-up work, not a colour decision.
+**All three move rendered colour on every theme, and that is the point.**
+`--primary-color` is part of the stock HA theme set, so at these sites the token
+resolved and the _token_ was wrong, not the fallback: the plant card's hover
+border painted a solid accent where the value it carried says a 20% white
+outline, and the action card's hover painted a solid accent fill where the value
+says a 10% green tint. The badge goes from green to blue. Correcting a wrong
+token is a visible change by construction — unlike the wrong-_fallback_ class,
+which is invisible until the theme goes silent.
+
+`growspace-card.styles.ts` `.gs-icon-box` looks like a fourth and is not.
+It backs `--divider-color` with an amber tint, so its fallback normalises with the
+rest of the family. The amber intent behind it — the box wants a tertiary
+container and outline, not a neutral divider — is a missing-role question in the
+shape of ADR 0039 §5a and is left for that work rather than resolved by
+recolouring here; its `var(--secondary-background-color, …)` sibling is a fifth HA
+name outside this issue's families and is untouched.
 
 ### 6. Alpha imprecision is not contradiction, and stays out
 
@@ -148,8 +160,10 @@ script already has to encode the classification to produce the inventory.
 ## Consequences
 
 - Under a theme that omits `--primary-color`, 26 sites change from Home Assistant
-  blue to Vitality Green — the defect being fixed. Under every stock theme nothing
-  moves, which is also why no screenshot snapshot shifts.
+  blue to Vitality Green — the defect being fixed. The wrong-*fallback* work moves
+  nothing under a stock theme. The wrong-*token* work moves three declarations on
+  every theme: `plant-card`'s hover border, `plant-actions-tab`'s hover fill and
+  the briefing panel's low-impact badge.
 - `--gm-primary-color` goes from 24 to 50 uses and becomes the accent's single
   spelling. `--growspace-card-accent`, declared with the same definition and used
   nowhere, is now visibly a dead alias; deleting it is out of scope here.
@@ -159,5 +173,11 @@ script already has to encode the classification to produce the inventory.
 - `portal-token-scope.test.ts` now asserts the silent-theme case directly — the
   accent, both text tiers and the two withheld names — so the acceptance criterion
   "checked with a theme that omits `--primary-color`" is a test rather than a claim.
+  Its probes adopt the token blocks explicitly, so what it proves is that the token
+  layer resolves, not that a given call site sits where that layer reaches. The
+  latter was checked by hand: every component touched here renders under a
+  registered card or under `growspace-dialog-host`, and none is reachable from
+  `src/cards/editors/`, which renders inside Home Assistant's own dialog and
+  adopts neither block.
 - The bare-literal count is unchanged at 148: this work moved fallbacks, and the
   audit only ever counted bare literals.
