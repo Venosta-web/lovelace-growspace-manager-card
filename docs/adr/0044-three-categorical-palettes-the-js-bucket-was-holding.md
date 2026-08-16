@@ -128,7 +128,9 @@ instead of moving the binding, because the transformation was broken.
 - **Nineteen tokens added**: eight `--gen-*`, three `--lineage-*`, five `--nutrient-*`,
   three `--sex-*`. None shadows a Home Assistant variable, so `--divider-color` and
   `--error-color` remain the only `card-only` names (ADR 0036).
-- The `js` bucket ratchets **38 → 18**, the whole audit **43 → 23**.
+- The `js` bucket loses **20 sites**. Merged with #639, which landed first and added the
+  `gpu` bucket, the baseline ratchets **81 → 61** and the `js` bucket **35 → 15** — the
+  ten escalated to #660 plus the five ramp fallbacks #639 declared.
 - One visual change is owed a look on a live card: the base nutrient chip's tint.
   Everything else is value-identical, and all 20 pixelmatch snapshots are unchanged.
 - `growspace-nutrient-inventory-dialog-ui.tint.test.ts` keeps the alpha-suffix defect from
