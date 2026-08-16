@@ -33,9 +33,10 @@ before touching anything, and here it was already broken **before** the migratio
 base chip renders with no tint while its icon, painted by the second declaration, keeps
 its colour. The failure reads as a chip that was never styled.
 
-Verified rather than assumed, in `src/styles/nutrient-type-tint.test.ts`: the suffix form
-computes to `rgba(0, 0, 0, 0)` for that value, and the replacement computes to a
-per-type tint for all six.
+Measured rather than argued, against the rendered component in
+`growspace-nutrient-inventory-dialog-ui.tint.test.ts`: on a real chip the suffix form
+computes to `rgba(0, 0, 0, 0)` for that value, and after the change all six chips paint a
+distinct non-transparent tint.
 
 ## Decision
 
@@ -93,6 +94,11 @@ The tint moves into the stylesheet as
 mix resolves whatever the value is, so a `var()` reference and a hex behave alike, and
 the hazard is removed rather than routed around by keeping every value a hex.
 
+The rule fires on any `.type-icon`, where the inline declarations it replaces only
+existed on chips the template had already coloured, so `--stock-c` carries
+`var(--primary-color, #4caf50)` as its own fallback — the same default `stockColor()`
+returns for a type the map does not know.
+
 **Named visual change:** the base chip _gains_ the 13% tint it has been missing. The
 other five are pixel-identical.
 
@@ -125,8 +131,8 @@ instead of moving the binding, because the transformation was broken.
 - The `js` bucket ratchets **38 → 18**, the whole audit **43 → 23**.
 - One visual change is owed a look on a live card: the base nutrient chip's tint.
   Everything else is value-identical, and all 20 pixelmatch snapshots are unchanged.
-- `src/styles/nutrient-type-tint.test.ts` keeps the alpha-suffix defect from coming back,
-  in the shape `phase-token-suffix.test.ts` established.
+- `growspace-nutrient-inventory-dialog-ui.tint.test.ts` keeps the alpha-suffix defect from
+  coming back, in the shape `phase-token-suffix.test.ts` established.
 - Three groups remain undecided and are escalated rather than improvised: the irrigation
   and drain accents (which carry the phase family's alpha-suffix constraint), the two
   stage-lookup `?? fallback` arms that #624's table does not cover, and four one-offs
