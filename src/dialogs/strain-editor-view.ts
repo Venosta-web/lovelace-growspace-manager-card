@@ -1111,7 +1111,7 @@ export class StrainEditorView extends LitElement {
               Done
             </button>
           </div>
-          <div style="text-align:center; font-size:var(--font-size-supporting); color:#888; margin-top:8px;">
+          <div style="text-align:center; font-size:var(--font-size-supporting); color:var(--text-muted); margin-top:8px;">
             Drag to pan • Scroll to zoom
           </div>
         </div>
