@@ -62,67 +62,77 @@ describe('VPDHeatmap', () => {
         expect(vpd).toBeCloseTo(1.26, 1);
     });
 
-    describe('_getZoneColor logic', () => {
-        it('should return correct colors for vegetative stage', () => {
+    // The classifier returns a ramp ROLE, not a colour — the colour is resolved from
+    // the DOM at draw time (ADR 0040 §2). The role-to-pixel half is covered by the
+    // co-located src/features/environment/components/vpd-heatmap.test.ts.
+    describe('_getZoneRole logic', () => {
+        it('should return correct roles for vegetative stage', () => {
             const stage = 'vegetative';
             // OptMin 0.8, OptMax 1.1, Min 0.4, Max 1.4
 
-            expect((element as any)._getZoneColor(0.9, stage)).toBe('#4caf50'); // Optimal
-            expect((element as any)._getZoneColor(0.2, stage)).toBe('#2196f3'); // Too Low
-            expect((element as any)._getZoneColor(1.5, stage)).toBe('#f44336'); // Too High
-            expect((element as any)._getZoneColor(0.6, stage)).toBe('#ff9800'); // Low Warning
-            expect((element as any)._getZoneColor(1.2, stage)).toBe('#ff9800'); // High Warning
-            // Fallback?
-            const defaultColor = (element as any)._getZoneColor(1.45, stage); // Out of warning, technically Max=1.4
-            // Wait, logic says if vpd > max return red.
+            expect((element as any)._getZoneRole(0.9, stage)).toBe('optimal');
+            expect((element as any)._getZoneRole(0.2, stage)).toBe('low');
+            expect((element as any)._getZoneRole(1.5, stage)).toBe('farHigh');
+            expect((element as any)._getZoneRole(0.6, stage)).toBe('high'); // Below-optimal transition
+            expect((element as any)._getZoneRole(1.2, stage)).toBe('high'); // Above-optimal transition
         });
 
-        it('should return correct colors for seedling stage', () => {
+        it('should return correct roles for seedling stage', () => {
             const stage = 'seedling';
             // OptMin 0.4, OptMax 0.8
-            expect((element as any)._getZoneColor(0.6, stage)).toBe('#4caf50');
+            expect((element as any)._getZoneRole(0.6, stage)).toBe('optimal');
         });
 
-        it('should return correct colors for flower stage', () => {
+        it('should return correct roles for flower stage', () => {
             const stage = 'flower';
             // OptMin 1.0, OptMax 1.35
-            expect((element as any)._getZoneColor(1.2, stage)).toBe('#4caf50');
+            expect((element as any)._getZoneRole(1.2, stage)).toBe('optimal');
         });
 
-        it('should return correct colors for late_flower stage', () => {
+        it('should return correct roles for late_flower stage', () => {
             const stage = 'late_flower';
             // OptMin 1.2, OptMax 1.55
-            expect((element as any)._getZoneColor(1.4, stage)).toBe('#4caf50');
+            expect((element as any)._getZoneRole(1.4, stage)).toBe('optimal');
         });
 
         it('should use default for unknown stage', () => {
             // Default: Opt 0.8-1.2
-            expect((element as any)._getZoneColor(1.0, 'unknown')).toBe('#4caf50');
+            expect((element as any)._getZoneRole(1.0, 'unknown')).toBe('optimal');
         });
 
-        it('should return correct colors for dry stage', () => {
+        it('should return correct roles for dry stage', () => {
             const stage = 'dry';
             // OptMin 0.8, OptMax 1.1
-            expect((element as any)._getZoneColor(0.9, stage)).toBe('#4caf50');
+            expect((element as any)._getZoneRole(0.9, stage)).toBe('optimal');
         });
 
-        it('should return correct colors for cure stage', () => {
+        it('should return correct roles for cure stage', () => {
             const stage = 'cure';
             // OptMin 0.6, OptMax 0.9
-            expect((element as any)._getZoneColor(0.7, stage)).toBe('#4caf50');
+            expect((element as any)._getZoneRole(0.7, stage)).toBe('optimal');
         });
 
-        it('should return fallback color for NaN', () => {
-            expect((element as any)._getZoneColor(NaN, 'flower')).toBe('#ff9800');
+        it('should return fallback role for NaN', () => {
+            expect((element as any)._getZoneRole(NaN, 'flower')).toBe('high');
         });
     });
 
-    it('should draw heatmap on firstUpdated', () => {
-        // Trigger manually or rely on fixture
-        (element as any).firstUpdated();
+    it('should draw heatmap on its first update', async () => {
+        // The mock has to be in place before the first render, so this one builds its
+        // own element rather than using the fixture.
+        const fresh = new VPDHeatmap();
+        document.body.appendChild(fresh);
+        const original = fresh.shadowRoot!.getElementById.bind(fresh.shadowRoot!);
+        fresh.shadowRoot!.getElementById = vi.fn((id) =>
+            id === 'vpdCanvas' ? mockCanvas : original(id)
+        );
+
+        await fresh.updateComplete;
+
         expect(mockCanvas.getContext).toHaveBeenCalledWith('2d');
         expect(mockContext.clearRect).toHaveBeenCalled();
         expect(mockContext.fillRect).toHaveBeenCalled(); // Should draw many pixels
+        fresh.remove();
     });
     it('should redraw when stage changes', async () => {
         mockContext.fillRect.mockClear();

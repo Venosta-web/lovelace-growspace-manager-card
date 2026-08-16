@@ -47,6 +47,24 @@ const EXEMPT_FILES = [
  */
 const ACCEPTED_EXCEPTIONS = [
   {
+    file: 'src/utils/three/renderers/frame-renderer.ts',
+    hexes: ['0x222222', '0x111111', '0x333333', '0xf0f0f0'],
+    reason:
+      'Grid helper lines and the floor slab of the 3D growspace. Scene furniture: no DOM twin and no semantic role, so there is nothing for a token to keep it in step with. ADR 0040 §9.',
+  },
+  {
+    file: 'src/utils/three/renderers/equipment-renderer.ts',
+    hexes: ['0x222222', '0x111111', '0x1a1a1a', '0x050505', '0x000000', '0xeeeeee', '0xaec4c7'],
+    reason:
+      'Equipment housings — the neutral casings, bezels and fan-blade grey the meshes are made of. Material, not role: the state these units report is carried by their indicators, which are NOT listed here. ADR 0040 §9.',
+  },
+  {
+    file: 'src/utils/three/renderers/plant-renderer.ts',
+    hexes: ['0x212121', '0x3d2b1f'],
+    reason:
+      'Pot plastic and soil. Scene furniture in the same sense as the frame. The foliage colours in this file carry real roles (primary, a stage colour, series 2) and are deliberately left counted — deferred, not exempt. ADR 0040 §9.',
+  },
+  {
     file: 'src/features/shared/ui/label-preview.ts',
     hexes: ['#000', '#333'],
     reason:
@@ -70,14 +88,20 @@ const isAccepted = (file, hex) =>
   ACCEPTED_EXCEPTIONS.some((e) => e.file === file && e.hexes.includes(hex));
 
 const HEX = /#[0-9A-Fa-f]{3,8}\b/g;
+/** three.js takes a resolved number, so every literal in the scene is `0xRRGGBB`. */
+const HEX_NUMERIC = /\b0x[0-9A-Fa-f]{6}\b/g;
 /** `var(--token, #hex)` — the fallback form, which is correct, not drift. */
 const FALLBACK = /var\(\s*--[A-Za-z0-9-]+\s*,\s*#[0-9A-Fa-f]{3,8}\s*\)/g;
+
+/** Everything under here paints through the GPU, whatever the literal's syntax. */
+const GPU_DIR = 'src/utils/three/';
 
 const BUCKETS = {
   css: 'CSS declarations in `css` templates',
   inline: 'Inline `style=` attributes',
   gradient: 'Gradient stops',
   js: 'JS data strings (viewmodels, constants, models) — `var()` is inert here',
+  gpu: 'three.js materials and uniforms — `var()` cannot reach a GPU colour at all',
 };
 
 /**
@@ -169,13 +193,14 @@ async function collect() {
         if (!ok) conflicts.push({ file: rel, line: i + 1, name, fallback });
       }
       const bare = line.replace(FALLBACK, (m) => ' '.repeat(m.length));
-      for (const match of bare.matchAll(HEX)) {
+      const gpu = rel.startsWith(GPU_DIR);
+      for (const match of [...bare.matchAll(HEX), ...bare.matchAll(HEX_NUMERIC)]) {
         const hex = match[0].toLowerCase();
         const site = {
           file: rel,
           line: i + 1,
           hex,
-          bucket: classify(bare.slice(0, match.index)),
+          bucket: gpu ? 'gpu' : classify(bare.slice(0, match.index)),
           text: trimmed.slice(0, 100),
         };
         if (isAccepted(rel, hex)) excluded.push(site);
