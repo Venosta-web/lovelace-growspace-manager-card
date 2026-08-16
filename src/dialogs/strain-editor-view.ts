@@ -1937,7 +1937,7 @@ export class StrainEditorView extends LitElement {
         color: inherit;
       }
       .type-option:hover {
-        border-color: #666;
+        border-color: var(--outline-hover);
       }
       .type-option:focus-visible {
         outline: 2px solid var(--primary-color);
@@ -1977,7 +1977,7 @@ export class StrainEditorView extends LitElement {
       .hg-bar-track {
         height: 18px;
         width: 100%;
-        background: #333;
+        background: var(--surface-container-high);
         border-radius: 2px;
         position: relative;
         overflow: hidden;
@@ -1986,7 +1986,7 @@ export class StrainEditorView extends LitElement {
         cursor: pointer;
       }
       .hg-bar-indica {
-        background: #8b5cf6;
+        background: var(--genetics-indica);
         height: 100%;
         /* Two flex segments split one track, so there is no fixed track to scale
            against; scaling indica would slide sativa's edge and tear the seam.
@@ -1995,7 +1995,7 @@ export class StrainEditorView extends LitElement {
         transition: width var(--md3-motion-duration-short4) var(--md3-motion-easing-standard);
       }
       .hg-bar-sativa {
-        background: #eab308;
+        background: var(--genetics-sativa);
         height: 100%;
         flex: 1;
       }

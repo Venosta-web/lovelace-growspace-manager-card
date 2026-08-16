@@ -190,7 +190,7 @@ export class Heatmap3D extends LitElement {
       transition: all 0.2s ease;
     }
     .metric-selector button.active {
-      background: #2c2c2e;
+      background: var(--surface-container-high);
       color: var(--accent-3d);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
@@ -408,7 +408,7 @@ export class Heatmap3D extends LitElement {
       text-align: center;
     }
     .sensor-tab.active {
-      background: #2c2c2e;
+      background: var(--surface-container-high);
       color: var(--accent-3d);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }

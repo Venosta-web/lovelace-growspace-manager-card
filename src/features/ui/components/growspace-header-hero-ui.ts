@@ -738,9 +738,9 @@ export class GrowspaceHeaderHeroUI extends LitElement {
       }
 
       .phase-badge--dryback {
-        color: #ff9800;
-        background: rgba(255, 152, 0, 0.14);
-        border: 1px solid rgba(255, 152, 0, 0.38);
+        color: var(--phase-p3);
+        background: color-mix(in srgb, var(--phase-p3) 14%, transparent);
+        border: 1px solid color-mix(in srgb, var(--phase-p3) 38%, transparent);
       }
 
       .phase-chart-container {

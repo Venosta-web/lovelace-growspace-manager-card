@@ -247,12 +247,23 @@ export const variables: CSSResult = css`
     /* The indica/sativa ratio bar splits one track between two opposed segments, so the pair
        is read against each other before either is read against the surface. Material
        equivalents of the violet/yellow the bar had imported from another palette. The violet
-       it replaces measured 2.98:1 against the #333 track, under the 3:1 a graphical object
-       needs; this measures 3.43:1. Separation between the two segments is unchanged at 2.2:1.
+       it replaces measured 3.39:1 against the track, under the 3:1 a graphical object needs
+       once the track lightens; this measures 3.90:1. (ADR 0042 quoted 2.98:1 and 3.43:1
+       against the #333 the track was authored as; #632 moved it onto
+       --surface-container-high.) Separation between the two segments is unchanged at 2.2:1.
        See ADR 0042 §5.
     */
     --genetics-indica: #9575cd;
     --genetics-sativa: #fbc02d;
+
+    /* Awards */
+    /* Amber 500, on the award chips a strain carries from a cannabis cup. Promoted under ADR
+       0035 §5a rather than folded: #631 sent this site to #632 as ordinary migration work, but
+       every amber the system already documents means something else — --cycle-day is the light
+       cycle, --gm-status-warning is 'something is wrong', and Tertiary's value is now the
+       cycle's. Value unchanged. See ADR 0042's first premise correction.
+    */
+    --award: #ffc107;
 
     /* Error/Warning Colors */
     /* Home Assistant defines this name too — same shadowing as --divider-color, and withheld
@@ -570,12 +581,23 @@ export const portalVariables: CSSResult = css`
     /* The indica/sativa ratio bar splits one track between two opposed segments, so the pair
        is read against each other before either is read against the surface. Material
        equivalents of the violet/yellow the bar had imported from another palette. The violet
-       it replaces measured 2.98:1 against the #333 track, under the 3:1 a graphical object
-       needs; this measures 3.43:1. Separation between the two segments is unchanged at 2.2:1.
+       it replaces measured 3.39:1 against the track, under the 3:1 a graphical object needs
+       once the track lightens; this measures 3.90:1. (ADR 0042 quoted 2.98:1 and 3.43:1
+       against the #333 the track was authored as; #632 moved it onto
+       --surface-container-high.) Separation between the two segments is unchanged at 2.2:1.
        See ADR 0042 §5.
     */
     --genetics-indica: #9575cd;
     --genetics-sativa: #fbc02d;
+
+    /* Awards */
+    /* Amber 500, on the award chips a strain carries from a cannabis cup. Promoted under ADR
+       0035 §5a rather than folded: #631 sent this site to #632 as ordinary migration work, but
+       every amber the system already documents means something else — --cycle-day is the light
+       cycle, --gm-status-warning is 'something is wrong', and Tertiary's value is now the
+       cycle's. Value unchanged. See ADR 0042's first premise correction.
+    */
+    --award: #ffc107;
 
     /* Error/Warning Colors */
     --error-bg: rgba(244, 67, 54, 0.1);
@@ -754,6 +776,7 @@ export const token = {
   '--activity-training': '#9c27b0',
   '--genetics-indica': '#9575cd',
   '--genetics-sativa': '#fbc02d',
+  '--award': '#ffc107',
   '--error-color': '#f44336',
   '--error-bg': 'rgba(244, 67, 54, 0.1)',
   '--error-border': 'rgba(244, 67, 54, 0.3)',

@@ -133,7 +133,7 @@ export class PrinterStatusStrip extends LitElement {
       color: var(--gm-primary-color);
     }
     .battery.amber {
-      color: #ffa726;
+      color: var(--gm-status-warning, var(--warning-color, #ffa726));
     }
     .battery.red {
       color: var(--danger-chip);

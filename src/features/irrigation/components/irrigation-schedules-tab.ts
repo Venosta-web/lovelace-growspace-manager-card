@@ -131,8 +131,8 @@ export class IrrigationSchedulesTab extends LitElement {
         top: 4px;
         bottom: 22px;
         width: 1px;
-        background: #ff9800;
-        box-shadow: 0 0 8px rgba(255, 152, 0, 0.5);
+        background: var(--marker-now);
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
         pointer-events: none;
         z-index: 8;
       }
@@ -144,7 +144,7 @@ export class IrrigationSchedulesTab extends LitElement {
         width: 7px;
         height: 7px;
         border-radius: 50%;
-        background: #ff9800;
+        background: var(--marker-now);
       }
       /* ── Time chips ── */
       .time-chips {
@@ -641,7 +641,7 @@ export class IrrigationSchedulesTab extends LitElement {
               <div class="overlay-backdrop" @click=${() => this._emit('schedules-cancel-inline')}>
                 <div
                   class="detail-card"
-                  style="max-width:400px;margin:0;background:#2d2d2d;width:90%;"
+                  style="max-width:400px;margin:0;background:var(--surface-container-high);width:90%;"
                   @click=${(e: Event) => e.stopPropagation()}
                 >
                   <h3>Add ${title} Time</h3>
@@ -710,7 +710,7 @@ export class IrrigationSchedulesTab extends LitElement {
               <div class="overlay-backdrop" @click=${() => this._emit('schedules-cancel-inline')}>
                 <div
                   class="detail-card"
-                  style="max-width:400px;margin:0;background:#2d2d2d;width:90%;"
+                  style="max-width:400px;margin:0;background:var(--surface-container-high);width:90%;"
                   @click=${(e: Event) => e.stopPropagation()}
                 >
                   <h3>Edit ${title} Time</h3>
