@@ -1241,7 +1241,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
                     y1="${chart.triggerY.toFixed(1)}"
                     x2="${CHART_W}"
                     y2="${chart.triggerY.toFixed(1)}"
-                    stroke="#FF9800"
+                    stroke="var(--phase-p3, #ff9800)"
                     stroke-width="1"
                     stroke-dasharray="4 4"
                     opacity="0.45"
@@ -1249,7 +1249,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
                   <text
                     x="${CHART_W - 4}"
                     y="${Math.min(CHART_H - 3, chart.triggerY + 10).toFixed(1)}"
-                    fill="#FF9800"
+                    fill="var(--phase-p3, #ff9800)"
                     font-size="6"
                     text-anchor="end"
                     font-family="var(--font-family, sans-serif)"
