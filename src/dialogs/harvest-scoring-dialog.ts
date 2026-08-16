@@ -568,7 +568,6 @@ export class HarvestScoringDialog extends LitElement {
           <button class="md3-button outlined" @click=${this._handleHarvestCancelled}>Cancel</button>
           <button
             class="md3-button filled"
-            style="background: linear-gradient(135deg, #388e3c, #4caf50);"
             @click=${this._handleHarvestConfirmed}
           >
             Confirm harvest
@@ -594,7 +593,6 @@ export class HarvestScoringDialog extends LitElement {
         </button>
         <button
           class="md3-button filled"
-          style="background: linear-gradient(135deg, #388e3c, #4caf50);"
           @click=${this._handleSaveClicked}
           ?disabled=${isBusy}
         >
