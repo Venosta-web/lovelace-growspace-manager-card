@@ -110,11 +110,11 @@ export class PlantTimeline extends LitElement {
       .icon-wrapper svg {
         width: 16px;
         height: 16px;
-        fill: var(--secondary-text-color, #aaa);
+        fill: var(--text-secondary);
       }
       .date {
         font-size: 0.75rem;
-        color: var(--secondary-text-color, #aaa);
+        color: var(--text-secondary);
         margin-bottom: 4px;
       }
       .content {
@@ -125,7 +125,7 @@ export class PlantTimeline extends LitElement {
       .details {
         margin-top: 4px;
         font-size: 0.85rem;
-        color: var(--secondary-text-color, #ccc);
+        color: var(--text-secondary);
         line-height: 1.4;
       }
 
@@ -223,10 +223,10 @@ export class PlantTimeline extends LitElement {
         fill: var(--error-color, #f44336);
       }
       .type-action .icon-wrapper {
-        border-color: var(--primary-color, #03a9f4);
+        border-color: var(--gm-primary-color);
       }
       .type-action .icon-wrapper svg {
-        fill: var(--primary-color, #03a9f4);
+        fill: var(--gm-primary-color);
       }
       .type-stage_change .icon-wrapper {
         border-color: var(--success-color, #4caf50);
@@ -281,7 +281,7 @@ export class PlantTimeline extends LitElement {
       .day-header {
         font-size: 0.85rem;
         font-weight: 700;
-        color: var(--primary-color, #03a9f4);
+        color: var(--gm-primary-color);
         padding: 12px 0 8px 12px;
         margin-left: -24px;
         background: var(--card-background-color, #1c1c1c);

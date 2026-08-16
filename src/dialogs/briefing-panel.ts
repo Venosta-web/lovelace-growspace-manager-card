@@ -346,7 +346,7 @@ export class GmBriefingPanel extends LitElement {
     }
     .impact-badge[data-impact='low'] {
       background: rgba(33, 150, 243, 0.2);
-      color: var(--primary-color, #2196f3);
+      color: var(--gm-info-color);
     }
     .reco-apply {
       font-size: 0.75rem;
@@ -457,7 +457,7 @@ export class GmBriefingPanel extends LitElement {
       border: none;
       cursor: pointer;
       font-family: inherit;
-      background: var(--primary-color, #2196f3);
+      background: var(--gm-primary-color);
       color: var(--text-primary);
     }
 

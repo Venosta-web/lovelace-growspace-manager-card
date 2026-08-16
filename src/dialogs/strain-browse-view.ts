@@ -105,7 +105,7 @@ export class StrainBrowseView extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--secondary-text-color, #444);
+        color: var(--text-muted);
         position: relative;
         overflow: hidden;
       }

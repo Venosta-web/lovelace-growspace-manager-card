@@ -38,7 +38,7 @@ export class GsHelpTooltip extends LitElement {
 
     .help-trigger:hover,
     .help-trigger:focus-visible {
-      color: var(--primary-color, #2196f3);
+      color: var(--gm-primary-color);
       outline: none;
     }
 

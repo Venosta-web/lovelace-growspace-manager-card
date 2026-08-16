@@ -41,7 +41,7 @@ export class GrowspaceToastUI extends LitElement {
         opacity 0.3s ease,
         transform 0.3s ease;
       pointer-events: auto;
-      border: 1px solid var(--divider-color, #eee);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
     }
 
     .toast-notification.visible {
@@ -60,7 +60,7 @@ export class GrowspaceToastUI extends LitElement {
     }
 
     .toast-notification.info {
-      border-left: 4px solid var(--primary-color, #03a9f4); /* impeccable-disable-line side-tab -- transient notification surface */
+      border-left: 4px solid var(--gm-primary-color); /* impeccable-disable-line side-tab -- transient notification surface */
     }
 
     .toast-message {

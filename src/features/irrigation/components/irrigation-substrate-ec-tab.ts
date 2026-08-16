@@ -195,7 +195,7 @@ export class IrrigationSubstrateEcTab extends LitElement {
           ></md3-number-input>
         </div>
         ${vm.poreBandInverted
-          ? html`<div style="font-size:0.78rem;color:var(--error-color,#ef5350);margin-top:6px;">
+          ? html`<div style="font-size:0.78rem;color:var(--error-color,#f44336);margin-top:6px;">
               Min must be below max.
             </div>`
           : nothing}

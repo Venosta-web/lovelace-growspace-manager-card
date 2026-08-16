@@ -90,7 +90,7 @@ export class IrrigationEcRampTab extends LitElement {
         transition: border-color 0.2s;
       }
       .curve-item:hover {
-        border-color: var(--primary-color, #03a9f4);
+        border-color: var(--gm-primary-color);
       }
       .curve-info {
         min-width: 0;

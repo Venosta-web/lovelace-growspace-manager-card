@@ -312,7 +312,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
       }
 
       .hero-card:focus-visible {
-        outline: 3px solid var(--primary-color, #2196f3);
+        outline: 3px solid var(--gm-primary-color);
         outline-offset: 3px;
       }
 
@@ -379,13 +379,13 @@ export class GrowspaceHeaderHeroUI extends LitElement {
       .hero-card.active {
         background: color-mix(
           in srgb,
-          var(--primary-color, #2196f3) 15%,
+          var(--gm-primary-color) 15%,
           var(--glass-bg, rgba(255, 255, 255, 0.05))
         );
-        border-color: var(--primary-color, #2196f3);
+        border-color: var(--gm-primary-color);
         box-shadow:
           0 8px 32px -4px rgba(0, 0, 0, 0.3),
-          0 0 0 1px var(--primary-color, #2196f3) inset;
+          0 0 0 1px var(--gm-primary-color) inset;
       }
 
       .hero-card.active .hero-value,

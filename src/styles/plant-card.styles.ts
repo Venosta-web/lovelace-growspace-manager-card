@@ -46,10 +46,10 @@ export const plantCardStyles = css`
   .plant-card-rich:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    border-color: var(--primary-color, rgba(255, 255, 255, 0.2));
+    border-color: var(--outline-hover);
   }
   .plant-card-rich:focus {
-    outline: 2px solid var(--primary-color, #22c55e);
+    outline: 2px solid var(--gm-primary-color);
     outline-offset: 2px;
   }
 

@@ -589,9 +589,9 @@ export class GrowspaceEnvChart extends LitElement {
 
   private _renderGrid(width: number, height: number) {
     return svg`
-        <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
-        <line x1="0" y1="0" x2="0" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
-        <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="var(--divider-color, #333)" stroke-width="0.5" stroke-dasharray="4 4" />
+        <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="var(--divider-color, rgba(255, 255, 255, 0.12))" stroke-width="1" />
+        <line x1="0" y1="0" x2="0" y2="${height}" stroke="var(--divider-color, rgba(255, 255, 255, 0.12))" stroke-width="1" />
+        <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="var(--divider-color, rgba(255, 255, 255, 0.12))" stroke-width="0.5" stroke-dasharray="4 4" />
     `;
   }
 
@@ -667,7 +667,7 @@ export class GrowspaceEnvChart extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--secondary-text-color, #444);
+      color: var(--text-muted);
       cursor: default;
     }
     .chart-svg {
@@ -684,7 +684,7 @@ export class GrowspaceEnvChart extends LitElement {
       font-size: var(--font-size-xs);
       font-weight: 500;
       letter-spacing: 0.04em;
-      color: var(--secondary-text-color, #aaa);
+      color: var(--text-muted);
       opacity: 0.4;
       text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
       line-height: 1;
@@ -705,7 +705,7 @@ export class GrowspaceEnvChart extends LitElement {
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.02em;
       white-space: nowrap;
-      color: var(--secondary-text-color, #aaa);
+      color: var(--text-muted);
       opacity: 0.5;
       text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
       line-height: 1;

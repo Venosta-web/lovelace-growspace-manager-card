@@ -149,7 +149,7 @@ function deriveEcTrend(metrics: SteeringMetrics): OverviewEcTrendCard {
   let color = 'var(--secondary-text-color)';
   if (trend === 'rising') {
     icon = mdiArrowUp;
-    color = 'var(--error-color, #F44336)';
+    color = 'var(--error-color, #f44336)';
   } else if (trend === 'falling') {
     icon = mdiArrowDown;
     color = 'var(--success-color, #4CAF50)';

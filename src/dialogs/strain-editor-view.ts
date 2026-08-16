@@ -701,7 +701,7 @@ export class StrainEditorView extends LitElement {
                   ? html`
                       <button
                         class="md3-button text"
-                        style="height: 32px; padding: 0 8px; color: var(--error-color, #ff5252);"
+                        style="height: 32px; padding: 0 8px; color: var(--error-color, #f44336);"
                         @click=${() => this._handleEditorChange('breeder_logo', '')}
                       >
                         <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
@@ -1584,7 +1584,7 @@ export class StrainEditorView extends LitElement {
                 ? html`
                     <button
                       class="md3-button text"
-                      style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);"
+                      style="height:36px; padding:0 12px; color:var(--error-color, #f44336);"
                       @click=${() => {
                         this._sm = transition(this._sm, {
                           type: 'BreederEditFieldChanged',

@@ -110,7 +110,7 @@ export class ErrorBoundary extends LitElement {
     }
 
     .too-many-errors {
-      background: var(--error-color, #d32f2f);
+      background: var(--error-color, #f44336);
       padding: 16px;
       border-radius: 8px;
       margin: 16px;

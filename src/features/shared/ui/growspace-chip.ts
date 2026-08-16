@@ -121,10 +121,10 @@ export class GrowspaceChip extends LitElement {
       :host([active]) .stat-chip {
         background: color-mix(
           in srgb,
-          var(--primary-color, #03a9f4) 15%,
+          var(--gm-primary-color) 15%,
           var(--glass-bg, rgba(255, 255, 255, 0.05))
         );
-        border-color: var(--primary-color, #03a9f4);
+        border-color: var(--gm-primary-color);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         color: var(--primary-text-color, #fff);
       }
@@ -155,7 +155,7 @@ export class GrowspaceChip extends LitElement {
         transform: translateY(-50%);
         opacity: 0.8;
         cursor: pointer;
-        color: var(--primary-color, #03a9f4);
+        color: var(--gm-primary-color);
         padding: 0;
         border: 0;
         background: transparent;
@@ -164,7 +164,7 @@ export class GrowspaceChip extends LitElement {
       .link-icon svg {
         width: 100%;
         height: 100%;
-        fill: var(--primary-color, #03a9f4);
+        fill: var(--gm-primary-color);
       }
 
       /* Respect user motion preferences (WCAG 2.3.3) */
