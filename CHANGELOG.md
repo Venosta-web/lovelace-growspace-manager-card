@@ -1,3 +1,10 @@
+# [1.1.0-next.138](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.137...v1.1.0-next.138) (2026-08-16)
+
+
+### Features
+
+* **irrigation:** pick the tank sensor with the shared entity picker ([#652](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/652)) ([eb8c1c9](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/eb8c1c9f963b1221b1f70c59989120629ba378de))
+
 # [1.1.0-next.137](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.136...v1.1.0-next.137) (2026-08-16)
 
 
