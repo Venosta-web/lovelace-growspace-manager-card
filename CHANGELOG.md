@@ -1,3 +1,10 @@
+# [1.1.0-next.140](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.139...v1.1.0-next.140) (2026-08-16)
+
+
+### Bug Fixes
+
+* **design:** migrate the css and inline colour literals to tokens ([#654](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/654)) ([e8aa867](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e8aa867c8d65285c08f86205a984f5caa32145f6)), closes [#576](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/576) [#ffc107](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/ffc107) [#631](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/631)
+
 # [1.1.0-next.139](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.138...v1.1.0-next.139) (2026-08-16)
 
 
