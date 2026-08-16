@@ -356,7 +356,6 @@ export class ConfigGrowspacesTab extends LitElement {
         .label=${label}
         .values=${values}
         .options=${field.options}
-        list-id=${`list-multi-${key}`}
         @entity-values-changed=${(event: CustomEvent<{ values: string[] }>) =>
           emit({ [key]: event.detail.values })}
       ></config-entity-multi-select>

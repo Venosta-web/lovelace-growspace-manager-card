@@ -19,6 +19,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { mdiThermometer } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui/md3-number-input';
+import '../../shared/ui/gm-entity-picker';
 import './config-entity-multi-select';
 import './config-section-header';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
@@ -133,7 +134,6 @@ export class ConfigSensorsTab extends LitElement {
         .label=${field.label}
         .values=${values}
         .options=${field.options}
-        list-id=${`list-multi-${field.key}`}
         @entity-values-changed=${(event: CustomEvent<{ values: string[] }>) =>
           this._emit({ [field.key]: event.detail.values })}
       ></config-entity-multi-select>
@@ -141,23 +141,14 @@ export class ConfigSensorsTab extends LitElement {
   }
 
   private _singleSelect(field: SensorFieldVM): TemplateResult {
-    const listId = `list-${field.key}`;
     return html`
       <div class="entity-select-container">
-        <div class="md3-input-group">
-          <label class="md3-label">${field.label}</label>
-          <input
-            class="md3-input"
-            list="${listId}"
-            .value=${field.value as string}
-            @change=${(e: Event) =>
-              this._emit({ [field.key]: (e.target as HTMLInputElement).value })}
-            placeholder="Search entity..."
-          />
-          <datalist id="${listId}">
-            ${field.options.map((eid) => html`<option value="${eid}"></option>`)}
-          </datalist>
-        </div>
+        <gm-entity-picker
+          .label=${field.label}
+          .value=${field.value as string}
+          .options=${field.options}
+          @entity-picked=${(e: CustomEvent<string>) => this._emit({ [field.key]: e.detail })}
+        ></gm-entity-picker>
       </div>
     `;
   }

@@ -345,7 +345,6 @@ export class ConfigClimateTab extends LitElement {
         .label=${label}
         .values=${values}
         .options=${options}
-        list-id=${`list-multi-${key}`}
         @entity-values-changed=${(event: CustomEvent<{ values: string[] }>) =>
           this._update({ [key]: event.detail.values })}
       ></config-entity-multi-select>

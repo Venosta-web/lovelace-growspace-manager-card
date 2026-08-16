@@ -20,6 +20,8 @@ import {
 } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
+import { provide } from '@lit/context';
+import { hassContext } from '../lib/context';
 
 import '../features/shared/ui/md3-text-input';
 import '../features/shared/ui/md3-number-input';
@@ -137,6 +139,8 @@ export interface RemoveEnvironmentEventDetail {
 export class ConfigDialog extends LitElement {
   @property({ type: Boolean, reflect: true }) open = false;
 
+  /** Provided so the entity pickers in the tabs can reach the entity registry. */
+  @provide({ context: hassContext })
   @property({ attribute: false })
   public hass!: HomeAssistant;
 

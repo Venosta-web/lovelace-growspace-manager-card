@@ -20,11 +20,10 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiWater, mdiPlus, mdiPencil, mdiDelete } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import '../../shared/ui/gm-entity-picker';
 import './config-section-header';
 import type { TankDraftFields } from '../../../dialogs/config-dialog-sm';
 import type { TankEditVM, TankRowVM, TanksTabViewModel } from '../viewmodels/tanks-tab.viewmodel';
-
-const LIST_ID = 'list-tank-sensor-entity';
 
 @customElement('config-tanks-tab')
 export class ConfigTanksTab extends LitElement {
@@ -140,20 +139,13 @@ export class ConfigTanksTab extends LitElement {
       <div
         style="margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--divider-color,rgba(255,255,255,0.15));border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;"
       >
-        <div class="md3-input-group">
-          <label class="md3-label">Sensor Entity *</label>
-          <input
-            class="md3-input"
-            list="${LIST_ID}"
-            .value=${draft.sensorEntity}
-            @input=${(e: Event) =>
-              this._updateDraft({ sensorEntity: (e.target as HTMLInputElement).value })}
-            placeholder="Search entity..."
-          />
-          <datalist id="${LIST_ID}">
-            ${this.vm.sensorOptions.map((eid) => html`<option value="${eid}"></option>`)}
-          </datalist>
-        </div>
+        <gm-entity-picker
+          label="Sensor Entity *"
+          .value=${draft.sensorEntity}
+          .options=${this.vm.sensorOptions}
+          @entity-picked=${(e: CustomEvent<string>) =>
+            this._updateDraft({ sensorEntity: e.detail })}
+        ></gm-entity-picker>
         <div class="md3-input-group">
           <label class="md3-label">Name</label>
           <input

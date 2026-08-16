@@ -70,9 +70,7 @@ export class ConfigIrrigationTab extends LitElement {
   }
 
   private _header(icon: string, title: string): TemplateResult {
-    return html`
-      <config-section-header .icon=${icon} .label=${title}></config-section-header>
-    `;
+    return html` <config-section-header .icon=${icon} .label=${title}></config-section-header> `;
   }
 
   private _field(field: IrrigationFieldVM): TemplateResult {
@@ -82,7 +80,6 @@ export class ConfigIrrigationTab extends LitElement {
         .label=${field.label}
         .values=${values}
         .options=${field.options}
-        list-id=${`list-multi-${field.key}`}
         @entity-values-changed=${(event: CustomEvent<{ values: string[] }>) =>
           this._update({ [field.key]: event.detail.values })}
       ></config-entity-multi-select>

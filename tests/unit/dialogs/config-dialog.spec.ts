@@ -9,6 +9,7 @@ import {
     HUMIDITY_STAGES,
 } from '../../../src/features/config/viewmodels/humidity-tab.viewmodel';
 import { html } from 'lit';
+import { pickEntity, pickEntityIn, pickerOptions } from '../../harness/entity-picker';
 
 // Env tabs are nested dumb components behind their own shadow roots (ADR-0019,
 // "Applied to Config Dialog"); pierce whichever is active. Still-inline env tabs
@@ -290,17 +291,10 @@ describe('ConfigDialog', () => {
             expect((element as any).envTemperatureSensors).toEqual(['sensor.temp']);
         });
 
-        it('should render native input with datalist', async () => {
-            // Temperature is now a multi-select with datalist
+        it('should offer only the device-class-matching entities in the picker', async () => {
             const picker = entityPicker(await sensorsShadow(element), 'Temperature Sensors');
-            const input = picker?.shadowRoot.querySelector('input');
-            const datalist = picker?.shadowRoot.querySelector('datalist');
+            const values = pickerOptions(picker!.shadowRoot);
 
-            expect(input).toBeTruthy();
-            expect(datalist).toBeTruthy();
-            // Check filtered options (only temperature sensors)
-            const options = Array.from(datalist?.querySelectorAll('option') || []);
-            const values = options.map(o => o.value);
             expect(values).toContain('sensor.temp');
             expect(values).not.toContain('sensor.hum'); // Wrong device class
         });
@@ -331,22 +325,20 @@ describe('ConfigDialog', () => {
         it('should update all environment sensors', async () => {
             const updateMultiPicker = async (label: string, value: string) => {
                 const picker = entityPicker(await sensorsShadow(element), label);
-                const input = picker?.shadowRoot.querySelector('input');
-
-                if (input) {
-                    input.value = value;
-                    input.dispatchEvent(new Event('change'));
+                if (picker) {
+                    pickEntity(picker.shadowRoot, value);
                     await element.updateComplete;
                 }
             };
 
             const updateSinglePicker = async (label: string, value: string) => {
-                const groups = Array.from((await sensorsShadow(element)).querySelectorAll('.md3-input-group'));
-                const group = groups.find(g => g.querySelector('label')?.textContent?.trim() === label);
-                const input = group?.querySelector('input');
-                if (input) {
-                    input.value = value;
-                    input.dispatchEvent(new Event('change'));
+                const picker = Array.from(
+                    (await sensorsShadow(element)).querySelectorAll<HTMLElement & { label: string }>(
+                        'gm-entity-picker'
+                    )
+                ).find((candidate) => candidate.label === label);
+                if (picker) {
+                    pickEntityIn(picker, value);
                     await element.updateComplete;
                 }
             };
@@ -952,9 +944,7 @@ describe('ConfigDialog', () => {
             await element.updateComplete;
 
             const picker = entityPicker(await sensorsShadow(element), 'Light Source / Sensor');
-            const input = picker!.shadowRoot.querySelector('input')!;
-            input.value = ''; // Empty string
-            input.dispatchEvent(new Event('change'));
+            pickEntity(picker!.shadowRoot, ''); // Cleared selection
             await element.updateComplete;
 
             expect((element as any).envLightSensors).toEqual(['sensor.1']); // Unchanged

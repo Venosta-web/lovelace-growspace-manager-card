@@ -99,7 +99,6 @@ export class ConfigVisionTab extends LitElement {
         label="Camera Entities"
         .values=${values}
         .options=${vm.cameraOptions}
-        list-id="list-multi-cameraEntities"
         @entity-values-changed=${(event: CustomEvent<{ values: string[] }>) =>
           this._update({ cameraEntities: event.detail.values })}
       ></config-entity-multi-select>
