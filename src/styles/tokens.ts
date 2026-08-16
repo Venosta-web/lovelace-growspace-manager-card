@@ -277,6 +277,25 @@ export const groups: TokenGroup[] = [
       { css: '--on-secondary', value: '#ffffff', doc: 'colors.on-secondary' },
       { css: null, doc: 'colors.secondary-container', docValue: 'rgba(33,150,243,0.12)' },
       { css: null, doc: 'colors.on-secondary-container', docValue: '#2196f3' },
+      {
+        css: '--info-dark',
+        value: '#1976d2',
+        doc: 'colors.info-dark',
+        note: 'The dark stop of --secondary-gradient, mirroring --error-dark. Exists so a gradient that cannot run 135deg — a liquid column runs `to bottom` — can compose the same two stops without re-authoring them. See ADR 0042 §3.',
+      },
+    ],
+  },
+  {
+    title: 'Light cycle — day and dark period',
+    note: "One pair for the whole light cycle, wherever it is reported: timeline icons, logbook entries, the humidity tab's day/night columns and the lights-on/off equipment icon. Four call sites had four different pairs before this existed. Day carries the Tertiary value, so the cycle a report describes and the controller accent that drives it are one colour. See ADR 0042 §2.",
+    tokens: [
+      { css: '--cycle-day', value: '#ffeb3b', doc: 'colors.cycle-day' },
+      {
+        css: '--cycle-night',
+        value: '#7986cb',
+        doc: 'colors.cycle-night',
+        note: 'Indigo 300, not the Indigo 500 (#3f51b5) three sites had drifted to: 500 measures 2.43:1 on --surface, below the 3:1 an icon or rule needs. This measures 4.83:1.',
+      },
     ],
   },
   {
@@ -421,6 +440,31 @@ export const groups: TokenGroup[] = [
     ],
   },
   {
+    title: 'Crop steering phases',
+    note: "P1/P2/P3 are painted as chart bands, listed as phase chips and worn as the hero's phase badge, all from one family that lived as three literals in slices/irrigation/index.ts. Values unchanged. See ADR 0042 §1.",
+    tokens: [
+      { css: '--phase-p1', value: '#4caf50', doc: 'colors.phase-p1', note: 'Saturation' },
+      { css: '--phase-p2', value: '#2196f3', doc: 'colors.phase-p2', note: 'Maintenance' },
+      {
+        css: '--phase-p3',
+        value: '#ff9800',
+        doc: 'colors.phase-p3',
+        note: 'Dryback. Shares a value with --stage-flower and with the --gm-warning-color fallback; it is neither, and the three are free to diverge.',
+      },
+    ],
+  },
+  {
+    title: 'Chart markers',
+    tokens: [
+      {
+        css: '--marker-now',
+        value: '#ffffff',
+        doc: 'colors.marker-now',
+        note: 'The current-time cursor on the day charts. Deliberately outside the data palette: the cursor crosses the P1–P3 bands, and the #ff9800 both charts used is exactly the P3 band it lands in. Neutral and the brightest thing on the chart, which is what a cursor should be. See ADR 0042 §1.',
+      },
+    ],
+  },
+  {
     title: 'Activity Colors',
     note: 'A dialog accent names the thing the dialog acts on. Stage dialogs pass a --stage-* colour; activity dialogs pass one of these or a semantic token (IPM and irrigation steering use --warning-color). See ADR 0038.',
     tokens: [
@@ -430,6 +474,14 @@ export const groups: TokenGroup[] = [
         doc: 'colors.activity-training',
         note: 'Shares a value with --stage-dry; training is an activity, not a stage, so the two are free to diverge.',
       },
+    ],
+  },
+  {
+    title: 'Genetics axis',
+    note: 'The indica/sativa ratio bar splits one track between two opposed segments, so the pair is read against each other before either is read against the surface. Material equivalents of the violet/yellow the bar had imported from another palette. The violet it replaces measured 2.98:1 against the #333 track, under the 3:1 a graphical object needs; this measures 3.43:1. Separation between the two segments is unchanged at 2.2:1. See ADR 0042 §5.',
+    tokens: [
+      { css: '--genetics-indica', value: '#9575cd', doc: 'colors.genetics-indica' },
+      { css: '--genetics-sativa', value: '#fbc02d', doc: 'colors.genetics-sativa' },
     ],
   },
   {

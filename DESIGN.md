@@ -43,6 +43,19 @@ colors:
   on-secondary: '#ffffff'
   secondary-container: 'rgba(33,150,243,0.12)'
   on-secondary-container: '#2196f3'
+  # The dark stop of --secondary-gradient, mirroring --error-dark. Exists so a gradient
+  # that cannot run 135deg — a liquid column runs `to bottom` — can compose the same two
+  # stops without re-authoring them. See ADR 0042 §3.
+  info-dark: '#1976d2'
+  # Light cycle — day and dark period — One pair for the whole light cycle, wherever it is
+  # reported: timeline icons, logbook entries, the humidity tab's day/night columns and
+  # the lights-on/off equipment icon. Four call sites had four different pairs before this
+  # existed. Day carries the Tertiary value, so the cycle a report describes and the
+  # controller accent that drives it are one colour. See ADR 0042 §2.
+  cycle-day: '#ffeb3b'
+  # Indigo 300, not the Indigo 500 (#3f51b5) three sites had drifted to: 500 measures
+  # 2.43:1 on --surface, below the 3:1 an icon or rule needs. This measures 4.83:1.
+  cycle-night: '#7986cb'
   # Tertiary — Amber Light (light cycle indicator)
   tertiary: '#ffeb3b'
   on-tertiary: '#1e1e1e'
@@ -95,12 +108,36 @@ colors:
   stage-flower-early: '#ff9800'
   stage-flower-mid: '#fb8c00'
   stage-flower-late: '#ef6c00'
+  # Crop steering phases — P1/P2/P3 are painted as chart bands, listed as phase chips and
+  # worn as the hero's phase badge, all from one family that lived as three literals in
+  # slices/irrigation/index.ts. Values unchanged. See ADR 0042 §1.
+  # Saturation
+  phase-p1: '#4caf50'
+  # Maintenance
+  phase-p2: '#2196f3'
+  # Dryback. Shares a value with --stage-flower and with the --gm-warning-color fallback;
+  # it is neither, and the three are free to diverge.
+  phase-p3: '#ff9800'
+  # Chart markers
+  # The current-time cursor on the day charts. Deliberately outside the data palette: the
+  # cursor crosses the P1–P3 bands, and the #ff9800 both charts used is exactly the P3
+  # band it lands in. Neutral and the brightest thing on the chart, which is what a cursor
+  # should be. See ADR 0042 §1.
+  marker-now: '#ffffff'
   # Activity Colors — A dialog accent names the thing the dialog acts on. Stage dialogs
   # pass a --stage-* colour; activity dialogs pass one of these or a semantic token (IPM
   # and irrigation steering use --warning-color). See ADR 0038.
   # Shares a value with --stage-dry; training is an activity, not a stage, so the two are
   # free to diverge.
   activity-training: '#9c27b0'
+  # Genetics axis — The indica/sativa ratio bar splits one track between two opposed
+  # segments, so the pair is read against each other before either is read against the
+  # surface. Material equivalents of the violet/yellow the bar had imported from another
+  # palette. The violet it replaces measured 2.98:1 against the #333 track, under the 3:1
+  # a graphical object needs; this measures 3.43:1. Separation between the two segments is
+  # unchanged at 2.2:1. See ADR 0042 §5.
+  genetics-indica: '#9575cd'
+  genetics-sativa: '#fbc02d'
   # Error/Warning Colors
   # Home Assistant defines this name too — same shadowing as --divider-color, and withheld
   # from the portal for the same reason. See ADR 0036.
@@ -334,12 +371,30 @@ Each role is implemented as `--text-primary` / `--text-secondary` / `--text-mute
 - **Danger** `#ef5350` (`--danger-chip`) — Pulsing stat-chip danger state (distinct from alert red — slightly lighter for chip context). `#ff5252` is not a separate red; it folds into this one.
 - **Error Dark** `#d32f2f` (`--error-dark`) — The dark stop of the danger gradient, and the pressed/hover state of destructive buttons.
 - **Info** `#2196f3` — Watering icons, informational context.
+- **Info Dark** `#1976d2` (`--info-dark`) — The dark stop of the secondary gradient, mirroring Error Dark. Exists so a gradient bound to another direction can compose the same two stops; see Gradients below.
 - **Error Surface** `rgba(244,67,54,0.1)` / border `rgba(244,67,54,0.3)` — Error message containers.
 - **Divider** `rgba(255,255,255,0.12)` — Section dividers, dialog header/footer borders.
+
+### Light Cycle
+
+- **Day** `#ffeb3b` (`--cycle-day`) — Carries the Tertiary "Amber Light" value, so the grow-light controller accent and every report describing the cycle it drives are one colour.
+- **Night** `#7986cb` (`--cycle-night`) — Indigo 300. Indigo 500 (`#3f51b5`) measures 2.43:1 on `--surface`, under the 3:1 an icon or 1px rule needs; this measures 4.83:1.
+
+One pair everywhere the light cycle is reported — timeline icons, logbook entries, the humidity tab's day/night columns, the lights-on/off equipment icon. Four sites had four different pairs before ADR 0042 §2. `--primary-light-color` keeps this value for the controller accent; `--primary-light-color-hover` and `-active` are unrelated white tints, despite the name.
+
+### Crop Steering Phases
+
+- **P1 Saturation** `#4caf50` (`--phase-p1`), **P2 Maintenance** `#2196f3` (`--phase-p2`), **P3 Dryback** `#ff9800` (`--phase-p3`) — chart bands, phase chips, and the hero's dryback badge, from one family. P3 shares a value with Flowering Orange and is not it.
+
+### Gradients
+
+`--primary-gradient`, `--secondary-gradient` and `--danger-gradient` run `135deg`, and **the direction is part of the token** — it is the card's fill direction for buttons and surfaces. A gradient bound to another direction (a liquid column runs `to bottom`) composes the same stops from the colour tokens instead of re-authoring them: `linear-gradient(to bottom, var(--gm-info-color), var(--info-dark))`. Re-declaring the stops as literals is what ADR 0042 §3 stops. `--primary-gradient` is the filled-button treatment; a filled button must not carry its own gradient.
 
 ### Data Series
 
 - **Series ramp** `--series-1` … `--series-4` (`#4fc3f7`, `#81c784`, `#ce93d8`, `#a5d6a7`) — Chart series and KPI tile accents. **Categorical, used in order** — the slots carry no per-metric meaning, because call sites assign them positionally. A fifth series needs a fifth slot added here, not an ad-hoc literal. Empty/no-data states use Disabled Text, not a series colour.
+- **Now marker** `#ffffff` (`--marker-now`) — The current-time cursor on the day charts. Deliberately outside the data palette: the cursor crosses every phase band, so any data hue reads as a band where it overlaps one. Neutral, and the brightest thing on a dark chart.
+- **Genetics axis** `#9575cd` (`--genetics-indica`) / `#fbc02d` (`--genetics-sativa`) — The two segments of the indica/sativa ratio bar, read against each other. Deep Purple 300 and Yellow 700; the violet they replace measured 2.98:1 on the bar's track, under the 3:1 a graphical object needs.
 
 ### Contrast Exceptions
 
@@ -362,11 +417,16 @@ The standing rule, from ADR 0040:
 - **A painted surface and the DOM legend describing it must resolve to the same colour.** This is the invariant; everything below is how it is kept.
 - **Painted surfaces resolve at draw time**, through a hidden probe element read as `getComputedStyle(probe).color` — never `getPropertyValue`, whose output is whatever syntax the theme author wrote. Resolve once per draw, outside the pixel loop.
 - **Repaint when the resolved palette changes**, not when `hass` changes. Re-resolve on every update, compare against the cached strings, repaint only on a difference.
-- **Ramps are authored once** as role descriptors holding token *names* plus a terminal fallback hex, read by the canvas, the legend, and the shader's uniform feed alike.
+- **Ramps are authored once** as role descriptors holding token _names_ plus a terminal fallback hex, read by the canvas, the legend, and the shader's uniform feed alike.
 - **Shaders take colour as a uniform**, converted with `new THREE.Color().setStyle()` — three.js renders linear, and a hand-normalised `vec3` comes out wrong. `setStyle` parses hex, named colours, `rgb`/`rgba` and `hsl`/`hsla` only, so any token a painted surface reads must resolve to one of those — derive with `color-mix(in srgb, …)`, never `in oklab`, whose computed value serialises as `oklab()`.
 - **Check that the token is in the component's scope**, against the composed `cssText` rather than the import list. The status tokens live in `status.styles.ts`, so a component that does not compose it sees `--gm-status-warning` as undefined — and both halves of a pair then fall back together, which looks like agreement.
 
-**Accepted exceptions**, allowlisted in `scripts/audit-design-tokens.mjs` and excluded from the migration's zero: three.js scene furniture (grid, floor, housings, soil and pot), `vpd-heatmap`'s white/black current-point marker, and the image-only canvases in `plant-utils.ts` and `camera-capture.ts`. **Deferred, not exempt**: `plant-renderer.ts`'s three role-carrying literals (`0x4caf50`, `0x2e7d32`, `0x81c784`).
+**Accepted exceptions** are permanent literals excluded from the migration's zero. They come in two kinds, and ADR 0042 §6 separates them because the earlier wording ran them together:
+
+- **Allowlisted** in `ACCEPTED_EXCEPTIONS` in `scripts/audit-design-tokens.mjs`, keyed by file plus the hexes carrying the accepted role, each with a reason — run `node scripts/audit-design-tokens.mjs --exceptions` to list them. Today: the printed ink and rules in `label-preview.ts`, the `<video>` letterbox in `camera-capture.ts`, and the tank illustration's shell material in `growspace-tank-card.ts`. A listed file is still audited for every other value, so a role-carrying literal added beside one still counts.
+- **Out of the matcher's reach**, and so never in the count to begin with: three.js scene furniture (grid, floor, housings, soil and pot) and `vpd-heatmap`'s current-point marker, which are `0x` numbers and CSS colour keywords rather than `#` hex.
+
+**Deferred, not exempt**: `plant-renderer.ts`'s three role-carrying literals (`0x4caf50`, `0x2e7d32`, `0x81c784`), and `plant-utils.ts:59` — its canvas is an image resizer that paints no colour, so the file's one literal is a stage-map fallback grey and belongs to #634, not to the exception list it was previously named in.
 
 ## 3. Typography Rules
 
@@ -560,7 +620,7 @@ Touch targets: checkbox overlays use 44×44px touch area (24px icon + 10px paddi
 
 The block is authored once, in `src/styles/reduced-motion.styles.ts`, and coverage follows composition rather than import. `dialogStyles` is `[sharedStyles, uiStyles, …]`, so **every component composing `dialogStyles` inherits it** — that is the large majority of the card, dialogs included. Also covered: anything composing `reduced-motion.styles.ts` or `ui.styles.ts`, `plant-card.styles.ts` or `growspace-card.styles.ts` directly, plus components carrying their own `reduce` block (`growspace-chip`, `growspace-header-hero-ui`, `growspace-header-actions-ui`, `base-dialog`, `growspace-task-bar`, `config-stage-accordion`).
 
-**Coverage is now complete for anything that moves.** The 20 components that build a bare `css` template *and* declare an animation, transition or hover transform compose `reducedMotion` directly. Ten more build a bare template but declare no motion at all — `camera-capture`, `label-preview`, `nutrient-stock-chip`, `flower-flip-chip`, `growspace-view-heatmap`, `growspace-header-secondary-ui`, `config-section-header`, `gm-settings-panel` and the two carousel/grid card editors — and are deliberately left alone; there is nothing to reduce.
+**Coverage is now complete for anything that moves.** The 20 components that build a bare `css` template _and_ declare an animation, transition or hover transform compose `reducedMotion` directly. Ten more build a bare template but declare no motion at all — `camera-capture`, `label-preview`, `nutrient-stock-chip`, `flower-flip-chip`, `growspace-view-heatmap`, `growspace-header-secondary-ui`, `config-section-header`, `gm-settings-panel` and the two carousel/grid card editors — and are deliberately left alone; there is nothing to reduce.
 
 The rule when adding motion to a component: if its `static styles` composes `dialogStyles`, `uiStyles`, `plant-card.styles` or `growspace-card.styles`, it is already covered. If it builds a bare `css` template, interpolate `${reducedMotion}`. `tests/unit/reduced-motion-coverage.test.ts` asserts the composed `cssText`, not the import list — coverage is a property of what a sheet composes, and reading it off imports is what produced a wrong claim here once already.
 

@@ -701,6 +701,18 @@ A background the card paints dark _regardless_ of the Home Assistant theme — a
 **3D View Accent**
 `--accent-3d` and its hover and idle steps, the accent shared by the 3D growspace view's DOM chrome and the three.js scene it controls. `THREE.Color` takes a resolved value, so `var()` cannot reach the scene half — both renderers import the generated `token` map instead, which is what keeps a control and the highlight it produces from drifting apart. The narrow case of the canvas/DOM pairing that a shared authored value can close; the VPD ramp is the wide case, where the scene half is GLSL. See ADR 0039 and #581.
 
+**Accepted Exception**
+A colour literal that is permanently correct as a literal, allowlisted in `ACCEPTED_EXCEPTIONS` in `scripts/audit-design-tokens.mjs` by file plus the hexes carrying the accepted role, and so excluded from the migration's zero. Two things qualify: a surface that must _not_ follow the theme (the printed label's ink, a `<video>` letterbox), and [[Illustration Material]]. Keyed by hex rather than line number because line numbers drift; scoped to the role rather than the file so a role-carrying literal added beside one still counts. Distinct from a literal merely out of the audit's reach — a three.js `0x` number or a CSS colour keyword was never in the count. See ADR 0042 §6.
+
+**Illustration Material**
+A colour describing what a drawn object is made of rather than what it means — the tank card's slate shell and its rust warning variant, or the three.js scene's floor and housings. It carries no role, nothing else in the card can reuse it, and the semantic bit it appears to carry is held elsewhere (the tank's warning state is in the liquid, not the shell). A token nothing can reuse is not a token, so this is an [[Accepted Exception]] rather than a sub-palette.
+
+**Light Cycle Pair**
+`--cycle-day` / `--cycle-night`, the one pair used wherever the light cycle is _reported_ — timeline and logbook entries, the humidity tab's columns, the lights-on/off equipment icon. Day carries the Tertiary "Amber Light" value that already drove the grow-light controller accent, so the report and the control agree. Four sites held four different pairs before it existed, three of them on an Indigo 500 that measures 2.43:1 on `--surface`. See ADR 0042 §2.
+
+**Now Marker**
+`--marker-now`, the current-time cursor on the day charts, and the one chart colour deliberately outside the data palette. A cursor crosses every band, so any data hue reads as a band where it overlaps one — and the `#ff9800` both charts used was exactly the P3 band it lands in. See ADR 0042 §1.
+
 ## Build
 
 **`__VERSION__`**
