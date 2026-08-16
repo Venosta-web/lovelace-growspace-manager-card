@@ -1,3 +1,10 @@
+# [1.1.0-next.135](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.134...v1.1.0-next.135) (2026-08-16)
+
+
+### Bug Fixes
+
+* use dark foregrounds for filled controls and toasts ([#649](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/649)) ([60e0ac1](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/60e0ac16acefe4db78fd5d416d4d070d35c9d0c7))
+
 # [1.1.0-next.134](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.133...v1.1.0-next.134) (2026-08-16)
 
 
