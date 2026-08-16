@@ -2,6 +2,14 @@ import { describe, it, expect, afterEach } from 'vitest';
 import './config-tanks-tab';
 import type { ConfigTanksTab } from './config-tanks-tab';
 import type { TankEditVM, TankRowVM, TanksTabViewModel } from '../viewmodels/tanks-tab.viewmodel';
+import {
+  hassWithEntities,
+  mountWithHass,
+  pickEntity,
+  pickerOptions,
+} from '../../../../tests/harness/entity-picker';
+
+const HASS = hassWithEntities({ 'sensor.a': 'Main Tank Level', 'sensor.b': 'Res Tank Level' });
 
 function row(over: Partial<TankRowVM> = {}): TankRowVM {
   return {
@@ -28,9 +36,7 @@ function makeVm(over: Partial<TanksTabViewModel> = {}): TanksTabViewModel {
 async function mount(vm: TanksTabViewModel): Promise<ConfigTanksTab> {
   const el = document.createElement('config-tanks-tab') as ConfigTanksTab;
   el.vm = vm;
-  document.body.appendChild(el);
-  await el.updateComplete;
-  return el;
+  return mountWithHass(el, HASS);
 }
 
 function listen<T = unknown>(el: HTMLElement, type: string): T[] {
@@ -69,12 +75,12 @@ describe('ConfigTanksTab — render', () => {
     expect(labels).toEqual(['Edit Main', 'Delete Main']);
   });
 
-  it('renders the inline form (with sensor datalist) when editing', async () => {
+  it('renders the inline form (with the sensor picker) when editing', async () => {
     const el = await mount(
       makeVm({ showEmpty: false, editing: draft, sensorOptions: ['sensor.a', 'sensor.b'] })
     );
-    expect(el.shadowRoot!.querySelectorAll('.md3-input-group').length).toBe(4);
-    expect(el.shadowRoot!.querySelectorAll('#list-tank-sensor-entity option').length).toBe(2);
+    expect(el.shadowRoot!.querySelectorAll('.md3-input-group').length).toBe(3);
+    expect(pickerOptions(el.shadowRoot!)).toEqual(['sensor.a', 'sensor.b']);
   });
 });
 
@@ -115,10 +121,13 @@ describe('ConfigTanksTab — intents out', () => {
     el.addEventListener('cancel-tank', () => cancelled++);
     el.addEventListener('save-tank-requested', () => saved++);
 
-    const nameInput = el.shadowRoot!.querySelectorAll<HTMLInputElement>('input.md3-input')[1];
+    const nameInput = el.shadowRoot!.querySelectorAll<HTMLInputElement>('input.md3-input')[0];
     nameInput.value = 'Renamed';
     nameInput.dispatchEvent(new Event('input'));
     expect(drafts).toEqual([{ partial: { name: 'Renamed' } }]);
+
+    pickEntity(el.shadowRoot!, 'sensor.b');
+    expect(drafts[drafts.length - 1]).toEqual({ partial: { sensorEntity: 'sensor.b' } });
 
     [...el.shadowRoot!.querySelectorAll('button')]
       .find((b) => b.textContent?.trim() === 'Cancel')!

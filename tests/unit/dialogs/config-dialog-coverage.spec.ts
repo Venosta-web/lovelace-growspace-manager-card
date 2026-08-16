@@ -42,6 +42,7 @@ vi.mock('../../../src/slices/subarea', () => ({
 }));
 
 import * as subareaSlice from '../../../src/slices/subarea';
+import { pickEntity } from '../../harness/entity-picker';
 
 // Mocking custom elements that are not defined in the test environment
 const mockCustomElements = () => {
@@ -549,34 +550,32 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         expect((element as any)._editingTankIndex).toBe(0);
 
         // Interact with form inputs to cover their @input arrow fns
-        const formInputs = Array.from((await sensorsShadow(element)).querySelectorAll('input.md3-input')) as HTMLInputElement[];
+        const tanksTab = await sensorsShadow(element);
+        pickEntity(tanksTab, 'sensor.tank_new');
+        expect((element as any)._tankDraft.sensorEntity).toBe('sensor.tank_new');
+
+        const formInputs = Array.from(tanksTab.querySelectorAll('input.md3-input')) as HTMLInputElement[];
         if (formInputs.length >= 1) {
-            // Sensor entity input
-            formInputs[0].value = 'sensor.tank_new';
-            formInputs[0].dispatchEvent(new Event('input'));
-            expect((element as any)._tankDraft.sensorEntity).toBe('sensor.tank_new');
-        }
-        if (formInputs.length >= 2) {
             // Name input
-            formInputs[1].value = 'Renamed Tank';
-            formInputs[1].dispatchEvent(new Event('input'));
+            formInputs[0].value = 'Renamed Tank';
+            formInputs[0].dispatchEvent(new Event('input'));
             expect((element as any)._tankDraft.name).toBe('Renamed Tank');
         }
-        if (formInputs.length >= 3) {
+        if (formInputs.length >= 2) {
             // Volume input
-            formInputs[2].value = '150';
-            formInputs[2].dispatchEvent(new Event('input'));
+            formInputs[1].value = '150';
+            formInputs[1].dispatchEvent(new Event('input'));
             expect((element as any)._tankDraft.volumeLiters).toBe(150);
 
             // Volume input empty → null
-            formInputs[2].value = '';
-            formInputs[2].dispatchEvent(new Event('input'));
+            formInputs[1].value = '';
+            formInputs[1].dispatchEvent(new Event('input'));
             expect((element as any)._tankDraft.volumeLiters).toBeNull();
         }
-        if (formInputs.length >= 4) {
+        if (formInputs.length >= 3) {
             // Warning level input
-            formInputs[3].value = '25';
-            formInputs[3].dispatchEvent(new Event('input'));
+            formInputs[2].value = '25';
+            formInputs[2].dispatchEvent(new Event('input'));
             expect((element as any)._tankDraft.warningLevel).toBe(25);
         }
 

@@ -15,6 +15,7 @@ import type { AcInfinityDevice } from '../../../slices/growspace/schema';
 import type { AcInfinityConflict } from './ac-infinity-conflict';
 import type { PortDeviceOption } from '../viewmodels/ac-infinity-port-resolver';
 import { renderPortPicker, renderDuplicateWarning } from './ac-infinity-port-picker';
+import '../../shared/ui/gm-entity-picker';
 
 export interface AcInfinityEditorProps {
   /** Section heading, e.g. "Exhaust Fan AC Infinity Devices". */
@@ -126,22 +127,24 @@ export function renderAcInfinityDevices(p: AcInfinityEditorProps): TemplateResul
               onPick: (deviceId) => p.onPickDevice?.(index, deviceId),
             })}
             <div style="margin-bottom:8px;">
-              <md3-select
+              <gm-entity-picker
                 label="Mode (select)"
                 .value=${device.mode_entity}
                 .options=${optionsWithCurrent(p.modeOptions, device.mode_entity)}
-                @change=${(e: CustomEvent<string>) => update(index, { mode_entity: e.detail })}
-              ></md3-select>
+                @entity-picked=${(e: CustomEvent<string>) =>
+                  update(index, { mode_entity: e.detail })}
+              ></gm-entity-picker>
               ${renderConflict(p.conflicts?.[device.mode_entity])}
               ${renderDuplicateWarning(p.duplicateWarnings?.[index])}
             </div>
             <div style="margin-bottom:8px;">
-              <md3-select
+              <gm-entity-picker
                 label="Speed (number)"
                 .value=${device.speed_entity}
                 .options=${optionsWithCurrent(p.speedOptions, device.speed_entity)}
-                @change=${(e: CustomEvent<string>) => update(index, { speed_entity: e.detail })}
-              ></md3-select>
+                @entity-picked=${(e: CustomEvent<string>) =>
+                  update(index, { speed_entity: e.detail })}
+              ></gm-entity-picker>
             </div>
             <md3-number-input
               label="On-speed (1–10)"

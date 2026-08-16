@@ -1,12 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import '../../../../../src/features/shared/ui/md3-entity-input';
 import type { Md3EntityInput } from '../../../../../src/features/shared/ui/md3-entity-input';
-
-function makeHass(entityIds: string[]) {
-  const states: Record<string, unknown> = {};
-  for (const id of entityIds) states[id] = {};
-  return { states } as any;
-}
+import { hassWithEntities, pickEntity, pickerOptions } from '../../../../harness/entity-picker';
 
 describe('Md3EntityInput', () => {
   let el: Md3EntityInput;
@@ -21,59 +16,56 @@ describe('Md3EntityInput', () => {
     if (el.isConnected) document.body.removeChild(el);
   });
 
-  it('renders no options when hass is not set', async () => {
-    const options = el.shadowRoot?.querySelectorAll('option');
-    expect(options?.length).toBe(0);
+  it('renders no picker when hass is not set', async () => {
+    expect(el.shadowRoot!.querySelector('gm-entity-picker')!.shadowRoot!.children.length).toBe(0);
   });
 
-  it('renders all entities as options when no domain filter is given', async () => {
-    el.hass = makeHass(['sensor.temp', 'light.desk', 'switch.fan']);
+  it('offers all entities when no domain filter is given', async () => {
+    el.hass = hassWithEntities({
+      'sensor.temp': 'Temp',
+      'light.desk': 'Desk',
+      'switch.fan': 'Fan',
+    });
     await el.updateComplete;
-    const options = Array.from(el.shadowRoot?.querySelectorAll('option') ?? []).map((o) =>
-      o.getAttribute('value')
-    );
-    expect(options).toContain('sensor.temp');
-    expect(options).toContain('light.desk');
-    expect(options).toContain('switch.fan');
+
+    expect(pickerOptions(el.shadowRoot!)).toEqual(['light.desk', 'sensor.temp', 'switch.fan']);
   });
 
   it('filters options to the specified domains', async () => {
-    el.hass = makeHass(['sensor.temp', 'light.desk', 'sensor.humidity']);
+    el.hass = hassWithEntities({
+      'sensor.temp': 'Temp',
+      'light.desk': 'Desk',
+      'sensor.humidity': 'Humidity',
+    });
     el.domains = ['sensor'];
     await el.updateComplete;
-    const options = Array.from(el.shadowRoot?.querySelectorAll('option') ?? []).map((o) =>
-      o.getAttribute('value')
-    );
-    expect(options).toContain('sensor.temp');
-    expect(options).toContain('sensor.humidity');
-    expect(options).not.toContain('light.desk');
+
+    expect(pickerOptions(el.shadowRoot!)).toEqual(['sensor.humidity', 'sensor.temp']);
   });
 
-  it('dispatches a change event with the new value when the input changes', async () => {
-    const details: unknown[] = [];
-    // Only collect the component's CustomEvent (detail field present), not the raw input event.
-    el.addEventListener('change', (e) => {
-      if (e instanceof CustomEvent) details.push(e.detail);
-    });
-
-    const input = el.shadowRoot?.querySelector('input') as HTMLInputElement;
-    input.value = 'sensor.temp';
-    input.dispatchEvent(new Event('change', { bubbles: false }));
-
-    expect(details).toHaveLength(1);
-    expect(details[0]).toBe('sensor.temp');
-  });
-
-  it('dispatches change event with null when the input is cleared', async () => {
+  it('dispatches a change event with the picked entity', async () => {
+    el.hass = hassWithEntities({ 'sensor.temp': 'Temp' });
+    await el.updateComplete;
     const details: unknown[] = [];
     el.addEventListener('change', (e) => {
       if (e instanceof CustomEvent) details.push(e.detail);
     });
 
-    const input = el.shadowRoot?.querySelector('input') as HTMLInputElement;
-    input.value = '';
-    input.dispatchEvent(new Event('change', { bubbles: false }));
+    pickEntity(el.shadowRoot!, 'sensor.temp');
 
-    expect(details[0]).toBeNull();
+    expect(details).toEqual(['sensor.temp']);
+  });
+
+  it('dispatches change with null when the picker is cleared', async () => {
+    el.hass = hassWithEntities({ 'sensor.temp': 'Temp' });
+    await el.updateComplete;
+    const details: unknown[] = [];
+    el.addEventListener('change', (e) => {
+      if (e instanceof CustomEvent) details.push(e.detail);
+    });
+
+    pickEntity(el.shadowRoot!, '');
+
+    expect(details).toEqual([null]);
   });
 });

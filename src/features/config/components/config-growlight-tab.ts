@@ -219,7 +219,6 @@ export class ConfigGrowlightTab extends LitElement {
         .label=${label}
         .values=${values}
         .options=${options}
-        list-id="list-growlight-entities"
         @entity-values-changed=${(event: CustomEvent<{ values: string[] }>) =>
           this._update({ growlightEntities: event.detail.values })}
       ></config-entity-multi-select>

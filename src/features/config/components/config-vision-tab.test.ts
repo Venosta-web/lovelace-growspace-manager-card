@@ -3,6 +3,13 @@ import './config-vision-tab';
 import type { ConfigVisionTab } from './config-vision-tab';
 import type { VisionTabViewModel } from '../viewmodels/vision-tab.viewmodel';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
+import {
+  hassWithEntities,
+  mountWithHass,
+  pickEntity,
+} from '../../../../tests/harness/entity-picker';
+
+const HASS = hassWithEntities({ 'camera.a': 'Tent Cam', 'camera.new': 'New Cam' });
 
 function makeVm(over: Partial<VisionTabViewModel> = {}): VisionTabViewModel {
   return {
@@ -20,9 +27,7 @@ function makeVm(over: Partial<VisionTabViewModel> = {}): VisionTabViewModel {
 async function mount(vm: VisionTabViewModel): Promise<ConfigVisionTab> {
   const el = document.createElement('config-vision-tab') as ConfigVisionTab;
   el.vm = vm;
-  document.body.appendChild(el);
-  await el.updateComplete;
-  return el;
+  return mountWithHass(el, HASS);
 }
 
 function listenPartials(el: HTMLElement): Array<Partial<EnvironmentDraft>> {
@@ -58,9 +63,7 @@ describe('ConfigVisionTab — intents out', () => {
     const el = await mount(makeVm());
     const received = listenPartials(el);
     const picker = el.shadowRoot!.querySelector('config-entity-multi-select')!;
-    const input = picker.shadowRoot!.querySelector<HTMLInputElement>('input')!;
-    input.value = 'camera.new';
-    input.dispatchEvent(new Event('change'));
+    pickEntity(picker.shadowRoot!, 'camera.new');
     expect(received).toEqual([{ cameraEntities: ['camera.new'] }]);
   });
 
@@ -68,7 +71,9 @@ describe('ConfigVisionTab — intents out', () => {
     const el = await mount(makeVm({ hasCameras: true, cameraEntities: ['camera.a'] }));
     const received = listenPartials(el);
 
-    const toggle = el.shadowRoot!.querySelector<HTMLInputElement>('.checkbox-label input[type="checkbox"]')!;
+    const toggle = el.shadowRoot!.querySelector<HTMLInputElement>(
+      '.checkbox-label input[type="checkbox"]'
+    )!;
     toggle.checked = true;
     toggle.dispatchEvent(new Event('change'));
     expect(received[0]).toEqual({ visionEnabled: true });

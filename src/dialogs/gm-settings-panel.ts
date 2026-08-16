@@ -36,7 +36,7 @@ export class GmSettingsPanel extends LitElement {
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--secondary-text-color, rgba(255,255,255,0.5));
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
       margin-bottom: 8px;
     }
     .section {
@@ -56,7 +56,7 @@ export class GmSettingsPanel extends LitElement {
     }
     .field-hint {
       font-size: 0.75rem;
-      color: var(--secondary-text-color, rgba(255,255,255,0.5));
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
       margin-top: 2px;
     }
     md3-entity-input,
@@ -68,11 +68,13 @@ export class GmSettingsPanel extends LitElement {
   `;
 
   private _emit() {
-    this.dispatchEvent(new CustomEvent('draft-change', {
-      detail: { ...this.draft },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent('draft-change', {
+        detail: { ...this.draft },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   private _patch(update: Partial<AiSettingsDraft>) {
@@ -167,7 +169,8 @@ export class GmSettingsPanel extends LitElement {
             .min=${5}
             .max=${1440}
             .value=${d.briefing_interval_minutes ?? 30}
-            @change=${(e: CustomEvent) => this._patch({ briefing_interval_minutes: Number(e.detail) })}
+            @change=${(e: CustomEvent) =>
+              this._patch({ briefing_interval_minutes: Number(e.detail) })}
           ></md3-number-input>
         </div>
         <div class="field-row">
@@ -186,9 +189,11 @@ export class GmSettingsPanel extends LitElement {
           <config-entity-multi-select
             data-field="briefing_trigger_entities"
             label="Trigger Entities"
+            .hass=${this.hass}
             .values=${d.briefing_trigger_entities ?? []}
             .options=${entityOptions}
-            @entity-values-changed=${(e: CustomEvent) => this._patch({ briefing_trigger_entities: e.detail.values ?? [] })}
+            @entity-values-changed=${(e: CustomEvent) =>
+              this._patch({ briefing_trigger_entities: e.detail.values ?? [] })}
           ></config-entity-multi-select>
         </div>
       </div>

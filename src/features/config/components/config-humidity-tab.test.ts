@@ -1,10 +1,14 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import './config-humidity-tab';
 import type { ConfigHumidityTab } from './config-humidity-tab';
-import type {
-  HumidityTabViewModel,
-  HumidityStageVM,
-} from '../viewmodels/humidity-tab.viewmodel';
+import type { HumidityTabViewModel, HumidityStageVM } from '../viewmodels/humidity-tab.viewmodel';
+import {
+  hassWithEntities,
+  mountWithHass,
+  pickEntity,
+} from '../../../../tests/harness/entity-picker';
+
+const HASS = hassWithEntities({ 'switch.new': 'Humidifier Plug' });
 
 function stage(over: Partial<HumidityStageVM> = {}): HumidityStageVM {
   return {
@@ -48,9 +52,7 @@ function makeVm(over: Partial<HumidityTabViewModel> = {}): HumidityTabViewModel 
 async function mount(vm: HumidityTabViewModel): Promise<ConfigHumidityTab> {
   const el = document.createElement('config-humidity-tab') as ConfigHumidityTab;
   el.vm = vm;
-  document.body.appendChild(el);
-  await el.updateComplete;
-  return el;
+  return mountWithHass(el, HASS);
 }
 
 function listen<T = unknown>(el: HTMLElement, type: string): T[] {
@@ -115,9 +117,7 @@ describe('ConfigHumidityTab — intents out', () => {
     const el = await mount(makeVm());
     const received = listen<{ partial: Record<string, unknown> }>(el, 'env-draft-changed');
     const picker = el.shadowRoot!.querySelector('config-entity-multi-select')!;
-    const input = picker.shadowRoot!.querySelector<HTMLInputElement>('input')!;
-    input.value = 'switch.new';
-    input.dispatchEvent(new Event('change'));
+    pickEntity(picker.shadowRoot!, 'switch.new');
     expect(received).toEqual([{ partial: { humidifierEntities: ['switch.new'] } }]);
   });
 
@@ -129,7 +129,9 @@ describe('ConfigHumidityTab — intents out', () => {
     );
     // First md3-number-input under the open stage = Dehumidifier / Day / On Above.
     const firstInput = el.shadowRoot!.querySelector('md3-number-input')!;
-    firstInput.dispatchEvent(new CustomEvent('change', { detail: '0.42', bubbles: true, composed: true }));
+    firstInput.dispatchEvent(
+      new CustomEvent('change', { detail: '0.42', bubbles: true, composed: true })
+    );
     expect(received).toEqual([{ stage: 'veg', cycle: 'day', point: 'on', value: 0.42 }]);
   });
 });

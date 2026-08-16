@@ -13,7 +13,7 @@ import type { AcInfinityGrowLight } from '../../../slices/growspace/schema';
 import { optionsWithCurrent } from './ac-infinity-device-editor';
 import { renderPortPicker, renderDuplicateWarning } from './ac-infinity-port-picker';
 import type { PortDeviceOption } from '../viewmodels/ac-infinity-port-resolver';
-import '../../shared/ui/md3-select';
+import '../../shared/ui/gm-entity-picker';
 import '../../shared/ui/md3-number-input';
 
 export interface GrowlightAcInfinityEditorProps {
@@ -98,54 +98,58 @@ export function renderGrowlightAcInfinityDevices(
               onPick: (deviceId) => p.onPickDevice?.(index, deviceId),
             })}
             <div style="margin-bottom:8px;">
-              <md3-select
+              <gm-entity-picker
                 label="Active Mode (select)"
                 .value=${device.mode_entity}
                 .options=${optionsWithCurrent(p.modeOptions, device.mode_entity)}
-                @change=${(e: CustomEvent<string>) => update(index, { mode_entity: e.detail })}
-              ></md3-select>
+                @entity-picked=${(e: CustomEvent<string>) =>
+                  update(index, { mode_entity: e.detail })}
+              ></gm-entity-picker>
               ${renderDuplicateWarning(p.duplicateWarnings?.[index])}
             </div>
             <div style="margin-bottom:8px;">
-              <md3-select
+              <gm-entity-picker
                 label="Lights-on time (time)"
                 .value=${device.on_time_entity}
                 .options=${optionsWithCurrent(p.timeOptions, device.on_time_entity)}
-                @change=${(e: CustomEvent<string>) => update(index, { on_time_entity: e.detail })}
-              ></md3-select>
+                @entity-picked=${(e: CustomEvent<string>) =>
+                  update(index, { on_time_entity: e.detail })}
+              ></gm-entity-picker>
             </div>
             <div style="margin-bottom:8px;">
-              <md3-select
+              <gm-entity-picker
                 label="Lights-off time (time)"
                 .value=${device.off_time_entity}
                 .options=${optionsWithCurrent(p.timeOptions, device.off_time_entity)}
-                @change=${(e: CustomEvent<string>) => update(index, { off_time_entity: e.detail })}
-              ></md3-select>
+                @entity-picked=${(e: CustomEvent<string>) =>
+                  update(index, { off_time_entity: e.detail })}
+              ></gm-entity-picker>
             </div>
             <div style="margin-bottom:8px;">
-              <md3-select
+              <gm-entity-picker
                 label="Power (number)"
                 .value=${device.power_entity}
                 .options=${optionsWithCurrent(p.numberOptions, device.power_entity)}
-                @change=${(e: CustomEvent<string>) => update(index, { power_entity: e.detail })}
-              ></md3-select>
+                @entity-picked=${(e: CustomEvent<string>) =>
+                  update(index, { power_entity: e.detail })}
+              ></gm-entity-picker>
             </div>
             <div style="margin-bottom:8px;">
-              <md3-select
+              <gm-entity-picker
                 label="Sunrise switch (optional)"
                 .value=${device.sunrise_switch_entity}
                 .options=${optionsWithCurrent(p.switchOptions, device.sunrise_switch_entity)}
-                @change=${(e: CustomEvent<string>) =>
+                @entity-picked=${(e: CustomEvent<string>) =>
                   update(index, { sunrise_switch_entity: e.detail })}
-              ></md3-select>
+              ></gm-entity-picker>
             </div>
-            <md3-select
+            <gm-entity-picker
               label="Sunrise duration (number, optional)"
               .value=${device.sunrise_duration_entity}
               .options=${optionsWithCurrent(p.numberOptions, device.sunrise_duration_entity)}
-              @change=${(e: CustomEvent<string>) =>
+              @entity-picked=${(e: CustomEvent<string>) =>
                 update(index, { sunrise_duration_entity: e.detail })}
-            ></md3-select>
+            ></gm-entity-picker>
           </div>
         `;
       })}

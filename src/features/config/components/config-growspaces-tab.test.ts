@@ -5,6 +5,13 @@ import type {
   GrowspaceDraft,
   GrowspacesTabViewModel,
 } from '../viewmodels/growspaces-tab.viewmodel';
+import {
+  hassWithEntities,
+  mountWithHass,
+  pickEntity,
+} from '../../../../tests/harness/entity-picker';
+
+const HASS = hassWithEntities({ 'sensor.lr': 'Lung Room Temperature' });
 
 const draft: GrowspaceDraft = { name: 'Tent 1', rows: 4, plantsPerRow: 4, notificationService: '' };
 const removalImpact = { sensorCount: 0, controllerCount: 0 };
@@ -24,9 +31,7 @@ function makeVm(over: Partial<GrowspacesTabViewModel> = {}): GrowspacesTabViewMo
 async function mount(vm: GrowspacesTabViewModel): Promise<ConfigGrowspacesTab> {
   const el = document.createElement('config-growspaces-tab') as ConfigGrowspacesTab;
   el.vm = vm;
-  document.body.appendChild(el);
-  await el.updateComplete;
-  return el;
+  return mountWithHass(el, HASS);
 }
 
 function listen<T = unknown>(el: HTMLElement, type: string): T[] {
@@ -145,12 +150,10 @@ describe('ConfigGrowspacesTab — intents out', () => {
     );
     expect(drafts).toEqual([{ partial: { name: 'Edited' } }]);
 
-    const lungroomPicker = el.shadowRoot!.querySelector(
-      'config-entity-multi-select[list-id="list-multi-lungroomTempSensors"]'
+    const lungroomPicker = [...el.shadowRoot!.querySelectorAll('config-entity-multi-select')].find(
+      (picker) => picker.label === 'Lung Room Temp Sensors'
     )!;
-    const lungroomInput = lungroomPicker.shadowRoot!.querySelector<HTMLInputElement>('input')!;
-    lungroomInput.value = 'sensor.lr';
-    lungroomInput.dispatchEvent(new Event('change'));
+    pickEntity(lungroomPicker.shadowRoot!, 'sensor.lr');
     expect(env).toEqual([{ partial: { lungroomTempSensors: ['sensor.lr'] } }]);
   });
 });

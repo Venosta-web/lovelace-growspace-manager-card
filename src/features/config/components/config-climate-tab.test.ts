@@ -11,6 +11,18 @@ import {
   FAN_VPD_STAGE_KEYS,
   FAN_VPD_STAGE_LABELS,
 } from '../../environment/constants';
+import {
+  hassWithEntities,
+  mountWithHass,
+  pickEntity,
+  pickerOptions,
+} from '../../../../tests/harness/entity-picker';
+
+const HASS = hassWithEntities({
+  'select.m': 'Grow Tent Port 1 Mode',
+  'select.new_mode': 'Grow Tent Port 2 Mode',
+  'number.port1_speed': 'Grow Tent Port 1 Speed',
+});
 
 const defaults = createInitialSM().environmentDraft;
 
@@ -81,9 +93,7 @@ function makeVm(over: Partial<ClimateTabViewModel> = {}): ClimateTabViewModel {
 async function mount(vm: ClimateTabViewModel): Promise<ConfigClimateTab> {
   const el = document.createElement('config-climate-tab') as ConfigClimateTab;
   el.vm = vm;
-  document.body.appendChild(el);
-  await el.updateComplete;
-  return el;
+  return mountWithHass(el, HASS);
 }
 
 function listenPartials(el: HTMLElement): Array<Partial<EnvironmentDraft>> {
@@ -510,21 +520,17 @@ describe('ConfigClimateTab — AC Infinity editor', () => {
     expect(partials[0].exhaustFanAcInfinityDevices).toEqual([]);
   });
 
-  it('renders the mode and speed pickers as md3-select, not free-text inputs', async () => {
+  it('renders the mode and speed pickers as entity pickers, not free-text inputs', async () => {
     const el = await mount(vmWithExhaustDevice());
     const card = el.shadowRoot!.querySelector('.ac-infinity-device')!;
-    const selects = card.querySelectorAll('md3-select');
-    expect(selects).toHaveLength(2);
+    expect(card.querySelectorAll('gm-entity-picker')).toHaveLength(2);
     expect(card.querySelector('input[list]')).toBeNull();
   });
 
   it('forwards a mode-picker change as an updated device bundle', async () => {
     const el = await mount(vmWithExhaustDevice());
     const partials = listenPartials(el);
-    const modeSelect = el.shadowRoot!.querySelector('.ac-infinity-device md3-select')!;
-    modeSelect.dispatchEvent(
-      new CustomEvent('change', { detail: 'select.new_mode', bubbles: true, composed: true })
-    );
+    pickEntity(el.shadowRoot!.querySelector('.ac-infinity-device')!, 'select.new_mode');
     expect(partials[0].exhaustFanAcInfinityDevices).toEqual([
       { mode_entity: 'select.new_mode', speed_entity: 'number.port1_speed', on_speed: 8 },
     ]);
@@ -542,8 +548,12 @@ describe('ConfigClimateTab — AC Infinity editor', () => {
         ],
       },
     });
-    const modeSelect = el.shadowRoot!.querySelector('.ac-infinity-device md3-select')!;
-    expect((modeSelect as unknown as { options: string[] }).options).toContain('select.legacy');
+    const card = el.shadowRoot!.querySelector('.ac-infinity-device')!;
+    expect(pickerOptions(card)).toContain('select.legacy');
+    const inner = card
+      .querySelector('gm-entity-picker')!
+      .shadowRoot!.querySelector('ha-entity-picker') as unknown as { value: string };
+    expect(inner.value).toBe('select.legacy');
   });
 
   it('renders the section title in normal flow, not absolutely positioned', async () => {

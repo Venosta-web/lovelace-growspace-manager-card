@@ -31,6 +31,7 @@ import {
   FAN_VPD_STAGE_LABELS,
 } from '../../environment/constants';
 import { TRIGGER_OPTIONS } from '../viewmodels/notifications-tab.viewmodel';
+import { hassWithEntities } from '../../../../tests/harness/entity-picker';
 
 const PHONE = { width: 390, height: 844 };
 /** Measured width of the dialog content pane at 390px, minus its 16px padding. */
@@ -273,8 +274,12 @@ async function mountTab(tag: string, vm: unknown, width = PANE_WIDTH): Promise<H
     updateComplete: Promise<unknown>;
   };
   el.vm = vm;
-  pane.appendChild(el);
+  const provider = document.createElement('test-hass-provider');
+  provider.hass = hassWithEntities({ [LONG_ENTITY]: 'North Flowering Room Substrate Probe 2' });
+  provider.appendChild(el);
+  pane.appendChild(provider);
   document.body.appendChild(pane);
+  await provider.updateComplete;
   await el.updateComplete;
   await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
   await el.updateComplete;
@@ -456,9 +461,10 @@ describe('entity chips', () => {
 
     for (const label of chipLabels) {
       expect(label.getAttribute('title')).toBe(LONG_ENTITY);
-      expect(getComputedStyle(label).textOverflow).toBe('ellipsis');
+      const id = label.querySelector('.chip-id')!;
+      expect(getComputedStyle(id).textOverflow).toBe('ellipsis');
       // Truncated rather than pushing the chip past its container.
-      expect(label.scrollWidth).toBeGreaterThan(label.clientWidth);
+      expect(id.scrollWidth).toBeGreaterThan(id.clientWidth);
     }
   });
 

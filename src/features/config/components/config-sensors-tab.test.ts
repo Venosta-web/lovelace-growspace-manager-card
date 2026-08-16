@@ -7,6 +7,21 @@ import type {
   SensorFieldKey,
 } from '../viewmodels/sensors-tab.viewmodel';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
+import {
+  hassWithEntities,
+  mountWithHass,
+  pickEntity,
+  pickerOptions,
+} from '../../../../tests/harness/entity-picker';
+
+const HASS = hassWithEntities({
+  'sensor.a': 'Tent A Temperature',
+  'sensor.b': 'Tent B Temperature',
+  'sensor.co2_a': 'CO2 A',
+  'sensor.co2_b': 'CO2 B',
+  'sensor.new': 'New Sensor',
+  'sensor.soil_x': 'Soil X',
+});
 
 function field(key: SensorFieldKey, over: Partial<SensorFieldVM> = {}): SensorFieldVM {
   const multi = over.multi ?? key.endsWith('Sensors');
@@ -40,9 +55,7 @@ function makeVm(over: Partial<SensorsTabViewModel> = {}): SensorsTabViewModel {
 async function mount(vm: SensorsTabViewModel): Promise<ConfigSensorsTab> {
   const el = document.createElement('config-sensors-tab') as ConfigSensorsTab;
   el.vm = vm;
-  document.body.appendChild(el);
-  await el.updateComplete;
-  return el;
+  return mountWithHass(el, HASS);
 }
 
 function listenPartials(el: HTMLElement): Array<Partial<EnvironmentDraft>> {
@@ -86,8 +99,8 @@ describe('ConfigSensorsTab — render', () => {
         ),
       })
     );
-    const opts = el.shadowRoot!.querySelectorAll('#list-co2Sensor option');
-    expect(opts.length).toBe(2);
+    const co2 = el.shadowRoot!.querySelectorAll('.entity-select-container')[1];
+    expect(pickerOptions(co2)).toEqual(['sensor.co2_a', 'sensor.co2_b']);
   });
 
   it('renders the LST section only when present in the VM', async () => {
@@ -104,9 +117,7 @@ describe('ConfigSensorsTab — intents out', () => {
     const el = await mount(makeVm());
     const received = listenPartials(el);
     const picker = el.shadowRoot!.querySelector('config-entity-multi-select')!;
-    const input = picker.shadowRoot!.querySelector<HTMLInputElement>('input')!;
-    input.value = 'sensor.new';
-    input.dispatchEvent(new Event('change'));
+    pickEntity(picker.shadowRoot!, 'sensor.new');
     expect(received).toEqual([{ temperatureSensors: ['sensor.new'] }]);
   });
 
@@ -132,11 +143,7 @@ describe('ConfigSensorsTab — intents out', () => {
   it('emits env-draft-changed for a single-select entity change', async () => {
     const el = await mount(makeVm());
     const received = listenPartials(el);
-    const input = el.shadowRoot!.querySelector<HTMLInputElement>(
-      '.entity-select-container input.md3-input'
-    )!;
-    input.value = 'sensor.soil_x';
-    input.dispatchEvent(new Event('change'));
+    pickEntity(el.shadowRoot!, 'sensor.soil_x');
     expect(received).toEqual([{ soilMoistureSensor: 'sensor.soil_x' }]);
   });
 
