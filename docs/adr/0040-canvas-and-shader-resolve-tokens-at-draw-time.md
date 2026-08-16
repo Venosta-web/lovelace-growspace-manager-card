@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-08-16
-- Issue: #581 (decision)
+- Issue: #581 (decision), #639/#640/#641 (the migrations that apply it)
 - Related: ADR 0035 (binding-context sorting, §5 derivation rejected for the series palette), ADR 0036 (portal token scope), ADR 0039 (§2 the scene reads the generated `token` map, §4 `--gm-warning-color` deprecated), #576 (needs the accepted-exception list to define its zero), #577 (established that SVG attributes are *not* affected)
 
 ## Context
@@ -282,11 +282,19 @@ assertion, AC #3 rests on an untested assumption about `hass` propagation.
 ### 11. Landing order
 
 ```
-this ADR + DESIGN.md + descriptor + --gm-info-deep + audit script
-  ├▶ vpd-heatmap canvas          (pixel-testable)
-  ├▶ vpd-cloud-renderer + heatmap-3d legend  (colour-space conversion, no pixel test)
-  └▶ tank-renderer pair          (visible colour change + color-mix rewrite)
+this ADR + DESIGN.md                          (#638)
+  └▶ #639  vpd-heatmap canvas                 (pixel-testable)
+       │   — carries the descriptor, --gm-info-deep and the audit script's gpu bucket
+       ├▶ #640  vpd-cloud-renderer + heatmap-3d legend
+       │        (colour-space conversion, no pixel test)
+       └▶ #641  tank-renderer pair
+                (visible colour change + color-mix rewrite)
 ```
+
+The foundation is not its own slice. The descriptor, the token and the audit bucket
+land inside #639, because on their own they are a layer with nothing demonstrating
+them — #639 is the thin path that proves the mechanism end to end, and #640 and #641
+then reuse it.
 
 Off fresh `dev`, not stacked. The three migrations carry genuinely different risk, and
 reviewed together the visual regressions hide behind the plumbing.
