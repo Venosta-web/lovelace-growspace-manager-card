@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
 import { TankRenderer } from '../../../../../src/utils/three/renderers/tank-renderer';
+import { resolveRamp } from '../../../../../src/styles/environment-ramp';
 
 // --- Mocks ---
 vi.mock('three', async () => {
@@ -240,8 +241,11 @@ describe('TankRenderer', () => {
 
         renderer.render();
 
-        // isWarning = true => hex #f44336 => int 0xff4422 (from code lines 38-39)
-        expect(liquidMock.material.color.set).toHaveBeenCalledWith(0xff4422);
+        // This assertion used to read "hex #f44336 => int 0xff4422", which is the
+        // conflation ADR 0040 §7 exists to fix: the label said #f44336, the mesh said
+        // 0xff4422, and they were never the same colour. The mesh now takes the
+        // resolved ramp stop the label references.
+        expect(liquidMock.material.color.set).toHaveBeenCalledWith(resolveRamp(null).farHigh);
 
         GroupMock.mockImplementation(originalImpl);
     });
