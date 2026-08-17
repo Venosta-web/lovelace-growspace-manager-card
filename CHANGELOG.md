@@ -1,3 +1,10 @@
+# [1.1.0-next.151](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.150...v1.1.0-next.151) (2026-08-17)
+
+
+### Bug Fixes
+
+* **environment:** optimistically patch device state on humidity control toggle ([#668](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/668)) ([118a65c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/118a65cbded31cc5364ccde78dace487693bb38b))
+
 # [1.1.0-next.150](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.149...v1.1.0-next.150) (2026-08-17)
 
 
