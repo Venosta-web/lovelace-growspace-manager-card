@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as hassCallModule from '../../services/hass-call';
-import type { GrowspaceDevice } from '../../services/types';
+import { createGrowspaceDevice, type GrowspaceDevice } from '../../services/types';
+import { devices$ } from '../grid';
 import {
   growspaceDevices$,
   getGrowspaceDevices,
@@ -29,6 +30,7 @@ vi.mock('../../services/hass-call', () => ({
 
 beforeEach(() => {
   growspaceDevices$.set(null);
+  devices$.set([]);
   vi.clearAllMocks();
 });
 
@@ -330,6 +332,23 @@ describe('setDehumidifierControl', () => {
       { growspace_id: 'gs1', enabled: true }
     );
   });
+
+  it('optimistically patches the device the config dialog reseeds from, so a reopen does not race the backend push', async () => {
+    devices$.set([createGrowspaceDevice({ deviceId: 'gs1', name: 'Tent 1' })]);
+
+    await setDehumidifierControl('gs1', true);
+
+    expect(devices$.get()[0].environmentAttributes.dehumidifierControlEnabled).toBe(true);
+  });
+
+  it('rolls the optimistic patch back if the service call fails', async () => {
+    devices$.set([createGrowspaceDevice({ deviceId: 'gs1', name: 'Tent 1' })]);
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('boom'));
+
+    await expect(setDehumidifierControl('gs1', true)).rejects.toThrow('boom');
+
+    expect(devices$.get()[0].environmentAttributes.dehumidifierControlEnabled).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -345,6 +364,23 @@ describe('setHumidifierControl', () => {
       'set_humidifier_control',
       { growspace_id: 'gs1', enabled: true }
     );
+  });
+
+  it('optimistically patches the device the config dialog reseeds from, so a reopen does not race the backend push', async () => {
+    devices$.set([createGrowspaceDevice({ deviceId: 'gs1', name: 'Tent 1' })]);
+
+    await setHumidifierControl('gs1', true);
+
+    expect(devices$.get()[0].environmentAttributes.humidifierControlEnabled).toBe(true);
+  });
+
+  it('rolls the optimistic patch back if the service call fails', async () => {
+    devices$.set([createGrowspaceDevice({ deviceId: 'gs1', name: 'Tent 1' })]);
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('boom'));
+
+    await expect(setHumidifierControl('gs1', true)).rejects.toThrow('boom');
+
+    expect(devices$.get()[0].environmentAttributes.humidifierControlEnabled).toBe(false);
   });
 });
 

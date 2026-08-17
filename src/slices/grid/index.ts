@@ -15,10 +15,13 @@
  * Public API (bootstrap writes):
  *   setDevices()              — replace the devices array (called by SyncService)
  *
- * Public API (sibling setters — called by Plant slice cross-slice mutations):
- *   addOptimisticDeletedPlantId()    — mark a plant as optimistically removed from the grid
- *   removeOptimisticDeletedPlantId() — restore a plant after a failed mutation inverse
- *   clearOptimisticDeletedPlantIds() — reset all optimistic deletes (called after a sync)
+ * Public API (sibling setters — called by Plant/Irrigation/Growspace slice cross-slice mutations):
+ *   addOptimisticDeletedPlantId()      — mark a plant as optimistically removed from the grid
+ *   removeOptimisticDeletedPlantId()   — restore a plant after a failed mutation inverse
+ *   clearOptimisticDeletedPlantIds()   — reset all optimistic deletes (called after a sync)
+ *   patchDeviceIrrigationConfig()      — patch one device's irrigationConfig
+ *   patchDeviceStrategy()              — patch one device's irrigationStrategy
+ *   patchDeviceEnvironmentAttributes() — patch one device's environmentAttributes
  *
  * Action type, payload shapes, and zod schemas are private to this module.
  * Cross-slice side-effects from the Plant slice are accepted via the sibling setters above.
@@ -26,7 +29,7 @@
 
 import { atom, computed, type ReadableAtom, type WritableAtom } from 'nanostores';
 import type { GrowspaceDevice, PlantEntity } from '../../types';
-import type { IrrigationConfig, IrrigationStrategy } from '../../services/types';
+import type { EnvironmentAttributes, IrrigationConfig, IrrigationStrategy } from '../../services/types';
 import { PlantUtils } from '../../utils/plant-utils';
 
 // ---------------------------------------------------------------------------
@@ -185,6 +188,26 @@ export function patchDeviceStrategy(
             irrigationStrategy: { ...(d.irrigationStrategy ?? {}), ...patch } as IrrigationStrategy,
           }
         : d
+    )
+  );
+}
+
+/**
+ * Patch a single device's environmentAttributes in place.
+ * Lets immediate-persist environment controls (humidifier/dehumidifier control
+ * enable) reflect on the device the config dialog reads optimistically, rather
+ * than waiting for a full device sync to round-trip through hass.
+ */
+export function patchDeviceEnvironmentAttributes(
+  growspaceId: string,
+  patch: Partial<EnvironmentAttributes>
+): void {
+  const current = devices$.get();
+  const idx = current.findIndex((d) => d.deviceId === growspaceId);
+  if (idx === -1) return;
+  devices$.set(
+    current.map((d, i) =>
+      i === idx ? { ...d, environmentAttributes: { ...d.environmentAttributes, ...patch } } : d
     )
   );
 }
