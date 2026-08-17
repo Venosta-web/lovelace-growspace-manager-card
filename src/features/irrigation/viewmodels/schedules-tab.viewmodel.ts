@@ -27,6 +27,7 @@
  */
 
 import { computed, type ReadableAtom } from 'nanostores';
+import { token } from '../../../styles/variables.generated';
 import type { GrowspaceDevice, IrrigationStrategy, IrrigationTime } from '../../../services/types';
 import type { CropSteeringHistory } from '../../../schemas/api-schema';
 import type { DialogSM, SchedulesSubState } from '../../../dialogs/irrigation-dialog-sm';
@@ -190,7 +191,9 @@ export function createSchedulesTabViewModel(
       ? {
           type: 'drain' as const,
           title: 'Drain Schedule',
-          color: '#FF9800',
+          // Six-digit hex through the token map, not var(): the tab concatenates
+          // `40`, `99` and `55` onto this (ADR 0045 §1).
+          color: token['--metric-drain'],
           defaultDuration: draft.drainDuration,
           times: deriveTimes(drainTimes, draft.drainDuration),
         }
@@ -204,9 +207,7 @@ export function createSchedulesTabViewModel(
         : {
             type: 'irrigation' as const,
             title: 'Irrigation Schedule',
-            // The dialog's stage color is the fixed `#2196F3` the former render
-            // passed through (`dialogColor`), so the VM carries it directly.
-            color: '#2196F3',
+            color: token['--metric-irrigation'],
             defaultDuration: draft.irrigationDuration,
             times: deriveTimes(irrigationTimes, draft.irrigationDuration),
           },

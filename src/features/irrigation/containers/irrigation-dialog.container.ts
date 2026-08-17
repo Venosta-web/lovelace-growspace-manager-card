@@ -1315,7 +1315,10 @@ export class IrrigationDialog extends LitElement {
   protected render() {
     if (!this.open) return nothing;
 
-    const dialogColor = '#2196F3';
+    // Dialog chrome, not data: the same role print-label and batch-print pass as
+    // their stageColor. No consumer concatenates onto it, so var() is safe here
+    // where the schedule sections need the token map (ADR 0045 §1).
+    const dialogColor = 'var(--gm-info-color)';
     const visible = this._visibleTabs;
     const tankCount = this.device?.environmentAttributes?.irrigationTanks?.length ?? 0;
 

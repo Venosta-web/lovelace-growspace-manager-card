@@ -957,7 +957,7 @@ export class CropSteeringDayChart extends LitElement {
                 const leftPct = pctAt(startMin);
                 const widthPct = (shot.duration / 86400) * 100;
                 const isPast = startMin < nowMinutes;
-                const shotColor = '#2196F3';
+                const shotColor = METRIC_CONFIG[MetricKey.IRRIGATION].color;
                 return html`
                   <div
                     class="cs-event ${isPast ? 'completed' : ''}"
