@@ -7,7 +7,12 @@ import { HeaderChip } from '../../../slices/header-metrics';
 import { metricHistoryKeys } from '../../../slices/metric-descriptors';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { statusTokens } from '../../../styles/status.styles';
-import { MetricKey, STATUS_CUES, toStatusLevel } from '../../../features/environment/constants';
+import {
+  METRIC_CONFIG,
+  MetricKey,
+  STATUS_CUES,
+  toStatusLevel,
+} from '../../../features/environment/constants';
 import { computePhases } from '../../../features/environment/crop-steering-model';
 import type { IrrigationStrategy, IrrigationConfig } from '../../../services/types';
 import type { RawHistoryDataPoint } from '../../../adapters/hass-types';
@@ -1007,7 +1012,9 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
     const CHART_W = 300;
     const CHART_H = 68;
-    const CS = '#26c6da'; // crop-steering teal
+    // The same VWC series crop-steering-day-chart plots, read through the same
+    // descriptor so the two charts cannot drift apart again (ADR 0045 §3).
+    const CS = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
 
     const targetVwc = strategy.targetVwcPercent;
     const triggerVwc = targetVwc - strategy.maintenanceDrybackPercent;

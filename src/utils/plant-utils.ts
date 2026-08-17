@@ -56,7 +56,7 @@ export class PlantUtils {
 
   static getPlantStageColor(state: PlantStage | string | undefined | null): string {
     const key = this.normalizeStage(state);
-    return this.stageColors[key] ?? '#757575';
+    return this.stageColors[key] ?? 'var(--stage-unknown, #757575)';
   }
 
   static encodeLocalPath(path: string): string {

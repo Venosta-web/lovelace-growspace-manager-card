@@ -307,7 +307,7 @@ export class SnapshotsDialog extends LitElement {
       low: 'var(--success-color, #4caf50)',
       medium: 'var(--warning-color, #ff9800)',
       high: 'var(--error-color, #f44336)',
-      critical: '#b71c1c',
+      critical: 'var(--severity-critical, #b71c1c)',
     };
     const r = this._selectedResult;
     return html`

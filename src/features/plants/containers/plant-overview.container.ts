@@ -644,7 +644,7 @@ export class PlantOverviewContainer extends LitElement {
               font-size: 0.7rem; line-height: 1.3;
               background: ${isCurrentStage ? 'rgba(255,152,0,0.15)' : 'transparent'};
               color: ${isCurrentStage
-                ? '#ffb74d'
+                ? 'var(--on-current-stage-chip, #ffb74d)'
                 : isDone
                   ? 'rgba(255,255,255,0.6)'
                   : 'rgba(255,255,255,0.25)'};
