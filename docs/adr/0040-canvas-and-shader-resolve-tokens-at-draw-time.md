@@ -89,8 +89,24 @@ this is the only option that does not revert landed work.
 `getComputedStyle(host).getPropertyValue('--gm-info-color')` returns the substituted
 token stream: usable, but whitespace-padded and in whatever syntax the theme author
 wrote (`orange`, `#f80`, `rgb(...)`). A hidden probe element carrying
-`color: var(--gm-info-color)`, read as `getComputedStyle(probe).color`, always
-normalises to `rgb()`.
+`color: var(--gm-info-color)`, read as `getComputedStyle(probe).color`, computes the
+value rather than echoing the syntax it was written in.
+
+**Corrected after measurement: `color` does not *always* normalise to `rgb()`.** It
+does for the cases this section was written against — measured in this repo's Chromium
+harness, `orange` computes to `rgb(255, 165, 0)`, `#f80` to `rgb(255, 136, 0)`, and a
+plain `var()` reference to the theme's own `rgb()`. But a `color-mix()` keeps its
+mixing space: `color-mix(in srgb, magenta 62%, black)` computes to
+`color(srgb 0.62 0 0.62)`, and the `in oklab` form to `oklab(0.435 0.170 -0.105)`.
+Assigning either to `fillStyle` and reading it back returns it unchanged, so read-back
+is not a normaliser either. Stop 1 is derived (§6), so this is not hypothetical — it is
+the one stop in the ramp that hits it.
+
+The resolver therefore forces every stop through a module-scoped 1×1 canvas — paint,
+`getImageData`, re-emit as `rgb(r, g, b)` — short-circuiting the four stops that
+already arrive in that form. `normalizeColor` in `src/styles/environment-ramp.ts` is
+that function. It is exported rather than private because §5's shader needs the same
+guarantee on both halves of its pair.
 
 Normalisation is not cosmetic. It is what makes decision 10's test possible at all:
 `getImageData` returns bytes, and only a normalised form puts both halves of the
@@ -212,15 +228,23 @@ Three consequences of that table are visible colour changes, and all are deliber
   a ramp, and the stop is a 6px sliver of a gradient nobody reads as an exact colour.
   The value changes; that is the price and it is recorded here rather than papered over.
 
-  **`in srgb`, not `in oklab`, and the reason is decision 5.** Mixing in oklab lands
-  closer (69% → `#105994`, ~22 units) and would be the better choice for a CSS-only
-  token. But a computed `color` whose value is a non-sRGB `color-mix` serialises as
-  `oklab(…)`, and `THREE.Color.setStyle` in the pinned three r184 parses only hex,
-  named colours, `rgb`/`rgba` and `hsl`/`hsla` — see
-  `node_modules/three/src/math/Color.js:286`. It would leave the colour unchanged and
-  warn, putting the shader's deep stop out of step with the legend's: a new asymmetry
-  *inside* the pair this ADR exists to close. Three units of accuracy is a cheap price
-  for the ramp resolving through one syntax everywhere.
+  **`in srgb`, not `in oklab` — and the original reason for that was wrong.** As
+  written, this paragraph argued that a non-sRGB `color-mix` serialises as `oklab(…)`
+  while `THREE.Color.setStyle` in the pinned three r184 parses only hex, named colours,
+  `rgb`/`rgba` and `hsl`/`hsla` (`setStyle` at
+  `node_modules/three/src/math/Color.js:286`, matching `/^(\w+)\(/` and switching on
+  those four names). Both of those facts hold. **The inference from them does not:
+  `in srgb` is no more parseable than `in oklab`** — it computes to
+  `color(srgb 0.62 0 0.62)`, which `setStyle` rejects for exactly the same reason.
+  Parseability never distinguished the two mixing spaces, so it cannot have chosen
+  between them, and §2's `normalizeColor` now hands both the same `rgb()` guarantee.
+
+  **The decision stands, on a different footing: `#145d97` has shipped.** Slice #639
+  landed it, and oklab's ~3 units of extra accuracy do not pay for moving a live colour
+  a second time. Changing a value because its rationale moved is a new decision rather
+  than a correction, and it is not made here. Note that this leaves the mixing space
+  invisible to §5 — whatever the resolver hands the shader is already `rgb()` — which is
+  precisely why there is no longer anything to gain by switching it.
 
 ### 7. `tank-renderer`'s label wins, and its alpha suffix becomes `color-mix`
 
