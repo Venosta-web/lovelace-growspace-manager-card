@@ -1,3 +1,10 @@
+# [1.1.0-next.147](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.146...v1.1.0-next.147) (2026-08-17)
+
+
+### Bug Fixes
+
+* **arrange:** convert plant layout positions at the backend seam ([#662](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/662)) ([5c44faa](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/5c44faa2fdf7275699d72472a7265ddb2c14b59f))
+
 # [1.1.0-next.146](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.145...v1.1.0-next.146) (2026-08-17)
 
 
