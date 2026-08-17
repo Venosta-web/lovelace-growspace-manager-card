@@ -1,3 +1,10 @@
+# [1.1.0-next.146](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.145...v1.1.0-next.146) (2026-08-17)
+
+
+### Bug Fixes
+
+* **design:** decide and migrate the colour roles the palettes could not answer ([#661](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/661)) ([898cb4d](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/898cb4d4337e9df99a91a912a73b58d91447ccfd)), closes [#634](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/634) [#hex](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/hex) [#555](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/555) [#555555](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/555555) [#4caf50](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/4caf50) [#4caf50](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/4caf50) [#639](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/639) [#639](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/639) [#4caf50](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/4caf50) [#2196f3](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/2196f3) [#03a9f4](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/03a9f4) [#2196F3](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/2196F3) [#26c6da](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/26c6da)
+
 # [1.1.0-next.145](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.144...v1.1.0-next.145) (2026-08-17)
 
 
