@@ -547,7 +547,7 @@ export function computeHeaderMetrics(
       icon: PlantUtils.getPlantStageIcon(dominantRaw.stage),
       daysLabel: `${dominantRaw.days} Day${dominantRaw.days !== 1 ? 's' : ''} ${stageName}`,
       weeksLabel: `${weeks} Week${weeks !== 1 ? 's' : ''} ${stageName}`,
-      color: STAGE_COLORS[dominantRaw.stage] ?? '#4caf50',
+      color: STAGE_COLORS[dominantRaw.stage] ?? 'var(--stage-unknown, #757575)',
     };
   }
 

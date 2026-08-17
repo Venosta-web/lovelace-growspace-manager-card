@@ -1159,7 +1159,7 @@ export class StrainEditorView extends LitElement {
                   <button
                     title="${img.is_thumbnail ? 'Thumbnail' : 'Set as thumbnail'}"
                     style="background:rgba(0,0,0,0.6); border:none; padding:3px; border-radius:50%; cursor:pointer; color:${img.is_thumbnail
-                      ? '#ffc107'
+                      ? 'var(--primary-color, #4caf50)'
                       : 'white'};"
                     @click=${(e: Event) => {
                       e.stopPropagation();

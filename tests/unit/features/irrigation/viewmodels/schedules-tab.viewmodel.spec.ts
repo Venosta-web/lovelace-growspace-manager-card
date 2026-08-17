@@ -17,6 +17,7 @@ import {
   type DialogSM,
 } from '../../../../../src/dialogs/irrigation-dialog-sm';
 import { createSchedulesTabViewModel } from '../../../../../src/features/irrigation/viewmodels/schedules-tab.viewmodel';
+import { token } from '../../../../../src/styles/variables.generated';
 
 function device(overrides: Partial<GrowspaceDevice> = {}): GrowspaceDevice {
   return {
@@ -70,7 +71,7 @@ describe('createSchedulesTabViewModel — manual mode', () => {
       },
     } as unknown as Partial<GrowspaceDevice>);
     const vm = build(createInitialSM(dev), dev);
-    expect(vm.irrigationSection!.color).toBe('#2196F3');
+    expect(vm.irrigationSection!.color).toBe(token['--metric-irrigation']);
     expect(vm.irrigationSection!.times).toEqual([
       { timeStr: '08:30:00', startMin: 510, durationSeconds: 45 },
       { timeStr: '20:00:00', startMin: 1200, durationSeconds: 60 },
@@ -96,7 +97,7 @@ describe('createSchedulesTabViewModel — manual mode', () => {
     } as unknown as Partial<GrowspaceDevice>);
     const vm = build(createInitialSM(dev), dev);
     expect(vm.drainSection).not.toBeNull();
-    expect(vm.drainSection!.color).toBe('#FF9800');
+    expect(vm.drainSection!.color).toBe(token['--metric-drain']);
     expect(vm.drainSection!.defaultDuration).toBe(90);
     expect(vm.drainSection!.times).toEqual([
       { timeStr: '09:00:00', startMin: 540, durationSeconds: 120 },

@@ -778,6 +778,29 @@ export const groups: TokenGroup[] = [
       { css: '--sex-hermaphrodite', value: '#ff9800', doc: 'colors.sex-hermaphrodite' },
     ],
   },
+  {
+    title: 'Roles With No Group — ADR 0045',
+    tokens: [
+      {
+        css: '--stage-unknown',
+        value: '#757575',
+        doc: 'colors.stage-unknown',
+        note: 'The `?? fallback` arm of a stage lookup, for a stage the card does not recognise. ADR 0038 documents the mapped stages; this is what an unmapped one falls back to. Grey rather than a hue for the same reason --metric-unknown and --gen-unknown are: header-metrics used to fall back to the veg green, so an unrecognised stage rendered as a recognised one.',
+      },
+      {
+        css: '--severity-critical',
+        value: '#b71c1c',
+        doc: 'colors.severity-critical',
+        note: 'Red 900, the tier above --error-color on the vision checkup severity ramp (none/low/medium/high/critical). Deliberately not --error-dark, whose note already binds it to the danger gradient stop and the destructive-button pressed state — a severity tier and a pressed state would have to move together for no reason.',
+      },
+      {
+        css: '--on-current-stage-chip',
+        value: '#ffb74d',
+        doc: 'colors.on-current-stage-chip',
+        note: 'Orange 300, the label on the current-stage chip in the plant overview, over its own rgba(255,152,0,0.15) ground. Named for "current" rather than for the flowering stage because the ground is that orange whichever stage is current. Unlike --on-primary-container-bright this is not a contrast rescue: --stage-flower measures 5.88:1 there and already passes AA. The brightening buys 7.33:1 at 0.7rem, which is why the value is kept rather than folded.',
+      },
+    ],
+  },
 ];
 
 function step(
