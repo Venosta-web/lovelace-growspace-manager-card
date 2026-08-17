@@ -14,6 +14,7 @@ build/
 
 # Local env files
 .env
+tests/e2e/.env.test
 ha-login-debug.png
 ha-login-debug.html
 ha-auth.json

@@ -47,6 +47,25 @@ not jsdom, and include **pixelmatch screenshot tests** — rendering changes can
 snapshots. Tests are picked up from `tests/{unit,cards,components}/` and co-located
 `src/**/*.{test,spec}.ts`.
 
+### Fresh workspace setup
+
+A fresh clone (or a fresh container hosting one, e.g. Home Assistant core's devcontainer
+with this repo cloned in as a sibling folder) has neither `node_modules` nor its git hooks
+wired up:
+
+```bash
+npm ci                               # required before lint/test/build work at all
+prek install                         # or: pre-commit install
+prek install --hook-type commit-msg  # not installed by the plain form above, despite
+                                      # default_install_hook_types in .pre-commit-config.yaml
+```
+
+Unlike `growspace_manager`'s single shared `.venv`, there is **no shared `node_modules`
+across `.worktrees/<branch>` checkouts** here — each worktree needs its own `npm ci`. A
+symlinked/shared `node_modules` was considered and rejected: hoisting and peer-dep
+resolution can drift between branches, and that class of bug is worse than a few minutes
+of install time per worktree.
+
 ## Architecture
 
 Entry point `src/index.ts` registers all 8 cards in `window.customCards` and logs
