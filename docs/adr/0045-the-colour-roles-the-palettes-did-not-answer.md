@@ -71,7 +71,13 @@ stage color is the fixed `#2196F3` the former render passed through". Drain does
 `40`, `99` and `55` onto the section colour, so those three sites must be a six-digit hex
 reached through the `token` map — `var(--metric-irrigation)40` is not a colour, and the
 band would lose its fill while its label kept rendering. Nothing concatenates onto
-`dialogColor`, so it takes `var()` and stays theme-following. `phase-token-suffix.test.ts`
+`dialogColor`, so it takes `var()` and stays theme-following — **with a fallback**, which
+the pixelmatch suite proved is load-bearing. `irrigation-overview-tab.visual.test.ts`
+mounts `<irrigation-dialog>` bare, outside the portal host that declares the token, and a
+bare `var(--gm-info-color)` there resolved to nothing: the save button lost its fill and
+the active nav item its accent, while everything else rendered. The other dialogs pass
+the bare form (`print-label-dialog.ts:532`, `batch-print-label-dialog.ts:227`) and are
+scope-dependent in the same way; they are simply not mounted bare by any test. `phase-token-suffix.test.ts`
 now covers `--metric-irrigation` and `--metric-drain` alongside the phase family; the
 audit cannot see any of it, because the concatenating sites hold no literal of their own.
 
