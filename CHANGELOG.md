@@ -1,3 +1,10 @@
+# [1.1.0-next.150](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.149...v1.1.0-next.150) (2026-08-17)
+
+
+### Bug Fixes
+
+* **environment:** make the 3D tank's liquid and label resolve to one colour ([#641](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/641)) ([#667](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/667)) ([0ebb4fc](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/0ebb4fc3caa92f1498b43c28fd2b284d9ec82f53)), closes [#640](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/640) [#639](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/639) [#f44336](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/f44336) [#2196f3](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/2196f3) [#hex](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/hex)
+
 # [1.1.0-next.149](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.148...v1.1.0-next.149) (2026-08-17)
 
 
