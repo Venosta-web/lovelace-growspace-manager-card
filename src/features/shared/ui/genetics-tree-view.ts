@@ -36,17 +36,17 @@ import {
 } from './genetics-tree-view-sm';
 
 const GEN_COLORS: Record<string, string> = {
-  P1: '#9e9e9e',
-  F1: '#4caf50',
-  F2: '#8bc34a',
-  BX1: '#ff9800',
-  BX2: '#f57c00',
-  S1: '#2196f3',
-  CL: '#e91e63',
+  P1: 'var(--gen-p1, #9e9e9e)',
+  F1: 'var(--gen-f1, #4caf50)',
+  F2: 'var(--gen-f2, #8bc34a)',
+  BX1: 'var(--gen-bx1, #ff9800)',
+  BX2: 'var(--gen-bx2, #f57c00)',
+  S1: 'var(--gen-s1, #2196f3)',
+  CL: 'var(--gen-cl, #e91e63)',
 };
 
 function genColor(gen: string): string {
-  return GEN_COLORS[gen] ?? '#555';
+  return GEN_COLORS[gen] ?? 'var(--gen-unknown, #555555)';
 }
 
 @customElement('genetics-tree-view')
@@ -993,11 +993,11 @@ export class GeneticsTreeView extends LitElement {
           const isAnc = anc.has(p.id);
           const isDesc = desc.has(p.id);
           const fill = isFocal
-            ? '#4caf50'
+            ? 'var(--lineage-focal, #4caf50)'
             : isAnc
-              ? '#ff9800'
+              ? 'var(--lineage-ancestor, #ff9800)'
               : isDesc
-                ? '#2196f3'
+                ? 'var(--lineage-descendant, #2196f3)'
                 : genColor(p.gen);
           return svg`<rect
             x="${pos.x - 1.5}" y="${pos.y - 0.7}"
@@ -1011,7 +1011,7 @@ export class GeneticsTreeView extends LitElement {
           width="${Math.max(2, Math.min(MM_W, vpX + vpW) - Math.max(0, vpX))}"
           height="${Math.max(2, Math.min(MM_H, vpY + vpH) - Math.max(0, vpY))}"
           fill="none"
-          stroke="#4caf50"
+          stroke="var(--gv-primary, #4caf50)"
           stroke-width="1.5"
           rx="2"
         />

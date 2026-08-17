@@ -23,11 +23,11 @@ import { dialogStyles } from '../../../styles/dialog.styles';
 
 const TYPE_COLOR: Record<NutrientStockType, string> = {
   base: 'var(--primary-color, #4caf50)',
-  bloom: '#e91e63',
-  calmag: '#ff9800',
-  root: '#795548',
-  additive: '#9c27b0',
-  microbe: '#00bcd4',
+  bloom: 'var(--nutrient-bloom, #e91e63)',
+  calmag: 'var(--nutrient-calmag, #ff9800)',
+  root: 'var(--nutrient-root, #795548)',
+  additive: 'var(--nutrient-additive, #9c27b0)',
+  microbe: 'var(--nutrient-microbe, #00bcd4)',
 };
 
 const TYPE_ICON: Record<NutrientStockType, string> = {
@@ -104,7 +104,12 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         background: rgba(255, 255, 255, 0.08);
       }
 
+      /* Mixed here rather than by concatenating an alpha suffix onto the colour in the
+         template: the type colours are var() references, and
+         'var(--nutrient-bloom, #e91e63)22' is not a colour. */
       .type-icon {
+        background: color-mix(in srgb, var(--stock-c, var(--primary-color, #4caf50)) 13%, transparent);
+        color: var(--stock-c, var(--primary-color, #4caf50));
         width: 36px;
         height: 36px;
         border-radius: var(--border-radius-md, 12px);
@@ -461,7 +466,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         data-stock-id=${stock.nutrient_id}
         @click=${() => this._dispatch({ type: 'ItemSelected', id: stock.nutrient_id })}
       >
-        <div class="type-icon" style="background:${color}22;color:${color}">
+        <div class="type-icon" style="--stock-c:${color}">
           <ha-svg-icon .path=${icon} style="width:20px;height:20px;fill:currentColor"></ha-svg-icon>
         </div>
         <div class="item-body">

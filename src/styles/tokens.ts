@@ -719,6 +719,65 @@ export const groups: TokenGroup[] = [
       },
     ],
   },
+  {
+    // A breeding generation is strain data the reader looks up, not decoration — the
+    // same argument ADR 0042 §5 made for the indica/sativa axis. Five of the seven
+    // values coincide with a stage-palette colour while meaning generation, which is
+    // why #577 excluded them on intent and why they are named rather than folded.
+    // Values are unchanged from the literals they replace. See ADR 0044 §1.
+    title: 'Genetics Generation Palette — one hue per breeding generation',
+    tokens: [
+      { css: '--gen-p1', value: '#9e9e9e', doc: 'colors.gen-p1' },
+      { css: '--gen-f1', value: '#4caf50', doc: 'colors.gen-f1' },
+      { css: '--gen-f2', value: '#8bc34a', doc: 'colors.gen-f2' },
+      { css: '--gen-bx1', value: '#ff9800', doc: 'colors.gen-bx1' },
+      { css: '--gen-bx2', value: '#f57c00', doc: 'colors.gen-bx2' },
+      { css: '--gen-s1', value: '#2196f3', doc: 'colors.gen-s1' },
+      { css: '--gen-cl', value: '#e91e63', doc: 'colors.gen-cl' },
+      {
+        css: '--gen-unknown',
+        value: '#555555',
+        doc: 'colors.gen-unknown',
+        note: 'For a generation label the card does not recognise. Grey rather than a hue, so an unmapped node is visibly not one of the named generations. Was the shorthand #555.',
+      },
+    ],
+  },
+  {
+    // The genetics tree paints three relations to the focal node at once, so the triple
+    // has to stay mutually distinguishable. Folding focal and descendant into the file's
+    // theme-derived --gv-primary/--gv-secondary would let a user's theme collapse two of
+    // the three arms onto one hue. Values unchanged. See ADR 0044 §2.
+    title: 'Lineage Relation — the genetics tree relative to its focal node',
+    tokens: [
+      { css: '--lineage-focal', value: '#4caf50', doc: 'colors.lineage-focal' },
+      { css: '--lineage-ancestor', value: '#ff9800', doc: 'colors.lineage-ancestor' },
+      { css: '--lineage-descendant', value: '#2196f3', doc: 'colors.lineage-descendant' },
+    ],
+  },
+  {
+    // A fixed categorical set, one hue per product type, structurally identical to the
+    // metric palette above. --nutrient-base is absent on purpose: base feed follows the
+    // Primary, which is where the map already pointed it. See ADR 0044 §3.
+    title: 'Nutrient Product Types — one hue per stock type',
+    tokens: [
+      { css: '--nutrient-bloom', value: '#e91e63', doc: 'colors.nutrient-bloom' },
+      { css: '--nutrient-calmag', value: '#ff9800', doc: 'colors.nutrient-calmag' },
+      { css: '--nutrient-root', value: '#795548', doc: 'colors.nutrient-root' },
+      { css: '--nutrient-additive', value: '#9c27b0', doc: 'colors.nutrient-additive' },
+      { css: '--nutrient-microbe', value: '#00bcd4', doc: 'colors.nutrient-microbe' },
+    ],
+  },
+  {
+    // Plant sex is recorded data the badge reports, not a status. Hermaphrodite's orange
+    // is a fourth claimant on the flowering/P3 hue and is named rather than folded for
+    // the same reason the generation palette is. Values unchanged. See ADR 0044 §4.
+    title: 'Plant Sex — one hue per recorded sex',
+    tokens: [
+      { css: '--sex-female', value: '#4caf50', doc: 'colors.sex-female' },
+      { css: '--sex-male', value: '#2196f3', doc: 'colors.sex-male' },
+      { css: '--sex-hermaphrodite', value: '#ff9800', doc: 'colors.sex-hermaphrodite' },
+    ],
+  },
 ];
 
 function step(
