@@ -28,7 +28,7 @@ export interface RampStop {
 export const ENVIRONMENT_RAMP: readonly RampStop[] = [
   { role: 'farLow', css: '--gm-info-deep', fallback: '#145d97' },
   { role: 'low', css: '--gm-info-color', fallback: '#2196f3' },
-  { role: 'optimal', css: '--gm-primary-color', fallback: '#4caf50' },
+  { role: 'optimal', css: '--gm-status-optimal', fallback: '#4caf50' },
   { role: 'high', css: '--gm-status-warning', fallback: '#ffa726' },
   { role: 'farHigh', css: '--gm-error-color', fallback: '#f44336' },
 ];

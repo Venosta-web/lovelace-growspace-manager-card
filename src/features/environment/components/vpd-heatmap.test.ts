@@ -20,12 +20,17 @@ const DRY_CELL = { x: 396, y: 296 };
 
 const MAGENTA = 'rgb(255, 0, 255)';
 const CYAN = 'rgb(0, 255, 255)';
+const BLUE = 'rgb(0, 0, 255)';
 
 const hosts: HTMLElement[] = [];
 
-function mount(infoColor: string): { host: HTMLElement; el: VPDHeatmap } {
+function mount(
+  infoColor: string,
+  overrides: Record<string, string> = {}
+): { host: HTMLElement; el: VPDHeatmap } {
   const host = document.createElement('div');
   host.style.setProperty('--info-color', infoColor);
+  for (const [prop, value] of Object.entries(overrides)) host.style.setProperty(prop, value);
   document.body.appendChild(host);
   hosts.push(host);
 
@@ -40,6 +45,16 @@ function pixelAt(el: VPDHeatmap, cell: { x: number; y: number }): string {
   const canvas = el.shadowRoot!.getElementById('vpdCanvas') as HTMLCanvasElement;
   const [r, g, b] = canvas.getContext('2d')!.getImageData(cell.x + 2, cell.y + 2, 1, 1).data;
   return `rgb(${r}, ${g}, ${b})`;
+}
+
+/** Whether any painted cell carries this colour — the optimal band has no fixed cell. */
+function canvasContains(el: VPDHeatmap, color: string): boolean {
+  const canvas = el.shadowRoot!.getElementById('vpdCanvas') as HTMLCanvasElement;
+  const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < data.length; i += 4) {
+    if (`rgb(${data[i]}, ${data[i + 1]}, ${data[i + 2]})` === color) return true;
+  }
+  return false;
 }
 
 function swatchColor(el: VPDHeatmap, role: string): string {
@@ -60,6 +75,7 @@ describe('vpd-heatmap ramp resolution', () => {
     const cssText = [VPDHeatmap.styles].flat(Infinity).map(String).join('\n');
 
     // The import list is not the check: a sheet can be imported and not composed.
+    expect(cssText).toContain('--gm-status-optimal');
     expect(cssText).toContain('--gm-status-warning');
     expect(cssText).toContain('--gm-info-deep');
     expect(cssText).toContain('--gm-info-color');
@@ -86,6 +102,17 @@ describe('vpd-heatmap ramp resolution', () => {
     expect(pixelAt(el, WET_CELL)).toBe(MAGENTA);
     expect(pixelAt(el, WET_CELL)).toBe(swatchColor(el, 'low'));
     expect(pixelAt(el, DRY_CELL)).toBe(swatchColor(el, 'farHigh'));
+  });
+
+  it('takes the optimal stop from the status green, not the theme accent', async () => {
+    // A blue or purple --primary-color used to make the "Optimal" zone non-green while
+    // its neighbours stayed warning orange and error red. ADR 0040 §6, stop 3.
+    const { el } = mount(BLUE, { '--primary-color': MAGENTA, '--success-color': CYAN });
+    await el.updateComplete;
+
+    expect(swatchColor(el, 'optimal')).toBe(CYAN);
+    expect(canvasContains(el, CYAN)).toBe(true);
+    expect(canvasContains(el, MAGENTA)).toBe(false);
   });
 
   it('paints a different colour when the theme names a different --info-color', async () => {
