@@ -1,3 +1,10 @@
+# [1.1.0-next.145](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.144...v1.1.0-next.145) (2026-08-17)
+
+
+### Bug Fixes
+
+* **design:** document and migrate the three categorical palettes the js bucket held ([#659](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/659)) ([b154b4e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b154b4e55a8799d42ce62dbaeaacd078d9692f3f)), closes [#634](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/634) [#hex](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/hex) [#555](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/555) [#555555](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/555555) [#4caf50](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/4caf50) [#4caf50](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/4caf50) [#639](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/639) [#639](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/639) [#4caf50](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/4caf50)
+
 # [1.1.0-next.144](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.143...v1.1.0-next.144) (2026-08-16)
 
 
