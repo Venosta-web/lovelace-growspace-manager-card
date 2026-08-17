@@ -1,9 +1,9 @@
 {
-  "total": 51,
-  "files": 9,
+  "total": 46,
+  "files": 8,
   "css": 0,
   "inline": 0,
-  "gradient": 5,
+  "gradient": 0,
   "js": 5,
   "gpu": 41,
   "fallbackConflicts": 0

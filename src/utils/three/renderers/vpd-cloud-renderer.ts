@@ -1,6 +1,23 @@
 import * as THREE from 'three';
 import { BaseRenderer } from './base-renderer';
 import { SensorTypeUtils } from '../../sensor-type-utils';
+import { ENVIRONMENT_RAMP, resolveRamp, type RampRole } from '../../../styles/environment-ramp';
+
+/* Ordinal, low to high — the shader indexes u_ramp positionally. */
+const RAMP_ORDER: readonly RampRole[] = ENVIRONMENT_RAMP.map((stop) => stop.role);
+
+/**
+ * `LinearSRGBColorSpace` means "this input needs no conversion", not "this input is
+ * linear". The fragment shader writes `gl_FragColor` with no `<colorspace_fragment>`
+ * chunk, so whatever the uniform holds reaches the framebuffer unencoded and must
+ * therefore stay sRGB-encoded. Plain `setStyle(str)` converts into the linear working
+ * space (`ColorManagement.enabled` is true by default since r152) and lands
+ * `rgb(13, 71, 161)` on 0.0040 where the constant this replaces carried 0.0510 —
+ * a near-black cloud. ADR 0040 §5 names `setStyle` without naming the colour space.
+ */
+const writeStop = (target: THREE.Color, css: string): void => {
+  target.setStyle(css, THREE.LinearSRGBColorSpace);
+};
 
 export class VpdCloudRenderer extends BaseRenderer {
   public render() {
@@ -51,6 +68,7 @@ export class VpdCloudRenderer extends BaseRenderer {
         u_boxSize: { value: new THREE.Vector3(width, height, depth) },
         u_opacity: { value: 0.7 },
         u_thresholds: { value: new THREE.Vector4(0, 0, 0, 0) },
+        u_ramp: { value: RAMP_ORDER.map(() => new THREE.Color()) },
         u_time: { value: 0 },
         u_localCameraPos: { value: new THREE.Vector3() },
       },
@@ -76,6 +94,7 @@ export class VpdCloudRenderer extends BaseRenderer {
                 uniform vec3 u_boxSize;
                 uniform float u_opacity;
                 uniform vec4 u_thresholds;
+                uniform vec3 u_ramp[5];
                 uniform float u_time;
                 uniform vec3 u_localCameraPos;
 
@@ -151,12 +170,12 @@ export class VpdCloudRenderer extends BaseRenderer {
                 }
 
                 vec3 getHealthColor(float val) {
-                    vec3 dangerLow = vec3(0.051, 0.278, 0.631); // #0d47a1
-                    vec3 warnLow = vec3(0.129, 0.588, 0.953);   // #2196f3
-                    vec3 optColor = vec3(0.298, 0.686, 0.314);  // #4caf50
-                    vec3 warnHigh = vec3(1.0, 0.596, 0.0);      // #ff9800
-                    vec3 dangerHigh = vec3(0.957, 0.263, 0.212); // #f44336
-                    
+                    vec3 dangerLow = u_ramp[0];
+                    vec3 warnLow = u_ramp[1];
+                    vec3 optColor = u_ramp[2];
+                    vec3 warnHigh = u_ramp[3];
+                    vec3 dangerHigh = u_ramp[4];
+
                     if (val <= u_thresholds.x) return dangerLow;
                     if (val >= u_thresholds.w) return dangerHigh;
                     
@@ -281,6 +300,20 @@ export class VpdCloudRenderer extends BaseRenderer {
     }
   }
 
+  /**
+   * The host resolves the palette from its own shadow root and hands it over on the
+   * context; with no host (a detached scene, a test) the descriptor's terminal hexes
+   * stand in, which `resolveRamp(null)` already normalises.
+   */
+  private writeRamp(material: THREE.ShaderMaterial) {
+    const uniform = material.uniforms.u_ramp;
+    if (!uniform) return;
+
+    const palette = this.context.rampPalette ?? resolveRamp(null);
+    const colors = uniform.value as THREE.Color[];
+    RAMP_ORDER.forEach((role, i) => writeStop(colors[i], palette[role]));
+  }
+
   public updateUniforms() {
     const { device, volatileGroup, sensorMeshes, selectedMetric } = this.context;
     // Find mesh
@@ -288,6 +321,8 @@ export class VpdCloudRenderer extends BaseRenderer {
     if (!volMesh) return;
 
     const material = (volMesh as THREE.Mesh).material as THREE.ShaderMaterial;
+    this.writeRamp(material);
+
     const ranges = {
       temperature: { min: 18, max: 32 },
       humidity: { min: 30, max: 85 },

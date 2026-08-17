@@ -32,9 +32,8 @@ const EXEMPT_FILES = [
   'src/styles/tokens.ts',
   'src/styles/variables.generated.ts',
   'src/styles/variables.ts',
-  // Console branding and shader source are not rendered as card CSS.
+  // Console branding is not rendered as card CSS.
   'src/index.ts',
-  'src/utils/three/renderers/vpd-cloud-renderer.ts',
 ];
 
 /**
