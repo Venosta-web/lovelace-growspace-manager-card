@@ -152,13 +152,13 @@ machinery.
 Leaving GLSL hardcoded and tokenising only the `heatmap-3d` legend was rejected: it is
 the same reachable-half-only asymmetry that caused the problem.
 
-### 6. The ramp is one five-stop scale, and two of its stops move
+### 6. The ramp is one five-stop scale, and three of its stops move
 
 | Stop | Role | Token |
 | --- | --- | --- |
 | 1 | far low | `--gm-info-deep` |
 | 2 | low | `--gm-info-color` |
-| 3 | optimal | `--gm-primary-color` |
+| 3 | optimal | `--gm-status-optimal` |
 | 4 | high | `--gm-status-warning` |
 | 5 | far high | `--gm-error-color` |
 
@@ -167,7 +167,20 @@ are one scale at two resolutions, not two scales. An ordinal `--heat-1…5` set 
 rejected: unlike the [[Series Slot]]s, these stops carry per-stop meaning that the
 call sites honour.
 
-Two consequences of that table are visible colour changes, and both are deliberate:
+Stop 3 was `--gm-primary-color` when this ADR was written, and shipped that way in
+slice 1 (#639). Corrected here after the rendered result: the brand accent follows
+the HA theme's `--primary-color`, so on a blue or purple theme the "Optimal" zone —
+and the swatch labelling it — stopped being green while its neighbours stayed a
+warning orange and an error red. The scale read as three unrelated colours. Stop 4's
+argument decides this one too: outside optimal means *something is drifting*, inside
+it means *nothing is wrong*, and both are the status role, not the brand's.
+`--gm-status-optimal` defers to `--success-color`, so "green" holds by theme
+convention rather than by construction — the same footing as stops 4 and 5, which is
+the point. It is declared beside `--gm-status-warning` in `status.styles.ts`, so it
+inherits that stop's `statusTokens` prerequisite and adds no new plumbing.
+Slices #640/#641 take stop 3 from this row, not from the shipped #639 value.
+
+Three consequences of that table are visible colour changes, and all are deliberate:
 
 - **Stop 4 is the status orange, not the stage orange.** ADR 0039 §4 deprecated
   `--gm-warning-color` as a conflation of the two, so the legend's current reference
