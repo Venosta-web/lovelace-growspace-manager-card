@@ -64,6 +64,12 @@ const ACCEPTED_EXCEPTIONS = [
       'Pot plastic and soil. Scene furniture in the same sense as the frame. The foliage colours in this file carry real roles (primary, a stage colour, series 2) and are deliberately left counted — deferred, not exempt. ADR 0040 §9.',
   },
   {
+    file: 'src/utils/three/renderers/tank-renderer.ts',
+    hexes: ['0xffffff', '0x1a1a1a', '0x444444'],
+    reason:
+      'The tank vessel itself — translucent container shell, base plinth and edge lines. Material, not role: the state a tank reports is carried by its liquid, which resolves from the ramp and is NOT listed here. ADR 0040 §7 and §9.',
+  },
+  {
     file: 'src/features/shared/ui/label-preview.ts',
     hexes: ['#000', '#333'],
     reason:

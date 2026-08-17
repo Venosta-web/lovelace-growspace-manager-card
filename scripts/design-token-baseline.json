@@ -1,10 +1,10 @@
 {
-  "total": 46,
-  "files": 8,
+  "total": 39,
+  "files": 7,
   "css": 0,
   "inline": 0,
   "gradient": 0,
   "js": 5,
-  "gpu": 41,
+  "gpu": 34,
   "fallbackConflicts": 0
 }
