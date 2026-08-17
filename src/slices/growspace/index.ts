@@ -3,6 +3,7 @@ import { atom } from 'nanostores';
 import { hassCall, callService } from '../../services/hass-call';
 import { mutate } from '../../services/mutate';
 import { GrowspaceAdapter } from '../../adapters/growspace-adapter';
+import { devices$, patchDeviceEnvironmentAttributes } from '../grid';
 import {
   GrowspaceAPICollectionSchema,
   GrowReportSchema,
@@ -117,17 +118,48 @@ export async function resetWaterTracking(growspaceId: string): Promise<void> {
 }
 
 export async function setDehumidifierControl(growspaceId: string, enabled: boolean): Promise<void> {
-  await callService('growspace_manager', 'set_dehumidifier_control', {
-    growspace_id: growspaceId,
-    enabled,
-  });
+  const prev =
+    devices$.get().find((d) => d.deviceId === growspaceId)?.environmentAttributes
+      .dehumidifierControlEnabled ?? false;
+  await mutate(
+    {
+      type: 'setDehumidifierControl',
+      // Patch the device the config dialog reseeds from immediately, so a
+      // close-then-reopen reflects the flip without waiting for hass to push
+      // the backend's confirmed state back through a full sync.
+      optimistic: () =>
+        patchDeviceEnvironmentAttributes(growspaceId, { dehumidifierControlEnabled: enabled }),
+      inverse: () =>
+        patchDeviceEnvironmentAttributes(growspaceId, { dehumidifierControlEnabled: prev }),
+      apply: () =>
+        callService('growspace_manager', 'set_dehumidifier_control', {
+          growspace_id: growspaceId,
+          enabled,
+        }),
+    },
+    growspaceId
+  );
 }
 
 export async function setHumidifierControl(growspaceId: string, enabled: boolean): Promise<void> {
-  await callService('growspace_manager', 'set_humidifier_control', {
-    growspace_id: growspaceId,
-    enabled,
-  });
+  const prev =
+    devices$.get().find((d) => d.deviceId === growspaceId)?.environmentAttributes
+      .humidifierControlEnabled ?? false;
+  await mutate(
+    {
+      type: 'setHumidifierControl',
+      optimistic: () =>
+        patchDeviceEnvironmentAttributes(growspaceId, { humidifierControlEnabled: enabled }),
+      inverse: () =>
+        patchDeviceEnvironmentAttributes(growspaceId, { humidifierControlEnabled: prev }),
+      apply: () =>
+        callService('growspace_manager', 'set_humidifier_control', {
+          growspace_id: growspaceId,
+          enabled,
+        }),
+    },
+    growspaceId
+  );
 }
 
 export async function updateSensorCoordinates(
