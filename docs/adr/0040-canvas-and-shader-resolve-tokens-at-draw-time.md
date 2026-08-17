@@ -117,9 +117,16 @@ Two mechanical requirements come with it:
 - **Resolve once per draw, outside the pixel loop.** `_drawHeatmap` paints
   400×300 in 4px steps — 7,500 iterations. A `getComputedStyle` call per iteration
   is not viable.
-- **`_getZoneColor` returns a role key, not a colour.** It becomes
-  `'wet' | 'fair' | 'optimal' | 'dry'`, indexed into the resolved palette. The
-  function's job was always classification; returning a hex was it doing two things.
+- **`_getZoneColor` returns a role key, not a colour**, indexed into the resolved
+  palette. The function's job was always classification; returning a hex was it doing
+  two things.
+
+  *As shipped in #639 it is `_getZoneRole`, returning §6's ordinal `RampRole` —
+  `'farLow' | 'low' | 'optimal' | 'high' | 'farHigh'` — not the
+  `'wet' | 'fair' | 'optimal' | 'dry'` this section first named. Those four were zone
+  labels, and one scale keyed by position is what lets `vpd-heatmap` (stops 2–5) and
+  the shader (all five) share a descriptor at all. The labels survive as presentation
+  in `LEGEND`, where the non-obvious pairing is Fair → `high`.*
 
 If a probe read comes back empty — no adopted stylesheet, a detached element — the
 descriptor's terminal hex is used. That fallback is a literal in the descriptor, not
