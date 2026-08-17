@@ -164,14 +164,15 @@ describe('GrowspaceUIStore.$notification is the same atom as slices/ui notificat
 });
 
 describe('GrowspaceUIStore guided task state', () => {
+  // Backend attributes are 1-based; the arrange draft is 0-based grid indices.
   const plants = [
     {
       entity_id: 'sensor.one',
-      attributes: { plant_id: 'one', row: 0, col: 0, strain: 'One' },
+      attributes: { plant_id: 'one', row: 1, col: 1, strain: 'One' },
     },
     {
       entity_id: 'sensor.two',
-      attributes: { plant_id: 'two', row: 0, col: 1, strain: 'Two' },
+      attributes: { plant_id: 'two', row: 1, col: 2, strain: 'Two' },
     },
   ] as PlantEntity[];
 

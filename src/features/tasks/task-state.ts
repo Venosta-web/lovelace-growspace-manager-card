@@ -7,6 +7,7 @@ export interface PlantPlacement {
   col: number;
 }
 
+/** Placements are 0-based grid indices; the backend stores them 1-based. */
 export type PlantLayout = Record<string, PlantPlacement>;
 
 export interface ArrangeTaskState {
@@ -48,7 +49,10 @@ export function placementsFromPlants(plants: PlantEntity[]): PlantLayout {
   return Object.fromEntries(
     plants.map((plant) => [
       plantIdOf(plant),
-      { row: Number(plant.attributes.row), col: Number(plant.attributes.col) },
+      {
+        row: (Number(plant.attributes.row) || 1) - 1,
+        col: (Number(plant.attributes.col) || 1) - 1,
+      },
     ])
   );
 }
