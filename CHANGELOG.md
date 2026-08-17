@@ -1,3 +1,10 @@
+# [1.1.0-next.148](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.147...v1.1.0-next.148) (2026-08-17)
+
+
+### Bug Fixes
+
+* **environment:** take the ramp's optimal stop from the status green ([#663](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/663)) ([7181f5c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7181f5cc84aeeddd41a7a5e0c30388564960a247)), closes [640/#641](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/641) [#639](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/639)
+
 # [1.1.0-next.147](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.146...v1.1.0-next.147) (2026-08-17)
 
 
