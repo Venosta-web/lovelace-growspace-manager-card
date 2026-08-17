@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, StrainEntry } from '../../../types';
+import type { RampPalette } from '../../../styles/environment-ramp';
 
 export interface RendererContext {
   scene: THREE.Scene;
@@ -14,6 +15,8 @@ export interface RendererContext {
   getSensorValue?: (entityId: string, metric: string) => number | null;
   strainLibrary?: StrainEntry[];
   sensorMeshes: Map<string, THREE.Object3D>;
+  /* Resolved out of the DOM by the hosting component; a renderer has no element to read. */
+  rampPalette?: RampPalette;
   visibility: {
     plants: boolean;
     lights: boolean;

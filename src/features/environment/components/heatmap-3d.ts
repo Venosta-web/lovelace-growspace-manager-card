@@ -16,6 +16,16 @@ import { openPlantOverviewDialog, openAddPlantDialog } from '../../../slices/ui'
 import { getHistoryStats } from '../../../store/history/history-store';
 import { SensorTypeUtils } from '../../../utils/sensor-type-utils';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
+import { statusTokens } from '../../../styles/status.styles';
+import { variables } from '../../../styles/variables';
+import { ENVIRONMENT_RAMP, rampVar, resolveRamp } from '../../../styles/environment-ramp';
+
+/* Built from the same descriptor the shader reads, so the strip cannot drift from the
+   cloud. `rampVar` carries each stop's terminal hex, so a dropped scope degrades to the
+   default ramp rather than to nothing. */
+export const LEGEND_GRADIENT = `linear-gradient(to right, ${ENVIRONMENT_RAMP.map((stop) =>
+  rampVar(stop.role)
+).join(', ')})`;
 
 @customElement('heatmap-3d')
 export class Heatmap3D extends LitElement {
@@ -60,426 +70,439 @@ export class Heatmap3D extends LitElement {
 
   private resizeObserver?: ResizeObserver;
 
-  static styles = css`
-    :host {
-      display: block;
-      width: 100%;
-      position: relative;
-    }
-    #container {
-      width: 100%;
-      height: 600px;
-      background: var(
-        --ha-card-background,
-        var(--card-background-color, var(--primary-background-color, #0a0a0a))
-      );
-      border-radius: var(--ha-card-border-radius, 12px);
-      overflow: hidden;
-      position: relative;
-      cursor: default;
-    }
-    canvas {
-      display: block;
-    }
-    .header {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      padding: 20px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 20;
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), transparent);
-      pointer-events: none;
-    }
-    .header h2 {
-      margin: 0;
-      font-size: 1.1rem;
-      font-weight: 500;
-      color: white;
-      letter-spacing: 0.5px;
-    }
-    .header-title {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .title-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      pointer-events: auto;
-    }
-    .toggles-container {
-      display: flex;
-      gap: 12px;
-      pointer-events: auto;
-    }
-    .toggle-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: var(--font-size-xs);
-      color: rgba(255, 255, 255, 0.7);
-      text-transform: uppercase;
-      font-weight: 500;
-      cursor: pointer;
-    }
-    .toggle-item:hover {
-      color: white;
-    }
-    .toggle-item span {
-      position: relative;
-      top: 1px;
-    }
-    .toggle-item ha-checkbox {
-      --mdc-checkbox-unchecked-color: rgba(255, 255, 255, 0.5);
-      --mdc-checkbox-disabled-color: rgba(255, 255, 255, 0.3);
-      --mdc-checkbox-ink-color: var(--accent-3d);
-    }
-    .header-actions {
-      display: flex;
-      gap: 4px;
-      pointer-events: auto;
-    }
-    .header ha-icon-button {
-      color: var(--accent-3d-idle);
-      transition: all 0.2s ease;
-      --mdc-icon-button-size: 32px;
-      --mdc-icon-size: 18px;
-    }
-    .header ha-icon-button.active {
-      color: var(--accent-3d);
-      background: color-mix(in srgb, var(--accent-3d) 15%, transparent);
-      border-radius: 50%;
-    }
-    .header ha-icon-button:hover {
-      color: var(--accent-3d-hover);
-    }
-    .overlay {
-      position: absolute;
-      top: 65px;
-      right: 16px;
-      width: 220px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      z-index: 20;
-    }
-    .metric-selector {
-      background: rgba(30, 30, 30, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: var(--border-radius-md, 12px);
-      padding: 4px;
-      display: flex;
-      gap: 4px;
-      backdrop-filter: blur(8px);
-    }
-    .metric-selector button {
-      flex: 1;
-      background: transparent;
-      border: none;
-      color: var(--on-overlay-secondary);
-      padding: 6px 2px;
-      border-radius: var(--border-radius-sm, 8px);
-      cursor: pointer;
-      font-size: 11px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-    }
-    .metric-selector button.active {
-      background: var(--surface-container-high);
-      color: var(--accent-3d);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-    }
-    .legend-container {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .legend {
-      width: 100%;
-      height: 8px;
-      background: linear-gradient(to right, #0d47a1, #2196f3, #4caf50, #ff9800, #f44336);
-      border-radius: var(--border-radius-xs, 4px);
-      position: relative;
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
-    }
-    .legend-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: var(--font-size-xs);
-      color: var(--on-overlay-secondary);
-    }
+  /* The shader resolves --gm-* out of this root, so both blocks that declare the ramp
+     have to be composed here: stops 3-4 come from statusTokens, stops 1, 2 and 5 from
+     variables. Composing only one leaves the other three on their fallbacks. */
+  static styles = [
+    variables,
+    statusTokens,
+    css`
+      :host {
+        display: block;
+        width: 100%;
+        position: relative;
+      }
+      #container {
+        width: 100%;
+        height: 600px;
+        background: var(
+          --ha-card-background,
+          var(--card-background-color, var(--primary-background-color, #0a0a0a))
+        );
+        border-radius: var(--ha-card-border-radius, 12px);
+        overflow: hidden;
+        position: relative;
+        cursor: default;
+      }
+      canvas {
+        display: block;
+      }
+      .header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 20;
+        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), transparent);
+        pointer-events: none;
+      }
+      .header h2 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: white;
+        letter-spacing: 0.5px;
+      }
+      .header-title {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .title-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        pointer-events: auto;
+      }
+      .toggles-container {
+        display: flex;
+        gap: 12px;
+        pointer-events: auto;
+      }
+      .toggle-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: var(--font-size-xs);
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      .toggle-item:hover {
+        color: white;
+      }
+      .toggle-item span {
+        position: relative;
+        top: 1px;
+      }
+      .toggle-item ha-checkbox {
+        --mdc-checkbox-unchecked-color: rgba(255, 255, 255, 0.5);
+        --mdc-checkbox-disabled-color: rgba(255, 255, 255, 0.3);
+        --mdc-checkbox-ink-color: var(--accent-3d);
+      }
+      .header-actions {
+        display: flex;
+        gap: 4px;
+        pointer-events: auto;
+      }
+      .header ha-icon-button {
+        color: var(--accent-3d-idle);
+        transition: all 0.2s ease;
+        --mdc-icon-button-size: 32px;
+        --mdc-icon-size: 18px;
+      }
+      .header ha-icon-button.active {
+        color: var(--accent-3d);
+        background: color-mix(in srgb, var(--accent-3d) 15%, transparent);
+        border-radius: 50%;
+      }
+      .header ha-icon-button:hover {
+        color: var(--accent-3d-hover);
+      }
+      .overlay {
+        position: absolute;
+        top: 65px;
+        right: 16px;
+        width: 220px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        z-index: 20;
+      }
+      .metric-selector {
+        background: rgba(30, 30, 30, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--border-radius-md, 12px);
+        padding: 4px;
+        display: flex;
+        gap: 4px;
+        backdrop-filter: blur(8px);
+      }
+      .metric-selector button {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--on-overlay-secondary);
+        padding: 6px 2px;
+        border-radius: var(--border-radius-sm, 8px);
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+      }
+      .metric-selector button.active {
+        background: var(--surface-container-high);
+        color: var(--accent-3d);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      }
+      .legend-container {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .legend {
+        width: 100%;
+        height: 8px;
+        border-radius: var(--border-radius-xs, 4px);
+        position: relative;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+      .legend-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--font-size-xs);
+        color: var(--on-overlay-secondary);
+      }
 
-    /* Timeline Styles */
-    .timeline-controls {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 20px 24px;
-      background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: 12px;
-      z-index: 20;
-    }
-    .timeline-info {
-      grid-column: 1 / span 3;
-      display: flex;
-      justify-content: space-between;
-      font-size: var(--font-size-xs);
-      color: var(--on-overlay-muted);
-      margin-top: -8px;
-      margin-bottom: 4px;
-    }
-    .play-btn {
-      background: transparent;
-      border: none;
-      color: var(--accent-3d);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .timeline-slider {
-      -webkit-appearance: none;
-      width: 100%;
-      height: 4px;
-      background: var(--divider-color);
-      border-radius: 2px;
-      outline: none;
-    }
-    .timeline-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 12px;
-      height: 12px;
-      background: var(--accent-3d);
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 0 0 10px color-mix(in srgb, var(--accent-3d) 50%, transparent);
-    }
-    .time-display {
-      font-size: 11px;
-      color: white;
-      min-width: 50px;
-      text-align: right;
-    }
+      /* Timeline Styles */
+      .timeline-controls {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 20px 24px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 12px;
+        z-index: 20;
+      }
+      .timeline-info {
+        grid-column: 1 / span 3;
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--font-size-xs);
+        color: var(--on-overlay-muted);
+        margin-top: -8px;
+        margin-bottom: 4px;
+      }
+      .play-btn {
+        background: transparent;
+        border: none;
+        color: var(--accent-3d);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .timeline-slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 4px;
+        background: var(--divider-color);
+        border-radius: 2px;
+        outline: none;
+      }
+      .timeline-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 12px;
+        height: 12px;
+        background: var(--accent-3d);
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 10px color-mix(in srgb, var(--accent-3d) 50%, transparent);
+      }
+      .time-display {
+        font-size: 11px;
+        color: white;
+        min-width: 50px;
+        text-align: right;
+      }
 
-    /* CSS2D Label Styles (Still used by CSS2DRenderer in SceneManager) */
-    .sensor-label {
-      background: rgba(10, 10, 10, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 4px 10px;
-      border-radius: var(--border-radius-full, 9999px);
-      color: white;
-      font-size: 11px;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    }
-    .sensor-icon {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: var(--font-size-xs);
-    }
-    /* Side Panel Styles */
-    .side-panel {
-      position: absolute;
-      top: 65px;
-      left: 16px;
-      width: 240px;
-      max-height: calc(100% - 200px);
-      background: rgba(30, 30, 30, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: var(--border-radius-md, 12px);
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      z-index: 30;
-      backdrop-filter: blur(12px);
-      overflow-y: auto;
-      color: white;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    }
-    .side-panel::-webkit-scrollbar {
-      width: 4px;
-    }
-    .side-panel::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 2px;
-    }
-    .side-panel h3 {
-      margin: 0;
-      font-size: var(--font-size-sm);
-      font-weight: 600;
-      color: var(--accent-3d);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    .sensor-item {
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: var(--border-radius-sm, 8px);
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .sensor-header {
-      font-size: var(--font-size-supporting);
-      font-weight: 500;
-      color: var(--on-overlay-primary);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .slider-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .slider-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .slider-row label {
-      font-size: var(--font-size-xs);
-      color: var(--on-overlay-muted);
-      width: 10px;
-      font-weight: bold;
-    }
-    .edit-slider {
-      flex: 1;
-      -webkit-appearance: none;
-      height: 2px;
-      background: var(--divider-color);
-      outline: none;
-    }
-    .edit-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 10px;
-      height: 10px;
-      background: var(--accent-3d);
-      border-radius: 50%;
-      cursor: pointer;
-    }
-    .slider-val {
-      font-size: var(--font-size-xs);
-      color: var(--on-overlay-secondary);
-      text-align: right;
-      width: 25px;
-    }
+      /* CSS2D Label Styles (Still used by CSS2DRenderer in SceneManager) */
+      .sensor-label {
+        background: rgba(10, 10, 10, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 4px 10px;
+        border-radius: var(--border-radius-full, 9999px);
+        color: white;
+        font-size: 11px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      }
+      .sensor-icon {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--font-size-xs);
+      }
+      /* Side Panel Styles */
+      .side-panel {
+        position: absolute;
+        top: 65px;
+        left: 16px;
+        width: 240px;
+        max-height: calc(100% - 200px);
+        background: rgba(30, 30, 30, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--border-radius-md, 12px);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        z-index: 30;
+        backdrop-filter: blur(12px);
+        overflow-y: auto;
+        color: white;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      }
+      .side-panel::-webkit-scrollbar {
+        width: 4px;
+      }
+      .side-panel::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+      }
+      .side-panel h3 {
+        margin: 0;
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        color: var(--accent-3d);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+      .sensor-item {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: var(--border-radius-sm, 8px);
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .sensor-header {
+        font-size: var(--font-size-supporting);
+        font-weight: 500;
+        color: var(--on-overlay-primary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .slider-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .slider-row label {
+        font-size: var(--font-size-xs);
+        color: var(--on-overlay-muted);
+        width: 10px;
+        font-weight: bold;
+      }
+      .edit-slider {
+        flex: 1;
+        -webkit-appearance: none;
+        height: 2px;
+        background: var(--divider-color);
+        outline: none;
+      }
+      .edit-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 10px;
+        height: 10px;
+        background: var(--accent-3d);
+        border-radius: 50%;
+        cursor: pointer;
+      }
+      .slider-val {
+        font-size: var(--font-size-xs);
+        color: var(--on-overlay-secondary);
+        text-align: right;
+        width: 25px;
+      }
 
-    /* Sensor Tab Styles */
-    .sensor-tabs {
-      display: flex;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: var(--border-radius-sm, 8px);
-      padding: 2px;
-      margin-bottom: 8px;
-    }
-    .sensor-tab {
-      flex: 1;
-      background: transparent;
-      border: none;
-      color: var(--on-overlay-muted);
-      padding: 6px 2px;
-      border-radius: var(--border-radius-sm, 8px);
-      cursor: pointer;
-      font-size: var(--font-size-xs);
-      font-weight: 600;
-      text-transform: uppercase;
-      transition: all 0.2s ease;
-      text-align: center;
-    }
-    .sensor-tab.active {
-      background: var(--surface-container-high);
-      color: var(--accent-3d);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    }
-    .sensor-tab:hover:not(.active) {
-      color: var(--on-overlay-primary);
-      background: rgba(255, 255, 255, 0.05);
-    }
+      /* Sensor Tab Styles */
+      .sensor-tabs {
+        display: flex;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: var(--border-radius-sm, 8px);
+        padding: 2px;
+        margin-bottom: 8px;
+      }
+      .sensor-tab {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--on-overlay-muted);
+        padding: 6px 2px;
+        border-radius: var(--border-radius-sm, 8px);
+        cursor: pointer;
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        transition: all 0.2s ease;
+        text-align: center;
+      }
+      .sensor-tab.active {
+        background: var(--surface-container-high);
+        color: var(--accent-3d);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+      .sensor-tab:hover:not(.active) {
+        color: var(--on-overlay-primary);
+        background: rgba(255, 255, 255, 0.05);
+      }
 
-    /* Tooltip Styles */
-    .plant-tooltip {
-      position: absolute;
-      background: rgba(15, 15, 15, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: var(--border-radius-sm, 8px);
-      padding: 12px;
-      color: white;
-      pointer-events: none;
-      z-index: 1000;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-      min-width: 180px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      transition:
-        opacity 0.2s ease,
-        transform 0.2s ease;
-    }
-    .tooltip-header {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 6px;
-      margin-bottom: 2px;
-    }
-    .tooltip-strain {
-      font-weight: 700;
-      font-size: var(--font-size-supporting);
-      color: var(--accent-3d);
-      display: block;
-    }
-    .tooltip-pheno {
-      font-size: 11px;
-      color: var(--on-overlay-secondary);
-      font-style: italic;
-    }
-    .tooltip-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      gap: 12px;
-    }
-    .tooltip-label {
-      color: var(--on-overlay-muted);
-      font-weight: 500;
-      text-transform: uppercase;
-      font-size: var(--font-size-xs);
-      letter-spacing: 0.5px;
-    }
-    .tooltip-value {
-      color: var(--on-overlay-primary);
-      font-weight: 500;
-    }
-    .tooltip-stage-pill {
-      padding: 2px 8px;
-      border-radius: var(--border-radius-md, 12px);
-      font-size: var(--font-size-xs);
-      font-weight: 600;
-      text-transform: uppercase;
-    }
+      /* Tooltip Styles */
+      .plant-tooltip {
+        position: absolute;
+        background: rgba(15, 15, 15, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--border-radius-sm, 8px);
+        padding: 12px;
+        color: white;
+        pointer-events: none;
+        z-index: 1000;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        min-width: 180px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition:
+          opacity 0.2s ease,
+          transform 0.2s ease;
+      }
+      .tooltip-header {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 6px;
+        margin-bottom: 2px;
+      }
+      .tooltip-strain {
+        font-weight: 700;
+        font-size: var(--font-size-supporting);
+        color: var(--accent-3d);
+        display: block;
+      }
+      .tooltip-pheno {
+        font-size: 11px;
+        color: var(--on-overlay-secondary);
+        font-style: italic;
+      }
+      .tooltip-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        gap: 12px;
+      }
+      .tooltip-label {
+        color: var(--on-overlay-muted);
+        font-weight: 500;
+        text-transform: uppercase;
+        font-size: var(--font-size-xs);
+        letter-spacing: 0.5px;
+      }
+      .tooltip-value {
+        color: var(--on-overlay-primary);
+        font-weight: 500;
+      }
+      .tooltip-stage-pill {
+        padding: 2px 8px;
+        border-radius: var(--border-radius-md, 12px);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
 
-    ${reducedMotion}
-  `;
+      .ramp-probe {
+        position: absolute;
+        width: 0;
+        height: 0;
+        visibility: hidden;
+      }
+
+      ${reducedMotion}
+    `,
+  ];
 
   connectedCallback() {
     super.connectedCallback();
@@ -561,7 +584,22 @@ export class Heatmap3D extends LitElement {
     }
   }
 
+  /**
+   * Runs after render, not in `willUpdate`, because the probe has to be in the shadow
+   * root to read anything. Re-resolving on every update is five `getComputedStyle`
+   * reads; the scene re-render behind it only happens when a stop actually moved.
+   */
+  private syncRampPalette() {
+    if (!this.sceneManager) return;
+    const palette = resolveRamp(this.shadowRoot?.getElementById('rampProbe'));
+    if (this.sceneManager.setRampPalette(palette)) {
+      this.updateScene();
+    }
+  }
+
   protected updated(changedProps: PropertyValues) {
+    this.syncRampPalette();
+
     if (!this.device) return;
 
     // sceneManager update moved to willUpdate for render consistency
@@ -1010,7 +1048,7 @@ export class Heatmap3D extends LitElement {
           ${this.showHeatmap
             ? html`
                 <div class="legend-container">
-                  <div class="legend"></div>
+                  <div class="legend" style="background: ${LEGEND_GRADIENT}"></div>
                   <div class="legend-labels">
                     <span>Low (${range.min}${range.unit})</span>
                     <span>High (${range.max}${range.unit})</span>
@@ -1280,6 +1318,7 @@ export class Heatmap3D extends LitElement {
               </div>
             `;
           })}
+        <div class="ramp-probe" id="rampProbe"></div>
       </div>
     `;
   }
