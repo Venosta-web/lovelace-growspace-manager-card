@@ -1,3 +1,10 @@
+# [1.1.0-next.149](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.148...v1.1.0-next.149) (2026-08-17)
+
+
+### Bug Fixes
+
+* **environment:** feed the VPD cloud shader and its legend from one ramp ([#640](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/640)) ([#666](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/666)) ([219a9c4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/219a9c45ac169153559d309e224a96965ffc24fc)), closes [#639](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/639)
+
 # [1.1.0-next.148](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.147...v1.1.0-next.148) (2026-08-17)
 
 
