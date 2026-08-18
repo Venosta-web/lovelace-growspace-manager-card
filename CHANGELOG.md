@@ -1,3 +1,11 @@
+# [1.1.0-next.152](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.151...v1.1.0-next.152) (2026-08-18)
+
+
+### Bug Fixes
+
+* **e2e:** close the .env.test gitignore gap and the substrate_ec_sensors drift ([#669](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/669)) ([f48c5a7](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/f48c5a7f41b258ec68a36d6e3f7b141339b3bfeb))
+* **e2e:** provision simulated sensors and fix stale VWC strategy test ([#670](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/670)) ([e3be433](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e3be433c808ae3b92157d031a54fb67be9cbfd37)), closes [#640](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/640) [#639](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/639) [#641](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/641) [#f44336](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/f44336) [#2196f3](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/2196f3) [#hex](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/hex)
+
 # [1.1.0-next.151](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.150...v1.1.0-next.151) (2026-08-17)
 
 
