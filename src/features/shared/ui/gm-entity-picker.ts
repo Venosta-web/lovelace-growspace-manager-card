@@ -51,6 +51,12 @@ export class GmEntityPicker extends LitElement {
     ha-entity-picker {
       display: block;
       width: 100%;
+      /* A registered ha-entity-picker can still throw on its own first render
+         (a lazily-loaded-chunk race distinct from the registration this._ready
+         already waits for — see ADR 0043 and issue 673), leaving its shadow
+         root empty. This floor keeps the field visible and holds its layout
+         slot until a later hass update lets it retry and succeed. */
+      min-height: 44px;
     }
 
     .loading {

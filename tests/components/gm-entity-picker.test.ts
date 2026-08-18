@@ -77,4 +77,11 @@ describe('GmEntityPicker', () => {
     expect(element.shadowRoot!.querySelector('ha-entity-picker')).toBeNull();
     expect(element.shadowRoot!.querySelector('input')).toBeNull();
   });
+
+  it('reserves a minimum height for ha-entity-picker, so a first render that throws inside the real component (#673) does not collapse the field to zero height', async () => {
+    const element = await mount();
+    const inner = element.shadowRoot!.querySelector('ha-entity-picker') as HTMLElement;
+
+    expect(getComputedStyle(inner).minHeight).toBe('44px');
+  });
 });
