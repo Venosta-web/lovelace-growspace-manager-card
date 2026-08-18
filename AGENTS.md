@@ -97,6 +97,7 @@ in-flight work before. For anything beyond a trivial single-turn change:
 git fetch origin
 git worktree add .worktrees/<branch-name> -b <branch-name> origin/dev
 cd .worktrees/<branch-name>
+npm ci   # node_modules is not shared across worktrees — see CLAUDE.md
 ```
 
 - The pre-commit worktree guard rejects commits made in the main checkout; override
