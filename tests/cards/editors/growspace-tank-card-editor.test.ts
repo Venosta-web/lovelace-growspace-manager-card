@@ -5,20 +5,28 @@ import { GrowspaceTankCardEditor } from '../../../src/cards/editors/growspace-ta
 describe('GrowspaceTankCardEditor', () => {
     let element: GrowspaceTankCardEditor;
     let mockHass: any;
+    let capturedCallback: any;
 
     beforeEach(async () => {
+        capturedCallback = null;
         mockHass = {
             states: {
                 'sensor.growspaces_list': {
                     attributes: {
-                        growspaces: [
-                            { id: 'gs1', name: 'Growroom 1' },
-                            { id: 'gs2', name: 'Growroom 2' }
-                        ]
-                    }
-                }
+                        growspaces: {
+                            gs1: 'Growroom 1',
+                            gs2: 'Growroom 2',
+                        },
+                    },
+                },
             },
             language: 'en',
+            connection: {
+                subscribeEvents: vi.fn().mockImplementation((callback) => {
+                    capturedCallback = callback;
+                    return Promise.resolve(vi.fn());
+                }),
+            },
         };
 
         element = new GrowspaceTankCardEditor();
@@ -37,12 +45,12 @@ describe('GrowspaceTankCardEditor', () => {
         expect(element).toBeInstanceOf(GrowspaceTankCardEditor);
     });
 
-    test('_loadGrowspaces populates _sensorGrowspaces from array format', () => {
-        (element as any)._loadGrowspaces();
-        const opts = (element as any)._sensorGrowspaces as Array<{ id: string; name: string }>;
-        expect(opts.length).toBe(2);
-        expect(opts[0]).toEqual({ id: 'gs1', name: 'Growroom 1' });
-        expect(opts[1]).toEqual({ id: 'gs2', name: 'Growroom 2' });
+    test('renders options based on sensor.growspaces_list via controller', () => {
+        (element as any).willUpdate(new Map([['hass', null]]));
+        const controller = (element as any)._gsController;
+        expect(controller.options.length).toBe(2);
+        expect(controller.options[0]).toEqual({ id: 'gs1', name: 'Growroom 1' });
+        expect(controller.options[1]).toEqual({ id: 'gs2', name: 'Growroom 2' });
     });
 
     test('handles growspace change and dispatches config-changed via _valueChanged', () => {
@@ -67,29 +75,30 @@ describe('GrowspaceTankCardEditor', () => {
 
     test('handles missing growspaces list sensor', () => {
         element.hass = { ...mockHass, states: {} };
-        (element as any)._loadGrowspaces();
-        expect((element as any)._sensorGrowspaces).toEqual([]);
+        (element as any).willUpdate(new Map([['hass', null]]));
+        expect((element as any)._gsController.options).toEqual([]);
     });
 
-    test('handles growspaces list as object format', () => {
-        element.hass = {
-            ...mockHass,
-            states: {
-                'sensor.growspaces_list': {
+    test('handles sensor update events via subscription callback', () => {
+        (element as any).willUpdate(new Map([['hass', null]]));
+        expect(capturedCallback).toBeDefined();
+
+        capturedCallback({
+            data: {
+                new_state: {
+                    entity_id: 'sensor.growspaces_list',
                     attributes: {
-                        growspaces: {
-                            'gs3': 'Tent 3',
-                            'gs4': 'Tent 4'
-                        }
-                    }
-                }
-            }
-        };
-        (element as any)._loadGrowspaces();
-        const opts = (element as any)._sensorGrowspaces as Array<{ id: string; name: string }>;
-        expect(opts.length).toBe(2);
-        expect(opts[0]).toEqual({ id: 'gs3', name: 'Tent 3' });
-        expect(opts[1]).toEqual({ id: 'gs4', name: 'Tent 4' });
+                        growspaces: { gs3: 'Tent 3', gs4: 'Tent 4' },
+                    },
+                },
+            },
+        });
+
+        const controller = (element as any)._gsController;
+        expect(controller.options).toEqual([
+            { id: 'gs3', name: 'Tent 3' },
+            { id: 'gs4', name: 'Tent 4' },
+        ]);
     });
 
     test('handles uninitialized config in render', async () => {
@@ -102,15 +111,15 @@ describe('GrowspaceTankCardEditor', () => {
         document.body.removeChild(div);
     });
 
-    test('willUpdate() calls _loadGrowspaces when hass changes', () => {
-        const spy = vi.spyOn(element as any, '_loadGrowspaces');
+    test('willUpdate() calls controller.update when hass changes', () => {
+        const spy = vi.spyOn((element as any)._gsController, 'update');
         (element as any).willUpdate(new Map([['hass', null]]));
-        expect(spy).toHaveBeenCalled();
+        expect(spy).toHaveBeenCalledWith(element.hass);
     });
 
-    test('setConfig calls _loadGrowspaces', () => {
-        const spy = vi.spyOn(element as any, '_loadGrowspaces');
-        element.setConfig({ type: 'custom:growspace-tank-card', default_growspace: 'gs1' } as any);
-        expect(spy).toHaveBeenCalled();
+    test('willUpdate() does not call controller.update when hass not in changedProps', () => {
+        const spy = vi.spyOn((element as any)._gsController, 'update');
+        (element as any).willUpdate(new Map([['config', null]]));
+        expect(spy).not.toHaveBeenCalled();
     });
 });
