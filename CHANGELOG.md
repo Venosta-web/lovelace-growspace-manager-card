@@ -1,3 +1,10 @@
+# [1.1.0-next.154](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.153...v1.1.0-next.154) (2026-08-18)
+
+
+### Bug Fixes
+
+* **config:** give ha-entity-picker a min-height floor in the Sensors tab ([#676](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/676)) ([8db0cd6](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/8db0cd651e6bc6f549aaef13e347933b4ea4aaea)), closes [#673](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/673)
+
 # [1.1.0-next.153](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.152...v1.1.0-next.153) (2026-08-18)
 
 
