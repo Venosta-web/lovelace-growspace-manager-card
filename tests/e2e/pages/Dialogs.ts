@@ -159,6 +159,18 @@ export class ConfigDialog {
     await expect(this.dialog).toHaveAttribute('open', '');
   }
 
+  async clickTab(tabId: string) {
+    await this.dialog.locator(`.cfg-nav-item[data-tab="${tabId}"]`).click();
+  }
+
+  async fillTimeField(label: string, value: string) {
+    await this.dialog.locator(`md3-text-input[type="time"][label="${label}"]`).locator('input').fill(value);
+  }
+
+  getTimeField(label: string): Locator {
+    return this.dialog.locator(`md3-text-input[type="time"][label="${label}"]`).locator('input');
+  }
+
   async save() {
     const saveButton = this.dialog.locator('button.md3-button.primary');
     await saveButton.click();
@@ -296,16 +308,13 @@ export class IrrigationDialog {
     await this.dialog.locator(`md3-number-input[label="${label}"]`).locator('input').fill(String(value));
   }
 
-  async fillTimeField(label: string, value: string) {
-    await this.dialog.locator(`md3-text-input[type="time"][label="${label}"]`).locator('input').fill(value);
-  }
-
   getNumberField(label: string): Locator {
     return this.dialog.locator(`md3-number-input[label="${label}"]`).locator('input');
   }
 
-  getTimeField(label: string): Locator {
-    return this.dialog.locator(`md3-text-input[type="time"][label="${label}"]`).locator('input');
+  /** Read-only in this dialog (ADR-0026) — editable copy lives on Config → Growlights. */
+  getLightsOnTimeReadout(): Locator {
+    return this.dialog.locator('.lights-on-readonly .ro-value');
   }
 
   async saveAll() {
