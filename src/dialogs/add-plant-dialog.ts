@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
@@ -61,6 +61,12 @@ export class AddPlantDialog extends LitElement {
   @property({ type: String }) growspaceName = '';
   @property({ type: Boolean, reflect: true }) open = false;
 
+  // Target cell and pre-fill, captured at open time — seeded into `_sm` by `willUpdate`.
+  @property({ type: Number }) row = 0;
+  @property({ type: Number }) col = 0;
+  @property({ type: String }) strain = '';
+  @property({ type: String }) phenotype = '';
+
   // Render-time args — not draft state
   @property({ type: Array }) clonePlants: PlantEntity[] = [];
   @property({ type: Array }) seedlingPlants: PlantEntity[] = [];
@@ -69,6 +75,17 @@ export class AddPlantDialog extends LitElement {
 
   @state() private _sm: SM = createInitialSM({ row: 0, col: 0 });
   @state() private _loadingLibrary = true;
+  private _initialStateApplied = false;
+
+  protected willUpdate(changedProperties: PropertyValues): void {
+    if (changedProperties.has('open') && !this.open) {
+      this._initialStateApplied = false;
+      return;
+    }
+    if (this._initialStateApplied || !this.open) return;
+    this.setInitialState(this.row, this.col, this.strain, this.phenotype);
+    this._initialStateApplied = true;
+  }
 
   // Self-fetch the strain library on open (see "Dialog self-fetch on open" in
   // CONTEXT.md); the populated atom flows back in via the `strainLibrary` prop.
