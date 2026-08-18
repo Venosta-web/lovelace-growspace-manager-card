@@ -1,3 +1,10 @@
+# [1.1.0-next.153](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.152...v1.1.0-next.153) (2026-08-18)
+
+
+### Bug Fixes
+
+* **dialogs:** seed AddPlantDialog from the clicked cell's row/col ([#671](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/671)) ([adf26b3](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/adf26b381cae1a3a6cee86581785d973f1b009a1))
+
 # [1.1.0-next.152](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.151...v1.1.0-next.152) (2026-08-18)
 
 
