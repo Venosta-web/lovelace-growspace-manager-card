@@ -1,3 +1,10 @@
+# [1.1.0-next.155](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.154...v1.1.0-next.155) (2026-08-19)
+
+
+### Bug Fixes
+
+* **editors:** route ai-insight & tank editors through GrowspaceOptionsController ([#677](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/677)) ([192f8e4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/192f8e4271be969c9e4f458e732a4e5b4f229868)), closes [#672](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/672)
+
 # [1.1.0-next.154](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.153...v1.1.0-next.154) (2026-08-18)
 
 
