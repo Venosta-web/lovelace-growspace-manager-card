@@ -8,21 +8,28 @@ if (!customElements.get('growspace-ai-insight-card-editor')) {
 
 describe('GrowspaceAiInsightCardEditor', () => {
     let element: GrowspaceAiInsightCardEditor;
+    let capturedCallback: any;
 
     beforeEach(() => {
+        capturedCallback = null;
         element = new GrowspaceAiInsightCardEditor();
         element.hass = {
             states: {
                 'sensor.growspaces_list': {
                     state: '2',
                     attributes: {
-                        growspaces: [
-                            { id: 'all', name: 'All Growspaces' },
-                            { id: 'gs1', name: 'Test Tent' },
-                            { id: 'gs2', name: 'Another Tent' }
-                        ]
-                    }
-                }
+                        growspaces: {
+                            gs1: 'Test Tent',
+                            gs2: 'Another Tent',
+                        },
+                    },
+                },
+            },
+            connection: {
+                subscribeEvents: vi.fn().mockImplementation((callback) => {
+                    capturedCallback = callback;
+                    return Promise.resolve(vi.fn());
+                }),
             },
         } as any;
     });
@@ -40,91 +47,50 @@ describe('GrowspaceAiInsightCardEditor', () => {
         expect(element._default_growspace).toBe('gs1');
     });
 
-    test('loads growspaces from array format via _loadGrowspaces', () => {
-        (element as any)._loadGrowspaces();
-        const opts = (element as any)._sensorGrowspaces as Array<{ id: string; name: string }>;
-        expect(opts.length).toBe(3);
-        expect(opts[0]).toEqual({ id: 'all', name: 'All Growspaces' });
-        expect(opts[1]).toEqual({ id: 'gs1', name: 'Test Tent' });
+    test('renders options based on sensor.growspaces_list via controller', () => {
+        const config: GrowspaceManagerCardConfig = {
+            type: 'custom:growspace-ai-insight-card',
+            default_growspace: 'gs1',
+        };
+        element.setConfig(config);
+        (element as any).willUpdate(new Map([['hass', null]]));
+
+        const controller = (element as any)._gsController;
+        expect(controller.options.length).toBe(2);
+        expect(controller.options[0]).toEqual({ id: 'gs1', name: 'Test Tent' });
+        expect(controller.options[1]).toEqual({ id: 'gs2', name: 'Another Tent' });
     });
 
-    test('loads growspaces from object (record) format', () => {
-        element.hass = {
-            states: {
-                'sensor.growspaces_list': {
-                    state: '2',
+    test('handles missing hass gracefully', () => {
+        element.hass = undefined as any;
+        expect(() => {
+            element.setConfig({ type: 'custom:growspace-ai-insight-card' });
+        }).not.toThrow();
+    });
+
+    test('handles sensor update events via subscription callback', () => {
+        const config: GrowspaceManagerCardConfig = {
+            type: 'custom:growspace-ai-insight-card',
+            default_growspace: 'gs1',
+        };
+        element.setConfig(config);
+        (element as any).willUpdate(new Map([['hass', null]]));
+
+        expect(capturedCallback).toBeDefined();
+
+        capturedCallback({
+            data: {
+                new_state: {
+                    entity_id: 'sensor.growspaces_list',
                     attributes: {
-                        growspaces: {
-                            gs1: 'Tent 1',
-                            gs2: 'Tent 2',
-                        },
+                        growspaces: { gs3: 'Update' },
                     },
                 },
             },
-        } as any;
-        (element as any)._loadGrowspaces();
-        const opts = (element as any)._sensorGrowspaces as Array<{ id: string; name: string }>;
-        expect(opts.length).toBe(2);
-        expect(opts[0].id).toBe('gs1');
-        expect(opts[0].name).toBe('Tent 1');
-    });
+        });
 
-    test('handles _loadGrowspaces with missing hass', () => {
-        element.hass = undefined as any;
-        (element as any)._loadGrowspaces();
-        expect((element as any)._sensorGrowspaces).toEqual([]);
-    });
-
-    test('handles _loadGrowspaces with missing sensor or attributes', () => {
-        element.hass = { states: {} } as any;
-        (element as any)._loadGrowspaces();
-        expect((element as any)._sensorGrowspaces).toEqual([]);
-
-        element.hass = {
-            states: {
-                'sensor.growspaces_list': {
-                    attributes: {}
-                }
-            }
-        } as any;
-        (element as any)._loadGrowspaces();
-        expect((element as any)._sensorGrowspaces).toEqual([]);
-    });
-
-    test('loads growspaces with fallback names in array format', () => {
-        element.hass = {
-            states: {
-                'sensor.growspaces_list': {
-                    attributes: {
-                        growspaces: [
-                            { id: 'gs1' },
-                            { id: 'gs2', name: '' }
-                        ]
-                    }
-                }
-            }
-        } as any;
-        (element as any)._loadGrowspaces();
-        const opts = (element as any)._sensorGrowspaces;
-        expect(opts[0].name).toBe('gs1');
-        expect(opts[1].name).toBe('gs2');
-    });
-
-    test('loads growspaces with fallback names in object format', () => {
-        element.hass = {
-            states: {
-                'sensor.growspaces_list': {
-                    attributes: {
-                        growspaces: {
-                            gs1: '',
-                        }
-                    }
-                }
-            }
-        } as any;
-        (element as any)._loadGrowspaces();
-        const opts = (element as any)._sensorGrowspaces;
-        expect(opts[0].name).toBe('gs1');
+        const controller = (element as any)._gsController;
+        expect(controller.options).toEqual([{ id: 'gs3', name: 'Update' }]);
     });
 
     test('_valueChanged dispatches config-changed', () => {
@@ -171,13 +137,15 @@ describe('GrowspaceAiInsightCardEditor', () => {
         document.body.removeChild(div);
     });
 
-    test('firstUpdated calls _loadGrowspaces', async () => {
-        const spy = vi.spyOn(element as any, '_loadGrowspaces');
-        const div = document.createElement('div');
-        div.appendChild(element);
-        document.body.appendChild(div);
-        await element.updateComplete;
-        expect(spy).toHaveBeenCalled();
-        document.body.removeChild(div);
+    test('willUpdate() calls controller.update when hass key is present', () => {
+        const spy = vi.spyOn((element as any)._gsController, 'update');
+        (element as any).willUpdate(new Map([['hass', null]]));
+        expect(spy).toHaveBeenCalledWith(element.hass);
+    });
+
+    test('willUpdate() does not call controller.update when hass not in changedProps', () => {
+        const spy = vi.spyOn((element as any)._gsController, 'update');
+        (element as any).willUpdate(new Map([['config', null]]));
+        expect(spy).not.toHaveBeenCalled();
     });
 });
