@@ -225,6 +225,6 @@ describe('GrowspaceGridCardEditor', () => {
         const result = element.render();
         expect(result).toBeTruthy();
         // result is a TemplateResult, check strings for ha-form
-        expect(result.strings[0]).toContain('ha-form');
+        expect(result.strings.join('')).toContain('ha-form');
     });
 });

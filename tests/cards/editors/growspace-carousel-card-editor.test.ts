@@ -146,7 +146,7 @@ describe('GrowspaceCarouselCardEditor', () => {
         const template = element.render();
         expect(template).toBeDefined();
         // Verify it contains ha-form
-        expect(template.strings[0]).toContain('ha-form');
+        expect(template.strings.join('')).toContain('ha-form');
     });
 
     test('renders options when sensor uses new {name, total_plants} attribute format', () => {
@@ -181,7 +181,8 @@ describe('GrowspaceCarouselCardEditor', () => {
         (element as any).willUpdate(new Map([['hass', null]]));
         
         const schema = (element as any)._computeSchema();
-        expect(schema[0].selector.select.options).toHaveLength(0);
+        expect(schema.map((field: { name: string }) => field.name)).not.toContain('growspaces');
+        expect(schema.map((field: { name: string }) => field.name)).toContain('interval');
     });
 
     test('static styles are defined', () => {

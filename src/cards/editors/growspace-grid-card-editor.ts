@@ -39,7 +39,7 @@ export class GrowspaceGridCardEditor extends LitElement implements LovelaceCardE
   `;
 
   private _computeSchema() {
-    return [
+    return this._gsController.filterUnavailableFields([
       {
         name: 'default_growspace',
         selector: {
@@ -51,7 +51,7 @@ export class GrowspaceGridCardEditor extends LitElement implements LovelaceCardE
           },
         },
       },
-    ];
+    ]);
   }
 
   render() {
@@ -63,6 +63,7 @@ export class GrowspaceGridCardEditor extends LitElement implements LovelaceCardE
           The Grid Card is a localized view locked to the Standard tracking interface. Environment
           headers and charts are removed.
         </div>
+        ${this._gsController.renderEmptyState(this.hass?.language)}
         <ha-form
           .hass=${this.hass}
           .data=${this._config}

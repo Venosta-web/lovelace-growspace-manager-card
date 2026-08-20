@@ -27,7 +27,7 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
   private _computeSchema() {
     const lang = this.hass?.language;
     const l = (key: string) => localize(key, '', '', lang);
-    return [
+    return this._gsController.filterUnavailableFields([
       {
         name: 'default_growspace',
         selector: {
@@ -81,13 +81,14 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
           },
         },
       },
-    ];
+    ]);
   }
 
   render() {
     if (!this._config) return html``;
 
     return html`
+      ${this._gsController.renderEmptyState(this.hass?.language)}
       <ha-form
         .hass=${this.hass}
         .data=${this._config}
