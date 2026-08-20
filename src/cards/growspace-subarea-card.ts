@@ -407,9 +407,10 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     }
 
     private _handleSubareaRangeChange(e: CustomEvent): void {
-        if (this._subarea) {
+        const deviceId = this._config.default_growspace;
+        if (this._subarea && deviceId) {
             const range = e.detail as HistoryTimeRange;
-            this.store.history.setGraphRange(this._config.default_growspace, range);
+            this.store.history.setGraphRange(deviceId, range);
             this._loadHistory(this._subarea, range);
         }
     }
