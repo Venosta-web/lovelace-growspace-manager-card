@@ -1,3 +1,10 @@
+# [1.1.0-next.158](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.157...v1.1.0-next.158) (2026-08-20)
+
+
+### Bug Fixes
+
+* **environment:** render tank consumption history bars ([#680](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/680)) ([54486ea](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/54486ea1ae68e55f992013acdb9f098d53e44d91))
+
 # [1.1.0-next.157](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.156...v1.1.0-next.157) (2026-08-20)
 
 
