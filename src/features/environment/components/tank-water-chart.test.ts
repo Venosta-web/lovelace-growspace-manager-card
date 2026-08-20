@@ -45,7 +45,7 @@ describe('TankWaterChart – _fetch', () => {
     expect(mockHassCall).toHaveBeenCalledWith(
       'growspace_manager/get_tank_water_history',
       { growspace_id: 'gs-1', range: '7d' },
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -157,7 +157,7 @@ describe('TankWaterChart – _renderBars', () => {
     await el.updateComplete;
     await vi.waitFor(() => el.shadowRoot!.querySelectorAll('rect').length === 3);
     const titles = Array.from(el.shadowRoot!.querySelectorAll('rect title')).map(
-      (t) => t.textContent ?? '',
+      (t) => t.textContent ?? ''
     );
     expect(titles[0]).toContain('4.0 L');
     expect(titles[1]).toContain('2.0 L');
@@ -172,5 +172,23 @@ describe('TankWaterChart – _renderBars', () => {
     const heights = Array.from(rects).map((r) => parseFloat(r.getAttribute('height') ?? '0'));
     expect(heights[0]).toBeGreaterThan(heights[1]);
     expect(heights[1]).toBeGreaterThan(heights[2]);
+  });
+
+  it.each([96, 168])('renders positive-width bars for a %i-bucket response', async (count) => {
+    mockHassCall.mockResolvedValue({
+      buckets: Array.from({ length: count }, (_, i) =>
+        mkBucket(new Date(2024, 0, 1, 0, i * 15).toISOString(), i % 4 === 0 ? 1 : 0)
+      ),
+    });
+    const el = createElement();
+    el.device = { deviceId: 'gs-1' } as any;
+    await el.updateComplete;
+    await vi.waitFor(() => el.shadowRoot!.querySelectorAll('rect').length === count);
+
+    const widths = Array.from(el.shadowRoot!.querySelectorAll<SVGRectElement>('rect')).map((r) =>
+      parseFloat(r.getAttribute('width') ?? '0')
+    );
+    expect(widths).toHaveLength(count);
+    expect(widths.every((width) => width > 0)).toBe(true);
   });
 });

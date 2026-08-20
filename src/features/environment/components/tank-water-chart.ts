@@ -146,8 +146,8 @@ export class TankWaterChart extends LitElement {
   private _renderBars(): TemplateResult {
     const max = Math.max(...this._buckets.map((b) => b.liters), 0.001);
     const chartH = 80;
-    const barW = Math.floor(100 / this._buckets.length);
-    const gap = 2;
+    const barW = 100 / this._buckets.length;
+    const gap = Math.min(0.5, barW * 0.2);
 
     return html`
       <svg viewBox="0 0 100 ${chartH}" preserveAspectRatio="none" height="${chartH}">
