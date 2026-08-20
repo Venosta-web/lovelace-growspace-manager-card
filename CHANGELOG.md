@@ -1,3 +1,10 @@
+# [1.1.0-next.157](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.156...v1.1.0-next.157) (2026-08-20)
+
+
+### Bug Fixes
+
+* **editor:** show empty growspace picker state ([#679](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/679)) ([a832816](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/a8328168883fb602daa1cb7983d43bd13d3f2675))
+
 # [1.1.0-next.156](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.155...v1.1.0-next.156) (2026-08-20)
 
 
