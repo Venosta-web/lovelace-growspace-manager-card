@@ -10,8 +10,17 @@ repos:
         name: unit tests
         entry: npm run test:unit
         language: system
-        types: [javascript, ts, json]
+        types_or: [javascript, ts, json]
         pass_filenames: false
+        stages: [pre-commit]
+
+      - id: typecheck
+        name: typecheck
+        entry: npm run typecheck
+        language: system
+        types_or: [javascript, ts]
+        pass_filenames: false
+        stages: [pre-commit]
 
   # commitlint runs in an environment prek builds and owns, NOT out of this
   # repo's node_modules. The previous `language: system` + `npx --no` version
