@@ -24,7 +24,7 @@ export class GrowspaceLogbookCardEditor extends LitElement implements LovelaceCa
   }
 
   private _computeSchema() {
-    return [
+    return this._gsController.filterUnavailableFields([
       {
         name: 'default_growspace',
         selector: {
@@ -47,7 +47,7 @@ export class GrowspaceLogbookCardEditor extends LitElement implements LovelaceCa
           },
         },
       },
-    ];
+    ]);
   }
 
   private _valueChanged(ev: CustomEvent): void {
@@ -84,6 +84,7 @@ export class GrowspaceLogbookCardEditor extends LitElement implements LovelaceCa
 
     return html`
       <div class="card-config">
+        ${this._gsController.renderEmptyState(this.hass?.language)}
         <ha-form
           .hass=${this.hass}
           .data=${this._config}

@@ -115,6 +115,7 @@
   },
   "editor": {
     "select_growspace": "Select a growspace...",
+    "no_growspaces": "No growspaces found — configure the growspace_manager integration first.",
     "theme_default": "Default",
     "theme_dark": "Dark",
     "theme_green": "Green",

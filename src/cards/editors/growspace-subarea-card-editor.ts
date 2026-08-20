@@ -68,7 +68,7 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
       ...this._subareas.map((sa) => ({ label: sa.name, value: sa.id })),
     ];
 
-    return [
+    return this._gsController.filterUnavailableFields([
       {
         name: 'default_growspace',
         selector: {
@@ -109,7 +109,7 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
           },
         },
       },
-    ];
+    ]);
   }
 
   private _valueChanged(ev: CustomEvent): void {
@@ -159,6 +159,7 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
     return html`
       <div class="card-config">
         ${this._loadingSubareas ? html`<span class="loading-text">Loading subareas...</span>` : ''}
+        ${this._gsController.renderEmptyState(this.hass?.language)}
         <ha-form
           .hass=${this.hass}
           .data=${this._config}

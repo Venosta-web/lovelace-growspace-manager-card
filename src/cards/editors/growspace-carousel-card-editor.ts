@@ -23,7 +23,7 @@ export class GrowspaceCarouselCardEditor extends LitElement implements LovelaceC
   }
 
   private _computeSchema() {
-    return [
+    return this._gsController.filterUnavailableFields([
       {
         name: 'growspaces',
         selector: {
@@ -49,13 +49,14 @@ export class GrowspaceCarouselCardEditor extends LitElement implements LovelaceC
         name: 'filter_empty',
         selector: { boolean: {} },
       },
-    ];
+    ]);
   }
 
   render() {
     if (!this._config) return html``;
 
     return html`
+      ${this._gsController.renderEmptyState(this.hass?.language)}
       <ha-form
         .hass=${this.hass}
         .data=${this._config}

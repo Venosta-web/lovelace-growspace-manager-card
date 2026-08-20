@@ -1,6 +1,7 @@
-import { ReactiveController, ReactiveControllerHost } from 'lit';
+import { html, ReactiveController, ReactiveControllerHost, TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassSubscriptionController } from './hass-subscription-controller';
+import { localize } from '../localize/localize';
 
 export type GrowspaceOption = { id: string; name: string };
 
@@ -10,6 +11,24 @@ export class GrowspaceOptionsController implements ReactiveController {
   private _subscribed = false;
 
   options: GrowspaceOption[] = [];
+
+  get hasOptions(): boolean {
+    return this.options.length > 0;
+  }
+
+  renderEmptyState(language?: string): TemplateResult {
+    if (this.hasOptions) return html``;
+
+    return html`
+      <ha-alert alert-type="info"> ${localize('editor.no_growspaces', '', '', language)} </ha-alert>
+    `;
+  }
+
+  filterUnavailableFields<T extends { name: string }>(schema: T[]): T[] {
+    return this.hasOptions
+      ? schema
+      : schema.filter((field) => field.name !== 'default_growspace' && field.name !== 'growspaces');
+  }
 
   constructor(host: ReactiveControllerHost) {
     this._host = host;
