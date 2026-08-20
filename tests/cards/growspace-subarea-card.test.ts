@@ -110,7 +110,7 @@ describe('GrowspaceSubareaCard', () => {
 
         element.setConfig({
             type: 'custom:growspace-subarea-card',
-            growspace_id: 'gs1',
+            default_growspace: 'gs1',
             subarea_id: 'sa1'
         } as any);
 
@@ -133,7 +133,7 @@ describe('GrowspaceSubareaCard', () => {
         expect(title?.textContent?.trim()).toBe('Veg Area');
 
         const subtitle = element.shadowRoot?.querySelector('.subarea-subtitle');
-        expect(subtitle?.textContent?.trim()).toContain('gs1'); // default to growspace_id if parent name not fetched
+        expect(subtitle?.textContent?.trim()).toContain('gs1'); // default to default_growspace if parent name not fetched
     });
 
     test('renders hero sensors correctly', () => {
@@ -201,7 +201,7 @@ describe('GrowspaceSubareaCard', () => {
     test('getStubConfig returns default config', () => {
         const stub = GrowspaceSubareaCard.getStubConfig();
         expect(stub.type).toBe('custom:growspace-subarea-card');
-        expect(stub.growspace_id).toBe('');
+        expect(stub.default_growspace).toBe('');
     });
 
     test('disconnectedCallback cleans up store and history', () => {
@@ -214,8 +214,22 @@ describe('GrowspaceSubareaCard', () => {
         expect(() => element.setConfig(null as any)).toThrow('Invalid configuration');
     });
 
-    test('renders unconfigured state when growspace_id is missing', async () => {
-        element.setConfig({ type: 'custom:growspace-subarea-card', growspace_id: '', subarea_id: '' } as any);
+    test('falls back to legacy growspace_id when default_growspace is absent', async () => {
+        element.setConfig({
+            type: 'custom:growspace-subarea-card',
+            growspace_id: 'gs1',
+            subarea_id: 'sa1',
+        } as any);
+
+        await (element as any)._loadSubarea();
+
+        expect(mockGetSubareas).toHaveBeenCalledWith('gs1');
+        expect((element as any)._config.default_growspace).toBe('gs1');
+        expect((element as any)._config).not.toHaveProperty('growspace_id');
+    });
+
+    test('renders unconfigured state when default_growspace is missing', async () => {
+        element.setConfig({ type: 'custom:growspace-subarea-card', default_growspace: '', subarea_id: '' } as any);
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('.no-data')?.textContent).toContain('Please configure');
     });
@@ -517,7 +531,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('firstUpdated calls _loadSubarea when _subarea is null and not loading', async () => {
-        (element as any)._config = { type: 'custom:growspace-subarea-card', growspace_id: 'gs2', subarea_id: 'sa1' };
+        (element as any)._config = { type: 'custom:growspace-subarea-card', default_growspace: 'gs2', subarea_id: 'sa1' };
         (element as any)._loading = false;
         (element as any)._subarea = null;
         const loadSpy = vi.spyOn(element as any, '_loadSubarea');
@@ -527,7 +541,7 @@ describe('GrowspaceSubareaCard', () => {
 
     test('updated calls _loadSubarea when config changes', async () => {
         const loadSpy = vi.spyOn(element as any, '_loadSubarea').mockResolvedValue(undefined);
-        element.setConfig({ type: 'custom:growspace-subarea-card', growspace_id: 'gs2', subarea_id: 'sa2' } as any);
+        element.setConfig({ type: 'custom:growspace-subarea-card', default_growspace: 'gs2', subarea_id: 'sa2' } as any);
         await element.updateComplete;
         expect(loadSpy).toHaveBeenCalled();
     });

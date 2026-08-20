@@ -37,7 +37,7 @@ test('growspace-subarea-card visual snapshot', async () => {
     const element = await fixture<GrowspaceSubareaCard>(html`
         <growspace-subarea-card .hass=${mockHass}></growspace-subarea-card>
     `);
-    element.setConfig({ type: 'custom:growspace-subarea-card', growspace_id: 'gs1', subarea_id: 'sa1' } as any);
+    element.setConfig({ type: 'custom:growspace-subarea-card', default_growspace: 'gs1', subarea_id: 'sa1' } as any);
     await element.updateComplete;
     await new Promise(resolve => setTimeout(resolve, 0));
     await element.updateComplete;

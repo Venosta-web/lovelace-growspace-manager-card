@@ -18,16 +18,20 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
   private _gsController = new GrowspaceOptionsController(this);
 
   public setConfig(config: GrowspaceSubareaCardConfig): void {
-    this._config = config;
-    if (config.growspace_id) {
-      this._loadSubareas(config.growspace_id);
+    const { growspace_id: legacyGrowspaceId, ...currentConfig } = config;
+    this._config = {
+      ...currentConfig,
+      default_growspace: config.default_growspace ?? legacyGrowspaceId ?? '',
+    };
+    if (this._config.default_growspace) {
+      this._loadSubareas(this._config.default_growspace);
     }
   }
 
   protected willUpdate(changedProps: Map<string, unknown>): void {
     if (changedProps.has('hass') && this.hass) {
       this._gsController.update(this.hass);
-      const gid = this._config?.growspace_id;
+      const gid = this._config?.default_growspace;
       if (gid && (this as any)._lastLoadedId !== gid) {
         (this as any)._lastLoadedId = gid;
         this._loadSubareas(gid);
@@ -54,7 +58,7 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
   private _computeSchema() {
     const subareaOptions = [
       {
-        label: this._config?.growspace_id
+        label: this._config?.default_growspace
           ? this._subareas.length
             ? 'Select a subarea...'
             : 'No subareas found'
@@ -66,7 +70,7 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
 
     return [
       {
-        name: 'growspace_id',
+        name: 'default_growspace',
         selector: {
           select: {
             options: [
@@ -112,9 +116,9 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
     if (!this._config || !this.hass) return;
 
     const newConfig = ev.detail.value;
-    if (newConfig.growspace_id !== this._config.growspace_id) {
+    if (newConfig.default_growspace !== this._config.default_growspace) {
       newConfig.subarea_id = '';
-      this._loadSubareas(newConfig.growspace_id);
+      this._loadSubareas(newConfig.default_growspace);
     }
 
     this._config = newConfig;
