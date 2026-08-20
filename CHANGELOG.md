@@ -1,3 +1,10 @@
+# [1.1.0-next.160](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.159...v1.1.0-next.160) (2026-08-20)
+
+
+### Bug Fixes
+
+* speed up seven-day graph loading ([#682](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/682)) ([fb64794](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/fb6479498f06b7ee59745ce8218c7d3b8563b3a3))
+
 # [1.1.0-next.159](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.158...v1.1.0-next.159) (2026-08-20)
 
 
