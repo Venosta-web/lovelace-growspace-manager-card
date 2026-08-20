@@ -23,7 +23,7 @@ import type { EnvSnapshot, SensorReadings } from '../slices/environment';
 import { setSubareaDeviceSnapshot, subareaDeviceSnapshots$ } from '../slices/device-state';
 import { computeHeaderMetrics } from '../slices/header-metrics';
 import { setHass } from '../services/hass-call';
-import { getBatchHistory } from '../store/history/history-store';
+import { getHistoryStats } from '../store/history/history-store';
 import { ConfigTab } from '../features/environment/constants';
 import type { HistoryTimeRange } from '../features/environment/constants';
 import { ResizeController } from '../controllers/resize-controller';
@@ -117,6 +117,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
      * a subarea's are its own, not the parent growspace's.
      */
     @state() private _metricSensors: Record<string, string[]> = {};
+    private _historyRequestId = 0;
 
     static styles: CSSResultGroup = [
         variables,
@@ -247,9 +248,6 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             this._loadSubarea();
         }
         this._initAnalyticsController();
-        if (this.store?.history && !this._analyticsStateController?.value?.historyLoaded) {
-            this.store.history.loadHistoryOnDemand();
-        }
     }
 
     disconnectedCallback(): void {
@@ -356,8 +354,21 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         const allEntityIds = [...new Set(metricEntities.flatMap((m) => m.entityIds))];
         if (!allEntityIds.length) return;
 
+        const requestId = ++this._historyRequestId;
+        this.store.history.setHistoryLoading(true);
+        this.store.history.setHistoryLoaded(false);
+
         try {
-            const batchResults = await getBatchHistory(allEntityIds, start, end);
+            // Seven days of raw HA state changes can be tens of thousands of rows.
+            // Keep chart cost bounded with the same downsampled transport as main graphs.
+            const batchResults = await getHistoryStats(
+                allEntityIds,
+                start,
+                end,
+                this._historyIntervalMinutes(activeRange),
+                true
+            );
+            if (requestId !== this._historyRequestId) return;
             const cache: Record<string, any[]> = {};
 
             for (const { metric, entityIds } of metricEntities) {
@@ -377,13 +388,29 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             this.store.history.setHistoryBatch(cache);
             this.store.history.setHistoryLoaded(true);
         } catch (err) {
+            if (requestId !== this._historyRequestId) return;
             console.error('[GrowspaceSubareaCard] Failed to load history:', err);
+        } finally {
+            if (requestId === this._historyRequestId) {
+                this.store.history.setHistoryLoading(false);
+            }
+        }
+    }
+
+    private _historyIntervalMinutes(range: HistoryTimeRange): number {
+        switch (range) {
+            case '7d': return 240;
+            case '24h': return 30;
+            case '6h': return 15;
+            default: return 5;
         }
     }
 
     private _handleSubareaRangeChange(e: CustomEvent): void {
         if (this._subarea) {
-            this._loadHistory(this._subarea, e.detail as HistoryTimeRange);
+            const range = e.detail as HistoryTimeRange;
+            this.store.history.setGraphRange(this._config.default_growspace, range);
+            this._loadHistory(this._subarea, range);
         }
     }
 
@@ -500,6 +527,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                             .device=${parentDevice}
                             .deviceSnapshot=${subareaDeviceSnapshot}
                             .metricSensors=${this._metricSensors}
+                            .historyManagedExternally=${true}
                             @set-range=${this._handleSubareaRangeChange}
                           ></growspace-analytics>`
                             : ''}

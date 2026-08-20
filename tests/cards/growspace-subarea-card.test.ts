@@ -11,17 +11,17 @@ import * as uiSlice from '../../src/slices/ui';
 // directly. `{ spy: true }` keeps every real atom/mutator while recording calls.
 vi.mock('../../src/slices/ui', { spy: true });
 
-const { mockGetBatchHistory, mockGetSubareas } = vi.hoisted(() => {
+const { mockGetHistoryStats, mockGetSubareas } = vi.hoisted(() => {
     const mockGetSubareas = vi.fn();
-    const mockGetBatchHistory = vi.fn();
-    return { mockGetBatchHistory, mockGetSubareas };
+    const mockGetHistoryStats = vi.fn();
+    return { mockGetHistoryStats, mockGetSubareas };
 });
 
 vi.mock('../../src/store/history/history-store', async () => {
     const actual = await vi.importActual('../../src/store/history/history-store') as any;
     return {
         ...actual,
-        getBatchHistory: mockGetBatchHistory,
+        getHistoryStats: mockGetHistoryStats,
     };
 });
 
@@ -71,7 +71,7 @@ describe('GrowspaceSubareaCard', () => {
 
     aroundEach(async (runTest) => {
         mockGetSubareas.mockResolvedValue([mockSubarea as any]);
-        mockGetBatchHistory.mockResolvedValue({
+        mockGetHistoryStats.mockResolvedValue({
             'sensor.veg_temp': [
                 { entity_id: 'sensor.veg_temp', attributes: {}, last_changed: '2024-01-01T10:00:00Z', state: '22.5' },
                 { entity_id: 'sensor.veg_temp', attributes: {}, last_changed: '2024-01-01T11:00:00Z', state: '23.0' }
@@ -360,7 +360,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('_loadHistory catches and logs errors', async () => {
-        mockGetBatchHistory.mockRejectedValue(new Error('History fetch failed'));
+        mockGetHistoryStats.mockRejectedValue(new Error('History fetch failed'));
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
         await (element as any)._loadHistory(mockSubarea);
         expect(consoleSpy).toHaveBeenCalled();
@@ -370,9 +370,9 @@ describe('GrowspaceSubareaCard', () => {
     test('_loadHistory returns early when the seeded snapshot has no entity IDs', async () => {
         const emptySubarea = { id: 'sa_empty', name: 'Veg', environment_config: {} };
         setSubareaEnvSnapshot('sa_empty', emptySubarea as any, { growspaceId: 'gs1' }, {});
-        mockGetBatchHistory.mockClear();
+        mockGetHistoryStats.mockClear();
         await (element as any)._loadHistory(emptySubarea);
-        expect(mockGetBatchHistory).not.toHaveBeenCalled();
+        expect(mockGetHistoryStats).not.toHaveBeenCalled();
     });
 
     test('_loadHistory returns early when no snapshot exists for the subarea', async () => {
@@ -381,9 +381,9 @@ describe('GrowspaceSubareaCard', () => {
             name: 'Veg',
             environment_config: { temperature_sensors: ['sensor.veg_temp'] }
         };
-        mockGetBatchHistory.mockClear();
+        mockGetHistoryStats.mockClear();
         await (element as any)._loadHistory(unseededSubarea);
-        expect(mockGetBatchHistory).not.toHaveBeenCalled();
+        expect(mockGetHistoryStats).not.toHaveBeenCalled();
     });
 
     test('toggles device chip metric graph on click', async () => {
@@ -677,7 +677,7 @@ describe('GrowspaceSubareaCard', () => {
             { entity_id: calcVpdId, state: '1.0', last_changed: '2024-01-01T10:00:00Z', attributes: {} },
             { entity_id: calcVpdId, state: '1.1', last_changed: '2024-01-01T11:00:00Z', attributes: {} },
         ];
-        mockGetBatchHistory.mockResolvedValue({
+        mockGetHistoryStats.mockResolvedValue({
             'sensor.veg_temp': [
                 { entity_id: 'sensor.veg_temp', state: '22.5', last_changed: '2024-01-01T10:00:00Z', attributes: {} },
                 { entity_id: 'sensor.veg_temp', state: '23.0', last_changed: '2024-01-01T11:00:00Z', attributes: {} },
@@ -688,10 +688,12 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        expect(mockGetBatchHistory).toHaveBeenCalledWith(
+        expect(mockGetHistoryStats).toHaveBeenCalledWith(
             expect.arrayContaining([calcVpdId]),
             expect.any(Date),
-            expect.any(Date)
+            expect.any(Date),
+            30,
+            true
         );
         expect((element as any)._historyCache['vpd']).toEqual(calcVpdHistory);
     });
@@ -717,7 +719,7 @@ describe('GrowspaceSubareaCard', () => {
             { entity_id: nameVpdId, state: '1.2', last_changed: '2024-01-01T10:00:00Z', attributes: {} },
             { entity_id: nameVpdId, state: '1.3', last_changed: '2024-01-01T11:00:00Z', attributes: {} },
         ];
-        mockGetBatchHistory.mockResolvedValue({
+        mockGetHistoryStats.mockResolvedValue({
             'sensor.veg_temp': [
                 { entity_id: 'sensor.veg_temp', state: '22.5', last_changed: '2024-01-01T10:00:00Z', attributes: {} },
                 { entity_id: 'sensor.veg_temp', state: '23.0', last_changed: '2024-01-01T11:00:00Z', attributes: {} },
@@ -728,10 +730,12 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        expect(mockGetBatchHistory).toHaveBeenCalledWith(
+        expect(mockGetHistoryStats).toHaveBeenCalledWith(
             expect.arrayContaining([nameVpdId]),
             expect.any(Date),
-            expect.any(Date)
+            expect.any(Date),
+            30,
+            true
         );
         expect((element as any)._historyCache['vpd']).toEqual(nameVpdHistory);
     });

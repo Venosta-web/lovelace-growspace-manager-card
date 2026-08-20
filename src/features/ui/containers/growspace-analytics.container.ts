@@ -25,6 +25,8 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   @property({ attribute: false }) deviceSnapshot: DeviceSnapshot | null | undefined;
   /** Per-metric entity lists when the host resolved them itself (subarea view). */
   @property({ attribute: false }) metricSensors: Record<string, string[]> | undefined;
+  /** The host owns history requests (used by subareas with their own sensor set). */
+  @property({ type: Boolean, attribute: false }) historyManagedExternally = false;
   private _deviceSnapshotsController!: StoreController<Map<string, DeviceSnapshot>>;
 
   private _controller!: StoreController<{
@@ -57,14 +59,24 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   }
 
   firstUpdated() {
-    if (this.store?.history && !this._controller?.value?.historyLoaded) {
+    if (
+      !this.historyManagedExternally &&
+      this.store?.history &&
+      !this._controller?.value?.historyLoaded
+    ) {
       this.store.history.loadHistoryOnDemand();
     }
   }
 
   protected updated() {
     const state = this._controller?.value;
-    if (this.store?.history && state && !state.historyLoaded && !state.historyLoading) {
+    if (
+      !this.historyManagedExternally &&
+      this.store?.history &&
+      state &&
+      !state.historyLoaded &&
+      !state.historyLoading
+    ) {
       this.store.history.loadHistoryOnDemand();
     }
   }
@@ -144,7 +156,7 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   }
 
   private _handleSetRange(e: CustomEvent) {
-    if (this.device) {
+    if (this.device && !this.historyManagedExternally) {
       this.store.history.setGraphRange(this.device.deviceId, e.detail);
       this.store.history.loadHistoryOnDemand();
     }
