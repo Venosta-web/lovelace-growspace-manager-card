@@ -441,7 +441,7 @@ describe('computeEnvSeries — fan and light value spaces', () => {
     const [raw] = computeEnvSeries(rawDescriptors, histories, [MetricKey.LIGHT], windowOf(24));
 
     expect(percentage.points.map((point) => point.value)).toEqual([50, 50]);
-    expect(percentage.chartType).toBe(ChartType.LINE);
+    expect(percentage.chartType).toBe(ChartType.STEP);
     expect({ min: percentage.min, max: percentage.max }).toEqual({ min: 0, max: 100 });
     expect(raw.points.map((point) => point.value)).toEqual([0, 0, 1, 1]);
     expect(raw.chartType).toBe(ChartType.STEP);

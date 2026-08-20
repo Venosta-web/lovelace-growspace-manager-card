@@ -165,7 +165,11 @@ function _lightDescriptor(
     color: config.color,
     unit: isPercentage ? '%' : config.unit,
     icon: config.icon,
-    chartType: isPercentage ? ChartType.LINE : ChartType.STEP,
+    // A light's reported value is held until Home Assistant records its next
+    // state change. Percentage entities therefore need the same step-after
+    // interpolation as binary lights; a line would invent gradual dimming
+    // between two discrete brightness updates.
+    chartType: ChartType.STEP,
     axis: isPercentage ? { min: 0, max: 100 } : { min: 0, max: 1 },
     entityId,
     sensors: [],

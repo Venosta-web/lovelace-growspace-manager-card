@@ -180,7 +180,7 @@ describe('computeMetricDescriptors', () => {
     });
   });
 
-  it('derives the light unit and axis from its configured entity state', () => {
+  it('derives the light unit and axis while preserving held-state interpolation', () => {
     const deviceSnapshot = snapshot({ lightSensors: entry('sensor.tent_light') });
 
     const percentage = computeMetricDescriptors(deviceSnapshot, {
@@ -192,7 +192,7 @@ describe('computeMetricDescriptors', () => {
     expect(percentage[MetricKey.LIGHT]).toMatchObject({
       unit: '%',
       axis: { min: 0, max: 100 },
-      chartType: ChartType.LINE,
+      chartType: ChartType.STEP,
       entityId: 'sensor.tent_light',
     });
 
