@@ -1,3 +1,10 @@
+# [1.1.0-next.156](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.155...v1.1.0-next.156) (2026-08-20)
+
+
+### Bug Fixes
+
+* **subarea:** migrate growspace config key ([#678](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/678)) ([8f0e9ca](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/8f0e9ca750795a4da3504c5fcf031ff439462e6e))
+
 # [1.1.0-next.155](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.154...v1.1.0-next.155) (2026-08-19)
 
 
