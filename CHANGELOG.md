@@ -1,3 +1,10 @@
+# [1.1.0-next.159](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.158...v1.1.0-next.159) (2026-08-20)
+
+
+### Bug Fixes
+
+* render percentage light history as steps ([#681](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/681)) ([069d2a5](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/069d2a5b0a2a61e158efd7690ed5702aa5756fd6))
+
 # [1.1.0-next.158](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.157...v1.1.0-next.158) (2026-08-20)
 
 
