@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BaseRenderer } from './base-renderer';
+import { defaultLightCoords } from '../default-placement';
 
 export class LightRenderer extends BaseRenderer {
   private ledMaterial?: THREE.MeshStandardMaterial;
@@ -7,7 +8,8 @@ export class LightRenderer extends BaseRenderer {
   public render() {
     const { device, volatileGroup, visibility } = this.context;
     const width = device.dimensions?.width ?? 120;
-    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+    const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
+    const height = device.dimensions?.height ?? 200;
 
     if (!visibility.lights) {
       this.dispose();
@@ -35,10 +37,10 @@ export class LightRenderer extends BaseRenderer {
     const scaleZ = 1 / rows;
     const currentLightIds = new Set<string>();
 
-    lightSensors.forEach((entityId) => {
+    lightSensors.forEach((entityId, index) => {
       currentLightIds.add(entityId);
-      const coords = sensorCoords[entityId];
-      if (!coords) return;
+      const coords =
+        sensorCoords[entityId] ?? defaultLightCoords(index, cols, rows, { width, depth, height });
 
       let lightGroup = this.cache.get(entityId) as THREE.Group;
       const modelWidth = width * scaleX;

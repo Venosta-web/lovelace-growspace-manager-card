@@ -1,6 +1,7 @@
 import { METRIC_CONFIG, MetricKey } from '../constants';
 import { EntityState, BINARY_ON_STATES } from '../lib/types/hass';
 import type { RawHistoryDataPoint, NormalizedHistoryPoint } from '../adapters/hass-types';
+import { classifyFanEntity, fanReadingToNormalizedValue } from '../slices/device-state';
 
 export class ChartUtils {
   /**
@@ -128,11 +129,11 @@ export class ChartUtils {
     if (metricKey === 'vpd' && status) {
       switch (status) {
         case 'optimal':
-          return '#4caf50'; // Green
+          return 'var(--success-color, #4caf50)';
         case 'warning':
-          return '#ff9800'; // Orange
+          return 'var(--gm-warning-color, #ff9800)'; // Orange
         case 'danger':
-          return '#f44336'; // Red
+          return 'var(--error-color, #f44336)';
       }
     }
     const config = METRIC_CONFIG[metricKey];
@@ -482,23 +483,39 @@ export class ChartUtils {
 
   /**
    * Canonical conversion of a single HA sensor state string to a number.
-   * Handles metric-specific binary conversions (DEHUMIDIFIER, LIGHT, EXHAUST, HUMIDIFIER)
-   * and falls back to float parsing for all other metrics.
+   * Handles metric-specific binary conversions (DEHUMIDIFIER, LIGHT) and fan entity modes
+   * (ADR-0008: fan domain → attributes.percentage; speed sensor → raw float).
    * Returns undefined for unavailable/unknown/unparseable states.
    */
-  public static normalizeSensorValue(ent: { state: string }, key: string): number | undefined {
+  public static normalizeSensorValue(
+    ent: { state: string; attributes?: Record<string, unknown> },
+    key: string,
+    fanEntityId?: string,
+    entityUnit?: string
+  ): number | undefined {
     const s = ent.state;
     if (s === EntityState.UNAVAILABLE || s === EntityState.UNKNOWN) return undefined;
 
+    if (key === MetricKey.OPTIMAL) {
+      return BINARY_ON_STATES.includes(s) ? 1 : 0;
+    }
     if (key === MetricKey.DEHUMIDIFIER) {
       return BINARY_ON_STATES.includes(s) || s === 'heating' || s === 'drying' ? 1 : 0;
     }
     if (key === MetricKey.LIGHT) {
+      if (entityUnit === '%') {
+        const val = parseFloat(s);
+        return isNaN(val) ? undefined : val;
+      }
       if (s === EntityState.ON || s === EntityState.TRUE) return 1;
       if (s === EntityState.OFF || s === EntityState.FALSE) return 0;
       const val = parseFloat(s);
       if (!isNaN(val)) return val > 0 ? 1 : 0;
       return undefined;
+    }
+
+    if (fanEntityId && fanEntityId.split('.')[0] === 'fan') {
+      return fanReadingToNormalizedValue(classifyFanEntity(fanEntityId, ent));
     }
 
     const val = parseFloat(s);
@@ -517,7 +534,9 @@ export class ChartUtils {
    */
   public static normalizeHistory(
     historyData: RawHistoryDataPoint[],
-    metricKey: string
+    metricKey: string,
+    fanEntityId?: string,
+    entityUnit?: string
   ): NormalizedHistoryPoint[] {
     if (!historyData || historyData.length === 0) return [];
 
@@ -527,7 +546,7 @@ export class ChartUtils {
 
     const points: NormalizedHistoryPoint[] = [];
     for (const h of sorted) {
-      const val = ChartUtils.normalizeSensorValue(h, metricKey);
+      const val = ChartUtils.normalizeSensorValue(h, metricKey, fanEntityId, entityUnit);
       if (val === undefined) continue;
       const point: NormalizedHistoryPoint = {
         time: new Date(h.last_changed).getTime(),

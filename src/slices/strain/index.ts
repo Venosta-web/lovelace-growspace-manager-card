@@ -24,6 +24,8 @@ import { z } from 'zod';
 import { callService, callFetch, hassCall } from '../../services/hass-call';
 import { StrainLibrarySchema, StrainLibraryWrapperSchema } from './schema';
 import type { StrainEntry, StrainGalleryImage, CropMeta } from '../../types';
+import type { CacheOptions } from '../../lib/local-cache';
+import { importStrainLineageTree } from '../genetics';
 
 // ---------------------------------------------------------------------------
 // Atoms (public)
@@ -100,6 +102,20 @@ function _buildStrainPayload(
 ): Record<string, unknown> {
   const payload: Record<string, unknown> = { ...data };
 
+  // `parents` is a lineage tree handled out-of-band via importStrainLineageTree,
+  // never part of the add/update_strain payload.
+  delete payload.parents;
+  // `key` is a read-only composite identifier from the strain read model.
+  delete payload.key;
+
+  // Coerce flowering-day ranges to numbers (form inputs deliver strings).
+  if (payload.flowering_days_min !== undefined && payload.flowering_days_min !== null) {
+    payload.flowering_days_min = Number(payload.flowering_days_min);
+  }
+  if (payload.flowering_days_max !== undefined && payload.flowering_days_max !== null) {
+    payload.flowering_days_max = Number(payload.flowering_days_max);
+  }
+
   // Remove undefined keys
   for (const key of Object.keys(payload)) {
     if (payload[key] === undefined) delete payload[key];
@@ -128,15 +144,58 @@ function _buildStrainPayload(
  *
  * Updates strainLibrary$ on success. Re-throws on backend errors.
  */
-export async function fetchStrainLibrary(): Promise<StrainEntry[]> {
-  const response = await hassCall(
-    'growspace_manager/get_strain_library',
-    {},
-    StrainLibraryWrapperSchema
-  );
-  const entries = _parseLibrary(response.strains);
-  strainLibrary$.set(entries);
-  return entries;
+const STRAIN_CACHE_KEY = 'growspace_strain_library_v2';
+const STRAIN_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+/**
+ * Fetch the strain library.
+ *
+ * Default (no `opts.cache`): a plain fresh WS fetch that updates `strainLibrary$`
+ * and rethrows on failure. With `opts.cache`: serve a fresh-enough cached value,
+ * otherwise fetch, cache, and swallow fetch errors (matching the retired
+ * library-actions wrapper). The cache is versioned (`_v2`) so stale-shape
+ * entries are ignored.
+ */
+export async function fetchStrainLibrary(opts?: CacheOptions): Promise<StrainEntry[]> {
+  if (opts?.cache && !opts.force) {
+    const cachedRaw = localStorage.getItem(STRAIN_CACHE_KEY);
+    if (cachedRaw) {
+      try {
+        const cache = JSON.parse(cachedRaw);
+        const age = Date.now() - (cache.timestamp || 0);
+        if (cache.version === 2 && age < STRAIN_CACHE_TTL_MS && Array.isArray(cache.data)) {
+          strainLibrary$.set(cache.data);
+          return cache.data;
+        }
+      } catch (e) {
+        console.warn('Failed to parse cached strain library', e);
+        localStorage.removeItem(STRAIN_CACHE_KEY);
+      }
+    }
+  }
+
+  try {
+    const response = await hassCall(
+      'growspace_manager/get_strain_library',
+      {},
+      StrainLibraryWrapperSchema
+    );
+    const entries = _parseLibrary(response.strains);
+    strainLibrary$.set(entries);
+    if (opts?.cache) {
+      localStorage.setItem(
+        STRAIN_CACHE_KEY,
+        JSON.stringify({ version: 2, timestamp: Date.now(), data: entries })
+      );
+    }
+    return entries;
+  } catch (e) {
+    if (opts?.cache) {
+      console.error('Failed to fetch strain library:', e);
+      return strainLibrary$.get();
+    }
+    throw e;
+  }
 }
 
 /**
@@ -147,9 +206,11 @@ export async function addStrain(
     strain?: string;
     image_crop_meta?: CropMeta;
     images?: StrainGalleryImage[];
+    parents?: { parents?: unknown[] };
   }
 ): Promise<void> {
   await callService('growspace_manager', 'add_strain', _buildStrainPayload(data));
+  await _importLineageIfPresent(data);
 }
 
 /**
@@ -175,9 +236,26 @@ export async function updateStrainMeta(
     strain?: string;
     image_crop_meta?: CropMeta;
     images?: StrainGalleryImage[];
+    parents?: { parents?: unknown[] };
   }
 ): Promise<void> {
   await callService('growspace_manager', 'update_strain_meta', _buildStrainPayload(data));
+  await _importLineageIfPresent(data);
+}
+
+/**
+ * Cross-slice sibling effect: when a strain is saved with a non-empty lineage
+ * tree, persist it via the Genetics slice. Kept here (the slice owning the strain
+ * write) per the cross-slice mutation pattern; the lineage tree is excluded from
+ * the strain payload itself (see `_buildStrainPayload`).
+ */
+async function _importLineageIfPresent(data: {
+  strain?: string;
+  parents?: { parents?: unknown[] };
+}): Promise<void> {
+  if (data.strain && data.parents?.parents?.length) {
+    await importStrainLineageTree(data.strain, data.parents);
+  }
 }
 
 /**

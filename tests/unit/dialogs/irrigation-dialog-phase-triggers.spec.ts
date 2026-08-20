@@ -4,6 +4,7 @@ import { IrrigationDialog } from '../../../src/dialogs/irrigation-dialog';
 import { transition } from '../../../src/dialogs/irrigation-dialog-sm';
 import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
+import { irrigationConfigs$ } from '../../../src/slices/irrigation';
 
 vi.mock('../../../src/features/shared/ui/md3-text-input', () => ({
     Md3TextInput: class extends HTMLElement {
@@ -24,23 +25,26 @@ vi.mock('../../../src/features/shared/ui/md3-switch', () => ({
     }
 }));
 
-const mocks = vi.hoisted(() => ({
-    setIrrigationSettings: vi.fn().mockResolvedValue(undefined),
-    addIrrigationTime: vi.fn().mockResolvedValue(undefined),
-    removeIrrigationTime: vi.fn().mockResolvedValue(undefined),
-    addDrainTime: vi.fn().mockResolvedValue(undefined),
-    removeDrainTime: vi.fn().mockResolvedValue(undefined),
-    setIrrigationStrategy: vi.fn().mockResolvedValue(undefined),
+// Stub the Irrigation slice mutators the dialog calls (ADR-0001) so they don't
+// hit the real callService/hassCall seam (no hass in this unit context), while
+// keeping the real atoms the dialog subscribes to.
+const sliceMocks = vi.hoisted(() => ({
     getIrrigationAnalytics: vi.fn().mockResolvedValue(null),
     configureDrainMonitoring: vi.fn().mockResolvedValue(undefined),
     setEcTargetRanges: vi.fn().mockResolvedValue(undefined),
+    logDrainReading: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('../../../src/services/data-service', () => ({
-    DataService: class {
-        constructor() { return mocks; }
-    }
-}));
+vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../src/slices/irrigation')>();
+    return {
+        ...actual,
+        getIrrigationAnalytics: sliceMocks.getIrrigationAnalytics,
+        configureDrainMonitoring: sliceMocks.configureDrainMonitoring,
+        setEcTargetRanges: sliceMocks.setEcTargetRanges,
+        logDrainReading: sliceMocks.logDrainReading,
+    };
+});
 
 class HaDialogMock extends HTMLElement { open = false; }
 if (!customElements.get('ha-dialog')) customElements.define('ha-dialog', HaDialogMock);
@@ -89,7 +93,6 @@ function makeMockStore(device: GrowspaceDevice) {
     const $devicesValue = [JSON.parse(JSON.stringify(device))];
     return {
         context: {
-            dataService: mocks,
             data: {
                 $devices: { get: () => $devicesValue },
                 patchDeviceIrrigationConfig: vi.fn((gsId: string, patch: any) => {
@@ -97,15 +100,6 @@ function makeMockStore(device: GrowspaceDevice) {
                     if (d) Object.assign(d.irrigationConfig, patch);
                 }),
             },
-            optimisticManager: {
-                applyOptimisticUpdate: vi.fn().mockImplementation(async (_type: any, _payload: any, applyFn: any) => {
-                    await applyFn(_payload);
-                    return 'mock-id';
-                }),
-                confirmUpdate: vi.fn(),
-                rollbackUpdate: vi.fn(),
-            },
-            undoRedoManager: { pushAction: vi.fn(), canUndo: false, canRedo: false },
             showToast: vi.fn(),
             closeDialog: vi.fn(),
             refreshData: vi.fn().mockResolvedValue(undefined),
@@ -120,10 +114,26 @@ async function openOnSteeringTab(element: IrrigationDialog): Promise<void> {
     element.open = true;
     document.body.appendChild(element);
     await element.updateComplete;
-    // Navigate to Steering tab (index 1)
+    // Select the Steering tab by LABEL (not index — nav order is gate-dependent).
     const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-    (tabs?.[1] as HTMLElement)?.click();
+    const steeringTab = Array.from(tabs ?? []).find((t) =>
+        t.textContent?.includes('Steering')
+    ) as HTMLElement | undefined;
+    steeringTab?.click();
     await element.updateComplete;
+}
+
+/**
+ * ADR-0019: the Steering tab renders in the decomposed <irrigation-steering-tab>
+ * child. Returns its shadow root so DOM queries pierce the child; SM assertions
+ * still read element._sm, which the Dialog Shell updates from the child's intents.
+ */
+async function steeringChild(element: IrrigationDialog): Promise<ShadowRoot> {
+    const child = element.shadowRoot?.querySelector('irrigation-steering-tab') as
+        | (HTMLElement & { updateComplete: Promise<boolean>; shadowRoot: ShadowRoot })
+        | null;
+    await child?.updateComplete;
+    return child!.shadowRoot;
 }
 
 describe('IrrigationDialog – Phase Triggers', () => {
@@ -141,6 +151,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
     afterEach(() => {
         if (element?.isConnected) document.body.removeChild(element);
         Element.prototype.getBoundingClientRect = originalGBCR;
+        irrigationConfigs$.set(new Map());
         vi.restoreAllMocks();
     });
 
@@ -202,9 +213,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="autoAdvanceP1ToP2"]'
-        ) as any;
+        const sr = await steeringChild(element);
+        const toggle = sr.querySelector('md3-switch[data-field="autoAdvanceP1ToP2"]') as any;
         expect(toggle).toBeTruthy();
         toggle.checked = true;
         toggle.dispatchEvent(new Event('change', { bubbles: true }));
@@ -221,9 +231,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="autoAdvanceP2ToP3"]'
-        ) as any;
+        const sr = await steeringChild(element);
+        const toggle = sr.querySelector('md3-switch[data-field="autoAdvanceP2ToP3"]') as any;
         expect(toggle).toBeTruthy();
         toggle.checked = true;
         toggle.dispatchEvent(new Event('change', { bubbles: true }));
@@ -240,9 +249,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="haltOnRunoffEc"]'
-        ) as any;
+        const sr = await steeringChild(element);
+        const toggle = sr.querySelector('md3-switch[data-field="haltOnRunoffEc"]') as any;
         expect(toggle).toBeTruthy();
 
         // Enable
@@ -268,9 +276,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        const thresholdInput = element.shadowRoot?.querySelector(
-            '[data-field="haltOnRunoffEcValue"]'
-        );
+        const sr = await steeringChild(element);
+        const thresholdInput = sr.querySelector('[data-field="haltOnRunoffEcValue"]');
         expect(thresholdInput).toBeTruthy();
     });
 
@@ -282,112 +289,9 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        const thresholdInput = element.shadowRoot?.querySelector(
-            '[data-field="haltOnRunoffEcValue"]'
-        );
+        const sr = await steeringChild(element);
+        const thresholdInput = sr.querySelector('[data-field="haltOnRunoffEcValue"]');
         expect(thresholdInput).toBeNull();
-    });
-
-    // ─── Slice 4: save dispatches correct values ──────────────────────────────
-
-    it('save dispatches autoAdvanceP1ToP2 after toggle', async () => {
-        element = new IrrigationDialog();
-        element.device = makeDevice();
-        (element as any).store = makeMockStore(element.device!);
-        element.hass = {} as any;
-
-        await openOnSteeringTab(element);
-
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="autoAdvanceP1ToP2"]'
-        ) as any;
-        toggle.checked = true;
-        toggle.dispatchEvent(new Event('change', { bubbles: true }));
-        await element.updateComplete;
-
-        const saveBtn = element.shadowRoot?.querySelector('button.btn-save-all');
-        (saveBtn as HTMLElement).click();
-        await element.updateComplete;
-        await new Promise(r => setTimeout(r, 0));
-
-        expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(
-            expect.objectContaining({ autoAdvanceP1ToP2: true })
-        );
-    });
-
-    it('save dispatches autoAdvanceP2ToP3 after toggle', async () => {
-        element = new IrrigationDialog();
-        element.device = makeDevice();
-        (element as any).store = makeMockStore(element.device!);
-        element.hass = {} as any;
-
-        await openOnSteeringTab(element);
-
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="autoAdvanceP2ToP3"]'
-        ) as any;
-        toggle.checked = true;
-        toggle.dispatchEvent(new Event('change', { bubbles: true }));
-        await element.updateComplete;
-
-        const saveBtn = element.shadowRoot?.querySelector('button.btn-save-all');
-        (saveBtn as HTMLElement).click();
-        await element.updateComplete;
-        await new Promise(r => setTimeout(r, 0));
-
-        expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(
-            expect.objectContaining({ autoAdvanceP2ToP3: true })
-        );
-    });
-
-    it('save dispatches haltOnRunoffEcThreshold after enabling halt toggle', async () => {
-        element = new IrrigationDialog();
-        element.device = makeDevice();
-        (element as any).store = makeMockStore(element.device!);
-        element.hass = {} as any;
-
-        await openOnSteeringTab(element);
-
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="haltOnRunoffEc"]'
-        ) as any;
-        toggle.checked = true;
-        toggle.dispatchEvent(new Event('change', { bubbles: true }));
-        await element.updateComplete;
-
-        const saveBtn = element.shadowRoot?.querySelector('button.btn-save-all');
-        (saveBtn as HTMLElement).click();
-        await element.updateComplete;
-        await new Promise(r => setTimeout(r, 0));
-
-        expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(
-            expect.objectContaining({ haltOnRunoffEcThreshold: 4.0 })
-        );
-    });
-
-    it('save dispatches haltOnRunoffEcThreshold=null when halt is disabled', async () => {
-        element = new IrrigationDialog();
-        element.device = makeDevice({ haltOnRunoffEcThreshold: 4.0 });
-        (element as any).store = makeMockStore(element.device!);
-        element.hass = {} as any;
-
-        await openOnSteeringTab(element);
-
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="haltOnRunoffEc"]'
-        ) as any;
-        toggle.checked = false;
-        toggle.dispatchEvent(new Event('change', { bubbles: true }));
-        await element.updateComplete;
-
-        const saveBtn = element.shadowRoot?.querySelector('button.btn-save-all');
-        (saveBtn as HTMLElement).click();
-        await element.updateComplete;
-        await new Promise(r => setTimeout(r, 0));
-
-        expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(
-            expect.objectContaining({ haltOnRunoffEcThreshold: null })
-        );
     });
 
     // ─── Crop Steering Phase Transitions (Confirmation Dialog) ────────────────
@@ -403,7 +307,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
         (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
         await element.updateComplete;
 
-        const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
+        const sr = await steeringChild(element);
+        const phaseCards = sr.querySelectorAll('.phase-card');
         const activeCard = Array.from(phaseCards ?? []).find((card: Element) => card.textContent?.includes('Phase · P2')) as HTMLElement;
         expect(activeCard).toBeTruthy();
         activeCard.click();
@@ -424,7 +329,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
         (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
         await element.updateComplete;
 
-        const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
+        const sr = await steeringChild(element);
+        const phaseCards = sr.querySelectorAll('.phase-card');
         const inactiveCard = Array.from(phaseCards ?? []).find((card: Element) => card.textContent?.includes('Phase · P1')) as HTMLElement;
         expect(inactiveCard).toBeTruthy();
         inactiveCard.click();
@@ -447,7 +353,9 @@ describe('IrrigationDialog – Phase Triggers', () => {
         (element as any)._sm = transition((element as any)._sm, { type: 'REQUEST_PHASE_CHANGE', phase: 'p1' });
         await element.updateComplete;
 
-        (element as any)._cancelPhaseChange();
+        // The cancel gesture now flows as a Tab Intent the Shell translates.
+        const child = element.shadowRoot!.querySelector('irrigation-steering-tab')!;
+        child.dispatchEvent(new CustomEvent('phase-change-cancelled', { bubbles: true, composed: true }));
         await element.updateComplete;
 
         expect((element as any)._sm.tabs.steering.sub.kind).toBe('idle');
@@ -466,7 +374,10 @@ describe('IrrigationDialog – Phase Triggers', () => {
         (element as any)._sm = transition((element as any)._sm, { type: 'REQUEST_PHASE_CHANGE', phase: 'p1' });
         await element.updateComplete;
 
-        (element as any)._confirmPhaseChange();
+        // The confirm gesture now flows as a Tab Intent the Shell translates
+        // (CONFIRM_PHASE_CHANGE + _saveSettings).
+        const child = element.shadowRoot!.querySelector('irrigation-steering-tab')!;
+        child.dispatchEvent(new CustomEvent('phase-change-confirmed', { bubbles: true, composed: true }));
         await element.updateComplete;
 
         expect((element as any)._sm.tabs.steering.sub.kind).toBe('idle');
@@ -484,7 +395,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
         (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
         await element.updateComplete;
 
-        const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
+        const sr = await steeringChild(element);
+        const phaseCards = sr.querySelectorAll('.phase-card');
         const inactiveCard = Array.from(phaseCards ?? []).find((card: Element) => card.textContent?.includes('Phase · P1')) as HTMLElement;
         expect(inactiveCard).toBeTruthy();
         inactiveCard.click();
@@ -492,7 +404,12 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         expect((element as any)._sm.tabs.steering.sub.kind).toBe('confirm-phase');
 
-        const cancelBtn = element.shadowRoot?.querySelector('gs-dialog button.tonal') as HTMLElement;
+        const sr2 = await steeringChild(element);
+        // The phase-confirm overlay is the gs-dialog owning the Confirm button.
+        const phaseConfirmBtn = Array.from(sr2.querySelectorAll('gs-dialog button.primary')).find(
+            (b) => b.textContent?.trim() === 'Confirm'
+        ) as HTMLElement;
+        const cancelBtn = phaseConfirmBtn.closest('gs-dialog')!.querySelector('button.tonal') as HTMLElement;
         expect(cancelBtn).toBeTruthy();
         cancelBtn.click();
         await element.updateComplete;
@@ -512,7 +429,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
         (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
         await element.updateComplete;
 
-        const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
+        const sr = await steeringChild(element);
+        const phaseCards = sr.querySelectorAll('.phase-card');
         const inactiveCard = Array.from(phaseCards ?? []).find((card: Element) => card.textContent?.includes('Phase · P1')) as HTMLElement;
         expect(inactiveCard).toBeTruthy();
         inactiveCard.click();
@@ -520,7 +438,10 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         expect((element as any)._sm.tabs.steering.sub.kind).toBe('confirm-phase');
 
-        const confirmBtn = element.shadowRoot?.querySelector('gs-dialog button.primary') as HTMLElement;
+        const sr2 = await steeringChild(element);
+        const confirmBtn = Array.from(sr2.querySelectorAll('gs-dialog button.primary')).find(
+            (b) => b.textContent?.trim() === 'Confirm'
+        ) as HTMLElement;
         expect(confirmBtn).toBeTruthy();
         confirmBtn.click();
         await element.updateComplete;

@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 export type ToastNotification = {
   message: string;
@@ -26,7 +27,7 @@ export class GrowspaceToastUI extends LitElement {
       background: var(--ha-card-background, var(--card-background-color, white));
       color: var(--primary-text-color);
       padding: 8px 16px 8px 24px;
-      border-radius: 24px;
+      border-radius: var(--border-radius-full, 9999px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       font-size: 14px;
       font-weight: 500;
@@ -40,7 +41,7 @@ export class GrowspaceToastUI extends LitElement {
         opacity 0.3s ease,
         transform 0.3s ease;
       pointer-events: auto;
-      border: 1px solid var(--divider-color, #eee);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
     }
 
     .toast-notification.visible {
@@ -48,16 +49,18 @@ export class GrowspaceToastUI extends LitElement {
       transform: translateY(0);
     }
 
+    /* Left status strip is the conventional toast affordance, not a content-card
+       accent — DESIGN.md names "Toast notification success" as a colour role. */
     .toast-notification.success {
-      border-left: 4px solid var(--success-color, #4caf50);
+      border-left: 4px solid var(--success-color, #4caf50); /* impeccable-disable-line side-tab -- transient notification surface */
     }
 
     .toast-notification.error {
-      border-left: 4px solid var(--error-color, #f44336);
+      border-left: 4px solid var(--error-color, #f44336); /* impeccable-disable-line side-tab -- transient notification surface */
     }
 
     .toast-notification.info {
-      border-left: 4px solid var(--primary-color, #03a9f4);
+      border-left: 4px solid var(--gm-primary-color); /* impeccable-disable-line side-tab -- transient notification surface */
     }
 
     .toast-message {
@@ -72,7 +75,7 @@ export class GrowspaceToastUI extends LitElement {
       text-transform: uppercase;
       cursor: pointer;
       padding: 8px 12px;
-      border-radius: 4px;
+      border-radius: var(--border-radius-xs, 4px);
       transition: background 0.2s ease;
       font-size: 12px;
       letter-spacing: 0.5px;
@@ -81,6 +84,8 @@ export class GrowspaceToastUI extends LitElement {
     .toast-action:hover {
       background: rgba(var(--rgb-primary-color), 0.1);
     }
+
+    ${reducedMotion}
   `;
 
   render() {

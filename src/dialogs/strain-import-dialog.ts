@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -78,7 +78,7 @@ export class StrainImportDialog extends LitElement {
 
   @state() private _importing = false;
 
-  protected willUpdate(changedProps: Map<string, any>) {
+  protected willUpdate(changedProps: PropertyValues) {
     if (changedProps.has('open') && this.open) {
       const pheno =
         this.initialPheno && this.initialPheno.toLowerCase() !== 'default'
@@ -233,7 +233,7 @@ export class StrainImportDialog extends LitElement {
   }
 
   private _close() {
-    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('close'));
   }
 
   static styles = [
@@ -265,7 +265,7 @@ export class StrainImportDialog extends LitElement {
         padding: 12px 16px;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         cursor: pointer;
         transition: all 0.2s;
       }
@@ -291,7 +291,7 @@ export class StrainImportDialog extends LitElement {
       .details-preview {
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 16px;
+        border-radius: var(--border-radius-lg, 16px);
         padding: 20px;
         display: flex;
         flex-direction: column;
@@ -314,7 +314,7 @@ export class StrainImportDialog extends LitElement {
         gap: 12px;
         padding: 12px;
         background: rgba(255, 255, 255, 0.02);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         cursor: pointer;
         transition: background 0.2s;
       }
@@ -324,7 +324,7 @@ export class StrainImportDialog extends LitElement {
       .field-checkbox {
         width: 20px;
         height: 20px;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         border: 2px solid var(--divider-color);
         display: flex;
         align-items: center;
@@ -360,7 +360,7 @@ export class StrainImportDialog extends LitElement {
         fill: currentColor;
       }
       .field-value {
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         word-break: break-word;
       }
       .loading-spinner {
@@ -389,12 +389,12 @@ export class StrainImportDialog extends LitElement {
         padding: 12px 16px;
         background: rgba(244, 67, 54, 0.1);
         border: 1px solid rgba(244, 67, 54, 0.3);
-        color: #ff5252;
-        border-radius: 8px;
-        font-size: 0.9rem;
+        color: var(--danger-chip);
+        border-radius: var(--border-radius-sm, 8px);
+        font-size: var(--font-size-sm);
       }
       .description-text {
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         line-height: 1.5;
         max-height: 100px;
         overflow-y: auto;
@@ -404,7 +404,7 @@ export class StrainImportDialog extends LitElement {
         width: 100%;
         height: 180px;
         object-fit: cover;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         margin-bottom: 12px;
         background: rgba(255, 255, 255, 0.05);
       }
@@ -418,9 +418,9 @@ export class StrainImportDialog extends LitElement {
         font-size: 0.75rem;
         padding: 4px 8px;
         background: rgba(255, 193, 7, 0.1);
-        color: #ffc107;
+        color: var(--award);
         border: 1px solid rgba(255, 193, 7, 0.3);
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         display: flex;
         align-items: center;
         gap: 4px;
@@ -476,7 +476,7 @@ export class StrainImportDialog extends LitElement {
                   ? html`
                       <div class="results-list">
                         <div
-                          style="font-size:0.8rem; color:var(--secondary-text-color); margin-bottom:4px;"
+                          style="font-size:var(--font-size-supporting); color:var(--secondary-text-color); margin-bottom:4px;"
                         >
                           Select a match:
                         </div>
@@ -521,7 +521,7 @@ export class StrainImportDialog extends LitElement {
                     ${this._importing
                       ? html`
                           <span
-                            style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"
+                            style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:var(--text-primary);border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"
                           ></span>
                           Downloading...
                         `

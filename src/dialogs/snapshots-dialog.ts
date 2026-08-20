@@ -5,8 +5,15 @@ import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
 import { SnapshotsDialogState } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
-import { mdiCamera, mdiRefresh } from '@mdi/js';
-import { type Snapshot, getSnapshots, captureSnapshot } from '../slices/camera';
+import { mdiCamera, mdiRefresh, mdiClose } from '@mdi/js';
+import {
+  type Snapshot,
+  getSnapshots,
+  captureSnapshot,
+  getVisionHistory,
+  triggerVisionCheckup,
+} from '../slices/camera';
+import { withToast } from '../slices/ui';
 import '../features/shared/ui';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import type { VisionCheckupResult } from '../lib/types/dialog';
@@ -31,6 +38,7 @@ export class SnapshotsDialog extends LitElement {
   @state() private _selectedResult: VisionCheckupResult | null = null;
   @state() private _isLoadingVision = false;
   @state() private _isRunningCheckup = false;
+  @state() private _lightboxSrc: string | null = null;
 
   static styles = [
     dialogStyles,
@@ -43,7 +51,7 @@ export class SnapshotsDialog extends LitElement {
       }
       .snapshot-card {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         overflow: hidden;
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         display: flex;
@@ -54,6 +62,14 @@ export class SnapshotsDialog extends LitElement {
         height: 150px;
         object-fit: cover;
         background: rgba(0, 0, 0, 0.2);
+      }
+      .vision-snapshot-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 8px;
+      }
+      .vision-snapshot-grid .snapshot-image {
+        border-radius: var(--border-radius-sm, 8px);
       }
       .snapshot-info {
         padding: 12px;
@@ -68,7 +84,7 @@ export class SnapshotsDialog extends LitElement {
         padding: 48px 24px;
         opacity: 0.6;
         background: rgba(255, 255, 255, 0.02);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         margin-top: 16px;
       }
       .header-actions {
@@ -89,13 +105,46 @@ export class SnapshotsDialog extends LitElement {
         border-bottom: 2px solid transparent;
         color: var(--secondary-text-color);
         cursor: pointer;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         font-weight: 500;
         transition: all 0.2s;
       }
       .tab-btn.active {
         color: var(--primary-color);
         border-bottom-color: var(--primary-color);
+      }
+      .lightbox-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        cursor: zoom-out;
+      }
+      .lightbox-image {
+        max-width: 95%;
+        max-height: 95%;
+        object-fit: contain;
+        border-radius: var(--border-radius-sm, 8px);
+        cursor: default;
+      }
+      .lightbox-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: rgba(0, 0, 0, 0.5);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-primary);
+        cursor: pointer;
       }
     `,
   ];
@@ -141,16 +190,12 @@ export class SnapshotsDialog extends LitElement {
   }
 
   private async _fetchVisionHistory() {
-    if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots) return;
+    if (!this.dialogState?.growspaceId) return;
     this._isLoadingVision = true;
     try {
-      const response = await this.store.actions.snapshots.visionHistory(
-        this.dialogState.growspaceId
-      );
-      if (response) {
-        this._visionHistory = response.history || [];
-        this._selectedResult = this._visionHistory[0] ?? null;
-      }
+      const response = await getVisionHistory(this.dialogState.growspaceId);
+      this._visionHistory = response.history || [];
+      this._selectedResult = this._visionHistory[0] ?? null;
     } catch (err) {
       console.error('[SnapshotsDialog] Failed to fetch vision history:', err);
       this.store.ui.showToast('Failed to load vision history', 'error');
@@ -160,21 +205,63 @@ export class SnapshotsDialog extends LitElement {
   }
 
   private async _runVisionCheckup() {
-    if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots) return;
+    if (!this.dialogState?.growspaceId) return;
+    const growspaceId = this.dialogState.growspaceId;
     this._isRunningCheckup = true;
-    try {
-      await this.store.actions.snapshots.triggerCheckup(this.dialogState.growspaceId);
-      await this._fetchVisionHistory();
-    } catch (err) {
-      console.error('[SnapshotsDialog] Failed to run vision checkup:', err);
-      // Action handles error toast
-    } finally {
-      this._isRunningCheckup = false;
-    }
+    await withToast(
+      async () => {
+        await triggerVisionCheckup(growspaceId);
+        await this.store.refreshData();
+      },
+      { success: 'Vision checkup triggered', errorPrefix: 'Failed to trigger checkup' }
+    );
+    this._isRunningCheckup = false;
+    await this._fetchVisionHistory();
   }
 
   private _close() {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  }
+
+  private _openLightbox(src: string) {
+    this._lightboxSrc = src;
+    // Capture-phase so Escape is intercepted before ha-dialog's escapeKeyAction
+    // fires, keeping dismissal scoped to the lightbox.
+    window.addEventListener('keydown', this._onLightboxKeydown, true);
+  }
+
+  private _closeLightbox() {
+    this._lightboxSrc = null;
+    window.removeEventListener('keydown', this._onLightboxKeydown, true);
+  }
+
+  private _onLightboxKeydown = (e: KeyboardEvent) => {
+    if (e.key !== 'Escape') return;
+    e.stopPropagation();
+    e.preventDefault();
+    this._closeLightbox();
+  };
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener('keydown', this._onLightboxKeydown, true);
+  }
+
+  private _renderLightbox() {
+    if (!this._lightboxSrc) return '';
+    return html`
+      <div class="lightbox-backdrop" @click=${this._closeLightbox}>
+        <button class="lightbox-close" @click=${this._closeLightbox} aria-label="Close">
+          <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+        </button>
+        <img
+          class="lightbox-image"
+          src="${this._lightboxSrc}"
+          alt="Vision checkup snapshot enlarged"
+          @click=${(e: Event) => e.stopPropagation()}
+        />
+      </div>
+    `;
   }
 
   private _formatDate(timestampStr: string) {
@@ -220,7 +307,7 @@ export class SnapshotsDialog extends LitElement {
       low: 'var(--success-color, #4caf50)',
       medium: 'var(--warning-color, #ff9800)',
       high: 'var(--error-color, #f44336)',
-      critical: '#b71c1c',
+      critical: 'var(--severity-critical, #b71c1c)',
     };
     const r = this._selectedResult;
     return html`
@@ -251,13 +338,13 @@ export class SnapshotsDialog extends LitElement {
                     <span
                       class="severity-chip"
                       style="background:${SEVERITY_COLORS[r.severity] ??
-                      'gray'};color:#fff;padding:4px 10px;border-radius:12px;font-size:0.8rem;font-weight:600;"
+                      'gray'};color:var(--text-primary);padding:4px 10px;border-radius: var(--border-radius-md, 12px);font-size:var(--font-size-supporting);font-weight:600;"
                       >${r.severity}</span
                     >
                     <span style="text-transform:capitalize;opacity:0.7;"
                       >${r.check_type} check</span
                     >
-                    <span style="opacity:0.5;font-size:0.8rem;"
+                    <span style="opacity:0.5;font-size:var(--font-size-supporting);"
                       >${this._formatDate(r.timestamp)}</span
                     >
                   </div>
@@ -270,10 +357,10 @@ export class SnapshotsDialog extends LitElement {
                           <strong style="font-size:0.85rem;">Issues detected</strong>
                           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
                             ${r.issues_detected.map(
-                              (i) =>
+                              (i: string) =>
                                 html`<span
                                   class="issue-chip"
-                                  style="background:rgba(244,67,54,0.15);color:var(--error-color,#f44336);border-radius:10px;padding:2px 10px;font-size:0.8rem;"
+                                  style="background:rgba(244,67,54,0.15);color:var(--error-color,#f44336);border-radius: var(--border-radius-md, 12px);padding:2px 10px;font-size:var(--font-size-supporting);"
                                   >${i}</span
                                 >`
                             )}
@@ -287,10 +374,10 @@ export class SnapshotsDialog extends LitElement {
                           <strong style="font-size:0.85rem;">Recommendations</strong>
                           <ol style="margin:8px 0 0 16px;padding:0;">
                             ${r.recommendations.map(
-                              (rec) =>
+                              (rec: string) =>
                                 html`<li
                                   class="recommendation-item"
-                                  style="margin-bottom:4px;font-size:0.9rem;"
+                                  style="margin-bottom:4px;font-size:var(--font-size-sm);"
                                 >
                                   ${rec}
                                 </li>`
@@ -299,6 +386,7 @@ export class SnapshotsDialog extends LitElement {
                         </div>
                       `
                     : ''}
+                  ${this._renderVisionSnapshots(r)}
                 </div>
                 ${this._visionHistory.length > 1
                   ? html`
@@ -310,7 +398,7 @@ export class SnapshotsDialog extends LitElement {
                           (entry) => html`
                             <div
                               class="history-row"
-                              style="display:flex;align-items:center;gap:12px;padding:8px 4px;cursor:pointer;border-radius:8px;background:${this
+                              style="display:flex;align-items:center;gap:12px;padding:8px 4px;cursor:pointer;border-radius: var(--border-radius-sm, 8px);background:${this
                                 ._selectedResult === entry
                                 ? 'rgba(255,255,255,0.05)'
                                 : 'transparent'};"
@@ -318,16 +406,16 @@ export class SnapshotsDialog extends LitElement {
                                 this._selectedResult = entry;
                               }}
                             >
-                              <span style="font-size:0.8rem;opacity:0.6;"
+                              <span style="font-size:var(--font-size-supporting);opacity:0.6;"
                                 >${this._formatDate(entry.timestamp)}</span
                               >
-                              <span style="text-transform:capitalize;font-size:0.8rem;opacity:0.7;"
+                              <span style="text-transform:capitalize;font-size:var(--font-size-supporting);opacity:0.7;"
                                 >${entry.check_type}</span
                               >
                               <span
                                 style="background:${SEVERITY_COLORS[
                                   entry.severity
-                                ]};color:#fff;padding:2px 8px;border-radius:10px;font-size:0.75rem;"
+                                ]};color:var(--text-primary);padding:2px 8px;border-radius: var(--border-radius-md, 12px);font-size:0.75rem;"
                                 >${entry.severity}</span
                               >
                             </div>
@@ -337,6 +425,30 @@ export class SnapshotsDialog extends LitElement {
                     `
                   : ''}
               `}
+      </div>
+    `;
+  }
+
+  private _renderVisionSnapshots(r: VisionCheckupResult) {
+    // Only render locally-served images; skip raw media-source:// fallbacks so
+    // no broken image is shown.
+    const paths = (r.snapshot_paths ?? []).filter((p) => p.startsWith('/local/'));
+    if (paths.length === 0) return '';
+    return html`
+      <div class="vision-snapshot-grid" style="margin-top:12px;">
+        ${paths.map(
+          (path) => html`
+            <img
+              src="${path}"
+              class="snapshot-image"
+              alt="Vision checkup snapshot"
+              loading="lazy"
+              style="cursor:zoom-in;"
+              @click=${() => this._openLightbox(path)}
+              onerror="this.src='data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23666\\' d=\\'M21,17H7V3H21M21,1H7A2,2 0 0,0 5,3V17A2,2 0 0,0 7,19H21A2,2 0 0,0 23,17V3A2,2 0 0,0 21,1M3,5H1V21A2,2 0 0,0 3,23H19V21H3V5M15.96,10.29L13.21,13.83L11.25,11.47L8.5,15H19.5L15.96,10.29Z\\'/%3E%3C/svg%3E'"
+            />
+          `
+        )}
       </div>
     `;
   }
@@ -428,6 +540,7 @@ export class SnapshotsDialog extends LitElement {
               `
             : this._renderVisionTab()}
         </div>
+        ${this._renderLightbox()}
       </gs-dialog>
     `;
   }

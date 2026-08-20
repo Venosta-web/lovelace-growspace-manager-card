@@ -132,43 +132,6 @@ describe('InteractionManager', () => {
         expect(sensorMesh.children.some(c => c.name === 'editOutline')).toBe(false);
     });
 
-    it('should handle link mode interactions', () => {
-        const callback = vi.fn();
-        manager.setCallback(callback);
-
-        const sensor1 = new THREE.Mesh();
-        sensor1.userData.entityId = 'sensor.1';
-        const sensor2 = new THREE.Mesh();
-        sensor2.userData.entityId = 'sensor.2';
-
-        sceneManager.sensorMeshes.set('sensor.1', sensor1);
-        sceneManager.sensorMeshes.set('sensor.2', sensor2);
-
-        manager.setEditMode(true);
-        manager.setLinkMode(true);
-
-        // 1. Hover over sensor
-        (manager as any)._raycaster.intersectObjects.mockReturnValue([{ object: sensor1 }]);
-        container.dispatchEvent(new MouseEvent('mousemove', { clientX: 10, clientY: 10 }));
-        expect(container.style.cursor).toBe('pointer');
-
-        // 2. Click first sensor to select
-        container.dispatchEvent(new MouseEvent('click', { clientX: 10, clientY: 10 }));
-        expect((manager as any).selectedForLink).toBe('sensor.1');
-
-        // 3. Click same sensor to deselect
-        container.dispatchEvent(new MouseEvent('click', { clientX: 10, clientY: 10 }));
-        expect((manager as any).selectedForLink).toBeNull();
-
-        // 4. Select again and link to second
-        container.dispatchEvent(new MouseEvent('click', { clientX: 10, clientY: 10 }));
-        (manager as any)._raycaster.intersectObjects.mockReturnValue([{ object: sensor2 }]);
-        container.dispatchEvent(new MouseEvent('click', { clientX: 20, clientY: 20 }));
-
-        expect(callback).toHaveBeenCalledWith('link', { from: 'sensor.1', to: 'sensor.2' });
-        expect((manager as any).selectedForLink).toBeNull();
-    });
-
     it('should handle drag events', () => {
         const callback = vi.fn();
         manager.setCallback(callback);
@@ -204,7 +167,6 @@ describe('InteractionManager', () => {
         // 2. Edit mode move (line 66)
         sceneManager.camera = new THREE.PerspectiveCamera();
         manager.setEditMode(true);
-        manager.setLinkMode(false);
         container.dispatchEvent(new MouseEvent('mousemove'));
 
         // 3. Detect sensor and emptySlot
@@ -267,18 +229,7 @@ describe('InteractionManager', () => {
         (manager as any)._raycaster.intersectObjects.mockReturnValue([{ object: mockPlant }]);
         container.dispatchEvent(new MouseEvent('mousemove', { clientX: 10, clientY: 10 }));
 
-        // hover (link)
-        manager.setLinkMode(true);
-        const sensor = { userData: { entityId: 's1' } };
-        (manager as any)._raycaster.intersectObjects.mockReturnValue([{ object: sensor }]);
-        container.dispatchEvent(new MouseEvent('mousemove', { clientX: 10, clientY: 10 }));
-
-        // click link (linking two sensors)
-        (manager as any).selectedForLink = 'other';
-        container.dispatchEvent(new MouseEvent('click', { clientX: 10, clientY: 10 }));
-
         // click plant
-        manager.setLinkMode(false);
         (manager as any).hoveredPlant = { id: 'p1' };
         container.dispatchEvent(new MouseEvent('click', { clientX: 10, clientY: 10 }));
 
@@ -297,7 +248,6 @@ describe('InteractionManager', () => {
 
     it('should handle handleClick editMode guard', () => {
         manager.setEditMode(true);
-        manager.setLinkMode(false);
         const callback = vi.fn();
         manager.setCallback(callback);
 
@@ -307,27 +257,8 @@ describe('InteractionManager', () => {
         expect(callback).not.toHaveBeenCalled();
     });
 
-    it('should handle more link mode branches', () => {
-        manager.setEditMode(true);
-        manager.setLinkMode(true);
-
-        // Match first object with NO entityId, second WITH entityId
-        const meshNoId = new THREE.Mesh();
-        const meshWithId = new THREE.Mesh();
-        meshWithId.userData.entityId = 's1';
-
-        (manager as any)._raycaster.intersectObjects.mockReturnValue([
-            { object: meshNoId },
-            { object: meshWithId }
-        ]);
-
-        container.dispatchEvent(new MouseEvent('click'));
-        expect((manager as any).selectedForLink).toBe('s1');
-    });
-
-    it('should handle handleClick with no hovered plant or link mode', () => {
+    it('should handle handleClick with no hovered plant', () => {
         manager.setEditMode(false);
-        manager.setLinkMode(false);
         (manager as any).hoveredPlant = null;
 
         const callback = vi.fn();
@@ -337,20 +268,7 @@ describe('InteractionManager', () => {
     });
 
     it('should cover remaining handleMouseMove branches', () => {
-        // 1. linkMode with foundSensor=false (line 91)
-        manager.setLinkMode(true);
-        (manager as any)._raycaster.intersectObjects.mockReturnValue([{ object: new THREE.Mesh() }]); // No entityId
-        container.dispatchEvent(new MouseEvent('mousemove'));
-        expect(container.style.cursor).toBe('default');
-
-        // 2. foundSensor break (line 87)
-        manager.setLinkMode(false);
-        const sensorMesh = { userData: { entityId: 's1' } };
-        (manager as any)._raycaster.intersectObjects.mockReturnValue([{ object: sensorMesh }]);
-        container.dispatchEvent(new MouseEvent('mousemove'));
-        expect(container.style.cursor).toBe('default'); // Default since it's not a plant and not linkMode
-
-        // 3. same plant branch (line 101-103)
+        // same plant branch
         const plant = { id: 'p1' };
         (manager as any).hoveredPlant = plant;
         const callback = vi.fn();
@@ -359,17 +277,9 @@ describe('InteractionManager', () => {
         container.dispatchEvent(new MouseEvent('mousemove', { clientX: 100, clientY: 100 }));
         expect(callback).toHaveBeenCalledWith('hover', expect.objectContaining({ plant }));
 
-        // 4. same plant WITHOUT callback (line 103 false)
+        // same plant without callback
         manager.setCallback(undefined as any);
         container.dispatchEvent(new MouseEvent('mousemove', { clientX: 105, clientY: 105 }));
     });
 
-    it('should cover linkMode handleClick entityId=false (line 125)', () => {
-        manager.setLinkMode(true);
-        (manager as any)._raycaster.intersectObjects.mockReturnValue([{ object: new THREE.Mesh() }]); // No entityId
-        const callback = vi.fn();
-        manager.setCallback(callback);
-        container.dispatchEvent(new MouseEvent('click'));
-        expect(callback).not.toHaveBeenCalled();
-    });
 });

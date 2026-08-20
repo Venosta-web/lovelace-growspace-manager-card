@@ -35,6 +35,9 @@ import {
   type StrainEntry,
 } from '../../../types';
 import { fetchPlantEvents, fetchGrowspaceEvents } from '../../../slices/logbook';
+import { strainLibrary$ } from '../../../slices/strain';
+import { openDialog, showToast, showError } from '../../../slices/ui';
+import { deletePlant, advancePlantStage, movePlantToGrowspace } from '../../../slices/plant';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import {
   createStablePlantOverviewViewModel,
@@ -117,6 +120,11 @@ export class PlantOverviewContainer extends LitElement {
         overflow-x: auto;
         scrollbar-width: none;
         -ms-overflow-style: none;
+        /* overflow-x:auto sets the flex min-height to 0, so without this
+           the column flexbox collapses the tab bar (instead of the scroll
+           area) when content exceeds max-height, hiding it behind the
+           overflowing tab content. */
+        flex-shrink: 0;
       }
       .tabs-container::-webkit-scrollbar {
         display: none;
@@ -152,11 +160,11 @@ export class PlantOverviewContainer extends LitElement {
         min-width: 18px;
         height: 18px;
         padding: 0 5px;
-        border-radius: 999px;
-        font-size: 0.65rem;
+        border-radius: var(--border-radius-full, 9999px);
+        font-size: var(--font-size-xs);
         font-weight: 600;
         background: var(--primary-color, #4caf50);
-        color: #fff;
+        color: var(--on-primary);
         line-height: 1;
         margin-left: 2px;
       }
@@ -176,6 +184,9 @@ export class PlantOverviewContainer extends LitElement {
         overflow-x: auto;
         -ms-overflow-style: none;
         scrollbar-width: none;
+        /* Same flex-shrink guard as .tabs-container (overflow-x:auto would
+           otherwise let the column flexbox collapse this row). */
+        flex-shrink: 0;
       }
 
       .quickbar::-webkit-scrollbar {
@@ -188,7 +199,7 @@ export class PlantOverviewContainer extends LitElement {
         gap: 6px;
         height: 32px;
         padding: 0 12px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         background: rgba(255, 255, 255, 0.05);
         color: var(--primary-text-color);
@@ -227,7 +238,7 @@ export class PlantOverviewContainer extends LitElement {
 
       .delete-confirm-card {
         background: var(--card-background-color, #2c2c2c);
-        border-radius: 16px;
+        border-radius: var(--border-radius-lg, 16px);
         padding: 32px;
         max-width: 400px;
         text-align: center;
@@ -610,7 +621,7 @@ export class PlantOverviewContainer extends LitElement {
         display: flex; align-items: stretch; gap: 0;
         background: rgba(0,0,0,0.2);
         border: 1px solid rgba(255,255,255,0.06);
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 4px;
         margin-bottom: 16px;
         overflow: hidden;
@@ -629,11 +640,11 @@ export class PlantOverviewContainer extends LitElement {
           return html`
             <div
               style="
-              flex: 1; text-align: center; padding: 6px 4px; border-radius: 7px;
+              flex: 1; text-align: center; padding: 6px 4px; border-radius: var(--border-radius-sm, 8px);
               font-size: 0.7rem; line-height: 1.3;
               background: ${isCurrentStage ? 'rgba(255,152,0,0.15)' : 'transparent'};
               color: ${isCurrentStage
-                ? '#ffb74d'
+                ? 'var(--on-current-stage-chip, #ffb74d)'
                 : isDone
                   ? 'rgba(255,255,255,0.6)'
                   : 'rgba(255,255,255,0.25)'};
@@ -969,9 +980,14 @@ export class PlantOverviewContainer extends LitElement {
   }
 
   private _handleSave(): void {
+    const attrs = this._editedAttributesAtom.get();
+    // No date/time completeness validation: md3-date-input never emits a partial
+    // value (an empty date clears the field, a missing time defaults to midnight),
+    // and the Lifecycle Timestamp seam owns the format on the way out (toWire).
+    // See ADR-0018.
     this.dispatchEvent(
       new CustomEvent('update-plant', {
-        detail: this._editedAttributesAtom.get(),
+        detail: attrs,
         bubbles: true,
         composed: true,
       })
@@ -985,8 +1001,23 @@ export class PlantOverviewContainer extends LitElement {
 
   private _confirmDelete(): void {
     const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-    this.store.actions.plant.delete(plantId);
+    // Optimistic delete + undo are owned by the slice mutator; close the dialog
+    // immediately and surface any backend failure via showError.
+    void deletePlant(plantId).catch((e) => showError(e, 'Failed to delete plant'));
     this._handleClose();
+  }
+
+  /** Advance the plant to its next stage (flower→dry, dry→cure, mother→clone). */
+  private async _advanceStage(plant: PlantEntity): Promise<void> {
+    try {
+      const target = await advancePlantStage(plant);
+      showToast(`Plant moved to ${target}`, 'success');
+      // Brief delay so the backend commit lands before the data refresh.
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await this.store?.refreshData();
+    } catch (e) {
+      showError(e, 'Failed to move plant');
+    }
   }
 
   private _cancelDelete(): void {
@@ -1022,19 +1053,19 @@ export class PlantOverviewContainer extends LitElement {
   private _handleHarvest(): void {
     const stage = (this.plant.state || this.plant.attributes?.stage || '').toLowerCase();
     if (stage === PlantStage.FLOWER || stage === 'flowering') {
-      this.store.actions.ui.setActiveDialog({
+      openDialog({
         type: 'HARVEST_SCORING',
         payload: { plant: this.plant },
       });
       // Close the overview when opening the scoring dialog to keep flow clean
       this._handleClose();
     } else {
-      this.store.actions.plant.harvest(this.plant);
+      void this._advanceStage(this.plant);
     }
   }
 
   private _handleFinishDrying(): void {
-    this.store.actions.plant.finishDrying(this.plant);
+    void this._advanceStage(this.plant);
   }
 
   private _handleHarvestAdvance(e: CustomEvent): void {
@@ -1048,7 +1079,16 @@ export class PlantOverviewContainer extends LitElement {
   private _handleMovePlantEvent(e: CustomEvent): void {
     const { targetId } = e.detail;
     if (!targetId) return;
-    this.store.actions.plant.move(this.plant, targetId);
+    const plant = this.plant;
+    void (async () => {
+      try {
+        await movePlantToGrowspace(plant, targetId);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await this.store?.refreshData();
+      } catch (err) {
+        showError(err, 'Failed to move plant');
+      }
+    })();
     this._handleClose();
   }
 
@@ -1147,7 +1187,7 @@ export class PlantOverviewContainer extends LitElement {
   private _openStrainEditor(): void {
     const strain = this.plant?.attributes?.strain ?? '';
     const phenotype = this.plant?.attributes?.phenotype ?? '';
-    const strainLibrary = this.store.data.$strainLibrary.get();
+    const strainLibrary = strainLibrary$.get();
     let strainEntry: StrainEntry | undefined = strainLibrary.find((s) => {
       const entryPhenotype = s.phenotype || '';
       return s.strain === strain && entryPhenotype === phenotype;

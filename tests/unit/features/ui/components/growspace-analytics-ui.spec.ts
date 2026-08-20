@@ -1,9 +1,20 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceAnalyticsUI } from '../../../../../src/features/ui/components/growspace-analytics-ui';
+import { MetricKey } from '../../../../../src/features/environment/constants';
+import type { AnalyticsItem } from '../../../../../src/features/ui/components/growspace-analytics-ui';
+import { computeMetricDescriptors } from '../../../../../src/slices/metric-descriptors';
 
 if (!customElements.get('growspace-analytics-ui')) {
   customElements.define('growspace-analytics-ui', GrowspaceAnalyticsUI);
+}
+
+if (!customElements.get('tank-water-chart')) {
+  customElements.define('tank-water-chart', class extends HTMLElement {});
+}
+
+if (!customElements.get('crop-steering-day-chart')) {
+  customElements.define('crop-steering-day-chart', class extends HTMLElement {});
 }
 
 describe('growspace-analytics-ui', () => {
@@ -99,6 +110,103 @@ describe('growspace-analytics-ui', () => {
     chart!.dispatchEvent(new CustomEvent('toggle-graph', { detail: 'test-single-toggle' }));
     expect(toggleHandler).toHaveBeenCalledOnce();
     expect(toggleHandler.mock.calls[0][0].detail).toBe('test-single-toggle');
+  });
+});
+
+describe('growspace-analytics-ui – _renderItem routing', () => {
+  it('renders tank-water-chart for MetricKey.WATER', async () => {
+    const item: AnalyticsItem = { type: 'single', metrics: [MetricKey.WATER] };
+    const el = await fixture<GrowspaceAnalyticsUI>(html`
+      <growspace-analytics-ui .items=${[item]} .isLoading=${false} .range=${'24h'}>
+      </growspace-analytics-ui>
+    `);
+    expect(el.shadowRoot!.querySelector('tank-water-chart')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('growspace-env-chart')).toBeNull();
+  });
+
+  it('renders crop-steering-day-chart for MetricKey.STEERING_PHASE', async () => {
+    const item: AnalyticsItem = { type: 'single', metrics: [MetricKey.STEERING_PHASE] };
+    const el = await fixture<GrowspaceAnalyticsUI>(html`
+      <growspace-analytics-ui .items=${[item]} .isLoading=${false} .range=${'24h'}>
+      </growspace-analytics-ui>
+    `);
+    expect(el.shadowRoot!.querySelector('crop-steering-day-chart')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('growspace-env-chart')).toBeNull();
+  });
+
+  it('renders growspace-env-chart for MetricKey.TEMPERATURE', async () => {
+    const item: AnalyticsItem = { type: 'single', metrics: [MetricKey.TEMPERATURE] };
+    const el = await fixture<GrowspaceAnalyticsUI>(html`
+      <growspace-analytics-ui .items=${[item]} .isLoading=${false} .range=${'24h'}>
+      </growspace-analytics-ui>
+    `);
+    expect(el.shadowRoot!.querySelector('growspace-env-chart')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('tank-water-chart')).toBeNull();
+  });
+
+  it('renders growspace-env-chart for grouped items regardless of metrics', async () => {
+    const item: AnalyticsItem = { type: 'group', metrics: [MetricKey.TEMPERATURE, MetricKey.HUMIDITY] };
+    const el = await fixture<GrowspaceAnalyticsUI>(html`
+      <growspace-analytics-ui .items=${[item]} .isLoading=${false} .range=${'24h'}>
+      </growspace-analytics-ui>
+    `);
+    expect(el.shadowRoot!.querySelector('growspace-env-chart')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('tank-water-chart')).toBeNull();
+  });
+
+  /**
+   * The charts derive nothing of their own (ADR-0030) — they draw what the
+   * descriptor table this component threads down lets them. Dropping that
+   * property would blank every graph without failing any test that only checks
+   * the chart element exists, so these two drive it through to a real trace.
+   */
+  describe('descriptor thread', () => {
+    const DESCRIPTORS = computeMetricDescriptors(null, {}, { attributes: {} });
+    const DEVICE = { deviceId: 'd1', name: 'Device 1' } as any;
+
+    function history(state: string) {
+      return [{ state, attributes: {}, last_changed: new Date().toISOString() }] as any;
+    }
+
+    const SENSOR_HISTORY = {
+      [MetricKey.TEMPERATURE]: history('22'),
+      [MetricKey.HUMIDITY]: history('60'),
+    } as any;
+
+    async function chartFor(item: AnalyticsItem) {
+      const el = await fixture<GrowspaceAnalyticsUI>(html`
+        <growspace-analytics-ui
+          .items=${[item]}
+          .isLoading=${false}
+          .range=${'24h'}
+          .device=${DEVICE}
+          .descriptors=${DESCRIPTORS}
+          .sensorHistory=${SENSOR_HISTORY}
+        ></growspace-analytics-ui>
+      `);
+      const chart = el.shadowRoot!.querySelector('growspace-env-chart') as any;
+      await chart.updateComplete;
+      return chart;
+    }
+
+    it('draws a single metric as a gradient-filled trace', async () => {
+      const chart = await chartFor({ type: 'single', metrics: [MetricKey.TEMPERATURE] });
+
+      expect(chart.shadowRoot.textContent).not.toContain('No history data');
+      expect(chart.shadowRoot.querySelector('path[stroke-width="2"]')).not.toBeNull();
+      expect(chart.shadowRoot.querySelector('path[fill^="url(#grad-"]')).not.toBeNull();
+    });
+
+    it('draws every metric of a combined chart with a flat fill', async () => {
+      const chart = await chartFor({
+        type: 'group',
+        metrics: [MetricKey.TEMPERATURE, MetricKey.HUMIDITY],
+      });
+
+      expect(chart.shadowRoot.querySelectorAll('path[stroke-width="2"]').length).toBe(2);
+      expect(chart.shadowRoot.querySelectorAll('path[fill-opacity="0.1"]').length).toBe(2);
+      expect(chart.shadowRoot.querySelector('path[fill^="url(#grad-"]')).toBeNull();
+    });
   });
 });
 

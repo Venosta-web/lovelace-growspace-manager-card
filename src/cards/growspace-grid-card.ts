@@ -10,6 +10,7 @@ import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import { ViewMode } from '../features/environment/constants';
 
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
+import { BootstrapController } from '../controllers/bootstrap.controller';
 import '../features/ui/containers/growspace-dialog-host.container';
 import '../features/ui/containers/growspace-toast.container';
 import '../features/shared/layouts/growspace-view-switcher';
@@ -22,7 +23,9 @@ import { variables } from '../styles/variables';
 
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
-import { startTransplant } from '../slices/grid-interaction';
+import { startTransplant, completeTransplant, gridInteraction$ } from '../slices/grid-interaction';
+import * as uiSlice from '../slices/ui';
+import { handleKeyboardNavigation, deleteSelectedPlants } from '../lib/keyboard-navigation';
 
 @customElement('growspace-grid-card')
 export class GrowspaceGridCard extends LitElement implements LovelaceCard {
@@ -32,6 +35,8 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
   store = new GrowspaceStore(this._sharedStore);
 
   protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
+
+  private _bootstrapCtrl!: BootstrapController;
 
   get selectedDevice() {
     return this._viewController.value.grid.selectedDevice;
@@ -67,13 +72,8 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
   protected firstUpdated() {
     if (this.hass) {
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl?.updateHass(this.hass);
     }
-    const forcedConfig = {
-      ...this._config,
-      compact: true,
-      initial_view_mode: ViewMode.STANDARD as unknown as string,
-    };
-    this.store.initializeSelectedDevice(forcedConfig as GrowspaceManagerCardConfig);
     this.store.ui.setViewMode(ViewMode.STANDARD);
   }
 
@@ -88,6 +88,7 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
 
     if (changedProps.has('hass') && this.hass) {
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl.updateHass(this.hass);
     }
   }
 
@@ -112,8 +113,14 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
       ...this._config,
       compact: true,
       initial_view_mode: ViewMode.STANDARD as unknown as string,
-    };
-    this.store.initializeSelectedDevice(forcedConfig as GrowspaceManagerCardConfig);
+    } as GrowspaceManagerCardConfig;
+
+    if (!this._bootstrapCtrl) {
+      this._bootstrapCtrl = new BootstrapController(this, this.store.grid, forcedConfig);
+      this.store.setRefreshCallback(() => this._bootstrapCtrl.refresh());
+    } else {
+      this._bootstrapCtrl.setCardConfig(forcedConfig);
+    }
     this.store.ui.setViewMode(ViewMode.STANDARD);
   }
 
@@ -131,19 +138,31 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
 
   // Event handlers
   private _handleKeyboardNav(e: KeyboardEvent) {
-    this.store.actions.ui.handleKeyboardNavigation(e.key);
+    handleKeyboardNavigation(e.key, this.store);
   }
 
-  private _handleSelectAll = () => this.store.actions.ui.selectAllPlants();
-  private _handleClearSelection = () => this.store.actions.ui.clearPlantSelection();
-  private _handleWaterSelected = () => this.store.actions.ui.openBatchWateringDialog();
+  private _handleSelectAll = () => this.store.selectAllPlantsInSelectedDevice();
+  private _handleClearSelection = () => this.store.ui.clearPlantSelection();
+  private _handleWaterSelected = () => this.store.ui.openBatchWateringDialog();
   private _handleExitEditMode = () => this.store.ui.setEditMode(false);
-  private _handleIPMSelected = () => this.store.actions.ui.openIPMDialog();
-  private _handleTrainingSelected = () => this.store.actions.ui.openBatchTrainingDialog();
+  private _handleIPMSelected = () =>
+    uiSlice.openIPMDialog({ growspaceId: this.store.grid.$selectedDevice.get() ?? undefined });
+  private _handleTrainingSelected = () => this.store.ui.openBatchTrainingDialog();
   private _handleBatchAddPlants = () =>
-    this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
-  private _handleDeleteSelected = () => void this.store.actions.ui.deleteSelectedPlants();
-  private _handleTransplantMode = () => startTransplant();
+    this.store.ui.setActiveDialog({
+      type: 'ADD_PLANTS',
+      payload: { growspaceId: this.store.grid.$selectedDevice.get() ?? undefined },
+    });
+  private _handleDeleteSelected = () => deleteSelectedPlants(this.store);
+  private _handleTransplantMode = () => {
+    if (gridInteraction$.get().status === 'transplanting') {
+      completeTransplant();
+      this.store.ui.setEditMode(true);
+    } else {
+      this.store.ui.setEditMode(false);
+      startTransplant();
+    }
+  };
 
   // We ignore growspace changes and view mode changes as this card is dedicated
   // to a specific view. Growspace changes are handled contextually if needed.

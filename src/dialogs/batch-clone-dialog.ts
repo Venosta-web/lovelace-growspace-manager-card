@@ -7,6 +7,9 @@ import '../features/shared/ui/gs-dialog';
 import type { BatchCloneDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
+import { activeDevices$ } from '../slices/grid';
+import { showToast } from '../slices/ui';
+import { takeClone } from '../slices/plant';
 
 @customElement('batch-clone-dialog')
 export class BatchCloneDialog extends LitElement {
@@ -32,7 +35,7 @@ export class BatchCloneDialog extends LitElement {
         margin-top: 16px;
       }
       .clones-row label {
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         opacity: 0.7;
         white-space: nowrap;
       }
@@ -40,7 +43,7 @@ export class BatchCloneDialog extends LitElement {
         width: 80px;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         color: var(--primary-text-color, #fff);
         font-size: 1rem;
         padding: 8px 12px;
@@ -52,7 +55,7 @@ export class BatchCloneDialog extends LitElement {
       }
       .progress-bar-wrap {
         background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         height: 6px;
         margin-top: 16px;
         overflow: hidden;
@@ -60,7 +63,10 @@ export class BatchCloneDialog extends LitElement {
       .progress-bar {
         background: var(--primary-color, #4caf50);
         height: 100%;
-        transition: width 0.3s ease;
+        width: 100%;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
       }
     `,
   ];
@@ -95,7 +101,7 @@ export class BatchCloneDialog extends LitElement {
     let completed = 0;
 
     for (const plantId of plantIds) {
-      const devices = this.store.data.$devices.get();
+      const devices = activeDevices$.get();
       let motherPlant;
       for (const device of devices) {
         motherPlant = device.plants?.find(
@@ -112,11 +118,7 @@ export class BatchCloneDialog extends LitElement {
       }
 
       try {
-        await this.store.actions.plant.takeClone(
-          motherPlant,
-          this._numClones,
-          this._targetGrowspaceId
-        );
+        await takeClone(motherPlant, this._numClones, this._targetGrowspaceId);
       } catch (_e) {
         errors.push(plantId);
       }
@@ -128,9 +130,9 @@ export class BatchCloneDialog extends LitElement {
 
     const totalClones = plantIds.length * this._numClones;
     if (errors.length === 0) {
-      this.store.actions.ui.toast(`Created ${totalClones} clone(s) successfully`, 'success');
+      showToast(`Created ${totalClones} clone(s) successfully`, 'success');
     } else {
-      this.store.actions.ui.toast(`Completed with ${errors.length} error(s)`, 'error');
+      showToast(`Completed with ${errors.length} error(s)`, 'error');
     }
 
     this._close();
@@ -151,7 +153,7 @@ export class BatchCloneDialog extends LitElement {
         heading="Clone Selected Plants"
         .subtitle=${`${plantIds.length} plant(s) selected`}
         .iconPath=${mdiContentCopy}
-        stageColor="#8bc34a"
+        stageColor="var(--stage-clone)"
         .submitting=${this._isSubmitting}
         @close=${this._close}
       >
@@ -186,7 +188,7 @@ export class BatchCloneDialog extends LitElement {
           ${this._isSubmitting
             ? html`
                 <div class="progress-bar-wrap">
-                  <div class="progress-bar" style="width: ${this._progress}%"></div>
+                  <div class="progress-bar" style="transform: scaleX(${this._progress / 100})"></div>
                 </div>
               `
             : nothing}
@@ -198,7 +200,7 @@ export class BatchCloneDialog extends LitElement {
           </button>
           <button
             class="md3-button primary"
-            style="background-color: #8bc34a; --mdc-theme-primary: #8bc34a;"
+            style="background-color: var(--stage-clone); --mdc-theme-primary: var(--stage-clone);"
             @click=${this._submit}
             ?disabled=${this._isSubmitting || !this._targetGrowspaceId}
           >

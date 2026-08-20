@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { DragControls } from 'three/examples/jsm/controls/DragControls.js';
 import { SceneManager } from './scene-manager';
+import { token } from '../../styles/variables.generated';
 
 export class InteractionManager {
   private sceneManager: SceneManager;
@@ -10,9 +11,6 @@ export class InteractionManager {
   private tooltipPos = { x: 0, y: 0 };
   private editMode: boolean = false;
   public isDragging: boolean = false;
-  private linkMode: boolean = false;
-
-  private selectedForLink: string | null = null;
   private mouseCallback?: (event: string, data?: any) => void;
 
   private _raycaster = new THREE.Raycaster();
@@ -26,14 +24,6 @@ export class InteractionManager {
 
   public setEditMode(enabled: boolean) {
     this.editMode = enabled;
-    if (!enabled) this.setLinkMode(false);
-    this.updateDragControls();
-    this.updateVisuals();
-  }
-
-  public setLinkMode(enabled: boolean) {
-    this.linkMode = enabled;
-    this.selectedForLink = null;
     this.updateDragControls();
     this.updateVisuals();
   }
@@ -48,7 +38,7 @@ export class InteractionManager {
       this.container.style.cursor = 'default';
       if (this.mouseCallback) this.mouseCallback('hover', null);
     });
-    this.container.addEventListener('click', (e) => this.handleClick(e));
+    this.container.addEventListener('click', () => this.handleClick());
   }
 
   private handleMouseMove(event: MouseEvent) {
@@ -58,7 +48,7 @@ export class InteractionManager {
     this._pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this._pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-    if (this.editMode && !this.linkMode) {
+    if (this.editMode) {
       // Drag checks are handled by DragControls
       return;
     }
@@ -71,8 +61,6 @@ export class InteractionManager {
     );
 
     let foundPlant = null;
-    let foundSensor = null;
-
     for (const hit of intersects) {
       const mesh = hit.object;
       // Check for plant hitbox
@@ -80,16 +68,7 @@ export class InteractionManager {
         foundPlant = mesh.userData.plant || mesh.userData.emptySlot;
         this.tooltipPos = { x: event.clientX - rect.left, y: event.clientY - rect.top };
       }
-      // Check for sensor/equipment
-      if (!foundSensor && mesh.userData && mesh.userData.entityId) {
-        foundSensor = mesh.userData.entityId;
-      }
-      if (foundPlant || foundSensor) break;
-    }
-
-    if (this.linkMode) {
-      this.container.style.cursor = foundSensor ? 'pointer' : 'default';
-      return;
+      if (foundPlant) break;
     }
 
     if (foundPlant !== this.hoveredPlant) {
@@ -109,44 +88,7 @@ export class InteractionManager {
     }
   }
 
-  private handleClick(event: MouseEvent) {
-    if (this.linkMode) {
-      const rect = this.container.getBoundingClientRect();
-      this._pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      this._pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-      this._raycaster.setFromCamera(this._pointer, this.sceneManager.camera!);
-      const intersects = this._raycaster.intersectObjects(
-        this.sceneManager.volatileGroup.children,
-        true
-      );
-
-      let entityId: string | null = null;
-      for (const hit of intersects) {
-        if (hit.object.userData && hit.object.userData.entityId) {
-          entityId = hit.object.userData.entityId;
-          break;
-        }
-      }
-
-      if (entityId) {
-        if (!this.selectedForLink) {
-          this.selectedForLink = entityId;
-          this.updateVisuals();
-        } else if (this.selectedForLink === entityId) {
-          this.selectedForLink = null;
-          this.updateVisuals();
-        } else {
-          // Emit link event
-          if (this.mouseCallback) {
-            this.mouseCallback('link', { from: this.selectedForLink, to: entityId });
-          }
-          this.selectedForLink = null;
-          this.updateVisuals();
-        }
-      }
-      return;
-    }
-
+  private handleClick() {
     if (this.editMode) return;
     if (this.hoveredPlant) {
       // Dispatch plant click
@@ -162,7 +104,6 @@ export class InteractionManager {
 
     if (
       this.editMode &&
-      !this.linkMode &&
       this.sceneManager.sensorMeshes.size > 0 &&
       this.sceneManager.camera &&
       this.sceneManager.renderer
@@ -196,7 +137,7 @@ export class InteractionManager {
   private updateVisuals() {
     const meshes = this.sceneManager.sensorMeshes;
 
-    meshes.forEach((mesh, id) => {
+    meshes.forEach((mesh) => {
       // Cleanup old
       const oldOutline = mesh.children.find((c) => c.name === 'editOutline');
       if (oldOutline) {
@@ -220,13 +161,12 @@ export class InteractionManager {
       });
 
       if (this.editMode) {
-        const isSelected = this.selectedForLink === id;
         // Add Outline
-        const g = new THREE.SphereGeometry(isSelected ? 6 : 2.5, 16, 16);
+        const g = new THREE.SphereGeometry(2.5, 16, 16);
         const m = new THREE.MeshBasicMaterial({
-          color: isSelected ? 0x00ff00 : 0x448aff,
+          color: token['--accent-3d'],
           transparent: true,
-          opacity: isSelected ? 0.5 : 0.3,
+          opacity: 0.3,
           side: THREE.BackSide,
         });
         const outline = new THREE.Mesh(g, m);
@@ -234,7 +174,7 @@ export class InteractionManager {
         mesh.add(outline);
 
         // Hit Area
-        const hg = new THREE.SphereGeometry(isSelected ? 7 : 5, 16, 16);
+        const hg = new THREE.SphereGeometry(5, 16, 16);
         const hm = new THREE.MeshBasicMaterial({ visible: false, transparent: true, opacity: 0 });
         const hit = new THREE.Mesh(hg, hm);
         hit.name = 'hitArea';

@@ -1,3 +1,8 @@
+# `commit-msg` is not installed by default — declare it so `prek install`
+# (or `pre-commit install`) wires up the commitlint hook without extra flags.
+# Existing clones must re-run `prek install`; this is not retroactive.
+default_install_hook_types: [pre-commit, commit-msg]
+
 repos:
   - repo: local
     hooks:
@@ -5,5 +10,26 @@ repos:
         name: unit tests
         entry: npm run test:unit
         language: system
-        types: [javascript, ts, json]
+        types_or: [javascript, ts, json]
         pass_filenames: false
+        stages: [pre-commit]
+
+      - id: typecheck
+        name: typecheck
+        entry: npm run typecheck
+        language: system
+        types_or: [javascript, ts]
+        pass_filenames: false
+        stages: [pre-commit]
+
+  # commitlint runs in an environment prek builds and owns, NOT out of this
+  # repo's node_modules. The previous `language: system` + `npx --no` version
+  # aborted the commit with "npx canceled due to missing packages" in any
+  # checkout that had not run `npm ci` yet — and a subsequent `git push` still
+  # reported success, so the commit looked like it had happened. It had not.
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.24.0
+    hooks:
+      - id: commitlint
+        stages: [commit-msg]
+        additional_dependencies: ['@commitlint/config-conventional']

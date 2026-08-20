@@ -3,7 +3,7 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceCarouselCard } from '../../../src/cards/growspace-carousel-card';
-import { createMockHass } from '../../mocks/hass';
+import { aHass } from '../../fixtures';
 
 // Mock the inner manager card to avoid its full dependency tree in a carousel-focused snapshot
 vi.mock('../../../src/growspace-manager-card', () => {
@@ -29,9 +29,8 @@ if (!customElements.get('growspace-carousel-card')) {
 
 test('growspace-carousel-card visual snapshot', async () => {
     const element = await fixture<GrowspaceCarouselCard>(html`<growspace-carousel-card></growspace-carousel-card>`);
-    // '4x4_tent' matches the growspace id createMockHass() puts in sensor.growspaces_list
-    element.hass = createMockHass() as any;
-    element.setConfig({ type: 'custom:growspace-carousel-card', growspaces: ['4x4_tent'] } as any);
+    element.hass = aHass() as any;
+    element.setConfig({ type: 'custom:growspace-carousel-card', growspaces: ['test_tent'] } as any);
     await element.updateComplete;
 
     await expect(page.elementLocator(element)).toMatchScreenshot();

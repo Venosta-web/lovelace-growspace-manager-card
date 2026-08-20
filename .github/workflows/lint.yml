@@ -2,30 +2,84 @@ name: Lint & Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
+  workflow_dispatch:
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6.0.2
-    
+
     - name: Set up Node.js
       uses: actions/setup-node@v6.4.0
       with:
         node-version: 24
         cache: 'npm'
-        
+
     - name: Install dependencies
       run: npm ci
-      
+
     - name: Run Lint
       run: npm run lint
-      
-    - name: Check Formatting
-      run: npm run format -- --check
-      
+
+    - name: Typecheck
+      run: npm run typecheck
+
+    # Fails if variables.generated.ts or DESIGN.md's frontmatter differ from what
+    # src/styles/tokens.ts produces, so a forgotten `npm run tokens:generate`
+    # cannot ship the doc-vs-runtime drift ADR 0035 exists to end.
+    - name: Check generated design tokens
+      run: npm run tokens:check
+
+    # Advisory until the #574 migration issues are cleared: fails only when a PR
+    # adds bare colour literals above the committed baseline, never on the
+    # existing backlog. Ratchet the baseline down as each migration lands.
+    - name: Audit colour literals
+      run: npm run tokens:audit -- --check
+
     - name: Build
       run: npm run build
+
+    - name: Validate HACS release layout
+      run: npm run validate:hacs-release
+
+    # Non-blocking until the existing prettier drift (~173 files) is reformatted
+    # in a dedicated PR — see ADR 0025. The previous `format -- --check` step was a
+    # no-op (it ran `prettier --write`), so it never actually checked.
+    - name: Check Formatting (non-blocking)
+      run: npm run format:check
+      continue-on-error: true
+
+  # Runs the Release job's install + build under the Node version Release pins,
+  # so a lockfile that only npm 11 can resolve fails on the PR instead of on dev.
+  #
+  # This is not redundant with the job above. Lint and Test run Node 24 (npm 11);
+  # Release runs Node 22 (npm 10) because Node 24's undici breaks octokit's
+  # release-asset upload. Those npm majors disagree about hoisting vs nesting
+  # some transitive deps, so a lockfile can satisfy every PR check and still fail
+  # `npm ci` on Release after merge — which is exactly what broke dev in #462.
+  #
+  # Keep the Node version here equal to release.yml's. If that pin moves, move
+  # this one in the same commit.
+  release-preflight:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6.0.2
+
+    - name: Set up Node.js (matching release.yml)
+      uses: actions/setup-node@v6.4.0
+      with:
+        node-version: '22'
+        cache: 'npm'
+
+    - name: Install with the Release job's npm
+      run: npm ci
+
+    - name: Build
+      run: npm run build
+
+    - name: Validate HACS release layout
+      run: npm run validate:hacs-release

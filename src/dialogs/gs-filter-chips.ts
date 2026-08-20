@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { reducedMotion } from '../styles/reduced-motion.styles';
 
 export type LibraryFilter = 'library' | 'active' | 'all';
 
@@ -16,11 +17,11 @@ export class GsFilterChips extends LitElement {
 
     .filter-chip {
       padding: 4px 14px;
-      border-radius: 16px;
-      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: var(--border-radius-lg, 16px);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
       background: transparent;
       color: var(--primary-text-color);
-      font-size: 13px;
+      font-size: var(--font-size-supporting);
       cursor: pointer;
       transition:
         background 0.15s,
@@ -29,9 +30,11 @@ export class GsFilterChips extends LitElement {
 
     .filter-chip.active {
       background: var(--primary-color);
-      color: var(--text-primary-color, #fff);
+      color: var(--on-primary);
       border-color: var(--primary-color);
     }
+
+    ${reducedMotion}
   `;
 
   private static readonly OPTS: Array<{ key: LibraryFilter; label: string }> = [

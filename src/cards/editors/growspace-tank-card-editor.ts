@@ -3,40 +3,22 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
 import type { GrowspaceManagerCardConfig } from '../../lib/types/config';
 import { sharedStyles } from '../../styles/shared.styles';
+import { GrowspaceOptionsController } from '../../controllers/growspace-options-controller';
 
 @customElement('growspace-tank-card-editor')
 export class GrowspaceTankCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: GrowspaceManagerCardConfig;
-  @state() private _sensorGrowspaces: { id: string; name: string }[] = [];
+
+  private _gsController = new GrowspaceOptionsController(this);
 
   public setConfig(config: GrowspaceManagerCardConfig): void {
     this._config = config;
-    this._loadGrowspaces();
-  }
-
-  private _loadGrowspaces(): void {
-    if (!this.hass) return;
-
-    const growspaceListSensor = this.hass.states['sensor.growspaces_list'];
-    if (growspaceListSensor?.attributes.growspaces) {
-      const raw = growspaceListSensor.attributes.growspaces;
-      if (Array.isArray(raw)) {
-        this._sensorGrowspaces = raw.map((g: any) => ({ id: g.id, name: g.name || g.id }));
-      } else {
-        this._sensorGrowspaces = Object.entries(raw).map(([id, name]) => ({
-          id,
-          name: String(name) || id,
-        }));
-      }
-    } else {
-      this._sensorGrowspaces = [];
-    }
   }
 
   protected willUpdate(changedProps: Map<string, unknown>): void {
-    if (changedProps.has('hass')) {
-      this._loadGrowspaces();
+    if (changedProps.has('hass') && this.hass) {
+      this._gsController.update(this.hass);
     }
   }
 
@@ -45,19 +27,19 @@ export class GrowspaceTankCardEditor extends LitElement implements LovelaceCardE
   }
 
   private _computeSchema() {
-    return [
+    return this._gsController.filterUnavailableFields([
       {
         name: 'default_growspace',
         selector: {
           select: {
             options: [
               { label: 'Select a growspace...', value: '' },
-              ...this._sensorGrowspaces.map((gs) => ({ label: gs.name, value: gs.id })),
+              ...this._gsController.options.map((gs) => ({ label: gs.name, value: gs.id })),
             ],
           },
         },
       },
-    ];
+    ]);
   }
 
   private _valueChanged(ev: CustomEvent): void {
@@ -96,11 +78,12 @@ export class GrowspaceTankCardEditor extends LitElement implements LovelaceCardE
 
     return html`
       <div class="card-config">
+        ${this._gsController.renderEmptyState(this.hass?.language)}
         <ha-form
           .hass=${this.hass}
           .data=${this._config}
           .schema=${this._computeSchema()}
-          .computeLabel=${(s: any) =>
+          .computeLabel=${(s: { name: string }) =>
             s.name === 'default_growspace' ? 'Target Growspace' : s.name}
           @value-changed=${this._valueChanged}
         ></ha-form>

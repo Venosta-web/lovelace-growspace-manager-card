@@ -71,7 +71,7 @@ export class EditModeBanner extends LitElement {
         gap: 12px;
         color: var(--primary-text-color, #fff);
         font-weight: 500;
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         white-space: nowrap;
         flex-shrink: 0;
       }

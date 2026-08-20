@@ -1,6 +1,11 @@
 import { LitElement, html, css, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property, state, query } from 'lit/decorators.js';
 import { mdiCameraPlus, mdiSend, mdiClose } from '@mdi/js';
+
+import { PlantUtils } from '../../../utils/plant-utils';
+import './camera-capture';
+import type { CameraCapture } from './camera-capture';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 /**
  * Quick note input component with image upload support
@@ -11,6 +16,8 @@ export class QuickNoteInput extends LitElement {
   @property({ type: String }) placeholder = 'Add a cultivation note...';
   @property({ type: Boolean }) allowImages = true;
   @property({ type: Boolean }) disabled = false;
+
+  @query('camera-capture') private _camera!: CameraCapture;
 
   @state() private _text = '';
   @state() private _images: string[] = [];
@@ -87,7 +94,7 @@ export class QuickNoteInput extends LitElement {
     }
 
     button.submit-btn {
-      background: var(--primary-color, #03a9f4);
+      background: var(--gm-primary-color);
       color: white;
     }
 
@@ -151,77 +158,19 @@ export class QuickNoteInput extends LitElement {
       background: var(--error-color-dark, #d32f2f);
     }
 
-    input[type='file'] {
-      display: none;
-    }
+    ${reducedMotion}
   `;
 
-  /**
-   * Resize and compress an image file
-   */
-  private async _resizeImage(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            reject(new Error('Could not get canvas context'));
-            return;
-          }
-
-          // Max dimensions
-          const MAX_WIDTH = 1024;
-          const MAX_HEIGHT = 1024;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Compress to JPEG 0.8
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          resolve(dataUrl);
-        };
-        img.onerror = (e) => reject(e);
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = (e) => reject(e);
-      reader.readAsDataURL(file);
-    });
-  }
-
-  private async _handleFileSelect(e: Event) {
-    const input = e.target as HTMLInputElement;
-    if (!input.files) return;
-
-    const files = Array.from(input.files);
-    for (const file of files) {
+  private async _handleCapture(e: CustomEvent<{ files: File[] }>) {
+    for (const file of e.detail.files) {
       try {
-        const resized = await this._resizeImage(file);
-        this._images = [...this._images, resized];
+        // Keep the note's historical 1024px/0.8 sizing (PlantUtils defaults are smaller).
+        const compressed = await PlantUtils.compressImage(file, 1024, 1024, 0.8);
+        this._images = [...this._images, compressed];
       } catch (err) {
         console.error('Error processing image:', err);
       }
     }
-
-    // Clear input to allow re-selecting same file
-    input.value = '';
   }
 
   private _removeImage(index: number) {
@@ -308,15 +257,12 @@ export class QuickNoteInput extends LitElement {
           <div class="action-buttons">
             ${this.allowImages
               ? html`
-                  <input
-                    type="file"
-                    id="fileInput"
-                    @change=${this._handleFileSelect}
-                    multiple
-                    accept="image/*"
-                  />
+                  <camera-capture
+                    .multiple=${true}
+                    @capture=${this._handleCapture}
+                  ></camera-capture>
                   <button
-                    @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}
+                    @click=${() => this._camera?.open()}
                     ?disabled=${this.disabled || this._isSaving}
                     aria-label="Add image"
                     title="Add image"

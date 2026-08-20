@@ -17,6 +17,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as hassCallModule from '../../services/hass-call';
+import { StrainDataSchema, StrainLibraryWrapperSchema } from './schema';
 import {
   strainLibrary$,
   setStrainLibrary,
@@ -156,6 +157,75 @@ describe('fetchStrainLibrary', () => {
 
     expect(strainLibrary$.get()).toEqual([original]);
   });
+
+  it('selects the gallery thumbnail when is_thumbnail is true', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      strains: {
+        Strain: {
+          meta: {},
+          phenotypes: {
+            default: {
+              images: [
+                { path: '/local/thumb.jpg', is_thumbnail: true },
+                { path: '/local/other.jpg', is_thumbnail: false },
+              ],
+            },
+          },
+        },
+      },
+    });
+
+    await fetchStrainLibrary();
+    const [entry] = strainLibrary$.get();
+    expect(entry.image).toBe('/local/thumb.jpg');
+  });
+
+  it('falls back to first gallery image when no thumbnail is flagged', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      strains: {
+        Strain: {
+          meta: {},
+          phenotypes: {
+            default: {
+              images: [
+                { path: '/local/first.jpg', is_thumbnail: false },
+                { path: '/local/second.jpg', is_thumbnail: false },
+              ],
+            },
+          },
+        },
+      },
+    });
+
+    await fetchStrainLibrary();
+    const [entry] = strainLibrary$.get();
+    expect(entry.image).toBe('/local/first.jpg');
+  });
+
+  it('skips a strain literally named "response"', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      strains: {
+        response: { meta: {}, phenotypes: { default: {} } },
+        RealStrain: { meta: {}, phenotypes: { default: {} } },
+      },
+    });
+
+    await fetchStrainLibrary();
+    const library = strainLibrary$.get();
+    expect(library).toHaveLength(1);
+    expect(library[0].strain).toBe('RealStrain');
+  });
+
+  it('emits no entries for a strain with no phenotypes', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      strains: {
+        NoPhenoStrain: { meta: { breeder: 'X' } },
+      },
+    });
+
+    await fetchStrainLibrary();
+    expect(strainLibrary$.get()).toEqual([]);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -257,13 +327,20 @@ describe('removeStrain', () => {
 
 describe('updateStrainMeta', () => {
   it('calls callService with update_strain_meta and the payload', async () => {
-    await updateStrainMeta({ strain: 'OG', phenotype: 'pheno1', description: 'Nice' });
+    await updateStrainMeta({
+      strain: 'OG',
+      phenotype: 'pheno1',
+      key: 'OG|pheno1',
+      description: 'Nice',
+    });
 
     expect(hassCallModule.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'update_strain_meta',
       expect.objectContaining({ strain: 'OG', description: 'Nice' })
     );
+    const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(payload).not.toHaveProperty('key');
   });
 
   it('applies same image routing as addStrain', async () => {
@@ -337,6 +414,27 @@ describe('importStrainLibrary', () => {
     } as unknown as Response);
 
     await expect(importStrainLibrary(file, false)).rejects.toThrow('Duplicate strains');
+  });
+
+  it('throws with statusText when the error response body is empty', async () => {
+    const file = new File(['x'], 'x.json', { type: 'application/json' });
+    vi.mocked(hassCallModule.callFetch).mockResolvedValueOnce({
+      ok: false,
+      text: async () => '',
+      statusText: 'Internal Server Error',
+    } as unknown as Response);
+
+    await expect(importStrainLibrary(file, false)).rejects.toThrow('Internal Server Error');
+  });
+
+  it('throws "Unknown import error" when success is false with no error field', async () => {
+    const file = new File(['x'], 'x.json', { type: 'application/json' });
+    vi.mocked(hassCallModule.callFetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: false }),
+    } as unknown as Response);
+
+    await expect(importStrainLibrary(file, false)).rejects.toThrow('Unknown import error');
   });
 });
 
@@ -416,5 +514,85 @@ describe('deleteBreeder', () => {
     vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('del err'));
 
     await expect(deleteBreeder('DJ Short')).rejects.toThrow('del err');
+  });
+});
+
+describe('StrainDataSchema round-trip', () => {
+  // Every key `StrainLibrary._load()` assembles for a strain entry: the 20 meta
+  // columns and the 8 phenotype fields. Values are deliberately non-default so
+  // a stripped field cannot pass by coincidence.
+  const backendStrain = {
+    meta: {
+      breeder: 'DJ Short',
+      breeder_logo: '/logos/dj-short.png',
+      type: 'Sativa',
+      lineage: 'Blueberry x Haze',
+      sex: 'feminized',
+      generation: 'F4',
+      sativa_percentage: 70,
+      indica_percentage: 30,
+      yield_potential: 'medium',
+      height: 'tall',
+      thc: 22.5,
+      cbd: 0.4,
+      cbg: 0.1,
+      description: 'A blueberry-forward sativa.',
+      awards: ['Cannabis Cup 2003'],
+      effects: ['euphoric'],
+      aroma: ['berry'],
+      taste: ['sweet'],
+      is_stub: false,
+      lineage_tree: [{ name: 'Blueberry', source: 'library' }],
+    },
+    phenotypes: {
+      'Pheno A': {
+        phenotype_id: 7,
+        description: 'The keeper cut.',
+        image_path: '/images/pheno-a.jpg',
+        image_crop_meta: { x: 10, y: 20, scale: 1.5 },
+        images: [{ path: '/images/pheno-a.jpg', is_thumbnail: true }],
+        flower_days_min: 56,
+        flower_days_max: 63,
+        harvests: [{ harvest_id: 1, wet_weight: 420 }],
+      },
+    },
+  };
+
+  it('keeps every field the backend emits', () => {
+    expect(StrainDataSchema.parse(backendStrain)).toEqual(backendStrain);
+  });
+
+  it('parses a whole library through the wrapper without stripping meta', () => {
+    const parsed = StrainLibraryWrapperSchema.parse({
+      strains: { Blueberry: backendStrain },
+      strain_list: ['Blueberry'],
+    });
+
+    expect(parsed.strains.Blueberry.meta.thc).toBe(22.5);
+    expect(parsed.strains.Blueberry.meta.generation).toBe('F4');
+    expect(parsed.strains.Blueberry.phenotypes['Pheno A'].phenotype_id).toBe(7);
+  });
+
+  it('survives an imported strain whose THC arrived as a string', () => {
+    // `import_library` bypasses the service schema's vol.Coerce(float), so a
+    // REAL column can hold a string. Failing here would blank the whole library.
+    const parsed = StrainDataSchema.parse({
+      ...backendStrain,
+      meta: { ...backendStrain.meta, thc: '22%' },
+    });
+
+    expect(parsed.meta.thc).toBe('22%');
+  });
+
+  it('transforms null meta and phenotype fields to undefined', () => {
+    const parsed = StrainDataSchema.parse({
+      meta: { breeder: null, sativa_percentage: null },
+      phenotypes: { default: { description: null, flower_days_min: null } },
+    });
+
+    expect(parsed.meta.breeder).toBeUndefined();
+    expect(parsed.meta.sativa_percentage).toBeUndefined();
+    expect(parsed.phenotypes.default.description).toBeUndefined();
+    expect(parsed.phenotypes.default.flower_days_min).toBeUndefined();
   });
 });

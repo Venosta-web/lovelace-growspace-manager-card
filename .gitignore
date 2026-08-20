@@ -4,8 +4,17 @@ node_modules/
 # Build output
 build/
 
+# Bundled card artifacts — produced by `npm run build`, served to HACS via
+# GitHub Release assets (.releaserc.json), not from the repo tree. Untracked to
+# keep the ~4MB minified bundle + 12MB sourcemap out of every diff. Manual
+# installs download the asset from the latest release (see README).
+/growspace-manager-card.js
+/dist/growspace-manager-card.js
+/dist/growspace-manager-card.js.map
+
 # Local env files
 .env
+tests/e2e/.env.test
 ha-login-debug.png
 ha-login-debug.html
 ha-auth.json
@@ -63,6 +72,7 @@ tests/e2e/test-reports/
 
 # Git worktrees
 .worktrees/
+.claude/worktrees/
 
 
 playwright-report-mock/index.html

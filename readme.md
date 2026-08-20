@@ -61,7 +61,7 @@ Manage your genetics with a visual library.
    ```
 
 ### Manual Installation
-1. Copy `dist/growspace-manager-card.js` to your Home Assistant `www` folder.
+1. Download `growspace-manager-card.js` from the [latest release](https://github.com/Venosta-web/lovelace-growspace-manager-card/releases/latest) (or build it yourself with `npm run build`, which outputs `dist/growspace-manager-card.js`) and copy it to your Home Assistant `www` folder.
 2. Add the resource in your Dashboard configuration:
    ```yaml
    resources:

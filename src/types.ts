@@ -16,29 +16,8 @@ export * from './services/types';
 export { GridOverlayMode as GridOverlayModeEnum } from './features/environment/constants';
 export { GrowspaceType as GrowspaceTypeEnum } from './features/plants/types';
 
-export interface SeedBatch {
-  batch_id: string;
-  strain_name: string;
-  breeder: string;
-  quantity: number;
-  acquisition_date: string;
-  generation: string;
-  lineage: string;
-  parent_1_strain?: string | null;
-  parent_1_phenotype?: string | null;
-  parent_2_strain?: string | null;
-  parent_2_phenotype?: string | null;
-  notes: string;
-}
-
-export interface PollinationEvent {
-  event_id: string;
-  date: string;
-  donor_plant_id: string;
-  receiver_plant_id: string;
-  notes: string;
-  result_seed_batch_id: string | null;
-}
+// Both are wire shapes described by the genetics slice's schemas (ADR 0031).
+export type { SeedBatch, PollinationEvent } from './slices/genetics/schema';
 
 export interface PhenotypeScores {
   vigor: number | null;

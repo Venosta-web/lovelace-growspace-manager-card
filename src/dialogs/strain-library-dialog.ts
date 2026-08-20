@@ -1,5 +1,6 @@
 import { LitElement, html, css, PropertyValues, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import {
   mdiClose,
   mdiCloudUpload,
@@ -14,6 +15,8 @@ import './strain-browse-view';
 import './strain-import-dialog';
 import './seeds-genetics-tab';
 import './strain-editor-view';
+import { updateStrainMeta, fetchStrainLibrary } from '../slices/strain';
+import { showToast } from '../slices/ui';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, StrainEntry, SeedBatch, PollinationEvent } from '../types';
 import type { GrowspaceStore } from '../store/core/growspace-store';
@@ -140,12 +143,11 @@ export class StrainLibraryDialog extends LitElement {
       this.classList.toggle('tree-maximized', this._treeMaximized);
     }
   }
-
   static styles = [
     dialogStyles,
     css`
       :host {
-        --accent-green: #4caf50;
+        --accent-green: var(--gm-primary-color);
       }
 
       .btn-close-tree {
@@ -200,414 +202,6 @@ export class StrainLibraryDialog extends LitElement {
           flex: none;
         }
       }
-
-      .sd-content {
-        padding: 24px;
-        overflow-y: auto;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .sd-footer {
-        padding: 16px 24px;
-        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
-        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-      }
-
-      /* GRID & CARDS */
-      .sd-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 20px;
-      }
-      .strain-card {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
-        transition: all 0.3s ease;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        cursor: pointer;
-      }
-      .strain-card:hover {
-        border-color: var(--accent-green);
-        transform: translateY(-4px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-      }
-      .sc-thumb {
-        height: 180px;
-        background: var(--card-background-color, #222);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--secondary-text-color, #444);
-        position: relative;
-        overflow: hidden;
-      }
-      .sc-thumb img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      .sc-content {
-        padding: 16px;
-        flex: 1;
-      }
-      .sc-title {
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin: 0 0 4px 0;
-        color: var(--primary-text-color, #fff);
-      }
-      .sc-type-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        color: var(--accent-green);
-        font-size: 0.85rem;
-        font-weight: 600;
-        margin-bottom: 12px;
-      }
-      .sc-meta {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        font-size: 0.8rem;
-        color: var(--secondary-text-color);
-      }
-      .sc-actions {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        display: flex;
-        gap: 8px;
-        opacity: 0;
-        transition: opacity 0.2s;
-      }
-      .strain-card:hover .sc-actions {
-        opacity: 1;
-      }
-      @media (hover: none) {
-        .sc-actions {
-          opacity: 1;
-        }
-      }
-      .sc-action-btn {
-        background: rgba(0, 0, 0, 0.6);
-        border: none;
-        border-radius: 50%;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        cursor: pointer;
-      }
-      .sc-action-btn:hover {
-        background: var(--accent-green);
-      }
-
-      /* SEARCH BAR */
-      .search-bar-container {
-        margin-bottom: 24px;
-      }
-      .search-input-wrapper {
-        position: relative;
-        margin-bottom: 12px;
-      }
-      .search-input-wrapper svg {
-        position: absolute;
-        left: 16px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 20px;
-        height: 20px;
-        fill: var(--secondary-text-color);
-        pointer-events: none;
-      }
-      .search-bar-input {
-        width: 100%;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 12px;
-        padding: 14px 14px 14px 48px;
-        color: var(--primary-text-color, #fff);
-        font-size: 1rem;
-        outline: none;
-        box-sizing: border-box;
-        font-family: inherit;
-      }
-      .search-bar-input:focus {
-        border-color: var(--accent-green);
-        background: rgba(255, 255, 255, 0.08);
-      }
-
-      /* FORMS */
-      .sd-form-group {
-        margin-bottom: 20px;
-      }
-      .sd-label {
-        display: block;
-        color: var(--primary-text-color, --secondary-text-color);
-        font-size: 0.85rem;
-        margin-bottom: 8px;
-        font-weight: 500;
-      }
-      .sd-input,
-      .sd-textarea,
-      .sd-select {
-        width: 100%;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 8px;
-        padding: 12px 16px;
-        color: var(--primary-text-color, #fff);
-        font-size: 0.95rem;
-        outline: none;
-        transition: border-color 0.2s;
-        box-sizing: border-box;
-      }
-      .sd-input:focus,
-      .sd-textarea:focus,
-      .sd-select:focus {
-        border-color: var(--accent-green);
-      }
-      .sd-textarea {
-        resize: vertical;
-        min-height: 100px;
-      }
-
-      /* EDITOR LAYOUT */
-      .editor-layout {
-        display: grid;
-        grid-template-columns: 1fr 1.5fr;
-        gap: 32px;
-      }
-
-      /* PHOTO UPLOAD */
-      .photo-upload-area {
-        border: 2px dashed var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 12px;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.02));
-        height: 240px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        transition: all 0.2s;
-        margin-bottom: 20px;
-        position: relative;
-        overflow: hidden;
-      }
-      .photo-upload-area:hover {
-        border-color: var(--accent-green);
-        background: rgba(76, 175, 80, 0.05);
-      }
-      .select-library-btn {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        background: rgba(0, 0, 0, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #fff;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        z-index: 10;
-        cursor: pointer;
-      }
-      .select-library-btn:hover {
-        background: var(--accent-green);
-        border-color: var(--accent-green);
-      }
-
-      /* Crop Overlay */
-      .crop-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.9);
-        z-index: 1000;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-      }
-      .crop-viewport {
-        width: 300px;
-        height: 300px;
-        border: 2px solid var(--accent-green);
-        overflow: hidden;
-        position: relative;
-        cursor: move;
-        box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.7);
-      }
-      .crop-controls {
-        margin-top: 20px;
-        width: 300px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .crop-slider {
-        width: 100%;
-        accent-color: var(--accent-green);
-      }
-
-      /* Type Selector */
-      .type-selector-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-      .type-option {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 8px;
-        padding: 16px;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s;
-        text-align: center;
-      }
-      .type-option:hover {
-        border-color: #666;
-      }
-      .type-option.active {
-        background: var(--secondary-background-color, rgba(76, 175, 80, 0.1));
-        border-color: var(--accent-green);
-        color: var(--primary-text-color, #fff);
-      }
-      .type-option svg {
-        width: 28px;
-        height: 28px;
-        fill: var(--secondary-text-color);
-      }
-      .type-option.active svg {
-        fill: var(--accent-green);
-      }
-
-      /* Hybrid Graph */
-      .hg-container {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        width: 100%;
-        margin-top: 8px;
-        font-family: 'Roboto', sans-serif;
-      }
-      .hg-labels {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: var(--primary-text-color, #fff);
-        margin-bottom: 2px;
-      }
-      .hg-bar-track {
-        height: 18px;
-        width: 100%;
-        background: #333;
-        border-radius: 2px;
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        cursor: pointer;
-      }
-      .hg-bar-indica {
-        background: #8b5cf6; /* Purple */
-        height: 100%;
-        transition: width 0.2s ease;
-      }
-      .hg-bar-sativa {
-        background: #eab308; /* Yellow */
-        height: 100%;
-        flex: 1;
-        transition: width 0.2s ease;
-      }
-      .hg-tick {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 1px;
-        background: rgba(255, 255, 255, 0.4);
-        pointer-events: none;
-      }
-
-      .hg-num-input {
-        background: transparent;
-        border: none;
-        border-bottom: 1px solid var(--secondary-text-color);
-        color: var(--primary-text-color, #fff);
-        width: 36px;
-        text-align: center;
-        font-size: 0.75rem;
-        font-weight: 700;
-        padding: 0;
-      }
-      .hg-num-input:focus {
-        outline: none;
-        border-bottom-color: var(--accent-green);
-      }
-
-      /* Pagination */
-      .pagination-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-        margin-top: 24px;
-        padding-bottom: 8px;
-      }
-      .pagination-text {
-        color: var(--secondary-text-color);
-        font-size: 0.9rem;
-        font-weight: 500;
-      }
-      .pagination-btn {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        color: var(--primary-text-color, #fff);
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-      .pagination-btn:hover:not(:disabled) {
-        border-color: var(--accent-green);
-        color: var(--accent-green);
-        background: rgba(255, 255, 255, 0.1);
-      }
-      .pagination-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        border-color: transparent;
-      }
-
       /* Mobile Responsive */
       @media (max-width: 600px) {
         ha-dialog {
@@ -626,157 +220,22 @@ export class StrainLibraryDialog extends LitElement {
           max-width: 100vw;
           border-radius: 0;
         }
-        .sd-header {
-          padding: 16px;
-        }
-        .sd-content {
-          padding: 16px;
-        }
-        .sd-grid {
-          grid-template-columns: 1fr;
-        }
-        .sd-footer {
-          display: none;
-        }
-        .fab-btn {
-          display: flex;
-        }
-        .editor-layout {
-          grid-template-columns: 1fr;
-        }
-      }
-      .fab-btn {
-        position: absolute;
-        bottom: 24px;
-        right: 24px;
-        width: 56px;
-        height: 56px;
-        border-radius: 16px;
-        background: var(--accent-green);
-        color: #fff;
-        border: none;
-        box-shadow: 0 4px 8px 3px rgba(0, 0, 0, 0.15);
-        display: none; /* Hidden on desktop */
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 20;
-      }
-
-      .sd-textarea {
-        width: 100%;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 8px;
-        padding: 12px;
-        color: var(--primary-text-color, #fff);
-        font-family: inherit;
-        resize: vertical;
-        box-sizing: border-box;
-        font-size: 1rem;
-      }
-      .sd-textarea:focus {
-        border-color: var(--accent-green);
-        outline: none;
-        background: rgba(255, 255, 255, 0.08);
-      }
-
-      /* Mobile menu */
-      .mobile-menu {
-        position: absolute;
-        top: 60px;
-        right: 16px;
-        background: var(--card-background-color, #2d2d2d);
-        border-radius: 4px;
-        padding: 8px 0;
-        min-width: 200px;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
-        z-index: 30;
-      }
-      .mobile-menu-item {
-        padding: 12px 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: var(--primary-text-color, #fff);
-        cursor: pointer;
-      }
-      .mobile-menu-item:hover {
-        background: rgba(255, 255, 255, 0.08);
-      }
-      .mobile-menu-item svg {
-        width: 20px;
-        height: 20px;
-        fill: var(--secondary-text-color);
-      }
-      .menu-overlay {
-        position: absolute;
-        inset: 0;
-        z-index: 25;
-      }
-
-      /* Breeder Dialog */
-      .breeder-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .breeder-card {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 16px;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
-        border-radius: 12px;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-      .breeder-card:hover {
-        border-color: var(--accent-green);
-        background: rgba(255, 255, 255, 0.08);
-      }
-      .breeder-logo-preview {
-        width: 56px;
-        height: 56px;
-        border-radius: 8px;
-        object-fit: contain;
-        background: rgba(255, 255, 255, 0.05);
-        padding: 4px;
-        flex-shrink: 0;
-      }
-      .breeder-logo-placeholder {
-        width: 56px;
-        height: 56px;
-        border-radius: 8px;
-        border: 1px dashed var(--divider-color);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--secondary-text-color);
-        flex-shrink: 0;
-      }
-      .breeder-info {
-        flex: 1;
-        min-width: 0;
-      }
-      .breeder-name {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--primary-text-color, #fff);
-        margin: 0 0 4px 0;
-      }
-      .breeder-strain-count {
-        font-size: 0.8rem;
-        color: var(--secondary-text-color);
-      }
-      .breeder-actions {
-        display: flex;
-        gap: 8px;
-        flex-shrink: 0;
       }
 
       .tab-content-tree {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /*
+       * Layout-transparent wrapper: exists to carry the tabpanel semantics for the
+       * workspace tablist, so it must pass the container's flex sizing straight
+       * through to whichever tab content it holds.
+       */
+      .workspace-panel {
         flex: 1;
         min-height: 0;
         display: flex;
@@ -799,7 +258,7 @@ export class StrainLibraryDialog extends LitElement {
         border: none;
         border-bottom: 3px solid transparent;
         color: var(--secondary-text-color);
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         font-weight: 500;
         cursor: pointer;
         transition:
@@ -814,6 +273,11 @@ export class StrainLibraryDialog extends LitElement {
       .tab-btn:hover:not(.active) {
         color: var(--primary-text-color);
       }
+      .tab-btn:focus-visible,
+      .tab-maximize-btn:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: -2px;
+      }
       .tab-maximize-btn {
         display: flex;
         align-items: center;
@@ -827,7 +291,7 @@ export class StrainLibraryDialog extends LitElement {
         cursor: pointer;
         flex-shrink: 0;
         margin-right: 4px;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
       }
       .tab-maximize-btn:hover {
         color: var(--primary-text-color);
@@ -852,296 +316,8 @@ export class StrainLibraryDialog extends LitElement {
         height: 100vh !important;
         border-radius: 0 !important;
       }
-
-      /* Seeds section */
-      .seeds-section {
-        padding: 24px;
-        overflow-y: auto;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-      }
-      .seeds-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin: 16px 0 12px 0;
-      }
-      .seeds-header:first-child {
-        margin-top: 0;
-      }
-      .seeds-header h3 {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--primary-text-color);
-      }
-      .seed-batch-card {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
-        border-radius: 10px;
-        padding: 14px 16px;
-        margin-bottom: 10px;
-      }
-      .seed-batch-card-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 8px;
-        margin-bottom: 4px;
-      }
-      .seed-batch-name {
-        font-weight: 700;
-        font-size: 1rem;
-        color: var(--primary-text-color);
-      }
-      .seed-batch-edit-btn {
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        border: none;
-        background: transparent;
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        padding: 0;
-        transition:
-          background 0.15s,
-          color 0.15s;
-      }
-      .seed-batch-edit-btn:hover {
-        background: var(--divider-color, rgba(255, 255, 255, 0.1));
-        color: var(--primary-text-color);
-      }
-      .seed-batch-edit-btn svg {
-        fill: currentColor;
-      }
-      .seed-batch-meta {
-        font-size: 0.82rem;
-        color: var(--secondary-text-color);
-        margin-bottom: 4px;
-      }
-      .seed-batch-parents {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 4px;
-        margin-bottom: 4px;
-      }
-      .seed-batch-parent-chip {
-        font-size: 0.78rem;
-        color: var(--primary-text-color);
-        background: var(--divider-color, rgba(255, 255, 255, 0.08));
-        border-radius: 6px;
-        padding: 2px 7px;
-      }
-      .seed-batch-parent-sep {
-        font-size: 0.78rem;
-        color: var(--secondary-text-color);
-        font-weight: 600;
-      }
-      .seed-batch-lineage {
-        font-size: 0.8rem;
-        color: var(--accent-green, #4caf50);
-        margin-bottom: 4px;
-      }
-      .seed-batch-notes {
-        font-size: 0.8rem;
-        color: var(--secondary-text-color);
-        font-style: italic;
-      }
-      .seed-batch-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 8px;
-        flex-wrap: wrap;
-      }
-      .sow-form {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-top: 8px;
-        padding: 10px 12px;
-        background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
-        border-radius: 8px;
-      }
-      .sow-select {
-        flex: 1;
-        min-width: 120px;
-        padding: 6px 8px;
-        border-radius: 6px;
-        border: 1px solid var(--divider-color);
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-      }
-      .sow-qty {
-        width: 64px;
-        padding: 6px 8px;
-        border-radius: 6px;
-        border: 1px solid var(--divider-color);
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: center;
-      }
-      .pollination-card {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
-        border-radius: 10px;
-        padding: 14px 16px;
-        margin-bottom: 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      .pollination-date {
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: var(--primary-text-color);
-      }
-      .pollination-plants {
-        font-size: 0.85rem;
-        color: var(--secondary-text-color);
-      }
-      .pollination-notes {
-        font-size: 0.8rem;
-        color: var(--secondary-text-color);
-        font-style: italic;
-      }
-      .pollination-card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .pollination-card-actions {
-        display: flex;
-        gap: 4px;
-      }
-      .icon-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: var(--secondary-text-color);
-        padding: 2px;
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-      }
-      .icon-btn:hover {
-        color: var(--primary-text-color);
-        background: var(--divider-color, rgba(255, 255, 255, 0.08));
-      }
-      .icon-btn.danger:hover {
-        color: var(--error-color, #f44336);
-      }
-      .delete-confirm-text {
-        font-size: 0.75rem;
-        color: var(--error-color, #f44336);
-        align-self: center;
-      }
-      .badge {
-        display: inline-block;
-        padding: 2px 10px;
-        border-radius: 12px;
-        font-size: 0.78rem;
-        font-weight: 600;
-        margin-top: 4px;
-      }
-      .badge.success {
-        background: rgba(76, 175, 80, 0.15);
-        color: var(--accent-green, #4caf50);
-      }
-      .empty-state {
-        color: var(--secondary-text-color);
-        font-size: 0.9rem;
-        margin: 8px 0 16px 0;
-      }
-
-      /* Form view */
-      .form-view {
-        padding: 24px;
-        overflow-y: auto;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .form-header {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 4px;
-      }
-      .form-header h3 {
-        margin: 0;
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--primary-text-color);
-      }
-      .form-view label {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: var(--secondary-text-color);
-      }
-      .form-view input {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
-        border-radius: 8px;
-        padding: 10px 14px;
-        color: var(--primary-text-color, #fff);
-        font-size: 0.95rem;
-        outline: none;
-        font-family: inherit;
-      }
-      .form-view input:focus {
-        border-color: var(--accent-green, #4caf50);
-      }
-      .form-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        margin-top: 8px;
-      }
-      .form-error {
-        color: var(--error-color, #f44336);
-        font-size: 0.85rem;
-        margin: 4px 0 0;
-      }
-      .library-filter-chips {
-        display: flex;
-        gap: 6px;
-        padding: 4px 0 8px;
-      }
-      .filter-chip {
-        padding: 4px 14px;
-        border-radius: 16px;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        background: transparent;
-        color: var(--primary-text-color);
-        font-size: 13px;
-        cursor: pointer;
-        transition:
-          background 0.15s,
-          color 0.15s;
-      }
-      .filter-chip.active {
-        background: var(--primary-color);
-        color: var(--text-primary-color, #fff);
-        border-color: var(--primary-color);
-      }
     `,
   ];
-
   render() {
     if (!this.open) return nothing;
 
@@ -1157,125 +333,145 @@ export class StrainLibraryDialog extends LitElement {
       >
         <div class="glass-dialog-container">
           ${this._renderTabBar()}
-          ${this._activeMainTab === 'tree'
-            ? this._renderTreeViewTab()
-            : this._activeMainTab === 'seeds'
-              ? html`
-                  <seeds-genetics-tab
-                    .strains=${this.strains}
-                    .seedBatches=${this.seedBatches}
-                    .pollinationEvents=${this.pollinationEvents}
-                    .plants=${this.plants}
-                    .onSeedDataChanged=${this.onSeedDataChanged}
-                    .onAddSeedBatch=${this.onAddSeedBatch}
-                    .onUpdateSeedBatch=${this.onUpdateSeedBatch}
-                    .onLogPollination=${this.onLogPollination}
-                    .onHarvestSeeds=${this.onHarvestSeeds}
-                    .onUpdatePollination=${this.onUpdatePollination}
-                    .onDeletePollination=${this.onDeletePollination}
-                    .onDeleteSeedBatch=${this.onDeleteSeedBatch}
-                    .onSowSeeds=${this.onSowSeeds}
-                    .initialSubView=${this.initialSubView}
-                    .prefilledReceiverId=${this.prefilledReceiverId}
-                    @close=${() => this.dispatchEvent(new CustomEvent('close'))}
-                  ></seeds-genetics-tab>
-                `
-              : this._view === 'browse'
+          <div
+            class="workspace-panel"
+            role="tabpanel"
+            id="workspace-panel-${this._activeMainTab}"
+            aria-labelledby="workspace-tab-${this._activeMainTab}"
+          >
+            ${this._activeMainTab === 'tree'
+              ? this._renderTreeViewTab()
+              : this._activeMainTab === 'seeds'
                 ? html`
-                    <strain-browse-view
-                      .hass=${this.hass}
+                    <seeds-genetics-tab
                       .strains=${this.strains}
-                      .activePlantCounts=${this.activePlantCounts}
-                      .libraryFilter=${this._libraryFilter}
-                      @strain-selected=${(e: CustomEvent) => {
-                        this._editingStrain = e.detail.strain;
-                        this._view = 'editor';
-                      }}
-                      @new-strain=${() => {
-                        this._editingStrain = undefined;
-                        this._view = 'editor';
-                      }}
-                      @filter-changed=${(e: CustomEvent) => {
-                        this._libraryFilter = e.detail.filter;
-                      }}
-                      @manage-breeders-requested=${() => {
-                        this._breederDialogOpen = true;
-                      }}
-                      @import-requested=${() => {
-                        this._importDialogOpen = true;
-                      }}
-                      @get-recommendation=${() =>
-                        this.dispatchEvent(new CustomEvent('get-recommendation'))}
-                      @export-library=${() => this.dispatchEvent(new CustomEvent('export-library'))}
-                      @strain-delete-confirmed=${(e: CustomEvent) =>
-                        this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }))}
+                      .seedBatches=${this.seedBatches}
+                      .pollinationEvents=${this.pollinationEvents}
+                      .plants=${this.plants}
+                      .onSeedDataChanged=${this.onSeedDataChanged}
+                      .onAddSeedBatch=${this.onAddSeedBatch}
+                      .onUpdateSeedBatch=${this.onUpdateSeedBatch}
+                      .onLogPollination=${this.onLogPollination}
+                      .onHarvestSeeds=${this.onHarvestSeeds}
+                      .onUpdatePollination=${this.onUpdatePollination}
+                      .onDeletePollination=${this.onDeletePollination}
+                      .onDeleteSeedBatch=${this.onDeleteSeedBatch}
+                      .onSowSeeds=${this.onSowSeeds}
+                      .initialSubView=${this.initialSubView}
+                      .prefilledReceiverId=${this.prefilledReceiverId}
                       @close=${() => this.dispatchEvent(new CustomEvent('close'))}
-                    ></strain-browse-view>
+                    ></seeds-genetics-tab>
                   `
-                : html`
-                    <strain-editor-view
-                      .editingStrain=${this._editingStrain}
-                      .strains=${this.strains}
-                      .store=${this.store}
-                      .hass=${this.hass}
-                      .source=${this.source}
-                      .returnPayload=${this.returnPayload}
-                      .onSave=${async (strain: import('../types').StrainEntry) => {
-                        await this.store?.actions.strain.update(strain);
-                        this._view = 'browse';
-                        this._editingStrain = undefined;
-                        this.dispatchEvent(new CustomEvent('data-changed'));
-                      }}
-                      @view-lineage=${(e: CustomEvent) => {
-                        this.focusLineage = true;
-                        this._cameFromEditor = true;
-                        this._activeMainTab = 'tree';
-                      }}
-                      @editing-strain-changed=${(e: CustomEvent) => {
-                        this._editingStrain = e.detail.strain;
-                      }}
-                      @editor-back=${() => {
-                        this._view = 'browse';
-                        this._editingStrain = undefined;
-                      }}
-                      @delete-strain=${(e: CustomEvent) => {
-                        this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }));
-                        this._view = 'browse';
-                        this._editingStrain = undefined;
-                      }}
-                      @strain-created-at-source=${(e: CustomEvent) => {
-                        this.dispatchEvent(
-                          new CustomEvent('strain-created-at-source', {
-                            detail: e.detail,
-                            bubbles: true,
-                            composed: true,
-                          })
-                        );
-                      }}
-                      @open-print-label=${(e: CustomEvent) => {
-                        this.dispatchEvent(
-                          new CustomEvent('open-print-label', {
-                            detail: e.detail,
-                            bubbles: true,
-                            composed: true,
-                          })
-                        );
-                      }}
-                      @import-library=${(e: CustomEvent) => {
-                        this.dispatchEvent(new CustomEvent('import-library', { detail: e.detail }));
-                      }}
-                      @update-breeder=${(e: CustomEvent) => {
-                        this.dispatchEvent(new CustomEvent('update-breeder', { detail: e.detail }));
-                      }}
-                      @save-breeder=${(e: CustomEvent) => {
-                        this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }));
-                      }}
-                      @delete-breeder=${(e: CustomEvent) => {
-                        this.dispatchEvent(new CustomEvent('delete-breeder', { detail: e.detail }));
-                      }}
-                      @close=${() => this.dispatchEvent(new CustomEvent('close'))}
-                    ></strain-editor-view>
-                  `}
+                : this._view === 'browse'
+                  ? html`
+                      <strain-browse-view
+                        .hass=${this.hass}
+                        .strains=${this.strains}
+                        .activePlantCounts=${this.activePlantCounts}
+                        .libraryFilter=${this._libraryFilter}
+                        @strain-selected=${(e: CustomEvent) => {
+                          this._editingStrain = e.detail.strain;
+                          this._view = 'editor';
+                        }}
+                        @new-strain=${() => {
+                          this._editingStrain = undefined;
+                          this._view = 'editor';
+                        }}
+                        @filter-changed=${(e: CustomEvent) => {
+                          this._libraryFilter = e.detail.filter;
+                        }}
+                        @manage-breeders-requested=${() => {
+                          this._breederDialogOpen = true;
+                        }}
+                        @import-requested=${() => {
+                          this._importDialogOpen = true;
+                        }}
+                        @get-recommendation=${() =>
+                          this.dispatchEvent(new CustomEvent('get-recommendation'))}
+                        @export-library=${() =>
+                          this.dispatchEvent(new CustomEvent('export-library'))}
+                        @strain-delete-confirmed=${(e: CustomEvent) =>
+                          this.dispatchEvent(
+                            new CustomEvent('delete-strain', { detail: e.detail })
+                          )}
+                        @close=${() => this.dispatchEvent(new CustomEvent('close'))}
+                      ></strain-browse-view>
+                    `
+                  : html`
+                      <strain-editor-view
+                        .editingStrain=${this._editingStrain}
+                        .strains=${this.strains}
+                        .store=${this.store}
+                        .hass=${this.hass}
+                        .source=${this.source}
+                        .returnPayload=${this.returnPayload}
+                        .onSave=${async (strain: import('../types').StrainEntry) => {
+                          await updateStrainMeta(strain);
+                          await fetchStrainLibrary({ cache: true, force: true });
+                          this.dispatchEvent(new CustomEvent('data-changed'));
+                          showToast('Strain updated successfully!', 'success');
+                          this._view = 'browse';
+                          this._editingStrain = undefined;
+                        }}
+                        @view-lineage=${(_e: CustomEvent) => {
+                          this.focusLineage = true;
+                          this._cameFromEditor = true;
+                          this._activeMainTab = 'tree';
+                        }}
+                        @editing-strain-changed=${(e: CustomEvent) => {
+                          this._editingStrain = e.detail.strain;
+                        }}
+                        @editor-back=${() => {
+                          this._view = 'browse';
+                          this._editingStrain = undefined;
+                        }}
+                        @delete-strain=${(e: CustomEvent) => {
+                          this.dispatchEvent(
+                            new CustomEvent('delete-strain', { detail: e.detail })
+                          );
+                          this._view = 'browse';
+                          this._editingStrain = undefined;
+                        }}
+                        @strain-created-at-source=${(e: CustomEvent) => {
+                          this.dispatchEvent(
+                            new CustomEvent('strain-created-at-source', {
+                              detail: e.detail,
+                              bubbles: true,
+                              composed: true,
+                            })
+                          );
+                        }}
+                        @open-print-label=${(e: CustomEvent) => {
+                          this.dispatchEvent(
+                            new CustomEvent('open-print-label', {
+                              detail: e.detail,
+                              bubbles: true,
+                              composed: true,
+                            })
+                          );
+                        }}
+                        @import-library=${(e: CustomEvent) => {
+                          this.dispatchEvent(
+                            new CustomEvent('import-library', { detail: e.detail })
+                          );
+                        }}
+                        @update-breeder=${(e: CustomEvent) => {
+                          this.dispatchEvent(
+                            new CustomEvent('update-breeder', { detail: e.detail })
+                          );
+                        }}
+                        @save-breeder=${(e: CustomEvent) => {
+                          this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }));
+                        }}
+                        @delete-breeder=${(e: CustomEvent) => {
+                          this.dispatchEvent(
+                            new CustomEvent('delete-breeder', { detail: e.detail })
+                          );
+                        }}
+                        @close=${() => this.dispatchEvent(new CustomEvent('close'))}
+                      ></strain-editor-view>
+                    `}
+          </div>
         </div>
       </ha-dialog>
 
@@ -1320,10 +516,15 @@ export class StrainLibraryDialog extends LitElement {
             </div>
             <button
               class="md3-button text close"
+              aria-label="Close import strains"
               @click=${close}
               style="min-width:auto; padding:8px; margin-left: auto;"
             >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <svg
+                aria-hidden="true"
+                style="width:24px;height:24px;fill:currentColor;"
+                viewBox="0 0 24 24"
+              >
                 <path d="${mdiClose}"></path>
               </svg>
             </button>
@@ -1331,14 +532,14 @@ export class StrainLibraryDialog extends LitElement {
 
           <div style="padding: 24px;">
             <div
-              style="font-size: 0.9rem; color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 20px;"
+              style="font-size: var(--font-size-sm); color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 20px;"
             >
               Select a ZIP file containing your strain library export. You can either merge the new
               strains with your existing library or replace it entirely.
             </div>
 
             <div
-              style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"
+              style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: var(--border-radius-sm, 8px); border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"
             >
               <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
                 <input
@@ -1350,7 +551,9 @@ export class StrainLibraryDialog extends LitElement {
                 />
                 <div>
                   <div style="font-weight: 600;">Merge</div>
-                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
+                  <div
+                    style="font-size: var(--font-size-supporting); color: var(--secondary-text-color);"
+                  >
                     Add new strains, keep existing ones.
                   </div>
                 </div>
@@ -1368,7 +571,9 @@ export class StrainLibraryDialog extends LitElement {
                 />
                 <div>
                   <div style="font-weight: 600;">Replace</div>
-                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
+                  <div
+                    style="font-size: var(--font-size-supporting); color: var(--secondary-text-color);"
+                  >
                     Overwrite entire library with import.
                   </div>
                 </div>
@@ -1409,49 +614,52 @@ export class StrainLibraryDialog extends LitElement {
     `;
   }
 
+  /**
+   * `aria-controls` is set only on the selected tab: panels render conditionally,
+   * so pointing at a panel id that isn't in the DOM would dangle.
+   */
+  private _renderWorkspaceTab(tab: 'strains' | 'seeds' | 'tree', label: string): TemplateResult {
+    const selected = this._activeMainTab === tab;
+    return html`
+      <button
+        class="tab-btn ${selected ? 'active' : ''}"
+        role="tab"
+        id="workspace-tab-${tab}"
+        aria-selected=${selected ? 'true' : 'false'}
+        aria-controls=${ifDefined(selected ? `workspace-panel-${tab}` : undefined)}
+        @click=${() => {
+          this._activeMainTab = tab;
+          this.focusLineage = false;
+          this._cameFromEditor = false;
+        }}
+      >
+        ${label}
+      </button>
+    `;
+  }
+
   private _renderTabBar(): TemplateResult {
     return html`
-      <div class="main-tab-bar">
-        <button
-          class="tab-btn ${this._activeMainTab === 'strains' ? 'active' : ''}"
-          @click=${() => {
-            this._activeMainTab = 'strains';
-            this.focusLineage = false;
-            this._cameFromEditor = false;
-          }}
-        >
-          Strains
-        </button>
-        <button
-          class="tab-btn ${this._activeMainTab === 'seeds' ? 'active' : ''}"
-          @click=${() => {
-            this._activeMainTab = 'seeds';
-            this.focusLineage = false;
-            this._cameFromEditor = false;
-          }}
-        >
-          Seeds &amp; Genetics
-        </button>
-        <button
-          class="tab-btn ${this._activeMainTab === 'tree' ? 'active' : ''}"
-          @click=${() => {
-            this._activeMainTab = 'tree';
-            this.focusLineage = false;
-            this._cameFromEditor = false;
-          }}
-        >
-          Tree View
-        </button>
+      <div class="main-tab-bar" role="tablist" aria-label="Strain library workspace">
+        ${this._renderWorkspaceTab('strains', 'Strains')}
+        ${this._renderWorkspaceTab('seeds', 'Seeds & Genetics')}
+        ${this._renderWorkspaceTab('tree', 'Tree View')}
         ${this._activeMainTab === 'tree'
           ? html`
               <button
                 class="tab-maximize-btn"
+                aria-label="${this._treeMaximized ? 'Restore tree view' : 'Maximize tree view'}"
+                aria-pressed=${this._treeMaximized ? 'true' : 'false'}
                 title="${this._treeMaximized ? 'Restore' : 'Maximize'}"
                 @click=${() => {
                   this._treeMaximized = !this._treeMaximized;
                 }}
               >
-                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <svg
+                  aria-hidden="true"
+                  style="width:18px;height:18px;fill:currentColor;"
+                  viewBox="0 0 24 24"
+                >
                   <path d="${this._treeMaximized ? mdiArrowCollapse : mdiArrowExpand}"></path>
                 </svg>
               </button>
@@ -1493,7 +701,7 @@ export class StrainLibraryDialog extends LitElement {
                       this._cameFromEditor = false;
                       this._activeMainTab = 'strains';
                     }}
-                    style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(76, 175, 80, 0.15); border: 1px solid var(--accent-green, #4caf50); border-radius: 20px; color: var(--accent-green, #4caf50); font-weight: 500; font-size: 13px; cursor: pointer; transition: all 0.2s ease-in-out; outline: none; margin-right: 0;"
+                    style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(76, 175, 80, 0.15); border: 1px solid var(--accent-green, #4caf50); border-radius: var(--border-radius-full, 9999px); color: var(--accent-green, #4caf50); font-weight: 500; font-size: var(--font-size-supporting); cursor: pointer; transition: all 0.2s ease-in-out; outline: none; margin-right: 0;"
                     onmouseover="this.style.background='rgba(76, 175, 80, 0.25)'"
                     onmouseout="this.style.background='rgba(76, 175, 80, 0.15)'"
                   >

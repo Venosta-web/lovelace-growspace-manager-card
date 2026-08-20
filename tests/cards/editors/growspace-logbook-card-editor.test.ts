@@ -150,6 +150,6 @@ describe('GrowspaceLogbookCardEditor', () => {
     element.setConfig({ type: 'custom:growspace-logbook-card' });
     const result = (element as any).render();
     expect(result).toBeTruthy();
-    expect(result.strings[0]).toContain('ha-form');
+    expect(result.strings.join('')).toContain('ha-form');
   });
 });

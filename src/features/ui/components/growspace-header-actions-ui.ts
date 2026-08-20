@@ -1,19 +1,21 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HeaderChip } from '../../../utils/metrics-utils';
+import { HeaderChip } from '../../../slices/header-metrics';
 import { ViewMode } from '../../../constants';
 import { GrowspaceDevice } from '../../../types';
 import '../../shared/ui/scroll-container';
 import '../../shared/ui/growspace-chip';
 import '../../shared/ui/gs-help-tooltip';
+import { localizeWithParams } from '../../../localize/localize';
 
 // Icons
 import {
   mdiCog,
   mdiBrain,
   mdiDotsVertical,
-  mdiPencil,
-  mdiLink,
+  mdiDragVariant,
+  mdiChartMultiple,
+  mdiCheckboxMultipleMarkedOutline,
   mdiClipboardTextClock,
   mdiWater,
   mdiWaterPlus,
@@ -24,8 +26,6 @@ import {
   mdiDna,
   mdiCube,
   mdiCamera,
-  mdiChartLine,
-  mdiFileChart,
 } from '@mdi/js';
 
 @customElement('growspace-header-actions-ui')
@@ -36,16 +36,19 @@ export class GrowspaceHeaderActionsUI extends LitElement {
   @property() public viewMode = ViewMode.STANDARD;
   @property({ type: Boolean }) public isEditMode = false;
   @property({ attribute: false }) public selectedPlants = new Set<string>();
+  @property({ type: Number }) public problemPlantCount = 0;
   @property() public selectedDevice: string | null = null;
   @property({ attribute: false }) public device?: GrowspaceDevice;
+  @property() public activeTask: 'idle' | 'arrange' | 'compare' | 'select_plants' = 'idle';
+  @property({ type: Boolean }) public canArrange = false;
+  @property({ type: Boolean }) public canCompare = false;
+  @property() public language = 'en';
 
   @state() private _draggedMetric: string | null = null;
+  @state() private _menuOpen = false;
 
   private get _chipDraggable(): string {
-    if (this.isMobile) {
-      return this.mobileLink.toString();
-    }
-    return 'true';
+    return 'false';
   }
 
   private _triggerAction(action: string) {
@@ -67,6 +70,81 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         composed: true,
       })
     );
+  }
+
+  private _handleMenuToggle(event: Event) {
+    const toggleEvent = event as ToggleEvent;
+    this._menuOpen = toggleEvent.newState === 'open';
+
+    if (this._menuOpen) {
+      requestAnimationFrame(() => {
+        if (this._menuOpen) this._menuItems()[0]?.focus();
+      });
+      return;
+    }
+
+    (this.shadowRoot?.getElementById('menu-trigger') as HTMLButtonElement | null)?.focus();
+  }
+
+  private _menuItems(): HTMLButtonElement[] {
+    return Array.from(
+      this.shadowRoot?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? []
+    );
+  }
+
+  private _handleMenuKeydown(event: KeyboardEvent) {
+    const items = this._menuItems();
+    const currentIndex = items.indexOf(this.shadowRoot?.activeElement as HTMLButtonElement);
+    let nextIndex: number | undefined;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+        break;
+      case 'ArrowUp':
+        nextIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = items.length - 1;
+        break;
+      case 'Escape':
+      case 'Tab':
+        (event.currentTarget as HTMLElement & { hidePopover: () => void }).hidePopover();
+        if (event.key === 'Escape') event.preventDefault();
+        return;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    items[nextIndex]?.focus();
+  }
+
+  private _menuItem(
+    icon: string,
+    label: string,
+    action: string,
+    options: { disabled?: boolean; active?: boolean; title?: string } = {}
+  ) {
+    return html`
+      <button
+        class="menu-item ${options.active ? 'active' : ''}"
+        data-action=${action}
+        role="menuitem"
+        tabindex="-1"
+        type="button"
+        ?disabled=${options.disabled}
+        aria-current=${options.active ? 'true' : nothing}
+        title=${options.title ?? nothing}
+        @click=${() => this._triggerAction(action)}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icon}"></path></svg>
+        <span class="menu-item-label">${label}</span>
+      </button>
+    `;
   }
 
   private _handleChipDragStart(e: DragEvent, metric: string) {
@@ -113,7 +191,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     );
   }
 
-  private _iconButton(icon: string, action: string, label: string, help: string, active = false) {
+  private _iconButton(icon: string, action: string, label: string, help: string, active?: boolean) {
     return html`
       <div style="position:relative;display:inline-flex;align-items:center;">
         <button
@@ -121,7 +199,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
           @click=${() => this._triggerAction(action)}
           title="${label}"
           aria-label="${label}"
-          aria-pressed="${active}"
+          aria-pressed=${active === undefined ? nothing : String(active)}
           type="button"
         >
           <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
@@ -133,6 +211,47 @@ export class GrowspaceHeaderActionsUI extends LitElement {
           style="position:absolute;top:-10px;right:-10px;z-index:1;"
         ></gs-help-tooltip>
       </div>
+    `;
+  }
+
+  private _renderPrimaryAction() {
+    if (this.activeTask !== 'idle') return nothing;
+
+    const plants = this.device?.plants;
+    if (!Array.isArray(plants)) return nothing;
+
+    const hasGrowspace = Boolean(this.device?.deviceId || this.selectedDevice);
+    const selectedCount = this.selectedPlants?.size ?? 0;
+    if (selectedCount > 0 && plants.length > 0 && hasGrowspace) {
+      return this._primaryAction(mdiWaterPlus, `Water selected (${selectedCount})`, 'water');
+    }
+
+    if (this.problemPlantCount > 0 && plants.length > 0) {
+      return this._primaryAction(
+        mdiCheckboxMultipleMarkedOutline,
+        'Review plants',
+        'select_plants'
+      );
+    }
+
+    if (plants.length === 0 && hasGrowspace) {
+      return this._primaryAction(mdiPlus, 'Add plant', 'add_plant');
+    }
+
+    return nothing;
+  }
+
+  private _primaryAction(icon: string, label: string, action: string) {
+    return html`
+      <button
+        class="primary-action"
+        type="button"
+        data-action=${action}
+        @click=${() => this._triggerAction(action)}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icon}"></path></svg>
+        <span>${label}</span>
+      </button>
     `;
   }
 
@@ -176,7 +295,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
     }
     .icon-button:focus-visible {
-      outline: 2px solid var(--primary-color, #2196f3);
+      outline: 2px solid var(--gm-primary-color);
       outline-offset: 2px;
     }
     .icon-button svg {
@@ -187,8 +306,41 @@ export class GrowspaceHeaderActionsUI extends LitElement {
 
     .icon-button.mobile-link.active,
     .icon-button.active {
-      background: var(--primary-color, #2196f3);
-      border-color: var(--primary-color, #2196f3);
+      background: var(--gm-primary-color);
+      border-color: var(--gm-primary-color);
+    }
+
+    .primary-action {
+      min-height: 40px;
+      border: 0;
+      border-radius: var(--border-radius-full, 9999px);
+      padding: 0 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-shrink: 0;
+      background: var(--primary-color, #4caf50);
+      color: var(--on-primary);
+      font: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.3),
+        0 1px 3px 1px rgba(0, 0, 0, 0.15);
+    }
+    .primary-action:hover {
+      filter: brightness(1.08);
+    }
+    .primary-action:focus-visible {
+      outline: 2px solid var(--primary-text-color, #fff);
+      outline-offset: 2px;
+    }
+    .primary-action svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
     }
 
     .menu-dropdown {
@@ -201,7 +353,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       margin-top: 8px;
       background: var(--card-background-color, #2a2a2a);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      border-radius: 12px;
+      border-radius: var(--border-radius-md, 12px);
       font-size: 0.9rem;
       min-width: 180px;
       padding: 0;
@@ -227,16 +379,34 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     }
 
     .menu-item {
+      width: 100%;
+      border: 0;
+      background: transparent;
       padding: 12px 16px;
       display: flex;
       align-items: center;
       gap: 12px;
       cursor: pointer;
       color: var(--primary-text-color, #ddd);
+      font: inherit;
+      text-align: start;
     }
     .menu-item:hover {
       background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
       color: var(--primary-text-color, #fff);
+    }
+    .menu-item.active {
+      font-weight: 700;
+      background: color-mix(in srgb, var(--primary-color, #4caf50) 16%, transparent);
+    }
+    .menu-item:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+    .menu-item:focus-visible {
+      outline: 2px solid var(--gm-primary-color);
+      outline-offset: -3px;
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
     }
     .menu-item svg {
       width: 20px;
@@ -265,11 +435,27 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     }
 
     @media (max-width: 600px) {
+      :host {
+        width: 100%;
+        gap: 8px;
+      }
+
+      .primary-action {
+        min-height: 48px;
+        border-radius: var(--border-radius-full, 9999px);
+        flex: 1;
+      }
+
+      .icon-button {
+        width: 48px;
+        height: 48px;
+      }
+
       .menu-dropdown:popover-open {
         inset: auto 0 0 0;
         width: 100%;
         position-anchor: none;
-        border-radius: 20px 20px 0 0;
+        border-radius: var(--border-radius-lg, 16px) var(--border-radius-lg, 16px) 0 0;
         margin: 0;
         max-height: calc(100dvh - env(safe-area-inset-top, 0px));
         overflow-y: auto;
@@ -298,6 +484,13 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       }
     }
 
+    /* Respect user motion preferences (WCAG 2.3.3) */
+    @media (prefers-reduced-motion: reduce) {
+      .menu-dropdown:popover-open {
+        animation: none;
+      }
+    }
+
     .chips-wrapper {
       display: flex;
       gap: 8px;
@@ -323,6 +516,8 @@ export class GrowspaceHeaderActionsUI extends LitElement {
                         .active=${chip.active}
                         .linked=${chip.linked}
                         .tooltip=${chip.tooltip}
+                        .toggle=${true}
+                        .actionLabel=${`Toggle ${chip.label} graph`}
                         draggable="${this._chipDraggable}"
                         @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
                         @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
@@ -337,30 +532,6 @@ export class GrowspaceHeaderActionsUI extends LitElement {
             </div>
           `
         : nothing}
-      ${this.isMobile
-        ? html`
-            <button
-              class="icon-button mobile-link ${this.mobileLink ? 'active' : ''}"
-              @click=${() =>
-                this.dispatchEvent(
-                  new CustomEvent('toggle-mobile-link', { bubbles: true, composed: true })
-                )}
-              title="Toggle Link Mode"
-              aria-label="Toggle Link Mode"
-              aria-pressed="${this.mobileLink}"
-              type="button"
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
-            </button>
-          `
-        : ''}
-      ${this._iconButton(
-        mdiPencil,
-        'edit',
-        'Edit Mode',
-        'Edit mode lets you reorder plants, remove them from the growspace, or drag metric chips to rearrange the header.',
-        this.isEditMode
-      )}
       ${!this.isMobile
         ? html`
             ${this._iconButton(
@@ -378,6 +549,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
             )}
           `
         : nothing}
+      ${this._renderPrimaryAction()}
 
       <div class="menu-container">
         <button
@@ -386,6 +558,11 @@ export class GrowspaceHeaderActionsUI extends LitElement {
           style="anchor-name: --menu-trigger"
           popovertarget="header-menu"
           title="Open Menu"
+          type="button"
+          aria-label="Open growspace actions menu"
+          aria-haspopup="menu"
+          aria-controls="header-menu"
+          aria-expanded=${this._menuOpen}
         >
           <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
         </button>
@@ -397,105 +574,83 @@ export class GrowspaceHeaderActionsUI extends LitElement {
   private _renderMenu() {
     const selectedCount = this.selectedPlants?.size || 0;
     return html`
-      <div id="header-menu" popover="auto" class="menu-dropdown">
-        <div class="drag-handle"></div>
-        ${this.isMobile
-          ? html`
-              <div class="menu-header">Growspace</div>
-              <div class="menu-item" @click=${() => this._triggerAction('config')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                <span class="menu-item-label">Settings</span>
-              </div>
-              <div class="menu-item" @click=${() => this._triggerAction('heatmap')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiCube}"></path></svg>
-                <span class="menu-item-label">3D Heatmap</span>
-              </div>
-              <div class="menu-divider"></div>
-            `
-          : nothing}
-        <div class="menu-header">Plant Actions</div>
-        <div class="menu-item" @click=${() => this._triggerAction('add_plant')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
-          <span class="menu-item-label">Add Plant</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('water')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
-          <span class="menu-item-label"
-            >${selectedCount > 0 ? 'Water Selected' : 'Water Growspace'}</span
-          >
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('ipm')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-          <span class="menu-item-label"
-            >${selectedCount > 0 ? 'Apply IPM to Selected' : 'Log / Manage IPM'}</span
-          >
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('training')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
-          <span class="menu-item-label"
-            >${selectedCount > 0 ? 'Train Selected' : 'Log Training'}</span
-          >
-        </div>
+      <div
+        id="header-menu"
+        popover="auto"
+        class="menu-dropdown"
+        role="menu"
+        aria-label="Growspace actions"
+        @toggle=${this._handleMenuToggle}
+        @keydown=${this._handleMenuKeydown}
+      >
+        <div class="drag-handle" aria-hidden="true"></div>
+        <div class="menu-header" aria-hidden="true">Plant care</div>
+        ${this._menuItem(
+          mdiCheckboxMultipleMarkedOutline,
+          localizeWithParams('tasks.select_plants', {}, this.language),
+          'select_plants',
+          {
+            disabled: this.activeTask !== 'idle' || (this.device?.plants?.length ?? 0) === 0,
+            active: this.activeTask === 'select_plants',
+          }
+        )}
+        ${this._menuItem(mdiPlus, 'Add Plant', 'add_plant')}
+        ${this._menuItem(
+          mdiWaterPlus,
+          selectedCount > 0 ? 'Water Selected' : 'Water Growspace',
+          'water'
+        )}
+        ${this._menuItem(
+          mdiBug,
+          selectedCount > 0 ? 'Apply IPM to Selected' : 'Log / Manage IPM',
+          'ipm'
+        )}
+        ${this._menuItem(
+          mdiDumbbell,
+          selectedCount > 0 ? 'Train Selected' : 'Log Training',
+          'training'
+        )}
 
-        <div class="menu-divider"></div>
+        <div class="menu-divider" role="separator"></div>
 
-        <div class="menu-header">Setup</div>
-        <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-          <span class="menu-item-label">Irrigation</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
-          <span class="menu-item-label">Nutrients</span>
-        </div>
-        ${this._showECRamp()
-          ? html`
-              <div class="menu-item" @click=${() => this._triggerAction('ec_ramp')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiChartLine}"></path></svg>
-                <span class="menu-item-label">EC Ramp Curves</span>
-              </div>
-            `
-          : ''}
-        <div class="menu-item" @click=${() => this._triggerAction('strains')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-          <span class="menu-item-label">Strains</span>
-        </div>
+        <div class="menu-header" aria-hidden="true">Setup</div>
+        ${this._menuItem(
+          mdiDragVariant,
+          localizeWithParams('tasks.arrange', {}, this.language),
+          'arrange',
+          {
+            disabled: this.activeTask !== 'idle' || !this.canArrange,
+            active: this.activeTask === 'arrange',
+            title: this.canArrange
+              ? localizeWithParams('tasks.arrange_help', {}, this.language)
+              : localizeWithParams('tasks.arrange_unavailable', {}, this.language),
+          }
+        )}
+        ${this.isMobile ? this._menuItem(mdiCog, 'Settings', 'config') : nothing}
+        ${this._menuItem(mdiWater, 'Irrigation', 'irrigation')}
+        ${this._menuItem(mdiBottleTonicPlus, 'Nutrients', 'nutrients')}
+        ${this._menuItem(mdiDna, 'Strains', 'strains')}
 
-        <div class="menu-divider"></div>
+        <div class="menu-divider" role="separator"></div>
 
-        <div class="menu-header">Insights</div>
-        <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
-          <span class="menu-item-label">Logbook</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('report')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiFileChart}"></path></svg>
-          <span class="menu-item-label">Generate Report</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('snapshots')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
-          <span class="menu-item-label">Camera Snapshots</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('ai')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-          <span class="menu-item-label">Ask AI</span>
-        </div>
+        <div class="menu-header" aria-hidden="true">Insights</div>
+        ${this._menuItem(
+          mdiChartMultiple,
+          localizeWithParams('tasks.compare', {}, this.language),
+          'compare',
+          {
+            disabled: this.activeTask !== 'idle' || !this.canCompare,
+            active: this.activeTask === 'compare',
+            title: this.canCompare
+              ? localizeWithParams('tasks.compare_help', {}, this.language)
+              : localizeWithParams('tasks.compare_unavailable', {}, this.language),
+          }
+        )}
+        ${this.isMobile ? this._menuItem(mdiCube, '3D Heatmap', 'heatmap') : nothing}
+        ${this._menuItem(mdiClipboardTextClock, 'Logbook', 'logbook')}
+        ${this._menuItem(mdiCamera, 'Camera Snapshots', 'snapshots')}
+        ${this._menuItem(mdiBrain, 'Ask AI', 'ai')}
       </div>
     `;
-  }
-
-  private _showECRamp(): boolean {
-    if (!this.device) return false;
-
-    const hasPump =
-      !!this.device.irrigationConfig?.irrigationPumpEntity ||
-      !!this.device.irrigationConfig?.drainPumpEntity;
-    const hasSchedule = (this.device.irrigationConfig?.irrigationTimes?.length || 0) > 0;
-    const hasECSensor =
-      (this.device.environmentAttributes?.feedEcSensors?.length || 0) > 0 ||
-      (this.device.environmentAttributes?.runoffEcSensors?.length || 0) > 0 ||
-      (this.device.environmentAttributes?.substrateEcSensors?.length || 0) > 0;
-
-    return hasPump && hasSchedule && hasECSensor;
   }
 }

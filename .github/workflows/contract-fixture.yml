@@ -1,0 +1,57 @@
+name: Contract Fixture
+
+on:
+  push:
+    branches: ['main', 'dev']
+  pull_request:
+    branches: ['main', 'dev']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract-fixture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve latest published GSM prerelease
+        id: gsm-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release_tag="$(
+            gh api 'repos/Venosta-web/growspace_manager/releases?per_page=100' \
+              --jq 'map(select(.prerelease and (.draft | not)))[0].tag_name'
+          )"
+          test -n "$release_tag" && test "$release_tag" != "null"
+          echo "tag=$release_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch GSM contract fixtures
+        env:
+          RELEASE_TAG: ${{ steps.gsm-release.outputs.tag }}
+        run: |
+          fixture_path="tests/fixtures/contract/growspace_payload.json"
+          base_url="https://raw.githubusercontent.com/Venosta-web/growspace_manager"
+          curl --fail-with-body --location --retry 3 \
+            --output "$RUNNER_TEMP/gsm-prerelease.json" \
+            "$base_url/prerelease/$fixture_path"
+          curl --fail-with-body --location --retry 3 \
+            --output "$RUNNER_TEMP/gsm-release.json" \
+            "$base_url/$RELEASE_TAG/$fixture_path"
+
+      - name: Diff fixture and schema key sets
+        env:
+          GSM_PRERELEASE_FIXTURE: ${{ runner.temp }}/gsm-prerelease.json
+          GSM_RELEASE_FIXTURE: ${{ runner.temp }}/gsm-release.json
+        run: npm run test:contract-fixture

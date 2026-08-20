@@ -1,5 +1,3 @@
-import { MetricKey } from './constants';
-
 export interface GraphDataPoint {
   time: number;
   value: number;
@@ -30,7 +28,7 @@ export interface GraphSeries {
   avg?: number;
   path: string;
   fillType: 'gradient' | 'flat' | 'none';
-  vpdSegments?: Array<{ path: string; color: string }>;
+  vpdBands?: import('./env-series').VpdBand[];
 }
 
 export interface TooltipItem {
@@ -46,16 +44,9 @@ export interface TooltipData {
   items: TooltipItem[];
 }
 
-export interface SensorGroup {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  z: number;
-  temperature_sensors: string[];
-  humidity_sensors: string[];
-  vpd_sensors: string[];
-}
+// A sensor group is a wire shape: it round-trips through `environment_config`.
+// `SensorGroupSchema` in the subarea slice describes it (ADR 0031).
+export type { SensorGroup } from '../../slices/subarea/schema';
 
 /**
  * Event category types for timeline events
@@ -74,15 +65,19 @@ export type EventCategory =
  * Used by growspace-timeline and growspace-logbook components
  */
 export interface GrowspaceEvent {
-  sensor_type: string;
+  // Required for all entries
   growspace_id: string;
-  start_time: string; // ISO date string (legacy, use timestamp)
-  end_time: string;
-  duration_sec: number;
-  severity: number;
   category: string; // Should be EventCategory but kept as string for backend compatibility
-  reasons: string[];
+  // Present on alert/watering/IPM/training entries; absent on note entries
+  sensor_type?: string;
+  start_time?: string; // ISO date string (legacy, use timestamp)
+  end_time?: string;
+  duration_sec?: number;
+  severity?: number;
+  reasons?: string[];
+  // Note-entry fields
   notes?: string;
+  // Common optional fields
   timestamp?: string; // ISO date string - preferred over start_time
   images?: string[];
   tags?: string[];

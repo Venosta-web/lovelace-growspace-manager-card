@@ -18,6 +18,8 @@ import { growspaceCardStyles } from '../styles/growspace-card.styles';
 import { variables } from '../styles/variables';
 
 import { GrowspaceStore } from '../store/core/growspace-store';
+import { toggleEnvGraph } from '../slices/ui';
+import { BootstrapController } from '../controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 
 @customElement('growspace-analytics-card')
@@ -28,6 +30,7 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
   store = new GrowspaceStore(this._sharedStore);
 
   protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
+  private _bootstrapCtrl!: BootstrapController;
 
   get selectedDevice() {
     return this._viewController.value.grid.selectedDevice;
@@ -62,14 +65,14 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
   protected firstUpdated() {
     if (this.hass) {
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl?.updateHass(this.hass);
     }
-    this.store.initializeSelectedDevice(this._config);
 
     // The standalone analytics card has no header chips to toggle graphs,
     // so default to the primary env metrics if none are active yet.
     if (this.store.history.$activeEnvGraphs.get().size === 0) {
       ['temperature', 'humidity', 'vpd', 'co2'].forEach((m) =>
-        this.store.actions.ui.toggleEnvGraph(m)
+        toggleEnvGraph(m, this.store.history, this.store.ui)
       );
     }
   }
@@ -85,6 +88,7 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
 
     if (changedProps.has('hass') && this.hass) {
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl?.updateHass(this.hass);
     }
   }
 
@@ -105,7 +109,12 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
   public setConfig(config: GrowspaceManagerCardConfig): void {
     if (!config) throw new Error('Invalid configuration');
     this._config = config;
-    this.store.initializeSelectedDevice(this._config);
+    if (!this._bootstrapCtrl) {
+      this._bootstrapCtrl = new BootstrapController(this, this.store.grid, this._config);
+      this.store.setRefreshCallback(() => this._bootstrapCtrl.refresh());
+    } else {
+      this._bootstrapCtrl.setCardConfig(this._config);
+    }
   }
 
   public getCardSize(): number {
@@ -143,7 +152,7 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
     }
 
-    const selectedDeviceData = devices.find((d: any) => d.deviceId === selectedDevice);
+    const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
     if (!selectedDeviceData) {
       return html`<ha-card
         ><div class="error">No valid growspace selected. Please configure the card.</div></ha-card

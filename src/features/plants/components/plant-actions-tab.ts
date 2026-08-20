@@ -7,6 +7,8 @@ import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { ActionConfig } from '../viewmodels/plant-overview.viewmodel';
 import type { PlantEntity } from '../../../types';
 import { sharedStyles } from '../../../styles/shared.styles';
+import { scorePlant } from '../../../slices/plant';
+import { showToast, showError } from '../../../slices/ui';
 
 @customElement('plant-actions-tab')
 export class PlantActionsTab extends LitElement {
@@ -99,7 +101,7 @@ export class PlantActionsTab extends LitElement {
       }
 
       .action-card:not(.disabled):hover {
-        background: var(--primary-color, rgba(76, 175, 80, 0.1));
+        background: rgba(76, 175, 80, 0.1);
         border-color: var(--primary-color, #4caf50);
         transform: translateY(-2px);
       }
@@ -151,7 +153,7 @@ export class PlantActionsTab extends LitElement {
       .md3-button.filled {
         background: var(--primary-color, #4caf50);
         border-color: transparent;
-        color: #fff;
+        color: var(--on-primary);
       }
     `,
   ];
@@ -243,10 +245,12 @@ export class PlantActionsTab extends LitElement {
                   const val = this._scoresEdit[dim.key];
                   return html`
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                      <span style="display:flex; align-items:center; gap:8px; font-size:0.95rem;">
+                      <span
+                        style="display:flex; align-items:center; gap:8px; font-size:var(--font-size-md);"
+                      >
                         <span>${dim.emoji}</span>${dim.label}
                       </span>
-                      <span style="font-size:0.95rem; opacity:0.7;"
+                      <span style="font-size:var(--font-size-md); opacity:0.7;"
                         >${val !== null && val !== undefined ? `${val} / 5` : '—'}</span
                       >
                     </div>
@@ -270,21 +274,25 @@ export class PlantActionsTab extends LitElement {
       <div style="display:flex; flex-direction:column; gap:6px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span
-            style="display:flex; align-items:center; gap:8px; font-weight:500; font-size:0.95rem;"
+            style="display:flex; align-items:center; gap:8px; font-weight:500; font-size:var(--font-size-md);"
           >
-            <span style="font-size:1.2rem;">${dim.emoji}</span>
+            <span style="font-size:var(--font-size-lg);">${dim.emoji}</span>
             ${dim.label}
           </span>
-          <span style="font-size:0.95rem; opacity:0.7; min-width:30px; text-align:right;">
+          <span
+            style="font-size:var(--font-size-md); opacity:0.7; min-width:30px; text-align:right;"
+          >
             ${current !== null && current !== undefined ? `${current} / 5` : '—'}
           </span>
         </div>
-        <p style="font-size:0.8rem; opacity:0.5; margin:0;">${dim.description}</p>
+        <p style="font-size:var(--font-size-supporting); opacity:0.5; margin:0;">
+          ${dim.description}
+        </p>
         <div style="display:flex; gap:6px; margin-top:4px;">
           ${[1, 2, 3, 4, 5].map(
             (star) => html`
               <button
-                style="background:none; border:none; padding:0; cursor:pointer; font-size:1.6rem; line-height:1; transition:transform 0.1s, filter 0.15s;
+                style="background:none; border:none; padding:0; cursor:pointer; font-size:var(--font-size-xl); line-height:1; transition:transform 0.1s, filter 0.15s;
                 filter: ${(current !== null && star <= current) ||
                 (preview !== null && star <= preview)
                   ? 'grayscale(0) opacity(1)'
@@ -318,10 +326,15 @@ export class PlantActionsTab extends LitElement {
     this._savingScore = true;
     try {
       const plantId = this.plant.attributes.plant_id as string;
-      await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
+      const hasValue = Object.values(this._scoresEdit).some((v) => v !== null && v !== undefined);
+      if (hasValue) {
+        await scorePlant(plantId, this._scoresEdit);
+        showToast('Scores saved', 'success');
+        await this.store?.refreshData(true);
+      }
       this._showScoringForm = false;
     } catch (e) {
-      console.error('Failed to save phenotype scores', e);
+      showError(e, 'Failed to save scores');
     } finally {
       this._savingScore = false;
     }

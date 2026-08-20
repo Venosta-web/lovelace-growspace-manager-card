@@ -1,27 +1,63 @@
 name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
 
 permissions:
   contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
-  build:
-    permissions:
-      contents: write
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+          # Push the release commit/tags over SSH as the deploy key: the
+          # integration-branch-gate ruleset only supports a DeployKey bypass on
+          # user-owned repos, so GITHUB_TOKEN (github-actions app) pushes to
+          # dev/main get rejected with GH013. GITHUB_TOKEN below still handles
+          # the GitHub Release + assets.
+          ssh-key: ${{ secrets.RELEASE_SSH_KEY }}
+
       - name: Use Node.js
         uses: actions/setup-node@v6.4.0
         with:
-          node-version: '24'
+          # Pinned to 22 (LTS): Node 24's bundled undici rejects octokit's
+          # release-asset upload with "invalid content-length header"
+          # (UND_ERR_INVALID_ARG), failing @semantic-release/github deterministically
+          # and leaving the GitHub Release as a draft with no assets.
+          node-version: '22'
           cache: 'npm'
+
       - run: npm ci
       - run: npm run build
-      - name: Upload Release Asset
-        uses: softprops/action-gh-release@v3.0.0
-        with:
-          files: dist/growspace-manager-card.js
+      - run: npm run validate:hacs-release
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
+        run: npx semantic-release
+
+      # semantic-release force-adds the ignored bundle to the release commit so
+      # the tag is independently installable by HACS. Remove it from branch
+      # tracking afterwards so normal local builds do not dirty source PRs.
+      - name: Keep built bundle in release tag only
+        run: |
+          if git ls-files --error-unmatch dist/growspace-manager-card.js >/dev/null 2>&1; then
+            git rm --cached dist/growspace-manager-card.js
+            git -c user.name='github-actions[bot]' \
+              -c user.email='github-actions[bot]@users.noreply.github.com' \
+              commit -m 'chore(release): untrack built bundle [skip ci]'
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi

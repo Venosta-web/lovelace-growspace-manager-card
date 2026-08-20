@@ -6,23 +6,65 @@
  *
  * The undo stack is scoped per growspace so that undoing on Tent B cannot
  * silently roll back an action taken on Tent A.
+ *
+ * After each successful commit the module fires an optional listener registered
+ * via `setMutateListener`.  The root card component wires this up once at boot
+ * to surface undo affordances (toast notification with Undo button, Ctrl+Z).
  */
 
 export interface Action {
-  /** Human-readable identifier for debugging (e.g. 'waterPlant'). */
+  /** Machine-readable identifier used for debugging and undo-stack entries. */
   type: string;
+  /**
+   * Optional human-readable description shown in the undo toast
+   * (e.g. 'Watered Amnesia Haze').  Falls back to `type` when omitted.
+   */
+  label?: string;
   /** Apply the optimistic update to local atoms immediately. */
   optimistic: () => void;
-  /** Reverse the optimistic update — called on failure or undo. */
+  /**
+   * Reverse the optimistic update — called as the **failure rollback** when
+   * `apply` throws (the change never committed, so this restores local atoms).
+   */
   inverse: () => void;
+  /**
+   * Optional **undo** behavior for Ctrl+Z after a *successful* commit. When the
+   * backend change committed, restoring a local atom is not enough — the undo
+   * must re-issue the inverse operation through the backend (e.g. re-create a
+   * deleted plant). When omitted, `inverse` is used for undo too (correct for
+   * optimistic edits whose local restore is the whole undo). Distinct from
+   * `inverse` precisely because failure-rollback and post-commit-undo need
+   * opposite things for backend-committing writes.
+   */
+  undoInverse?: () => void;
   /** Persist the change to Home Assistant via hassCall. */
   apply: () => Promise<void>;
 }
+
+/** Payload passed to the commit listener after each successful mutate. */
+export type CommitInfo = { type: string; label: string | undefined };
+
+/** Callback invoked after each successful commit. */
+export type MutateListener = (info: CommitInfo, growspaceId: string) => void;
 
 type UndoEntry = { type: string; inverse: () => void };
 
 const _undoStack = new Map<string, UndoEntry[]>();
 const MAX_UNDO = 10;
+
+let _listener: MutateListener | null = null;
+
+/**
+ * Register a callback that fires after every successful `mutate()` commit.
+ * Pass `null` to remove the listener.  Only one listener is supported at a
+ * time; calling this again replaces the previous registration.
+ *
+ * The root card component uses this to show undo toast notifications without
+ * coupling the service layer to UI atoms.
+ */
+export function setMutateListener(fn: MutateListener | null): void {
+  _listener = fn;
+}
 
 function _stackFor(growspaceId: string): UndoEntry[] {
   let stack = _undoStack.get(growspaceId);
@@ -48,11 +90,13 @@ export async function mutate(action: Action, growspaceId: string): Promise<void>
     action.inverse();
     throw err;
   }
+  const entry: UndoEntry = { type: action.type, inverse: action.undoInverse ?? action.inverse };
   const stack = _stackFor(growspaceId);
-  stack.push({ type: action.type, inverse: action.inverse });
+  stack.push(entry);
   if (stack.length > MAX_UNDO) {
     stack.shift();
   }
+  _listener?.({ type: action.type, label: action.label }, growspaceId);
 }
 
 /** Whether there is an action on the undo stack for the given growspace. */

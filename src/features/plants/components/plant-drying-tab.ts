@@ -1,15 +1,12 @@
 import { LitElement, html, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { consume } from '@lit/context';
-import { storeContext } from '../../../context';
-import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { PlantEntity } from '../../../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import { logDryingWeight, logMoistureReading, setVisualTag } from '../../../slices/plant';
+import { showToast, showError } from '../../../slices/ui';
 
 @customElement('plant-drying-tab')
 export class PlantDryingTab extends LitElement {
-  @consume({ context: storeContext }) private store!: GrowspaceStore;
-
   @property({ attribute: false }) plant!: PlantEntity;
 
   @state() private _weightInput = '';
@@ -86,7 +83,7 @@ export class PlantDryingTab extends LitElement {
           >
             Visual tag
           </p>
-          <p style="font-size:0.8rem; opacity:0.5; margin:0 0 10px;">
+          <p style="font-size:var(--font-size-supporting); opacity:0.5; margin:0 0 10px;">
             Physical identifier tied to the plant (e.g. "Red Velcro").
           </p>
           <div style="display:flex; gap:8px; align-items:center;">
@@ -224,7 +221,10 @@ export class PlantDryingTab extends LitElement {
     this._savingTag = true;
     try {
       const tag = this._visualTagInput.trim() || null;
-      await this.store.actions.plant.setVisualTag(this._plantId(), tag);
+      await setVisualTag(this._plantId(), tag);
+      showToast('Visual tag saved', 'success');
+    } catch (e) {
+      showError(e, 'Failed to save visual tag');
     } finally {
       this._savingTag = false;
     }
@@ -235,13 +235,12 @@ export class PlantDryingTab extends LitElement {
     if (isNaN(grams)) return;
     this._savingWeight = true;
     try {
-      await this.store.actions.plant.logDryingWeight(
-        this._plantId(),
-        grams,
-        this._weightDate || undefined
-      );
+      await logDryingWeight(this._plantId(), grams, this._weightDate || undefined);
+      showToast('Weight logged', 'success');
       this._weightInput = '';
       this._weightDate = '';
+    } catch (e) {
+      showError(e, 'Failed to log weight');
     } finally {
       this._savingWeight = false;
     }
@@ -252,13 +251,12 @@ export class PlantDryingTab extends LitElement {
     if (isNaN(pct)) return;
     this._savingMoisture = true;
     try {
-      await this.store.actions.plant.logMoistureReading(
-        this._plantId(),
-        pct,
-        this._moistureDate || undefined
-      );
+      await logMoistureReading(this._plantId(), pct, this._moistureDate || undefined);
+      showToast('Moisture logged', 'success');
       this._moistureInput = '';
       this._moistureDate = '';
+    } catch (e) {
+      showError(e, 'Failed to log moisture');
     } finally {
       this._savingMoisture = false;
     }

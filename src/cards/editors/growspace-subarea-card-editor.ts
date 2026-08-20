@@ -18,17 +18,23 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
   private _gsController = new GrowspaceOptionsController(this);
 
   public setConfig(config: GrowspaceSubareaCardConfig): void {
-    this._config = config;
-    if (config.growspace_id) {
-      this._loadSubareas(config.growspace_id);
+    const { growspace_id: legacyGrowspaceId, ...currentConfig } = config;
+    this._config = {
+      ...currentConfig,
+      default_growspace: config.default_growspace ?? legacyGrowspaceId ?? '',
+    };
+    if (this._config.default_growspace) {
+      this._loadSubareas(this._config.default_growspace);
     }
   }
 
   protected willUpdate(changedProps: Map<string, unknown>): void {
     if (changedProps.has('hass') && this.hass) {
       this._gsController.update(this.hass);
-      if (this._config?.growspace_id) {
-        this._loadSubareas(this._config.growspace_id);
+      const gid = this._config?.default_growspace;
+      if (gid && (this as any)._lastLoadedId !== gid) {
+        (this as any)._lastLoadedId = gid;
+        this._loadSubareas(gid);
       }
     }
   }
@@ -52,7 +58,7 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
   private _computeSchema() {
     const subareaOptions = [
       {
-        label: this._config?.growspace_id
+        label: this._config?.default_growspace
           ? this._subareas.length
             ? 'Select a subarea...'
             : 'No subareas found'
@@ -62,9 +68,9 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
       ...this._subareas.map((sa) => ({ label: sa.name, value: sa.id })),
     ];
 
-    return [
+    return this._gsController.filterUnavailableFields([
       {
-        name: 'growspace_id',
+        name: 'default_growspace',
         selector: {
           select: {
             options: [
@@ -75,16 +81,44 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
         },
       },
       { name: 'subarea_id', selector: { select: { options: subareaOptions } } },
-    ];
+      {
+        name: 'hidden_chips',
+        selector: {
+          select: {
+            multiple: true,
+            options: [
+              { label: 'Light', value: 'light' },
+              { label: 'Exhaust Fan', value: 'exhaust' },
+              { label: 'Circulation Fan', value: 'circulation_fan' },
+              { label: 'Humidifier', value: 'humidifier' },
+              { label: 'Dehumidifier', value: 'dehumidifier' },
+              { label: 'Temperature', value: 'temperature' },
+              { label: 'Humidity', value: 'humidity' },
+              { label: 'VPD', value: 'vpd' },
+              { label: 'CO2', value: 'co2' },
+              { label: 'Soil Moisture', value: 'soil_moisture' },
+              { label: 'Substrate Temperature', value: 'substrate_temperature' },
+              { label: 'Tank Level', value: 'irrigation_tank_level' },
+              { label: 'DLI', value: 'dli' },
+              { label: 'Energy', value: 'energy' },
+              { label: 'Water', value: 'water' },
+              { label: 'Optimal Conditions', value: 'optimal' },
+              { label: 'Crop Steering', value: 'crop_steering' },
+              { label: 'Steering Phase', value: 'steering_phase' },
+            ],
+          },
+        },
+      },
+    ]);
   }
 
   private _valueChanged(ev: CustomEvent): void {
     if (!this._config || !this.hass) return;
 
     const newConfig = ev.detail.value;
-    if (newConfig.growspace_id !== this._config.growspace_id) {
+    if (newConfig.default_growspace !== this._config.default_growspace) {
       newConfig.subarea_id = '';
-      this._loadSubareas(newConfig.growspace_id);
+      this._loadSubareas(newConfig.default_growspace);
     }
 
     this._config = newConfig;
@@ -125,6 +159,7 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
     return html`
       <div class="card-config">
         ${this._loadingSubareas ? html`<span class="loading-text">Loading subareas...</span>` : ''}
+        ${this._gsController.renderEmptyState(this.hass?.language)}
         <ha-form
           .hass=${this.hass}
           .data=${this._config}

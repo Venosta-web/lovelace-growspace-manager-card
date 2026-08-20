@@ -10,8 +10,8 @@
  *   chart  — growspace-analytics (standard) or heatmap-3d (heatmap mode)
  *   grid   — growspace-grid-container (plant placement grid)
  *
- * The active LayoutSpec is derived automatically from the global `viewMode$`
- * atom via the `layoutSpec$` computed atom — no manual wiring required.
+ * The active LayoutSpec is derived from this card's own `store.ui.$layoutSpec`
+ * (per-instance), so each card on a dashboard renders its own view mode.
  */
 
 import { LitElement, html, TemplateResult, PropertyValues } from 'lit';
@@ -24,7 +24,8 @@ import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../../
 import { ViewMode } from '../../../constants';
 import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
-import { layoutSpec$ } from '../../../slices/ui/layout-spec';
+import type { LayoutSpec } from '../../../slices/ui/layout-spec';
+import { showToast } from '../../../slices/ui';
 import { gridInteraction$ } from '../../../slices/grid-interaction';
 
 // Side-effect imports register child custom elements
@@ -40,6 +41,8 @@ import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { uiStyles } from '../../../styles/ui.styles';
 import { variables } from '../../../styles/variables';
+import type { CardTaskState } from '../../tasks/task-state';
+import '../../tasks/growspace-task-bar';
 
 @customElement('growspace-view')
 export class GrowspaceView extends LitElement {
@@ -59,12 +62,13 @@ export class GrowspaceView extends LitElement {
   @property({ type: Boolean }) isEditMode = false;
   @property({ type: Boolean }) isCompact = false;
   @property({ type: Number }) selectedCount = 0;
+  @property({ attribute: false }) taskState: CardTaskState = { kind: 'idle' };
   @property({ attribute: false }) config: GrowspaceManagerCardConfig | undefined;
   @property({ type: Boolean }) editMode3DCords = false;
 
   // ── Internal store subscriptions ──────────────────────────────────────────
 
-  private _specController = new StoreController(this, layoutSpec$);
+  private _specController!: StoreController<LayoutSpec>;
   private _gridInteractionController!: StoreController<
     typeof gridInteraction$ extends import('nanostores').ReadableAtom<infer T> ? T : never
   >;
@@ -73,6 +77,9 @@ export class GrowspaceView extends LitElement {
 
   private _initControllers() {
     if (this.store) {
+      if (!this._specController) {
+        this._specController = new StoreController(this, this.store.ui.$layoutSpec);
+      }
       if (!this._viewStandardController) {
         this._viewStandardController = new StoreController(this, this.store.$viewStandardState);
       }
@@ -109,10 +116,16 @@ export class GrowspaceView extends LitElement {
   // ── Render ────────────────────────────────────────────────────────────────
 
   protected render(): TemplateResult {
-    const spec = this._specController.value;
+    const spec = this._specController?.value;
 
     return html`
       ${spec?.slots.includes('header') ? this._renderHeader() : ''}
+      ${this.taskState.kind !== 'idle'
+        ? html`<growspace-task-bar
+            .taskState=${this.taskState}
+            .selectedCount=${this.selectedCount}
+          ></growspace-task-bar>`
+        : ''}
       ${spec?.slots.includes('chart') ? this._renderChart() : ''}
       ${spec?.slots.includes('grid') ? this._renderGrid() : ''}
     `;
@@ -121,7 +134,7 @@ export class GrowspaceView extends LitElement {
   // ── Slot renderers ────────────────────────────────────────────────────────
 
   private _renderHeader(): TemplateResult {
-    const spec = this._specController.value;
+    const spec = this._specController?.value;
     if (spec?.viewVariant === ViewMode.HEADER) {
       return html`
         <div class="view-mode-container header">
@@ -147,7 +160,7 @@ export class GrowspaceView extends LitElement {
   }
 
   private _renderChart(): TemplateResult {
-    const spec = this._specController.value;
+    const spec = this._specController?.value;
     if (spec?.chartType === 'heatmap') {
       return html`
         <heatmap-3d
@@ -169,7 +182,7 @@ export class GrowspaceView extends LitElement {
   }
 
   private _renderGrid(): TemplateResult {
-    if (this._specController.value?.viewVariant === ViewMode.COMPACT) {
+    if (this._specController?.value?.viewVariant === ViewMode.COMPACT) {
       return html`
         <div class="compact-controls">
           <button
@@ -193,14 +206,6 @@ export class GrowspaceView extends LitElement {
     }
 
     return html`
-      ${this.isEditMode
-        ? html`
-            <growspace-edit-mode-banner
-              .selectedCount=${this.selectedCount}
-              @batch-add-plants=${(e: CustomEvent) => this._redispatch(e, 'batch-add-plants')}
-            ></growspace-edit-mode-banner>
-          `
-        : ''}
       ${this._gridInteractionController?.value?.status === 'transplanting'
         ? html`
             <transplant-source-panel
@@ -258,12 +263,12 @@ export class GrowspaceView extends LitElement {
         col: detail.target_col,
         veg_start: today,
       });
-      this.store.actions.ui.toast('Plant transplanted successfully', 'success');
+      showToast('Plant transplanted successfully', 'success');
       await new Promise((resolve) => setTimeout(resolve, 500));
       await this.store.refreshData();
     } catch (error) {
       console.error('[GrowspaceView] Transplant failed:', error);
-      this.store.actions.ui.toast('Failed to transplant plant', 'error');
+      showToast('Failed to transplant plant', 'error');
     }
   }
 

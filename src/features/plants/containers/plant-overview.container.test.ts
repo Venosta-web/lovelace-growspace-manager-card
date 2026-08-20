@@ -9,6 +9,24 @@ import { atom } from 'nanostores';
 import { PlantOverviewContainer } from './plant-overview.container';
 import './plant-overview.container';
 import type { PlantEntity } from '../../../types';
+import { strainLibrary$ } from '../../../slices/strain';
+import { activeDialog$ } from '../../../slices/ui';
+import { advancePlantStage, movePlantToGrowspace } from '../../../slices/plant';
+
+// The container now calls the Plant slice mutators directly. Spread the real
+// module so child components that import other Plant-slice exports still load.
+vi.mock('../../../slices/plant', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../slices/plant')>()),
+  deletePlant: vi.fn().mockResolvedValue(undefined),
+  advancePlantStage: vi.fn().mockResolvedValue('dry'),
+  movePlantToGrowspace: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../../slices/logbook', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../slices/logbook')>();
+  return { ...actual, fetchPlantEvents: vi.fn(), fetchGrowspaceEvents: vi.fn() };
+});
+import * as logbookSlice from '../../../slices/logbook';
 
 // ---------------------------------------------------------------------------
 // Mock child elements expected by the container template
@@ -115,8 +133,6 @@ function createElement(store: ReturnType<typeof makeMockStore>, plant: PlantEnti
   return el;
 }
 
-const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 20));
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -136,6 +152,7 @@ describe('PlantOverviewContainer – private method logic', () => {
   });
 
   afterEach(() => {
+    strainLibrary$.set([]);
     vi.restoreAllMocks();
   });
 
@@ -204,15 +221,15 @@ describe('PlantOverviewContainer – private method logic', () => {
   });
 
   // ── _handleHarvest ────────────────────────────────────────────────────────
-  it('_handleHarvest calls store.actions.plant.harvest', () => {
+  it('_handleHarvest calls advancePlantStage', () => {
     (el as any)._handleHarvest();
-    expect(store.actions.plant.harvest).toHaveBeenCalledWith(plant);
+    expect(advancePlantStage).toHaveBeenCalledWith(plant);
   });
 
   // ── _handleFinishDrying ───────────────────────────────────────────────────
-  it('_handleFinishDrying calls store.actions.plant.finishDrying', () => {
+  it('_handleFinishDrying calls advancePlantStage', () => {
     (el as any)._handleFinishDrying();
-    expect(store.actions.plant.finishDrying).toHaveBeenCalledWith(plant);
+    expect(advancePlantStage).toHaveBeenCalledWith(plant);
   });
 
   // ── _handleMovePlantEvent ─────────────────────────────────────────────
@@ -220,7 +237,7 @@ describe('PlantOverviewContainer – private method logic', () => {
     (el as any)._handleMovePlantEvent(
       new CustomEvent('move-plant', { detail: { targetId: 'gs-2' } })
     );
-    expect(store.actions.plant.move).toHaveBeenCalledWith(plant, 'gs-2');
+    expect(movePlantToGrowspace).toHaveBeenCalledWith(plant, 'gs-2');
     expect(store.ui.closeDialog).toHaveBeenCalled();
   });
 
@@ -249,21 +266,28 @@ describe('PlantOverviewContainer – private method logic', () => {
     expect(fired[0].detail.plantId).toBe('test_plant');
   });
 
+  // ── _openNutrients ────────────────────────────────────────────────────────
+  it('_openNutrients opens NUTRIENTS dialog', () => {
+    (el as any)._openNutrients();
+    expect(store.ui.setActiveDialog).toHaveBeenCalledWith({ type: 'NUTRIENTS', payload: {} });
+  });
+
   // ── _openStrainEditor ─────────────────────────────────────────────────────
   it('_openStrainEditor finds existing entry from library', () => {
-    store.data.$strainLibrary.set([
+    strainLibrary$.set([
       {
         strain: 'Test Strain',
         phenotype: 'Pheno A',
         key: 'ts_pa',
         flowering_days_min: 60,
         flowering_days_max: 70,
-      },
+      } as any,
     ]);
     (el as any)._openStrainEditor();
     const call = store.ui.setActiveDialog.mock.calls[0][0];
     expect(call.type).toBe('STRAIN_LIBRARY');
     expect(call.payload.editingStrain.strain).toBe('Test Strain');
+    expect(call.payload.editingStrain.key).toBe('ts_pa');
   });
 
   it('_openStrainEditor creates fallback entry when strain not in library (lines 828-829)', () => {
@@ -290,14 +314,83 @@ describe('PlantOverviewContainer – private method logic', () => {
     (el as any)._handleHarvestAdvance(
       new CustomEvent('harvest-advance', { detail: { action: 'finish-drying' } })
     );
-    expect(store.actions.plant.finishDrying).toHaveBeenCalledWith(el.plant);
+    expect(advancePlantStage).toHaveBeenCalledWith(el.plant);
   });
 
   it('_handleHarvestAdvance calls harvest for harvest action', () => {
     (el as any)._handleHarvestAdvance(
       new CustomEvent('harvest-advance', { detail: { action: 'harvest' } })
     );
-    expect(store.actions.plant.harvest).toHaveBeenCalledWith(el.plant);
+    expect(advancePlantStage).toHaveBeenCalledWith(el.plant);
+  });
+
+  // ── _fetchLogbookEvents success path ──────────────────────────────────────
+  it('_fetchLogbookEvents sets _logbookEvents and atom on success', async () => {
+    const mockEvents = [{ id: 'e1', type: 'watering' }] as any;
+    vi.mocked(logbookSlice.fetchPlantEvents).mockResolvedValue(mockEvents);
+    (el as any).hass = {};
+    await (el as any)._fetchLogbookEvents();
+    expect((el as any)._logbookEvents).toBe(mockEvents);
+    expect((el as any)._logbookEventsAtom.get()).toBe(mockEvents);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _handleSave – no lifecycle date validation (ADR-0018: seam owns the format)
+// ---------------------------------------------------------------------------
+describe('PlantOverviewContainer – _handleSave', () => {
+  let store: ReturnType<typeof makeMockStore>;
+  let plant: PlantEntity;
+  let el: PlantOverviewContainer;
+
+  beforeEach(() => {
+    store = makeMockStore();
+    plant = makeMockPlant();
+    el = createElement(store, plant);
+    (el as any).plant = plant;
+    (el as any).store = store;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function saveWith(attrs: Record<string, unknown>): CustomEvent | null {
+    (el as any)._editedAttributesAtom.set(attrs);
+    let dispatched: CustomEvent | null = null;
+    el.addEventListener('update-plant', (e) => (dispatched = e as CustomEvent));
+    (el as any)._handleSave();
+    return dispatched;
+  }
+
+  it('dispatches update-plant when adding a flower datetime to a plant with date-only seedling/veg', () => {
+    // The original bug scenario: existing fields are date-only, user adds flower.
+    // No toast — the seam owns the format, there is no completeness validation.
+    const dispatched = saveWith({
+      seedling_start: '2026-01-15',
+      veg_start: '2026-02-01',
+      flower_start: '2026-03-01T14:30',
+    });
+
+    expect(store.ui.showToast).not.toHaveBeenCalled();
+    expect(dispatched).not.toBeNull();
+    expect((dispatched as unknown as CustomEvent).detail.flower_start).toBe('2026-03-01T14:30');
+  });
+
+  it('dispatches with existing date-only fields untouched, no toast', () => {
+    const dispatched = saveWith({ seedling_start: '2026-01-15', veg_start: '2026-02-01' });
+
+    expect(store.ui.showToast).not.toHaveBeenCalled();
+    expect(dispatched).not.toBeNull();
+  });
+
+  it('never raises the old "set both date and time" toast (validator removed)', () => {
+    // Even values the old guard would have rejected now dispatch unchanged —
+    // the validation is gone (ADR-0018).
+    const dispatched = saveWith({ flower_start: '2026-03-05', dry_start: '2026-03-05T' });
+
+    expect(store.ui.showToast).not.toHaveBeenCalled();
+    expect(dispatched).not.toBeNull();
   });
 });
 
@@ -321,7 +414,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
   }
 
   // ── Harvest tab button ────────────────────────────────────────────────────
-  it('clicking harvest tab button sets _activeTab to dashboard', async () => {
+  it('clicking harvest tab button sets _activeTab to harvest', async () => {
     const plant = makeMockPlant(
       { harvest_metrics: { wet_weight: 50 }, scores: { vigor: 3 } },
       'dry'
@@ -329,12 +422,12 @@ describe('PlantOverviewContainer – rendering branches', () => {
     await attachElement(plant);
 
     const harvestBtn = Array.from(el.shadowRoot?.querySelectorAll('.tab-btn') ?? []).find((btn) =>
-      btn.textContent?.includes('Scoring')
+      btn.textContent?.includes('Harvest')
     ) as HTMLButtonElement;
     harvestBtn?.click();
     await el.updateComplete;
 
-    expect((el as any)._activeTab).toBe('dashboard');
+    expect((el as any)._activeTab).toBe('harvest');
   });
 
   // ── Footer: mother stage "Take Clone" button (lines 561-565) ─────────────
@@ -356,9 +449,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
       b.textContent?.includes('Harvest')
     ) as HTMLButtonElement | undefined;
     btn?.click();
-    expect(store.actions.ui.setActiveDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'HARVEST_SCORING' })
-    );
+    expect(activeDialog$.get()).toEqual(expect.objectContaining({ type: 'HARVEST_SCORING' }));
   });
 
   // ── Footer: flowering stage Harvest button ────────────────────────────────
@@ -378,7 +469,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
       b.textContent?.includes('Finish Drying')
     ) as HTMLButtonElement | undefined;
     btn?.click();
-    expect(store.actions.plant.finishDrying).toHaveBeenCalled();
+    expect(advancePlantStage).toHaveBeenCalled();
   });
 
   // ── Harvest tab renders plant-harvest-tab component ─────────────────────
@@ -418,7 +509,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
       })
     );
 
-    expect(store.actions.plant.move).toHaveBeenCalledWith(plant, 'gs-2');
+    expect(movePlantToGrowspace).toHaveBeenCalledWith(plant, 'gs-2');
   });
 
   // ── harvest-saved event from harvest tab switches to dashboard ───────────

@@ -1,12 +1,19 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { GrowspaceSharedStore } from './growspace-shared-store';
 import { GrowspaceStore } from './growspace-store';
+import { strainLibrary$, setStrainLibrary } from '../../slices/strain';
+import { setDevices } from '../../slices/grid';
 
 describe('GrowspaceStore.$dialogHostState', () => {
   let store: GrowspaceStore;
 
   beforeEach(() => {
     store = new GrowspaceStore(new GrowspaceSharedStore());
+  });
+
+  afterEach(() => {
+    setStrainLibrary([]);
+    setDevices([]);
   });
 
   it('exposes $dialogHostState as a computed atom', () => {
@@ -37,7 +44,7 @@ describe('GrowspaceStore.$dialogHostState', () => {
 
   it('updates when devices change', () => {
     const device = { deviceId: 'gs1', name: 'GrowSpace 1', plants: [] } as any;
-    store.data.$devices.set([device]);
+    setDevices([device]);
     expect(store.$dialogHostState.get().devices).toHaveLength(1);
   });
 
@@ -48,7 +55,7 @@ describe('GrowspaceStore.$dialogHostState', () => {
 
   it('updates when strainLibrary changes', () => {
     const strain = { id: 'strain1', name: 'Test Strain' } as any;
-    store.data.$strainLibrary.set([strain]);
+    strainLibrary$.set([strain]);
     expect(store.$dialogHostState.get().strainLibrary).toHaveLength(1);
   });
 });

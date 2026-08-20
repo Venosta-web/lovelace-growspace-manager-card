@@ -206,9 +206,6 @@ describe('StrainImportDialog', () => {
     (closeBtn as HTMLElement).click();
 
     expect(closeSpy).toHaveBeenCalled();
-    const event = closeSpy.mock.calls[0][0];
-    expect(event.bubbles).toBe(true);
-    expect(event.composed).toBe(true);
   });
 
   it('dispatches close event when Cancel button is clicked', async () => {
@@ -223,9 +220,6 @@ describe('StrainImportDialog', () => {
     (cancelBtn as HTMLElement).click();
 
     expect(closeSpy).toHaveBeenCalled();
-    const event = closeSpy.mock.calls[0][0];
-    expect(event.bubbles).toBe(true);
-    expect(event.composed).toBe(true);
   });
 
   it('updates search query on input change', async () => {
@@ -392,6 +386,30 @@ describe('StrainImportDialog', () => {
     const resultItem = element.shadowRoot?.querySelector('.result-item');
     (resultItem as HTMLElement).click();
     expect(selectSpy).toHaveBeenCalledWith(mockResults[0]);
+  });
+
+  it('downloads images via sendMessagePromise when available', async () => {
+    const mockDetails = {
+      name: 'Gelato',
+      breeder: 'Sherbinski',
+      type: 'Hybrid',
+      images: ['https://example.com/gelato.jpg'],
+    };
+    element.open = true;
+    await element.updateComplete;
+    (element as any)._details = mockDetails;
+
+    mockHass.connection = { sendMessagePromise: vi.fn().mockResolvedValue({ path: '/local/dl/gelato.jpg' }) };
+    element.hass = mockHass;
+
+    const importSpy = vi.fn();
+    element.addEventListener('import', importSpy);
+
+    await (element as any)._import();
+
+    const eventDetail = importSpy.mock.calls[0][0].detail;
+    expect(eventDetail.image).toBe('/local/dl/gelato.jpg');
+    expect(eventDetail.images).toEqual(['/local/dl/gelato.jpg']);
   });
 
   it('handles image field click in UI', async () => {

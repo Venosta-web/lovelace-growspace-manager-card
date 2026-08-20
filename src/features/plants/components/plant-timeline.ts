@@ -11,7 +11,6 @@ import '../../shared/ui/confirm-delete-dialog';
 import {
   mdiAlertCircle,
   mdiDelete,
-  mdiNote,
   mdiTag,
   mdiThermometer,
   mdiWaterPercent,
@@ -71,7 +70,7 @@ export class PlantTimeline extends LitElement {
       .event {
         position: relative;
         padding: 12px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
       }
@@ -111,22 +110,22 @@ export class PlantTimeline extends LitElement {
       .icon-wrapper svg {
         width: 16px;
         height: 16px;
-        fill: var(--secondary-text-color, #aaa);
+        fill: var(--text-secondary);
       }
       .date {
         font-size: 0.75rem;
-        color: var(--secondary-text-color, #aaa);
+        color: var(--text-secondary);
         margin-bottom: 4px;
       }
       .content {
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         color: var(--primary-text-color, #fff);
         font-weight: 600;
       }
       .details {
         margin-top: 4px;
         font-size: 0.85rem;
-        color: var(--secondary-text-color, #ccc);
+        color: var(--text-secondary);
         line-height: 1.4;
       }
 
@@ -144,7 +143,7 @@ export class PlantTimeline extends LitElement {
         align-items: center;
         gap: 4px;
         padding: 2px 8px;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         background: rgba(255, 255, 255, 0.1);
         font-size: 0.75rem;
         color: var(--secondary-text-color);
@@ -174,7 +173,7 @@ export class PlantTimeline extends LitElement {
         width: 100%;
         aspect-ratio: 1;
         object-fit: cover;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         cursor: pointer;
         transition: transform 0.2s;
         border: 1px solid var(--divider-color);
@@ -196,14 +195,14 @@ export class PlantTimeline extends LitElement {
         gap: 4px;
         font-size: 0.7rem;
         padding: 1px 6px;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         background: var(--divider-color);
         color: var(--secondary-text-color);
       }
 
       /* Milestone Banner */
       .event.type-milestone {
-        border-left: 4px solid var(--success-color);
+        border-left: 4px solid var(--success-color); /* impeccable-disable-line side-tab -- banner accent, not a content-card side tab */
         background: linear-gradient(
           90deg,
           rgba(var(--rgb-success-color), 0.15) 0%,
@@ -211,7 +210,7 @@ export class PlantTimeline extends LitElement {
         );
       }
       .event.type-milestone .content {
-        font-size: 1.05rem;
+        font-size: var(--font-size-md);
         letter-spacing: 0.5px;
         color: var(--success-color);
       }
@@ -224,10 +223,10 @@ export class PlantTimeline extends LitElement {
         fill: var(--error-color, #f44336);
       }
       .type-action .icon-wrapper {
-        border-color: var(--primary-color, #03a9f4);
+        border-color: var(--gm-primary-color);
       }
       .type-action .icon-wrapper svg {
-        fill: var(--primary-color, #03a9f4);
+        fill: var(--gm-primary-color);
       }
       .type-stage_change .icon-wrapper {
         border-color: var(--success-color, #4caf50);
@@ -242,24 +241,24 @@ export class PlantTimeline extends LitElement {
         fill: var(--warning-color, #ff9800);
       }
       .type-environmental_report.is-night .icon-wrapper {
-        border-color: #3f51b5;
+        border-color: var(--cycle-night);
       }
       .type-environmental_report.is-night .icon-wrapper svg {
-        fill: #3f51b5;
+        fill: var(--cycle-night);
       }
       .type-environmental_report.is-day .icon-wrapper {
-        border-color: #ffc107;
+        border-color: var(--cycle-day);
       }
       .type-environmental_report.is-day .icon-wrapper svg {
-        fill: #ffc107;
+        fill: var(--cycle-day);
       }
 
       /* Action specific styling */
       .action-ipm .icon-wrapper {
-        border-color: #9c27b0;
+        border-color: var(--gm-ipm-color, #9c27b0);
       }
       .action-ipm .icon-wrapper svg {
-        fill: #9c27b0;
+        fill: var(--gm-ipm-color, #9c27b0);
       }
       .action-training .icon-wrapper {
         border-color: var(--gm-warning-color, #ff9800);
@@ -282,7 +281,7 @@ export class PlantTimeline extends LitElement {
       .day-header {
         font-size: 0.85rem;
         font-weight: 700;
-        color: var(--primary-color, #03a9f4);
+        color: var(--gm-primary-color);
         padding: 12px 0 8px 12px;
         margin-left: -24px;
         background: var(--card-background-color, #1c1c1c);
@@ -298,7 +297,7 @@ export class PlantTimeline extends LitElement {
         padding: 8px 12px;
         background: rgba(var(--rgb-warning-color), 0.1);
         border: 1px solid rgba(var(--rgb-warning-color), 0.2);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         font-size: 0.85rem;
         display: flex;
         align-items: center;
@@ -311,9 +310,9 @@ export class PlantTimeline extends LitElement {
         gap: 4px;
         background: var(--success-color);
         color: white;
-        font-size: 0.65rem;
+        font-size: var(--font-size-xs);
         padding: 1px 4px;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         margin-left: 8px;
         vertical-align: middle;
       }
@@ -328,7 +327,7 @@ export class PlantTimeline extends LitElement {
         z-index: 9999;
         pointer-events: none;
         background: rgba(0, 0, 0, 0.9);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 4px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         max-width: 90vw;
@@ -340,7 +339,7 @@ export class PlantTimeline extends LitElement {
       .image-hover-overlay img {
         max-width: 100%;
         max-height: 100%;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         object-fit: contain;
       }
     `,
@@ -384,19 +383,19 @@ export class PlantTimeline extends LitElement {
   private _getStageColor(stage?: string): string {
     switch (stage?.toLowerCase()) {
       case 'flower':
-        return '#e91e63';
+        return 'var(--stage-flower, #ff9800)';
       case 'veg':
-        return '#4caf50';
+        return 'var(--stage-veg, #4caf50)';
       case 'seedling':
-        return '#8bc34a';
+        return 'var(--stage-seedling, #8bc34a)';
       case 'clone':
-        return '#66bb6a';
+        return 'var(--stage-clone, #26c6da)';
       case 'mother':
-        return '#2e7d32';
+        return 'var(--stage-mother, #e91e63)';
       case 'dry':
-        return '#ff9800';
+        return 'var(--stage-dry, #9c27b0)';
       case 'cure':
-        return '#795548';
+        return 'var(--stage-cure, #2196f3)';
       default:
         return 'var(--divider-color)';
     }
@@ -628,14 +627,14 @@ export class PlantTimeline extends LitElement {
       case 'environmental_report': {
         const isDay = event.sensor_type !== 'night_report';
         return html`
-          <div class="content" style="color: ${isDay ? '#ffc107' : '#3f51b5'}">
+          <div class="content" style="color: ${isDay ? 'var(--cycle-day)' : 'var(--cycle-night)'}">
             ${isDay ? 'Day' : 'Night'} Environmental Report
           </div>
           <div class="details">
             ${event.reasons?.map(
               (r: string) =>
                 html`<span
-                  style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;"
+                  style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: var(--border-radius-xs, 4px);"
                   >${r}</span
                 >`
             )}
@@ -647,7 +646,7 @@ export class PlantTimeline extends LitElement {
             return temperature !== undefined && humidity !== undefined
               ? html`
                   <div
-                    style="margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; border: 1px solid var(--divider-color);"
+                    style="margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: var(--border-radius-sm, 8px); padding: 12px; border: 1px solid var(--divider-color);"
                   >
                     <vpd-heatmap
                       .temperature=${temperature}

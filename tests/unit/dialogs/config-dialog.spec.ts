@@ -2,7 +2,39 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
+import { needsExhaustCall } from '../../../src/features/config/environment-save';
+import {
+    readThreshold,
+    DEFAULT_DEHUM_THRESHOLDS,
+    HUMIDITY_STAGES,
+} from '../../../src/features/config/viewmodels/humidity-tab.viewmodel';
 import { html } from 'lit';
+import { pickEntity, pickEntityIn, pickerOptions } from '../../harness/entity-picker';
+
+// Env tabs are nested dumb components behind their own shadow roots (ADR-0019,
+// "Applied to Config Dialog"); pierce whichever is active. Still-inline env tabs
+// (Humidity, etc.) fall back to the dialog's own shadow.
+async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
+    await element.updateComplete;
+    const tab = element.shadowRoot!.querySelector(
+        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-vision-tab, config-growspaces-tab, config-heatmap-tab'
+    ) as (HTMLElement & { updateComplete: Promise<boolean> }) | null;
+    if (tab) {
+        await tab.updateComplete;
+        return tab.shadowRoot!;
+    }
+    return element.shadowRoot!;
+}
+
+type EntityMultiSelectElement = HTMLElement & {
+    label: string;
+    shadowRoot: ShadowRoot;
+};
+
+function entityPicker(root: ShadowRoot, label: string): EntityMultiSelectElement | undefined {
+    return Array.from(root.querySelectorAll<EntityMultiSelectElement>('config-entity-multi-select'))
+        .find((picker) => picker.label === label);
+}
 
 class HaEntityPickerMock extends HTMLElement {
     get value() { return this.getAttribute('value') || ''; }
@@ -79,7 +111,8 @@ describe('ConfigDialog', () => {
                     'persistent_notification': {}
                 }
             },
-            localize: (key: string) => `[${key}]`
+            localize: (key: string) => `[${key}]`,
+            callService: vi.fn().mockResolvedValue(undefined)
         };
         element.hass = mockHass;
 
@@ -128,8 +161,8 @@ describe('ConfigDialog', () => {
             await element.updateComplete;
         });
 
-        it('should render inputs', () => {
-            const nameInput = element.shadowRoot?.querySelector('md3-text-input[label="Growspace Name"]');
+        it('should render inputs', async () => {
+            const nameInput = (await sensorsShadow(element)).querySelector('md3-text-input[label="Growspace Name"]');
             expect(nameInput).toBeTruthy();
         });
 
@@ -151,8 +184,8 @@ describe('ConfigDialog', () => {
             expect(detail.rows).toBe(5);
         });
 
-        it('should list mobile app services', () => {
-            const select = element.shadowRoot?.querySelector('select');
+        it('should list mobile app services', async () => {
+            const select = (await sensorsShadow(element)).querySelector('select');
             const options = select?.querySelectorAll('option');
             // None + mobile_app_phone = 2
             expect(options?.length).toBeGreaterThanOrEqual(2);
@@ -167,27 +200,30 @@ describe('ConfigDialog', () => {
         });
 
         it('should populate fields when growspace selected', async () => {
-            const gsRow = element.shadowRoot?.querySelector('.cfg-gs-row') as HTMLElement;
+            const gsRow = (await sensorsShadow(element)).querySelector('.cfg-gs-row') as HTMLElement;
             gsRow?.click();
             await element.updateComplete;
 
             expect((element as any).editName).toBe('Growspace 1');
             expect((element as any).editRows).toBe(4);
 
-            const nameInput = element.shadowRoot?.querySelector('md3-text-input[label="Growspace Name"]');
+            const nameInput = (await sensorsShadow(element)).querySelector('md3-text-input[label="Growspace Name"]');
             expect((nameInput as any).value).toBe('Growspace 1');
         });
 
         it('should submit updates', async () => {
             (element as any).editSelectedId = 'gs1';
             (element as any).editName = 'Updated GS';
+            (element as any).envSelectedId = 'gs1';
+            (element as any).envTemperatureSensors = ['sensor.temp'];
+            (element as any).envHumiditySensors = ['sensor.hum'];
             await element.updateComplete;
 
             const listener = vi.fn();
             element.addEventListener('edit-growspace-submit', listener);
 
             const btn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
-                .find(b => b.textContent?.includes('Save Changes'));
+                .find(b => b.textContent?.includes('Save Growspace & Environment'));
             (btn as HTMLElement)?.click();
 
             expect(listener).toHaveBeenCalled();
@@ -205,8 +241,8 @@ describe('ConfigDialog', () => {
             (delBtn as HTMLElement)?.click();
             await element.updateComplete;
 
-            // Should show confirmation
-            expect(element.shadowRoot?.querySelector('h3')?.textContent).toContain('Delete Growspace?');
+            // Should show confirmation (now in the nested component)
+            expect((await sensorsShadow(element)).querySelector('h3')?.textContent).toContain('Delete Growspace?');
 
             // Click Confirm
             const listener = vi.fn();
@@ -229,23 +265,21 @@ describe('ConfigDialog', () => {
 
     describe('Environment Tab', () => {
         beforeEach(async () => {
+            element.initialTab = ConfigTab.SENSORS;
             element.currentTab = ConfigTab.SENSORS;
             await element.updateComplete;
         });
 
         it('should load initial state', async () => {
-            element.setInitialState(ConfigTab.SENSORS, {
-                selectedGrowspaceId: 'gs1',
-                temperatureSensor: 'sensor.temp',
-                temperatureSensors: ['sensor.temp'],
-                humiditySensor: 'sensor.hum',
-                humiditySensors: ['sensor.hum'],
-                vpdSensor: '', vpdSensors: [], co2Sensor: '', circulationFanEntity: '',
-                stressThreshold: 0, moldThreshold: 0, lightSensor: '', lightSensors: [],
-                exhaustEntity: '', exhaustFanEntities: [], humidifierEntity: '', humidifierEntities: [],
-                humidifierControlEnabled: false,
-                dehumidifierEntity: '', dehumidifierEntities: [], circulationFanEntities: [],
-                soilMoistureSensor: '', dehumidifierControlEnabled: true, dehumidifierThresholds: {}
+            (element as any)._seedFromDevice({
+                deviceId: 'gs1',
+                environmentAttributes: {
+                    temperatureSensor: 'sensor.temp',
+                    temperatureSensors: ['sensor.temp'],
+                    humiditySensor: 'sensor.hum',
+                    humiditySensors: ['sensor.hum'],
+                    dehumidifierControlEnabled: true,
+                },
             });
             await element.updateComplete;
 
@@ -257,18 +291,10 @@ describe('ConfigDialog', () => {
             expect((element as any).envTemperatureSensors).toEqual(['sensor.temp']);
         });
 
-        it('should render native input with datalist', async () => {
-            // Temperature is now a multi-select with datalist
-            const containers = Array.from(element.shadowRoot?.querySelectorAll('.multi-select-container') || []);
-            const container = containers.find(c => c.querySelector('label')?.textContent?.trim() === 'Temperature Sensors');
-            const input = container?.querySelector('input');
-            const datalist = container?.querySelector('datalist');
+        it('should offer only the device-class-matching entities in the picker', async () => {
+            const picker = entityPicker(await sensorsShadow(element), 'Temperature Sensors');
+            const values = pickerOptions(picker!.shadowRoot);
 
-            expect(input).toBeTruthy();
-            expect(datalist).toBeTruthy();
-            // Check filtered options (only temperature sensors)
-            const options = Array.from(datalist?.querySelectorAll('option') || []);
-            const values = options.map(o => o.value);
             expect(values).toContain('sensor.temp');
             expect(values).not.toContain('sensor.hum'); // Wrong device class
         });
@@ -277,6 +303,7 @@ describe('ConfigDialog', () => {
             (element as any).envSelectedId = 'gs1';
             (element as any).envTemperatureSensors = ['sensor.new'];
             (element as any).envHumiditySensors = ['sensor.hum'];
+            await element.updateComplete;
 
             const listener = vi.fn();
             element.addEventListener('configure-environment-submit', listener);
@@ -297,24 +324,21 @@ describe('ConfigDialog', () => {
 
         it('should update all environment sensors', async () => {
             const updateMultiPicker = async (label: string, value: string) => {
-                const containers = Array.from(element.shadowRoot?.querySelectorAll('.multi-select-container') || []);
-                const container = containers.find(c => c.querySelector('label')?.textContent?.trim() === label);
-                const input = container?.querySelector('input');
-
-                if (input) {
-                    input.value = value;
-                    input.dispatchEvent(new Event('change'));
+                const picker = entityPicker(await sensorsShadow(element), label);
+                if (picker) {
+                    pickEntity(picker.shadowRoot, value);
                     await element.updateComplete;
                 }
             };
 
             const updateSinglePicker = async (label: string, value: string) => {
-                const groups = Array.from(element.shadowRoot?.querySelectorAll('.md3-input-group') || []);
-                const group = groups.find(g => g.querySelector('label')?.textContent?.trim() === label);
-                const input = group?.querySelector('input');
-                if (input) {
-                    input.value = value;
-                    input.dispatchEvent(new Event('change'));
+                const picker = Array.from(
+                    (await sensorsShadow(element)).querySelectorAll<HTMLElement & { label: string }>(
+                        'gm-entity-picker'
+                    )
+                ).find((candidate) => candidate.label === label);
+                if (picker) {
+                    pickEntityIn(picker, value);
                     await element.updateComplete;
                 }
             };
@@ -388,7 +412,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should update control dehumidifier checkbox', async () => {
-            const checks = element.shadowRoot?.querySelectorAll('input[type="checkbox"]');
+            const checks = (await sensorsShadow(element)).querySelectorAll('input[type="checkbox"]');
             const dehumCheck = Array.from(checks || []).find(c => {
                 const label = c.closest('label');
                 return label?.textContent?.includes('Dehumidifier Control');
@@ -402,7 +426,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should switch stages via accordion', async () => {
-            const accHeads = element.shadowRoot?.querySelectorAll('.acc-head');
+            const accHeads = (await sensorsShadow(element)).querySelectorAll('.acc-head');
             const vegHead = Array.from(accHeads || []).find(h => h.textContent?.includes('Vegetative'));
             (vegHead as HTMLElement)?.click();
             await element.updateComplete;
@@ -420,7 +444,7 @@ describe('ConfigDialog', () => {
             //   - On Input
             //   - Off Input
 
-            const inputs = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || []);
+            const inputs = Array.from((await sensorsShadow(element)).querySelectorAll('md3-number-input'));
             // Order: Day On, Day Off, Night On, Night Off
 
             // Update Day Off (Index 1)
@@ -435,7 +459,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle invalid inputs gracefully', async () => {
-            const inputs = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || []);
+            const inputs = Array.from((await sensorsShadow(element)).querySelectorAll('md3-number-input'));
             const dayOn = inputs[0];
 
             // Initial value
@@ -448,18 +472,18 @@ describe('ConfigDialog', () => {
         });
 
         it('should initialize stage if missing during write', async () => {
-            (element as any)._openHumidityStageId = 'drying';
+            (element as any)._openHumidityStageId = 'dry';
             await element.updateComplete;
 
-            const inputs = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || []);
-            // Write to Day On (first input in drying accordion)
+            const inputs = Array.from((await sensorsShadow(element)).querySelectorAll('md3-number-input'));
+            // Write to Day On (first input in dry accordion)
             inputs[0]?.dispatchEvent(new CustomEvent('change', { detail: '0.5' }));
             await element.updateComplete;
 
-            // Check deep structure created
-            expect((element as any).envDehumidifierThresholds.drying.day.on).toBe(0.5);
+            // Check deep structure created — key is 'dry' (backend PlantStage.DRY value)
+            expect((element as any).envDehumidifierThresholds.dry.day.on).toBe(0.5);
             // Verify other defaults
-            expect((element as any).envDehumidifierThresholds.drying.day.off).toBe(0);
+            expect((element as any).envDehumidifierThresholds.dry.day.off).toBe(0);
         });
     });
 
@@ -473,22 +497,22 @@ describe('ConfigDialog', () => {
         it('should update Add Growspace inputs', async () => {
             element.currentTab = ConfigTab.GROWSPACES;
             (element as any)._isAddingGrowspace = true;
-            await element.updateComplete;
+            const root = await sensorsShadow(element);
 
             // Name
-            const nameInput = element.shadowRoot?.querySelector('md3-text-input[label="Growspace Name"]');
+            const nameInput = root.querySelector('md3-text-input[label="Growspace Name"]');
             nameInput?.dispatchEvent(new CustomEvent('change', { detail: 'New Name' }));
 
             // Rows
-            const rowsInput = element.shadowRoot?.querySelector('md3-number-input[label="Rows"]');
+            const rowsInput = root.querySelector('md3-number-input[label="Rows"]');
             rowsInput?.dispatchEvent(new CustomEvent('change', { detail: '8' }));
 
             // Plants Per Row
-            const pprInput = element.shadowRoot?.querySelector('md3-number-input[label="Plants per Row"]');
+            const pprInput = root.querySelector('md3-number-input[label="Plants per Row"]');
             pprInput?.dispatchEvent(new CustomEvent('change', { detail: '8' }));
 
             // Notification Service (Select)
-            const select = element.shadowRoot?.querySelector('select');
+            const select = root.querySelector('select');
             if (select) {
                 select.value = 'mobile_app_test';
                 select.dispatchEvent(new Event('change'));
@@ -505,24 +529,22 @@ describe('ConfigDialog', () => {
         it('should update Edit Growspace inputs', async () => {
             element.currentTab = ConfigTab.GROWSPACES;
             (element as any).editSelectedId = 'gs1'; // Select one to show fields
-            await element.updateComplete;
+            const root = await sensorsShadow(element);
 
             // Name
-            const nameInput = element.shadowRoot?.querySelector('md3-text-input[label="Growspace Name"]');
+            const nameInput = root.querySelector('md3-text-input[label="Growspace Name"]');
             nameInput?.dispatchEvent(new CustomEvent('change', { detail: 'Edited Name' }));
 
             // Rows
-            const rowsInput = element.shadowRoot?.querySelector('md3-number-input[label="Rows"]');
+            const rowsInput = root.querySelector('md3-number-input[label="Rows"]');
             rowsInput?.dispatchEvent(new CustomEvent('change', { detail: '6' }));
 
             // Plants Per Row
-            const pprInput = element.shadowRoot?.querySelector('md3-number-input[label="Plants per Row"]');
+            const pprInput = root.querySelector('md3-number-input[label="Plants per Row"]');
             pprInput?.dispatchEvent(new CustomEvent('change', { detail: '6' }));
 
             // Notification Service (Select)
-            // In new GROWSPACES tab there is no separate growspace dropdown, only notification service select
-            const selects = element.shadowRoot?.querySelectorAll('select');
-            const notifySelect = selects?.[0];
+            const notifySelect = root.querySelectorAll('select')?.[0];
 
             if (notifySelect) {
                 notifySelect.value = 'mobile_app_test';
@@ -546,6 +568,8 @@ describe('ConfigDialog', () => {
             const listener = vi.fn();
             element.addEventListener('add-growspace-submit', listener);
 
+            // Must enter adding state before setting add draft fields
+            (element as any)._isAddingGrowspace = true;
             (element as any).addName = 'New GS';
             (element as any).addNotificationService = 'mobile_app_test';
 
@@ -557,11 +581,10 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle edit population when device is not found', () => {
-            (element as any).editName = 'Old Name';
+            // In the SM design, _populateEditFields is a no-op when device is not found.
+            // editSelectedId stays empty; no stale state leaks through.
             (element as any)._populateEditFields('non_existent_id');
-            // Should set ID but not update fields
-            expect((element as any).editSelectedId).toBe('non_existent_id');
-            expect((element as any).editName).toBe('Old Name');
+            expect((element as any).editSelectedId).toBe('');
         });
 
         it('should close dialog via header button', async () => {
@@ -578,12 +601,10 @@ describe('ConfigDialog', () => {
 
         it('should render correct tab content based on property', async () => {
             element.currentTab = ConfigTab.GROWSPACES;
-            await element.updateComplete;
-            expect(element.shadowRoot?.querySelector('.cfg-master-list')).toBeTruthy();
+            expect((await sensorsShadow(element)).querySelector('.cfg-master-list')).toBeTruthy();
 
             element.currentTab = ConfigTab.HUMIDITY;
-            await element.updateComplete;
-            expect(element.shadowRoot?.querySelector('.acc-card')).toBeTruthy();
+            expect((await sensorsShadow(element)).querySelector('.acc-card')).toBeTruthy();
         });
     });
 
@@ -606,22 +627,16 @@ describe('ConfigDialog', () => {
             expect((element as any).currentTab).toBe(ConfigTab.HUMIDITY);
         });
 
-        it('should return 0 for missing threshold value', async () => {
-            (element as any).envDehumidifierThresholds = undefined;
-            await element.updateComplete;
-
-            const result = (element as any)._getThresholdValue('veg', 'day', 'on');
-            expect(result).toBe(0);
+        // The threshold-read logic moved to the Humidity VM (ADR-0019); these
+        // assert it at its new home (readThreshold) instead of the removed
+        // inline `_getThresholdValue` shell helper.
+        it('should return 0 for unknown stage threshold value', () => {
+            expect(readThreshold({}, DEFAULT_DEHUM_THRESHOLDS, 'unknown_stage', 'day', 'on')).toBe(0);
         });
 
-        it('should return correct threshold value when present', async () => {
-            (element as any).envDehumidifierThresholds = {
-                veg: { day: { on: 1.5, off: 1.2 } }
-            };
-            await element.updateComplete;
-
-            const result = (element as any)._getThresholdValue('veg', 'day', 'on');
-            expect(result).toBe(1.5);
+        it('should return correct threshold value when present', () => {
+            const thresholds = { veg: { day: { on: 1.5, off: 1.2 } } };
+            expect(readThreshold(thresholds, DEFAULT_DEHUM_THRESHOLDS, 'veg', 'day', 'on')).toBe(1.5);
         });
 
         it('should handle notification service change event', async () => {
@@ -629,8 +644,8 @@ describe('ConfigDialog', () => {
             (element as any)._isAddingGrowspace = true;
             await element.updateComplete;
 
-            // Notification service is a select in the new add form - use a valid option
-            const notifSelect = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
+            // Notification service is a select in the new add form (nested component)
+            const notifSelect = (await sensorsShadow(element)).querySelector('select') as HTMLSelectElement;
             if (notifSelect) {
                 notifSelect.value = 'mobile_app_phone';
                 notifSelect.dispatchEvent(new Event('change'));
@@ -650,11 +665,13 @@ describe('ConfigDialog', () => {
     });
 
     describe('Final Coverage Gaps', () => {
-        it('should handle willUpdate with null environmentData', async () => {
-            element.environmentData = { growspace_id: 'g1' } as any;
+        it('should wait when growspaceId has no matching device', async () => {
+            element.open = false;
             await element.updateComplete;
-            element.environmentData = null as any;
+            element.growspaceId = 'missing';
+            element.open = true;
             await element.updateComplete;
+            expect((element as any)._initialStateApplied).toBe(false);
         });
 
         it('should handle updated with open property toggle', async () => {
@@ -670,7 +687,7 @@ describe('ConfigDialog', () => {
             element.currentTab = ConfigTab.HUMIDITY;
             (element as any)._openHumidityStageId = 'seedling';
             await element.updateComplete;
-            const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
+            const inputs = (await sensorsShadow(element)).querySelectorAll('md3-number-input');
             // Labels are "On Above %" and "Off Below %" in the new accordion
             const offInputs = Array.from(inputs || []).filter(i => i.getAttribute('label')?.includes('Below'));
             const onInputs = Array.from(inputs || []).filter(i => i.getAttribute('label')?.includes('Above'));
@@ -684,8 +701,7 @@ describe('ConfigDialog', () => {
 
         it('should trigger add growspace button click handler', async () => {
             element.currentTab = ConfigTab.GROWSPACES;
-            await element.updateComplete;
-            const addBtn = element.shadowRoot?.querySelector('.cfg-master-add-btn') as HTMLElement;
+            const addBtn = (await sensorsShadow(element)).querySelector('.cfg-master-add-btn') as HTMLElement;
             addBtn?.click();
             await element.updateComplete;
             expect((element as any)._isAddingGrowspace).toBe(true);
@@ -694,11 +710,11 @@ describe('ConfigDialog', () => {
         it('should trigger dehumidifier stage switch via accordion', async () => {
             element.currentTab = ConfigTab.HUMIDITY;
             await element.updateComplete;
-            const accHeads = element.shadowRoot?.querySelectorAll('.acc-head');
+            const accHeads = (await sensorsShadow(element)).querySelectorAll('.acc-head');
             const vegHead = Array.from(accHeads || []).find(h => h.textContent?.includes('Vegetative'));
             (vegHead as HTMLElement)?.click();
             await element.updateComplete;
-            const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
+            const inputs = (await sensorsShadow(element)).querySelectorAll('md3-number-input');
             inputs?.[0]?.dispatchEvent(new CustomEvent('change', { detail: '2.0' }));
             expect((element as any).envDehumidifierThresholds.veg.day.on).toBe(2.0);
         });
@@ -720,10 +736,8 @@ describe('ConfigDialog', () => {
 
         it('should render humidity accordion with all stages', async () => {
             element.currentTab = ConfigTab.HUMIDITY;
-            await element.updateComplete;
-            const accCards = element.shadowRoot?.querySelectorAll('.acc-card');
-            // All 8 stages rendered as accordion items
-            expect(accCards?.length).toBe(8);
+            const accCards = (await sensorsShadow(element)).querySelectorAll('.acc-card');
+            expect(accCards?.length).toBe(HUMIDITY_STAGES.length);
         });
 
         it('should handle null thresholds during _updateThreshold', () => {
@@ -744,39 +758,6 @@ describe('ConfigDialog', () => {
             element.devices = [dev];
             (element as any)._populateEditFields('no_notify');
             expect((element as any).editNotificationService).toBe('');
-        });
-
-        it('should render entity select fallback to entity_id if friendly_name missing', async () => {
-            element.hass = {
-                ...element.hass,
-                states: {
-                    'sensor.no_friendly': {
-                        entity_id: 'sensor.no_friendly',
-                        attributes: {}, // No friendly_name
-                        state: 'on'
-                    }
-                }
-            } as any;
-            element.currentTab = ConfigTab.SENSORS;
-            await element.updateComplete;
-            // Force re-render/update to ensure _renderEntitySelect uses the entity
-            // But we need to make sure _getEntities returns it.
-            // _getEntities filters by domain/device class.
-            // It calls 'sensor.no_friendly'
-            // We need to inject it into _getEntities or make sure it matches default filter
-            // renderEnvironmentTab calls _getEntities(['sensor'], 'temperature') etc.
-            // Let's verify _getEntities is called.
-            // Actually, simplest way is to call _renderEntitySelect directly if possible?
-            // It's private.
-            const result = (element as any)._renderEntitySelect(
-                'Label',
-                'val',
-                ['sensor'],
-                null,
-                (e: any) => { }
-            );
-            // result is TemplateResult. hard to inspect options deep inside.
-            // Better to inspect DOM if rendered.
         });
 
         it('should handle env growspace change with device missing environmentAttributes', () => {
@@ -826,12 +807,10 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle device not found in _populateEditFields', () => {
-            (element as any).editName = 'Original';
-            // Passing ID that doesn't exist in element.devices
+            // In the SM design, _populateEditFields is a no-op when device is not found.
+            // No stale state leaks; editSelectedId stays empty.
             (element as any)._populateEditFields('missing_id');
-            expect((element as any).editSelectedId).toBe('missing_id');
-            // edit_name should NOT change
-            expect((element as any).editName).toBe('Original');
+            expect((element as any).editSelectedId).toBe('');
         });
 
         it('should fallback to defaults in _populateEditFields if device properties missing', () => {
@@ -913,8 +892,8 @@ describe('ConfigDialog', () => {
             expect(res).toEqual([]);
         });
 
-        it('should handle null environmentData in willUpdate', async () => {
-            element.environmentData = undefined as any;
+        it('should handle an empty growspaceId in willUpdate', async () => {
+            element.growspaceId = '';
             await element.updateComplete;
             // No error should occur
         });
@@ -930,11 +909,12 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle empty value in _handleEditSelection', () => {
+            // _handleEditSelection('') calls _populateEditFields('') which returns early,
+            // then _handleEnvGrowspaceChange resets the env draft.
+            // editSelectedId resets to idle (empty).
             (element as any).editSelectedId = 'old';
             (element as any)._handleEditSelection('');
             expect((element as any).editSelectedId).toBe('');
-            // Should also populate (reset) fields
-            expect((element as any).editName).toBe('');
         });
 
         it('should cancel delete growspace', () => {
@@ -944,24 +924,14 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle multi-select chip removal', async () => {
-            const spy = vi.fn();
-            const result = (element as any)._renderMultiEntitySelect(
-                'Test',
-                ['entity1', 'entity2'],
-                ['sensor'],
-                null,
-                spy
-            );
-
-            // Directly call the changeHandler via the spy since we can't easily click in TemplateResult without rendering
-            // But actually we can render it to a temporary div or just assume the logic works if we see it in the code.
-            // Let's try to find it in shadowRoot if possible by rendering the component with some multi-values.
-
+            // The inline `_renderMultiEntitySelect` helper was removed in #368; chip
+            // removal is now exercised through the live Sensors tab component.
             element.currentTab = ConfigTab.SENSORS;
             (element as any).envLightSensors = ['sensor.1', 'sensor.2'];
             await element.updateComplete;
 
-            const removeBtn = element.shadowRoot?.querySelector('.chip-remove');
+            const picker = entityPicker(await sensorsShadow(element), 'Light Source / Sensor');
+            const removeBtn = picker?.shadowRoot.querySelector('.chip-remove');
             (removeBtn as HTMLElement)?.click();
             await element.updateComplete;
 
@@ -973,9 +943,8 @@ describe('ConfigDialog', () => {
             (element as any).envLightSensors = ['sensor.1'];
             await element.updateComplete;
 
-            const input = element.shadowRoot?.querySelector('.search-input-inner') as HTMLInputElement;
-            input.value = ''; // Empty string
-            input.dispatchEvent(new Event('change'));
+            const picker = entityPicker(await sensorsShadow(element), 'Light Source / Sensor');
+            pickEntity(picker!.shadowRoot, ''); // Cleared selection
             await element.updateComplete;
 
             expect((element as any).envLightSensors).toEqual(['sensor.1']); // Unchanged
@@ -1059,13 +1028,13 @@ describe('ConfigDialog', () => {
             await element.updateComplete;
         });
 
-        it('should render sensor groups list', () => {
-            const groupName = element.shadowRoot?.querySelector('div[style*="font-weight:500"]');
+        it('should render sensor groups list', async () => {
+            const groupName = (await sensorsShadow(element)).querySelector('div[style*="font-weight:500"]');
             expect(groupName?.textContent).toBe('Group 1');
         });
 
         it('should open add group dialog', async () => {
-            const addBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
+            const addBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
                 .find(b => b.textContent?.includes('Add Group'));
             (addBtn as HTMLElement)?.click();
             await element.updateComplete;
@@ -1084,7 +1053,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should delete a group', async () => {
-            const deleteBtn = element.shadowRoot?.querySelector('button.error');
+            const deleteBtn = (await sensorsShadow(element)).querySelector('button.danger');
             (deleteBtn as HTMLElement)?.click();
             await element.updateComplete;
 
@@ -1136,99 +1105,6 @@ describe('ConfigDialog', () => {
         });
     });
 
-    describe('Environment Management', () => {
-        it('should dispatch generate-grow-report event', () => {
-            const spy = vi.fn();
-            element.addEventListener('generate-grow-report', spy);
-            (element as any).editSelectedId = 'gs1';
-            (element as any)._generateGrowReport();
-            
-            expect(spy).toHaveBeenCalled();
-            expect(spy.mock.calls[0][0].detail).toEqual({ growspace_id: 'gs1' });
-        });
-
-        it('should return early in _generateGrowReport if no id selected', () => {
-            const spy = vi.fn();
-            element.addEventListener('generate-grow-report', spy);
-            (element as any).editSelectedId = '';
-            (element as any)._generateGrowReport();
-            expect(spy).not.toHaveBeenCalled();
-        });
-
-        it('should handle environment removal with confirmation', () => {
-            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-            const dispatchSpy = vi.fn();
-            element.addEventListener('remove-environment-submit', dispatchSpy);
-            
-            (element as any).envSelectedId = 'gs1';
-            (element as any)._handleRemoveEnvironment();
-            
-            expect(confirmSpy).toHaveBeenCalled();
-            expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
-                detail: { growspace_id: 'gs1' }
-            }));
-            confirmSpy.mockRestore();
-        });
-
-        it('should abort environment removal if not confirmed', () => {
-            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
-            const dispatchSpy = vi.fn();
-            element.addEventListener('remove-environment-submit', dispatchSpy);
-            
-            (element as any).envSelectedId = 'gs1';
-            (element as any)._handleRemoveEnvironment();
-            
-            expect(confirmSpy).toHaveBeenCalled();
-            expect(dispatchSpy).not.toHaveBeenCalled();
-            confirmSpy.mockRestore();
-        });
-
-        it('should return early in _handleRemoveEnvironment if no id selected', () => {
-            const confirmSpy = vi.spyOn(window, 'confirm');
-            (element as any).envSelectedId = '';
-            (element as any)._handleRemoveEnvironment();
-            expect(confirmSpy).not.toHaveBeenCalled();
-        });
-
-        it('should handle timeout in _handleRemoveEnvironment (line 472)', async () => {
-             vi.useFakeTimers();
-             const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-             const envChangeSpy = vi.spyOn(element as any, '_handleEnvGrowspaceChange');
-             
-             (element as any).envSelectedId = 'env1';
-             (element as any)._handleRemoveEnvironment();
-             
-             expect(envChangeSpy).not.toHaveBeenCalled();
-             
-             vi.runAllTimers();
-             
-             expect(envChangeSpy).toHaveBeenCalledWith(expect.objectContaining({
-                 target: { value: 'env1' }
-             }));
-             
-             confirmSpy.mockRestore();
-             envChangeSpy.mockRestore();
-             vi.useRealTimers();
-        });
-
-        it('should handle errors in _handleRemoveEnvironment (line 479)', async () => {
-             vi.spyOn(window, 'confirm').mockReturnValue(true);
-             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-             const dispatchSpy = vi.spyOn(element, 'dispatchEvent').mockImplementation(() => {
-                 throw new Error('Dispatch failed');
-             });
-             
-             (element as any).envSelectedId = 'env1';
-             (element as any)._handleRemoveEnvironment();
-             
-             expect(consoleSpy).toHaveBeenCalledWith('Failed to remove environment:', expect.any(Error));
-             
-             consoleSpy.mockRestore();
-             dispatchSpy.mockRestore();
-             vi.restoreAllMocks();
-        });
-    });
-
     describe('Vision Checkup config section', () => {
       it('renders vision section in vision tab', async () => {
         (element as any).currentTab = 'vision';
@@ -1236,7 +1112,7 @@ describe('ConfigDialog', () => {
         (element as any).envVisionCameraEntities = ['camera.tent1'];
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn');
+        const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary');
         expect(saveBtn).toBeTruthy();
       });
 
@@ -1246,8 +1122,6 @@ describe('ConfigDialog', () => {
         (element as any).envVisionCameraEntities = [];
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn');
-        expect(saveBtn).toBeFalsy();
         const toggle = element.shadowRoot?.querySelector('input[type="checkbox"]');
         expect(toggle).toBeFalsy();
       });
@@ -1258,9 +1132,9 @@ describe('ConfigDialog', () => {
         (element as any).envVisionCameraEntities = ['camera.tent1'];
         await element.updateComplete;
 
-        const toggle = element.shadowRoot?.querySelector('input[type="checkbox"]');
+        const toggle = (await sensorsShadow(element)).querySelector('input[type="checkbox"]');
         expect(toggle).toBeTruthy();
-        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn');
+        const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary');
         expect(saveBtn).toBeTruthy();
       });
 
@@ -1277,7 +1151,7 @@ describe('ConfigDialog', () => {
         (element as any).envVisionLateOffset = 45;
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn') as HTMLElement;
+        const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary') as HTMLElement;
         saveBtn?.click();
 
         expect(submitSpy).toHaveBeenCalledOnce();
@@ -1289,6 +1163,23 @@ describe('ConfigDialog', () => {
         expect(detail.visionCheckupConfig.late_check_offset_minutes).toBe(45);
       });
 
+      it('does not dispatch event when the vision group is untouched', async () => {
+        const submitSpy = vi.fn();
+        element.addEventListener('vision-checkup-config-submit', submitSpy);
+
+        (element as any).currentTab = 'vision';
+        (element as any).envSelectedId = 'tent1';
+        // A buffered edit (cameraEntities), not a vision-group one: it must not
+        // drag the dedicated vision save along (ADR-0032).
+        (element as any).envVisionCameraEntities = ['camera.tent1'];
+        await element.updateComplete;
+
+        const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary') as HTMLElement;
+        saveBtn?.click();
+
+        expect(submitSpy).not.toHaveBeenCalled();
+      });
+
       it('does not dispatch event when no growspace selected', async () => {
         const submitSpy = vi.fn();
         element.addEventListener('vision-checkup-config-submit', submitSpy);
@@ -1298,11 +1189,39 @@ describe('ConfigDialog', () => {
         (element as any).envVisionCameraEntities = ['camera.tent1'];
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn') as HTMLElement;
+        const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary') as HTMLElement;
         saveBtn?.click();
 
         expect(submitSpy).not.toHaveBeenCalled();
       });
     });
-});
 
+    describe('Climate save (env→host two-call path)', () => {
+        it('carries the edited exhaust config into the submit event so needsExhaustCall is true', async () => {
+            element.currentTab = ConfigTab.CLIMATE;
+            (element as any).envSelectedId = 'gs1';
+            (element as any).envTemperatureSensors = ['sensor.temp'];
+            (element as any).envHumiditySensors = ['sensor.hum'];
+            await element.updateComplete;
+
+            // Toggle the exhaust panel's Enabled in the nested Climate component.
+            const root = await sensorsShadow(element);
+            const exhaustEnabled = Array.from(root.querySelectorAll('label.checkbox-label'))
+                .filter((l) => l.textContent?.includes('Enabled'))[1]
+                .querySelector('input[type="checkbox"]') as HTMLInputElement;
+            exhaustEnabled.checked = true;
+            exhaustEnabled.dispatchEvent(new Event('change'));
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('configure-environment-submit', listener);
+            const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary') as HTMLElement;
+            saveBtn?.click();
+
+            expect(listener).toHaveBeenCalled();
+            const detail = listener.mock.calls[0][0].detail;
+            expect(detail.exhaustFanConfig.enabled).toBe(true);
+            expect(needsExhaustCall(detail)).toBe(true);
+        });
+    });
+});

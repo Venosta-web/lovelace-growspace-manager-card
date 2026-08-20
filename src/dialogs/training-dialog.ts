@@ -32,7 +32,7 @@ export class TrainingDialog extends LitElement {
       }
       .form-section h3 {
         margin-top: 0;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         text-transform: uppercase;
         opacity: 0.6;
         letter-spacing: 1px;
@@ -41,7 +41,7 @@ export class TrainingDialog extends LitElement {
       .apply-summary {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         padding: 16px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         margin-top: 16px;
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       }
@@ -101,7 +101,7 @@ export class TrainingDialog extends LitElement {
     const count = plantIds ? plantIds.length : 0;
 
     // Match standard dialog layout
-    const dialogColor = '#9c27b0'; // Purple for learning/training
+    const dialogColor = 'var(--activity-training)';
     const title = 'Log Training';
     const subtitle =
       count > 0

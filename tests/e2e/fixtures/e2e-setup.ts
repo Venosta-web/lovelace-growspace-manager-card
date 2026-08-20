@@ -159,7 +159,8 @@ function buildSensors(slug: string) {
     vpd_sensor:              s('vpd'),
     co2_sensor:              s('co2'),
     feed_ec_sensors:         [s('feed_ec')],
-    substrate_ec_sensors:    [s('substrate_ec')],
+    bulk_ec_sensors:         [s('bulk_ec')],
+    pore_ec_sensors:         [s('pore_ec')],
     runoff_ec_sensors:       [s('runoff_ec')],
     ph_sensors:              [s('ph')],
     substrate_temperature_sensors: [s('substrate_temperature')],
@@ -175,7 +176,9 @@ function buildSensors(slug: string) {
 async function resolveGrowspaceId(slug: string): Promise<string | null> {
   const attrs = await getStateAttributes(`sensor.e2e_${slug}_overview`);
   if (!attrs) return null;
-  return (attrs['growspace_id'] as string) ?? null;
+  // growspace_id is nested under attrs.identity in the current schema
+  const identity = attrs['identity'] as Record<string, unknown> | undefined;
+  return (identity?.['growspace_id'] as string) ?? null;
 }
 
 async function ensureGrowspace(spec: GrowspaceSpec): Promise<string> {

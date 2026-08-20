@@ -27,7 +27,7 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
   private _computeSchema() {
     const lang = this.hass?.language;
     const l = (key: string) => localize(key, '', '', lang);
-    return [
+    return this._gsController.filterUnavailableFields([
       {
         name: 'default_growspace',
         selector: {
@@ -53,13 +53,42 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
       },
       { name: 'keyboard_rotate_enabled', selector: { boolean: {} } },
       { name: 'keyboard_rotate_speed', selector: { number: { min: 0.1, max: 5.0, step: 0.1 } } },
-    ];
+      {
+        name: 'hidden_chips',
+        selector: {
+          select: {
+            multiple: true,
+            options: [
+              { label: 'Light', value: 'light' },
+              { label: 'Exhaust Fan', value: 'exhaust' },
+              { label: 'Circulation Fan', value: 'circulation_fan' },
+              { label: 'Humidifier', value: 'humidifier' },
+              { label: 'Dehumidifier', value: 'dehumidifier' },
+              { label: 'Temperature', value: 'temperature' },
+              { label: 'Humidity', value: 'humidity' },
+              { label: 'VPD', value: 'vpd' },
+              { label: 'CO2', value: 'co2' },
+              { label: 'Soil Moisture', value: 'soil_moisture' },
+              { label: 'Substrate Temperature', value: 'substrate_temperature' },
+              { label: 'Tank Level', value: 'irrigation_tank_level' },
+              { label: 'DLI', value: 'dli' },
+              { label: 'Energy', value: 'energy' },
+              { label: 'Water', value: 'water' },
+              { label: 'Optimal Conditions', value: 'optimal' },
+              { label: 'Crop Steering', value: 'crop_steering' },
+              { label: 'Steering Phase', value: 'steering_phase' },
+            ],
+          },
+        },
+      },
+    ]);
   }
 
   render() {
     if (!this._config) return html``;
 
     return html`
+      ${this._gsController.renderEmptyState(this.hass?.language)}
       <ha-form
         .hass=${this.hass}
         .data=${this._config}

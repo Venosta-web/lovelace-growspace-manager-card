@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceHeaderActionsUI } from '../../../../../src/features/ui/components/growspace-header-actions-ui';
-import type { HeaderChip } from '../../../../../src/utils/metrics-utils';
+import type { HeaderChip } from '../../../../../src/slices/header-metrics';
 import { ViewMode } from '../../../../../src/constants';
 
 if (!customElements.get('growspace-header-actions-ui')) {
@@ -20,6 +20,7 @@ const mockChip: HeaderChip = {
 };
 
 const mockDeviceFull = {
+  plants: [{ attributes: { plant_id: 'plant-1' } }],
   irrigationConfig: {
     irrigationPumpEntity: 'switch.pump',
     irrigationTimes: ['08:00'],
@@ -48,17 +49,20 @@ describe('GrowspaceHeaderActionsUI', () => {
     expect(el.shadowRoot!.querySelector('.gs-device-chips-container')).not.toBeNull();
   });
 
-  it('dispatches action-triggered event when Edit Mode button clicked', async () => {
+  it('dispatches action-triggered event when Select plants is clicked', async () => {
     const handler = vi.fn();
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui @action-triggered=${handler}></growspace-header-actions-ui>
+      <growspace-header-actions-ui
+        .device=${mockDeviceFull}
+        @action-triggered=${handler}
+      ></growspace-header-actions-ui>
     `);
-    const iconButtons = el.shadowRoot!.querySelectorAll('.icon-button') as NodeListOf<HTMLElement>;
-    // First icon button that has a title matching Edit Mode
-    const editBtn = Array.from(iconButtons).find((b) => b.title === 'Edit Mode');
-    editBtn?.click();
+    const selectPlants = el.shadowRoot!.querySelector<HTMLElement>(
+      '[data-action="select_plants"]'
+    );
+    selectPlants?.click();
     expect(handler).toHaveBeenCalledOnce();
-    expect(handler.mock.calls[0][0].detail.action).toBe('edit');
+    expect(handler.mock.calls[0][0].detail.action).toBe('select_plants');
   });
 
   it('dispatches action-triggered event when Settings button clicked', async () => {
@@ -85,13 +89,14 @@ describe('GrowspaceHeaderActionsUI', () => {
     expect(handler.mock.calls[0][0].detail.action).toBe('heatmap');
   });
 
-  it('applies active class to Edit Mode button when isEditMode is true', async () => {
+  it('applies active class to Select plants while its task is active', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isEditMode=${true}></growspace-header-actions-ui>
+      <growspace-header-actions-ui activeTask="select_plants"></growspace-header-actions-ui>
     `);
-    const iconButtons = el.shadowRoot!.querySelectorAll('.icon-button') as NodeListOf<HTMLElement>;
-    const editBtn = Array.from(iconButtons).find((b) => b.title === 'Edit Mode');
-    expect(editBtn?.classList.contains('active')).toBe(true);
+    const selectPlants = el.shadowRoot!.querySelector<HTMLElement>(
+      '[data-action="select_plants"]'
+    );
+    expect(selectPlants?.classList.contains('active')).toBe(true);
   });
 
   it('applies active class to 3D Heatmap button when in HEATMAP view mode', async () => {
@@ -103,22 +108,22 @@ describe('GrowspaceHeaderActionsUI', () => {
     expect(heatmapBtn?.classList.contains('active')).toBe(true);
   });
 
-  it('renders mobile link button in mobile mode', async () => {
+  it('does not render the removed mobile link mode', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui .isMobile=${true}></growspace-header-actions-ui>
     `);
     const mobileLinkBtn = el.shadowRoot!.querySelector('.icon-button.mobile-link') as HTMLElement;
-    expect(mobileLinkBtn).not.toBeNull();
+    expect(mobileLinkBtn).toBeNull();
   });
 
-  it('dispatches toggle-mobile-link event when mobile link button clicked', async () => {
+  it('does not dispatch the removed toggle-mobile-link event', async () => {
     const handler = vi.fn();
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui .isMobile=${true} @toggle-mobile-link=${handler}></growspace-header-actions-ui>
     `);
     const mobileLinkBtn = el.shadowRoot!.querySelector('.icon-button.mobile-link') as HTMLElement;
     mobileLinkBtn?.click();
-    expect(handler).toHaveBeenCalledOnce();
+    expect(handler).not.toHaveBeenCalled();
   });
 
   it('does not render mobile link button in desktop mode', async () => {
@@ -140,7 +145,9 @@ describe('GrowspaceHeaderActionsUI', () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui @action-triggered=${handler}></growspace-header-actions-ui>
     `);
-    const menuItems = el.shadowRoot!.querySelectorAll('.menu-item') as NodeListOf<HTMLElement>;
+    const menuItems = el.shadowRoot!.querySelectorAll(
+      '.menu-item:not(:disabled)'
+    ) as NodeListOf<HTMLElement>;
     expect(menuItems.length).toBeGreaterThan(0);
     menuItems[0]?.click();
     expect(handler).toHaveBeenCalledOnce();
@@ -197,18 +204,18 @@ describe('GrowspaceHeaderActionsUI', () => {
     expect((el as any)._chipDraggable).toBe('false');
   });
 
-  it('chip is draggable in mobile mode with mobileLink enabled', async () => {
+  it('chip remains non-draggable when legacy mobileLink is enabled', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui .isMobile=${true} .mobileLink=${true}></growspace-header-actions-ui>
     `);
-    expect((el as any)._chipDraggable).toBe('true');
+    expect((el as any)._chipDraggable).toBe('false');
   });
 
-  it('chip is always draggable in desktop mode', async () => {
+  it('chip is not draggable in desktop mode', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui .isMobile=${false}></growspace-header-actions-ui>
     `);
-    expect((el as any)._chipDraggable).toBe('true');
+    expect((el as any)._chipDraggable).toBe('false');
   });
 
   describe('Drag and Drop', () => {
@@ -336,9 +343,9 @@ describe('GrowspaceHeaderActionsUI', () => {
 
   describe('Menu Actions', () => {
     const actions = [
-      'add_plant', 'water', 'ipm', 'training', 
-      'irrigation', 'nutrients', 'ec_ramp', 'strains', 
-      'logbook', 'report', 'snapshots', 'ai'
+      'add_plant', 'water', 'ipm', 'training',
+      'irrigation', 'nutrients', 'strains',
+      'logbook', 'snapshots', 'ai'
     ];
 
     actions.forEach(action => {
@@ -351,67 +358,11 @@ describe('GrowspaceHeaderActionsUI', () => {
           ></growspace-header-actions-ui>
         `);
         
-        // Find the menu item with the action
-        const menuItems = Array.from(el.shadowRoot!.querySelectorAll('.menu-item')) as HTMLElement[];
-        
-        const index = actions.indexOf(action);
-        if (menuItems[index]) {
-          menuItems[index].click();
-          expect(handler).toHaveBeenCalled();
-          expect(handler.mock.calls[0][0].detail.action).toBe(action);
-        }
+        const menuItem = el.shadowRoot!.querySelector<HTMLElement>(`[data-action="${action}"]`);
+        menuItem?.click();
+        expect(handler).toHaveBeenCalled();
+        expect(handler.mock.calls[0][0].detail.action).toBe(action);
       });
-    });
-
-    it('hides EC Ramp Curves when requirements are not met', async () => {
-      const deviceNoPump = {
-        irrigationConfig: { irrigationPumpEntity: null, drainPumpEntity: null, irrigationTimes: ['08:00'] },
-        environmentAttributes: { feedEcSensors: ['sensor.ec'] }
-      } as any;
-      
-      const el = await fixture<GrowspaceHeaderActionsUI>(html`
-        <growspace-header-actions-ui .device=${deviceNoPump}></growspace-header-actions-ui>
-      `);
-      
-      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
-      expect(labels).not.toContain('EC Ramp Curves');
-    });
-
-    it('shows EC Ramp Curves when all requirements are met', async () => {
-      const el = await fixture<GrowspaceHeaderActionsUI>(html`
-        <growspace-header-actions-ui .device=${mockDeviceFull}></growspace-header-actions-ui>
-      `);
-      
-      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
-      expect(labels).toContain('EC Ramp Curves');
-    });
-
-    it('hides EC Ramp Curves when no schedule is defined', async () => {
-      const deviceNoSchedule = {
-        irrigationConfig: { irrigationPumpEntity: 'switch.pump', irrigationTimes: [] },
-        environmentAttributes: { feedEcSensors: ['sensor.ec'] }
-      } as any;
-      
-      const el = await fixture<GrowspaceHeaderActionsUI>(html`
-        <growspace-header-actions-ui .device=${deviceNoSchedule}></growspace-header-actions-ui>
-      `);
-      
-      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
-      expect(labels).not.toContain('EC Ramp Curves');
-    });
-
-    it('hides EC Ramp Curves when no EC sensor is defined', async () => {
-      const deviceNoEC = {
-        irrigationConfig: { irrigationPumpEntity: 'switch.pump', irrigationTimes: ['08:00'] },
-        environmentAttributes: { feedEcSensors: [], runoffEcSensors: [], substrateEcSensors: [] }
-      } as any;
-      
-      const el = await fixture<GrowspaceHeaderActionsUI>(html`
-        <growspace-header-actions-ui .device=${deviceNoEC}></growspace-header-actions-ui>
-      `);
-      
-      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
-      expect(labels).not.toContain('EC Ramp Curves');
     });
 
     it('hides popover when action is triggered', async () => {
@@ -482,4 +433,3 @@ describe('GrowspaceHeaderActionsUI', () => {
     });
   });
 });
-

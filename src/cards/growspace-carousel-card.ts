@@ -3,6 +3,7 @@ import { customElement, property, state, query } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import type { GrowspaceCarouselCardConfig } from '../lib/types/config';
 import '../growspace-manager-card';
+import { reducedMotion } from '../styles/reduced-motion.styles';
 
 @customElement('growspace-carousel-card')
 export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
@@ -120,7 +121,6 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
     this._wrapper.classList.remove('slide-out');
     this._wrapper.classList.add('slide-in-prepare');
 
-    // eslint-disable-next-line no-void
     void this._wrapper.offsetWidth;
 
     // Slide in from the right
@@ -189,5 +189,7 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
       transform: translateX(30px);
       opacity: 0;
     }
+
+    ${reducedMotion}
   `;
 }

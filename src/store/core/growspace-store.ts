@@ -1,52 +1,44 @@
 import { computed, ReadableAtom } from 'nanostores';
 import { HomeAssistant } from 'custom-card-helpers';
-import { PlantEntity, GrowspaceManagerCardConfig } from '../../types';
-import { DataService } from '../../services/data-service';
+import { PlantEntity } from '../../types';
+import type { NutrientPresetsResponse } from '../../slices/nutrient';
 
 // Sub-stores
-import { GrowspaceDataStore } from './data-store';
 import { GrowspaceUIStore } from '../ui/ui-store';
 import { GrowspaceHistoryStore } from '../history/history-store';
-import { type GridSliceRef, type GridViewState } from '../../slices/grid';
-import { GrowspaceGridStore } from '../grid/grid-store';
+import { MetricComparisonStore } from '../comparisons/metric-comparison-store';
+import {
+  type GridSliceRef,
+  type GridViewState,
+  makePerCardGridSlice,
+  devices$,
+  optimisticDeletedPlantIds$,
+  removeOptimisticDeletedPlantId,
+} from '../../slices/grid';
 import { GrowspaceSharedStore } from './growspace-shared-store';
-
-import { ActionDispatcher } from './action-dispatcher';
-import { ActionContext } from './action-context';
 
 // Action Modules
 import * as plantSlice from '../../slices/plant';
-import * as aiActions from '../system/ai-actions';
 
-// Services
-import { SyncService } from '../../services/sync-service';
-import { UndoRedoManager, UndoableAction } from '../../services/undo-redo-manager';
-import { OptimisticManager } from '../system/optimistic-manager';
+// Nutrient Slice atoms
+import { nutrientPresets$, ipmPresets$, nutrientInventory$ } from '../../slices/nutrient';
+import { strainLibrary$ } from '../../slices/strain';
 
 // New infrastructure (Phase 1)
-import { EventBus } from '../../features/shared/events/event-bus';
+import { EventBus, DATA_STALE_EVENT } from '../../features/shared/events';
 
 export class GrowspaceStore {
   private readonly _shared: GrowspaceSharedStore;
   private _staleUnsub?: () => void;
+  private _refreshCallback?: () => Promise<void>;
 
-  dataService!: DataService;
   hass!: HomeAssistant;
-
-  // Shared sub-stores (delegated to shared store)
-  public get data(): GrowspaceDataStore {
-    return this._shared.data;
-  }
 
   // Per-card stores
   public readonly ui: GrowspaceUIStore;
   public readonly grid: GridSliceRef;
   public readonly history: GrowspaceHistoryStore;
-
-  // Services
-  public readonly syncService: SyncService;
-  public readonly undoRedoManager: UndoRedoManager;
-  public readonly optimisticManager: OptimisticManager;
+  public readonly comparisons: MetricComparisonStore;
 
   // New infrastructure (Phase 1)
   public readonly eventBus: EventBus;
@@ -57,7 +49,7 @@ export class GrowspaceStore {
     devices: import('../../types').GrowspaceDevice[];
     selectedDevice: string | null;
     strainLibrary: import('../../types').StrainEntry[];
-    nutrientPresets: Record<string, import('../../types').NutrientPreset>;
+    nutrientPresets: NutrientPresetsResponse;
     ipmPresets: Record<string, import('../../types').IPMPreset>;
     nutrientInventory: import('../../types').NutrientInventory | null;
   }>;
@@ -68,6 +60,7 @@ export class GrowspaceStore {
     isEditMode: boolean;
     selectedPlants: Set<string>;
     selectedDevice: string | null;
+    taskState: import('../../features/tasks/task-state').CardTaskState;
   }>;
 
   /** Combined atom for card rendering — one subscription replaces grid + ui modules. */
@@ -83,7 +76,7 @@ export class GrowspaceStore {
     isEditMode: boolean;
     selectedPlants: Set<string>;
     devices: import('../../types').GrowspaceDevice[];
-    nutrientPresets: Record<string, import('../../types').NutrientPreset>;
+    nutrientPresets: NutrientPresetsResponse;
   }>;
 
   /** Combined atom for growspace-view-standard. */
@@ -112,48 +105,25 @@ export class GrowspaceStore {
     strainLibrary: import('../../types').StrainEntry[];
   }>;
 
-  /** Unified Action Context */
-  public get context(): ActionContext {
-    return {
-      dataService: this.dataService,
-      data: this.data,
-      ui: this.ui,
-      grid: this.grid,
-      undoRedoManager: this.undoRedoManager,
-      optimisticManager: this.optimisticManager,
-      closeDialog: () => this.ui.closeDialog(),
-      refreshData: (force?: boolean) => this.refreshData(force),
-    };
-  }
-
-  /**
-   * Centralized Action Dispatcher
-   */
-  public readonly actions = new ActionDispatcher(this);
-
   constructor(shared: GrowspaceSharedStore) {
     this._shared = shared;
-    this.dataService = shared.dataService;
 
     // Per-card stores
     this.ui = new GrowspaceUIStore();
-    this.grid = new GrowspaceGridStore(shared.data);
-    this.history = new GrowspaceHistoryStore(
-      shared.dataService,
-      shared.data,
-      this.grid.$selectedDevice
-    );
+    this.grid = makePerCardGridSlice();
+    this.history = new GrowspaceHistoryStore(this.grid.$selectedDevice);
+    this.comparisons = new MetricComparisonStore();
 
     // Cross-store computed atoms
     this.$dialogHostState = computed(
       [
         this.ui.$activeDialog,
-        this.data.$devices,
+        this.grid.$activeDevices,
         this.grid.$selectedDevice,
-        this.data.$strainLibrary,
-        this.data.$nutrientPresets,
-        this.data.$ipmPresets,
-        this.data.$nutrientInventory,
+        strainLibrary$,
+        nutrientPresets$,
+        ipmPresets$,
+        nutrientInventory$,
       ],
       (
         activeDialog,
@@ -168,19 +138,26 @@ export class GrowspaceStore {
         devices,
         selectedDevice,
         strainLibrary,
-        nutrientPresets,
-        ipmPresets,
+        nutrientPresets: nutrientPresets ?? {},
+        ipmPresets: ipmPresets ?? {},
         nutrientInventory,
       })
     );
 
     this.$headerActionsState = computed(
-      [this.ui.$viewMode, this.ui.$isEditMode, this.ui.$selectedPlants, this.grid.$selectedDevice],
-      (viewMode, isEditMode, selectedPlants, selectedDevice) => ({
+      [
+        this.ui.$viewMode,
+        this.ui.$isEditMode,
+        this.ui.$selectedPlants,
+        this.grid.$selectedDevice,
+        this.ui.$taskState,
+      ],
+      (viewMode, isEditMode, selectedPlants, selectedDevice, taskState) => ({
         viewMode,
         isEditMode,
         selectedPlants,
         selectedDevice,
+        taskState,
       })
     );
 
@@ -190,50 +167,40 @@ export class GrowspaceStore {
     );
 
     this.$plantCardViewState = computed(
-      [
-        this.ui.$isEditMode,
-        this.ui.$selectedPlants,
-        this.data.$devices,
-        this.data.$nutrientPresets,
-      ],
+      [this.ui.$isEditMode, this.ui.$selectedPlants, this.grid.$activeDevices, nutrientPresets$],
       (isEditMode, selectedPlants, devices, nutrientPresets) => ({
         isEditMode,
         selectedPlants,
         devices,
-        nutrientPresets,
+        nutrientPresets: nutrientPresets ?? {},
       })
     );
 
-    this.$viewStandardState = computed([this.data.$devices], (devices) => ({ devices }));
+    this.$viewStandardState = computed([this.grid.$activeDevices], (devices) => ({ devices }));
 
     this.$headerState = computed(
-      [this.data.$devices, this.data.$nutrientInventory, this.history.$headerHistoryState],
+      [this.grid.$activeDevices, nutrientInventory$, this.history.$headerHistoryState],
       (devices, nutrientInventory, history) => ({ devices, nutrientInventory, history })
     );
 
     this.$mainCardState = computed(
-      [this.grid.$gridViewState, this.ui.$cardViewState, this.data.$strainLibrary],
+      [this.grid.$gridViewState, this.ui.$cardViewState, strainLibrary$],
       (grid, ui, strainLibrary) => ({ grid, ui, strainLibrary })
     );
 
-    // Initialize services
-    this.syncService = new SyncService(this.dataService, shared.data, this.ui, this.grid);
-    this.undoRedoManager = new UndoRedoManager((msg, type, action) =>
-      this.ui.showToast(msg, type, action)
-    );
-    this.optimisticManager = new OptimisticManager(shared.data, this.undoRedoManager);
-
-    // Initialize new infrastructure (Phase 1)
+    // New infrastructure (Phase 1)
     this.eventBus = new EventBus();
 
-    // Trigger a full refresh whenever the shared store signals stale data
-    let prevStale = shared.data.$staleCounter.get();
-    this._staleUnsub = shared.data.$staleCounter.subscribe((n) => {
-      if (n !== prevStale) {
-        prevStale = n;
-        this.syncService.refreshGrowspaceData();
-      }
+    // Trigger a full refresh whenever the shared store signals stale data.
+    // _refreshCallback is set by the card's Bootstrap controller via setRefreshCallback().
+    this._staleUnsub = shared.addOnStale(async () => {
+      await this._refreshCallback?.();
+      this.eventBus.emit(DATA_STALE_EVENT, undefined);
     });
+  }
+
+  public setRefreshCallback(cb: () => Promise<void>): void {
+    this._refreshCallback = cb;
   }
 
   public initialize(hass: HomeAssistant): void {
@@ -244,59 +211,35 @@ export class GrowspaceStore {
   public destroy(): void {
     this._staleUnsub?.();
     this.history.destroy();
+    this.comparisons.destroy();
     this.eventBus.clear();
-  }
-
-  // === Undo/Redo Methods ===
-
-  public pushUndoAction(action: UndoableAction): void {
-    this.undoRedoManager.pushAction(action);
-  }
-
-  public get canUndo(): boolean {
-    return this.undoRedoManager.canUndo;
-  }
-
-  public get canRedo(): boolean {
-    return this.undoRedoManager.canRedo;
-  }
-
-  public async undo(): Promise<void> {
-    await this.undoRedoManager.undo();
-  }
-
-  public async redo(): Promise<void> {
-    await this.undoRedoManager.redo();
   }
 
   updateHass(hass: HomeAssistant) {
     this.hass = hass;
     this._shared.updateHass(hass);
-    this.syncService.updateHass(hass);
     if (hass.language && hass.language !== this.ui.$language.get()) {
       this.ui.setLanguage(hass.language);
     }
   }
 
-  async refreshData(force = false) {
-    if (force) {
-      this.dataService.invalidateCache();
-    }
-    await this.syncService.refreshGrowspaceData();
+  async refreshData(_force = false) {
+    await this._refreshCallback?.();
     this._pruneOptimisticDeletions();
   }
 
   private _pruneOptimisticDeletions() {
-    const optimisticIds = this.data.$optimisticDeletedPlantIds.get();
+    const optimisticIds = optimisticDeletedPlantIds$.get();
     if (optimisticIds.size === 0) return;
 
     const allPlantIds = new Set<string>();
-    const devices = this.data.$devices.get();
-    devices.forEach((d) =>
-      d.plants.forEach((p) =>
-        allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))
-      )
-    );
+    devices$
+      .get()
+      .forEach((d) =>
+        d.plants.forEach((p) =>
+          allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))
+        )
+      );
 
     const toRemove = new Set<string>();
     optimisticIds.forEach((id) => {
@@ -306,27 +249,38 @@ export class GrowspaceStore {
     });
 
     if (toRemove.size > 0) {
-      toRemove.forEach((id) => this.data.removeOptimisticDeletedPlantId(id));
+      toRemove.forEach((id) => removeOptimisticDeletedPlantId(id));
     }
-  }
-
-  // Device coordination — these belong on the store as they manage lifecycle state
-  initializeSelectedDevice(config: GrowspaceManagerCardConfig) {
-    if (!config) return;
-    this.data.setConfig(config);
-    this.syncService.setCardConfig(config);
-    this.syncService.updateDevicesState();
   }
 
   handleDeviceChange(deviceId: string) {
     this.grid.setSelectedDevice(deviceId);
   }
 
+  /**
+   * Select every plant in this card's currently-selected device.
+   *
+   * Reads the per-card selected device and its (optimistic-deletion-filtered)
+   * plants from this card's grid slice, then writes this card's selection — so
+   * "select all" on one card never touches another. No-op when no device is
+   * selected.
+   */
+  selectAllPlantsInSelectedDevice() {
+    const selectedId = this.grid.$selectedDevice.get();
+    if (!selectedId) return;
+
+    const device = this.grid.$activeDevices.get().find((d) => d.deviceId === selectedId);
+    if (!device?.plants) return;
+
+    const ids = device.plants
+      .map((plant) => plant.attributes.plant_id)
+      .filter((pId): pId is string => Boolean(pId));
+
+    this.ui.selectAllPlants(ids);
+  }
+
   // Grid helper — triggers a data refresh after a position change
   updateGrid() {
-    if (this.hass) {
-      this.dataService.updateHass(this.hass);
-    }
     this.refreshData();
   }
 
@@ -341,36 +295,6 @@ export class GrowspaceStore {
     }
     if (success) {
       this.updateGrid();
-    }
-  }
-
-  // Strain recommendation — has non-trivial loading-state management within the dialog
-  async getStrainRecommendation(userQuery: string) {
-    this._updateStrainRecommendationDialog({ isLoading: true });
-    try {
-      const res = await aiActions.getStrainRecommendation(this.context, userQuery);
-      this._updateStrainRecommendationDialog({
-        isLoading: false,
-        response: typeof res === 'string' ? res : JSON.stringify(res),
-      });
-      return res;
-    } catch (e: unknown) {
-      const error = e instanceof Error ? e.message : 'Unknown error';
-      console.error('Error getting strain recommendation:', e);
-      this._updateStrainRecommendationDialog({ isLoading: false, response: 'Error: ' + error });
-      throw e;
-    }
-  }
-
-  private _updateStrainRecommendationDialog(
-    payload: Partial<{ isLoading: boolean; response: string }>
-  ) {
-    const currentDialog = this.ui.$activeDialog.get();
-    if (currentDialog.type === 'STRAIN_RECOMMENDATION') {
-      this.ui.setActiveDialog({
-        ...currentDialog,
-        payload: { ...currentDialog.payload, ...payload },
-      });
     }
   }
 }

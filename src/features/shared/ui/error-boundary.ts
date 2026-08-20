@@ -1,6 +1,7 @@
 import { LitElement, html, css, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { mdiAlertCircle, mdiRefresh, mdiRestart } from '@mdi/js';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 /**
  * ErrorBoundary - Catches and handles errors in child components
@@ -57,7 +58,7 @@ export class ErrorBoundary extends LitElement {
     }
 
     .error-title {
-      font-size: 1.2rem;
+      font-size: var(--font-size-lg);
       font-weight: 500;
       margin: 0;
     }
@@ -109,7 +110,7 @@ export class ErrorBoundary extends LitElement {
     }
 
     .too-many-errors {
-      background: var(--error-color, #d32f2f);
+      background: var(--error-color, #f44336);
       padding: 16px;
       border-radius: 8px;
       margin: 16px;
@@ -125,6 +126,8 @@ export class ErrorBoundary extends LitElement {
       margin-bottom: 8px;
       user-select: none;
     }
+
+    ${reducedMotion}
   `;
 
   connectedCallback() {

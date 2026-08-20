@@ -7,6 +7,8 @@ import '../../../src/dialogs/snapshots-dialog';
 vi.mock('../../../src/slices/camera', () => ({
   getSnapshots: vi.fn().mockResolvedValue({ growspace_id: 'gs1', snapshots: [], total: 0 }),
   captureSnapshot: vi.fn().mockResolvedValue({ growspace_id: 'gs1', timestamp: '', snapshots: [] }),
+  getVisionHistory: vi.fn().mockResolvedValue({ history: [], total: 0 }),
+  triggerVisionCheckup: vi.fn().mockResolvedValue(undefined),
   setSnapshots: vi.fn(),
   snapshots$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
 }));
@@ -260,7 +262,6 @@ describe('SnapshotsDialog', () => {
 describe('Vision Checkup tab', () => {
   let element: SnapshotsDialog;
   let mockStore: any;
-  let mockSnapshotsActions: any;
   let mockUi: any;
   let mockVisionHistory: VisionCheckupResult[];
 
@@ -268,19 +269,14 @@ describe('Vision Checkup tab', () => {
     vi.mocked(cameraSlice.getSnapshots).mockResolvedValue({ growspace_id: 'gs1', snapshots: [], total: 0 });
     vi.mocked(cameraSlice.captureSnapshot).mockResolvedValue({ growspace_id: 'gs1', timestamp: '', snapshots: [] });
 
-    mockSnapshotsActions = {
-      visionHistory: vi.fn(),
-      triggerCheckup: vi.fn()
-    };
-
     mockUi = {
       closeDialog: vi.fn(),
       showToast: vi.fn(),
     };
 
     mockStore = {
-      actions: { snapshots: mockSnapshotsActions },
       ui: mockUi,
+      refreshData: vi.fn().mockResolvedValue(undefined),
     };
 
     mockVisionHistory = [
@@ -303,8 +299,8 @@ describe('Vision Checkup tab', () => {
         snapshot_paths: [],
       },
     ];
-    mockSnapshotsActions.visionHistory = vi.fn().mockResolvedValue({ history: mockVisionHistory, total: 2 });
-    mockSnapshotsActions.triggerCheckup = vi.fn();
+    vi.mocked(cameraSlice.getVisionHistory).mockResolvedValue({ history: mockVisionHistory, total: 2 } as any);
+    vi.mocked(cameraSlice.triggerVisionCheckup).mockResolvedValue(undefined as any);
 
     element = new SnapshotsDialog();
     (element as any).store = mockStore;
@@ -352,7 +348,7 @@ describe('Vision Checkup tab', () => {
     (tabs?.[1] as HTMLElement).click();
     await element.updateComplete;
     await new Promise(resolve => setTimeout(resolve, 0));
-    expect(mockSnapshotsActions.visionHistory).toHaveBeenCalledWith('gs1');
+    expect(vi.mocked(cameraSlice.getVisionHistory)).toHaveBeenCalledWith('gs1');
   });
 
   it('renders latest result panel with severity chip and analysis', async () => {
@@ -400,6 +396,192 @@ describe('Vision Checkup tab', () => {
     expect(recs?.length).toBe(2);
   });
 
+  it('renders a persisted /local/ snapshot as an image in the result detail view', async () => {
+    mockVisionHistory[0].snapshot_paths = [
+      '/local/growspace_manager/snapshots/gs1/20240101_120000_cam1_processed.jpg',
+    ];
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const images = element.shadowRoot?.querySelectorAll('.vision-snapshot-grid img.snapshot-image');
+    expect(images?.length).toBe(1);
+    expect((images?.[0] as HTMLImageElement).getAttribute('src')).toBe(
+      '/local/growspace_manager/snapshots/gs1/20240101_120000_cam1_processed.jpg'
+    );
+  });
+
+  it('renders no snapshot grid when snapshot_paths is empty', async () => {
+    // mockVisionHistory[0].snapshot_paths defaults to []
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const grid = element.shadowRoot?.querySelector('.vision-snapshot-grid');
+    expect(grid).toBeNull();
+  });
+
+  it('renders no image for raw media-source:// fallback paths', async () => {
+    mockVisionHistory[0].snapshot_paths = ['media-source://camera/camera.grow_cam'];
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const grid = element.shadowRoot?.querySelector('.vision-snapshot-grid');
+    expect(grid).toBeNull();
+    const images = element.shadowRoot?.querySelectorAll('.vision-snapshot-grid img.snapshot-image');
+    expect(images?.length).toBe(0);
+  });
+
+  it('renders only /local/ images when mixed with a media-source:// fallback', async () => {
+    mockVisionHistory[0].snapshot_paths = [
+      '/local/growspace_manager/snapshots/gs1/a_cam1_processed.jpg',
+      'media-source://camera/camera.grow_cam',
+      '/local/growspace_manager/snapshots/gs1/b_cam2_processed.jpg',
+    ];
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const images = element.shadowRoot?.querySelectorAll('.vision-snapshot-grid img.snapshot-image');
+    expect(images?.length).toBe(2);
+  });
+
+  it('clicking a vision snapshot opens a full-size lightbox overlay of that image', async () => {
+    mockVisionHistory[0].snapshot_paths = [
+      '/local/growspace_manager/snapshots/gs1/a_cam1_processed.jpg',
+    ];
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const thumb = element.shadowRoot?.querySelector(
+      '.vision-snapshot-grid img.snapshot-image'
+    ) as HTMLImageElement;
+    thumb.click();
+    await element.updateComplete;
+
+    const overlay = element.shadowRoot?.querySelector('.lightbox-backdrop');
+    expect(overlay).toBeTruthy();
+    const full = overlay?.querySelector('img.lightbox-image') as HTMLImageElement;
+    expect(full.getAttribute('src')).toBe(
+      '/local/growspace_manager/snapshots/gs1/a_cam1_processed.jpg'
+    );
+  });
+
+  it('enlarges the clicked image in a multi-camera result', async () => {
+    mockVisionHistory[0].snapshot_paths = [
+      '/local/growspace_manager/snapshots/gs1/a_cam1_processed.jpg',
+      '/local/growspace_manager/snapshots/gs1/b_cam2_processed.jpg',
+    ];
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const thumbs = element.shadowRoot?.querySelectorAll(
+      '.vision-snapshot-grid img.snapshot-image'
+    );
+    (thumbs?.[1] as HTMLImageElement).click();
+    await element.updateComplete;
+
+    const full = element.shadowRoot?.querySelector(
+      '.lightbox-backdrop img.lightbox-image'
+    ) as HTMLImageElement;
+    expect(full.getAttribute('src')).toBe(
+      '/local/growspace_manager/snapshots/gs1/b_cam2_processed.jpg'
+    );
+  });
+
+  const openLightbox = async () => {
+    mockVisionHistory[0].snapshot_paths = [
+      '/local/growspace_manager/snapshots/gs1/a_cam1_processed.jpg',
+    ];
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+    const thumb = element.shadowRoot?.querySelector(
+      '.vision-snapshot-grid img.snapshot-image'
+    ) as HTMLImageElement;
+    thumb.click();
+    await element.updateComplete;
+  };
+
+  it('dismisses the lightbox on backdrop click', async () => {
+    await openLightbox();
+    const backdrop = element.shadowRoot?.querySelector('.lightbox-backdrop') as HTMLElement;
+    backdrop.click();
+    await element.updateComplete;
+    expect(element.shadowRoot?.querySelector('.lightbox-backdrop')).toBeNull();
+  });
+
+  it('does not dismiss the lightbox when the enlarged image itself is clicked', async () => {
+    await openLightbox();
+    const full = element.shadowRoot?.querySelector(
+      '.lightbox-backdrop img.lightbox-image'
+    ) as HTMLImageElement;
+    full.click();
+    await element.updateComplete;
+    expect(element.shadowRoot?.querySelector('.lightbox-backdrop')).toBeTruthy();
+  });
+
+  it('dismisses the lightbox via the explicit close control', async () => {
+    await openLightbox();
+    const closeBtn = element.shadowRoot?.querySelector('.lightbox-close') as HTMLElement;
+    closeBtn.click();
+    await element.updateComplete;
+    expect(element.shadowRoot?.querySelector('.lightbox-backdrop')).toBeNull();
+  });
+
+  it('dismisses the lightbox on Escape and intercepts the key from the dialog', async () => {
+    await openLightbox();
+    const closeSpy = vi.fn();
+    element.addEventListener('close', closeSpy);
+
+    const ev = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    window.dispatchEvent(ev);
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.querySelector('.lightbox-backdrop')).toBeNull();
+    expect(ev.defaultPrevented).toBe(true);
+    expect(closeSpy).not.toHaveBeenCalled();
+    expect(element.open).toBe(true);
+  });
+
   it('renders history list with compact rows', async () => {
     element.dialogState = { growspaceId: 'gs1' };
     element.open = true;
@@ -433,7 +615,7 @@ describe('Vision Checkup tab', () => {
   });
 
   it('shows empty state when no vision history', async () => {
-    mockSnapshotsActions.visionHistory = vi.fn().mockResolvedValue({ history: [], total: 0 });
+    vi.mocked(cameraSlice.getVisionHistory).mockResolvedValue({ history: [], total: 0 } as any);
     element.dialogState = { growspaceId: 'gs1' };
     element.open = true;
     await element.updateComplete;
@@ -449,7 +631,7 @@ describe('Vision Checkup tab', () => {
 
   it('Run Checkup Now button calls triggerVisionCheckup and refreshes', async () => {
     const mockResult = { ...mockVisionHistory[0] };
-    mockSnapshotsActions.triggerCheckup = vi.fn().mockResolvedValue(mockResult);
+    vi.mocked(cameraSlice.triggerVisionCheckup).mockResolvedValue(mockResult as any);
     element.dialogState = { growspaceId: 'gs1' };
     element.open = true;
     await element.updateComplete;
@@ -462,12 +644,12 @@ describe('Vision Checkup tab', () => {
     await element.updateComplete;
     await new Promise(resolve => setTimeout(resolve, 0));
 
-    expect(mockSnapshotsActions.triggerCheckup).toHaveBeenCalledWith('gs1');
-    expect(mockSnapshotsActions.visionHistory).toHaveBeenCalled();
+    expect(vi.mocked(cameraSlice.triggerVisionCheckup)).toHaveBeenCalledWith('gs1');
+    expect(vi.mocked(cameraSlice.getVisionHistory)).toHaveBeenCalled();
   });
 
   it('handles error from triggerVisionCheckup', async () => {
-    mockSnapshotsActions.triggerCheckup = vi.fn().mockRejectedValue(new Error('No cameras'));
+    vi.mocked(cameraSlice.triggerVisionCheckup).mockRejectedValue(new Error('No cameras'));
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     element.dialogState = { growspaceId: 'gs1' };
     element.open = true;

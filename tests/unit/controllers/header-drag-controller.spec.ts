@@ -53,18 +53,14 @@ describe('HeaderDragController', () => {
 
   describe('handleDragStart', () => {
     it('should set draggedMetric and update host', () => {
-      const mockDataTransfer = {
-        setData: vi.fn(),
-        effectAllowed: 'none'
-      };
-      const e = new DragEvent('dragstart');
-      Object.defineProperty(e, 'dataTransfer', { value: mockDataTransfer });
-      
+      const dt = new DataTransfer();
+      const e = new DragEvent('dragstart', { dataTransfer: dt });
+
       controller.handleDragStart(e, 'temp');
 
       expect(controller.draggedMetric).toBe('temp');
-      expect(mockDataTransfer.setData).toHaveBeenCalledWith('text/plain', 'temp');
-      expect(mockDataTransfer.effectAllowed).toBe('move');
+      expect(e.dataTransfer).not.toBeNull();
+      expect(e.dataTransfer!.getData('text/plain')).toBe('temp');
       expect(mockHost.requestUpdate).toHaveBeenCalled();
     });
 

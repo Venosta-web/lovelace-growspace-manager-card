@@ -7,6 +7,7 @@ const FIELD_LABELS: Record<string, string> = {
   keyboard_rotate_enabled: 'Keyboard Rotation (3D View)',
   keyboard_rotate_speed: 'Rotation Speed',
   default_view: 'Default View',
+  hidden_chips: 'Hidden Chips',
 };
 
 export const computeEditorLabel = (schema: { name: string }): string =>

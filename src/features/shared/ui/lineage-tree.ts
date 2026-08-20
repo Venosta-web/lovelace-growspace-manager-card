@@ -2,18 +2,6 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { LineageNode } from '../../plants/types';
 
-const SEX_SYMBOLS: Record<string, string> = {
-  female: '♀',
-  male: '♂',
-  hermaphrodite: '⚥',
-};
-
-const SEX_COLORS: Record<string, string> = {
-  female: '#4caf50',
-  male: '#2196f3',
-  hermaphrodite: '#ff9800',
-};
-
 @customElement('lineage-tree')
 export class LineageTree extends LitElement {
   @property({ attribute: false }) node: LineageNode | null = null;
@@ -24,7 +12,7 @@ export class LineageTree extends LitElement {
   static override styles = css`
     :host {
       display: block;
-      font-size: 13px;
+      font-size: var(--font-size-supporting);
     }
     .tree-empty {
       color: var(--secondary-text-color);
@@ -39,8 +27,8 @@ export class LineageTree extends LitElement {
     }
     .skeleton {
       height: 36px;
-      border-radius: 8px;
-      background: var(--divider-color, #e0e0e0);
+      border-radius: var(--border-radius-sm, 8px);
+      background: var(--divider-color, rgba(255, 255, 255, 0.12));
       animation: pulse 1.4s ease-in-out infinite;
     }
     .skeleton.narrow {
@@ -80,7 +68,7 @@ export class LineageTree extends LitElement {
       transform: translateX(-50%);
       width: 2px;
       height: 12px;
-      background: var(--divider-color, #ccc);
+      background: var(--divider-color, rgba(255, 255, 255, 0.12));
     }
     .node-card {
       display: flex;
@@ -88,20 +76,18 @@ export class LineageTree extends LitElement {
       align-items: center;
       gap: 2px;
       padding: 6px 10px;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       background: var(--card-background-color, #fff);
-      border: 1px solid var(--divider-color, #e0e0e0);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
       min-width: 80px;
       text-align: center;
     }
-    .node-card.plant {
+    /* Keyed on the node's 'source'; a node without one is the genetics root. */
+    .node-card.library {
       border-color: var(--primary-color);
     }
-    .node-card.seed_batch {
-      border-color: #8bc34a;
-    }
-    .node-card.strain {
-      border-color: #9c27b0;
+    .node-card.manual {
+      border-color: var(--secondary-text-color);
       border-style: dashed;
     }
     .node-label {
@@ -111,7 +97,7 @@ export class LineageTree extends LitElement {
       word-break: break-word;
     }
     .node-phenotype {
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       color: var(--secondary-text-color);
       font-style: italic;
     }
@@ -122,16 +108,12 @@ export class LineageTree extends LitElement {
       font-size: 11px;
       color: var(--secondary-text-color);
     }
-    .sex-badge {
-      font-size: 12px;
-      font-weight: bold;
-    }
     .gen-badge {
       background: var(--primary-color);
-      color: var(--text-primary-color, #fff);
-      border-radius: 4px;
+      color: var(--on-primary);
+      border-radius: var(--border-radius-xs, 4px);
       padding: 0 4px;
-      font-size: 10px;
+      font-size: var(--font-size-xs);
     }
     .cross-label {
       font-size: 12px;
@@ -152,7 +134,7 @@ export class LineageTree extends LitElement {
     .v-line {
       width: 2px;
       height: 12px;
-      background: var(--divider-color, #ccc);
+      background: var(--divider-color, rgba(255, 255, 255, 0.12));
     }
     :host([clickable]) .node-card.ancestor {
       cursor: pointer;
@@ -174,15 +156,13 @@ export class LineageTree extends LitElement {
   }
 
   private _renderNode(node: LineageNode, depth = 0): TemplateResult {
-    const sexSymbol = node.sex && node.sex !== 'unknown' ? SEX_SYMBOLS[node.sex] : null;
-    const sexColor = node.sex ? SEX_COLORS[node.sex] : null;
     const phenotype = node.phenotype && node.phenotype !== 'default' ? node.phenotype : null;
     const isAncestor = depth > 0;
 
     return html`
       <div class="tree-level">
         <div
-          class="node-card ${node.type} ${isAncestor ? 'ancestor' : ''}"
+          class="node-card ${node.source ?? ''} ${isAncestor ? 'ancestor' : ''}"
           @click=${() => {
             if (this.clickable && isAncestor) this._emitNodeClick(node.name);
           }}
@@ -190,9 +170,6 @@ export class LineageTree extends LitElement {
           <div class="node-label">${node.name}</div>
           ${phenotype ? html`<div class="node-phenotype">${phenotype}</div>` : nothing}
           <div class="node-meta">
-            ${sexSymbol
-              ? html`<span class="sex-badge" style="color:${sexColor}">${sexSymbol}</span>`
-              : nothing}
             ${node.generation ? html`<span class="gen-badge">${node.generation}</span>` : nothing}
           </div>
         </div>
@@ -262,7 +239,7 @@ export class LineageTreeEditor extends LitElement {
   static override styles = css`
     :host {
       display: block;
-      font-size: 13px;
+      font-size: var(--font-size-supporting);
     }
     .lte-root {
       display: flex;
@@ -274,14 +251,14 @@ export class LineageTreeEditor extends LitElement {
       font-weight: 600;
       font-size: 14px;
       padding: 8px 16px;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       background: var(--primary-color);
-      color: var(--text-primary-color, #fff);
+      color: var(--on-primary);
     }
     .lte-v-line {
       width: 2px;
       height: 16px;
-      background: var(--divider-color, #ccc);
+      background: var(--divider-color, rgba(255, 255, 255, 0.12));
     }
     .lte-parents-row {
       display: flex;
@@ -294,7 +271,7 @@ export class LineageTreeEditor extends LitElement {
       align-items: center;
       gap: 4px;
       padding: 8px 12px;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm, 8px);
       border: 1px solid var(--divider-color);
       position: relative;
       min-width: 100px;
@@ -318,7 +295,7 @@ export class LineageTreeEditor extends LitElement {
       border: none;
       cursor: pointer;
       font-size: 14px;
-      color: var(--error-color, #e53935);
+      color: var(--error-color, #f44336);
       padding: 0;
     }
     .lte-add-slot {
@@ -328,7 +305,7 @@ export class LineageTreeEditor extends LitElement {
     }
     .lte-add-btn {
       padding: 6px 12px;
-      border-radius: 6px;
+      border-radius: var(--border-radius-sm, 8px);
       border: 1px dashed var(--divider-color);
       background: transparent;
       cursor: pointer;
@@ -346,7 +323,7 @@ export class LineageTreeEditor extends LitElement {
     .lte-search {
       width: 100%;
       padding: 6px 8px;
-      border-radius: 6px;
+      border-radius: var(--border-radius-sm, 8px);
       border: 1px solid var(--primary-color);
       font-size: 12px;
       box-sizing: border-box;
@@ -359,7 +336,7 @@ export class LineageTreeEditor extends LitElement {
       z-index: 100;
       background: var(--card-background-color, #fff);
       border: 1px solid var(--divider-color);
-      border-radius: 6px;
+      border-radius: var(--border-radius-sm, 8px);
       max-height: 200px;
       overflow-y: auto;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
@@ -371,7 +348,7 @@ export class LineageTreeEditor extends LitElement {
     }
     .lte-suggestion:hover {
       background: var(--primary-color);
-      color: var(--text-primary-color, #fff);
+      color: var(--on-primary);
     }
     .lte-suggestion.manual {
       font-style: italic;
@@ -399,9 +376,7 @@ export class LineageTreeEditor extends LitElement {
     return (this.node?.parents ?? []).map((p) => ({
       name: p.name,
       phenotype: p.phenotype,
-      source: ((p as unknown as Record<string, unknown>)['source'] ?? 'manual') as
-        | 'library'
-        | 'manual',
+      source: p.source ?? 'manual',
     }));
   }
 

@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { mdiClose, mdiPencil, mdiDelete, mdiChartTree } from '@mdi/js';
+import { mdiClose, mdiChartTree } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
 import { SensorGroup } from '../types';
@@ -49,7 +49,7 @@ export class SensorGroupDialog extends LitElement {
         gap: 8px;
       }
       .column-title {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         font-weight: 500;
         color: var(--secondary-text-color);
         padding-bottom: 4px;
@@ -268,7 +268,6 @@ export class SensorGroupDialog extends LitElement {
     const entities = Object.keys(this.hass.states);
     const filterByClass = (cls: string) =>
       entities.filter((e) => this.hass.states[e].attributes.device_class === cls);
-    const filterByDomain = (dom: string) => entities.filter((e) => e.startsWith(dom));
 
     return {
       temp: filterByClass('temperature').sort(),

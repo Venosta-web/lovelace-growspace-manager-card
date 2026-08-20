@@ -26,6 +26,7 @@ import { growspaceCardStyles } from '../styles/growspace-card.styles';
 import { variables } from '../styles/variables';
 
 import { GrowspaceStore } from '../store/core/growspace-store';
+import { BootstrapController } from '../controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 
 @customElement('growspace-tank-card')
@@ -36,6 +37,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
   store = new GrowspaceStore(this._sharedStore);
 
   protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
+  private _bootstrapCtrl!: BootstrapController;
 
   get selectedDevice() {
     return this._viewController.value.grid.selectedDevice;
@@ -84,16 +86,16 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
 
       .warning-badge {
         background: rgba(244, 67, 54, 0.2);
-        color: #f44336;
+        color: var(--gm-error-color);
         border: 1px solid rgba(244, 67, 54, 0.4);
-        border-radius: 20px;
+        border-radius: var(--border-radius-full, 9999px);
         padding: 3px 10px;
         font-size: 0.78rem;
         font-weight: 600;
       }
 
       .avg-badge {
-        font-size: 0.82rem;
+        font-size: var(--font-size-supporting);
         opacity: 0.5;
       }
 
@@ -112,9 +114,9 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
 
       /* Tank Visualization */
       .tank-card {
-        background: #1e1e1e;
+        background: var(--growspace-card-bg);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
+        border-radius: var(--border-radius-lg, 16px);
         padding: 16px;
         transition: all 0.3s;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -138,7 +140,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
 
       .tank-header h4 {
         margin: 0 0 4px;
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         font-weight: 500;
         color: rgba(255, 255, 255, 0.9);
       }
@@ -191,7 +193,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         width: 100%;
         height: 100%;
         background: linear-gradient(135deg, #34495e, #2c3e50);
-        border-radius: 14px;
+        border-radius: var(--border-radius-md, 12px);
         box-shadow:
           inset 2px 2px 5px rgba(255, 255, 255, 0.1),
           inset -2px -2px 5px rgba(0, 0, 0, 0.5),
@@ -212,7 +214,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         width: 126px;
         height: 10px;
         background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.2));
-        border-radius: 5px;
+        border-radius: var(--border-radius-xs, 4px);
         z-index: 2;
       }
 
@@ -243,7 +245,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         width: 78%;
         height: 68%;
         background: rgba(0, 0, 0, 0.4);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         position: relative;
         overflow: hidden;
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -256,13 +258,17 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         bottom: 0;
         width: 100%;
         height: var(--level, 0%);
-        background: linear-gradient(to bottom, #2196f3, #1976d2);
+        background: linear-gradient(to bottom, var(--secondary), var(--info-dark));
+        /* scaleY would flatten .liquid-surface and .wave, which are pinned to this
+           element's top edge. Level changes on a slow sensor cadence, so the layout
+           cost is one animation per reading. See ADR 0037. */
+        /* impeccable-disable-next-line layout-transition -- children pinned to the animated edge */
         transition: height 1s ease-out;
         opacity: 0.9;
       }
 
       .tank-card.warning .liquid {
-        background: linear-gradient(to bottom, #f44336, #d32f2f);
+        background: linear-gradient(to bottom, var(--error-color), var(--error-dark));
       }
 
       .liquid-surface {
@@ -331,7 +337,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
 
       .warning-icon {
         font-size: 0.9rem;
-        color: #ffeb3b;
+        color: var(--primary-light-color);
         animation: pulse 2s infinite;
       }
 
@@ -359,20 +365,20 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
 
       .depletion-label {
         display: inline-block;
-        font-size: 0.72rem;
-        border-radius: 10px;
+        font-size: var(--font-size-xs);
+        border-radius: var(--border-radius-md, 12px);
         padding: 2px 7px;
         margin-top: 4px;
         background: rgba(255, 255, 255, 0.07);
       }
 
       .depletion-label.depleting {
-        color: #ff9800;
+        color: var(--gm-warning-color, #ff9800);
         background: rgba(255, 152, 0, 0.1);
       }
 
       .depletion-label.refilling {
-        color: #4caf50;
+        color: var(--gm-primary-color);
         background: rgba(76, 175, 80, 0.1);
       }
     `,
@@ -381,8 +387,8 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
   protected firstUpdated() {
     if (this.hass) {
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl?.updateHass(this.hass);
     }
-    this.store.initializeSelectedDevice(this._config);
   }
 
   disconnectedCallback() {
@@ -396,6 +402,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
 
     if (changedProps.has('hass') && this.hass) {
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl?.updateHass(this.hass);
     }
   }
 
@@ -414,7 +421,12 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
   public setConfig(config: GrowspaceManagerCardConfig): void {
     if (!config) throw new Error('Invalid configuration');
     this._config = config;
-    this.store.initializeSelectedDevice(this._config);
+    if (!this._bootstrapCtrl) {
+      this._bootstrapCtrl = new BootstrapController(this, this.store.grid, this._config);
+      this.store.setRefreshCallback(() => this._bootstrapCtrl.refresh());
+    } else {
+      this._bootstrapCtrl.setCardConfig(this._config);
+    }
   }
 
   public getCardSize(): number {
@@ -452,7 +464,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
     }
 
-    const device = devices.find((d: any) => d.deviceId === selectedDevice);
+    const device = devices.find((d) => d.deviceId === selectedDevice);
     if (!device) {
       return html`<ha-card
         ><div class="error">No valid growspace selected. Please configure the card.</div></ha-card
@@ -488,7 +500,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
               ? html`
                   <div class="empty-state">
                     No irrigation tanks configured for this growspace.<br />
-                    <span style="font-size: 0.82rem; opacity: 0.7;"
+                    <span style="font-size: var(--font-size-supporting); opacity: 0.7;"
                       >Add tank sensors in Environment Settings to monitor levels.</span
                     >
                   </div>

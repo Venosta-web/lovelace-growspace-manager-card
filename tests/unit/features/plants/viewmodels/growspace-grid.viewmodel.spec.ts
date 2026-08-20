@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { atom } from 'nanostores';
+import { setDevices } from '../../../../../src/slices/grid';
 import { createGrowspaceGridViewModel } from '../../../../../src/features/plants/viewmodels/growspace-grid.viewmodel';
 import { GridOverlayMode, StatusLevel } from '../../../../../src/features/environment/constants';
 import type { PlantEntity } from '../../../../../src/types';
@@ -21,31 +22,34 @@ const makePlant = (overrides: Partial<PlantEntity['attributes']> = {}): PlantEnt
 
 const makeDevice = (overrides: Record<string, any> = {}) => ({
   deviceId: 'gs1',
+  plants: [],
   biologicalMetrics: { vpdStatus: 'ok', ...overrides.biologicalMetrics },
   ...overrides,
 });
 
-const makeStore = (deviceOverrides: Record<string, any> = {}, hassStates: Record<string, any> = {}) => ({
-  ui: {
-    $isEditMode: atom(false),
-    $selectedPlants: atom(new Set<string>()),
-    $isCompactView: atom(false),
-    $isLoading: atom(false),
-    $gridOverlayMode: atom(GridOverlayMode.NONE),
-  },
-  data: {
-    $devices: atom([makeDevice(deviceOverrides)]),
-    $strainLibrary: atom([]),
-    $nutrientPresets: atom({}),
-  },
-  hass: { states: hassStates },
-});
+const makeStore = (deviceOverrides: Record<string, any> = {}, hassStates: Record<string, any> = {}) => {
+  setDevices([makeDevice(deviceOverrides)] as any);
+  return {
+    ui: {
+      $isEditMode: atom(false),
+      $selectedPlants: atom(new Set<string>()),
+      $isCompactView: atom(false),
+      $isLoading: atom(false),
+      $gridOverlayMode: atom(GridOverlayMode.NONE),
+    },
+    hass: { states: hassStates },
+  };
+};
 
 describe('createGrowspaceGridViewModel', () => {
   let mockPlant: PlantEntity;
 
   beforeEach(() => {
     mockPlant = makePlant();
+  });
+
+  afterEach(() => {
+    setDevices([]);
   });
 
   describe('isListView', () => {

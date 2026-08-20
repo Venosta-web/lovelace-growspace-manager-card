@@ -1,3 +1,19 @@
+# Unit / Component Test Placement
+
+New tests go in one of two places depending on whether they touch the DOM:
+
+- **Pure module tests** (no `fixture()`, no Lit rendering) — co-locate next to the source
+  file: `src/foo/foo.test.ts`
+- **Component tests** (mount Lit elements via `fixture()`) — `tests/` in the matching
+  subfolder (`tests/components/`, `tests/dialogs/`, `tests/cards/`, etc.)
+
+`tests/unit/` holds legacy tests that predate this convention — don't add new tests there.
+
+The vitest config already picks up both patterns (`src/**/*.{test,spec}.ts` and
+`tests/{unit,cards,components}/**/*.{test,spec}.ts`).
+
+---
+
 # E2E Testing
 
 Playwright tests in `tests/e2e/` run against a **real Home Assistant instance** — not a
@@ -67,3 +83,37 @@ updated in place.
 - Call `callHAService(page, domain, service, data)` for all HA interactions.
 - Mirror the style of `tests/e2e/specs/vwc-strategy.spec.ts` for pure-API specs.
 - Tests run sequentially and share HA state — always reset entity state in `beforeEach`.
+
+---
+
+# Session Isolation & Merge Gates
+
+## Work in a worktree
+
+This checkout is shared by concurrent agent sessions; editing it directly has wiped
+in-flight work before. For anything beyond a trivial single-turn change:
+
+```bash
+git fetch origin
+git worktree add .worktrees/<branch-name> -b <branch-name> origin/dev
+cd .worktrees/<branch-name>
+npm ci   # node_modules is not shared across worktrees — see CLAUDE.md
+```
+
+- The pre-commit worktree guard rejects commits made in the main checkout; override
+  deliberately with `ALLOW_MAIN_CHECKOUT=1` for quick fixes only.
+- If the working tree looks wrong or edits seem to have vanished, trust `origin`,
+  not the checkout — another session may have moved HEAD.
+- Base on **fresh `dev`** (every merge auto-releases, so a day-old `dev` is stale),
+  unless the feature is explicitly stacked on another unmerged branch.
+
+## Merge gates & landing order
+
+`dev` and `main` are ruleset-protected: PR + green checks, zero required approvals,
+bypass only for the GitHub Actions app (semantic-release). Cross-repo features land
+**GSM-first** — the integration releases before the card PR merges — unless the
+change is a Backward-Safe Card Change (release-ref contract fixture parse passes;
+see `docs/adr/0029` and CONTEXT.md).
+
+Before opening or updating a PR, inspect `.github/workflows/pr-title.yml` and format the
+title as a Conventional Commit (`type(optional-scope): description`) using an allowed type.

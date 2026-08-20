@@ -13,20 +13,29 @@
  */
 
 import type { IrrigationStrategy, GrowspaceDevice } from '../types';
-import type { ECTargetRange } from '../services/types';
+import type { ECTargetRange, SteeringMode } from '../services/types';
+import type { ECRampCurve, ECRampPoint } from '../slices/nutrient';
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
 export type Phase = 'p1' | 'p2' | 'p3';
 
 export type TabId =
+  | 'overview'
   | 'schedules'
   | 'steering'
   | 'config'
   | 'tanks'
   | 'water_analytics'
   | 'drain_ec'
-  | 'ec_targets';
+  | 'substrate_ec'
+  | 'ec_ramp';
+
+// ─── Overview tab (read-only crop-steering diagnostics) ─────────────────────────
+
+export interface OverviewTabState {
+  sub: { kind: 'idle' };
+}
 
 // ─── Schedules tab ─────────────────────────────────────────────────────────────
 
@@ -63,7 +72,10 @@ export interface SchedulesTabState {
 
 // ─── Steering tab ──────────────────────────────────────────────────────────────
 
-export type SteeringSubState = { kind: 'idle' } | { kind: 'confirm-phase'; pending: Phase };
+export type SteeringSubState =
+  | { kind: 'idle' }
+  | { kind: 'confirm-phase'; pending: Phase }
+  | { kind: 'confirm-mode'; pending: SteeringMode };
 
 export interface SteeringTabState {
   draft: Partial<IrrigationStrategy>;
@@ -90,10 +102,30 @@ export interface ConfigTabState {
   sub: { kind: 'idle' };
 }
 
-// ─── Tanks tab (display only) ─────────────────────────────────────────────────
+// ─── Tanks tab ─────────────────────────────────────────────────────────────────
+
+/** The editable Tank Config facet (see CONTEXT.md "Tank Config vs Tank Levels"). */
+export interface TankDraft {
+  sensorEntity: string;
+  name: string;
+  volumeLiters: number | null;
+  warningLevel: number;
+}
+
+/**
+ * Transient inline-edit sub-state for the Tanks tab — one tank at a time,
+ * opened on demand and discarded on cancel (the Schedules `editing-*` shape,
+ * not a persistent draft). Identity is by array `index`; if a sync push
+ * reorders/removes tanks mid-edit the index can point at a different tank — a
+ * known limitation carried over from the pre-decomposition component state,
+ * tracked separately, deliberately not fixed in this refactor.
+ */
+export type TanksSubState =
+  | { kind: 'idle' }
+  | { kind: 'editing'; index: number; draft: TankDraft };
 
 export interface TanksTabState {
-  sub: { kind: 'idle' };
+  sub: TanksSubState;
 }
 
 // ─── Water analytics tab ───────────────────────────────────────────────────────
@@ -122,29 +154,69 @@ export interface DrainEcTabState {
   sub: DrainEcSubState;
 }
 
-// ─── EC Targets tab ────────────────────────────────────────────────────────────
+// ─── Substrate & EC tab ──────────────────────────────────────────────────────
+//
+// Buffered draft holds only the values saved through the dialog footer: the
+// pore-EC band (validated min ≤ max on save) and the per-stage feed-EC ranges.
+// Shot Sizing Mode, Substrate Profile, and EC Modulation persist immediately on
+// edit (ADR-0017) and are NOT part of this draft or the dirty guard.
 
-export interface EcTargetsTabState {
-  draft: ECTargetRange[];
+export interface SubstrateEcDraft {
+  ecTargetRanges: ECTargetRange[];
+  poreEcMin: number | null;
+  poreEcMax: number | null;
+}
+
+export interface SubstrateEcTabState {
+  draft: SubstrateEcDraft;
   sub: { kind: 'idle' };
+}
+
+// ─── EC Ramp tab ───────────────────────────────────────────────────────────────
+
+/**
+ * The editable EC Ramp Curve draft — the partial curve open in the inline
+ * editor. `id` is present only when editing an existing curve (absent for a
+ * new one). Point edits operate on this `points` array.
+ */
+export type EcRampCurveDraft = Partial<ECRampCurve>;
+
+/**
+ * Transient inline-edit sub-state for the EC Ramp tab — mirrors the tanks
+ * `editing` shape but as a LIST/EDIT discriminated view. In `list` the tab shows
+ * the saved curves; in `editing` it shows the form bound to `draft`. `error`
+ * carries synchronous validation copy (name required, ≥1 valid point); save and
+ * remove *rejections* surface as a root toast instead (ADR-0015).
+ */
+export type EcRampSubState =
+  | { kind: 'list' }
+  | { kind: 'editing'; draft: EcRampCurveDraft };
+
+export interface EcRampTabState {
+  sub: EcRampSubState;
+  /** Synchronous validation error for the open editor, or null. */
+  error: string | null;
 }
 
 // ─── Root SM ───────────────────────────────────────────────────────────────────
 
 export interface TabStates {
+  overview: OverviewTabState;
   schedules: SchedulesTabState;
   steering: SteeringTabState;
   config: ConfigTabState;
   tanks: TanksTabState;
   water_analytics: WaterAnalyticsTabState;
   drain_ec: DrainEcTabState;
-  ec_targets: EcTargetsTabState;
+  substrate_ec: SubstrateEcTabState;
+  ec_ramp: EcRampTabState;
 }
 
 /** Root-level overlays (not scoped to a tab). */
 export type DialogStatus =
   | { kind: 'idle' }
   | { kind: 'confirm-discard'; pendingTab: TabId }
+  | { kind: 'applying'; action: string; params: unknown }
   | { kind: 'run-now-saving' };
 
 export interface DialogSM {
@@ -199,10 +271,38 @@ export type DialogEvent =
   | { type: 'REQUEST_PHASE_CHANGE'; phase: Phase }
   | { type: 'CONFIRM_PHASE_CHANGE' }
   | { type: 'CANCEL_PHASE_CHANGE' }
+  | { type: 'REQUEST_STEERING_MODE'; mode: SteeringMode }
+  | { type: 'CANCEL_STEERING_MODE' }
   | { type: 'UPDATE_STEERING_DRAFT'; partial: Partial<IrrigationStrategy> }
 
   // ── Config ──
   | { type: 'UPDATE_CONFIG_DRAFT'; partial: Partial<ConfigDraft> }
+
+  // ── Tanks ──
+  /** Open the inline editor for the tank at `index`, seeded with its config. */
+  | { type: 'EDIT_TANK'; index: number; draft: TankDraft }
+  /** Merge a field change into the open tank draft (no-op when not editing). */
+  | { type: 'UPDATE_TANK_DRAFT'; partial: Partial<TankDraft> }
+  /** Close the inline tank editor, discarding the draft. */
+  | { type: 'CANCEL_TANK_EDIT' }
+
+  // ── EC Ramp ──
+  /** Open the editor for a brand-new curve (seeded with one default point). */
+  | { type: 'EC_RAMP_START_NEW' }
+  /** Open the editor seeded from an existing curve (deep-copied by the caller). */
+  | { type: 'EC_RAMP_EDIT_CURVE'; draft: EcRampCurveDraft }
+  /** Close the editor and return to the list. */
+  | { type: 'EC_RAMP_CANCEL_EDIT' }
+  /** Merge a field change (name/stage) into the open curve draft. */
+  | { type: 'UPDATE_EC_RAMP_CURVE'; partial: Partial<ECRampCurve> }
+  /** Append a point to the open curve draft (day/EC stepped off the last point). */
+  | { type: 'EC_RAMP_ADD_POINT' }
+  /** Remove the point at `index` from the open curve draft. */
+  | { type: 'EC_RAMP_REMOVE_POINT'; index: number }
+  /** Merge a partial into the point at `index` of the open curve draft. */
+  | { type: 'EC_RAMP_UPDATE_POINT'; index: number; partial: Partial<ECRampPoint> }
+  /** Set (or clear) the synchronous validation error for the open editor. */
+  | { type: 'SET_EC_RAMP_ERROR'; error: string | null }
 
   // ── Drain EC ──
   | { type: 'UPDATE_DRAIN_EC_DRAFT'; partial: Partial<DrainEcDraft> }
@@ -211,6 +311,20 @@ export type DialogEvent =
 
   // ── EC Targets ──
   | { type: 'UPDATE_EC_TARGETS_DRAFT'; ranges: ECTargetRange[] }
+  | { type: 'UPDATE_PORE_EC_BAND'; min: number | null; max: number | null }
+
+  // ── Mutation run (MutationRunController seam — ADR-0015) ──
+  /**
+   * A synchronous handler asks to run a mutation. Moves status to
+   * `applying { action, params }`; the MutationRunController runs the matching
+   * effect post-render. Params travel in the status — never read sub-state in
+   * the effect, it may be cleared by the time the effect runs.
+   */
+  | { type: 'SaveRequested'; action: string; params: unknown }
+  /** Effect succeeded — return to idle. No success toast (mutate() already toasts). */
+  | { type: 'SaveResolved' }
+  /** Effect rejected — return to idle and surface a transient error toast. */
+  | { type: 'SaveFailed'; action: string; error: unknown }
 
   // ── Global ──
   | { type: 'SET_TOAST'; message: string | undefined }
@@ -241,8 +355,20 @@ function defaultSteeringDraft(): Partial<IrrigationStrategy> {
     maintenanceDrybackPercent: 3.0,
     shotDurationSeconds: 15,
     shotIntervalMinutes: 15,
+    p1ShotDurationSeconds: 15,
+    p1ShotIntervalMinutes: 15,
+    p2ShotDurationSeconds: 15,
+    p2ShotIntervalMinutes: 15,
+    p1ShotVolumePercent: 4.0,
+    p2ShotVolumePercent: 4.0,
     autoLightTracking: false,
     detectedLightsOnTime: null,
+    declaredSteeringMode: null,
+    dynamicShotEnabled: true,
+    dynamicAggressiveness: 1.0,
+    dynamicRecovery: 0.1,
+    dynamicShotSizeFloor: 0.5,
+    dynamicIntervalCeiling: 1.5,
   };
 }
 
@@ -272,19 +398,33 @@ function defaultDrainEcDraft(): DrainEcDraft {
   };
 }
 
-function defaultEcTargetsDraft(): ECTargetRange[] {
+function defaultEcTargetRanges(): ECTargetRange[] {
   return EC_STAGES.map((stage) => ({ stage, minEc: 0, maxEc: 0 }));
+}
+
+function defaultSubstrateEcDraft(): SubstrateEcDraft {
+  return { ecTargetRanges: defaultEcTargetRanges(), poreEcMin: null, poreEcMax: null };
+}
+
+/** Seed the feed-EC ranges from device config, padding missing stages with zeros. */
+function ecTargetRangesFromConfig(ranges: ECTargetRange[] | undefined): ECTargetRange[] {
+  if (!ranges || ranges.length === 0) return defaultEcTargetRanges();
+  return EC_STAGES.map(
+    (stage) => ranges.find((r) => r.stage === stage) ?? { stage, minEc: 0, maxEc: 0 }
+  );
 }
 
 function defaultTabs(): TabStates {
   return {
+    overview: { sub: { kind: 'idle' } },
     schedules: { draft: defaultSchedulesDraft(), sub: { kind: 'idle' } },
     steering: { draft: defaultSteeringDraft(), phase: 'p2', sub: { kind: 'idle' } },
     config: { draft: defaultConfigDraft(), sub: { kind: 'idle' } },
     tanks: { sub: { kind: 'idle' } },
     water_analytics: { stageAggregates: null, sub: { kind: 'idle' } },
     drain_ec: { draft: defaultDrainEcDraft(), sub: { kind: 'idle' } },
-    ec_targets: { draft: defaultEcTargetsDraft(), sub: { kind: 'idle' } },
+    substrate_ec: { draft: defaultSubstrateEcDraft(), sub: { kind: 'idle' } },
+    ec_ramp: { sub: { kind: 'list' }, error: null },
   };
 }
 
@@ -324,8 +464,22 @@ function applyDeviceToSM(sm: DialogSM, device: GrowspaceDevice): DialogSM {
     maintenanceDrybackPercent: strat?.maintenanceDrybackPercent ?? 3.0,
     shotDurationSeconds: strat?.shotDurationSeconds ?? 15,
     shotIntervalMinutes: strat?.shotIntervalMinutes ?? 15,
+    p1ShotDurationSeconds: strat?.p1ShotDurationSeconds ?? strat?.shotDurationSeconds ?? 15,
+    p1ShotIntervalMinutes: strat?.p1ShotIntervalMinutes ?? strat?.shotIntervalMinutes ?? 15,
+    p2ShotDurationSeconds: strat?.p2ShotDurationSeconds ?? strat?.shotDurationSeconds ?? 15,
+    p2ShotIntervalMinutes: strat?.p2ShotIntervalMinutes ?? strat?.shotIntervalMinutes ?? 15,
+    p1ShotVolumePercent: strat?.p1ShotVolumePercent ?? 4.0,
+    p2ShotVolumePercent: strat?.p2ShotVolumePercent ?? 4.0,
+    // shotSizingMode is intentionally absent: it persists immediately on toggle
+    // (ADR-0017) and is read from the live strategy, not buffered here.
     autoLightTracking: strat?.autoLightTracking ?? false,
     detectedLightsOnTime: strat?.detectedLightsOnTime ?? null,
+    declaredSteeringMode: strat?.declaredSteeringMode ?? null,
+    dynamicShotEnabled: strat?.dynamicShotEnabled ?? true,
+    dynamicAggressiveness: strat?.dynamicAggressiveness ?? 1.0,
+    dynamicRecovery: strat?.dynamicRecovery ?? 0.1,
+    dynamicShotSizeFloor: strat?.dynamicShotSizeFloor ?? 0.5,
+    dynamicIntervalCeiling: strat?.dynamicIntervalCeiling ?? 1.5,
   };
 
   const configDraft: ConfigDraft = {
@@ -350,14 +504,11 @@ function applyDeviceToSM(sm: DialogSM, device: GrowspaceDevice): DialogSM {
     logDrainVolume: sm.tabs.drain_ec.draft.logDrainVolume,
   };
 
-  const ranges = config.ecTargetRanges;
-  const ecTargetsDraft: ECTargetRange[] =
-    ranges && ranges.length > 0
-      ? EC_STAGES.map((stage) => {
-          const found = ranges.find((r) => r.stage === stage);
-          return found ?? { stage, minEc: 0, maxEc: 0 };
-        })
-      : defaultEcTargetsDraft();
+  const substrateEcDraft: SubstrateEcDraft = {
+    ecTargetRanges: ecTargetRangesFromConfig(config.ecTargetRanges),
+    poreEcMin: strat?.poreEcTargetMin ?? null,
+    poreEcMax: strat?.poreEcTargetMax ?? null,
+  };
 
   const phase: Phase = (config.activeSteeringPhase as Phase | undefined) ?? sm.tabs.steering.phase;
 
@@ -369,7 +520,7 @@ function applyDeviceToSM(sm: DialogSM, device: GrowspaceDevice): DialogSM {
       steering: { ...sm.tabs.steering, draft: steeringDraft, phase },
       config: { ...sm.tabs.config, draft: configDraft },
       drain_ec: { ...sm.tabs.drain_ec, draft: drainEcDraft },
-      ec_targets: { ...sm.tabs.ec_targets, draft: ecTargetsDraft },
+      substrate_ec: { ...sm.tabs.substrate_ec, draft: substrateEcDraft },
     },
   };
 }
@@ -401,7 +552,27 @@ export function isSteeringDirty(sm: DialogSM, device: GrowspaceDevice): boolean 
     d.targetVwcPercent !== s.targetVwcPercent ||
     d.maintenanceDrybackPercent !== s.maintenanceDrybackPercent ||
     d.shotDurationSeconds !== s.shotDurationSeconds ||
-    d.shotIntervalMinutes !== s.shotIntervalMinutes
+    d.shotIntervalMinutes !== s.shotIntervalMinutes ||
+    // Per-phase fields fall back to the legacy shared values, mirroring hydrate,
+    // so a device predating the per-phase split is not reported as dirty.
+    (d.p1ShotDurationSeconds ?? s.shotDurationSeconds) !==
+      (s.p1ShotDurationSeconds ?? s.shotDurationSeconds) ||
+    (d.p1ShotIntervalMinutes ?? s.shotIntervalMinutes) !==
+      (s.p1ShotIntervalMinutes ?? s.shotIntervalMinutes) ||
+    (d.p2ShotDurationSeconds ?? s.shotDurationSeconds) !==
+      (s.p2ShotDurationSeconds ?? s.shotDurationSeconds) ||
+    (d.p2ShotIntervalMinutes ?? s.shotIntervalMinutes) !==
+      (s.p2ShotIntervalMinutes ?? s.shotIntervalMinutes) ||
+    (d.p1ShotVolumePercent ?? 4.0) !== (s.p1ShotVolumePercent ?? 4.0) ||
+    (d.p2ShotVolumePercent ?? 4.0) !== (s.p2ShotVolumePercent ?? 4.0) ||
+    // shotSizingMode is not buffered here (ADR-0017) — it persists immediately.
+    (d.autoLightTracking ?? false) !== (s.autoLightTracking ?? false) ||
+    (d.detectedLightsOnTime ?? null) !== (s.detectedLightsOnTime ?? null) ||
+    (d.dynamicShotEnabled ?? true) !== (s.dynamicShotEnabled ?? true) ||
+    (d.dynamicAggressiveness ?? 1.0) !== (s.dynamicAggressiveness ?? 1.0) ||
+    (d.dynamicRecovery ?? 0.1) !== (s.dynamicRecovery ?? 0.1) ||
+    (d.dynamicShotSizeFloor ?? 0.5) !== (s.dynamicShotSizeFloor ?? 0.5) ||
+    (d.dynamicIntervalCeiling ?? 1.5) !== (s.dynamicIntervalCeiling ?? 1.5)
   );
 }
 
@@ -434,17 +605,26 @@ export function isDrainEcDirty(sm: DialogSM, device: GrowspaceDevice): boolean {
   );
 }
 
-/** True if the ec_targets tab has unsaved changes relative to the device. */
-export function isEcTargetsDirty(sm: DialogSM, device: GrowspaceDevice): boolean {
-  const d = sm.tabs.ec_targets.draft;
+/**
+ * True if the substrate_ec tab's buffered draft (feed-EC ranges + pore-EC band)
+ * has unsaved changes. Shot Sizing Mode, Substrate Profile, and EC Modulation
+ * persist immediately (ADR-0017) and are deliberately excluded.
+ */
+export function isSubstrateEcDirty(sm: DialogSM, device: GrowspaceDevice): boolean {
+  const d = sm.tabs.substrate_ec.draft;
+  const strat = device.irrigationStrategy;
+  if ((d.poreEcMin ?? null) !== (strat?.poreEcTargetMin ?? null)) return true;
+  if ((d.poreEcMax ?? null) !== (strat?.poreEcTargetMax ?? null)) return true;
+
   const ranges = device.irrigationConfig?.ecTargetRanges ?? [];
+  const rows = d.ecTargetRanges;
   // When the device has no ranges, the SM initialises with all-zero defaults.
   // It is only dirty if the user has changed at least one value away from zero.
   if (ranges.length === 0) {
-    return d.some((r) => r.minEc !== 0 || r.maxEc !== 0);
+    return rows.some((r) => r.minEc !== 0 || r.maxEc !== 0);
   }
-  if (d.length !== ranges.length) return true;
-  return d.some((dr) => {
+  if (rows.length !== ranges.length) return true;
+  return rows.some((dr) => {
     const deviceRange = ranges.find((r) => r.stage === dr.stage);
     return !deviceRange || deviceRange.minEc !== dr.minEc || deviceRange.maxEc !== dr.maxEc;
   });
@@ -464,8 +644,8 @@ export function isActiveTabDirty(sm: DialogSM, device: GrowspaceDevice): boolean
       return isConfigDirty(sm, device);
     case 'drain_ec':
       return isDrainEcDirty(sm, device);
-    case 'ec_targets':
-      return isEcTargetsDirty(sm, device);
+    case 'substrate_ec':
+      return isSubstrateEcDirty(sm, device);
     default:
       return false;
   }
@@ -547,25 +727,42 @@ function resetActiveTabDraft(sm: DialogSM, device: GrowspaceDevice): TabStates {
           sub: { kind: 'idle' },
         },
       };
-    case 'ec_targets': {
-      const ranges = config.ecTargetRanges;
+    case 'substrate_ec':
       return {
         ...sm.tabs,
-        ec_targets: {
-          draft:
-            ranges && ranges.length > 0
-              ? EC_STAGES.map((stage) => {
-                  const found = ranges.find((r) => r.stage === stage);
-                  return found ?? { stage, minEc: 0, maxEc: 0 };
-                })
-              : defaultEcTargetsDraft(),
+        substrate_ec: {
+          draft: {
+            ecTargetRanges: ecTargetRangesFromConfig(config.ecTargetRanges),
+            poreEcMin: strat?.poreEcTargetMin ?? null,
+            poreEcMax: strat?.poreEcTargetMax ?? null,
+          },
           sub: { kind: 'idle' },
         },
       };
-    }
     default:
       return sm.tabs;
   }
+}
+
+// ─── Mutation error messages ──────────────────────────────────────────────────
+
+/**
+ * Per-action error toast copy for `SaveFailed`. Keeps the user-facing failure
+ * message in the pure SM (action -> message) so the controller stays
+ * dialog-agnostic and effects carry no UI strings.
+ */
+const ACTION_ERROR_MESSAGES: Record<string, string> = {
+  'save-all': 'Failed to save irrigation settings',
+  'save-settings': 'Failed to save irrigation settings',
+  'run-now': 'Failed to run irrigation cycle',
+  'edit-irrigation-time': 'Failed to save irrigation time',
+  'edit-drain-time': 'Failed to save drain time',
+  'save-ec-ramp-curve': 'Failed to save EC ramp curve',
+  'remove-ec-ramp-curve': 'Failed to delete EC ramp curve',
+};
+
+export function actionErrorMessage(action: string): string {
+  return ACTION_ERROR_MESSAGES[action] ?? 'Operation failed';
 }
 
 // ─── Transition function ────────────────────────────────────────────────────────
@@ -593,6 +790,12 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
             sm.activeTab === 'schedules'
               ? { ...sm.tabs.schedules, sub: { kind: 'idle' } }
               : sm.tabs.schedules,
+          // Reset the EC Ramp tab to its list view when leaving it, so re-entering
+          // never reopens a stale editor draft (replaces the old willUpdate reset).
+          ec_ramp:
+            sm.activeTab === 'ec_ramp'
+              ? { sub: { kind: 'list' }, error: null }
+              : sm.tabs.ec_ramp,
         },
       };
 
@@ -817,6 +1020,27 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
         },
       };
 
+    case 'REQUEST_STEERING_MODE':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          steering: {
+            ...sm.tabs.steering,
+            sub: { kind: 'confirm-mode', pending: event.mode },
+          },
+        },
+      };
+
+    case 'CANCEL_STEERING_MODE':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          steering: { ...sm.tabs.steering, sub: { kind: 'idle' } },
+        },
+      };
+
     case 'UPDATE_STEERING_DRAFT':
       return {
         ...sm,
@@ -841,6 +1065,138 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
             draft: { ...sm.tabs.config.draft, ...event.partial },
           },
         },
+      };
+
+    // ── Tanks ────────────────────────────────────────────────────────────────
+
+    case 'EDIT_TANK':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          tanks: { sub: { kind: 'editing', index: event.index, draft: event.draft } },
+        },
+      };
+
+    case 'UPDATE_TANK_DRAFT': {
+      const sub = sm.tabs.tanks.sub;
+      if (sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          tanks: { sub: { ...sub, draft: { ...sub.draft, ...event.partial } } },
+        },
+      };
+    }
+
+    case 'CANCEL_TANK_EDIT':
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, tanks: { sub: { kind: 'idle' } } },
+      };
+
+    // ── EC Ramp ──────────────────────────────────────────────────────────────
+
+    case 'EC_RAMP_START_NEW':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          ec_ramp: {
+            sub: {
+              kind: 'editing',
+              draft: { name: '', stage: 'flower', points: [{ day: 1, target_ec: 1.0 }] },
+            },
+            error: null,
+          },
+        },
+      };
+
+    case 'EC_RAMP_EDIT_CURVE':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          ec_ramp: { sub: { kind: 'editing', draft: event.draft }, error: null },
+        },
+      };
+
+    case 'EC_RAMP_CANCEL_EDIT':
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, ec_ramp: { sub: { kind: 'list' }, error: null } },
+      };
+
+    case 'UPDATE_EC_RAMP_CURVE': {
+      const sub = sm.tabs.ec_ramp.sub;
+      if (sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          ec_ramp: {
+            ...sm.tabs.ec_ramp,
+            sub: { ...sub, draft: { ...sub.draft, ...event.partial } },
+          },
+        },
+      };
+    }
+
+    case 'EC_RAMP_ADD_POINT': {
+      const sub = sm.tabs.ec_ramp.sub;
+      if (sub.kind !== 'editing') return sm;
+      const points = [...(sub.draft.points ?? [])];
+      const lastDay = points.length > 0 ? points[points.length - 1].day : 0;
+      const lastEc = points.length > 0 ? points[points.length - 1].target_ec : 1.0;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          ec_ramp: {
+            ...sm.tabs.ec_ramp,
+            sub: {
+              ...sub,
+              draft: { ...sub.draft, points: [...points, { day: lastDay + 7, target_ec: lastEc + 0.2 }] },
+            },
+          },
+        },
+      };
+    }
+
+    case 'EC_RAMP_REMOVE_POINT': {
+      const sub = sm.tabs.ec_ramp.sub;
+      if (sub.kind !== 'editing') return sm;
+      const points = [...(sub.draft.points ?? [])];
+      points.splice(event.index, 1);
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          ec_ramp: { ...sm.tabs.ec_ramp, sub: { ...sub, draft: { ...sub.draft, points } } },
+        },
+      };
+    }
+
+    case 'EC_RAMP_UPDATE_POINT': {
+      const sub = sm.tabs.ec_ramp.sub;
+      if (sub.kind !== 'editing') return sm;
+      const points = [...(sub.draft.points ?? [])];
+      if (event.index < 0 || event.index >= points.length) return sm;
+      points[event.index] = { ...points[event.index], ...event.partial };
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          ec_ramp: { ...sm.tabs.ec_ramp, sub: { ...sub, draft: { ...sub.draft, points } } },
+        },
+      };
+    }
+
+    case 'SET_EC_RAMP_ERROR':
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, ec_ramp: { ...sm.tabs.ec_ramp, error: event.error } },
       };
 
     // ── Drain EC ─────────────────────────────────────────────────────────────
@@ -888,11 +1244,50 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
         ...sm,
         tabs: {
           ...sm.tabs,
-          ec_targets: {
-            ...sm.tabs.ec_targets,
-            draft: event.ranges,
+          substrate_ec: {
+            ...sm.tabs.substrate_ec,
+            draft: { ...sm.tabs.substrate_ec.draft, ecTargetRanges: event.ranges },
           },
         },
+      };
+
+    case 'UPDATE_PORE_EC_BAND':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          substrate_ec: {
+            ...sm.tabs.substrate_ec,
+            draft: { ...sm.tabs.substrate_ec.draft, poreEcMin: event.min, poreEcMax: event.max },
+          },
+        },
+      };
+
+    // ── Mutation run (ADR-0015) ───────────────────────────────────────────────
+
+    case 'SaveRequested':
+      // Clear any inline schedule-editing sub-state up front: inline-edit
+      // handlers used to CANCEL_INLINE before awaiting. The params the effect
+      // needs travel in `status.params`, not in this (now-cleared) sub-state.
+      return {
+        ...sm,
+        status: { kind: 'applying', action: event.action, params: event.params },
+        tabs: {
+          ...sm.tabs,
+          schedules: { ...sm.tabs.schedules, sub: { kind: 'idle' } },
+        },
+      };
+
+    case 'SaveResolved':
+      // No success toast — the irrigation mutators go through mutate(), whose
+      // listener already shows a success+Undo toast (see growspace-manager-card).
+      return { ...sm, status: { kind: 'idle' } };
+
+    case 'SaveFailed':
+      return {
+        ...sm,
+        status: { kind: 'idle' },
+        toast: actionErrorMessage(event.action),
       };
 
     // ── Global ───────────────────────────────────────────────────────────────

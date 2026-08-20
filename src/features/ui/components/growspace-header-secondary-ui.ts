@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { HeaderChip } from '../../../utils/metrics-utils';
+import { HeaderChip } from '../../../slices/header-metrics';
 import { NutrientInventory } from '../../../types';
 import { MetricKey } from '../../environment/constants';
 import type { FlowerFlipInfo } from '../../../utils/flower-flip';
@@ -20,10 +20,7 @@ export class GrowspaceHeaderSecondaryUI extends LitElement {
   @property({ type: String }) public growspaceId = '';
 
   private get _chipDraggable(): string {
-    if (this.isMobile) {
-      return this.mobileLink.toString();
-    }
-    return 'true';
+    return 'false';
   }
 
   private _handleChipDragStart(e: DragEvent, metric: string) {
@@ -94,6 +91,8 @@ export class GrowspaceHeaderSecondaryUI extends LitElement {
                 .active=${chip.active}
                 .linked=${chip.linked}
                 .tooltip=${chip.tooltip}
+                .toggle=${true}
+                .actionLabel=${`Toggle ${chip.label} graph`}
                 draggable="${this._chipDraggable}"
                 @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
                 @dragover=${(e: DragEvent) => e.preventDefault()}

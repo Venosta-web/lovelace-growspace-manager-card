@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GrowspaceLogbook } from '../../../../src/features/shared/ui/growspace-logbook';
 import { GrowspaceEvent } from '../../../../src/types';
+import { token } from '../../../../src/styles/variables';
 
 // vi.mock is hoisted — use vi.hoisted() to share refs between factory and tests
 const { mockFetchGrowspaceEvents } = vi.hoisted(() => ({
@@ -255,8 +256,14 @@ describe('GrowspaceLogbook', () => {
         });
 
         it('should return correct color for environmental_report', () => {
-            expect((element as any)._getEventColor('environmental_report', 'Day Report')).toBe('#ffc107');
-            expect((element as any)._getEventColor('environmental_report', 'night_report')).toBe('#3f51b5');
+            // ADR 0042 §2: the day/night pair is one documented pair now, so assert on the
+            // token rather than the hex it happens to resolve to.
+            expect((element as any)._getEventColor('environmental_report', 'Day Report')).toBe(
+                `var(--cycle-day, ${token['--cycle-day']})`
+            );
+            expect((element as any)._getEventColor('environmental_report', 'night_report')).toBe(
+                `var(--cycle-night, ${token['--cycle-night']})`
+            );
         });
 
         describe('Lifecycle Coverage', () => {
@@ -678,6 +685,23 @@ describe('GrowspaceLogbook', () => {
             // < 0.75 -> error
             expect((element as any)._getSeverityColor(0.5, 'optimal')).toContain('error');
             expect((element as any)._getSeverityColor(0, 'optimal')).toContain('error');
+        });
+
+        it('should return correct colors for positive-direction sensor types (irrigation/water/drain/nutrient)', () => {
+            // Positive-direction: High severity = Good outcome (Success), like 'optimal'
+
+            // >= 0.9 -> success
+            expect((element as any)._getSeverityColor(0.95, 'irrigation')).toContain('success');
+            expect((element as any)._getSeverityColor(0.9, 'watering')).toContain('success');
+            expect((element as any)._getSeverityColor(0.9, 'water')).toContain('success');
+            expect((element as any)._getSeverityColor(0.9, 'drain')).toContain('success');
+            expect((element as any)._getSeverityColor(0.9, 'nutrient')).toContain('success');
+
+            // >= 0.75 -> warning
+            expect((element as any)._getSeverityColor(0.8, 'irrigation')).toContain('warning');
+
+            // < 0.75 -> error
+            expect((element as any)._getSeverityColor(0.5, 'irrigation')).toContain('error');
         });
 
         it('should return correct colors for default sensor types', () => {

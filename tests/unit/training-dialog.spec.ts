@@ -24,7 +24,7 @@ interface MockStore {
     openBatchTrainingDialog: any;
 }
 
-const createMockHass = (): Partial<HomeAssistant> => ({
+const aMinimalHass = (): Partial<HomeAssistant> => ({
     callService: vi.fn().mockResolvedValue(undefined),
     connection: {
         sendMessagePromise: vi.fn().mockResolvedValue({}),
@@ -64,7 +64,7 @@ describe('TrainingDialog', () => {
 
     beforeEach(async () => {
         mockStore = createMockStore();
-        mockHass = createMockHass();
+        mockHass = aMinimalHass();
 
         // Provide contexts
         new ContextProvider(document.body, hassContext, mockHass as any);

@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+import { userEvent } from 'vitest/browser';
 import { GrowspaceHeaderActionsUI } from './growspace-header-actions-ui';
 import './growspace-header-actions-ui';
 
@@ -8,22 +9,6 @@ for (const tag of mockTags) {
   if (!customElements.get(tag)) {
     customElements.define(tag, class extends HTMLElement {});
   }
-}
-
-function makeDevice(overrides: Record<string, unknown> = {}) {
-  return {
-    irrigationConfig: {
-      irrigationPumpEntity: '',
-      drainPumpEntity: '',
-      irrigationTimes: [] as string[],
-    },
-    environmentAttributes: {
-      feedEcSensors: [] as string[],
-      runoffEcSensors: [] as string[],
-      substrateEcSensors: [] as string[],
-    },
-    ...overrides,
-  };
 }
 
 function createElement(props: Partial<GrowspaceHeaderActionsUI> = {}): GrowspaceHeaderActionsUI {
@@ -37,138 +22,40 @@ function createElement(props: Partial<GrowspaceHeaderActionsUI> = {}): Growspace
 // ---------------------------------------------------------------------------
 
 describe('GrowspaceHeaderActionsUI – _chipDraggable', () => {
-  it('returns "true" on desktop regardless of mobileLink', () => {
-    const el = createElement({ isMobile: false, mobileLink: false });
-    expect((el as any)._chipDraggable).toBe('true');
-  });
-
-  it('returns "false" on mobile when mobileLink is off', () => {
-    const el = createElement({ isMobile: true, mobileLink: false });
+  it('keeps metric dragging disabled outside the guided Compare flow', () => {
+    const el = createElement({ isMobile: false, mobileLink: true });
     expect((el as any)._chipDraggable).toBe('false');
-  });
-
-  it('returns "true" on mobile when mobileLink is on', () => {
-    const el = createElement({ isMobile: true, mobileLink: true });
-    expect((el as any)._chipDraggable).toBe('true');
   });
 });
 
 // ---------------------------------------------------------------------------
-// _showECRamp
+// EC Ramp Curves menu item removal
 // ---------------------------------------------------------------------------
 
-describe('GrowspaceHeaderActionsUI – _showECRamp', () => {
-  it('returns false when device is undefined', () => {
-    const el = createElement();
-    expect((el as any)._showECRamp()).toBe(false);
-  });
-
-  it('returns false when pump present but no schedule', () => {
-    const el = createElement({
-      device: makeDevice({
-        irrigationConfig: {
-          irrigationPumpEntity: 'switch.pump',
-          drainPumpEntity: '',
-          irrigationTimes: [],
-        },
-        environmentAttributes: {
-          feedEcSensors: ['sensor.ec'],
-          runoffEcSensors: [],
-          substrateEcSensors: [],
-        },
-      }) as any,
-    });
-    expect((el as any)._showECRamp()).toBe(false);
-  });
-
-  it('returns false when pump and schedule present but no EC sensor', () => {
-    const el = createElement({
-      device: makeDevice({
-        irrigationConfig: {
-          irrigationPumpEntity: 'switch.pump',
-          drainPumpEntity: '',
-          irrigationTimes: ['08:00'],
-        },
-        environmentAttributes: {
-          feedEcSensors: [],
-          runoffEcSensors: [],
-          substrateEcSensors: [],
-        },
-      }) as any,
-    });
-    expect((el as any)._showECRamp()).toBe(false);
-  });
-
-  it('returns true with irrigation pump, schedule, and feed EC sensor', () => {
-    const el = createElement({
-      device: makeDevice({
-        irrigationConfig: {
-          irrigationPumpEntity: 'switch.pump',
-          drainPumpEntity: '',
-          irrigationTimes: ['08:00'],
-        },
-        environmentAttributes: {
-          feedEcSensors: ['sensor.feed_ec'],
-          runoffEcSensors: [],
-          substrateEcSensors: [],
-        },
-      }) as any,
-    });
-    expect((el as any)._showECRamp()).toBe(true);
-  });
-
-  it('returns true with drain pump, schedule, and runoff EC sensor', () => {
-    const el = createElement({
-      device: makeDevice({
-        irrigationConfig: {
-          irrigationPumpEntity: '',
-          drainPumpEntity: 'switch.drain',
-          irrigationTimes: ['08:00'],
-        },
-        environmentAttributes: {
-          feedEcSensors: [],
-          runoffEcSensors: ['sensor.runoff_ec'],
-          substrateEcSensors: [],
-        },
-      }) as any,
-    });
-    expect((el as any)._showECRamp()).toBe(true);
-  });
-
-  it('returns true with substrate EC sensor', () => {
-    const el = createElement({
-      device: makeDevice({
-        irrigationConfig: {
-          irrigationPumpEntity: 'switch.pump',
-          drainPumpEntity: '',
-          irrigationTimes: ['08:00'],
-        },
-        environmentAttributes: {
-          feedEcSensors: [],
-          runoffEcSensors: [],
-          substrateEcSensors: ['sensor.substrate_ec'],
-        },
-      }) as any,
-    });
-    expect((el as any)._showECRamp()).toBe(true);
-  });
-
-  it('returns false when no pump entity is set', () => {
-    const el = createElement({
-      device: makeDevice({
-        irrigationConfig: {
-          irrigationPumpEntity: '',
-          drainPumpEntity: '',
-          irrigationTimes: ['08:00'],
-        },
-        environmentAttributes: {
-          feedEcSensors: ['sensor.ec'],
-          runoffEcSensors: [],
-          substrateEcSensors: [],
-        },
-      }) as any,
-    });
-    expect((el as any)._showECRamp()).toBe(false);
+describe('GrowspaceHeaderActionsUI – EC Ramp Curves menu item', () => {
+  it('never appears in the menu even when device has pump, schedule, and EC sensors', async () => {
+    const el = await fixture<GrowspaceHeaderActionsUI>(html`
+      <growspace-header-actions-ui
+        .isMobile=${false}
+        .device=${{
+          irrigationConfig: {
+            irrigationPumpEntity: 'switch.pump',
+            drainPumpEntity: '',
+            irrigationTimes: ['08:00'],
+          },
+          environmentAttributes: {
+            feedEcSensors: ['sensor.feed_ec'],
+            runoffEcSensors: [],
+            bulkEcSensors: [],
+            poreEcSensors: [],
+          },
+        }}
+      ></growspace-header-actions-ui>
+    `);
+    const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map((i) =>
+      i.textContent?.trim()
+    );
+    expect(labels).not.toContain('EC Ramp Curves');
   });
 });
 
@@ -203,13 +90,23 @@ describe('GrowspaceHeaderActionsUI – desktop render', () => {
     expect(labels).toContain('Settings');
   });
 
-  it('renders edit button on desktop', async () => {
+  it('replaces the Edit Mode icon with named task entries in the overflow menu', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isMobile=${false}></growspace-header-actions-ui>
+      <growspace-header-actions-ui
+        .isMobile=${false}
+        .canArrange=${true}
+        .canCompare=${true}
+        .device=${{ plants: [{}] }}
+      ></growspace-header-actions-ui>
     `);
-    const buttons = el.shadowRoot!.querySelectorAll('.icon-button');
-    const labels = Array.from(buttons).map((b) => (b as HTMLElement).title);
-    expect(labels).toContain('Edit Mode');
+    const toolbarLabels = Array.from(el.shadowRoot!.querySelectorAll('.icon-button')).map(
+      (button) => (button as HTMLElement).title
+    );
+    const taskLabels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map((item) =>
+      item.textContent?.trim()
+    );
+    expect(toolbarLabels).not.toContain('Edit Mode');
+    expect(taskLabels).toEqual(expect.arrayContaining(['Arrange', 'Compare', 'Select plants']));
   });
 
   it('does not show Growspace menu section on desktop', async () => {
@@ -232,11 +129,11 @@ describe('GrowspaceHeaderActionsUI – mobile render', () => {
     expect(el.shadowRoot!.querySelector('.gs-device-chips-container')).toBeNull();
   });
 
-  it('renders mobile-link toggle button on mobile', async () => {
+  it('does not render the hidden mobile link-mode toggle', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui .isMobile=${true}></growspace-header-actions-ui>
     `);
-    expect(el.shadowRoot!.querySelector('.mobile-link')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('.mobile-link')).toBeNull();
   });
 
   it('does not render heatmap and settings as toolbar icon buttons on mobile', async () => {
@@ -249,55 +146,27 @@ describe('GrowspaceHeaderActionsUI – mobile render', () => {
     expect(labels).not.toContain('Settings');
   });
 
-  it('still renders edit button on mobile', async () => {
+  it('does not render the hidden Edit Mode button on mobile', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui .isMobile=${true}></growspace-header-actions-ui>
     `);
     const buttons = el.shadowRoot!.querySelectorAll('.icon-button');
     const labels = Array.from(buttons).map((b) => (b as HTMLElement).title);
-    expect(labels).toContain('Edit Mode');
+    expect(labels).not.toContain('Edit Mode');
   });
 
-  it('shows Growspace menu section with Settings and Heatmap on mobile', async () => {
+  it('groups mobile Settings and Heatmap under Setup and Insights', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui .isMobile=${true}></growspace-header-actions-ui>
     `);
     const headers = el.shadowRoot!.querySelectorAll('.menu-header');
     const headerTexts = Array.from(headers).map((h) => h.textContent?.trim());
-    expect(headerTexts).toContain('Growspace');
+    expect(headerTexts).toEqual(['Plant care', 'Setup', 'Insights']);
 
     const items = el.shadowRoot!.querySelectorAll('.menu-item .menu-item-label');
     const itemTexts = Array.from(items).map((i) => i.textContent?.trim());
     expect(itemTexts).toContain('Settings');
     expect(itemTexts).toContain('3D Heatmap');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// mobile-link toggle button state
-// ---------------------------------------------------------------------------
-
-describe('GrowspaceHeaderActionsUI – mobile-link button active state', () => {
-  it('applies active class when mobileLink is true', async () => {
-    const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui
-        .isMobile=${true}
-        .mobileLink=${true}
-      ></growspace-header-actions-ui>
-    `);
-    const btn = el.shadowRoot!.querySelector('.mobile-link');
-    expect(btn?.classList.contains('active')).toBe(true);
-  });
-
-  it('does not apply active class when mobileLink is false', async () => {
-    const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui
-        .isMobile=${true}
-        .mobileLink=${false}
-      ></growspace-header-actions-ui>
-    `);
-    const btn = el.shadowRoot!.querySelector('.mobile-link');
-    expect(btn?.classList.contains('active')).toBe(false);
   });
 });
 
@@ -308,46 +177,31 @@ describe('GrowspaceHeaderActionsUI – mobile-link button active state', () => {
 describe('GrowspaceHeaderActionsUI – events', () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it('dispatches toggle-mobile-link when mobile-link button is clicked', async () => {
+  it('dispatches the understandable task action from a native menu button', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isMobile=${true}></growspace-header-actions-ui>
-    `);
-    const events: Event[] = [];
-    el.addEventListener('toggle-mobile-link', (e) => events.push(e));
-
-    const btn = el.shadowRoot!.querySelector('.mobile-link') as HTMLButtonElement;
-    btn.click();
-
-    expect(events).toHaveLength(1);
-  });
-
-  it('dispatches action-triggered with action "edit" when edit button is clicked', async () => {
-    const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isMobile=${false}></growspace-header-actions-ui>
+      <growspace-header-actions-ui .canCompare=${true}></growspace-header-actions-ui>
     `);
     const events: CustomEvent[] = [];
     el.addEventListener('action-triggered', (e) => events.push(e as CustomEvent));
 
-    const editBtn = Array.from(el.shadowRoot!.querySelectorAll('.icon-button')).find(
-      (b) => (b as HTMLElement).title === 'Edit Mode'
-    ) as HTMLButtonElement;
-    editBtn.click();
+    const compare = Array.from(
+      el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.menu-item')
+    ).find((button) => button.textContent?.includes('Compare'))!;
+    compare.click();
 
     expect(events).toHaveLength(1);
-    expect(events[0].detail).toEqual({ action: 'edit' });
+    expect(events[0].detail).toEqual({ action: 'compare' });
   });
 
-  it('edit button has active class when isEditMode is true', async () => {
+  it('exposes the current task state to assistive technology', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui
-        .isMobile=${false}
-        .isEditMode=${true}
-      ></growspace-header-actions-ui>
+      <growspace-header-actions-ui .activeTask=${'compare'}></growspace-header-actions-ui>
     `);
-    const editBtn = Array.from(el.shadowRoot!.querySelectorAll('.icon-button')).find(
-      (b) => (b as HTMLElement).title === 'Edit Mode'
-    );
-    expect(editBtn?.classList.contains('active')).toBe(true);
+    const compare = Array.from(
+      el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.menu-item')
+    ).find((button) => button.textContent?.includes('Compare'))!;
+    expect(compare.classList.contains('active')).toBe(true);
+    expect(compare.getAttribute('aria-current')).toBe('true');
   });
 
   it('dispatches action-triggered with "water Selected" label when plants are selected', async () => {
@@ -374,5 +228,61 @@ describe('GrowspaceHeaderActionsUI – events', () => {
       i.textContent?.includes('Water Growspace')
     );
     expect(waterItem).not.toBeNull();
+  });
+});
+
+describe('GrowspaceHeaderActionsUI – overflow menu accessibility', () => {
+  it('uses menu semantics and moves focus with arrow keys', async () => {
+    const el = await fixture<GrowspaceHeaderActionsUI>(html`
+      <growspace-header-actions-ui></growspace-header-actions-ui>
+    `);
+    const trigger = el.shadowRoot!.querySelector('#menu-trigger') as HTMLButtonElement;
+    const menu = el.shadowRoot!.querySelector('#header-menu') as HTMLElement;
+    const items = Array.from(
+      menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')
+    );
+
+    expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
+    expect(menu.getAttribute('role')).toBe('menu');
+    menu.showPopover();
+    (el as any)._handleMenuToggle({ newState: 'open' });
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    expect(el.shadowRoot!.activeElement).toBe(items[0]);
+    await userEvent.keyboard('{ArrowDown}');
+    expect(el.shadowRoot!.activeElement).toBe(items[1]);
+    await userEvent.keyboard('{End}');
+    expect(el.shadowRoot!.activeElement).toBe(items[items.length - 1]);
+  });
+
+  it('closes with Escape and returns focus to the trigger', async () => {
+    const el = await fixture<GrowspaceHeaderActionsUI>(html`
+      <growspace-header-actions-ui></growspace-header-actions-ui>
+    `);
+    const trigger = el.shadowRoot!.querySelector('#menu-trigger') as HTMLButtonElement;
+
+    (el as any)._handleMenuToggle({ newState: 'open' });
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    (el as any)._handleMenuKeydown({
+      key: 'Escape',
+      currentTarget: {
+        hidePopover: () => (el as any)._handleMenuToggle({ newState: 'closed' }),
+      },
+      preventDefault: () => undefined,
+    });
+    await el.updateComplete;
+
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    expect(el.shadowRoot!.activeElement).toBe(trigger);
+  });
+
+  it('renders every overflow action as a native button', async () => {
+    const el = await fixture<GrowspaceHeaderActionsUI>(html`
+      <growspace-header-actions-ui .isMobile=${true}></growspace-header-actions-ui>
+    `);
+    const menuItems = el.shadowRoot!.querySelectorAll('[role="menuitem"]');
+    expect(menuItems.length).toBeGreaterThan(0);
+    expect(Array.from(menuItems).every((item) => item instanceof HTMLButtonElement)).toBe(true);
   });
 });

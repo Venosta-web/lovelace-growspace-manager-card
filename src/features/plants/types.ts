@@ -1,4 +1,5 @@
 import { HassEntity } from 'home-assistant-js-websocket';
+import type { PlantSlot } from '../../slices/grid/schema';
 
 // --- Enums ---
 
@@ -21,22 +22,24 @@ export enum PlantSex {
 
 export enum DehumidifierStage {
   SEEDLING = 'seedling',
+  CLONE = 'clone',
   MOTHER = 'mother',
   VEG = 'veg',
-  EARLY_FLOWER = 'early_flower',
-  MID_FLOWER = 'mid_flower',
-  LATE_FLOWER = 'late_flower',
-  DRYING = 'drying',
-  CURING = 'curing',
+  EARLY_FLOWER = 'flower_early',
+  MID_FLOWER = 'flower_mid',
+  LATE_FLOWER = 'flower_late',
+  DRY = 'dry',
+  CURE = 'cure',
 }
 
 export enum HumidifierStage {
   SEEDLING = 'seedling',
+  CLONE = 'clone',
   MOTHER = 'mother',
   VEG = 'veg',
-  EARLY_FLOWER = 'early_flower',
-  MID_FLOWER = 'mid_flower',
-  LATE_FLOWER = 'late_flower',
+  EARLY_FLOWER = 'flower_early',
+  MID_FLOWER = 'flower_mid',
+  LATE_FLOWER = 'flower_late',
   DRY = 'dry',
   CURE = 'cure',
 }
@@ -45,6 +48,7 @@ export enum GrowspaceType {
   NORMAL = 'normal',
   MOTHER = 'mother',
   CLONE = 'clone',
+  FLOWER = 'flower',
   DRY = 'dry',
   CURE = 'cure',
   VEG = 'veg',
@@ -92,61 +96,22 @@ export type PlantTimelineEvent =
 
 // --- Plant Data ---
 
-export interface RawPlantData {
-  plant_id: string;
-  entity_id: string;
-  strain: string;
-  phenotype: string;
-  stage: string;
-  row: number;
-  col: number;
-  position: string;
-
-  // Days
-  seedling_days: number;
-  mother_days: number;
-  clone_days: number;
-  veg_days: number;
-  flower_days: number;
-  dry_days: number;
-  cure_days: number;
-  days_in_stage?: number;
-
-  // Dates
-  seedling_start: string | null;
-  mother_start: string | null;
-  clone_start: string | null;
-  veg_start: string | null;
-  flower_start: string | null;
-  dry_start: string | null;
-  cure_start: string | null;
-
-  // Watering tracking
-  last_watered?: string | null;
-  last_trained?: string | null;
-  last_training_technique?: string | null;
-  last_ipm?: string | null;
-  last_ipm_type?: string | null;
-  phi_clearance_date?: string | null;
-  phi_days_remaining?: number | null;
-  days_since_last_watering: number | null;
-  events?: PlantTimelineEvent[];
-
-  // Breeding / genetics
-  sex?: PlantSex | string;
-  seed_batch_id?: string | null;
-  generation?: string;
-}
+/** The non-empty plant row emitted inside the growspace grid payload. */
+export type RawPlantData = NonNullable<PlantSlot>;
 
 export interface PlantAttributes extends RawPlantData {
   friendly_name?: string;
   growspace_id?: string;
+  days_in_stage?: number;
   planted_date?: string;
   germination_date?: string;
   flower_start_date?: string;
   harvest_date?: string;
   location?: string;
   events?: PlantTimelineEvent[];
+  sex?: PlantSex | string;
+  seed_batch_id?: string | null;
+  generation?: string;
 }
 
 export interface PlantEntity extends HassEntity {
@@ -242,19 +207,7 @@ export interface PlantDisplayData {
 
 // --- Lineage / Breeding ---
 
-export interface LineageNode {
-  /** plant_id or seed_batch_id of this node */
-  id: string;
-  /** Display name (strain name) */
-  name: string;
-  /** Phenotype name — present when not 'default'; shown alongside name in the tree */
-  phenotype?: string;
-  /** 'plant' | 'seed_batch' | 'strain' */
-  type: 'plant' | 'seed_batch' | 'strain';
-  /** Generation designation, e.g. F1, S1, BX1 */
-  generation?: string;
-  /** Sex of the plant (only for plant nodes) */
-  sex?: PlantSex | string;
-  /** Parent nodes (up to 2) */
-  parents?: LineageNode[];
-}
+// The lineage node is a wire shape, so per ADR 0031 it is described once — by
+// `LineageNodeSchema` in the genetics slice — and re-exported here for the
+// components that render it.
+export type { LineageNode } from '../../slices/genetics/schema';

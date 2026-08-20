@@ -26,6 +26,7 @@
  *   logDrainReading()            — fire-and-forget
  *   configureDrainMonitoring()   — fire-and-forget
  *   runIrrigationCycle()         — fire-and-forget
+ *   fetchCropSteeringHistory()   — fetches sensor-driven VWC/EC history for one growspace
  *
  * Action type, payload shapes, and zod schemas are private to this module.
  * Tank data absorption: this slice is the authoritative source for tank levels,
@@ -33,10 +34,23 @@
  */
 
 import { atom } from 'nanostores';
-import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../../services/types';
+import type {
+  IrrigationConfig,
+  IrrigationStrategy,
+  IrrigationTank,
+  ECTargetRange,
+} from '../../services/types';
 import { mutate } from '../../services/mutate';
-import { callService } from '../../services/hass-call';
-import type { IrrigationMode, PhaseWindows } from './schema';
+import { callService, hassCall } from '../../services/hass-call';
+import type { IrrigationMode, PhaseWindows, IrrigationAnalytics } from './schema';
+import { IrrigationAnalyticsSchema } from './schema';
+import { patchDeviceIrrigationConfig, patchDeviceStrategy } from '../grid';
+import {
+  CropSteeringHistorySchema,
+  type CropSteeringHistory,
+} from '../../schemas/api-schema';
+import { ApplySteeringModeResultSchema, type SteeringMode } from './schema';
+import { token } from '../../styles/variables';
 
 // ---------------------------------------------------------------------------
 // Atoms (public read)
@@ -45,6 +59,7 @@ import type { IrrigationMode, PhaseWindows } from './schema';
 export const irrigationConfigs$ = atom<Map<string, IrrigationConfig>>(new Map());
 export const irrigationStrategies$ = atom<Map<string, IrrigationStrategy>>(new Map());
 export const tankLevels$ = atom<Map<string, IrrigationTank[]>>(new Map());
+export const cropSteeringHistory$ = atom<Map<string, CropSteeringHistory>>(new Map());
 
 // ---------------------------------------------------------------------------
 // Bootstrap writes (called by SyncService when fresh data arrives)
@@ -109,7 +124,7 @@ export function computePhaseWindows(
       name: 'Saturation',
       start: lightsOnMin,
       end: p1End,
-      color: '#4CAF50',
+      color: token['--phase-p1'],
       target: 'Reach FC',
     },
     {
@@ -118,7 +133,7 @@ export function computePhaseWindows(
       name: 'Maintenance',
       start: p1End,
       end: p3Start,
-      color: '#2196F3',
+      color: token['--phase-p2'],
       target: 'Runoff target',
     },
     {
@@ -127,7 +142,7 @@ export function computePhaseWindows(
       name: 'Dryback',
       start: p3Start,
       end: lightsOffMin,
-      color: '#FF9800',
+      color: token['--phase-p3'],
       target: `−${strategy.maintenanceDrybackPercent ?? 3}% VWC`,
     },
   ];
@@ -223,8 +238,14 @@ export async function addIrrigationTime(
   await mutate(
     {
       type: 'addIrrigationTime',
-      optimistic: () => _patchConfig(growspaceId, { irrigationTimes: next }),
-      inverse: () => _patchConfig(growspaceId, { irrigationTimes: prev.irrigationTimes }),
+      optimistic: () => {
+        _patchConfig(growspaceId, { irrigationTimes: next });
+        patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next });
+      },
+      inverse: () => {
+        _patchConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
+        patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
+      },
       apply: () =>
         callService('growspace_manager', 'add_irrigation_time', {
           growspace_id: growspaceId,
@@ -250,8 +271,14 @@ export async function removeIrrigationTime(growspaceId: string, time: string): P
   await mutate(
     {
       type: 'removeIrrigationTime',
-      optimistic: () => _patchConfig(growspaceId, { irrigationTimes: next }),
-      inverse: () => _patchConfig(growspaceId, { irrigationTimes: prev.irrigationTimes }),
+      optimistic: () => {
+        _patchConfig(growspaceId, { irrigationTimes: next });
+        patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next });
+      },
+      inverse: () => {
+        _patchConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
+        patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
+      },
       apply: () =>
         callService('growspace_manager', 'remove_irrigation_time', {
           growspace_id: growspaceId,
@@ -280,8 +307,14 @@ export async function addDrainTime(
   await mutate(
     {
       type: 'addDrainTime',
-      optimistic: () => _patchConfig(growspaceId, { drainTimes: next }),
-      inverse: () => _patchConfig(growspaceId, { drainTimes: prev.drainTimes }),
+      optimistic: () => {
+        _patchConfig(growspaceId, { drainTimes: next });
+        patchDeviceIrrigationConfig(growspaceId, { drainTimes: next });
+      },
+      inverse: () => {
+        _patchConfig(growspaceId, { drainTimes: prev.drainTimes });
+        patchDeviceIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes });
+      },
       apply: () =>
         callService('growspace_manager', 'add_drain_time', {
           growspace_id: growspaceId,
@@ -307,8 +340,14 @@ export async function removeDrainTime(growspaceId: string, time: string): Promis
   await mutate(
     {
       type: 'removeDrainTime',
-      optimistic: () => _patchConfig(growspaceId, { drainTimes: next }),
-      inverse: () => _patchConfig(growspaceId, { drainTimes: prev.drainTimes }),
+      optimistic: () => {
+        _patchConfig(growspaceId, { drainTimes: next });
+        patchDeviceIrrigationConfig(growspaceId, { drainTimes: next });
+      },
+      inverse: () => {
+        _patchConfig(growspaceId, { drainTimes: prev.drainTimes });
+        patchDeviceIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes });
+      },
       apply: () =>
         callService('growspace_manager', 'remove_drain_time', {
           growspace_id: growspaceId,
@@ -346,15 +385,87 @@ export async function updateIrrigationStrategy(
     payload.shot_duration_seconds = updates.shotDurationSeconds;
   if (updates.shotIntervalMinutes !== undefined)
     payload.shot_interval_minutes = updates.shotIntervalMinutes;
+  if (updates.p1ShotDurationSeconds !== undefined)
+    payload.p1_shot_duration_seconds = updates.p1ShotDurationSeconds;
+  if (updates.p1ShotIntervalMinutes !== undefined)
+    payload.p1_shot_interval_minutes = updates.p1ShotIntervalMinutes;
+  if (updates.p2ShotDurationSeconds !== undefined)
+    payload.p2_shot_duration_seconds = updates.p2ShotDurationSeconds;
+  if (updates.p2ShotIntervalMinutes !== undefined)
+    payload.p2_shot_interval_minutes = updates.p2ShotIntervalMinutes;
+  if (updates.p1ShotVolumePercent !== undefined)
+    payload.p1_shot_volume_percent = updates.p1ShotVolumePercent;
+  if (updates.p2ShotVolumePercent !== undefined)
+    payload.p2_shot_volume_percent = updates.p2ShotVolumePercent;
+  if (updates.shotSizingMode !== undefined) payload.shot_sizing_mode = updates.shotSizingMode;
+  // Substrate Profile serializes to the backend's flat keys (folded into the
+  // nested substrate_profile server-side); the read side stays nested.
+  if (updates.substrateProfile !== undefined) {
+    payload.substrate_media_type = updates.substrateProfile.mediaType;
+    payload.substrate_liters_per_pot = updates.substrateProfile.litersPerPot;
+  }
+  if (updates.poreEcTargetMin !== undefined) payload.pore_ec_target_min = updates.poreEcTargetMin;
+  if (updates.poreEcTargetMax !== undefined) payload.pore_ec_target_max = updates.poreEcTargetMax;
+  if (updates.ecModulationEnabled !== undefined)
+    payload.ec_modulation_enabled = updates.ecModulationEnabled;
   if (updates.autoLightTracking !== undefined)
     payload.auto_light_tracking = updates.autoLightTracking;
+  if (updates.dynamicShotEnabled !== undefined)
+    payload.dynamic_shot_enabled = updates.dynamicShotEnabled;
+  if (updates.dynamicAggressiveness !== undefined)
+    payload.dynamic_aggressiveness = updates.dynamicAggressiveness;
+  if (updates.dynamicRecovery !== undefined) payload.dynamic_recovery = updates.dynamicRecovery;
+  if (updates.dynamicShotSizeFloor !== undefined)
+    payload.dynamic_shot_size_floor = updates.dynamicShotSizeFloor;
+  if (updates.dynamicIntervalCeiling !== undefined)
+    payload.dynamic_interval_ceiling = updates.dynamicIntervalCeiling;
 
   await mutate(
     {
       type: 'updateIrrigationStrategy',
-      optimistic: () => _patchStrategy(growspaceId, updates),
-      inverse: () => _patchStrategy(growspaceId, prev),
+      // Patch both the strategy read-model atom and the device the dialog reads,
+      // so immediate-persist controls (sizing mode, profile, modulation) reflect
+      // optimistically without waiting for a full device sync (ADR-0017).
+      optimistic: () => {
+        _patchStrategy(growspaceId, updates);
+        patchDeviceStrategy(growspaceId, updates);
+      },
+      inverse: () => {
+        _patchStrategy(growspaceId, prev);
+        patchDeviceStrategy(growspaceId, prev);
+      },
       apply: () => callService('growspace_manager', 'set_irrigation_strategy', payload),
+    },
+    growspaceId
+  );
+}
+
+/**
+ * Stamp a Steering Mode's server-owned preset into the strategy (ADR-0012).
+ *
+ * The server owns the preset table and writes the new field values; the WS
+ * command returns only the declared mode. We optimistically reflect the
+ * selected mode so the selector highlights immediately — the stamped numeric
+ * field values arrive through the normal device sync.
+ */
+export async function applySteeringMode(
+  growspaceId: string,
+  mode: SteeringMode
+): Promise<void> {
+  const prev = _getStrategy(growspaceId);
+
+  await mutate(
+    {
+      type: 'applySteeringMode',
+      optimistic: () => _patchStrategy(growspaceId, { declaredSteeringMode: mode }),
+      inverse: () => _patchStrategy(growspaceId, prev),
+      apply: async () => {
+        await hassCall(
+          'growspace_manager/apply_steering_mode',
+          { growspace_id: growspaceId, steering_mode: mode },
+          ApplySteeringModeResultSchema
+        );
+      },
     },
     growspaceId
   );
@@ -432,11 +543,15 @@ export async function saveIrrigationSettings(
   await mutate(
     {
       type: 'saveIrrigationSettings',
-      optimistic: () => _patchConfig(growspaceId, patch),
+      optimistic: () => {
+        _patchConfig(growspaceId, patch);
+        patchDeviceIrrigationConfig(growspaceId, patch);
+      },
       inverse: () => {
         const restored = new Map(irrigationConfigs$.get());
         restored.set(growspaceId, prev);
         irrigationConfigs$.set(restored);
+        patchDeviceIrrigationConfig(growspaceId, prev);
       },
       apply: () => callService('growspace_manager', 'set_irrigation_settings', payload),
     },
@@ -483,6 +598,25 @@ export async function configureDrainMonitoring(
 }
 
 /**
+ * Set per-stage EC target ranges. One service call per range.
+ *
+ * Fire-and-forget — no optimistic update, no undo.
+ */
+export async function setEcTargetRanges(
+  growspaceId: string,
+  ranges: ECTargetRange[]
+): Promise<void> {
+  for (const r of ranges) {
+    await callService('growspace_manager', 'set_ec_target_range', {
+      growspace_id: growspaceId,
+      stage: r.stage,
+      feed_ec_min: r.minEc,
+      feed_ec_max: r.maxEc,
+    });
+  }
+}
+
+/**
  * Trigger a manual irrigation cycle.
  *
  * Fire-and-forget — no optimistic update, no undo.
@@ -492,4 +626,39 @@ export async function runIrrigationCycle(growspaceId: string, duration?: number)
   if (duration !== undefined) payload.duration = duration;
 
   await callService('growspace_manager', 'run_irrigation_cycle', payload);
+}
+
+export async function fetchCropSteeringHistory(growspaceId: string): Promise<void> {
+  const result = await hassCall(
+    'growspace_manager/get_crop_steering_history',
+    { growspace_id: growspaceId },
+    CropSteeringHistorySchema
+  );
+  const updated = new Map(cropSteeringHistory$.get());
+  updated.set(growspaceId, result);
+  cropSteeringHistory$.set(updated);
+}
+
+/**
+ * Fetch irrigation analytics for a growspace.
+ *
+ * Returns null when the backend call fails so callers can treat absent analytics
+ * the same way as the legacy IrrigationAPI.getIrrigationAnalytics (sendWebSocketSafe).
+ */
+export async function getIrrigationAnalytics(
+  growspaceId: string
+): Promise<IrrigationAnalytics | null> {
+  try {
+    return await hassCall(
+      'growspace_manager/irrigation_analytics',
+      { growspace_id: growspaceId },
+      IrrigationAnalyticsSchema
+    );
+  } catch (err) {
+    console.error(
+      '[IrrigationSlice] getIrrigationAnalytics failed:',
+      err instanceof Error ? err.message : err
+    );
+    return null;
+  }
 }

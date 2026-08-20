@@ -3,25 +3,25 @@
  *
  * Public API (atoms):
  *   devices$                  — read: all growspace devices (bootstrapped by SyncService)
- *   selectedDeviceId$         — read/write: the currently selected device ID
  *   optimisticDeletedPlantIds$ — read: plant IDs optimistically removed from the grid
  *   activeDevices$            — read: devices with optimistically deleted plants filtered out
  *   growspaceOptions$         — read: device_id → device name map for selectors
- *   gridLayout$               — read: computed grid layout for the selected device
+ *
+ * The active-growspace selection is per-card only: `makePerCardGridSlice()` mints
+ * an isolated `$selectedDevice` atom per card. There is no module-global selection
+ * (the old `selectedDeviceId$` / `gridSlice` facade were removed once every reader
+ * moved to the per-card slice — see CONTEXT.md "Active growspace" and ADR-0027).
  *
  * Public API (bootstrap writes):
  *   setDevices()              — replace the devices array (called by SyncService)
- *   setSelectedDeviceId()     — set the active device (called by cards / handleDeviceChange)
  *
- * Public API (sibling setters — called by Plant slice cross-slice mutations):
- *   addOptimisticDeletedPlantId()    — mark a plant as optimistically removed from the grid
- *   removeOptimisticDeletedPlantId() — restore a plant after a failed mutation inverse
- *   clearOptimisticDeletedPlantIds() — reset all optimistic deletes (called after a sync)
- *
- * GridSliceRef / gridSlice:
- *   A stable facade object compatible with the legacy ActionContext.grid interface.
- *   Cards and action modules may use `ctx.grid.$selectedDevice` / `ctx.grid.setSelectedDevice()`
- *   through this facade without knowing about the underlying atoms.
+ * Public API (sibling setters — called by Plant/Irrigation/Growspace slice cross-slice mutations):
+ *   addOptimisticDeletedPlantId()      — mark a plant as optimistically removed from the grid
+ *   removeOptimisticDeletedPlantId()   — restore a plant after a failed mutation inverse
+ *   clearOptimisticDeletedPlantIds()   — reset all optimistic deletes (called after a sync)
+ *   patchDeviceIrrigationConfig()      — patch one device's irrigationConfig
+ *   patchDeviceStrategy()              — patch one device's irrigationStrategy
+ *   patchDeviceEnvironmentAttributes() — patch one device's environmentAttributes
  *
  * Action type, payload shapes, and zod schemas are private to this module.
  * Cross-slice side-effects from the Plant slice are accepted via the sibling setters above.
@@ -29,6 +29,7 @@
 
 import { atom, computed, type ReadableAtom, type WritableAtom } from 'nanostores';
 import type { GrowspaceDevice, PlantEntity } from '../../types';
+import type { EnvironmentAttributes, IrrigationConfig, IrrigationStrategy } from '../../services/types';
 import { PlantUtils } from '../../utils/plant-utils';
 
 // ---------------------------------------------------------------------------
@@ -65,15 +66,6 @@ export interface GridSliceRef {
 export const devices$ = atom<GrowspaceDevice[]>([]);
 
 /**
- * The currently selected growspace device ID.
- *
- * NOTE: this is a module-level singleton.  Multiple card instances on the same
- * dashboard share this state.  Per-card selection isolation is deferred to a
- * later refactor step.
- */
-export const selectedDeviceId$ = atom<string | null>(null);
-
-/**
  * Plant IDs that have been optimistically removed from the grid by the Plant
  * slice before the backend confirms the mutation.  The Grid slice filters these
  * out of `activeDevices$` so the UI reflects the change immediately.
@@ -97,34 +89,22 @@ export const activeDevices$ = computed(
     }))
 );
 
+/** plantId → deviceId map for O(1) lookups. Derived from raw devices$ (not filtered). */
+export const plantToDeviceMap$ = computed(devices$, (devices): Map<string, string> => {
+  const map = new Map<string, string>();
+  for (const device of devices) {
+    for (const plant of device.plants) {
+      const pid = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
+      map.set(pid, device.deviceId);
+    }
+  }
+  return map;
+});
+
 /** device_id → device name map for growspace selector dropdowns. */
 export const growspaceOptions$ = computed(
   activeDevices$,
   (devices): Record<string, string> => Object.fromEntries(devices.map((d) => [d.deviceId, d.name]))
-);
-
-/** Grid layout for the currently selected device. */
-export const gridLayout$ = computed(
-  [activeDevices$, selectedDeviceId$],
-  (devices, selectedId): GridLayout => {
-    if (!selectedId) return { effectiveRows: 0, grid: [] };
-    const device = devices.find((d) => d.deviceId === selectedId);
-    if (!device) return { effectiveRows: 0, grid: [] };
-    const effectiveRows = PlantUtils.calculateEffectiveRows(device);
-    const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plantsPerRow);
-    return { effectiveRows, grid };
-  }
-);
-
-/** Combined view-state atom (one subscription covers grid + selector + device list). */
-export const gridViewState$ = computed(
-  [activeDevices$, selectedDeviceId$, gridLayout$, growspaceOptions$],
-  (devices, selectedDevice, gridLayout, growspaceOptions): GridViewState => ({
-    devices,
-    selectedDevice,
-    gridLayout,
-    growspaceOptions,
-  })
 );
 
 // ---------------------------------------------------------------------------
@@ -134,11 +114,6 @@ export const gridViewState$ = computed(
 /** Replace the full device list. Called by SyncService after every data refresh. */
 export function setDevices(devices: readonly GrowspaceDevice[]): void {
   devices$.set(devices as GrowspaceDevice[]);
-}
-
-/** Set the active growspace device. Called by cards via handleDeviceChange. */
-export function setSelectedDeviceId(id: string | null): void {
-  selectedDeviceId$.set(id);
 }
 
 // ---------------------------------------------------------------------------
@@ -173,20 +148,126 @@ export function clearOptimisticDeletedPlantIds(): void {
   optimisticDeletedPlantIds$.set(new Set());
 }
 
-// ---------------------------------------------------------------------------
-// GridSliceRef facade — backward-compatible ActionContext.grid interface
-// ---------------------------------------------------------------------------
+/**
+ * Patch a single device's irrigationConfig in place.
+ * Called by irrigation action handlers that previously called GrowspaceDataStore.patchDeviceIrrigationConfig().
+ */
+export function patchDeviceIrrigationConfig(
+  growspaceId: string,
+  patch: Partial<IrrigationConfig>
+): void {
+  const current = devices$.get();
+  const idx = current.findIndex((d) => d.deviceId === growspaceId);
+  if (idx === -1) return;
+  devices$.set(
+    current.map((d, i) =>
+      i === idx ? { ...d, irrigationConfig: { ...d.irrigationConfig, ...patch } } : d
+    )
+  );
+}
 
 /**
- * Stable facade that satisfies the `ActionContext.grid` contract used by action
- * modules (ctx.grid.$selectedDevice, ctx.grid.setSelectedDevice, etc.).
- * Pass `gridSlice` wherever `GrowspaceGridStore` was previously expected.
+ * Patch a single device's irrigationStrategy in place, mirroring
+ * patchDeviceIrrigationConfig. Lets immediate-persist strategy writes (Shot
+ * Sizing Mode, Substrate Profile, EC Modulation — ADR-0017) reflect on the
+ * device the dialog reads, so the Steering tab relabel and the toggles update
+ * optimistically rather than waiting for a full device sync.
  */
-export const gridSlice: GridSliceRef = {
-  $selectedDevice: selectedDeviceId$,
-  $growspaceOptions: growspaceOptions$,
-  $activeDevices: activeDevices$,
-  $gridLayout: gridLayout$,
-  $gridViewState: gridViewState$,
-  setSelectedDevice: setSelectedDeviceId,
-};
+export function patchDeviceStrategy(
+  growspaceId: string,
+  patch: Partial<IrrigationStrategy>
+): void {
+  const current = devices$.get();
+  const idx = current.findIndex((d) => d.deviceId === growspaceId);
+  if (idx === -1) return;
+  devices$.set(
+    current.map((d, i) =>
+      i === idx
+        ? {
+            ...d,
+            irrigationStrategy: { ...(d.irrigationStrategy ?? {}), ...patch } as IrrigationStrategy,
+          }
+        : d
+    )
+  );
+}
+
+/**
+ * Patch a single device's environmentAttributes in place.
+ * Lets immediate-persist environment controls (humidifier/dehumidifier control
+ * enable) reflect on the device the config dialog reads optimistically, rather
+ * than waiting for a full device sync to round-trip through hass.
+ */
+export function patchDeviceEnvironmentAttributes(
+  growspaceId: string,
+  patch: Partial<EnvironmentAttributes>
+): void {
+  const current = devices$.get();
+  const idx = current.findIndex((d) => d.deviceId === growspaceId);
+  if (idx === -1) return;
+  devices$.set(
+    current.map((d, i) =>
+      i === idx ? { ...d, environmentAttributes: { ...d.environmentAttributes, ...patch } } : d
+    )
+  );
+}
+
+/**
+ * Create a per-card GridSliceRef with an isolated $selectedDevice atom.
+ *
+ * Shared module atoms (devices$, optimisticDeletedPlantIds$) are the data
+ * source, so all cards see the same device list. Only selectedDevice is
+ * per-card, so carousel and standalone cards don't interfere with each other.
+ */
+export function makePerCardGridSlice(): GridSliceRef {
+  const selectedDevice$ = atom<string | null>(null);
+
+  const perCardActiveDevices$ = computed(
+    [devices$, optimisticDeletedPlantIds$],
+    (devices, deletedIds): GrowspaceDevice[] =>
+      devices.map((d) => ({
+        ...d,
+        plants: d.plants.filter((p) => {
+          const pid = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+          return !deletedIds.has(pid);
+        }),
+      }))
+  );
+
+  const perCardGrowspaceOptions$ = computed(
+    perCardActiveDevices$,
+    (devices): Record<string, string> =>
+      Object.fromEntries(devices.map((d) => [d.deviceId, d.name]))
+  );
+
+  const perCardGridLayout$ = computed(
+    [perCardActiveDevices$, selectedDevice$],
+    (devices, selectedId): GridLayout => {
+      if (!selectedId) return { effectiveRows: 0, grid: [] };
+      const device = devices.find((d) => d.deviceId === selectedId);
+      if (!device) return { effectiveRows: 0, grid: [] };
+      const effectiveRows = PlantUtils.calculateEffectiveRows(device);
+      const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plantsPerRow);
+      return { effectiveRows, grid };
+    }
+  );
+
+  const perCardGridViewState$ = computed(
+    [perCardActiveDevices$, selectedDevice$, perCardGridLayout$, perCardGrowspaceOptions$],
+    (devices, selectedDevice, gridLayout, growspaceOptions): GridViewState => ({
+      devices,
+      selectedDevice,
+      gridLayout,
+      growspaceOptions,
+    })
+  );
+
+  return {
+    $selectedDevice: selectedDevice$,
+    $growspaceOptions: perCardGrowspaceOptions$,
+    $activeDevices: perCardActiveDevices$,
+    $gridLayout: perCardGridLayout$,
+    $gridViewState: perCardGridViewState$,
+    setSelectedDevice: (id) => selectedDevice$.set(id),
+  };
+}

@@ -1,5 +1,5 @@
 import { LovelaceCardConfig } from 'custom-card-helpers';
-import { ViewMode } from '../../features/environment/constants';
+import { MetricKey, ViewMode } from '../../features/environment/constants';
 
 export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   type: string;
@@ -7,6 +7,7 @@ export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   initial_view_mode?: ViewMode;
   keyboard_rotate_enabled?: boolean;
   keyboard_rotate_speed?: number;
+  hidden_chips?: MetricKey[];
 }
 
 export interface GrowspaceLogbookCardConfig extends GrowspaceManagerCardConfig {

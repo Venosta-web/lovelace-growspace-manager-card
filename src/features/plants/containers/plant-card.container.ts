@@ -9,17 +9,22 @@ import { LitElement, html, css, type TemplateResult } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
-import { atom, type ReadableAtom } from 'nanostores';
+import { atom, computed, type ReadableAtom } from 'nanostores';
 import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
+import { activeDevices$ } from '../../../slices/grid';
 import type { PlantEntity } from '../../../types';
+import { nutrientPresets$ } from '../../../slices/nutrient';
+import { strainLibrary$ } from '../../../slices/strain';
 import { DragDropController, DragDropHost } from '../../../controllers/drag-drop-controller';
 import {
   createPlantCardViewModel,
   type PlantCardViewModel,
 } from '../viewmodels/plant-card.viewmodel';
 import { PlantCardUI } from '../components/plant-card-ui';
+import { localizeWithParams } from '../../../localize/localize';
 import '../components/plant-card-ui';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 /**
  * Container component for plant card
@@ -42,6 +47,8 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
         opacity: 0.8;
       }
     }
+
+    ${reducedMotion}
   `;
 
   // Input props
@@ -76,6 +83,10 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
     return this.viewModelController?.value?.isSelected ?? false;
   }
 
+  get isDraggable(): boolean {
+    return this.viewModelController?.value?.isDraggable ?? false;
+  }
+
   connectedCallback(): void {
     super.connectedCallback();
     if (this.plant) {
@@ -85,9 +96,10 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
       this.viewModel = createPlantCardViewModel(this.$plant, {
         $isEditMode: this.store.ui.$isEditMode,
         $selectedPlants: this.store.ui.$selectedPlants,
-        $strainLibrary: this.store.data.$strainLibrary,
-        $nutrientPresets: this.store.data.$nutrientPresets,
-        $devices: this.store.data.$devices,
+        $strainLibrary: strainLibrary$,
+        $nutrientPresets: computed([nutrientPresets$], (p) => p ?? {}),
+        $devices: activeDevices$,
+        $taskState: this.store.ui.$taskState,
       });
       this.viewModelController = new StoreController(this, this.viewModel);
     }
@@ -125,7 +137,7 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
         .isEditMode=${vm.isEditMode}
         .isDraggable=${vm.isDraggable}
         .growthDeviation=${vm.growthDeviation}
-        .ariaLabel=${vm.ariaLabel}
+        .ariaLabel=${this._ariaLabel(vm)}
         .checkboxAriaLabel=${vm.checkboxAriaLabel}
         @plant-click=${this._handlePlantClick}
         @plant-toggle-selection=${this._handleToggleSelection}
@@ -133,10 +145,30 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
     `;
   }
 
+  private _ariaLabel(vm: PlantCardViewModel): string {
+    const task = this.store.ui.$taskState?.get?.() ?? { kind: 'idle' };
+    if (task.kind !== 'arrange') return vm.ariaLabel;
+    const plantId = vm.plant.attributes?.plant_id || vm.plant.entity_id.replace('sensor.', '');
+    return localizeWithParams(
+      task.pickedPlantId === plantId
+        ? 'tasks.arrange_picked_plant_label'
+        : task.pickedPlantId
+          ? 'tasks.arrange_plant_target_label'
+          : 'tasks.arrange_plant_label',
+      {
+        plant: vm.displayData.strainName || plantId,
+        row: this.row,
+        col: this.col,
+      },
+      this.store.ui.$language?.get?.() ?? 'en'
+    );
+  }
+
   // Event handlers - dispatch actions through store
 
   private _handlePlantClick(e: CustomEvent): void {
     const { plant } = e.detail;
+    if ((this.store.ui.$taskState?.get?.() ?? { kind: 'idle' }).kind !== 'idle') return;
 
     // Open plant overview dialog
     this.store.ui.setActiveDialog({

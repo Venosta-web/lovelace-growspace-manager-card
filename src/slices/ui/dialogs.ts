@@ -1,0 +1,313 @@
+import { ConfigTab, ViewMode } from '../../constants';
+import { PlantEntity, GrowspaceDevice } from '../../types';
+import { plantToDeviceMap$, devices$, optimisticDeletedPlantIds$ } from '../grid';
+import { openDialog, setPendingDeepLink } from './index';
+import type { GrowspaceViewMode } from '../../types';
+
+/** Minimal per-card view-mode surface (a card's `store.ui`) used to drop HEADER → STANDARD. */
+interface ViewModeHost {
+  $viewMode: { get(): GrowspaceViewMode };
+  setViewMode(mode: GrowspaceViewMode): void;
+}
+
+/**
+ * Pure dialog-open helpers: each builds an `ActiveDialogState` payload and calls
+ * the UI slice `openDialog` setter. The add-plant / IPM helpers are "fetch-coupled"
+ * only by name — the dialogs self-fetch on open (CONTEXT.md "Dialog self-fetch on
+ * open"), so these are pure UI-state ops too.
+ */
+
+/** Resolve the single growspace shared by a set of plants, or undefined if mixed. */
+function getCommonGrowspaceId(plantIds: string[]): string | undefined {
+  const plantToDevice = plantToDeviceMap$.get();
+  let commonGrowspaceId: string | undefined;
+
+  for (const plantId of plantIds) {
+    const plantGrowspaceId = plantToDevice.get(plantId);
+    if (!plantGrowspaceId) continue;
+
+    if (commonGrowspaceId === undefined) {
+      commonGrowspaceId = plantGrowspaceId;
+    } else if (commonGrowspaceId !== plantGrowspaceId) {
+      return undefined; // Mixed growspaces
+    }
+  }
+
+  return commonGrowspaceId;
+}
+
+export function openPlantOverviewDialog(plant: PlantEntity, selectedIds?: string[]): void {
+  openDialog({
+    type: 'PLANT_OVERVIEW',
+    payload: {
+      plant,
+      editedAttributes: { ...plant.attributes },
+      activeTab: 'dashboard',
+      selectedPlantIds: selectedIds,
+    },
+  });
+}
+
+/**
+ * Open the add-plant dialog for `growspaceId`. With an explicit row/col, open
+ * there; otherwise pick the first empty cell of that growspace. The target is
+ * carried in the payload so the confirm handler never re-derives it from ambient
+ * selection (ADR-0027). The dialog self-fetches its strain library on open.
+ */
+export function openAddPlantDialog(growspaceId: string | null, row?: number, col?: number): void {
+  const gid = growspaceId ?? undefined;
+  if (row !== undefined && col !== undefined) {
+    openDialog({ type: 'ADD_PLANT', payload: { growspaceId: gid, row, col } });
+    return;
+  }
+
+  if (!growspaceId) return;
+
+  const device = devices$.get().find((d) => d.deviceId === growspaceId);
+  let targetRow = 0;
+  let targetCol = 0;
+
+  if (device) {
+    const deleted = optimisticDeletedPlantIds$.get();
+    const occupied = new Set<string>();
+    device.plants.forEach((p) => {
+      const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+      if (deleted.has(pId)) return;
+      const r = (p.attributes.row ?? 1) - 1;
+      const c = (p.attributes.col ?? 1) - 1;
+      occupied.add(`${r},${c}`);
+    });
+
+    const rows = device.rows || 4;
+    const cols = device.plantsPerRow || 4;
+    let found = false;
+    for (let r = 0; r < rows && !found; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (!occupied.has(`${r},${c}`)) {
+          targetRow = r;
+          targetCol = c;
+          found = true;
+          break;
+        }
+      }
+    }
+  }
+
+  openDialog({ type: 'ADD_PLANT', payload: { growspaceId: gid, row: targetRow, col: targetCol } });
+}
+
+/**
+ * Toggle an environment metric graph. `crop_steering` opens the irrigation dialog
+ * instead of a graph; other metrics toggle the per-card history graph (passed in,
+ * since it's per-card state) and drop HEADER view back to STANDARD when activated.
+ */
+export function toggleEnvGraph(
+  metric: string,
+  history?: { toggleEnvGraph(metric: string): boolean },
+  ui?: ViewModeHost,
+  growspaceId?: string | null
+): void {
+  if (metric === 'crop_steering') {
+    // Target growspace comes from the caller's per-card selection (ADR-0027),
+    // never the dead page-global selection.
+    if (growspaceId) openIrrigationDialog({ growspaceId, initialTab: 'overview' });
+    return;
+  }
+  if (!history) return;
+  const isNowActive = history.toggleEnvGraph(metric);
+  if (isNowActive && ui && ui.$viewMode.get() === ViewMode.HEADER) {
+    ui.setViewMode(ViewMode.STANDARD);
+  }
+}
+
+/** Open the IPM dialog for a growspace or a set of plants (self-fetches presets). */
+export function openIPMDialog(context?: { growspaceId?: string; plantIds?: string[] }): void {
+  // Growspace-scoped IPM must be given its target explicitly (ADR-0027); the
+  // dead page-global selection is no longer consulted. Plant-scoped calls carry
+  // plantIds and leave growspaceId undefined.
+  const growspaceId = context?.growspaceId || undefined;
+  openDialog({ type: 'IPM', payload: { growspaceId, plantIds: context?.plantIds } });
+}
+
+/**
+ * Resolve a deep link (`?plantId=`) to the plant overview dialog. When devices
+ * aren't loaded yet, stash the id as pending so a later hydration can retry.
+ */
+export function handleDeepLink(plantId: string): void {
+  const devices = devices$.get();
+  if (!devices || devices.length === 0) {
+    setPendingDeepLink(plantId);
+    return;
+  }
+
+  let foundPlant: PlantEntity | undefined;
+  for (const device of devices) {
+    if (!device.plants) continue;
+    foundPlant = device.plants.find(
+      (p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId
+    );
+    if (foundPlant) break;
+  }
+
+  if (foundPlant) {
+    openPlantOverviewDialog(foundPlant);
+    setPendingDeepLink(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('plantId');
+    window.history.replaceState({}, '', url.toString());
+  } else {
+    console.warn(`[DeepLink] Plant ${plantId} not found in current devices.`);
+    setPendingDeepLink(null);
+  }
+}
+
+export function openBatchPrintLabelsDialog(selectedIds: string[]): void {
+  if (selectedIds.length === 0) return;
+
+  openDialog({
+    type: 'BATCH_PRINT_LABELS',
+    payload: { plantIds: selectedIds },
+  });
+}
+
+export function openBatchCloneDialog(selectedIds: string[]): void {
+  if (selectedIds.length === 0) return;
+
+  openDialog({
+    type: 'BATCH_CLONE',
+    payload: { plantIds: selectedIds },
+  });
+}
+
+export function openBatchWateringDialog(selectedIds: string[], growspaceId?: string): void {
+  if (selectedIds.length === 0 && !growspaceId) return;
+
+  let targetGrowspaceId = growspaceId;
+  if (!targetGrowspaceId && selectedIds.length > 0) {
+    targetGrowspaceId = getCommonGrowspaceId(selectedIds);
+  }
+
+  openDialog({
+    type: 'WATERING',
+    payload: {
+      mode: 'plant',
+      plantIds: selectedIds,
+      growspaceId: targetGrowspaceId,
+    },
+  });
+}
+
+export function openBatchTrainingDialog(selectedIds: string[], growspaceId?: string): void {
+  if (selectedIds.length === 0 && !growspaceId) return;
+
+  let targetGrowspaceId = growspaceId;
+  if (!targetGrowspaceId && selectedIds.length > 0) {
+    targetGrowspaceId = getCommonGrowspaceId(selectedIds);
+  }
+
+  openDialog({
+    type: 'TRAINING',
+    payload: {
+      isOpen: true,
+      plantIds: selectedIds,
+      growspaceId: targetGrowspaceId,
+    },
+  });
+}
+
+export function openStrainRecommendationDialog(): void {
+  openDialog({
+    type: 'STRAIN_RECOMMENDATION',
+    payload: { isLoading: false, response: null },
+  });
+}
+
+export function openLogbookDialog(growspaceId?: string): void {
+  if (growspaceId) {
+    openDialog({
+      type: 'LOGBOOK',
+      payload: { growspaceId },
+    });
+  }
+}
+
+export function openConfigDialog(
+  device?: GrowspaceDevice,
+  initialTab: ConfigTab = ConfigTab.GROWSPACES,
+  scrollToField?: string
+): void {
+  openDialog({
+    type: 'CONFIG',
+    payload: {
+      currentTab: initialTab,
+      scrollToField,
+      growspaceId: device?.deviceId ?? '',
+    },
+  });
+}
+
+export function openStrainLibraryDialog(initialTab?: 'strains' | 'seeds'): void {
+  openDialog({
+    type: 'STRAIN_LIBRARY',
+    payload: { initialTab },
+  });
+}
+
+export function openIrrigationDialog(options?: {
+  growspaceId?: string;
+  initialTab?: string;
+  scrollToField?: string;
+}): void {
+  openDialog({ type: 'IRRIGATION', payload: options ?? {} });
+}
+
+export function openGrowMasterDialog(growspaceId: string): void {
+  openDialog({
+    type: 'GROW_MASTER',
+    payload: {
+      growspaceId,
+      isLoading: false,
+      response: '',
+      mode: 'single',
+    },
+  });
+}
+
+export function openWateringDialog(options: {
+  plantIds?: string[];
+  growspaceId?: string;
+  mode?: 'plant' | 'growspace';
+}): void {
+  openDialog({
+    type: 'WATERING',
+    payload: {
+      plantIds: options.plantIds,
+      growspaceId: options.growspaceId,
+      mode: options.mode || (options.plantIds?.length ? 'plant' : 'growspace'),
+    },
+  });
+}
+
+export function openTrainingDialog(plantIds: string[], growspaceId?: string): void {
+  openDialog({
+    type: 'TRAINING',
+    payload: {
+      isOpen: true,
+      plantIds,
+      growspaceId,
+    },
+  });
+}
+
+export function openNutrientsDialog(): void {
+  openDialog({ type: 'NUTRIENTS', payload: {} });
+}
+
+export function openSnapshotsDialog(growspaceId?: string): void {
+  openDialog({
+    type: 'SNAPSHOTS',
+    payload: {
+      growspaceId: growspaceId || '',
+    },
+  });
+}

@@ -32,7 +32,7 @@ export class CloneDialog extends LitElement {
       }
       .form-section h3 {
         margin-top: 0;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         text-transform: uppercase;
         opacity: 0.6;
         letter-spacing: 1px;
@@ -41,7 +41,7 @@ export class CloneDialog extends LitElement {
       .source-info {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         padding: 16px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         margin-bottom: 24px;
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       }
@@ -105,7 +105,7 @@ export class CloneDialog extends LitElement {
     const attrs = this.sourcePlant.attributes;
     const strain = attrs?.strain || 'Unknown Strain';
     const phenotype = attrs?.phenotype || 'No Phenotype';
-    const dialogColor = '#8bc34a'; // Light green for cloning
+    const dialogColor = 'var(--stage-clone)';
     const title = 'Take Clone';
     const subtitle = `Creating clones from ${strain}`;
 

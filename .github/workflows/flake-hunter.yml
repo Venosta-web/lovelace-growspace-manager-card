@@ -1,0 +1,61 @@
+name: Flake Hunter
+
+# Measures the flake rate of the vitest browser-mode suite by running it N
+# times in parallel. Built for issue #453 (hoisted vi.mock factories
+# intermittently not applied — vitest-dev/vitest#8339): use it to baseline the
+# rate and to validate any config experiment before adopting it.
+#
+# Hunts run with --retry=0 (per-test retry off); coverage remains disabled by
+# the shared Vitest config so lighter flakes aren't hidden and runs stay fast.
+# The pass/fail verdict per matrix job IS the datapoint; a hunt of 10 with 2
+# failures = ~20% flake rate.
+
+# workflow_dispatch only registers once this file reaches the DEFAULT branch
+# (main). Until then — and as the everyday path — push a branch named
+# flake-hunt/<anything> at the commit you want hunted; push-triggered runs use
+# the pushed ref's own workflow file.
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: 'Number of suite runs'
+        required: false
+        default: '10'
+  push:
+    branches: ['flake-hunt/**']
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      indices: ${{ steps.gen.outputs.indices }}
+    steps:
+      - id: gen
+        run: |
+          python3 -c "import json; print('indices=' + json.dumps(list(range(1, int('${{ inputs.runs || 10 }}') + 1))))" >> "$GITHUB_OUTPUT"
+
+  hunt:
+    needs: plan
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        run: ${{ fromJSON(needs.plan.outputs.indices) }}
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run suite (attempt ${{ matrix.run }}, no retry, no coverage)
+        run: npm run test:unit -- --retry=0

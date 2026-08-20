@@ -9,6 +9,7 @@ import { computed, type ReadableAtom } from 'nanostores';
 import type { PlantEntity } from '../../../types';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { GridOverlayMode, StatusLevel } from '../../../features/environment/constants';
+import { activeDevices$ } from '../../../slices/grid';
 
 /**
  * Overlay color constants
@@ -69,7 +70,7 @@ function calculateOverlayColor(
     return OVERLAY_COLORS.TRANSPARENT;
   }
 
-  const device = store.data.$devices.get().find((d) => d.deviceId === growspaceId);
+  const device = activeDevices$.get().find((d) => d.deviceId === growspaceId);
   if (!device) {
     return OVERLAY_COLORS.TRANSPARENT;
   }
@@ -158,7 +159,7 @@ export function createGrowspaceGridViewModel(
       store.ui.$isCompactView,
       store.ui.$isLoading,
       store.ui.$gridOverlayMode,
-      store.data.$devices,
+      activeDevices$,
     ],
     (isEditMode, selectedPlants, isCompactView, isLoading, overlayMode) => {
       // Pre-compute list view flag (grids wider than 5 columns use list layout)

@@ -6,6 +6,8 @@ import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { PlantEntity } from '../../../types';
 import type { LineageNode } from '../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import { setPlantSex, unlinkSeedBatch, getLineageTree } from '../../../slices/genetics';
+import { showToast, showError } from '../../../slices/ui';
 import '../../shared/ui/lineage-tree';
 
 @customElement('plant-genetics-tab')
@@ -16,8 +18,8 @@ export class PlantGeneticsTab extends LitElement {
 
   @state() private _lineageTree: LineageNode | null = null;
   @state() private _lineageLoading = false;
-  @state() private _sexSaving = false;
   @state() private _seedBatchSearchOpen = false;
+  @state() private _sexSaving = false;
 
   static styles = [dialogStyles];
 
@@ -34,69 +36,21 @@ export class PlantGeneticsTab extends LitElement {
 
   render(): TemplateResult {
     const attrs = this.plant?.attributes ?? {};
-    const sex = (attrs.sex as string) ?? 'unknown';
     const seedBatchId = (attrs.seed_batch_id as string | null) ?? null;
     const generation = (attrs.generation as string) ?? '';
-
+    const sex = (attrs.sex as string) ?? '';
     const sexOptions = [
-      { value: 'unknown', label: 'Unknown' },
-      { value: 'female', label: '♀ Female' },
-      { value: 'male', label: '♂ Male' },
-      { value: 'hermaphrodite', label: '⚥ Hermaphrodite' },
+      { value: 'female', label: 'Female' },
+      { value: 'male', label: 'Male' },
+      { value: 'hermaphrodite', label: 'Hermaphrodite' },
     ];
 
     return html`
       <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
-        <!-- Sex -->
-        <div>
-          <h4
-            style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;"
-          >
-            Sex
-          </h4>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            ${sexOptions.map(
-              (opt) => html`
-                <button
-                  class="md3-chip ${sex === opt.value ? 'selected' : ''}"
-                  style="
-                  padding: 6px 14px;
-                  border-radius: 20px;
-                  border: 1px solid ${sex === opt.value
-                    ? 'var(--primary-color)'
-                    : 'var(--divider-color)'};
-                  background: ${sex === opt.value ? 'var(--primary-color)' : 'transparent'};
-                  color: ${sex === opt.value
-                    ? 'var(--text-primary-color, #fff)'
-                    : 'var(--primary-text-color)'};
-                  font-size: 13px;
-                  cursor: pointer;
-                "
-                  ?disabled=${this._sexSaving}
-                  @click=${async () => {
-                    if (sex === opt.value) return;
-                    this._sexSaving = true;
-                    try {
-                      await this.store?.actions.genetics.setPlantSex(
-                        attrs.plant_id as string,
-                        opt.value
-                      );
-                    } finally {
-                      this._sexSaving = false;
-                    }
-                  }}
-                >
-                  ${opt.label}
-                </button>
-              `
-            )}
-          </div>
-        </div>
-
         <!-- Seed batch origin -->
         <div>
           <h4
-            style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;"
+            style="margin: 0 0 12px; font-size: var(--font-size-supporting); color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;"
           >
             Origin
           </h4>
@@ -106,10 +60,10 @@ export class PlantGeneticsTab extends LitElement {
                   <span
                     style="
                     background: rgba(139,195,74,0.15);
-                    border: 1px solid #8bc34a;
+                    border: 1px solid var(--stage-seedling);
                     border-radius: 16px;
                     padding: 4px 12px;
-                    font-size: 13px;
+                    font-size: var(--font-size-supporting);
                   "
                     >🌱 ${seedBatchId}${generation ? ` · ${generation}` : ''}</span
                   >
@@ -117,10 +71,14 @@ export class PlantGeneticsTab extends LitElement {
                     class="md3-button text"
                     style="font-size: 12px; color: var(--secondary-text-color);"
                     @click=${async () => {
-                      await this.store?.actions.genetics.sowSeed(
-                        seedBatchId,
-                        attrs.plant_id as string
-                      );
+                      const plantId = attrs.plant_id as string;
+                      try {
+                        await unlinkSeedBatch(plantId);
+                        showToast('Seed batch unlinked', 'success');
+                        await this.store?.refreshData();
+                      } catch (e) {
+                        showError(e, 'Failed to unlink seed batch');
+                      }
                     }}
                   >
                     Unlink
@@ -131,7 +89,7 @@ export class PlantGeneticsTab extends LitElement {
                 <div>
                   <button
                     class="md3-button tonal"
-                    style="font-size: 13px;"
+                    style="font-size: var(--font-size-supporting);"
                     @click=${() => {
                       this._seedBatchSearchOpen = !this._seedBatchSearchOpen;
                     }}
@@ -156,10 +114,54 @@ export class PlantGeneticsTab extends LitElement {
               `}
         </div>
 
+        <!-- Sex -->
+        <div>
+          <h4
+            style="margin: 0 0 12px; font-size: var(--font-size-supporting); color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;"
+          >
+            Sex
+          </h4>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            ${sexOptions.map(
+              (opt) => html`
+                <button
+                  class="md3-chip ${sex === opt.value ? 'selected' : ''}"
+                  style="
+                    border: 1px solid ${sex === opt.value
+                    ? 'var(--primary-color)'
+                    : 'var(--divider-color)'};
+                    background: ${sex === opt.value ? 'var(--primary-color)' : 'transparent'};
+                    color: ${sex === opt.value
+                    ? 'var(--primary-text-color)'
+                    : 'var(--secondary-text-color)'};
+                    border-radius: 16px; padding: 4px 12px; font-size: var(--font-size-supporting); cursor: pointer;
+                  "
+                  ?disabled=${this._sexSaving}
+                  @click=${async () => {
+                    if (sex === opt.value) return;
+                    this._sexSaving = true;
+                    try {
+                      await setPlantSex(attrs.plant_id as string, opt.value);
+                      showToast('Plant sex updated', 'success');
+                      await this.store?.refreshData();
+                    } catch (e) {
+                      showError(e, 'Failed to set plant sex');
+                    } finally {
+                      this._sexSaving = false;
+                    }
+                  }}
+                >
+                  ${opt.label}
+                </button>
+              `
+            )}
+          </div>
+        </div>
+
         <!-- Lineage tree -->
         <div>
           <h4
-            style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; display:flex; align-items:center; justify-content:space-between;"
+            style="margin: 0 0 12px; font-size: var(--font-size-supporting); color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; display:flex; align-items:center; justify-content:space-between;"
           >
             Lineage
             <button
@@ -194,7 +196,7 @@ export class PlantGeneticsTab extends LitElement {
     this._lineageLoading = true;
     this._lineageTree = null;
     try {
-      const tree = await this.store.actions.genetics.getLineageTree(plantId);
+      const tree = await getLineageTree(plantId);
       this._lineageTree = tree;
     } catch {
       this._lineageTree = null;

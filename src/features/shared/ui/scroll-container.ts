@@ -2,6 +2,7 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property, state, query } from 'lit/decorators.js';
 import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
 import { ResizeController } from '../../../controllers/resize-controller';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 @customElement('scroll-container')
 export class ScrollContainer extends LitElement {
@@ -62,6 +63,12 @@ export class ScrollContainer extends LitElement {
       height: 100%;
     }
 
+    .scroll-content:focus-visible,
+    .scroll-arrow:focus-visible {
+      outline: 2px solid var(--gm-primary-color);
+      outline-offset: 2px;
+    }
+
     .scroll-content::-webkit-scrollbar {
       display: none;
     }
@@ -80,6 +87,10 @@ export class ScrollContainer extends LitElement {
         opacity 0.2s;
       flex-shrink: 0;
       z-index: 2;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font: inherit;
     }
 
     .scroll-arrow:hover {
@@ -106,27 +117,41 @@ export class ScrollContainer extends LitElement {
     ::slotted(*) {
       height: 100%;
     }
+
+    ${reducedMotion}
   `;
 
   render() {
     return html`
-      <div
+      <button
         class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}"
+        type="button"
+        aria-label="Scroll header metrics left"
+        ?disabled=${!this._canScrollLeft}
         @click=${() => this.scrollContentLeft()}
       >
-        <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
-      </div>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="${mdiChevronLeft}"></path></svg>
+      </button>
 
-      <div class="scroll-content ${this.containerClass}" @scroll=${() => this.checkScroll()}>
+      <div
+        class="scroll-content ${this.containerClass}"
+        role="region"
+        aria-label="Header metrics"
+        tabindex="0"
+        @scroll=${() => this.checkScroll()}
+      >
         <slot></slot>
       </div>
 
-      <div
+      <button
         class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}"
+        type="button"
+        aria-label="Scroll header metrics right"
+        ?disabled=${!this._canScrollRight}
         @click=${() => this.scrollContentRight()}
       >
-        <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-      </div>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="${mdiChevronRight}"></path></svg>
+      </button>
     `;
   }
 }

@@ -1,6 +1,11 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiInformationOutline } from '@mdi/js';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
+
+// CSS Anchor Positioning is scoped to the shadow tree, but the popover API
+// promotes the popover element to the document top layer (outside all shadow
+// roots), so `position-anchor` silently breaks. We use a JS fallback instead.
 
 @customElement('gs-help-tooltip')
 export class GsHelpTooltip extends LitElement {
@@ -33,7 +38,7 @@ export class GsHelpTooltip extends LitElement {
 
     .help-trigger:hover,
     .help-trigger:focus-visible {
-      color: var(--primary-color, #2196f3);
+      color: var(--gm-primary-color);
       outline: none;
     }
 
@@ -47,11 +52,11 @@ export class GsHelpTooltip extends LitElement {
     .help-popover {
       position: fixed;
       inset: auto;
-      position-try-fallbacks: flip-block, flip-inline;
       margin: 0;
       border: none;
       padding: 0;
       background: transparent;
+      translate: -50% 0;
     }
 
     .help-popover[popover]:popover-open {
@@ -64,7 +69,7 @@ export class GsHelpTooltip extends LitElement {
       border-radius: 8px;
       padding: 8px 12px;
       max-width: 240px;
-      font-size: 0.8rem;
+      font-size: var(--font-size-supporting);
       line-height: 1.5;
       color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
@@ -83,32 +88,48 @@ export class GsHelpTooltip extends LitElement {
       }
     }
 
-    :host([placement='top']) .help-popover {
-      bottom: anchor(top);
-      left: anchor(center);
-      translate: -50% -6px;
-    }
-
-    :host([placement='bottom']) .help-popover {
-      top: anchor(bottom);
-      left: anchor(center);
-      translate: -50% 6px;
-    }
-
-    :host([placement='left']) .help-popover {
-      right: anchor(left);
-      top: anchor(center);
-      translate: -6px -50%;
-    }
-
-    :host([placement='right']) .help-popover {
-      left: anchor(right);
-      top: anchor(center);
-      translate: 6px -50%;
-    }
+    ${reducedMotion}
   `;
 
   private _popoverId = `gs-help-${Math.random().toString(36).slice(2)}`;
+
+  private _positionPopover = (e: Event) => {
+    const te = e as ToggleEvent;
+    const popover = this.shadowRoot!.querySelector<HTMLElement>('.help-popover');
+    const btn = this.shadowRoot!.querySelector<HTMLButtonElement>('.help-trigger');
+    if (!popover || !btn) return;
+
+    if (te.newState === 'open') {
+      const rect = btn.getBoundingClientRect();
+      switch (this.placement) {
+        case 'bottom':
+          popover.style.top = `${rect.bottom + 6}px`;
+          popover.style.left = `${rect.left + rect.width / 2}px`;
+          break;
+        case 'left':
+          popover.style.top = `${rect.top + rect.height / 2}px`;
+          popover.style.left = `${rect.left - popover.offsetWidth - 6}px`;
+          break;
+        case 'right':
+          popover.style.top = `${rect.top + rect.height / 2}px`;
+          popover.style.left = `${rect.right + 6}px`;
+          break;
+        default: // top
+          popover.style.top = `${rect.top - popover.offsetHeight - 6}px`;
+          popover.style.left = `${rect.left + rect.width / 2}px`;
+      }
+    } else {
+      popover.style.top = '';
+      popover.style.left = '';
+    }
+  };
+
+  override firstUpdated() {
+    this.shadowRoot!.querySelector('.help-popover')?.addEventListener(
+      'toggle',
+      this._positionPopover
+    );
+  }
 
   render() {
     if (!this.content) return nothing;
@@ -116,19 +137,13 @@ export class GsHelpTooltip extends LitElement {
     return html`
       <button
         class="help-trigger"
-        style="anchor-name: --${this._popoverId};"
         popovertarget="${this._popoverId}"
         aria-label="Help: ${this.label}"
         title="${this.label}"
       >
         <svg viewBox="0 0 24 24"><path d="${mdiInformationOutline}"></path></svg>
       </button>
-      <div
-        id="${this._popoverId}"
-        class="help-popover"
-        popover="auto"
-        style="position-anchor: --${this._popoverId};"
-      >
+      <div id="${this._popoverId}" class="help-popover" popover="auto">
         <div class="help-popover-inner">${this.content}</div>
       </div>
     `;

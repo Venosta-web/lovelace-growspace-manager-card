@@ -2,6 +2,36 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
 
+// Env tabs (Sensors, Climate, Humidity, Irrigation) are nested dumb components
+// behind their own shadow roots (ADR-0019); pierce whichever is active.
+async function sensorsShadow(element: ConfigDialog): Promise<ShadowRoot> {
+    await element.updateComplete;
+    const tab = element.shadowRoot!.querySelector(
+        'config-sensors-tab, config-climate-tab, config-humidity-tab, config-irrigation-tab, config-vision-tab, config-tanks-tab, config-growspaces-tab, config-heatmap-tab, config-subareas-tab'
+    ) as HTMLElement & { updateComplete: Promise<boolean> };
+    await tab.updateComplete;
+    return tab.shadowRoot!;
+}
+
+type EntityMultiSelectElement = HTMLElement & {
+    label: string;
+    shadowRoot: ShadowRoot;
+};
+
+type SectionHeaderElement = HTMLElement & { label: string };
+
+function entityPickers(root: ShadowRoot): EntityMultiSelectElement[] {
+    return Array.from(root.querySelectorAll<EntityMultiSelectElement>('config-entity-multi-select'));
+}
+
+function entityPicker(root: ShadowRoot, label: string): EntityMultiSelectElement | undefined {
+    return entityPickers(root).find((picker) => picker.label === label);
+}
+
+function sectionHeaders(root: ShadowRoot): SectionHeaderElement[] {
+    return Array.from(root.querySelectorAll<SectionHeaderElement>('config-section-header'));
+}
+
 vi.mock('../../../src/slices/subarea', () => ({
     getSubareas: vi.fn().mockResolvedValue([]),
     addSubarea: vi.fn().mockResolvedValue({ id: 'sa-new', name: '', environment_config: {} }),
@@ -12,6 +42,7 @@ vi.mock('../../../src/slices/subarea', () => ({
 }));
 
 import * as subareaSlice from '../../../src/slices/subarea';
+import { pickEntity } from '../../harness/entity-picker';
 
 // Mocking custom elements that are not defined in the test environment
 const mockCustomElements = () => {
@@ -56,6 +87,13 @@ const mockCustomElements = () => {
             set label(val: any) {}
         });
     }
+    if (!customElements.get('md3-select')) {
+        customElements.define('md3-select', class extends HTMLElement {
+            set value(val: any) {}
+            set label(val: any) {}
+            set options(val: any) {}
+        });
+    }
 };
 
 describe('ConfigDialog - Branch Coverage Expansion', () => {
@@ -91,7 +129,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         element.currentTab = ConfigTab.VISION;
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn');
+        const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary');
         expect(saveBtn).to.exist;
 
         // Toggle vision enabled
@@ -115,7 +153,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         }
 
         // Submit vision config
-        const visionSaveBtn = element.shadowRoot?.querySelector('.vision-save-btn') as HTMLElement;
+        const visionSaveBtn = element.shadowRoot?.querySelector('button.md3-button.primary') as HTMLElement;
         expect(visionSaveBtn).to.exist;
         if (visionSaveBtn) {
             // Call directly to ensure coverage of the method itself and its branches
@@ -129,30 +167,12 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envSelectedId = 'gs1';
         await element.updateComplete;
 
-        // _generateGrowReport
-        const reportSpy = vi.fn();
-        element.addEventListener('generate-grow-report', reportSpy);
-        (element as any)._generateGrowReport();
-        expect(reportSpy).toHaveBeenCalled();
-
         // _submitDeleteGrowspace -> _cancelDeleteGrowspace
         (element as any)._submitDeleteGrowspace();
         expect((element as any)._showDeleteConfirm).to.be.true;
         (element as any)._cancelDeleteGrowspace();
         expect((element as any)._showDeleteConfirm).to.be.false;
 
-        // _handleRemoveEnvironment (Confirm)
-        vi.spyOn(window, 'confirm').mockReturnValue(true);
-        const removeEnvSpy = vi.fn();
-        element.addEventListener('remove-environment-submit', removeEnvSpy);
-        (element as any)._handleRemoveEnvironment();
-        expect(removeEnvSpy).toHaveBeenCalled();
-
-        // _handleRemoveEnvironment (Cancel)
-        removeEnvSpy.mockClear();
-        vi.spyOn(window, 'confirm').mockReturnValue(false);
-        (element as any)._handleRemoveEnvironment();
-        expect(removeEnvSpy).not.toHaveBeenCalled();
     });
 
     it('should cover Subarea management branches', async () => {
@@ -205,24 +225,25 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         };
         await element.updateComplete;
 
-        // Verify it's rendering
-        const humidifierHeader = Array.from(element.shadowRoot?.querySelectorAll('h3') || [])
-            .find(h => h.textContent?.includes('Humidity'));
+        // Verify it's rendering (humidity tab is now a nested dumb component).
+        const root = await sensorsShadow(element);
+        const humidifierHeader = sectionHeaders(root)
+            .find((header) => header.label.includes('Humidity'));
         expect(humidifierHeader).to.exist;
 
-        // Exercise inline handlers
-        const checkbox = element.shadowRoot?.querySelector('input[type="checkbox"]');
+        // Exercise the component's intent handlers through to the shell.
+        const checkbox = root.querySelector('input[type="checkbox"]');
         if (checkbox) {
             (checkbox as HTMLInputElement).checked = true;
             checkbox.dispatchEvent(new Event('change'));
         }
 
-        const accHead = element.shadowRoot?.querySelector('.acc-head');
+        const accHead = root.querySelector('.acc-head');
         if (accHead) {
             (accHead as HTMLElement).click();
         }
 
-        const numberInput = element.shadowRoot?.querySelector('md3-number-input');
+        const numberInput = (await sensorsShadow(element)).querySelector('md3-number-input');
         if (numberInput) {
             numberInput.dispatchEvent(new CustomEvent('change', { detail: '0.5' }));
         }
@@ -242,6 +263,15 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any)._openHumidityStageId = 'seedling';
         await element.updateComplete;
         expect((element as any)._openHumidityStageId).to.equal('seedling');
+
+        // Click the open accordion head again → isOpen=true branch → sets id to ''  (line 2141)
+        const openHead = Array.from(element.shadowRoot?.querySelectorAll('.acc-head') ?? [])
+            .find((h) => h.closest('.acc-card')?.querySelector('.acc-head-title')?.textContent?.includes('Seedling')) as HTMLElement | undefined;
+        if (openHead) {
+            openHead.click();
+            await element.updateComplete;
+            expect((element as any)._openHumidityStageId).to.equal('');
+        }
     });
 
 
@@ -328,7 +358,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any)._showDeleteConfirm = true;
         await element.updateComplete;
 
-        const confirmBtn = element.shadowRoot?.querySelector('.md3-button.primary.error');
+        const confirmBtn = element.shadowRoot?.querySelector('.md3-button.danger');
         expect(confirmBtn).to.exist;
 
         // Cover _confirmDeleteGrowspace
@@ -401,10 +431,9 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envVisionCameraEntities = ['camera.tent'];
         await element.updateComplete;
 
-        // The edit form is rendered; both multi-select containers should be present
-        const containers = element.shadowRoot?.querySelectorAll('.multi-select-container');
-        expect(containers).toBeDefined();
-        expect(containers!.length).toBeGreaterThanOrEqual(2);
+        // The edit form is rendered; both shared multi-selects should be present
+        const containers = entityPickers(await sensorsShadow(element));
+        expect(containers.length).toBeGreaterThanOrEqual(2);
     });
 
     it('renders substrate temp sensors in the SENSORS tab', async () => {
@@ -413,8 +442,8 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envSubstrateTemperatureSensors = ['sensor.substrate_temp'];
         await element.updateComplete;
 
-        const labels = Array.from(element.shadowRoot?.querySelectorAll('.md3-label-multi') ?? []);
-        const substrateLabel = labels.find((l) => l.textContent?.includes('Substrate'));
+        const substrateLabel = entityPickers(await sensorsShadow(element))
+            .find((picker) => picker.label.includes('Substrate'));
         expect(substrateLabel).toBeDefined();
     });
 
@@ -441,7 +470,8 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envSelectedId = 'gs1';
         (element as any).envPhSensors = ['sensor.ph'];
         (element as any).envFeedEcSensors = ['sensor.feed_ec'];
-        (element as any).envSubstrateEcSensors = ['sensor.sub_ec'];
+        (element as any).envBulkEcSensors = ['sensor.bulk_ec'];
+        (element as any).envPoreEcSensors = ['sensor.pore_ec'];
         (element as any).envRunoffEcSensors = ['sensor.runoff_ec'];
         (element as any).envDrainVolumeSensors = ['sensor.drain'];
         (element as any).envIrrigationFlowSensors = ['sensor.flow'];
@@ -449,15 +479,19 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envEnergySensors = ['sensor.energy'];
         await element.updateComplete;
 
-        const labels = Array.from(element.shadowRoot?.querySelectorAll('.md3-label-multi') ?? []);
-        const labelTexts = labels.map((l) => l.textContent?.trim());
+        const root = await sensorsShadow(element);
+        const labelTexts = entityPickers(root).map((picker) => picker.label);
         expect(labelTexts).toContain('pH Sensors');
         expect(labelTexts).toContain('Feed EC Sensors');
+        expect(labelTexts).toContain('Bulk EC Sensors');
+        expect(labelTexts).toContain('Pore EC Sensors');
         expect(labelTexts).toContain('Power Sensors');
         expect(labelTexts).toContain('Energy Sensors');
 
-        // Click every chip-remove × to invoke all 8 changeHandler arrow fns (lines 1615-1628)
-        const chipRemoves = Array.from(element.shadowRoot?.querySelectorAll('.chip-remove') ?? []) as HTMLElement[];
+        // Click every chip-remove × to invoke all changeHandler arrow fns
+        const chipRemoves = entityPickers(await sensorsShadow(element)).flatMap(
+            (picker) => Array.from(picker.shadowRoot.querySelectorAll<HTMLElement>('.chip-remove'))
+        );
         for (const chip of chipRemoves) {
             chip.click();
         }
@@ -466,7 +500,18 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         // All sensor arrays should now be empty
         expect((element as any).envPhSensors).toHaveLength(0);
         expect((element as any).envFeedEcSensors).toHaveLength(0);
+        expect((element as any).envBulkEcSensors).toHaveLength(0);
+        expect((element as any).envPoreEcSensors).toHaveLength(0);
         expect((element as any).envEnergySensors).toHaveLength(0);
+    });
+
+    it('renders a "Substrate EC" section header in the IRRIGATION tab', async () => {
+        element.currentTab = ConfigTab.IRRIGATION;
+        (element as any).envSelectedId = 'gs1';
+        await element.updateComplete;
+
+        const headings = sectionHeaders(await sensorsShadow(element)).map((header) => header.label);
+        expect(headings).toContain('Substrate EC');
     });
 
     it('renders the tank list and toggles add/edit/delete form in the TANKS tab', async () => {
@@ -477,14 +522,14 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         ];
         await element.updateComplete;
 
-        // Tank list item is rendered
-        expect(element.shadowRoot?.textContent).toContain('Main Tank');
+        // Tank list item is rendered (now in the nested config-tanks-tab)
+        expect((await sensorsShadow(element)).textContent).toContain('Main Tank');
 
         // Click the edit tank button (arrow fn at line 1667)
-        const editTankBtn = Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.text:not(.error)') ?? [])
-            .find((b) => !b.style.minWidth || b.style.padding === '6px') as HTMLElement | undefined
-            ?? Array.from(element.shadowRoot?.querySelectorAll('button') ?? [])
-                .find((b) => b.style.padding === '6px' && !b.classList.contains('error')) as HTMLElement | undefined;
+        const editTankBtn = (Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.text:not(.danger)') ?? []) as HTMLElement[])
+            .find((b) => !b.style.minWidth || b.style.padding === '6px')
+            ?? (Array.from(element.shadowRoot?.querySelectorAll('button') ?? []) as HTMLElement[])
+                .find((b) => b.style.padding === '6px' && !b.classList.contains('error'));
 
         // Fall back to direct method call if DOM lookup is ambiguous, but also open the form via button
         const allBtns = Array.from(element.shadowRoot?.querySelectorAll('button') ?? []);
@@ -505,34 +550,32 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         expect((element as any)._editingTankIndex).toBe(0);
 
         // Interact with form inputs to cover their @input arrow fns
-        const formInputs = Array.from(element.shadowRoot?.querySelectorAll('input.md3-input') ?? []) as HTMLInputElement[];
+        const tanksTab = await sensorsShadow(element);
+        pickEntity(tanksTab, 'sensor.tank_new');
+        expect((element as any)._tankDraft.sensorEntity).toBe('sensor.tank_new');
+
+        const formInputs = Array.from(tanksTab.querySelectorAll('input.md3-input')) as HTMLInputElement[];
         if (formInputs.length >= 1) {
-            // Sensor entity input
-            formInputs[0].value = 'sensor.tank_new';
-            formInputs[0].dispatchEvent(new Event('input'));
-            expect((element as any)._tankDraft.sensorEntity).toBe('sensor.tank_new');
-        }
-        if (formInputs.length >= 2) {
             // Name input
-            formInputs[1].value = 'Renamed Tank';
-            formInputs[1].dispatchEvent(new Event('input'));
+            formInputs[0].value = 'Renamed Tank';
+            formInputs[0].dispatchEvent(new Event('input'));
             expect((element as any)._tankDraft.name).toBe('Renamed Tank');
         }
-        if (formInputs.length >= 3) {
+        if (formInputs.length >= 2) {
             // Volume input
-            formInputs[2].value = '150';
-            formInputs[2].dispatchEvent(new Event('input'));
+            formInputs[1].value = '150';
+            formInputs[1].dispatchEvent(new Event('input'));
             expect((element as any)._tankDraft.volumeLiters).toBe(150);
 
             // Volume input empty → null
-            formInputs[2].value = '';
-            formInputs[2].dispatchEvent(new Event('input'));
+            formInputs[1].value = '';
+            formInputs[1].dispatchEvent(new Event('input'));
             expect((element as any)._tankDraft.volumeLiters).toBeNull();
         }
-        if (formInputs.length >= 4) {
+        if (formInputs.length >= 3) {
             // Warning level input
-            formInputs[3].value = '25';
-            formInputs[3].dispatchEvent(new Event('input'));
+            formInputs[2].value = '25';
+            formInputs[2].dispatchEvent(new Event('input'));
             expect((element as any)._tankDraft.warningLevel).toBe(25);
         }
 
@@ -543,7 +586,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         expect((element as any)._showTankForm).toBe(false);
 
         // Click the delete tank button (arrow fn at line 1670)
-        const deleteTankBtn = Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.text.error') ?? [])
+        const deleteTankBtn = Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.text.danger') ?? [])
             .find((b) => !b.textContent?.trim()) as HTMLElement | undefined;
         if (deleteTankBtn) {
             deleteTankBtn.click();
@@ -575,19 +618,18 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         await element.updateComplete;
 
         // With no cameras: instruction paragraph should appear
-        const para = element.shadowRoot?.querySelector('p');
+        const para = (await sensorsShadow(element)).querySelector('p');
         expect(para?.textContent).toContain('Add camera entities');
 
         // With cameras: camera entities multi-select renders
         (element as any).envVisionCameraEntities = ['camera.tent'];
-        await element.updateComplete;
 
-        const labels = Array.from(element.shadowRoot?.querySelectorAll('.md3-label-multi') ?? []);
-        const cameraLabel = labels.find((l) => l.textContent?.includes('Camera'));
+        const cameraPicker = entityPicker(await sensorsShadow(element), 'Camera Entities');
+        const cameraLabel = cameraPicker?.label;
         expect(cameraLabel).toBeDefined();
 
-        // Click the chip-remove × to trigger the changeHandler arrow fn (line 1732)
-        const chipRemove = element.shadowRoot?.querySelector('.chip-remove') as HTMLElement | null;
+        // Click the chip-remove × to trigger the changeHandler arrow fn
+        const chipRemove = cameraPicker?.shadowRoot.querySelector<HTMLElement>('.chip-remove');
         if (chipRemove) {
             chipRemove.click();
             await element.updateComplete;
@@ -603,15 +645,12 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         ];
         await element.updateComplete;
 
-        // Group name rendered
-        expect(element.shadowRoot?.textContent).toContain('Group A');
+        // Group name rendered (now in the nested config-heatmap-tab)
+        const root = await sensorsShadow(element);
+        expect(root.textContent).toContain('Group A');
 
-        // Click the edit button DOM element to cover the arrow fn at line 1780.
-        // querySelectorAll returns them in DOM order; the header close button is first,
-        // so the group edit button is the last non-error text button.
-        const textButtons = Array.from(
-            element.shadowRoot?.querySelectorAll('button.md3-button.text:not(.error)') ?? []
-        );
+        // Click the group's edit button (the non-error text button) to cover its handler.
+        const textButtons = Array.from(root.querySelectorAll('button.md3-button.text:not(.danger)'));
         const editBtn = textButtons[textButtons.length - 1] as HTMLElement | undefined;
         expect(editBtn).toBeDefined();
         editBtn!.click();
@@ -623,35 +662,32 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
     it('renders add-subarea form: clicking Add Subarea button and Cancel covers inline handlers', async () => {
         (element as any).envSelectedId = 'gs1';
         element.currentTab = ConfigTab.SUBAREAS;
-        vi.spyOn(element as any, '_getDataService').mockReturnValue({
-            getSubareas: vi.fn().mockResolvedValue([]),
-        });
         await element.updateComplete;
 
-        // Click the "Add Subarea" button to cover the arrow fn at line 1811
-        const allButtons = Array.from(element.shadowRoot?.querySelectorAll('button') ?? []);
-        const addSubareaBtn = allButtons.find((b) => b.textContent?.includes('Add Subarea'));
+        // Click the "Add Subarea" button (now in the nested component)
+        const addSubareaBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
+            .find((b) => b.textContent?.includes('Add Subarea'));
         expect(addSubareaBtn).toBeDefined();
         addSubareaBtn!.click();
         await element.updateComplete;
         expect((element as any)._showAddSubarea).toBe(true);
         expect((element as any)._newSubareaName).toBe('');
 
-        // Trigger @input on the name field to cover the input arrow fn (line 1820)
-        const nameInput = element.shadowRoot?.querySelector('input.md3-input') as HTMLInputElement;
+        // Trigger @input on the name field
+        const nameInput = (await sensorsShadow(element)).querySelector('input.md3-input') as HTMLInputElement;
         expect(nameInput).toBeDefined();
         nameInput.value = 'Zone A';
         nameInput.dispatchEvent(new Event('input'));
         await element.updateComplete;
         expect((element as any)._newSubareaName).toBe('Zone A');
 
-        // Trigger @keydown Enter to cover the keydown arrow fn (line 1821)
+        // Trigger @keydown Enter (commit-add-subarea → _handleAddSubarea)
         vi.spyOn(element as any, '_handleAddSubarea').mockResolvedValue(undefined);
         nameInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
         expect((element as any)._handleAddSubarea).toHaveBeenCalled();
 
-        // Click Cancel to cover its arrow fn (line 1824)
-        const cancelBtn = Array.from(element.shadowRoot?.querySelectorAll('button') ?? [])
+        // Click Cancel
+        const cancelBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
             .find((b) => b.textContent?.trim() === 'Cancel');
         expect(cancelBtn).toBeDefined();
         cancelBtn!.click();
@@ -669,21 +705,18 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any)._deleteConfirmSubareaId = '';
         // Mock _loadSubareas so the async chain after _confirmDeleteSubarea doesn't clear _subareas
         vi.spyOn(element as any, '_loadSubareas').mockResolvedValue(undefined);
-        vi.spyOn(element as any, '_getDataService').mockReturnValue({
-            removeSubarea: vi.fn().mockResolvedValue(undefined),
-        });
         await element.updateComplete;
 
-        // Normal state: click the delete button (arrow fn at line 1849 → _handleDeleteSubarea)
-        const allButtons = Array.from(element.shadowRoot?.querySelectorAll('button') ?? []);
-        const deleteBtn = allButtons.find((b) => b.title === 'Delete subarea');
+        // Normal state: click the delete button (→ _handleDeleteSubarea)
+        const deleteBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
+            .find((b) => b.title === 'Delete subarea');
         expect(deleteBtn).toBeDefined();
         deleteBtn!.click();
         await element.updateComplete;
         expect((element as any)._deleteConfirmSubareaId).toBe('sa1');
 
-        // Confirm state: click "No" (arrow fn at line 1844 → resets _deleteConfirmSubareaId)
-        const noBtn = Array.from(element.shadowRoot?.querySelectorAll('button') ?? [])
+        // Confirm state: click "No" (→ resets _deleteConfirmSubareaId)
+        const noBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
             .find((b) => b.textContent?.trim() === 'No');
         expect(noBtn).toBeDefined();
         noBtn!.click();
@@ -693,7 +726,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         // Re-enter confirm state for Yes click (arrow fn at line 1843 → _confirmDeleteSubarea)
         (element as any)._handleDeleteSubarea('sa1');
         await element.updateComplete;
-        const yesBtn = Array.from(element.shadowRoot?.querySelectorAll('button') ?? [])
+        const yesBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
             .find((b) => b.textContent?.trim() === 'Yes');
         expect(yesBtn).toBeDefined();
         yesBtn!.click();
@@ -703,7 +736,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any)._subareas = [{ id: 'sa1', name: 'Zone A', environment_config: {} }];
         (element as any)._deleteConfirmSubareaId = '';
         await element.updateComplete;
-        const editBtn = Array.from(element.shadowRoot?.querySelectorAll('button') ?? [])
+        const editBtn = Array.from((await sensorsShadow(element)).querySelectorAll('button'))
             .find((b) => b.title === 'Edit sensors');
         expect(editBtn).toBeDefined();
         editBtn!.click();
@@ -747,28 +780,20 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         expect(loadSpy).toHaveBeenCalled();
     });
 
-    it('setInitialState populates visionCheckupConfig and triggers loadSubareas on SUBAREAS tab', async () => {
+    it('_seedFromDevice populates visionCheckupConfig and triggers loadSubareas on SUBAREAS tab', async () => {
         vi.spyOn(element as any, '_loadSubareas').mockResolvedValue(undefined);
-
-        element.setInitialState(ConfigTab.SUBAREAS, {
-            selectedGrowspaceId: 'gs1',
-            temperatureSensors: [], humiditySensors: [], vpdSensors: [],
-            co2Sensor: '', circulationFanEntities: [], stressThreshold: 0.8,
-            moldThreshold: 0.8, lightSensors: [], exhaustFanEntities: [],
-            humidifierEntities: [], dehumidifierEntities: [], soilMoistureSensor: '',
-            dehumidifierControlEnabled: false, dehumidifierThresholds: {},
-            humidifierControlEnabled: false, humidifierThresholds: {},
-            sensorGroups: [], sensorCoordinates: {}, irrigationTanks: [],
-            cameraEntities: [], lungroomTempSensors: [], substrateTemperatureSensors: [],
-            phSensors: [], feedEcSensors: [], substrateEcSensors: [], runoffEcSensors: [],
-            drainVolumeSensors: [], irrigationFlowSensors: [], powerSensors: [], energySensors: [],
-            visionCheckupConfig: {
-                enabled: true,
-                early_check_offset_minutes: 30,
-                mid_check_hours: 4,
-                late_check_offset_minutes: 45,
+        element.initialTab = ConfigTab.SUBAREAS;
+        (element as any)._seedFromDevice({
+            deviceId: 'gs1',
+            environmentAttributes: {
+                visionCheckupConfig: {
+                    enabled: true,
+                    early_check_offset_minutes: 30,
+                    mid_check_hours: 4,
+                    late_check_offset_minutes: 45,
+                },
             },
-        } as any);
+        });
 
         expect((element as any).envVisionEnabled).toBe(true);
         expect((element as any).envVisionEarlyOffset).toBe(30);
@@ -811,12 +836,6 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         expect((element as any)._editingTankIndex).toBeNull();
     });
 
-    it('_getDataService lazily creates DataService when _dataService is unset', () => {
-        (element as any)._dataService = undefined;
-        const svc = (element as any)._getDataService();
-        expect(svc).toBeDefined();
-    });
-
     it('_handleEnvGrowspaceChange maps irrigationTanks from device attributes', async () => {
         element.devices = [{
             deviceId: 'gs1',
@@ -845,7 +864,9 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envVisionCameraEntities = ['camera.tent'];
         await element.updateComplete;
 
-        const chipRemoves = Array.from(element.shadowRoot?.querySelectorAll('.chip-remove') ?? []) as HTMLElement[];
+        const chipRemoves = entityPickers(await sensorsShadow(element)).flatMap(
+            (picker) => Array.from(picker.shadowRoot.querySelectorAll<HTMLElement>('.chip-remove'))
+        );
         for (const cr of chipRemoves) cr.click();
         await element.updateComplete;
 
@@ -859,10 +880,460 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envSubstrateTemperatureSensors = ['sensor.substrate'];
         await element.updateComplete;
 
-        const chipRemove = element.shadowRoot?.querySelector('.chip-remove') as HTMLElement | null;
+        const substratePicker = entityPicker(
+            await sensorsShadow(element),
+            'Substrate Temperature Sensors'
+        );
+        const chipRemove = substratePicker?.shadowRoot.querySelector<HTMLElement>('.chip-remove');
         chipRemove?.click();
         await element.updateComplete;
 
         expect((element as any).envSubstrateTemperatureSensors).toHaveLength(0);
+    });
+});
+
+// ─── Fan Controller Panel (ConfigTab.CLIMATE) — lines 1862–2038 ──────────────
+
+describe('ConfigDialog - Fan Controller Panel coverage', () => {
+    let element: ConfigDialog;
+
+    // The Climate tab is now a nested dumb component (ADR-0019); pierce it.
+    function allInputs(root: ShadowRoot) {
+        return Array.from(root.querySelectorAll('md3-number-input'));
+    }
+
+    function dispatchAllInputs(root: ShadowRoot, value: string) {
+        for (const input of allInputs(root)) {
+            input.dispatchEvent(new CustomEvent('change', { detail: value }));
+        }
+    }
+
+    function fanCfg() {
+        return (element as any)._sm.environmentDraft.circulationFanConfig;
+    }
+
+    beforeEach(async () => {
+        mockCustomElements();
+        element = new ConfigDialog();
+        element.hass = { states: {}, callService: vi.fn() } as any;
+        element.growspaceOptions = { gs1: 'Growspace 1' };
+        element.devices = [
+            { deviceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationTarget: '' },
+        ] as any;
+        document.body.appendChild(element);
+        element.open = true;
+        element.currentTab = ConfigTab.CLIMATE;
+        (element as any).envSelectedId = 'gs1';
+        await element.updateComplete;
+    });
+
+    afterEach(() => {
+        document.body.removeChild(element);
+        vi.clearAllMocks();
+    });
+
+    it('enabled toggle (line 1862) sets circulationFanConfig.enabled', async () => {
+        const root = await sensorsShadow(element);
+        const checkboxes = Array.from(
+            root.querySelectorAll('input[type="checkbox"]')
+        ) as HTMLInputElement[];
+        const enabledCb = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes('Enabled'));
+        expect(enabledCb).toBeDefined();
+        enabledCb!.checked = true;
+        enabledCb!.dispatchEvent(new Event('change'));
+        expect(fanCfg().enabled).toBe(true);
+    });
+
+    it('regulation_mode change handler (line 1879) updates regulation_mode', async () => {
+        const root = await sensorsShadow(element);
+        const select = root.querySelector('md3-select');
+        expect(select).toBeDefined();
+        select!.dispatchEvent(new CustomEvent('change', { detail: 'humidity' }));
+        expect(fanCfg().regulation_mode).toBe('humidity');
+    });
+
+    it('VPD mode (default) — vpd_target, vpd_tolerance, min_speed, max_speed handlers fire (lines 1889–2004)', async () => {
+        const root = await sensorsShadow(element);
+        expect(allInputs(root).length).toBeGreaterThanOrEqual(4);
+        dispatchAllInputs(root, '1.5');
+        expect(fanCfg().vpd_target).toBeCloseTo(1.5);
+        expect(fanCfg().vpd_tolerance).toBeCloseTo(1.5);
+        expect(fanCfg().min_speed).toBeCloseTo(1.5);
+        expect(fanCfg().max_speed).toBeCloseTo(1.5);
+    });
+
+    it('humidity mode — humidity_target / humidity_tolerance handlers fire (lines 1905–1911)', async () => {
+        (element as any)._updateFanConfig({ regulation_mode: 'humidity' });
+        const root = await sensorsShadow(element);
+        dispatchAllInputs(root, '65');
+        expect(fanCfg().humidity_target).toBeCloseTo(65);
+        expect(fanCfg().humidity_tolerance).toBeCloseTo(65);
+    });
+
+    it('temperature mode — temperature_target / temperature_tolerance handlers fire (lines 1921–1929)', async () => {
+        (element as any)._updateFanConfig({ regulation_mode: 'temperature' });
+        const root = await sensorsShadow(element);
+        dispatchAllInputs(root, '26');
+        expect(fanCfg().temperature_target).toBeCloseTo(26);
+        expect(fanCfg().temperature_tolerance).toBeCloseTo(26);
+    });
+
+    it('renders the promoted critical-temperature editor and wires paired bounds plus hysteresis', async () => {
+        let root = await sensorsShadow(element);
+        let editor = root.querySelector('.critical-temperature[data-controller="fan"]')!;
+        expect(editor).toBeDefined();
+        let overrideInputs = Array.from(editor.querySelectorAll('md3-number-input'));
+        expect(overrideInputs.length).toBe(3);
+
+        overrideInputs[0].dispatchEvent(new CustomEvent('change', { detail: '18' }));
+        expect(fanCfg().critical_temp_low).toBeCloseTo(18);
+        expect(fanCfg().critical_temp_high).toBeCloseTo(32);
+
+        root = await sensorsShadow(element);
+        editor = root.querySelector('.critical-temperature[data-controller="fan"]')!;
+        overrideInputs = Array.from(editor.querySelectorAll('md3-number-input'));
+        overrideInputs[1].dispatchEvent(new CustomEvent('change', { detail: '30' }));
+        expect(fanCfg().critical_temp_high).toBeCloseTo(30);
+
+        root = await sensorsShadow(element);
+        editor = root.querySelector('.critical-temperature[data-controller="fan"]')!;
+        overrideInputs = Array.from(editor.querySelectorAll('md3-number-input'));
+        overrideInputs[2].dispatchEvent(new CustomEvent('change', { detail: '2' }));
+        expect(fanCfg().critical_temp_hysteresis).toBeCloseTo(2);
+
+        root = await sensorsShadow(element);
+        editor = root.querySelector('.critical-temperature[data-controller="fan"]')!;
+        overrideInputs = Array.from(editor.querySelectorAll('md3-number-input'));
+        overrideInputs[0].dispatchEvent(new CustomEvent('change', { detail: '' }));
+        expect(fanCfg().critical_temp_low).toBeNull();
+        expect(fanCfg().critical_temp_high).toBeNull();
+    });
+
+    it('wind_enabled toggle (lines 2014–2015) expands wind settings; period/amplitude handlers fire (lines 2025–2033)', async () => {
+        let root = await sensorsShadow(element);
+        const checkboxes = Array.from(
+            root.querySelectorAll('input[type="checkbox"]')
+        ) as HTMLInputElement[];
+        const windCb = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes('Dynamic Wind'));
+        expect(windCb).toBeDefined();
+        windCb!.checked = true;
+        windCb!.dispatchEvent(new Event('change'));
+        root = await sensorsShadow(element);
+        expect(fanCfg().wind_enabled).toBe(true);
+
+        // Wind inputs are the last margin-top row-col-grid *within the circulation
+        // Fan Controller panel* — scope to that card so the sibling Exhaust Fan
+        // Controller panel (rendered below it) doesn't shadow the global selector.
+        const fanCard = Array.from(root.querySelectorAll('.detail-card'))
+            .find((card) =>
+                (card.querySelector('config-section-header') as SectionHeaderElement | null)
+                    ?.label === 'Fan Controller'
+            );
+        expect(fanCard).toBeDefined();
+        const marginGrids = Array.from(
+            fanCard!.querySelectorAll('.row-col-grid[style*="margin-top"]')
+        );
+        const windInputs = Array.from(marginGrids[marginGrids.length - 1].querySelectorAll('md3-number-input'));
+        expect(windInputs.length).toBe(2);
+
+        windInputs[0].dispatchEvent(new CustomEvent('change', { detail: '90' }));
+        expect(fanCfg().wind_period_seconds).toBeCloseTo(90);
+        windInputs[1].dispatchEvent(new CustomEvent('change', { detail: '20' }));
+        expect(fanCfg().wind_amplitude_pct).toBeCloseTo(20);
+    });
+});
+
+// ─── Remaining branch gaps: lines 2725, 2770, 2969 ───────────────────────────
+
+describe('ConfigDialog - remaining branch coverage (lines 2725, 2770, 2969)', () => {
+    let element: ConfigDialog;
+
+    beforeEach(async () => {
+        mockCustomElements();
+        element = new ConfigDialog();
+        element.hass = { states: {}, callService: vi.fn() } as any;
+        element.growspaceOptions = { gs1: 'Growspace 1' };
+        element.devices = [
+            { deviceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationTarget: '' },
+        ] as any;
+        document.body.appendChild(element);
+        element.open = true;
+        await element.updateComplete;
+    });
+
+    afterEach(() => {
+        document.body.removeChild(element);
+        vi.clearAllMocks();
+    });
+
+    it('line 2725 false-branch: renders "Select a growspace" placeholder when envId empty and gsSub is idle', async () => {
+        // envSelectedId = '' and growspaces sub = idle → growspaceId = '' → guard fires
+        (element as any).envSelectedId = '';
+        element.currentTab = ConfigTab.SUBAREAS;
+
+        expect((await sensorsShadow(element)).textContent).toContain('Select a growspace');
+    });
+
+    it('line 2725 true-branch: falls back to gsSub.growspaceId when envId empty and gsSub is editing', async () => {
+        // SELECT_GROWSPACE puts tabs.growspaces.sub into { kind: 'editing', growspaceId: 'gs1', ... }
+        (element as any)._t({ type: 'SELECT_GROWSPACE', growspaceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationService: '' });
+        (element as any).envSelectedId = '';
+        element.currentTab = ConfigTab.SUBAREAS;
+        await element.updateComplete;
+
+        // growspaceId resolves to gsSub.growspaceId ('gs1') → subareas section renders (not placeholder)
+        expect((await sensorsShadow(element)).textContent).not.toContain('Select a growspace');
+    });
+
+    it('line 2770 false-branch: non-Enter keydown on subarea name input does not call _handleAddSubarea', async () => {
+        (element as any).envSelectedId = 'gs1';
+        element.currentTab = ConfigTab.SUBAREAS;
+        (element as any)._showAddSubarea = true;
+        await element.updateComplete;
+
+        const spy = vi.spyOn(element as any, '_handleAddSubarea').mockResolvedValue(undefined);
+
+        const nameInput = (await sensorsShadow(element)).querySelector('input.md3-input') as HTMLInputElement | null;
+        expect(nameInput).toBeDefined();
+        nameInput!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('line 2969 false-branch: rail hidden when allowedTabs has exactly one entry', async () => {
+        element.allowedTabs = [ConfigTab.SENSORS];
+        await element.updateComplete;
+
+        expect(element.shadowRoot?.querySelector('.cfg-rail')).toBeNull();
+    });
+});
+
+// ─── Tank row/form branch gaps: lines 2475, 2507, 2565 ───────────────────────
+
+describe('ConfigDialog - Tank branch coverage (lines 2475, 2507, 2565)', () => {
+    let element: ConfigDialog;
+
+    beforeEach(async () => {
+        mockCustomElements();
+        element = new ConfigDialog();
+        element.hass = { states: {}, callService: vi.fn() } as any;
+        element.growspaceOptions = { gs1: 'Growspace 1' };
+        element.devices = [
+            { deviceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationTarget: '' },
+        ] as any;
+        document.body.appendChild(element);
+        element.open = true;
+        element.currentTab = ConfigTab.TANKS;
+        (element as any).envSelectedId = 'gs1';
+        await element.updateComplete;
+    });
+
+    afterEach(() => {
+        document.body.removeChild(element);
+        vi.clearAllMocks();
+    });
+
+    it('line 2471/2474/2475: empty name falls back to "Tank 1"; null volumeLiters → nothing; null warningLevel → 30%', async () => {
+        (element as any).envIrrigationTanks = [
+            { sensorEntity: 'sensor.tank1', name: '', volumeLiters: null, warningLevel: null },
+        ];
+        await element.updateComplete;
+
+        const text = (await sensorsShadow(element)).textContent ?? '';
+        // name || 'Tank X' fallback
+        expect(text).toContain('Tank 1');
+        // warningLevel ?? 30 → 30%
+        expect(text).toContain('30%');
+        // volumeLiters == null → nothing branch — no "L" suffix
+        expect(text).not.toMatch(/\d+ L/);
+    });
+
+    it('line 2507: IIFE guard returns nothing when tank sub kind is not adding or editing', async () => {
+        // The only valid non-idle states are 'adding' and 'editing', so trigger the dead-code
+        // branch by forcing a synthetic state that passes the outer kind !== 'idle' check
+        // but fails the inner guard.
+        const sm = (element as any)._sm;
+        (element as any)._sm = {
+            ...sm,
+            tabs: {
+                ...sm.tabs,
+                tanks: { sub: { kind: 'confirm-delete' } },
+            },
+        };
+        await element.updateComplete;
+
+        // Outer condition (kind !== 'idle') is satisfied; inner guard short-circuits to nothing
+        expect(element.shadowRoot?.querySelector('.md3-input-group')).toBeNull();
+    });
+
+    it('line 2565: warningLevel input cleared → parseFloat(NaN) || 30 stores 30', async () => {
+        (element as any)._openAddTank();
+
+        // Distinguish warning level input (max="100") from volume input (no max)
+        const inputs = Array.from(
+            (await sensorsShadow(element)).querySelectorAll('input.md3-input')
+        ) as HTMLInputElement[];
+        const warningInput = inputs.find((i) => i.type === 'number' && i.max === '100');
+        expect(warningInput).toBeDefined();
+
+        // First set a real value so the assertion below is non-vacuous
+        warningInput!.value = '45';
+        warningInput!.dispatchEvent(new Event('input'));
+        expect((element as any)._sm.tabs.tanks.sub.warningLevel).toBe(45);
+
+        // Now clear it → parseFloat('') = NaN, NaN || 30 = 30
+        warningInput!.value = '';
+        warningInput!.dispatchEvent(new Event('input'));
+        expect((element as any)._sm.tabs.tanks.sub.warningLevel).toBe(30);
+    });
+});
+
+// ─── Misc branch coverage: getters, setters, guards, setInitialState ──────────
+
+describe('ConfigDialog - misc branch coverage (getters/setters/guards/setInitialState)', () => {
+    let element: ConfigDialog;
+
+    beforeEach(async () => {
+        mockCustomElements();
+        element = new ConfigDialog();
+        element.hass = { states: {}, callService: vi.fn() } as any;
+        element.growspaceOptions = { gs1: 'Growspace 1' };
+        element.devices = [
+            { deviceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationTarget: '' },
+        ] as any;
+        document.body.appendChild(element);
+        element.open = true;
+        await element.updateComplete;
+    });
+
+    afterEach(() => {
+        document.body.removeChild(element);
+        vi.clearAllMocks();
+    });
+
+    it('edit/add getters return defaults when sub-state is idle (lines 291,297,303,309,315,324,333,342)', () => {
+        // sub.kind = 'idle' by default — all ternary false-branches fire
+        expect((element as any).editName).toBe('');
+        expect((element as any).editRows).toBe(0);
+        expect((element as any).editPlantsPerRow).toBe(0);
+        expect((element as any).editNotificationService).toBe('');
+        expect((element as any).addName).toBe('');
+        expect((element as any).addRows).toBe(4);
+        expect((element as any).addPlantsPerRow).toBe(4);
+        expect((element as any).addNotificationService).toBe('');
+    });
+
+    it('addRows/addPlantsPerRow/addNotificationService setters trigger START_ADD_GROWSPACE when idle (lines 327,336,345)', () => {
+        // sub.kind = 'idle' → setters should call START_ADD_GROWSPACE then UPDATE_ADD_DRAFT
+        expect((element as any)._sm.tabs.growspaces.sub.kind).toBe('idle');
+        (element as any).addRows = 6;
+        expect((element as any)._sm.tabs.growspaces.sub.kind).toBe('adding');
+        expect((element as any).addRows).toBe(6);
+
+        // Reset to idle and test the other two setters
+        (element as any)._t({ type: 'CANCEL_GROWSPACES' });
+        (element as any).addPlantsPerRow = 3;
+        expect((element as any)._sm.tabs.growspaces.sub.kind).toBe('adding');
+        expect((element as any).addPlantsPerRow).toBe(3);
+
+        (element as any)._t({ type: 'CANCEL_GROWSPACES' });
+        (element as any).addNotificationService = 'notify.mobile';
+        expect((element as any)._sm.tabs.growspaces.sub.kind).toBe('adding');
+        expect((element as any).addNotificationService).toBe('notify.mobile');
+    });
+
+    it('_newSubareaName getter returns "" when sub is not adding (line 387)', () => {
+        // sub.kind = 'idle' → false branch of ternary
+        expect((element as any)._newSubareaName).toBe('');
+    });
+
+    it('_seedFromDevice without a device leaves draft at defaults', () => {
+        (element as any)._seedFromDevice();
+        expect((element as any)._sm.environmentDraft.selectedGrowspaceId).toBe('');
+    });
+
+    it('_seedFromDevice maps legacy single-sensor fields to arrays', () => {
+        (element as any)._seedFromDevice({
+            deviceId: 'gs1',
+            environmentAttributes: {
+                temperatureSensor: 'sensor.temp',
+                humiditySensor: 'sensor.hum',
+                vpdSensor: 'sensor.vpd',
+            },
+        });
+        expect((element as any)._sm.environmentDraft.temperatureSensors).toEqual(['sensor.temp']);
+        expect((element as any)._sm.environmentDraft.humiditySensors).toEqual(['sensor.hum']);
+        expect((element as any)._sm.environmentDraft.vpdSensors).toEqual(['sensor.vpd']);
+    });
+
+    it('_editTank with empty/null fields uses || and ?? fallbacks (lines 1363–1366)', () => {
+        (element as any).envIrrigationTanks = [
+            { sensorEntity: '', name: '', volumeLiters: null, warningLevel: null },
+        ];
+        (element as any)._updateFanConfig; // ensure element is set up
+        (element as any)._editTank(0);
+        const sub = (element as any)._sm.tabs.tanks.sub;
+        expect(sub.kind).toBe('editing');
+        expect(sub.sensorEntity).toBe('');   // || '' fallback
+        expect(sub.name).toBe('');            // || '' fallback
+        expect(sub.volumeLiters).toBeNull();  // ?? null fallback
+        expect(sub.warningLevel).toBe(30);   // ?? 30 fallback
+    });
+
+    it('_saveTank returns early when kind is idle (line 1377)', () => {
+        // kind = 'idle' → first guard fires, method returns without committing
+        expect((element as any)._sm.tabs.tanks.sub.kind).toBe('idle');
+        (element as any)._saveTank(); // should not throw or change state
+        expect((element as any)._sm.tabs.tanks.sub.kind).toBe('idle');
+    });
+
+    it('_handleSaveGroup updates existing group when found (line 1405 index >= 0 branch)', () => {
+        const existing = { id: 'g1', name: 'Group A', sensors: [] };
+        (element as any)._t({ type: 'UPDATE_ENV_DRAFT', partial: { sensorGroups: [existing] } });
+
+        const updated = { id: 'g1', name: 'Group A Renamed', sensors: ['sensor.a'] };
+        (element as any)._handleSaveGroup(new CustomEvent('save-sensor-group', { detail: { group: updated } }));
+
+        const groups = (element as any)._sm.environmentDraft.sensorGroups;
+        expect(groups).toHaveLength(1);
+        expect(groups[0].name).toBe('Group A Renamed');
+    });
+
+    it('_confirmDeleteGrowspace returns early when not in confirm-delete state (line 1146)', () => {
+        const spy = vi.fn();
+        element.addEventListener('delete-growspace-submit', spy);
+        // sub.kind = 'idle' → guard fires → returns without dispatching
+        (element as any)._confirmDeleteGrowspace();
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('_populateEditFields returns early when devices is undefined (line 1194)', () => {
+        (element as any).devices = undefined;
+        // Should not throw; the guard at line 1194 prevents the find() call
+        expect(() => (element as any)._populateEditFields('gs1')).not.toThrow();
+    });
+
+    it('_loadSubareas uses gsSub.growspaceId when envId is empty and sub is editing (line 1420)', async () => {
+        (element as any)._t({ type: 'SELECT_GROWSPACE', growspaceId: 'gs1', name: 'GS', rows: 4, plantsPerRow: 4, notificationService: '' });
+        (element as any).envSelectedId = '';
+
+        const loadSpy = vi.spyOn(element as any, '_loadSubareas').mockResolvedValue(undefined);
+        // Directly test the editId fallback by calling the real method once
+        loadSpy.mockRestore();
+
+        const { getSubareas: mockGet } = await import('../../../src/slices/subarea');
+        vi.mocked(mockGet).mockResolvedValueOnce([]);
+        await (element as any)._loadSubareas();
+
+        // growspaceId = '' || 'gs1' (from gsSub.growspaceId) → loaded with 'gs1'
+        expect((element as any)._subareasGrowspaceId).toBe('gs1');
+    });
+
+    it('_handleAddSubarea returns early when sub is not adding (line 1441)', async () => {
+        // sub.kind = 'idle' → name = '' → early return
+        expect((element as any)._sm.tabs.subareas.sub.kind).toBe('idle');
+        const { addSubarea: mockAdd } = await import('../../../src/slices/subarea');
+        await (element as any)._handleAddSubarea();
+        expect(vi.mocked(mockAdd)).not.toHaveBeenCalled();
     });
 });

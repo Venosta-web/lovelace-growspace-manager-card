@@ -1,6 +1,6 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { z } from 'zod';
-import { WSError } from './base-api';
+import { WSError, type ErrorCode } from './errors';
 
 let _hass: HomeAssistant | undefined;
 
@@ -25,6 +25,31 @@ export async function callService(
  */
 export function setHass(hass: HomeAssistant): void {
   _hass = hass;
+}
+
+/**
+ * Return the current HomeAssistant instance, or undefined if not yet set.
+ * Used by history-store to access hass.states for entity checks.
+ */
+export function getHass(): HomeAssistant | undefined {
+  return _hass;
+}
+
+/**
+ * Call the Home Assistant REST API through the shared hass reference.
+ * Wraps `hass.callApi` for use from history-store reads that require REST.
+ *
+ * @param method - HTTP method ('GET', etc.)
+ * @param path   - HA REST API path relative to the base URL (e.g. 'history/period/...')
+ */
+export async function callApi<T>(
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  path: string
+): Promise<T> {
+  if (!_hass) {
+    throw new WSError('internal_error', 'callApi: hass is not set — call setHass() first');
+  }
+  return _hass.callApi<T>(method, path);
 }
 
 /**
@@ -58,7 +83,7 @@ export async function callServiceReturning<T>(
   domain: string,
   service: string,
   serviceData: Record<string, unknown>,
-  schema: z.ZodType<T, z.ZodTypeDef, unknown>
+  schema: z.ZodType<T>
 ): Promise<T> {
   if (!_hass) {
     throw new WSError(
@@ -105,7 +130,7 @@ export async function callServiceReturning<T>(
 export async function hassCall<T>(
   command: string,
   params: Record<string, unknown>,
-  schema: z.ZodType<T, z.ZodTypeDef, unknown>
+  schema: z.ZodType<T>
 ): Promise<T> {
   if (!_hass) {
     throw new WSError('internal_error', 'hassCall: hass is not set — call setHass() first');
@@ -128,10 +153,12 @@ export async function hassCall<T>(
           'coordinator_not_ready',
           'entity_not_found',
           'validation_failed',
+          'conflict',
           'internal_error',
+          'rate_limited',
         ].includes(code)
           ? code
-          : 'internal_error') as ConstructorParameters<typeof WSError>[0],
+          : 'internal_error') as ErrorCode,
         message
       );
     }

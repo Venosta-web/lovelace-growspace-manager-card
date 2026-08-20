@@ -1,7 +1,24 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, type PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { sharedStyles } from '../../../styles/shared.styles';
+import { statusTokens } from '../../../styles/status.styles';
+import { variables } from '../../../styles/variables';
+import {
+  rampVar,
+  rampPalettesEqual,
+  resolveRamp,
+  type RampPalette,
+  type RampRole,
+} from '../../../styles/environment-ramp';
+
+/** The four ramp stops this chart consumes, with the words it labels them by. */
+const LEGEND: readonly { role: RampRole; label: string }[] = [
+  { role: 'low', label: 'Wet' },
+  { role: 'high', label: 'Fair' },
+  { role: 'optimal', label: 'Optimal' },
+  { role: 'farHigh', label: 'Dry' },
+];
 
 @customElement('vpd-heatmap')
 export class VPDHeatmap extends LitElement {
@@ -18,7 +35,11 @@ export class VPDHeatmap extends LitElement {
     | 'dry'
     | 'cure' = 'vegetative';
 
+  /* The canvas resolves --gm-* out of its own root, so both blocks that declare
+     them have to be composed here rather than inherited from an ancestor card. */
   static styles = [
+    variables,
+    statusTokens,
     sharedStyles,
     css`
       :host {
@@ -32,7 +53,7 @@ export class VPDHeatmap extends LitElement {
       canvas {
         width: 100%;
         height: auto;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         background: var(--card-background-color, #202020);
       }
 
@@ -55,7 +76,7 @@ export class VPDHeatmap extends LitElement {
         backdrop-filter: blur(4px);
         color: white;
         padding: 4px 8px;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm, 8px);
         font-size: 0.75rem;
         font-weight: 600;
         white-space: nowrap;
@@ -71,7 +92,7 @@ export class VPDHeatmap extends LitElement {
         justify-content: center;
         gap: 12px;
         margin-top: 8px;
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
       }
 
@@ -86,15 +107,25 @@ export class VPDHeatmap extends LitElement {
         height: 10px;
         border-radius: 2px;
       }
+
+      .ramp-probe {
+        position: absolute;
+        width: 0;
+        height: 0;
+        visibility: hidden;
+      }
     `,
   ];
 
-  protected firstUpdated() {
-    this._drawHeatmap();
-  }
+  private _palette?: RampPalette;
 
-  protected updated(changedProps: Map<string, any>) {
+  protected updated(changedProps: PropertyValues) {
+    const palette = this._resolvePalette();
+    const paletteChanged = !rampPalettesEqual(this._palette, palette);
+    this._palette = palette;
+
     if (
+      paletteChanged ||
       changedProps.has('stage') ||
       changedProps.has('temperature') ||
       changedProps.has('humidity')
@@ -103,13 +134,17 @@ export class VPDHeatmap extends LitElement {
     }
   }
 
+  private _resolvePalette(): RampPalette {
+    return resolveRamp(this.shadowRoot?.getElementById('rampProbe'));
+  }
+
   private _getVPD(tempC: number, rh: number): number {
     const svp = 0.61078 * Math.exp((17.27 * tempC) / (tempC + 237.3));
     const vpd = svp * (1 - rh / 100);
     return vpd;
   }
 
-  private _getZoneColor(vpd: number, stage: string): string {
+  private _getZoneRole(vpd: number, stage: string): RampRole {
     // VPD ranges in kPa
     let min, max, optMin, optMax;
 
@@ -160,12 +195,12 @@ export class VPDHeatmap extends LitElement {
         max = 1.5;
     }
 
-    if (vpd >= optMin && vpd <= optMax) return '#4caf50'; // Optimal (Green)
-    if (vpd < min) return '#2196f3'; // Wet (Too Low - Blue)
-    if (vpd > max) return '#f44336'; // Dry (Too High - Red)
+    if (vpd >= optMin && vpd <= optMax) return 'optimal';
+    if (vpd < min) return 'low';
+    if (vpd > max) return 'farHigh';
 
-    // Transitions
-    return '#ff9800'; // Warning (Orange)
+    // Either transition band, both sides of optimal — one "drifting" colour.
+    return 'high';
   }
 
   private _drawHeatmap() {
@@ -188,6 +223,9 @@ export class VPDHeatmap extends LitElement {
     // Clear
     ctx.clearRect(0, 0, width, height);
 
+    // Resolved once for the whole draw: the loop below runs 7,500 times.
+    const palette = this._palette ?? this._resolvePalette();
+
     // Draw Heatmap pixels
     for (let x = 0; x < width; x += 4) {
       for (let y = 0; y < height; y += 4) {
@@ -195,9 +233,8 @@ export class VPDHeatmap extends LitElement {
         const rh = maxRH - (y / height) * (maxRH - minRH);
 
         const vpd = this._getVPD(temp, rh);
-        const color = this._getZoneColor(vpd, this.stage);
 
-        ctx.fillStyle = color;
+        ctx.fillStyle = palette[this._getZoneRole(vpd, this.stage)];
         ctx.fillRect(x, y, 4, 4);
       }
     }
@@ -268,23 +305,20 @@ export class VPDHeatmap extends LitElement {
           : ''}
       </div>
       <div class="legend">
-        <div class="legend-item">
-          <div class="legend-color" style="background: #2196f3"></div>
-          Wet
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #ff9800"></div>
-          Fair
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #4caf50"></div>
-          Optimal
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #f44336"></div>
-          Dry
-        </div>
+        ${LEGEND.map(
+          ({ role, label }) => html`
+            <div class="legend-item">
+              <div
+                class="legend-color"
+                data-role=${role}
+                style="background: ${rampVar(role)}"
+              ></div>
+              ${label}
+            </div>
+          `
+        )}
       </div>
+      <div class="ramp-probe" id="rampProbe"></div>
     `;
   }
 }

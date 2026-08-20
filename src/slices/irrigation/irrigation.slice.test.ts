@@ -15,11 +15,14 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../../services/types';
+import { createGrowspaceDevice } from '../../services/types';
 import * as hassCall from '../../services/hass-call';
+import { devices$, setDevices } from '../grid';
 import {
   irrigationConfigs$,
   irrigationStrategies$,
   tankLevels$,
+  cropSteeringHistory$,
   setIrrigationConfig,
   setIrrigationStrategy,
   setTankLevels,
@@ -31,11 +34,16 @@ import {
   addDrainTime,
   removeDrainTime,
   updateIrrigationStrategy,
+  applySteeringMode,
   saveIrrigationSettings,
   logDrainReading,
   configureDrainMonitoring,
+  setEcTargetRanges,
   runIrrigationCycle,
+  fetchCropSteeringHistory,
+  getIrrigationAnalytics,
 } from './index';
+import { CropSteeringHistorySchema } from '../../schemas/api-schema';
 import {
   IrrigationModeSchema,
   SetIrrigationStrategyPayloadSchema,
@@ -53,6 +61,7 @@ import {
 
 vi.mock('../../services/hass-call', () => ({
   callService: vi.fn().mockResolvedValue(undefined),
+  hassCall: vi.fn().mockResolvedValue({}),
   setHass: vi.fn(),
 }));
 
@@ -86,6 +95,8 @@ beforeEach(() => {
   irrigationConfigs$.set(new Map());
   irrigationStrategies$.set(new Map());
   tankLevels$.set(new Map());
+  cropSteeringHistory$.set(new Map());
+  devices$.set([]);
   vi.clearAllMocks();
   vi.mocked(hassCall.callService).mockResolvedValue(undefined);
 });
@@ -373,6 +384,29 @@ describe('addIrrigationTime', () => {
     const config = irrigationConfigs$.get().get('new_gs');
     expect(config?.irrigationTimes).toEqual([{ time: '09:00', duration: 45 }]);
   });
+
+  it('cross-slice bridge: also patches devices$.irrigationConfig optimistically', async () => {
+    setDevices([createGrowspaceDevice({ deviceId: 'gs1', name: 'G1' })]);
+    setIrrigationConfig('gs1', makeConfig());
+
+    await addIrrigationTime('gs1', '08:00', 60);
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.irrigationTimes).toContainEqual(
+      expect.objectContaining({ time: '08:00' })
+    );
+  });
+
+  it('cross-slice bridge: reverts devices$.irrigationConfig on rollback', async () => {
+    setDevices([createGrowspaceDevice({ deviceId: 'gs1', name: 'G1' })]);
+    setIrrigationConfig('gs1', makeConfig());
+    vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('fail'));
+
+    await expect(addIrrigationTime('gs1', '08:00', 60)).rejects.toThrow();
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.irrigationTimes).toHaveLength(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -418,6 +452,30 @@ describe('removeIrrigationTime', () => {
     const times = irrigationConfigs$.get().get('gs1')?.irrigationTimes ?? [];
     expect(times).toContainEqual(expect.objectContaining({ time: '08:00' }));
   });
+
+  it('cross-slice bridge: also removes from devices$.irrigationConfig optimistically', async () => {
+    setDevices([
+      createGrowspaceDevice({
+        deviceId: 'gs1',
+        name: 'G1',
+        irrigationConfig: {
+          irrigationTimes: [
+            { time: '08:00', duration: 60 },
+            { time: '14:00', duration: 60 },
+          ],
+          drainTimes: [],
+        },
+      }),
+    ]);
+
+    await removeIrrigationTime('gs1', '08:00');
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.irrigationTimes).not.toContainEqual(
+      expect.objectContaining({ time: '08:00' })
+    );
+    expect(device?.irrigationConfig.irrigationTimes).toHaveLength(1);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -454,6 +512,18 @@ describe('addDrainTime', () => {
     await expect(addDrainTime('gs1', '18:00', 30)).rejects.toThrow();
 
     expect(irrigationConfigs$.get().get('gs1')?.drainTimes).toHaveLength(0);
+  });
+
+  it('cross-slice bridge: also patches devices$.irrigationConfig.drainTimes optimistically', async () => {
+    setDevices([createGrowspaceDevice({ deviceId: 'gs1', name: 'G1' })]);
+    setIrrigationConfig('gs1', makeConfig());
+
+    await addDrainTime('gs1', '18:00', 30);
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.drainTimes).toContainEqual(
+      expect.objectContaining({ time: '18:00' })
+    );
   });
 });
 
@@ -495,6 +565,21 @@ describe('removeDrainTime', () => {
     expect(irrigationConfigs$.get().get('gs1')?.drainTimes).toContainEqual(
       expect.objectContaining({ time: '18:00' })
     );
+  });
+
+  it('cross-slice bridge: also removes from devices$.irrigationConfig.drainTimes', async () => {
+    setDevices([
+      createGrowspaceDevice({
+        deviceId: 'gs1',
+        name: 'G1',
+        irrigationConfig: { irrigationTimes: [], drainTimes: [{ time: '18:00', duration: 30 }] },
+      }),
+    ]);
+
+    await removeDrainTime('gs1', '18:00');
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.drainTimes).toHaveLength(0);
   });
 });
 
@@ -560,6 +645,84 @@ describe('updateIrrigationStrategy', () => {
     );
   });
 
+  it('serializes per-phase shot and sizing-mode fields to the payload', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+
+    await updateIrrigationStrategy('gs1', {
+      p1ShotDurationSeconds: 12,
+      p1ShotIntervalMinutes: 20,
+      p2ShotDurationSeconds: 18,
+      p2ShotIntervalMinutes: 30,
+      p1ShotVolumePercent: 3.5,
+      p2ShotVolumePercent: 5,
+      shotSizingMode: 'volume',
+    });
+
+    expect(hassCall.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'set_irrigation_strategy',
+      expect.objectContaining({
+        growspace_id: 'gs1',
+        p1_shot_duration_seconds: 12,
+        p1_shot_interval_minutes: 20,
+        p2_shot_duration_seconds: 18,
+        p2_shot_interval_minutes: 30,
+        p1_shot_volume_percent: 3.5,
+        p2_shot_volume_percent: 5,
+        shot_sizing_mode: 'volume',
+      })
+    );
+  });
+
+  it('serializes Adaptive Shot Control fields to the payload', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+
+    await updateIrrigationStrategy('gs1', {
+      dynamicShotEnabled: false,
+      dynamicAggressiveness: 1.5,
+      dynamicRecovery: 0.2,
+      dynamicShotSizeFloor: 0.4,
+      dynamicIntervalCeiling: 2.0,
+    });
+
+    expect(hassCall.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'set_irrigation_strategy',
+      expect.objectContaining({
+        growspace_id: 'gs1',
+        dynamic_shot_enabled: false,
+        dynamic_aggressiveness: 1.5,
+        dynamic_recovery: 0.2,
+        dynamic_shot_size_floor: 0.4,
+        dynamic_interval_ceiling: 2.0,
+      })
+    );
+  });
+
+  it('serializes substrate profile to flat keys and band/modulation fields', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+
+    await updateIrrigationStrategy('gs1', {
+      substrateProfile: { mediaType: 'rockwool', litersPerPot: 6.5 },
+      poreEcTargetMin: 2.5,
+      poreEcTargetMax: 4.0,
+      ecModulationEnabled: true,
+    });
+
+    expect(hassCall.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'set_irrigation_strategy',
+      expect.objectContaining({
+        growspace_id: 'gs1',
+        substrate_media_type: 'rockwool',
+        substrate_liters_per_pot: 6.5,
+        pore_ec_target_min: 2.5,
+        pore_ec_target_max: 4.0,
+        ec_modulation_enabled: true,
+      })
+    );
+  });
+
   it('rolls back strategy on failure', async () => {
     setIrrigationStrategy('gs1', makeStrategy({ lightsOnTime: '06:00' }));
     vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('fail'));
@@ -599,6 +762,41 @@ describe('updateIrrigationStrategy', () => {
       shotDurationSeconds: 30,
       shotIntervalMinutes: 15,
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applySteeringMode
+// ---------------------------------------------------------------------------
+
+describe('applySteeringMode', () => {
+  it('calls the apply_steering_mode WS command with the chosen mode', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+
+    await applySteeringMode('gs1', 'generative');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/apply_steering_mode',
+      { growspace_id: 'gs1', steering_mode: 'generative' },
+      expect.anything()
+    );
+  });
+
+  it('reflects the selected mode optimistically', async () => {
+    setIrrigationStrategy('gs1', makeStrategy({ declaredSteeringMode: null }));
+
+    await applySteeringMode('gs1', 'vegetative');
+
+    expect(irrigationStrategies$.get().get('gs1')?.declaredSteeringMode).toBe('vegetative');
+  });
+
+  it('rolls back the declared mode on failure', async () => {
+    setIrrigationStrategy('gs1', makeStrategy({ declaredSteeringMode: 'balanced' }));
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('fail'));
+
+    await expect(applySteeringMode('gs1', 'generative')).rejects.toThrow();
+
+    expect(irrigationStrategies$.get().get('gs1')?.declaredSteeringMode).toBe('balanced');
   });
 });
 
@@ -701,6 +899,27 @@ describe('saveIrrigationSettings', () => {
 
     expect(irrigationConfigs$.get().get('gs1')?.irrigationPumpEntity).toBe('switch.old');
   });
+
+  it('cross-slice bridge: also patches devices$.irrigationConfig pump entity optimistically', async () => {
+    setDevices([
+      createGrowspaceDevice({
+        deviceId: 'gs1',
+        name: 'G1',
+        irrigationConfig: { irrigationTimes: [], drainTimes: [], irrigationPumpEntity: 'switch.old' },
+      }),
+    ]);
+    setIrrigationConfig('gs1', makeConfig({ irrigationPumpEntity: 'switch.old' }));
+
+    await saveIrrigationSettings('gs1', {
+      irrigationPumpEntity: 'switch.new',
+      drainPumpEntity: 'switch.drain',
+      irrigationDuration: 60,
+      drainDuration: 30,
+    });
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.irrigationPumpEntity).toBe('switch.new');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -762,6 +981,35 @@ describe('configureDrainMonitoring', () => {
       'configure_drain_monitoring',
       { growspace_id: 'gs1' }
     );
+  });
+});
+
+describe('setEcTargetRanges', () => {
+  it('does not call the service when the ranges array is empty', async () => {
+    await setEcTargetRanges('gs1', []);
+
+    expect(hassCall.callService).not.toHaveBeenCalled();
+  });
+
+  it('calls set_ec_target_range once per range, remapping min/max to feed_ec bounds', async () => {
+    await setEcTargetRanges('gs1', [
+      { stage: 'veg', minEc: 1.2, maxEc: 1.8 },
+      { stage: 'flower_early', minEc: 1.5, maxEc: 2.2 },
+    ]);
+
+    expect(hassCall.callService).toHaveBeenCalledTimes(2);
+    expect(hassCall.callService).toHaveBeenNthCalledWith(1, 'growspace_manager', 'set_ec_target_range', {
+      growspace_id: 'gs1',
+      stage: 'veg',
+      feed_ec_min: 1.2,
+      feed_ec_max: 1.8,
+    });
+    expect(hassCall.callService).toHaveBeenNthCalledWith(2, 'growspace_manager', 'set_ec_target_range', {
+      growspace_id: 'gs1',
+      stage: 'flower_early',
+      feed_ec_min: 1.5,
+      feed_ec_max: 2.2,
+    });
   });
 });
 
@@ -941,5 +1189,123 @@ describe('Zod Schema Validations', () => {
       };
       expect(PhaseWindowsSchema.parse(windows)).toEqual(windows);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CropSteeringHistorySchema
+// ---------------------------------------------------------------------------
+
+const minimalHistory = {
+  growspace_id: 'gs1',
+  lights_on: '2024-06-01T06:00:00+00:00',
+  soil_moisture: [
+    { timestamp: '2024-06-01T04:00:00+00:00', value: 42.5 },
+    { timestamp: '2024-06-01T04:05:00+00:00', value: null },
+  ],
+};
+
+describe('CropSteeringHistorySchema', () => {
+  it('parses a minimal response (no pore_ec / bulk_ec)', () => {
+    const result = CropSteeringHistorySchema.parse(minimalHistory);
+    expect(result.growspace_id).toBe('gs1');
+    expect(result.lights_on).toBe('2024-06-01T06:00:00+00:00');
+    expect(result.soil_moisture).toHaveLength(2);
+    expect(result.soil_moisture[0]).toEqual({ timestamp: '2024-06-01T04:00:00+00:00', value: 42.5 });
+    expect(result.soil_moisture[1]).toEqual({ timestamp: '2024-06-01T04:05:00+00:00', value: null });
+    expect(result.pore_ec).toBeUndefined();
+    expect(result.bulk_ec).toBeUndefined();
+  });
+
+  it('parses a response with optional pore_ec and bulk_ec arrays', () => {
+    const full = {
+      ...minimalHistory,
+      pore_ec: [{ timestamp: '2024-06-01T04:00:00+00:00', value: 3.1 }],
+      bulk_ec: [{ timestamp: '2024-06-01T04:00:00+00:00', value: 2.8 }],
+    };
+    const result = CropSteeringHistorySchema.parse(full);
+    expect(result.pore_ec).toHaveLength(1);
+    expect(result.bulk_ec).toHaveLength(1);
+  });
+
+  it('rejects when soil_moisture is missing', () => {
+    const { soil_moisture: _sm, ...bad } = minimalHistory;
+    expect(() => CropSteeringHistorySchema.parse(bad)).toThrow();
+  });
+
+  it('rejects when lights_on is missing', () => {
+    const { lights_on: _lo, ...bad } = minimalHistory;
+    expect(() => CropSteeringHistorySchema.parse(bad)).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchCropSteeringHistory
+// ---------------------------------------------------------------------------
+
+describe('fetchCropSteeringHistory', () => {
+  it('calls hassCall with get_crop_steering_history and the growspace_id', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(minimalHistory);
+
+    await fetchCropSteeringHistory('gs1');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_crop_steering_history',
+      { growspace_id: 'gs1' },
+      expect.anything()
+    );
+  });
+
+  it('updates cropSteeringHistory$ keyed by growspace_id on success', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(minimalHistory);
+
+    await fetchCropSteeringHistory('gs1');
+
+    expect(cropSteeringHistory$.get().get('gs1')).toMatchObject({ growspace_id: 'gs1' });
+  });
+
+  it('re-throws on failure and leaves existing atom entry unchanged', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('ws error'));
+
+    await expect(fetchCropSteeringHistory('gs1')).rejects.toThrow('ws error');
+    expect(cropSteeringHistory$.get().get('gs1')).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getIrrigationAnalytics
+// ---------------------------------------------------------------------------
+
+describe('getIrrigationAnalytics', () => {
+  it('calls hassCall with irrigation_analytics command and growspace_id', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      growspace_id: 'gs1',
+      stage_aggregates: { veg: 1.5, flower: 2.1 },
+    });
+
+    await getIrrigationAnalytics('gs1');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/irrigation_analytics',
+      { growspace_id: 'gs1' },
+      expect.anything()
+    );
+  });
+
+  it('returns the analytics payload on success', async () => {
+    const payload = { growspace_id: 'gs1', stage_aggregates: { veg: 1.5 } };
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(payload);
+
+    const result = await getIrrigationAnalytics('gs1');
+
+    expect(result).toEqual(payload);
+  });
+
+  it('returns null when hassCall throws', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('network error'));
+
+    const result = await getIrrigationAnalytics('gs1');
+
+    expect(result).toBeNull();
   });
 });

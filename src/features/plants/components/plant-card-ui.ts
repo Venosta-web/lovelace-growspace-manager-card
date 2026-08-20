@@ -171,9 +171,9 @@ export class PlantCardUI extends LitElement {
     if (!sex || sex === 'unknown') return nothing;
     const symbols: Record<string, string> = { female: '♀', male: '♂', hermaphrodite: '⚥' };
     const colors: Record<string, string> = {
-      female: '#4caf50',
-      male: '#2196f3',
-      hermaphrodite: '#ff9800',
+      female: 'var(--sex-female, #4caf50)',
+      male: 'var(--sex-male, #2196f3)',
+      hermaphrodite: 'var(--sex-hermaphrodite, #ff9800)',
     };
     const symbol = symbols[sex];
     const color = colors[sex];
@@ -181,7 +181,7 @@ export class PlantCardUI extends LitElement {
     return html`
       <span
         class="status-icon"
-        style="font-size:13px; font-weight:bold; color:${color}; line-height:1; display:flex; align-items:center;"
+        style="font-size:var(--font-size-supporting); font-weight:bold; color:${color}; line-height:1; display:flex; align-items:center;"
         title="Sex: ${sex}"
         role="img"
         aria-label="Sex: ${sex}"
@@ -264,7 +264,7 @@ export class PlantCardUI extends LitElement {
     }
 
     const isAhead = this.growthDeviation > 0;
-    const color = isAhead ? '#4caf50' : '#f44336';
+    const color = isAhead ? 'var(--success-color, #4caf50)' : 'var(--error-color, #f44336)';
     const bgColor = isAhead ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)';
 
     return html`

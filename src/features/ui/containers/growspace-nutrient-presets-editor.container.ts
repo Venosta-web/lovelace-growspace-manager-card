@@ -1,66 +1,53 @@
-import { LitElement, html, nothing } from 'lit';
+import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
-import { hassContext, storeContext } from '../../../lib/context';
-import { GrowspaceStore } from '../../../store/core/growspace-store';
-import { NutrientPreset } from '../../../types';
+import { nutrientPresets$, nutrientInventory$, fetchNutrientPresets } from '../../../slices/nutrient';
+import type { PresetsSub } from '../../../dialogs/feed-and-water-dialog-sm';
 import '../components/growspace-nutrient-presets-editor-ui';
 
+/**
+ * Thin wiring layer that subscribes to the nutrient atoms and passes live
+ * inventory + preset data to the presets editor UI for dropdown population
+ * and orphan detection. Self-fetches its preset data on open (see the
+ * "Dialog self-fetch on open" entry in CONTEXT.md), rendering a loading
+ * state until the atom resolves.
+ */
 @customElement('growspace-nutrient-presets-editor')
 export class GrowspaceNutrientPresetsEditorContainer extends LitElement {
-  @consume({ context: hassContext, subscribe: true })
-  public hass!: any;
+  @property({ attribute: false }) selectedId: string | null = null;
+  @property({ attribute: false }) sub: PresetsSub = { kind: 'idle' };
 
-  @consume({ context: storeContext, subscribe: true })
-  @property({ attribute: false })
-  public store!: GrowspaceStore;
+  private _presets = new StoreController(this, nutrientPresets$);
+  private _inventory = new StoreController(this, nutrientInventory$);
 
-  @property({ type: Boolean }) open = false;
-  @property({ type: String }) growspaceId?: string;
-
-  private _nutrientDataController!: StoreController<
-    import('../../../store/core/data-store').NutrientDataState
-  >;
-
-  connectedCallback() {
+  connectedCallback(): void {
     super.connectedCallback();
-    if (this.store) {
-      this._nutrientDataController = new StoreController(this, this.store.data.$nutrientDataState);
-    }
-  }
-
-  private _handleSave(e: CustomEvent<Partial<NutrientPreset>>) {
-    const preset = e.detail;
-    void this.store.actions.nutrient.savePreset({
-      preset_id: preset.id,
-      name: preset.name || 'Unnamed Preset',
-      nutrients:
-        preset.nutrients?.map((n: import('../../../services/types').NutrientItem) => ({
-          name: n.name,
-          dose_ml_l: n.dose_ml_l,
-        })) || [],
-    });
-  }
-
-  private _handleDelete(e: CustomEvent<{ presetId: string }>) {
-    void this.store.actions.nutrient.removePreset(e.detail.presetId);
+    fetchNutrientPresets().catch((err: unknown) =>
+      console.error('[nutrient-presets-editor] failed to fetch presets', err)
+    );
   }
 
   render() {
-    if (!this.store || !this._nutrientDataController) return nothing;
+    const presets = this._presets.value;
+    const inventory = this._inventory.value;
 
-    const { nutrientPresets } = this._nutrientDataController.value;
+    if (presets === null) {
+      return html`<div class="presets-loading" role="status">Loading presets…</div>`;
+    }
 
     return html`
       <growspace-nutrient-presets-editor-ui
-        .open=${this.open}
-        .presets=${nutrientPresets}
-        .growspaceId=${this.growspaceId}
-        @close=${() => this.dispatchEvent(new CustomEvent('close'))}
-        @save-preset=${this._handleSave}
-        @delete-preset=${this._handleDelete}
+        .presets=${presets}
+        .inventory=${inventory}
+        .selectedId=${this.selectedId}
+        .sub=${this.sub}
       ></growspace-nutrient-presets-editor-ui>
     `;
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'growspace-nutrient-presets-editor': GrowspaceNutrientPresetsEditorContainer;
   }
 }

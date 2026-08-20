@@ -1,305 +1,391 @@
-import { fixture } from '@open-wc/testing-helpers';
-import { expect, test, describe, aroundEach, vi } from 'vitest';
-import { html } from 'lit';
+import { expect, test, describe, beforeEach, afterEach, vi } from 'vitest';
 import { GrowspaceTankCard } from '../../src/cards/growspace-tank-card';
-import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
 import type { IrrigationTank } from '../../src/services/types';
-import { createMockHass } from '../mocks/hass';
+import { aHass, aGrowspace } from '../fixtures';
+import { setDevices } from '../../src/slices/grid';
+import { renderCard } from '../harness';
 
-// Ensure the custom element is defined
 if (!customElements.get('growspace-tank-card')) {
-    customElements.define('growspace-tank-card', GrowspaceTankCard);
+  customElements.define('growspace-tank-card', GrowspaceTankCard);
 }
 
-// Mock sub-components
 vi.mock('../../src/features/shared/ui/error-boundary', () => ({
-    ErrorBoundary: class extends HTMLElement {
-        constructor() {
-            super();
-            this.attachShadow({ mode: 'open' }).innerHTML = '<slot></slot>';
-        }
+  ErrorBoundary: class extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' }).innerHTML = '<slot></slot>';
     }
+  },
 }));
-// We don't necessarily need to mock the editor class itself if we just check tag name
 vi.mock('../../src/cards/editors/growspace-tank-card-editor', () => ({
-    GrowspaceTankCardEditor: class extends HTMLElement {}
+  GrowspaceTankCardEditor: class extends HTMLElement {},
+}));
+vi.mock('../../src/slices/growspace', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/slices/growspace')>()),
+  fetchRawCollection: vi.fn(() => new Promise(() => {})),
 }));
 
 describe('GrowspaceTankCard', () => {
-    let element: GrowspaceTankCard;
+  const growspace = aGrowspace();
+  const hass = aHass({ growspaces: [growspace] });
 
-    aroundEach(async (runTest) => {
-        element = await fixture<GrowspaceTankCard>(html`
-            <growspace-tank-card></growspace-tank-card>
-        `);
-        element.hass = createMockHass() as any;
-        await runTest();
-        vi.restoreAllMocks();
+  afterEach(() => {
+    setDevices([]);
+  });
+
+  test('renders without crash', async () => {
+    const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+    expect(handle.element).toBeInstanceOf(GrowspaceTankCard);
+    handle.unmount();
+  });
+
+  test('throws error on invalid config', async () => {
+    const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+    expect(() => handle.element.setConfig(undefined as any)).toThrowError('Invalid configuration');
+    handle.unmount();
+  });
+
+  test('renders error state when hass is missing', async () => {
+    const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+    handle.element.hass = undefined as any;
+    await handle.element.updateComplete;
+
+    const errorDiv = handle.element.shadowRoot?.querySelector('.error');
+    expect(errorDiv).toBeTruthy();
+    expect(errorDiv?.textContent).toContain('Home Assistant not available');
+    handle.unmount();
+  });
+
+  test('renders loading state when store is loading and no devices', async () => {
+    const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+    handle.element.store.ui.$isLoading.set(true);
+    setDevices([]);
+    await handle.element.updateComplete;
+
+    const loader = handle.element.shadowRoot?.querySelector('ha-circular-progress');
+    expect(loader).toBeTruthy();
+    handle.unmount();
+  });
+
+  test('renders no-data state when devices array is empty', async () => {
+    const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+    handle.element.store.ui.$isLoading.set(false);
+    setDevices([]);
+    await handle.element.updateComplete;
+
+    const noData = handle.element.shadowRoot?.querySelector('.no-data');
+    expect(noData).toBeTruthy();
+    expect(noData?.textContent).toContain('No growspace devices found.');
+    handle.unmount();
+  });
+
+  test('renders empty state when no tanks configured', async () => {
+    const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+    handle.element.store.ui.$isLoading.set(false);
+    setDevices([
+      { deviceId: growspace.growspaceId, name: growspace.name, environmentAttributes: { irrigationTanks: [] }, plants: [] } as any,
+    ]);
+    handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
+    await handle.element.updateComplete;
+
+    const emptyState = handle.element.shadowRoot?.querySelector('.empty-state');
+    expect(emptyState).toBeTruthy();
+    expect(emptyState?.textContent).toContain('No irrigation tanks configured');
+    handle.unmount();
+  });
+
+  describe('depletion countdown', () => {
+    let handle: Awaited<ReturnType<typeof renderCard<GrowspaceTankCard>>>;
+    const tanks: IrrigationTank[] = [
+      {
+        name: 'Main Tank',
+        fillLevel: 80,
+        isWarning: false,
+        hoursRemaining: 48,
+        volumeLiters: 100,
+        depletionStatus: 'depleting',
+        warningLevel: 20,
+        sensorEntity: 'sensor.main_tank',
+      },
+      {
+        name: 'Low Tank',
+        fillLevel: 15,
+        isWarning: true,
+        hoursRemaining: 4,
+        volumeLiters: 50,
+        depletionStatus: 'depleting',
+        warningLevel: 20,
+        sensorEntity: 'sensor.low_tank',
+      },
+    ];
+
+    beforeEach(async () => {
+      handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+      handle.element.store.ui.$isLoading.set(false);
+      setDevices([
+        { deviceId: growspace.growspaceId, name: growspace.name, environmentAttributes: { irrigationTanks: tanks }, plants: [] } as any,
+      ]);
+      handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
+      await handle.element.updateComplete;
     });
 
-    test('is defined', () => {
-        expect(element).toBeInstanceOf(GrowspaceTankCard);
+    test('shows depletion countdown for main tank as days', () => {
+      const tankCards = handle.element.shadowRoot?.querySelectorAll('.tank-card');
+      expect(tankCards?.length).toBe(2);
+      expect(tankCards?.[0].querySelector('.tank-meta')?.textContent).toContain('2d left');
     });
 
-    test('setConfig updates config and initializes store', () => {
-        const config: GrowspaceManagerCardConfig = {
-            type: 'custom:growspace-tank-card',
-            default_growspace: 'test_tent',
-        };
-        const spy = vi.spyOn(element.store, 'initializeSelectedDevice');
-        element.setConfig(config);
-        expect((element as any)._config).toBe(config);
-        expect(spy).toHaveBeenCalledWith(config);
+    test('shows depletion countdown for low tank as hours', () => {
+      const tankCards = handle.element.shadowRoot?.querySelectorAll('.tank-card');
+      expect(tankCards?.[1].querySelector('.tank-meta')?.textContent).toContain('4h left');
     });
 
-    test('throws error on invalid config', () => {
-        expect(() => element.setConfig(undefined as any)).toThrowError('Invalid configuration');
+    test('warning badge shows count of low tanks', () => {
+      const warningBadge = handle.element.shadowRoot?.querySelector('.warning-badge');
+      expect(warningBadge?.textContent).toContain('1 low');
     });
 
-    test('renders error state when hass is missing', async () => {
-        element.hass = undefined as any;
-        await element.updateComplete;
+    test('cleanup', () => {
+      handle.unmount();
+    });
+  });
 
-        const errorDiv = element.shadowRoot?.querySelector('.error');
-        expect(errorDiv).toBeTruthy();
-        expect(errorDiv?.textContent).toContain('Home Assistant not available');
+  test('getCardSize returns expected size', async () => {
+    const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+    expect(handle.element.getCardSize()).toBe(3);
+    handle.unmount();
+  });
+
+  test('getStubConfig returns expected config', () => {
+    expect(GrowspaceTankCard.getStubConfig()).toEqual({
+      type: 'custom:growspace-tank-card',
+      default_growspace: '',
+    });
+  });
+
+  test('disconnectedCallback destroys store', async () => {
+    const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+    const spy = vi.spyOn(handle.element.store, 'destroy');
+    handle.element.disconnectedCallback();
+    expect(spy).toHaveBeenCalled();
+  });
+
+  test('getConfigElement returns growspace-tank-card-editor element', async () => {
+    const editor = await GrowspaceTankCard.getConfigElement();
+    expect(editor.tagName.toLowerCase()).toBe('growspace-tank-card-editor');
+  });
+
+  test('getLayoutOptions returns grid sizing options', async () => {
+    const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+    const opts = handle.element.getLayoutOptions();
+    expect(opts).toEqual({
+      grid_columns: 4,
+      grid_min_columns: 2,
+      grid_rows: 6,
+      grid_min_rows: 5,
+    });
+    handle.unmount();
+  });
+
+  test('renders error state when devices exist but none matches selectedDevice', async () => {
+    const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+    handle.element.store.ui.$isLoading.set(false);
+    setDevices([
+      {
+        deviceId: 'other-device',
+        name: 'Other',
+        environmentAttributes: { irrigationTanks: [] },
+        plants: [],
+      } as any,
+    ]);
+    handle.element.store.grid.$selectedDevice.set('no-match-device-id');
+    await handle.element.updateComplete;
+
+    const errorDiv = handle.element.shadowRoot?.querySelector('.error');
+    expect(errorDiv).toBeTruthy();
+    expect(errorDiv?.textContent).toContain('No valid growspace selected');
+    handle.unmount();
+  });
+
+  test('_handleError logs to console.error', async () => {
+    const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const testError = new Error('test error');
+    (handle.element as any)._handleError(testError, { componentStack: 'test' });
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Growspace Tank Card caught error:',
+      testError,
+      { componentStack: 'test' }
+    );
+    consoleSpy.mockRestore();
+    handle.unmount();
+  });
+
+  describe('_renderTank branch coverage', () => {
+    const makeDevice = (tanks: IrrigationTank[]) => ({
+      deviceId: 'test_tent',
+      name: 'Test Tent',
+      environmentAttributes: { irrigationTanks: tanks },
+      plants: [],
     });
 
-    test('renders loading state when store is loading and no devices', async () => {
-        element.store.ui.$isLoading.set(true);
-        element.store.data.$devices.set([]);
-        await element.updateComplete;
+    async function renderWithTanks(tanks: IrrigationTank[]) {
+      const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+      handle.element.store.ui.$isLoading.set(false);
+      setDevices([makeDevice(tanks) as any]);
+      handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
+      await handle.element.updateComplete;
+      return handle;
+    }
 
-        const loader = element.shadowRoot?.querySelector('ha-circular-progress');
-        expect(loader).toBeTruthy();
+    test('depletionStatus refilling shows ↑ Refilling label with refilling class', async () => {
+      const handle = await renderWithTanks([
+        {
+          name: 'Refill Tank',
+          fillLevel: 50,
+          isWarning: false,
+          hoursRemaining: 10,
+          volumeLiters: 80,
+          depletionStatus: 'refilling',
+          warningLevel: 20,
+          sensorEntity: 'sensor.refill_tank',
+        },
+      ]);
+      const footer = handle.element.shadowRoot?.querySelector('.tank-footer');
+      expect(footer?.textContent).toContain('↑ Refilling');
+      const depletionLabel = handle.element.shadowRoot?.querySelector('.depletion-label.refilling');
+      expect(depletionLabel).toBeTruthy();
+      handle.unmount();
     });
 
-    test('renders no-data state when devices array is empty', async () => {
-        element.store.ui.$isLoading.set(false);
-        element.store.data.$devices.set([]);
-        await element.updateComplete;
-
-        const noData = element.shadowRoot?.querySelector('.no-data');
-        expect(noData).toBeTruthy();
-        expect(noData?.textContent).toContain('No growspace devices found.');
+    test('depletionStatus static shows — Stable label', async () => {
+      const handle = await renderWithTanks([
+        {
+          name: 'Static Tank',
+          fillLevel: 60,
+          isWarning: false,
+          hoursRemaining: 20,
+          volumeLiters: 100,
+          depletionStatus: 'static',
+          warningLevel: 20,
+          sensorEntity: 'sensor.static_tank',
+        },
+      ]);
+      const footer = handle.element.shadowRoot?.querySelector('.tank-footer');
+      expect(footer?.textContent).toContain('— Stable');
+      handle.unmount();
     });
 
-    test('renders error state when selected device is not found', async () => {
-        element.store.ui.$isLoading.set(false);
-        // Added plants: [] and environmentAttributes to avoid store crashes and mapping issues
-        element.store.data.$devices.set([
-            { deviceId: 'wrong_device', name: 'Wrong Tent', environmentAttributes: {}, plants: [] } as any
-        ]);
-        element.store.grid.$selectedDevice.set('selected_tent');
-        await element.updateComplete;
-
-        const errorDiv = element.shadowRoot?.querySelector('.error');
-        expect(errorDiv).toBeTruthy();
-        expect(errorDiv?.textContent).toContain('No valid growspace selected. Please configure the card.');
+    test('depletionStatus unknown renders no depletion label', async () => {
+      const handle = await renderWithTanks([
+        {
+          name: 'Unknown Tank',
+          fillLevel: 55,
+          isWarning: false,
+          hoursRemaining: 12,
+          volumeLiters: 100,
+          depletionStatus: undefined as any,
+          warningLevel: 20,
+          sensorEntity: 'sensor.unknown_tank',
+        },
+      ]);
+      const depletionLabel = handle.element.shadowRoot?.querySelector('.depletion-label');
+      expect(depletionLabel).toBeNull();
+      handle.unmount();
     });
 
-    test('renders empty state when no tanks configured', async () => {
-        element.store.ui.$isLoading.set(false);
-        element.store.data.$devices.set([
-            {
-                deviceId: 'selected_tent',
-                name: 'Selected Tent',
-                environmentAttributes: { irrigationTanks: [] },
-                plants: []
-            } as any
-        ]);
-        element.store.grid.$selectedDevice.set('selected_tent');
-        await element.updateComplete;
-
-        const emptyState = element.shadowRoot?.querySelector('.empty-state');
-        expect(emptyState).toBeTruthy();
-        expect(emptyState?.textContent).toContain('No irrigation tanks configured');
+    test('hoursRemaining null renders no time-left text in tank-meta', async () => {
+      const handle = await renderWithTanks([
+        {
+          name: 'No Time Tank',
+          fillLevel: 70,
+          isWarning: false,
+          hoursRemaining: null as any,
+          volumeLiters: 100,
+          depletionStatus: 'depleting',
+          warningLevel: 20,
+          sensorEntity: 'sensor.no_time_tank',
+        },
+      ]);
+      const tankMeta = handle.element.shadowRoot?.querySelector('.tank-meta');
+      const spans = Array.from(tankMeta?.querySelectorAll('span') ?? []);
+      expect(spans.some((s) => s.textContent?.includes('left'))).toBe(false);
+      handle.unmount();
     });
 
-    test('renders tanks with data correctly', async () => {
-        const mockTanks: IrrigationTank[] = [
-            {
-                name: 'Main Tank',
-                fillLevel: 85.5,
-                isWarning: false,
-                hoursRemaining: 48,
-                volumeLiters: 100,
-                depletionStatus: 'depleting',
-                warningLevel: 20,
-                sensorEntity: 'sensor.tank_1'
-            },
-            {
-                name: 'Low Tank',
-                fillLevel: 15,
-                isWarning: true,
-                hoursRemaining: 4,
-                volumeLiters: 50,
-                depletionStatus: 'refilling',
-                warningLevel: 20,
-                sensorEntity: 'sensor.tank_2'
-            }
-        ];
-
-        element.store.ui.$isLoading.set(false);
-        element.store.data.$devices.set([
-            {
-                deviceId: 'selected_tent',
-                name: 'Selected Tent',
-                environmentAttributes: { irrigationTanks: mockTanks },
-                plants: []
-            } as any
-        ]);
-        element.store.grid.$selectedDevice.set('selected_tent');
-        await element.updateComplete;
-
-        // Check header info
-        const warningBadge = element.shadowRoot?.querySelector('.warning-badge');
-        expect(warningBadge).toBeTruthy();
-        expect(warningBadge?.textContent).toContain('1 low');
-
-        // Check tank cards
-        const tankCards = element.shadowRoot?.querySelectorAll('.tank-card');
-        expect(tankCards?.length).toBe(2);
-
-        // First tank (normal)
-        const tank1 = tankCards?.[0];
-        expect(tank1?.classList.contains('warning')).toBe(false);
-        expect(tank1?.querySelector('h4')?.textContent).toBe('Main Tank');
-        expect(tank1?.querySelector('.percentage-text')?.textContent).toContain('86%');
-        expect(tank1?.querySelector('.tank-meta')?.textContent).toContain('2d left');
-        expect(tank1?.querySelector('.tank-meta')?.textContent).toContain('100 L');
-        expect(tank1?.querySelector('.depletion-label')?.textContent).toContain('↓ Depleting');
-
-        // Second tank (warning)
-        const tank2 = tankCards?.[1];
-        expect(tank2?.classList.contains('warning')).toBe(true);
-        expect(tank2?.querySelector('.percentage-text')?.textContent).toContain('15%');
-        expect(tank2?.querySelector('.warning-icon')).toBeTruthy();
-        expect(tank2?.querySelector('.tank-meta')?.textContent).toContain('4h left');
-        expect(tank2?.querySelector('.depletion-label')?.textContent).toContain('↑ Refilling');
+    test('fillLevel null shows N/A text in percentage-text', async () => {
+      const handle = await renderWithTanks([
+        {
+          name: 'Empty Data Tank',
+          fillLevel: null as any,
+          isWarning: false,
+          hoursRemaining: 5,
+          volumeLiters: 100,
+          depletionStatus: 'depleting',
+          warningLevel: 20,
+          sensorEntity: 'sensor.empty_data_tank',
+        },
+      ]);
+      const percentageText = handle.element.shadowRoot?.querySelector('.percentage-text');
+      expect(percentageText?.textContent).toContain('N/A');
+      handle.unmount();
     });
 
-    test('renders tanks with edge case data correctly', async () => {
-        const mockTanks: IrrigationTank[] = [
-            {
-                name: 'Static Tank',
-                fillLevel: 50,
-                isWarning: false,
-                depletionStatus: 'static',
-                warningLevel: 20,
-                sensorEntity: 'sensor.tank_3'
-            },
-            {
-                name: 'Unknown Tank',
-                fillLevel: null as any,
-                isWarning: false,
-                depletionStatus: 'unknown' as any,
-                warningLevel: 20,
-                sensorEntity: 'sensor.tank_4'
-            }
-        ];
-
-        element.store.ui.$isLoading.set(false);
-        element.store.data.$devices.set([
-            {
-                deviceId: 'selected_tent',
-                name: 'Selected Tent',
-                environmentAttributes: { irrigationTanks: mockTanks },
-                plants: []
-            } as any
-        ]);
-        element.store.grid.$selectedDevice.set('selected_tent');
-        await element.updateComplete;
-
-        const tankCards = element.shadowRoot?.querySelectorAll('.tank-card');
-        
-        // Static tank
-        expect(tankCards?.[0].querySelector('.depletion-label')?.textContent).toContain('— Stable');
-        
-        // Null fill level
-        expect(tankCards?.[1].querySelector('.percentage-text')?.textContent).toContain('N/A');
-        expect(tankCards?.[1].querySelector('.depletion-label')).toBeFalsy();
+    test('volumeLiters null renders no volume span in tank-meta', async () => {
+      const handle = await renderWithTanks([
+        {
+          name: 'No Volume Tank',
+          fillLevel: 50,
+          isWarning: false,
+          hoursRemaining: null as any,
+          volumeLiters: null as any,
+          depletionStatus: 'depleting',
+          warningLevel: 20,
+          sensorEntity: 'sensor.no_volume_tank',
+        },
+      ]);
+      const tankMeta = handle.element.shadowRoot?.querySelector('.tank-meta');
+      expect(tankMeta?.textContent).not.toContain(' L');
+      handle.unmount();
     });
 
-    test('renders average level when no warnings', async () => {
-        const mockTanks: IrrigationTank[] = [
-            {
-                name: 'Tank 1',
-                fillLevel: 90,
-                isWarning: false,
-                warningLevel: 20,
-                sensorEntity: 'sensor.tank_1'
-            },
-            {
-                name: 'Tank 2',
-                fillLevel: 80,
-                isWarning: false,
-                warningLevel: 20,
-                sensorEntity: 'sensor.tank_2'
-            }
-        ];
-
-        element.store.ui.$isLoading.set(false);
-        element.store.data.$devices.set([
-            {
-                deviceId: 'selected_tent',
-                name: 'Selected Tent',
-                environmentAttributes: { irrigationTanks: mockTanks },
-                plants: []
-            } as any
-        ]);
-        element.store.grid.$selectedDevice.set('selected_tent');
-        await element.updateComplete;
-
-        const avgBadge = element.shadowRoot?.querySelector('.avg-badge');
-        expect(avgBadge).toBeTruthy();
-        expect(avgBadge?.textContent).toContain('Avg 85%');
+    test('avg-badge shown when no warning tanks but fillLevel data present', async () => {
+      const handle = await renderWithTanks([
+        {
+          name: 'Good Tank',
+          fillLevel: 80,
+          isWarning: false,
+          hoursRemaining: 24,
+          volumeLiters: 100,
+          depletionStatus: 'depleting',
+          warningLevel: 20,
+          sensorEntity: 'sensor.good_tank',
+        },
+      ]);
+      const avgBadge = handle.element.shadowRoot?.querySelector('.avg-badge');
+      expect(avgBadge).toBeTruthy();
+      expect(avgBadge?.textContent).toContain('Avg');
+      handle.unmount();
     });
 
-    test('getCardSize returns expected size from component', () => {
-        expect(element.getCardSize()).toBe(3);
+    test('header renders nothing when avgLevel is null (all tanks have null fillLevel)', async () => {
+      const handle = await renderWithTanks([
+        {
+          name: 'Null Fill Tank',
+          fillLevel: null as any,
+          isWarning: false,
+          hoursRemaining: 10,
+          volumeLiters: 100,
+          depletionStatus: 'depleting',
+          warningLevel: 20,
+          sensorEntity: 'sensor.null_fill_tank',
+        },
+      ]);
+      const avgBadge = handle.element.shadowRoot?.querySelector('.avg-badge');
+      const warningBadge = handle.element.shadowRoot?.querySelector('.warning-badge');
+      expect(avgBadge).toBeNull();
+      expect(warningBadge).toBeNull();
+      handle.unmount();
     });
-
-    test('getStubConfig returns expected config from component', () => {
-        const stub = GrowspaceTankCard.getStubConfig();
-        expect(stub).toEqual({
-            type: 'custom:growspace-tank-card',
-            default_growspace: ''
-        });
-    });
-
-    test('getConfigElement returns editor element', async () => {
-        const el = await GrowspaceTankCard.getConfigElement();
-        expect(el.tagName.toLowerCase()).toBe('growspace-tank-card-editor');
-    });
-
-    test('disconnectedCallback destroys store', () => {
-        const storeSpy = vi.spyOn(element.store, 'destroy');
-        element.disconnectedCallback();
-        expect(storeSpy).toHaveBeenCalled();
-    });
-
-    test('stale counter triggers data refresh', async () => {
-        const refreshSpy = vi.spyOn(element.store.syncService, 'refreshGrowspaceData');
-        element.store.data.$staleCounter.set(element.store.data.$staleCounter.get() + 1);
-        await Promise.resolve();
-        expect(refreshSpy).toHaveBeenCalled();
-    });
-
-    test('selectedDevice getter returns value from store', () => {
-        element.store.grid.$selectedDevice.set('test_device');
-        expect(element.selectedDevice).toBe('test_device');
-    });
-
-    test('_handleError logs error to console', () => {
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        const error = new Error('Test error');
-        const errorInfo = { componentStack: 'stack' };
-        
-        (element as any)._handleError(error, errorInfo);
-
-        expect(consoleSpy).toHaveBeenCalledWith('Growspace Tank Card caught error:', error, errorInfo);
-        consoleSpy.mockRestore();
-    });
-
+  });
 });

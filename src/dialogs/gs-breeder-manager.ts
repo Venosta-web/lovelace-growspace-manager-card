@@ -14,20 +14,24 @@ import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/gs-help-tooltip';
+import {
+  createInitialSM,
+  transition,
+  type BreederManagerSM,
+} from './gs-breeder-manager-sm';
 
 @customElement('gs-breeder-manager')
 export class GsBreederManager extends LitElement {
   @property({ type: Array }) strains: StrainEntry[] = [];
   @property({ type: Boolean }) open = false;
 
-  @state() private _editorState: { name: string; logo: string; originalName: string } | null = null;
-  @state() private _pendingDelete: string | null = null;
+  @state() private _sm: BreederManagerSM = createInitialSM();
 
   static styles = [
     dialogStyles,
     css`
       :host {
-        --accent-green: #4caf50;
+        --accent-green: var(--gm-primary-color);
       }
 
       .sd-content {
@@ -63,10 +67,10 @@ export class GsBreederManager extends LitElement {
         width: 100%;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         padding: 12px 16px;
         color: var(--primary-text-color, #fff);
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         outline: none;
         transition: border-color 0.2s;
         box-sizing: border-box;
@@ -89,7 +93,7 @@ export class GsBreederManager extends LitElement {
         padding: 16px;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         cursor: pointer;
         transition: all 0.2s;
       }
@@ -102,7 +106,7 @@ export class GsBreederManager extends LitElement {
       .breeder-logo-preview {
         width: 56px;
         height: 56px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         object-fit: contain;
         background: rgba(255, 255, 255, 0.05);
         padding: 4px;
@@ -112,7 +116,7 @@ export class GsBreederManager extends LitElement {
       .breeder-logo-placeholder {
         width: 56px;
         height: 56px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         border: 1px dashed var(--divider-color);
         display: flex;
         align-items: center;
@@ -134,7 +138,7 @@ export class GsBreederManager extends LitElement {
       }
 
       .breeder-strain-count {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         color: var(--secondary-text-color);
       }
 
@@ -153,7 +157,7 @@ export class GsBreederManager extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #fff;
+        color: var(--text-primary);
         cursor: pointer;
       }
 
@@ -165,7 +169,7 @@ export class GsBreederManager extends LitElement {
 
   protected willUpdate(changed: PropertyValues<this>): void {
     if (changed.has('open') && !this.open) {
-      this._editorState = null;
+      this._sm = createInitialSM();
     }
   }
 
@@ -175,6 +179,9 @@ export class GsBreederManager extends LitElement {
 
   render() {
     if (!this.open) return nothing;
+
+    const sm = this._sm;
+    const isEditor = sm.activeView === 'editor';
 
     return html`
       <gs-dialog .open=${true} .heading=${'Breeder Manager'} .iconPath=${mdiAccountGroup}>
@@ -187,14 +194,14 @@ export class GsBreederManager extends LitElement {
         </slot>
 
         <div class="sd-content">
-          ${this._editorState ? this._renderEditor() : this._renderList()}
+          ${isEditor ? this._renderEditor() : this._renderList()}
         </div>
 
-        ${!this._editorState
+        ${!isEditor
           ? html`
               <div class="sd-footer">
                 <span
-                  style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px; flex:1;"
+                  style="font-size:var(--font-size-supporting); color:var(--secondary-text-color); padding: 0 8px; flex:1;"
                 >
                   Breeders appear automatically when strains with breeder info are saved.
                 </span>
@@ -204,7 +211,9 @@ export class GsBreederManager extends LitElement {
           : nothing}
       </gs-dialog>
 
-      ${this._pendingDelete ? this._renderDeleteConfirmation() : nothing}
+      ${sm.views.list.sub.kind === 'confirm-delete'
+        ? this._renderDeleteConfirmation(sm.views.list.sub.name)
+        : nothing}
     `;
   }
 
@@ -245,7 +254,15 @@ export class GsBreederManager extends LitElement {
       <div class="breeder-list">
         ${breeders.map(
           (b) => html`
-            <div class="breeder-card" @click=${() => this._startEdit(b.name, b.logo)}>
+            <div
+              class="breeder-card"
+              @click=${() =>
+                (this._sm = transition(this._sm, {
+                  type: 'EDIT_REQUESTED',
+                  name: b.name,
+                  logo: b.logo,
+                }))}
+            >
               ${b.logo
                 ? html`<img class="breeder-logo-preview" src="${b.logo}" alt="${b.name}" />`
                 : html`<div class="breeder-logo-placeholder">
@@ -264,7 +281,11 @@ export class GsBreederManager extends LitElement {
                   class="action-btn"
                   @click=${(e: Event) => {
                     e.stopPropagation();
-                    this._startEdit(b.name, b.logo);
+                    this._sm = transition(this._sm, {
+                      type: 'EDIT_REQUESTED',
+                      name: b.name,
+                      logo: b.logo,
+                    });
                   }}
                 >
                   <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
@@ -275,7 +296,7 @@ export class GsBreederManager extends LitElement {
                   class="action-btn"
                   @click=${(e: Event) => {
                     e.stopPropagation();
-                    this._pendingDelete = b.name;
+                    this._sm = transition(this._sm, { type: 'DELETE_REQUESTED', name: b.name });
                   }}
                   style="color:var(--error-color, #f44336);"
                 >
@@ -292,21 +313,25 @@ export class GsBreederManager extends LitElement {
   }
 
   private _renderEditor(): TemplateResult {
-    const state = this._editorState!;
-    const isEdit = !!state.originalName;
+    const { draft, sub } = this._sm.views.editor;
+    const isEdit = draft.originalName !== null;
     const affectedStrains = isEdit
-      ? this.strains.filter((s) => s.breeder === state.originalName)
+      ? this.strains.filter((s) => s.breeder === draft.originalName)
       : [];
+    const isUploading = sub.kind === 'uploading';
 
     const handleLogoUpload = (e: Event) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        PlantUtils.compressImage(file)
-          .then((base64) => {
-            this._editorState = { ...this._editorState!, logo: base64 };
-          })
-          .catch((err) => console.error('Error compressing logo:', err));
-      }
+      if (!file) return;
+      this._sm = transition(this._sm, { type: 'LOGO_UPLOAD_STARTED' });
+      PlantUtils.compressImage(file)
+        .then((base64) => {
+          this._sm = transition(this._sm, { type: 'LOGO_UPLOAD_RESOLVED', base64 });
+        })
+        .catch((err) => {
+          console.error('Error compressing logo:', err);
+          this._sm = transition(this._sm, { type: 'LOGO_UPLOAD_RESOLVED', base64: draft.logo });
+        });
     };
 
     return html`
@@ -315,7 +340,7 @@ export class GsBreederManager extends LitElement {
           <button
             class="md3-button tonal"
             style="padding:0 12px; height:32px;"
-            @click=${() => (this._editorState = null)}
+            @click=${() => (this._sm = transition(this._sm, { type: 'BACK_TO_LIST' }))}
           >
             <svg
               style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
@@ -336,12 +361,13 @@ export class GsBreederManager extends LitElement {
             type="text"
             class="sd-input"
             placeholder="e.g. Royal Queen Seeds"
-            .value=${state.name}
+            .value=${draft.name}
             @input=${(e: InputEvent) => {
-              this._editorState = {
-                ...this._editorState!,
-                name: (e.target as HTMLInputElement).value,
-              };
+              this._sm = transition(this._sm, {
+                type: 'FIELD_CHANGED',
+                field: 'name',
+                value: (e.target as HTMLInputElement).value,
+              });
             }}
           />
         </div>
@@ -349,13 +375,13 @@ export class GsBreederManager extends LitElement {
         <div class="sd-form-group">
           <label class="sd-label">Breeder Logo</label>
           <div style="display:flex; align-items:center; gap:16px;">
-            ${state.logo
+            ${draft.logo
               ? html`<img
-                  src="${state.logo}"
-                  style="width:64px; height:64px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.05); padding:4px;"
+                  src="${draft.logo}"
+                  style="width:64px; height:64px; object-fit:contain; border-radius: var(--border-radius-sm, 8px); background:rgba(255,255,255,0.05); padding:4px;"
                 />`
               : html`<div
-                  style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);"
+                  style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius: var(--border-radius-sm, 8px); display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);"
                 >
                   <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                     <path d="${mdiImage}"></path>
@@ -365,6 +391,7 @@ export class GsBreederManager extends LitElement {
               <button
                 class="md3-button tonal"
                 style="height:36px; padding:0 16px; font-size:0.85rem;"
+                ?disabled=${isUploading}
                 @click=${(e: Event) =>
                   ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}
               >
@@ -374,7 +401,7 @@ export class GsBreederManager extends LitElement {
                 >
                   <path d="${mdiCloudUpload}"></path>
                 </svg>
-                ${state.logo ? 'Change Logo' : 'Upload Logo'}
+                ${isUploading ? 'Uploading…' : draft.logo ? 'Change Logo' : 'Upload Logo'}
               </button>
               <input
                 type="file"
@@ -382,13 +409,17 @@ export class GsBreederManager extends LitElement {
                 style="display:none"
                 @change=${handleLogoUpload}
               />
-              ${state.logo
+              ${draft.logo
                 ? html`
                     <button
                       class="md3-button text"
-                      style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);"
+                      style="height:36px; padding:0 12px; color:var(--error-color, #f44336);"
                       @click=${() => {
-                        this._editorState = { ...this._editorState!, logo: '' };
+                        this._sm = transition(this._sm, {
+                          type: 'FIELD_CHANGED',
+                          field: 'logo',
+                          value: '',
+                        });
                       }}
                     >
                       <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
@@ -404,7 +435,7 @@ export class GsBreederManager extends LitElement {
         ${isEdit && affectedStrains.length > 0
           ? html`
               <div
-                style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius:8px; padding:16px;"
+                style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius: var(--border-radius-sm, 8px); padding:16px;"
               >
                 <label class="sd-label" style="margin-bottom:8px;"
                   >Strains using this breeder (${affectedStrains.length})</label
@@ -413,7 +444,7 @@ export class GsBreederManager extends LitElement {
                   ${affectedStrains.map(
                     (s) => html`
                       <span
-                        style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius:16px; font-size:0.8rem; font-weight:500;"
+                        style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius: var(--border-radius-lg, 16px); font-size:var(--font-size-supporting); font-weight:500;"
                       >
                         ${s.strain}${s.phenotype ? ` (${s.phenotype})` : ''}
                       </span>
@@ -425,13 +456,16 @@ export class GsBreederManager extends LitElement {
           : nothing}
 
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
-          <button class="md3-button tonal" @click=${() => (this._editorState = null)}>
+          <button
+            class="md3-button tonal"
+            @click=${() => (this._sm = transition(this._sm, { type: 'BACK_TO_LIST' }))}
+          >
             Cancel
           </button>
           <button
             class="md3-button primary"
             @click=${() => this._handleSave()}
-            ?disabled=${!state.name.trim()}
+            ?disabled=${!draft.name.trim() || isUploading}
           >
             <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${mdiCheck}"></path>
@@ -443,15 +477,14 @@ export class GsBreederManager extends LitElement {
     `;
   }
 
-  private _renderDeleteConfirmation(): TemplateResult {
-    const breederName = this._pendingDelete!;
+  private _renderDeleteConfirmation(breederName: string): TemplateResult {
     const affectedCount = this.strains.filter((s) => s.breeder === breederName).length;
 
     return html`
       <ha-dialog
         open
         @closed=${() => {
-          this._pendingDelete = null;
+          this._sm = transition(this._sm, { type: 'CANCEL_DELETE' });
         }}
         hideActions
         without-header
@@ -474,14 +507,14 @@ export class GsBreederManager extends LitElement {
             <button
               class="md3-button tonal"
               @click=${() => {
-                this._pendingDelete = null;
+                this._sm = transition(this._sm, { type: 'CANCEL_DELETE' });
               }}
             >
               Cancel
             </button>
             <button
               class="md3-button text"
-              style="color:#f44336;"
+              style="color:var(--gm-error-color);"
               @click=${() => this._confirmDelete()}
             >
               <svg
@@ -498,43 +531,42 @@ export class GsBreederManager extends LitElement {
     `;
   }
 
-  private _startEdit(name?: string, logo?: string) {
-    this._editorState = { name: name || '', logo: logo || '', originalName: name || '' };
-  }
-
   private _handleSave() {
-    const state = this._editorState;
-    if (!state || !state.name.trim()) return;
+    const { draft } = this._sm.views.editor;
+    if (!draft.name.trim()) return;
 
-    const newName = state.name.trim();
-    const isEdit = !!state.originalName;
+    const newName = draft.name.trim();
+    const isEdit = draft.originalName !== null;
+
+    this._sm = transition(this._sm, { type: 'SAVE_REQUESTED' });
 
     if (isEdit) {
       this.dispatchEvent(
         new CustomEvent('update-breeder', {
-          detail: { oldName: state.originalName, newName, logo: state.logo },
+          detail: { oldName: draft.originalName, newName, logo: draft.logo },
         })
       );
     } else {
       this.dispatchEvent(
         new CustomEvent('save-breeder', {
-          detail: { name: newName, logo: state.logo },
+          detail: { name: newName, logo: draft.logo },
         })
       );
     }
 
-    this._editorState = null;
+    this._sm = transition(this._sm, { type: 'SAVE_RESOLVED' });
   }
 
   private _confirmDelete() {
-    if (this._pendingDelete) {
-      this.dispatchEvent(
-        new CustomEvent('delete-breeder', {
-          detail: { name: this._pendingDelete },
-        })
-      );
-      this._pendingDelete = null;
-    }
+    const sub = this._sm.views.list.sub;
+    if (sub.kind !== 'confirm-delete') return;
+
+    const name = sub.name;
+    this._sm = transition(this._sm, { type: 'DELETE_CONFIRMED' });
+    this.dispatchEvent(
+      new CustomEvent('delete-breeder', { detail: { name } })
+    );
+    this._sm = transition(this._sm, { type: 'DELETE_RESOLVED' });
   }
 }
 

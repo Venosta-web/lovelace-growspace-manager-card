@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
 import { html, render } from 'lit';
 import { mdiViewDashboard } from '@mdi/js';
+import * as growspaceSlice from '../../../src/slices/growspace/index';
 
 // Mock components
 if (!customElements.get('md3-number-input')) {
@@ -11,14 +12,25 @@ if (!customElements.get('md3-number-input')) {
     });
 }
 
+vi.mock('../../../src/slices/growspace/index', async (importOriginal) => {
+    const actual = await importOriginal<typeof growspaceSlice>();
+    return { ...actual, setDehumidifierControl: vi.fn().mockResolvedValue(undefined) };
+});
+
 describe('ConfigDialog Interactions', () => {
     let element: ConfigDialog;
 
     beforeEach(async () => {
         element = new ConfigDialog();
+        element.initialTab = ConfigTab.SENSORS;
         element.open = true; // MUST SET OPEN
         document.body.appendChild(element);
         await element.updateComplete;
+    });
+
+    afterEach(() => {
+        element.remove();
+        vi.clearAllMocks();
     });
 
     it('should switch tabs when header buttons are clicked', async () => {
@@ -27,8 +39,10 @@ describe('ConfigDialog Interactions', () => {
 
         const tabs = [
             ConfigTab.GROWSPACES,
+            ConfigTab.NOTIFICATIONS,
             ConfigTab.SENSORS,
             ConfigTab.CLIMATE,
+            ConfigTab.GROWLIGHT,
             ConfigTab.HUMIDITY,
             ConfigTab.IRRIGATION,
             ConfigTab.TANKS,
@@ -47,8 +61,9 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('should trigger sensor changes via DOM select', async () => {
-        element.setInitialState(ConfigTab.SENSORS, {
-            selectedGrowspaceId: 'gs1'
+        (element as any)._seedFromDevice({
+            deviceId: 'gs1',
+            environmentAttributes: {},
         } as any);
         element.hass = {
             states: {
@@ -68,10 +83,14 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('should trigger updateThreshold via night/off selection', async () => {
-        element.setInitialState(ConfigTab.HUMIDITY, {
-            dehumidifierThresholds: {
-                'gs1': { 'day': { on: 60, off: 55 }, 'night': { on: 65, off: 60 } }
-            }
+        element.initialTab = ConfigTab.HUMIDITY;
+        (element as any)._seedFromDevice({
+            deviceId: 'gs1',
+            environmentAttributes: {
+                dehumidifierThresholds: {
+                    'gs1': { 'day': { on: 60, off: 55 }, 'night': { on: 65, off: 60 } }
+                },
+            },
         } as any);
         (element as any)._openHumidityStageId = 'gs1';
         await element.updateComplete;
@@ -82,5 +101,92 @@ describe('ConfigDialog Interactions', () => {
             input.dispatchEvent(new CustomEvent('change', { detail: '70' }));
             // Threshold update logic is internal, but this hits the branch
         }
+    });
+
+    it('configure-environment-submit payload omits the immediate-persist humidity control flags', async () => {
+        element.initialTab = ConfigTab.HUMIDITY;
+        (element as any)._seedFromDevice({ deviceId: 'gs1', environmentAttributes: {} });
+        await element.updateComplete;
+
+        (element as any)._setEnv({
+            co2Sensor: 'sensor.co2',
+            dehumidifierControlEnabled: true,
+            humidifierControlEnabled: false,
+        });
+
+        const listener = vi.fn();
+        element.addEventListener('configure-environment-submit', listener);
+        (element as any)._submitEnvironment();
+
+        expect(listener).toHaveBeenCalledOnce();
+        const detail = listener.mock.calls[0][0].detail;
+        // The flags are persisted the moment they are toggled (ADR-0032
+        // `immediate` class), so re-sending them on Save would rewrite state the
+        // user did not touch in this Save.
+        expect(detail).not.toHaveProperty('dehumidifierControlEnabled');
+        expect(detail).not.toHaveProperty('humidifierControlEnabled');
+        // Buffered keys edited in the same batch still ride the patch.
+        expect(detail).toHaveProperty('co2Sensor', 'sensor.co2');
+    });
+
+    it('preserves humidifier thresholds after an unrelated tab edit and save', async () => {
+        element.remove();
+        const humidifierThresholds = { veg: { day: { on: 60, off: 55 } } };
+        element = new ConfigDialog();
+        element.devices = [{
+            deviceId: 'gs1',
+            environmentAttributes: {
+                humidifierThresholds,
+                temperatureSensors: ['sensor.temperature'],
+                humiditySensors: ['sensor.humidity'],
+            },
+        } as any];
+        element.growspaceId = 'gs1';
+        element.growspaceOptions = { gs1: 'Tent 1' };
+        element.initialTab = ConfigTab.SENSORS;
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const sensorsTab = element.shadowRoot!.querySelector('config-sensors-tab')!;
+        sensorsTab.dispatchEvent(new CustomEvent('env-draft-changed', {
+            detail: { partial: { co2Sensor: 'sensor.changed' } },
+            bubbles: true,
+            composed: true,
+        }));
+        await element.updateComplete;
+
+        const listener = vi.fn();
+        element.addEventListener('configure-environment-submit', listener);
+        const save = Array.from(element.shadowRoot!.querySelectorAll('button'))
+            .find((button) => button.textContent?.includes('Save Environment')) as HTMLButtonElement;
+        save.click();
+
+        expect(listener).toHaveBeenCalledOnce();
+        const detail = listener.mock.calls[0][0].detail;
+        expect(detail.co2Sensor).toBe('sensor.changed');
+        // Under patch semantics (ADR-0032) an untouched key is preserved by
+        // being omitted, not by being echoed back from the draft.
+        expect(detail).not.toHaveProperty('humidifierThresholds');
+    });
+
+    it('toggling dehumidifier control checkbox calls setDehumidifierControl immediately', async () => {
+        element.initialTab = ConfigTab.HUMIDITY;
+        (element as any)._seedFromDevice({ deviceId: 'gs1', environmentAttributes: {} });
+        await element.updateComplete;
+
+        // Humidity tab is a nested dumb component (ADR-0019); pierce its shadow.
+        const tab = element.shadowRoot?.querySelector('config-humidity-tab') as HTMLElement & {
+            updateComplete: Promise<boolean>;
+        };
+        await tab.updateComplete;
+        const checkbox = Array.from(tab.shadowRoot!.querySelectorAll('input[type="checkbox"]'))
+            .find((el) => el.closest('label')?.textContent?.includes('Dehumidifier Control')) as HTMLInputElement | undefined;
+
+        expect(checkbox).toBeDefined();
+        checkbox!.checked = true;
+        checkbox!.dispatchEvent(new Event('change'));
+
+        expect(growspaceSlice.setDehumidifierControl).toHaveBeenCalledWith('gs1', true);
     });
 });

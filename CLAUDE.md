@@ -10,9 +10,11 @@ hub; for specifics see:
 
 ## Gotchas (read first)
 
-1. **Never hand-edit the bundle.** `dist/growspace-manager-card.js` and the committed
-   root `growspace-manager-card.js` (~3.8MB) are build artifacts. Make changes in `src/`
-   and run `npm run build`. Editing the bundle directly is always wrong.
+1. **Never hand-edit the bundle.** `dist/growspace-manager-card.js`, its sourcemap, and
+   the root `growspace-manager-card.js` (~4MB) are build artifacts. They are gitignored
+   during normal development and produced by `npm run build`. Semantic-release force-adds
+   the dist bundle to the tagged release commit for HACS, then a cleanup commit removes it
+   from branch tracking. Make changes in `src/`; never commit or hand-edit the bundle.
 2. **Interactions are store-driven, not `tap_action`.** Plant grid cells, hero cards, and
    chips dispatch through the nanostores state machine — not generic Lovelace
    `tap_action`/`hold_action`. Don't wire up the Lovelace action model for these.
@@ -44,6 +46,25 @@ Unit tests run in **real Chromium** (vitest browser mode via `@vitest/browser-pl
 not jsdom, and include **pixelmatch screenshot tests** — rendering changes can shift
 snapshots. Tests are picked up from `tests/{unit,cards,components}/` and co-located
 `src/**/*.{test,spec}.ts`.
+
+### Fresh workspace setup
+
+A fresh clone (or a fresh container hosting one, e.g. Home Assistant core's devcontainer
+with this repo cloned in as a sibling folder) has neither `node_modules` nor its git hooks
+wired up:
+
+```bash
+npm ci                               # required before lint/test/build work at all
+prek install                         # or: pre-commit install
+prek install --hook-type commit-msg  # not installed by the plain form above, despite
+                                      # default_install_hook_types in .pre-commit-config.yaml
+```
+
+Unlike `growspace_manager`'s single shared `.venv`, there is **no shared `node_modules`
+across `.worktrees/<branch>` checkouts** here — each worktree needs its own `npm ci`. A
+symlinked/shared `node_modules` was considered and rejected: hoisting and peer-dep
+resolution can drift between branches, and that class of bug is worse than a few minutes
+of install time per worktree.
 
 ## Architecture
 
@@ -87,5 +108,7 @@ This card is the frontend for the **`growspace_manager`** integration (sibling v
 
 - **Prettier**: single quotes, semicolons, 2-space indent, width 100, ES5 trailing commas.
 - **ESLint**: `standard` + `@typescript-eslint/recommended` + prettier. Unused vars are an
-  error — prefix with `_` to intentionally ignore. `no-explicit-any` is a warning; avoid `any`.
+  error — prefix with `_` to intentionally ignore. `no-explicit-any` is a warning; avoid `any`
+  in shipped code. Test files (`*.{test,spec}.ts`) are exempt from `no-explicit-any` — they may
+  use `any` to reach component internals (`(el as any)._private`) and build partial mocks.
 - TypeScript `strict` mode, Lit decorators (`experimentalDecorators`, `useDefineForClassFields: false`).

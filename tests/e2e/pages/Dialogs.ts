@@ -1,6 +1,35 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { PlantData } from './types';
 
+export class PlantOverviewDialog {
+  readonly page: Page;
+  readonly dialog: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.dialog = page.locator('plant-overview-container ha-dialog');
+  }
+
+  async waitForOpen() {
+    await expect(this.dialog).toHaveAttribute('open', '');
+  }
+
+  async clickWaterButton() {
+    const btn = this.page
+      .locator('plant-overview-container')
+      .locator('button.quickbar-btn[title="Log watering"]');
+    await btn.click();
+  }
+
+  async close() {
+    const btn = this.page
+      .locator('plant-overview-container')
+      .locator('button.md3-button.outlined', { hasText: /cancel/i });
+    await btn.click();
+    await this.dialog.waitFor({ state: 'hidden', timeout: 5000 });
+  }
+}
+
 export class AddPlantDialog {
   readonly page: Page;
   readonly dialog: Locator;
@@ -74,8 +103,18 @@ export class AddPlantDialog {
 
   // ── Step 3: Schedule ─────────────────────────────────────────────────────────
 
+  /**
+   * Fills an md3-date-input. `date` may be `YYYY-MM-DD` or `YYYY-MM-DDTHH:MM` —
+   * in time mode the control renders separate date and time inputs.
+   */
   async fillDate(label: string, date: string) {
-    await this.dialog.locator(`md3-date-input[label="${label}"]`).locator('input').fill(date);
+    const control = this.dialog.locator(`md3-date-input[label="${label}"]`);
+    const [datePart, timePart] = date.split('T');
+    await control.locator('input[type="date"]').fill(datePart);
+    const timeInput = control.locator('input[type="time"]');
+    if (timePart && (await timeInput.count())) {
+      await timeInput.fill(timePart.slice(0, 5));
+    }
   }
 
   // ── Legacy helpers (kept for existing tests) ─────────────────────────────────
@@ -120,6 +159,18 @@ export class ConfigDialog {
     await expect(this.dialog).toHaveAttribute('open', '');
   }
 
+  async clickTab(tabId: string) {
+    await this.dialog.locator(`.cfg-nav-item[data-tab="${tabId}"]`).click();
+  }
+
+  async fillTimeField(label: string, value: string) {
+    await this.dialog.locator(`md3-text-input[type="time"][label="${label}"]`).locator('input').fill(value);
+  }
+
+  getTimeField(label: string): Locator {
+    return this.dialog.locator(`md3-text-input[type="time"][label="${label}"]`).locator('input');
+  }
+
   async save() {
     const saveButton = this.dialog.locator('button.md3-button.primary');
     await saveButton.click();
@@ -136,25 +187,26 @@ export class ConfigDialog {
 export class WateringDialog {
   readonly page: Page;
   readonly dialog: Locator;
+  private readonly haDialog: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.dialog = page.locator('growspace-watering-dialog-ui ha-dialog');
+    this.dialog = page.locator('feed-and-water-dialog');
+    this.haDialog = page.locator('feed-and-water-dialog ha-dialog');
   }
 
   async waitForOpen() {
-    await expect(this.dialog).toHaveAttribute('open', '');
+    await expect(this.haDialog).toHaveAttribute('open', '');
   }
 
   async fillAmount(amount: number) {
-    const amountInput = this.dialog.locator('md3-number-input[label*="Amount" i]').locator('input');
+    const amountInput = this.dialog.locator('md3-number-input[label="Volume (Liters)"]').locator('input');
     await amountInput.fill(String(amount));
   }
 
   async submit() {
-    const saveButton = this.dialog.locator('button.md3-button.primary');
-    await saveButton.click();
-    await this.dialog.waitFor({ state: 'hidden', timeout: 5000 });
+    await this.dialog.locator('button.md3-button.primary', { hasText: /Record Watering/i }).click();
+    await this.dialog.waitFor({ state: 'detached', timeout: 10000 });
   }
 }
 
@@ -256,16 +308,13 @@ export class IrrigationDialog {
     await this.dialog.locator(`md3-number-input[label="${label}"]`).locator('input').fill(String(value));
   }
 
-  async fillTimeField(label: string, value: string) {
-    await this.dialog.locator(`md3-text-input[type="time"][label="${label}"]`).locator('input').fill(value);
-  }
-
   getNumberField(label: string): Locator {
     return this.dialog.locator(`md3-number-input[label="${label}"]`).locator('input');
   }
 
-  getTimeField(label: string): Locator {
-    return this.dialog.locator(`md3-text-input[type="time"][label="${label}"]`).locator('input');
+  /** Read-only in this dialog (ADR-0026) — editable copy lives on Config → Growlights. */
+  getLightsOnTimeReadout(): Locator {
+    return this.dialog.locator('.lights-on-readonly .ro-value');
   }
 
   async saveAll() {
@@ -287,7 +336,7 @@ export class NutrientDialog {
 
   constructor(page: Page) {
     this.page = page;
-    this.dialog = page.locator('nutrient-dialog ha-dialog');
+    this.dialog = page.locator('feed-and-water-dialog ha-dialog');
   }
 
   async waitForOpen() {

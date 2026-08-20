@@ -2,9 +2,9 @@ name: Test
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "main", "dev" ]
   workflow_dispatch:
 
 jobs:
@@ -14,29 +14,32 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6.0.2
-    
+
     - name: Use Node.js
       uses: actions/setup-node@v6.4.0
       with:
         node-version: '24'
         cache: 'npm'
-        
+
     - name: Install dependencies
       run: npm ci
 
+    # Unit tests run in real Chromium via vitest browser mode (@vitest/browser-playwright).
+    - name: Install Playwright Chromium
+      run: npx playwright install --with-deps chromium
+
     - name: Run Unit Tests
+      id: unit-tests
+      # continue-on-error lets the retry step below run; the job still fails if
+      # the retry fails too.
+      continue-on-error: true
       run: npm run test:unit
 
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-
-    - name: Run E2E Tests
-      run: npm run test
-      
-    - name: Upload Playwright Report
-      if: failure()
-      uses: actions/upload-artifact@v7.0.1
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+    # vitest browser mode intermittently fails to apply a file's hoisted vi.mock
+    # factory (vitest-dev/vitest#8339, tracked in issue #453). Per-test retry
+    # can't absorb it — the poisoned module graph persists for the file's whole
+    # lifetime — but a fresh vitest process gets a fresh module graph, so one
+    # full re-run does. Genuinely broken tests fail both attempts.
+    - name: Retry Unit Tests (browser-mode mock race, issue #453)
+      if: steps.unit-tests.outcome == 'failure'
+      run: npm run test:unit

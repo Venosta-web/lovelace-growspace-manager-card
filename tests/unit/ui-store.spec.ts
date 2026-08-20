@@ -2,13 +2,15 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GrowspaceUIStore } from '../../src/store/ui/ui-store';
 import { ViewMode, GridOverlayMode } from '../../src/constants';
 import { gridInteraction$, cancel } from '../../src/slices/grid-interaction';
+import { notification$, __resetUiSliceForTests } from '../../src/slices/ui';
 
 describe('UI Store', () => {
     let store: GrowspaceUIStore;
 
     beforeEach(() => {
+        __resetUiSliceForTests();
+        notification$.set(null);
         store = new GrowspaceUIStore();
-        // Reset defaults if needed, but new instance should be fresh
     });
 
     describe('Atoms', () => {
@@ -291,6 +293,8 @@ describe('UI Store', () => {
                 focusedPlantIndex: -1,
                 selectedPlants: new Set(),
                 overlayMode: 'none',
+                taskState: { kind: 'idle' },
+                announcement: { message: '', sequence: 0 },
             });
         });
 

@@ -16,9 +16,6 @@ import type {
   BatchCloneDialogState,
   HarvestScoringDialogState,
   SnapshotsDialogState,
-  CropSteeringDialogState,
-  ECRampDialogState,
-  GrowReportDialogState,
   EnvironmentConfigDialogState,
   IrrigationDialogState,
 } from '../../lib/types/dialog';
@@ -47,7 +44,4 @@ export type ActiveDialogState =
   | { type: 'NUTRIENTS'; payload: Record<string, never> }
   | { type: 'HARVEST_SCORING'; payload: HarvestScoringDialogState }
   | { type: 'SNAPSHOTS'; payload: SnapshotsDialogState }
-  | { type: 'CROP_STEERING'; payload: CropSteeringDialogState }
-  | { type: 'EC_RAMP_EDITOR'; payload: ECRampDialogState }
-  | { type: 'GROW_REPORT'; payload: GrowReportDialogState }
   | { type: 'ENVIRONMENT_CONFIG'; payload: EnvironmentConfigDialogState };

@@ -1,6 +1,13 @@
 import * as THREE from 'three';
-import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { BaseRenderer } from './base-renderer';
+import { token } from '../../../styles/variables.generated';
+import {
+  defaultClimateUnitCoords,
+  defaultExhaustCoords,
+  defaultPumpCoords,
+} from '../default-placement';
+
+type SensorCoord = { x: number; y: number; z: number; rotation?: number };
 
 export class EquipmentRenderer extends BaseRenderer {
   private _humidifierParticles?: THREE.Points;
@@ -21,7 +28,7 @@ export class EquipmentRenderer extends BaseRenderer {
   public render() {
     const { device, volatileGroup, hass } = this.context;
     const width = device.dimensions?.width ?? 120;
-    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+    const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
     const height = device.dimensions?.height ?? 200;
     const env = device.environmentAttributes;
     const sensorCoords = env?.sensorCoordinates || {};
@@ -38,9 +45,11 @@ export class EquipmentRenderer extends BaseRenderer {
     const hums = env?.humidifierEntities || (env?.humidifierEntity ? [env.humidifierEntity] : []);
     const dehums =
       env?.dehumidifierEntities || (env?.dehumidifierEntity ? [env.dehumidifierEntity] : []);
-    [...hums, ...dehums].forEach((entityId) => {
-      const coords = sensorCoords[entityId];
-      if (!coords) return;
+    const climateUnits = [...hums, ...dehums];
+    climateUnits.forEach((entityId, index) => {
+      const coords =
+        sensorCoords[entityId] ??
+        defaultClimateUnitCoords(index, climateUnits.length, { width, depth, height });
       currentEntityIds.add(entityId);
 
       const isOutside = coords.x < 0 || coords.x > width || coords.y < 0 || coords.y > depth;
@@ -127,14 +136,15 @@ export class EquipmentRenderer extends BaseRenderer {
 
     pumps.forEach((entityId) => {
       if (!entityId) return;
-      let coords = sensorCoords[entityId];
-      if (!coords) coords = { x: 0, y: 0, z: 0, rotation: 0 };
       currentEntityIds.add(entityId);
 
-      const isOutside = coords.x < 0 || coords.x > width || coords.y < 0 || coords.y > depth;
       const isDrain =
         entityId === irrigationConfig?.drainPumpEntity ||
         env?.sensorTypes?.[entityId] === this.SENSOR_TYPES.DRAIN_PUMP;
+
+      const coords = sensorCoords[entityId] ?? defaultPumpCoords(isDrain, { width, depth, height });
+
+      const isOutside = coords.x < 0 || coords.x > width || coords.y < 0 || coords.y > depth;
 
       let isActive = false;
       const state = hass?.states[entityId];
@@ -149,10 +159,6 @@ export class EquipmentRenderer extends BaseRenderer {
         if (now >= start && now < start + evt.duration * 1000) isActive = true;
       }
 
-      // Link Logic
-      const tankId = env?.pump_tank_links?.[entityId];
-      const tankMesh = tankId ? this.context.sensorMeshes.get(tankId) : null;
-
       let group = this.cache.get(entityId) as THREE.Group;
       if (group) {
         // UPDATE
@@ -165,8 +171,7 @@ export class EquipmentRenderer extends BaseRenderer {
           depth,
           height,
           coords.z,
-          isActive,
-          tankMesh
+          isActive
         );
       } else {
         // CREATE
@@ -178,49 +183,15 @@ export class EquipmentRenderer extends BaseRenderer {
           depth,
           height,
           coords.z,
-          isActive,
-          tankMesh
+          isActive
         );
         this.cache.set(entityId, group);
         volatileGroup.add(group);
-
-        // Add Unlink Icon
-        const unlinkDiv = document.createElement('div');
-        unlinkDiv.className = 'sensor-label link-icon';
-        unlinkDiv.style.cursor = 'pointer';
-        const unlinkIcon = new CSS2DObject(unlinkDiv);
-        unlinkIcon.name = 'unlinkIcon';
-        unlinkIcon.position.set(0, 20, 0); // Above pump
-        group.add(unlinkIcon);
       }
 
-      if (tankMesh && tankMesh.userData.entityId === tankId) {
-        // Positioned relative to tank in world (simplified by setting world position to match tank bottom)
-        const tankPos = tankMesh.position.clone();
-        group.position.set(tankPos.x, 2, tankPos.z); // Slightly above bottom
-        if (tankMesh.rotation.y) group.rotation.y = tankMesh.rotation.y;
-      } else {
-        const yPos = isOutside ? 0 : coords.z !== undefined ? coords.z : 0;
-        group.position.set(coords.x - width / 2, yPos, coords.y - depth / 2);
-        if (coords.rotation) group.rotation.y = THREE.MathUtils.degToRad(coords.rotation);
-      }
-
-      const unlinkIcon = group.getObjectByName('unlinkIcon') as CSS2DObject;
-      if (unlinkIcon) {
-        unlinkIcon.visible = !!tankId;
-        if (unlinkIcon.visible) {
-          unlinkIcon.element.innerHTML = `<ha-icon icon="mdi:link-variant-off" style="color: #f44336; --mdc-icon-size: 14px"></ha-icon>`;
-          unlinkIcon.element.onclick = (e: MouseEvent) => {
-            e.stopPropagation();
-            if (this.context.requestUpdate) {
-              // Heatmap3D handles unlink event
-              this.context.scene.userData.element?.dispatchEvent(
-                new CustomEvent('unlink', { detail: { entityId } })
-              );
-            }
-          };
-        }
-      }
+      const yPos = isOutside ? 0 : coords.z !== undefined ? coords.z : 0;
+      group.position.set(coords.x - width / 2, yPos, coords.y - depth / 2);
+      if (coords.rotation) group.rotation.y = THREE.MathUtils.degToRad(coords.rotation);
 
       const logicalZ = coords.z !== undefined ? coords.z : 0;
       const updatedUserData = {
@@ -232,7 +203,6 @@ export class EquipmentRenderer extends BaseRenderer {
         targetH: logicalZ,
         isDrain,
         types: isDrain ? ['drain_pump'] : ['irrigation_pump'],
-        tankId,
       };
       group.userData = updatedUserData;
 
@@ -242,9 +212,10 @@ export class EquipmentRenderer extends BaseRenderer {
     // 3. Exhaust Fans
     const exhaustEntities =
       env?.exhaustFanEntities || (env?.exhaustEntity ? [env.exhaustEntity] : []);
-    exhaustEntities.forEach((entityId) => {
-      let coords = sensorCoords[entityId];
-      if (!coords) coords = { x: width / 2, y: depth / 2, z: height, rotation: 0 };
+    exhaustEntities.forEach((entityId, index) => {
+      const coords =
+        sensorCoords[entityId] ??
+        defaultExhaustCoords(index, exhaustEntities.length, { width, depth, height });
       currentEntityIds.add(entityId);
 
       let speed = 0;
@@ -310,7 +281,7 @@ export class EquipmentRenderer extends BaseRenderer {
     group: THREE.Group,
     intensity: number,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     w: number,
     d: number,
     h: number,
@@ -383,23 +354,21 @@ export class EquipmentRenderer extends BaseRenderer {
     group: THREE.Group,
     isDrain: boolean,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     w: number,
     d: number,
     h: number,
     targetH: number,
-    isActive: boolean,
-    tankMesh?: THREE.Object3D | null
+    isActive: boolean
   ) {
     const deviceHeight = isOutside ? 0 : coords.z !== undefined ? coords.z : 0;
 
     // Update Hose if state or target height changed
     if (
-      (isOutside || tankMesh) &&
+      isOutside &&
       (group.userData.isActive !== isActive ||
         group.userData.isOutside !== isOutside ||
-        group.userData.targetH !== targetH ||
-        group.userData.tankId !== (tankMesh as any)?.userData?.entityId)
+        group.userData.targetH !== targetH)
     ) {
       const oldHose = group.getObjectByName('pumpHose');
       if (oldHose) {
@@ -424,28 +393,12 @@ export class EquipmentRenderer extends BaseRenderer {
       const portLength = 5;
       const outputPoint = new THREE.Vector3(-bodyLength / 2 - 5 - portLength, bodyRadius + 4, 0);
 
-      let path;
-      if (tankMesh) {
-        // Route through tank lid (lid is at y=45+4=49 approx in tank space)
-        // Pump is at y=2 in world. Tank is at y=0.
-        // relative to pump, lid is at y=47?
-        // Let's use world coordinates for path if easier, but renderers use local.
-        // In local pump space:
-        const lidHeight = 47;
-        path = new THREE.CatmullRomCurve3([
-          outputPoint.clone(),
-          new THREE.Vector3(0, lidHeight, 0),
-          new THREE.Vector3(localTarget.x, lidHeight + 10, localTarget.z),
-          localTarget,
-        ]);
-      } else {
-        path = new THREE.CatmullRomCurve3([
-          outputPoint.clone(),
-          outputPoint.clone().add(new THREE.Vector3(-10, 5, 0)),
-          localTarget.clone().lerp(outputPoint, 0.2),
-          localTarget,
-        ]);
-      }
+      const path = new THREE.CatmullRomCurve3([
+        outputPoint.clone(),
+        outputPoint.clone().add(new THREE.Vector3(-10, 5, 0)),
+        localTarget.clone().lerp(outputPoint, 0.2),
+        localTarget,
+      ]);
 
       const hoseGeo = new THREE.TubeGeometry(path, 32, 0.75, 8, false);
       const hoseMat = new THREE.MeshPhysicalMaterial({
@@ -479,7 +432,7 @@ export class EquipmentRenderer extends BaseRenderer {
   private createHumidifierModel(
     intensity: number,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     w: number,
     d: number,
     h: number,
@@ -588,7 +541,7 @@ export class EquipmentRenderer extends BaseRenderer {
   private createDehumidifierModel(
     intensity: number,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     w: number,
     d: number,
     h: number,
@@ -660,13 +613,12 @@ export class EquipmentRenderer extends BaseRenderer {
   private createPumpModel(
     isDrain: boolean,
     isOutside: boolean,
-    coords: any,
+    coords: SensorCoord,
     frameWidth: number,
     frameDepth: number,
     frameHeight: number,
     hoseTargetHeight: number,
-    isActive: boolean,
-    tankMesh?: THREE.Object3D | null
+    isActive: boolean
   ): THREE.Group {
     const deviceHeight = isOutside ? 0 : coords.z !== undefined ? coords.z : 0;
 
@@ -702,7 +654,6 @@ export class EquipmentRenderer extends BaseRenderer {
     body.position.y = bodyRadius + baseHeight;
     group.add(body);
 
-    const headRadius = bodyRadius * 1.1;
     const headLength = 5;
     const headGeo = this.getSharedGeometry('pumpHead', () => {
       const g = new THREE.CylinderGeometry(8.8, 8.8, 5, 32);
@@ -713,7 +664,6 @@ export class EquipmentRenderer extends BaseRenderer {
     head.position.set(-bodyLength / 2 - headLength / 2, bodyRadius + baseHeight, 0);
     group.add(head);
 
-    const portRadius = 2.5;
     const portLength = 5;
     const portGeo = this.getSharedGeometry(
       'pumpPort',
@@ -902,7 +852,7 @@ export class EquipmentRenderer extends BaseRenderer {
     geom.setAttribute('progress', new THREE.BufferAttribute(new Float32Array(count).fill(0), 1));
 
     const mat = new THREE.PointsMaterial({
-      color: 0x448aff,
+      color: token['--accent-3d'],
       size: 2,
       transparent: true,
       opacity: 0.8,

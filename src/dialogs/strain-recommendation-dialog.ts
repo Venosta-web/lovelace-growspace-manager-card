@@ -33,8 +33,8 @@ export class StrainRecommendationDialog extends LitElement {
         width: 100%;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        color: #fff;
+        border-radius: var(--border-radius-sm, 8px);
+        color: var(--text-primary);
         padding: 12px;
         font-family: inherit;
         resize: vertical;
@@ -65,7 +65,7 @@ export class StrainRecommendationDialog extends LitElement {
       }
       .gm-response-box {
         background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 16px;
         line-height: 1.5;
         white-space: pre-wrap;
@@ -103,7 +103,7 @@ export class StrainRecommendationDialog extends LitElement {
       >
         <div class="glass-dialog-container">
           <div class="dialog-header">
-            <div class="dialog-icon" style="color: #4CAF50">
+            <div class="dialog-icon" style="color: var(--gm-primary-color)">
               <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiBrain}"></path>
               </svg>

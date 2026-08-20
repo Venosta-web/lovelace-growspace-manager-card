@@ -5,9 +5,12 @@ import { StoreController } from '@nanostores/lit';
 import { hassContext, storeContext } from '../../../context';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
+import { toggleEnvGraph } from '../../../slices/ui';
 import type { GrowspaceDevice } from '../../../types';
-import { METRIC_CONFIG, METRIC_SORT_ORDER, type MetricKey } from '../../../constants';
+import { METRIC_SORT_ORDER, type MetricKey } from '../../../constants';
 import type { AnalyticsItem } from '../components/growspace-analytics-ui';
+import { deviceSnapshots$, type DeviceSnapshot } from '../../../slices/device-state';
+import { computeMetricDescriptors } from '../../../slices/metric-descriptors';
 import '../components/growspace-analytics-ui';
 
 @customElement('growspace-analytics')
@@ -19,6 +22,12 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   private store!: GrowspaceStore;
 
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
+  @property({ attribute: false }) deviceSnapshot: DeviceSnapshot | null | undefined;
+  /** Per-metric entity lists when the host resolved them itself (subarea view). */
+  @property({ attribute: false }) metricSensors: Record<string, string[]> | undefined;
+  /** The host owns history requests (used by subareas with their own sensor set). */
+  @property({ type: Boolean, attribute: false }) historyManagedExternally = false;
+  private _deviceSnapshotsController!: StoreController<Map<string, DeviceSnapshot>>;
 
   private _controller!: StoreController<{
     historyLoading: boolean;
@@ -34,6 +43,9 @@ export class GrowspaceAnalyticsContainer extends LitElement {
       this._controller = new StoreController(this, this.store.history.$analyticsViewState);
       this.store.history.startAutoRefresh();
     }
+    if (!this._deviceSnapshotsController) {
+      this._deviceSnapshotsController = new StoreController(this, deviceSnapshots$);
+    }
   }
 
   connectedCallback() {
@@ -47,14 +59,24 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   }
 
   firstUpdated() {
-    if (this.store?.history && !this._controller?.value?.historyLoaded) {
+    if (
+      !this.historyManagedExternally &&
+      this.store?.history &&
+      !this._controller?.value?.historyLoaded
+    ) {
       this.store.history.loadHistoryOnDemand();
     }
   }
 
   protected updated() {
     const state = this._controller?.value;
-    if (this.store?.history && state && !state.historyLoaded && !state.historyLoading) {
+    if (
+      !this.historyManagedExternally &&
+      this.store?.history &&
+      state &&
+      !state.historyLoaded &&
+      !state.historyLoading
+    ) {
       this.store.history.loadHistoryOnDemand();
     }
   }
@@ -98,6 +120,24 @@ export class GrowspaceAnalyticsContainer extends LitElement {
     const state = this._controller?.value;
     if (!state || state.activeEnvGraphs?.size === 0 || !this.device) return html``;
 
+    const deviceSnapshot =
+      this.deviceSnapshot === undefined
+        ? (deviceSnapshots$.get().get(this.device.deviceId) ?? null)
+        : this.deviceSnapshot;
+
+    // Descriptors are built here, where reading `hass.states` is allowed, so the
+    // charts below never have to (ADR-0030).
+    const overviewEntity = this.device.overviewEntityId
+      ? this.hass?.states[this.device.overviewEntityId]
+      : undefined;
+    const descriptors = computeMetricDescriptors(
+      deviceSnapshot,
+      this.hass?.states ?? {},
+      overviewEntity,
+      this.device,
+      this.metricSensors
+    );
+
     return html`
       <growspace-analytics-ui
         .items=${this._items}
@@ -105,6 +145,7 @@ export class GrowspaceAnalyticsContainer extends LitElement {
         .range=${this.store.history.getRange()}
         .hass=${this.hass}
         .device=${this.device}
+        .descriptors=${descriptors}
         .sensorHistory=${state.combinedHistory || {}}
         @set-range=${this._handleSetRange}
         @toggle-graph=${this._handleToggleGraph}
@@ -115,7 +156,7 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   }
 
   private _handleSetRange(e: CustomEvent) {
-    if (this.device) {
+    if (this.device && !this.historyManagedExternally) {
       this.store.history.setGraphRange(this.device.deviceId, e.detail);
       this.store.history.loadHistoryOnDemand();
     }
@@ -124,7 +165,12 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   private _handleToggleGraph(e: CustomEvent) {
     const metric = typeof e.detail === 'string' ? e.detail : e.detail.metric;
     if (metric) {
-      this.store?.actions.ui.toggleEnvGraph(metric);
+      toggleEnvGraph(
+        metric,
+        this.store?.history,
+        this.store?.ui,
+        this.device?.deviceId ?? this.store?.grid.$selectedDevice.get()
+      );
     }
   }
 

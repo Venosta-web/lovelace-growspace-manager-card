@@ -190,14 +190,17 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       hsoCard.click();
       await gsBreederManager?.updateComplete;
 
-      expect(gsBreederManager?._editorState).toBeTruthy();
-      expect(gsBreederManager?._editorState.name).toBe('HSO');
-      expect(gsBreederManager?._editorState.originalName).toBe('HSO');
+      expect(gsBreederManager?._sm.activeView).toBe('editor');
+      expect(gsBreederManager?._sm.views.editor.draft.name).toBe('HSO');
+      expect(gsBreederManager?._sm.views.editor.draft.originalName).toBe('HSO');
     });
 
     it('saves new breeder', async () => {
       const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-      gsBreederManager._editorState = { name: 'New Breeder', logo: 'new-logo', originalName: '' };
+      const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+      gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: undefined, logo: 'new-logo' });
+      gsBreederManager._sm = t(gsBreederManager._sm, { type: 'FIELD_CHANGED', field: 'name', value: 'New Breeder' });
+      gsBreederManager._sm = t(gsBreederManager._sm, { type: 'FIELD_CHANGED', field: 'logo', value: 'new-logo' });
       gsBreederManager.requestUpdate?.();
       await gsBreederManager?.updateComplete;
 
@@ -211,12 +214,15 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       const detail = saveHandler.mock.calls[0][0].detail;
       expect(detail.name).toBe('New Breeder');
       expect(detail.logo).toBe('new-logo');
-      expect(gsBreederManager?._editorState).toBeNull();
+      expect(gsBreederManager?._sm.activeView).toBe('list');
     });
 
     it('updates existing breeder', async () => {
       const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-      gsBreederManager._editorState = { name: 'HSO Updated', logo: 'new-logo', originalName: 'HSO' };
+      const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+      gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'HSO', logo: 'new-logo' });
+      gsBreederManager._sm = t(gsBreederManager._sm, { type: 'FIELD_CHANGED', field: 'name', value: 'HSO Updated' });
+      gsBreederManager._sm = t(gsBreederManager._sm, { type: 'FIELD_CHANGED', field: 'logo', value: 'new-logo' });
       gsBreederManager.requestUpdate?.();
       await gsBreederManager?.updateComplete;
 
@@ -230,12 +236,13 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       const detail = updateHandler.mock.calls[0][0].detail;
       expect(detail.oldName).toBe('HSO');
       expect(detail.newName).toBe('HSO Updated');
-      expect(gsBreederManager?._editorState).toBeNull();
+      expect(gsBreederManager?._sm.activeView).toBe('list');
     });
 
     it('deletes a breeder', async () => {
       const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-      gsBreederManager._pendingDelete = 'HSO';
+      const { transition: t } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+      gsBreederManager._sm = t(gsBreederManager._sm, { type: 'DELETE_REQUESTED', name: 'HSO' });
       gsBreederManager.requestUpdate?.();
       await gsBreederManager?.updateComplete;
 
@@ -248,19 +255,21 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       expect(deleteHandler).toHaveBeenCalledWith(expect.objectContaining({
         detail: { name: 'HSO' }
       }));
-      expect(gsBreederManager?._pendingDelete).toBeNull();
+      expect(gsBreederManager?._sm.views.list.sub.kind).toBe('idle');
     });
 
     it('cancels breeder deletion', async () => {
       const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-      gsBreederManager._pendingDelete = 'HSO';
-      gsBreederManager._pendingDelete = null;
-      expect(gsBreederManager?._pendingDelete).toBeNull();
+      const { transition: t } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+      gsBreederManager._sm = t(gsBreederManager._sm, { type: 'DELETE_REQUESTED', name: 'HSO' });
+      gsBreederManager._sm = t(gsBreederManager._sm, { type: 'CANCEL_DELETE' });
+      expect(gsBreederManager?._sm.views.list.sub.kind).toBe('idle');
     });
 
     it('toggles logo in breeder editor', async () => {
       const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-      gsBreederManager._editorState = { name: 'Test', logo: 'some-logo', originalName: '' };
+      const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+      gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'Test', logo: 'some-logo' });
       gsBreederManager.requestUpdate?.();
       await gsBreederManager?.updateComplete;
 
@@ -268,12 +277,13 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       deleteLogoBtn?.click();
       await gsBreederManager?.updateComplete;
 
-      expect(gsBreederManager?._editorState.logo).toBe('');
+      expect(gsBreederManager?._sm.views.editor.draft.logo).toBe('');
     });
 
     it('closes breeder editor on clicking cancel button', async () => {
       const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-      gsBreederManager._editorState = { name: 'Test', logo: 'logo', originalName: '' };
+      const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+      gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'Test', logo: 'logo' });
       gsBreederManager.requestUpdate?.();
       await gsBreederManager?.updateComplete;
 
@@ -282,22 +292,22 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       cancelBtn?.click();
       await gsBreederManager?.updateComplete;
 
-      expect(gsBreederManager?._editorState).toBeNull();
+      expect(gsBreederManager?._sm.activeView).toBe('list');
     });
   });
 
   describe('UI Interactions', () => {
-    it('toggles mobile menu', async () => {
+    it('toggles manage menu', async () => {
       const browseView = element.shadowRoot?.querySelector('strain-browse-view') as any;
       const menuBtn = browseView?.shadowRoot?.querySelector('.header-actions button') as HTMLElement;
       menuBtn?.click();
-      expect(browseView?._mobileMenuOpen).toBe(true);
+      expect(browseView?._manageMenuOpen).toBe(true);
 
       menuBtn?.click();
-      expect(browseView?._mobileMenuOpen).toBe(false);
+      expect(browseView?._manageMenuOpen).toBe(false);
     });
 
-    it('renders dots menu in browse view', async () => {
+    it('renders the manage menu trigger in browse view', async () => {
       (element as any)._view = 'browse';
       await element.updateComplete;
 
@@ -372,7 +382,10 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       (element as any)._activeMainTab = 'strains';
       await element.updateComplete;
 
-      const browseView = element.shadowRoot?.querySelector('strain-browse-view');
+      const browseView = element.shadowRoot?.querySelector('strain-browse-view') as any;
+      (browseView.shadowRoot?.querySelector('.manage-menu-trigger') as HTMLElement).click();
+      await browseView.updateComplete;
+
       const manageBtn = (Array.from(browseView?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[])
         .find(b => b.textContent?.includes('Manage Breeders'));
       expect(manageBtn).toBeTruthy();
@@ -437,7 +450,8 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       await element.updateComplete;
 
       const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-      gsBreederManager._startEdit('Test Breeder', '');
+      const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+      gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'Test Breeder', logo: '' });
       await gsBreederManager?.updateComplete;
 
       const fileInput = gsBreederManager?.shadowRoot?.querySelector('input[type="file"]') as HTMLInputElement;
@@ -488,6 +502,69 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       (element as any)._libraryFilter = 'all';
       const allFiltered = (element as any)._applyLibraryFilter(element.strains);
       expect(allFiltered).toHaveLength(2);
+    });
+
+    it('toggles _treeMaximized when maximize button is clicked (line 1451)', async () => {
+      (element as any)._activeMainTab = 'tree';
+      await element.updateComplete;
+
+      const maximizeBtn = element.shadowRoot?.querySelector('.tab-maximize-btn') as HTMLElement | null;
+      expect(maximizeBtn).toBeTruthy();
+      expect((element as any)._treeMaximized).toBe(false);
+
+      maximizeBtn?.click();
+      expect((element as any)._treeMaximized).toBe(true);
+
+      maximizeBtn?.click();
+      expect((element as any)._treeMaximized).toBe(false);
+    });
+
+    it('updates _libraryFilter when gs-filter-chips dispatches filter-changed (line 1483)', async () => {
+      (element as any)._activeMainTab = 'tree';
+      await element.updateComplete;
+
+      const chips = element.shadowRoot?.querySelector('gs-filter-chips');
+      expect(chips).toBeTruthy();
+
+      chips?.dispatchEvent(new CustomEvent('filter-changed', { detail: { filter: 'active' }, bubbles: true, composed: true }));
+      expect((element as any)._libraryFilter).toBe('active');
+
+      chips?.dispatchEvent(new CustomEvent('filter-changed', { detail: { filter: 'library' }, bubbles: true, composed: true }));
+      expect((element as any)._libraryFilter).toBe('library');
+    });
+
+    it('handles open-strain-editor from genetics-tree-view for a known strain (lines 1526-1530)', async () => {
+      (element as any)._activeMainTab = 'tree';
+      await element.updateComplete;
+
+      const treeView = element.shadowRoot?.querySelector('genetics-tree-view');
+      expect(treeView).toBeTruthy();
+
+      treeView?.dispatchEvent(new CustomEvent('open-strain-editor', {
+        detail: { id: mockStrains[0].key },
+        bubbles: true,
+        composed: true,
+      }));
+
+      expect((element as any)._editingStrain).toEqual(mockStrains[0]);
+      expect((element as any)._view).toBe('editor');
+      expect((element as any)._activeMainTab).toBe('strains');
+    });
+
+    it('ignores open-strain-editor from genetics-tree-view for an unknown strain key', async () => {
+      (element as any)._activeMainTab = 'tree';
+      (element as any)._view = 'list';
+      await element.updateComplete;
+
+      const treeView = element.shadowRoot?.querySelector('genetics-tree-view');
+      treeView?.dispatchEvent(new CustomEvent('open-strain-editor', {
+        detail: { id: 'nonexistent-key' },
+        bubbles: true,
+        composed: true,
+      }));
+
+      expect((element as any)._view).toBe('list');
+      expect((element as any)._editingStrain).toBeFalsy();
     });
 
     it('builds tree nodes with structured parents, legacy lineage strings, stubs, and seed batches', async () => {

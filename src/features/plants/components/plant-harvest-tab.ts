@@ -5,6 +5,8 @@ import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { PlantEntity } from '../../../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import { saveHarvestMetrics, scorePlant } from '../../../slices/plant';
+import { showToast, showError } from '../../../slices/ui';
 
 @customElement('plant-harvest-tab')
 export class PlantHarvestTab extends LitElement {
@@ -77,7 +79,9 @@ export class PlantHarvestTab extends LitElement {
         <div style="display:flex; flex-direction:column; gap:20px; padding:8px 0;">
           ${PlantHarvestTab.SCORE_DIMENSIONS.map((dim) => this._renderScoreRow(dim))}
         </div>
-        <p style="font-size:0.8rem; opacity:0.45; margin:8px 0 0; text-align:center;">
+        <p
+          style="font-size:var(--font-size-supporting); opacity:0.45; margin:8px 0 0; text-align:center;"
+        >
           All fields are optional — you can advance without scoring.
         </p>
 
@@ -244,7 +248,6 @@ export class PlantHarvestTab extends LitElement {
           </button>
           <button
             class="md3-button filled"
-            style="background: linear-gradient(135deg, #388e3c, #4caf50);"
             @click=${() => this._saveHarvestMetrics()}
             ?disabled=${isSaving}
           >
@@ -272,21 +275,25 @@ export class PlantHarvestTab extends LitElement {
       <div style="display:flex; flex-direction:column; gap:6px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span
-            style="display:flex; align-items:center; gap:8px; font-weight:500; font-size:0.95rem;"
+            style="display:flex; align-items:center; gap:8px; font-weight:500; font-size:var(--font-size-md);"
           >
-            <span style="font-size:1.2rem;">${dim.emoji}</span>
+            <span style="font-size:var(--font-size-lg);">${dim.emoji}</span>
             ${dim.label}
           </span>
-          <span style="font-size:0.95rem; opacity:0.7; min-width:30px; text-align:right;">
+          <span
+            style="font-size:var(--font-size-md); opacity:0.7; min-width:30px; text-align:right;"
+          >
             ${current !== null && current !== undefined ? `${current} / 5` : '—'}
           </span>
         </div>
-        <p style="font-size:0.8rem; opacity:0.5; margin:0;">${dim.description}</p>
+        <p style="font-size:var(--font-size-supporting); opacity:0.5; margin:0;">
+          ${dim.description}
+        </p>
         <div style="display:flex; gap:6px; margin-top:4px;">
           ${[1, 2, 3, 4, 5].map(
             (star) => html`
               <button
-                style="background:none; border:none; padding:0; cursor:pointer; font-size:1.6rem; line-height:1; transition:transform 0.1s, filter 0.15s;
+                style="background:none; border:none; padding:0; cursor:pointer; font-size:var(--font-size-xl); line-height:1; transition:transform 0.1s, filter 0.15s;
                 filter: ${(current !== null && star <= current) ||
                 (preview !== null && star <= preview)
                   ? 'grayscale(0) opacity(1)'
@@ -328,11 +335,18 @@ export class PlantHarvestTab extends LitElement {
     this._savingHarvest = true;
     try {
       const plantId = this.plant.attributes.plant_id as string;
-      await this.store.actions.plant.saveHarvestMetrics(plantId, this._harvestMetricsEdit);
-      await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
+      if (Object.keys(this._harvestMetricsEdit).length > 0) {
+        await saveHarvestMetrics(plantId, this._harvestMetricsEdit);
+        showToast('Harvest metrics saved', 'success');
+      }
+      if (Object.values(this._scoresEdit).some((v) => v !== null && v !== undefined)) {
+        await scorePlant(plantId, this._scoresEdit);
+        showToast('Scores saved', 'success');
+      }
+      await this.store?.refreshData(true);
       this.dispatchEvent(new CustomEvent('harvest-saved', { bubbles: true, composed: true }));
     } catch (e) {
-      console.error('Failed to save harvest metrics', e);
+      showError(e, 'Failed to save harvest metrics');
     } finally {
       this._savingHarvest = false;
     }

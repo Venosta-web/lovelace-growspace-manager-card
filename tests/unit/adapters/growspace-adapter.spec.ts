@@ -66,7 +66,7 @@ describe('GrowspaceAdapter', () => {
         plants_per_row: 2,
         total_plants: 1,
         grid: {
-          'position_0_0': {
+          position_0_0: {
             plant_id: 'p1',
             entity_id: 'sensor.p1',
             strain: 'Kush',
@@ -91,7 +91,7 @@ describe('GrowspaceAdapter', () => {
             cure_start: null,
             days_since_last_watering: 0,
           },
-          'position_0_1': null,
+          position_0_1: null,
         },
       },
       environment: {
@@ -146,7 +146,7 @@ describe('GrowspaceAdapter', () => {
         plants_per_row: 2,
         total_plants: 1,
         grid: {
-          'position_1_2': {
+          position_1_2: {
             plant_id: 'p1',
             row: 1,
             col: 2,
@@ -171,7 +171,9 @@ describe('GrowspaceAdapter', () => {
   });
 
   it('should handle wsData with null grid', () => {
-    const ws = makeWsData({ grid: { rows: 2, plants_per_row: 2, total_plants: 0, grid: null as any } });
+    const ws = makeWsData({
+      grid: { rows: 2, plants_per_row: 2, total_plants: 0, grid: null as any },
+    });
     const result = GrowspaceAdapter.transformGrowspace(null, ws);
     expect(result?.plants).toHaveLength(0);
   });
@@ -187,13 +189,17 @@ describe('GrowspaceAdapter', () => {
   });
 
   it('should fallback growspace_id from overview when wsData lacks it', () => {
-    const ws = makeWsData({ identity: { growspace_id: '', name: 'Test Room', type: GrowspaceTypeEnum.NORMAL } });
+    const ws = makeWsData({
+      identity: { growspace_id: '', name: 'Test Room', type: GrowspaceTypeEnum.NORMAL },
+    });
     const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
     expect(result?.deviceId).toBe('test_gs');
   });
 
   it('should use default name when both wsData and overview lack it', () => {
-    const ws = makeWsData({ identity: { growspace_id: 'gs_anon', name: '', type: GrowspaceTypeEnum.NORMAL } });
+    const ws = makeWsData({
+      identity: { growspace_id: 'gs_anon', name: '', type: GrowspaceTypeEnum.NORMAL },
+    });
     const overviewWithoutName = {
       entity_id: 'sensor.test',
       attributes: { growspace_id: 'gs_anon' },
@@ -215,7 +221,7 @@ describe('GrowspaceAdapter', () => {
         plants_per_row: 1,
         total_plants: 1,
         grid: {
-          'position_0_0': {
+          position_0_0: {
             plant_id: 'p1',
             entity_id: 'sensor.p1',
             strain: 'Unknown',
@@ -240,13 +246,15 @@ describe('GrowspaceAdapter', () => {
     });
     const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
     expect(result?.irrigationStrategy).toEqual(
-      expect.objectContaining({ enabled: true, targetVwcPercent: 45 }),
+      expect.objectContaining({ enabled: true, targetVwcPercent: 45 })
     );
   });
 
   describe('Coverage Gap Fillers', () => {
     it('should fallback to "unknown" when both wsData and overview lack growspace_id', () => {
-      const ws = makeWsData({ identity: { growspace_id: '', name: 'No ID', type: GrowspaceTypeEnum.NORMAL } });
+      const ws = makeWsData({
+        identity: { growspace_id: '', name: 'No ID', type: GrowspaceTypeEnum.NORMAL },
+      });
       const overviewWithoutId = { entity_id: 'sensor.test', attributes: {} };
       const result = GrowspaceAdapter.transformGrowspace(overviewWithoutId as any, ws);
       expect(result?.deviceId).toBe('unknown');
@@ -267,7 +275,7 @@ describe('GrowspaceAdapter', () => {
           plants_per_row: 2,
           total_plants: 1,
           grid: {
-            'position_0_0': {
+            position_0_0: {
               plant_id: 'p1',
               entity_id: 'sensor.p1',
               strain: 'Valid',
@@ -276,8 +284,8 @@ describe('GrowspaceAdapter', () => {
               row: 0,
               col: 0,
             } as any,
-            'position_0_1': null,
-            'position_1_0': undefined as any,
+            position_0_1: null,
+            position_1_0: undefined as any,
           },
         },
       });
@@ -291,7 +299,7 @@ describe('GrowspaceAdapter', () => {
           growspace_id: 'test_gs',
           overview_entity_id: '',
           name: 'Test Room',
-          type: 'normal',
+          type: GrowspaceTypeEnum.NORMAL,
         },
       });
       const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
@@ -307,6 +315,7 @@ describe('GrowspaceAdapter', () => {
         sensor_groups: [
           {
             id: 'group1',
+            name: 'Group 1',
             x: 10,
             y: 20,
             z: 5,
@@ -378,12 +387,27 @@ describe('GrowspaceAdapter', () => {
       sensors: {
         sensor_types: {},
         sensor_coordinates: {},
-        sensor_groups: [{ id: 'group_empty', x: 10, y: 10, z: 10 }] as any,
+        sensor_groups: [{ id: 'group_empty', name: 'Empty', x: 10, y: 10, z: 10 }] as any,
       },
     });
     const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
     expect(result).toBeDefined();
     expect(result?.environmentAttributes?.sensorGroups).toHaveLength(1);
+  });
+
+  it('should drop only the group that does not parse', () => {
+    const ws = makeWsData({
+      sensors: {
+        sensor_types: {},
+        sensor_coordinates: {},
+        sensor_groups: [
+          { id: 'good', name: 'Good', x: 1, y: 2, z: 3, temperature_sensors: ['sensor.t'] },
+          { name: 'No id at all' },
+        ] as any,
+      },
+    });
+    const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+    expect(result?.environmentAttributes?.sensorGroups?.map((g) => g.id)).toEqual(['good']);
   });
 
   it('should NOT overwrite existing sensor coordinates with group coordinates', () => {
@@ -411,7 +435,7 @@ describe('GrowspaceAdapter', () => {
         plants_per_row: 2,
         total_plants: 0,
         grid: {},
-        dimensions: { width: 100, length: 111, height: 100 },
+        dimensions: { width: 100, length: 111, height: 100, unit: 'cm' },
       },
     });
     const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
@@ -430,6 +454,67 @@ describe('GrowspaceAdapter', () => {
     });
     const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
     expect(result?.dimensions?.length).toBe(120);
+  });
+
+  it('should map ecTargetRanges from irrigation_config', () => {
+    const ws = makeWsData({
+      irrigation: {
+        irrigation_config: {
+          irrigation_times: [],
+          drain_times: [],
+          ec_target_ranges: [
+            { stage: 'veg', feed_ec_min: 1.2, feed_ec_max: 1.6 },
+            { stage: 'flower', feed_ec_min: 1.8, feed_ec_max: 2.2 },
+          ],
+        },
+        irrigation_strategy: null,
+      },
+    });
+    const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+    expect(result?.irrigationConfig.ecTargetRanges).toHaveLength(2);
+    expect(result?.irrigationConfig.ecTargetRanges[0]).toEqual({
+      stage: 'veg',
+      minEc: 1.2,
+      maxEc: 1.6,
+    });
+    expect(result?.irrigationConfig.ecTargetRanges[1]).toEqual({
+      stage: 'flower',
+      minEc: 1.8,
+      maxEc: 2.2,
+    });
+  });
+
+  it('should map drainConfig.readings when drain_config has entries', () => {
+    const ws = makeWsData({
+      irrigation: {
+        irrigation_config: { irrigation_times: [], drain_times: [] },
+        irrigation_strategy: null,
+        drain_config: {
+          enabled: true,
+          max_ec_delta: 0.5,
+          target_runoff_percent: 20,
+          readings: [
+            {
+              timestamp: '2024-01-01T10:00:00Z',
+              feed_ec: 1.5,
+              drain_ec: 1.8,
+              drain_volume_ml: 200,
+              feed_volume_ml: 1000,
+            },
+          ],
+        },
+      } as any,
+    });
+    const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+    expect(result?.drainConfig).not.toBeNull();
+    expect(result?.drainConfig?.readings).toHaveLength(1);
+    expect(result?.drainConfig?.readings[0]).toEqual({
+      timestamp: '2024-01-01T10:00:00Z',
+      feedEc: 1.5,
+      drainEc: 1.8,
+      drainVolumeMl: 200,
+      feedVolumeMl: 1000,
+    });
   });
 
   it('should backfill sensorCoordinates for known sensors if missing', () => {
@@ -455,5 +540,140 @@ describe('GrowspaceAdapter', () => {
     const coords = result?.environmentAttributes?.sensorCoordinates || {};
     expect(coords['sensor.temp']).toEqual({ x: 100, y: 100, z: 0 });
     expect(coords['sensor.light']).toEqual({ x: 100, y: 100, z: 0 });
+  });
+
+  describe('waterUsage.litersToday mapping', () => {
+    it('populates litersToday from irrigation.water_usage.liters_today', () => {
+      const ws = makeWsData({
+        irrigation: {
+          irrigation_config: { irrigation_times: [], drain_times: [] },
+          irrigation_strategy: null,
+          water_usage: {
+            total_liters: 100,
+            cycle_start_date: '2026-01-01',
+            daily_readings: [],
+            liters_today: 3.7,
+          },
+        } as any,
+      });
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+      expect(result?.waterUsage?.litersToday).toBe(3.7);
+    });
+
+    // growspace_manager's ADR-0017: liters_today is the backend's canonical
+    // Aggregate Water Use (tank-derived + manual in tank mode; manual +
+    // pump-estimate otherwise). This characterizes that the adapter surfaces the
+    // backend's pre-aggregated figure verbatim — it reads liters_today directly and
+    // does not sum or recompute from daily_readings (which are present here only to
+    // mirror the ADR-0017 additive scenario; the adapter never inspects them).
+    it('surfaces the additive liters_today verbatim, not a sum recomputed client-side', () => {
+      const ws = makeWsData({
+        irrigation: {
+          irrigation_config: { irrigation_times: [], drain_times: [] },
+          irrigation_strategy: null,
+          water_usage: {
+            total_liters: 100,
+            cycle_start_date: '2026-01-01',
+            // Backend already folded manual (3.2) into the tank-derived total to
+            // reach liters_today = 8.2; the adapter passes that 8.2 through as-is.
+            daily_readings: [{ date: '2026-06-15', liters: 3.2, source: 'manual' }],
+            liters_today: 8.2,
+          },
+        } as any,
+      });
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+      expect(result?.waterUsage?.litersToday).toBe(8.2);
+    });
+
+    it('leaves litersToday undefined when liters_today is absent from payload', () => {
+      const ws = makeWsData({
+        irrigation: {
+          irrigation_config: { irrigation_times: [], drain_times: [] },
+          irrigation_strategy: null,
+          water_usage: {
+            total_liters: 50,
+            cycle_start_date: '2026-01-01',
+            daily_readings: [],
+          },
+        } as any,
+      });
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+      expect(result?.waterUsage?.litersToday).toBeUndefined();
+    });
+  });
+
+  describe('projectedShotWindow mapping', () => {
+    it('passes through the projected shot window range from the backend payload', () => {
+      const ws = makeWsData({
+        irrigation: {
+          irrigation_config: { irrigation_times: [], drain_times: [] },
+          irrigation_strategy: null,
+          projected_shot_window: {
+            start: '2026-06-07T09:45:00+00:00',
+            end: '2026-06-07T18:00:00+00:00',
+          },
+        } as any,
+      });
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+      expect(result?.projectedShotWindow).toEqual({
+        start: '2026-06-07T09:45:00+00:00',
+        end: '2026-06-07T18:00:00+00:00',
+      });
+    });
+
+    it('defaults projectedShotWindow to null when absent from the payload', () => {
+      const ws = makeWsData({
+        irrigation: {
+          irrigation_config: { irrigation_times: [], drain_times: [] },
+          irrigation_strategy: null,
+        } as any,
+      });
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+      expect(result?.projectedShotWindow).toBeNull();
+    });
+  });
+
+  describe('subareas mapping', () => {
+    it('maps payload subareas into GrowspaceDevice.subareas', () => {
+      const ws = makeWsData({
+        subareas: [
+          {
+            id: 'sa1',
+            name: 'Veg Shelf',
+            environment_config: { temperature_sensors: ['sensor.shelf_temp'] },
+          },
+          {
+            id: 'sa2',
+            name: 'Flower Shelf',
+            environment_config: { humidity_sensors: ['sensor.shelf_hum'] },
+          },
+        ],
+      });
+
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+
+      expect(result?.subareas).toEqual([
+        {
+          id: 'sa1',
+          name: 'Veg Shelf',
+          environment_config: { temperature_sensors: ['sensor.shelf_temp'] },
+        },
+        {
+          id: 'sa2',
+          name: 'Flower Shelf',
+          environment_config: { humidity_sensors: ['sensor.shelf_hum'] },
+        },
+      ]);
+    });
+
+    it('defaults subareas to [] when the payload key is absent (older backends)', () => {
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, makeWsData());
+      expect(result?.subareas).toEqual([]);
+    });
+
+    it('defaults subareas to [] in the loading-state skeleton', () => {
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, null);
+      expect(result?.subareas).toEqual([]);
+    });
   });
 });

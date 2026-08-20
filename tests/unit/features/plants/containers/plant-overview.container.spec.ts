@@ -3,6 +3,7 @@ import { atom } from 'nanostores';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { ContextProvider } from '@lit/context';
 import { hassContext, storeContext } from '../../../../../src/context';
+import { deletePlant } from '../../../../../src/slices/plant';
 import '../../../../../src/features/plants/containers/plant-overview.container';
 import type { PlantOverviewContainer } from '../../../../../src/features/plants/containers/plant-overview.container';
 import type { PlantEntity } from '../../../../../src/types';
@@ -11,6 +12,21 @@ import type { PlantEntity } from '../../../../../src/types';
 vi.mock('../../../../../src/features/plants/components/plant-dashboard-tab', () => ({ default: class { } }));
 vi.mock('../../../../../src/features/plants/components/plant-actions-tab', () => ({ default: class { } }));
 vi.mock('../../../../../src/features/plants/components/plant-timeline-tab', () => ({ default: class { } }));
+vi.mock('../../../../../src/slices/logbook', () => ({
+  fetchPlantEvents: vi.fn().mockResolvedValue([
+    { event_id: 'e1', timestamp: '2026-01-15T10:00:00Z', category: 'note' },
+  ]),
+  fetchGrowspaceEvents: vi.fn().mockResolvedValue([]),
+}));
+
+// The container calls Plant slice mutators directly; spread the real module so
+// child components that import other Plant-slice exports still load.
+vi.mock('../../../../../src/slices/plant', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../../../src/slices/plant')>()),
+  deletePlant: vi.fn().mockResolvedValue(undefined),
+  advancePlantStage: vi.fn().mockResolvedValue('dry'),
+  movePlantToGrowspace: vi.fn().mockResolvedValue(undefined),
+}));
 
 describe('PlantOverviewContainer', () => {
   let element: PlantOverviewContainer;
@@ -481,6 +497,41 @@ describe('PlantOverviewContainer', () => {
     expect(mockStore.ui.closeDialog).toHaveBeenCalled(); // Should close upon save
   });
 
+  it('_fetchLogbookEvents populates logbook events on success', async () => {
+    const { fetchPlantEvents } = await import('../../../../../src/slices/logbook');
+    vi.mocked(fetchPlantEvents).mockClear();
+
+    (element as any).hass = mockHass;
+    await (element as any)._fetchLogbookEvents();
+
+    expect(vi.mocked(fetchPlantEvents)).toHaveBeenCalledWith('plant_1', 'space_1');
+    expect((element as any)._logbookEvents).toHaveLength(1);
+  });
+
+  it('_openSnapshots calls setActiveDialog with SNAPSHOTS type', () => {
+    (element as any)._openSnapshots();
+    expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+      type: 'SNAPSHOTS',
+      payload: { growspaceId: 'space_1' },
+    });
+  });
+
+  it('_openLogbook calls setActiveDialog with LOGBOOK type', () => {
+    (element as any)._openLogbook();
+    expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+      type: 'LOGBOOK',
+      payload: { growspaceId: 'space_1' },
+    });
+  });
+
+  it('_openNutrients calls setActiveDialog with NUTRIENTS type', () => {
+    (element as any)._openNutrients();
+    expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+      type: 'NUTRIENTS',
+      payload: {},
+    });
+  });
+
   it('should handle deletion confirmation cycle', async () => {
     const deleteBtn = Array.from(element.shadowRoot!.querySelectorAll('button.danger')).find(b => b.textContent?.includes('Delete')) as HTMLButtonElement;
     expect(deleteBtn).toBeTruthy();
@@ -505,7 +556,7 @@ describe('PlantOverviewContainer', () => {
     const confirmBtn = element.shadowRoot!.querySelector('.delete-overlay button.danger') as HTMLButtonElement;
     confirmBtn.click();
 
-    expect(mockStore.actions.plant.delete).toHaveBeenCalledWith('plant_1');
+    expect(deletePlant).toHaveBeenCalledWith('plant_1');
     expect(mockStore.ui.closeDialog).toHaveBeenCalled();
   });
 });

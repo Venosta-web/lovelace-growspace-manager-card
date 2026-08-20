@@ -11,7 +11,26 @@ import {
   IrrigationConfig,
   IrrigationStrategy,
 } from '../types';
-import type { ECTargetStage } from '../services/types';
+import type { ECTargetStage, SteeringMetrics, SerializedIrrigationConfig } from '../services/types';
+import { ActiveEventSchema, IrrigationTankRowSchema } from '../slices/irrigation/schema';
+import { LegacyStageThresholdsSchema } from '../slices/growspace/schema';
+import { normalizeTriggerType } from '../slices/notification/triggers';
+import { SensorGroupSchema } from '../slices/subarea/schema';
+import type { SensorGroup } from '../slices/subarea/schema';
+
+function parseSensorGroups(raw: unknown[] | undefined): SensorGroup[] {
+  return (raw ?? []).flatMap((g) => {
+    const parsed = SensorGroupSchema.safeParse(g);
+    return parsed.success ? [parsed.data] : [];
+  });
+}
+
+function parseLegacyStageThresholds(raw: unknown) {
+  // Current GSM snapshots use target/tolerance, while the editor still writes
+  // the legacy day/night on/off model. Do not reinterpret one as the other.
+  const parsed = LegacyStageThresholdsSchema.safeParse(raw);
+  return parsed.success ? parsed.data : undefined;
+}
 
 export class GrowspaceAdapter {
   static transformGrowspace(
@@ -39,6 +58,7 @@ export class GrowspaceAdapter {
         overviewEntityId: overview!.entity_id,
         name,
         lastUpdated: 'Loading...',
+        subareas: [],
       });
     }
 
@@ -59,8 +79,13 @@ export class GrowspaceAdapter {
     // 3. Sensor Coordinates — merge group coords, then backfill defaults
     const sensorCoordinates = { ...(sensors?.sensor_coordinates ?? {}) };
 
-    // Merge group coordinates
-    (sensors?.sensor_groups ?? []).forEach((g: any) => {
+    // Merge group coordinates.
+    // `sensor_groups` is an Opaque Region (ADR 0031): an open-ended, grower-driven
+    // collection left unvalidated at the growspace level so one malformed group
+    // cannot fail the whole get_data parse. Rows are parsed individually, so a
+    // bad group costs its own coordinates and nothing else.
+    const sensorGroups = parseSensorGroups(sensors?.sensor_groups);
+    sensorGroups.forEach((g) => {
       const groupCoords = { x: g.x, y: g.y, z: g.z };
       [
         ...(g.temperature_sensors || []),
@@ -75,7 +100,7 @@ export class GrowspaceAdapter {
 
     // Backfill defaults for known sensors that have no coordinate
     const midX = (gridData?.dimensions?.width ?? 120) / 2;
-    const midY = (gridData?.dimensions?.length ?? (gridData?.dimensions as any)?.depth ?? 120) / 2;
+    const midY = (gridData?.dimensions?.length ?? gridData?.dimensions?.depth ?? 120) / 2;
     const defaultCoords = { x: midX, y: midY, z: 0 };
 
     const ensureCoord = (id: string | null | undefined) => {
@@ -91,74 +116,109 @@ export class GrowspaceAdapter {
     ensureCoord(environment?.soil_moisture_sensor);
     ensureCoord(environment?.light_sensor);
 
-    (environment as any)?.temperature_sensors?.forEach(ensureCoord);
-    (environment as any)?.humidity_sensors?.forEach(ensureCoord);
-    (environment as any)?.vpd_sensors?.forEach(ensureCoord);
-    (environment as any)?.co2_sensors?.forEach(ensureCoord);
-    (environment as any)?.light_sensors?.forEach(ensureCoord);
-    (environment as any)?.soil_moisture_sensors?.forEach(ensureCoord);
+    environment?.temperature_sensors?.forEach(ensureCoord);
+    environment?.humidity_sensors?.forEach(ensureCoord);
+    environment?.vpd_sensors?.forEach(ensureCoord);
+    environment?.light_sensors?.forEach(ensureCoord);
 
     // 4. Environment Attributes from environment sub-object
     const environmentAttributes: EnvironmentAttributes = {
       temperatureSensor: environment?.temperature_sensor,
-      temperatureSensors: (environment as any)?.temperature_sensors,
+      temperatureSensors: environment?.temperature_sensors,
       humiditySensor: environment?.humidity_sensor,
-      humiditySensors: (environment as any)?.humidity_sensors,
+      humiditySensors: environment?.humidity_sensors,
       vpdSensor: environment?.vpd_sensor,
-      vpdSensors: (environment as any)?.vpd_sensors,
+      vpdSensors: environment?.vpd_sensors,
       co2Sensor: environment?.co2_sensor,
-      co2Sensors: (environment as any)?.co2_sensors,
       soilMoistureSensor: environment?.soil_moisture_sensor,
-      soilMoistureSensors: (environment as any)?.soil_moisture_sensors,
       lightSensor: environment?.light_sensor,
-      lightSensors: (environment as any)?.light_sensors,
+      lightSensors: environment?.light_sensors,
       dehumidifierEntity: environment?.dehumidifier_entity,
-      dehumidifierEntities: (environment as any)?.dehumidifier_entities,
+      dehumidifierEntities: environment?.dehumidifier_entities,
       dehumidifierControlEnabled: environment?.dehumidifier_control_enabled,
-      dehumidifierThresholds: (environment as any)?.dehumidifier_thresholds,
-      dehumidifierState: (environment as any)?.dehumidifier_state,
+      dehumidifierThresholds: parseLegacyStageThresholds(environment?.dehumidifier_thresholds),
+      dehumidifierState: environment?.dehumidifier_state ?? undefined,
       humidifierEntity: environment?.humidifier_entity,
-      humidifierEntities: (environment as any)?.humidifier_entities,
+      humidifierEntities: environment?.humidifier_entities,
       humidifierControlEnabled: environment?.humidifier_control_enabled,
-      humidifierThresholds: (environment as any)?.humidifier_thresholds,
-      exhaustEntity: (environment as any)?.exhaust_entity,
-      exhaustFanEntities: (environment as any)?.exhaust_fan_entities,
-      circulationFanEntity: (environment as any)?.circulation_fan_entity,
-      circulationFanEntities: (environment as any)?.circulation_fan_entities,
-      vpd: (environment as any)?.vpd,
-      soilMoistureValue: (environment as any)?.soil_moisture_value,
-      exhaustSensor: (environment as any)?.exhaust_sensor,
-      humidifierSensor: (environment as any)?.humidifier_sensor,
-      irrigationPumpState: (environment as any)?.irrigation_pump_state,
-      drainPumpState: (environment as any)?.drain_pump_state,
-      irrigationTanks: (environment as any)?.irrigation_tanks?.map((t: any) => ({
-        sensorEntity: t.sensor_entity,
-        name: t.name,
-        warningLevel: t.warning_level,
-        fillLevel: t.fill_level,
-        isWarning: t.is_warning,
-        hoursRemaining: t.hours_remaining ?? null,
-        depletionStatus: t.depletion_status ?? null,
-        volumeLiters: t.volume_liters ?? null,
-        waterHistory: t.water_history ?? undefined,
-      })),
-      activeEvents: (environment as any)?.active_events,
+      humidifierThresholds: parseLegacyStageThresholds(environment?.humidifier_thresholds),
+      exhaustEntity: environment?.exhaust_entity,
+      exhaustFanEntities: environment?.exhaust_fan_entities,
+      circulationFanEntity: environment?.circulation_fan_entity,
+      circulationFanEntities: environment?.circulation_fan_entities,
+      circulationFanConfig: environment?.circulation_fan_config,
+      exhaustFanConfig: environment?.exhaust_fan_config,
+      exhaustFanAcInfinityDevices: environment?.exhaust_fan_ac_infinity_devices,
+      circulationFanAcInfinityDevices: environment?.circulation_fan_ac_infinity_devices,
+      humidifierAcInfinityDevices: environment?.humidifier_ac_infinity_devices,
+      dehumidifierAcInfinityDevices: environment?.dehumidifier_ac_infinity_devices,
+      growlightEntities: environment?.growlight_entities,
+      growlightAcInfinityDevices: environment?.growlight_ac_infinity_devices,
+      growlightConfig: environment?.growlight_config,
+      vpd: environment?.vpd ?? undefined,
+      soilMoistureValue: environment?.soil_moisture_value ?? undefined,
+      // `?? null` not `?? undefined`: null is the meaningful "inherited" state
+      // for the band pair, and the dialog seeders rely on it.
+      soilMoistureMin: environment?.soil_moisture_min ?? null,
+      soilMoistureMax: environment?.soil_moisture_max ?? null,
+      soilMoistureBand: environment?.soil_moisture_band,
+      soilMoistureUnit: environment?.soil_moisture_unit ?? undefined,
+      soilMoistureBandCompatible: environment?.soil_moisture_band_compatible,
+      irrigationPumpState: environment?.irrigation_pump_state ?? undefined,
+      drainPumpState: environment?.drain_pump_state ?? undefined,
+      // `irrigation_tanks` and `active_events` are Opaque Regions (ADR 0031):
+      // open-ended, grower-driven collections that stay unvalidated at the
+      // growspace level so one malformed entry cannot blank every growspace.
+      // The tank rows are still parsed individually here, which keeps the blast
+      // radius at one tank while their shape stays schema-described.
+      irrigationTanks: environment?.irrigation_tanks?.flatMap((raw) => {
+        const row = IrrigationTankRowSchema.safeParse(raw);
+        if (!row.success) return [];
+        const t = row.data;
+        return [
+          {
+            sensorEntity: t.sensor_entity,
+            name: t.name,
+            warningLevel: t.warning_level,
+            fillLevel: t.fill_level,
+            isWarning: t.is_warning,
+            hoursRemaining: t.hours_remaining ?? null,
+            depletionStatus: t.depletion_status ?? null,
+            volumeLiters: t.volume_liters ?? null,
+            waterHistory: t.water_history ?? undefined,
+          },
+        ];
+      }),
+      activeEvents: environment?.active_events
+        ? Object.fromEntries(
+            Object.entries(environment.active_events).flatMap(([type, raw]) => {
+              const parsed = ActiveEventSchema.safeParse(raw);
+              return parsed.success ? [[type, parsed.data] as const] : [];
+            })
+          )
+        : undefined,
       // Sensor lookup data comes from sensors sub-object
       sensorCoordinates,
       sensorTypes: sensors?.sensor_types,
-      sensorGroups: sensors?.sensor_groups as any,
-      electricityCostPerKwh: (environment as any)?.electricity_cost_per_kwh,
-      substrateTemperatureSensors: (environment as any)?.substrate_temperature_sensors,
-      cameraEntities: (environment as any)?.camera_entities,
-      lungroomTempSensors: (environment as any)?.lung_room_temp_sensors,
-      powerSensors: (environment as any)?.power_sensors,
-      energySensors: (environment as any)?.energy_sensors,
-      phSensors: (environment as any)?.ph_sensors,
-      feedEcSensors: (environment as any)?.feed_ec_sensors,
-      substrateEcSensors: (environment as any)?.substrate_ec_sensors,
-      runoffEcSensors: (environment as any)?.runoff_ec_sensors,
-      drainVolumeSensors: (environment as any)?.drain_volume_sensors,
-      irrigationFlowSensors: (environment as any)?.irrigation_flow_sensors,
+      sensorGroups: sensors?.sensor_groups ? sensorGroups : undefined,
+      electricityCostPerKwh: environment?.electricity_cost_per_kwh,
+      substrateTemperatureSensors: environment?.substrate_temperature_sensors,
+      cameraEntities: environment?.camera_entities,
+      visionCheckupConfig: environment?.vision_checkup_config,
+      lungroomTempSensors: environment?.lung_room_temp_sensors,
+      powerSensors: environment?.power_sensors,
+      energySensors: environment?.energy_sensors,
+      phSensors: environment?.ph_sensors,
+      feedEcSensors: environment?.feed_ec_sensors,
+      bulkEcSensors: environment?.bulk_ec_sensors,
+      poreEcSensors: environment?.pore_ec_sensors,
+      runoffEcSensors: environment?.runoff_ec_sensors,
+      drainVolumeSensors: environment?.drain_volume_sensors,
+      irrigationFlowSensors: environment?.irrigation_flow_sensors,
+      vpdOptimalOverrides: environment?.vpd_optimal_overrides ?? {},
+      lstOffset: environment?.lst_offset,
+      stressThreshold: environment?.stress_threshold ?? null,
+      moldThreshold: environment?.mold_threshold ?? null,
     };
 
     // 5. Stats from metrics sub-object
@@ -196,26 +256,28 @@ export class GrowspaceAdapter {
     }
 
     // 7. Irrigation from irrigation sub-object
-    const irrigationConfigRaw = irrigation?.irrigation_config ?? {};
+    const irrigationConfigRaw: Partial<SerializedIrrigationConfig> =
+      irrigation?.irrigation_config ?? {};
     const irrigationConfig: IrrigationConfig = {
-      irrigationPumpEntity: (irrigationConfigRaw as any).irrigation_pump_entity,
-      drainPumpEntity: (irrigationConfigRaw as any).drain_pump_entity,
-      irrigationDuration: (irrigationConfigRaw as any).irrigation_duration,
-      drainDuration: (irrigationConfigRaw as any).drain_duration,
-      irrigationTimes: (irrigationConfigRaw as any).irrigation_times ?? [],
-      drainTimes: (irrigationConfigRaw as any).drain_times ?? [],
-      vegDayHours: (irrigationConfigRaw as any).veg_day_hours,
-      soilTriggerPercent: (irrigationConfigRaw as any).soil_trigger_percent,
-      dailyVolumeCapLiters: (irrigationConfigRaw as any).daily_volume_cap_liters,
-      maxCyclesPerDay: (irrigationConfigRaw as any).max_cycles_per_day,
-      skipDuringDark: (irrigationConfigRaw as any).skip_during_dark,
-      pauseOnLowTank: (irrigationConfigRaw as any).pause_on_low_tank,
-      logToLogbook: (irrigationConfigRaw as any).log_to_logbook,
-      autoAdvanceP1ToP2: (irrigationConfigRaw as any).auto_advance_p1_to_p2,
-      autoAdvanceP2ToP3: (irrigationConfigRaw as any).auto_advance_p2_to_p3,
-      haltOnRunoffEcThreshold: (irrigationConfigRaw as any).halt_on_runoff_ec_threshold,
-      activeSteeringPhase: (irrigationConfigRaw as any).active_steering_phase,
-      ecTargetRanges: ((irrigationConfigRaw as any).ec_target_ranges ?? []).map(
+      irrigationPumpEntity: irrigationConfigRaw.irrigation_pump_entity,
+      drainPumpEntity: irrigationConfigRaw.drain_pump_entity,
+      irrigationDuration: irrigationConfigRaw.irrigation_duration,
+      drainDuration: irrigationConfigRaw.drain_duration,
+      irrigationTimes: irrigationConfigRaw.irrigation_times ?? [],
+      drainTimes: irrigationConfigRaw.drain_times ?? [],
+      vegDayHours: irrigationConfigRaw.veg_day_hours,
+      soilTriggerPercent: irrigationConfigRaw.soil_trigger_percent,
+      dailyVolumeCapLiters: irrigationConfigRaw.daily_volume_cap_liters,
+      maxCyclesPerDay: irrigationConfigRaw.max_cycles_per_day,
+      skipDuringDark: irrigationConfigRaw.skip_during_dark,
+      pauseOnLowTank: irrigationConfigRaw.pause_on_low_tank,
+      logToLogbook: irrigationConfigRaw.log_to_logbook,
+      autoAdvanceP1ToP2: irrigationConfigRaw.auto_advance_p1_to_p2,
+      autoAdvanceP2ToP3: irrigationConfigRaw.auto_advance_p2_to_p3,
+      haltOnRunoffEcThreshold: irrigationConfigRaw.halt_on_runoff_ec_threshold,
+      activeSteeringPhase: irrigationConfigRaw.active_steering_phase,
+      phaseChangedAt: irrigationConfigRaw.phase_changed_at ?? undefined,
+      ecTargetRanges: (irrigationConfigRaw.ec_target_ranges ?? []).map(
         (r: { stage: string; feed_ec_min: number; feed_ec_max: number }) => ({
           stage: r.stage as ECTargetStage,
           minEc: r.feed_ec_min,
@@ -235,8 +297,42 @@ export class GrowspaceAdapter {
           maintenanceDrybackPercent: irrigationStrategyRaw.maintenance_dryback_percent,
           shotDurationSeconds: irrigationStrategyRaw.shot_duration_seconds,
           shotIntervalMinutes: irrigationStrategyRaw.shot_interval_minutes,
+          // Per-phase shot fields fall back to the legacy shared values so
+          // strategies stored before the per-phase split still populate P1/P2.
+          p1ShotDurationSeconds:
+            irrigationStrategyRaw.p1_shot_duration_seconds ??
+            irrigationStrategyRaw.shot_duration_seconds,
+          p1ShotIntervalMinutes:
+            irrigationStrategyRaw.p1_shot_interval_minutes ??
+            irrigationStrategyRaw.shot_interval_minutes,
+          p2ShotDurationSeconds:
+            irrigationStrategyRaw.p2_shot_duration_seconds ??
+            irrigationStrategyRaw.shot_duration_seconds,
+          p2ShotIntervalMinutes:
+            irrigationStrategyRaw.p2_shot_interval_minutes ??
+            irrigationStrategyRaw.shot_interval_minutes,
+          p1ShotVolumePercent: irrigationStrategyRaw.p1_shot_volume_percent,
+          p2ShotVolumePercent: irrigationStrategyRaw.p2_shot_volume_percent,
+          shotSizingMode: irrigationStrategyRaw.shot_sizing_mode ?? 'seconds',
+          substrateProfile: irrigationStrategyRaw.substrate_profile
+            ? {
+                mediaType: irrigationStrategyRaw.substrate_profile.media_type,
+                litersPerPot: irrigationStrategyRaw.substrate_profile.liters_per_pot,
+              }
+            : undefined,
+          poreEcTargetMin: irrigationStrategyRaw.pore_ec_target_min ?? null,
+          poreEcTargetMax: irrigationStrategyRaw.pore_ec_target_max ?? null,
+          ecModulationEnabled: irrigationStrategyRaw.ec_modulation_enabled ?? false,
           autoLightTracking: irrigationStrategyRaw.auto_light_tracking,
           detectedLightsOnTime: irrigationStrategyRaw.detected_lights_on_time,
+          declaredSteeringMode: irrigationStrategyRaw.declared_steering_mode ?? null,
+          // Adaptive Shot Control (ADR-0014). Master toggle defaults on to match
+          // the backend default and the previously always-on size feedback.
+          dynamicShotEnabled: irrigationStrategyRaw.dynamic_shot_enabled ?? true,
+          dynamicAggressiveness: irrigationStrategyRaw.dynamic_aggressiveness,
+          dynamicRecovery: irrigationStrategyRaw.dynamic_recovery,
+          dynamicShotSizeFloor: irrigationStrategyRaw.dynamic_shot_size_floor,
+          dynamicIntervalCeiling: irrigationStrategyRaw.dynamic_interval_ceiling,
         }
       : undefined;
 
@@ -264,14 +360,65 @@ export class GrowspaceAdapter {
         }
       : null;
 
+    const substrateRaw = irrigation?.substrate;
+    const overnightEventRaw = substrateRaw?.latest_overnight_event;
+    const steeringMetrics: SteeringMetrics | undefined = substrateRaw
+      ? {
+          overnightDryback: substrateRaw.overnight_dryback ?? null,
+          latestOvernightEvent: overnightEventRaw
+            ? {
+                peakVwc: overnightEventRaw.peak_vwc,
+                troughVwc: overnightEventRaw.trough_vwc,
+                dryback: overnightEventRaw.dryback,
+                peakTimestamp: overnightEventRaw.peak_timestamp ?? null,
+                troughTimestamp: overnightEventRaw.trough_timestamp ?? null,
+              }
+            : null,
+          incycleDrybackCount: substrateRaw.incycle_dryback_count ?? 0,
+          incycleDrybackAvg: substrateRaw.incycle_dryback_avg ?? null,
+          ecTrend: substrateRaw.ec_trend ?? null,
+          ecTrendAvailable: substrateRaw.ec_trend_available ?? false,
+          score: substrateRaw.score ?? null,
+          measuredClassification: substrateRaw.measured_classification ?? null,
+          intentDeviation: substrateRaw.intent_deviation ?? null,
+          shotComposition: substrateRaw.shot_composition ?? null,
+        }
+      : undefined;
+
     const waterUsageRaw = irrigation?.water_usage;
     const waterUsage = waterUsageRaw
       ? {
           totalLiters: waterUsageRaw.total_liters,
           cycleStartDate: waterUsageRaw.cycle_start_date,
           dailyReadings: waterUsageRaw.daily_readings as Array<Record<string, unknown>>,
+          ...(waterUsageRaw.liters_today != null
+            ? { litersToday: waterUsageRaw.liters_today }
+            : {}),
         }
       : null;
+
+    // Global notification settings ride every growspace payload (camelCase keys
+    // + a separate ai_auto_alerts flag); fold the flag into the settings object
+    // the Config Dialog seeds from. Undefined when the backend omits them.
+    const notificationSettings: GrowspaceDevice['notificationSettings'] =
+      wsData?.notification_settings
+        ? { ...wsData.notification_settings, aiAutoAlerts: wsData.ai_auto_alerts ?? true }
+        : undefined;
+
+    // Timed notifications are stored snake_case (backend consumers require it);
+    // map to the camelCase shape the Config Dialog seeds from. Legacy trigger
+    // words are normalised to the bare stage names the firing path
+    // (calculate_days_in_stage) resolves; anything else stays flagged as
+    // unrecognised instead of being coerced into a stage it does not mean.
+    const timedNotifications: GrowspaceDevice['timedNotifications'] = (
+      wsData?.timed_notifications ?? []
+    ).map((n) => ({
+      id: n.id,
+      message: n.message,
+      triggerType: normalizeTriggerType(n.trigger_type),
+      day: n.day,
+      growspaceIds: n.growspace_ids,
+    }));
 
     // 8. Construct Device
     return createGrowspaceDevice({
@@ -281,12 +428,18 @@ export class GrowspaceAdapter {
       type: (identity?.type ?? 'normal') as GrowspaceDevice['type'],
       rows: gridData?.rows ?? 3,
       plantsPerRow: gridData?.plants_per_row ?? 3,
+      layoutRevision: wsData?.layout_revision,
+      capabilities: wsData?.capabilities
+        ? { atomicPlantLayout: wsData.capabilities.atomic_plant_layout ?? false }
+        : undefined,
       notificationTarget: identity?.notification_target,
+      notificationSettings,
+      timedNotifications,
       dimensions: gridData?.dimensions
         ? {
             width: gridData.dimensions.width ?? 120,
             height: gridData.dimensions.height ?? 200,
-            length: gridData.dimensions.length ?? (gridData.dimensions as any)?.depth ?? 120,
+            length: gridData.dimensions.length ?? gridData.dimensions?.depth ?? 120,
             unit: gridData.dimensions.unit ?? 'cm',
           }
         : undefined,
@@ -304,13 +457,17 @@ export class GrowspaceAdapter {
       // Configs
       irrigationConfig,
       irrigationStrategy,
+      volumeModeCapable: irrigation?.volume_mode_capable ?? false,
       drainConfig,
       energyTracking,
       waterUsage,
+      steeringMetrics,
+      subareas: wsData.subareas ?? [],
 
       // Irrigation cycle telemetry
       lastCycleTimestamp: irrigation?.last_cycle_timestamp ?? null,
       nextScheduledCycle: irrigation?.next_scheduled_cycle ?? null,
+      projectedShotWindow: irrigation?.projected_shot_window ?? null,
       cyclesToday: irrigation?.cycles_today ?? 0,
       volumeDispensedToday: irrigation?.volume_dispensed_today ?? 0,
     });

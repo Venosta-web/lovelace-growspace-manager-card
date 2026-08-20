@@ -3,6 +3,7 @@ import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { atom, computed } from 'nanostores';
 import { gridInteraction$, cancel } from '../../../../src/slices/grid-interaction';
+import { notification$ } from '../../../../src/slices/ui';
 
 // Mock imports — include both legacy paths (for old imports still in the view) and new container paths
 vi.mock('../../../../src/features/ui/containers/growspace-header.container', () => ({}));
@@ -135,6 +136,14 @@ describe('GrowspaceViewStandard', () => {
         expect(element.shadowRoot?.querySelector('growspace-edit-mode-banner')).toBeTruthy();
     });
 
+    it('should keep edit mode banner visible when transplant mode is active', async () => {
+        element.isEditMode = false;
+        gridInteraction$.set({ status: 'transplanting', sourcePlantId: null });
+        element.requestUpdate();
+        await element.updateComplete;
+        expect(element.shadowRoot?.querySelector('growspace-edit-mode-banner')).toBeTruthy();
+    });
+
     it('should show transplant source panel when gridInteraction$ is transplanting', async () => {
         devicesAtom.set([
             {
@@ -255,7 +264,10 @@ describe('GrowspaceViewStandard', () => {
             })
         );
 
-        expect(mockStore.actions.ui.toast).toHaveBeenCalledWith('Plant transplanted successfully', 'success');
+        expect(notification$.get()).toEqual({
+            message: 'Plant transplanted successfully',
+            type: 'success',
+        });
         vi.useRealTimers();
     });
 
@@ -273,7 +285,7 @@ describe('GrowspaceViewStandard', () => {
         // Flush promise queue
         await new Promise(resolve => setTimeout(resolve, 0));
 
-        expect(mockStore.actions.ui.toast).toHaveBeenCalledWith('Failed to transplant plant', 'error');
+        expect(notification$.get()).toEqual({ message: 'Failed to transplant plant', type: 'error' });
         expect(consoleSpy).toHaveBeenCalled();
     });
 

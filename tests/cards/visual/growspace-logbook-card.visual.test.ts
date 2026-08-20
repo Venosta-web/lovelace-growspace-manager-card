@@ -3,8 +3,9 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceLogbookCard } from '../../../src/cards/growspace-logbook-card';
-import { createMockHass } from '../../mocks/hass';
-import { createMockDevice } from '../../mocks/device';
+import { setDevices } from '../../../src/slices/grid';
+import { aHass, aGrowspaceDevice } from '../../fixtures';
+
 
 // Mock the timeline service so growspace-logbook renders empty events instead of fetching
 vi.mock('../../../src/services/timeline-service', () => ({
@@ -16,6 +17,12 @@ vi.mock('../../../src/services/timeline-service', () => ({
     }),
 }));
 vi.mock('../../../src/cards/editors/growspace-logbook-card-editor', () => ({}));
+vi.mock('../../../src/slices/growspace', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../src/slices/growspace')>();
+    // Never-resolving mock so the bootstrap controller's async fetch doesn't
+    // race with the manual setDevices() seed in this rendering test.
+    return { ...actual, fetchRawCollection: vi.fn(() => new Promise(() => {})) };
+});
 
 if (!customElements.get('growspace-logbook-card')) {
     customElements.define('growspace-logbook-card', GrowspaceLogbookCard);
@@ -23,15 +30,13 @@ if (!customElements.get('growspace-logbook-card')) {
 
 test('growspace-logbook-card visual snapshot', async () => {
     const element = await fixture<GrowspaceLogbookCard>(html`<growspace-logbook-card></growspace-logbook-card>`);
-    element.hass = createMockHass() as any;
+    element.hass = aHass() as any;
 
-    vi.spyOn((element as any)._store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
-    vi.spyOn((element as any)._store.syncService, 'updateDevicesState').mockImplementation(() => {});
 
     element.setConfig({ type: 'custom:growspace-logbook-card', default_growspace: 'test_tent' } as any);
 
     (element as any)._store.ui.$isLoading.set(false);
-    (element as any)._store.data.$devices.set([createMockDevice()]);
+    setDevices([aGrowspaceDevice()]);
     (element as any)._store.grid.$selectedDevice.set('test_tent');
     await element.updateComplete;
     // Allow the async _fetchEvents to complete

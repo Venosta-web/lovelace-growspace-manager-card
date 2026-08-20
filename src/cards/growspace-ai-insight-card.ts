@@ -25,6 +25,8 @@ import { growspaceCardStyles } from '../styles/growspace-card.styles';
 import { variables } from '../styles/variables';
 
 import { GrowspaceStore } from '../store/core/growspace-store';
+import { activeDevices$ } from '../slices/grid';
+import { BootstrapController } from '../controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 
 import {
@@ -44,6 +46,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
   store = new GrowspaceStore(this._sharedStore);
 
   protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
+  private _bootstrapCtrl!: BootstrapController;
   protected _aiInsightController = new StoreController(this, aiInsight$);
   protected _aiLoadingController = new StoreController(this, isAiLoading$);
   protected _aiErrorController = new StoreController(this, aiError$);
@@ -88,11 +91,11 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       .ai-icon svg {
         width: 32px;
         height: 32px;
-        fill: #4caf50;
+        fill: var(--gm-primary-color);
       }
       .ai-title {
         margin: 0;
-        font-size: 1.4rem;
+        font-size: var(--font-size-xl);
         font-weight: 600;
         color: var(--primary-text-color, #ffffff);
       }
@@ -103,11 +106,11 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       }
       .gm-response-box {
         background: rgba(255, 255, 255, 0.05);
-        border: 2px solid #4caf50;
+        border: 2px solid var(--gm-primary-color);
         border-radius: 12px;
         padding: 20px;
         line-height: 1.6;
-        font-size: 0.95rem;
+        font-size: var(--font-size-md);
         white-space: pre-wrap;
         margin-top: 20px;
         color: var(--primary-text-color, #ffffff);
@@ -147,7 +150,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       .sd-textarea:focus {
         outline: none;
         background: rgba(255, 255, 255, 0.08);
-        border-color: #4caf50;
+        border-color: var(--gm-primary-color);
       }
       .button-group {
         display: flex;
@@ -155,7 +158,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
         justify-content: flex-end;
       }
       .error-state {
-        color: #f44336;
+        color: var(--gm-error-color);
         padding: 16px;
         background: rgba(244, 67, 54, 0.1);
         border-radius: 8px;
@@ -167,8 +170,8 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
   protected firstUpdated() {
     if (this.hass) {
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl?.updateHass(this.hass);
     }
-    this.store.initializeSelectedDevice(this._config);
   }
 
   disconnectedCallback() {
@@ -182,6 +185,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
     super.updated(changedProps);
     if (changedProps.has('hass') && this.hass) {
       this.store.updateHass(this.hass);
+      this._bootstrapCtrl?.updateHass(this.hass);
     }
   }
 
@@ -202,7 +206,12 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
   public setConfig(config: GrowspaceManagerCardConfig): void {
     if (!config) throw new Error('Invalid configuration');
     this._config = config;
-    this.store.initializeSelectedDevice(this._config);
+    if (!this._bootstrapCtrl) {
+      this._bootstrapCtrl = new BootstrapController(this, this.store.grid, this._config);
+      this.store.setRefreshCallback(() => this._bootstrapCtrl.refresh());
+    } else {
+      this._bootstrapCtrl.setCardConfig(this._config);
+    }
   }
 
   public getCardSize(): number {
@@ -225,7 +234,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       } else {
         const device = this.selectedDevice;
         if (!device) throw new Error('No device selected and "Analyze All" was false.');
-        const devices = this.store.data.$devices.get();
+        const devices = activeDevices$.get();
         if (!devices.find((d: { deviceId: string }) => d.deviceId === device)) {
           throw new Error('Selected device not found in devices list.');
         }

@@ -1,8 +1,27 @@
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 
+import { BROWSER_TEST_INCLUDE, browserTestBatch } from './scripts/browser-test-batches.mjs';
+
+const selectedBatchId = process.env.VITEST_BROWSER_BATCH;
+const selectedBatch = selectedBatchId ? browserTestBatch(selectedBatchId) : undefined;
+
+if (selectedBatchId && !selectedBatch) {
+    throw new Error(`Unknown browser test batch: ${selectedBatchId}`);
+}
+
 export default defineConfig({
     test: {
+        // Per-test retry absorbs transient in-context flakes (spy timing etc.).
+        // It does NOT absorb the browser-mode module-mock race (vitest-dev/
+        // vitest#8339, our issue #453): when a file's hoisted vi.mock factory
+        // fails to apply, the poisoned module graph persists for the file's
+        // whole lifetime and every retry fails identically (verified 2026-07-07:
+        // camera.slice failed the same lines across all 3 attempts). That class
+        // is absorbed in CI by re-running the whole vitest process (test.yml
+        // retry step) and measured by the flake-hunter workflow with --retry=0.
+        retry: 2,
+        fileParallelism: false,
         browser: {
             enabled: true,
             provider: playwright({ contextOptions: { viewport: { width: 1280, height: 720 } } }),
@@ -21,17 +40,15 @@ export default defineConfig({
             },
         },
         setupFiles: ['./tests/setup.ts'],
-        include: [
-            'tests/unit/**/*.{test,spec}.ts',
-            'tests/cards/**/*.{test,spec}.ts',
-            'tests/components/**/*.{test,spec}.ts',
-            'src/**/*.{test,spec}.ts'
-        ],
+        include: selectedBatch?.include ?? BROWSER_TEST_INCLUDE,
+        exclude: selectedBatch?.exclude ?? [],
         coverage: {
             provider: 'v8',
-            enabled: true,
-            clean: false,
-            reporter: ['text', 'json', 'html'],
+            enabled: false,
+            clean: true,
+            // Batch coverage maps are carried in Vitest's blob reports. Only
+            // the final merge writes reports, so every batch contributes.
+            reporter: selectedBatch ? [] : ['text', 'json', 'html'],
             include: ['src/**/*.ts'],
             exclude: ['src/**/*.spec.ts', 'src/types.ts']
         },

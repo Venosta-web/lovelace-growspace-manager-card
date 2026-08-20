@@ -307,9 +307,6 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
             (element as any).envIrrigationFlowSensors = ['sensor.flow'];
             (element as any).envEnergySensors = ['sensor.energy'];
 
-            // Enable dehumidifier control
-            (element as any).envDehumidifierControlEnabled = true;
-
             // Set thresholds
             (element as any).envStressThreshold = 0.75;
             (element as any).envMoldThreshold = 0.85;
@@ -335,7 +332,6 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
                     phSensors: expect.arrayContaining(['sensor.ph_main']),
                     feedEcSensors: expect.arrayContaining(['sensor.ec_feed']),
                     energySensors: expect.arrayContaining(['sensor.energy']),
-                    dehumidifierControlEnabled: true,
                     stressThreshold: 0.75,
                     moldThreshold: 0.85
                 })
@@ -436,41 +432,42 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
             (element as any).envSelectedId = 'gs1';
 
             // Update individual points for each stage using the _updateThreshold method
+            // Values are VPD in kPa (matching backend PlantStage enum keys)
             const testUpdates = [
-                { stage: DehumidifierStage.SEEDLING, cycle: 'day', point: 'on', value: 72 },
-                { stage: DehumidifierStage.SEEDLING, cycle: 'day', point: 'off', value: 68 },
-                { stage: DehumidifierStage.SEEDLING, cycle: 'night', point: 'on', value: 77 },
-                { stage: DehumidifierStage.SEEDLING, cycle: 'night', point: 'off', value: 73 },
+                { stage: DehumidifierStage.SEEDLING, cycle: 'day', point: 'on', value: 0.55 },
+                { stage: DehumidifierStage.SEEDLING, cycle: 'day', point: 'off', value: 0.65 },
+                { stage: DehumidifierStage.SEEDLING, cycle: 'night', point: 'on', value: 0.60 },
+                { stage: DehumidifierStage.SEEDLING, cycle: 'night', point: 'off', value: 0.70 },
 
-                { stage: DehumidifierStage.VEGETATIVE, cycle: 'day', point: 'on', value: 67 },
-                { stage: DehumidifierStage.VEGETATIVE, cycle: 'day', point: 'off', value: 62 },
-                { stage: DehumidifierStage.VEGETATIVE, cycle: 'night', point: 'on', value: 72 },
-                { stage: DehumidifierStage.VEGETATIVE, cycle: 'night', point: 'off', value: 67 },
+                { stage: DehumidifierStage.VEG, cycle: 'day', point: 'on', value: 0.65 },
+                { stage: DehumidifierStage.VEG, cycle: 'day', point: 'off', value: 0.75 },
+                { stage: DehumidifierStage.VEG, cycle: 'night', point: 'on', value: 0.70 },
+                { stage: DehumidifierStage.VEG, cycle: 'night', point: 'off', value: 0.80 },
 
-                { stage: DehumidifierStage.EARLY_FLOWER, cycle: 'day', point: 'on', value: 62 },
-                { stage: DehumidifierStage.EARLY_FLOWER, cycle: 'day', point: 'off', value: 57 },
-                { stage: DehumidifierStage.EARLY_FLOWER, cycle: 'night', point: 'on', value: 67 },
-                { stage: DehumidifierStage.EARLY_FLOWER, cycle: 'night', point: 'off', value: 62 },
+                { stage: DehumidifierStage.EARLY_FLOWER, cycle: 'day', point: 'on', value: 1.15 },
+                { stage: DehumidifierStage.EARLY_FLOWER, cycle: 'day', point: 'off', value: 1.25 },
+                { stage: DehumidifierStage.EARLY_FLOWER, cycle: 'night', point: 'on', value: 0.75 },
+                { stage: DehumidifierStage.EARLY_FLOWER, cycle: 'night', point: 'off', value: 0.95 },
 
-                { stage: DehumidifierStage.MID_FLOWER, cycle: 'day', point: 'on', value: 57 },
-                { stage: DehumidifierStage.MID_FLOWER, cycle: 'day', point: 'off', value: 52 },
-                { stage: DehumidifierStage.MID_FLOWER, cycle: 'night', point: 'on', value: 62 },
-                { stage: DehumidifierStage.MID_FLOWER, cycle: 'night', point: 'off', value: 57 },
+                { stage: DehumidifierStage.MID_FLOWER, cycle: 'day', point: 'on', value: 1.30 },
+                { stage: DehumidifierStage.MID_FLOWER, cycle: 'day', point: 'off', value: 1.40 },
+                { stage: DehumidifierStage.MID_FLOWER, cycle: 'night', point: 'on', value: 0.95 },
+                { stage: DehumidifierStage.MID_FLOWER, cycle: 'night', point: 'off', value: 1.05 },
 
-                { stage: DehumidifierStage.LATE_FLOWER, cycle: 'day', point: 'on', value: 52 },
-                { stage: DehumidifierStage.LATE_FLOWER, cycle: 'day', point: 'off', value: 47 },
-                { stage: DehumidifierStage.LATE_FLOWER, cycle: 'night', point: 'on', value: 57 },
-                { stage: DehumidifierStage.LATE_FLOWER, cycle: 'night', point: 'off', value: 52 },
+                { stage: DehumidifierStage.LATE_FLOWER, cycle: 'day', point: 'on', value: 1.40 },
+                { stage: DehumidifierStage.LATE_FLOWER, cycle: 'day', point: 'off', value: 1.50 },
+                { stage: DehumidifierStage.LATE_FLOWER, cycle: 'night', point: 'on', value: 1.00 },
+                { stage: DehumidifierStage.LATE_FLOWER, cycle: 'night', point: 'off', value: 1.10 },
 
-                { stage: DehumidifierStage.DRYING, cycle: 'day', point: 'on', value: 57 },
-                { stage: DehumidifierStage.DRYING, cycle: 'day', point: 'off', value: 52 },
-                { stage: DehumidifierStage.DRYING, cycle: 'night', point: 'on', value: 57 },
-                { stage: DehumidifierStage.DRYING, cycle: 'night', point: 'off', value: 52 },
+                { stage: DehumidifierStage.DRY, cycle: 'day', point: 'on', value: 0.85 },
+                { stage: DehumidifierStage.DRY, cycle: 'day', point: 'off', value: 1.05 },
+                { stage: DehumidifierStage.DRY, cycle: 'night', point: 'on', value: 0.90 },
+                { stage: DehumidifierStage.DRY, cycle: 'night', point: 'off', value: 1.10 },
 
-                { stage: DehumidifierStage.CURING, cycle: 'day', point: 'on', value: 64 },
-                { stage: DehumidifierStage.CURING, cycle: 'day', point: 'off', value: 60 },
-                { stage: DehumidifierStage.CURING, cycle: 'night', point: 'on', value: 64 },
-                { stage: DehumidifierStage.CURING, cycle: 'night', point: 'off', value: 60 }
+                { stage: DehumidifierStage.CURE, cycle: 'day', point: 'on', value: 0.95 },
+                { stage: DehumidifierStage.CURE, cycle: 'day', point: 'off', value: 1.15 },
+                { stage: DehumidifierStage.CURE, cycle: 'night', point: 'on', value: 1.00 },
+                { stage: DehumidifierStage.CURE, cycle: 'night', point: 'off', value: 1.20 }
             ];
 
             // Apply all updates
@@ -492,21 +489,21 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
 
             const stages = [
                 DehumidifierStage.SEEDLING,
-                DehumidifierStage.VEGETATIVE,
+                DehumidifierStage.VEG,
                 DehumidifierStage.EARLY_FLOWER,
                 DehumidifierStage.MID_FLOWER,
                 DehumidifierStage.LATE_FLOWER,
-                DehumidifierStage.DRYING,
-                DehumidifierStage.CURING
+                DehumidifierStage.DRY,
+                DehumidifierStage.CURE,
             ];
 
-            // Set unique values for each stage
+            // Set unique VPD values (kPa) for each stage
             stages.forEach((stage, index) => {
-                const baseValue = 50 + (index * 5);
+                const baseValue = 0.5 + (index * 0.1);
                 (element as any)._updateThreshold(stage, 'day', 'on', baseValue);
-                (element as any)._updateThreshold(stage, 'day', 'off', baseValue - 5);
-                (element as any)._updateThreshold(stage, 'night', 'on', baseValue + 5);
-                (element as any)._updateThreshold(stage, 'night', 'off', baseValue);
+                (element as any)._updateThreshold(stage, 'day', 'off', baseValue + 0.1);
+                (element as any)._updateThreshold(stage, 'night', 'on', baseValue + 0.05);
+                (element as any)._updateThreshold(stage, 'night', 'off', baseValue + 0.15);
             });
 
             await element.updateComplete;
@@ -517,11 +514,11 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
                 (element as any)._activeDehumidifierStage = stage;
                 await element.updateComplete;
 
-                const baseValue = 50 + (i * 5);
-                expect((element as any).envDehumidifierThresholds[stage].day.on).toBe(baseValue);
-                expect((element as any).envDehumidifierThresholds[stage].day.off).toBe(baseValue - 5);
-                expect((element as any).envDehumidifierThresholds[stage].night.on).toBe(baseValue + 5);
-                expect((element as any).envDehumidifierThresholds[stage].night.off).toBe(baseValue);
+                const baseValue = parseFloat((0.5 + i * 0.1).toFixed(2));
+                expect((element as any).envDehumidifierThresholds[stage].day.on).toBeCloseTo(baseValue, 5);
+                expect((element as any).envDehumidifierThresholds[stage].day.off).toBeCloseTo(baseValue + 0.1, 5);
+                expect((element as any).envDehumidifierThresholds[stage].night.on).toBeCloseTo(baseValue + 0.05, 5);
+                expect((element as any).envDehumidifierThresholds[stage].night.off).toBeCloseTo(baseValue + 0.15, 5);
             }
         });
     });

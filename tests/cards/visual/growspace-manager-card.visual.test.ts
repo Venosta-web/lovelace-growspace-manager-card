@@ -3,12 +3,18 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceManagerCard } from '../../../src/growspace-manager-card';
-import { createMockHass } from '../../mocks/hass';
-import { createMockDevice } from '../../mocks/device';
+import { setDevices } from '../../../src/slices/grid';
+import { aHass, aGrowspaceDevice } from '../../fixtures';
 
 vi.mock('../../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
 vi.mock('../../../src/features/ui/containers/growspace-toast.container', () => ({}));
 vi.mock('../../../src/growspace-manager-card-editor.js', () => ({}));
+vi.mock('../../../src/slices/growspace', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../src/slices/growspace')>();
+    // Never-resolving mock so the bootstrap controller's async fetch doesn't
+    // race with the manual setDevices() seed in this rendering test.
+    return { ...actual, fetchRawCollection: vi.fn(() => new Promise(() => {})) };
+});
 
 if (!customElements.get('growspace-manager-card')) {
     customElements.define('growspace-manager-card', GrowspaceManagerCard);
@@ -16,16 +22,16 @@ if (!customElements.get('growspace-manager-card')) {
 
 test('growspace-manager-card visual snapshot', async () => {
     const element = await fixture<GrowspaceManagerCard>(html`<growspace-manager-card></growspace-manager-card>`);
-    element.hass = createMockHass() as any;
+    element.hass = aHass() as any;
 
-    vi.spyOn(element.store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
-    vi.spyOn(element.store.syncService, 'updateDevicesState').mockImplementation(() => {});
 
     element.setConfig({ type: 'custom:growspace-manager-card', default_growspace: 'test_tent' } as any);
 
     element.store.ui.$isLoading.set(false);
-    element.store.data.$devices.set([createMockDevice()]);
+    setDevices([aGrowspaceDevice()]);
     element.store.grid.$selectedDevice.set('test_tent');
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
     await element.updateComplete;
 
     await expect(page.elementLocator(element)).toMatchScreenshot();

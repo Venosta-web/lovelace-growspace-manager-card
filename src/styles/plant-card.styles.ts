@@ -46,10 +46,10 @@ export const plantCardStyles = css`
   .plant-card-rich:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    border-color: var(--primary-color, rgba(255, 255, 255, 0.2));
+    border-color: var(--outline-hover);
   }
   .plant-card-rich:focus {
-    outline: 2px solid var(--primary-color, #22c55e);
+    outline: 2px solid var(--gm-primary-color);
     outline-offset: 2px;
   }
 
@@ -169,7 +169,7 @@ export const plantCardStyles = css`
     border: 1px solid rgba(255, 255, 255, 0.12);
     padding: 2px 7px;
     border-radius: 999px;
-    font-size: 0.65rem;
+    font-size: var(--font-size-xs);
     font-variant-numeric: tabular-nums;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.9);
@@ -183,7 +183,7 @@ export const plantCardStyles = css`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #f44336;
+    background: var(--gm-error-color);
     box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.3);
     flex-shrink: 0;
     animation: pulse-alert 2s infinite;

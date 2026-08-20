@@ -1,11 +1,15 @@
-import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
+import { LitElement, html, css, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { GrowspaceDevice, SensorHistories, HistoryTimeRange } from '../../../types';
+import type { MetricDescriptor } from '../../../slices/metric-descriptors';
 import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
 import '../../../growspace-env-chart';
+import { MetricKey } from '../../environment/constants';
+import '../../environment/components/tank-water-chart';
+import '../../environment/components/crop-steering-day-chart';
 
 export type AnalyticsItem = {
   type: 'group' | 'single';
@@ -20,6 +24,8 @@ export class GrowspaceAnalyticsUI extends LitElement {
   @property({ attribute: false }) hass: HomeAssistant | undefined;
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
   @property({ attribute: false }) sensorHistory: SensorHistories = {};
+  /** The Metric Descriptor table the charts derive from, built by the container. */
+  @property({ attribute: false }) descriptors: Record<string, MetricDescriptor> = {};
 
   static styles = [
     growspaceCardStyles,
@@ -49,11 +55,11 @@ export class GrowspaceAnalyticsUI extends LitElement {
         <div class="graphs-container">
           ${this._renderTimeRangeSelector()}
           <div
-            style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--secondary-text-color,#666);"
+            style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-secondary);"
           >
             <div
               class="loading-spinner"
-              style="width:24px;height:24px;border:2px solid var(--primary-color,#03a9f4);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"
+              style="width:24px;height:24px;border:2px solid var(--gm-primary-color);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"
             ></div>
             <span style="margin-left:12px;">Loading history data...</span>
           </div>
@@ -99,6 +105,7 @@ export class GrowspaceAnalyticsUI extends LitElement {
           .hass=${this.hass}
           .device=${this.device}
           .sensorHistory=${this.sensorHistory}
+          .descriptors=${this.descriptors}
           .metrics=${item.metrics}
           .isCombined=${true}
           .range=${this.range}
@@ -108,11 +115,26 @@ export class GrowspaceAnalyticsUI extends LitElement {
         ></growspace-env-chart>
       `;
     }
+    if (item.metrics[0] === MetricKey.WATER) {
+      return html`
+        <tank-water-chart .device=${this.device} .range=${this.range}></tank-water-chart>
+      `;
+    }
+    if (item.metrics[0] === MetricKey.STEERING_PHASE) {
+      return html`<crop-steering-day-chart
+        .device=${this.device}
+        .hideShotTrack=${true}
+        .range=${this.range}
+        .sensorHistory=${this.sensorHistory}
+        .rollingWindow=${true}
+      ></crop-steering-day-chart>`;
+    }
     return html`
       <growspace-env-chart
         .hass=${this.hass}
         .device=${this.device}
         .sensorHistory=${this.sensorHistory}
+        .descriptors=${this.descriptors}
         .metricKey=${item.metrics[0]}
         .metrics=${item.metrics}
         .range=${this.range}

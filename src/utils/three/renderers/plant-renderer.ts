@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { BaseRenderer } from './base-renderer';
 import { PlantUtils } from '../../plant-utils';
+import type { PlantEntity } from '../../../features/plants/types';
 
 export class PlantRenderer extends BaseRenderer {
   private _strainColorCache: Map<string, string[]> = new Map();
@@ -12,9 +13,9 @@ export class PlantRenderer extends BaseRenderer {
 
   public render() {
     this._plantHitBoxes = [];
-    const { device, volatileGroup, requestUpdate, visibility } = this.context;
+    const { device, volatileGroup, visibility } = this.context;
     const width = device.dimensions?.width ?? 120;
-    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+    const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
 
     if (!visibility.plants) {
       this.dispose();
@@ -28,8 +29,8 @@ export class PlantRenderer extends BaseRenderer {
     const cellWidth = width / plantsPerRow;
     const cellDepth = depth / effectiveRows;
 
-    const gridMap = new Map<string, any>();
-    plants.forEach((p: any) => {
+    const gridMap = new Map<string, PlantEntity>();
+    plants.forEach((p) => {
       const r = p.attributes?.row ?? 1;
       const c = p.attributes?.col ?? 1;
       gridMap.set(`${r},${c}`, p);
@@ -92,7 +93,7 @@ export class PlantRenderer extends BaseRenderer {
     col: number,
     cellWidth: number,
     cellDepth: number,
-    plant: any,
+    plant: PlantEntity | undefined,
     stage: string
   ): THREE.Group {
     const group = new THREE.Group();
@@ -207,7 +208,7 @@ export class PlantRenderer extends BaseRenderer {
   private createPlantModel(
     stage: string,
     potHeight: number,
-    plant: any,
+    plant: PlantEntity,
     requestUpdate?: () => void
   ): THREE.Group {
     const group = new THREE.Group();
@@ -328,7 +329,7 @@ export class PlantRenderer extends BaseRenderer {
     scale: number,
     potHeight: number,
     stemHeight: number,
-    plant: any,
+    plant: PlantEntity,
     requestUpdate?: () => void
   ) {
     let strainColors: string[] = [];
@@ -339,11 +340,15 @@ export class PlantRenderer extends BaseRenderer {
         if (this._strainColorCache.has(plantData.imageUrl)) {
           strainColors = this._strainColorCache.get(plantData.imageUrl)!;
         } else {
-          this.extractStrainColors(plantData.imageUrl).then((colors) => {
-            if (colors && colors.length > 0 && requestUpdate) {
-              requestUpdate();
-            }
-          });
+          this.extractStrainColors(plantData.imageUrl)
+            .then((colors) => {
+              if (colors && colors.length > 0 && requestUpdate) {
+                requestUpdate();
+              }
+            })
+            .catch((err: unknown) =>
+              console.error('[PlantRenderer] failed to extract strain colors', err),
+            );
         }
       }
     }
@@ -492,26 +497,13 @@ export class PlantRenderer extends BaseRenderer {
       canvas.width = 100;
       canvas.height = 100;
       ctx.drawImage(img, 0, 0, 100, 100);
-      const data = ctx.getImageData(0, 0, 100, 100).data;
 
-      // Allow basic simplified color extraction or mocked
-      // For brevity, using simplified logic or just returning empty if too complex to port
-      // But let's try a simple average of center
-
-      const colors: string[] = [];
-      // Simplified: return dominant green/orange/purple if detected
-      // Real implementation requires complex histogram logic from original file
-      // I will retain the cache mechanism but maybe skip full logic to save token space if acceptable,
-      // OR copy the loop. The loop is efficient enough.
-
-      // ... (Insert Histogram Logic if needed, or placeholder)
-      // For now, I'll return empty to avoid bloat,
-      // relying on defaults, as this is visually "extra"
-      // Re-implementing the full color extraction might be too large for this file chunk.
-
-      this._strainColorCache.set(imageUrl, []); // Placeholder
+      // TODO: strain colour extraction (histogram of the drawn image) is not
+      // implemented yet. Cache and return an empty palette so callers fall back
+      // to default colours.
+      this._strainColorCache.set(imageUrl, []);
       return [];
-    } catch (e) {
+    } catch {
       return [];
     }
   }

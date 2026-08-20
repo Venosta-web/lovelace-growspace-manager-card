@@ -189,7 +189,7 @@ Comprehensive end-to-end tests for the irrigation dialog covering all major feat
 2. Enable steering via `md3-switch`
 3. Configure **ALL 8 fields:**
    - Target VWC (%): `48.5`
-   - Dryback (%): `4.0`
+   - VWC Delta (%): `4.0`
    - Lights On Time: `07:00:00`
    - P0 Duration (min): `90`
    - P2 Stop Buffer (min): `150`
@@ -210,7 +210,7 @@ Comprehensive end-to-end tests for the irrigation dialog covering all major feat
 |-------|------|------------|
 | Enable Steering | boolean | `true` |
 | Target VWC (%) | number | `48.5` |
-| Dryback (%) | number | `4.0` |
+| VWC Delta (%) | number | `4.0` |
 | Lights On Time | time | `07:00:00` |
 | P0 Duration (min) | number | `90` |
 | P2 Stop Buffer (min) | number | `150` |

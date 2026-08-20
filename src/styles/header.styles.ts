@@ -23,7 +23,7 @@ export const headerStyles = css`
 
   /* The visible text element that drives width */
   .select-sizer {
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
     font-size: 1.75rem;
     font-weight: 400;
     margin: 0;
@@ -37,7 +37,8 @@ export const headerStyles = css`
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    white-space: pre;
+    white-space: normal;
+    overflow-wrap: anywhere;
     pointer-events: none;
     visibility: visible;
   }
@@ -62,6 +63,12 @@ export const headerStyles = css`
     background-color: initial;
   }
 
+  .select-wrapper:has(.growspace-select-header:focus-visible) {
+    outline: 3px solid var(--primary-color, #4caf50);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+
   /* --- Header Top Section --- */
   .gs-header-top {
     display: grid;
@@ -84,6 +91,7 @@ export const headerStyles = css`
     display: flex;
     align-items: center;
     gap: 10px;
+    max-width: 100%;
   }
 
   .gs-title {
@@ -99,6 +107,7 @@ export const headerStyles = css`
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    overflow-wrap: anywhere;
   }
 
   .header-meta-row {
@@ -110,18 +119,73 @@ export const headerStyles = css`
     font-variant-numeric: tabular-nums;
   }
 
+  .operational-summary {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 34rem;
+    color: var(--primary-text-color, #fff);
+    font-size: 0.875rem;
+    line-height: 1.35;
+  }
+
+  .operational-summary > span {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+  }
+
+  .operational-summary strong {
+    font-weight: 600;
+  }
+
+  .operational-summary svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    fill: currentColor;
+  }
+
+  .operational-summary.stable svg {
+    color: var(--gm-status-optimal, var(--success-color, #4caf50));
+  }
+
+  .operational-summary.attention svg,
+  .operational-summary.unavailable svg {
+    color: var(--gm-status-warning, var(--warning-color, #ffa726));
+  }
+
+  .operational-detail {
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+    font-size: 0.75rem;
+  }
+
   .header-meta-stat .num {
     color: var(--primary-text-color, #fff);
     font-weight: 500;
     margin-right: 3px;
   }
 
+  /*
+   * The alert stat keeps readable text and lets the warning token ride on the icon
+   * and the count, rather than tinting the whole phrase amber on every theme.
+   */
   .header-meta-stat.alert {
-    color: #ffb74d;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--primary-text-color, #fff);
   }
 
   .header-meta-stat.alert .num {
-    color: #ffb74d;
+    color: var(--gm-status-warning, var(--warning-color, #ffa726));
+  }
+
+  .header-meta-stat.alert svg {
+    width: 14px;
+    height: 14px;
+    fill: var(--gm-status-warning, var(--warning-color, #ffa726));
+    flex-shrink: 0;
   }
 
   /* New component slots */
@@ -203,20 +267,26 @@ export const headerStyles = css`
 
     .gs-header-top {
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       align-items: flex-start;
-      gap: 8px;
+      gap: 12px;
     }
 
     .header-title-area {
       flex: 1;
+      width: 100%;
       min-width: 0;
       max-width: none;
     }
 
     .header-actions {
-      flex-shrink: 0;
-      align-self: flex-start;
+      width: 100%;
+      align-self: stretch;
+    }
+
+    .operational-summary > span {
+      flex-direction: column;
+      gap: 2px;
     }
 
     .header-stage-area-wrapper,

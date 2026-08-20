@@ -11,7 +11,7 @@ vi.mock('../../../src/services/mutate', () => ({
   undo: vi.fn(),
 }));
 
-// Mock callService from hass-call seam
+// Mock hass-call seam
 vi.mock('../../../src/services/hass-call', () => ({
   hassCall: vi.fn().mockResolvedValue(undefined),
   setHass: vi.fn(),
@@ -20,7 +20,7 @@ vi.mock('../../../src/services/hass-call', () => ({
 
 import { plants$, selectedPlant$, setPlants, waterPlant } from '../../../src/slices/plant';
 import { mutate } from '../../../src/services/mutate';
-import { callService } from '../../../src/services/hass-call';
+import { hassCall } from '../../../src/services/hass-call';
 import type { PlantEntity } from '../../../src/features/plants/types';
 
 function makePlant(id: string): PlantEntity {
@@ -66,24 +66,23 @@ describe('Plant slice', () => {
       );
     });
 
-    it('apply calls callService with correct payload', async () => {
+    it('apply calls hassCall with correct payload', async () => {
       await waterPlant('plant-1', 250);
 
-      // mutate mock runs optimistic then apply — verify callService was called
-      expect(callService).toHaveBeenCalledWith(
-        'growspace_manager',
-        'water_plant',
+      expect(hassCall).toHaveBeenCalledWith(
+        'growspace_manager/water_plant',
         expect.objectContaining({ plant_id: 'plant-1', amount: 250 }),
+        expect.anything(),
       );
     });
 
-    it('passes optional nutrients to callService', async () => {
+    it('passes optional nutrients to hassCall', async () => {
       await waterPlant('plant-2', 100, { nitrogen: 5 });
 
-      expect(callService).toHaveBeenCalledWith(
-        'growspace_manager',
-        'water_plant',
+      expect(hassCall).toHaveBeenCalledWith(
+        'growspace_manager/water_plant',
         expect.objectContaining({ nutrients: { nitrogen: 5 } }),
+        expect.anything(),
       );
     });
   });

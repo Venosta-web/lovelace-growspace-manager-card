@@ -11,6 +11,7 @@ import {
 } from '@mdi/js';
 import { IPMPreset, IPMItem, IPMType } from '../../../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import { fetchIPMPresets } from '../../../slices/nutrient';
 import '../../shared/ui'; // Ensure MD3 components are registered
 
 @customElement('growspace-ipm-dialog-ui')
@@ -25,6 +26,19 @@ export class GrowspaceIPMDialogUI extends LitElement {
   @state() private _view: 'APPLY' | 'LIST' | 'EDIT' = 'APPLY';
   @state() private _selectedPresetId: string | null = null;
   @state() private _notes: string = '';
+  @state() private _loadingPresets = true;
+
+  // Self-fetch presets on open (see "Dialog self-fetch on open" in CONTEXT.md);
+  // the populated atom flows back in via the `presets` prop from the host.
+  connectedCallback(): void {
+    super.connectedCallback();
+    this._loadingPresets = true;
+    fetchIPMPresets()
+      .finally(() => {
+        this._loadingPresets = false;
+      })
+      .catch((err: unknown) => console.error('[ipm-dialog] failed to fetch presets', err));
+  }
 
   // Edit mode state
   @state() private _editingPreset: Partial<IPMPreset> | null = null;
@@ -49,7 +63,7 @@ export class GrowspaceIPMDialogUI extends LitElement {
         font-size: 1rem;
       }
       .preset-details {
-        font-size: 0.8rem;
+        font-size: var(--font-size-supporting);
         opacity: 0.7;
       }
       .preset-actions {
@@ -74,7 +88,7 @@ export class GrowspaceIPMDialogUI extends LitElement {
         flex: 1;
       }
       .error-bar {
-        background: var(--error-color, #ff5252);
+        background: var(--error-color, #f44336);
         color: white;
         padding: 8px 16px;
         border-radius: 4px;
@@ -209,11 +223,13 @@ export class GrowspaceIPMDialogUI extends LitElement {
       >
         <div class="dialog-content-grid">
           ${this.error ? html`<div class="error-bar">${this.error}</div>` : nothing}
-          ${this._view === 'APPLY'
-            ? this._renderApply()
-            : this._view === 'LIST'
-              ? this._renderList()
-              : this._renderEdit()}
+          ${this._loadingPresets && Object.keys(this.presets || {}).length === 0
+            ? html`<div class="empty-state" role="status">Loading presets…</div>`
+            : this._view === 'APPLY'
+              ? this._renderApply()
+              : this._view === 'LIST'
+                ? this._renderList()
+                : this._renderEdit()}
         </div>
 
         <div class="button-group">${this._renderFooterButtons()}</div>

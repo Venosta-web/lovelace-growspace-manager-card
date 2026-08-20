@@ -32,10 +32,42 @@ export const SetIrrigationStrategyPayloadSchema = growspaceIdPayload.extend({
   maintenance_dryback_percent: z.number().optional(),
   shot_duration_seconds: z.number().int().optional(),
   shot_interval_minutes: z.number().int().optional(),
+  p1_shot_duration_seconds: z.number().int().optional(),
+  p1_shot_interval_minutes: z.number().int().optional(),
+  p2_shot_duration_seconds: z.number().int().optional(),
+  p2_shot_interval_minutes: z.number().int().optional(),
+  p1_shot_volume_percent: z.number().optional(),
+  p2_shot_volume_percent: z.number().optional(),
+  shot_sizing_mode: z.enum(['seconds', 'volume']).optional(),
+  // Substrate Profile (#446): the backend accepts flat keys and folds them into
+  // the nested substrate_profile server-side (read side stays nested).
+  substrate_media_type: z.enum(['coco', 'rockwool', 'soil']).optional(),
+  substrate_liters_per_pot: z.number().optional(),
+  // Pore EC Target Band + EC Modulation (#447). null clears a band edge.
+  pore_ec_target_min: z.number().nullable().optional(),
+  pore_ec_target_max: z.number().nullable().optional(),
+  ec_modulation_enabled: z.boolean().optional(),
   auto_light_tracking: z.boolean().optional(),
+  // Adaptive Shot Control (ADR-0014).
+  dynamic_shot_enabled: z.boolean().optional(),
+  dynamic_aggressiveness: z.number().optional(),
+  dynamic_recovery: z.number().optional(),
+  dynamic_shot_size_floor: z.number().optional(),
+  dynamic_interval_ceiling: z.number().optional(),
 });
 
 export type SetIrrigationStrategyPayload = z.infer<typeof SetIrrigationStrategyPayloadSchema>;
+
+export const SteeringModeSchema = z.enum(['vegetative', 'balanced', 'generative']);
+export type SteeringMode = z.infer<typeof SteeringModeSchema>;
+
+/** Result of the apply_steering_mode WS command (server stamps the preset). */
+export const ApplySteeringModeResultSchema = z.object({
+  growspace_id: z.string(),
+  declared_steering_mode: SteeringModeSchema,
+});
+
+export type ApplySteeringModeResult = z.infer<typeof ApplySteeringModeResultSchema>;
 
 // ---------------------------------------------------------------------------
 // Settings
@@ -145,3 +177,125 @@ export const PhaseWindowsSchema = z.object({
 });
 
 export type PhaseWindows = z.infer<typeof PhaseWindowsSchema>;
+
+// ---------------------------------------------------------------------------
+// In-flight cycles (read — the values of the `environment.active_events` Opaque Region)
+// ---------------------------------------------------------------------------
+
+/**
+ * One in-flight irrigation or drain cycle
+ * (`irrigation_coordinator.py:507-510`). The record is keyed by event type
+ * (`'irrigation'` or `'drain'`) and its entries are popped when the cycle ends,
+ * so it holds only what is running right now.
+ */
+export const ActiveEventSchema = z.object({
+  /** UTC ISO-8601 start. */
+  start: z.string(),
+  /** Cycle length in **seconds**. */
+  duration: z.number().int(),
+});
+
+export type ActiveEvent = z.infer<typeof ActiveEventSchema>;
+
+// ---------------------------------------------------------------------------
+// Tank rows (read — the elements of the `environment.irrigation_tanks` Opaque Region)
+// ---------------------------------------------------------------------------
+
+/**
+ * A refill entry in `water_history.recent_refills` — the raw event dict the
+ * tracker built, passed through by reference (`growspace_view_model.py:90`,
+ * `tank_water_tracker.py:242-246`). Only refills are shipped, so the
+ * `growth_stage` the tracker adds on the consumption branch cannot appear here.
+ */
+export const TankWaterEventSchema = z.object({
+  timestamp: z.string(),
+  event_type: z.enum(['consumption', 'refill']),
+  pct_delta: z.number(),
+  liters: z.number(),
+});
+
+export type TankWaterEvent = z.infer<typeof TankWaterEventSchema>;
+
+/** One day of the 7-day summary (`growspace_view_model.py:95-99`). */
+export const TankDailyEntrySchema = z.object({
+  date: z.string(),
+  consumed: z.number(),
+  refilled: z.number(),
+});
+
+export type TankDailyEntry = z.infer<typeof TankDailyEntrySchema>;
+
+/** A 15-minute consumption bucket (`tank_water_tracker.py:118`). */
+export const TankConsumptionBucketSchema = z.object({
+  /** ISO-8601 start of the bucket. */
+  ts: z.string(),
+  /** Liters consumed in this bucket. */
+  liters: z.number(),
+});
+
+export type TankConsumptionBucket = z.infer<typeof TankConsumptionBucketSchema>;
+
+/**
+ * The tank's water history, which is *only* the three computed summaries:
+ * `growspace_view_model.py:640-648` folds in `_compute_tank_water_summaries`
+ * and deliberately omits the raw `snapshots` and `events` that the
+ * `TankWaterHistory` model carries, to stay inside the attribute-size budget.
+ * They were declared here as "kept for forward compatibility"; nothing reads
+ * them and the backend has no branch that emits them, so they are gone.
+ */
+export const TankWaterHistorySchema = z.object({
+  buckets_24h: z.array(TankConsumptionBucketSchema).optional(),
+  daily_7d: z.array(TankDailyEntrySchema).optional(),
+  recent_refills: z.array(TankWaterEventSchema).optional(),
+});
+
+export type TankWaterHistory = z.infer<typeof TankWaterHistorySchema>;
+
+export const TankDepletionStatusSchema = z.enum([
+  'depleting',
+  'refilling',
+  'static',
+  'insufficient_data',
+]);
+
+export type TankDepletionStatus = z.infer<typeof TankDepletionStatusSchema>;
+
+/**
+ * One row of `environment.irrigation_tanks` (`growspace_view_model.py:630-641`).
+ *
+ * The array itself stays an Opaque Region in the growspace payload (ADR 0031,
+ * opaque-by-arity: the row count is grower-driven, and a stricter element type
+ * would fail the whole `get_data` parse over one malformed tank). The row shape
+ * is not opaque, though — the adapter parses each row with this schema and drops
+ * only the rows that fail, so the blast radius stays one tank while the shape is
+ * still described exactly once.
+ *
+ * `enable_prediction`, `enable_lights_bias`, `enable_vpd_weighting`,
+ * `last_recorded_level` and `peak_level` exist on the backend model
+ * (`models/irrigation.py:279-284`) but are not emitted on these rows.
+ */
+export const IrrigationTankRowSchema = z.object({
+  sensor_entity: z.string(),
+  name: z.string(),
+  warning_level: z.number(),
+  /** null when the sensor is missing or its state does not parse. */
+  fill_level: z.number().nullable(),
+  is_warning: z.boolean(),
+  hours_remaining: z.number().nullable().optional(),
+  depletion_status: TankDepletionStatusSchema.nullable().optional(),
+  volume_liters: z.number().nullable().optional(),
+  water_history: TankWaterHistorySchema.optional(),
+});
+
+export type SerializedIrrigationTank = z.infer<typeof IrrigationTankRowSchema>;
+
+// ---------------------------------------------------------------------------
+// Irrigation analytics (read — not a service payload)
+// ---------------------------------------------------------------------------
+
+export const IrrigationAnalyticsSchema = z.object({
+  growspace_id: z.string(),
+  stage_aggregates: z.record(z.string(), z.number()),
+});
+
+export type IrrigationAnalytics = z.infer<typeof IrrigationAnalyticsSchema>;

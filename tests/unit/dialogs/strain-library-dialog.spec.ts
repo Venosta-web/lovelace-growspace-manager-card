@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { StrainLibraryDialog } from '../../../src/dialogs/strain-library-dialog';
 import { StrainEntry } from '../../../src/types';
 import { PlantUtils } from '../../../src/utils/plant-utils';
+import { setHass } from '../../../src/services/hass-call';
 
 // Mock PlantUtils for logic isolation in browser testing
 vi.mock('../../../src/utils/plant-utils', () => ({
@@ -118,8 +119,10 @@ describe('StrainLibraryDialog', () => {
         });
 
         it('should switch to editor when a card is clicked', async () => {
-            const card = browseView?.shadowRoot?.querySelector('.strain-card');
-            (card as HTMLElement)?.click();
+            // The card container is non-interactive; the title button carries the
+            // activation and stretches its hit area over the whole card.
+            const openBtn = browseView?.shadowRoot?.querySelector('.strain-card .sc-open-btn');
+            (openBtn as HTMLElement)?.click();
             await element.updateComplete;
 
             expect((element as any)._view).toBe('editor');
@@ -210,42 +213,42 @@ describe('StrainLibraryDialog', () => {
 
     // Image Library Selector tests are now in strain-editor-view.spec.ts
 
+    /** Opens the Manage menu and returns its items. */
+    const openManageMenu = async (): Promise<HTMLElement[]> => {
+        browseView._manageMenuOpen = true;
+        browseView.requestUpdate?.();
+        await browseView?.updateComplete;
+        return Array.from(browseView?.shadowRoot?.querySelectorAll('.manage-menu-item') || []) as HTMLElement[];
+    };
+
     describe('Import/Export', () => {
         it('should dispatch export event', async () => {
             const listener = vi.fn();
             element.addEventListener('export-library', listener);
 
-            const exportBtn = (Array.from(browseView?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[])
-                .find(b => b.textContent?.includes('Export'));
-            (exportBtn as HTMLElement)?.click();
+            const items = await openManageMenu();
+            items.find(b => b.textContent?.includes('Export'))?.click();
 
             expect(listener).toHaveBeenCalled();
         });
 
         it('should open import dialog when Import button is clicked', async () => {
-            const importBtn = (Array.from(browseView?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[])
-                .find(b => b.textContent?.includes('Import'));
-            (importBtn as HTMLElement)?.click();
+            const items = await openManageMenu();
+            items.find(b => b.textContent?.includes('Import'))?.click();
             await element.updateComplete;
 
             expect((element as any)._importDialogOpen).toBe(true);
         });
     });
 
-    describe('Mobile Menu', () => {
-        it('should toggle mobile menu', async () => {
-            browseView._mobileMenuOpen = true;
-            browseView.requestUpdate?.();
-            await browseView?.updateComplete;
+    describe('Manage Menu', () => {
+        it('should toggle manage menu', async () => {
+            const items = await openManageMenu();
+            expect(browseView?.shadowRoot?.querySelector('.manage-menu')).toBeTruthy();
+            expect(items).toHaveLength(3);
 
-            const menu = browseView?.shadowRoot?.querySelector('.mobile-menu');
-            expect(menu).toBeTruthy();
-
-            const items = menu?.querySelectorAll('.mobile-menu-item');
-            if (items && items.length > 0) {
-                (items[0] as HTMLElement).click();
-                expect(browseView?._mobileMenuOpen).toBe(false);
-            }
+            items[0].click();
+            expect(browseView?._manageMenuOpen).toBe(false);
         });
     });
     // Removed duplicate Filtering describe block as it is now covered earlier
@@ -254,6 +257,10 @@ describe('StrainLibraryDialog', () => {
     // Dialog-level: verify save-strain event causes view to return to browse
     describe('Validation (dialog-level)', () => {
         it('should return to browse view when onSave callback is invoked by strain-editor-view', async () => {
+            setHass({
+                callService: vi.fn().mockResolvedValue(undefined),
+                callWS: vi.fn().mockResolvedValue({ strains: {} }),
+            } as never);
             (element as any)._view = 'editor';
             await element.updateComplete;
 
@@ -407,47 +414,23 @@ describe('StrainLibraryDialog', () => {
 
     // Advanced Editor Interactions tests are now in strain-editor-view.spec.ts
 
-    describe('Mobile Interactions', () => {
-        it('should open editor via FAB', async () => {
-            const fab = browseView?.shadowRoot?.querySelector('.fab-btn');
-            (fab as HTMLElement)?.click();
-            await element.updateComplete;
-            expect((element as any)._view).toBe('editor');
-        });
-
+    describe('Manage Menu Interactions', () => {
         it('should trigger menu actions', async () => {
-            browseView._mobileMenuOpen = true;
-            browseView.requestUpdate?.();
-            await browseView?.updateComplete;
-
-            const items = browseView?.shadowRoot?.querySelectorAll('.mobile-menu-item');
-
-            // Get Rec
-            const recSpy = vi.fn();
-            element.addEventListener('get-recommendation', recSpy);
-            (items?.[1] as HTMLElement).click();
-            expect(recSpy).toHaveBeenCalled();
-
-            // Re-open
-            browseView._mobileMenuOpen = true;
-            browseView.requestUpdate?.();
-            await browseView?.updateComplete;
-
             // Import (sets dialog open)
-            (items?.[2] as HTMLElement).click();
+            (await openManageMenu())[0].click();
             await element.updateComplete;
             expect((element as any)._importDialogOpen).toBe(true);
-
-            // Re-open
-            browseView._mobileMenuOpen = true;
-            browseView.requestUpdate?.();
-            await browseView?.updateComplete;
 
             // Export
             const expSpy = vi.fn();
             element.addEventListener('export-library', expSpy);
-            (items?.[3] as HTMLElement).click();
+            (await openManageMenu())[1].click();
             expect(expSpy).toHaveBeenCalled();
+
+            // Manage Breeders
+            (await openManageMenu())[2].click();
+            await element.updateComplete;
+            expect((element as any)._breederDialogOpen).toBe(true);
         });
     });
 
@@ -535,8 +518,8 @@ describe('StrainLibraryDialog', () => {
             expect(browseView?._currentPage).toBe(1);
         });
 
-        it('should close mobile menu on overlay click', async () => {
-            browseView._mobileMenuOpen = true;
+        it('should close manage menu on overlay click', async () => {
+            browseView._manageMenuOpen = true;
             browseView.requestUpdate?.();
             await browseView?.updateComplete;
 
@@ -544,7 +527,7 @@ describe('StrainLibraryDialog', () => {
             (overlay as HTMLElement)?.click();
             await browseView?.updateComplete;
 
-            expect(browseView?._mobileMenuOpen).toBe(false);
+            expect(browseView?._manageMenuOpen).toBe(false);
         });
 
         it('should use default icon for unknown type', async () => {
@@ -613,7 +596,7 @@ describe('StrainLibraryDialog', () => {
             expect(closeSpy).toHaveBeenCalled();
         });
 
-        it('should toggle mobile menu via header button (browse view)', async () => {
+        it('should toggle manage menu via header button (browse view)', async () => {
             // In browse view
             (element as any)._view = 'browse';
             await element.updateComplete;
@@ -625,7 +608,7 @@ describe('StrainLibraryDialog', () => {
             (menuBtn as HTMLElement).click();
             await browseView?.updateComplete;
 
-            expect(browseView?._mobileMenuOpen).toBe(true);
+            expect(browseView?._manageMenuOpen).toBe(true);
         });
 
         it('should trigger Get Recommendation via footer button (browse view)', async () => {
@@ -856,6 +839,6 @@ describe('StrainLibraryDialog', () => {
         browseView.requestUpdate?.();
         await browseView?.updateComplete;
         const content = browseView?.shadowRoot?.querySelector('.sd-content');
-        expect(content?.textContent).toContain(`No strains found matching "${query}"`);
+        expect(content?.textContent).toContain(`No strains match "${query}" in Library`);
     });
 });

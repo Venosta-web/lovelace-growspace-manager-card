@@ -1,8 +1,16 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { atom } from 'nanostores';
+import * as uiSlice from '../../../../../src/slices/ui';
+import { ViewMode } from '../../../../../src/constants';
+import { MetricKey } from '../../../../../src/features/environment/constants';
 import '../../../../../src/features/ui/containers/growspace-analytics.container';
 import type { GrowspaceAnalyticsContainer } from '../../../../../src/features/ui/containers/growspace-analytics.container';
+
+// Graph toggling is now a slice op the container calls directly (`uiSlice.toggleEnvGraph`).
+// `{ spy: true }` keeps every real atom/util while wrapping exports in call-through spies;
+// an `importOriginal()` factory would deadlock on the slices/ui index↔dialogs cycle.
+vi.mock('../../../../../src/slices/ui', { spy: true });
 
 vi.mock('../../../../../src/features/ui/components/growspace-analytics-ui', () => {
     if (!customElements.get('growspace-analytics-ui')) {
@@ -40,8 +48,12 @@ const buildMockStore = ($analyticsViewState: ReturnType<typeof atom>) => {
             unlinkGraphGroup: vi.fn(),
             unlinkGraphMetric: vi.fn(),
             getRange: vi.fn().mockReturnValue('24h'),
+            toggleEnvGraph: vi.fn().mockReturnValue(false),
         },
         toggleEnvGraph,
+        // Per-card view-mode surface the container forwards to the slice op so it
+        // can drop HEADER → STANDARD on this card only.
+        ui: { $viewMode: atom(ViewMode.STANDARD), setViewMode: vi.fn() },
         actions: { ui: { toggleEnvGraph } },
     };
 };
@@ -54,6 +66,7 @@ describe('GrowspaceAnalyticsContainer', () => {
     let $analyticsViewState: ReturnType<typeof atom>;
 
     beforeEach(async () => {
+        vi.clearAllMocks();
         $analyticsViewState = createViewStateAtom();
         mockStore = buildMockStore($analyticsViewState);
 
@@ -67,6 +80,17 @@ describe('GrowspaceAnalyticsContainer', () => {
 
     it('renders growspace-analytics-ui when state has active graphs and device', async () => {
         expect(element.shadowRoot?.querySelector('growspace-analytics-ui')).toBeTruthy();
+    });
+
+    it('hands the charts a Metric Descriptor table', async () => {
+        // The charts derive nothing themselves (ADR-0030), so an empty table here
+        // is a silent blackout: every graph would render "No Data".
+        const ui = element.shadowRoot?.querySelector('growspace-analytics-ui') as any;
+
+        expect(Object.keys(ui.descriptors ?? {}).length).toBeGreaterThan(0);
+        expect(ui.descriptors[MetricKey.TEMPERATURE]).toMatchObject({
+            key: MetricKey.TEMPERATURE,
+        });
     });
 
     it('renders empty when device is not set', async () => {
@@ -170,19 +194,19 @@ describe('GrowspaceAnalyticsContainer', () => {
     it('toggle-graph event with string detail calls store.actions.ui.toggleEnvGraph', async () => {
         const ui = element.shadowRoot!.querySelector('growspace-analytics-ui')!;
         ui.dispatchEvent(new CustomEvent('toggle-graph', { detail: 'temperature' }));
-        expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('temperature');
+        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('temperature', mockStore.history, mockStore.ui, 'grow1');
     });
 
     it('toggle-graph event with object detail calls store.actions.ui.toggleEnvGraph with metric', async () => {
         const ui = element.shadowRoot!.querySelector('growspace-analytics-ui')!;
         ui.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'co2' } }));
-        expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('co2');
+        expect(uiSlice.toggleEnvGraph).toHaveBeenCalledWith('co2', mockStore.history, mockStore.ui, 'grow1');
     });
 
     it('toggle-graph event with empty metric does not call toggleEnvGraph', async () => {
         const ui = element.shadowRoot!.querySelector('growspace-analytics-ui')!;
         ui.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: '' } }));
-        expect(mockStore.toggleEnvGraph).not.toHaveBeenCalled();
+        expect(uiSlice.toggleEnvGraph).not.toHaveBeenCalled();
     });
 
     it('set-range event calls setGraphRange and loadHistoryOnDemand', async () => {

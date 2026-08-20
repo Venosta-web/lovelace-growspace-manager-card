@@ -20,8 +20,6 @@ export class NutrientStockChip extends LitElement {
       return html``;
     }
 
-    // eslint-disable-next-line camelcase
-    // eslint-disable-next-line camelcase
     const { current_ml: currentMl, initial_ml: initialMl, name } = this.stock;
     const ratio = initialMl > 0 ? currentMl / initialMl : 0;
 
@@ -43,6 +41,7 @@ export class NutrientStockChip extends LitElement {
         .label=${this.compact ? undefined : name}
         .value=${value}
         .status=${status}
+        .actionLabel=${`Open ${name} nutrient stock`}
         .tooltip=${`Capacity: ${initialMl}ml\nLast Updated: ${new Date(this.stock.last_updated).toLocaleDateString()}`}
       ></growspace-chip>
     `;

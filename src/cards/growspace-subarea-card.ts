@@ -1,33 +1,31 @@
 import {
-  LitElement,
-  html,
-  css,
-  svg,
-  CSSResultGroup,
-  PropertyValues,
-  TemplateResult,
-  nothing,
+    LitElement,
+    html,
+    css,
+    CSSResultGroup,
+    PropertyValues,
+    TemplateResult,
+    nothing,
 } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
-import {
-  mdiCog,
-  mdiThermometer,
-  mdiWaterPercent,
-  mdiCloudOutline,
-  mdiWeatherCloudy,
-} from '@mdi/js';
+import { mdiCog } from '@mdi/js';
 
 import { hassContext, configContext, storeContext } from '../lib/context';
+import { DATA_STALE_EVENT } from '../features/shared/events';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import { getSubareas } from '../slices/subarea';
 import type { Subarea } from '../slices/subarea';
-import { DataService } from '../services/data-service';
+import { setSubareaEnvSnapshot, subareaEnvSnapshots$ } from '../slices/environment';
+import type { EnvSnapshot, SensorReadings } from '../slices/environment';
+import { setSubareaDeviceSnapshot, subareaDeviceSnapshots$ } from '../slices/device-state';
+import { computeHeaderMetrics } from '../slices/header-metrics';
+import { setHass } from '../services/hass-call';
+import { getHistoryStats } from '../store/history/history-store';
 import { ConfigTab } from '../features/environment/constants';
 import type { HistoryTimeRange } from '../features/environment/constants';
-import { ChartUtils } from '../utils/chart-utils';
 import { ResizeController } from '../controllers/resize-controller';
 import '../dialogs/config-dialog';
 
@@ -38,7 +36,7 @@ import '../features/ui/containers/growspace-analytics.container';
 import '../features/ui/components/growspace-header-hero-ui';
 import '../features/ui/components/growspace-header-secondary-ui';
 import '../features/shared/ui/growspace-chip';
-import { MetricsUtils } from '../utils/metrics-utils';
+import { filterChips } from '../utils/chip-filter';
 
 import { sharedStyles } from '../styles/shared.styles';
 import { uiStyles } from '../styles/ui.styles';
@@ -46,56 +44,87 @@ import { growspaceCardStyles } from '../styles/growspace-card.styles';
 import { variables } from '../styles/variables';
 
 import { GrowspaceStore } from '../store/core/growspace-store';
+import { toggleEnvGraph } from '../slices/ui';
+import { metricHistoryKeys } from '../slices/metric-descriptors';
+import { BootstrapController } from '../controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
 
 export interface GrowspaceSubareaCardConfig extends GrowspaceManagerCardConfig {
-  growspace_id: string;
-  subarea_id: string;
+    /** Legacy key retained for existing dashboard configurations. */
+    growspace_id?: string;
+    subarea_id: string;
 }
 
-const SENSOR_LABEL_TO_METRIC: Record<string, string> = {
-  Temperature: 'temperature',
-  Humidity: 'humidity',
-  VPD: 'vpd',
-  CO2: 'co2',
-};
+/**
+ * Metric → entity-ID lists for the subarea history fetch, derived from the
+ * subarea EnvSnapshot's SensorReadings (ADR-0018). The snapshot is the single
+ * source of resolved entity IDs, so the history cache keys structurally match
+ * what the chips display — both read the same snapshot field.
+ */
+export function deriveSubareaMetricEntities(
+    snapshot: EnvSnapshot
+): Array<{ metric: string; entityIds: string[] }> {
+    const readings: Array<[string, SensorReadings | null]> = [
+        ['temperature', snapshot.temperatureReadings],
+        ['humidity', snapshot.humidityReadings],
+        ['vpd', snapshot.vpdReadings],
+        ['co2', snapshot.co2Readings],
+    ];
+
+    const metricEntities: Array<{ metric: string; entityIds: string[] }> = [];
+    for (const [metric, reading] of readings) {
+        if (reading && reading.entityIds.length > 0) {
+            metricEntities.push({ metric, entityIds: [...reading.entityIds] });
+        }
+    }
+    return metricEntities;
+}
 
 @customElement('growspace-subarea-card')
 export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
-  private _sharedStore = growspaceStoreRegistry.acquire();
+    private _sharedStore = growspaceStoreRegistry.acquire();
 
-  @provide({ context: storeContext })
-  store = new GrowspaceStore(this._sharedStore);
+    @provide({ context: storeContext })
+    store = new GrowspaceStore(this._sharedStore);
 
-  protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
-  private _resizeController = new ResizeController(this, () => {});
+    protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
+    private _bootstrapCtrl!: BootstrapController;
+    protected _subareaEnvController = new StoreController(this, subareaEnvSnapshots$);
+    protected _subareaDeviceController = new StoreController(this, subareaDeviceSnapshots$);
+    private _resizeController = new ResizeController(this, () => { });
 
-  private _dataService: DataService | null = null;
-  private _analyticsStateController: StoreController<any> | null = null;
-  private _staleUnsub?: () => void;
+    private _analyticsStateController: StoreController<any> | null = null;
+    private _staleUnsub?: () => void;
 
-  @provide({ context: hassContext })
-  @property({ attribute: false })
-  hass!: HomeAssistant;
+    @provide({ context: hassContext })
+    @property({ attribute: false })
+    hass!: HomeAssistant;
 
-  @provide({ context: configContext })
-  @property({ attribute: false })
-  _config!: GrowspaceSubareaCardConfig;
+    @provide({ context: configContext })
+    @property({ attribute: false })
+    _config!: GrowspaceSubareaCardConfig;
 
-  @state() private _subarea: Subarea | null = null;
-  @state() private _loading = true;
-  @state() private _error: string | null = null;
-  @state() private _parentGrowspaceName = '';
-  @state() private _showConfigDialog = false;
-  @state() private _historyCache: Record<string, any[]> = {};
+    @state() private _subarea: Subarea | null = null;
+    @state() private _loading = true;
+    @state() private _error: string | null = null;
+    @state() private _parentGrowspaceName = '';
+    @state() private _showConfigDialog = false;
+    @state() private _historyCache: Record<string, any[]> = {};
+    /**
+     * The entity lists `_historyCache` was keyed by. Handed to the analytics
+     * charts so a metric's series and its history describe the same sensors —
+     * a subarea's are its own, not the parent growspace's.
+     */
+    @state() private _metricSensors: Record<string, string[]> = {};
+    private _historyRequestId = 0;
 
-  static styles: CSSResultGroup = [
-    variables,
-    sharedStyles,
-    uiStyles,
-    growspaceCardStyles,
-    css`
+    static styles: CSSResultGroup = [
+        variables,
+        sharedStyles,
+        uiStyles,
+        growspaceCardStyles,
+        css`
             .subarea-inner {
                 display: flex;
                 flex-direction: column;
@@ -154,16 +183,6 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 align-items: center;
                 gap: 6px;
             }
-                font-size: 0.72rem;
-                color: var(--secondary-text-color);
-                opacity: 0.7;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                position: relative;
-                z-index: 1;
-            }
-
             /* Additional sensors — compact secondary grid */
             .secondary-sensors-grid {
                 display: grid;
@@ -201,347 +220,325 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 opacity: 0.7;
             }
         `,
-  ];
+    ];
 
-  private _initAnalyticsController(): void {
-    if (this.store?.history && !this._analyticsStateController) {
-      this._analyticsStateController = new StoreController(
-        this,
-        this.store.history.$analyticsViewState
-      );
-      this.store.history.startAutoRefresh();
-    }
-  }
-
-  connectedCallback(): void {
-    super.connectedCallback();
-    this._initAnalyticsController();
-    let prevStale = this._sharedStore.data.$staleCounter.get();
-    this._staleUnsub = this._sharedStore.data.$staleCounter.subscribe((n) => {
-      if (n !== prevStale) {
-        prevStale = n;
-        this._loadSubarea();
-      }
-    });
-  }
-
-  protected firstUpdated(): void {
-    if (this.hass) {
-      this.store.updateHass(this.hass);
-      this._dataService = new DataService(this.hass);
-    }
-    if (this._config?.growspace_id) {
-      const syntheticConfig: GrowspaceManagerCardConfig = {
-        ...this._config,
-        default_growspace: this._config.growspace_id,
-      };
-      this.store.initializeSelectedDevice(syntheticConfig);
-    }
-    if (!this._subarea && !this._loading) {
-      this._loadSubarea();
-    }
-    this._initAnalyticsController();
-    if (this.store?.history && !this._analyticsStateController?.value?.historyLoaded) {
-      this.store.history.loadHistoryOnDemand();
-    }
-  }
-
-  disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this._staleUnsub?.();
-    this.store.history?.stopAutoRefresh();
-    this.store.destroy();
-    growspaceStoreRegistry.release();
-  }
-
-  protected updated(changedProps: PropertyValues): void {
-    super.updated(changedProps);
-
-    if (changedProps.has('hass') && this.hass) {
-      this.store.updateHass(this.hass);
-      if (!this._dataService) {
-        this._dataService = new DataService(this.hass);
-      } else {
-        this._dataService.updateHass(this.hass);
-      }
-    }
-
-    if (changedProps.has('_config') && this._config?.growspace_id) {
-      const syntheticConfig: GrowspaceManagerCardConfig = {
-        ...this._config,
-        default_growspace: this._config.growspace_id,
-      };
-      this.store.initializeSelectedDevice(syntheticConfig);
-      this._loadSubarea();
-    }
-
-    const devices = this._viewController.value?.grid?.devices ?? [];
-    if (devices.length && this._config?.growspace_id) {
-      const parent = devices.find((d: any) => d.deviceId === this._config.growspace_id);
-      if (parent && parent.name !== this._parentGrowspaceName) {
-        this._parentGrowspaceName = parent.name;
-      }
-    }
-  }
-
-  private async _loadSubarea(): Promise<void> {
-    if (!this._config?.growspace_id || !this._config?.subarea_id) return;
-    if (!this.hass) return;
-
-    if (!this._dataService) {
-      this._dataService = new DataService(this.hass);
-    }
-
-    this._loading = true;
-    this._error = null;
-
-    try {
-      const subareas = await getSubareas(this._config.growspace_id);
-      const found = subareas.find((s) => s.id === this._config.subarea_id) ?? null;
-      if (!found) {
-        this._error = `Subarea "${this._config.subarea_id}" not found in growspace "${this._config.growspace_id}".`;
-      } else {
-        this._subarea = found;
-        this._loadHistory(found);
-      }
-    } catch (err) {
-      console.error('[GrowspaceSubareaCard] Failed to load subarea:', err);
-      this._error = 'Failed to load subarea data.';
-    } finally {
-      this._loading = false;
-    }
-  }
-
-  private _calculateHistoryStart(range: HistoryTimeRange): Date {
-    const now = new Date();
-    switch (range) {
-      case '1h':
-        return new Date(now.getTime() - 60 * 60 * 1000);
-      case '6h':
-        return new Date(now.getTime() - 6 * 60 * 60 * 1000);
-      case '7d':
-        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      default:
-        return new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    }
-  }
-
-  private async _loadHistory(subarea: Subarea, range?: HistoryTimeRange): Promise<void> {
-    if (!this._dataService) return;
-
-    const ec = subarea.environment_config;
-    const activeRange = range ?? this.store.history.getRange();
-    const end = new Date();
-    const start = this._calculateHistoryStart(activeRange);
-
-    const metricEntities: Array<{ metric: string; entityIds: string[] }> = [];
-
-    const tempIds = ec.temperature_sensors?.length
-      ? ec.temperature_sensors
-      : ec.temperature_sensor
-        ? [ec.temperature_sensor]
-        : [];
-    const humIds = ec.humidity_sensors?.length
-      ? ec.humidity_sensors
-      : ec.humidity_sensor
-        ? [ec.humidity_sensor]
-        : [];
-    const vpdIds = ec.vpd_sensors?.length ? ec.vpd_sensors : ec.vpd_sensor ? [ec.vpd_sensor] : [];
-    const co2Ids = ec.co2_sensor ? [ec.co2_sensor] : [];
-
-    if (tempIds.length) metricEntities.push({ metric: 'temperature', entityIds: tempIds });
-    if (humIds.length) metricEntities.push({ metric: 'humidity', entityIds: humIds });
-    if (vpdIds.length) metricEntities.push({ metric: 'vpd', entityIds: vpdIds });
-    if (co2Ids.length) metricEntities.push({ metric: 'co2', entityIds: co2Ids });
-
-    const allEntityIds = [...new Set(metricEntities.flatMap((m) => m.entityIds))];
-    if (!allEntityIds.length) return;
-
-    try {
-      const batchResults = await this._dataService.getBatchHistory(allEntityIds, start, end);
-      const cache: Record<string, any[]> = {};
-
-      for (const { metric, entityIds } of metricEntities) {
-        if (entityIds.length === 1) {
-          cache[metric] = batchResults[entityIds[0]] || [];
-        } else {
-          entityIds.forEach((id) => {
-            cache[`${metric}:${id}`] = batchResults[id] || [];
-          });
+    private _initAnalyticsController(): void {
+        if (this.store?.history && !this._analyticsStateController) {
+            this._analyticsStateController = new StoreController(
+                this,
+                this.store.history.$analyticsViewState
+            );
+            this.store.history.startAutoRefresh();
         }
-      }
-
-      this._historyCache = cache;
-      // Inject subarea sensor history into the store so growspace-analytics
-      // shows the subarea's sensors instead of the parent growspace's sensors.
-      this.store.history.setHistoryBatch(cache);
-      this.store.history.setHistoryLoaded(true);
-    } catch (err) {
-      console.error('[GrowspaceSubareaCard] Failed to load history:', err);
-    }
-  }
-
-  private _handleSubareaRangeChange(e: CustomEvent): void {
-    if (this._subarea) {
-      this._loadHistory(this._subarea, e.detail as HistoryTimeRange);
-    }
-  }
-
-  public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    await import('./editors/growspace-subarea-card-editor.js');
-    return document.createElement('growspace-subarea-card-editor') as unknown as LovelaceCardEditor;
-  }
-
-  public static getStubConfig(): GrowspaceSubareaCardConfig {
-    return {
-      type: 'custom:growspace-subarea-card',
-      growspace_id: '',
-      subarea_id: '',
-    };
-  }
-
-  public setConfig(config: GrowspaceSubareaCardConfig): void {
-    if (!config) throw new Error('Invalid configuration');
-    this._config = config;
-    const syntheticConfig: GrowspaceManagerCardConfig = {
-      ...config,
-      default_growspace: config.growspace_id || '',
-    };
-    this.store.initializeSelectedDevice(syntheticConfig);
-  }
-
-  public getCardSize(): number {
-    return 4;
-  }
-
-  public getLayoutOptions() {
-    return {
-      grid_columns: 12,
-      grid_min_columns: 6,
-      grid_min_rows: 4,
-    };
-  }
-
-  private _toggleMetricGraph(metric: string): void {
-    this.store?.actions.ui.toggleEnvGraph(metric);
-  }
-
-  protected render(): TemplateResult {
-    if (!this.hass) {
-      return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
     }
 
-    if (!this._config?.growspace_id || !this._config?.subarea_id) {
-      return html`
+    connectedCallback(): void {
+        super.connectedCallback();
+        this._initAnalyticsController();
+        this._staleUnsub = this.store.eventBus.on(DATA_STALE_EVENT, () => this._loadSubarea());
+    }
+
+    protected firstUpdated(): void {
+        if (this.hass) {
+            this.store.updateHass(this.hass);
+            setHass(this.hass);
+            this._bootstrapCtrl?.updateHass(this.hass);
+        }
+        if (!this._subarea && !this._loading) {
+            this._loadSubarea();
+        }
+        this._initAnalyticsController();
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        this._staleUnsub?.();
+        this.store.history?.stopAutoRefresh();
+        this.store.destroy();
+        growspaceStoreRegistry.release();
+    }
+
+    protected updated(changedProps: PropertyValues): void {
+        super.updated(changedProps);
+
+        if (changedProps.has('hass') && this.hass) {
+            this.store.updateHass(this.hass);
+            setHass(this.hass);
+            this._bootstrapCtrl?.updateHass(this.hass);
+        }
+
+        if (changedProps.has('_config') && this._config?.default_growspace) {
+            this._loadSubarea();
+        }
+
+        const devices = this._viewController.value?.grid?.devices ?? [];
+        if (devices.length && this._config?.default_growspace) {
+            const parent = devices.find((d) => d.deviceId === this._config.default_growspace);
+            if (parent && parent.name !== this._parentGrowspaceName) {
+                this._parentGrowspaceName = parent.name;
+            }
+        }
+    }
+
+    private async _loadSubarea(): Promise<void> {
+        if (!this._config?.default_growspace || !this._config?.subarea_id) return;
+        if (!this.hass) return;
+
+        this._loading = true;
+        this._error = null;
+
+        try {
+            const subareas = await getSubareas(this._config.default_growspace);
+            const found = subareas.find((s) => s.id === this._config.subarea_id) ?? null;
+            if (!found) {
+                this._error = `Subarea "${this._config.subarea_id}" not found in growspace "${this._config.default_growspace}".`;
+            } else {
+                this._subarea = found;
+                this._seedSnapshots(found);
+                this._loadHistory(found);
+            }
+        } catch (err) {
+            console.error('[GrowspaceSubareaCard] Failed to load subarea:', err);
+            this._error = 'Failed to load subarea data.';
+        } finally {
+            this._loading = false;
+        }
+    }
+
+    /**
+     * Bootstrap seed for subareaEnvSnapshots$ and subareaDeviceSnapshots$ right
+     * after the subarea loads, so the first render has data. SyncService keeps
+     * both snapshots fresh afterwards (it iterates subareas$, which getSubareas
+     * just hydrated).
+     */
+    private _seedSnapshots(subarea: Subarea): void {
+        if (!this.hass) return;
+        const devices = this._viewController.value?.grid?.devices ?? [];
+        const parent = devices.find((d) => d.deviceId === this._config.default_growspace);
+        setSubareaEnvSnapshot(
+            subarea.id,
+            subarea,
+            {
+                growspaceId: this._config.default_growspace,
+                growspaceName: parent?.name || this._parentGrowspaceName || undefined,
+            },
+            this.hass.states
+        );
+        setSubareaDeviceSnapshot(subarea.id, subarea, this.hass.states);
+    }
+
+    private _calculateHistoryStart(range: HistoryTimeRange): Date {
+        const now = new Date();
+        switch (range) {
+            case '1h':
+                return new Date(now.getTime() - 60 * 60 * 1000);
+            case '6h':
+                return new Date(now.getTime() - 6 * 60 * 60 * 1000);
+            case '7d':
+                return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            default:
+                return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        }
+    }
+
+    private async _loadHistory(subarea: Subarea, range?: HistoryTimeRange): Promise<void> {
+        const snapshot = subareaEnvSnapshots$.get().get(subarea.id);
+        if (!snapshot) return;
+
+        const activeRange = range ?? this.store.history.getRange();
+        const end = new Date();
+        const start = this._calculateHistoryStart(activeRange);
+
+        const metricEntities = deriveSubareaMetricEntities(snapshot);
+
+        const allEntityIds = [...new Set(metricEntities.flatMap((m) => m.entityIds))];
+        if (!allEntityIds.length) return;
+
+        const requestId = ++this._historyRequestId;
+        this.store.history.setHistoryLoading(true);
+        this.store.history.setHistoryLoaded(false);
+
+        try {
+            // Seven days of raw HA state changes can be tens of thousands of rows.
+            // Keep chart cost bounded with the same downsampled transport as main graphs.
+            const batchResults = await getHistoryStats(
+                allEntityIds,
+                start,
+                end,
+                this._historyIntervalMinutes(activeRange),
+                true
+            );
+            if (requestId !== this._historyRequestId) return;
+            const cache: Record<string, any[]> = {};
+
+            for (const { metric, entityIds } of metricEntities) {
+                // Keyed through the shared function so this view's injected
+                // histories are filed exactly where the chart looks (#473).
+                for (const { entityId, historyKey } of metricHistoryKeys(metric, entityIds)) {
+                    cache[historyKey] = batchResults[entityId] || [];
+                }
+            }
+
+            this._historyCache = cache;
+            this._metricSensors = Object.fromEntries(
+                metricEntities.map(({ metric, entityIds }) => [metric, entityIds])
+            );
+            // Inject subarea sensor history into the store so growspace-analytics
+            // shows the subarea's sensors instead of the parent growspace's sensors.
+            this.store.history.setHistoryBatch(cache);
+            this.store.history.setHistoryLoaded(true);
+        } catch (err) {
+            if (requestId !== this._historyRequestId) return;
+            console.error('[GrowspaceSubareaCard] Failed to load history:', err);
+        } finally {
+            if (requestId === this._historyRequestId) {
+                this.store.history.setHistoryLoading(false);
+            }
+        }
+    }
+
+    private _historyIntervalMinutes(range: HistoryTimeRange): number {
+        switch (range) {
+            case '7d': return 240;
+            case '24h': return 30;
+            case '6h': return 15;
+            default: return 5;
+        }
+    }
+
+    private _handleSubareaRangeChange(e: CustomEvent): void {
+        const deviceId = this._config.default_growspace;
+        if (this._subarea && deviceId) {
+            const range = e.detail as HistoryTimeRange;
+            this.store.history.setGraphRange(deviceId, range);
+            this._loadHistory(this._subarea, range);
+        }
+    }
+
+    public static async getConfigElement(): Promise<LovelaceCardEditor> {
+        await import('./editors/growspace-subarea-card-editor.js');
+        return document.createElement('growspace-subarea-card-editor') as unknown as LovelaceCardEditor;
+    }
+
+    public static getStubConfig(): GrowspaceSubareaCardConfig {
+        return {
+            type: 'custom:growspace-subarea-card',
+            default_growspace: '',
+            subarea_id: '',
+        };
+    }
+
+    public setConfig(config: GrowspaceSubareaCardConfig): void {
+        if (!config) throw new Error('Invalid configuration');
+        const { growspace_id: legacyGrowspaceId, ...currentConfig } = config;
+        this._config = {
+            ...currentConfig,
+            default_growspace: config.default_growspace ?? legacyGrowspaceId ?? '',
+        };
+        if (!this._bootstrapCtrl) {
+            this._bootstrapCtrl = new BootstrapController(this, this.store.grid, this._config);
+            this.store.setRefreshCallback(() => this._bootstrapCtrl.refresh());
+        } else {
+            this._bootstrapCtrl.setCardConfig(this._config);
+        }
+    }
+
+    public getCardSize(): number {
+        return 4;
+    }
+
+    public getLayoutOptions() {
+        return {
+            grid_columns: 12,
+            grid_min_columns: 6,
+            grid_min_rows: 4,
+        };
+    }
+
+    private _toggleMetricGraph(metric: string): void {
+        toggleEnvGraph(metric, this.store?.history, this.store?.ui);
+    }
+
+    protected render(): TemplateResult {
+        if (!this.hass) {
+            return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
+        }
+
+        if (!this._config?.default_growspace || !this._config?.subarea_id) {
+            return html`
         <ha-card>
           <div class="no-data">Please configure a growspace and subarea.</div>
         </ha-card>
       `;
-    }
+        }
 
-    if (this._loading) {
-      return html`
-        <ha-card>
-          <div class="loading-container">
-            <ha-circular-progress active></ha-circular-progress>
-          </div>
-        </ha-card>
-      `;
-    }
+        // Compute these outside the loading guard so the config-dialog stays alive
+        // even while the card body is reloading (DATA_STALE_EVENT).
+        const devices = this._viewController.value?.grid?.devices ?? [];
+        const parentDevice = devices.find((d) => d.deviceId === this._config.default_growspace);
+        const growspaceOptions: Record<string, string> = Object.fromEntries(
+            devices.map((d) => [d.deviceId, d.name])
+        );
+        const subareaDeviceSnapshot = this._subarea
+            ? (subareaDeviceSnapshots$.get().get(this._subarea.id) ?? null)
+            : null;
+        const parentName = this._parentGrowspaceName || this._config.default_growspace;
 
-    if (this._error) {
-      return html`
-        <ha-card>
-          <div class="error">${this._error}</div>
-        </ha-card>
-      `;
-    }
-
-    if (!this._subarea) {
-      return html`
-        <ha-card>
-          <div class="no-data">Subarea not found.</div>
-        </ha-card>
-      `;
-    }
-
-    const ec = this._subarea.environment_config;
-    const parentName = this._parentGrowspaceName || this._config.growspace_id;
-    const { devices } = this._viewController.value.grid;
-    const parentDevice = devices.find((d: any) => d.deviceId === this._config.growspace_id);
-
-    const growspaceOptions: Record<string, string> = Object.fromEntries(
-      devices.map((d: any) => [d.deviceId, d.name])
-    );
-
-    const parentEnvAttrs = parentDevice?.environmentAttributes;
-    const configEnvData = {
-      selectedGrowspaceId: this._config.growspace_id,
-      temperatureSensor: parentEnvAttrs?.temperatureSensor || '',
-      humiditySensor: parentEnvAttrs?.humiditySensor || '',
-      vpdSensor: parentEnvAttrs?.vpdSensor || '',
-      co2Sensor: parentEnvAttrs?.co2Sensor || '',
-      circulationFanEntity: parentEnvAttrs?.circulationFanEntity || '',
-      circulationFanEntities: parentEnvAttrs?.circulationFanEntities || [],
-      stressThreshold: 0.8,
-      moldThreshold: 0.8,
-      lightSensor: parentEnvAttrs?.lightSensor || '',
-      lightSensors: parentEnvAttrs?.lightSensors || [],
-      exhaustEntity: parentEnvAttrs?.exhaustEntity || '',
-      exhaustFanEntities: parentEnvAttrs?.exhaustFanEntities || [],
-      humidifierEntity: parentEnvAttrs?.humidifierEntity || '',
-      humidifierEntities: parentEnvAttrs?.humidifierEntities || [],
-      dehumidifierEntity: parentEnvAttrs?.dehumidifierEntity || '',
-      dehumidifierEntities: parentEnvAttrs?.dehumidifierEntities || [],
-      soilMoistureSensor: parentEnvAttrs?.soilMoistureSensor || '',
-      dehumidifierControlEnabled: parentEnvAttrs?.dehumidifierControlEnabled || false,
-      dehumidifierThresholds: parentEnvAttrs?.dehumidifierThresholds || {},
-      sensorGroups: parentEnvAttrs?.sensorGroups || [],
-      sensorCoordinates: parentEnvAttrs?.sensorCoordinates || {},
-      irrigationTanks: parentEnvAttrs?.irrigationTanks || [],
-      cameraEntities: parentEnvAttrs?.cameraEntities || [],
-    };
-
-    return html`
+        return html`
       <error-boundary
         .fallbackMessage=${'Failed to load Subarea Card'}
         .onError=${this._handleError}
       >
         <ha-card>
-          <div class="unified-growspace-card glass-surface glass-panel">
-            <div class="subarea-inner">
-              <div class="subarea-header">
-                <div class="subarea-header-text">
-                  <h2 class="subarea-title">${this._subarea.name}</h2>
-                  <p class="subarea-subtitle">
-                    <ha-icon icon="mdi:sprout" style="--mdi-icon-size: 16px;"></ha-icon>
-                    ${parentName}
-                  </p>
+          ${this._loading
+                ? html`
+                <div class="loading-container">
+                  <ha-circular-progress active></ha-circular-progress>
                 </div>
-                <button
-                  class="config-button"
-                  title="Configure subareas"
-                  @click=${() => {
-                    this._showConfigDialog = true;
-                  }}
-                >
-                  <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                </button>
-              </div>
+              `
+                : this._error
+                    ? html`<div class="error">${this._error}</div>`
+                    : !this._subarea
+                        ? html`<div class="no-data">Subarea not found.</div>`
+                        : html`
+                <div class="unified-growspace-card glass-surface glass-panel">
+                  <div class="subarea-inner">
+                    <div class="subarea-header">
+                      <div class="subarea-header-text">
+                        <h2 class="subarea-title">${this._subarea.name}</h2>
+                        <p class="subarea-subtitle">
+                          <ha-icon icon="mdi:sprout" style="--mdi-icon-size: 16px;"></ha-icon>
+                          ${parentName}
+                        </p>
+                      </div>
+                      <button
+                        class="config-button"
+                        title="Configure subareas"
+                        @click=${() => {
+                            this._showConfigDialog = true;
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                      </button>
+                    </div>
 
-              ${this._renderHeaderMetrics(ec, parentDevice)}
-              ${parentDevice
-                ? html`<growspace-analytics
-                    .device=${parentDevice}
-                    @set-range=${this._handleSubareaRangeChange}
-                  ></growspace-analytics>`
-                : ''}
-            </div>
-          </div>
+                    ${this._renderHeaderMetrics(parentDevice)}
+                    ${parentDevice
+                            ? html`<growspace-analytics
+                            .device=${parentDevice}
+                            .deviceSnapshot=${subareaDeviceSnapshot}
+                            .metricSensors=${this._metricSensors}
+                            .historyManagedExternally=${true}
+                            @set-range=${this._handleSubareaRangeChange}
+                          ></growspace-analytics>`
+                            : ''}
+                  </div>
+                </div>
+              `}
         </ha-card>
 
         ${this._showConfigDialog
-          ? html`
+                ? html`
               <config-dialog
                 .open=${true}
                 .hass=${this.hass}
@@ -549,51 +546,70 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 .growspaceOptions=${growspaceOptions}
                 .initialTab=${ConfigTab.SUBAREAS}
                 .allowedTabs=${[ConfigTab.SUBAREAS]}
-                .environmentData=${configEnvData}
+                .growspaceId=${this._config.default_growspace}
                 @close=${() => {
-                  this._showConfigDialog = false;
-                }}
+                        this._showConfigDialog = false;
+                    }}
               ></config-dialog>
             `
-          : nothing}
+                : nothing}
       </error-boundary>
     `;
-  }
+    }
 
-  private _renderHeaderMetrics(
-    ec: Subarea['environment_config'],
-    parentDevice: any
-  ): TemplateResult {
-    const metrics = MetricsUtils.computeSubareaMetrics(
-      this.hass,
-      ec,
-      this._analyticsStateController?.value?.activeEnvGraphs ?? new Set(),
-      parentDevice?.deviceId,
-      parentDevice?.name || this._parentGrowspaceName,
-      this._subarea?.id,
-      this._subarea?.name
-    );
+    private _renderHeaderMetrics(parentDevice: any): TemplateResult {
+        const activeEnvGraphs = this._analyticsStateController?.value?.activeEnvGraphs ?? new Set();
 
-    const hasAny =
-      metrics.heroChips.length > 0 ||
-      metrics.secondaryChips.length > 0 ||
-      metrics.deviceChips.length > 0;
-    const isMobile = this._resizeController.isMobile;
-    const timeRange = this._analyticsStateController?.value?.timeRange || '24h';
+        // All chips are atom-sourced: the subarea EnvSnapshot and DeviceSnapshot are
+        // fed by SyncService (and seeded in _loadSubarea); empty plant/irrigation/tank
+        // inputs mean dominant-stage and irrigation chips correctly don't render.
+        const envSnapshot = this._subarea
+            ? (subareaEnvSnapshots$.get().get(this._subarea.id) ?? null)
+            : null;
+        const deviceSnapshot = this._subarea
+            ? (subareaDeviceSnapshots$.get().get(this._subarea.id) ?? null)
+            : null;
+        const {
+            hero,
+            chips,
+            deviceChips: allDeviceChips,
+        } = computeHeaderMetrics(
+            envSnapshot,
+            [],
+            null,
+            [],
+            'subarea',
+            activeEnvGraphs,
+            [],
+            null,
+            deviceSnapshot
+        );
 
-    return html`
+        const hidden = this._config?.hidden_chips;
+        const heroChips = filterChips(hero, hidden);
+        const secondaryChips = filterChips(chips, hidden);
+        const deviceChips = filterChips(allDeviceChips, hidden);
+
+        const hasAny =
+            heroChips.length > 0 ||
+            secondaryChips.length > 0 ||
+            deviceChips.length > 0;
+        const isMobile = this._resizeController.isMobile;
+        const timeRange = this._analyticsStateController?.value?.timeRange || '24h';
+
+        return html`
       <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;">
         ${!hasAny
-          ? html`
+                ? html`
               <div class="no-sensors">No environment sensors configured for this subarea.</div>
             `
-          : ''}
-        ${metrics.deviceChips.length > 0
-          ? html`
-              ${isMobile
+                : ''}
+        ${deviceChips.length > 0
                 ? html`
+              ${isMobile
+                        ? html`
                     <growspace-header-hero-ui
-                      .chips=${metrics.deviceChips}
+                      .chips=${deviceChips}
                       .historyCache=${this._historyCache}
                       .device=${parentDevice}
                       .hass=${this.hass}
@@ -602,12 +618,12 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                       @toggle-graph=${(e: CustomEvent) => this._toggleMetricGraph(e.detail.metric)}
                     ></growspace-header-hero-ui>
                   `
-                : html`
+                        : html`
                     <div
                       style="display: flex; gap: 8px; padding: 0 4px; overflow-x: auto; scrollbar-width: none;"
                     >
-                      ${metrics.deviceChips.map(
-                        (chip) => html`
+                      ${deviceChips.map(
+                            (chip) => html`
                           <growspace-chip
                             .icon=${chip.icon}
                             .label=${chip.label}
@@ -617,18 +633,20 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                             .active=${chip.active}
                             .linked=${chip.linked}
                             .tooltip=${chip.tooltip}
+                            .toggle=${true}
+                            .actionLabel=${`Toggle ${chip.label} graph`}
                             @click=${() => this._toggleMetricGraph(chip.key)}
                           ></growspace-chip>
                         `
-                      )}
+                        )}
                     </div>
                   `}
             `
-          : ''}
-        ${metrics.heroChips.length > 0
-          ? html`
+                : ''}
+        ${heroChips.length > 0
+                ? html`
               <growspace-header-hero-ui
-                .chips=${metrics.heroChips}
+                .chips=${heroChips}
                 .historyCache=${this._historyCache}
                 .device=${parentDevice}
                 .hass=${this.hass}
@@ -637,13 +655,13 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 @toggle-graph=${(e: CustomEvent) => this._toggleMetricGraph(e.detail.metric)}
               ></growspace-header-hero-ui>
             `
-          : ''}
-        ${metrics.secondaryChips.length > 0
-          ? html`
-              ${isMobile
+                : ''}
+        ${secondaryChips.length > 0
                 ? html`
+              ${isMobile
+                        ? html`
                     <growspace-header-hero-ui
-                      .chips=${metrics.secondaryChips}
+                      .chips=${secondaryChips}
                       .historyCache=${this._historyCache}
                       .device=${parentDevice}
                       .hass=${this.hass}
@@ -652,32 +670,32 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                       @toggle-graph=${(e: CustomEvent) => this._toggleMetricGraph(e.detail.metric)}
                     ></growspace-header-hero-ui>
                   `
-                : html`
+                        : html`
                     <growspace-header-secondary-ui
-                      .chips=${metrics.secondaryChips}
+                      .chips=${secondaryChips}
                       @toggle-graph=${(e: CustomEvent) => this._toggleMetricGraph(e.detail.metric)}
                     ></growspace-header-secondary-ui>
                   `}
             `
-          : ''}
+                : ''}
       </div>
     `;
-  }
-
-  private _handleError = (error: Error, errorInfo: unknown): void => {
-    console.error('Growspace Subarea Card caught error:', error, errorInfo);
-    if (this.hass) {
-      this.hass.callService('system_log', 'write', {
-        message: `Growspace Subarea Card Error: ${error.message}`,
-        level: 'error',
-        logger: 'lovelace_growspace_manager_card',
-      });
     }
-  };
+
+    private _handleError = (error: Error, errorInfo: unknown): void => {
+        console.error('Growspace Subarea Card caught error:', error, errorInfo);
+        if (this.hass) {
+            this.hass.callService('system_log', 'write', {
+                message: `Growspace Subarea Card Error: ${error.message}`,
+                level: 'error',
+                logger: 'lovelace_growspace_manager_card',
+            });
+        }
+    };
 }
 
 declare global {
-  interface HTMLElementTagNameMap {
-    'growspace-subarea-card': GrowspaceSubareaCard;
-  }
+    interface HTMLElementTagNameMap {
+        'growspace-subarea-card': GrowspaceSubareaCard;
+    }
 }

@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiDelete, mdiClose } from '@mdi/js';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 /**
  * Reusable confirmation dialog for delete operations
@@ -51,7 +52,7 @@ export class ConfirmDeleteDialog extends LitElement {
     p {
       margin: 0 0 var(--spacing-lg) 0;
       color: var(--secondary-text-color);
-      font-size: 0.95rem;
+      font-size: var(--font-size-md);
       line-height: 1.5;
     }
 
@@ -67,7 +68,7 @@ export class ConfirmDeleteDialog extends LitElement {
       gap: 6px;
       padding: 10px 20px;
       border-radius: var(--border-radius-sm);
-      font-size: 0.95rem;
+      font-size: var(--font-size-md);
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s;
@@ -98,6 +99,8 @@ export class ConfirmDeleteDialog extends LitElement {
       height: 18px;
       fill: currentColor;
     }
+
+    ${reducedMotion}
   `;
 
   private _handleCancel(e: Event) {

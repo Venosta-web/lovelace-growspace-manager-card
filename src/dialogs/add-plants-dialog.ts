@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
@@ -24,6 +24,7 @@ export class AddPlantsDialog extends LitElement {
 
   @property({ type: String }) strain = '';
   @property({ type: String }) phenotype = '';
+  @property({ type: String }) libraryError = '';
   @state() private addToLibrary = false;
   @property({ type: Number }) amount = 1;
   @property({ type: Number }) start_number = 1;
@@ -52,12 +53,12 @@ export class AddPlantsDialog extends LitElement {
       }
       .explanation-card {
         background: rgba(var(--md3-sys-color-primary-container-rgb, 103, 80, 164), 0.1);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 16px;
         display: flex;
         gap: 12px;
         align-items: flex-start;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         color: var(--md3-sys-color-on-surface-variant);
         border: 1px solid rgba(var(--md3-sys-color-primary-rgb), 0.1);
       }
@@ -118,6 +119,7 @@ export class AddPlantsDialog extends LitElement {
   }
 
   private _confirm() {
+    this.libraryError = '';
     if (this.growspaceDevice) {
       const totalSlots =
         (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plantsPerRow || 0);
@@ -256,7 +258,7 @@ export class AddPlantsDialog extends LitElement {
                 class="toggle-container"
                 style="margin-top: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
               >
-                <span style="font-size: 0.95rem; color: var(--secondary-text-color);"
+                <span style="font-size: var(--font-size-md); color: var(--secondary-text-color);"
                   >Add to Strain Library</span
                 >
                 <md3-switch
@@ -266,6 +268,8 @@ export class AddPlantsDialog extends LitElement {
                   ?disabled=${!this.strain}
                 ></md3-switch>
               </div>
+
+              ${this.libraryError ? html`<ha-alert alert-type="error">${this.libraryError}</ha-alert>` : nothing}
 
               <div class="row-col-grid">
                 <md3-number-input

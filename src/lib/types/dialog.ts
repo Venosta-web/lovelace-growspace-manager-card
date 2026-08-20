@@ -1,7 +1,32 @@
 import type { PlantEntity, PlantAttributes, StrainEntry } from '../../features/plants/types';
 import type { SensorGroup } from '../../features/environment/types';
+import type { VisionCheckupConfig } from '../../slices/camera';
+import type {
+  AcInfinityDevice,
+  AcInfinityGrowLight,
+  CirculationFanConfig,
+  ExhaustFanConfig,
+  GrowLightConfig,
+} from '../../slices/growspace/schema';
+
+export type { VisionCheckupConfig };
+export type { CirculationFanConfig };
+export type { ExhaustFanConfig };
+export type { AcInfinityDevice };
+
+export interface VisionCheckupResult {
+  severity: string;
+  check_type: string;
+  timestamp: string;
+  analysis: string;
+  issues_detected: string[];
+  recommendations: string[];
+  snapshot_paths: string[];
+}
 
 export interface AddPlantDialogState {
+  /** Target growspace, captured at open time (ADR-0027). */
+  growspaceId?: string;
   row: number;
   col: number;
   strain?: string;
@@ -17,6 +42,8 @@ export interface AddPlantDialogState {
 }
 
 export interface AddPlantsDialogState {
+  /** Target growspace, captured at open time (ADR-0027). */
+  growspaceId?: string;
   strain?: string;
   phenotype?: string;
   amount?: number;
@@ -57,114 +84,59 @@ export interface EnvironmentConfigDialogState {
   deviceId: string;
 }
 
-export interface EnvironmentConfigData {
-  selectedGrowspaceId: string;
-
-  // Basic sensors (multi)
-  temperatureSensors: string[];
-  humiditySensors: string[];
-  vpdSensors: string[];
-  co2Sensor: string;
-  soilMoistureSensor: string;
-
-  // Legacy singular (backward compat)
-  temperatureSensor: string;
-  humiditySensor: string;
-  vpdSensor: string;
-
-  // Fans
-  circulationFanEntity: string;
-  circulationFanEntities: string[];
-  exhaustEntity: string;
-  exhaustFanEntities: string[];
-
-  stressThreshold: number;
-  moldThreshold: number;
-
-  // Lights
-  lightSensor: string;
-  lightSensors: string[];
-
-  // Humidifier
-  humidifierEntity: string;
-  humidifierEntities: string[];
-  humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  humidifierControlEnabled: boolean;
-
-  // Dehumidifier
-  dehumidifierEntity: string;
-  dehumidifierEntities: string[];
-  dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  dehumidifierControlEnabled: boolean;
-
-  sensorGroups?: SensorGroup[];
-  sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
-  irrigationTanks?: any[];
-  cameraEntities?: string[];
-  lungroomTempSensors?: string[];
-  visionCheckupConfig?: VisionCheckupConfig;
-
-  // Advanced / irrigation monitoring sensors
-  substrateTemperatureSensors?: string[];
-  phSensors?: string[];
-  feedEcSensors?: string[];
-  substrateEcSensors?: string[];
-  runoffEcSensors?: string[];
-  drainVolumeSensors?: string[];
-  irrigationFlowSensors?: string[];
-  powerSensors?: string[];
-  energySensors?: string[];
-}
-
-export interface VisionCheckupConfig {
-  enabled: boolean;
-  early_check_offset_minutes: number;
-  mid_check_hours: number;
-  late_check_offset_minutes: number;
-}
-
-export interface VisionCheckupResult {
-  timestamp: string;
-  check_type: 'early' | 'mid' | 'late' | 'manual';
-  analysis: string;
-  issues_detected: string[];
-  severity: 'none' | 'low' | 'medium' | 'high' | 'critical';
-  recommendations: string[];
-  snapshot_paths: string[];
-}
-
 export interface VisionCheckupConfigEventDetail {
   growspaceId: string;
   visionCheckupConfig: VisionCheckupConfig;
 }
 
+/**
+ * Sparse environment patch (ADR-0032).
+ *
+ * Only `selectedGrowspaceId` is guaranteed — it routes the command. Every other
+ * key is present exactly when the user edited it, and a present key carries a
+ * deliberate value, including an empty one. Consumers must branch on key
+ * *presence* (`'key' in detail`), never on truthiness or array length, or
+ * untouched fields get rewritten and deliberate clears get dropped.
+ *
+ * The humidity control flags are deliberately absent: they are immediate-persist
+ * (`set_humidifier_control` / `set_dehumidifier_control`) and must never be
+ * re-sent by the buffered Save.
+ */
 export interface EnvironmentConfigEventDetail {
   selectedGrowspaceId: string;
   // Multi sensors
-  temperatureSensors: string[];
-  humiditySensors: string[];
+  temperatureSensors?: string[];
+  humiditySensors?: string[];
   vpdSensors?: string[];
   co2Sensor?: string | null;
   soilMoistureSensor?: string | null;
+  // Acceptable Moisture Band — only ever present as a complete pair.
+  soilMoistureMin?: number | null;
+  soilMoistureMax?: number | null;
   // Fans
   circulationFanEntity?: string | null;
   circulationFanEntities?: string[];
   exhaustEntity?: string | null;
   exhaustFanEntities?: string[];
-  stressThreshold: number;
-  moldThreshold: number;
+  exhaustFanAcInfinityDevices?: AcInfinityDevice[];
+  circulationFanAcInfinityDevices?: AcInfinityDevice[];
+  stressThreshold?: number | null;
+  moldThreshold?: number | null;
   lightSensor?: string | null;
   lightSensors?: string[];
   // Humidifier
   humidifierEntity?: string | null;
   humidifierEntities?: string[];
   humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  humidifierControlEnabled: boolean;
+  humidifierAcInfinityDevices?: AcInfinityDevice[];
   // Dehumidifier
   dehumidifierEntity?: string | null;
   dehumidifierEntities?: string[];
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  dehumidifierControlEnabled: boolean;
+  dehumidifierAcInfinityDevices?: AcInfinityDevice[];
+  growlightEntities?: string[];
+  growlightAcInfinityDevices?: AcInfinityGrowLight[];
+  growlightConfig?: GrowLightConfig;
   sensorGroups?: SensorGroup[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   irrigationTanks?: any[];
@@ -174,26 +146,39 @@ export interface EnvironmentConfigEventDetail {
   substrateTemperatureSensors?: string[];
   phSensors?: string[];
   feedEcSensors?: string[];
-  substrateEcSensors?: string[];
+  bulkEcSensors?: string[];
+  poreEcSensors?: string[];
   runoffEcSensors?: string[];
   drainVolumeSensors?: string[];
   irrigationFlowSensors?: string[];
   powerSensors?: string[];
   energySensors?: string[];
+  circulationFanConfig?: CirculationFanConfig;
+  exhaustFanConfig?: ExhaustFanConfig;
+  vpdOptimalOverrides?: Record<
+    string,
+    { day: { low: number; high: number }; night: { low: number; high: number } }
+  >;
+  lstOffset?: number;
 }
 
 export interface ConfigDialogState {
   currentTab:
     | 'growspaces'
+    | 'notifications'
     | 'sensors'
     | 'climate'
+    | 'growlight'
     | 'humidity'
     | 'irrigation'
     | 'tanks'
     | 'vision'
     | 'heatmap'
-    | 'subareas';
-  environmentData: EnvironmentConfigData;
+    | 'subareas'
+    | 'vpd_targets';
+  growspaceId: string;
+  /** Optional deep-link: a `data-scroll-target` value to scroll into view + pulse. */
+  scrollToField?: string;
 }
 
 export interface GrowMasterDialogState {
@@ -235,6 +220,8 @@ export interface IPMDialogState {
   plantIds?: string[];
 }
 
+export type QrTarget = 'web' | 'deeplink';
+
 export interface PrintLabelDialogState {
   plantId?: string;
   strainName?: string;
@@ -243,6 +230,10 @@ export interface PrintLabelDialogState {
   breeder?: string;
   breederLogo?: string;
   deviceId?: string;
+  defaultFields?: Partial<LabelFieldVisibility>;
+  defaultSizeId?: LabelSizeId;
+  defaultDensity?: PrintDensity;
+  defaultQrTarget?: QrTarget;
 }
 
 export interface BatchPrintLabelsDialogState {
@@ -264,23 +255,39 @@ export interface SnapshotsDialogState {
   growspaceId: string;
 }
 
-export interface CropSteeringDialogState {
-  growspaceId: string;
-}
-
-export interface ECRampDialogState {
-  growspaceId?: string;
-}
-
-export interface GrowReportDialogState {
-  growspaceId: string;
-}
-
 export interface BatchCloneDialogState {
   plantIds: string[];
 }
 
 export interface IrrigationDialogState {
+  growspaceId?: string;
   initialTab?: string;
   scrollToField?: string;
+}
+
+export type LabelSizeId = '50x30' | '40x30' | '50x50' | '50x80' | '50x15';
+
+export type PrintDensity = 'low' | 'normal' | 'high';
+
+export interface LabelFieldVisibility {
+  name: boolean;
+  phenotype: boolean;
+  breeder: boolean;
+  lineage: boolean;
+  startDate: boolean;
+  stageAge: boolean;
+  plantId: boolean;
+  logo: boolean;
+  qr: boolean;
+}
+
+export interface LabelFieldValues {
+  name: string;
+  phenotype: string;
+  breeder: string;
+  lineage: string;
+  startDate: string;
+  stageAge: string;
+  plantId: string;
+  logo: string;
 }

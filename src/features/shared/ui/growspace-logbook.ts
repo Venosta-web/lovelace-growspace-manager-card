@@ -59,15 +59,15 @@ export class GrowspaceLogbook extends LitElement {
       .log-container::-webkit-scrollbar {
         width: 8px;
         background: rgba(255, 255, 255, 0.05);
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
       }
       .log-container::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.15);
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
       }
       .event-card {
         background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 16px;
         margin-bottom: 12px;
         border: 1px solid rgba(255, 255, 255, 0.05);
@@ -107,7 +107,7 @@ export class GrowspaceLogbook extends LitElement {
         opacity: 0.6;
         background: rgba(255, 255, 255, 0.1);
         padding: 2px 8px;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
       }
       .event-details {
         display: grid;
@@ -137,7 +137,7 @@ export class GrowspaceLogbook extends LitElement {
         display: inline-block;
         background: rgba(255, 255, 255, 0.08);
         padding: 2px 8px;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs, 4px);
         margin-right: 6px;
         margin-bottom: 4px;
       }
@@ -158,7 +158,7 @@ export class GrowspaceLogbook extends LitElement {
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
         padding: 6px 16px;
-        border-radius: 20px;
+        border-radius: var(--border-radius-full, 9999px);
         font-size: 0.9rem;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -192,11 +192,11 @@ export class GrowspaceLogbook extends LitElement {
     const t = this._normalize(type);
 
     if (cat === 'environmental_report') {
-      if (t.includes('night')) return '#3f51b5'; // Indigo for Night
-      return '#ffc107'; // Amber for Day
+      if (t.includes('night')) return 'var(--cycle-night, #7986cb)';
+      return 'var(--cycle-day, #ffeb3b)';
     }
 
-    if (t.includes('ipm')) return '#9c27b0';
+    if (t.includes('ipm')) return 'var(--gm-ipm-color, #9c27b0)';
     if (cat === 'training' || t.includes('training')) return 'var(--gm-warning-color, #ff9800)';
     if (t.includes('water') || t.includes('irrigation') || t.includes('nutrient'))
       return 'var(--gm-info-color, #2196f3)';
@@ -210,8 +210,19 @@ export class GrowspaceLogbook extends LitElement {
     return 'var(--accent-color, #4caf50)';
   }
 
+  private _isPositiveDirectionMetric(sensorType?: string): boolean {
+    const t = sensorType?.toLowerCase() ?? '';
+    return (
+      t === 'optimal' ||
+      t.includes('water') ||
+      t.includes('irrigation') ||
+      t.includes('drain') ||
+      t.includes('nutrient')
+    );
+  }
+
   private _getSeverityColor(severity: number, sensorType?: string): string {
-    if (sensorType?.toLowerCase() === 'optimal') {
+    if (this._isPositiveDirectionMetric(sensorType)) {
       if (severity >= 0.9) return 'var(--success-color, #4CAF50)';
       if (severity >= 0.75) return 'var(--warning-color)';
       return 'var(--error-color)';
@@ -432,7 +443,8 @@ export class GrowspaceLogbook extends LitElement {
 
                   const startTime =
                     (event as GrowspaceEvent & { timestamp?: string }).timestamp ||
-                    event.start_time;
+                    event.start_time ||
+                    '';
                   const index = (this._events || []).indexOf(event);
                   const eventColor = this._getEventColor(event.category, event.sensor_type);
 
@@ -449,9 +461,9 @@ export class GrowspaceLogbook extends LitElement {
                           <div class="event-type" style="color: ${eventColor}">${type}</div>
                           <div class="event-time">${this._formatTime(startTime)}</div>
                         </div>
-                        ${event.duration_sec > 0
+                        ${(event.duration_sec ?? 0) > 0
                           ? html`<div class="event-duration">
-                              ${formatDuration(event.duration_sec)}
+                              ${formatDuration(event.duration_sec!)}
                             </div>`
                           : nothing}
                       </div>
@@ -462,7 +474,7 @@ export class GrowspaceLogbook extends LitElement {
                             ? html`
                                 <div
                                   class="note-text"
-                                  style="font-size: 0.95rem; opacity: 1; margin-bottom: 8px;"
+                                  style="font-size: var(--font-size-md); opacity: 1; margin-bottom: 8px;"
                                 >
                                   ${(event as GrowspaceEvent & { notes?: string }).notes}
                                 </div>
@@ -488,7 +500,7 @@ export class GrowspaceLogbook extends LitElement {
                                 (event as GrowspaceEvent & { images?: string[] }).images!.length > 0
                                   ? html`
                                       <div
-                                        style="font-size: 0.8rem; opacity: 0.6; font-style: italic;"
+                                        style="font-size: var(--font-size-supporting); opacity: 0.6; font-style: italic;"
                                       >
                                         ${(event as GrowspaceEvent & { images?: string[] }).images!
                                           .length}
@@ -513,16 +525,16 @@ export class GrowspaceLogbook extends LitElement {
                               : nothing}
                         </div>
 
-                        ${!isNote && event.severity > 0.5 && event.category !== 'training'
+                        ${!isNote && (event.severity ?? 0) > 0.5 && event.category !== 'training'
                           ? html`
                               <div
                                 class="event-probability"
                                 style="color: ${this._getSeverityColor(
-                                  event.severity,
+                                  event.severity!,
                                   event.sensor_type
                                 )}"
                               >
-                                ${formatProbability(event.severity)}
+                                ${formatProbability(event.severity!)}
                               </div>
                             `
                           : nothing}

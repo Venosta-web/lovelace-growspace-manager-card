@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { DragControls } from 'three/examples/jsm/controls/DragControls.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 
 import { BaseRenderer, RendererContext } from './renderers/base-renderer';
@@ -14,6 +13,7 @@ import { PlantRenderer } from './renderers/plant-renderer';
 import { EquipmentRenderer } from './renderers/equipment-renderer';
 import { TankRenderer } from './renderers/tank-renderer';
 import { VpdCloudRenderer } from './renderers/vpd-cloud-renderer';
+import { rampPalettesEqual, type RampPalette } from '../../styles/environment-ramp';
 
 export class SceneManager {
   public scene: THREE.Scene;
@@ -131,7 +131,7 @@ export class SceneManager {
 
   public update(
     device: GrowspaceDevice,
-    hass: HomeAssistant,
+    hass: HomeAssistant | undefined,
     selectedMetric: string,
     historyData: Record<string, unknown[]>,
     timelineIndex: number,
@@ -147,6 +147,18 @@ export class SceneManager {
     if (visibility) this.context.visibility = visibility;
 
     this.renderScene();
+  }
+
+  /**
+   * Every renderer shares this one context object, so mutating it here is enough to
+   * reach the cloud shader. Returns whether the palette actually changed, so the host
+   * can skip a scene render on a `hass` tick that leaves the theme alone.
+   */
+  public setRampPalette(palette: RampPalette): boolean {
+    const current = this.context.rampPalette;
+    if (current && rampPalettesEqual(current, palette)) return false;
+    this.context.rampPalette = palette;
+    return true;
   }
 
   public setCallbacks(callbacks: {

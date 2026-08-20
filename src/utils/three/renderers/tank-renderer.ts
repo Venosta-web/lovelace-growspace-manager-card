@@ -1,19 +1,26 @@
 import * as THREE from 'three';
 import { BaseRenderer } from './base-renderer';
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { defaultTankCoords } from '../default-placement';
+import { rampVar, resolveRamp, type RampRole } from '../../../styles/environment-ramp';
+
+/** A tank reports one of two states, and each is a stop the environment ramp already owns. */
+const TANK_ROLE = { warning: 'farHigh', normal: 'low' } as const satisfies Record<string, RampRole>;
 
 export class TankRenderer extends BaseRenderer {
   private _tankWaves: THREE.Mesh[] = [];
 
   public render() {
     this._tankWaves = [];
-    const { device, volatileGroup, hass, visibility } = this.context;
+    const { device, volatileGroup, visibility } = this.context;
     const width = device.dimensions?.width ?? 120;
-    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+    const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
+    const height = device.dimensions?.height ?? 200;
     const env = device.environmentAttributes;
     const tanks = env?.irrigationTanks || [];
     const sensorCoords = env?.sensorCoordinates || {};
 
+    const palette = this.context.rampPalette ?? resolveRamp(null);
     const currentTankIds = new Set<string>();
 
     const cMat = this.getSharedMaterial(
@@ -51,15 +58,21 @@ export class TankRenderer extends BaseRenderer {
       () => new THREE.PlaneGeometry(30 * 0.94, 30 * 0.94, 20, 20)
     );
 
-    tanks.forEach((tank: any) => {
+    tanks.forEach((tank, index) => {
       const entityId = tank.sensorEntity;
       currentTankIds.add(entityId);
-      const coords = sensorCoords[entityId] || { x: 0, y: depth / 2, z: 0 };
+      const coords =
+        sensorCoords[entityId] ?? defaultTankCoords(index, tanks.length, { width, depth, height });
 
       const isWarning = tank.isWarning;
       const fill = tank.fillLevel || 0;
-      const liquidColor = isWarning ? 0xff4422 : 0x00aaff;
-      const hex = isWarning ? '#f44336' : '#2196f3';
+      // One role, two representations: the mesh takes it resolved, the label as CSS.
+      const role = isWarning ? TANK_ROLE.warning : TANK_ROLE.normal;
+      // A resolved string, not a colour space decision: `Color.set(css)` routes to
+      // `setStyle` with three's default, which is what a lit MeshStandardMaterial wants.
+      // The cloud shader's uniform is the opposite case — do not copy `writeStop` here.
+      const liquidColor = palette[role];
+      const labelColor = rampVar(role);
 
       let tankGroup = this.cache.get(entityId) as THREE.Group;
       if (!tankGroup) {
@@ -146,10 +159,10 @@ export class TankRenderer extends BaseRenderer {
       if (label) {
         label.visible = visibility?.tooltips ?? true;
         const newHTML = `
-                    <div class="sensor-icon" style="background: ${hex}33; border-color: ${hex}">
-                        <ha-icon icon="mdi:barrel" style="color: ${hex}; --mdc-icon-size: 10px"></ha-icon>
+                    <div class="sensor-icon" style="background: color-mix(in srgb, ${labelColor} 20%, transparent); border-color: ${labelColor}">
+                        <ha-icon icon="mdi:barrel" style="color: ${labelColor}; --mdc-icon-size: 10px"></ha-icon>
                     </div>
-                    <span style="color: white; font-weight: 800; font-size: 13px;">${Math.round(fill)}%</span>
+                    <span style="color: white; font-weight: 800; font-size: var(--font-size-supporting);">${Math.round(fill)}%</span>
                 `;
         if (label.element.innerHTML !== newHTML) label.element.innerHTML = newHTML;
       }
@@ -170,7 +183,7 @@ export class TankRenderer extends BaseRenderer {
     });
   }
 
-  public animate(deltaTime: number) {
+  public animate(_deltaTime: number) {
     if (this._tankWaves.length > 0) {
       const time = Date.now() * 0.003;
       this._tankWaves.forEach((wave) => {

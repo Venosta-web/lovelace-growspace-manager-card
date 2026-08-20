@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 @customElement('md3-switch')
 export class Md3Switch extends LitElement {
@@ -13,9 +14,9 @@ export class Md3Switch extends LitElement {
       --md-switch-width: 52px;
       --md-switch-height: 32px;
       --md-switch-handle-size: 24px;
-      --md-switch-track-color-on: var(--primary-color, #2196f3);
+      --md-switch-track-color-on: var(--gm-primary-color);
       --md-switch-track-color-off: rgba(255, 255, 255, 0.1);
-      --md-switch-handle-color: #fff;
+      --md-switch-handle-color: var(--text-primary);
     }
 
     button {
@@ -23,7 +24,7 @@ export class Md3Switch extends LitElement {
       position: relative;
       width: var(--md-switch-width);
       height: var(--md-switch-height);
-      border-radius: calc(var(--md-switch-height) / 2);
+      border-radius: var(--border-radius-full, 9999px);
       background: var(--md-switch-track-color-off);
       cursor: pointer;
       transition: background-color 0.2s;
@@ -52,6 +53,8 @@ export class Md3Switch extends LitElement {
     :host([checked]) .handle {
       transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
     }
+
+    ${reducedMotion}
   `;
 
   private _handleClick() {

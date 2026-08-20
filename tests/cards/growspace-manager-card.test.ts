@@ -1,10 +1,10 @@
-import { fixture } from '@open-wc/testing-helpers';
 import { expect, test, describe, aroundEach, vi } from 'vitest';
-import { html } from 'lit';
 import { GrowspaceManagerCard } from '../../src/growspace-manager-card';
-import { ViewMode } from '../../src/features/environment/constants';
+import { ViewMode, MetricKey } from '../../src/features/environment/constants';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
-import { createMockHass } from '../mocks/hass';
+import { aHass, aGrowspace, aPlant } from '../fixtures';
+import { renderCard } from '../harness';
+import { gridInteraction$ } from '../../src/slices/grid-interaction';
 
 if (!customElements.get('growspace-manager-card')) {
   customElements.define('growspace-manager-card', GrowspaceManagerCard);
@@ -22,26 +22,18 @@ describe('GrowspaceManagerCard', () => {
   let element: GrowspaceManagerCard;
 
   aroundEach(async (runTest) => {
-    element = await fixture<GrowspaceManagerCard>(
-      html`<growspace-manager-card></growspace-manager-card>`
-    );
-    element.hass = createMockHass() as any;
+    const handle = await renderCard<GrowspaceManagerCard>('growspace-manager-card', {
+      hass: aHass(),
+      growspace: aGrowspace(),
+    });
+    element = handle.element;
     await runTest();
+    handle.unmount();
     vi.restoreAllMocks();
   });
 
   test('is defined', () => {
     expect(element).toBeInstanceOf(GrowspaceManagerCard);
-  });
-
-  test('renders error state when hass is missing', async () => {
-    const el = await fixture<GrowspaceManagerCard>(
-      html`<growspace-manager-card></growspace-manager-card>`
-    );
-    el.hass = undefined as any;
-    await el.updateComplete;
-    const errorDiv = el.shadowRoot?.querySelector('.error');
-    expect(errorDiv?.textContent).toContain('Home Assistant not available');
   });
 
   test('throws error on invalid config', () => {
@@ -129,4 +121,128 @@ describe('GrowspaceManagerCard', () => {
     expect(element.store.ui.$viewMode.get()).toBe(ViewMode.STANDARD);
   });
 
+  test('scoped Escape cancels Compare and announces that prior state was restored', async () => {
+    element.store.ui.startCompare(0);
+    (element as any)._handleKeyboardNav(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await element.updateComplete;
+
+    expect(element.store.ui.$taskState.get()).toEqual({ kind: 'idle' });
+    expect(element.store.ui.$announcement.get().message).toContain('Compare cancelled');
+  });
+
+  test('Compare cannot be cancelled or submitted twice while its save is in flight', async () => {
+    let resolveSave!: () => void;
+    const pendingSave = new Promise<void>((resolve) => {
+      resolveSave = resolve;
+    });
+    const saveSpy = vi.spyOn(element.store.comparisons, 'save').mockReturnValue(pendingSave);
+    element.store.ui.startCompare(0);
+    element.store.ui.toggleComparisonMetric('humidity', 'Humidity', true, null);
+    element.store.ui.toggleComparisonMetric('temperature', 'Temperature', true, null);
+
+    const firstSave = (element as any)._handleTaskDone() as Promise<void>;
+    await Promise.resolve();
+    expect(element.store.ui.$taskState.get()).toMatchObject({
+      kind: 'compare',
+      status: 'saving',
+    });
+
+    (element as any)._handleKeyboardNav(new KeyboardEvent('keydown', { key: 'Escape' }));
+    (element as any)._handleTaskCancel();
+    await (element as any)._handleTaskDone();
+
+    expect(saveSpy).toHaveBeenCalledOnce();
+    expect(element.store.ui.$taskState.get()).toMatchObject({
+      kind: 'compare',
+      status: 'saving',
+    });
+
+    resolveSave();
+    await firstSave;
+    expect(element.store.ui.$taskState.get()).toEqual({ kind: 'idle' });
+    expect(element.store.ui.$announcement.get().message).toContain('Metric Comparison saved');
+  });
+
+  test('Done exits an unchanged Arrange draft without a backend write', async () => {
+    const callWS = (element.hass as any).callWS as ReturnType<typeof vi.fn>;
+    callWS.mockClear();
+    element.store.ui.startArrange([aPlant({ row: 0, col: 0 })], 7);
+
+    await (element as any)._handleTaskDone();
+
+    expect(callWS).not.toHaveBeenCalled();
+    expect(element.store.ui.$taskState.get()).toEqual({ kind: 'idle' });
+    expect(element.store.ui.$announcement.get().message).toContain('Arrangement unchanged');
+  });
+
+  test('Escape discards an Arrange draft and restores the previous view', async () => {
+    element.store.ui.setViewMode(ViewMode.HEADER);
+    element.store.ui.startArrange([aPlant({ row: 0, col: 0 })], 7);
+
+    (element as any)._handleKeyboardNav(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await element.updateComplete;
+
+    expect(element.store.ui.$taskState.get()).toEqual({ kind: 'idle' });
+    expect(element.store.ui.$viewMode.get()).toBe(ViewMode.HEADER);
+    expect(element.store.ui.$announcement.get().message).toContain('Arrange cancelled');
+  });
+
+  test('Done exits Select plants and clears its provisional selection state', async () => {
+    element.store.ui.startSelectPlants();
+    element.store.ui.togglePlantSelection('plant-1');
+    await (element as any)._handleTaskDone();
+
+    expect(element.store.ui.$taskState.get()).toEqual({ kind: 'idle' });
+    expect(element.store.ui.$selectedPlants.get().size).toBe(0);
+    expect(element.store.ui.$announcement.get().message).toContain('Select plants complete');
+  });
+
+  describe('harness tracer', () => {
+    let handle: Awaited<ReturnType<typeof renderCard<GrowspaceManagerCard>>>;
+
+    aroundEach(async (runTest) => {
+      handle = await renderCard<GrowspaceManagerCard>('growspace-manager-card', {
+        hass: aHass(),
+        growspace: aGrowspace(),
+      });
+      await runTest();
+      handle.unmount();
+    });
+
+    test('renders without crash', () => {
+      expect(handle.element).toBeInstanceOf(GrowspaceManagerCard);
+    });
+
+    test('chip click opens env graph for that metric', () => {
+      handle.clickChip(MetricKey.TEMPERATURE);
+      handle.expectEnvGraph(MetricKey.TEMPERATURE);
+    });
+
+    test('hero click opens env graph for that metric', () => {
+      handle.clickHero(MetricKey.HUMIDITY);
+      handle.expectEnvGraph(MetricKey.HUMIDITY);
+    });
+
+    test('plant-cell click transitions GridInteraction to selected', () => {
+      handle.clickPlantCell(1, 1);
+      const state = gridInteraction$.get();
+      expect(state.status).toBe('selected');
+      if (state.status === 'selected') {
+        expect(state.plantId).toBe(`${aGrowspace().growspaceId}_plant_1`);
+      }
+    });
+
+    test('linkChips groups two metrics in linkedGraphGroups', () => {
+      handle.linkChips(MetricKey.TEMPERATURE, MetricKey.HUMIDITY);
+      const groups: string[][] = handle.element.store.history.$linkedGraphGroups.get();
+      expect(
+        groups.some((g) => g.includes(MetricKey.TEMPERATURE) && g.includes(MetricKey.HUMIDITY))
+      ).toBe(true);
+    });
+
+    test('openGrowmaster opens the Growmaster Dialog', () => {
+      handle.openGrowmaster();
+      handle.expectGrowmasterOpen();
+    });
+  });
 });

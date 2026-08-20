@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { ChartUtils } from '../../src/utils/chart-utils';
 
+// The sparkline emits colour as a CSS string, so it carries the role token with the
+// token's own value as the fallback (ADR 0041). Named here so the assertions read as
+// "this is the optimal role" rather than pinning a hex.
+const VPD_OPTIMAL = 'var(--success-color, #4caf50)';
+const VPD_DANGER = 'var(--error-color, #f44336)';
+
 describe('ChartUtils', () => {
     describe('generateSparklinePath', () => {
         it('should return empty string for insufficient data', () => {
@@ -74,9 +80,9 @@ describe('ChartUtils', () => {
 
     describe('getSparklineColor', () => {
         it('should return VPD status colors', () => {
-            expect(ChartUtils.getSparklineColor('vpd', 'optimal')).toBe('#4caf50');
-            expect(ChartUtils.getSparklineColor('vpd', 'warning')).toBe('#ff9800');
-            expect(ChartUtils.getSparklineColor('vpd', 'danger')).toBe('#f44336');
+            expect(ChartUtils.getSparklineColor('vpd', 'optimal')).toBe(VPD_OPTIMAL);
+            expect(ChartUtils.getSparklineColor('vpd', 'warning')).toBe('var(--gm-warning-color, #ff9800)');
+            expect(ChartUtils.getSparklineColor('vpd', 'danger')).toBe(VPD_DANGER);
         });
 
         it('should return default colors for other metrics', () => {
@@ -132,14 +138,14 @@ describe('ChartUtils', () => {
                 data, 100, 50, dnThresholds,
                 [{ state: 'on', last_changed: '2023-01-01T09:00:00Z' }] // Always ON
             );
-            expect(segmentsDay[0].color).toBe('#ff9800'); // Warning
+            expect(segmentsDay[0].color).toBe('var(--gm-warning-color, #ff9800)'); // Warning
 
             // Case 2: All Night (Light OFF) -> Expect Optimal (Green)
             const segmentsNight = ChartUtils.generateVpdSparklineSegments(
                 data, 100, 50, dnThresholds,
                 [{ state: 'off', last_changed: '2023-01-01T09:00:00Z' }] // Always OFF
             );
-            expect(segmentsNight[0].color).toBe('#4caf50'); // Optimal
+            expect(segmentsNight[0].color).toBe(VPD_OPTIMAL);
         });
 
         it('should handle raw HA history and internal normalization', () => {
@@ -152,7 +158,7 @@ describe('ChartUtils', () => {
             ];
             const segments = ChartUtils.generateVpdSparklineSegments(rawData, 100, 50, thresholds, rawLight);
             expect(segments.length).toBe(1);
-            expect(segments[0].color).toBe('#4caf50');
+            expect(segments[0].color).toBe(VPD_OPTIMAL);
         });
 
         it('should skip segments with only 1 point during transition', () => {
@@ -165,7 +171,7 @@ describe('ChartUtils', () => {
             // first segment: optimal (M p0 L p1), then p1 starts 'danger' segment but loop ends.
             // currentSegmentX will have [p1.x] and be length 1.
             expect(segments.length).toBe(1);
-            expect(segments[0].color).toBe('#4caf50');
+            expect(segments[0].color).toBe(VPD_OPTIMAL);
         });
     });
 
@@ -328,7 +334,7 @@ describe('ChartUtils', () => {
             ];
             const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, []);
             expect(segments.length).toBe(1);
-            expect(segments[0].color).toBe('#4caf50');
+            expect(segments[0].color).toBe(VPD_OPTIMAL);
         });
 
         describe('Coverage Gap Fillers', () => {
@@ -498,10 +504,10 @@ describe('ChartUtils', () => {
                     const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, [], '1h');
 
                     expect(segments.length).toBeGreaterThanOrEqual(4);
-                    expect(segments[0].color).toBe('#f44336'); // Danger
-                    expect(segments[1].color).toBe('#ff9800'); // Warning
-                    expect(segments[2].color).toBe('#4caf50'); // Optimal
-                    expect(segments[3].color).toBe('#ff9800'); // Warning
+                    expect(segments[0].color).toBe(VPD_DANGER);
+                    expect(segments[1].color).toBe('var(--gm-warning-color, #ff9800)'); // Warning
+                    expect(segments[2].color).toBe(VPD_OPTIMAL);
+                    expect(segments[3].color).toBe('var(--gm-warning-color, #ff9800)'); // Warning
                 });
             });
         });
