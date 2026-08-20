@@ -1,3 +1,10 @@
+# [1.1.0-next.161](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.160...v1.1.0-next.161) (2026-08-20)
+
+
+### Bug Fixes
+
+* enforce local test and typecheck hooks ([#683](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/683)) ([f63ed7c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/f63ed7c8392fda694b901bec5ade5acadc55b1be))
+
 # [1.1.0-next.160](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.159...v1.1.0-next.160) (2026-08-20)
 
 
