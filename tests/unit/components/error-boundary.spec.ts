@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ErrorBoundary } from '../../../src/components/error-boundary';
-import '../../../src/components/error-boundary';
+import { ErrorBoundary } from '../../../src/features/shared/ui/error-boundary';
+import '../../../src/features/shared/ui/error-boundary';
 
 describe('ErrorBoundary', () => {
     let element: ErrorBoundary;

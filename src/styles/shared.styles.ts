@@ -30,6 +30,7 @@ export const sharedStyles = css`
   }
 
   .glass-dialog-container {
+    box-sizing: border-box;
     border-radius: var(--border-radius-lg, 16px);
     overflow: hidden;
     background: var(--card-background-color, rgba(20, 20, 20, 0.85));

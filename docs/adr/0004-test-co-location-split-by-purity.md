@@ -1,0 +1,7 @@
+# Test files are split by purity, not co-located uniformly
+
+New pure-module tests (state machines, slices, utilities) live next to their source file (`src/foo/foo.test.ts`). Tests that mount Lit components via `fixture()` live in `tests/`. The vitest config already picks up both patterns.
+
+The alternative was a uniform co-location rule — all tests next to their source, regardless of whether they touch the DOM. That would have required moving ~70 existing component tests and mixed DOM-heavy tests into `src/`, making `src/` harder to read and the build exclusion rules more complex (the bundler already excludes `*.test.ts` but component tests pull in `@open-wc/testing-helpers` and other test-only deps that should never appear next to prod code).
+
+The pure/DOM split is already load-bearing in the codebase: `irrigation-dialog-sm.test.ts` is co-located because it tests a pure function with no browser setup; `add-plant-dialog.spec.ts` lives in `tests/unit/dialogs/` because it mounts a Lit element. Formalising this split as the convention makes the existing pattern explicit rather than inventing a new one. Existing tests in `tests/` are not migrated — the convention governs new files only. Pure-module specs in `tests/unit/` are also left in place; the churn of bulk-migrating 300+ existing specs outweighs the readability gain, and many target `store/*` modules slated for deletion per ADR-0001.

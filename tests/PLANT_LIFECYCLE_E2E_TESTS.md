@@ -12,11 +12,11 @@ Comprehensive end-to-end tests for multi-step plant lifecycle operations coverin
 
 ## Test Coverage Breakdown
 
-### 1. Mother → Clone Chain (3 tests)
+### 1. Plant Cloning Chain (3 tests)
 
-#### ✅ Should create mother plant and take clone
+#### ✅ Should create plant (Mother, Veg, or Flower) and take clone
 **Complete Workflow:**
-1. Create mother plant with stage='mother'
+1. Create plant with stage='mother', 'veg', or 'flower'
 2. Open plant overview dialog
 3. Click "Take Clone" button
 4. Clone dialog opens with mother info displayed
@@ -35,7 +35,7 @@ Comprehensive end-to-end tests for multi-step plant lifecycle operations coverin
 
 **Data Flow:**
 ```
-Mother Plant (any growspace)
+Source Plant (Mother, Veg, or Flower)
   ↓ Click "Take Clone"
   ↓ CloneDialog opens
   ↓ Select count (3) + target growspace
@@ -339,21 +339,21 @@ events.filter(e =>
 
 ### 6. Stage-Based Validations (3 tests)
 
-#### ✅ Should only show "Take Clone" button for mother plants
+#### ✅ Should only show "Take Clone" button for valid stages (Mother, Veg, Flower)
 **Validation Test:**
 1. Create veg plant (not mother)
 2. Open veg plant overview
 3. Look for "Take Clone" button
-4. Verify button NOT visible
+4. Verify button IS visible
 
 **Key Assertions:**
-- "Take Clone" absent for veg stage
-- Only mother stage shows button
+- "Take Clone" present for mother, veg, and flower stages
+- UI allows cloning from most vegetative and reproductive stages
 - UI enforces stage-based permissions
 
 **Button Visibility Rules:**
 ```typescript
-showTakeClone = (stage === 'mother')
+showTakeClone = ['mother', 'veg', 'flower'].includes(stage)
 showHarvest = (stage === 'flower')
 showFinishDrying = (stage === 'dry')
 showMove = (stage === 'clone')

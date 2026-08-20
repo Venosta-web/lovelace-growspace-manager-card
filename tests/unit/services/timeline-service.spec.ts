@@ -78,6 +78,34 @@ describe('TimelineService', () => {
             expect(consoleErrorSpy).toHaveBeenCalled();
             consoleErrorSpy.mockRestore();
         });
+
+        it('should sort using start_time when timestamp is absent', async () => {
+            const logs = [{ event_id: 'a', start_time: '2026-01-15T09:00:00Z', category: 'note' }];
+            const alerts = [{ event_id: 'b', start_time: '2026-01-15T11:00:00Z', category: 'alert' }];
+
+            mockHass.callWS.mockImplementation(async (msg: any) => {
+                if (msg.type === 'growspace_manager/get_log') return { gs1: logs };
+                return { gs1: alerts };
+            });
+
+            const result = await service.fetchGrowspaceEvents('gs1');
+
+            expect(result[0].event_id).toBe('b');
+            expect(result[1].event_id).toBe('a');
+        });
+
+        it('should sort events with neither timestamp nor start_time as equal (0)', async () => {
+            const logs = [{ event_id: 'x', category: 'note' }];
+            const alerts = [{ event_id: 'y', category: 'alert' }];
+
+            mockHass.callWS.mockImplementation(async (msg: any) => {
+                if (msg.type === 'growspace_manager/get_log') return { gs1: logs };
+                return { gs1: alerts };
+            });
+
+            const result = await service.fetchGrowspaceEvents('gs1');
+            expect(result).toHaveLength(2);
+        });
     });
 
     describe('addPlantNote', () => {
@@ -267,6 +295,19 @@ describe('TimelineService', () => {
             expect(result[1].event_id).toBe('x');
         });
 
+        it('should sort events with neither timestamp nor start_time as equal (0 fallback)', async () => {
+            const logs = [{ event_id: 'p', category: 'note' }];
+            const alerts = [{ event_id: 'q', category: 'alert' }];
+
+            mockHass.callWS.mockImplementation(async (msg: any) => {
+                if (msg.type === 'growspace_manager/get_log') return { p3: logs };
+                return { p3: alerts };
+            });
+
+            const result = await service.fetchPlantEvents('p3', 'gs1');
+            expect(result).toHaveLength(2);
+        });
+
         it('should rethrow errors', async () => {
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
             mockHass.callWS.mockRejectedValue(new Error('WS plant error'));
@@ -275,6 +316,39 @@ describe('TimelineService', () => {
 
             expect(consoleErrorSpy).toHaveBeenCalled();
             consoleErrorSpy.mockRestore();
+        });
+    });
+
+    describe('addGrowspaceNote', () => {
+        it('should add growspace note with all fields', async () => {
+            mockHass.callWS.mockResolvedValue(undefined);
+            const payload: NotePayload = {
+                notes: 'Tent A looking healthy',
+                images: ['snap.jpg'],
+            };
+
+            await service.addGrowspaceNote('gs_tent_a', payload);
+
+            expect(mockHass.callWS).toHaveBeenCalledWith({
+                type: 'growspace_manager/add_growspace_note',
+                growspace_id: 'gs_tent_a',
+                notes: 'Tent A looking healthy',
+                images: ['snap.jpg'],
+            });
+        });
+
+        it('should use empty array when images not provided', async () => {
+            mockHass.callWS.mockResolvedValue(undefined);
+            const payload: NotePayload = { notes: 'No images attached' };
+
+            await service.addGrowspaceNote('gs_tent_b', payload);
+
+            expect(mockHass.callWS).toHaveBeenCalledWith({
+                type: 'growspace_manager/add_growspace_note',
+                growspace_id: 'gs_tent_b',
+                notes: 'No images attached',
+                images: [],
+            });
         });
     });
 

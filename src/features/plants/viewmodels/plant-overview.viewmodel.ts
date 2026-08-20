@@ -6,12 +6,7 @@
  */
 
 import { computed, type ReadableAtom } from 'nanostores';
-import type {
-  PlantEntity,
-  PlantOverviewEditedAttributes,
-  GrowspaceEvent,
-  PlantTimelineEvent,
-} from '../../../types';
+import type { PlantEntity, PlantOverviewEditedAttributes, GrowspaceEvent } from '../../../types';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { PlantUtils } from '../../../utils/plant-utils';
 
@@ -56,7 +51,7 @@ export interface PlantOverviewViewModel {
   editedAttributes: PlantOverviewEditedAttributes;
 
   // UI state
-  activeTab: 'dashboard' | 'actions' | 'timeline';
+  activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
   isEditing: boolean;
   showAllDates: boolean;
   showDeleteConfirmation: boolean;
@@ -76,6 +71,9 @@ export interface PlantOverviewViewModel {
 
   // Available actions (computed based on stage)
   availableActions: ActionConfig[];
+
+  // Data for selectors
+  growspaceOptions: Record<string, string>;
 
   // Validation
   hasUnsavedChanges: boolean;
@@ -145,7 +143,9 @@ function processTimelineEvents(
   // Add logbook events for this plant
   const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
   logbookEvents
-    .filter((evt) => evt.plant_id === plantId || evt.growspace_id === plant.attributes?.growspace_id)
+    .filter(
+      (evt) => evt.plant_id === plantId || evt.growspace_id === plant.attributes?.growspace_id
+    )
     .forEach((evt) => {
       events.push({
         type: evt.category === 'note' ? 'note' : 'action',
@@ -249,8 +249,8 @@ function getAvailableActions(plant: PlantEntity): ActionConfig[] {
       id: 'training',
       label: 'Log Training',
       icon: 'mdiDumbbell',
-      enabled: stage === 'vegetative' || stage === 'flowering',
-      tooltip: stage !== 'vegetative' && stage !== 'flowering' ? 'Training only in veg/flower' : undefined,
+      enabled: stage === 'veg' || stage === 'flower',
+      tooltip: stage !== 'veg' && stage !== 'flower' ? 'Training only in veg/flower' : undefined,
     },
     {
       id: 'ipm',
@@ -263,8 +263,11 @@ function getAvailableActions(plant: PlantEntity): ActionConfig[] {
       id: 'clone',
       label: 'Take Clone',
       icon: 'mdiContentCopy',
-      enabled: stage === 'mother' || stage === 'vegetative',
-      tooltip: stage !== 'mother' && stage !== 'vegetative' ? 'Clone from mother or veg plants' : undefined,
+      enabled: stage === 'mother' || stage === 'veg' || stage === 'flower',
+      tooltip:
+        stage !== 'mother' && stage !== 'veg' && stage !== 'flower'
+          ? 'Clone from mother or veg and flower plants'
+          : undefined,
     },
     {
       id: 'print_label',
@@ -272,6 +275,14 @@ function getAvailableActions(plant: PlantEntity): ActionConfig[] {
       icon: 'mdiPrinter',
       enabled: stage !== 'harvested',
       tooltip: stage === 'harvested' ? 'Cannot print labels for harvested plants' : undefined,
+    },
+    {
+      id: 'pollinate',
+      label: 'Log Pollination',
+      icon: 'mdiDna',
+      enabled: stage === 'flower' || stage === 'flowering',
+      tooltip:
+        stage !== 'flower' && stage !== 'flowering' ? 'Only available in flower stage' : undefined,
     },
   ];
 
@@ -324,79 +335,82 @@ function canSaveAttributes(editedAttributes: PlantOverviewEditedAttributes): boo
 }
 
 /**
- * Create ViewModel for plant overview dialog
+ * Create ViewModel for plant overview dialog.
+ * Takes atoms for all inputs, allowing it to be used with a single persistent
+ * StoreController in the container component.
  */
-export function createPlantOverviewViewModel(
-  plant: PlantEntity,
-  editedAttributes: PlantOverviewEditedAttributes,
-  uiState: {
-    activeTab: 'dashboard' | 'actions' | 'timeline';
+export function createStablePlantOverviewViewModel(
+  $plant: ReadableAtom<PlantEntity | null>,
+  $editedAttributes: ReadableAtom<PlantOverviewEditedAttributes>,
+  $uiState: ReadableAtom<{
+    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
     isEditing: boolean;
     showAllDates: boolean;
     showDeleteConfirmation: boolean;
-  },
-  store: GrowspaceStore
+  }>,
+  store: GrowspaceStore,
+  $logbookEvents: ReadableAtom<GrowspaceEvent[]>
 ): ReadableAtom<PlantOverviewViewModel> {
   return computed(
-    [
-      // We don't need many store subscriptions for this dialog
-      // Most data comes from props (plant, editedAttributes)
-      // But we do watch for new logbook events
-      store.data.$strainLibrary, // For strain data
-    ],
-    (strainLibrary) => {
+    [$plant, $editedAttributes, $uiState, $logbookEvents, store.grid.$growspaceOptions],
+    (plant, editedAttributes, uiState, logbookEvents, growspaceOptions) => {
+      // Fallback for null plant (initial state)
+      if (!plant) {
+        return {
+          plant: {} as PlantEntity,
+          editedAttributes: {} as PlantOverviewEditedAttributes,
+          activeTab: uiState.activeTab,
+          isEditing: false,
+          showAllDates: false,
+          showDeleteConfirmation: false,
+          plantId: '',
+          stageColor: '',
+          stageIcon: '',
+          displayName: '',
+          displaySubtitle: '',
+          timelineEvents: [],
+          plantStats: [],
+          availableActions: [],
+          growspaceOptions: {},
+          hasUnsavedChanges: false,
+          canSave: false,
+        } as PlantOverviewViewModel;
+      }
+
       const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
       const stageColor = PlantUtils.getPlantStageColor(plant.state);
       const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
 
-      // Ensure displayName is a string (editedAttributes.strain is PlantAttributeValue)
-      const strainValue = editedAttributes.strain;
+      const strainValue = editedAttributes?.strain;
       const displayName = typeof strainValue === 'string' ? strainValue : 'Unknown Strain';
 
-      const phenoValue = editedAttributes.phenotype;
-      const displaySubtitle = `${plant.state} Stage • ${typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'}`;
+      const phenoValue = editedAttributes?.phenotype;
+      const displaySubtitle = `${plant.state} Stage • ${
+        typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'
+      }`;
 
-      // Process timeline events (we'll need to pass logbook events as prop)
-      const timelineEvents = processTimelineEvents(plant, []);
-
-      // Calculate stats
+      const timelineEvents = processTimelineEvents(plant, logbookEvents);
       const plantStats = calculatePlantStats(plant);
-
-      // Available actions
       const availableActions = getAvailableActions(plant);
-
-      // Validation
       const unsavedChanges = hasUnsavedChanges(plant, editedAttributes);
       const canSave = canSaveAttributes(editedAttributes);
 
       return {
-        // Core data
         plant,
         editedAttributes,
-
-        // UI state
         activeTab: uiState.activeTab,
         isEditing: uiState.isEditing,
         showAllDates: uiState.showAllDates,
         showDeleteConfirmation: uiState.showDeleteConfirmation,
-
-        // Computed identifiers
         plantId,
         stageColor,
         stageIcon,
         displayName,
         displaySubtitle,
-
-        // Timeline data
         timelineEvents,
-
-        // Plant stats
         plantStats,
-
-        // Available actions
         availableActions,
-
-        // Validation
+        growspaceOptions,
         hasUnsavedChanges: unsavedChanges,
         canSave: canSave && unsavedChanges,
       };

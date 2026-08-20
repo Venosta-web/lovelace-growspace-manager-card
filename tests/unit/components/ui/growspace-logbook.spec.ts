@@ -1,7 +1,25 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { GrowspaceLogbook } from '../../../../src/components/ui/growspace-logbook';
+import { GrowspaceLogbook } from '../../../../src/features/shared/ui/growspace-logbook';
 import { GrowspaceEvent } from '../../../../src/types';
+import { token } from '../../../../src/styles/variables';
+
+// vi.mock is hoisted — use vi.hoisted() to share refs between factory and tests
+const { mockFetchGrowspaceEvents } = vi.hoisted(() => ({
+    mockFetchGrowspaceEvents: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('../../../../src/slices/logbook', () => ({
+    fetchGrowspaceEvents: mockFetchGrowspaceEvents,
+    fetchPlantEvents: vi.fn().mockResolvedValue([]),
+    addGrowspaceNote: vi.fn(),
+    addPlantNote: vi.fn(),
+    deleteEvent: vi.fn(),
+    growspaceEvents$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+    plantEvents$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+    setGrowspaceEvents: vi.fn(),
+    setPlantEvents: vi.fn(),
+}));
 
 // Mock virtualizer
 vi.mock('@lit-labs/virtualizer/virtualize.js', () => ({
@@ -51,13 +69,11 @@ describe('GrowspaceLogbook', () => {
     beforeEach(async () => {
         vi.clearAllMocks();
 
+        // Default: fetch resolves with mockEvents so tests that just check rendering work
+        mockFetchGrowspaceEvents.mockResolvedValue(mockEvents);
+
         mockHass = {
-            callWS: vi.fn().mockImplementation(async (msg) => {
-                if (msg.type === 'growspace_manager/get_log') {
-                    return { [element.growspaceId || 'gs1']: mockEvents };
-                }
-                return { [element.growspaceId || 'gs1']: [] };
-            }),
+            callWS: vi.fn(),
             callService: vi.fn(),
         };
 
@@ -80,21 +96,14 @@ describe('GrowspaceLogbook', () => {
 
 
     it('should fetch events when growspaceId changes', async () => {
-        mockHass.callWS.mockImplementation(async (msg: any) => {
-            if (msg.type === 'growspace_manager/get_log') return { gs2: mockEvents };
-            return { gs2: [] };
-        });
+        mockFetchGrowspaceEvents.mockResolvedValue(mockEvents);
 
         element.growspaceId = 'gs2';
         await element.updateComplete;
         await new Promise(resolve => setTimeout(resolve, 0));
         await element.updateComplete;
 
-        expect(mockHass.callWS).toHaveBeenCalledWith(expect.objectContaining({
-            type: 'growspace_manager/get_log',
-            growspace_id: 'gs2',
-            limit: 50
-        }));
+        expect(mockFetchGrowspaceEvents).toHaveBeenCalledWith('gs2', 50);
 
         const cards = element.shadowRoot?.querySelectorAll('.event-card');
         expect(cards?.length).toBe(3);
@@ -247,8 +256,14 @@ describe('GrowspaceLogbook', () => {
         });
 
         it('should return correct color for environmental_report', () => {
-            expect((element as any)._getEventColor('environmental_report', 'Day Report')).toBe('#ffc107');
-            expect((element as any)._getEventColor('environmental_report', 'night_report')).toBe('#3f51b5');
+            // ADR 0042 §2: the day/night pair is one documented pair now, so assert on the
+            // token rather than the hex it happens to resolve to.
+            expect((element as any)._getEventColor('environmental_report', 'Day Report')).toBe(
+                `var(--cycle-day, ${token['--cycle-day']})`
+            );
+            expect((element as any)._getEventColor('environmental_report', 'night_report')).toBe(
+                `var(--cycle-night, ${token['--cycle-night']})`
+            );
         });
 
         describe('Lifecycle Coverage', () => {
@@ -508,28 +523,26 @@ describe('GrowspaceLogbook', () => {
         describe('Error Handling', () => {
             it('should handle fetch error gracefully', async () => {
                 const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-                const mockHass = {
-                    callWS: vi.fn().mockRejectedValue(new Error('Network error'))
-                } as any;
+                mockFetchGrowspaceEvents.mockRejectedValueOnce(new Error('Network error'));
 
-                const element = document.createElement('growspace-logbook') as GrowspaceLogbook;
-                element.hass = mockHass;
-                element.growspaceId = 'test_growspace';
-                document.body.appendChild(element);
+                const freshElement = document.createElement('growspace-logbook') as GrowspaceLogbook;
+                freshElement.hass = mockHass;
+                freshElement.growspaceId = 'test_growspace';
+                document.body.appendChild(freshElement);
 
-                await element.updateComplete;
+                await freshElement.updateComplete;
                 // Wait for async fetch
                 await new Promise(resolve => setTimeout(resolve, 100));
 
                 expect(consoleErrorSpy).toHaveBeenCalledWith(
-                    'Error fetching growspace events:',
+                    'Error fetching logbook events:',
                     expect.any(Error)
                 );
 
                 // Should still have empty events array
-                expect((element as any)._events).toEqual([]);
+                expect((freshElement as any)._events).toEqual([]);
 
-                document.body.removeChild(element);
+                document.body.removeChild(freshElement);
                 consoleErrorSpy.mockRestore();
             });
         });
@@ -599,8 +612,7 @@ describe('GrowspaceLogbook', () => {
         });
 
         it('should scroll to closest event and highlight', async () => {
-            // Setup events with mock HASS
-            mockHass.callWS.mockResolvedValue({ gs1: mockEvents });
+            mockFetchGrowspaceEvents.mockResolvedValue(mockEvents);
             element = new GrowspaceLogbook();
             element.hass = mockHass;
             element.growspaceId = 'gs1';
@@ -675,6 +687,23 @@ describe('GrowspaceLogbook', () => {
             expect((element as any)._getSeverityColor(0, 'optimal')).toContain('error');
         });
 
+        it('should return correct colors for positive-direction sensor types (irrigation/water/drain/nutrient)', () => {
+            // Positive-direction: High severity = Good outcome (Success), like 'optimal'
+
+            // >= 0.9 -> success
+            expect((element as any)._getSeverityColor(0.95, 'irrigation')).toContain('success');
+            expect((element as any)._getSeverityColor(0.9, 'watering')).toContain('success');
+            expect((element as any)._getSeverityColor(0.9, 'water')).toContain('success');
+            expect((element as any)._getSeverityColor(0.9, 'drain')).toContain('success');
+            expect((element as any)._getSeverityColor(0.9, 'nutrient')).toContain('success');
+
+            // >= 0.75 -> warning
+            expect((element as any)._getSeverityColor(0.8, 'irrigation')).toContain('warning');
+
+            // < 0.75 -> error
+            expect((element as any)._getSeverityColor(0.5, 'irrigation')).toContain('error');
+        });
+
         it('should return correct colors for default sensor types', () => {
             // Default: High severity = Bad (Error)
 
@@ -710,7 +739,7 @@ describe('GrowspaceLogbook', () => {
         });
 
         it('should handle empty events array correctly', async () => {
-            mockHass.callWS.mockResolvedValue({ gs1: [] });
+            mockFetchGrowspaceEvents.mockResolvedValueOnce([]);
             element = new GrowspaceLogbook();
             element.hass = mockHass;
             element.growspaceId = 'gs1';

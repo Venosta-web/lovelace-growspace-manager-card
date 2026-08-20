@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
@@ -6,11 +6,11 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { mdiClose, mdiSprout, mdiInformationOutline, mdiDna } from '@mdi/js';
 import { StrainEntry, GrowspaceDevice } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../components/ui/md3-text-input';
-import '../components/ui/md3-number-input';
-import '../components/ui/md3-select';
-import '../components/ui/md3-date-input';
-import '../components/ui/md3-switch';
+import '../features/shared/ui/md3-text-input';
+import '../features/shared/ui/md3-number-input';
+import '../features/shared/ui/md3-select';
+import '../features/shared/ui/md3-date-input';
+import '../features/shared/ui/md3-switch';
 
 @customElement('add-plants-dialog')
 export class AddPlantsDialog extends LitElement {
@@ -24,6 +24,7 @@ export class AddPlantsDialog extends LitElement {
 
   @property({ type: String }) strain = '';
   @property({ type: String }) phenotype = '';
+  @property({ type: String }) libraryError = '';
   @state() private addToLibrary = false;
   @property({ type: Number }) amount = 1;
   @property({ type: Number }) start_number = 1;
@@ -52,12 +53,12 @@ export class AddPlantsDialog extends LitElement {
       }
       .explanation-card {
         background: rgba(var(--md3-sys-color-primary-container-rgb, 103, 80, 164), 0.1);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md, 12px);
         padding: 16px;
         display: flex;
         gap: 12px;
         align-items: flex-start;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         color: var(--md3-sys-color-on-surface-variant);
         border: 1px solid rgba(var(--md3-sys-color-primary-rgb), 0.1);
       }
@@ -118,6 +119,7 @@ export class AddPlantsDialog extends LitElement {
   }
 
   private _confirm() {
+    this.libraryError = '';
     if (this.growspaceDevice) {
       const totalSlots =
         (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plantsPerRow || 0);
@@ -173,8 +175,10 @@ export class AddPlantsDialog extends LitElement {
         open
         @closed=${this._close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
+        width="large"
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->
@@ -185,7 +189,14 @@ export class AddPlantsDialog extends LitElement {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Batch Add Plants</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Batch Add Plants</h2>
+                <gs-help-tooltip
+                  content="Add multiple plants at once. This will automatically assign them to available positions in your growspace using a numbered naming pattern."
+                  placement="bottom"
+                  label="Batch Add"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">Add multiple plants to ${this.growspaceName}</div>
             </div>
             <button
@@ -247,15 +258,18 @@ export class AddPlantsDialog extends LitElement {
                 class="toggle-container"
                 style="margin-top: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
               >
-                <span style="font-size: 0.95rem; color: var(--secondary-text-color);"
+                <span style="font-size: var(--font-size-md); color: var(--secondary-text-color);"
                   >Add to Strain Library</span
                 >
                 <md3-switch
                   .checked=${this.addToLibrary}
-                  @change=${(e: Event) => (this.addToLibrary = (e.target as HTMLInputElement).checked)}
+                  @change=${(e: Event) =>
+                    (this.addToLibrary = (e.target as HTMLInputElement).checked)}
                   ?disabled=${!this.strain}
                 ></md3-switch>
               </div>
+
+              ${this.libraryError ? html`<ha-alert alert-type="error">${this.libraryError}</ha-alert>` : nothing}
 
               <div class="row-col-grid">
                 <md3-number-input

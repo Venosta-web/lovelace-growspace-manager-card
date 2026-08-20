@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { localize } from '../../../src/localize/localize';
-import { en } from '../../../src/localize/languages/en';
+import en from '../../../src/localize/languages/en.json';
 
 describe('localize', () => {
     it('should translate a known key', () => {

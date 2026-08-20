@@ -1,0 +1,217 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { fixture, html } from '@open-wc/testing-helpers';
+import { PlantGeneticsTab } from '../../../../../src/features/plants/components/plant-genetics-tab';
+import type { PlantEntity } from '../../../../../src/types';
+import {
+  getLineageTree,
+  unlinkSeedBatch,
+  setPlantSex,
+} from '../../../../../src/slices/genetics';
+
+// The tab now calls the Genetics slice mutators directly (the dispatcher's
+// `genetics` domain is retired).
+vi.mock('../../../../../src/slices/genetics', () => ({
+  getLineageTree: vi.fn().mockResolvedValue({ id: 'root', name: 'Root' }),
+  unlinkSeedBatch: vi.fn().mockResolvedValue(undefined),
+  setPlantSex: vi.fn().mockResolvedValue(undefined),
+}));
+
+if (!customElements.get('plant-genetics-tab')) {
+  customElements.define('plant-genetics-tab', PlantGeneticsTab);
+}
+
+describe('plant-genetics-tab', () => {
+  let mockStore: any;
+  let mockPlant: PlantEntity;
+
+  beforeEach(() => {
+    vi.mocked(getLineageTree).mockClear().mockResolvedValue({ id: 'root', name: 'Root' } as any);
+    vi.mocked(unlinkSeedBatch).mockClear().mockResolvedValue(undefined);
+    vi.mocked(setPlantSex).mockClear().mockResolvedValue(undefined);
+    mockStore = {
+      refreshData: vi.fn().mockResolvedValue(undefined),
+    };
+
+    mockPlant = {
+      entity_id: 'plant.test',
+      attributes: {
+        plant_id: 'p123',
+        friendly_name: 'Test Plant',
+        sex: 'female',
+        seed_batch_id: 'SB001',
+        generation: 'F1',
+        strain: 'Blueberry',
+        phenotype: 'Tall',
+      },
+    } as any;
+  });
+
+  const setup = async (plant = mockPlant) => {
+    const el = await fixture<PlantGeneticsTab>(html`
+      <plant-genetics-tab .plant=${plant}></plant-genetics-tab>
+    `);
+    (el as any).store = mockStore;
+    // Manually trigger since store was missing during connectedCallback
+    await (el as any)._loadLineageTree();
+    await el.updateComplete;
+    return el;
+  };
+
+  it('renders correctly with plant data', async () => {
+    const el = await setup();
+
+    // Check origin
+    expect(el.shadowRoot?.textContent).to.contain('SB001');
+    expect(el.shadowRoot?.textContent).to.contain('F1');
+  });
+
+  it('toggles link to seed batch form when no seed batch is present', async () => {
+    const plantNoSeed = {
+      ...mockPlant,
+      attributes: { ...mockPlant.attributes, seed_batch_id: null }
+    } as any;
+    const el = await setup(plantNoSeed);
+    
+    const linkBtn = el.shadowRoot?.querySelector('button.tonal') as HTMLElement;
+    expect(linkBtn.textContent?.trim()).to.equal('🔗 Link to seed batch');
+    
+    linkBtn.click();
+    await el.updateComplete;
+    
+    expect(el.shadowRoot?.textContent).to.contain('To link this plant to a seed batch');
+    
+    linkBtn.click();
+    await el.updateComplete;
+    expect(el.shadowRoot?.textContent).to.not.contain('To link this plant to a seed batch');
+  });
+
+  it('dispatches open-strain-editor event when Edit Lineage is clicked', async () => {
+    const el = await setup();
+    
+    let eventDetail: any = null;
+    el.addEventListener('open-strain-editor', (e: any) => {
+      eventDetail = e.detail;
+    });
+    
+    const editBtn = Array.from(el.shadowRoot?.querySelectorAll('button') || [])
+      .find(b => b.textContent?.trim() === 'Edit lineage') as HTMLElement;
+    
+    editBtn.click();
+    
+    expect(eventDetail).to.deep.equal({
+      strain: 'Blueberry',
+      phenotype: 'Tall',
+      focusLineage: true
+    });
+  });
+
+  it('does not dispatch open-strain-editor if strain is missing', async () => {
+    const plantNoStrain = {
+      ...mockPlant,
+      attributes: { ...mockPlant.attributes, strain: undefined }
+    } as any;
+    const el = await setup(plantNoStrain);
+    
+    let eventDispatched = false;
+    el.addEventListener('open-strain-editor', () => {
+      eventDispatched = true;
+    });
+    
+    const editBtn = Array.from(el.shadowRoot?.querySelectorAll('button') || [])
+      .find(b => b.textContent?.trim() === 'Edit lineage') as HTMLElement;
+    
+    editBtn.click();
+    expect(eventDispatched).to.be.false;
+  });
+
+  it('renders origin without generation if it is missing', async () => {
+    const plantNoGen = {
+      ...mockPlant,
+      attributes: { ...mockPlant.attributes, generation: undefined }
+    } as any;
+    const el = await setup(plantNoGen);
+    
+    expect(el.shadowRoot?.textContent).to.contain('SB001');
+    expect(el.shadowRoot?.textContent).to.not.contain('·');
+  });
+
+  it('loads lineage tree on init', async () => {
+    const el = await setup();
+    expect(getLineageTree).toHaveBeenCalledWith('p123');
+    expect((el as any)._lineageTree).to.deep.equal({ id: 'root', name: 'Root' });
+  });
+
+  it('handles lineage tree loading failure', async () => {
+    vi.mocked(getLineageTree).mockRejectedValue(new Error('Failed'));
+    const el = await setup();
+    
+    expect((el as any)._lineageTree).to.be.null;
+    expect((el as any)._lineageLoading).to.be.false;
+  });
+
+  it('skips loading lineage tree if plant_id or store is missing', async () => {
+    const el = await fixture<PlantGeneticsTab>(html`<plant-genetics-tab></plant-genetics-tab>`);
+    // No store, no plant
+    await (el as any)._loadLineageTree();
+    expect(getLineageTree).not.toHaveBeenCalled();
+    
+    el.plant = { attributes: { plant_id: 'p123' } } as any;
+    await (el as any)._loadLineageTree();
+    expect(getLineageTree).not.toHaveBeenCalled();
+  });
+
+  it('reloads lineage tree when plant changes', async () => {
+    const el = await setup();
+    vi.mocked(getLineageTree).mockClear();
+
+    el.plant = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: 'p456' } } as any;
+    await el.updateComplete;
+
+    expect(getLineageTree).toHaveBeenCalledWith('p456');
+  });
+
+  it('calls unlinkSeedBatch when Unlink button is clicked', async () => {
+    const el = await setup();
+
+    const unlinkBtn = Array.from(el.shadowRoot?.querySelectorAll('button') || [])
+      .find(b => b.textContent?.trim() === 'Unlink') as HTMLElement;
+
+    unlinkBtn.click();
+    await el.updateComplete;
+
+    expect(unlinkSeedBatch).toHaveBeenCalledWith('p123');
+  });
+
+  it('calls setPlantSex and resets _sexSaving when a different sex chip is clicked', async () => {
+    const el = await setup(); // current sex is 'female'
+
+    let resolveSetSex!: () => void;
+    vi.mocked(setPlantSex).mockReturnValue(
+      new Promise<void>(res => { resolveSetSex = res; })
+    );
+
+    const maleBtn = Array.from(el.shadowRoot?.querySelectorAll('button') || [])
+      .find(b => b.textContent?.trim() === 'Male') as HTMLElement;
+
+    maleBtn.click();
+    await el.updateComplete;
+
+    expect((el as any)._sexSaving).to.be.true;
+    expect(setPlantSex).toHaveBeenCalledWith('p123', 'male');
+
+    resolveSetSex();
+    await vi.waitFor(() => expect((el as any)._sexSaving).to.be.false);
+  });
+
+  it('does not call setPlantSex when the already-selected sex chip is clicked', async () => {
+    const el = await setup(); // current sex is 'female'
+
+    const femaleBtn = Array.from(el.shadowRoot?.querySelectorAll('button') || [])
+      .find(b => b.textContent?.trim() === 'Female') as HTMLElement;
+
+    femaleBtn.click();
+    await el.updateComplete;
+
+    expect(setPlantSex).not.toHaveBeenCalled();
+  });
+});

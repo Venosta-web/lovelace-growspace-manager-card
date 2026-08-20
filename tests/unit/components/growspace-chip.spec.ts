@@ -1,7 +1,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
-import { GrowspaceChip } from '../../../src/components/growspace-chip';
+import { GrowspaceChip } from '../../../src/features/shared/ui/growspace-chip';
 
 describe('GrowspaceChip', () => {
     let element: GrowspaceChip;

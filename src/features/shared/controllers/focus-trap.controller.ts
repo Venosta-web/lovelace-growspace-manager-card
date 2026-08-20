@@ -63,9 +63,7 @@ export class FocusTrapController implements ReactiveController {
    * Focus the target element
    */
   focusTarget(): void {
-    const element = this.host.shadowRoot?.querySelector(
-      this.options.selector
-    ) as HTMLElement;
+    const element = this.host.shadowRoot?.querySelector(this.options.selector) as HTMLElement;
 
     if (element && typeof element.focus === 'function') {
       element.focus();

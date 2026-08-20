@@ -118,7 +118,7 @@ export class BaseDialogLayout extends LitElement {
         width: 100%;
         max-width: 100%;
         max-height: 92vh;
-        border-radius: 20px 20px 0 0;
+        border-radius: var(--border-radius-lg, 16px) var(--border-radius-lg, 16px) 0 0;
         animation: slideUpFromBottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
@@ -198,8 +198,8 @@ export class BaseDialogLayout extends LitElement {
       border: none;
       color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
       cursor: pointer;
-      padding: 12px;  /* Was 8px — 20px icon + 24px padding = 44px total (WCAG minimum) */
-      border-radius: 8px;
+      padding: 12px; /* Was 8px — 20px icon + 24px padding = 44px total (WCAG minimum) */
+      border-radius: var(--border-radius-sm, 8px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -355,10 +355,8 @@ export class BaseDialogLayout extends LitElement {
           aria-labelledby="base-dialog-title"
           @click=${(e: Event) => e.stopPropagation()}
         >
-          ${this._renderHeader()}
-          ${this.tabs ? this._renderTabs() : nothing}
-          ${this._renderContent()}
-          ${this._renderActions()}
+          ${this._renderHeader()} ${this.tabs ? this._renderTabs() : nothing}
+          ${this._renderContent()} ${this._renderActions()}
         </div>
       </div>
     `;
@@ -369,9 +367,7 @@ export class BaseDialogLayout extends LitElement {
       <div class="dialog-header">
         <div class="dialog-header-text">
           <h2 class="dialog-title" id="base-dialog-title">${this.title}</h2>
-          ${this.subtitle
-            ? html`<div class="dialog-subtitle">${this.subtitle}</div>`
-            : nothing}
+          ${this.subtitle ? html`<div class="dialog-subtitle">${this.subtitle}</div>` : nothing}
         </div>
         ${!this.hideCloseButton
           ? html`

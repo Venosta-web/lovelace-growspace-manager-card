@@ -1,11 +1,11 @@
 import { fixture, html } from '@open-wc/testing-helpers';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { QuickNoteInput } from '../../../../src/components/ui/quick-note-input';
-import '../../../../src/components/ui/quick-note-input';
+import { QuickNoteInput } from '../../../../src/features/shared/ui/quick-note-input';
+import '../../../../src/features/shared/ui/quick-note-input';
+import { PlantUtils } from '../../../../src/utils/plant-utils';
 
 describe('QuickNoteInput', () => {
     let element: QuickNoteInput;
-    const originalCreateElement = document.createElement.bind(document);
 
     beforeEach(async () => {
         element = await fixture(html`<quick-note-input></quick-note-input>`);
@@ -59,179 +59,71 @@ describe('QuickNoteInput', () => {
         expect(submitBtn.disabled).toBe(true);
     });
 
-    it('should handle file selection', async () => {
-        const mockFile = new File(['image'], 'test.jpg', { type: 'image/jpeg' });
+    it('should add compressed images when camera-capture emits files', async () => {
+        const compressSpy = vi
+            .spyOn(PlantUtils, 'compressImage')
+            .mockResolvedValue('data:image/jpeg;base64,compressed');
+        const file = new File(['image'], 'test.jpg', { type: 'image/jpeg' });
 
-        // Mock FileReader
-        const mockReader = { readAsDataURL: vi.fn(), onload: null as any };
-        vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
+        await (element as any)._handleCapture(new CustomEvent('capture', { detail: { files: [file] } }));
+        await element.updateComplete;
 
-        // Mock Image
-        const mockImage = { onload: null as any, width: 500, height: 400 };
-        vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
+        // Keep the note's historical 1024px/0.8 sizing.
+        expect(compressSpy).toHaveBeenCalledWith(file, 1024, 1024, 0.8);
+        expect((element as any)._images).toEqual(['data:image/jpeg;base64,compressed']);
+    });
 
-        // Mock Canvas
-        const mockContext = { drawImage: vi.fn() };
-        const mockCanvas = {
-            width: 0,
-            height: 0,
-            getContext: vi.fn(() => mockContext),
-            toDataURL: vi.fn(() => 'data:image/jpeg;base64,resized')
-        };
-        vi.spyOn(document, 'createElement').mockImplementation((t, o) =>
-            t === 'canvas' ? mockCanvas as any : originalCreateElement(t, o)
+    it('should process every captured file', async () => {
+        const compressSpy = vi
+            .spyOn(PlantUtils, 'compressImage')
+            .mockResolvedValueOnce('data:img1')
+            .mockResolvedValueOnce('data:img2');
+        const files = [
+            new File([''], 'a.jpg', { type: 'image/jpeg' }),
+            new File([''], 'b.jpg', { type: 'image/jpeg' }),
+        ];
+
+        await (element as any)._handleCapture(new CustomEvent('capture', { detail: { files } }));
+        await element.updateComplete;
+
+        expect(compressSpy).toHaveBeenCalledTimes(2);
+        expect((element as any)._images).toEqual(['data:img1', 'data:img2']);
+    });
+
+    it('should wire the capture event from camera-capture to _handleCapture', async () => {
+        vi.spyOn(PlantUtils, 'compressImage').mockResolvedValue('data:wired');
+        await element.updateComplete;
+
+        const camera = element.shadowRoot?.querySelector('camera-capture');
+        const file = new File([''], 'wired.jpg', { type: 'image/jpeg' });
+        camera?.dispatchEvent(
+            new CustomEvent('capture', { detail: { files: [file] }, bubbles: true, composed: true })
         );
 
+        // _handleCapture is async; let the compression microtasks settle.
+        await new Promise((resolve) => setTimeout(resolve, 0));
         await element.updateComplete;
 
-        const fileInput = element.shadowRoot?.getElementById('fileInput') as HTMLInputElement;
-        Object.defineProperty(fileInput, 'files', {
-            value: [mockFile],
-            configurable: true
-        });
+        expect((element as any)._images).toEqual(['data:wired']);
+    });
 
-        const handlePromise = (element as any)._handleFileSelect({ target: fileInput });
+    it('should handle capture with no files', async () => {
+        const compressSpy = vi.spyOn(PlantUtils, 'compressImage');
 
-        // Trigger FileReader onload
-        if (mockReader.onload) mockReader.onload({ target: { result: 'data:image/jpeg;base64,original' } });
-
-        // Trigger Image onload
-        if (mockImage.onload) mockImage.onload();
-
-        await handlePromise;
+        await (element as any)._handleCapture(new CustomEvent('capture', { detail: { files: [] } }));
         await element.updateComplete;
 
-        expect((element as any)._images.length).toBe(1);
-    });
-
-    it('should resize wide images', async () => {
-        const mockFile = new File([''], 'wide.jpg');
-        const mockReader = { readAsDataURL: vi.fn(), onload: null as any };
-        vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
-
-        const mockImage = { onload: null as any, width: 2000, height: 1000 };
-        vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
-
-        const mockContext = { drawImage: vi.fn() };
-        const mockCanvas = {
-            width: 0,
-            height: 0,
-            getContext: vi.fn(() => mockContext),
-            toDataURL: vi.fn(() => 'data:resized')
-        };
-        vi.spyOn(document, 'createElement').mockImplementation((tagName, options) => {
-            if (tagName === 'canvas') return mockCanvas as any;
-            return originalCreateElement(tagName, options);
-        });
-
-        const resizePromise = (element as any)._resizeImage(mockFile);
-        if (mockReader.onload) mockReader.onload({ target: { result: 'data' } });
-        if (mockImage.onload) mockImage.onload();
-
-        await resizePromise;
-
-        expect(mockCanvas.width).toBe(1024); // MAX_WIDTH
-        expect(mockContext.drawImage).toHaveBeenCalled();
-    });
-
-    it('should resize tall images', async () => {
-        const mockFile = new File([''], 'tall.jpg');
-        const mockReader = { readAsDataURL: vi.fn(), onload: null as any };
-        vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
-
-        const mockImage = { onload: null as any, width: 1000, height: 2000 };
-        vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
-
-        const mockContext = { drawImage: vi.fn() };
-        const mockCanvas = {
-            width: 0,
-            height: 0,
-            getContext: vi.fn(() => mockContext),
-            toDataURL: vi.fn(() => 'data:resized')
-        };
-        vi.spyOn(document, 'createElement').mockImplementation((tagName, options) => {
-            if (tagName === 'canvas') return mockCanvas as any;
-            return originalCreateElement(tagName, options);
-        });
-
-        const resizePromise = (element as any)._resizeImage(mockFile);
-        if (mockReader.onload) mockReader.onload({ target: { result: 'data' } });
-        if (mockImage.onload) mockImage.onload();
-
-        await resizePromise;
-
-        expect(mockCanvas.height).toBe(1024); // MAX_HEIGHT
-    });
-
-    it('should handle canvas context error', async () => {
-        const mockFile = new File([''], 'test.jpg');
-        const mockReader = { readAsDataURL: vi.fn(), onload: null as any };
-        vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
-
-        const mockImage = { onload: null as any };
-        vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
-
-        const mockCanvas = { getContext: vi.fn(() => null) };
-        vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any);
-
-        const resizePromise = (element as any)._resizeImage(mockFile);
-        if (mockReader.onload) mockReader.onload({ target: { result: 'data' } });
-        if (mockImage.onload) mockImage.onload();
-
-        await expect(resizePromise).rejects.toThrow('Could not get canvas context');
-    });
-
-    it('should handle FileReader error', async () => {
-        const mockFile = new File([''], 'test.jpg');
-        const mockReader = { readAsDataURL: vi.fn(), onerror: null as any };
-        vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
-
-        const resizePromise = (element as any)._resizeImage(mockFile);
-        if (mockReader.onerror) mockReader.onerror(new Error('Read failed'));
-
-        await expect(resizePromise).rejects.toThrow('Read failed');
-    });
-
-    it('should handle Image load error', async () => {
-        const mockFile = new File([''], 'test.jpg');
-        const mockReader = { readAsDataURL: vi.fn(), onload: null as any };
-        vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
-
-        const mockImage = { onload: null as any, onerror: null as any };
-        vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
-
-        const resizePromise = (element as any)._resizeImage(mockFile);
-        if (mockReader.onload) mockReader.onload({ target: { result: 'data' } });
-        if (mockImage.onerror) mockImage.onerror(new Error('Image load failed'));
-
-        await expect(resizePromise).rejects.toThrow('Image load failed');
-    });
-
-    it('should handle file select with no files', async () => {
-        await element.updateComplete;
-        const fileInput = element.shadowRoot?.getElementById('fileInput') as HTMLInputElement;
-
-        await (element as any)._handleFileSelect({ target: { files: null } });
-        await element.updateComplete;
-
+        expect(compressSpy).not.toHaveBeenCalled();
         expect((element as any)._images.length).toBe(0);
     });
 
-    it('should handle error during file processing', async () => {
-        const mockFile = new File([''], 'test.jpg');
+    it('should log and skip an image when compression fails', async () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+        vi.spyOn(PlantUtils, 'compressImage').mockRejectedValue(new Error('Compression failed'));
+        const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
 
-        // Mock to throw error
-        vi.spyOn(element as any, '_resizeImage').mockRejectedValue(new Error('Resize failed'));
-
+        await (element as any)._handleCapture(new CustomEvent('capture', { detail: { files: [file] } }));
         await element.updateComplete;
-        const fileInput = element.shadowRoot?.getElementById('fileInput') as HTMLInputElement;
-        Object.defineProperty(fileInput, 'files', {
-            value: [mockFile],
-            configurable: true
-        });
-
-        await (element as any)._handleFileSelect({ target: fileInput });
 
         expect(consoleSpy).toHaveBeenCalledWith('Error processing image:', expect.any(Error));
         expect((element as any)._images.length).toBe(0);
@@ -391,18 +283,18 @@ describe('QuickNoteInput', () => {
         expect(previewsContainer).toBeFalsy();
     });
 
-    it('should trigger file input click when camera button is clicked', async () => {
+    it('should open the camera-capture menu when the add-image button is clicked', async () => {
         await element.updateComplete;
 
-        const fileInput = element.shadowRoot?.getElementById('fileInput') as HTMLInputElement;
-        const clickSpy = vi.spyOn(fileInput, 'click');
+        const camera = element.shadowRoot?.querySelector('camera-capture');
+        const openSpy = vi.spyOn(camera as any, 'open');
 
         const cameraBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
             .find(b => b.getAttribute('aria-label') === 'Add image') as HTMLButtonElement;
 
         cameraBtn.click();
 
-        expect(clickSpy).toHaveBeenCalled();
+        expect(openSpy).toHaveBeenCalled();
     });
 
     it('should disable remove button when saving', async () => {

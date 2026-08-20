@@ -1,0 +1,212 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  __resetUiSliceForTests,
+  activeDialog$,
+  openPlantOverviewDialog,
+  openStrainRecommendationDialog,
+  openLogbookDialog,
+  openConfigDialog,
+  openStrainLibraryDialog,
+  openIrrigationDialog,
+  openIPMDialog,
+  toggleEnvGraph,
+  openGrowMasterDialog,
+  openWateringDialog,
+  openTrainingDialog,
+  openNutrientsDialog,
+  openSnapshotsDialog,
+  openBatchWateringDialog,
+  openBatchTrainingDialog,
+} from './index';
+import { setDevices } from '../grid';
+import { ConfigTab } from '../../constants';
+import type { PlantEntity } from '../../types';
+
+describe('slices/ui pure dialog-open helpers', () => {
+  beforeEach(() => {
+    __resetUiSliceForTests();
+    setDevices([]);
+  });
+
+  it('openGrowMasterDialog opens GROW_MASTER with the growspace id', () => {
+    openGrowMasterDialog('gs-1');
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('GROW_MASTER');
+    if (dialog.type === 'GROW_MASTER') {
+      expect(dialog.payload.growspaceId).toBe('gs-1');
+    }
+  });
+
+  it('openWateringDialog opens WATERING and infers plant mode from plant ids', () => {
+    openWateringDialog({ plantIds: ['p1'], growspaceId: 'gs-1' });
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('WATERING');
+    if (dialog.type === 'WATERING') {
+      expect(dialog.payload.mode).toBe('plant');
+      expect(dialog.payload.plantIds).toEqual(['p1']);
+    }
+  });
+
+  it('openWateringDialog defaults to growspace mode when no plant ids', () => {
+    openWateringDialog({ growspaceId: 'gs-1' });
+    const dialog = activeDialog$.get();
+    if (dialog.type === 'WATERING') {
+      expect(dialog.payload.mode).toBe('growspace');
+    }
+  });
+
+  it('openTrainingDialog opens TRAINING with plant ids and growspace id', () => {
+    openTrainingDialog(['p1', 'p2'], 'gs-1');
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('TRAINING');
+    if (dialog.type === 'TRAINING') {
+      expect(dialog.payload.plantIds).toEqual(['p1', 'p2']);
+      expect(dialog.payload.growspaceId).toBe('gs-1');
+    }
+  });
+
+  it('openNutrientsDialog opens NUTRIENTS', () => {
+    openNutrientsDialog();
+    expect(activeDialog$.get().type).toBe('NUTRIENTS');
+  });
+
+  it('openSnapshotsDialog opens SNAPSHOTS with the growspace id', () => {
+    openSnapshotsDialog('gs-2');
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('SNAPSHOTS');
+    if (dialog.type === 'SNAPSHOTS') {
+      expect(dialog.payload.growspaceId).toBe('gs-2');
+    }
+  });
+
+  it('openStrainRecommendationDialog opens STRAIN_RECOMMENDATION', () => {
+    openStrainRecommendationDialog();
+    expect(activeDialog$.get().type).toBe('STRAIN_RECOMMENDATION');
+  });
+
+  it('openStrainLibraryDialog opens STRAIN_LIBRARY with the requested tab', () => {
+    openStrainLibraryDialog('seeds');
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('STRAIN_LIBRARY');
+    if (dialog.type === 'STRAIN_LIBRARY') {
+      expect(dialog.payload.initialTab).toBe('seeds');
+    }
+  });
+
+  it('openIrrigationDialog opens IRRIGATION with the provided options', () => {
+    openIrrigationDialog({ growspaceId: 'gs-1', initialTab: 'overview' });
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('IRRIGATION');
+    if (dialog.type === 'IRRIGATION') {
+      expect(dialog.payload.growspaceId).toBe('gs-1');
+    }
+  });
+
+  // Regression for #440 / ADR-0027: IPM and crop-steering must resolve their
+  // growspace from an explicit/per-card source, never the dead page-global.
+  it('openIPMDialog opens IPM with an explicit growspace id', () => {
+    openIPMDialog({ growspaceId: 'gs-1' });
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('IPM');
+    if (dialog.type === 'IPM') {
+      expect(dialog.payload.growspaceId).toBe('gs-1');
+    }
+  });
+
+  it('openIPMDialog opens growspace-unscoped IPM when given no context', () => {
+    openIPMDialog();
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('IPM');
+    if (dialog.type === 'IPM') {
+      expect(dialog.payload.growspaceId).toBeUndefined();
+    }
+  });
+
+  it('openIPMDialog stays plant-scoped (no growspace) when given plant ids', () => {
+    openIPMDialog({ plantIds: ['p1', 'p2'] });
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('IPM');
+    if (dialog.type === 'IPM') {
+      expect(dialog.payload.plantIds).toEqual(['p1', 'p2']);
+      expect(dialog.payload.growspaceId).toBeUndefined();
+    }
+  });
+
+  it('toggleEnvGraph(crop_steering) opens the irrigation dialog for the given growspace', () => {
+    toggleEnvGraph('crop_steering', undefined, undefined, 'gs-1');
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('IRRIGATION');
+    if (dialog.type === 'IRRIGATION') {
+      expect(dialog.payload.growspaceId).toBe('gs-1');
+    }
+  });
+
+  it('toggleEnvGraph(crop_steering) is a no-op without a growspace', () => {
+    toggleEnvGraph('crop_steering', undefined, undefined, undefined);
+    expect(activeDialog$.get().type).toBe('NONE');
+  });
+
+  it('openConfigDialog opens CONFIG for the device id', () => {
+    openConfigDialog({ deviceId: 'gs-1' } as never);
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('CONFIG');
+    if (dialog.type === 'CONFIG') {
+      expect(dialog.payload.growspaceId).toBe('gs-1');
+      expect(dialog.payload.currentTab).toBe(ConfigTab.GROWSPACES);
+    }
+  });
+
+  it('openConfigDialog honours an explicit initialTab', () => {
+    openConfigDialog({ deviceId: 'gs-1' } as never, ConfigTab.GROWLIGHT);
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('CONFIG');
+    if (dialog.type === 'CONFIG') {
+      expect(dialog.payload.currentTab).toBe(ConfigTab.GROWLIGHT);
+    }
+  });
+
+  it('openPlantOverviewDialog opens PLANT_OVERVIEW with a snapshot of the plant', () => {
+    const plant = { attributes: { plant_id: 'p1', strain: 'OG' } } as unknown as PlantEntity;
+    openPlantOverviewDialog(plant, ['p1', 'p2']);
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('PLANT_OVERVIEW');
+    if (dialog.type === 'PLANT_OVERVIEW') {
+      expect(dialog.payload.plant).toBe(plant);
+      expect(dialog.payload.selectedPlantIds).toEqual(['p1', 'p2']);
+    }
+  });
+
+  it('openLogbookDialog opens LOGBOOK with the explicit growspace id', () => {
+    openLogbookDialog('gs-explicit');
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('LOGBOOK');
+    if (dialog.type === 'LOGBOOK') {
+      expect(dialog.payload.growspaceId).toBe('gs-explicit');
+    }
+  });
+
+  it('openLogbookDialog is a no-op when no growspace id is given', () => {
+    openLogbookDialog();
+    expect(activeDialog$.get().type).toBe('NONE');
+  });
+
+  it('openBatchWateringDialog opens WATERING from the given selection', () => {
+    openBatchWateringDialog(['p1', 'p2'], 'gs-1');
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('WATERING');
+    if (dialog.type === 'WATERING') {
+      expect(dialog.payload.plantIds).toHaveLength(2);
+      expect(dialog.payload.growspaceId).toBe('gs-1');
+    }
+  });
+
+  it('openBatchWateringDialog is a no-op with no selection and no growspace', () => {
+    openBatchWateringDialog([]);
+    expect(activeDialog$.get().type).toBe('NONE');
+  });
+
+  it('openBatchTrainingDialog opens TRAINING from the given selection', () => {
+    openBatchTrainingDialog(['p1'], 'gs-1');
+    expect(activeDialog$.get().type).toBe('TRAINING');
+  });
+});

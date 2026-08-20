@@ -1,13 +1,15 @@
 import { css } from 'lit';
+import { reducedMotion } from './reduced-motion.styles';
 
 export const uiStyles = css`
   /* --- MD3 Buttons --- */
   .md3-button {
     height: 40px;
     padding: 0 24px;
-    border-radius: 20px; /* Full-rounded MD3 style */
+    border-radius: var(--border-radius-full, 9999px); /* Full-rounded MD3 style */
     border: none;
-    font-family: 'Roboto', sans-serif;
+    font-family:
+      'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
     font-weight: 500;
     font-size: 0.875rem;
     letter-spacing: 0.1px;
@@ -61,10 +63,17 @@ export const uiStyles = css`
   /* Primary Filled Button */
   .md3-button.primary {
     background: var(--primary-color, #4caf50);
-    color: var(--text-primary-color, #fff);
+    color: var(--on-primary);
     box-shadow:
       0 1px 2px rgba(0, 0, 0, 0.3),
       0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  }
+
+  /* The gradient, not the flat --primary-color of .primary above: this is the fill three
+     harvest buttons used to carry inline, folded here per ADR 0042 §4. */
+  .md3-button.filled {
+    background: var(--primary-gradient);
+    color: var(--on-primary);
   }
 
   .md3-button.primary:hover {
@@ -135,6 +144,39 @@ export const uiStyles = css`
     outline-color: var(--error-color, #f44336);
   }
 
+  /* danger composes with the tonal and text variants: it recolours them without
+     changing their shape, so an inline icon button stays an icon button. Three
+     classes outrank the two-class outlined rule above, so the border is dropped
+     explicitly rather than by source order. --error-color is withheld from the
+     portalled dialog host (ADR 0036), so these keep the fallback form. */
+  .md3-button.tonal.danger {
+    background: var(--error-bg, rgba(244, 67, 54, 0.1));
+    color: var(--error-color, #f44336);
+    border: none;
+  }
+
+  .md3-button.tonal.danger:hover {
+    background: rgba(244, 67, 54, 0.16);
+  }
+
+  .md3-button.tonal.danger:active {
+    background: var(--error-bg, rgba(244, 67, 54, 0.1));
+  }
+
+  .md3-button.text.danger {
+    background: transparent;
+    color: var(--error-color, #f44336);
+    border: none;
+  }
+
+  .md3-button.text.danger:hover {
+    background: rgba(244, 67, 54, 0.08);
+  }
+
+  .md3-button.text.danger:active {
+    background: rgba(244, 67, 54, 0.12);
+  }
+
   /* Disabled state */
   .md3-button:disabled {
     opacity: 0.38;
@@ -152,6 +194,27 @@ export const uiStyles = css`
     justify-content: flex-end;
     flex-wrap: wrap;
     margin-top: var(--spacing-lg);
+  }
+
+  /*
+   * The label is the tap target — clicking anywhere on it toggles the control —
+   * so the 44px floor lives on the row, not on the 24px checkbox glyph.
+   */
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    font-size: 0.875rem;
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+    cursor: pointer;
+  }
+
+  .checkbox-label input[type='checkbox'] {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
   }
 
   /* --- MD3 Inputs --- */
@@ -205,9 +268,11 @@ export const uiStyles = css`
     width: 100%;
     padding: 24px 16px 8px;
     border: none;
+    background: transparent;
     color: var(--primary-text-color, #ffffff);
     font-size: 1rem;
-    font-family: 'Roboto', sans-serif;
+    font-family:
+      'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
     box-sizing: border-box;
     outline: none;
   }
@@ -253,10 +318,10 @@ export const uiStyles = css`
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
-    background: #323232;
-    color: #fff;
+    background: var(--surface-container-high);
+    color: var(--on-overlay-primary);
     padding: 12px 24px;
-    border-radius: 24px;
+    border-radius: var(--border-radius-full, 9999px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     z-index: 100;
     font-weight: 500;
@@ -270,12 +335,12 @@ export const uiStyles = css`
 
   .toast-notification.success {
     background: var(--success-color, #4caf50);
-    color: #fff;
+    color: var(--on-primary);
   }
 
   .toast-notification.error {
     background: var(--error-color, #f44336);
-    color: #fff;
+    color: var(--on-error);
   }
 
   @keyframes slideUpFade {
@@ -297,32 +362,5 @@ export const uiStyles = css`
     min-height: 200px;
   }
 
-  .loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid rgba(255, 255, 255, 0.1);
-    border-left-color: var(--primary-color, #4caf50);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Respect user motion preferences (WCAG 2.3.3) */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
+  ${reducedMotion}
 `;

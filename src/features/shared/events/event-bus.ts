@@ -188,10 +188,7 @@ export class TypedEventBus<TEvents extends Record<string, any>> {
     this.bus.setDebug(enabled);
   }
 
-  on<K extends keyof TEvents>(
-    event: K,
-    handler: EventHandler<TEvents[K]>
-  ): Unsubscribe {
+  on<K extends keyof TEvents>(event: K, handler: EventHandler<TEvents[K]>): Unsubscribe {
     return this.bus.on(event as string, handler);
   }
 

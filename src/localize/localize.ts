@@ -1,6 +1,5 @@
-import { en } from './languages/en';
+import en from './languages/en.json';
 
-// Define types for localization structure
 interface LocaleStrings {
   [key: string]: string;
 }
@@ -17,6 +16,12 @@ const languages: Languages = {
   en,
 };
 
+function lookup(string: string, language: string): string {
+  const [section, key] = string.split('.');
+  const lang = language.replace(/_/, '-');
+  return languages[lang]?.[section]?.[key] ?? languages.en?.[section]?.[key] ?? string;
+}
+
 // Basic lookup logic
 export const localize = (
   string: string,
@@ -27,27 +32,33 @@ export const localize = (
   if (!string || typeof string !== 'string') {
     return string;
   }
-  const [section, key] = string.split('.');
-
-  let translated: string;
-  const lang = language.replace(/_/, '-');
-
-  try {
-    translated = languages[lang][section][key];
-  } catch (_) {
-    try {
-      translated = languages.en[section][key];
-    } catch (_) {
-      translated = string;
-    }
-  }
-
-  if (translated === undefined) {
-    translated = string;
-  }
+  let translated = lookup(string, language);
 
   if (search !== '' && replace !== '') {
     translated = translated.replace(search, replace);
   }
   return translated;
 };
+
+export function localizeWithParams(
+  string: string,
+  params: Record<string, string | number> = {},
+  language = 'en'
+): string {
+  return Object.entries(params).reduce(
+    (translated, [name, value]) => translated.replaceAll(`{${name}}`, String(value)),
+    lookup(string, language)
+  );
+}
+
+export function localizePlural(
+  string: string,
+  count: number,
+  params: Record<string, string | number> = {},
+  language = 'en'
+): string {
+  const category = new Intl.PluralRules(language.replace(/_/, '-')).select(count);
+  const candidate = `${string}_${category}`;
+  const key = lookup(candidate, language) === candidate ? `${string}_other` : candidate;
+  return localizeWithParams(key, { ...params, count }, language);
+}

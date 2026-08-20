@@ -6,9 +6,10 @@ import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import type { GrowspaceDevice } from '../../../services/types';
-import type { GraphSeries, TooltipData, GraphDataPoint, SensorHistories } from '../types';
+import type { GraphSeries, TooltipData, SensorHistories } from '../types';
 import { ChartUtils } from '../../../utils/chart-utils';
-import { GraphDataTransformer } from '../utils/graph-transformer';
+import { computeEnvSeries } from '../env-series';
+import type { MetricDescriptor } from '../../../slices/metric-descriptors';
 import {
   METRIC_CONFIG,
   MetricKey,
@@ -18,12 +19,11 @@ import {
   ScrollDirection,
   SENSOR_CHART_DEFAULTS,
 } from '../constants';
-import { DEFAULTS } from '../../../lib/constants';
-import { BINARY_ON_STATES } from '../../../lib/types/hass';
 
 import { consume } from '@lit/context';
 import { hassContext } from '../../../lib/context';
-import '../../../components/error-boundary';
+import '../../shared/ui/error-boundary';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
@@ -32,25 +32,23 @@ export class GrowspaceEnvChart extends LitElement {
 
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
   @property({ attribute: false }) sensorHistory: SensorHistories = {};
+  /**
+   * The Metric Descriptor table this chart derives from, computed by the host.
+   *
+   * It arrives as a property rather than being computed here because building it
+   * reads `hass.states`, which no component below [[EnvSnapshot]] may do
+   * (ADR-0030). A metric absent from the table renders nothing.
+   */
+  @property({ attribute: false }) descriptors: Record<string, MetricDescriptor> = {};
 
   @property({ type: String }) metricKey = '';
-  @property({ type: String }) unit = '';
-  @property({ type: String }) color = '#ffffff';
   @property({ type: String }) title = '';
   @property({ type: String }) icon = mdiMagnify;
   @property({ type: String }) range: '1h' | '6h' | '24h' | '7d' = '24h';
-  @property({ type: String }) type: ChartType = ChartType.LINE;
-
-  @property({ type: String }) chartTitle: string | undefined;
-  @property({ type: String }) customSensorId: string | undefined;
 
   // For combined graphs
   @property({ type: Array }) metrics: string[] = [];
   @property({ type: Boolean }) isCombined = false;
-  @property({ type: Object }) metricConfig: Record<
-    string,
-    { color: string; title: string; unit: string; icon?: string }
-  > = {};
 
   @state() private _activeTooltip: TooltipData | null = null;
   @state() private _hoverTime: number | null = null;
@@ -156,350 +154,67 @@ export class GrowspaceEnvChart extends LitElement {
     this._cachedChartRect = null;
   }
 
-  private _getVpdThresholds() {
-    const defaultThresholds = {
-      targetMin: DEFAULTS.VPD.TARGET_MIN,
-      targetMax: DEFAULTS.VPD.TARGET_MAX,
-      dangerMin: DEFAULTS.VPD.DANGER_MIN,
-      dangerMax: DEFAULTS.VPD.DANGER_MAX,
-    };
-
-    const overviewEntity = this.device?.overviewEntityId
-      ? this.hass?.states[this.device.overviewEntityId]
-      : null;
-
-    if (!overviewEntity?.attributes) return { day: defaultThresholds, night: defaultThresholds };
-
-    const attrs = overviewEntity.attributes;
-
-    // Day targets
-    const day = {
-      targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? DEFAULTS.VPD.TARGET_MIN,
-      targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? DEFAULTS.VPD.TARGET_MAX,
-      dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? DEFAULTS.VPD.DANGER_MIN,
-      dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? DEFAULTS.VPD.DANGER_MAX,
-    };
-
-    // Night targets - use day values as sensible defaults if night not explicitly configured
-    // This is intentional default behavior, not backward compatibility
-    const night = {
-      targetMin: attrs.night_vpd_target_min ?? day.targetMin,
-      targetMax: attrs.night_vpd_target_max ?? day.targetMax,
-      dangerMin: attrs.night_vpd_danger_min ?? day.dangerMin,
-      dangerMax: attrs.night_vpd_danger_max ?? day.dangerMax,
-    };
-
-    return { day, night };
-  }
-
-  private _getVpdStatusForValue(
-    value: number,
-    thresholds: ReturnType<typeof this._getVpdThresholds>,
-    isDay: boolean
-  ): StatusLevel {
-    const t = isDay ? thresholds.day : thresholds.night;
-    if (value < t.dangerMin || value > t.dangerMax) return StatusLevel.DANGER;
-    if (value < t.targetMin || value > t.targetMax) return StatusLevel.WARNING;
-    return StatusLevel.OPTIMAL;
-  }
-
   private _getVpdStatusColor(status: StatusLevel): string {
     return STATUS_COLORS[status] || METRIC_CONFIG.vpd.color;
   }
 
-  private _generateVpdSegments(
-    points: Array<{ x: number; y: number; value: number; time: number }>,
-    thresholds: ReturnType<typeof this._getVpdThresholds>,
-    lightHistory: GraphDataPoint[]
-  ): Array<{ path: string; color: string }> {
-    if (points.length < 2) return [];
-
-    const segments: Array<{ path: string; color: string }> = [];
-    let currentSegment: typeof points = [];
-
-    // Helper to determine day/night at a specific time
-    // using ChartUtils.getIsDay to ensure consistent logic with sparklines
-
-    const isDay = ChartUtils.getIsDay(points[0].time, lightHistory);
-    let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds, isDay);
-
-    for (let i = 0; i < points.length; i++) {
-      const p = points[i];
-      const pIsDay = ChartUtils.getIsDay(p.time, lightHistory);
-      const status = this._getVpdStatusForValue(p.value, thresholds, pIsDay);
-
-      if (status === currentStatus) {
-        currentSegment.push(p);
-      } else {
-        if (currentSegment.length >= 1) {
-          currentSegment.push(p);
-          const pathStr = `M ${currentSegment.map((pt) => `${pt.x},${pt.y}`).join(' L ')}`;
-          segments.push({ path: pathStr, color: this._getVpdStatusColor(currentStatus) });
-        }
-        currentSegment = [p];
-        currentStatus = status;
-      }
-    }
-    if (currentSegment.length >= 2) {
-      const pathStr = `M ${currentSegment.map((pt) => `${pt.x},${pt.y}`).join(' L ')}`;
-      segments.push({ path: pathStr, color: this._getVpdStatusColor(currentStatus) });
-    }
-    return segments;
-  }
-
-  private _computeGraphSeries(
+  /**
+   * Derive the chart's metrics as Env Series (value space), then apply geometry —
+   * the one step that needs the chart's pixel dimensions, and the only part of the
+   * derivation this component still owns (ADR-0030).
+   */
+  private _buildRenderSeries(
     width: number,
     height: number,
     startTime: Date,
     durationMillis: number,
     now: Date
   ): GraphSeries[] {
-    const baseKeys = this.isCombined ? this.metrics : [this.metricKey];
-    const metricKeys: string[] = [];
-
-    // Expand composite keys for multi-sensor metrics
-    for (const key of baseKeys) {
-      const compositeKeys = Object.keys(this.sensorHistory || {}).filter((hKey) =>
-        hKey.startsWith(`${key}:`)
-      );
-      if (compositeKeys.length > 0) {
-        metricKeys.push(...compositeKeys);
-      } else {
-        metricKeys.push(key);
-      }
-    }
-
-    const seriesList: GraphSeries[] = [];
     const startTimeMs = startTime.getTime();
-    const nowMs = now.getTime();
+    const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
 
-    // Prepare Light History for VPD calculation if needed
-    let lightHistoryPoints: GraphDataPoint[] = [];
-    if (metricKeys.includes(MetricKey.VPD) && this.sensorHistory[MetricKey.LIGHT]) {
-      lightHistoryPoints = ChartUtils.normalizeHistory(
-        this.sensorHistory[MetricKey.LIGHT],
-        MetricKey.LIGHT
-      );
-    }
-
-    metricKeys.forEach((key, seriesIdx) => {
-      // Extract base metric if using composite key
-      const baseKey = key.includes(':') ? key.split(':')[0] : key;
-
-      const baseConfig = this.metricConfig[baseKey] || {
-        color: this.isCombined ? METRIC_CONFIG[baseKey]?.color || '#ffffff' : this.color,
-        title: this.chartTitle || (this.isCombined ? METRIC_CONFIG[baseKey]?.title || baseKey : this.title),
-        unit: this.isCombined ? METRIC_CONFIG[baseKey]?.unit || '' : this.unit,
-        icon: this.isCombined ? METRIC_CONFIG[baseKey]?.icon || '' : this.icon,
-      };
-
-      // Handle color deviation for multi-sensor series
-      let seriesBaseColor = baseConfig.color || '#fff';
-      let seriesTitle = baseConfig.title || baseKey;
-      if (key.includes(':')) {
-        const parts = key.split(':');
-        const entityId = parts[1];
-
-        // Only deviate if this is not the first sensor for this baseMetric in our metricKeys
-        const sameBaseIndices = metricKeys
-          .map((k, i) => (k.startsWith(`${baseKey}:`) ? i : -1))
-          .filter((i) => i !== -1);
-        const subIdx = sameBaseIndices.indexOf(seriesIdx);
-
-        if (subIdx > 0) {
-          seriesBaseColor = `color-mix(in srgb, ${seriesBaseColor}, white ${subIdx * 20}%)`;
-        }
-
-        // Try to refine title if it's a multi-sensor series
-        const stateObj = this.hass?.states[entityId];
-        const friendlyName = stateObj?.attributes?.friendly_name || entityId;
-        const baseTitle = baseConfig.title || baseKey;
-        seriesTitle = `${baseTitle} (${friendlyName})`;
-      }
-
-      const config = { ...baseConfig, color: seriesBaseColor, title: seriesTitle };
-
-      const historySource = this.sensorHistory[key] || [];
-      if (historySource.length === 0) return;
-
-      const dataPoints: GraphDataPoint[] = [];
-      let initialState = historySource[0];
-
-      for (const h of historySource) {
-        if (new Date(h.last_changed).getTime() > startTimeMs) break;
-        initialState = h;
-      }
-
-      if (initialState) {
-        const val =
-          key === MetricKey.OPTIMAL || BINARY_ON_STATES.includes(initialState.state)
-            ? BINARY_ON_STATES.includes(initialState.state)
-              ? 1
-              : 0
-            : GraphDataTransformer.normalizeSensorValue(initialState, key);
-        if (val !== undefined) dataPoints.push({ time: startTimeMs, value: val });
-      }
-
-      const len = historySource.length;
-      for (let i = 0; i < len; i++) {
-        const h = historySource[i];
-        const t = new Date(h.last_changed).getTime();
-        if (t <= startTimeMs) continue;
-
-        let val: number | undefined;
-        if (key === MetricKey.OPTIMAL) {
-          val = BINARY_ON_STATES.includes(h.state) ? 1 : 0;
-          if (h.attributes?.reasons)
-            dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
-          else dataPoints.push({ time: t, value: val });
-        } else {
-          val = GraphDataTransformer.normalizeSensorValue(h, key);
-          if (val !== undefined) dataPoints.push({ time: t, value: val });
-        }
-      }
-
-      if (dataPoints.length > 0) {
-        const last = dataPoints[dataPoints.length - 1];
-        dataPoints.push({ time: nowMs, value: last.value, meta: last.meta });
-      }
-
-      if (dataPoints.length > 0) {
-        // ⚡ BOLT OPTIMIZATION: Single-pass min/max/sum calculation
-        // Combines 3 separate iterations into one O(n) pass
-        // Also avoids spread operator which can cause stack overflow for large arrays
-        let min = dataPoints[0].value;
-        let max = dataPoints[0].value;
-        let sum = 0;
-        for (let i = 0; i < dataPoints.length; i++) {
-          const val = dataPoints[i].value;
-          if (val < min) min = val;
-          if (val > max) max = val;
-          sum += val;
-        }
-        const avg = sum / dataPoints.length;
-
-        const isStep =
-          (config as { type?: ChartType }).type === ChartType.STEP ||
-          key === MetricKey.OPTIMAL ||
-          key === MetricKey.DEHUMIDIFIER ||
-          key === MetricKey.LIGHT ||
-          key === MetricKey.IRRIGATION ||
-          key === MetricKey.DRAIN;
-        if (
-          key === MetricKey.EXHAUST ||
-          key === MetricKey.HUMIDIFIER ||
-          key === MetricKey.CIRCULATION_FAN
-        ) {
-          min = 0;
-          max = 10;
-        } else if (key === MetricKey.DEHUMIDIFIER) {
-          min = 0;
-          max = 1;
-        } else if (isStep) {
-          min = 0;
-          max = 1;
-        }
-
-        if (!this.isCombined && max === min && !isStep) {
-          max += 1;
-          min -= 1;
-        }
-
-        const paddedRange = max - min || 1;
-
-        const pathStr = ChartUtils.generatePathFromValues(dataPoints, width, height, {
-          min,
-          max,
-          startTime: startTimeMs,
-          endTime: startTimeMs + durationMillis,
-          type: isStep ? ChartType.STEP : ChartType.LINE,
-          timeRange: this.range,
-        });
-
-        let vpdSegments;
-        let seriesColor = config.color || '#fff';
-
-        if (key === MetricKey.VPD) {
-          const thresholds = this._getVpdThresholds();
-          const vpdPoints = dataPoints.map((p) => ({
-            x: ((p.time - startTimeMs) / durationMillis) * width,
-            y: height - ((p.value - min) / paddedRange) * height,
-            value: p.value,
-            time: p.time,
-          }));
-          vpdSegments = this._generateVpdSegments(vpdPoints, thresholds, lightHistoryPoints);
-
-          if (dataPoints.length > 0) {
-            // Determine current status (last point)
-            const lastPoint = dataPoints[dataPoints.length - 1];
-            // Get current light state for last point color
-            // Or just rely on current environment active state?
-            // Better to match the graph logic:
-            let isDay = true;
-            if (lightHistoryPoints.length > 0) {
-              const lastLight = lightHistoryPoints[lightHistoryPoints.length - 1];
-              // If last light point is recent enough... usually it covers 'now'
-              isDay = lastLight.value === 1;
-            }
-            seriesColor = this._getVpdStatusColor(
-              this._getVpdStatusForValue(lastPoint.value, thresholds, isDay)
-            );
-          }
-        }
-
-        seriesList.push({
-          id: key,
-          title: config.title || key,
-          color: seriesColor,
-          unit: config.unit || '',
-          icon: config.icon || '',
-          points: dataPoints,
-          min,
-          max,
-          avg,
-          path: pathStr,
-          fillType: this.isCombined || key.includes(':') ? 'flat' : 'gradient',
-          vpdSegments,
-        });
-      }
-    });
-
-    return seriesList;
+    return computeEnvSeries(this.descriptors, this.sensorHistory ?? {}, metricKeys, {
+      startTimeMs,
+      nowMs: now.getTime(),
+      isCombined: this.isCombined,
+    }).map((series) => ({
+      id: series.id,
+      title: series.title,
+      color: series.color,
+      unit: series.unit,
+      icon: series.icon,
+      points: series.points,
+      min: series.min,
+      max: series.max,
+      avg: series.avg,
+      path: ChartUtils.generatePathFromValues(series.points, width, height, {
+        min: series.min,
+        max: series.max,
+        startTime: startTimeMs,
+        endTime: startTimeMs + durationMillis,
+        type: series.chartType,
+        timeRange: this.range,
+      }),
+      // Overlaid traces — a combined chart's metrics, or one metric's several
+      // sensors — take a flat fill; a lone trace keeps its gradient.
+      fillType: this.isCombined || series.sensor ? ('flat' as const) : ('gradient' as const),
+      vpdBands: series.vpdBands,
+    }));
   }
 
   protected willUpdate(changedProperties: PropertyValues) {
     if (
-      changedProperties.has('device') ||
+      changedProperties.has('descriptors') ||
       changedProperties.has('sensorHistory') ||
       changedProperties.has('range') ||
       changedProperties.has('metricKey') ||
       changedProperties.has('metrics') ||
       changedProperties.has('isCombined')
     ) {
-      let needsUpdate = true;
-
-      if (changedProperties.has('sensorHistory') && changedProperties.size === 1) {
-        const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
-        const oldHist = changedProperties.get('sensorHistory') as SensorHistories | undefined;
-
-        if (oldHist) {
-          let allSame = true;
-          for (const k of metricKeys) {
-            if (this.sensorHistory[k] !== oldHist[k]) {
-              allSame = false;
-              break;
-            }
-          }
-          if (allSame) needsUpdate = false;
-        }
-      }
-
-      if (needsUpdate) {
-        const durationMillis = this._getDurationMillis(this.range);
-        const now = new Date();
-        const startTime = new Date(now.getTime() - durationMillis);
-        this._renderSeries = this._computeGraphSeries(800, 200, startTime, durationMillis, now);
-      }
+      const durationMillis = this._getDurationMillis(this.range);
+      const now = new Date();
+      const startTime = new Date(now.getTime() - durationMillis);
+      this._renderSeries = this._buildRenderSeries(800, 200, startTime, durationMillis, now);
     }
   }
 
@@ -534,8 +249,8 @@ export class GrowspaceEnvChart extends LitElement {
       <error-boundary .fallbackMessage=${'Failed to render environment chart'}>
         <div class="gs-env-graph-card">
           ${this.isCombined
-        ? this._renderCombinedHeader(series)
-        : this._renderSingleHeader(series[0])}
+            ? this._renderCombinedHeader(series)
+            : this._renderSingleHeader(series[0])}
 
           <div
             class="gs-env-chart-container"
@@ -546,32 +261,47 @@ export class GrowspaceEnvChart extends LitElement {
           >
             ${this._renderTooltip()}
             ${!this.isCombined
-        ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
-        : ''}
+              ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
+              : ''}
             ${this._renderXAxisHTML(this.range)}
 
             <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
               ${this._renderGrid(width, height)}
               ${series.map((s) => {
-          // Handle VPD segments separately (they have their own path validation)
-          if (s.vpdSegments?.length) {
-            return svg`${s.vpdSegments.map((seg) => svg`<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
-          }
+                // VPD bands remain in value/time space until this render step, where
+                // the component has the chart dimensions needed to create paths.
+                if (s.vpdBands?.length) {
+                  return svg`${s.vpdBands.map((band) => {
+                    const bandPoints = s.points.filter(
+                      (point) => point.time >= band.startTime && point.time <= band.endTime
+                    );
+                    const path = ChartUtils.generatePathFromValues(bandPoints, width, height, {
+                      min: s.min,
+                      max: s.max,
+                      startTime: startTime.getTime(),
+                      endTime: startTime.getTime() + durationMillis,
+                      type: ChartType.LINE,
+                      timeRange: this.range,
+                    });
+                    return svg`<path d="${path}" fill="none" stroke="${this._getVpdStatusColor(band.status)}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`;
+                  })}`;
+                }
 
-          // Skip rendering regular paths if no valid path data
-          if (!s.path || s.path.trim() === '' || s.points.length === 0) {
-            return svg``;
-          }
+                // Skip rendering regular paths if no valid path data
+                if (!s.path || s.path.trim() === '' || s.points.length === 0) {
+                  return svg``;
+                }
 
-          return svg`
+                return svg`
                   ${s.fillType === 'gradient' ? svg`<defs>${this._renderGradient(s.id, s.color)}</defs>` : ''}
-                  ${s.fillType === 'gradient'
-              ? svg`<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
-              : svg`<path d="${s.path} V ${height} H ${((s.points[0].time - startTime.getTime()) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`
-            }
+                  ${
+                    s.fillType === 'gradient'
+                      ? svg`<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
+                      : svg`<path d="${s.path} V ${height} H ${((s.points[0].time - startTime.getTime()) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`
+                  }
                   <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" vector-effect="non-scaling-stroke" />
                 `;
-        })}
+              })}
             </svg>
           </div>
         </div>
@@ -624,10 +354,9 @@ export class GrowspaceEnvChart extends LitElement {
     }
 
     const rect = this._cachedChartRect!;
-    const contentWidth = rect.width - 90;
     const mouseX = e.clientX - rect.left;
 
-    const relX = Math.max(0, Math.min(1, (mouseX - 50) / contentWidth));
+    const relX = rect.width > 0 ? Math.max(0, Math.min(1, mouseX / rect.width)) : 0.5;
     const hoverTime = startTime.getTime() + relX * durationMillis;
 
     const items = seriesList.map((s) => {
@@ -696,7 +425,7 @@ export class GrowspaceEnvChart extends LitElement {
         defaults?.binary ||
         series.id === MetricKey.OPTIMAL ||
         series.id === MetricKey.DEHUMIDIFIER ||
-        series.id === MetricKey.LIGHT ||
+        (series.id === MetricKey.LIGHT && series.unit !== '%') ||
         series.id === MetricKey.IRRIGATION ||
         series.id === MetricKey.DRAIN;
 
@@ -741,16 +470,16 @@ export class GrowspaceEnvChart extends LitElement {
       <div class="gs-env-graph-header">
         <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
           ${this._canScrollLeft
-        ? html`<div
+            ? html`<div
                 class="scroll-nav left"
                 @click=${(e: Event) => {
-            e.stopPropagation();
-            this._scrollChips(ScrollDirection.LEFT);
-          }}
+                  e.stopPropagation();
+                  this._scrollChips(ScrollDirection.LEFT);
+                }}
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
               </div>`
-        : ''}
+            : ''}
 
           <div
             class="chips-scroll-container"
@@ -758,29 +487,29 @@ export class GrowspaceEnvChart extends LitElement {
             @click=${(e: Event) => e.stopPropagation()}
           >
             ${seriesList.map(
-          (s) => html`
+              (s) => html`
                 <div
                   class=${classMap({
-            'gs-legend-item': true,
-            'mask-left': this._canScrollLeft,
-            'mask-right': this._canScrollRight,
-          })}
+                    'gs-legend-item': true,
+                    'mask-left': this._canScrollLeft,
+                    'mask-right': this._canScrollRight,
+                  })}
                   @click=${(e: Event) => {
-              e.stopPropagation();
-              this.dispatchEvent(
-                new CustomEvent('unlink-graph', {
-                  detail: s.id,
-                  bubbles: true,
-                  composed: true,
-                })
-              );
-            }}
+                    e.stopPropagation();
+                    this.dispatchEvent(
+                      new CustomEvent('unlink-graph', {
+                        detail: s.id,
+                        bubbles: true,
+                        composed: true,
+                      })
+                    );
+                  }}
                 >
                   <span
                     style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${s.color}; margin-right:6px; flex-shrink:0;"
                   ></span>
                   ${s.icon
-              ? html`<div
+                    ? html`<div
                         style="width:16px; height:16px; color:${s.color}; margin-right:4px; display:inline-flex;"
                       >
                         <svg
@@ -790,32 +519,32 @@ export class GrowspaceEnvChart extends LitElement {
                           <path d="${s.icon}"></path>
                         </svg>
                       </div>`
-              : ''}
+                    : ''}
                   <span style="color:${s.color}; font-weight:500;">${s.title}</span>
                 </div>
               `
-        )}
+            )}
           </div>
 
           ${this._canScrollRight
-        ? html`<div
+            ? html`<div
                 class="scroll-nav right"
                 @click=${(e: Event) => {
-            e.stopPropagation();
-            this._scrollChips(ScrollDirection.RIGHT);
-          }}
+                  e.stopPropagation();
+                  this._scrollChips(ScrollDirection.RIGHT);
+                }}
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
               </div>`
-        : ''}
+            : ''}
         </div>
         <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
           <ha-icon-button
             .path=${mdiLink}
             @click=${() =>
-        this.dispatchEvent(
-          new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true })
-        )}
+              this.dispatchEvent(
+                new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true })
+              )}
             title="Unlink Graphs"
           ></ha-icon-button>
         </div>
@@ -834,7 +563,7 @@ export class GrowspaceEnvChart extends LitElement {
           ${time}
         </div>
         ${items.map(
-      (i) => html`
+          (i) => html`
             <div
               style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:2px;"
             >
@@ -842,27 +571,27 @@ export class GrowspaceEnvChart extends LitElement {
               <span style="font-family:monospace; font-weight:bold;">${i.value}</span>
             </div>
           `
-    )}
+        )}
       </div>
       <div
         class="gs-cursor-line"
         style=${styleMap({
-      left: `${x}px`,
-      height: '100%',
-      top: '0',
-      position: 'absolute',
-      borderLeft: '1px dashed rgba(255,255,255,0.3)',
-      pointerEvents: 'none',
-    })}
+          left: `${x}px`,
+          height: '100%',
+          top: '0',
+          position: 'absolute',
+          borderLeft: '1px dashed rgba(255,255,255,0.3)',
+          pointerEvents: 'none',
+        })}
       ></div>
     `;
   }
 
   private _renderGrid(width: number, height: number) {
     return svg`
-        <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
-        <line x1="0" y1="0" x2="0" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
-        <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="var(--divider-color, #333)" stroke-width="0.5" stroke-dasharray="4 4" />
+        <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="var(--divider-color, rgba(255, 255, 255, 0.12))" stroke-width="1" />
+        <line x1="0" y1="0" x2="0" y2="${height}" stroke="var(--divider-color, rgba(255, 255, 255, 0.12))" stroke-width="1" />
+        <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="var(--divider-color, rgba(255, 255, 255, 0.12))" stroke-width="0.5" stroke-dasharray="4 4" />
     `;
   }
 
@@ -876,25 +605,21 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   private _renderXAxisHTML(range: string) {
-    const labelStyle =
-      'position: absolute; bottom: 8px; font-size: 10px; color: var(--secondary-text-color, #666); line-height: 1; pointer-events: none;';
-    return html`<div style="${labelStyle} left: 50px;">-${range}</div>
-      <div style="${labelStyle} right: 40px;">Now</div>`;
+    return html`<span class="gs-axis-cap left">-${range}</span>
+      <span class="gs-axis-cap right">Now</span>`;
   }
 
   private _renderYAxisHTML(min: number, max: number, unit: string) {
-    const labelStyle =
-      'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: var(--secondary-text-color, #aaa); line-height: 1; pointer-events: none;';
     if (unit === 'state' || (max === 1 && min === 0)) {
-      return html`<div style="${labelStyle} top: 20px;">ON</div>
-        <div style="${labelStyle} bottom: 30px;">OFF</div>`;
+      return html`<span class="gs-axis-target" style="top: 8px;">ON</span>
+        <span class="gs-axis-target" style="bottom: 8px;">OFF</span>`;
     }
     return html`
-      <div style="${labelStyle} top: 20px;">${max.toFixed(0)}${unit}</div>
-      <div style="${labelStyle} top: 50%; transform: translateY(-5px);">
+      <span class="gs-axis-target" style="top: 8px;">${max.toFixed(0)}${unit}</span>
+      <span class="gs-axis-target" style="top: 50%; transform: translateY(-50%);">
         ${((max + min) / 2).toFixed(1)}
-      </div>
-      <div style="${labelStyle} bottom: 30px;">${min.toFixed(0)}${unit}</div>
+      </span>
+      <span class="gs-axis-target" style="bottom: 8px;">${min.toFixed(0)}${unit}</span>
     `;
   }
 
@@ -935,7 +660,6 @@ export class GrowspaceEnvChart extends LitElement {
       height: 180px;
       background: var(--secondary-background-color, #0d0d0d);
       border-radius: 8px;
-      padding: 20px 40px 30px 50px;
       cursor: crosshair;
       overflow: hidden;
     }
@@ -943,7 +667,7 @@ export class GrowspaceEnvChart extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--secondary-text-color, #444);
+      color: var(--text-muted);
       cursor: default;
     }
     .chart-svg {
@@ -951,6 +675,41 @@ export class GrowspaceEnvChart extends LitElement {
       height: 100%;
       overflow: visible;
       display: block;
+    }
+
+    .gs-axis-cap {
+      position: absolute;
+      bottom: 19px;
+      z-index: 2;
+      font-size: var(--font-size-xs);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      opacity: 0.4;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+      line-height: 1;
+      pointer-events: none;
+    }
+    .gs-axis-cap.left {
+      left: 7px;
+    }
+    .gs-axis-cap.right {
+      right: 7px;
+    }
+    .gs-axis-target {
+      position: absolute;
+      left: 8px;
+      z-index: 2;
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      color: var(--text-muted);
+      opacity: 0.5;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+      line-height: 1;
+      pointer-events: none;
     }
 
     svg path {
@@ -1066,5 +825,7 @@ export class GrowspaceEnvChart extends LitElement {
         display: none;
       }
     }
+
+    ${reducedMotion}
   `;
 }

@@ -1,17 +1,56 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
 import { HomeAssistant } from 'custom-card-helpers';
-import { mdiClose, mdiSprout, mdiDna, mdiContentCopy } from '@mdi/js';
+import { mdiClose, mdiSprout, mdiDna, mdiContentCopy, mdiCheck, mdiChevronRight } from '@mdi/js';
 import { StrainEntry, PlantEntity } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../components/ui/md3-text-input';
-import '../components/ui/md3-number-input';
-import '../components/ui/md3-select';
-import '../components/ui/md3-date-input';
-import '../components/ui/md3-switch';
-import '../components/ui/gs-help-tooltip';
+import { fetchStrainLibrary } from '../slices/strain';
+import '../features/shared/ui/md3-text-input';
+import '../features/shared/ui/md3-number-input';
+import '../features/shared/ui/md3-select';
+import '../features/shared/ui/md3-date-input';
+import '../features/shared/ui/md3-switch';
+import '../features/shared/ui/gs-help-tooltip';
+import {
+  createInitialSM,
+  transition,
+  STAGE_DATE_FIELD,
+  type SM,
+  type AddSubState,
+} from './add-plant-dialog-sm';
+
+const STAGE_OPTIONS = [
+  { value: 'seedling', label: 'Seedling' },
+  { value: 'clone', label: 'Clone' },
+  { value: 'mother', label: 'Mother' },
+  { value: 'veg', label: 'Veg' },
+  { value: 'flower', label: 'Flower' },
+  { value: 'dry', label: 'Dry' },
+  { value: 'cure', label: 'Cure' },
+];
+
+const STAGE_DATE_LABELS: Record<string, string> = {
+  seedling: 'Seedling Start',
+  clone: 'Clone Start',
+  mother: 'Mother Start',
+  veg: 'Veg Start',
+  flower: 'Flower Start',
+  dry: 'Dry Start',
+  cure: 'Cure Start',
+};
+
+function deriveDefaultStage(growspaceName: string): string {
+  const name = growspaceName.toLowerCase();
+  if (name.includes('mother')) return 'mother';
+  if (name.includes('clone')) return 'clone';
+  if (name.includes('dry')) return 'dry';
+  if (name.includes('cure')) return 'cure';
+  if (name.includes('flower')) return 'flower';
+  if (name.includes('veg')) return 'veg';
+  return 'seedling';
+}
 
 @customElement('add-plant-dialog')
 export class AddPlantDialog extends LitElement {
@@ -22,30 +61,43 @@ export class AddPlantDialog extends LitElement {
   @property({ type: String }) growspaceName = '';
   @property({ type: Boolean, reflect: true }) open = false;
 
-  // Initialize with values passed via methods or defaults
-  @property({ type: String }) strain = '';
-  @property({ type: String }) phenotype = '';
-  @state() private addToLibrary = false;
+  // Target cell and pre-fill, captured at open time — seeded into `_sm` by `willUpdate`.
   @property({ type: Number }) row = 0;
   @property({ type: Number }) col = 0;
+  @property({ type: String }) strain = '';
+  @property({ type: String }) phenotype = '';
 
-  // Date fields
-  @property({ type: String }) veg_start = '';
-  @property({ type: String }) flower_start = '';
-  @property({ type: String }) seedling_start = '';
-  @property({ type: String }) mother_start = '';
-  @property({ type: String }) clone_start = '';
-  @property({ type: String }) dry_start = '';
-  @property({ type: String }) cure_start = '';
-
-  // Tab state for transplant functionality
-  @state() private _activeTab: 'add' | 'clone' | 'seedling' = 'add';
-  @state() private _selectedTransplantPlant: PlantEntity | null = null;
-
-  // Plants available for transplant (filtered by stage)
+  // Render-time args — not draft state
   @property({ type: Array }) clonePlants: PlantEntity[] = [];
   @property({ type: Array }) seedlingPlants: PlantEntity[] = [];
   @property({ type: String }) targetGrowspaceId = '';
+  @property({ type: Array }) siblingPlants: PlantEntity[] = [];
+
+  @state() private _sm: SM = createInitialSM({ row: 0, col: 0 });
+  @state() private _loadingLibrary = true;
+  private _initialStateApplied = false;
+
+  protected willUpdate(changedProperties: PropertyValues): void {
+    if (changedProperties.has('open') && !this.open) {
+      this._initialStateApplied = false;
+      return;
+    }
+    if (this._initialStateApplied || !this.open) return;
+    this.setInitialState(this.row, this.col, this.strain, this.phenotype);
+    this._initialStateApplied = true;
+  }
+
+  // Self-fetch the strain library on open (see "Dialog self-fetch on open" in
+  // CONTEXT.md); the populated atom flows back in via the `strainLibrary` prop.
+  connectedCallback(): void {
+    super.connectedCallback();
+    this._loadingLibrary = true;
+    fetchStrainLibrary()
+      .finally(() => {
+        this._loadingLibrary = false;
+      })
+      .catch((err: unknown) => console.error('[add-plant-dialog] failed to fetch strains', err));
+  }
 
   static styles = [
     dialogStyles,
@@ -86,7 +138,7 @@ export class AddPlantDialog extends LitElement {
         padding: 12px 8px;
         background: transparent;
         border: none;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         color: var(--secondary-text-color);
         cursor: pointer;
         transition: all 0.2s ease;
@@ -109,19 +161,186 @@ export class AddPlantDialog extends LitElement {
         fill: currentColor;
       }
 
+      /* Wizard step indicator */
+      .wizard-steps {
+        display: flex;
+        align-items: center;
+        padding: 14px 24px;
+        gap: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.1);
+      }
+
+      .wizard-step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: var(--font-size-supporting);
+        font-weight: 500;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+        white-space: nowrap;
+      }
+
+      .wizard-step.active {
+        color: var(--primary-color, #4caf50);
+      }
+
+      .wizard-step.done {
+        color: rgba(255, 255, 255, 0.55);
+      }
+
+      .wizard-step-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 1.5px solid currentColor;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        flex-shrink: 0;
+      }
+
+      .wizard-step.active .wizard-step-num {
+        background: var(--primary-color, #4caf50);
+        border-color: var(--primary-color, #4caf50);
+        color: var(--on-primary);
+      }
+
+      .wizard-step.done .wizard-step-num {
+        background: rgba(76, 175, 80, 0.2);
+        border-color: rgba(76, 175, 80, 0.4);
+        color: var(--on-primary-container-bright);
+      }
+
+      .wizard-connector {
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0 8px;
+      }
+
+      .wizard-connector.done {
+        background: rgba(76, 175, 80, 0.3);
+      }
+
+      /* Strain typeahead */
+      .strain-typeahead {
+        position: relative;
+      }
+
+      .strain-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        background: var(--card-background-color, #2c2c2c);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--border-radius-sm, 8px);
+        max-height: 200px;
+        overflow-y: auto;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        margin-top: 4px;
+      }
+
+      .strain-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        cursor: pointer;
+        font-size: var(--font-size-sm);
+        transition: background 0.1s;
+      }
+
+      .strain-option:hover {
+        background: rgba(76, 175, 80, 0.12);
+        color: var(--on-primary-container-bright);
+      }
+
+      .strain-option-meta {
+        font-size: 0.72rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      }
+
+      /* Source type toggle */
+      .source-toggle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .source-btn {
+        padding: 12px;
+        border-radius: var(--border-radius-sm, 8px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-align: center;
+        transition: all 0.15s;
+      }
+
+      .source-btn.active {
+        border-color: var(--primary-color, #4caf50);
+        background: rgba(76, 175, 80, 0.12);
+        color: var(--primary-color, #4caf50);
+      }
+
+      /* Sibling plant picker */
+      .sibling-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      .sibling-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border-radius: var(--border-radius-sm, 8px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: all 0.15s;
+      }
+
+      .sibling-item:hover {
+        border-color: rgba(76, 175, 80, 0.4);
+        background: rgba(76, 175, 80, 0.06);
+      }
+
+      .sibling-item.selected {
+        border-color: var(--primary-color, #4caf50);
+        background: rgba(76, 175, 80, 0.1);
+        color: var(--on-primary-container-bright);
+      }
+
+      .sibling-meta {
+        font-size: 0.72rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      }
+
       .plant-info-grid {
         display: grid;
         grid-template-columns: auto 1fr;
         gap: 8px 16px;
         padding: 12px;
         background: rgba(255, 255, 255, 0.03);
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         margin-top: 12px;
       }
 
       .info-label {
         color: var(--secondary-text-color);
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
       }
 
       .info-value {
@@ -130,20 +349,21 @@ export class AddPlantDialog extends LitElement {
     `,
   ];
 
-  // Provide a method to set initial data from parent if needed
-  public setInitialState(row: number, col: number, strain: string = '', phenotype: string = '') {
-    this.row = row;
-    this.col = col;
-    this.strain = strain;
-    this.phenotype = phenotype;
-    // resetting dates
-    this.veg_start = '';
-    this.flower_start = '';
-    this.seedling_start = '';
-    this.mother_start = '';
-    this.clone_start = '';
-    this.dry_start = '';
-    this.cure_start = '';
+  public setInitialState(row: number, col: number, strain = '', phenotype = '') {
+    this._sm = createInitialSM({ row, col });
+    this._sm = transition(this._sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'stage',
+      value: deriveDefaultStage(this.growspaceName),
+    });
+    if (strain) {
+      this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
+      this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
+    }
+    if (phenotype) {
+      this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: phenotype });
+    }
   }
 
   private _close() {
@@ -151,6 +371,7 @@ export class AddPlantDialog extends LitElement {
   }
 
   private _openStrainCreator() {
+    const { draft } = this._sm.tabs.add;
     this.dispatchEvent(
       new CustomEvent('create-new-strain', {
         bubbles: true,
@@ -158,17 +379,17 @@ export class AddPlantDialog extends LitElement {
         detail: {
           source: 'add-plant',
           returnPayload: {
-            row: this.row,
-            col: this.col,
-            strain: this.strain,
-            phenotype: this.phenotype,
-            seedling_start: this.seedling_start,
-            veg_start: this.veg_start,
-            flower_start: this.flower_start,
-            mother_start: this.mother_start,
-            clone_start: this.clone_start,
-            dry_start: this.dry_start,
-            cure_start: this.cure_start,
+            row: draft.row,
+            col: draft.col,
+            strain: draft.strain,
+            phenotype: draft.phenotype,
+            seedling_start: draft.seedlingStart,
+            veg_start: draft.vegStart,
+            flower_start: draft.flowerStart,
+            mother_start: draft.motherStart,
+            clone_start: draft.cloneStart,
+            dry_start: draft.dryStart,
+            cure_start: draft.cureStart,
           },
         },
       })
@@ -176,100 +397,97 @@ export class AddPlantDialog extends LitElement {
   }
 
   private _confirm() {
-    if (this._activeTab === 'add') {
-      // Original add plant logic
+    const { activeTab, tabs } = this._sm;
+    if (activeTab === 'add') {
+      const today = new Date().toISOString().split('T')[0];
+      const d = tabs.add.draft;
       const payload = {
-        row: this.row + 1,
-        col: this.col + 1,
-        strain: this.strain,
-        phenotype: this.phenotype,
-        veg_start: this.veg_start,
-        flower_start: this.flower_start,
-        seedling_start: this.seedling_start,
-        mother_start: this.mother_start,
-        clone_start: this.clone_start,
-        dry_start: this.dry_start,
-        cure_start: this.cure_start,
-        addToLibrary: this.addToLibrary,
+        row: d.row + 1,
+        col: d.col + 1,
+        strain: d.strain,
+        phenotype: d.phenotype,
+        seedling_start: d.stage === 'seedling' ? d.seedlingStart || today : '',
+        clone_start: d.stage === 'clone' ? d.cloneStart || today : '',
+        mother_start: d.stage === 'mother' ? d.motherStart || today : '',
+        veg_start: d.stage === 'veg' ? d.vegStart || today : '',
+        flower_start: d.stage === 'flower' ? d.flowerStart || today : '',
+        dry_start: d.stage === 'dry' ? d.dryStart || today : '',
+        cure_start: d.stage === 'cure' ? d.cureStart || today : '',
+        addToLibrary: d.addToLibrary,
       };
-
+      this._sm = transition(this._sm, { type: 'SaveRequested' });
       this.dispatchEvent(
-        new CustomEvent('add-plant-submit', {
-          detail: payload,
-          bubbles: true,
-          composed: true,
-        })
+        new CustomEvent('add-plant-submit', { detail: payload, bubbles: true, composed: true })
       );
     } else {
-      // Transplant mode
-      if (!this._selectedTransplantPlant) return;
+      const tabDraft = activeTab === 'clone' ? tabs.clone.draft : tabs.seedling.draft;
+      if (!tabDraft.selectedPlantId) return;
 
-      // Get today's date in YYYY-MM-DD format
+      const plants = activeTab === 'clone' ? this.clonePlants : this.seedlingPlants;
+      const plant = plants.find((p) => p.attributes.plant_id === tabDraft.selectedPlantId);
+      if (!plant) return;
+
       const today = new Date().toISOString().split('T')[0];
-
       const payload = {
-        plant_id: this._selectedTransplantPlant.attributes.plant_id,
-        source_growspace_id: this._selectedTransplantPlant.attributes.growspace_id,
+        plant_id: plant.attributes.plant_id,
+        source_growspace_id: plant.attributes.growspace_id,
         target_growspace_id: this.targetGrowspaceId,
-        new_row: this.row + 1,
-        new_col: this.col + 1,
-        veg_start: today, // Auto-set veg_start to today
+        new_row: tabDraft.row + 1,
+        new_col: tabDraft.col + 1,
+        veg_start: today,
       };
-
+      this._sm = transition(this._sm, { type: 'SaveRequested' });
       this.dispatchEvent(
-        new CustomEvent('transplant-plant-submit', {
-          detail: payload,
-          bubbles: true,
-          composed: true,
-        })
+        new CustomEvent('transplant-plant-submit', { detail: payload, bubbles: true, composed: true })
       );
     }
   }
 
   render() {
-    console.log(
-      '[AddPlantDialog] render called, open:',
-      this.open,
-      'strains:',
-      this.strainLibrary?.length
-    );
     if (!this.open) return html``;
+
+    const { activeTab, tabs } = this._sm;
+    const addDraft = tabs.add.draft;
+    const addSub = tabs.add.sub;
 
     const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
 
-    // Filter phenotypes based on selected strain
-    const relevantPhenotypes = this.strain
+    const relevantPhenotypes = addDraft.strain
       ? [
-        ...new Set(
-          this.strainLibrary
-            .filter((s) => s.strain === this.strain && s.phenotype)
-            .map((s) => s.phenotype)
-        ),
-      ].sort()
+          ...new Set(
+            this.strainLibrary
+              .filter((s) => s.strain === addDraft.strain && s.phenotype)
+              .map((s) => s.phenotype)
+          ),
+        ].sort()
       : [];
 
     const dialogTitle =
-      this._activeTab === 'add'
+      activeTab === 'add'
         ? 'Add New Plant'
-        : this._activeTab === 'clone'
+        : activeTab === 'clone'
           ? 'Transplant Clone'
           : 'Transplant Seedling';
 
     const dialogSubtitle =
-      this._activeTab === 'add'
-        ? 'Enter plant details below'
+      activeTab === 'add'
+        ? `Slot ${addDraft.row + 1}–${addDraft.col + 1}`
         : 'Select a plant to transplant to this location';
 
-    const buttonText = this._activeTab === 'add' ? 'Add Plant' : 'Transplant';
-    const isButtonDisabled = this._activeTab !== 'add' && !this._selectedTransplantPlant;
+    const isTransplant = activeTab !== 'add';
+    const transplantDraft = activeTab === 'clone' ? tabs.clone.draft : tabs.seedling.draft;
+    const isButtonDisabled = isTransplant && !transplantDraft.selectedPlantId;
+    const isOnLastStep = addSub.kind === 'step-schedule';
 
     return html`
       <ha-dialog
         open
         @closed=${this._close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
+        width="large"
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->
@@ -304,172 +522,398 @@ export class AddPlantDialog extends LitElement {
           <!-- TAB BAR -->
           <div class="tab-bar">
             <button
-              class="tab ${this._activeTab === 'add' ? 'active' : ''}"
+              class="tab ${activeTab === 'add' ? 'active' : ''}"
               @click=${() => {
-        this._activeTab = 'add';
-        this._selectedTransplantPlant = null;
-      }}
+                this._sm = transition(this._sm, { type: 'TabSelected', tab: 'add' });
+              }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
-              Add Plant
+              New Plant
             </button>
             <button
-              class="tab ${this._activeTab === 'clone' ? 'active' : ''}"
+              class="tab ${activeTab === 'clone' ? 'active' : ''}"
               @click=${() => {
-        this._activeTab = 'clone';
-        this._selectedTransplantPlant = null;
-      }}
+                this._sm = transition(this._sm, { type: 'TabSelected', tab: 'clone' });
+              }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
-              Clone
+              Transplant Clone
             </button>
             <button
-              class="tab ${this._activeTab === 'seedling' ? 'active' : ''}"
+              class="tab ${activeTab === 'seedling' ? 'active' : ''}"
               @click=${() => {
-        this._activeTab = 'seedling';
-        this._selectedTransplantPlant = null;
-      }}
+                this._sm = transition(this._sm, { type: 'TabSelected', tab: 'seedling' });
+              }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
-              Seedling
+              Transplant Seedling
             </button>
           </div>
 
+          <!-- WIZARD STEP INDICATOR (add tab only) -->
+          ${activeTab === 'add' ? this._renderWizardSteps(addSub) : nothing}
+
           <div class="overview-grid">
-            ${this._activeTab === 'add'
-        ? this._renderAddPlantForm(uniqueStrains, relevantPhenotypes)
-        : this._renderTransplantForm(this._activeTab)}
+            ${activeTab === 'add'
+              ? this._loadingLibrary && this.strainLibrary.length === 0
+                ? html`<div class="empty-state" role="status">Loading strain library…</div>`
+                : this._renderWizardStep(addSub, uniqueStrains, relevantPhenotypes)
+              : this._renderTransplantForm(activeTab as 'clone' | 'seedling')}
           </div>
 
           <!-- ACTION BUTTONS -->
           <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
-            <button
-              class="md3-button primary"
-              @click=${this._confirm}
-              ?disabled=${isButtonDisabled}
-            >
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiSprout}"></path>
-              </svg>
-              ${buttonText}
-            </button>
+            ${activeTab === 'add'
+              ? html`
+                  <button
+                    class="md3-button tonal"
+                    @click=${addSub.kind === 'step-identity' ? this._close : () => {
+                      this._sm = transition(this._sm, { type: 'WizardBacked' });
+                    }}
+                  >
+                    ${addSub.kind === 'step-identity' ? 'Cancel' : 'Back'}
+                  </button>
+                  ${!isOnLastStep
+                    ? html`
+                        <button
+                          class="md3-button primary"
+                          @click=${() => {
+                            this._sm = transition(this._sm, { type: 'WizardAdvanced' });
+                          }}
+                          ?disabled=${addSub.kind === 'step-identity' && !addDraft.strain}
+                        >
+                          Continue
+                          <svg
+                            style="width:16px;height:16px;fill:currentColor;margin-left:4px;"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="${mdiChevronRight}"></path>
+                          </svg>
+                        </button>
+                      `
+                    : html`
+                        <button class="md3-button primary" @click=${this._confirm}>
+                          <svg
+                            style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="${mdiSprout}"></path>
+                          </svg>
+                          Add Plant
+                        </button>
+                      `}
+                `
+              : html`
+                  <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+                  <button
+                    class="md3-button primary"
+                    @click=${this._confirm}
+                    ?disabled=${isButtonDisabled}
+                  >
+                    <svg
+                      style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="${mdiSprout}"></path>
+                    </svg>
+                    Transplant
+                  </button>
+                `}
           </div>
         </div>
       </ha-dialog>
     `;
   }
 
-  private renderTimelineContent() {
-    const name = this.growspaceName.toLowerCase();
-
-    if (name.includes('mother')) {
-      return html`<md3-date-input
-        label="Mother Start"
-        .value=${this.mother_start}
-        @change=${(e: CustomEvent) => (this.mother_start = e.detail)}
-      ></md3-date-input>`;
-    } else if (name.includes('clone')) {
-      return html`<md3-date-input
-        label="Clone Start"
-        .value=${this.clone_start}
-        @change=${(e: CustomEvent) => (this.clone_start = e.detail)}
-      ></md3-date-input>`;
-    } else if (name.includes('dry')) {
-      return html`<md3-date-input
-        label="Dry Start"
-        .value=${this.dry_start}
-        @change=${(e: CustomEvent) => (this.dry_start = e.detail)}
-      ></md3-date-input>`;
-    } else if (name.includes('cure')) {
-      return html`<md3-date-input
-        label="Cure Start"
-        .value=${this.cure_start}
-        @change=${(e: CustomEvent) => (this.cure_start = e.detail)}
-      ></md3-date-input>`;
-    } else {
-      return html`
-        <md3-date-input
-          label="Seedling Start"
-          .value=${this.seedling_start}
-          @change=${(e: CustomEvent) => (this.seedling_start = e.detail)}
-        ></md3-date-input>
-        <md3-date-input
-          label="Veg Start"
-          .value=${this.veg_start}
-          @change=${(e: CustomEvent) => (this.veg_start = e.detail)}
-        ></md3-date-input>
-        <md3-date-input
-          label="Flower Start"
-          .value=${this.flower_start}
-          @change=${(e: CustomEvent) => (this.flower_start = e.detail)}
-        ></md3-date-input>
-      `;
-    }
+  private _renderWizardSteps(sub: AddSubState) {
+    const steps = ['Identity', 'Source', 'Schedule'];
+    const currentIndex = sub.kind === 'step-identity' ? 0 : sub.kind === 'step-source' ? 1 : 2;
+    return html`
+      <div class="wizard-steps">
+        ${steps.map((label, i) => {
+          const isActive = i === currentIndex;
+          const isDone = i < currentIndex;
+          return html`
+            ${i > 0 ? html`<div class="wizard-connector ${isDone ? 'done' : ''}"></div>` : nothing}
+            <div class="wizard-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}">
+              <div class="wizard-step-num">
+                ${isDone
+                  ? html`<svg style="width:12px;height:12px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${mdiCheck}"></path>
+                    </svg>`
+                  : i + 1}
+              </div>
+              ${label}
+            </div>
+          `;
+        })}
+      </div>
+    `;
   }
 
-  private _renderAddPlantForm(uniqueStrains: string[], relevantPhenotypes: string[]) {
+  private _renderWizardStep(sub: AddSubState, uniqueStrains: string[], relevantPhenotypes: string[]) {
+    if (sub.kind === 'step-identity') return this._renderStep1Identity(uniqueStrains, relevantPhenotypes);
+    if (sub.kind === 'step-source') return this._renderStep2Source();
+    return this._renderStep3Schedule();
+  }
+
+  private _renderStep1Identity(uniqueStrains: string[], relevantPhenotypes: string[]) {
+    const { draft } = this._sm.tabs.add;
+    const query = draft.strainQuery.toLowerCase();
+    const filtered = query
+      ? uniqueStrains.filter((s) => s.toLowerCase().includes(query))
+      : uniqueStrains.slice(0, 8);
+    const showDropdown = filtered.length > 0 && draft.strainQuery !== draft.strain;
+
+    const selectedEntry = draft.strain
+      ? this.strainLibrary.find((s) => s.strain === draft.strain)
+      : null;
+
     return html`
-      <!-- IDENTITY CARD -->
       <div class="detail-card">
-        <h3>Identity & Location</h3>
-        <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;">
-          <md3-select
-            style="width: 100%;"
+        <h3>What are you growing?</h3>
+
+        <div class="strain-typeahead">
+          <md3-text-input
             label="Strain *"
-            .value=${this.strain}
-            .options=${uniqueStrains}
-            @change=${(e: CustomEvent) => (this.strain = e.detail)}
-          ></md3-select>
-          <button
-            class="md3-button tonal"
-            style="height: 56px; width: 56px; padding: 0; display: flex; align-items: center; justify-content: center;"
-            @click=${this._openStrainCreator}
-            title="Add New Strain"
-          >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiDna}"></path>
-            </svg>
-          </button>
+            .value=${draft.strainQuery || draft.strain}
+            placeholder="Search strain library…"
+            @change=${(e: CustomEvent) => {
+              this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: e.detail });
+              if (e.detail !== draft.strain) {
+                this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: '' });
+              }
+            }}
+          ></md3-text-input>
+          ${showDropdown
+            ? html`
+                <div class="strain-dropdown">
+                  ${filtered.map((s) => {
+                    const entry = this.strainLibrary.find((e) => e.strain === s);
+                    return html`
+                      <div
+                        class="strain-option"
+                        @click=${() => {
+                          this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: s });
+                          this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: s });
+                        }}
+                      >
+                        <span>${s}</span>
+                        ${entry?.breeder
+                          ? html`<span class="strain-option-meta">${entry.breeder}</span>`
+                          : nothing}
+                      </div>
+                    `;
+                  })}
+                </div>
+              `
+            : nothing}
         </div>
-        <md3-text-input
-          label="Phenotype"
-          .value=${this.phenotype}
-          .suggestions=${relevantPhenotypes}
-          @change=${(e: CustomEvent) => (this.phenotype = e.detail)}
-        ></md3-text-input>
+
+        ${draft.strain
+          ? html`
+              <md3-text-input
+                label="Phenotype"
+                .value=${draft.phenotype}
+                .suggestions=${relevantPhenotypes}
+                @change=${(e: CustomEvent) =>
+                  (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: e.detail }))}
+              ></md3-text-input>
+            `
+          : nothing}
+        ${selectedEntry
+          ? html`
+              <div
+                style="
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: var(--border-radius-sm, 8px);
+            background: rgba(76,175,80,0.06);
+            border: 1px solid rgba(76,175,80,0.2);
+            font-size: var(--font-size-supporting);
+            color: rgba(255,255,255,0.7);
+            display: flex; gap: 16px;
+          "
+              >
+                ${selectedEntry.breeder
+                  ? html`<span><b style="color:var(--text-primary)">${selectedEntry.breeder}</b></span>`
+                  : nothing}
+                ${selectedEntry.type ? html`<span>${selectedEntry.type}</span>` : nothing}
+                ${selectedEntry.flowering_days_min
+                  ? html`<span
+                      >~${selectedEntry.flowering_days_min}–${selectedEntry.flowering_days_max ||
+                      '?'}
+                      days flower</span
+                    >`
+                  : nothing}
+              </div>
+            `
+          : nothing}
 
         <div
           class="toggle-container"
-          style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
+          style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
         >
-          <span style="font-size: 0.95rem; color: var(--secondary-text-color);"
+          <span style="font-size: var(--font-size-sm); color: var(--secondary-text-color);"
             >Add to Strain Library</span
           >
           <md3-switch
-            .checked=${this.addToLibrary}
-            @change=${(e: Event) => (this.addToLibrary = (e.target as HTMLInputElement).checked)}
-            ?disabled=${!this.strain}
+            .checked=${draft.addToLibrary}
+            @change=${(e: Event) =>
+              (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: (e.target as HTMLInputElement).checked }))}
+            ?disabled=${!draft.strain}
           ></md3-switch>
-        </div>
-        <div class="row-col-grid">
-          <md3-number-input
-            label="Row"
-            .value=${this.row + 1}
-            @change=${(e: CustomEvent) => (this.row = parseInt(e.detail) - 1)}
-          ></md3-number-input>
-          <md3-number-input
-            label="Col"
-            .value=${this.col + 1}
-            @change=${(e: CustomEvent) => (this.col = parseInt(e.detail) - 1)}
-          ></md3-number-input>
         </div>
       </div>
 
-      <!-- TIMELINE CARD -->
+      <div style="padding-top: 4px;">
+        <button class="md3-button tonal" style="width: 100%;" @click=${this._openStrainCreator}>
+          <svg
+            style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+            viewBox="0 0 24 24"
+          >
+            <path d="${mdiDna}"></path>
+          </svg>
+          Create New Strain
+        </button>
+      </div>
+    `;
+  }
+
+  private _renderStep2Source() {
+    const { draft } = this._sm.tabs.add;
+    const clonable = this.siblingPlants.filter((p) =>
+      ['mother', 'veg', 'flower', 'vegetative', 'flowering'].includes(
+        (p.state || p.attributes?.stage || '').toLowerCase()
+      )
+    );
+
+    return html`
       <div class="detail-card">
-        <h3>Timeline</h3>
-        ${this.renderTimelineContent()}
+        <h3>Plant Source</h3>
+        <div class="source-toggle">
+          <button
+            class="source-btn ${draft.sourceType === 'seed' ? 'active' : ''}"
+            @click=${() => {
+              this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'seed' });
+              this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'siblingPlantId', value: null });
+            }}
+          >
+            🌱 Seed
+          </button>
+          <button
+            class="source-btn ${draft.sourceType === 'clone' ? 'active' : ''}"
+            @click=${() =>
+              (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' }))}
+            ?disabled=${clonable.length === 0}
+          >
+            ✂️ Clone
+          </button>
+        </div>
+
+        ${draft.sourceType === 'clone' && clonable.length > 0
+          ? html`
+              <div
+                style="font-size: var(--font-size-supporting); color: var(--secondary-text-color); margin-bottom: 8px;"
+              >
+                Select mother plant to clone settings from:
+              </div>
+              <div class="sibling-list">
+                ${clonable.map((p) => {
+                  const isSelected = draft.siblingPlantId === p.attributes.plant_id;
+                  const stage = p.state || p.attributes?.stage || 'unknown';
+                  const days = p.attributes?.days_in_stage;
+                  return html`
+                    <div
+                      class="sibling-item ${isSelected ? 'selected' : ''}"
+                      @click=${() => {
+                        const today = new Date().toISOString().split('T')[0];
+                        this._sm = transition(this._sm, {
+                          type: 'SiblingPlantSelected',
+                          strain: p.attributes.strain || draft.strain,
+                          phenotype: p.attributes.phenotype || draft.phenotype,
+                          cloneStart: today,
+                        });
+                      }}
+                    >
+                      <div>
+                        <div style="font-weight: 500;">
+                          ${p.attributes.strain || 'Unknown'}${p.attributes.phenotype
+                            ? ` · ${p.attributes.phenotype}`
+                            : ''}
+                        </div>
+                        <div class="sibling-meta">
+                          ${stage}${days !== undefined ? ` · D${days}` : ''}
+                        </div>
+                      </div>
+                      ${isSelected
+                        ? html`
+                            <svg style="width:18px;height:18px;fill:var(--on-primary-container-bright);" viewBox="0 0 24 24">
+                              <path d="${mdiCheck}"></path>
+                            </svg>
+                          `
+                        : nothing}
+                    </div>
+                  `;
+                })}
+              </div>
+            `
+          : nothing}
+        ${draft.sourceType === 'clone' && clonable.length === 0
+          ? html`
+              <p
+                style="font-size: 0.85rem; color: var(--secondary-text-color); font-style: italic;"
+              >
+                No clonable plants found in this growspace.
+              </p>
+            `
+          : nothing}
+      </div>
+
+      <div class="detail-card">
+        <h3>Location</h3>
+        <div class="row-col-grid">
+          <md3-number-input
+            label="Row"
+            .value=${draft.row + 1}
+            @change=${(e: CustomEvent) =>
+              (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'row', value: parseInt(e.detail) - 1 }))}
+          ></md3-number-input>
+          <md3-number-input
+            label="Col"
+            .value=${draft.col + 1}
+            @change=${(e: CustomEvent) =>
+              (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'col', value: parseInt(e.detail) - 1 }))}
+          ></md3-number-input>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderStep3Schedule() {
+    const { draft } = this._sm.tabs.add;
+    const dateField = STAGE_DATE_FIELD[draft.stage] as keyof typeof draft | undefined;
+    const dateValue = dateField ? (draft[dateField] as string) : '';
+    const dateLabel = STAGE_DATE_LABELS[draft.stage] ?? 'Start Date';
+
+    return html`
+      <div class="detail-card">
+        <h3>Schedule</h3>
+        <md3-select
+          label="Stage"
+          .value=${draft.stage}
+          .options=${STAGE_OPTIONS}
+          @change=${(e: CustomEvent) =>
+            (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: e.detail }))}
+        ></md3-select>
+        ${dateField
+          ? html`<md3-date-input
+              label=${dateLabel}
+              .value=${dateValue}
+              @change=${(e: CustomEvent) =>
+                (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: dateField, value: e.detail }))}
+            ></md3-date-input>`
+          : nothing}
       </div>
     `;
   }
@@ -478,12 +922,13 @@ export class AddPlantDialog extends LitElement {
     const plants = stage === 'clone' ? this.clonePlants : this.seedlingPlants;
     const stageLabel = stage === 'clone' ? 'Clone' : 'Seedling';
     const daysField = stage === 'clone' ? 'clone_days' : 'seedling_days';
+    const tabDraft = stage === 'clone' ? this._sm.tabs.clone.draft : this._sm.tabs.seedling.draft;
 
-    // Build options for select with format: StrainName, Phenotype, Growspace, Col, Row, Days
     const options = plants.map((p) => {
       const strain = p.attributes.strain || 'Unknown';
       const pheno = p.attributes.phenotype || '-';
-      const growspace = (p as PlantEntity & { _growspaceName?: string })._growspaceName || 'Unknown';
+      const growspace =
+        (p as PlantEntity & { _growspaceName?: string })._growspaceName || 'Unknown';
       const col = p.attributes.col;
       const row = p.attributes.row;
       const days = p.attributes[daysField] || 0;
@@ -494,30 +939,37 @@ export class AddPlantDialog extends LitElement {
       };
     });
 
-    const selectedPlant = this._selectedTransplantPlant;
+    const selectedPlant = tabDraft.selectedPlantId
+      ? plants.find((p) => p.attributes.plant_id === tabDraft.selectedPlantId) || null
+      : null;
 
     return html`
       <!-- SELECT PLANT CARD -->
       <div class="detail-card">
         <h3>Select ${stageLabel} to Transplant</h3>
         ${plants.length === 0
-        ? html`<p style="color: var(--secondary-text-color); font-style: italic;">
+          ? html`<p style="color: var(--secondary-text-color); font-style: italic;">
               No ${stageLabel.toLowerCase()}s available for transplant
             </p>`
-        : html`
+          : html`
               <md3-select
                 label="Select Plant"
-                .value=${selectedPlant?.attributes.plant_id || ''}
+                .value=${tabDraft.selectedPlantId || ''}
                 .options=${options}
                 @change=${(e: CustomEvent) => {
-            const plantId = e.detail;
-            this._selectedTransplantPlant =
-              plants.find((p) => p.attributes.plant_id === plantId) || null;
-          }}
+                  this._sm = transition(this._sm, {
+                    type: 'DraftFieldChanged',
+                    tab: stage,
+                    field: 'selectedPlantId',
+                    value: plants.find((p) => p.attributes.plant_id === e.detail)
+                      ? e.detail
+                      : null,
+                  });
+                }}
               ></md3-select>
             `}
         ${selectedPlant
-        ? html`
+          ? html`
               <div class="plant-info-grid">
                 <span class="info-label">Strain:</span>
                 <span class="info-value">${selectedPlant.attributes.strain}</span>
@@ -536,12 +988,12 @@ export class AddPlantDialog extends LitElement {
                 <span class="info-label">${stage === 'clone' ? 'Clone' : 'Seedling'} Start:</span>
                 <span class="info-value"
                   >${selectedPlant.attributes[
-          stage === 'clone' ? 'clone_start' : 'seedling_start'
-          ] || 'N/A'}</span
+                    stage === 'clone' ? 'clone_start' : 'seedling_start'
+                  ] || 'N/A'}</span
                 >
               </div>
             `
-        : nothing}
+          : nothing}
       </div>
 
       <!-- NEW LOCATION CARD -->
@@ -550,13 +1002,25 @@ export class AddPlantDialog extends LitElement {
         <div class="row-col-grid">
           <md3-number-input
             label="Row"
-            .value=${this.row + 1}
-            @change=${(e: CustomEvent) => (this.row = parseInt(e.detail) - 1)}
+            .value=${tabDraft.row + 1}
+            @change=${(e: CustomEvent) =>
+              (this._sm = transition(this._sm, {
+                type: 'DraftFieldChanged',
+                tab: stage,
+                field: 'row',
+                value: parseInt(e.detail) - 1,
+              }))}
           ></md3-number-input>
           <md3-number-input
             label="Col"
-            .value=${this.col + 1}
-            @change=${(e: CustomEvent) => (this.col = parseInt(e.detail) - 1)}
+            .value=${tabDraft.col + 1}
+            @change=${(e: CustomEvent) =>
+              (this._sm = transition(this._sm, {
+                type: 'DraftFieldChanged',
+                tab: stage,
+                field: 'col',
+                value: parseInt(e.detail) - 1,
+              }))}
           ></md3-number-input>
         </div>
         <p style="margin-top: 12px; font-size: 0.85rem; color: var(--secondary-text-color);">

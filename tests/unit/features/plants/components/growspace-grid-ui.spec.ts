@@ -38,6 +38,7 @@ describe('growspace-grid-ui', () => {
       col: (i % 3) + 1,
       plant: i === 0 ? defaultPlant : null,
       overlayColor: '',
+      isSelected: false,
     }));
   };
 
@@ -63,16 +64,61 @@ describe('growspace-grid-ui', () => {
     expect(plantCards?.length).to.equal(1);
   });
 
-  it('renders overlays when overlay mode is not NONE', async () => {
-    const cells = [{
+  it('renders correctly in list view', async () => {
+    const cells = createCells(1);
+    const el = await fixture<GrowspaceGridUI>(html`
+      <growspace-grid-ui .cells=${cells} .isListView=${true}></growspace-grid-ui>
+    `);
+    
+    const grid = el.shadowRoot?.querySelector('.grid');
+    expect(grid?.classList.contains('force-list-view')).to.be.true;
+    expect(grid?.getAttribute('style')).to.equal('');
+  });
+
+  it('renders correctly in compact view', async () => {
+    const el = await fixture<GrowspaceGridUI>(html`
+      <growspace-grid-ui .isCompactView=${true}></growspace-grid-ui>
+    `);
+    
+    const grid = el.shadowRoot?.querySelector('.grid');
+    expect(grid?.classList.contains('compact')).to.be.true;
+  });
+
+  it('uses entity_id as key when plant_id is missing', async () => {
+    const plantWithoutId: PlantEntity = {
+      ...defaultPlant,
+      attributes: { ...defaultPlant.attributes }
+    };
+    delete (plantWithoutId.attributes as any).plant_id;
+    
+    const cells: GridCellData[] = [{
       row: 1,
       col: 1,
-      plant: defaultPlant,
-      overlayColor: 'rgba(255, 0, 0, 0.5)'
+      plant: plantWithoutId,
+      overlayColor: '',
+      isSelected: false,
     }];
     
     const el = await fixture<GrowspaceGridUI>(html`
-      <growspace-grid-ui .cells=${cells} .overlayMode=${GridOverlayMode.STRAINS}></growspace-grid-ui>
+      <growspace-grid-ui .cells=${cells}></growspace-grid-ui>
+    `);
+    
+    // We can't easily verify the internal repeat key, but we ensure it renders without error
+    const plantCard = el.shadowRoot?.querySelector('plant-card-container');
+    expect(plantCard).to.exist;
+  });
+
+  it('renders overlays when overlay mode is not NONE', async () => {
+    const cells: GridCellData[] = [{
+      row: 1,
+      col: 1,
+      plant: defaultPlant,
+      overlayColor: 'rgba(255, 0, 0, 0.5)',
+      isSelected: false,
+    }];
+    
+    const el = await fixture<GrowspaceGridUI>(html`
+      <growspace-grid-ui .cells=${cells} .overlayMode=${GridOverlayMode.VPD}></growspace-grid-ui>
     `);
     
     const overlay = el.shadowRoot?.querySelector('.grid-overlay') as HTMLElement;
@@ -183,7 +229,7 @@ describe('growspace-grid-ui', () => {
       
       const grid = el.shadowRoot?.querySelector('.grid') as HTMLElement;
       
-      // We manually create a mock dataTransfer since DataTransfer is not constructible in Node
+      // DataTransfer truthy branch
       const pd = { dropEffect: 'none' };
       const dragOverEvent = new Event('dragover', { cancelable: true }) as any;
       dragOverEvent.dataTransfer = pd;
@@ -191,6 +237,32 @@ describe('growspace-grid-ui', () => {
       grid.dispatchEvent(dragOverEvent);
       expect(dragOverEvent.defaultPrevented).to.be.true;
       expect(dragOverEvent.dataTransfer.dropEffect).to.equal('move');
+
+      // DataTransfer null branch (line 416)
+      const noTransferEvent = new Event('dragover', { cancelable: true }) as any;
+      noTransferEvent.dataTransfer = null;
+      grid.dispatchEvent(noTransferEvent);
+      expect(noTransferEvent.defaultPrevented).to.be.true;
+    });
+
+    it('handles null event in _handleDrop (line 422, 434)', async () => {
+      const el = await fixture<GrowspaceGridUI>(html`
+        <growspace-grid-ui></growspace-grid-ui>
+      `);
+      
+      let payload: any = null;
+      el.addEventListener('grid-drop', (e: any) => { payload = e.detail; });
+      
+      // Manually call the private handler if needed, or trigger via element with null event
+      // If we can't trigger it via DOM with null event, we might need a direct call test
+      // but let's try triggering it via the element's event handling if possible.
+      // In growspace-grid-ui, _handleDrop is called by @drop on empty slots.
+      // Let's try calling it via the internal reference if possible, or just through a test helper.
+      (el as any)._handleDrop(null, 2, 3, null);
+      
+      expect(payload.targetRow).to.equal(2);
+      expect(payload.targetCol).to.equal(3);
+      expect(payload.originalEvent).to.be.null;
     });
   });
 });

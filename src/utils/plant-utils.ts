@@ -12,6 +12,7 @@ import {
   StageDisplay,
   STAGE_CONFIG,
 } from '../types';
+import { toWire } from './lifecycle-timestamp';
 
 export const PLANT_STAGES: PlantStage[] = [
   PlantStage.SEEDLING,
@@ -25,13 +26,13 @@ export const PLANT_STAGES: PlantStage[] = [
 
 export class PlantUtils {
   private static readonly stageColors: Record<PlantStage, string> = {
-    [PlantStage.MOTHER]: '#E91E63',
-    [PlantStage.CLONE]: '#FF5722',
-    [PlantStage.SEEDLING]: '#4CAF50',
-    [PlantStage.VEG]: '#8BC34A',
-    [PlantStage.FLOWER]: '#FF9800',
-    [PlantStage.DRY]: '#9c27b0',
-    [PlantStage.CURE]: '#2196f3',
+    [PlantStage.MOTHER]: 'var(--stage-mother, #e91e63)',
+    [PlantStage.CLONE]: 'var(--stage-clone, #26c6da)',
+    [PlantStage.SEEDLING]: 'var(--stage-seedling, #8bc34a)',
+    [PlantStage.VEG]: 'var(--stage-veg, #4caf50)',
+    [PlantStage.FLOWER]: 'var(--stage-flower, #ff9800)',
+    [PlantStage.DRY]: 'var(--stage-dry, #9c27b0)',
+    [PlantStage.CURE]: 'var(--stage-cure, #2196f3)',
   };
 
   private static readonly stageIcons: Record<PlantStage, string> = {
@@ -55,7 +56,11 @@ export class PlantUtils {
 
   static getPlantStageColor(state: PlantStage | string | undefined | null): string {
     const key = this.normalizeStage(state);
-    return this.stageColors[key] ?? '#757575';
+    return this.stageColors[key] ?? 'var(--stage-unknown, #757575)';
+  }
+
+  static encodeLocalPath(path: string): string {
+    return path.replace(/#/g, '%23');
   }
 
   static getPlantStageIcon(state: PlantStage | string | undefined | null): string {
@@ -214,27 +219,6 @@ export class PlantUtils {
   /**
    * Extracts YYYY-MM-DD from a date string or datetime-local string
    */
-  static formatDateForBackend(value?: string | null): string | undefined {
-    if (!value) return undefined;
-    try {
-      // If it's already roughly ISO format, extracting the first part is safest
-      // if we assume the user entered local time in the datetime-local input.
-      const parts = value.split('T');
-      if (parts.length > 0 && parts[0].match(/^\d{4}-\d{2}-\d{2}$/)) {
-        return parts[0];
-      }
-      // Fallback to parsing if format is unexpected
-      const dt = new Date(value);
-      if (isNaN(dt.getTime())) return undefined;
-      const yyyy = dt.getFullYear();
-      const mm = String(dt.getMonth() + 1).padStart(2, '0');
-      const dd = String(dt.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
-    } catch {
-      return undefined;
-    }
-  }
-
   /** Date fields used for plant lifecycle */
   private static readonly DATE_FIELDS = [
     'seedling_start',
@@ -266,15 +250,9 @@ export class PlantUtils {
     fieldsToProcess.forEach((field) => {
       if (editedAttributes[field] !== undefined) {
         if (this.DATE_FIELDS.includes(field as (typeof this.DATE_FIELDS)[number])) {
-          const val = String(editedAttributes[field] || '');
-          if (!val || val === 'null' || val === 'undefined') {
-            payload[field] = null;
-          } else {
-            const formattedDate = this.formatDateForBackend(val);
-            if (formattedDate) {
-              payload[field] = formattedDate;
-            }
-          }
+          // Lifecycle Timestamp: send the datetime verbatim (no truncation), or
+          // null to clear. See lifecycle-timestamp.ts / ADR-0018.
+          payload[field] = toWire(editedAttributes[field] as string | null | undefined);
         } else {
           if (editedAttributes[field] !== null) {
             payload[field] = editedAttributes[field];
@@ -296,28 +274,6 @@ export class PlantUtils {
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:00`;
-  }
-
-  /**
-   * Formats a date string (YYYY-MM-DD or ISO) to YYYY-MM-DDThh:mm for datetime-local inputs
-   */
-  static toDateTimeLocal(value?: string | null): string {
-    if (!value) return '';
-    try {
-      const dt = new Date(value);
-      if (isNaN(dt.getTime())) return '';
-
-      const pad = (n: number) => n.toString().padStart(2, '0');
-      const yyyy = dt.getFullYear();
-      const mm = pad(dt.getMonth() + 1);
-      const dd = pad(dt.getDate());
-      const hh = pad(dt.getHours());
-      const min = pad(dt.getMinutes());
-
-      return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-    } catch {
-      return '';
-    }
   }
 
   static getDominantStage(plants: PlantEntity[]): { stage: PlantStage; days: number } | null {

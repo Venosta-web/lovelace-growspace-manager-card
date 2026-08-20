@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi } from 'vitest';
-import { NutrientPresetsSchema, IPMPresetsSchema, validateGrowspaceResponse, validateGrowspaceCollection, validateStrainLibrary, HistoryPointSchema, GrowspaceAPIResponseSchema } from '../../../src/schemas/api-schema';
+import { NutrientPresetsSchema, IPMPresetsSchema, validateGrowspaceResponse, validateGrowspaceCollection, StrainLibraryWrapperSchema, HistoryPointSchema, GrowspaceAPIResponseSchema, ECRampPointSchema, ECRampCurvesSchema, StrainPhenotypeSchema, StrainDataSchema } from '../../../src/schemas/api-schema';
 
 describe('API Schemas', () => {
     describe('NutrientPresetsSchema', () => {
@@ -87,25 +87,25 @@ describe('API Schemas', () => {
 
         it('should validate growspace response', () => {
             const validData = {
-                growspace_id: 'gs1',
-                name: 'GS1',
-                type: 'flower',
-                rows: 1,
-                plants_per_row: 1,
-                grid: {},
-                irrigationConfig: {}
+                identity: { growspace_id: 'gs1', name: 'GS1', type: 'flower' },
+                grid: { rows: 1, plants_per_row: 1, total_plants: 0, grid: {} },
+                environment: {},
+                sensors: { sensor_types: {}, sensor_coordinates: {}, sensor_groups: [] },
+                irrigation: { irrigation_config: {} },
+                metrics: { vpd_status: 'ok', granular_stage: 'unknown', is_day: false },
             };
             const result = validateGrowspaceResponse(validData);
             expect(result.success).toBe(true);
             if (result.success && result.data) {
-                expect(result.data.growspace_id).toBe('gs1');
+                expect(result.data.identity.growspace_id).toBe('gs1');
             }
         });
 
         it('should return error for invalid growspace response', () => {
             // Suppress console.error for this test
             const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            const invalidData = { growspace_id: 123 }; // Invalid type
+            // identity.growspace_id must be a string, not a number
+            const invalidData = { identity: { growspace_id: 123, name: 'X', type: 'normal' } };
             const result = validateGrowspaceResponse(invalidData);
             expect(result.success).toBe(false);
             expect(result.errors).toBeDefined();
@@ -115,12 +115,13 @@ describe('API Schemas', () => {
         it('should validate growspace collection', () => {
             const validData = {
                 'gs1': {
-                    growspace_id: 'gs1',
-                    name: 'GS1',
-                    type: 'flower',
-                    rows: 1,
-                    plants_per_row: 1
-                }
+                    identity: { growspace_id: 'gs1', name: 'GS1', type: 'flower' },
+                    grid: { rows: 1, plants_per_row: 1, total_plants: 0, grid: {} },
+                    environment: {},
+                    sensors: { sensor_types: {}, sensor_coordinates: {}, sensor_groups: [] },
+                    irrigation: { irrigation_config: {} },
+                    metrics: { vpd_status: 'ok', granular_stage: 'unknown', is_day: false },
+                },
             };
             const result = validateGrowspaceCollection(validData);
             expect(result.success).toBe(true);
@@ -128,83 +129,81 @@ describe('API Schemas', () => {
 
         it('should return error for invalid growspace collection', () => {
             const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            const invalidData = { 'gs1': { growspace_id: 123 } };
+            // identity.growspace_id must be a string, not a number
+            const invalidData = { 'gs1': { identity: { growspace_id: 123, name: 'X', type: 'normal' } } };
             const result = validateGrowspaceCollection(invalidData);
             expect(result.success).toBe(false);
             spy.mockRestore();
         });
 
+        // The strain library is validated by the Strain slice's own schema at the
+        // hassCall seam; the wrapper is re-exported here for the older path.
         it('should validate strain library', () => {
-            const validData = {
+            const result = StrainLibraryWrapperSchema.safeParse({
                 strains: {},
                 strain_list: []
-            };
-            const result = validateStrainLibrary(validData);
+            });
             expect(result.success).toBe(true);
         });
 
         it('should return error for invalid strain library', () => {
-            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            const invalidData = { strains: "invalid" };
-            const result = validateStrainLibrary(invalidData);
+            const result = StrainLibraryWrapperSchema.safeParse({ strains: "invalid" });
             expect(result.success).toBe(false);
-            spy.mockRestore();
         });
 
         it('should handle irrigation schedule transformations', () => {
             const data = {
-                growspace_id: 'gs1',
-                name: 'GS1',
-                type: 'flower',
-                rows: 1,
-                plants_per_row: 1,
-                irrigation_config: {
-                    irrigation_times: [
-                        '08:00', // string transform
-                        { start_time: '10:00', duration_seconds: 60 }, // start_time and duration_seconds alias
-                        { time: '12:00', duration: null, duration_seconds: 120 } // null duration fallback
-                    ],
-                    drain_times: [
-                        '18:00', // string transform
-                        { time: '14:00', duration: 45 }, // explicit time and duration
-                        { time: '16:00', duration: null, duration_seconds: null } // both null -> undefined
-                    ]
-                }
+                identity: { growspace_id: 'gs1', name: 'GS1', type: 'flower' },
+                grid: { rows: 1, plants_per_row: 1, total_plants: 0, grid: {} },
+                environment: {},
+                sensors: {},
+                irrigation: {
+                    irrigation_config: {
+                        irrigation_times: [
+                            '08:00', // string transform
+                            { start_time: '10:00', duration_seconds: 60 }, // start_time and duration_seconds alias
+                            { time: '12:00', duration: null, duration_seconds: 120 }, // null duration fallback
+                        ],
+                        drain_times: [
+                            '18:00', // string transform
+                            { time: '14:00', duration: 45 }, // explicit time and duration
+                            { time: '16:00', duration: null, duration_seconds: null }, // both null -> undefined
+                        ],
+                    },
+                },
+                metrics: {},
             };
             const result = GrowspaceAPIResponseSchema.parse(data);
+            const irr = result.irrigation.irrigation_config;
 
             // irrigation_times[0]: '08:00' -> { time: '08:00' }
-            expect(result.irrigation_config.irrigation_times[0]).toEqual({ time: '08:00' });
+            expect(irr.irrigation_times[0]).toEqual({ time: '08:00' });
 
             // irrigation_times[1]: { start_time: '10:00', duration_seconds: 60 } -> { time: '10:00', duration: 60 }
-            expect(result.irrigation_config.irrigation_times[1] as any).toEqual({ time: '10:00', duration: 60 });
+            expect(irr.irrigation_times[1] as any).toEqual({ time: '10:00', duration: 60 });
 
             // irrigation_times[2]: { time: '12:00', duration: null, duration_seconds: 120 } -> { time: '12:00', duration: 120 }
-            expect(result.irrigation_config.irrigation_times[2] as any).toEqual({ time: '12:00', duration: 120 });
+            expect(irr.irrigation_times[2] as any).toEqual({ time: '12:00', duration: 120 });
 
             // drain_times[0]: '18:00' -> { time: '18:00' }
-            expect(result.irrigation_config.drain_times[0]).toEqual({ time: '18:00' });
+            expect(irr.drain_times[0]).toEqual({ time: '18:00' });
 
             // drain_times[1]: { time: '14:00', duration: 45 } -> { time: '14:00', duration: 45 }
-            expect(result.irrigation_config.drain_times[1] as any).toEqual({ time: '14:00', duration: 45 });
+            expect(irr.drain_times[1] as any).toEqual({ time: '14:00', duration: 45 });
 
             // drain_times[2]: { time: '16:00', duration: null, duration_seconds: null } -> { time: '16:00', duration: undefined }
-            expect(result.irrigation_config.drain_times[2].time).toBe('16:00');
-            expect((result.irrigation_config.drain_times[2] as any).duration).toBeUndefined();
+            expect(irr.drain_times[2].time).toBe('16:00');
+            expect((irr.drain_times[2] as any).duration).toBeUndefined();
         });
 
         it('should fail if irrigation schedule time is empty', () => {
             const data = {
-                growspace_id: 'gs1',
-                name: 'GS1',
-                type: 'flower',
-                rows: 1,
-                plants_per_row: 1,
-                irrigation_config: {
-                    irrigation_times: [
-                        { duration: 60 } // Missing time and start_time
-                    ]
-                }
+                identity: { growspace_id: 'gs1', name: 'GS1', type: 'flower' },
+                irrigation: {
+                    irrigation_config: {
+                        irrigation_times: [{ duration: 60 }], // Missing time and start_time
+                    },
+                },
             };
             const result = GrowspaceAPIResponseSchema.safeParse(data);
             expect(result.success).toBe(false);
@@ -256,4 +255,157 @@ describe('API Schemas', () => {
             expect(typeof result.s).toBe('string');
         });
     });
+
+    describe('ECRampPointSchema', () => {
+        it('uses provided day and target_ec directly', () => {
+            const result = ECRampPointSchema.parse({ day: 5, target_ec: 1.8 });
+            expect(result.day).toBe(5);
+            expect(result.target_ec).toBe(1.8);
+        });
+
+        it('derives day from week when day is missing', () => {
+            // week=2 → day = (2-1)*7 + 1 = 8
+            const result = ECRampPointSchema.parse({ week: 2, target_ec: 2.0 });
+            expect(result.day).toBe(8);
+        });
+
+        it('defaults to day=1 when both day and week are missing', () => {
+            const result = ECRampPointSchema.parse({ target_ec: 1.5 });
+            expect(result.day).toBe(1);
+        });
+
+        it('uses ec_min as target_ec when target_ec is missing', () => {
+            const result = ECRampPointSchema.parse({ day: 3, ec_min: 1.2 });
+            expect(result.target_ec).toBe(1.2);
+        });
+
+        it('defaults target_ec to 0 when both target_ec and ec_min are missing', () => {
+            const result = ECRampPointSchema.parse({ day: 3 });
+            expect(result.target_ec).toBe(0);
+        });
+    });
+
+    describe('ECRampCurvesSchema', () => {
+        it('parses a record of curves', () => {
+            const input = {
+                curve1: {
+                    id: 'curve1',
+                    name: 'Test Curve',
+                    points: [{ day: 1, target_ec: 1.0 }],
+                },
+            };
+            const result = ECRampCurvesSchema.parse(input);
+            expect(result).toHaveProperty('curve1');
+        });
+
+        it('transforms an empty array to an empty object (backend default)', () => {
+            const result = ECRampCurvesSchema.parse([]);
+            expect(result).toEqual({});
+        });
+    });
+
+    describe('StrainPhenotypeSchema', () => {
+        it('should transform nullish fields to undefined', () => {
+            const input = {
+                description: null,
+                image_path: null,
+                image_crop_meta: null,
+                flower_days_min: null,
+                flower_days_max: null,
+            };
+            const result = StrainPhenotypeSchema.parse(input);
+            expect(result.description).toBeUndefined();
+            expect(result.image_path).toBeUndefined();
+            expect(result.image_crop_meta).toBeUndefined();
+            expect(result.flower_days_min).toBeUndefined();
+            expect(result.flower_days_max).toBeUndefined();
+        });
+
+        it('should preserve valid values', () => {
+            const input = {
+                description: 'Sweet and fruity',
+                image_path: '/images/strain1.jpg',
+                image_crop_meta: { x: 10, y: 20, scale: 1.5 },
+                flower_days_min: 55,
+                flower_days_max: 65,
+            };
+            const result = StrainPhenotypeSchema.parse(input);
+            expect(result.description).toBe('Sweet and fruity');
+            expect(result.image_path).toBe('/images/strain1.jpg');
+            expect(result.image_crop_meta).toEqual({ x: 10, y: 20, scale: 1.5 });
+            expect(result.flower_days_min).toBe(55);
+            expect(result.flower_days_max).toBe(65);
+        });
+
+        it('should handle undefined / missing fields', () => {
+            const input = {};
+            const result = StrainPhenotypeSchema.parse(input);
+            expect(result.description).toBeUndefined();
+            expect(result.image_path).toBeUndefined();
+            expect(result.image_crop_meta).toBeUndefined();
+            expect(result.flower_days_min).toBeUndefined();
+            expect(result.flower_days_max).toBeUndefined();
+        });
+    });
+
+    describe('StrainDataSchema', () => {
+        it('should transform nullish meta fields to undefined', () => {
+            const input = {
+                meta: {
+                    breeder: null,
+                    breeder_logo: null,
+                    type: null,
+                    lineage: null,
+                    sex: null,
+                    sativa_percentage: null,
+                    indica_percentage: null,
+                }
+            };
+            const result = StrainDataSchema.parse(input);
+            expect(result.meta.breeder).toBeUndefined();
+            expect(result.meta.breeder_logo).toBeUndefined();
+            expect(result.meta.type).toBeUndefined();
+            expect(result.meta.lineage).toBeUndefined();
+            expect(result.meta.sex).toBeUndefined();
+            expect(result.meta.sativa_percentage).toBeUndefined();
+            expect(result.meta.indica_percentage).toBeUndefined();
+        });
+
+        it('should preserve valid values', () => {
+            const input = {
+                meta: {
+                    breeder: 'Barneys Farm',
+                    breeder_logo: '/logos/barneys.png',
+                    type: 'Hybrid',
+                    lineage: 'LSD x Super Lemon Haze',
+                    sex: 'Feminized',
+                    sativa_percentage: 60,
+                    indica_percentage: 40,
+                }
+            };
+            const result = StrainDataSchema.parse(input);
+            expect(result.meta.breeder).toBe('Barneys Farm');
+            expect(result.meta.breeder_logo).toBe('/logos/barneys.png');
+            expect(result.meta.type).toBe('Hybrid');
+            expect(result.meta.lineage).toBe('LSD x Super Lemon Haze');
+            expect(result.meta.sex).toBe('Feminized');
+            expect(result.meta.sativa_percentage).toBe(60);
+            expect(result.meta.indica_percentage).toBe(40);
+        });
+
+        it('should handle undefined / missing meta fields', () => {
+            const input = {
+                meta: {}
+            };
+            const result = StrainDataSchema.parse(input);
+            expect(result.meta.breeder).toBeUndefined();
+            expect(result.meta.breeder_logo).toBeUndefined();
+            expect(result.meta.type).toBeUndefined();
+            expect(result.meta.lineage).toBeUndefined();
+            expect(result.meta.sex).toBeUndefined();
+            expect(result.meta.sativa_percentage).toBeUndefined();
+            expect(result.meta.indica_percentage).toBeUndefined();
+        });
+    });
 });
+

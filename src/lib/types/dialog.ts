@@ -1,11 +1,32 @@
-import type {
-  PlantEntity,
-  PlantAttributes,
-  StrainEntry,
-} from '../../features/plants/types';
+import type { PlantEntity, PlantAttributes, StrainEntry } from '../../features/plants/types';
 import type { SensorGroup } from '../../features/environment/types';
+import type { VisionCheckupConfig } from '../../slices/camera';
+import type {
+  AcInfinityDevice,
+  AcInfinityGrowLight,
+  CirculationFanConfig,
+  ExhaustFanConfig,
+  GrowLightConfig,
+} from '../../slices/growspace/schema';
+
+export type { VisionCheckupConfig };
+export type { CirculationFanConfig };
+export type { ExhaustFanConfig };
+export type { AcInfinityDevice };
+
+export interface VisionCheckupResult {
+  severity: string;
+  check_type: string;
+  timestamp: string;
+  analysis: string;
+  issues_detected: string[];
+  recommendations: string[];
+  snapshot_paths: string[];
+}
 
 export interface AddPlantDialogState {
+  /** Target growspace, captured at open time (ADR-0027). */
+  growspaceId?: string;
   row: number;
   col: number;
   strain?: string;
@@ -21,6 +42,8 @@ export interface AddPlantDialogState {
 }
 
 export interface AddPlantsDialogState {
+  /** Target growspace, captured at open time (ADR-0027). */
+  growspaceId?: string;
   strain?: string;
   phenotype?: string;
   amount?: number;
@@ -33,6 +56,7 @@ export interface AddPlantsDialogState {
   dry_start?: string;
   cure_start?: string;
   addToLibrary?: boolean;
+  generation?: string;
 }
 
 export interface PlantOverviewDialogState {
@@ -45,64 +69,19 @@ export interface PlantOverviewDialogState {
 
 export interface StrainLibraryDialogState {
   editingStrain?: StrainEntry;
+  focusLineage?: boolean;
   source?: 'add-plant' | 'add-plants' | 'plant-overview';
   returnPayload?: unknown;
   initialTab?: 'strains' | 'seeds';
+  view?: 'strains' | 'editor';
+  /** When set, the seeds tab opens directly on this sub-view instead of the list. */
+  initialSubView?: 'list' | 'log-pollination';
+  /** Pre-fills the receiver plant field in the log-pollination form. */
+  prefilledReceiverId?: string;
 }
 
-export interface EnvironmentConfigData {
-  selectedGrowspaceId: string;
-  temperatureSensor: string;
-  humiditySensor: string;
-  vpdSensor: string;
-  co2Sensor: string;
-
-  // Fans
-  circulationFanEntity: string;
-  circulationFanEntities: string[];
-  exhaustEntity: string;
-  exhaustFanEntities: string[];
-
-  stressThreshold: number;
-  moldThreshold: number;
-
-  // Lights
-  lightSensor: string;
-  lightSensors: string[];
-
-  // Humidifier
-  humidifierEntity: string;
-  humidifierEntities: string[];
-
-  // Dehumidifier
-  dehumidifierEntity: string;
-  dehumidifierEntities: string[];
-  dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  dehumidifierControlEnabled: boolean;
-
-  soilMoistureSensor: string;
-  sensorGroups?: SensorGroup[];
-  sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
-  irrigationTanks?: any[];
-  cameraEntities?: string[];
-  visionCheckupConfig?: VisionCheckupConfig;
-}
-
-export interface VisionCheckupConfig {
-  enabled: boolean;
-  early_check_offset_minutes: number;
-  mid_check_hours: number;
-  late_check_offset_minutes: number;
-}
-
-export interface VisionCheckupResult {
-  timestamp: string;
-  check_type: 'early' | 'mid' | 'late' | 'manual';
-  analysis: string;
-  issues_detected: string[];
-  severity: 'none' | 'low' | 'medium' | 'high' | 'critical';
-  recommendations: string[];
-  snapshot_paths: string[];
+export interface EnvironmentConfigDialogState {
+  deviceId: string;
 }
 
 export interface VisionCheckupConfigEventDetail {
@@ -110,35 +89,96 @@ export interface VisionCheckupConfigEventDetail {
   visionCheckupConfig: VisionCheckupConfig;
 }
 
+/**
+ * Sparse environment patch (ADR-0032).
+ *
+ * Only `selectedGrowspaceId` is guaranteed — it routes the command. Every other
+ * key is present exactly when the user edited it, and a present key carries a
+ * deliberate value, including an empty one. Consumers must branch on key
+ * *presence* (`'key' in detail`), never on truthiness or array length, or
+ * untouched fields get rewritten and deliberate clears get dropped.
+ *
+ * The humidity control flags are deliberately absent: they are immediate-persist
+ * (`set_humidifier_control` / `set_dehumidifier_control`) and must never be
+ * re-sent by the buffered Save.
+ */
 export interface EnvironmentConfigEventDetail {
   selectedGrowspaceId: string;
-  temperatureSensor: string;
-  humiditySensor: string;
-  vpdSensor?: string | null;
+  // Multi sensors
+  temperatureSensors?: string[];
+  humiditySensors?: string[];
+  vpdSensors?: string[];
   co2Sensor?: string | null;
+  soilMoistureSensor?: string | null;
+  // Acceptable Moisture Band — only ever present as a complete pair.
+  soilMoistureMin?: number | null;
+  soilMoistureMax?: number | null;
+  // Fans
   circulationFanEntity?: string | null;
   circulationFanEntities?: string[];
-  stressThreshold: number;
-  moldThreshold: number;
-  lightSensor?: string | null;
-  lightSensors?: string[];
   exhaustEntity?: string | null;
   exhaustFanEntities?: string[];
+  exhaustFanAcInfinityDevices?: AcInfinityDevice[];
+  circulationFanAcInfinityDevices?: AcInfinityDevice[];
+  stressThreshold?: number | null;
+  moldThreshold?: number | null;
+  lightSensor?: string | null;
+  lightSensors?: string[];
+  // Humidifier
   humidifierEntity?: string | null;
   humidifierEntities?: string[];
+  humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+  humidifierAcInfinityDevices?: AcInfinityDevice[];
+  // Dehumidifier
   dehumidifierEntity?: string | null;
   dehumidifierEntities?: string[];
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  soilMoistureSensor?: string | null;
-  dehumidifierControlEnabled: boolean;
+  dehumidifierAcInfinityDevices?: AcInfinityDevice[];
+  growlightEntities?: string[];
+  growlightAcInfinityDevices?: AcInfinityGrowLight[];
+  growlightConfig?: GrowLightConfig;
   sensorGroups?: SensorGroup[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   irrigationTanks?: any[];
+  cameraEntities?: string[];
+  lungroomTempSensors?: string[];
+  // Advanced / irrigation monitoring
+  substrateTemperatureSensors?: string[];
+  phSensors?: string[];
+  feedEcSensors?: string[];
+  bulkEcSensors?: string[];
+  poreEcSensors?: string[];
+  runoffEcSensors?: string[];
+  drainVolumeSensors?: string[];
+  irrigationFlowSensors?: string[];
+  powerSensors?: string[];
+  energySensors?: string[];
+  circulationFanConfig?: CirculationFanConfig;
+  exhaustFanConfig?: ExhaustFanConfig;
+  vpdOptimalOverrides?: Record<
+    string,
+    { day: { low: number; high: number }; night: { low: number; high: number } }
+  >;
+  lstOffset?: number;
 }
 
 export interface ConfigDialogState {
-  currentTab: 'add_growspace' | 'edit_growspace' | 'environment' | 'dehumidifier' | 'sensor_groups';
-  environmentData: EnvironmentConfigData;
+  currentTab:
+    | 'growspaces'
+    | 'notifications'
+    | 'sensors'
+    | 'climate'
+    | 'growlight'
+    | 'humidity'
+    | 'irrigation'
+    | 'tanks'
+    | 'vision'
+    | 'heatmap'
+    | 'subareas'
+    | 'vpd_targets';
+  growspaceId: string;
+  /** Optional deep-link: a `data-scroll-target` value to scroll into view + pulse. */
+  scrollToField?: string;
 }
 
 export interface GrowMasterDialogState {
@@ -180,6 +220,8 @@ export interface IPMDialogState {
   plantIds?: string[];
 }
 
+export type QrTarget = 'web' | 'deeplink';
+
 export interface PrintLabelDialogState {
   plantId?: string;
   strainName?: string;
@@ -188,32 +230,64 @@ export interface PrintLabelDialogState {
   breeder?: string;
   breederLogo?: string;
   deviceId?: string;
+  defaultFields?: Partial<LabelFieldVisibility>;
+  defaultSizeId?: LabelSizeId;
+  defaultDensity?: PrintDensity;
+  defaultQrTarget?: QrTarget;
 }
 
-/** State for the harvest scoring modal shown before actually harvesting a plant. */
+export interface BatchPrintLabelsDialogState {
+  plantIds: string[];
+}
+
 export interface HarvestScoringDialogState {
   /** The plant being harvested. */
   plant: PlantEntity;
   /** Current score values (1–5 or undefined/null for unset). */
   vigor?: number | null;
-  structure?: number | null;
-  aroma?: number | null;
+  internodal_spacing?: number | null;
+  terpene_intensity?: number | null;
   resin?: number | null;
-  pestResistance?: number | null;
+  mold_resistance?: number | null;
 }
 
 export interface SnapshotsDialogState {
   growspaceId: string;
 }
 
-export interface CropSteeringDialogState {
-  growspaceId: string;
+export interface BatchCloneDialogState {
+  plantIds: string[];
 }
 
-export interface ECRampDialogState {
+export interface IrrigationDialogState {
   growspaceId?: string;
+  initialTab?: string;
+  scrollToField?: string;
 }
 
-export interface GrowReportDialogState {
-  growspaceId: string;
+export type LabelSizeId = '50x30' | '40x30' | '50x50' | '50x80' | '50x15';
+
+export type PrintDensity = 'low' | 'normal' | 'high';
+
+export interface LabelFieldVisibility {
+  name: boolean;
+  phenotype: boolean;
+  breeder: boolean;
+  lineage: boolean;
+  startDate: boolean;
+  stageAge: boolean;
+  plantId: boolean;
+  logo: boolean;
+  qr: boolean;
+}
+
+export interface LabelFieldValues {
+  name: string;
+  phenotype: string;
+  breeder: string;
+  lineage: string;
+  startDate: string;
+  stageAge: string;
+  plantId: string;
+  logo: string;
 }

@@ -2,9 +2,24 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html, nothing } from 'lit';
 import { fixture, elementUpdated } from '@open-wc/testing-helpers';
 import * as THREE from 'three';
-import '../../../src/components/heatmap-3d';
-import { Heatmap3D } from '../../../src/components/heatmap-3d';
+import '../../../src/features/environment/components/heatmap-3d';
+import { Heatmap3D } from '../../../src/features/environment/components/heatmap-3d';
 import { GrowspaceType } from '../../../src/constants';
+import { activeDialog$, __resetUiSliceForTests } from '../../../src/slices/ui';
+import * as uiSlice from '../../../src/slices/ui';
+
+// Empty-slot clicks now open the Add-Plant dialog through the slice op the
+// heatmap calls directly. `{ spy: true }` keeps every real atom/mutator
+// (activeDialog$, openPlantOverviewDialog) while recording calls.
+vi.mock('../../../src/slices/ui', { spy: true });
+
+vi.mock('../../../src/store/history/history-store', async () => {
+    const actual = await vi.importActual('../../../src/store/history/history-store') as any;
+    return {
+        ...actual,
+        getHistoryStats: vi.fn().mockResolvedValue({}),
+    };
+});
 
 // --- Mocks ---
 
@@ -332,13 +347,6 @@ describe('Heatmap3D Logic', () => {
         vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => { });
         vi.stubGlobal('ResizeObserver', MockResizeObserver);
 
-        // Mock fetchHistory globally
-        if (!(Heatmap3D.prototype as any).dataService) {
-            (Heatmap3D.prototype as any).dataService = { fetchHistory: vi.fn().mockResolvedValue({}) };
-        } else {
-            vi.spyOn((Heatmap3D.prototype as any).dataService, 'fetchHistory').mockResolvedValue({});
-        }
-
         vi.clearAllMocks();
         element = await fixture(html`
             <heatmap-3d .device=${JSON.parse(JSON.stringify(mockDevice))} .hass=${mockHass}></heatmap-3d>
@@ -366,14 +374,8 @@ describe('Heatmap3D Logic', () => {
 
         it('should handle fetchHistory failure', async () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-
-            // Ensure dataService exists
-            if (!(element as any).dataService) {
-                (element as any).dataService = { fetchHistory: vi.fn() };
-            }
-
-            // Mock fetchHistory failure directly
-            const fetchHistorySpy = vi.spyOn((element as any).dataService, 'fetchHistory').mockRejectedValue(new Error('Fetch Error'));
+            const { getHistoryStats } = await import('../../../src/store/history/history-store');
+            vi.mocked(getHistoryStats).mockRejectedValueOnce(new Error('Fetch Error'));
 
             // Add sensors so setup proceeds
             const env = { sensorCoordinates: { 'sensor.t1': { x: 0, y: 0, z: 0 } } };
@@ -382,7 +384,6 @@ describe('Heatmap3D Logic', () => {
             await (element as any).fetchHistory();
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to fetch history'), expect.any(Error));
 
-            fetchHistorySpy.mockRestore();
             consoleSpy.mockRestore();
         });
     });
@@ -733,46 +734,6 @@ describe('Heatmap3D Logic', () => {
             }
         });
 
-        it('should handle pump-tank linking', async () => {
-            const pumpId = 'sensor.pump1';
-            const tankId = 'sensor.tank1';
-
-            const pumpMesh = new THREE.Mesh();
-            pumpMesh.userData.types = ['irrigation_pump'];
-            const tankMesh = new THREE.Mesh();
-            tankMesh.userData.types = ['irrigation_tank'];
-
-            (element as any).sceneManager.sensorMeshes.set(pumpId, pumpMesh);
-            (element as any).sceneManager.sensorMeshes.set(tankId, tankMesh);
-
-            const updateSpy = vi.spyOn(element as any, '_updatePumpTankLinks');
-
-            // Link pump -> tank
-            (element as any)._handleLink(pumpId, tankId);
-            expect(element.device!.environmentAttributes!.pump_tank_links![pumpId]).toBe(tankId);
-            expect(updateSpy).toHaveBeenCalled();
-
-            // Link tank -> pump (reverse selection)
-            delete element.device!.environmentAttributes!.pump_tank_links![pumpId];
-            (element as any)._handleLink(tankId, pumpId);
-            expect(element.device!.environmentAttributes!.pump_tank_links![pumpId]).toBe(tankId);
-
-            // Unlink
-            (element as any)._handleUnlink(pumpId);
-            expect(element.device!.environmentAttributes!.pump_tank_links![pumpId]).toBeUndefined();
-        });
-
-        it('should handle linking with missing meshes', () => {
-            (element as any)._handleLink('missing1', 'missing2');
-            expect(true).toBe(true); // No error
-        });
-
-        it('should handle unlink with missing links object', () => {
-            element.device!.environmentAttributes!.pump_tank_links = undefined;
-            (element as any)._handleUnlink('p1');
-            expect(true).toBe(true); // No error
-        });
-
         it('should sync local coordinates from mesh', () => {
             element.device = JSON.parse(JSON.stringify(mockDevice)); // Ensure fresh device
             const mesh = new THREE.Mesh();
@@ -841,16 +802,7 @@ describe('Heatmap3D Logic', () => {
     });
 
     describe('Keyboard and Resize', () => {
-        it.skip('should handle keyboard rotation keys', () => {
-            (element as any).keyboardRotateEnabled = true;
-            const keyDown = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
-            (element as any)._handleKeyDown(keyDown);
-            expect((element as any)._keysPressed.has('ArrowLeft')).toBe(true);
 
-            const keyUp = new KeyboardEvent('keyup', { key: 'ArrowLeft' });
-            (element as any)._handleKeyUp(keyUp);
-            expect((element as any)._keysPressed.has('ArrowLeft')).toBe(false);
-        });
 
         it('should handle resize', () => {
             const spy = vi.spyOn(element as any, 'handleResize');
@@ -896,9 +848,9 @@ describe('Heatmap3D Logic', () => {
 
         it('should fetch history with sensor groups', async () => {
             element.device = { ...mockDevice, environmentAttributes: { sensorGroups: [{ temperature_sensors: ['s.t1'], humidity_sensors: ['s.h1'], vpd_sensors: ['s.v1'] }] } };
-            const historySpy = vi.spyOn((element as any).dataService, 'fetchHistory');
+            const { getHistoryStats } = await import('../../../src/store/history/history-store');
             await (element as any).fetchHistory();
-            expect(historySpy).toHaveBeenCalledWith(expect.arrayContaining(['s.t1', 's.h1', 's.v1']), expect.any(Date));
+            expect(getHistoryStats).toHaveBeenCalledWith(expect.arrayContaining(['s.t1', 's.h1', 's.v1']), expect.any(Date));
         });
 
         it('should return 0 for unknown sensor values', () => {
@@ -961,14 +913,17 @@ describe('Heatmap3D Logic', () => {
 
     describe('Interactions', () => {
         it('should handle plant or empty slot click via handleInteraction', () => {
-            const storeSpy = { openPlantOverviewDialog: vi.fn(), openAddPlantDialog: vi.fn() };
-            (element as any).store = storeSpy;
+            __resetUiSliceForTests();
+            vi.mocked(uiSlice.openAddPlantDialog).mockClear();
             const mockPlant = { entity_id: 'sensor.plant1', id: 'p1' };
             (element as any).handleInteraction('click', { plant: mockPlant });
-            expect(storeSpy.openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
+            expect(activeDialog$.get()).toEqual(expect.objectContaining({ type: 'PLANT_OVERVIEW' }));
+            expect((activeDialog$.get() as { payload: { plant: unknown } }).payload.plant).toBe(
+                mockPlant
+            );
             const mockEmpty = { row: 3, col: 4 };
             (element as any).handleInteraction('click', { plant: mockEmpty });
-            expect(storeSpy.openAddPlantDialog).toHaveBeenCalledWith(3, 4);
+            expect(uiSlice.openAddPlantDialog).toHaveBeenCalledWith('gs1', 3, 4);
         });
 
         it('should handle drag and dragend via handleInteraction', () => {
@@ -992,14 +947,6 @@ describe('Heatmap3D Logic', () => {
             expect((element as any)._hoveredPlant).toBeNull();
         });
 
-        it('should handle link and unlink events via handleInteraction', () => {
-            const spyLink = vi.spyOn(element as any, '_handleLink').mockImplementation(() => { });
-            const spyUnlink = vi.spyOn(element as any, '_handleUnlink').mockImplementation(() => { });
-            (element as any).handleInteraction('link', { from: 's1', to: 's2' });
-            expect(spyLink).toHaveBeenCalledWith('s1', 's2');
-            (element as any).handleInteraction('unlink', { entityId: 's1' });
-            expect(spyUnlink).toHaveBeenCalledWith('s1');
-        });
     });
 
     describe('Tooltip', () => {
@@ -1058,32 +1005,18 @@ describe('Heatmap3D Logic', () => {
     });
 
     describe('Edge Cases and Missing Branches', () => {
-        it('should handle updateBackendCoordinates when dataService is missing', () => {
-            const originalService = (element as any).dataService;
-            (element as any).dataService = undefined;
+        it('should handle updateBackendCoordinates when sceneManager is missing', () => {
+            (element as any).sceneManager = undefined;
             const mesh = new THREE.Mesh();
-            (element as any).sceneManager.sensorMeshes.set('s1', mesh);
-
             expect(() => (element as any).updateBackendCoordinates(mesh)).not.toThrow();
-            (element as any).dataService = originalService;
         });
 
         it('should handle fetchHistory with no entityIds', async () => {
             element.device = { ...mockDevice, environmentAttributes: { sensorCoordinates: {} } };
-            const spy = vi.spyOn((element as any).dataService, 'fetchHistory');
+            const { getHistoryStats } = await import('../../../src/store/history/history-store');
+            vi.mocked(getHistoryStats).mockClear();
             await (element as any).fetchHistory();
-            expect(spy).not.toHaveBeenCalled();
-        });
-
-        it('should initialize environmentAttributes in _handleLink if missing', () => {
-            element.device = { ...mockDevice, environmentAttributes: undefined };
-            const m1 = new THREE.Mesh(); m1.userData.types = ['irrigation_pump'];
-            const m2 = new THREE.Mesh(); m2.userData.types = ['irrigation_tank'];
-            (element as any).sceneManager.sensorMeshes.set('p1', m1);
-            (element as any).sceneManager.sensorMeshes.set('t1', m2);
-
-            (element as any)._handleLink('p1', 't1');
-            expect(element.device?.environmentAttributes?.pump_tank_links).toBeDefined();
+            expect(getHistoryStats).not.toHaveBeenCalled();
         });
 
         it('should handle showHeatmap toggle via @change', async () => {
@@ -1160,13 +1093,6 @@ describe('Heatmap3D Logic', () => {
             expect(true).toBe(true);
         });
 
-        it('should handle unlink event on container', () => {
-            const spy = vi.spyOn(element as any, '_handleUnlink').mockImplementation(() => { });
-            const event = new CustomEvent('unlink', { detail: { entityId: 's1' } });
-            (element as any).container.dispatchEvent(event);
-            expect(spy).toHaveBeenCalledWith('s1');
-        });
-
         it('should handle requestUpdate callback from sceneManager', () => {
             const spy = vi.spyOn(element, 'requestUpdate');
             const context = (element as any).sceneManager.context;
@@ -1178,22 +1104,6 @@ describe('Heatmap3D Logic', () => {
             const context = (element as any).sceneManager.context;
             const val = context.getSensorValue('sensor.temp1', 'temperature');
             expect(val).toBe(25.5);
-        });
-
-        it('should handle toggleLinkMode from UI', async () => {
-            (element as any).editMode3DCords = true;
-            (element as any)._activeSensorTab = 'irrigation';
-            await elementUpdated(element);
-
-            const linkButton = element.shadowRoot?.querySelector('.side-panel .sensor-tab:not(.active)') as HTMLElement;
-            if (linkButton && linkButton.textContent?.includes('Mode')) {
-                linkButton.click();
-                expect((element as any)._linkMode).toBe(true);
-            } else {
-                // Fallback to direct call if UI selector is tricky
-                (element as any).toggleLinkMode();
-                expect((element as any)._linkMode).toBe(true);
-            }
         });
 
         it('should exercise getMetricValue', () => {
@@ -1240,37 +1150,6 @@ describe('Heatmap3D Logic', () => {
             (element as any).handleSliderInput('s1', 'z', 50);
             expect(mesh.userData.logicalZ).toBe(50);
             expect(mesh.position.y).toBe(40); // Remains 40, didn't update to 50
-        });
-
-        it('should handle _handleLink with reverse selection', () => {
-            const pumpId = 'p1';
-            const tankId = 't1';
-            const pumpMesh = new THREE.Mesh();
-            pumpMesh.userData.types = ['irrigation_pump'];
-            const tankMesh = new THREE.Mesh();
-            tankMesh.userData.types = ['irrigation_tank'];
-
-            (element as any).sceneManager.sensorMeshes.set(pumpId, pumpMesh);
-            (element as any).sceneManager.sensorMeshes.set(tankId, tankMesh);
-
-            // Link tank -> pump (to cover "Allow reverse selection too" branches)
-            (element as any)._handleLink(tankId, pumpId);
-            expect(element.device?.environmentAttributes?.pump_tank_links?.[pumpId]).toBe(tankId);
-        });
-
-        it('should handle _handleLink with drain pump', () => {
-            const pumpId = 'd1';
-            const tankId = 't1';
-            const pumpMesh = new THREE.Mesh();
-            pumpMesh.userData.types = ['drain_pump'];
-            const tankMesh = new THREE.Mesh();
-            tankMesh.userData.types = ['irrigation_tank'];
-
-            (element as any).sceneManager.sensorMeshes.set(pumpId, pumpMesh);
-            (element as any).sceneManager.sensorMeshes.set(tankId, tankMesh);
-
-            (element as any)._handleLink(pumpId, tankId);
-            expect(element.device?.environmentAttributes?.pump_tank_links?.[pumpId]).toBe(tankId);
         });
 
         it('should click every sensor tab and check filtering with matching meshes', async () => {

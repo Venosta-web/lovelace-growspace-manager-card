@@ -5,7 +5,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { hassContext } from '../context';
 import { mdiClose, mdiCheck, mdiContentCopy } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../components/ui'; // Ensure MD3 components are registered
+import '../features/shared/ui'; // Ensure MD3 components are registered
 import { PlantEntity } from '../types';
 import { GrowspaceStore } from '../store/core/growspace-store';
 
@@ -27,16 +27,12 @@ export class CloneDialog extends LitElement {
   static styles = [
     dialogStyles,
     css`
-      :host {
-        display: block;
-        --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
-      }
       .form-section {
         margin-bottom: 24px;
       }
       .form-section h3 {
         margin-top: 0;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         text-transform: uppercase;
         opacity: 0.6;
         letter-spacing: 1px;
@@ -45,7 +41,7 @@ export class CloneDialog extends LitElement {
       .source-info {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         padding: 16px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm, 8px);
         margin-bottom: 24px;
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       }
@@ -109,7 +105,7 @@ export class CloneDialog extends LitElement {
     const attrs = this.sourcePlant.attributes;
     const strain = attrs?.strain || 'Unknown Strain';
     const phenotype = attrs?.phenotype || 'No Phenotype';
-    const dialogColor = '#8bc34a'; // Light green for cloning
+    const dialogColor = 'var(--stage-clone)';
     const title = 'Take Clone';
     const subtitle = `Creating clones from ${strain}`;
 
@@ -117,11 +113,12 @@ export class CloneDialog extends LitElement {
 
     return html`
       <ha-dialog
-        .open=${this.open}
+        open
         @closed=${this._handleClose}
         hideActions
-        .heading=${title}
+        without-header
         .escapeKeyAction=${'close'}
+        width="large"
       >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
           <div class="dialog-header">
@@ -186,8 +183,8 @@ export class CloneDialog extends LitElement {
             <button class="md3-button primary" @click=${this._save} ?disabled=${this._submitting}>
               <ha-svg-icon .path=${mdiCheck}></ha-svg-icon>
               ${this._submitting
-        ? 'Creating...'
-        : `Take ${this._numClones} Clone${this._numClones > 1 ? 's' : ''}`}
+                ? 'Creating...'
+                : `Take ${this._numClones} Clone${this._numClones > 1 ? 's' : ''}`}
             </button>
           </div>
         </div>

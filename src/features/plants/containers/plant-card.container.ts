@@ -5,40 +5,71 @@
  * Handles store access, subscriptions, and event-to-action mapping.
  */
 
-import { LitElement, html, type TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { LitElement, html, css, type TemplateResult } from 'lit';
+import { customElement, property, query } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
-import type { ReadableAtom } from 'nanostores';
+import { atom, computed, type ReadableAtom } from 'nanostores';
 import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
+import { activeDevices$ } from '../../../slices/grid';
 import type { PlantEntity } from '../../../types';
+import { nutrientPresets$ } from '../../../slices/nutrient';
+import { strainLibrary$ } from '../../../slices/strain';
 import { DragDropController, DragDropHost } from '../../../controllers/drag-drop-controller';
 import {
   createPlantCardViewModel,
   type PlantCardViewModel,
 } from '../viewmodels/plant-card.viewmodel';
+import { PlantCardUI } from '../components/plant-card-ui';
+import { localizeWithParams } from '../../../localize/localize';
 import '../components/plant-card-ui';
+import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 /**
  * Container component for plant card
  */
 @customElement('plant-card-container')
 export class PlantCardContainer extends LitElement implements DragDropHost {
+  static styles = css`
+    .plant-card-skeleton {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      background: var(--card-background-color, #1c1c1e);
+      animation: skeleton-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes skeleton-pulse {
+      0%,
+      100% {
+        opacity: 0.4;
+      }
+      50% {
+        opacity: 0.8;
+      }
+    }
+
+    ${reducedMotion}
+  `;
+
   // Input props
   @property({ attribute: false }) plant!: PlantEntity;
   @property({ type: Number }) row!: number;
   @property({ type: Number }) col!: number;
   @property({ type: Boolean }) forceDraggable = false;
 
+  @query('plant-card-ui') private _cardUI?: PlantCardUI;
+
   // Store access
   @consume({ context: storeContext, subscribe: true })
   @property({ attribute: false })
   public store!: GrowspaceStore;
 
+  // Reactive plant atom — updated via willUpdate so the ViewModel reacts to entity changes
+  private $plant = atom<PlantEntity | null>(null);
+
   // ViewModel
-  private viewModel!: ReadableAtom<PlantCardViewModel>;
-  private viewModelController!: StoreController<PlantCardViewModel>;
+  private viewModel!: ReadableAtom<PlantCardViewModel | null>;
+  private viewModelController!: StoreController<PlantCardViewModel | null>;
 
   // Drag & drop controller
   private dragController = new DragDropController(this);
@@ -52,13 +83,31 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
     return this.viewModelController?.value?.isSelected ?? false;
   }
 
+  get isDraggable(): boolean {
+    return this.viewModelController?.value?.isDraggable ?? false;
+  }
+
   connectedCallback(): void {
     super.connectedCallback();
-
-    if (this.plant && this.store) {
-      // Create ViewModel for this plant
-      this.viewModel = createPlantCardViewModel(this.plant, this.store);
+    if (this.plant) {
+      this.$plant.set(this.plant);
+    }
+    if (this.store) {
+      this.viewModel = createPlantCardViewModel(this.$plant, {
+        $isEditMode: this.store.ui.$isEditMode,
+        $selectedPlants: this.store.ui.$selectedPlants,
+        $strainLibrary: strainLibrary$,
+        $nutrientPresets: computed([nutrientPresets$], (p) => p ?? {}),
+        $devices: activeDevices$,
+        $taskState: this.store.ui.$taskState,
+      });
       this.viewModelController = new StoreController(this, this.viewModel);
+    }
+  }
+
+  willUpdate(changedProperties: Map<string, unknown>): void {
+    if (changedProperties.has('plant') && this.plant) {
+      this.$plant.set(this.plant);
     }
   }
 
@@ -66,20 +115,18 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
    * Focus the card
    */
   public focus(options?: FocusOptions): void {
-    const cardUI = this.shadowRoot?.querySelector('plant-card-ui') as any;
-    if (cardUI && typeof cardUI.focus === 'function') {
-      cardUI.focus(options);
+    if (this._cardUI && typeof this._cardUI.focus === 'function') {
+      this._cardUI.focus(options);
     } else {
       super.focus(options);
     }
   }
 
   render(): TemplateResult {
-    if (!this.viewModelController) {
-      return html``;
+    const vm = this.viewModelController?.value ?? null;
+    if (!vm) {
+      return html`<div class="plant-card-skeleton"></div>`;
     }
-
-    const vm = this.viewModelController.value;
 
     return html`
       <plant-card-ui
@@ -90,7 +137,7 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
         .isEditMode=${vm.isEditMode}
         .isDraggable=${vm.isDraggable}
         .growthDeviation=${vm.growthDeviation}
-        .ariaLabel=${vm.ariaLabel}
+        .ariaLabel=${this._ariaLabel(vm)}
         .checkboxAriaLabel=${vm.checkboxAriaLabel}
         @plant-click=${this._handlePlantClick}
         @plant-toggle-selection=${this._handleToggleSelection}
@@ -98,10 +145,30 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
     `;
   }
 
+  private _ariaLabel(vm: PlantCardViewModel): string {
+    const task = this.store.ui.$taskState?.get?.() ?? { kind: 'idle' };
+    if (task.kind !== 'arrange') return vm.ariaLabel;
+    const plantId = vm.plant.attributes?.plant_id || vm.plant.entity_id.replace('sensor.', '');
+    return localizeWithParams(
+      task.pickedPlantId === plantId
+        ? 'tasks.arrange_picked_plant_label'
+        : task.pickedPlantId
+          ? 'tasks.arrange_plant_target_label'
+          : 'tasks.arrange_plant_label',
+      {
+        plant: vm.displayData.strainName || plantId,
+        row: this.row,
+        col: this.col,
+      },
+      this.store.ui.$language?.get?.() ?? 'en'
+    );
+  }
+
   // Event handlers - dispatch actions through store
 
   private _handlePlantClick(e: CustomEvent): void {
     const { plant } = e.detail;
+    if ((this.store.ui.$taskState?.get?.() ?? { kind: 'idle' }).kind !== 'idle') return;
 
     // Open plant overview dialog
     this.store.ui.setActiveDialog({

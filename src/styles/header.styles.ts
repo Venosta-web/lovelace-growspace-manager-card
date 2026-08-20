@@ -23,23 +23,24 @@ export const headerStyles = css`
 
   /* The visible text element that drives width */
   .select-sizer {
-    font-family: 'Roboto', sans-serif;
-    font-size: 3.5rem;
-    font-weight: 300;
+    font-family: 'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
+    font-size: 1.75rem;
+    font-weight: 400;
     margin: 0;
     line-height: 1.1;
+    letter-spacing: -0.01em;
     text-transform: capitalize;
     background: linear-gradient(
       135deg,
       var(--primary-text-color, #ffffff) 0%,
-      var(--secondary-text-color, rgba(255, 255, 255, 0.9)) 100%
+      var(--secondary-text-color, rgba(255, 255, 255, 0.8)) 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    white-space: pre;
-    pointer-events: none; /* Let clicks pass through to select */
-    visibility: visible; /* Ensure it is seen */
+    white-space: normal;
+    overflow-wrap: anywhere;
+    pointer-events: none;
+    visibility: visible;
   }
 
   /* The functional select element, invisible but clickable */
@@ -62,6 +63,12 @@ export const headerStyles = css`
     background-color: initial;
   }
 
+  .select-wrapper:has(.growspace-select-header:focus-visible) {
+    outline: 3px solid var(--primary-color, #4caf50);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+
   /* --- Header Top Section --- */
   .gs-header-top {
     display: grid;
@@ -75,7 +82,110 @@ export const headerStyles = css`
     grid-column: 1;
     grid-row: 1;
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .header-title-row {
+    display: flex;
     align-items: center;
+    gap: 10px;
+    max-width: 100%;
+  }
+
+  .gs-title {
+    font-size: 1.75rem;
+    font-weight: 400;
+    margin: 0;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    background: linear-gradient(
+      135deg,
+      var(--primary-text-color, #ffffff) 0%,
+      var(--secondary-text-color, rgba(255, 255, 255, 0.8)) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    overflow-wrap: anywhere;
+  }
+
+  .header-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.78rem;
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
+    font-variant-numeric: tabular-nums;
+  }
+
+  .operational-summary {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 34rem;
+    color: var(--primary-text-color, #fff);
+    font-size: 0.875rem;
+    line-height: 1.35;
+  }
+
+  .operational-summary > span {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+  }
+
+  .operational-summary strong {
+    font-weight: 600;
+  }
+
+  .operational-summary svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    fill: currentColor;
+  }
+
+  .operational-summary.stable svg {
+    color: var(--gm-status-optimal, var(--success-color, #4caf50));
+  }
+
+  .operational-summary.attention svg,
+  .operational-summary.unavailable svg {
+    color: var(--gm-status-warning, var(--warning-color, #ffa726));
+  }
+
+  .operational-detail {
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+    font-size: 0.75rem;
+  }
+
+  .header-meta-stat .num {
+    color: var(--primary-text-color, #fff);
+    font-weight: 500;
+    margin-right: 3px;
+  }
+
+  /*
+   * The alert stat keeps readable text and lets the warning token ride on the icon
+   * and the count, rather than tinting the whole phrase amber on every theme.
+   */
+  .header-meta-stat.alert {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--primary-text-color, #fff);
+  }
+
+  .header-meta-stat.alert .num {
+    color: var(--gm-status-warning, var(--warning-color, #ffa726));
+  }
+
+  .header-meta-stat.alert svg {
+    width: 14px;
+    height: 14px;
+    fill: var(--gm-status-warning, var(--warning-color, #ffa726));
+    flex-shrink: 0;
   }
 
   /* New component slots */
@@ -121,35 +231,75 @@ export const headerStyles = css`
     margin-left: auto;
   }
 
+  /* --- Mobile stage context (above name, hidden on desktop) --- */
+  .mobile-stage-context {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
+    margin-bottom: 4px;
+  }
+
+  .mobile-stage-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .mobile-stage-sep {
+    opacity: 0.35;
+  }
+
   /* --- Mobile & Responsive --- */
   @media (max-width: 600px) {
-    .gs-title {
-      font-size: 2rem;
-    }
-    .header-title-area {
-      max-width: 70%;
+    .mobile-stage-context {
+      display: flex;
     }
 
-    growspace-header-actions {
-      grid-column: 1;
-      grid-row: 3;
-      justify-content: flex-start;
-      justify-self: auto;
+    .header-meta-row {
+      display: none;
     }
 
     .gs-header-top {
-      grid-template-columns: minmax(0, 1fr);
-      position: relative; /* For absolute actions */
-      gap: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
     }
 
-    /* Wrap secondary strip when link mode active - managed via props now or css? */
-    /* Since secondary-strip is now inside generic scroll-container, wrapping is harder unless scroll-container supports it */
-    /* Or we just allow scrolling on mobile always */
+    .header-title-area {
+      flex: 1;
+      width: 100%;
+      min-width: 0;
+      max-width: none;
+    }
 
+    .header-actions {
+      width: 100%;
+      align-self: stretch;
+    }
+
+    .operational-summary > span {
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .header-stage-area-wrapper,
     .secondary-strip-container {
-      grid-row: 4;
-      grid-column: 1;
+      display: none;
+    }
+
+    .gs-title {
+      font-size: 1.5rem;
+    }
+
+    .select-sizer {
+      font-size: 1.5rem;
     }
   }
 `;

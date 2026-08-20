@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Md3Switch } from '../../../../src/components/ui/md3-switch';
+import { Md3Switch } from '../../../../src/features/shared/ui/md3-switch';
 
 // Ensure custom element is defined
 if (!customElements.get('md3-switch')) {

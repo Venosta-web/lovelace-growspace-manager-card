@@ -1,38 +1,119 @@
-# Testing Instructions
+# Unit / Component Test Placement
 
-This repository uses [Playwright](https://playwright.dev/) for verifying the frontend functionality of the `growspace-manager-card`.
+New tests go in one of two places depending on whether they touch the DOM:
 
-## Prerequisites
+- **Pure module tests** (no `fixture()`, no Lit rendering) — co-locate next to the source
+  file: `src/foo/foo.test.ts`
+- **Component tests** (mount Lit elements via `fixture()`) — `tests/` in the matching
+  subfolder (`tests/components/`, `tests/dialogs/`, `tests/cards/`, etc.)
 
-Before running the tests, you must build the project to generate the distribution files that the mockup relies on.
+`tests/unit/` holds legacy tests that predate this convention — don't add new tests there.
 
-1.  **Install Dependencies**:
-    ```bash
-    npm install
-    ```
+The vitest config already picks up both patterns (`src/**/*.{test,spec}.ts` and
+`tests/{unit,cards,components}/**/*.{test,spec}.ts`).
 
-2.  **Build the Project**:
-    ```bash
-    npm run build
-    ```
-    This creates `dist/growspace-manager-card.js`.
+---
 
-## Running Tests
+# E2E Testing
 
-The tests are located in the `tests/` directory and run against a local dev server (serving `index.html` by default, but tests may target other files).
+Playwright tests in `tests/e2e/` run against a **real Home Assistant instance** — not a
+local dev server. Tests call the HA REST API via `callHAService` and assert on entity
+states. No page navigation is required for pure-API specs.
 
-To run the full test suite:
+## Quick reference
 
 ```bash
-npx playwright test
+npm run test:ha          # run e2e specs against HA (fastest loop)
+npm run test:ha:headed   # same, with visible browser
+npm run test:ha:debug    # same, with Playwright Inspector
+npm run test:e2e         # build first, then test:ha (full pipeline)
 ```
 
-This command will:
-1.  Start a local HTTP server on port 8080 (configured in `playwright.config.ts`).
-2.  Launch Playwright (headless mode is enabled by default in config).
-3.  Run all `.spec.ts` files found in the `tests/` directory.
+Run `test:ha` directly when iterating on specs — the build step in `test:e2e` is only
+needed when `src/` changed since the last build.
 
-## Troubleshooting
+## First-time setup
 
-*   **Missing Card**: If tests fail saying elements are not visible, ensure `npm run build` completed successfully and `dist/growspace-manager-card.js` exists.
-*   **Port Conflicts**: The test config uses port 8080. If this port is in use, verify if another process is running or edit `playwright.config.ts`.
+Before the first Playwright run you must populate `.env.test` with growspace IDs and
+configure the HA access token:
+
+```bash
+cd tests/e2e
+cp .env.test.example .env.test   # fill in HA_ACCESS_TOKEN and HA_BASE_URL
+```
+
+Then run the setup script to create growspaces, link sensors, and write IDs back to
+`.env.test`:
+
+```bash
+cd /path/to/repo
+HA_ACCESS_TOKEN=<token> HA_BASE_URL=http://localhost:8123 \
+  npx ts-node tests/e2e/fixtures/e2e-setup.ts
+```
+
+Finally set `TEST_*_DASHBOARD_PATH` in `.env.test` to match your HA dashboard URLs.
+
+## When to re-run the setup script
+
+Re-run `e2e-setup.ts` whenever it is modified — which happens when:
+
+- a new growspace slug is added
+- a new entity ID or sensor is introduced
+- the VWC strategy parameters change
+
+The script is idempotent: existing growspaces and plants are skipped; `.env.test` IDs are
+updated in place.
+
+## Config
+
+| Setting | Value |
+|---|---|
+| Specs dir | `tests/e2e/specs/` |
+| Fixtures | `tests/e2e/fixtures/ha-setup.ts` |
+| Page objects | `tests/e2e/pages/` |
+| Config file | `tests/e2e/playwright.config.ts` |
+| Workers | 1 (sequential — tests share HA state) |
+| Retries | 2 |
+| Default timeout | 15 s (slow coordinator tests override with `test.setTimeout(300_000)`) |
+| Env file | `tests/e2e/.env.test` (gitignored) |
+
+## Writing specs
+
+- Use `haTest` from `fixtures/ha-setup.ts` (extends Playwright `test` with `testContext`).
+- Call `callHAService(page, domain, service, data)` for all HA interactions.
+- Mirror the style of `tests/e2e/specs/vwc-strategy.spec.ts` for pure-API specs.
+- Tests run sequentially and share HA state — always reset entity state in `beforeEach`.
+
+---
+
+# Session Isolation & Merge Gates
+
+## Work in a worktree
+
+This checkout is shared by concurrent agent sessions; editing it directly has wiped
+in-flight work before. For anything beyond a trivial single-turn change:
+
+```bash
+git fetch origin
+git worktree add .worktrees/<branch-name> -b <branch-name> origin/dev
+cd .worktrees/<branch-name>
+npm ci   # node_modules is not shared across worktrees — see CLAUDE.md
+```
+
+- The pre-commit worktree guard rejects commits made in the main checkout; override
+  deliberately with `ALLOW_MAIN_CHECKOUT=1` for quick fixes only.
+- If the working tree looks wrong or edits seem to have vanished, trust `origin`,
+  not the checkout — another session may have moved HEAD.
+- Base on **fresh `dev`** (every merge auto-releases, so a day-old `dev` is stale),
+  unless the feature is explicitly stacked on another unmerged branch.
+
+## Merge gates & landing order
+
+`dev` and `main` are ruleset-protected: PR + green checks, zero required approvals,
+bypass only for the GitHub Actions app (semantic-release). Cross-repo features land
+**GSM-first** — the integration releases before the card PR merges — unless the
+change is a Backward-Safe Card Change (release-ref contract fixture parse passes;
+see `docs/adr/0029` and CONTEXT.md).
+
+Before opening or updating a PR, inspect `.github/workflows/pr-title.yml` and format the
+title as a Conventional Commit (`type(optional-scope): description`) using an allowed type.

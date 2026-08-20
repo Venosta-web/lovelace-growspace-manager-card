@@ -6,22 +6,25 @@ export const dialogStyles = [
   sharedStyles,
   uiStyles,
   css`
-    .glass-dialog-container {
-      display: flex;
-      flex-direction: column;
-      max-height: 85vh;
-      color: var(--primary-text-color, #fff);
-      font-family: 'Roboto', sans-serif;
-      /* Background/Shadow handled by sharedStyles, but specific flex layout kept here */
+    ha-dialog {
+      --dialog-surface-margin-top: 40px;
+      --ha-dialog-min-height: auto;
+      --dialog-content-padding: 0;
     }
 
-    /* Restored from 1.0.24.3.0 */
-    .dialog-content-grid {
-      padding: 24px;
-      overflow-y: auto;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
+    .glass-dialog-container {
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-width: 0;
+      min-height: 0;
+      height: auto;
+      max-height: 90vh;
+      overflow: hidden;
+      position: relative;
+      color: var(--primary-text-color, #fff);
+      font-family: 'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
     }
 
     .dialog-header {
@@ -30,6 +33,7 @@ export const dialogStyles = [
       padding: 16px 24px;
       border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+      flex-shrink: 0;
     }
 
     .dialog-icon {
@@ -80,6 +84,15 @@ export const dialogStyles = [
       justify-content: flex-end;
       gap: 12px;
       flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .dialog-content,
+    .dialog-content-grid {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 24px;
     }
 
     .row-col-grid {
@@ -88,9 +101,49 @@ export const dialogStyles = [
       flex-wrap: wrap;
       align-items: flex-start;
     }
+    /*
+     * The basis is the wrap floor: line-breaking uses the flex basis, so columns
+     * drop to one-per-row below ~560px. A zero min-width clamps nothing above
+     * the basis, so it still frees children to truncate rather than overflow.
+     */
     .row-col-grid > * {
-      flex: 1;
+      flex: 1 1 272px;
       min-width: 0;
+    }
+
+    .config-reset-button {
+      align-self: flex-start;
+      min-height: 44px;
+      min-width: 0;
+      padding: 0 16px;
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.2));
+      color: var(--primary-text-color, #fff);
+    }
+
+    /* Tap floors hold at every width — a 44px target is not a phone-only need. */
+    .detail-card .md3-button {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    .vwc-targets-group {
+      grid-column: span 2;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 8px 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 16px;
+    }
+    .vwc-targets-group-title {
+      grid-column: 1 / -1;
+      margin: 0 0 4px 0;
+      font-size: 0.9rem;
+      font-weight: 500;
+      opacity: 0.9;
+      letter-spacing: 0.1px;
     }
 
     @media (max-width: 450px) {
@@ -111,11 +164,9 @@ export const dialogStyles = [
         padding: 12px 16px;
       }
 
-      /* Restored responsive rules */
+      .dialog-content,
       .dialog-content-grid {
-        flex: 1;
-        min-height: 0;
-        padding: 8px;
+        padding: 16px;
       }
       .dialog-header .md3-button.text,
       .dialog-header .md3-button.text.close {

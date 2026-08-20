@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Md3Select } from '../../../../src/components/ui/md3-select';
+import { Md3Select } from '../../../../src/features/shared/ui/md3-select';
 
 // Ensure custom element is defined
 if (!customElements.get('md3-select')) {

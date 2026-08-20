@@ -76,7 +76,6 @@ The config dialog for the lovelace-growspace-manager-card now has comprehensive 
 - Circulation Fan/Switch (multi-entity select, array)
 - Humidifier (multi-entity select, array)
 - Dehumidifier (multi-entity select, array)
-- Control Dehumidifier (checkbox, boolean)
 
 **Form Fields - Thresholds Section:**
 - Stress Threshold % (number input, step: 0.01, default: 0.8)
@@ -87,13 +86,13 @@ The config dialog for the lovelace-growspace-manager-card now has comprehensive 
 - ✅ ALL multi-entity climate control fields filled (with 2-3 entities each)
 - ✅ Redundant sensor configuration tested
 - ✅ Threshold values validated
-- ✅ Dehumidifier control enabled/disabled
 - ✅ Maximum multi-entity selections (3 lights, 3 circulation fans, etc.)
 - ✅ Entity filtering by device_class verified
 
 #### 4. DEHUMIDIFIER Tab
 **Form Fields:**
 - Growspace Selection (dropdown)
+- Enable Control (checkbox, boolean)
 - 7 Stage Sub-tabs:
   - Seedling
   - Vegetative
@@ -114,6 +113,7 @@ The config dialog for the lovelace-growspace-manager-card now has comprehensive 
 **Total Threshold Points:** 7 stages × 2 cycles × 2 points = **28 threshold values**
 
 **Test Coverage:**
+- ✅ Dehumidifier control enabled/disabled
 - ✅ ALL 7 stages configured with complete threshold data
 - ✅ Individual threshold point updates tested (28 updates validated)
 - ✅ Stage switching tested with threshold persistence

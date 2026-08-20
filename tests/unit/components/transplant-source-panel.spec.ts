@@ -3,12 +3,12 @@ import { html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
 // Mock the child component import to prevent real registration
-vi.mock('../../../src/components/plant-card', () => {
+vi.mock('../../../src/features/plants/containers/plant-card.container', () => {
     return {};
 });
 
 // Define our mock component
-@customElement('growspace-plant-card')
+@customElement('plant-card-container')
 class MockPlantCard extends LitElement {
     plant: any;
     row: any;
@@ -25,8 +25,8 @@ class MockPlantCard extends LitElement {
     }
 }
 
-import '../../../src/components/transplant-source-panel';
-import { TransplantSourcePanel } from '../../../src/components/transplant-source-panel';
+import '../../../src/features/plants/components/transplant-source-panel';
+import { TransplantSourcePanel } from '../../../src/features/plants/components/transplant-source-panel';
 
 describe('TransplantSourcePanel', () => {
     let element: TransplantSourcePanel;
@@ -90,7 +90,7 @@ describe('TransplantSourcePanel', () => {
         element.seedlingPlants = [mockPlants[1]];
         await element.updateComplete;
 
-        const cards = element.shadowRoot?.querySelectorAll('growspace-plant-card');
+        const cards = element.shadowRoot?.querySelectorAll('plant-card-container');
         expect(cards?.length).toBe(2);
 
         const badges = element.shadowRoot?.querySelectorAll('.count-badge');
@@ -102,7 +102,7 @@ describe('TransplantSourcePanel', () => {
         element.clonePlants = [mockPlants[0]];
         await element.updateComplete;
 
-        const card = element.shadowRoot?.querySelector('growspace-plant-card') as HTMLElement;
+        const card = element.shadowRoot?.querySelector('plant-card-container') as HTMLElement;
         const setDataSpy = vi.fn();
 
         const mockEvent = {
@@ -151,7 +151,7 @@ describe('TransplantSourcePanel', () => {
         element.clonePlants = [mockPlants[0]];
         await element.updateComplete;
 
-        const card = element.shadowRoot?.querySelector('growspace-plant-card') as HTMLElement;
+        const card = element.shadowRoot?.querySelector('plant-card-container') as HTMLElement;
 
         // Mock dragstart to set attribute
         const dragEvent = new Event('dragstart', { bubbles: true, composed: true });
@@ -171,7 +171,7 @@ describe('TransplantSourcePanel', () => {
         element.clonePlants = [mockPlants[0]];
         await element.updateComplete;
 
-        const card = element.shadowRoot?.querySelector('growspace-plant-card') as HTMLElement;
+        const card = element.shadowRoot?.querySelector('plant-card-container') as HTMLElement;
 
         const dragEvent = new Event('dragstart', { bubbles: true, composed: true });
         // No dataTransfer defined
