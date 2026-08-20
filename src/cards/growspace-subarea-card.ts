@@ -51,7 +51,8 @@ import { StoreController } from '@nanostores/lit';
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
 
 export interface GrowspaceSubareaCardConfig extends GrowspaceManagerCardConfig {
-    growspace_id: string;
+    /** Legacy key retained for existing dashboard configurations. */
+    growspace_id?: string;
     subarea_id: string;
 }
 
@@ -268,13 +269,13 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             this._bootstrapCtrl?.updateHass(this.hass);
         }
 
-        if (changedProps.has('_config') && this._config?.growspace_id) {
+        if (changedProps.has('_config') && this._config?.default_growspace) {
             this._loadSubarea();
         }
 
         const devices = this._viewController.value?.grid?.devices ?? [];
-        if (devices.length && this._config?.growspace_id) {
-            const parent = devices.find((d) => d.deviceId === this._config.growspace_id);
+        if (devices.length && this._config?.default_growspace) {
+            const parent = devices.find((d) => d.deviceId === this._config.default_growspace);
             if (parent && parent.name !== this._parentGrowspaceName) {
                 this._parentGrowspaceName = parent.name;
             }
@@ -282,17 +283,17 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     }
 
     private async _loadSubarea(): Promise<void> {
-        if (!this._config?.growspace_id || !this._config?.subarea_id) return;
+        if (!this._config?.default_growspace || !this._config?.subarea_id) return;
         if (!this.hass) return;
 
         this._loading = true;
         this._error = null;
 
         try {
-            const subareas = await getSubareas(this._config.growspace_id);
+            const subareas = await getSubareas(this._config.default_growspace);
             const found = subareas.find((s) => s.id === this._config.subarea_id) ?? null;
             if (!found) {
-                this._error = `Subarea "${this._config.subarea_id}" not found in growspace "${this._config.growspace_id}".`;
+                this._error = `Subarea "${this._config.subarea_id}" not found in growspace "${this._config.default_growspace}".`;
             } else {
                 this._subarea = found;
                 this._seedSnapshots(found);
@@ -315,12 +316,12 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     private _seedSnapshots(subarea: Subarea): void {
         if (!this.hass) return;
         const devices = this._viewController.value?.grid?.devices ?? [];
-        const parent = devices.find((d) => d.deviceId === this._config.growspace_id);
+        const parent = devices.find((d) => d.deviceId === this._config.default_growspace);
         setSubareaEnvSnapshot(
             subarea.id,
             subarea,
             {
-                growspaceId: this._config.growspace_id,
+                growspaceId: this._config.default_growspace,
                 growspaceName: parent?.name || this._parentGrowspaceName || undefined,
             },
             this.hass.states
@@ -394,23 +395,23 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     public static getStubConfig(): GrowspaceSubareaCardConfig {
         return {
             type: 'custom:growspace-subarea-card',
-            growspace_id: '',
+            default_growspace: '',
             subarea_id: '',
         };
     }
 
     public setConfig(config: GrowspaceSubareaCardConfig): void {
         if (!config) throw new Error('Invalid configuration');
-        this._config = config;
-        const syntheticConfig: GrowspaceManagerCardConfig = {
-            ...config,
-            default_growspace: config.growspace_id || '',
+        const { growspace_id: legacyGrowspaceId, ...currentConfig } = config;
+        this._config = {
+            ...currentConfig,
+            default_growspace: config.default_growspace ?? legacyGrowspaceId ?? '',
         };
         if (!this._bootstrapCtrl) {
-            this._bootstrapCtrl = new BootstrapController(this, this.store.grid, syntheticConfig);
+            this._bootstrapCtrl = new BootstrapController(this, this.store.grid, this._config);
             this.store.setRefreshCallback(() => this._bootstrapCtrl.refresh());
         } else {
-            this._bootstrapCtrl.setCardConfig(syntheticConfig);
+            this._bootstrapCtrl.setCardConfig(this._config);
         }
     }
 
@@ -435,7 +436,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
         }
 
-        if (!this._config?.growspace_id || !this._config?.subarea_id) {
+        if (!this._config?.default_growspace || !this._config?.subarea_id) {
             return html`
         <ha-card>
           <div class="no-data">Please configure a growspace and subarea.</div>
@@ -446,14 +447,14 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         // Compute these outside the loading guard so the config-dialog stays alive
         // even while the card body is reloading (DATA_STALE_EVENT).
         const devices = this._viewController.value?.grid?.devices ?? [];
-        const parentDevice = devices.find((d) => d.deviceId === this._config.growspace_id);
+        const parentDevice = devices.find((d) => d.deviceId === this._config.default_growspace);
         const growspaceOptions: Record<string, string> = Object.fromEntries(
             devices.map((d) => [d.deviceId, d.name])
         );
         const subareaDeviceSnapshot = this._subarea
             ? (subareaDeviceSnapshots$.get().get(this._subarea.id) ?? null)
             : null;
-        const parentName = this._parentGrowspaceName || this._config.growspace_id;
+        const parentName = this._parentGrowspaceName || this._config.default_growspace;
 
         return html`
       <error-boundary
@@ -516,7 +517,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 .growspaceOptions=${growspaceOptions}
                 .initialTab=${ConfigTab.SUBAREAS}
                 .allowedTabs=${[ConfigTab.SUBAREAS]}
-                .growspaceId=${this._config.growspace_id}
+                .growspaceId=${this._config.default_growspace}
                 @close=${() => {
                         this._showConfigDialog = false;
                     }}

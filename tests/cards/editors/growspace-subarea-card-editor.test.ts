@@ -57,10 +57,10 @@ describe('GrowspaceSubareaCardEditor', () => {
         expect(element).toBeInstanceOf(GrowspaceSubareaCardEditor);
     });
 
-    test('setConfig updates config and loads subareas when growspace_id set', async () => {
+    test('setConfig updates config and loads subareas when default_growspace set', async () => {
         const config = {
             type: 'custom:growspace-subarea-card',
-            growspace_id: 'gs1',
+            default_growspace: 'gs1',
             subarea_id: 'sa1'
         };
 
@@ -69,6 +69,36 @@ describe('GrowspaceSubareaCardEditor', () => {
 
         expect((element as any)._config).toEqual(config);
         expect(loadSubareasSpy).toHaveBeenCalledWith('gs1');
+    });
+
+    test('normalizes a legacy growspace_id config and writes only default_growspace', () => {
+        element.setConfig({
+            type: 'custom:growspace-subarea-card',
+            growspace_id: 'gs1',
+            subarea_id: 'sa1',
+        } as any);
+
+        const configChangedSpy = vi.fn();
+        element.addEventListener('config-changed', configChangedSpy);
+        (element as any)._valueChanged({
+            detail: { value: { ...(element as any)._config } },
+        } as any);
+
+        const savedConfig = configChangedSpy.mock.calls[0][0].detail.config;
+        expect(savedConfig.default_growspace).toBe('gs1');
+        expect(savedConfig).not.toHaveProperty('growspace_id');
+    });
+
+    test('prefers default_growspace when both config keys are present', () => {
+        element.setConfig({
+            type: 'custom:growspace-subarea-card',
+            default_growspace: 'gs2',
+            growspace_id: 'gs1',
+            subarea_id: 'sa1',
+        } as any);
+
+        expect((element as any)._config.default_growspace).toBe('gs2');
+        expect((element as any)._config).not.toHaveProperty('growspace_id');
     });
 
     test('loads growspaces via controller after willUpdate(hass)', () => {
@@ -82,7 +112,7 @@ describe('GrowspaceSubareaCardEditor', () => {
     test('handles growspace change via _valueChanged', () => {
         element.setConfig({
             type: 'custom:growspace-subarea-card',
-            growspace_id: 'gs1'
+            default_growspace: 'gs1'
         } as any);
 
         const configChangedSpy = vi.fn();
@@ -92,7 +122,7 @@ describe('GrowspaceSubareaCardEditor', () => {
             detail: {
                 value: {
                     type: 'custom:growspace-subarea-card',
-                    growspace_id: 'gs2',
+                    default_growspace: 'gs2',
                     subarea_id: 'sa1'
                 }
             }
@@ -100,14 +130,14 @@ describe('GrowspaceSubareaCardEditor', () => {
 
         expect(configChangedSpy).toHaveBeenCalled();
         const detail = configChangedSpy.mock.calls[0][0].detail;
-        expect(detail.config.growspace_id).toBe('gs2');
+        expect(detail.config.default_growspace).toBe('gs2');
         expect(detail.config.subarea_id).toBe('');
     });
 
     test('handles subarea change via _valueChanged (same growspace)', () => {
         element.setConfig({
             type: 'custom:growspace-subarea-card',
-            growspace_id: 'gs1',
+            default_growspace: 'gs1',
             subarea_id: 'sa1'
         } as any);
 
@@ -118,7 +148,7 @@ describe('GrowspaceSubareaCardEditor', () => {
             detail: {
                 value: {
                     type: 'custom:growspace-subarea-card',
-                    growspace_id: 'gs1',
+                    default_growspace: 'gs1',
                     subarea_id: 'sa2'
                 }
             }
@@ -134,12 +164,12 @@ describe('GrowspaceSubareaCardEditor', () => {
         expect((element as any)._gsController.options).toEqual([]);
     });
 
-    test('setConfig loads subareas when growspace_id is set', async () => {
+    test('setConfig loads subareas when default_growspace is set', async () => {
         const loadSubareasSpy = vi.spyOn(element as any, '_loadSubareas');
 
         element.setConfig({
             type: 'custom:growspace-subarea-card',
-            growspace_id: 'gs1',
+            default_growspace: 'gs1',
             subarea_id: ''
         } as any);
 
@@ -180,10 +210,10 @@ describe('GrowspaceSubareaCardEditor', () => {
         expect(spy).not.toHaveBeenCalled();
     });
 
-    test('willUpdate: loads subareas when hass changes and growspace_id is set', async () => {
+    test('willUpdate: loads subareas when hass changes and default_growspace is set', async () => {
         element.setConfig({
             type: 'custom:growspace-subarea-card',
-            growspace_id: 'gs1',
+            default_growspace: 'gs1',
             subarea_id: 'sa1'
         } as any);
 
@@ -205,7 +235,7 @@ describe('GrowspaceSubareaCardEditor', () => {
     test('displays "No subareas found" when list is empty via _computeSchema', async () => {
         (element as any)._config = {
             type: 'custom:growspace-subarea-card',
-            growspace_id: 'gs1'
+            default_growspace: 'gs1'
         };
         (element as any)._subareas = [];
         (element as any)._loadingSubareas = false;
@@ -217,7 +247,7 @@ describe('GrowspaceSubareaCardEditor', () => {
     });
 
     test('displays "Select a growspace first" when no growspace selected via _computeSchema', () => {
-        (element as any)._config = { type: 'custom:growspace-subarea-card', growspace_id: '' };
+        (element as any)._config = { type: 'custom:growspace-subarea-card', default_growspace: '' };
         (element as any)._subareas = [];
         (element as any)._loadingSubareas = false;
 
@@ -228,7 +258,7 @@ describe('GrowspaceSubareaCardEditor', () => {
     });
 
     test('_computeSchema maps subareas into options when list is non-empty', () => {
-        (element as any)._config = { type: 'custom:growspace-subarea-card', growspace_id: 'gs1' };
+        (element as any)._config = { type: 'custom:growspace-subarea-card', default_growspace: 'gs1' };
         (element as any)._subareas = [
             { id: 'sa1', name: 'Veg Area' },
             { id: 'sa2', name: 'Flower Area' },
@@ -243,10 +273,10 @@ describe('GrowspaceSubareaCardEditor', () => {
 
     test('_computeSchema maps controller growspace options when populated', () => {
         (element as any).willUpdate(new Map([['hass', null]]));
-        (element as any)._config = { type: 'custom:growspace-subarea-card', growspace_id: 'gs1' };
+        (element as any)._config = { type: 'custom:growspace-subarea-card', default_growspace: 'gs1' };
 
         const schema = (element as any)._computeSchema();
-        const growspaceField = schema.find((s: any) => s.name === 'growspace_id');
+        const growspaceField = schema.find((s: any) => s.name === 'default_growspace');
         expect(growspaceField.selector.select.options.length).toBe(3); // 1 default + 2 from mock
         expect(growspaceField.selector.select.options[1]).toEqual({ label: 'Tent 1', value: 'gs1' });
         expect(growspaceField.selector.select.options[2]).toEqual({ label: 'Tent 2', value: 'gs2' });
@@ -257,7 +287,7 @@ describe('GrowspaceSubareaCardEditor', () => {
             <growspace-subarea-card-editor></growspace-subarea-card-editor>
         `);
         el.hass = mockHass;
-        el.setConfig({ type: 'custom:growspace-subarea-card', growspace_id: 'gs1' } as any);
+        el.setConfig({ type: 'custom:growspace-subarea-card', default_growspace: 'gs1' } as any);
         (el as any)._loadingSubareas = true;
         await el.updateComplete;
 
