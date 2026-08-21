@@ -295,6 +295,15 @@ export class GrowspaceHistoryStore {
     }
   }
 
+  /** Ensure every metric in `metrics` is active, without toggling ones already active. */
+  public activateEnvGraphs(metrics: string[]): void {
+    const current = this.$activeEnvGraphs.get();
+    if (metrics.every((metric) => current.has(metric))) return;
+    const next = new Set(current);
+    metrics.forEach((metric) => next.add(metric));
+    this.$activeEnvGraphs.set(next);
+  }
+
   public toggleEnvGraphGroup(metrics: string[]): boolean {
     const current = this.$activeEnvGraphs.get();
     const shouldClose = metrics.every((metric) => current.has(metric));
