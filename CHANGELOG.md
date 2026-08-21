@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0...v1.1.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* stop water chart reload loop ([60c4cf2](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/60c4cf21378cfe4c70cc8a658d6564217813e546))
+
 # 1.0.0 (2026-08-20)
 
 

@@ -40,7 +40,7 @@ import type {
   IrrigationStrategy,
   IrrigationTank,
 } from '../../services/types';
-import { MetricKey } from '../../features/environment/constants';
+import { METRIC_CONFIG, MetricKey } from '../../features/environment/constants';
 import { PlantUtils } from '../../utils/plant-utils';
 
 // ---------------------------------------------------------------------------
@@ -56,7 +56,7 @@ export interface HeaderChip {
   value: string;
   multiValues?: string[];
   entityIds?: string[];
-  label?: string;
+  label: string;
   status?: string;
   tooltip?: string;
   active: boolean;
@@ -125,6 +125,10 @@ function _makeChip(
   activeEnvGraphs: Set<string>,
   linkedGraphGroups: string[][]
 ): HeaderChip {
+  const label = opts.label ?? METRIC_CONFIG[key]?.title;
+  if (!label) {
+    throw new Error(`Missing display label for header metric "${key}"`);
+  }
   const { linked, groupIndex } = _isMetricLinked(key, linkedGraphGroups);
   const hasCompositeActive = Array.from(activeEnvGraphs).some((k) => k.startsWith(`${key}:`));
   const active = activeEnvGraphs.has(key) || hasCompositeActive;
@@ -134,7 +138,7 @@ function _makeChip(
     value,
     multiValues: opts.multiValues,
     entityIds: opts.entityIds,
-    label: opts.label,
+    label,
     status: opts.status,
     tooltip: opts.tooltip,
     active,
@@ -172,7 +176,14 @@ function _makeSensorReadingChip(
     if (useSum) {
       const value = readings.sum !== null ? `${readings.sum.toFixed(1)}${unit}` : undefined;
       if (!value) return null;
-      return _makeChip(key, icon, value, { ...opts, entityIds }, activeEnvGraphs, linkedGraphGroups);
+      return _makeChip(
+        key,
+        icon,
+        value,
+        { ...opts, entityIds },
+        activeEnvGraphs,
+        linkedGraphGroups
+      );
     }
     const multiValues = perSensor.map((v) => (v !== null ? `${v.toFixed(1)}${unit}` : '-'));
     return _makeChip(
@@ -678,12 +689,7 @@ export function computeHeaderMetrics(
   if (tankChip) chips.push(tankChip);
 
   // Tank-Derived Water Chip (calendar-day consumption; see ADR-0020)
-  const waterChip = _buildWaterChip(
-    litersToday,
-    tankLevels,
-    activeEnvGraphs,
-    linkedGraphGroups
-  );
+  const waterChip = _buildWaterChip(litersToday, tankLevels, activeEnvGraphs, linkedGraphGroups);
   if (waterChip) chips.push(waterChip);
 
   // Irrigation / drain timing

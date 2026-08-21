@@ -83,7 +83,12 @@ describe('GrowspaceTankCard', () => {
     const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
     handle.element.store.ui.$isLoading.set(false);
     setDevices([
-      { deviceId: growspace.growspaceId, name: growspace.name, environmentAttributes: { irrigationTanks: [] }, plants: [] } as any,
+      {
+        deviceId: growspace.growspaceId,
+        name: growspace.name,
+        environmentAttributes: { irrigationTanks: [] },
+        plants: [],
+      } as any,
     ]);
     handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
     await handle.element.updateComplete;
@@ -123,10 +128,23 @@ describe('GrowspaceTankCard', () => {
       handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
       handle.element.store.ui.$isLoading.set(false);
       setDevices([
-        { deviceId: growspace.growspaceId, name: growspace.name, environmentAttributes: { irrigationTanks: tanks }, plants: [] } as any,
+        {
+          deviceId: growspace.growspaceId,
+          name: growspace.name,
+          environmentAttributes: { irrigationTanks: tanks },
+          plants: [],
+        } as any,
       ]);
       handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
       await handle.element.updateComplete;
+    });
+
+    test('uses sequential heading levels for the card and its tanks', () => {
+      expect(handle.element.shadowRoot?.querySelector('.card-title')?.tagName).toBe('H2');
+      expect(handle.element.shadowRoot?.querySelector('.tank-header > h3')?.textContent).toBe(
+        'Main Tank'
+      );
+      expect(handle.element.shadowRoot?.querySelector('.tank-header > h4')).toBeNull();
     });
 
     test('shows depletion countdown for main tank as days', () => {
@@ -212,11 +230,9 @@ describe('GrowspaceTankCard', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const testError = new Error('test error');
     (handle.element as any)._handleError(testError, { componentStack: 'test' });
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'Growspace Tank Card caught error:',
-      testError,
-      { componentStack: 'test' }
-    );
+    expect(consoleSpy).toHaveBeenCalledWith('Growspace Tank Card caught error:', testError, {
+      componentStack: 'test',
+    });
     consoleSpy.mockRestore();
     handle.unmount();
   });
@@ -230,7 +246,10 @@ describe('GrowspaceTankCard', () => {
     });
 
     async function renderWithTanks(tanks: IrrigationTank[]) {
-      const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
+      const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', {
+        hass,
+        growspace,
+      });
       handle.element.store.ui.$isLoading.set(false);
       setDevices([makeDevice(tanks) as any]);
       handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
