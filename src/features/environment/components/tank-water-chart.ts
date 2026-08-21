@@ -5,6 +5,7 @@ import type { GrowspaceDevice } from '../../../services/types';
 import type { HistoryTimeRange } from '../constants';
 import { hassCall } from '../../../services/hass-call';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
+import { localize } from '../../../localize/localize';
 
 const TankWaterBucketSchema = z.object({
   timestamp: z.string(),
@@ -24,6 +25,10 @@ export class TankWaterChart extends LitElement {
 
   @state() private _buckets: TankWaterBucket[] = [];
   @state() private _loading = false;
+  @state() private _error = false;
+
+  private _lastRequestKey: string | undefined;
+  private _requestVersion = 0;
 
   static styles = css`
     :host {
@@ -60,11 +65,30 @@ export class TankWaterChart extends LitElement {
         transform: rotate(360deg);
       }
     }
-    .empty {
+    .empty,
+    .error {
       padding: 32px;
       text-align: center;
       color: var(--text-muted);
       font-size: var(--font-size-supporting);
+    }
+    .retry-button {
+      min-height: 40px;
+      margin-top: 12px;
+      padding-inline: 16px;
+      border: 1px solid currentColor;
+      border-radius: var(--border-radius-full, 9999px);
+      background: transparent;
+      color: var(--gm-primary-color);
+      font: inherit;
+      cursor: pointer;
+    }
+    .retry-button:hover {
+      background: var(--primary-container);
+    }
+    .retry-button:focus-visible {
+      outline: 2px solid var(--gm-primary-color);
+      outline-offset: 2px;
     }
     svg {
       width: 100%;
@@ -85,31 +109,46 @@ export class TankWaterChart extends LitElement {
     ${reducedMotion}
   `;
 
-  connectedCallback(): void {
-    super.connectedCallback();
-    this._fetch();
-  }
-
-  updated(changed: PropertyValues): void {
+  protected willUpdate(changed: PropertyValues): void {
     if (changed.has('range') || changed.has('device')) {
-      this._fetch();
+      void this._fetch();
     }
   }
 
   private async _fetch(): Promise<void> {
-    if (!this.device) return;
+    const deviceId = this.device?.deviceId;
+    if (!deviceId) {
+      this._lastRequestKey = undefined;
+      this._requestVersion++;
+      this._buckets = [];
+      this._loading = false;
+      this._error = false;
+      return;
+    }
+
+    const requestKey = `${deviceId}:${this.range}`;
+    if (requestKey === this._lastRequestKey) return;
+
+    this._lastRequestKey = requestKey;
+    const requestVersion = ++this._requestVersion;
     this._loading = true;
+    this._error = false;
     try {
       const result = await hassCall(
         'growspace_manager/get_tank_water_history',
-        { growspace_id: this.device.deviceId, range: this.range },
+        { growspace_id: deviceId, range: this.range },
         TankWaterHistorySchema
       );
+      if (requestVersion !== this._requestVersion) return;
       this._buckets = result.buckets;
     } catch {
+      if (requestVersion !== this._requestVersion) return;
       this._buckets = [];
+      this._error = true;
     } finally {
-      this._loading = false;
+      if (requestVersion === this._requestVersion) {
+        this._loading = false;
+      }
     }
   }
 
@@ -117,10 +156,24 @@ export class TankWaterChart extends LitElement {
     if (this._loading) {
       return html`
         <div class="chart-wrapper">
-          <div class="chart-title">Water Consumption</div>
-          <div class="loading">
+          <div class="chart-title">${localize('water_chart.title')}</div>
+          <div class="loading" role="status" aria-live="polite">
             <div class="spinner"></div>
-            <span>Loading...</span>
+            <span>${localize('water_chart.loading')}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    if (this._error) {
+      return html`
+        <div class="chart-wrapper">
+          <div class="chart-title">${localize('water_chart.title')}</div>
+          <div class="error" role="alert">
+            <div>${localize('water_chart.load_failed')}</div>
+            <button class="retry-button" type="button" @click=${this._retry}>
+              ${localize('water_chart.retry')}
+            </button>
           </div>
         </div>
       `;
@@ -129,18 +182,23 @@ export class TankWaterChart extends LitElement {
     if (this._buckets.length === 0) {
       return html`
         <div class="chart-wrapper">
-          <div class="chart-title">Water Consumption</div>
-          <div class="empty">No water data for this period.</div>
+          <div class="chart-title">${localize('water_chart.title')}</div>
+          <div class="empty">${localize('water_chart.empty')}</div>
         </div>
       `;
     }
 
     return html`
       <div class="chart-wrapper">
-        <div class="chart-title">Water Consumption</div>
+        <div class="chart-title">${localize('water_chart.title')}</div>
         ${this._renderBars()}
       </div>
     `;
+  }
+
+  private _retry(): void {
+    this._lastRequestKey = undefined;
+    void this._fetch();
   }
 
   private _renderBars(): TemplateResult {

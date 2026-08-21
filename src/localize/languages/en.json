@@ -24,6 +24,13 @@
   "errors": {
     "fetch_failed": "Failed to fetch data"
   },
+  "water_chart": {
+    "title": "Water Consumption",
+    "loading": "Loading water history...",
+    "empty": "No water data for this period.",
+    "load_failed": "Water history could not be loaded.",
+    "retry": "Try again"
+  },
   "tasks": {
     "menu": "Tasks",
     "arrange": "Arrange",
