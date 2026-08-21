@@ -155,6 +155,8 @@ describe('GrowspaceView', () => {
     expect(wrapper).toBeTruthy();
     const expandBtn = element.shadowRoot?.querySelector('.expand-handle');
     expect(expandBtn).toBeTruthy();
+    expect(expandBtn?.getAttribute('aria-label')).toBe('Expand growspace details');
+    expect(expandBtn?.getAttribute('aria-expanded')).toBe('false');
   });
 
   it('expand-handle button dispatches toggle-expansion in HEADER mode', async () => {
@@ -165,9 +167,7 @@ describe('GrowspaceView', () => {
     const btn = element.shadowRoot?.querySelector('.expand-handle') as HTMLElement;
     btn.click();
 
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'toggle-expansion' })
-    );
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'toggle-expansion' }));
   });
 
   it('HEADER mode header redispatches growspace-changed from growspace-header', async () => {
@@ -256,9 +256,7 @@ describe('GrowspaceView', () => {
       })
     );
 
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'sensor-position-changed' })
-    );
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'sensor-position-changed' }));
   });
 
   // ── Standard grid — optional UI elements ──────────────────────────────────
@@ -307,9 +305,9 @@ describe('GrowspaceView', () => {
     element.requestUpdate();
     await element.updateComplete;
 
-    const panel = element.shadowRoot?.querySelector('transplant-source-panel') as
-      | MockTransplantPanel
-      | null;
+    const panel = element.shadowRoot?.querySelector(
+      'transplant-source-panel'
+    ) as MockTransplantPanel | null;
     expect(panel).toBeTruthy();
     expect(panel!.clonePlants).toHaveLength(1);
     expect(panel!.seedlingPlants).toHaveLength(1);
@@ -332,7 +330,10 @@ describe('GrowspaceView', () => {
     element.config = { initial_view_mode: 'header' } as never;
     await element.updateComplete;
 
-    expect(element.shadowRoot?.querySelector('.collapse-handle')).toBeTruthy();
+    const button = element.shadowRoot?.querySelector('.collapse-handle');
+    expect(button).toBeTruthy();
+    expect(button?.getAttribute('aria-label')).toBe('Collapse growspace details');
+    expect(button?.getAttribute('aria-expanded')).toBe('true');
   });
 
   it('collapse-handle dispatches toggle-expansion', async () => {
@@ -345,9 +346,7 @@ describe('GrowspaceView', () => {
     const btn = element.shadowRoot?.querySelector('.collapse-handle') as HTMLElement;
     btn.click();
 
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'toggle-expansion' })
-    );
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'toggle-expansion' }));
   });
 
   it('hides collapse-handle when config.initial_view_mode is not header', async () => {
@@ -433,9 +432,7 @@ describe('GrowspaceView', () => {
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const grid = element.shadowRoot?.querySelector('growspace-grid-container');
-    grid?.dispatchEvent(
-      new CustomEvent('transplant-drop', { detail: { plant_id: 'p1' } })
-    );
+    grid?.dispatchEvent(new CustomEvent('transplant-drop', { detail: { plant_id: 'p1' } }));
 
     await new Promise((r) => setTimeout(r, 0));
 
@@ -448,9 +445,11 @@ describe('GrowspaceView', () => {
     element = await createElement();
     element.device = { deviceId: undefined } as never;
 
-    await (element as never as {
-      _handleTransplantDrop(e: CustomEvent): Promise<void>;
-    })._handleTransplantDrop(new CustomEvent('transplant-drop', { detail: { plant_id: 'p1' } }));
+    await (
+      element as never as {
+        _handleTransplantDrop(e: CustomEvent): Promise<void>;
+      }
+    )._handleTransplantDrop(new CustomEvent('transplant-drop', { detail: { plant_id: 'p1' } }));
 
     expect(mockStore.hass.callService).not.toHaveBeenCalled();
   });

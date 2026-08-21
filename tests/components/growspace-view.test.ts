@@ -56,6 +56,14 @@ describe('GrowspaceView', () => {
     expect(el.shadowRoot!.querySelector('growspace-header')).not.toBeNull();
   });
 
+  it('names the collapsed-view expansion control and exposes its state', async () => {
+    const el = await renderView(ViewMode.HEADER);
+    const button = el.shadowRoot!.querySelector('.expand-handle') as HTMLButtonElement;
+
+    expect(button.ariaLabel).toBe('Expand growspace details');
+    expect(button.ariaExpanded).toBe('false');
+  });
+
   it('renders growspace-header in heatmap mode', async () => {
     const el = await renderView(ViewMode.HEATMAP);
     expect(el.shadowRoot!.querySelector('growspace-header')).not.toBeNull();

@@ -76,6 +76,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
       }
 
       .card-title {
+        margin: 0;
         font-size: 1rem;
         font-weight: 600;
         opacity: 0.9;
@@ -138,7 +139,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         margin-bottom: 16px;
       }
 
-      .tank-header h4 {
+      .tank-header h3 {
         margin: 0 0 4px;
         font-size: var(--font-size-md);
         font-weight: 500;
@@ -485,10 +486,10 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         <ha-card>
           <div class="tank-card-wrapper glass-surface glass-panel">
             <div class="card-header">
-              <span class="card-title">
+              <h2 class="card-title">
                 <ha-icon icon="mdi:water" style="--mdi-icon-size: 18px;"></ha-icon>
                 ${device.name} — Tanks
-              </span>
+              </h2>
               ${warningTanks.length > 0
                 ? html`<span class="warning-badge">⚠ ${warningTanks.length} low</span>`
                 : avgLevel !== null
@@ -544,7 +545,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
     return html`
       <div class="tank-card ${isWarning ? 'warning' : ''}">
         <div class="tank-header">
-          <h4>${tank.name}</h4>
+          <h3>${tank.name}</h3>
           <div class="tank-meta">
             ${timeLeft ? html`<span>${timeLeft}</span>` : nothing}
             ${tank.volumeLiters != null ? html`<span>${tank.volumeLiters} L</span>` : nothing}
