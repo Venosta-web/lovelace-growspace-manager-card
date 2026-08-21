@@ -233,6 +233,16 @@ describe('TankWaterChart – _renderBars', () => {
     expect(heights[1]).toBeGreaterThan(heights[2]);
   });
 
+  it('uses a visible water color when card tokens are not inherited', async () => {
+    const el = createElement();
+    el.device = { deviceId: 'gs-1' } as any;
+    await el.updateComplete;
+    await vi.waitFor(() => el.shadowRoot!.querySelector('rect') !== null);
+
+    const bar = el.shadowRoot!.querySelector<SVGRectElement>('rect')!;
+    expect(getComputedStyle(bar).fill).toBe('rgb(3, 169, 244)');
+  });
+
   it.each([96, 168])('renders positive-width bars for a %i-bucket response', async (count) => {
     mockHassCall.mockResolvedValue({
       buckets: Array.from({ length: count }, (_, i) =>

@@ -95,7 +95,7 @@ export class TankWaterChart extends LitElement {
       overflow: visible;
     }
     .bar {
-      fill: var(--gm-primary-color);
+      fill: var(--metric-water, var(--gm-primary-color, #03a9f4));
       opacity: 0.85;
     }
     .bar:hover {
