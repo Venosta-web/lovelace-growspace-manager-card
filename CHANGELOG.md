@@ -1,3 +1,15 @@
+## [1.1.4](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.3...v1.1.4) (2026-08-21)
+
+
+### Bug Fixes
+
+* render tank water chart bars in SVG namespace ([4749652](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/4749652165e4704153c27db221d0f34d50b32a27))
+
+
+### Reverts
+
+* restore original visual-regression baselines ([7f39afb](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7f39afb9fa10257d53ed12cc71b204e8076ac2d3))
+
 ## [1.1.3](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.2...v1.1.3) (2026-08-21)
 
 
