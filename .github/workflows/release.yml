@@ -49,15 +49,15 @@ jobs:
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
         run: npx semantic-release
 
-      # semantic-release force-adds the ignored bundle to the release commit so
-      # the tag is independently installable by HACS. Remove it from branch
-      # tracking afterwards so normal local builds do not dirty source PRs.
-      - name: Keep built bundle in release tag only
+      # semantic-release force-adds the ignored entry and chunks to the release
+      # commit so the tag is independently installable by HACS. Remove them from
+      # branch tracking afterwards so normal local builds do not dirty source PRs.
+      - name: Keep built bundles in release tag only
         run: |
-          if git ls-files --error-unmatch dist/growspace-manager-card.js >/dev/null 2>&1; then
-            git rm --cached dist/growspace-manager-card.js
+          if git ls-files 'dist/*.js' | grep -q .; then
+            git rm --cached dist/*.js
             git -c user.name='github-actions[bot]' \
               -c user.email='github-actions[bot]@users.noreply.github.com' \
-              commit -m 'chore(release): untrack built bundle [skip ci]'
+              commit -m 'chore(release): untrack built bundle'
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi

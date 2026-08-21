@@ -1,4 +1,5 @@
 import { createRequire } from 'module';
+import { rmSync } from 'node:fs';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
@@ -16,9 +17,15 @@ const isProduction = process.env.NODE_ENV === 'production';
 const isCoverage = process.env.COVERAGE === 'true';
 
 const plugins = [
+  {
+    name: 'clean-dist',
+    buildStart() {
+      rmSync('dist', { recursive: true, force: true });
+    },
+  },
   replace({
     'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development'),
-    '__VERSION__': JSON.stringify(pkg.version),
+    __VERSION__: JSON.stringify(pkg.version),
     preventAssignment: true,
   }),
   resolve(),
@@ -41,10 +48,11 @@ if (isProduction && !isCoverage) {
 export default {
   input: 'src/index.ts',
   output: {
-    file: 'dist/growspace-manager-card.js',
+    dir: 'dist',
+    entryFileNames: 'growspace-manager-card.js',
+    chunkFileNames: 'growspace-[name]-[hash].js',
     format: 'es',
     sourcemap: !isProduction || isCoverage,
-    inlineDynamicImports: true,
   },
   plugins,
 };

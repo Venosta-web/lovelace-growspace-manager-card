@@ -8,9 +8,9 @@ build/
 # GitHub Release assets (.releaserc.json), not from the repo tree. Untracked to
 # keep the ~4MB minified bundle + 12MB sourcemap out of every diff. Manual
 # installs download the asset from the latest release (see README).
-/growspace-manager-card.js
-/dist/growspace-manager-card.js
-/dist/growspace-manager-card.js.map
+/growspace-*.js
+/dist/*.js
+/dist/*.js.map
 
 # Local env files
 .env
