@@ -1,3 +1,15 @@
+## [1.1.2](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.1...v1.1.2) (2026-08-21)
+
+
+### Bug Fixes
+
+* **ci:** run checks on release cleanup commits ([#690](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/690)) ([0a33ac5](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/0a33ac561e0532a91e0cc3aaeced5b0478b6d5bc))
+
+
+### Performance Improvements
+
+* lazy-load 3D and secondary feature bundles ([#688](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/688)) ([f7e4aad](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/f7e4aadecedf388324ceb6f242192a40a2f280c9))
+
 ## [1.1.2-next.2](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.2-next.1...v1.1.2-next.2) (2026-08-21)
 
 
