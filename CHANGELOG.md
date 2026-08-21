@@ -1,3 +1,10 @@
+## [1.1.2-next.2](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.2-next.1...v1.1.2-next.2) (2026-08-21)
+
+
+### Bug Fixes
+
+* **ci:** run checks on release cleanup commits ([#690](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/690)) ([0a33ac5](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/0a33ac561e0532a91e0cc3aaeced5b0478b6d5bc))
+
 ## [1.1.2-next.1](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.1...v1.1.2-next.1) (2026-08-21)
 
 
