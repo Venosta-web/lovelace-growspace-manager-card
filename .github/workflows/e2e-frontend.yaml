@@ -1,16 +1,14 @@
 name: E2E Frontend Tests
 
 on:
-  pull_request:
-    branches:
-      - main
-      - master
+  # The Docker-backed PR job referenced a Compose file removed in 80236b51.
+  # Keep manual execution available while a reachable HA runner is provisioned.
   workflow_dispatch:
 
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6.0.2
@@ -50,7 +48,7 @@ jobs:
             elapsed=$((elapsed + interval))
           done
           echo "Timed out waiting for Home Assistant."
-          
+
           # Print container logs for debugging
           echo "::group::Home Assistant Logs"
           docker compose -f tests/e2e/docker-compose.test.yml logs
