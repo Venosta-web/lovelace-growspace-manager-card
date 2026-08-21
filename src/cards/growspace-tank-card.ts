@@ -76,6 +76,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
       }
 
       .card-title {
+        margin: 0;
         font-size: 1rem;
         font-weight: 600;
         opacity: 0.9;
@@ -138,7 +139,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         margin-bottom: 16px;
       }
 
-      .tank-header h4 {
+      .tank-header h3 {
         margin: 0 0 4px;
         font-size: var(--font-size-md);
         font-weight: 500;
