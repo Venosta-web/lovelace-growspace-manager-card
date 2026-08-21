@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { diffContractKeys, formatContractDrift } from './key-set-diff';
 
 describe('contract fixture key-set diff', () => {
-  it('reports the object and key added by the prerelease fixture', () => {
+  it('reports the object and key added by the main fixture', () => {
     const schema = z.object({ environment: z.object({ humidity: z.number() }) });
 
     const drift = diffContractKeys(

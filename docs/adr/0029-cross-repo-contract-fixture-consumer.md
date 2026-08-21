@@ -22,17 +22,18 @@ env-clear pattern) existed only as maintainer memory.
    > **Amended by ADR 0031.** Strict parsing is not achievable: `hassCall`
    > throws on any parse failure, so production schemas strip unknown keys
    > rather than reject them. The check is a recursive **key-set diff** with an
-   > **asymmetric verdict per ref** — `prerelease` tests completeness (fixture
+   > **asymmetric verdict per ref** — `main` tests completeness (fixture
    > keys ⊆ schema keys), the release ref tests backward-safety (the schema's
    > non-optional keys ⊆ fixture keys). A key in the release fixture but absent
    > from the schema is expected, not drift. The rest of this ADR stands.
-2. **Two refs, one test.** The fixture is fetched from GSM `prerelease` *and*
+
+2. **Two refs, one test.** The fixture is fetched from GSM `main` _and_
    from the latest GSM release tag. Passing against the release fixture is the
    mechanical definition of a **backward-safe card change** — the sanctioned
-   exception to the GSM-first landing order. A PR green against `prerelease` but
+   exception to the GSM-first landing order. A PR green against `main` but
    red against the release fixture must wait for the next GSM release; that
    failure is a landing-order signal, not a flake.
-3. The check joins the required contexts on the `dev`/`main` rulesets (ADR 0025
+3. The check joins the required contexts on the `main` ruleset (ADR 0025
    amendment).
 
 ## Consequences

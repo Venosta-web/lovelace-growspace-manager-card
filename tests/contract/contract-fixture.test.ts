@@ -23,8 +23,8 @@ async function expectFixtureToMatch(variable: string, verdict: ContractVerdict):
 }
 
 describe('GSM contract fixtures', () => {
-  it('checks prerelease completeness and latest-release backward safety', async () => {
-    await expectFixtureToMatch('GSM_PRERELEASE_FIXTURE', 'completeness');
+  it('checks main completeness and latest-release backward safety', async () => {
+    await expectFixtureToMatch('GSM_MAIN_FIXTURE', 'completeness');
     await expectFixtureToMatch('GSM_RELEASE_FIXTURE', 'backward-safety');
   });
 });
