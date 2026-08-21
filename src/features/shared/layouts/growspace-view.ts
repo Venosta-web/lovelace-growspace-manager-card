@@ -34,7 +34,6 @@ import '../../ui/containers/growspace-analytics.container';
 import '../../ui/components/growspace-edit-mode-banner-ui';
 import '../../plants/components/transplant-source-panel';
 import '../../plants/containers/growspace-grid.container';
-import '../../environment/components/heatmap-3d';
 import '../ui/error-boundary';
 
 import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
@@ -167,6 +166,7 @@ export class GrowspaceView extends LitElement {
   private _renderChart(): TemplateResult {
     const spec = this._specController?.value;
     if (spec?.chartType === 'heatmap') {
+      void import('../../environment/components/heatmap-3d');
       return html`
         <heatmap-3d
           .device=${this.device}

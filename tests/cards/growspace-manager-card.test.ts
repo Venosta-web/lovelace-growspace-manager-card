@@ -36,6 +36,14 @@ describe('GrowspaceManagerCard', () => {
     expect(element).toBeInstanceOf(GrowspaceManagerCard);
   });
 
+  test('loads the dialog host only when a dialog opens', async () => {
+    expect((element as any)._dialogPortal).toBeNull();
+
+    element.store.ui.setActiveDialog({ type: 'ADD_PLANT', payload: { row: 0, col: 0 } });
+
+    await vi.waitFor(() => expect((element as any)._dialogPortal).not.toBeNull());
+  });
+
   test('throws error on invalid config', () => {
     expect(() => element.setConfig(undefined as any)).toThrowError('Invalid configuration');
   });
