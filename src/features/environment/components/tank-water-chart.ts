@@ -1,4 +1,4 @@
-import { LitElement, html, css, type TemplateResult, type PropertyValues } from 'lit';
+import { LitElement, html, css, svg, type TemplateResult, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { z } from 'zod';
 import type { GrowspaceDevice } from '../../../services/types';
@@ -213,7 +213,7 @@ export class TankWaterChart extends LitElement {
           const barH = (bucket.liters / max) * (chartH - 16);
           const x = i * barW + gap / 2;
           const y = chartH - barH - 14;
-          return html`
+          return svg`
             <rect class="bar" x="${x}" y="${y}" width="${barW - gap}" height="${barH}" rx="1">
               <title>
                 ${new Date(bucket.timestamp).toLocaleTimeString()} — ${bucket.liters.toFixed(1)} L
