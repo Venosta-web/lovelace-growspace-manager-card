@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.2...v1.1.3) (2026-08-21)
+
+
+### Bug Fixes
+
+* keep water chart bars visible ([c796e5a](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/c796e5a2feca1830e3d0717b3f7e5ff74eace25a))
+
 ## [1.1.2](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.1...v1.1.2) (2026-08-21)
 
 
