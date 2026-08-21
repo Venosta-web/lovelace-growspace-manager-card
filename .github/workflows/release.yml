@@ -58,6 +58,6 @@ jobs:
             git rm --cached dist/*.js
             git -c user.name='github-actions[bot]' \
               -c user.email='github-actions[bot]@users.noreply.github.com' \
-              commit -m 'chore(release): untrack built bundle [skip ci]'
+              commit -m 'chore(release): untrack built bundle'
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
