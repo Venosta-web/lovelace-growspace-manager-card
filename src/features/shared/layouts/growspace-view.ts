@@ -142,7 +142,12 @@ export class GrowspaceView extends LitElement {
             .device=${this.device}
             @growspace-changed=${(e: CustomEvent) => this._redispatch(e, 'growspace-changed')}
           ></growspace-header>
-          <button class="expand-handle" @click=${this._dispatchToggle}>
+          <button
+            class="expand-handle"
+            @click=${this._dispatchToggle}
+            aria-label="Expand growspace details"
+            aria-expanded="false"
+          >
             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${mdiChevronDown}"></path>
             </svg>
@@ -225,7 +230,8 @@ export class GrowspaceView extends LitElement {
             <button
               class="collapse-handle"
               @click=${this._dispatchToggle}
-              aria-label="Toggle view expansion"
+              aria-label="Collapse growspace details"
+              aria-expanded="true"
             >
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiChevronUp}"></path>

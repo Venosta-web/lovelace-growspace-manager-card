@@ -8,6 +8,7 @@ function makeChip(key: MetricKey): HeaderChip {
     key,
     icon: '',
     value: '0',
+    label: key,
     active: false,
     linked: false,
     groupIndex: 0,

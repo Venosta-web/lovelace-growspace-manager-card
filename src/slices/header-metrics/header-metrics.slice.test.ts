@@ -420,7 +420,11 @@ describe('Cycle 6 — tank level chips', () => {
   });
 
   it('sets no status when depletionStatus is insufficient_data', () => {
-    const tank = makeTank({ fillLevel: 50, hoursRemaining: 6, depletionStatus: 'insufficient_data' });
+    const tank = makeTank({
+      fillLevel: 50,
+      hoursRemaining: 6,
+      depletionStatus: 'insufficient_data',
+    });
 
     const { chips } = computeHeaderMetrics(null, [], null, [tank], 'main');
 
@@ -638,11 +642,9 @@ describe('Cycle 8 — chip.active from activeEnvGraphs', () => {
   it('marks chip as linked with correct groupIndex when key appears in linkedGraphGroups', () => {
     const env = makeEnvSnapshot({ temperature: 24, humidity: 60 });
 
-    const { hero } = computeHeaderMetrics(
-      env, [], null, [], 'main',
-      new Set(),
-      [[MetricKey.TEMPERATURE, MetricKey.HUMIDITY]],
-    );
+    const { hero } = computeHeaderMetrics(env, [], null, [], 'main', new Set(), [
+      [MetricKey.TEMPERATURE, MetricKey.HUMIDITY],
+    ]);
 
     const tempChip = hero.find((c) => c.key === MetricKey.TEMPERATURE)!;
     expect(tempChip.linked).toBe(true);
@@ -931,7 +933,12 @@ describe('Cycle N — irrigation monitoring chips', () => {
 
   it('emits summed power value (not "Multiple") when two power sensors are configured', () => {
     const env = makeEnvSnapshot({
-      power: { avg: 325, sum: 650, perSensor: [300, 350], entityIds: ['sensor.pwr_1', 'sensor.pwr_2'] },
+      power: {
+        avg: 325,
+        sum: 650,
+        perSensor: [300, 350],
+        entityIds: ['sensor.pwr_1', 'sensor.pwr_2'],
+      },
     });
     const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
     const chip = chips.find((c) => c.key === MetricKey.POWER);
@@ -942,7 +949,12 @@ describe('Cycle N — irrigation monitoring chips', () => {
 
   it('emits summed energy value (not "Multiple") when two energy sensors are configured', () => {
     const env = makeEnvSnapshot({
-      energy: { avg: 4.5, sum: 9.0, perSensor: [4.0, 5.0], entityIds: ['sensor.energy_1', 'sensor.energy_2'] },
+      energy: {
+        avg: 4.5,
+        sum: 9.0,
+        perSensor: [4.0, 5.0],
+        entityIds: ['sensor.energy_1', 'sensor.energy_2'],
+      },
     });
     const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
     const chip = chips.find((c) => c.key === MetricKey.ENERGY);
@@ -1139,7 +1151,12 @@ function makeReadings(values: (number | null)[], entityIds?: string[]): SensorRe
   const ids = entityIds ?? values.map((_, i) => `sensor.s${i + 1}`);
   const defined = values.filter((v): v is number => v !== null);
   const sum = defined.length > 0 ? defined.reduce((a, b) => a + b, 0) : null;
-  return { avg: sum !== null ? sum / defined.length : null, sum, perSensor: values, entityIds: ids };
+  return {
+    avg: sum !== null ? sum / defined.length : null,
+    sum,
+    perSensor: values,
+    entityIds: ids,
+  };
 }
 
 describe('Cycle 11 — hero chips from per-sensor readings', () => {
@@ -1237,7 +1254,7 @@ describe('Cycle 11 — hero chips from per-sensor readings', () => {
     const { hero } = computeHeaderMetrics(env, [], null, [], 'main');
 
     expect(hero.map((c) => c.value)).toEqual(['24.5°C', '58%']);
-    expect(hero[0].label).toBeUndefined();
+    expect(hero[0].label).toBe('Temperature');
   });
 });
 
@@ -1686,7 +1703,7 @@ describe('Cycle 14 — subarea device chips', () => {
     const chip = deviceChips.find((c) => c.key === MetricKey.LIGHT)!;
     expect(chip.value).toBe('On');
     expect(chip.icon).toBe(mdiLightbulbOn);
-    expect(chip.label).toBeUndefined();
+    expect(chip.label).toBe('Light');
   });
 
   it('drives the bulb icon from a single numeric light reading in the subarea context', () => {
