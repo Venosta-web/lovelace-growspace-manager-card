@@ -1,5 +1,5 @@
 import { LitElement, html, CSSResultGroup, PropertyValues, css, TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 
 import { hassContext, configContext } from '../lib/context';
@@ -11,7 +11,6 @@ import { ViewMode } from '../features/environment/constants';
 
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
 import { BootstrapController } from '../controllers/bootstrap.controller';
-import '../features/ui/containers/growspace-dialog-host.container';
 import '../features/ui/containers/growspace-toast.container';
 import '../features/shared/layouts/growspace-view-switcher';
 import '../features/shared/ui/error-boundary';
@@ -37,6 +36,8 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
   protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
 
   private _bootstrapCtrl!: BootstrapController;
+  private _dialogUnsubscribe?: () => void;
+  @state() private _dialogHostReady = false;
 
   get selectedDevice() {
     return this._viewController.value.grid.selectedDevice;
@@ -77,8 +78,20 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
     this.store.ui.setViewMode(ViewMode.STANDARD);
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    this._dialogUnsubscribe ??= this.store.ui.$activeDialog.subscribe((active) => {
+      if (active.type === 'NONE' || this._dialogHostReady) return;
+      void import('../features/ui/containers/growspace-dialog-host.container').then(() => {
+        if (this.isConnected) this._dialogHostReady = true;
+      });
+    });
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
+    this._dialogUnsubscribe?.();
+    this._dialogUnsubscribe = undefined;
     this.store.destroy();
     growspaceStoreRegistry.release();
   }
@@ -244,7 +257,13 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
         </ha-card>
 
         <growspace-toast></growspace-toast>
-        <growspace-dialog-host .devices=${devices}></growspace-dialog-host>
+        ${this._dialogHostReady
+          ? html`<growspace-dialog-host
+              .store=${this.store}
+              .hass=${this.hass}
+              .config=${this._config}
+            ></growspace-dialog-host>`
+          : ''}
       </error-boundary>
     `;
   }

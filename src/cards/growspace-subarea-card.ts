@@ -27,7 +27,6 @@ import { getHistoryStats } from '../store/history/history-store';
 import { ConfigTab } from '../features/environment/constants';
 import type { HistoryTimeRange } from '../features/environment/constants';
 import { ResizeController } from '../controllers/resize-controller';
-import '../dialogs/config-dialog';
 
 import '../features/shared/ui/error-boundary';
 import '../features/ui/containers/growspace-header.container';
@@ -516,6 +515,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                         title="Configure subareas"
                         @click=${() => {
                             this._showConfigDialog = true;
+                            void import('../dialogs/config-dialog');
                         }}
                       >
                         <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>

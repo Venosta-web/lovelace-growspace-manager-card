@@ -15,7 +15,6 @@ import type { GrowspaceManagerCardConfig } from './lib/types/config';
 import type { StrainEntry } from './features/plants/types';
 
 import './growspace-env-chart';
-import './features/ui/containers/growspace-dialog-host.container';
 import type { GrowspaceDialogHost } from './features/ui/containers/growspace-dialog-host.container';
 import './features/ui/components/growspace-edit-mode-banner-ui';
 import './features/ui/containers/growspace-header.container';
@@ -52,6 +51,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   store = new GrowspaceStore(this._sharedStore);
 
   private _dialogPortal: GrowspaceDialogHost | null = null;
+  private _dialogHostModule?: Promise<
+    typeof import('./features/ui/containers/growspace-dialog-host.container')
+  >;
+  private _dialogUnsubscribe?: () => void;
   private _viewModeInitialized = false;
   private _bootstrapCtrl!: BootstrapController;
 
@@ -134,13 +137,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         },
       });
     });
-    if (!this._dialogPortal) {
-      const portal = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
-      portal.store = this.store;
-      if (this.hass) portal.hass = this.hass;
-      document.body.appendChild(portal);
-      this._dialogPortal = portal;
-    }
+    this._dialogUnsubscribe ??= this.store.ui.$activeDialog.subscribe((active) => {
+      if (active.type !== 'NONE') void this._ensureDialogPortal();
+    });
   }
 
   disconnectedCallback() {
@@ -148,12 +147,27 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
     window.removeEventListener('keydown', this._handleGlobalKeydown);
     setMutateListener(null);
+    this._dialogUnsubscribe?.();
+    this._dialogUnsubscribe = undefined;
     if (this._dialogPortal) {
       document.body.removeChild(this._dialogPortal);
       this._dialogPortal = null;
     }
     this.store.destroy();
     growspaceStoreRegistry.release();
+  }
+
+  private async _ensureDialogPortal(): Promise<void> {
+    await (this._dialogHostModule ??=
+      import('./features/ui/containers/growspace-dialog-host.container'));
+    if (!this.isConnected || this._dialogPortal) return;
+
+    const portal = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    portal.store = this.store;
+    if (this.hass) portal.hass = this.hass;
+    if (this._config) portal.config = this._config;
+    document.body.appendChild(portal);
+    this._dialogPortal = portal;
   }
 
   private _handleLibraryExportReady = (e: LibraryExportReadyEvent) => {
