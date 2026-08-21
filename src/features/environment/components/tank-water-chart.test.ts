@@ -19,6 +19,10 @@ function createElement(): TankWaterChart {
   return el;
 }
 
+beforeEach(() => {
+  mockHassCall.mockReset();
+});
+
 afterEach(() => {
   document.body.innerHTML = '';
   vi.restoreAllMocks();
@@ -34,7 +38,7 @@ describe('TankWaterChart – _fetch', () => {
     expect(mockHassCall).not.toHaveBeenCalled();
   });
 
-  it('calls hassCall with device id and range on connectedCallback', async () => {
+  it('calls hassCall once with the initial device id and range', async () => {
     const device = { deviceId: 'gs-1' } as any;
     mockHassCall.mockResolvedValue({ buckets: [] });
     const el = createElement();
@@ -47,6 +51,7 @@ describe('TankWaterChart – _fetch', () => {
       { growspace_id: 'gs-1', range: '7d' },
       expect.anything()
     );
+    expect(mockHassCall).toHaveBeenCalledTimes(1);
   });
 
   it('populates buckets on successful fetch', async () => {
@@ -60,13 +65,30 @@ describe('TankWaterChart – _fetch', () => {
     expect(el.shadowRoot!.querySelectorAll('rect').length).toBe(2);
   });
 
-  it('sets buckets to empty array on fetch error', async () => {
+  it('shows a recoverable error when the fetch fails', async () => {
     mockHassCall.mockRejectedValue(new Error('network error'));
     const el = createElement();
     el.device = { deviceId: 'gs-1' } as any;
     await el.updateComplete;
     await vi.waitFor(() => !el.shadowRoot!.querySelector('.loading'));
-    expect(el.shadowRoot!.querySelector('.empty')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('[role="alert"]')).not.toBeNull();
+    expect(el.shadowRoot!.textContent).toContain('Water history could not be loaded');
+  });
+
+  it('retries a failed request when Try again is activated', async () => {
+    mockHassCall
+      .mockRejectedValueOnce(new Error('network error'))
+      .mockResolvedValueOnce({ buckets: [mkBucket('2024-01-01T00:00:00Z', 3)] });
+    const el = createElement();
+    el.device = { deviceId: 'gs-1' } as any;
+    await vi.waitFor(() =>
+      expect(el.shadowRoot!.querySelector<HTMLButtonElement>('.retry-button')).not.toBeNull()
+    );
+
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.retry-button')!.click();
+
+    await vi.waitFor(() => el.shadowRoot!.textContent!.includes('3.0 L'));
+    expect(mockHassCall).toHaveBeenCalledTimes(2);
   });
 
   it('re-fetches when range property changes', async () => {
@@ -90,6 +112,42 @@ describe('TankWaterChart – _fetch', () => {
     await el.updateComplete;
     expect(mockHassCall.mock.calls.length).toBeGreaterThan(callsBefore);
   });
+
+  it('does not re-fetch when the device object changes but its id does not', async () => {
+    mockHassCall.mockResolvedValue({ buckets: [] });
+    const el = createElement();
+    el.device = { deviceId: 'gs-1', name: 'First object' } as any;
+    await el.updateComplete;
+    await vi.waitFor(() => expect(mockHassCall).toHaveBeenCalledTimes(1));
+
+    el.device = { deviceId: 'gs-1', name: 'Replacement object' } as any;
+    await el.updateComplete;
+
+    expect(mockHassCall).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores a stale response after the range changes', async () => {
+    let resolveFirst!: (value: unknown) => void;
+    let resolveSecond!: (value: unknown) => void;
+    mockHassCall
+      .mockReturnValueOnce(new Promise((resolve) => (resolveFirst = resolve)))
+      .mockReturnValueOnce(new Promise((resolve) => (resolveSecond = resolve)));
+
+    const el = createElement();
+    el.device = { deviceId: 'gs-1' } as any;
+    await el.updateComplete;
+    el.range = '7d';
+    await el.updateComplete;
+
+    resolveSecond({ buckets: [mkBucket('2024-01-02T00:00:00Z', 7)] });
+    await vi.waitFor(() => el.shadowRoot!.textContent!.includes('7.0 L'));
+    resolveFirst({ buckets: [mkBucket('2024-01-01T00:00:00Z', 1)] });
+    await Promise.resolve();
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.textContent).toContain('7.0 L');
+    expect(el.shadowRoot!.textContent).not.toContain('1.0 L');
+  });
 });
 
 // ─── loading state ────────────────────────────────────────────────────────────
@@ -103,7 +161,8 @@ describe('TankWaterChart – loading state', () => {
     await el.updateComplete;
     // _loading = true triggers a second update cycle
     await el.updateComplete;
-    expect(el.shadowRoot!.querySelector('.loading')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('.loading')?.getAttribute('role')).toBe('status');
+    expect(el.shadowRoot!.querySelector('.loading')?.getAttribute('aria-live')).toBe('polite');
     resolve({ buckets: [] });
     await el.updateComplete;
   });
