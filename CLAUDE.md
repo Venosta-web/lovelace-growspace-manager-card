@@ -63,10 +63,10 @@ prek install --hook-type commit-msg  # not installed by the plain form above, de
 Standalone worktrees install their own `node_modules` with `npm ci`. Worktrees created by
 the sibling `growspace_manager_workspace` hub **share the main card checkout's
 `node_modules` only while their `package-lock.json` SHA-256 hashes are identical**. The hub
-also runs `npm ci --dry-run` to prove the installed tree exactly matches the worktree before
-linking it. If either check fails, the link is removed and that worktree must run its own
-`npm ci`; dependency drift therefore fails closed instead of silently using another
-branch's hoisting or peer-dependency resolution.
+also runs `npm ci --dry-run` and requires a zero-add/change/remove plan before linking it.
+If either check fails, the link is removed and that worktree must run its own `npm ci`;
+dependency drift therefore fails closed instead of silently using another branch's
+hoisting or peer-dependency resolution.
 
 Treat a shared link as read-only: never run `npm ci`, `npm install`, `npm rebuild`,
 `patch-package`, or dependency postinstall tooling through it. When changing dependencies,
