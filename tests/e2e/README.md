@@ -60,6 +60,13 @@ Ensure HA is accessible at `http://localhost:8123` and you have:
 npm test
 ```
 
+When invoked through the repository root (`npm run test:ha`, headed, or debug), a
+preflight first verifies that `dist/` matches the current runtime source and that Home
+Assistant serves that exact build. Use root-level `npm run test:e2e` after source changes;
+it builds, recreates HA with the new `dist/` mount, waits for it, and then starts Playwright.
+The Playwright config applies the same preflight to commands run from this directory.
+Set `E2E_CARD_URL` in `.env.test` only if the card is registered at a non-workspace URL.
+
 ### Specific Test File
 ```bash
 npm test smoke.spec.ts

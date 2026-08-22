@@ -12,15 +12,18 @@ import css from 'rollup-plugin-css-only';
 import replace from '@rollup/plugin-replace';
 import minifyHTML from '@lit-labs/rollup-plugin-minify-html-literals';
 import summary from 'rollup-plugin-summary';
+import { computeSourceFingerprint, createBuildBanner } from './scripts/e2e-build-state.mjs';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const isCoverage = process.env.COVERAGE === 'true';
+let buildBanner;
 
 const plugins = [
   {
-    name: 'clean-dist',
-    buildStart() {
+    name: 'prepare-dist',
+    async buildStart() {
       rmSync('dist', { recursive: true, force: true });
+      buildBanner = createBuildBanner(await computeSourceFingerprint());
     },
   },
   replace({
@@ -53,6 +56,7 @@ export default {
     chunkFileNames: 'growspace-[name]-[hash].js',
     format: 'es',
     sourcemap: !isProduction || isCoverage,
+    banner: () => buildBanner,
   },
   plugins,
 };
