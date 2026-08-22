@@ -656,6 +656,7 @@ export class StrainEditorView extends LitElement {
                   ? html`
                       <img
                         src="${s.breeder_logo}"
+                        alt="${s.breeder ? `${s.breeder} logo` : 'Breeder logo'}"
                         style="width: 48px; height: 48px; object-fit: contain; border-radius: var(--border-radius-xs, 4px); background: rgba(255,255,255,0.05); padding: 4px;"
                       />
                     `
@@ -1151,6 +1152,7 @@ export class StrainEditorView extends LitElement {
               >
                 <img
                   src="${PlantUtils.encodeLocalPath(img.path)}"
+                  alt="Strain photo ${i + 1}"
                   style="width:100%; height:100%; object-fit:cover;"
                 />
                 <div
@@ -1550,6 +1552,7 @@ export class StrainEditorView extends LitElement {
             ${state.logo
               ? html`<img
                   src="${state.logo}"
+                  alt="${state.name ? `${state.name} logo` : 'Breeder logo'}"
                   style="width:64px; height:64px; object-fit:contain; border-radius: var(--border-radius-sm, 8px); background:rgba(255,255,255,0.05); padding:4px;"
                 />`
               : html`<div

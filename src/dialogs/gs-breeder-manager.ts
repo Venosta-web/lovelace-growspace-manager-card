@@ -378,6 +378,7 @@ export class GsBreederManager extends LitElement {
             ${draft.logo
               ? html`<img
                   src="${draft.logo}"
+                  alt="${draft.name ? `${draft.name} logo` : 'Breeder logo'}"
                   style="width:64px; height:64px; object-fit:contain; border-radius: var(--border-radius-sm, 8px); background:rgba(255,255,255,0.05); padding:4px;"
                 />`
               : html`<div

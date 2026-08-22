@@ -571,7 +571,11 @@ export class StrainImportDialog extends LitElement {
                         ? ` (${d.images.length} available)`
                         : ''}
                     </div>
-                    <img class="preview-image" src="${d.image ?? d.images![0]}" />
+                    <img
+                      class="preview-image"
+                      src="${d.image ?? d.images![0]}"
+                      alt="${d.name ? `${d.name} preview` : 'Strain preview'}"
+                    />
                   </div>
                 </div>
               `

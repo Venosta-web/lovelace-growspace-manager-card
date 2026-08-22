@@ -468,7 +468,7 @@ export class PlantTimeline extends LitElement {
     if (!this._hoveredImage) return nothing;
     return html`
       <div class="image-hover-overlay">
-        <img src=${this._hoveredImage} />
+        <img src=${this._hoveredImage} alt="Note photo preview" />
       </div>
     `;
   }
@@ -703,12 +703,13 @@ export class PlantTimeline extends LitElement {
 
     return html`
       <div class="image-grid">
-        ${images.map((img) => {
+        ${images.map((img, i) => {
           // If it's a relative path, prefix with /api/growspace_manager/v1/images/
           const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
           return html`
             <img
               src=${src}
+              alt="Plant note photo ${i + 1}"
               @click=${() => this._openImage(src)}
               @mouseenter=${() => (this._hoveredImage = src)}
               @mouseleave=${() => (this._hoveredImage = null)}
