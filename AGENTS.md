@@ -23,14 +23,19 @@ states. No page navigation is required for pure-API specs.
 ## Quick reference
 
 ```bash
-npm run test:ha          # run e2e specs against HA (fastest loop)
+npm run test:ha          # verify the served bundle, then run e2e specs
 npm run test:ha:headed   # same, with visible browser
 npm run test:ha:debug    # same, with Playwright Inspector
-npm run test:e2e         # build first, then test:ha (full pipeline)
+npm run test:e2e         # build, remount/restart HA, verify, then run e2e
 ```
 
-Run `test:ha` directly when iterating on specs — the build step in `test:e2e` is only
-needed when `src/` changed since the last build.
+Run `test:ha` directly when iterating on specs. Every e2e entry point compares a hash of
+the runtime source and build configuration with `dist/`, then compares the exact local
+build ID with the bundle served by HA. A stale/missing bundle or a Docker bind mount that
+still points at a replaced `dist/` fails before Playwright starts. Use `test:e2e` after
+source changes; it rebuilds and recreates the HA dev container with this checkout's
+`dist/` mounted. The Playwright config also enforces the preflight for commands run
+directly from `tests/e2e/`.
 
 ## First-time setup
 
