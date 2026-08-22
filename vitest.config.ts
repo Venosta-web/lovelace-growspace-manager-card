@@ -5,6 +5,7 @@ import { BROWSER_TEST_INCLUDE, browserTestBatch } from './scripts/browser-test-b
 
 const selectedBatchId = process.env.VITEST_BROWSER_BATCH;
 const selectedBatch = selectedBatchId ? browserTestBatch(selectedBatchId) : undefined;
+const chromiumExecutablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 
 if (selectedBatchId && !selectedBatch) {
     throw new Error(`Unknown browser test batch: ${selectedBatchId}`);
@@ -24,7 +25,12 @@ export default defineConfig({
         fileParallelism: false,
         browser: {
             enabled: true,
-            provider: playwright({ contextOptions: { viewport: { width: 1280, height: 720 } } }),
+            provider: playwright({
+                contextOptions: { viewport: { width: 1280, height: 720 } },
+                launchOptions: chromiumExecutablePath
+                    ? { executablePath: chromiumExecutablePath }
+                    : undefined,
+            }),
             instances: [
                 { browser: 'chromium' },
             ],

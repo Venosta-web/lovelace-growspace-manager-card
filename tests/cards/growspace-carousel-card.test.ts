@@ -54,15 +54,30 @@ describe('GrowspaceCarouselCard', () => {
     handle.unmount();
   });
 
-  test('setConfig throws if growspaces is empty', async () => {
+  test('renders a setup message if no growspaces are configured', async () => {
     const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
       hass,
       growspace: gs1,
       config: carouselConfig,
     });
-    expect(() =>
-      handle.element.setConfig({ type: 'custom:growspace-carousel-card', growspaces: [] } as any)
-    ).toThrowError('You need to define at least one growspace');
+    handle.element.setConfig({ type: 'custom:growspace-carousel-card', growspaces: [] } as any);
+    await handle.element.updateComplete;
+
+    expect(handle.element.shadowRoot?.textContent).toContain('Growspace filter not configured');
+    expect(handle.element.shadowRoot?.textContent).toContain('Configure the growspace filter');
+    handle.unmount();
+  });
+
+  test('renders a setup message if the growspace filter is absent', async () => {
+    const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+      hass,
+      growspace: gs1,
+      config: carouselConfig,
+    });
+    handle.element.setConfig({ type: 'custom:growspace-carousel-card' } as any);
+    await handle.element.updateComplete;
+
+    expect(handle.element.shadowRoot?.textContent).toContain('Growspace filter not configured');
     handle.unmount();
   });
 
@@ -137,6 +152,19 @@ describe('GrowspaceCarouselCard', () => {
   test('getConfigElement returns editor', async () => {
     const editor = await GrowspaceCarouselCard.getConfigElement();
     expect(editor.tagName.toLowerCase()).toBe('growspace-carousel-card-editor');
+  });
+
+  test('renders a filter setup message when no config is present', async () => {
+    const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+      hass,
+      growspace: gs1,
+      config: carouselConfig,
+    });
+    (handle.element as any)._config = undefined;
+    await handle.element.updateComplete;
+
+    expect(handle.element.shadowRoot?.textContent).toContain('Growspace filter not configured');
+    handle.unmount();
   });
 
   describe('auto-cycle between two growspaces', () => {
@@ -255,7 +283,11 @@ describe('GrowspaceCarouselCard', () => {
       const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
         hass: hassWithCounts,
         growspace: gs1,
-        config: { type: 'custom:growspace-carousel-card', growspaces: [gs1.growspaceId, gs2.growspaceId], filter_empty: true },
+        config: {
+          type: 'custom:growspace-carousel-card',
+          growspaces: [gs1.growspaceId, gs2.growspaceId],
+          filter_empty: true,
+        },
       });
       handle.element.hass = hassWithCounts;
       const active = (handle.element as any)._activeGrowspaces;
@@ -267,7 +299,10 @@ describe('GrowspaceCarouselCard', () => {
       const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
         hass: hassWithCounts,
         growspace: gs1,
-        config: { type: 'custom:growspace-carousel-card', growspaces: [gs1.growspaceId, gs2.growspaceId] },
+        config: {
+          type: 'custom:growspace-carousel-card',
+          growspaces: [gs1.growspaceId, gs2.growspaceId],
+        },
       });
       handle.element.hass = hassWithCounts;
       const active = (handle.element as any)._activeGrowspaces;
@@ -275,7 +310,7 @@ describe('GrowspaceCarouselCard', () => {
       handle.unmount();
     });
 
-    test('filter_empty=true falls back to all when all growspaces are empty', async () => {
+    test('filter_empty=true shows a message when all growspaces are empty', async () => {
       const allEmptyHass = {
         ...hass,
         states: {
@@ -293,37 +328,92 @@ describe('GrowspaceCarouselCard', () => {
       const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
         hass: allEmptyHass,
         growspace: gs1,
-        config: { type: 'custom:growspace-carousel-card', growspaces: [gs1.growspaceId, gs2.growspaceId], filter_empty: true },
+        config: {
+          type: 'custom:growspace-carousel-card',
+          growspaces: [gs1.growspaceId, gs2.growspaceId],
+          filter_empty: true,
+        },
       });
       handle.element.hass = allEmptyHass;
+      await handle.element.updateComplete;
       const active = (handle.element as any)._activeGrowspaces;
-      expect(active).toEqual([gs1.growspaceId, gs2.growspaceId]);
+      expect(active).toEqual([]);
+      expect(handle.element.shadowRoot?.textContent).toContain('No growspaces with plants');
+      expect(handle.element.shadowRoot?.textContent).toContain(
+        'None of the filtered growspaces have any plants.'
+      );
+      expect(handle.element.shadowRoot?.querySelector('growspace-manager-card')).toBeNull();
       handle.unmount();
     });
 
-    test('filter_empty=true treats primitive (non-object) entry as zero-plant growspace', async () => {
-      const primitiveEntryHass = {
+    test('reads plant counts from overview sensors with the integration list format', async () => {
+      const integrationListHass = {
         ...hass,
         states: {
-          ...hass.states,
           'sensor.growspaces_list': {
             attributes: {
               growspaces: {
                 [gs1.growspaceId]: 'Tent A',
-                [gs2.growspaceId]: { name: gs2.name, total_plants: 3 },
+                [gs2.growspaceId]: 'Tent B',
+              },
+            },
+          },
+          'sensor.tent_a': {
+            state: '2',
+            attributes: { growspace_id: gs1.growspaceId, total_plants: 2 },
+          },
+          'sensor.tent_b': {
+            state: '0',
+            attributes: { growspace_id: gs2.growspaceId, total_plants: 0 },
+          },
+        },
+      } as any;
+      const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+        hass: integrationListHass,
+        growspace: gs1,
+        config: {
+          type: 'custom:growspace-carousel-card',
+          growspaces: [gs1.growspaceId, gs2.growspaceId],
+          filter_empty: true,
+        },
+      });
+      handle.element.hass = integrationListHass;
+      const active = (handle.element as any)._activeGrowspaces;
+      expect(active).toEqual([gs1.growspaceId]);
+      handle.unmount();
+    });
+
+    test('renders the growspace at the filtered index', async () => {
+      const filteredHass = {
+        ...hass,
+        states: {
+          'sensor.growspaces_list': {
+            attributes: {
+              growspaces: {
+                [gs1.growspaceId]: { name: gs1.name, total_plants: 2 },
+                [gs2.growspaceId]: { name: gs2.name, total_plants: 0 },
+                tent_c: { name: 'Tent C', total_plants: 1 },
               },
             },
           },
         },
       } as any;
       const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
-        hass: primitiveEntryHass,
+        hass: filteredHass,
         growspace: gs1,
-        config: { type: 'custom:growspace-carousel-card', growspaces: [gs1.growspaceId, gs2.growspaceId], filter_empty: true },
+        config: {
+          type: 'custom:growspace-carousel-card',
+          growspaces: [gs1.growspaceId, gs2.growspaceId, 'tent_c'],
+          filter_empty: true,
+        },
       });
-      handle.element.hass = primitiveEntryHass;
-      const active = (handle.element as any)._activeGrowspaces;
-      expect(active).toEqual([gs2.growspaceId]);
+      handle.element.hass = filteredHass;
+      (handle.element as any)._currentIndex = 1;
+      handle.element.requestUpdate();
+      await handle.element.updateComplete;
+
+      const manager = handle.element.shadowRoot?.querySelector('growspace-manager-card') as any;
+      expect(manager?._config.default_growspace).toBe('tent_c');
       handle.unmount();
     });
 
@@ -332,13 +422,18 @@ describe('GrowspaceCarouselCard', () => {
       const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
         hass: hassWithCounts,
         growspace: gs1,
-        config: { type: 'custom:growspace-carousel-card', growspaces: [gs1.growspaceId, gs2.growspaceId] },
+        config: {
+          type: 'custom:growspace-carousel-card',
+          growspaces: [gs1.growspaceId, gs2.growspaceId],
+        },
       });
       handle.element.hass = hassWithCounts;
       (handle.element as any)._config.interval = 0;
       (handle.element as any)._startTimer();
 
-      const nextSlideSpy = vi.spyOn(handle.element as any, '_nextSlide').mockResolvedValue(undefined);
+      const nextSlideSpy = vi
+        .spyOn(handle.element as any, '_nextSlide')
+        .mockResolvedValue(undefined);
       vi.advanceTimersByTime(15000);
       expect(nextSlideSpy).toHaveBeenCalledTimes(1);
 
