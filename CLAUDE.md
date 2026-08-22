@@ -60,11 +60,26 @@ prek install --hook-type commit-msg  # not installed by the plain form above, de
                                       # default_install_hook_types in .pre-commit-config.yaml
 ```
 
-Unlike `growspace_manager`'s single shared `.venv`, there is **no shared `node_modules`
-across `.worktrees/<branch>` checkouts** here — each worktree needs its own `npm ci`. A
-symlinked/shared `node_modules` was considered and rejected: hoisting and peer-dep
-resolution can drift between branches, and that class of bug is worse than a few minutes
-of install time per worktree.
+Standalone worktrees install their own `node_modules` with `npm ci`. Worktrees created by
+the sibling `growspace_manager_workspace` hub **share the main card checkout's
+`node_modules` only while their `package-lock.json` SHA-256 hashes are identical**. The hub
+also runs `npm ci --dry-run` to prove the installed tree exactly matches the worktree before
+linking it. If either check fails, the link is removed and that worktree must run its own
+`npm ci`; dependency drift therefore fails closed instead of silently using another
+branch's hoisting or peer-dependency resolution.
+
+Treat a shared link as read-only: never run `npm ci`, `npm install`, `npm rebuild`,
+`patch-package`, or dependency postinstall tooling through it. When changing dependencies,
+unlink `node_modules`, run `npm ci` in the worktree, and keep that real directory private.
+Vite's optimiser cache and browser-test reports live under the checkout-local `.cache/`,
+not under `node_modules`, and the Vitest commands use Vite's runner config loader so it does
+not create `node_modules/.vite-temp`. Concurrent worktrees therefore do not contend on
+writable test caches.
+
+This policy was measured for issue #706 on 2026-08-22: the dereferenced dependency tree was
+465 MB on ext4, while a warm offline `npm ci` took 2.4 s. Lockfile changes were uncommon
+(two on `dev`'s first-parent history in the preceding 90 days and no additional changes
+back to 180 days), making guarded sharing the common path without accepting drift.
 
 ## Architecture
 

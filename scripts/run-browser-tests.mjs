@@ -6,7 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { BROWSER_TEST_BATCHES } from './browser-test-batches.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const reportsDirectory = path.join(root, 'node_modules', '.cache', 'browser-test-batches');
+// Reports are mutable and each checkout owns its own run, even when the hub
+// safely shares the read-only dependency tree.
+const reportsDirectory = path.join(root, '.cache', 'browser-test-batches');
 const vitest = path.join(root, 'node_modules', 'vitest', 'vitest.mjs');
 const forwardedArguments = process.argv.slice(2);
 
@@ -23,6 +25,7 @@ for (const [index, batch] of BROWSER_TEST_BATCHES.entries()) {
     [
       vitest,
       'run',
+      '--configLoader=runner',
       ...forwardedArguments,
       '--reporter=blob',
       `--outputFile=${path.join(reportsDirectory, `${batch.id}.json`)}`,
@@ -42,7 +45,13 @@ for (const [index, batch] of BROWSER_TEST_BATCHES.entries()) {
 process.stdout.write('\nComplete browser suite\n');
 const mergeResult = spawnSync(
   process.execPath,
-  [vitest, 'run', ...forwardedArguments, `--merge-reports=${reportsDirectory}`],
+  [
+    vitest,
+    'run',
+    '--configLoader=runner',
+    ...forwardedArguments,
+    `--merge-reports=${reportsDirectory}`,
+  ],
   { cwd: root, stdio: 'inherit' }
 );
 

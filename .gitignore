@@ -41,6 +41,7 @@ server.log
 # Ignore test output
 test_*.txt
 test-*.txt
+/.cache/
 
 # Playwright
 playwright-report/
