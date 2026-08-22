@@ -205,7 +205,7 @@ export class WateringDialog {
   }
 
   async submit() {
-    await this.dialog.locator('button.md3-button.primary', { hasText: /Record Watering/i }).click();
+    await this.dialog.getByRole('button', { name: 'Record Watering' }).click();
     await this.dialog.waitFor({ state: 'detached', timeout: 10000 });
   }
 }
