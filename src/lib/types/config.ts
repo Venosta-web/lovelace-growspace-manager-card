@@ -18,7 +18,7 @@ export type GrowspaceViewMode = ViewMode;
 
 export interface GrowspaceCarouselCardConfig extends LovelaceCardConfig {
   type: string;
-  growspaces: string[];
+  growspaces?: string[];
   interval?: number;
   filter_empty?: boolean;
 }
