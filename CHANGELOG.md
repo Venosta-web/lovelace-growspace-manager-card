@@ -1,3 +1,10 @@
+## [1.1.6-next.2](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.1...v1.1.6-next.2) (2026-08-22)
+
+
+### Bug Fixes
+
+* **e2e:** block service workers so HA cannot reload the page mid-test ([#704](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/704)) ([734755a](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/734755ae3d6c197e62ded47ad04e4c7e71f8557d))
+
 ## [1.1.6-next.1](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.5...v1.1.6-next.1) (2026-08-22)
 
 
