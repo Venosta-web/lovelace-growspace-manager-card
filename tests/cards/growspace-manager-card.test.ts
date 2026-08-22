@@ -171,6 +171,20 @@ describe('GrowspaceManagerCard', () => {
     expect(element.store.ui.$announcement.get().message).toContain('Metric Comparison saved');
   });
 
+  test('Done activates the env graphs for a saved Comparison, even for a metric already displayed standalone', async () => {
+    element.store.history.toggleEnvGraph('humidity');
+    vi.spyOn(element.store.comparisons, 'save').mockResolvedValue(undefined);
+    element.store.ui.startCompare(0);
+    element.store.ui.toggleComparisonMetric('humidity', 'Humidity', true, null);
+    element.store.ui.toggleComparisonMetric('temperature', 'Temperature', true, null);
+
+    await (element as any)._handleTaskDone();
+
+    const activeEnvGraphs = element.store.history.$activeEnvGraphs.get();
+    expect(activeEnvGraphs.has('humidity')).toBe(true);
+    expect(activeEnvGraphs.has('temperature')).toBe(true);
+  });
+
   test('Done exits an unchanged Arrange draft without a backend write', async () => {
     const callWS = (element.hass as any).callWS as ReturnType<typeof vi.fn>;
     callWS.mockClear();

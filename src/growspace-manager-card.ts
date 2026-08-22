@@ -373,6 +373,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         task.comparisonId !== null &&
         [...task.draftMetrics].sort().join('\0') === [...task.originalMetrics].sort().join('\0')
       ) {
+        this.store.history.activateEnvGraphs(task.draftMetrics);
         this.store.ui.exitTask(true);
       } else if (task.draftMetrics.length < 2 || task.draftMetrics.length > 4) {
         const message = localizeWithParams(
@@ -395,6 +396,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             task.expectedRecordRevision,
             task.originalMetrics
           );
+          this.store.history.activateEnvGraphs(task.draftMetrics);
           this.store.ui.exitTask(true);
           this.store.ui.announce(
             localizeWithParams('tasks.comparison_saved', {}, this.store.ui.$language.get())
