@@ -77,9 +77,10 @@ not create `node_modules/.vite-temp`. Concurrent worktrees therefore do not cont
 writable test caches.
 
 This policy was measured for issue #706 on 2026-08-22: the dereferenced dependency tree was
-465 MB on ext4, while a warm offline `npm ci` took 2.4 s. Lockfile changes were uncommon
-(two on `dev`'s first-parent history in the preceding 90 days and no additional changes
-back to 180 days), making guarded sharing the common path without accepting drift.
+465 MB on ext4, a warm offline `npm ci` took 2.4 s, and the hash + dry-run guard took
+0.47 s. Lockfile changes were uncommon (two on `dev`'s first-parent history in the
+preceding 90 days and no additional changes back to 180 days), making guarded sharing the
+common path without accepting drift.
 
 ## Architecture
 
