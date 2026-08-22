@@ -1,3 +1,11 @@
+## [1.1.5](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.4...v1.1.5) (2026-08-22)
+
+
+### Bug Fixes
+
+* **a11y:** add descriptive alt text to breeder/strain/plant images ([6ffeafd](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/6ffeafddd652cd5ddf815f3cf2344a848d9d5208))
+* activate comparison metrics' env graphs when Compare is saved ([e90671a](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e90671a51c5eac77538089b7fed4cd3648e2b3db))
+
 ## [1.1.4](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.3...v1.1.4) (2026-08-21)
 
 
