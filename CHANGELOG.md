@@ -1,3 +1,10 @@
+## [1.1.6](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.5...v1.1.6) (2026-08-22)
+
+
+### Bug Fixes
+
+* **design:** bring irrigation dialog nav rail onto the type ramp ([20cd11e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/20cd11e565364155e460d442b56530c32faa6623))
+
 ## [1.1.5](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.4...v1.1.5) (2026-08-22)
 
 
