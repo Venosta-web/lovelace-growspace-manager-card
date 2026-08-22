@@ -74,6 +74,17 @@ tests/e2e/test-reports/
 .worktrees/
 .claude/worktrees/
 
+# Local/generated agent tooling
+.agents/
+.claude/skills/
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+.codex/
+.gemini/skills/
+.github/agents/
+.github/hooks/
+.github/skills/
+
 
 playwright-report-mock/index.html
 .gitignore
