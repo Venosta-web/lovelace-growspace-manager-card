@@ -1,3 +1,10 @@
+## [1.1.6-next.1](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.5...v1.1.6-next.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* handle empty carousel growspace filters ([#695](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/695)) ([cbcd1e1](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/cbcd1e1689867fca377ee1303974d63bfb9975c7))
+
 ## [1.1.5](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.4...v1.1.5) (2026-08-22)
 
 
