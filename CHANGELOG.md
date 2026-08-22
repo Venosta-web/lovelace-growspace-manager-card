@@ -1,3 +1,10 @@
+## [1.1.7](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6...v1.1.7) (2026-08-22)
+
+
+### Bug Fixes
+
+* **config:** default circulation fan regulation_mode to vpd ([9057e39](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/9057e39503ec0e7cebe5976ab221e7d3a9c5160a))
+
 ## [1.1.6](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.5...v1.1.6) (2026-08-22)
 
 
