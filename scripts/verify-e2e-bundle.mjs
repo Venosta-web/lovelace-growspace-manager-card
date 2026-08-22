@@ -65,9 +65,23 @@ async function fetchServedBundle(url) {
     );
   }
   if (!response.ok) {
+    // A 404 when a local bundle exists is nearly always the bind-mount inode
+    // trap, not a misconfigured resource: rollup deletes and recreates dist/,
+    // and Docker keeps serving the old, deleted directory until the container
+    // is recreated. Lead with that; the registration causes are far rarer and
+    // send you looking in the wrong place.
+    const likelyCauses =
+      response.status === 404
+        ? 'Most likely the build replaced dist/ and Home Assistant is still mounting the old, deleted\n' +
+          'directory. Recreate the container (`./scripts/ha dev restart` in the workspace hub, or\n' +
+          '`node scripts/restart-e2e-ha.mjs`).\n' +
+          'If that does not fix it, the container may be mounting a different checkout entirely —\n' +
+          'check `docker inspect growspace-ha-dev` for the dist/ mount source. Only then suspect\n' +
+          'E2E_CARD_URL or the Lovelace resource registration.'
+        : 'Check that Home Assistant is healthy, then E2E_CARD_URL and the Lovelace resource registration.';
+
     throw new Error(
-      `E2E bundle preflight failed: ${url} returned HTTP ${response.status}.\n` +
-        'Check E2E_CARD_URL and the Home Assistant Lovelace resource registration before running Playwright.'
+      `E2E bundle preflight failed: ${url} returned HTTP ${response.status}.\n${likelyCauses}`
     );
   }
   return response.text();
