@@ -21,6 +21,10 @@ on:
         description: 'Number of suite runs'
         required: false
         default: '10'
+      batch-retries:
+        description: 'BROWSER_TEST_BATCH_RETRIES: 0 measures the raw rate, 1 measures the mitigated rate'
+        required: false
+        default: '0'
   push:
     branches: ['flake-hunt/**']
 
@@ -57,5 +61,12 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      # BROWSER_TEST_BATCH_RETRIES=0 disables the batch re-run in
+      # run-browser-tests.mjs. Without it this workflow would measure the
+      # mitigation rather than the bug, and the raw rate would become
+      # unobservable — which is the one number this workflow exists to produce.
+      # To measure the *mitigated* rate instead, set it to 1.
       - name: Run suite (attempt ${{ matrix.run }}, no retry, no coverage)
+        env:
+          BROWSER_TEST_BATCH_RETRIES: ${{ inputs.batch-retries || '0' }}
         run: npm run test:unit -- --retry=0
