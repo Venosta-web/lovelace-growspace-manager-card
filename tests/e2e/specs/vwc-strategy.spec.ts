@@ -10,8 +10,6 @@ test.describe('VWC strategy — Schedules tab conditional display', () => {
     growspaceCard = new GrowspaceCard(page);
     await growspaceCard.navigate(testContext.vwcVegDashboardPath);
     await growspaceCard.waitForCardReady();
-    await page.reload();
-    await growspaceCard.waitForCardReady();
 
     await callHAService(page, 'growspace_manager', 'set_irrigation_strategy', {
       growspace_id: testContext.vwcVegGrowspaceId,

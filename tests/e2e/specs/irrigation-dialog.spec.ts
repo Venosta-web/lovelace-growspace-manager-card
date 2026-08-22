@@ -12,11 +12,6 @@ test.describe('Irrigation dialog', () => {
     growspaceCard = new GrowspaceCard(page);
     await growspaceCard.navigate(testContext.vegDashboardPath);
     await growspaceCard.waitForCardReady();
-    // The first navigate may go through HA's OAuth redirect, which causes Lovelace to
-    // fire a deferred re-render after auth completes, remounting all cards. Reloading
-    // here hits the page post-auth (token now in localStorage) so the card loads clean.
-    await page.reload();
-    await growspaceCard.waitForCardReady();
     await callHAService(page, 'growspace_manager', 'remove_irrigation_time', {
       growspace_id: testContext.vegGrowspaceId,
       time: SENTINEL_TIME,

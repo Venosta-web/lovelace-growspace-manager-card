@@ -9,9 +9,6 @@ test.describe('Plant watering round-trip', () => {
     growspaceCard = new GrowspaceCard(page);
     await growspaceCard.navigate(testContext.vegDashboardPath);
     await growspaceCard.waitForCardReady();
-    // Auth redirect causes deferred re-render on first load → reload after auth settles
-    await page.reload();
-    await growspaceCard.waitForCardReady();
 
     // Reset plant state so the "Recently watered" icon is absent at test start
     await callHAService(page, 'growspace_manager', 'reset_plant_last_watered', {
