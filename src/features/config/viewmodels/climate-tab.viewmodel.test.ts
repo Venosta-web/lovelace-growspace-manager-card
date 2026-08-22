@@ -64,6 +64,20 @@ describe('createClimateTabViewModel — circulation fan panel', () => {
     ).toBe(false);
   });
 
+  it('defaults mode to vpd when a legacy growspace has no saved regulation_mode', () => {
+    // api-schema.ts doesn't validate circulation_fan_config, so a growspace whose
+    // Fan Controller was never saved comes through with the key missing. `vm.mode`
+    // must still be a real FanRegulationMode, or <md3-select>'s bound .value
+    // matches no <option> and the control renders with no visible selection.
+    const vm = createClimateTabViewModel(
+      withFan({ regulation_mode: undefined }),
+      deps,
+      collapsed
+    );
+    expect(vm.fan.mode).toBe('vpd');
+    expect(vm.fan.showStageVpd).toBe(true);
+  });
+
   it('relabels + dims the VPD target when stage-aware overrides drive it', () => {
     const on = createClimateTabViewModel(
       withFan({ regulation_mode: 'vpd', stage_vpd_enabled: true }),
