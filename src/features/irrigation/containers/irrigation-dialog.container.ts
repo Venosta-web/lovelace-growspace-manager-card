@@ -426,7 +426,7 @@ export class IrrigationDialog extends LitElement {
       }
 
       .v1-rail-caps {
-        font-size: 10px;
+        font-size: var(--font-size-xs);
         font-weight: 600;
         letter-spacing: 0.08em;
         text-transform: uppercase;
@@ -440,7 +440,7 @@ export class IrrigationDialog extends LitElement {
         gap: 10px;
         padding: 9px 16px;
         cursor: pointer;
-        font-size: 13px;
+        font-size: var(--font-size-sm);
         color: rgba(255, 255, 255, 0.65);
         transition:
           background 0.15s,
@@ -474,7 +474,7 @@ export class IrrigationDialog extends LitElement {
         margin-left: auto;
         background: rgba(33, 150, 243, 0.2);
         color: var(--gm-info-color);
-        font-size: 10px;
+        font-size: var(--font-size-supporting);
         font-weight: 700;
         padding: 1px 6px;
         border-radius: var(--border-radius-md, 12px);
@@ -502,7 +502,7 @@ export class IrrigationDialog extends LitElement {
       }
 
       .growspace-crumb {
-        font-size: 10px;
+        font-size: var(--font-size-xs);
         color: rgba(255, 255, 255, 0.35);
         text-transform: uppercase;
         letter-spacing: 0.07em;
@@ -521,7 +521,7 @@ export class IrrigationDialog extends LitElement {
 
       .content-section-title {
         margin-left: auto;
-        font-size: 0.95rem;
+        font-size: var(--font-size-sm);
         font-weight: 500;
         opacity: 0.8;
       }
@@ -616,7 +616,7 @@ export class IrrigationDialog extends LitElement {
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 0.82rem;
+        font-size: var(--font-size-supporting);
         color: rgba(255, 255, 255, 0.55);
         line-height: 1.4;
       }
