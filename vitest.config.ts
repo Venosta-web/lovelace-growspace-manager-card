@@ -22,8 +22,9 @@ export default defineConfig({
     // fails to apply, the poisoned module graph persists for the file's
     // whole lifetime and every retry fails identically (verified 2026-07-07:
     // camera.slice failed the same lines across all 3 attempts). That class
-    // is absorbed in CI by re-running the whole vitest process (test.yml
-    // retry step) and measured by the flake-hunter workflow with --retry=0.
+    // is absorbed by re-running only the failed batch in a fresh Vitest
+    // process (run-browser-tests.mjs) and measured by Flake Hunter with
+    // both retry layers disabled.
     retry: 2,
     fileParallelism: false,
     browser: {
