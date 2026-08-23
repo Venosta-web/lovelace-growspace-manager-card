@@ -12,10 +12,12 @@ import css from 'rollup-plugin-css-only';
 import replace from '@rollup/plugin-replace';
 import minifyHTML from '@lit-labs/rollup-plugin-minify-html-literals';
 import summary from 'rollup-plugin-summary';
+import { failOnBareModuleSpecifiers } from './scripts/bare-module-specifiers.mjs';
 import { computeSourceFingerprint, createBuildBanner } from './scripts/e2e-build-state.mjs';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const isCoverage = process.env.COVERAGE === 'true';
+const bareModuleSpecifierAllowlist = [];
 let buildBanner;
 
 const plugins = [
@@ -47,6 +49,8 @@ if (isProduction && !isCoverage) {
   plugins.push(terser());
   plugins.push(summary());
 }
+
+plugins.push(failOnBareModuleSpecifiers({ allowlist: bareModuleSpecifierAllowlist }));
 
 export default {
   input: 'src/index.ts',

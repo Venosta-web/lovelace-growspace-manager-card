@@ -6,6 +6,7 @@ const BUILD_INPUT_FILES = [
   'package-lock.json',
   'package.json',
   'rollup.config.js',
+  'scripts/bare-module-specifiers.mjs',
   'scripts/e2e-build-state.mjs',
   'tsconfig.json',
 ];
