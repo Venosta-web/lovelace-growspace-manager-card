@@ -5,10 +5,13 @@
 
 ## Context
 
-`growspace-manager-card.ts:138-141` creates `growspace-dialog-host` with
-`document.createElement` and appends it to `document.body`. In the flattened
-tree it is therefore a **sibling** of the card, not a descendant, and inherits
-nothing from the `:host` block in `src/styles/variables.ts` where every
+`growspace-manager-card.ts` creates `growspace-dialog-host` with
+`document.createElement` and portals it outside the card subtree. It was
+originally appended to `document.body`; since the Home Assistant entity picker
+moved to internal Lit contexts, it is appended to Home Assistant's shadow root
+so those contexts remain reachable. In either location it is a **sibling** of
+the card, not a descendant, and inherits nothing from the `:host` block in
+`src/styles/variables.ts` where every
 `--stage-*`, `--gm-*`, `--font-size-*` and `--border-radius-*` is declared. The
 host had no `static styles` at all, and no file under `src/dialogs/` imported
 `variables`.
