@@ -58,10 +58,7 @@ test.describe('Config dialog empty entity fields', () => {
     page,
     testContext,
   }) => {
-    test.skip(
-      !testContext.vwcFlowerDashboardPath,
-      'TEST_VWC_FLOWER_DASHBOARD_PATH is required'
-    );
+    test.skip(!testContext.vwcFlowerDashboardPath, 'TEST_VWC_FLOWER_DASHBOARD_PATH is required');
     const growspaceCard = new GrowspaceCard(page);
     await growspaceCard.navigate(testContext.vwcFlowerDashboardPath);
     await growspaceCard.waitForCardReady();
@@ -71,9 +68,7 @@ test.describe('Config dialog empty entity fields', () => {
     await dialog.waitForOpen();
     await dialog.clickTab('humidity');
 
-    const deviceFields = dialog.dialog.locator(
-      'config-humidity-tab config-entity-multi-select'
-    );
+    const deviceFields = dialog.dialog.locator('config-humidity-tab config-entity-multi-select');
     await expect
       .poll(() =>
         deviceFields.evaluateAll((fields) =>
@@ -87,8 +82,6 @@ test.describe('Config dialog empty entity fields', () => {
     await expect(
       devicePickers.first().getByText('Select an entity', { exact: true })
     ).toBeVisible();
-    await expect(
-      devicePickers.nth(1).getByText('Select an entity', { exact: true })
-    ).toBeVisible();
+    await expect(devicePickers.nth(1).getByText('Select an entity', { exact: true })).toBeVisible();
   });
 });
