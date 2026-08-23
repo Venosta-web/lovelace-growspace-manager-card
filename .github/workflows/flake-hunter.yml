@@ -21,6 +21,10 @@ on:
         description: 'Number of suite runs'
         required: false
         default: '10'
+      batch-retries:
+        description: '0 measures the raw rate; 1 measures the mitigated rate'
+        required: false
+        default: '0'
   push:
     branches: ['flake-hunt/**']
 
@@ -58,4 +62,8 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run suite (attempt ${{ matrix.run }}, no retry, no coverage)
+        env:
+          # Keep the upstream race observable by default. Set the dispatch input
+          # to 1 only when measuring the batch-level mitigation.
+          BROWSER_TEST_BATCH_RETRIES: ${{ inputs.batch-retries || '0' }}
         run: npm run test:unit -- --retry=0
