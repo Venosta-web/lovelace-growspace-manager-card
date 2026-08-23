@@ -727,7 +727,7 @@ describe('list item — optional stage and week', () => {
     `);
     const meta = el.shadowRoot!.querySelector('.item-meta')!;
     expect(meta.textContent).not.toContain('Week');
-    expect(meta.textContent).toContain('0 nutrients');
+    expect(meta.textContent!.replace(/\s+/g, ' ')).toContain('0 nutrients');
   });
 });
 

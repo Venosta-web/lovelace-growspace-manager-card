@@ -14,11 +14,7 @@ import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/gs-help-tooltip';
-import {
-  createInitialSM,
-  transition,
-  type BreederManagerSM,
-} from './gs-breeder-manager-sm';
+import { createInitialSM, transition, type BreederManagerSM } from './gs-breeder-manager-sm';
 
 @customElement('gs-breeder-manager')
 export class GsBreederManager extends LitElement {
@@ -193,9 +189,7 @@ export class GsBreederManager extends LitElement {
           ></gs-help-tooltip>
         </slot>
 
-        <div class="sd-content">
-          ${isEditor ? this._renderEditor() : this._renderList()}
-        </div>
+        <div class="sd-content">${isEditor ? this._renderEditor() : this._renderList()}</div>
 
         ${!isEditor
           ? html`
@@ -564,9 +558,7 @@ export class GsBreederManager extends LitElement {
 
     const name = sub.name;
     this._sm = transition(this._sm, { type: 'DELETE_CONFIRMED' });
-    this.dispatchEvent(
-      new CustomEvent('delete-breeder', { detail: { name } })
-    );
+    this.dispatchEvent(new CustomEvent('delete-breeder', { detail: { name } }));
     this._sm = transition(this._sm, { type: 'DELETE_RESOLVED' });
   }
 }

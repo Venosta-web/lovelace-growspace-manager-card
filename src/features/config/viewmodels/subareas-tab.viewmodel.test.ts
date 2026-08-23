@@ -40,7 +40,10 @@ describe('createSubareasTabViewModel — gating', () => {
 
 describe('createSubareasTabViewModel — list + state', () => {
   it('shows loading / empty appropriately', () => {
-    const loading = createSubareasTabViewModel(withGrowspace(sm()), { subareas: [], loading: true });
+    const loading = createSubareasTabViewModel(withGrowspace(sm()), {
+      subareas: [],
+      loading: true,
+    });
     expect(loading.loading).toBe(true);
     expect(loading.showEmpty).toBe(false);
     const emptyVm = createSubareasTabViewModel(withGrowspace(sm()), empty);

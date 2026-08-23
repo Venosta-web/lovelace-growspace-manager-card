@@ -30,8 +30,7 @@ export class FanRenderer extends BaseRenderer {
 
     fanEntities.forEach((entityId, index) => {
       currentFanIds.add(entityId);
-      const coords =
-        sensorCoords[entityId] ?? defaultFanCoords(index, { width, depth, height });
+      const coords = sensorCoords[entityId] ?? defaultFanCoords(index, { width, depth, height });
 
       // Determine Fan Speed
       const stateObj = hass?.states[entityId];

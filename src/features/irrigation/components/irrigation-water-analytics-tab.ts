@@ -237,7 +237,8 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
                     style="height:100%;width:100%;transform:scaleX(${Math.max(
                       0,
                       Math.min(100, pct)
-                    ) / 100});transform-origin:left;background:${c};transition:transform var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);"
+                    ) /
+                    100});transform-origin:left;background:${c};transition:transform var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);"
                   ></div>
                 </div>
               </div>

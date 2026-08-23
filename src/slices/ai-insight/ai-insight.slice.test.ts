@@ -21,7 +21,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as hassCall from '../../services/hass-call';
 import { WSError } from '../../services/errors';
 import { notification$ } from '../ui';
-import { SuggestedActionSchema, TriageAlertSchema, AIBriefingSchema, ResolveAckSchema, ConversationThreadSchema, MAX_PINNED_THREADS, MAX_RECENT_THREADS } from './schema';
+import {
+  SuggestedActionSchema,
+  TriageAlertSchema,
+  AIBriefingSchema,
+  ResolveAckSchema,
+  ConversationThreadSchema,
+  MAX_PINNED_THREADS,
+  MAX_RECENT_THREADS,
+} from './schema';
 import type { ConversationThread } from './schema';
 import {
   aiInsight$,
@@ -423,9 +431,9 @@ describe('startConversation', () => {
 
     await startConversation('gs1', 'hello');
 
-    const saveCalls = vi.mocked(hassCall.hassCall).mock.calls.filter(
-      ([cmd]) => cmd === 'growspace_manager/save_conversation_threads'
-    );
+    const saveCalls = vi
+      .mocked(hassCall.hassCall)
+      .mock.calls.filter(([cmd]) => cmd === 'growspace_manager/save_conversation_threads');
     expect(saveCalls).toHaveLength(1);
     expect(saveCalls[0][1]).toMatchObject({ growspace_id: 'gs1' });
   });
@@ -463,12 +471,21 @@ describe('sendMessage', () => {
       pinned: false,
       updated_at: 1700000001,
     };
-    conversationThreads$.set(new Map([
-      ['other-thread', existingThread],
-      ['thread-abc', { thread_id: 'thread-abc', growspace_id: 'gs1', messages: [
-        { role: 'user' as const, text: 'First message', timestamp: 1700000000 },
-      ], pinned: false, updated_at: 1700000000 }],
-    ]));
+    conversationThreads$.set(
+      new Map([
+        ['other-thread', existingThread],
+        [
+          'thread-abc',
+          {
+            thread_id: 'thread-abc',
+            growspace_id: 'gs1',
+            messages: [{ role: 'user' as const, text: 'First message', timestamp: 1700000000 }],
+            pinned: false,
+            updated_at: 1700000000,
+          },
+        ],
+      ])
+    );
 
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
       thread_id: 'thread-abc',
@@ -486,15 +503,20 @@ describe('sendMessage', () => {
 
   it('updates updated_at on the thread after sending', async () => {
     const originalTime = 1700000000000;
-    conversationThreads$.set(new Map([
-      ['thread-abc', {
-        thread_id: 'thread-abc',
-        growspace_id: 'gs1',
-        messages: [],
-        pinned: false,
-        updated_at: originalTime,
-      }],
-    ]));
+    conversationThreads$.set(
+      new Map([
+        [
+          'thread-abc',
+          {
+            thread_id: 'thread-abc',
+            growspace_id: 'gs1',
+            messages: [],
+            pinned: false,
+            updated_at: originalTime,
+          },
+        ],
+      ])
+    );
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
       thread_id: 'thread-abc',
       growspace_id: 'gs1',
@@ -508,15 +530,20 @@ describe('sendMessage', () => {
   });
 
   it('calls save_conversation_threads after sending a message', async () => {
-    conversationThreads$.set(new Map([
-      ['thread-abc', {
-        thread_id: 'thread-abc',
-        growspace_id: 'gs1',
-        messages: [],
-        pinned: false,
-        updated_at: 1700000000000,
-      }],
-    ]));
+    conversationThreads$.set(
+      new Map([
+        [
+          'thread-abc',
+          {
+            thread_id: 'thread-abc',
+            growspace_id: 'gs1',
+            messages: [],
+            pinned: false,
+            updated_at: 1700000000000,
+          },
+        ],
+      ])
+    );
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
       thread_id: 'thread-abc',
       growspace_id: 'gs1',
@@ -525,9 +552,9 @@ describe('sendMessage', () => {
 
     await sendMessage('thread-abc', 'follow-up');
 
-    const saveCalls = vi.mocked(hassCall.hassCall).mock.calls.filter(
-      ([cmd]) => cmd === 'growspace_manager/save_conversation_threads'
-    );
+    const saveCalls = vi
+      .mocked(hassCall.hassCall)
+      .mock.calls.filter(([cmd]) => cmd === 'growspace_manager/save_conversation_threads');
     expect(saveCalls).toHaveLength(1);
     expect(saveCalls[0][1]).toMatchObject({ growspace_id: 'gs1' });
   });
@@ -569,15 +596,20 @@ describe('sendMessage', () => {
   });
 
   it('sends image_entities as an array when imageEntityId is provided', async () => {
-    conversationThreads$.set(new Map([
-      ['thread-abc', {
-        thread_id: 'thread-abc',
-        growspace_id: 'gs1',
-        messages: [],
-        pinned: false,
-        updated_at: 1700000000,
-      }],
-    ]));
+    conversationThreads$.set(
+      new Map([
+        [
+          'thread-abc',
+          {
+            thread_id: 'thread-abc',
+            growspace_id: 'gs1',
+            messages: [],
+            pinned: false,
+            updated_at: 1700000000,
+          },
+        ],
+      ])
+    );
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
       thread_id: 'thread-abc',
       growspace_id: 'gs1',
@@ -606,11 +638,9 @@ describe('applyAction', () => {
 
     await applyAction(action);
 
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'light.turn_on',
-      'light.grow_light',
-      { brightness: 255 }
-    );
+    expect(hassCall.callService).toHaveBeenCalledWith('light.turn_on', 'light.grow_light', {
+      brightness: 255,
+    });
   });
 });
 
@@ -689,7 +719,9 @@ describe('resolveAlert', () => {
     const [, , schema] = vi.mocked(hassCall.hassCall).mock.calls[0];
     expect(ResolveAckSchema.safeParse({ success: true, alert_id: 'alert-1' }).success).toBe(true);
     expect(TriageAlertSchema.safeParse({ success: true, alert_id: 'alert-1' }).success).toBe(false);
-    expect((schema as typeof ResolveAckSchema).safeParse({ success: true, alert_id: 'alert-1' }).success).toBe(true);
+    expect(
+      (schema as typeof ResolveAckSchema).safeParse({ success: true, alert_id: 'alert-1' }).success
+    ).toBe(true);
   });
 
   it('sends resolution_note in the payload when provided', async () => {
@@ -709,7 +741,10 @@ describe('resolveAlert', () => {
 
     await resolveAlert('alert-1', 'Fixed humidity');
 
-    const resolved = aiAlerts$.get().get('gs1')?.find((a) => a.id === 'alert-1');
+    const resolved = aiAlerts$
+      .get()
+      .get('gs1')
+      ?.find((a) => a.id === 'alert-1');
     expect(resolved?.resolved).toBe(true);
   });
 
@@ -720,7 +755,12 @@ describe('resolveAlert', () => {
 
     await resolveAlert('alert-1');
 
-    expect(aiAlerts$.get().get('gs1')?.find((a) => a.id === 'alert-2')?.resolved).toBe(false);
+    expect(
+      aiAlerts$
+        .get()
+        .get('gs1')
+        ?.find((a) => a.id === 'alert-2')?.resolved
+    ).toBe(false);
   });
 
   it('leaves aiAlerts$ unchanged when alert id is not found in any growspace', async () => {
@@ -729,7 +769,12 @@ describe('resolveAlert', () => {
 
     await resolveAlert('nonexistent');
 
-    expect(aiAlerts$.get().get('gs1')?.find((a) => a.id === 'alert-1')?.resolved).toBe(false);
+    expect(
+      aiAlerts$
+        .get()
+        .get('gs1')
+        ?.find((a) => a.id === 'alert-1')?.resolved
+    ).toBe(false);
   });
 });
 
@@ -742,7 +787,9 @@ describe('fetchBriefing', () => {
     generated_at: 1700000000,
     summary_text: 'Plants are healthy',
     kpis: [{ label: 'VPD', value: '1.2', unit: 'kPa' }],
-    recommendations: [{ title: 'Reduce humidity', description: 'Slightly lower RH', impact: 'low' as const }],
+    recommendations: [
+      { title: 'Reduce humidity', description: 'Slightly lower RH', impact: 'low' as const },
+    ],
     ai_available: true,
   };
 
@@ -923,9 +970,9 @@ describe('togglePin', () => {
     await togglePin('t1');
 
     expect(conversationThreads$.get().get('t1')?.pinned).toBe(true);
-    const saveCalls = vi.mocked(hassCall.hassCall).mock.calls.filter(
-      ([cmd]) => cmd === 'growspace_manager/save_conversation_threads'
-    );
+    const saveCalls = vi
+      .mocked(hassCall.hassCall)
+      .mock.calls.filter(([cmd]) => cmd === 'growspace_manager/save_conversation_threads');
     expect(saveCalls).toHaveLength(1);
   });
 
@@ -989,7 +1036,13 @@ describe('fetchConversationThreads', () => {
   });
 
   it('does not overwrite threads of other growspaces', async () => {
-    const gs2Thread = { thread_id: 'thread-2', growspace_id: 'gs2', messages: [], pinned: false, updated_at: 1700000000 };
+    const gs2Thread = {
+      thread_id: 'thread-2',
+      growspace_id: 'gs2',
+      messages: [],
+      pinned: false,
+      updated_at: 1700000000,
+    };
     conversationThreads$.set(new Map([['thread-2', gs2Thread]]));
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce([thread]);
 
@@ -1109,15 +1162,13 @@ describe('saveAiAgent', () => {
 
   it('calls growspace_manager/save_ai_agent with the agent_id', async () => {
     const { saveAiAgent } = await import('./index');
-    vi.mocked(hassCall.hassCall)
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce(briefingPayload);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({}).mockResolvedValueOnce(briefingPayload);
 
     await saveAiAgent('conversation.claude', 'gs1');
 
-    const saveCalls = vi.mocked(hassCall.hassCall).mock.calls.filter(
-      ([cmd]) => cmd === 'growspace_manager/save_ai_agent'
-    );
+    const saveCalls = vi
+      .mocked(hassCall.hassCall)
+      .mock.calls.filter(([cmd]) => cmd === 'growspace_manager/save_ai_agent');
     expect(saveCalls).toHaveLength(1);
     expect(saveCalls[0][1]).toEqual({ agent_id: 'conversation.claude' });
   });
@@ -1125,9 +1176,7 @@ describe('saveAiAgent', () => {
   it('sets aiEnabled$ to true after saving', async () => {
     const { saveAiAgent } = await import('./index');
     aiEnabled$.set(null);
-    vi.mocked(hassCall.hassCall)
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce(briefingPayload);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({}).mockResolvedValueOnce(briefingPayload);
 
     await saveAiAgent('conversation.claude', 'gs1');
 
@@ -1136,15 +1185,13 @@ describe('saveAiAgent', () => {
 
   it('calls fetchBriefing with forceRefresh after saving', async () => {
     const { saveAiAgent } = await import('./index');
-    vi.mocked(hassCall.hassCall)
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce(briefingPayload);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({}).mockResolvedValueOnce(briefingPayload);
 
     await saveAiAgent('conversation.claude', 'gs1');
 
-    const briefingCalls = vi.mocked(hassCall.hassCall).mock.calls.filter(
-      ([cmd]) => cmd === 'growspace_manager/get_briefing'
-    );
+    const briefingCalls = vi
+      .mocked(hassCall.hassCall)
+      .mock.calls.filter(([cmd]) => cmd === 'growspace_manager/get_briefing');
     expect(briefingCalls).toHaveLength(1);
     expect(briefingCalls[0][1]).toMatchObject({ growspace_id: 'gs1', force_refresh: true });
   });

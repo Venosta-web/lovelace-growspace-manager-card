@@ -27,11 +27,7 @@
  */
 
 import { computed, type ReadableAtom } from 'nanostores';
-import type {
-  GrowspaceDevice,
-  SubstrateProfile,
-  ShotSizingMode,
-} from '../../../services/types';
+import type { GrowspaceDevice, SubstrateProfile, ShotSizingMode } from '../../../services/types';
 import type { DialogSM, SubstrateEcDraft } from '../../../dialogs/irrigation-dialog-sm';
 import type { DialogCapabilities } from './dialog-capabilities';
 
@@ -85,8 +81,7 @@ export function createSubstrateEcTabViewModel(
       mediaType: 'coco',
       litersPerPot: 0,
     };
-    const hasPoreEcSensors =
-      (device?.environmentAttributes?.poreEcSensors?.length ?? 0) > 0;
+    const hasPoreEcSensors = (device?.environmentAttributes?.poreEcSensors?.length ?? 0) > 0;
 
     // Deduced Volume Mode lock hint (ADR-0017): the server bool is the gate; we
     // only branch the hint text on liters-per-pot to name the missing prereq.

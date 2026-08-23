@@ -4,7 +4,15 @@ import { mdiClose, mdiBrain, mdiMicrophone, mdiNewspaper, mdiInbox, mdiCog } fro
 import { StoreController } from '@nanostores/lit';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { dialogStyles } from '../styles/dialog.styles';
-import { aiMode$, aiBriefing$, fetchBriefing, fetchAiSettings, saveAiSettings, fetchConversationThreads, type AiSettingsDraft } from '../slices/ai-insight';
+import {
+  aiMode$,
+  aiBriefing$,
+  fetchBriefing,
+  fetchAiSettings,
+  saveAiSettings,
+  fetchConversationThreads,
+  type AiSettingsDraft,
+} from '../slices/ai-insight';
 import './chat-panel';
 import './briefing-panel';
 import './inbox-panel';
@@ -16,7 +24,11 @@ const MODE_META: Record<AiMode, { label: string; icon: string; token: string }> 
   chat: { label: 'Chat', icon: mdiBrain, token: 'var(--ai-accent, #4caf50)' },
   briefing: { label: 'Briefing', icon: mdiNewspaper, token: 'var(--ai-violet, #9c27b0)' },
   inbox: { label: 'Inbox', icon: mdiInbox, token: 'var(--ai-amber, #ff9800)' },
-  settings: { label: 'Settings', icon: mdiCog, token: 'var(--secondary-text-color, rgba(255,255,255,0.6))' },
+  settings: {
+    label: 'Settings',
+    icon: mdiCog,
+    token: 'var(--secondary-text-color, rgba(255,255,255,0.6))',
+  },
 };
 
 @customElement('grow-master-dialog')
@@ -30,8 +42,12 @@ export class GrowMasterDialog extends LitElement {
 
   @state() private _settingsDraft: AiSettingsDraft = {};
 
-  private get _growspaceId() { return this.growspaceId ?? ''; }
-  private get _growspaceName() { return this.growspaceName ?? ''; }
+  private get _growspaceId() {
+    return this.growspaceId ?? '';
+  }
+  private get _growspaceName() {
+    return this.growspaceName ?? '';
+  }
 
   private _aiMode = new StoreController(this, aiMode$);
 
@@ -141,7 +157,8 @@ export class GrowMasterDialog extends LitElement {
         font-size: var(--font-size-xs);
         font-family: inherit;
         width: 56px;
-        transition: background var(--md3-motion-duration-short4, 200ms),
+        transition:
+          background var(--md3-motion-duration-short4, 200ms),
           color var(--md3-motion-duration-short4, 200ms);
       }
       .gm-nav-item:hover {
@@ -162,7 +179,7 @@ export class GrowMasterDialog extends LitElement {
       .gm-nav-rail-bottom {
         margin-top: auto;
         padding-top: 8px;
-        border-top: 1px solid var(--divider-color, rgba(255,255,255,0.08));
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
       }
 
       /* ── Content area ────────────────────────────────────────── */
@@ -330,9 +347,7 @@ export class GrowMasterDialog extends LitElement {
     return html`
       <nav class="gm-nav-rail" aria-label="AI mode navigation">
         ${(['chat', 'briefing', 'inbox'] as AiMode[]).map((m) => this._renderNavItem(m, mode))}
-        <div class="gm-nav-rail-bottom">
-          ${this._renderNavItem('settings', mode)}
-        </div>
+        <div class="gm-nav-rail-bottom">${this._renderNavItem('settings', mode)}</div>
       </nav>
     `;
   }
@@ -375,7 +390,9 @@ export class GrowMasterDialog extends LitElement {
         style="flex:1;min-height:0;"
         .draft=${this._settingsDraft}
         .hass=${this.hass}
-        @draft-change=${(e: CustomEvent<AiSettingsDraft>) => { this._settingsDraft = e.detail; }}
+        @draft-change=${(e: CustomEvent<AiSettingsDraft>) => {
+          this._settingsDraft = e.detail;
+        }}
       ></gm-settings-panel>
     `;
   }
@@ -403,9 +420,19 @@ export class GrowMasterDialog extends LitElement {
         </p>
         <div class="gm-footer-actions">
           ${mode === 'briefing'
-        ? html`<button class="md3-button tonal" @click=${() => fetchBriefing(this._growspaceId, true)}>Refresh Briefing</button>`
-        : nothing}
-          <button class="gm-mic-btn" disabled aria-label="Voice input (unavailable)" title="Voice input coming soon">
+            ? html`<button
+                class="md3-button tonal"
+                @click=${() => fetchBriefing(this._growspaceId, true)}
+              >
+                Refresh Briefing
+              </button>`
+            : nothing}
+          <button
+            class="gm-mic-btn"
+            disabled
+            aria-label="Voice input (unavailable)"
+            title="Voice input coming soon"
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="${mdiMicrophone}"></path>
             </svg>

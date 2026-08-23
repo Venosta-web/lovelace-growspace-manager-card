@@ -72,8 +72,7 @@ function deriveCapabilities(
 
   const hasPump = !!(cfg?.irrigationPumpEntity || cfg?.drainPumpEntity);
   const hasTank = (env?.irrigationTanks?.length ?? 0) > 0;
-  const hasSoilMoisture =
-    !!env?.soilMoistureSensor || (env?.soilMoistureSensors?.length ?? 0) > 0;
+  const hasSoilMoisture = !!env?.soilMoistureSensor || (env?.soilMoistureSensors?.length ?? 0) > 0;
   const hasStrategy = !!device?.irrigationStrategy?.enabled;
 
   const sizingMode = device?.irrigationStrategy?.shotSizingMode ?? 'seconds';

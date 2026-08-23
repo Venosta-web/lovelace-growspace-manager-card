@@ -9,7 +9,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { handleKeyboardNavigation, deleteSelectedPlants } from './keyboard-navigation';
 import { deletePlant } from '../slices/plant';
 import { focusedPlantIndex$ } from '../slices/ui';
-import { devices$, addOptimisticDeletedPlantId, clearOptimisticDeletedPlantIds } from '../slices/grid';
+import {
+  devices$,
+  addOptimisticDeletedPlantId,
+  clearOptimisticDeletedPlantIds,
+} from '../slices/grid';
 import { gridInteraction$, cancel } from '../slices/grid-interaction';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { GrowspaceSharedStore } from '../store/core/growspace-shared-store';
@@ -30,7 +34,9 @@ describe('keyboard-navigation', () => {
 
   beforeEach(() => {
     vi.mocked(deletePlant).mockClear();
-    devices$.set([{ deviceId: 'gs1', plants: [makePlant('p1', 0, 0), makePlant('p2', 0, 1)] } as any]);
+    devices$.set([
+      { deviceId: 'gs1', plants: [makePlant('p1', 0, 0), makePlant('p2', 0, 1)] } as any,
+    ]);
     store = new GrowspaceStore(new GrowspaceSharedStore());
     store.grid.setSelectedDevice('gs1');
     focusedPlantIndex$.set(0);

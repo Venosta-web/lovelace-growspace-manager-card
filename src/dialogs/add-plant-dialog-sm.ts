@@ -107,8 +107,18 @@ export type SMEvent =
   | { type: 'WizardBacked' }
   // Draft mutations — typed by tab
   | { type: 'DraftFieldChanged'; tab: 'add'; field: AddDraftField; value: AddDraft[AddDraftField] }
-  | { type: 'DraftFieldChanged'; tab: 'clone'; field: TransplantDraftField; value: TransplantDraft[TransplantDraftField] }
-  | { type: 'DraftFieldChanged'; tab: 'seedling'; field: TransplantDraftField; value: TransplantDraft[TransplantDraftField] }
+  | {
+      type: 'DraftFieldChanged';
+      tab: 'clone';
+      field: TransplantDraftField;
+      value: TransplantDraft[TransplantDraftField];
+    }
+  | {
+      type: 'DraftFieldChanged';
+      tab: 'seedling';
+      field: TransplantDraftField;
+      value: TransplantDraft[TransplantDraftField];
+    }
   // Sibling pre-fill (carries derived fields only, not PlantEntity)
   | { type: 'SiblingPlantSelected'; strain: string; phenotype: string; cloneStart: string }
   // Save lifecycle
@@ -164,8 +174,7 @@ export function createInitialSM({ row, col }: { row: number; col: number }): SM 
 export function transition(sm: SM, event: SMEvent): SM {
   switch (event.type) {
     case 'TabSelected': {
-      const addSub: AddSubState =
-        event.tab === 'add' ? { kind: 'step-identity' } : sm.tabs.add.sub;
+      const addSub: AddSubState = event.tab === 'add' ? { kind: 'step-identity' } : sm.tabs.add.sub;
       return {
         ...sm,
         activeTab: event.tab,

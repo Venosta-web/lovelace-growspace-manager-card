@@ -23,7 +23,11 @@ describe('dialog-capabilities – irrigationMethod', () => {
     const device = createGrowspaceDevice({
       deviceId: 'gs1',
       name: 'Tent',
-      irrigationConfig: { irrigationPumpEntity: 'switch.pump', irrigationTimes: [], drainTimes: [] },
+      irrigationConfig: {
+        irrigationPumpEntity: 'switch.pump',
+        irrigationTimes: [],
+        drainTimes: [],
+      },
     });
     const c = caps(device);
     expect(c.hasPump).toBe(true);
@@ -52,7 +56,11 @@ describe('dialog-capabilities – irrigationMethod', () => {
     const device = createGrowspaceDevice({
       deviceId: 'gs1',
       name: 'Tent',
-      irrigationConfig: { irrigationPumpEntity: 'switch.pump', irrigationTimes: [], drainTimes: [] },
+      irrigationConfig: {
+        irrigationPumpEntity: 'switch.pump',
+        irrigationTimes: [],
+        drainTimes: [],
+      },
       environmentAttributes: { irrigationTanks: [tank] },
     });
     expect(caps(device).irrigationMethod).toBe('pump');

@@ -904,10 +904,20 @@ describe('EnvSnapshotSchema', () => {
       optimalConditions: null,
       ...NULL_SENSOR_FIELDS,
       soilMoisture: { avg: 42.5, sum: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] },
-      substrateTemperature: { avg: null, sum: null, perSensor: [null, null], entityIds: ['sensor.st_1', 'sensor.st_2'] },
+      substrateTemperature: {
+        avg: null,
+        sum: null,
+        perSensor: [null, null],
+        entityIds: ['sensor.st_1', 'sensor.st_2'],
+      },
     };
     const parsed = EnvSnapshotSchema.parse(payload);
-    expect(parsed.soilMoisture).toEqual({ avg: 42.5, sum: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] });
+    expect(parsed.soilMoisture).toEqual({
+      avg: 42.5,
+      sum: 42.5,
+      perSensor: [42.5],
+      entityIds: ['sensor.sm_1'],
+    });
     expect(parsed.substrateTemperature!.avg).toBeNull();
   });
 
@@ -1162,7 +1172,12 @@ describe('subareaEnvSnapshots$ atom and setSubareaEnvSnapshot', () => {
       'sensor.t': makeHassEntity('sensor.t', '23.5'),
     };
 
-    setSubareaEnvSnapshot('sa1', makeSubarea({ temperature_sensor: 'sensor.t' }), PARENT, hassStates);
+    setSubareaEnvSnapshot(
+      'sa1',
+      makeSubarea({ temperature_sensor: 'sensor.t' }),
+      PARENT,
+      hassStates
+    );
 
     expect(subareaEnvSnapshots$.get().get('sa1')!.temperature).toBe(23.5);
   });
@@ -1173,7 +1188,12 @@ describe('subareaEnvSnapshots$ atom and setSubareaEnvSnapshot', () => {
       'sensor.t2': makeHassEntity('sensor.t2', '26'),
     };
 
-    setSubareaEnvSnapshot('sa1', makeSubarea({ temperature_sensor: 'sensor.t1' }), PARENT, hassStates);
+    setSubareaEnvSnapshot(
+      'sa1',
+      makeSubarea({ temperature_sensor: 'sensor.t1' }),
+      PARENT,
+      hassStates
+    );
     const firstMap = subareaEnvSnapshots$.get();
     setSubareaEnvSnapshot(
       'sa2',

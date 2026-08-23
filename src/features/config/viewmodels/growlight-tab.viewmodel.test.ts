@@ -71,7 +71,9 @@ describe('createGrowlightTabViewModel — Duplicate Port Warning', () => {
     const s = transition(sm(), {
       type: 'UPDATE_ENV_DRAFT',
       partial: {
-        circulationFanAcInfinityDevices: [{ mode_entity: 'select.shared', speed_entity: '', on_speed: 10 }],
+        circulationFanAcInfinityDevices: [
+          { mode_entity: 'select.shared', speed_entity: '', on_speed: 10 },
+        ],
         growlightAcInfinityDevices: [growLight('select.shared')],
       },
     });

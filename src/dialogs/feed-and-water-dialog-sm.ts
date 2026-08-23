@@ -93,9 +93,7 @@ export interface TabStates {
 
 // ─── Root SM ──────────────────────────────────────────────────────────────────
 
-export type Status =
-  | { kind: 'idle' }
-  | { kind: 'confirm-discard'; pendingTab: TabId };
+export type Status = { kind: 'idle' } | { kind: 'confirm-discard'; pendingTab: TabId };
 
 export interface SM extends DialogStateMachine<TabId, TabStates> {
   activeTab: TabId;
@@ -135,10 +133,18 @@ export type SMEvent =
   | { type: 'PresetBackToList' }
   | { type: 'PresetNewItemRequested' }
   | { type: 'PresetEditStarted'; draft: NutrientPresetDraft }
-  | { type: 'PresetDraftChanged'; field: keyof Omit<NutrientPresetDraft, 'nutrients'>; value: string | number | null | undefined }
+  | {
+      type: 'PresetDraftChanged';
+      field: keyof Omit<NutrientPresetDraft, 'nutrients'>;
+      value: string | number | null | undefined;
+    }
   | { type: 'PresetNutrientRowAdded' }
   | { type: 'PresetNutrientRowRemoved'; index: number }
-  | { type: 'PresetNutrientRowUpdated'; index: number; patch: Partial<{ nutrient_id: string; dose_ml_l: number; name: string }> }
+  | {
+      type: 'PresetNutrientRowUpdated';
+      index: number;
+      patch: Partial<{ nutrient_id: string; dose_ml_l: number; name: string }>;
+    }
   | { type: 'PresetSaveRequested' }
   | { type: 'PresetSaveResolved' }
   | { type: 'PresetSaveFailed'; message: string }
@@ -180,7 +186,16 @@ function emptyPresetDraft(): NutrientPresetDraft {
 }
 
 function emptyStockDraft(): NutrientStockDraft {
-  return { name: '', current_ml: 0, initial_ml: 0, brand: '', stockType: 'base', npk: '', dose_ml_l: 0, notes: '' };
+  return {
+    name: '',
+    current_ml: 0,
+    initial_ml: 0,
+    brand: '',
+    stockType: 'base',
+    npk: '',
+    dose_ml_l: 0,
+    notes: '',
+  };
 }
 
 // ─── Transition ───────────────────────────────────────────────────────────────
@@ -232,7 +247,10 @@ export function transition(sm: SM, event: SMEvent): SM {
         ...sm,
         tabs: {
           ...sm.tabs,
-          watering: { ...sm.tabs.watering, draft: { ...sm.tabs.watering.draft, volume: event.volume } },
+          watering: {
+            ...sm.tabs.watering,
+            draft: { ...sm.tabs.watering.draft, volume: event.volume },
+          },
         },
       };
 
@@ -241,7 +259,10 @@ export function transition(sm: SM, event: SMEvent): SM {
         ...sm,
         tabs: {
           ...sm.tabs,
-          watering: { ...sm.tabs.watering, draft: { ...sm.tabs.watering.draft, presetId: event.presetId } },
+          watering: {
+            ...sm.tabs.watering,
+            draft: { ...sm.tabs.watering.draft, presetId: event.presetId },
+          },
         },
       };
 
@@ -262,7 +283,11 @@ export function transition(sm: SM, event: SMEvent): SM {
         ...sm,
         tabs: {
           ...sm.tabs,
-          watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT }, adHocOpen: false },
+          watering: {
+            sub: { kind: 'idle' },
+            draft: { ...DEFAULT_WATERING_DRAFT },
+            adHocOpen: false,
+          },
         },
       };
     }
@@ -359,7 +384,10 @@ export function transition(sm: SM, event: SMEvent): SM {
         ...sm,
         tabs: {
           ...sm.tabs,
-          inventory: { ...inv, sub: { kind: 'error', draft: inv.sub.draft, message: event.message } },
+          inventory: {
+            ...inv,
+            sub: { kind: 'error', draft: inv.sub.draft, message: event.message },
+          },
         },
       };
     }
@@ -445,7 +473,10 @@ export function transition(sm: SM, event: SMEvent): SM {
       if (sm.tabs.presets.sub.kind === 'editing') return sm;
       return {
         ...sm,
-        tabs: { ...sm.tabs, presets: { selectedId: null, sub: { kind: 'editing', draft: emptyPresetDraft() } } },
+        tabs: {
+          ...sm.tabs,
+          presets: { selectedId: null, sub: { kind: 'editing', draft: emptyPresetDraft() } },
+        },
       };
     }
 
@@ -465,7 +496,10 @@ export function transition(sm: SM, event: SMEvent): SM {
         ...sm,
         tabs: {
           ...sm.tabs,
-          presets: { ...presets, sub: { kind: 'editing', draft: { ...presets.sub.draft, [event.field]: event.value } } },
+          presets: {
+            ...presets,
+            sub: { kind: 'editing', draft: { ...presets.sub.draft, [event.field]: event.value } },
+          },
         },
       };
     }
@@ -479,7 +513,13 @@ export function transition(sm: SM, event: SMEvent): SM {
           ...sm.tabs,
           presets: {
             ...presets,
-            sub: { kind: 'editing', draft: { ...presets.sub.draft, nutrients: [...presets.sub.draft.nutrients, { nutrient_id: '', dose_ml_l: 0 }] } },
+            sub: {
+              kind: 'editing',
+              draft: {
+                ...presets.sub.draft,
+                nutrients: [...presets.sub.draft.nutrients, { nutrient_id: '', dose_ml_l: 0 }],
+              },
+            },
           },
         },
       };
@@ -494,7 +534,13 @@ export function transition(sm: SM, event: SMEvent): SM {
           ...sm.tabs,
           presets: {
             ...presets,
-            sub: { kind: 'editing', draft: { ...presets.sub.draft, nutrients: presets.sub.draft.nutrients.filter((_, i) => i !== event.index) } },
+            sub: {
+              kind: 'editing',
+              draft: {
+                ...presets.sub.draft,
+                nutrients: presets.sub.draft.nutrients.filter((_, i) => i !== event.index),
+              },
+            },
           },
         },
       };
@@ -513,7 +559,9 @@ export function transition(sm: SM, event: SMEvent): SM {
               kind: 'editing',
               draft: {
                 ...presets.sub.draft,
-                nutrients: presets.sub.draft.nutrients.map((row, i) => i === event.index ? { ...row, ...event.patch } : row),
+                nutrients: presets.sub.draft.nutrients.map((row, i) =>
+                  i === event.index ? { ...row, ...event.patch } : row
+                ),
               },
             },
           },
@@ -526,7 +574,10 @@ export function transition(sm: SM, event: SMEvent): SM {
       if (presets.sub.kind !== 'editing') return sm;
       return {
         ...sm,
-        tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'applying', draft: presets.sub.draft } } },
+        tabs: {
+          ...sm.tabs,
+          presets: { ...presets, sub: { kind: 'applying', draft: presets.sub.draft } },
+        },
       };
     }
 
@@ -545,7 +596,13 @@ export function transition(sm: SM, event: SMEvent): SM {
       if (presets.sub.kind !== 'applying') return sm;
       return {
         ...sm,
-        tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'error', draft: presets.sub.draft, message: event.message } } },
+        tabs: {
+          ...sm.tabs,
+          presets: {
+            ...presets,
+            sub: { kind: 'error', draft: presets.sub.draft, message: event.message },
+          },
+        },
       };
     }
 
@@ -554,7 +611,10 @@ export function transition(sm: SM, event: SMEvent): SM {
       if (presets.sub.kind !== 'error') return sm;
       return {
         ...sm,
-        tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'editing', draft: presets.sub.draft } } },
+        tabs: {
+          ...sm.tabs,
+          presets: { ...presets, sub: { kind: 'editing', draft: presets.sub.draft } },
+        },
       };
     }
 
@@ -563,7 +623,10 @@ export function transition(sm: SM, event: SMEvent): SM {
       if (presets.sub.kind === 'editing' || presets.sub.kind === 'applying') return sm;
       return {
         ...sm,
-        tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'confirm-delete', id: event.id, name: event.name } } },
+        tabs: {
+          ...sm.tabs,
+          presets: { ...presets, sub: { kind: 'confirm-delete', id: event.id, name: event.name } },
+        },
       };
     }
 
@@ -572,7 +635,10 @@ export function transition(sm: SM, event: SMEvent): SM {
       if (presets.sub.kind !== 'confirm-delete') return sm;
       return {
         ...sm,
-        tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'applying', draft: emptyPresetDraft() } } },
+        tabs: {
+          ...sm.tabs,
+          presets: { ...presets, sub: { kind: 'applying', draft: emptyPresetDraft() } },
+        },
       };
     }
 

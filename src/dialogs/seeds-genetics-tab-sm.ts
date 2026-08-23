@@ -19,10 +19,7 @@ export type ViewId = 'list' | 'add-batch' | 'log-pollination' | 'harvest';
 
 // ─── Shared async sub-state ───────────────────────────────────────────────────
 
-export type AsyncSub =
-  | { kind: 'idle' }
-  | { kind: 'applying' }
-  | { kind: 'error'; message: string };
+export type AsyncSub = { kind: 'idle' } | { kind: 'applying' } | { kind: 'error'; message: string };
 
 // ─── List view ────────────────────────────────────────────────────────────────
 
@@ -30,7 +27,13 @@ export type ListSubState =
   | { kind: 'idle' }
   | { kind: 'confirm-delete-batch'; batchId: string }
   | { kind: 'confirm-delete-pollination'; eventId: string }
-  | { kind: 'sow'; batchId: string; growspaceId: string; quantity: number; sub: { kind: 'idle' } | { kind: 'applying' } };
+  | {
+      kind: 'sow';
+      batchId: string;
+      growspaceId: string;
+      quantity: number;
+      sub: { kind: 'idle' } | { kind: 'applying' };
+    };
 
 export interface ListViewState {
   sub: ListSubState;
