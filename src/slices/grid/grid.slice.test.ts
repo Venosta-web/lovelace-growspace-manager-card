@@ -184,10 +184,7 @@ describe('plantToDeviceMap$', () => {
   it('maps plant_id to deviceId for all plants across all devices', () => {
     const p1 = makePlant('p1', 1, 1);
     const p2 = makePlant('p2', 1, 2);
-    setDevices([
-      makeDevice('gs1', 'Room 1', [p1]),
-      makeDevice('gs2', 'Room 2', [p2]),
-    ]);
+    setDevices([makeDevice('gs1', 'Room 1', [p1]), makeDevice('gs2', 'Room 2', [p2])]);
 
     const map = plantToDeviceMap$.get();
     expect(map.get('p1')).toBe('gs1');
@@ -223,10 +220,15 @@ describe('plantToDeviceMap$', () => {
 
 describe('patchDeviceIrrigationConfig', () => {
   it('patches irrigationConfig on the matching device', () => {
-    const device = { ...makeDevice('gs1', 'Room 1', []), irrigationConfig: { irrigationTimes: [] } };
+    const device = {
+      ...makeDevice('gs1', 'Room 1', []),
+      irrigationConfig: { irrigationTimes: [] },
+    };
     setDevices([device as any]);
 
-    patchDeviceIrrigationConfig('gs1', { irrigationTimes: [{ start: '08:00', duration: 30 }] } as any);
+    patchDeviceIrrigationConfig('gs1', {
+      irrigationTimes: [{ start: '08:00', duration: 30 }],
+    } as any);
 
     const updated = devices$.get().find((d) => d.deviceId === 'gs1')!;
     expect((updated as any).irrigationConfig.irrigationTimes).toHaveLength(1);
@@ -291,10 +293,7 @@ describe('makePerCardGridSlice', () => {
   it('$gridLayout computes independently per instance based on its own selected device', () => {
     const p1 = makePlant('p1', 1, 1);
     const p2 = makePlant('p2', 1, 1);
-    setDevices([
-      makeDevice('gs1', 'Room A', [p1], 2, 2),
-      makeDevice('gs2', 'Room B', [p2], 2, 2),
-    ]);
+    setDevices([makeDevice('gs1', 'Room A', [p1], 2, 2), makeDevice('gs2', 'Room B', [p2], 2, 2)]);
 
     const sliceA = makePerCardGridSlice();
     const sliceB = makePerCardGridSlice();

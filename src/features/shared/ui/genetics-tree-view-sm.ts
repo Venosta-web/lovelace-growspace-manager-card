@@ -161,9 +161,7 @@ export function shouldRefit(opts: {
   panGen: number;
 }): boolean {
   return (
-    opts.resized ||
-    opts.externalFocal ||
-    (opts.layoutChanged && opts.reframeGen > opts.panGen)
+    opts.resized || opts.externalFocal || (opts.layoutChanged && opts.reframeGen > opts.panGen)
   );
 }
 
@@ -212,7 +210,10 @@ export function transition(sm: GeneticsTreeSM, event: GeneticsTreeEvent): Geneti
       // force-refit on a breeder change without re-arming, an oversight.
       return rearm({ ...sm, breederFilter: event.value });
     case 'SET_GEN_FILTER':
-      return { ...sm, genFilter: event.gen === null || sm.genFilter === event.gen ? null : event.gen };
+      return {
+        ...sm,
+        genFilter: event.gen === null || sm.genFilter === event.gen ? null : event.gen,
+      };
     case 'RESET_FILTERS':
       return { ...sm, collapsed: new Set(), genFilter: null, selectedId: null, search: '' };
     case 'EXTERNAL_FOCAL_CHANGED':

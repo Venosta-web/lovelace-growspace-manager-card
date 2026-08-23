@@ -14,13 +14,7 @@
  */
 
 import { computed, type ReadableAtom } from 'nanostores';
-import {
-  mdiArrowUp,
-  mdiArrowDown,
-  mdiMinus,
-  mdiWeatherNight,
-  mdiCounter,
-} from '@mdi/js';
+import { mdiArrowUp, mdiArrowDown, mdiMinus, mdiWeatherNight, mdiCounter } from '@mdi/js';
 import type {
   GrowspaceDevice,
   SteeringMetrics,
@@ -274,7 +268,12 @@ export function createOverviewTabViewModel(
         intentBanner: null,
         overnightDryback: emptyMetricCard(),
         inCycleDryback: emptyMetricCard(),
-        ecTrend: { locked: true, value: 'Locked', icon: mdiMinus, color: 'var(--secondary-text-color)' },
+        ecTrend: {
+          locked: true,
+          value: 'Locked',
+          icon: mdiMinus,
+          color: 'var(--secondary-text-color)',
+        },
         shotComposition: null,
         caps,
       };

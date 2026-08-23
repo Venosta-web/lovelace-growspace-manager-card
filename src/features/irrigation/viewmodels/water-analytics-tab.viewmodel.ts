@@ -182,23 +182,18 @@ export function createWaterAnalyticsTabViewModel(
       : [];
 
     const hasPump = !!(
-      device?.irrigationConfig?.irrigationPumpEntity ||
-      device?.irrigationConfig?.drainPumpEntity
+      device?.irrigationConfig?.irrigationPumpEntity || device?.irrigationConfig?.drainPumpEntity
     );
     const hasTank = tanks.length > 0;
     const hasTankSensors = tanks.some((t) => t.sensorEntity);
 
     const recentReadings = readings.slice(-30).reverse();
-    const readingsWithVolumes = recentReadings.filter(
-      (r) => r.feedVolumeMl && r.drainVolumeMl
-    );
+    const readingsWithVolumes = recentReadings.filter((r) => r.feedVolumeMl && r.drainVolumeMl);
     const totalFeedMl = readingsWithVolumes.reduce((s, r) => s + (r.feedVolumeMl || 0), 0);
     const totalDrainMl = readingsWithVolumes.reduce((s, r) => s + (r.drainVolumeMl || 0), 0);
     const avgRunoff = totalFeedMl > 0 ? (totalDrainMl / totalFeedMl) * 100 : null;
 
-    const tanksWithData = tanks.filter(
-      (t) => t.fillLevel !== null && t.fillLevel !== undefined
-    );
+    const tanksWithData = tanks.filter((t) => t.fillLevel !== null && t.fillLevel !== undefined);
     const avgTankLevel =
       tanksWithData.length > 0
         ? tanksWithData.reduce((s, t) => s + (t.fillLevel ?? 0), 0) / tanksWithData.length
@@ -229,9 +224,7 @@ export function createWaterAnalyticsTabViewModel(
       .filter((d) => d.date === todayKey)
       .reduce((s, d) => s + d.consumed, 0);
     const tankLiters7d = allDaily7d.reduce((s, d) => s + d.consumed, 0);
-    const daysWithData = new Set(
-      allDaily7d.filter((d) => d.consumed > 0).map((d) => d.date)
-    ).size;
+    const daysWithData = new Set(allDaily7d.filter((d) => d.consumed > 0).map((d) => d.date)).size;
     const tankAvgPerDay = daysWithData > 0 ? tankLiters7d / daysWithData : 0;
     const plantCount = device?.plants?.length ?? 0;
     const tankLitersPerPlantPerDay =

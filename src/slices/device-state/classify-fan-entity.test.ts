@@ -44,9 +44,9 @@ describe('classifyFanEntity — type facet (kind) is id-derived', () => {
 
 describe('classifyFanEntity — reading facet (HA fan)', () => {
   it('reads percentage raw (unrounded) when on', () => {
-    expect(classifyFanEntity('fan.exhaust', { state: 'on', attributes: { percentage: 70.4 } })).toEqual(
-      { kind: 'ha-fan', available: true, on: true, percentage: 70.4 }
-    );
+    expect(
+      classifyFanEntity('fan.exhaust', { state: 'on', attributes: { percentage: 70.4 } })
+    ).toEqual({ kind: 'ha-fan', available: true, on: true, percentage: 70.4 });
   });
 
   it('reports percentage null when on with no percentage attribute', () => {
@@ -59,7 +59,10 @@ describe('classifyFanEntity — reading facet (HA fan)', () => {
   });
 
   it('is off (percentage ignored) when state is off', () => {
-    const reading = classifyFanEntity('fan.exhaust', { state: 'off', attributes: { percentage: 0 } });
+    const reading = classifyFanEntity('fan.exhaust', {
+      state: 'off',
+      attributes: { percentage: 0 },
+    });
     expect(reading).toMatchObject({ kind: 'ha-fan', available: true, on: false });
   });
 });

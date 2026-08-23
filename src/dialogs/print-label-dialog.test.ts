@@ -19,7 +19,13 @@ beforeEach(() => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const mockTags = ['ha-dialog', 'ha-svg-icon', 'md3-select', 'label-preview', 'printer-status-strip'];
+const mockTags = [
+  'ha-dialog',
+  'ha-svg-icon',
+  'md3-select',
+  'label-preview',
+  'printer-status-strip',
+];
 for (const tag of mockTags) {
   if (!customElements.get(tag)) {
     customElements.define(tag, class extends HTMLElement {});
@@ -164,28 +170,68 @@ describe('PrintLabelDialog – _toggleField', () => {
 
   it('toggles a field from true to false', () => {
     const el = createElement();
-    (el as any)._fields = { name: true, phenotype: true, breeder: true, lineage: true, startDate: true, stageAge: true, plantId: true, logo: true, qr: true };
+    (el as any)._fields = {
+      name: true,
+      phenotype: true,
+      breeder: true,
+      lineage: true,
+      startDate: true,
+      stageAge: true,
+      plantId: true,
+      logo: true,
+      qr: true,
+    };
     (el as any)._toggleField('phenotype');
     expect((el as any)._fields.phenotype).toBe(false);
   });
 
   it('toggles a field from false to true', () => {
     const el = createElement();
-    (el as any)._fields = { name: true, phenotype: false, breeder: true, lineage: true, startDate: true, stageAge: true, plantId: true, logo: true, qr: true };
+    (el as any)._fields = {
+      name: true,
+      phenotype: false,
+      breeder: true,
+      lineage: true,
+      startDate: true,
+      stageAge: true,
+      plantId: true,
+      logo: true,
+      qr: true,
+    };
     (el as any)._toggleField('phenotype');
     expect((el as any)._fields.phenotype).toBe(true);
   });
 
   it('does not toggle name — it is always locked on', () => {
     const el = createElement();
-    (el as any)._fields = { name: true, phenotype: true, breeder: true, lineage: true, startDate: true, stageAge: true, plantId: true, logo: true, qr: true };
+    (el as any)._fields = {
+      name: true,
+      phenotype: true,
+      breeder: true,
+      lineage: true,
+      startDate: true,
+      stageAge: true,
+      plantId: true,
+      logo: true,
+      qr: true,
+    };
     (el as any)._toggleField('name');
     expect((el as any)._fields.name).toBe(true);
   });
 
   it('toggling qr to false hides qr target selector', () => {
     const el = createElement();
-    (el as any)._fields = { name: true, phenotype: true, breeder: true, lineage: true, startDate: true, stageAge: true, plantId: true, logo: true, qr: true };
+    (el as any)._fields = {
+      name: true,
+      phenotype: true,
+      breeder: true,
+      lineage: true,
+      startDate: true,
+      stageAge: true,
+      plantId: true,
+      logo: true,
+      qr: true,
+    };
     (el as any)._toggleField('qr');
     expect((el as any)._fields.qr).toBe(false);
   });
@@ -236,7 +282,17 @@ describe('PrintLabelDialog – _submit print flow', () => {
   it('passes fields, sizeId, density, qrTarget, deviceId to printLabel', async () => {
     const mockStore = makeMockStore();
     const el = createElement(mockStore);
-    const fields = { name: true, phenotype: false, breeder: true, lineage: false, startDate: true, stageAge: false, plantId: true, logo: false, qr: true };
+    const fields = {
+      name: true,
+      phenotype: false,
+      breeder: true,
+      lineage: false,
+      startDate: true,
+      stageAge: false,
+      plantId: true,
+      logo: false,
+      qr: true,
+    };
     (el as any).dialogState = { plantId: 'p1' };
     (el as any)._fields = fields;
     (el as any)._sizeId = '40x30';
@@ -390,7 +446,17 @@ describe('PrintLabelDialog – render', () => {
     const el = await fixture<PrintLabelDialog>(html`
       <print-label-dialog .open=${true}></print-label-dialog>
     `);
-    (el as any)._fields = { name: true, phenotype: true, breeder: true, lineage: true, startDate: true, stageAge: true, plantId: true, logo: true, qr: false };
+    (el as any)._fields = {
+      name: true,
+      phenotype: true,
+      breeder: true,
+      lineage: true,
+      startDate: true,
+      stageAge: true,
+      plantId: true,
+      logo: true,
+      qr: false,
+    };
     await el.updateComplete;
     expect(el.shadowRoot!.querySelector('.qr-target-card')).toBeNull();
   });
@@ -399,7 +465,17 @@ describe('PrintLabelDialog – render', () => {
     const el = await fixture<PrintLabelDialog>(html`
       <print-label-dialog .open=${true}></print-label-dialog>
     `);
-    (el as any)._fields = { name: true, phenotype: true, breeder: true, lineage: true, startDate: true, stageAge: true, plantId: true, logo: true, qr: true };
+    (el as any)._fields = {
+      name: true,
+      phenotype: true,
+      breeder: true,
+      lineage: true,
+      startDate: true,
+      stageAge: true,
+      plantId: true,
+      logo: true,
+      qr: true,
+    };
     await el.updateComplete;
     expect(el.shadowRoot!.querySelector('.qr-target-card')).not.toBeNull();
   });
@@ -437,13 +513,23 @@ describe('PrintLabelDialog – render', () => {
 
   it('renders printer options when printers are present in hass', async () => {
     const el = await fixture<PrintLabelDialog>(html`
-      <print-label-dialog .open=${true} .hass=${makeHass()} .store=${makeMockStore()}></print-label-dialog>
+      <print-label-dialog
+        .open=${true}
+        .hass=${makeHass()}
+        .store=${makeMockStore()}
+      ></print-label-dialog>
     `);
     await el.updateComplete;
     const select = el.shadowRoot!.querySelector('md3-select[label="Niimbot Printer"]') as any;
     expect(select).not.toBeNull();
-    expect(select.options).toContainEqual({ label: 'Printer A', value: 'image.printer_a_last_label_made' });
-    expect(select.options).toContainEqual({ label: 'Printer B', value: 'image.printer_b_last_label_made' });
+    expect(select.options).toContainEqual({
+      label: 'Printer A',
+      value: 'image.printer_a_last_label_made',
+    });
+    expect(select.options).toContainEqual({
+      label: 'Printer B',
+      value: 'image.printer_b_last_label_made',
+    });
   });
 
   it('renders fallback sizeLabel when sizeId is not found in LABEL_SIZES', async () => {
@@ -482,21 +568,23 @@ describe('PrintLabelDialog – _getPlant & _getFieldValues', () => {
         phenotype: 'Ph1',
         veg_start: '2026-05-01T00:00:00Z',
         days_in_stage: 5,
-      }
+      },
     };
-    setDevices([{
-      deviceId: 'dev1',
-      name: 'Growspace 1',
-      type: 'normal' as any,
-      rows: 1,
-      plantsPerRow: 1,
-      plants: [mockPlant] as any,
-      grid: {},
-      biologicalMetrics: {} as any,
-      environmentAttributes: {} as any,
-      stats: {} as any,
-      irrigationConfig: {} as any
-    }]);
+    setDevices([
+      {
+        deviceId: 'dev1',
+        name: 'Growspace 1',
+        type: 'normal' as any,
+        rows: 1,
+        plantsPerRow: 1,
+        plants: [mockPlant] as any,
+        grid: {},
+        biologicalMetrics: {} as any,
+        environmentAttributes: {} as any,
+        stats: {} as any,
+        irrigationConfig: {} as any,
+      },
+    ]);
 
     const el = createElement();
     expect((el as any)._getPlant('plant_1')).toEqual(mockPlant);
@@ -509,40 +597,44 @@ describe('PrintLabelDialog – _getPlant & _getFieldValues', () => {
       attributes: {
         strain: 'OG Kush',
         phenotype: 'Ph1',
-      }
+      },
     };
-    setDevices([{
-      deviceId: 'dev1',
-      name: 'Growspace 1',
-      type: 'normal' as any,
-      rows: 1,
-      plantsPerRow: 1,
-      plants: [mockPlant] as any,
-      grid: {},
-      biologicalMetrics: {} as any,
-      environmentAttributes: {} as any,
-      stats: {} as any,
-      irrigationConfig: {} as any
-    }]);
+    setDevices([
+      {
+        deviceId: 'dev1',
+        name: 'Growspace 1',
+        type: 'normal' as any,
+        rows: 1,
+        plantsPerRow: 1,
+        plants: [mockPlant] as any,
+        grid: {},
+        biologicalMetrics: {} as any,
+        environmentAttributes: {} as any,
+        stats: {} as any,
+        irrigationConfig: {} as any,
+      },
+    ]);
 
     const el = createElement();
     expect((el as any)._getPlant('plant_1')).toEqual(mockPlant);
   });
 
   it('returns null if plant is not found', () => {
-    setDevices([{
-      deviceId: 'dev1',
-      name: 'Growspace 1',
-      type: 'normal' as any,
-      rows: 1,
-      plantsPerRow: 1,
-      plants: [],
-      grid: {},
-      biologicalMetrics: {} as any,
-      environmentAttributes: {} as any,
-      stats: {} as any,
-      irrigationConfig: {} as any
-    }]);
+    setDevices([
+      {
+        deviceId: 'dev1',
+        name: 'Growspace 1',
+        type: 'normal' as any,
+        rows: 1,
+        plantsPerRow: 1,
+        plants: [],
+        grid: {},
+        biologicalMetrics: {} as any,
+        environmentAttributes: {} as any,
+        stats: {} as any,
+        irrigationConfig: {} as any,
+      },
+    ]);
 
     const el = createElement();
     expect((el as any)._getPlant('plant_1')).toBeNull();
@@ -560,22 +652,24 @@ describe('PrintLabelDialog – _getPlant & _getFieldValues', () => {
         lineage: 'Kush x OG',
         veg_start: '2026-05-01T00:00:00Z',
         days_in_stage: 5,
-        breeder_logo: 'logo.png'
-      }
+        breeder_logo: 'logo.png',
+      },
     };
-    setDevices([{
-      deviceId: 'dev1',
-      name: 'Growspace 1',
-      type: 'normal' as any,
-      rows: 1,
-      plantsPerRow: 1,
-      plants: [mockPlant] as any,
-      grid: {},
-      biologicalMetrics: {} as any,
-      environmentAttributes: {} as any,
-      stats: {} as any,
-      irrigationConfig: {} as any
-    }]);
+    setDevices([
+      {
+        deviceId: 'dev1',
+        name: 'Growspace 1',
+        type: 'normal' as any,
+        rows: 1,
+        plantsPerRow: 1,
+        plants: [mockPlant] as any,
+        grid: {},
+        biologicalMetrics: {} as any,
+        environmentAttributes: {} as any,
+        stats: {} as any,
+        irrigationConfig: {} as any,
+      },
+    ]);
 
     const el = createElement();
     el.dialogState = { plantId: 'plant_1' };
@@ -596,21 +690,23 @@ describe('PrintLabelDialog – _getPlant & _getFieldValues', () => {
       attributes: {
         plant_id: 'plant_1',
         flower_start: '2026-05-01T00:00:00Z',
-      }
+      },
     };
-    setDevices([{
-      deviceId: 'dev1',
-      name: 'Growspace 1',
-      type: 'normal' as any,
-      rows: 1,
-      plantsPerRow: 1,
-      plants: [mockPlant] as any,
-      grid: {},
-      biologicalMetrics: {} as any,
-      environmentAttributes: {} as any,
-      stats: {} as any,
-      irrigationConfig: {} as any
-    }]);
+    setDevices([
+      {
+        deviceId: 'dev1',
+        name: 'Growspace 1',
+        type: 'normal' as any,
+        rows: 1,
+        plantsPerRow: 1,
+        plants: [mockPlant] as any,
+        grid: {},
+        biologicalMetrics: {} as any,
+        environmentAttributes: {} as any,
+        stats: {} as any,
+        irrigationConfig: {} as any,
+      },
+    ]);
 
     const el = createElement();
     el.dialogState = { plantId: 'plant_1' };
@@ -651,9 +747,10 @@ describe('PrintLabelDialog – DOM interactions', () => {
     const el = await fixture<PrintLabelDialog>(html`
       <print-label-dialog .open=${true}></print-label-dialog>
     `);
-    const phenotypeRow = Array.from(el.shadowRoot!.querySelectorAll('.field-toggle-row'))
-      .find(row => row.querySelector('.field-toggle-label')?.textContent?.trim() === 'Phenotype') as HTMLElement;
-    
+    const phenotypeRow = Array.from(el.shadowRoot!.querySelectorAll('.field-toggle-row')).find(
+      (row) => row.querySelector('.field-toggle-label')?.textContent?.trim() === 'Phenotype'
+    ) as HTMLElement;
+
     expect((el as any)._fields.phenotype).toBe(true);
     phenotypeRow.click();
     await el.updateComplete;
@@ -664,9 +761,10 @@ describe('PrintLabelDialog – DOM interactions', () => {
     const el = await fixture<PrintLabelDialog>(html`
       <print-label-dialog .open=${true}></print-label-dialog>
     `);
-    const nameRow = Array.from(el.shadowRoot!.querySelectorAll('.field-toggle-row'))
-      .find(row => row.querySelector('.field-toggle-label')?.textContent?.trim() === 'Strain name') as HTMLElement;
-    
+    const nameRow = Array.from(el.shadowRoot!.querySelectorAll('.field-toggle-row')).find(
+      (row) => row.querySelector('.field-toggle-label')?.textContent?.trim() === 'Strain name'
+    ) as HTMLElement;
+
     expect((el as any)._fields.name).toBe(true);
     nameRow.click();
     await el.updateComplete;
@@ -679,13 +777,13 @@ describe('PrintLabelDialog – DOM interactions', () => {
     `);
     const pill = el.shadowRoot!.querySelector('.mobile-pill-toggle') as HTMLButtonElement;
     const settingsCol = el.shadowRoot!.querySelector('.settings-col') as HTMLElement;
-    
+
     expect((el as any)._settingsOpen).toBe(false);
     expect(settingsCol.classList.contains('mobile-open')).toBe(false);
-    
+
     pill.click();
     await el.updateComplete;
-    
+
     expect((el as any)._settingsOpen).toBe(true);
     expect(settingsCol.classList.contains('mobile-open')).toBe(true);
   });
@@ -706,13 +804,13 @@ describe('PrintLabelDialog – DOM interactions', () => {
       qr: true,
     };
     await el.updateComplete;
-    
+
     const select = el.shadowRoot!.querySelector('.qr-target-card md3-select') as any;
     expect(select).not.toBeNull();
-    
+
     select.dispatchEvent(new CustomEvent('change', { detail: 'deeplink' }));
     await el.updateComplete;
-    
+
     expect((el as any)._qrTarget).toBe('deeplink');
   });
 
@@ -722,14 +820,18 @@ describe('PrintLabelDialog – DOM interactions', () => {
     `);
     (el as any)._copies = 2;
     await el.updateComplete;
-    
-    const decBtn = el.shadowRoot!.querySelectorAll('.copies-stepper button')[0] as HTMLButtonElement;
-    const incBtn = el.shadowRoot!.querySelectorAll('.copies-stepper button')[1] as HTMLButtonElement;
-    
+
+    const decBtn = el.shadowRoot!.querySelectorAll(
+      '.copies-stepper button'
+    )[0] as HTMLButtonElement;
+    const incBtn = el.shadowRoot!.querySelectorAll(
+      '.copies-stepper button'
+    )[1] as HTMLButtonElement;
+
     incBtn.click();
     await el.updateComplete;
     expect((el as any)._copies).toBe(3);
-    
+
     decBtn.click();
     await el.updateComplete;
     expect((el as any)._copies).toBe(2);
@@ -753,11 +855,11 @@ describe('PrintLabelDialog – DOM interactions', () => {
     `);
     (el as any)._density = 'normal';
     await el.updateComplete;
-    
+
     const lightBtn = el.shadowRoot!.querySelectorAll('.density-seg button')[0] as HTMLButtonElement;
     lightBtn.click();
     await el.updateComplete;
-    
+
     expect((el as any)._density).toBe('low');
   });
 
@@ -767,14 +869,15 @@ describe('PrintLabelDialog – DOM interactions', () => {
     `);
     (el as any)._sizeId = '50x30';
     await el.updateComplete;
-    
-    const chip40x30 = Array.from(el.shadowRoot!.querySelectorAll('.size-chip'))
-      .find(btn => btn.textContent?.trim() === '40×30') as HTMLButtonElement;
-      
+
+    const chip40x30 = Array.from(el.shadowRoot!.querySelectorAll('.size-chip')).find(
+      (btn) => btn.textContent?.trim() === '40×30'
+    ) as HTMLButtonElement;
+
     expect(chip40x30).not.toBeNull();
     chip40x30.click();
     await el.updateComplete;
-    
+
     expect((el as any)._sizeId).toBe('40x30');
   });
 
@@ -783,13 +886,13 @@ describe('PrintLabelDialog – DOM interactions', () => {
       <print-label-dialog .open=${true} .hass=${makeHass()}></print-label-dialog>
     `);
     await el.updateComplete;
-    
+
     const select = el.shadowRoot!.querySelector('md3-select[label="Niimbot Printer"]') as any;
     expect(select).not.toBeNull();
-    
+
     select.dispatchEvent(new CustomEvent('change', { detail: 'image.printer_b_last_label_made' }));
     await el.updateComplete;
-    
+
     expect((el as any)._selectedDeviceId).toBe('image.printer_b_last_label_made');
   });
 });

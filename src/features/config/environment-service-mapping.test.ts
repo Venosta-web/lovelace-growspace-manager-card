@@ -79,10 +79,14 @@ describe('card → configure_environment mapping', () => {
   });
 
   it('never sends the immediate-persist control flags', async () => {
-    const payload = await wirePayload((d) => {
-      d.humidifierControlEnabled = true;
-      d.temperatureSensors = ['sensor.temp'];
-    }, 'humidifierControlEnabled', 'temperatureSensors');
+    const payload = await wirePayload(
+      (d) => {
+        d.humidifierControlEnabled = true;
+        d.temperatureSensors = ['sensor.temp'];
+      },
+      'humidifierControlEnabled',
+      'temperatureSensors'
+    );
 
     expect('control_humidifier' in payload).toBe(false);
     expect('control_dehumidifier' in payload).toBe(false);

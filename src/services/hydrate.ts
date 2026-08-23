@@ -76,8 +76,7 @@ export function hydrate(
       });
     }
 
-    const subareas =
-      hydratedGrowspaceId === d.deviceId ? subareas$.get() : (d.subareas ?? []);
+    const subareas = hydratedGrowspaceId === d.deviceId ? subareas$.get() : (d.subareas ?? []);
     subareas.forEach((subarea) => {
       setSubareaEnvSnapshot(
         subarea.id,

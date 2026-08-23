@@ -347,7 +347,7 @@ export class PlantRenderer extends BaseRenderer {
               }
             })
             .catch((err: unknown) =>
-              console.error('[PlantRenderer] failed to extract strain colors', err),
+              console.error('[PlantRenderer] failed to extract strain colors', err)
             );
         }
       }

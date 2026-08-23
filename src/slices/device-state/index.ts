@@ -270,7 +270,12 @@ function _buildSnapshot(ids: DeviceEntityIds, hassStates: HassStates): DeviceSna
     exhaustFans: _buildEntry(ids.exhaustIds, hassStates, mdiFan, _normalizeFanDevice),
     circulationFans: _buildEntry(ids.circulationIds, hassStates, mdiFan, _normalizeFanDevice),
     humidifiers: _buildEntry(ids.humidifierIds, hassStates, mdiAirHumidifier, _normalizeOnOff),
-    dehumidifiers: _buildEntry(ids.dehumidifierIds, hassStates, mdiAirHumidifierOff, _normalizeOnOff),
+    dehumidifiers: _buildEntry(
+      ids.dehumidifierIds,
+      hassStates,
+      mdiAirHumidifierOff,
+      _normalizeOnOff
+    ),
   };
 }
 
@@ -295,7 +300,10 @@ const AC_INFINITY_CURRENT_POWER_KEY = 'current_power';
  * when the registry exposes it, else fall back to the speed setpoint so the
  * chip still renders (a bundle with no power sensor keeps appearing).
  */
-function _acInfinityDisplayEntity(device: AcInfinityDevice, registry: EntityRegistry | undefined): string {
+function _acInfinityDisplayEntity(
+  device: AcInfinityDevice,
+  registry: EntityRegistry | undefined
+): string {
   const deviceId = registry?.[device.speed_entity]?.device_id;
   if (registry && deviceId) {
     for (const [entityId, entry] of Object.entries(registry)) {
@@ -352,8 +360,8 @@ export function computeDeviceSnapshot(
         ...(env.lightSensors && env.lightSensors.length > 0
           ? env.lightSensors
           : env.lightSensor
-          ? [env.lightSensor]
-          : []),
+            ? [env.lightSensor]
+            : []),
         ...(env.growlightEntities ?? []),
       ],
       exhaustIds: [

@@ -3,7 +3,8 @@ import { css } from 'lit';
 export const growspaceCardStyles = css`
   :host {
     display: block;
-    font-family: 'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
+    font-family:
+      'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
     color: var(--growspace-card-text);
   }
 
@@ -91,8 +92,14 @@ export const growspaceCardStyles = css`
      status name carries the chain it is defined as in status.styles.ts. */
   .stat-chip.status-warning {
     color: var(--gm-status-warning, var(--warning-color, #ffa726)) !important;
-    border-color: var(--gm-status-warning-outline, color-mix(in srgb, var(--warning-color, #ffa726) 60%, transparent)) !important;
-    background: var(--gm-status-warning-fill, color-mix(in srgb, var(--warning-color, #ffa726) 14%, transparent)) !important;
+    border-color: var(
+      --gm-status-warning-outline,
+      color-mix(in srgb, var(--warning-color, #ffa726) 60%, transparent)
+    ) !important;
+    background: var(
+      --gm-status-warning-fill,
+      color-mix(in srgb, var(--warning-color, #ffa726) 14%, transparent)
+    ) !important;
   }
 
   .stat-chip.status-danger {

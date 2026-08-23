@@ -257,7 +257,7 @@ describe('GrowspaceStore – movePlant', () => {
 
   it('logs error and skips updateGrid when updatePlant rejects', async () => {
     vi.mocked(plantSlice.updatePlant).mockRejectedValue(new Error('move failed'));
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const gridSpy = vi.spyOn(store, 'updateGrid');
     const plant = { entity_id: 'sensor.p1', attributes: { plant_id: 'p1' } } as any;
     await store.movePlant(plant, 0, 0);

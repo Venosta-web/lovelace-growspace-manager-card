@@ -1086,7 +1086,9 @@ export class StrainEditorView extends LitElement {
         </div>
 
         <div class="crop-controls">
-          <div style="display:flex; justify-content:space-between; color:var(--text-secondary); font-size:var(--font-size-supporting);">
+          <div
+            style="display:flex; justify-content:space-between; color:var(--text-secondary); font-size:var(--font-size-supporting);"
+          >
             <span>Zoom: ${(meta.scale * 100).toFixed(0)}%</span>
           </div>
           <input
@@ -1112,7 +1114,9 @@ export class StrainEditorView extends LitElement {
               Done
             </button>
           </div>
-          <div style="text-align:center; font-size:var(--font-size-supporting); color:var(--text-muted); margin-top:8px;">
+          <div
+            style="text-align:center; font-size:var(--font-size-supporting); color:var(--text-muted); margin-top:8px;"
+          >
             Drag to pan • Scroll to zoom
           </div>
         </div>
@@ -1306,7 +1310,9 @@ export class StrainEditorView extends LitElement {
                 />
                 <div>
                   <div style="font-weight: 600;">Merge</div>
-                  <div style="font-size: var(--font-size-supporting); color: var(--secondary-text-color);">
+                  <div
+                    style="font-size: var(--font-size-supporting); color: var(--secondary-text-color);"
+                  >
                     Add new strains, keep existing ones.
                   </div>
                 </div>
@@ -1327,7 +1333,9 @@ export class StrainEditorView extends LitElement {
                 />
                 <div>
                   <div style="font-weight: 600;">Replace</div>
-                  <div style="font-size: var(--font-size-supporting); color: var(--secondary-text-color);">
+                  <div
+                    style="font-size: var(--font-size-supporting); color: var(--secondary-text-color);"
+                  >
                     Overwrite entire library with import.
                   </div>
                 </div>
@@ -1967,7 +1975,8 @@ export class StrainEditorView extends LitElement {
         gap: 4px;
         width: 100%;
         margin-top: 8px;
-        font-family: 'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
+        font-family:
+          'Roboto', sans-serif; /* impeccable-disable-line overused-font -- DESIGN.md commits to Roboto to match the Home Assistant MD3 system stack */
       }
       .hg-labels {
         display: flex;

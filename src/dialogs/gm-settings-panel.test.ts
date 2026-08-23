@@ -18,9 +18,7 @@ for (const tag of stubTags) {
 
 describe('GmSettingsPanel — Alerts section removed', () => {
   it('does not render an ai_auto_alerts toggle', async () => {
-    const el = await fixture<GmSettingsPanel>(html`
-      <gm-settings-panel></gm-settings-panel>
-    `);
+    const el = await fixture<GmSettingsPanel>(html` <gm-settings-panel></gm-settings-panel> `);
     await el.updateComplete;
 
     const toggle = el.shadowRoot!.querySelector('[data-field="ai_auto_alerts"]');
@@ -28,9 +26,7 @@ describe('GmSettingsPanel — Alerts section removed', () => {
   });
 
   it('does not render an Alerts section heading', async () => {
-    const el = await fixture<GmSettingsPanel>(html`
-      <gm-settings-panel></gm-settings-panel>
-    `);
+    const el = await fixture<GmSettingsPanel>(html` <gm-settings-panel></gm-settings-panel> `);
     await el.updateComplete;
 
     const headings = [...el.shadowRoot!.querySelectorAll('.section-heading')];
@@ -41,9 +37,7 @@ describe('GmSettingsPanel — Alerts section removed', () => {
 
 describe('GmSettingsPanel — draft-change event', () => {
   it('does not include ai_auto_alerts in emitted draft', async () => {
-    const el = await fixture<GmSettingsPanel>(html`
-      <gm-settings-panel></gm-settings-panel>
-    `);
+    const el = await fixture<GmSettingsPanel>(html` <gm-settings-panel></gm-settings-panel> `);
     await el.updateComplete;
 
     let emittedDraft: Record<string, unknown> | null = null;

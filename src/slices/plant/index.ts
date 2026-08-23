@@ -334,8 +334,7 @@ export async function updatePlant(
       type: 'updatePlant',
       optimistic: () => plants$.set(patched),
       inverse: () => plants$.set(originalList),
-      apply: () =>
-        wsVoid('growspace_manager/update_plant', { plant_id: plantId, ...updates }),
+      apply: () => wsVoid('growspace_manager/update_plant', { plant_id: plantId, ...updates }),
     },
     _growspaceIdFor(plantId)
   );

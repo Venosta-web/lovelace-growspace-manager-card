@@ -5,11 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  createInitialSM,
-  transition,
-  type ChatSM,
-} from './chat-panel-sm';
+import { createInitialSM, transition, type ChatSM } from './chat-panel-sm';
 
 // ─── createInitialSM ──────────────────────────────────────────────────────────
 
@@ -32,9 +28,7 @@ describe('createInitialSM', () => {
 
   it('seeds a growspace chip when growspaceName is provided', () => {
     const sm = createInitialSM('Tent Alpha');
-    expect(sm.contextChips).toEqual([
-      { id: 'growspace', label: 'Tent Alpha', type: 'growspace' },
-    ]);
+    expect(sm.contextChips).toEqual([{ id: 'growspace', label: 'Tent Alpha', type: 'growspace' }]);
   });
 
   it('creates SM with empty dismissedActionIndices', () => {
@@ -130,7 +124,10 @@ describe('COMPOSER_DRAFT_CHANGED', () => {
 describe('ATTACHMENT_SELECTED', () => {
   it('sets pendingAttachment to the data URL', () => {
     const sm = createInitialSM();
-    const next = transition(sm, { type: 'ATTACHMENT_SELECTED', dataUrl: 'data:image/png;base64,abc' });
+    const next = transition(sm, {
+      type: 'ATTACHMENT_SELECTED',
+      dataUrl: 'data:image/png;base64,abc',
+    });
     expect(next.pendingAttachment).toBe('data:image/png;base64,abc');
   });
 });

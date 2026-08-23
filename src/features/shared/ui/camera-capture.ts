@@ -361,7 +361,11 @@ export class CameraCapture extends LitElement {
                 </button>
               </div>
               <div class="overlay-bottom">
-                <button class="shutter" title="Capture" @click=${() => this._capturePhoto()}></button>
+                <button
+                  class="shutter"
+                  title="Capture"
+                  @click=${() => this._capturePhoto()}
+                ></button>
               </div>
             `}
       </div>

@@ -370,7 +370,11 @@ describe('DISCARD_AND_SWITCH (via discardAndSwitch helper)', () => {
   it('resetActiveTabDraft returns current tabs when activeTab is unknown/default', () => {
     const device = makeDevice();
     let sm = createInitialSM(device);
-    sm = { ...sm, activeTab: 'invalid_tab' as any, status: { kind: 'confirm-discard', pendingTab: 'schedules' } };
+    sm = {
+      ...sm,
+      activeTab: 'invalid_tab' as any,
+      status: { kind: 'confirm-discard', pendingTab: 'schedules' },
+    };
     const next = discardAndSwitch(sm, device);
     expect(next.tabs).toBe(sm.tabs);
   });
@@ -1209,9 +1213,7 @@ describe('isSubstrateEcDirty', () => {
     let sm = createInitialSM(device);
     sm = transition(sm, {
       type: 'UPDATE_EC_TARGETS_DRAFT',
-      ranges: [
-        { stage: 'seedling', minEc: 1.0, maxEc: 1.5 },
-      ],
+      ranges: [{ stage: 'seedling', minEc: 1.0, maxEc: 1.5 }],
     });
     expect(isSubstrateEcDirty(sm, device)).toBe(true);
   });
@@ -1239,9 +1241,7 @@ describe('isSubstrateEcDirty', () => {
       irrigationConfig: {
         irrigationTimes: [],
         drainTimes: [],
-        ecTargetRanges: [
-          { stage: 'seedling', minEc: 1.0, maxEc: 1.5 },
-        ],
+        ecTargetRanges: [{ stage: 'seedling', minEc: 1.0, maxEc: 1.5 }],
       },
     });
     const sm = createInitialSM(device);
@@ -1511,14 +1511,20 @@ describe('ec_ramp tab slot', () => {
 
   it('UPDATE_EC_RAMP_CURVE merges name/stage into the open draft', () => {
     let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
-    sm = transition(sm, { type: 'UPDATE_EC_RAMP_CURVE', partial: { name: 'Bloom', stage: 'flower' } });
+    sm = transition(sm, {
+      type: 'UPDATE_EC_RAMP_CURVE',
+      partial: { name: 'Bloom', stage: 'flower' },
+    });
     const sub = sm.tabs.ec_ramp.sub;
     expect(sub.kind === 'editing' && sub.draft.name).toBe('Bloom');
     expect(sub.kind === 'editing' && sub.draft.stage).toBe('flower');
   });
 
   it('UPDATE_EC_RAMP_CURVE is a no-op when not editing', () => {
-    const sm = transition(createInitialSM(), { type: 'UPDATE_EC_RAMP_CURVE', partial: { name: 'x' } });
+    const sm = transition(createInitialSM(), {
+      type: 'UPDATE_EC_RAMP_CURVE',
+      partial: { name: 'x' },
+    });
     expect(sm.tabs.ec_ramp.sub.kind).toBe('list');
   });
 
@@ -1714,7 +1720,10 @@ describe('tanks tab', () => {
 
   it('UPDATE_TANK_DRAFT merges a partial into the open draft', () => {
     let sm = transition(createInitialSM(), { type: 'EDIT_TANK', index: 0, draft });
-    sm = transition(sm, { type: 'UPDATE_TANK_DRAFT', partial: { name: 'Renamed', warningLevel: 45 } });
+    sm = transition(sm, {
+      type: 'UPDATE_TANK_DRAFT',
+      partial: { name: 'Renamed', warningLevel: 45 },
+    });
     const sub = sm.tabs.tanks.sub;
     expect(sub.kind).toBe('editing');
     if (sub.kind === 'editing') {
@@ -1778,13 +1787,19 @@ describe('ec_ramp tab', () => {
 
   it('UPDATE_EC_RAMP_CURVE merges name/stage into the open draft', () => {
     let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
-    sm = transition(sm, { type: 'UPDATE_EC_RAMP_CURVE', partial: { name: 'Bloom', stage: 'flower' } });
+    sm = transition(sm, {
+      type: 'UPDATE_EC_RAMP_CURVE',
+      partial: { name: 'Bloom', stage: 'flower' },
+    });
     const sub = sm.tabs.ec_ramp.sub;
     expect(sub.kind === 'editing' && sub.draft.name).toBe('Bloom');
   });
 
   it('UPDATE_EC_RAMP_CURVE is a no-op when not editing', () => {
-    const next = transition(createInitialSM(), { type: 'UPDATE_EC_RAMP_CURVE', partial: { name: 'x' } });
+    const next = transition(createInitialSM(), {
+      type: 'UPDATE_EC_RAMP_CURVE',
+      partial: { name: 'x' },
+    });
     expect(next.tabs.ec_ramp.sub.kind).toBe('list');
   });
 
@@ -1828,7 +1843,10 @@ describe('ec_ramp tab', () => {
   });
 
   it('SET_EC_RAMP_ERROR sets and clears the validation error', () => {
-    let sm = transition(createInitialSM(), { type: 'SET_EC_RAMP_ERROR', error: 'Curve name is required' });
+    let sm = transition(createInitialSM(), {
+      type: 'SET_EC_RAMP_ERROR',
+      error: 'Curve name is required',
+    });
     expect(sm.tabs.ec_ramp.error).toBe('Curve name is required');
     sm = transition(sm, { type: 'SET_EC_RAMP_ERROR', error: null });
     expect(sm.tabs.ec_ramp.error).toBeNull();
@@ -1851,7 +1869,12 @@ describe('ec_ramp tab', () => {
   });
 
   it('SaveRequested(save-ec-ramp-curve) carries the payload into applying status', () => {
-    const params = { curve_id: 'c1', name: 'Veg', stage: 'veg', points: [{ day: 1, target_ec: 1.2 }] };
+    const params = {
+      curve_id: 'c1',
+      name: 'Veg',
+      stage: 'veg',
+      points: [{ day: 1, target_ec: 1.2 }],
+    };
     const sm = transition(createInitialSM(), {
       type: 'SaveRequested',
       action: 'save-ec-ramp-curve',

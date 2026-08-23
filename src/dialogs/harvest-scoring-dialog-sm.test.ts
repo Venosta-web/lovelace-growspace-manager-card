@@ -66,7 +66,14 @@ describe('createInitialSM', () => {
 
   it('seeds scoring draft from provided state', () => {
     const sm = createInitialSM({
-      plant: { entity_id: 'sensor.p1', state: 'flower', attributes: {} as any, last_changed: '', last_updated: '', context: { id: '', user_id: null, parent_id: null } },
+      plant: {
+        entity_id: 'sensor.p1',
+        state: 'flower',
+        attributes: {} as any,
+        last_changed: '',
+        last_updated: '',
+        context: { id: '', user_id: null, parent_id: null },
+      },
       vigor: 4,
       internodal_spacing: 3,
       terpene_intensity: null,
@@ -113,12 +120,22 @@ describe('TabSelected', () => {
 
 describe('DraftFieldChanged — scoring', () => {
   it('sets vigor', () => {
-    const sm = transition(idleSM(), { type: 'DraftFieldChanged', tab: 'scoring', field: 'vigor', value: 3 });
+    const sm = transition(idleSM(), {
+      type: 'DraftFieldChanged',
+      tab: 'scoring',
+      field: 'vigor',
+      value: 3,
+    });
     expect(sm.tabs.scoring.draft.vigor).toBe(3);
   });
 
   it('clears vigor (toggle off)', () => {
-    let sm = transition(idleSM(), { type: 'DraftFieldChanged', tab: 'scoring', field: 'vigor', value: 3 });
+    let sm = transition(idleSM(), {
+      type: 'DraftFieldChanged',
+      tab: 'scoring',
+      field: 'vigor',
+      value: 3,
+    });
     sm = transition(sm, { type: 'DraftFieldChanged', tab: 'scoring', field: 'vigor', value: null });
     expect(sm.tabs.scoring.draft.vigor).toBeNull();
   });
@@ -144,7 +161,12 @@ describe('DraftFieldChanged — scoring', () => {
 
   it('does not affect metrics draft', () => {
     const before = idleSM();
-    const after = transition(before, { type: 'DraftFieldChanged', tab: 'scoring', field: 'vigor', value: 5 });
+    const after = transition(before, {
+      type: 'DraftFieldChanged',
+      tab: 'scoring',
+      field: 'vigor',
+      value: 5,
+    });
     expect(after.tabs.metrics).toBe(before.tabs.metrics);
   });
 });
@@ -153,7 +175,12 @@ describe('DraftFieldChanged — scoring', () => {
 
 describe('DraftFieldChanged — metrics', () => {
   it('sets wetWeight', () => {
-    const sm = transition(idleSM(), { type: 'DraftFieldChanged', tab: 'metrics', field: 'wetWeight', value: '120' });
+    const sm = transition(idleSM(), {
+      type: 'DraftFieldChanged',
+      tab: 'metrics',
+      field: 'wetWeight',
+      value: '120',
+    });
     expect(sm.tabs.metrics.draft.wetWeight).toBe('120');
   });
 
@@ -168,7 +195,12 @@ describe('DraftFieldChanged — metrics', () => {
     ];
     let sm = idleSM();
     fields.forEach((f, i) => {
-      sm = transition(sm, { type: 'DraftFieldChanged', tab: 'metrics', field: f, value: `val${i}` });
+      sm = transition(sm, {
+        type: 'DraftFieldChanged',
+        tab: 'metrics',
+        field: f,
+        value: `val${i}`,
+      });
     });
     expect(sm.tabs.metrics.draft.wetWeight).toBe('val0');
     expect(sm.tabs.metrics.draft.dryWeight).toBe('val1');
@@ -180,7 +212,12 @@ describe('DraftFieldChanged — metrics', () => {
 
   it('does not affect scoring draft', () => {
     const before = idleSM();
-    const after = transition(before, { type: 'DraftFieldChanged', tab: 'metrics', field: 'wetWeight', value: '50' });
+    const after = transition(before, {
+      type: 'DraftFieldChanged',
+      tab: 'metrics',
+      field: 'wetWeight',
+      value: '50',
+    });
     expect(after.tabs.scoring).toBe(before.tabs.scoring);
   });
 });
@@ -321,12 +358,22 @@ describe('isScoringEmpty', () => {
   });
 
   it('returns false when any score is set', () => {
-    const sm = transition(idleSM(), { type: 'DraftFieldChanged', tab: 'scoring', field: 'vigor', value: 3 });
+    const sm = transition(idleSM(), {
+      type: 'DraftFieldChanged',
+      tab: 'scoring',
+      field: 'vigor',
+      value: 3,
+    });
     expect(isScoringEmpty(sm)).toBe(false);
   });
 
   it('returns false when only one score is set', () => {
-    const sm = transition(idleSM(), { type: 'DraftFieldChanged', tab: 'scoring', field: 'resin', value: 5 });
+    const sm = transition(idleSM(), {
+      type: 'DraftFieldChanged',
+      tab: 'scoring',
+      field: 'resin',
+      value: 5,
+    });
     expect(isScoringEmpty(sm)).toBe(false);
   });
 });

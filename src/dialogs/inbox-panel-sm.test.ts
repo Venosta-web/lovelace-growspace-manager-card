@@ -5,11 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  createInitialSM,
-  transition,
-  type InboxSM,
-} from './inbox-panel-sm';
+import { createInitialSM, transition, type InboxSM } from './inbox-panel-sm';
 import type { SuggestedAction } from '../slices/ai-insight/schema';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

@@ -116,9 +116,33 @@ describe('generateSubstrateProjection', () => {
     lightsOnMin: 360,
     lightsOffMin: 1440,
     phases: [
-      { id: 'p1', label: 'P1', name: 'Saturation', start: 360, end: 420, color: '#4CAF50', target: '' },
-      { id: 'p2', label: 'P2', name: 'Maintenance', start: 420, end: 1320, color: '#2196F3', target: '' },
-      { id: 'p3', label: 'P3', name: 'Dryback', start: 1320, end: 1440, color: '#FF9800', target: '' },
+      {
+        id: 'p1',
+        label: 'P1',
+        name: 'Saturation',
+        start: 360,
+        end: 420,
+        color: '#4CAF50',
+        target: '',
+      },
+      {
+        id: 'p2',
+        label: 'P2',
+        name: 'Maintenance',
+        start: 420,
+        end: 1320,
+        color: '#2196F3',
+        target: '',
+      },
+      {
+        id: 'p3',
+        label: 'P3',
+        name: 'Dryback',
+        start: 1320,
+        end: 1440,
+        color: '#FF9800',
+        target: '',
+      },
     ],
   };
 

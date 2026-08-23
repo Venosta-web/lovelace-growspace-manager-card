@@ -368,7 +368,11 @@ describe('isTabDirty — inventory applying', () => {
   });
 
   it('returns false when inventory sub is confirm-delete', () => {
-    const sm = transition(withInventoryItemSelected(), { type: 'DeleteRequested', id: 'n1', name: 'X' });
+    const sm = transition(withInventoryItemSelected(), {
+      type: 'DeleteRequested',
+      id: 'n1',
+      name: 'X',
+    });
     expect(isTabDirty(sm, 'inventory')).toBe(false);
   });
 });
@@ -453,7 +457,16 @@ describe('EditStarted', () => {
     const before = idle();
     const after = transition(before, {
       type: 'EditStarted',
-      draft: { name: 'X', current_ml: 0, initial_ml: 0, brand: '', stockType: 'base', npk: '', dose_ml_l: 0, notes: '' },
+      draft: {
+        name: 'X',
+        current_ml: 0,
+        initial_ml: 0,
+        brand: '',
+        stockType: 'base',
+        npk: '',
+        dose_ml_l: 0,
+        notes: '',
+      },
     });
     expect(after).toBe(before);
   });
@@ -579,7 +592,11 @@ describe('ErrorDismissed', () => {
 
 describe('DeleteRequested', () => {
   it('moves inventory sub to confirm-delete', () => {
-    const sm = transition(withInventoryItemSelected(), { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    const sm = transition(withInventoryItemSelected(), {
+      type: 'DeleteRequested',
+      id: 'n1',
+      name: 'Cal-Mag',
+    });
     expect(sm.tabs.inventory.sub).toEqual({ kind: 'confirm-delete', id: 'n1', name: 'Cal-Mag' });
   });
 
@@ -600,7 +617,11 @@ describe('DeleteRequested', () => {
 
 describe('DeleteConfirmed', () => {
   it('moves sub from confirm-delete to applying', () => {
-    let sm = transition(withInventoryItemSelected(), { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    let sm = transition(withInventoryItemSelected(), {
+      type: 'DeleteRequested',
+      id: 'n1',
+      name: 'Cal-Mag',
+    });
     sm = transition(sm, { type: 'DeleteConfirmed' });
     expect(sm.tabs.inventory.sub.kind).toBe('applying');
   });
@@ -616,7 +637,11 @@ describe('DeleteConfirmed', () => {
 
 describe('DeleteResolved', () => {
   it('resets sub to idle and clears selectedId', () => {
-    let sm = transition(withInventoryItemSelected(), { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    let sm = transition(withInventoryItemSelected(), {
+      type: 'DeleteRequested',
+      id: 'n1',
+      name: 'Cal-Mag',
+    });
     sm = transition(sm, { type: 'DeleteConfirmed' });
     sm = transition(sm, { type: 'DeleteResolved' });
     expect(sm.tabs.inventory.sub.kind).toBe('idle');
@@ -624,7 +649,11 @@ describe('DeleteResolved', () => {
   });
 
   it('sets a deleted toast', () => {
-    let sm = transition(withInventoryItemSelected(), { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    let sm = transition(withInventoryItemSelected(), {
+      type: 'DeleteRequested',
+      id: 'n1',
+      name: 'Cal-Mag',
+    });
     sm = transition(sm, { type: 'DeleteConfirmed' });
     sm = transition(sm, { type: 'DeleteResolved' });
     expect(sm.toast).toBeTruthy();
@@ -641,13 +670,21 @@ describe('DeleteResolved', () => {
 
 describe('DeleteCancelled', () => {
   it('returns sub to idle', () => {
-    let sm = transition(withInventoryItemSelected('n1'), { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    let sm = transition(withInventoryItemSelected('n1'), {
+      type: 'DeleteRequested',
+      id: 'n1',
+      name: 'Cal-Mag',
+    });
     sm = transition(sm, { type: 'DeleteCancelled' });
     expect(sm.tabs.inventory.sub.kind).toBe('idle');
   });
 
   it('preserves selectedId', () => {
-    let sm = transition(withInventoryItemSelected('n1'), { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    let sm = transition(withInventoryItemSelected('n1'), {
+      type: 'DeleteRequested',
+      id: 'n1',
+      name: 'Cal-Mag',
+    });
     sm = transition(sm, { type: 'DeleteCancelled' });
     expect(sm.tabs.inventory.selectedId).toBe('n1');
   });
@@ -696,7 +733,16 @@ describe('full inventory drill-down lifecycle', () => {
 
     sm = transition(sm, {
       type: 'EditStarted',
-      draft: { name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, brand: '', stockType: 'calmag', npk: '', dose_ml_l: 2, notes: '' },
+      draft: {
+        name: 'Cal-Mag',
+        current_ml: 500,
+        initial_ml: 1000,
+        brand: '',
+        stockType: 'calmag',
+        npk: '',
+        dose_ml_l: 2,
+        notes: '',
+      },
     });
     expect(sm.tabs.inventory.sub.kind).toBe('editing');
 
@@ -725,7 +771,16 @@ describe('full inventory drill-down lifecycle', () => {
     sm = transition(sm, { type: 'ItemSelected', id: 'n1' });
     sm = transition(sm, {
       type: 'EditStarted',
-      draft: { name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, brand: '', stockType: 'calmag', npk: '', dose_ml_l: 2, notes: '' },
+      draft: {
+        name: 'Cal-Mag',
+        current_ml: 500,
+        initial_ml: 1000,
+        brand: '',
+        stockType: 'calmag',
+        npk: '',
+        dose_ml_l: 2,
+        notes: '',
+      },
     });
 
     sm = transition(sm, { type: 'TabSelected', tab: 'presets' });
@@ -932,7 +987,11 @@ describe('PresetNutrientRowUpdated', () => {
 
   it('stores name snapshot when nutrient_id is updated with a name', () => {
     let sm = withPresetsEditing();
-    sm = transition(sm, { type: 'PresetNutrientRowUpdated', index: 0, patch: { nutrient_id: 'n2', name: 'Bloom A' } });
+    sm = transition(sm, {
+      type: 'PresetNutrientRowUpdated',
+      index: 0,
+      patch: { nutrient_id: 'n2', name: 'Bloom A' },
+    });
     if (sm.tabs.presets.sub.kind === 'editing') {
       expect(sm.tabs.presets.sub.draft.nutrients[0].nutrient_id).toBe('n2');
       expect(sm.tabs.presets.sub.draft.nutrients[0].name).toBe('Bloom A');
@@ -941,7 +1000,11 @@ describe('PresetNutrientRowUpdated', () => {
 
   it('is a no-op when not editing', () => {
     const before = withPresetsItemSelected();
-    const after = transition(before, { type: 'PresetNutrientRowUpdated', index: 0, patch: { dose_ml_l: 5 } });
+    const after = transition(before, {
+      type: 'PresetNutrientRowUpdated',
+      index: 0,
+      patch: { dose_ml_l: 5 },
+    });
     expect(after).toBe(before);
   });
 });
@@ -955,7 +1018,9 @@ describe('PresetSaveRequested', () => {
   });
 
   it('preserves the draft during applying', () => {
-    const sm = transition(withPresetsEditing('p1', { name: 'Bloom' }), { type: 'PresetSaveRequested' });
+    const sm = transition(withPresetsEditing('p1', { name: 'Bloom' }), {
+      type: 'PresetSaveRequested',
+    });
     if (sm.tabs.presets.sub.kind === 'applying') {
       expect(sm.tabs.presets.sub.draft.name).toBe('Bloom');
     }
@@ -1041,19 +1106,31 @@ describe('PresetErrorDismissed', () => {
 
 describe('PresetDeleteRequested', () => {
   it('moves presets sub to confirm-delete', () => {
-    const sm = transition(withPresetsItemSelected(), { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    const sm = transition(withPresetsItemSelected(), {
+      type: 'PresetDeleteRequested',
+      id: 'p1',
+      name: 'Veg Week 1',
+    });
     expect(sm.tabs.presets.sub).toEqual({ kind: 'confirm-delete', id: 'p1', name: 'Veg Week 1' });
   });
 
   it('is a no-op when editing', () => {
     const before = withPresetsEditing();
-    const after = transition(before, { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    const after = transition(before, {
+      type: 'PresetDeleteRequested',
+      id: 'p1',
+      name: 'Veg Week 1',
+    });
     expect(after).toBe(before);
   });
 
   it('is a no-op when applying', () => {
     const applying = transition(withPresetsEditing(), { type: 'PresetSaveRequested' });
-    const after = transition(applying, { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    const after = transition(applying, {
+      type: 'PresetDeleteRequested',
+      id: 'p1',
+      name: 'Veg Week 1',
+    });
     expect(after).toBe(applying);
   });
 });
@@ -1062,7 +1139,11 @@ describe('PresetDeleteRequested', () => {
 
 describe('PresetDeleteConfirmed', () => {
   it('moves sub from confirm-delete to applying', () => {
-    let sm = transition(withPresetsItemSelected(), { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    let sm = transition(withPresetsItemSelected(), {
+      type: 'PresetDeleteRequested',
+      id: 'p1',
+      name: 'Veg Week 1',
+    });
     sm = transition(sm, { type: 'PresetDeleteConfirmed' });
     expect(sm.tabs.presets.sub.kind).toBe('applying');
   });
@@ -1078,7 +1159,11 @@ describe('PresetDeleteConfirmed', () => {
 
 describe('PresetDeleteResolved', () => {
   it('resets sub to idle and clears selectedId', () => {
-    let sm = transition(withPresetsItemSelected(), { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    let sm = transition(withPresetsItemSelected(), {
+      type: 'PresetDeleteRequested',
+      id: 'p1',
+      name: 'Veg Week 1',
+    });
     sm = transition(sm, { type: 'PresetDeleteConfirmed' });
     sm = transition(sm, { type: 'PresetDeleteResolved' });
     expect(sm.tabs.presets.sub.kind).toBe('idle');
@@ -1086,7 +1171,11 @@ describe('PresetDeleteResolved', () => {
   });
 
   it('sets a deleted toast', () => {
-    let sm = transition(withPresetsItemSelected(), { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    let sm = transition(withPresetsItemSelected(), {
+      type: 'PresetDeleteRequested',
+      id: 'p1',
+      name: 'Veg Week 1',
+    });
     sm = transition(sm, { type: 'PresetDeleteConfirmed' });
     sm = transition(sm, { type: 'PresetDeleteResolved' });
     expect(sm.toast).toBeTruthy();
@@ -1103,13 +1192,21 @@ describe('PresetDeleteResolved', () => {
 
 describe('PresetDeleteCancelled', () => {
   it('returns sub to idle', () => {
-    let sm = transition(withPresetsItemSelected('p1'), { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    let sm = transition(withPresetsItemSelected('p1'), {
+      type: 'PresetDeleteRequested',
+      id: 'p1',
+      name: 'Veg Week 1',
+    });
     sm = transition(sm, { type: 'PresetDeleteCancelled' });
     expect(sm.tabs.presets.sub.kind).toBe('idle');
   });
 
   it('preserves selectedId', () => {
-    let sm = transition(withPresetsItemSelected('p1'), { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    let sm = transition(withPresetsItemSelected('p1'), {
+      type: 'PresetDeleteRequested',
+      id: 'p1',
+      name: 'Veg Week 1',
+    });
     sm = transition(sm, { type: 'PresetDeleteCancelled' });
     expect(sm.tabs.presets.selectedId).toBe('p1');
   });
@@ -1170,7 +1267,14 @@ describe('full presets drill-down lifecycle', () => {
 
     sm = transition(sm, {
       type: 'PresetEditStarted',
-      draft: { name: 'Veg Week 1', stage: 'veg', week: 1, ec_target: 1.2, ph_target: 6.0, nutrients: [] },
+      draft: {
+        name: 'Veg Week 1',
+        stage: 'veg',
+        week: 1,
+        ec_target: 1.2,
+        ph_target: 6.0,
+        nutrients: [],
+      },
     });
     expect(sm.tabs.presets.sub.kind).toBe('editing');
 
@@ -1194,7 +1298,6 @@ describe('full presets drill-down lifecycle', () => {
     expect(sm.tabs.presets.selectedId).toBeNull();
   });
 });
-
 
 // ─── adHocOpen (ad-hoc nutrients toggle) ─────────────────────────────────────
 

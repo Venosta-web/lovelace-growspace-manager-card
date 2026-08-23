@@ -55,7 +55,10 @@ export function deriveConfigDialogCapabilities(
   // other field along with it, so the dialog must not let the save start.
   if (
     isEnvironmentSaveBlockedByBand(
-      { soilMoistureMin: draft.soilMoistureMin ?? null, soilMoistureMax: draft.soilMoistureMax ?? null },
+      {
+        soilMoistureMin: draft.soilMoistureMin ?? null,
+        soilMoistureMax: draft.soilMoistureMax ?? null,
+      },
       dirty
     )
   ) {
