@@ -1,3 +1,10 @@
+## [1.1.6-next.5](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.4...v1.1.6-next.5) (2026-08-23)
+
+
+### Bug Fixes
+
+* preserve HA contexts for dialog pickers ([#729](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/729)) ([00b7b0b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/00b7b0b26d5f97552f0eb8337c5d431d0d0070d1))
+
 ## [1.1.6-next.4](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.3...v1.1.6-next.4) (2026-08-23)
 
 
