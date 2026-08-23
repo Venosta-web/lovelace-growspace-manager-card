@@ -69,19 +69,28 @@ If either check fails, the link is removed and that worktree must run its own `n
 dependency drift therefore fails closed instead of silently using another branch's
 hoisting or peer-dependency resolution.
 
-Treat a shared link as read-only: never run `npm ci`, `npm install`, `npm rebuild`,
-`patch-package`, or dependency postinstall tooling through it. When changing dependencies,
-unlink `node_modules`, run `npm ci` in the worktree, and keep that real directory private.
+Never run dependency-mutating npm commands through a shared link. That is a rule, not a
+guarantee — the mechanics split in two. Measured: `npm ci` and `npm install` delete the link and put a private install in its place, leaving the main checkout's tree
+untouched. `npm rebuild`, `patch-package`, and dependency postinstalls leave the link
+intact and **write straight through into the main checkout's dependency tree**. That second
+class never runs the root package's `preinstall` script, so **no npm hook can catch it**;
+the risk is accepted and unguardable, not covered. If it happens, repair it with `npm ci`
+in the main card checkout. When changing dependencies deliberately, unlink `node_modules`,
+run `npm ci` in the worktree, and keep that real directory private.
+
 Vite's optimiser cache and browser-test reports live under the checkout-local `.cache/`,
 not under `node_modules`, and the Vitest commands use Vite's runner config loader so it does
 not create `node_modules/.vite-temp`. Concurrent worktrees therefore do not contend on
 writable test caches.
 
-This policy was measured for issue #706 on 2026-08-22: the dereferenced dependency tree was
-465 MB on ext4, a warm offline `npm ci` took 2.4 s, and the hash + dry-run guard took
-0.47 s. Lockfile changes were uncommon (two on `dev`'s first-parent history in the
-preceding 90 days and no additional changes back to 180 days), making guarded sharing the
-common path without accepting drift.
+The decision, the measurements behind it (465 MB tree, 2.4 s warm private `npm ci`, 0.47 s
+guard, two lockfile changes on `dev` in 90 days), and the accepted risk are recorded in the
+hub's ADR — `growspace_manager_workspace/docs/adr/0001-guarded-shared-card-dependencies.md`
+([online](https://github.com/Venosta-web/growspace_manager_workspace/blob/main/docs/adr/0001-guarded-shared-card-dependencies.md)),
+from issue #706. It also sets the ownership boundary this repo works under: **the hub heals,
+the card detects.** Hub setup may create, re-link, or remove a shared link; a check on this
+side may refuse to run against a mismatched tree, but must never create or repair a link —
+sharing one checkout's dependencies with another is hub policy.
 
 ## Architecture
 
