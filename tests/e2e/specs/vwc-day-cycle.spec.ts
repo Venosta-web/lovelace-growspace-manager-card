@@ -106,7 +106,7 @@ async function assertTankAboveCutoff(page: Page, slug: string, when: string): Pr
       `${TANK_WARNING_PERCENT}% cutoff. Every shot is skipped while it is ` +
       `("Irrigation skipped — tank 'Tank' is low"), so the pump can never turn on. ` +
       `beforeEach sets it to ${TANK_READY_PERCENT}% — check that the ` +
-      `input_number.set_value call landed.`,
+      `input_number.set_value call landed.`
   );
 }
 
@@ -155,7 +155,7 @@ async function waitForPumpOn(
   page: Page,
   slug: string,
   pumpEntity: string,
-  timeoutMs = 90_000,
+  timeoutMs = 90_000
 ): Promise<void> {
   await assertTankAboveCutoff(page, slug, 'before waiting for a shot');
   const deadline = Date.now() + timeoutMs;
@@ -170,7 +170,7 @@ async function waitForPumpOn(
     throw new Error(
       `Entity ${pumpEntity} expected "on" but got "${final}" after ${timeoutMs}ms ` +
         `(tank at ${level}%, cutoff ${TANK_WARNING_PERCENT}%) — ` +
-        `${await steeringDiagnostics(page, slug)}`,
+        `${await steeringDiagnostics(page, slug)}`
     );
   }
 }
@@ -183,7 +183,7 @@ async function assertEntityStaysInState(
   page: Page,
   entityId: string,
   expected: string,
-  durationMs = 70_000,
+  durationMs = 70_000
 ): Promise<void> {
   const deadline = Date.now() + durationMs;
   while (Date.now() < deadline) {
@@ -216,7 +216,7 @@ async function setTankLevel(page: Page, slug: string, value: number): Promise<vo
 function strategyPayload(
   growspaceId: string,
   lightsOnTime: string,
-  target: number,
+  target: number
 ): Record<string, unknown> {
   return {
     growspace_id: growspaceId,
@@ -274,7 +274,7 @@ for (const gs of gsConfigs) {
         page,
         'growspace_manager',
         'set_irrigation_strategy',
-        strategyPayload(growspaceId, '06:00:00', gs.target),
+        strategyPayload(growspaceId, '06:00:00', gs.target)
       );
 
       // Reset irrigation settings — clear flags like pause_on_low_tank / auto_advance_p2_to_p3
@@ -316,7 +316,7 @@ for (const gs of gsConfigs) {
         page,
         'growspace_manager',
         'set_irrigation_strategy',
-        strategyPayload(growspaceId, lightsOn, gs.target),
+        strategyPayload(growspaceId, lightsOn, gs.target)
       );
 
       // VWC well below target — should still not trigger in P3
@@ -339,7 +339,7 @@ for (const gs of gsConfigs) {
         page,
         'growspace_manager',
         'set_irrigation_strategy',
-        strategyPayload(growspaceId, lightsOn, gs.target),
+        strategyPayload(growspaceId, lightsOn, gs.target)
       );
 
       // VWC well below target — should still not trigger during P0
@@ -362,7 +362,7 @@ for (const gs of gsConfigs) {
         page,
         'growspace_manager',
         'set_irrigation_strategy',
-        strategyPayload(growspaceId, lightsOn, gs.target),
+        strategyPayload(growspaceId, lightsOn, gs.target)
       );
 
       // Drop VWC well below target to trigger an irrigation shot
@@ -392,7 +392,7 @@ for (const gs of gsConfigs) {
         page,
         'growspace_manager',
         'set_irrigation_strategy',
-        strategyPayload(growspaceId, lightsOn, gs.target),
+        strategyPayload(growspaceId, lightsOn, gs.target)
       );
 
       // Tick 1: VWC at target → coordinator marks target_reached_today = True.
@@ -434,7 +434,7 @@ for (const gs of gsConfigs) {
         page,
         'growspace_manager',
         'set_irrigation_strategy',
-        strategyPayload(growspaceId, p1LightsOn, gs.target),
+        strategyPayload(growspaceId, p1LightsOn, gs.target)
       );
       await callHAService(page, 'growspace_manager', 'set_irrigation_settings', {
         growspace_id: growspaceId,
@@ -456,7 +456,7 @@ for (const gs of gsConfigs) {
         page,
         'growspace_manager',
         'set_irrigation_strategy',
-        strategyPayload(growspaceId, p2StopLightsOn, gs.target),
+        strategyPayload(growspaceId, p2StopLightsOn, gs.target)
       );
 
       // VWC below dryback — would trigger in P2, but P2-stop guard must suppress it
@@ -491,7 +491,7 @@ for (const gs of gsConfigs) {
         page,
         'growspace_manager',
         'set_irrigation_strategy',
-        strategyPayload(growspaceId, lightsOn, gs.target),
+        strategyPayload(growspaceId, lightsOn, gs.target)
       );
 
       // VWC well below target — would normally trigger an irrigation shot
