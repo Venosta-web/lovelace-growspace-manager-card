@@ -48,7 +48,7 @@ describe('plant-drying-tab', () => {
     expect(stats).to.exist;
 
     // We expect stats to render values correctly
-    const texts = Array.from(stats || []).map(s => s.textContent);
+    const texts = Array.from(stats || []).map((s) => s.textContent);
     expect(texts).to.contain('Current weight');
     expect(texts).to.contain('45.5 g');
     expect(texts).to.contain('Weight lost');
@@ -75,7 +75,9 @@ describe('plant-drying-tab', () => {
     (el as any).store = mockStore;
     await el.updateComplete;
 
-    const texts = Array.from(el.shadowRoot?.querySelectorAll('span') || []).map(s => s.textContent);
+    const texts = Array.from(el.shadowRoot?.querySelectorAll('span') || []).map(
+      (s) => s.textContent
+    );
     expect(texts).to.contain('✓ Yes');
   });
 
@@ -240,7 +242,9 @@ describe('plant-drying-tab', () => {
 
     const buttons = el.shadowRoot?.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
     // The second button is "Log weight"
-    const logWeightBtn = Array.from(buttons).find(b => b.textContent?.trim() === 'Log weight') as HTMLButtonElement;
+    const logWeightBtn = Array.from(buttons).find(
+      (b) => b.textContent?.trim() === 'Log weight'
+    ) as HTMLButtonElement;
     expect(logWeightBtn).to.exist;
 
     logWeightBtn.click();
@@ -269,7 +273,9 @@ describe('plant-drying-tab', () => {
     await el.updateComplete;
 
     const buttons = el.shadowRoot?.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
-    const logWeightBtn = Array.from(buttons).find(b => b.textContent?.trim() === 'Log weight') as HTMLButtonElement;
+    const logWeightBtn = Array.from(buttons).find(
+      (b) => b.textContent?.trim() === 'Log weight'
+    ) as HTMLButtonElement;
 
     logWeightBtn.click();
     await el.updateComplete;
@@ -304,8 +310,12 @@ describe('plant-drying-tab', () => {
     `);
     await el.updateComplete;
 
-    const numberInput = el.shadowRoot?.querySelector('input[placeholder="Moisture (%)"]') as HTMLInputElement;
-    const dateInputs = el.shadowRoot?.querySelectorAll('input[type="date"]') as NodeListOf<HTMLInputElement>;
+    const numberInput = el.shadowRoot?.querySelector(
+      'input[placeholder="Moisture (%)"]'
+    ) as HTMLInputElement;
+    const dateInputs = el.shadowRoot?.querySelectorAll(
+      'input[type="date"]'
+    ) as NodeListOf<HTMLInputElement>;
     const dateInput = dateInputs[1];
 
     expect(numberInput).to.exist;
@@ -335,7 +345,9 @@ describe('plant-drying-tab', () => {
     await el.updateComplete;
 
     const buttons = el.shadowRoot?.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
-    const logMoistureBtn = Array.from(buttons).find(b => b.textContent?.trim() === 'Log moisture') as HTMLButtonElement;
+    const logMoistureBtn = Array.from(buttons).find(
+      (b) => b.textContent?.trim() === 'Log moisture'
+    ) as HTMLButtonElement;
     expect(logMoistureBtn).to.exist;
 
     logMoistureBtn.click();
@@ -364,7 +376,9 @@ describe('plant-drying-tab', () => {
     await el.updateComplete;
 
     const buttons = el.shadowRoot?.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
-    const logMoistureBtn = Array.from(buttons).find(b => b.textContent?.trim() === 'Log moisture') as HTMLButtonElement;
+    const logMoistureBtn = Array.from(buttons).find(
+      (b) => b.textContent?.trim() === 'Log moisture'
+    ) as HTMLButtonElement;
 
     logMoistureBtn.click();
     await el.updateComplete;
@@ -424,9 +438,7 @@ describe('plant-drying-tab', () => {
     });
 
     it('returns empty string if plant is not defined or attributes are empty', async () => {
-      const el = await fixture<PlantDryingTab>(html`
-        <plant-drying-tab></plant-drying-tab>
-      `);
+      const el = await fixture<PlantDryingTab>(html` <plant-drying-tab></plant-drying-tab> `);
       expect((el as any)._plantId()).to.equal('');
     });
   });

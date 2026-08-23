@@ -66,7 +66,9 @@ test.describe('VWC strategy — Schedules tab conditional display', () => {
     await expect(dialog.getNumberField('Maintenance Dryback (%)')).toHaveValue(
       String(SENTINEL.maintenanceDrybackPercent)
     );
-    await expect(dialog.getNumberField('P0 Duration (min)')).toHaveValue(String(SENTINEL.p0DurationMinutes));
+    await expect(dialog.getNumberField('P0 Duration (min)')).toHaveValue(
+      String(SENTINEL.p0DurationMinutes)
+    );
     await expect(dialog.getNumberField('P2 Stop Buffer (min)')).toHaveValue(
       String(SENTINEL.p2StopBeforeLightsOffMinutes)
     );
@@ -113,7 +115,10 @@ test.describe('VWC strategy — Schedules tab conditional display', () => {
     await expect(dialog.getLightsOnTimeReadout()).toHaveText(SENTINEL_TIME);
   });
 
-  test('shows steering nudge when VWC disabled, shows schedule card after enabling', async ({ page, testContext }) => {
+  test('shows steering nudge when VWC disabled, shows schedule card after enabling', async ({
+    page,
+    testContext,
+  }) => {
     await growspaceCard.clickMenuItem(/irrigation/i);
     const dialog = new IrrigationDialog(page);
     await dialog.waitForOpen();

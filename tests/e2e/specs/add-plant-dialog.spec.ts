@@ -27,10 +27,11 @@ async function cleanupNonAnchorPlants(page: Page, growspaceId: string): Promise<
     { t: token }
   );
   const plantIds = states
-    .filter((s) =>
-      s.attributes?.plant_id &&
-      s.attributes?.growspace_id === growspaceId &&
-      !(s.attributes?.row === 1 && s.attributes?.col === 1)
+    .filter(
+      (s) =>
+        s.attributes?.plant_id &&
+        s.attributes?.growspace_id === growspaceId &&
+        !(s.attributes?.row === 1 && s.attributes?.col === 1)
     )
     .map((s) => s.attributes.plant_id as string);
 
@@ -58,7 +59,7 @@ test.describe('Add Plant Dialog', () => {
     if (!testContext.vegGrowspaceId || !testContext.vegDashboardPath) {
       throw new Error(
         'TEST_VEG_GROWSPACE_ID and TEST_VEG_DASHBOARD_PATH must be set in .env.test. ' +
-        'Run fixtures/e2e-setup.ts to create the e2e growspaces.'
+          'Run fixtures/e2e-setup.ts to create the e2e growspaces.'
       );
     }
 
@@ -103,7 +104,9 @@ test.describe('Add Plant Dialog', () => {
     await dialog.waitForClosed();
 
     // Anchor + new plant = 2 cards with TEST_STRAIN
-    const plantCards = growspaceCard.card.locator('plant-card-container').filter({ hasText: TEST_STRAIN });
+    const plantCards = growspaceCard.card
+      .locator('plant-card-container')
+      .filter({ hasText: TEST_STRAIN });
     await expect(plantCards).toHaveCount(2, { timeout: 8000 });
 
     // Reload — verify the backend persisted the plant

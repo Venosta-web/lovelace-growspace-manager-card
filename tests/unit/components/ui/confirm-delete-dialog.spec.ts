@@ -4,205 +4,207 @@ import { ConfirmDeleteDialog } from '../../../../src/features/shared/ui/confirm-
 import '../../../../src/features/shared/ui/confirm-delete-dialog';
 
 describe('ConfirmDeleteDialog', () => {
-    let element: ConfirmDeleteDialog;
+  let element: ConfirmDeleteDialog;
 
-    beforeEach(async () => {
-        element = await fixture(html`<confirm-delete-dialog></confirm-delete-dialog>`);
-    });
+  beforeEach(async () => {
+    element = await fixture(html`<confirm-delete-dialog></confirm-delete-dialog>`);
+  });
 
-    it('should not render when open is false', async () => {
-        element.open = false;
-        await element.updateComplete;
+  it('should not render when open is false', async () => {
+    element.open = false;
+    await element.updateComplete;
 
-        const overlay = element.shadowRoot?.querySelector('.overlay');
-        expect(overlay).toBeNull();
-    });
+    const overlay = element.shadowRoot?.querySelector('.overlay');
+    expect(overlay).toBeNull();
+  });
 
-    it('should render when open is true', async () => {
-        element.open = true;
-        await element.updateComplete;
+  it('should render when open is true', async () => {
+    element.open = true;
+    await element.updateComplete;
 
-        const overlay = element.shadowRoot?.querySelector('.overlay');
-        expect(overlay).toBeTruthy();
-    });
+    const overlay = element.shadowRoot?.querySelector('.overlay');
+    expect(overlay).toBeTruthy();
+  });
 
-    it('should display default title and message', async () => {
-        element.open = true;
-        await element.updateComplete;
+  it('should display default title and message', async () => {
+    element.open = true;
+    await element.updateComplete;
 
-        const title = element.shadowRoot?.querySelector('h2');
-        const message = element.shadowRoot?.querySelector('p');
+    const title = element.shadowRoot?.querySelector('h2');
+    const message = element.shadowRoot?.querySelector('p');
 
-        expect(title?.textContent).toBe('Confirm Deletion');
-        expect(message?.textContent).toBe('Are you sure you want to delete this entry? This action cannot be undone.');
-    });
+    expect(title?.textContent).toBe('Confirm Deletion');
+    expect(message?.textContent).toBe(
+      'Are you sure you want to delete this entry? This action cannot be undone.'
+    );
+  });
 
-    it('should display custom title and message', async () => {
-        element.title = 'Delete Plant';
-        element.message = 'Are you sure you want to delete this plant?';
-        element.open = true;
-        await element.updateComplete;
+  it('should display custom title and message', async () => {
+    element.title = 'Delete Plant';
+    element.message = 'Are you sure you want to delete this plant?';
+    element.open = true;
+    await element.updateComplete;
 
-        const title = element.shadowRoot?.querySelector('h2');
-        const message = element.shadowRoot?.querySelector('p');
+    const title = element.shadowRoot?.querySelector('h2');
+    const message = element.shadowRoot?.querySelector('p');
 
-        expect(title?.textContent).toBe('Delete Plant');
-        expect(message?.textContent).toBe('Are you sure you want to delete this plant?');
-    });
+    expect(title?.textContent).toBe('Delete Plant');
+    expect(message?.textContent).toBe('Are you sure you want to delete this plant?');
+  });
 
-    it('should dispatch cancel event when cancel button is clicked', async () => {
-        element.open = true;
-        await element.updateComplete;
+  it('should dispatch cancel event when cancel button is clicked', async () => {
+    element.open = true;
+    await element.updateComplete;
 
-        const eventSpy = vi.fn();
-        element.addEventListener('cancel', eventSpy);
+    const eventSpy = vi.fn();
+    element.addEventListener('cancel', eventSpy);
 
-        const cancelBtn = element.shadowRoot?.querySelector('.cancel-btn') as HTMLButtonElement;
-        cancelBtn.click();
+    const cancelBtn = element.shadowRoot?.querySelector('.cancel-btn') as HTMLButtonElement;
+    cancelBtn.click();
 
-        expect(eventSpy).toHaveBeenCalled();
-        expect(element.open).toBe(false);
-    });
+    expect(eventSpy).toHaveBeenCalled();
+    expect(element.open).toBe(false);
+  });
 
-    it('should dispatch confirm event when delete button is clicked', async () => {
-        element.open = true;
-        await element.updateComplete;
+  it('should dispatch confirm event when delete button is clicked', async () => {
+    element.open = true;
+    await element.updateComplete;
 
-        const eventSpy = vi.fn();
-        element.addEventListener('confirm', eventSpy);
+    const eventSpy = vi.fn();
+    element.addEventListener('confirm', eventSpy);
 
-        const deleteBtn = element.shadowRoot?.querySelector('.delete-btn') as HTMLButtonElement;
-        deleteBtn.click();
+    const deleteBtn = element.shadowRoot?.querySelector('.delete-btn') as HTMLButtonElement;
+    deleteBtn.click();
 
-        expect(eventSpy).toHaveBeenCalled();
-        expect(element.open).toBe(false);
-    });
+    expect(eventSpy).toHaveBeenCalled();
+    expect(element.open).toBe(false);
+  });
 
-    it('should close dialog when overlay is clicked', async () => {
-        element.open = true;
-        await element.updateComplete;
+  it('should close dialog when overlay is clicked', async () => {
+    element.open = true;
+    await element.updateComplete;
 
-        const eventSpy = vi.fn();
-        element.addEventListener('cancel', eventSpy);
+    const eventSpy = vi.fn();
+    element.addEventListener('cancel', eventSpy);
 
-        const overlay = element.shadowRoot?.querySelector('.overlay') as HTMLElement;
-        overlay.click();
+    const overlay = element.shadowRoot?.querySelector('.overlay') as HTMLElement;
+    overlay.click();
 
-        expect(eventSpy).toHaveBeenCalled();
-        expect(element.open).toBe(false);
-    });
+    expect(eventSpy).toHaveBeenCalled();
+    expect(element.open).toBe(false);
+  });
 
-    it('should not close dialog when dialog content is clicked', async () => {
-        element.open = true;
-        await element.updateComplete;
+  it('should not close dialog when dialog content is clicked', async () => {
+    element.open = true;
+    await element.updateComplete;
 
-        const eventSpy = vi.fn();
-        element.addEventListener('cancel', eventSpy);
+    const eventSpy = vi.fn();
+    element.addEventListener('cancel', eventSpy);
 
-        const dialog = element.shadowRoot?.querySelector('.dialog') as HTMLElement;
-        dialog.click();
+    const dialog = element.shadowRoot?.querySelector('.dialog') as HTMLElement;
+    dialog.click();
 
-        expect(eventSpy).not.toHaveBeenCalled();
-        expect(element.open).toBe(true);
-    });
+    expect(eventSpy).not.toHaveBeenCalled();
+    expect(element.open).toBe(true);
+  });
 
-    it('should stop propagation on cancel button click', async () => {
-        element.open = true;
-        await element.updateComplete;
+  it('should stop propagation on cancel button click', async () => {
+    element.open = true;
+    await element.updateComplete;
 
-        const cancelBtn = element.shadowRoot?.querySelector('.cancel-btn') as HTMLButtonElement;
-        const clickEvent = new MouseEvent('click', { bubbles: true });
-        const stopPropSpy = vi.spyOn(clickEvent, 'stopPropagation');
+    const cancelBtn = element.shadowRoot?.querySelector('.cancel-btn') as HTMLButtonElement;
+    const clickEvent = new MouseEvent('click', { bubbles: true });
+    const stopPropSpy = vi.spyOn(clickEvent, 'stopPropagation');
 
-        cancelBtn.dispatchEvent(clickEvent);
+    cancelBtn.dispatchEvent(clickEvent);
 
-        expect(stopPropSpy).toHaveBeenCalled();
-    });
+    expect(stopPropSpy).toHaveBeenCalled();
+  });
 
-    it('should stop propagation on confirm button click', async () => {
-        element.open = true;
-        await element.updateComplete;
+  it('should stop propagation on confirm button click', async () => {
+    element.open = true;
+    await element.updateComplete;
 
-        const deleteBtn = element.shadowRoot?.querySelector('.delete-btn') as HTMLButtonElement;
-        const clickEvent = new MouseEvent('click', { bubbles: true });
-        const stopPropSpy = vi.spyOn(clickEvent, 'stopPropagation');
+    const deleteBtn = element.shadowRoot?.querySelector('.delete-btn') as HTMLButtonElement;
+    const clickEvent = new MouseEvent('click', { bubbles: true });
+    const stopPropSpy = vi.spyOn(clickEvent, 'stopPropagation');
 
-        deleteBtn.dispatchEvent(clickEvent);
+    deleteBtn.dispatchEvent(clickEvent);
 
-        expect(stopPropSpy).toHaveBeenCalled();
-    });
+    expect(stopPropSpy).toHaveBeenCalled();
+  });
 
-    it('should render cancel button with icon', async () => {
-        element.open = true;
-        await element.updateComplete;
+  it('should render cancel button with icon', async () => {
+    element.open = true;
+    await element.updateComplete;
 
-        const cancelBtn = element.shadowRoot?.querySelector('.cancel-btn');
-        const svg = cancelBtn?.querySelector('svg');
+    const cancelBtn = element.shadowRoot?.querySelector('.cancel-btn');
+    const svg = cancelBtn?.querySelector('svg');
 
-        expect(svg).toBeTruthy();
-        expect(cancelBtn?.textContent).toContain('Cancel');
-    });
+    expect(svg).toBeTruthy();
+    expect(cancelBtn?.textContent).toContain('Cancel');
+  });
 
-    it('should render delete button with icon', async () => {
-        element.open = true;
-        await element.updateComplete;
+  it('should render delete button with icon', async () => {
+    element.open = true;
+    await element.updateComplete;
 
-        const deleteBtn = element.shadowRoot?.querySelector('.delete-btn');
-        const svg = deleteBtn?.querySelector('svg');
+    const deleteBtn = element.shadowRoot?.querySelector('.delete-btn');
+    const svg = deleteBtn?.querySelector('svg');
 
-        expect(svg).toBeTruthy();
-        expect(deleteBtn?.textContent).toContain('Delete');
-    });
+    expect(svg).toBeTruthy();
+    expect(deleteBtn?.textContent).toContain('Delete');
+  });
 
-    it('should handle rapid open/close cycles', async () => {
-        element.open = true;
-        await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('.overlay')).toBeTruthy();
+  it('should handle rapid open/close cycles', async () => {
+    element.open = true;
+    await element.updateComplete;
+    expect(element.shadowRoot?.querySelector('.overlay')).toBeTruthy();
 
-        element.open = false;
-        await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('.overlay')).toBeNull();
+    element.open = false;
+    await element.updateComplete;
+    expect(element.shadowRoot?.querySelector('.overlay')).toBeNull();
 
-        element.open = true;
-        await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('.overlay')).toBeTruthy();
-    });
+    element.open = true;
+    await element.updateComplete;
+    expect(element.shadowRoot?.querySelector('.overlay')).toBeTruthy();
+  });
 
-    it('should handle overlay click with correct target detection', async () => {
-        element.open = true;
-        await element.updateComplete;
+  it('should handle overlay click with correct target detection', async () => {
+    element.open = true;
+    await element.updateComplete;
 
-        const eventSpy = vi.fn();
-        element.addEventListener('cancel', eventSpy);
+    const eventSpy = vi.fn();
+    element.addEventListener('cancel', eventSpy);
 
-        // Click on overlay (target === currentTarget)
-        const overlay = element.shadowRoot?.querySelector('.overlay') as HTMLElement;
-        const overlayEvent = new MouseEvent('click', { bubbles: true });
-        Object.defineProperty(overlayEvent, 'target', { value: overlay, configurable: true });
-        Object.defineProperty(overlayEvent, 'currentTarget', { value: overlay, configurable: true });
+    // Click on overlay (target === currentTarget)
+    const overlay = element.shadowRoot?.querySelector('.overlay') as HTMLElement;
+    const overlayEvent = new MouseEvent('click', { bubbles: true });
+    Object.defineProperty(overlayEvent, 'target', { value: overlay, configurable: true });
+    Object.defineProperty(overlayEvent, 'currentTarget', { value: overlay, configurable: true });
 
-        overlay.dispatchEvent(overlayEvent);
+    overlay.dispatchEvent(overlayEvent);
 
-        expect(eventSpy).toHaveBeenCalled();
-    });
+    expect(eventSpy).toHaveBeenCalled();
+  });
 
-    it('should not trigger cancel when clicking on nested element in overlay', async () => {
-        element.open = true;
-        await element.updateComplete;
+  it('should not trigger cancel when clicking on nested element in overlay', async () => {
+    element.open = true;
+    await element.updateComplete;
 
-        const eventSpy = vi.fn();
-        element.addEventListener('cancel', eventSpy);
+    const eventSpy = vi.fn();
+    element.addEventListener('cancel', eventSpy);
 
-        // Click on dialog within overlay (target !== currentTarget)
-        const overlay = element.shadowRoot?.querySelector('.overlay') as HTMLElement;
-        const dialog = element.shadowRoot?.querySelector('.dialog') as HTMLElement;
+    // Click on dialog within overlay (target !== currentTarget)
+    const overlay = element.shadowRoot?.querySelector('.overlay') as HTMLElement;
+    const dialog = element.shadowRoot?.querySelector('.dialog') as HTMLElement;
 
-        const nestedEvent = new MouseEvent('click', { bubbles: true });
-        Object.defineProperty(nestedEvent, 'target', { value: dialog, configurable: true });
-        Object.defineProperty(nestedEvent, 'currentTarget', { value: overlay, configurable: true });
+    const nestedEvent = new MouseEvent('click', { bubbles: true });
+    Object.defineProperty(nestedEvent, 'target', { value: dialog, configurable: true });
+    Object.defineProperty(nestedEvent, 'currentTarget', { value: overlay, configurable: true });
 
-        overlay.dispatchEvent(nestedEvent);
+    overlay.dispatchEvent(nestedEvent);
 
-        expect(eventSpy).not.toHaveBeenCalled();
-    });
+    expect(eventSpy).not.toHaveBeenCalled();
+  });
 });

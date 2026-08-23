@@ -21,13 +21,10 @@ export async function callHAService(
 ): Promise<any> {
   const baseURL = process.env.HA_BASE_URL || 'http://localhost:8123';
   const token = process.env.HA_ACCESS_TOKEN;
-  const response = await page.request.post(
-    `${baseURL}/api/services/${domain}/${service}`,
-    {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      data: serviceData,
-    }
-  );
+  const response = await page.request.post(`${baseURL}/api/services/${domain}/${service}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    data: serviceData,
+  });
   if (!response.ok()) {
     throw new Error(`callHAService failed: ${response.status()} ${await response.text()}`);
   }

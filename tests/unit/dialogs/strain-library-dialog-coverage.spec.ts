@@ -143,11 +143,17 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
 
       // Simulate the event from strain-editor-view being forwarded by dialog
       const editorView = element.shadowRoot?.querySelector('strain-editor-view');
-      editorView?.dispatchEvent(new CustomEvent('strain-created-at-source', {
-        bubbles: true,
-        composed: true,
-        detail: { strain: { strain: 'Quick Strain', type: 'Indica' }, source: 'add-plant-dialog', returnPayload: { extra: 'data' } }
-      }));
+      editorView?.dispatchEvent(
+        new CustomEvent('strain-created-at-source', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            strain: { strain: 'Quick Strain', type: 'Indica' },
+            source: 'add-plant-dialog',
+            returnPayload: { extra: 'data' },
+          },
+        })
+      );
 
       expect(sourceHandler).toHaveBeenCalled();
       const detail = sourceHandler.mock.calls[0][0].detail;
@@ -186,7 +192,9 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
     it('starts breeder edit on card click', async () => {
       const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
       const cards = gsBreederManager?.shadowRoot?.querySelectorAll('.breeder-card');
-      const hsoCard = (Array.from(cards || []) as HTMLElement[]).find(c => c.textContent?.includes('HSO'))!;
+      const hsoCard = (Array.from(cards || []) as HTMLElement[]).find((c) =>
+        c.textContent?.includes('HSO')
+      )!;
       hsoCard.click();
       await gsBreederManager?.updateComplete;
 
@@ -197,10 +205,23 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
 
     it('saves new breeder', async () => {
       const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-      const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
-      gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: undefined, logo: 'new-logo' });
-      gsBreederManager._sm = t(gsBreederManager._sm, { type: 'FIELD_CHANGED', field: 'name', value: 'New Breeder' });
-      gsBreederManager._sm = t(gsBreederManager._sm, { type: 'FIELD_CHANGED', field: 'logo', value: 'new-logo' });
+      const { transition: t, createInitialSM } =
+        await import('../../../src/dialogs/gs-breeder-manager-sm');
+      gsBreederManager._sm = t(createInitialSM(), {
+        type: 'EDIT_REQUESTED',
+        name: undefined,
+        logo: 'new-logo',
+      });
+      gsBreederManager._sm = t(gsBreederManager._sm, {
+        type: 'FIELD_CHANGED',
+        field: 'name',
+        value: 'New Breeder',
+      });
+      gsBreederManager._sm = t(gsBreederManager._sm, {
+        type: 'FIELD_CHANGED',
+        field: 'logo',
+        value: 'new-logo',
+      });
       gsBreederManager.requestUpdate?.();
       await gsBreederManager?.updateComplete;
 
@@ -219,10 +240,23 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
 
     it('updates existing breeder', async () => {
       const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-      const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
-      gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'HSO', logo: 'new-logo' });
-      gsBreederManager._sm = t(gsBreederManager._sm, { type: 'FIELD_CHANGED', field: 'name', value: 'HSO Updated' });
-      gsBreederManager._sm = t(gsBreederManager._sm, { type: 'FIELD_CHANGED', field: 'logo', value: 'new-logo' });
+      const { transition: t, createInitialSM } =
+        await import('../../../src/dialogs/gs-breeder-manager-sm');
+      gsBreederManager._sm = t(createInitialSM(), {
+        type: 'EDIT_REQUESTED',
+        name: 'HSO',
+        logo: 'new-logo',
+      });
+      gsBreederManager._sm = t(gsBreederManager._sm, {
+        type: 'FIELD_CHANGED',
+        field: 'name',
+        value: 'HSO Updated',
+      });
+      gsBreederManager._sm = t(gsBreederManager._sm, {
+        type: 'FIELD_CHANGED',
+        field: 'logo',
+        value: 'new-logo',
+      });
       gsBreederManager.requestUpdate?.();
       await gsBreederManager?.updateComplete;
 
@@ -252,9 +286,11 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       gsBreederManager?._confirmDelete();
       await element.updateComplete;
 
-      expect(deleteHandler).toHaveBeenCalledWith(expect.objectContaining({
-        detail: { name: 'HSO' }
-      }));
+      expect(deleteHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: { name: 'HSO' },
+        })
+      );
       expect(gsBreederManager?._sm.views.list.sub.kind).toBe('idle');
     });
 
@@ -268,12 +304,19 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
 
     it('toggles logo in breeder editor', async () => {
       const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-      const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
-      gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'Test', logo: 'some-logo' });
+      const { transition: t, createInitialSM } =
+        await import('../../../src/dialogs/gs-breeder-manager-sm');
+      gsBreederManager._sm = t(createInitialSM(), {
+        type: 'EDIT_REQUESTED',
+        name: 'Test',
+        logo: 'some-logo',
+      });
       gsBreederManager.requestUpdate?.();
       await gsBreederManager?.updateComplete;
 
-      const deleteLogoBtn = gsBreederManager?.shadowRoot?.querySelector('button[style*="color:var(--error-color"]') as HTMLElement;
+      const deleteLogoBtn = gsBreederManager?.shadowRoot?.querySelector(
+        'button[style*="color:var(--error-color"]'
+      ) as HTMLElement;
       deleteLogoBtn?.click();
       await gsBreederManager?.updateComplete;
 
@@ -282,13 +325,21 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
 
     it('closes breeder editor on clicking cancel button', async () => {
       const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-      const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
-      gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'Test', logo: 'logo' });
+      const { transition: t, createInitialSM } =
+        await import('../../../src/dialogs/gs-breeder-manager-sm');
+      gsBreederManager._sm = t(createInitialSM(), {
+        type: 'EDIT_REQUESTED',
+        name: 'Test',
+        logo: 'logo',
+      });
       gsBreederManager.requestUpdate?.();
       await gsBreederManager?.updateComplete;
 
-      const cancelBtn = (Array.from(gsBreederManager?.shadowRoot?.querySelectorAll('.md3-button.tonal') || []) as HTMLElement[])
-        .find(b => b.textContent?.trim() === 'Cancel');
+      const cancelBtn = (
+        Array.from(
+          gsBreederManager?.shadowRoot?.querySelectorAll('.md3-button.tonal') || []
+        ) as HTMLElement[]
+      ).find((b) => b.textContent?.trim() === 'Cancel');
       cancelBtn?.click();
       await gsBreederManager?.updateComplete;
 
@@ -299,7 +350,9 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
   describe('UI Interactions', () => {
     it('toggles manage menu', async () => {
       const browseView = element.shadowRoot?.querySelector('strain-browse-view') as any;
-      const menuBtn = browseView?.shadowRoot?.querySelector('.header-actions button') as HTMLElement;
+      const menuBtn = browseView?.shadowRoot?.querySelector(
+        '.header-actions button'
+      ) as HTMLElement;
       menuBtn?.click();
       expect(browseView?._manageMenuOpen).toBe(true);
 
@@ -312,7 +365,9 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       await element.updateComplete;
 
       const browseView = element.shadowRoot?.querySelector('strain-browse-view');
-      const menuBtn = browseView?.shadowRoot?.querySelector('.header-actions button') as HTMLElement;
+      const menuBtn = browseView?.shadowRoot?.querySelector(
+        '.header-actions button'
+      ) as HTMLElement;
       expect(menuBtn).toBeTruthy();
       expect(menuBtn.innerHTML).toContain('svg');
     });
@@ -326,11 +381,13 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       element.addEventListener('open-print-label', printHandler);
 
       const editorView = element.shadowRoot?.querySelector('strain-editor-view');
-      editorView?.dispatchEvent(new CustomEvent('open-print-label', {
-        bubbles: true,
-        composed: true,
-        detail: { strainName: 'Quick Strain', breeder: 'HSO' }
-      }));
+      editorView?.dispatchEvent(
+        new CustomEvent('open-print-label', {
+          bubbles: true,
+          composed: true,
+          detail: { strainName: 'Quick Strain', breeder: 'HSO' },
+        })
+      );
 
       expect(printHandler).toHaveBeenCalled();
       const detail = printHandler.mock.calls[0][0].detail;
@@ -361,14 +418,22 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       const editorView = element.shadowRoot?.querySelector('strain-editor-view');
       expect(editorView).toBeTruthy();
 
-      const eventTypes = ['import-library', 'update-breeder', 'save-breeder', 'delete-breeder', 'close'];
+      const eventTypes = [
+        'import-library',
+        'update-breeder',
+        'save-breeder',
+        'delete-breeder',
+        'close',
+      ];
       for (const type of eventTypes) {
         const handler = vi.fn();
         element.addEventListener(type, handler);
 
-        editorView?.dispatchEvent(new CustomEvent(type, {
-          detail: { test: 'payload' }
-        }));
+        editorView?.dispatchEvent(
+          new CustomEvent(type, {
+            detail: { test: 'payload' },
+          })
+        );
 
         expect(handler).toHaveBeenCalled();
         if (type !== 'close') {
@@ -386,8 +451,9 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       (browseView.shadowRoot?.querySelector('.manage-menu-trigger') as HTMLElement).click();
       await browseView.updateComplete;
 
-      const manageBtn = (Array.from(browseView?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[])
-        .find(b => b.textContent?.includes('Manage Breeders'));
+      const manageBtn = (
+        Array.from(browseView?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[]
+      ).find((b) => b.textContent?.includes('Manage Breeders'));
       expect(manageBtn).toBeTruthy();
 
       manageBtn?.click();
@@ -406,7 +472,8 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
         click: vi.fn(),
       };
 
-      const createElementSpy = vi.spyOn(document, 'createElement')
+      const createElementSpy = vi
+        .spyOn(document, 'createElement')
         .mockImplementation((tagName: string) => {
           if (tagName === 'input') {
             return mockInput as any;
@@ -414,8 +481,9 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
           return document.createElement(tagName);
         });
 
-      const selectFileBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
-        .find(b => b.textContent?.includes('Select File')) as HTMLElement | undefined;
+      const selectFileBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || []).find(
+        (b) => b.textContent?.includes('Select File')
+      ) as HTMLElement | undefined;
       expect(selectFileBtn).toBeTruthy();
 
       selectFileBtn?.click();
@@ -432,8 +500,8 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       const file = new File(['test'], 'strains.zip', { type: 'application/zip' });
       mockInput.onchange({
         target: {
-          files: [file]
-        }
+          files: [file],
+        },
       } as any);
 
       expect(importHandler).toHaveBeenCalled();
@@ -450,17 +518,25 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       await element.updateComplete;
 
       const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-      const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
-      gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'Test Breeder', logo: '' });
+      const { transition: t, createInitialSM } =
+        await import('../../../src/dialogs/gs-breeder-manager-sm');
+      gsBreederManager._sm = t(createInitialSM(), {
+        type: 'EDIT_REQUESTED',
+        name: 'Test Breeder',
+        logo: '',
+      });
       await gsBreederManager?.updateComplete;
 
-      const fileInput = gsBreederManager?.shadowRoot?.querySelector('input[type="file"]') as HTMLInputElement;
+      const fileInput = gsBreederManager?.shadowRoot?.querySelector(
+        'input[type="file"]'
+      ) as HTMLInputElement;
       expect(fileInput).toBeTruthy();
 
       const clickSpy = vi.spyOn(fileInput, 'click');
 
-      const uploadBtn = (Array.from(gsBreederManager?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[])
-        .find(b => b.textContent?.includes('Upload Logo'));
+      const uploadBtn = (
+        Array.from(gsBreederManager?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[]
+      ).find((b) => b.textContent?.includes('Upload Logo'));
       expect(uploadBtn).toBeTruthy();
 
       uploadBtn?.click();
@@ -468,8 +544,9 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
     });
 
     it('switches main tab to tree view on click', async () => {
-      const treeTabBtn = Array.from(element.shadowRoot?.querySelectorAll('.tab-btn') || [])
-        .find(b => b.textContent?.includes('Tree View')) as HTMLElement | undefined;
+      const treeTabBtn = Array.from(element.shadowRoot?.querySelectorAll('.tab-btn') || []).find(
+        (b) => b.textContent?.includes('Tree View')
+      ) as HTMLElement | undefined;
       expect(treeTabBtn).toBeTruthy();
 
       treeTabBtn?.click();
@@ -508,7 +585,9 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       (element as any)._activeMainTab = 'tree';
       await element.updateComplete;
 
-      const maximizeBtn = element.shadowRoot?.querySelector('.tab-maximize-btn') as HTMLElement | null;
+      const maximizeBtn = element.shadowRoot?.querySelector(
+        '.tab-maximize-btn'
+      ) as HTMLElement | null;
       expect(maximizeBtn).toBeTruthy();
       expect((element as any)._treeMaximized).toBe(false);
 
@@ -526,10 +605,22 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       const chips = element.shadowRoot?.querySelector('gs-filter-chips');
       expect(chips).toBeTruthy();
 
-      chips?.dispatchEvent(new CustomEvent('filter-changed', { detail: { filter: 'active' }, bubbles: true, composed: true }));
+      chips?.dispatchEvent(
+        new CustomEvent('filter-changed', {
+          detail: { filter: 'active' },
+          bubbles: true,
+          composed: true,
+        })
+      );
       expect((element as any)._libraryFilter).toBe('active');
 
-      chips?.dispatchEvent(new CustomEvent('filter-changed', { detail: { filter: 'library' }, bubbles: true, composed: true }));
+      chips?.dispatchEvent(
+        new CustomEvent('filter-changed', {
+          detail: { filter: 'library' },
+          bubbles: true,
+          composed: true,
+        })
+      );
       expect((element as any)._libraryFilter).toBe('library');
     });
 
@@ -540,11 +631,13 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       const treeView = element.shadowRoot?.querySelector('genetics-tree-view');
       expect(treeView).toBeTruthy();
 
-      treeView?.dispatchEvent(new CustomEvent('open-strain-editor', {
-        detail: { id: mockStrains[0].key },
-        bubbles: true,
-        composed: true,
-      }));
+      treeView?.dispatchEvent(
+        new CustomEvent('open-strain-editor', {
+          detail: { id: mockStrains[0].key },
+          bubbles: true,
+          composed: true,
+        })
+      );
 
       expect((element as any)._editingStrain).toEqual(mockStrains[0]);
       expect((element as any)._view).toBe('editor');
@@ -557,11 +650,13 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       await element.updateComplete;
 
       const treeView = element.shadowRoot?.querySelector('genetics-tree-view');
-      treeView?.dispatchEvent(new CustomEvent('open-strain-editor', {
-        detail: { id: 'nonexistent-key' },
-        bubbles: true,
-        composed: true,
-      }));
+      treeView?.dispatchEvent(
+        new CustomEvent('open-strain-editor', {
+          detail: { id: 'nonexistent-key' },
+          bubbles: true,
+          composed: true,
+        })
+      );
 
       expect((element as any)._view).toBe('list');
       expect((element as any)._editingStrain).toBeFalsy();
@@ -574,21 +669,21 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
           strain: 'Mother Strain',
           breeder: 'Breeder 1',
           phenotype: 'Pheno A',
-          parents: []
+          parents: [],
         } as any,
         {
           key: 'pf1',
           strain: 'Father Strain',
           breeder: 'Breeder 2',
           phenotype: '',
-          lineage: 'Grand Mother X Grand Father'
+          lineage: 'Grand Mother X Grand Father',
         } as any,
         {
           key: 'cs1',
           strain: 'Child Strain',
           breeder: 'Breeder 3',
           phenotype: '',
-          parents: [{ name: 'Mother Strain' }, { name: 'Father Strain' }]
+          parents: [{ name: 'Mother Strain' }, { name: 'Father Strain' }],
         } as any,
       ];
 
@@ -600,7 +695,7 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
           generation: 'F2',
           parent_1_strain: 'Child Strain',
           parent_2_strain: 'Unknown Strain Parent',
-        } as any
+        } as any,
       ];
 
       (element as any)._activeMainTab = 'tree';
@@ -611,7 +706,7 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
 
       const nodes = (geneticsTree as any).nodes;
       expect(nodes).toBeTruthy();
-      
+
       const childNode = nodes.find((n: any) => n.id === 'cs1');
       expect(childNode).toBeTruthy();
       expect(childNode.parents.mother).toBe('pm1');
@@ -634,4 +729,3 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
     });
   });
 });
-

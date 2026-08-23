@@ -42,7 +42,12 @@ describe('ConfigDialog — Notifications tab', () => {
       customElements.define('config-dialog', ConfigDialog);
     }
     if (!customElements.get('ha-dialog')) {
-      customElements.define('ha-dialog', class HaDialogMock extends HTMLElement { open = false; });
+      customElements.define(
+        'ha-dialog',
+        class HaDialogMock extends HTMLElement {
+          open = false;
+        }
+      );
     }
 
     element = new ConfigDialog();

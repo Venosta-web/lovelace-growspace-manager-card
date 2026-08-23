@@ -75,14 +75,20 @@ describe('GrowspaceHeaderSecondaryUI', () => {
 
   it('renders nutrient-stock-chip elements when inventory is provided', async () => {
     const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
-      <growspace-header-secondary-ui .chips=${[]} .inventory=${mockInventory}></growspace-header-secondary-ui>
+      <growspace-header-secondary-ui
+        .chips=${[]}
+        .inventory=${mockInventory}
+      ></growspace-header-secondary-ui>
     `);
     expect(el.shadowRoot!.querySelectorAll('nutrient-stock-chip').length).toBe(2);
   });
 
   it('renders no stock chips when inventory is null', async () => {
     const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
-      <growspace-header-secondary-ui .chips=${[]} .inventory=${null}></growspace-header-secondary-ui>
+      <growspace-header-secondary-ui
+        .chips=${[]}
+        .inventory=${null}
+      ></growspace-header-secondary-ui>
     `);
     expect(el.shadowRoot!.querySelectorAll('nutrient-stock-chip').length).toBe(0);
   });
@@ -91,7 +97,10 @@ describe('GrowspaceHeaderSecondaryUI', () => {
     const handler = vi.fn();
     const chips = [makeChip({ key: 'ph' })];
     const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
-      <growspace-header-secondary-ui .chips=${chips} @toggle-graph=${handler}></growspace-header-secondary-ui>
+      <growspace-header-secondary-ui
+        .chips=${chips}
+        @toggle-graph=${handler}
+      ></growspace-header-secondary-ui>
     `);
     const chip = el.shadowRoot!.querySelector('growspace-chip') as HTMLElement;
     chip?.click();
@@ -103,7 +112,10 @@ describe('GrowspaceHeaderSecondaryUI', () => {
     const handler = vi.fn();
     const chips = [makeChip({ key: 'ec' })];
     const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
-      <growspace-header-secondary-ui .chips=${chips} @chip-drag-start=${handler}></growspace-header-secondary-ui>
+      <growspace-header-secondary-ui
+        .chips=${chips}
+        @chip-drag-start=${handler}
+      ></growspace-header-secondary-ui>
     `);
     const chip = el.shadowRoot!.querySelector('growspace-chip') as HTMLElement;
     chip?.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true }));
@@ -115,7 +127,10 @@ describe('GrowspaceHeaderSecondaryUI', () => {
     const handler = vi.fn();
     const chips = [makeChip({ key: 'ph' })];
     const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
-      <growspace-header-secondary-ui .chips=${chips} @chip-drop=${handler}></growspace-header-secondary-ui>
+      <growspace-header-secondary-ui
+        .chips=${chips}
+        @chip-drop=${handler}
+      ></growspace-header-secondary-ui>
     `);
     const chip = el.shadowRoot!.querySelector('growspace-chip') as HTMLElement;
     chip?.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true }));
@@ -138,7 +153,10 @@ describe('GrowspaceHeaderSecondaryUI', () => {
     const handler = vi.fn();
     const chips = [makeChip({ key: 'ph', groupIndex: 2 })];
     const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
-      <growspace-header-secondary-ui .chips=${chips} @unlink-graphs=${handler}></growspace-header-secondary-ui>
+      <growspace-header-secondary-ui
+        .chips=${chips}
+        @unlink-graphs=${handler}
+      ></growspace-header-secondary-ui>
     `);
     const chip = el.shadowRoot!.querySelector('growspace-chip') as HTMLElement;
     chip?.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
@@ -162,21 +180,32 @@ describe('GrowspaceHeaderSecondaryUI', () => {
 
   it('chip is not draggable when isMobile=true and mobileLink=false', async () => {
     const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
-      <growspace-header-secondary-ui .chips=${[]} .isMobile=${true} .mobileLink=${false}></growspace-header-secondary-ui>
+      <growspace-header-secondary-ui
+        .chips=${[]}
+        .isMobile=${true}
+        .mobileLink=${false}
+      ></growspace-header-secondary-ui>
     `);
     expect((el as any)._chipDraggable).toBe('false');
   });
 
   it('chip is not draggable when legacy mobileLink is enabled', async () => {
     const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
-      <growspace-header-secondary-ui .chips=${[]} .isMobile=${true} .mobileLink=${true}></growspace-header-secondary-ui>
+      <growspace-header-secondary-ui
+        .chips=${[]}
+        .isMobile=${true}
+        .mobileLink=${true}
+      ></growspace-header-secondary-ui>
     `);
     expect((el as any)._chipDraggable).toBe('false');
   });
 
   it('chip is not draggable in desktop mode', async () => {
     const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
-      <growspace-header-secondary-ui .chips=${[]} .isMobile=${false}></growspace-header-secondary-ui>
+      <growspace-header-secondary-ui
+        .chips=${[]}
+        .isMobile=${false}
+      ></growspace-header-secondary-ui>
     `);
     expect((el as any)._chipDraggable).toBe('false');
   });

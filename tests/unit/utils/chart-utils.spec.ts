@@ -17,11 +17,15 @@ describe('ChartUtils.normalizeSensorValue', () => {
   });
 
   it('returns undefined for unavailable state', () => {
-    expect(ChartUtils.normalizeSensorValue({ state: 'unavailable' }, MetricKey.TEMPERATURE)).toBeUndefined();
+    expect(
+      ChartUtils.normalizeSensorValue({ state: 'unavailable' }, MetricKey.TEMPERATURE)
+    ).toBeUndefined();
   });
 
   it('returns undefined for unknown state', () => {
-    expect(ChartUtils.normalizeSensorValue({ state: 'unknown' }, MetricKey.TEMPERATURE)).toBeUndefined();
+    expect(
+      ChartUtils.normalizeSensorValue({ state: 'unknown' }, MetricKey.TEMPERATURE)
+    ).toBeUndefined();
   });
 
   it('returns numeric value for a parseable float state', () => {
@@ -93,24 +97,43 @@ describe('ChartUtils.normalizeSensorValue — fan entity domain (ADR-0008)', () 
 describe('ChartUtils.normalizeSensorValue — percentage light sensor', () => {
   it('returns raw numeric value when entityUnit is % and state is a percentage', () => {
     expect(
-      ChartUtils.normalizeSensorValue({ state: '85', attributes: {} }, MetricKey.LIGHT, undefined, '%')
+      ChartUtils.normalizeSensorValue(
+        { state: '85', attributes: {} },
+        MetricKey.LIGHT,
+        undefined,
+        '%'
+      )
     ).toBe(85);
   });
 
   it('returns 0 when entityUnit is % and state is 0', () => {
     expect(
-      ChartUtils.normalizeSensorValue({ state: '0', attributes: {} }, MetricKey.LIGHT, undefined, '%')
+      ChartUtils.normalizeSensorValue(
+        { state: '0', attributes: {} },
+        MetricKey.LIGHT,
+        undefined,
+        '%'
+      )
     ).toBe(0);
   });
 
   it('returns undefined when entityUnit is % and state is non-numeric', () => {
     expect(
-      ChartUtils.normalizeSensorValue({ state: 'on', attributes: {} }, MetricKey.LIGHT, undefined, '%')
+      ChartUtils.normalizeSensorValue(
+        { state: 'on', attributes: {} },
+        MetricKey.LIGHT,
+        undefined,
+        '%'
+      )
     ).toBeUndefined();
   });
 
   it('preserves binary 0/1 behaviour for LIGHT when no entityUnit is provided', () => {
-    expect(ChartUtils.normalizeSensorValue({ state: '85', attributes: {} }, MetricKey.LIGHT)).toBe(1);
-    expect(ChartUtils.normalizeSensorValue({ state: '0', attributes: {} }, MetricKey.LIGHT)).toBe(0);
+    expect(ChartUtils.normalizeSensorValue({ state: '85', attributes: {} }, MetricKey.LIGHT)).toBe(
+      1
+    );
+    expect(ChartUtils.normalizeSensorValue({ state: '0', attributes: {} }, MetricKey.LIGHT)).toBe(
+      0
+    );
   });
 });

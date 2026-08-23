@@ -145,7 +145,10 @@ describe('growspace-analytics-ui – _renderItem routing', () => {
   });
 
   it('renders growspace-env-chart for grouped items regardless of metrics', async () => {
-    const item: AnalyticsItem = { type: 'group', metrics: [MetricKey.TEMPERATURE, MetricKey.HUMIDITY] };
+    const item: AnalyticsItem = {
+      type: 'group',
+      metrics: [MetricKey.TEMPERATURE, MetricKey.HUMIDITY],
+    };
     const el = await fixture<GrowspaceAnalyticsUI>(html`
       <growspace-analytics-ui .items=${[item]} .isLoading=${false} .range=${'24h'}>
       </growspace-analytics-ui>
@@ -209,4 +212,3 @@ describe('growspace-analytics-ui – _renderItem routing', () => {
     });
   });
 });
-
