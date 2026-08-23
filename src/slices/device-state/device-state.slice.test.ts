@@ -134,6 +134,22 @@ describe('computeDeviceSnapshot — light sensor percentage', () => {
 
     expect(snapshot.lightSensors!.value).toBe('0%');
   });
+
+  it("ignores a dimmable grow light's retained brightness while it is off", () => {
+    const device = makeDevice({
+      environmentAttributes: { growlightEntities: ['light.sim_flower_grow_light'] },
+    });
+    const hassStates: HassStates = {
+      'light.sim_flower_grow_light': makeHassEntity('light.sim_flower_grow_light', 'off', {
+        brightness: 166,
+        supported_color_modes: ['brightness'],
+      }),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.lightSensors!.value).toBe('0%');
+  });
 });
 
 // ---------------------------------------------------------------------------

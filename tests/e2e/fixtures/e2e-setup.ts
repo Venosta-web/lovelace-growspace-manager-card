@@ -25,6 +25,7 @@ interface CoverageSetupProfile {
   services: {
     configure_environment?: Record<string, unknown>;
     set_irrigation_settings?: Record<string, unknown>;
+    set_irrigation_strategy?: Record<string, unknown>;
   };
 }
 
@@ -214,6 +215,14 @@ async function configureEnvironment(growspaceId: string, spec: GrowspaceSpec): P
     irrigation_tanks: [],
     irrigation_flow_sensors: [],
     drain_volume_sensors: [],
+    light_sensors: [],
+    growlight_entities: [],
+    growlight_config: {
+      enabled: false,
+      power: 100,
+      sunrise_enabled: false,
+      sunrise_minutes: 0,
+    },
     ...spec.services.configure_environment,
   });
 
@@ -253,6 +262,27 @@ async function ensureTestStrain(): Promise<void> {
     // add_strain is idempotent — duplicate errors are expected on re-runs
     console.log('  already exists or non-fatal error:', err.message);
   }
+}
+
+async function reloadGrowspaceManager(results: Array<{ slug: string; id: string }>): Promise<void> {
+  const lighting = results.find((result) => result.slug === 'lighting');
+  if (!lighting) return;
+
+  // Growspace sub-coordinators are selected when the config entry loads. A
+  // single reload after all profile writes activates the light-cycle tracker
+  // (and the VWC coordinator profiles) against their final configuration.
+  console.log('\n[integration] reloading Growspace Manager with final profile configuration…');
+  await callService('homeassistant', 'reload_config_entry', {
+    entity_id: 'sensor.e2e_lighting_overview',
+  });
+  for (let i = 0; i < 20; i++) {
+    await sleep(500);
+    if (await resolveGrowspaceId('lighting')) {
+      console.log('  reloaded');
+      return;
+    }
+  }
+  throw new Error('Growspace Manager did not return after config-entry reload');
 }
 
 /**
@@ -303,7 +333,13 @@ async function main(): Promise<void> {
     const growspaceId = await ensureGrowspace(spec);
     await ensureStagePlant(growspaceId, spec);
     await configureEnvironment(growspaceId, spec);
-    if (spec.vwcStrategy) {
+    if (spec.services.set_irrigation_strategy) {
+      console.log(`  configuring light-cycle tracking…`);
+      await callService('growspace_manager', 'set_irrigation_strategy', {
+        growspace_id: growspaceId,
+        ...spec.services.set_irrigation_strategy,
+      });
+    } else if (spec.vwcStrategy) {
       await setVwcStrategy(growspaceId, spec.slug, spec.vwcStrategy);
     } else {
       // A rerun must also remove strategy capability from non-VWC profiles.
@@ -316,6 +352,7 @@ async function main(): Promise<void> {
   }
 
   await ensureTestStrain();
+  await reloadGrowspaceManager(results);
 
   writeIdsToEnvFile(results);
 }

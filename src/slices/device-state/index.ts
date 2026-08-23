@@ -88,6 +88,9 @@ function _normalizeLightSensor(entity: HassEntity | undefined): string | undefin
     const n = parseFloat(entity.state);
     return isNaN(n) ? undefined : `${Math.round(n)}%`;
   }
+  // Many lights retain their last brightness while off. State wins: reporting
+  // that stale attribute as live power makes an off grow light look energized.
+  if (entity.state === 'off' && entity.attributes?.supported_color_modes) return '0%';
   // Dimmable grow light actuator (light.*): show brightness as a percentage,
   // matching the 0–100% a light sensor reports. `brightness` is 0–255 and present
   // only while on; a dimmable light that is off reads 0%.
@@ -95,7 +98,6 @@ function _normalizeLightSensor(entity: HassEntity | undefined): string | undefin
   if (typeof brightness === 'number') {
     return `${Math.round((brightness / 255) * 100)}%`;
   }
-  if (entity.state === 'off' && entity.attributes?.supported_color_modes) return '0%';
   if (entity.state === 'on') return 'On';
   if (entity.state === 'off') return 'Off';
   const n = parseFloat(entity.state);
