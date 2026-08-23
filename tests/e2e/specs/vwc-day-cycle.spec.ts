@@ -22,6 +22,23 @@ const TANK_WARNING_PERCENT = 30;
 const TANK_READY_PERCENT = 80; // comfortably clear of the cutoff
 const TANK_LOW_PERCENT = 15; // unambiguously under it
 
+// The coordinator evaluates once a minute, and a P2 maintenance shot is three
+// ticks away from "VWC is at target", not one:
+//
+//   tick A  sees VWC >= target, marks target_reached_today, fires nothing by design
+//   tick B  sees VWC under the dryback trigger, logs "Pulse watering" and performs
+//           the P1->P2 transition -- but the [[Infiltration Gate]] withholds the
+//           shot, because the spec raised VWC ~20 points seconds after the
+//           preceding P1 test's shot and that reads exactly like the substrate
+//           still absorbing it (suppressed_by: "infiltrating")
+//   tick C  the gate has released; the shot fires
+//
+// 90 s covers two ticks, so the wait used to expire between B and C -- which is
+// why this test failed in a full run and passed on its own, where there is no
+// preceding shot for the gate to hold against. The gate gives up after
+// INFILTRATION_BACKSTOP_INTERVALS (3) intervals, so four ticks is the ceiling.
+const P2_SHOT_TIMEOUT_MS = 240_000;
+
 // ---------------------------------------------------------------------------
 // Time helpers
 // ---------------------------------------------------------------------------
@@ -94,6 +111,40 @@ async function assertTankAboveCutoff(page: Page, slug: string, when: string): Pr
 }
 
 /**
+ * Returns a one-line summary of why the coordinator is or is not watering.
+ *
+ * Best effort, and deliberately non-fatal: these attributes lag the coordinator
+ * by a tick or more, so they explain a failure without being trustworthy enough
+ * to assert on. `suppressed_by` is the useful one — it names the gate that
+ * withheld the last shot ("cooldown", "infiltrating", ...).
+ */
+async function steeringDiagnostics(page: Page, slug: string): Promise<string> {
+  const baseURL = process.env.HA_BASE_URL || 'http://localhost:8123';
+  const token = process.env.HA_ACCESS_TOKEN;
+  try {
+    const [steering, overview] = await Promise.all([
+      page.request.get(`${baseURL}/api/states/sensor.e2e_${slug}_crop_steering_score`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }),
+      page.request.get(`${baseURL}/api/states/sensor.e2e_${slug}_overview`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }),
+    ]);
+    const shot = (await steering.json())?.attributes?.shot_composition ?? {};
+    const phase = (await overview.json())?.attributes?.irrigation?.irrigation_config
+      ?.active_steering_phase;
+    return (
+      `steering phase ${phase ?? '?'}, last tick suppressed_by ` +
+      `${shot.suppressed_by ?? 'nothing'}, infiltration ${shot.infiltration ?? '?'}, ` +
+      `last shot ${shot.last_shot?.timestamp ?? 'none this session'} ` +
+      `(these attributes lag a tick)`
+    );
+  } catch (error) {
+    return `steering diagnostics unavailable: ${String(error)}`;
+  }
+}
+
+/**
  * Polls until the pump switches on, or throws after `timeoutMs`.
  *
  * Checks the tank up front and on every poll: a low tank makes the coordinator
@@ -118,7 +169,8 @@ async function waitForPumpOn(
     const level = await getTankLevel(page, slug);
     throw new Error(
       `Entity ${pumpEntity} expected "on" but got "${final}" after ${timeoutMs}ms ` +
-        `(tank at ${level}%, cutoff ${TANK_WARNING_PERCENT}%)`,
+        `(tank at ${level}%, cutoff ${TANK_WARNING_PERCENT}%) — ` +
+        `${await steeringDiagnostics(page, slug)}`,
     );
   }
 }
@@ -323,12 +375,14 @@ for (const gs of gsConfigs) {
     // -----------------------------------------------------------------------
     // P2 — maintenance: shot fires once target_reached_today is established
     //
-    // Two-tick setup:
-    //   Tick 1 — VWC at target → coordinator sets target_reached_today = True
-    //   Tick 2 — VWC drops below dryback threshold → coordinator fires maintenance shot
+    // Two writes, but three coordinator ticks — the shot lands one tick after
+    // the write that asks for it. See P2_SHOT_TIMEOUT_MS.
+    //   Write 1 — VWC at target → coordinator sets target_reached_today = True
+    //   Write 2 — VWC below the dryback threshold → coordinator fires the shot
     // -----------------------------------------------------------------------
     test('P2 — maintenance shot fires after target reached', async ({ page, testContext }) => {
-      test.setTimeout(300_000);
+      // 70 s tick-1 wait + a four-tick shot window, with room to spare.
+      test.setTimeout(420_000);
       const growspaceId = testContext[gs.idKey];
       const pumpEntity = `switch.sim_e2e_${gs.slug}_irrigation_pump`;
 
@@ -341,14 +395,20 @@ for (const gs of gsConfigs) {
         strategyPayload(growspaceId, lightsOn, gs.target),
       );
 
-      // Tick 1: VWC at target → coordinator marks target_reached_today = True
+      // Tick 1: VWC at target → coordinator marks target_reached_today = True.
+      // This stays a fixed sleep rather than a poll on observed state: the flag
+      // is internal, and the phase the overview sensor exposes still reads p1
+      // afterwards (the coordinator deliberately fires nothing on the tick that
+      // sets it). 70 s is one full tick plus margin, which is all this step needs
+      // — the shot window below is what absorbs the remaining timing slack.
       await setVwcSensor(page, gs.slug, gs.target);
       await page.waitForTimeout(70_000);
 
-      // Tick 2: drop VWC below dryback threshold → maintenance shot fires
+      // Tick 2: drop VWC below dryback threshold → maintenance shot fires, once
+      // the Infiltration Gate releases. See P2_SHOT_TIMEOUT_MS for the budget.
       await setVwcSensor(page, gs.slug, gs.target - MAINTENANCE_DRYBACK - 1);
 
-      await waitForPumpOn(page, gs.slug, pumpEntity);
+      await waitForPumpOn(page, gs.slug, pumpEntity, P2_SHOT_TIMEOUT_MS);
       expect(await getEntityState(page, pumpEntity)).toBe('on');
     });
 
