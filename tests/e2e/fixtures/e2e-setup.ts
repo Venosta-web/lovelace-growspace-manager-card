@@ -209,12 +209,19 @@ async function configureEnvironment(growspaceId: string, spec: GrowspaceSpec): P
   console.log(`  linking sensors…`);
   await callService('growspace_manager', 'configure_environment', {
     growspace_id: growspaceId,
+    // Hardware profiles are exclusive. Explicit clears make reruns converge
+    // even when an older fixture wired flow, drain, or tanks into every space.
+    irrigation_tanks: [],
+    irrigation_flow_sensors: [],
+    drain_volume_sensors: [],
     ...spec.services.configure_environment,
   });
 
   console.log(`  wiring irrigation & drain pumps…`);
   await callService('growspace_manager', 'set_irrigation_settings', {
     growspace_id: growspaceId,
+    irrigation_pump_entity: '',
+    drain_pump_entity: '',
     ...spec.services.set_irrigation_settings,
   });
 }
@@ -298,6 +305,12 @@ async function main(): Promise<void> {
     await configureEnvironment(growspaceId, spec);
     if (spec.vwcStrategy) {
       await setVwcStrategy(growspaceId, spec.slug, spec.vwcStrategy);
+    } else {
+      // A rerun must also remove strategy capability from non-VWC profiles.
+      await callService('growspace_manager', 'set_irrigation_strategy', {
+        growspace_id: growspaceId,
+        enabled: false,
+      });
     }
     results.push({ slug: spec.slug, id: growspaceId });
   }

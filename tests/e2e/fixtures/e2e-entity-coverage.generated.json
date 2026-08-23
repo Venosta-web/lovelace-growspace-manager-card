@@ -47,6 +47,7 @@
           ],
           "irrigation_tanks": [
             {
+              "name": "Tank 1",
               "sensor_entity": "sensor.e2e_veg_irrigation_tank",
               "volume_liters": 50
             }
@@ -103,6 +104,7 @@
           ],
           "irrigation_tanks": [
             {
+              "name": "Tank 1",
               "sensor_entity": "sensor.e2e_clone_irrigation_tank",
               "volume_liters": 50
             }
@@ -159,6 +161,7 @@
           ],
           "irrigation_tanks": [
             {
+              "name": "Tank 1",
               "sensor_entity": "sensor.e2e_mother_irrigation_tank",
               "volume_liters": 50
             }
@@ -215,6 +218,7 @@
           ],
           "irrigation_tanks": [
             {
+              "name": "Tank 1",
               "sensor_entity": "sensor.e2e_flower_irrigation_tank",
               "volume_liters": 50
             }
@@ -271,6 +275,7 @@
           ],
           "irrigation_tanks": [
             {
+              "name": "Tank 1",
               "sensor_entity": "sensor.e2e_dry_irrigation_tank",
               "volume_liters": 50
             }
@@ -327,6 +332,7 @@
           ],
           "irrigation_tanks": [
             {
+              "name": "Tank 1",
               "sensor_entity": "sensor.e2e_cure_irrigation_tank",
               "volume_liters": 50
             }
@@ -375,14 +381,9 @@
           "energy_sensors": [
             "input_number.e2e_vwc_veg_energy"
           ],
-          "drain_volume_sensors": [
-            "input_number.e2e_vwc_veg_drain_volume"
-          ],
-          "irrigation_flow_sensors": [
-            "input_number.e2e_vwc_veg_irrigation_flow"
-          ],
           "irrigation_tanks": [
             {
+              "name": "Tank 1",
               "sensor_entity": "input_number.e2e_vwc_veg_irrigation_tank",
               "volume_liters": 50
             }
@@ -439,14 +440,9 @@
           "energy_sensors": [
             "input_number.e2e_vwc_flower_energy"
           ],
-          "drain_volume_sensors": [
-            "input_number.e2e_vwc_flower_drain_volume"
-          ],
-          "irrigation_flow_sensors": [
-            "input_number.e2e_vwc_flower_irrigation_flow"
-          ],
           "irrigation_tanks": [
             {
+              "name": "Tank 1",
               "sensor_entity": "input_number.e2e_vwc_flower_irrigation_tank",
               "volume_liters": 50
             }
@@ -464,6 +460,53 @@
         "p2_stop_before_lights_off_minutes": 120,
         "shot_duration_seconds": 10,
         "shot_interval_minutes": 15
+      }
+    },
+    {
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "name": "E2E Irrigation Monitored",
+      "plant_stage_field": "veg_start",
+      "stage_days_ago": 0,
+      "services": {
+        "configure_environment": {
+          "drain_volume_sensors": [
+            "input_number.e2e_irrigation_monitored_drain_volume"
+          ],
+          "irrigation_flow_sensors": [
+            "input_number.e2e_irrigation_monitored_irrigation_flow"
+          ]
+        },
+        "set_irrigation_settings": {
+          "irrigation_pump_entity": "switch.sim_e2e_irrigation_monitored_irrigation_pump",
+          "drain_pump_entity": "switch.sim_e2e_irrigation_monitored_drain_pump"
+        }
+      }
+    },
+    {
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "name": "E2E Irrigation Tanks",
+      "plant_stage_field": "veg_start",
+      "stage_days_ago": 0,
+      "services": {
+        "configure_environment": {
+          "irrigation_tanks": [
+            {
+              "name": "Tank 1",
+              "sensor_entity": "input_number.e2e_irrigation_tanks_irrigation_tank_1",
+              "volume_liters": 50
+            },
+            {
+              "name": "Tank 2",
+              "sensor_entity": "input_number.e2e_irrigation_tanks_irrigation_tank_2",
+              "volume_liters": 50
+            }
+          ]
+        },
+        "set_irrigation_settings": {
+          "irrigation_pump_entity": "switch.sim_e2e_irrigation_tanks_irrigation_pump"
+        }
       }
     }
   ],
@@ -1349,18 +1392,10 @@
       "behavior": "read-only"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_drain_volume",
+      "entity_id": "input_number.e2e_irrigation_monitored_drain_volume",
       "role": "irrigation.drain_volume",
-      "profile": "vwc",
-      "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
-    },
-    {
-      "entity_id": "input_number.e2e_vwc_flower_drain_volume",
-      "role": "irrigation.drain_volume",
-      "profile": "vwc",
-      "slug": "vwc_flower",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
       "domain": "input_number",
       "behavior": "controllable"
     },
@@ -1413,18 +1448,10 @@
       "behavior": "read-only"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_irrigation_flow",
+      "entity_id": "input_number.e2e_irrigation_monitored_irrigation_flow",
       "role": "irrigation.flow",
-      "profile": "vwc",
-      "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
-    },
-    {
-      "entity_id": "input_number.e2e_vwc_flower_irrigation_flow",
-      "role": "irrigation.flow",
-      "profile": "vwc",
-      "slug": "vwc_flower",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
       "domain": "input_number",
       "behavior": "controllable"
     },
@@ -1493,6 +1520,22 @@
       "behavior": "controllable"
     },
     {
+      "entity_id": "input_number.e2e_irrigation_tanks_irrigation_tank_1",
+      "role": "irrigation.tank_level",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_irrigation_tanks_irrigation_tank_2",
+      "role": "irrigation.tank_level",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
       "entity_id": "switch.sim_e2e_veg_irrigation_pump",
       "role": "irrigation.irrigation_pump",
       "profile": "stage",
@@ -1553,6 +1596,22 @@
       "role": "irrigation.irrigation_pump",
       "profile": "vwc",
       "slug": "vwc_flower",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_irrigation_monitored_irrigation_pump",
+      "role": "irrigation.irrigation_pump",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_irrigation_tanks_irrigation_pump",
+      "role": "irrigation.irrigation_pump",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
       "domain": "switch",
       "behavior": "controllable"
     },
@@ -1621,6 +1680,14 @@
       "behavior": "controllable"
     },
     {
+      "entity_id": "switch.sim_e2e_irrigation_monitored_drain_pump",
+      "role": "irrigation.drain_pump",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
       "entity_id": "input_boolean.sim_e2e_veg_irrigation_pump",
       "role": "simulation.irrigation_pump_state",
       "profile": "stage",
@@ -1685,6 +1752,22 @@
       "behavior": "controllable"
     },
     {
+      "entity_id": "input_boolean.sim_e2e_irrigation_monitored_irrigation_pump",
+      "role": "simulation.irrigation_pump_state",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_irrigation_tanks_irrigation_pump",
+      "role": "simulation.irrigation_pump_state",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
       "entity_id": "input_boolean.sim_e2e_veg_drain_pump",
       "role": "simulation.drain_pump_state",
       "profile": "stage",
@@ -1745,6 +1828,14 @@
       "role": "simulation.drain_pump_state",
       "profile": "vwc",
       "slug": "vwc_flower",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_irrigation_monitored_drain_pump",
+      "role": "simulation.drain_pump_state",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
       "domain": "input_boolean",
       "behavior": "controllable"
     }
