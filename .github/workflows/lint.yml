@@ -46,18 +46,8 @@ jobs:
     - name: Validate HACS release layout
       run: npm run validate:hacs-release
 
-    # Non-blocking until the existing prettier drift is reformatted in a dedicated
-    # PR — see ADR 0025. The previous `format -- --check` step was a no-op (it ran
-    # `prettier --write`), so it never actually checked.
-    #
-    # The count this reports is now the real one: `format:check` covers src/,
-    # tests/ and the root config, and `.prettierignore` keeps generated output and
-    # prose out of it. 293 files at the time of writing — 108 in src/, 185 in
-    # tests/. Flipping this step to blocking belongs to the enforcement ticket,
-    # once that backlog is zero.
-    - name: Check Formatting (non-blocking)
+    - name: Check Formatting
       run: npm run format:check
-      continue-on-error: true
 
   # Runs the Release job's install + build under the Node version Release pins,
   # so a lockfile that only npm 11 can resolve fails on the PR instead of on dev.
