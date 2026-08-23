@@ -52,3 +52,36 @@ test.describe('Setup dialogs', () => {
     await dialog.waitForOpen();
   });
 });
+
+test.describe('Config dialog empty entity fields', () => {
+  test('empty humidity device fields still render entity pickers', async ({
+    page,
+    testContext,
+  }) => {
+    test.skip(!testContext.vwcFlowerDashboardPath, 'TEST_VWC_FLOWER_DASHBOARD_PATH is required');
+    const growspaceCard = new GrowspaceCard(page);
+    await growspaceCard.navigate(testContext.vwcFlowerDashboardPath);
+    await growspaceCard.waitForCardReady();
+
+    await growspaceCard.card.locator('[aria-label="Settings"]').click();
+    const dialog = new ConfigDialog(page);
+    await dialog.waitForOpen();
+    await dialog.clickTab('humidity');
+
+    const deviceFields = dialog.dialog.locator('config-humidity-tab config-entity-multi-select');
+    await expect
+      .poll(() =>
+        deviceFields.evaluateAll((fields) =>
+          fields.map((field) => (field as HTMLElement & { values: string[] }).values)
+        )
+      )
+      .toEqual([[], []]);
+
+    const devicePickers = deviceFields.locator('ha-entity-picker');
+    await expect(devicePickers).toHaveCount(2);
+    await expect(
+      devicePickers.first().getByText('Select an entity', { exact: true })
+    ).toBeVisible();
+    await expect(devicePickers.nth(1).getByText('Select an entity', { exact: true })).toBeVisible();
+  });
+});
