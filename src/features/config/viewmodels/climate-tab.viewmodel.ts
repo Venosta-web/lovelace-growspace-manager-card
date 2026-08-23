@@ -201,7 +201,15 @@ export function createClimateTabViewModel(
   const d = sm.environmentDraft;
   const fan = d.circulationFanConfig;
   const exhaust = d.exhaustFanConfig;
-  const mode = fan.regulation_mode as FanRegulationMode;
+  // `regulation_mode` predates the field on older growspaces and the backend
+  // response isn't schema-validated here (CLAUDE.md's api-schema.ts has no
+  // entry for it), so a growspace whose Fan Controller was never saved comes
+  // through with the key missing rather than its documented default. Binding
+  // that straight to <md3-select>.value leaves the native <select> matching no
+  // <option>, which drops its selectedIndex to -1 and renders the control
+  // blank — not merely unselected. Fall back to the same 'vpd' default a new
+  // growspace draft gets (defaultEnvironmentDraft in config-dialog-sm.ts).
+  const mode = (fan.regulation_mode as FanRegulationMode | undefined) ?? 'vpd';
   const duplicates = buildDuplicatePortWarnings(acInfinityRoleLists(d));
   const temperatureUnit = normalizedTemperatureUnit(deps.unitSystem?.temperature);
   const pressureUnit = normalizedPressureUnit(deps.unitSystem?.pressure);

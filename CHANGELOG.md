@@ -1,3 +1,24 @@
+## [1.1.8](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.7...v1.1.8) (2026-08-22)
+
+
+### Bug Fixes
+
+* **e2e:** block service workers so HA cannot reload the page mid-test ([08442cf](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/08442cf57de7c4962cb0961dab391009e596b3d9))
+
+## [1.1.7](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6...v1.1.7) (2026-08-22)
+
+
+### Bug Fixes
+
+* **config:** default circulation fan regulation_mode to vpd ([9057e39](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/9057e39503ec0e7cebe5976ab221e7d3a9c5160a))
+
+## [1.1.6](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.5...v1.1.6) (2026-08-22)
+
+
+### Bug Fixes
+
+* **design:** bring irrigation dialog nav rail onto the type ramp ([20cd11e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/20cd11e565364155e460d442b56530c32faa6623))
+
 ## [1.1.6-next.3](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.2...v1.1.6-next.3) (2026-08-23)
 
 
