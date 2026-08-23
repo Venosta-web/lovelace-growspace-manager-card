@@ -1,3 +1,10 @@
+## [1.1.6-next.6](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.5...v1.1.6-next.6) (2026-08-23)
+
+
+### Bug Fixes
+
+* **config:** cover empty humidity entity pickers ([#731](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/731)) ([66d95af](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/66d95af284ca0f3c9b02fd4f806b3c1059d0d097))
+
 ## [1.1.6-next.5](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.4...v1.1.6-next.5) (2026-08-23)
 
 
