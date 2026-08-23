@@ -64,15 +64,15 @@ describe('plant-actions-tab', () => {
     `);
     (el as any).store = mockStore;
     await el.updateComplete;
-    
+
     const cards = el.shadowRoot?.querySelectorAll('.action-card');
     expect(cards?.length).to.equal(2);
-    
+
     const firstCard = cards?.[0] as HTMLElement;
     expect(firstCard.querySelector('span')?.textContent).to.equal('Water Plant');
     expect(firstCard.title).to.equal('Add Water');
     expect(firstCard.classList.contains('disabled')).to.be.false;
-    
+
     const secondCard = cards?.[1] as HTMLElement;
     expect(secondCard.querySelector('span')?.textContent).to.equal('Train Plant');
     expect(secondCard.title).to.equal('Plant is too young');
@@ -96,8 +96,8 @@ describe('plant-actions-tab', () => {
       ...mockPlant,
       attributes: {
         ...mockPlant.attributes,
-        scores: { vigor: 5, structure: null, aroma: 4, resin: 3, pest_resistance: 2 }
-      }
+        scores: { vigor: 5, structure: null, aroma: 4, resin: 3, pest_resistance: 2 },
+      },
     } as any;
 
     el.plant = newPlant;
@@ -116,15 +116,15 @@ describe('plant-actions-tab', () => {
     const el = await fixture<PlantActionsTab>(html`
       <plant-actions-tab .availableActions=${mockActions} .plant=${mockPlant}></plant-actions-tab>
     `);
-    
+
     let payload: { actionId: string } | null = null;
-    el.addEventListener('action-click', (e: Event) => { 
-      payload = (e as CustomEvent).detail; 
+    el.addEventListener('action-click', (e: Event) => {
+      payload = (e as CustomEvent).detail;
     });
-    
+
     const firstCard = el.shadowRoot?.querySelectorAll('.action-card')[0] as HTMLElement;
     firstCard.click();
-    
+
     expect(payload).to.deep.equal({ actionId: 'water' });
   });
 
@@ -134,13 +134,15 @@ describe('plant-actions-tab', () => {
     `);
     (el as any).store = mockStore;
     await el.updateComplete;
-    
+
     let clicked = false;
-    el.addEventListener('action-click', () => { clicked = true; });
-    
+    el.addEventListener('action-click', () => {
+      clicked = true;
+    });
+
     const secondCard = el.shadowRoot?.querySelectorAll('.action-card')[1] as HTMLElement;
     secondCard.click();
-    
+
     expect(clicked).to.be.false;
   });
 
@@ -150,7 +152,7 @@ describe('plant-actions-tab', () => {
     `);
     (el as any).store = mockStore;
     await el.updateComplete;
-    
+
     // Initial state: Save button not present
     expect(el.shadowRoot?.querySelector('.md3-button.filled')).to.be.null;
 
@@ -159,7 +161,9 @@ describe('plant-actions-tab', () => {
     await el.updateComplete;
 
     expect(el.shadowRoot?.querySelector('.md3-button.filled')).to.not.be.null;
-    expect(el.shadowRoot?.querySelector('.md3-button.filled')?.textContent).to.contain('Save scores');
+    expect(el.shadowRoot?.querySelector('.md3-button.filled')?.textContent).to.contain(
+      'Save scores'
+    );
   });
 
   it('handles star rating interactions', async () => {
@@ -168,14 +172,14 @@ describe('plant-actions-tab', () => {
     `);
     (el as any).store = mockStore;
     await el.updateComplete;
-    
+
     // Open form
     (el as any)._showScoringForm = true;
     await el.updateComplete;
 
     const toggleBtn = el.shadowRoot?.querySelector('.score-card-header button') as HTMLElement;
     expect(toggleBtn.textContent?.trim()).toBe('Cancel');
-    
+
     // Save button should be visible
     const saveBtn = el.shadowRoot?.querySelector('.md3-button.filled') as HTMLElement;
     expect(saveBtn).to.exist;
@@ -199,7 +203,9 @@ describe('plant-actions-tab', () => {
     (el as any)._showScoringForm = true;
     await el.updateComplete;
 
-    const vigorRow = el.shadowRoot?.querySelectorAll('div[style*="flex-direction:column; gap:6px;"]')[0];
+    const vigorRow = el.shadowRoot?.querySelectorAll(
+      'div[style*="flex-direction:column; gap:6px;"]'
+    )[0];
     const stars = vigorRow?.querySelectorAll('button');
 
     // Mouseenter on 5th star
@@ -224,9 +230,11 @@ describe('plant-actions-tab', () => {
 
     // Aroma is null initially
     const aromaKey = 'aroma';
-    const aromaRow = el.shadowRoot?.querySelectorAll('div[style*="flex-direction:column; gap:6px;"]')[2];
+    const aromaRow = el.shadowRoot?.querySelectorAll(
+      'div[style*="flex-direction:column; gap:6px;"]'
+    )[2];
     const aromaStars = aromaRow?.querySelectorAll('button');
-    
+
     // Click 3rd star
     aromaStars?.[2].click();
     await el.updateComplete;
@@ -249,7 +257,7 @@ describe('plant-actions-tab', () => {
     `);
     (el as any).store = mockStore;
     await el.updateComplete;
-    
+
     // Open form
     (el as any)._showScoringForm = true;
     await el.updateComplete;
@@ -260,11 +268,11 @@ describe('plant-actions-tab', () => {
 
     const saveBtn = el.shadowRoot?.querySelector('.md3-button.filled') as HTMLElement;
     saveBtn.click();
-    
+
     expect((el as any)._savingScore).to.be.true;
-    
-    // We need to wait for the async save to complete. 
-    // Since we can't easily await the click's internal promise, 
+
+    // We need to wait for the async save to complete.
+    // Since we can't easily await the click's internal promise,
     // we can wait until _savingScore becomes false.
     await vi.waitFor(() => expect((el as any)._showScoringForm).to.be.false);
 
@@ -287,63 +295,73 @@ describe('plant-actions-tab', () => {
     `);
     (el as any).store = mockStore;
     await el.updateComplete;
-    
+
     await (el as any)._savePhenotypeScore();
-    
+
     expect((el as any)._savingScore).to.be.false;
     expect(consoleSpy).toHaveBeenCalledWith('Failed to save scores', expect.any(Error));
-    
+
     consoleSpy.mockRestore();
   });
 
   it('does nothing when saving scores without plant_id', async () => {
     const el = await fixture<PlantActionsTab>(html`
-      <plant-actions-tab .availableActions=${mockActions} .plant=${{ attributes: {} } as any}></plant-actions-tab>
+      <plant-actions-tab
+        .availableActions=${mockActions}
+        .plant=${{ attributes: {} } as any}
+      ></plant-actions-tab>
     `);
     (el as any).store = mockStore;
     await el.updateComplete;
-    
+
     await (el as any)._savePhenotypeScore();
     expect(scorePlant).not.toHaveBeenCalled();
   });
 
   it('initializes scores with null if scores attribute is missing', async () => {
     const el = await fixture<PlantActionsTab>(html`
-      <plant-actions-tab .availableActions=${mockActions} .plant=${{ attributes: { plant_id: 'p1' } } as any}></plant-actions-tab>
+      <plant-actions-tab
+        .availableActions=${mockActions}
+        .plant=${{ attributes: { plant_id: 'p1' } } as any}
+      ></plant-actions-tab>
     `);
     await el.updateComplete;
-    
+
     expect((el as any)._scoresEdit.vigor).to.be.null;
   });
 
   it('falls back to label for title if tooltip is not provided', async () => {
-    const actions: ActionConfig[] = [{
-      id: 'test',
-      icon: 'mdiBug',
-      label: 'Test Action',
-      enabled: true
-    }];
-    
+    const actions: ActionConfig[] = [
+      {
+        id: 'test',
+        icon: 'mdiBug',
+        label: 'Test Action',
+        enabled: true,
+      },
+    ];
+
     const el = await fixture<PlantActionsTab>(html`
       <plant-actions-tab .availableActions=${actions} .plant=${mockPlant}></plant-actions-tab>
     `);
-    
+
     const card = el.shadowRoot?.querySelector('.action-card') as HTMLElement;
     expect(card.title).to.equal('Test Action');
   });
 
   it('renders without an icon if icon string does not match the map', async () => {
-    const actions: ActionConfig[] = [{
-      id: 'test',
-      icon: 'unknownIcon',
-      label: 'Test Action',
-      enabled: true
-    }];
-    
+    const actions: ActionConfig[] = [
+      {
+        id: 'test',
+        icon: 'unknownIcon',
+        label: 'Test Action',
+        enabled: true,
+      },
+    ];
+
     const el = await fixture<PlantActionsTab>(html`
       <plant-actions-tab .availableActions=${actions} .plant=${mockPlant}></plant-actions-tab>
     `);
-    
+
     const svg = el.shadowRoot?.querySelector('svg');
     expect(svg).to.not.exist;
   });
@@ -353,14 +371,14 @@ describe('plant-actions-tab', () => {
       <plant-actions-tab .availableActions=${mockActions} .plant=${mockPlant}></plant-actions-tab>
     `);
     await el.updateComplete;
-    
+
     // Set a local score
     el['_scoresEdit'].vigor = 1;
-    
+
     // Set plant to null
     (el as any).plant = null;
     await el.updateComplete;
-    
+
     // Score should remain 1 because the reset logic is skipped if plant is null
     expect(el['_scoresEdit'].vigor).to.equal(1);
   });
@@ -370,14 +388,14 @@ describe('plant-actions-tab', () => {
       <plant-actions-tab .availableActions=${mockActions} .plant=${mockPlant}></plant-actions-tab>
     `);
     await el.updateComplete;
-    
+
     // Set a local score
     el['_scoresEdit'].vigor = 1;
-    
+
     // Update another property
     el.availableActions = [];
     await el.updateComplete;
-    
+
     // Score should remain 1
     expect(el['_scoresEdit'].vigor).to.equal(1);
   });

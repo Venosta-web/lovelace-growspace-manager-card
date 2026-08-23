@@ -105,7 +105,13 @@ describe('irrigation-drain-ec-tab', () => {
 
   it('renders the status banner text from the VM', async () => {
     const el = await mount(
-      makeVm({ status: { color: '#f44336', text: 'Salt buildup alert — Δ0.50 mS/cm above threshold', lastReading: null } })
+      makeVm({
+        status: {
+          color: '#f44336',
+          text: 'Salt buildup alert — Δ0.50 mS/cm above threshold',
+          lastReading: null,
+        },
+      })
     );
     expect(norm(el.shadowRoot!.textContent)).toContain('Salt buildup alert');
   });

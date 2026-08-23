@@ -138,7 +138,7 @@ describe('HeaderDragController', () => {
 
     it('should handle null event in handleDrop', () => {
       const onLink = vi.fn();
-      
+
       controller.handleDragStart(null as any, 'temp');
       vi.clearAllMocks();
 

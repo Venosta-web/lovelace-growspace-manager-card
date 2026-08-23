@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { buildIndex, type TreeNode } from '../../../../../src/features/shared/ui/genetics-tree-layout';
+import {
+  buildIndex,
+  type TreeNode,
+} from '../../../../../src/features/shared/ui/genetics-tree-layout';
 import {
   visibleNodes,
   computeLayout,
@@ -12,7 +15,13 @@ import {
   type GeneticsTreeEvent,
 } from '../../../../../src/features/shared/ui/genetics-tree-view-sm';
 
-function node(id: string, gen: string, breeder: string, mother: string | null = null, father: string | null = null): TreeNode {
+function node(
+  id: string,
+  gen: string,
+  breeder: string,
+  mother: string | null = null,
+  father: string | null = null
+): TreeNode {
   return {
     id,
     name: id,
@@ -44,13 +53,21 @@ function ids(ns: TreeNode[]): string[] {
 describe('genetics-tree-view-sm', () => {
   describe('visibleNodes', () => {
     it('keeps only nodes matching the breeder filter', () => {
-      const result = visibleNodes(nodes, { breederFilter: 'Beta', collapsed: new Set(), childrenOf });
+      const result = visibleNodes(nodes, {
+        breederFilter: 'Beta',
+        collapsed: new Set(),
+        childrenOf,
+      });
       expect(ids(result)).toEqual(['d', 'e']);
     });
 
     it('hides the whole transitive descendant subtree of a collapsed node, keeping the collapsed node itself', () => {
       // collapse 'a' -> hides c (child) and f (grandchild via c); a, b, d, e stay
-      const result = visibleNodes(nodes, { breederFilter: '', collapsed: new Set(['a']), childrenOf });
+      const result = visibleNodes(nodes, {
+        breederFilter: '',
+        collapsed: new Set(['a']),
+        childrenOf,
+      });
       expect(ids(result)).toEqual(['a', 'b', 'd', 'e']);
     });
 
@@ -139,7 +156,13 @@ describe('genetics-tree-view-sm', () => {
   });
 
   describe('shouldRefit', () => {
-    const base = { layoutChanged: false, resized: false, externalFocal: false, reframeGen: 0, panGen: -1 };
+    const base = {
+      layoutChanged: false,
+      resized: false,
+      externalFocal: false,
+      reframeGen: 0,
+      panGen: -1,
+    };
 
     it('does not refit when nothing changed this update', () => {
       expect(shouldRefit({ ...base, layoutChanged: false })).toBe(false);
@@ -203,10 +226,10 @@ describe('genetics-tree-view-sm', () => {
     });
 
     it('NODE_CLICKED switches selection to a different node', () => {
-      const sm = transition(
-        transition(createInitialSM(), { type: 'NODE_CLICKED', id: 'c' }),
-        { type: 'NODE_CLICKED', id: 'd' }
-      );
+      const sm = transition(transition(createInitialSM(), { type: 'NODE_CLICKED', id: 'c' }), {
+        type: 'NODE_CLICKED',
+        id: 'd',
+      });
       expect(sm.selectedId).toBe('d');
     });
 
@@ -341,7 +364,10 @@ describe('genetics-tree-view-sm', () => {
     });
 
     it('EXTERNAL_FOCAL_CHANGED to an id enters lineage mode; to null only clears the focal', () => {
-      const focused = transition(createInitialSM(), { type: 'EXTERNAL_FOCAL_CHANGED', focalId: 'c' });
+      const focused = transition(createInitialSM(), {
+        type: 'EXTERNAL_FOCAL_CHANGED',
+        focalId: 'c',
+      });
       expect(focused.focalId).toBe('c');
       expect(focused.mode).toBe('lineage');
       const cleared = transition(focused, { type: 'EXTERNAL_FOCAL_CHANGED', focalId: null });

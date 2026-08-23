@@ -7,7 +7,11 @@
 import { describe, it, expect } from 'vitest';
 import { atom } from 'nanostores';
 import { createGrowspaceDevice } from '../../../../../src/services/types';
-import type { GrowspaceDevice, IrrigationConfig, SteeringMetrics } from '../../../../../src/services/types';
+import type {
+  GrowspaceDevice,
+  IrrigationConfig,
+  SteeringMetrics,
+} from '../../../../../src/services/types';
 import { createDialogCapabilities } from '../../../../../src/features/irrigation/viewmodels/dialog-capabilities';
 import { createOverviewTabViewModel } from '../../../../../src/features/irrigation/viewmodels/overview-tab.viewmodel';
 

@@ -8,7 +8,7 @@ import {
   motherLineOf,
   NODE_W,
   NODE_H,
-  type TreeNode
+  type TreeNode,
 } from '../../../../../src/features/shared/ui/genetics-tree-layout';
 
 const mockNodes: TreeNode[] = [
@@ -20,7 +20,7 @@ const mockNodes: TreeNode[] = [
     pheno: 'P1',
     gen: 'P1',
     type: 'strain',
-    parents: { mother: null, father: null }
+    parents: { mother: null, father: null },
   },
   {
     id: 'p2',
@@ -30,7 +30,7 @@ const mockNodes: TreeNode[] = [
     pheno: 'P2',
     gen: 'P1',
     type: 'strain',
-    parents: { mother: null, father: null }
+    parents: { mother: null, father: null },
   },
   {
     id: 'f1',
@@ -40,7 +40,7 @@ const mockNodes: TreeNode[] = [
     pheno: 'F1',
     gen: 'F1',
     type: 'batch',
-    parents: { mother: 'p1', father: 'p2' }
+    parents: { mother: 'p1', father: 'p2' },
   },
   {
     id: 'f2',
@@ -50,8 +50,8 @@ const mockNodes: TreeNode[] = [
     pheno: 'F2',
     gen: 'F2',
     type: 'batch',
-    parents: { mother: 'f1', father: null }
-  }
+    parents: { mother: 'f1', father: null },
+  },
 ];
 
 describe('genetics-tree-layout', () => {
@@ -88,13 +88,25 @@ describe('genetics-tree-layout', () => {
     it('should handle cycles gracefully', () => {
       const cyclicNodes: TreeNode[] = [
         {
-          id: 'a', name: 'A', strain: 'S', breeder: 'B', pheno: 'P', gen: 'F1', type: 'batch',
-          parents: { mother: 'b', father: null }
+          id: 'a',
+          name: 'A',
+          strain: 'S',
+          breeder: 'B',
+          pheno: 'P',
+          gen: 'F1',
+          type: 'batch',
+          parents: { mother: 'b', father: null },
         },
         {
-          id: 'b', name: 'B', strain: 'S', breeder: 'B', pheno: 'P', gen: 'F1', type: 'batch',
-          parents: { mother: 'a', father: null }
-        }
+          id: 'b',
+          name: 'B',
+          strain: 'S',
+          breeder: 'B',
+          pheno: 'P',
+          gen: 'F1',
+          type: 'batch',
+          parents: { mother: 'a', father: null },
+        },
       ];
       const result = layoutTopDown(cyclicNodes);
       expect(Object.keys(result.nodes)).toHaveLength(2);
@@ -139,9 +151,15 @@ describe('genetics-tree-layout', () => {
       const multiBreeder: TreeNode[] = [
         ...mockNodes,
         {
-          id: 'x1', name: 'X1', strain: 'X', breeder: 'Other', pheno: '',
-          gen: 'F1', type: 'strain', parents: { mother: null, father: null }
-        }
+          id: 'x1',
+          name: 'X1',
+          strain: 'X',
+          breeder: 'Other',
+          pheno: '',
+          gen: 'F1',
+          type: 'strain',
+          parents: { mother: null, father: null },
+        },
       ];
       const result = layoutBreederGrouped(multiBreeder);
       expect(result.bands!.length).toBe(2);

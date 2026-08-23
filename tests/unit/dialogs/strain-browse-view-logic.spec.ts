@@ -94,10 +94,7 @@ describe('filterAndSortStrains', () => {
   });
 
   it('applies the library filter before searching', () => {
-    const withStub = [
-      ...strains,
-      makeStrain({ strain: 'Stub Z', is_stub: true }),
-    ];
+    const withStub = [...strains, makeStrain({ strain: 'Stub Z', is_stub: true })];
     const result = filterAndSortStrains(withStub, 'z', 'library', EMPTY_COUNTS);
     expect(result.every((s) => !s.is_stub)).toBe(true);
   });

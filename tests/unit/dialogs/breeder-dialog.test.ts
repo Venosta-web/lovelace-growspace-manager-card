@@ -185,11 +185,7 @@ describe('Breeder aggregation', () => {
     ];
 
     const result = getUniqueBreeders(strains);
-    expect(result.map((b) => b.name)).toEqual([
-      'Apple Seeds',
-      'Middle Breeders',
-      'Zebra Genetics',
-    ]);
+    expect(result.map((b) => b.name)).toEqual(['Apple Seeds', 'Middle Breeders', 'Zebra Genetics']);
   });
 
   it('should handle single strain with breeder', () => {

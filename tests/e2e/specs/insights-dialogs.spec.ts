@@ -1,6 +1,11 @@
 import { haTest as test, expect } from '../fixtures/ha-setup';
 import { GrowspaceCard } from '../pages/GrowspaceCard';
-import { LogbookDialog, SnapshotsDialog, GrowReportDialog, GrowMasterDialog } from '../pages/Dialogs';
+import {
+  LogbookDialog,
+  SnapshotsDialog,
+  GrowReportDialog,
+  GrowMasterDialog,
+} from '../pages/Dialogs';
 
 test.describe('Insights dialogs', () => {
   let growspaceCard: GrowspaceCard;

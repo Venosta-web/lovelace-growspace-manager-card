@@ -42,7 +42,11 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
-async function callService(domain: string, service: string, data: Record<string, unknown>): Promise<void> {
+async function callService(
+  domain: string,
+  service: string,
+  data: Record<string, unknown>
+): Promise<void> {
   const res = await fetch(`${BASE_URL}/api/services/${domain}/${service}`, {
     method: 'POST',
     headers,
@@ -57,19 +61,19 @@ async function callService(domain: string, service: string, data: Record<string,
 async function getStateAttributes(entityId: string): Promise<Record<string, unknown> | null> {
   const res = await fetch(`${BASE_URL}/api/states/${entityId}`, { headers });
   if (!res.ok) return null;
-  const data = await res.json() as { attributes: Record<string, unknown> };
+  const data = (await res.json()) as { attributes: Record<string, unknown> };
   return data.attributes;
 }
 
 async function getStateValue(entityId: string): Promise<string | null> {
   const res = await fetch(`${BASE_URL}/api/states/${entityId}`, { headers });
   if (!res.ok) return null;
-  const data = await res.json() as { state: string };
+  const data = (await res.json()) as { state: string };
   return data.state;
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(r => setTimeout(r, ms));
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 interface VwcStrategyParams {
@@ -111,11 +115,11 @@ function stageDate(daysAgo = 0): string {
 
 const GROWSPACES: GrowspaceSpec[] = [
   { slug: 'mother', name: 'E2E Mother', plantStageField: 'mother_start' },
-  { slug: 'clone',  name: 'E2E Clone',  plantStageField: 'clone_start'  },
-  { slug: 'veg',    name: 'E2E Veg',    plantStageField: 'veg_start'    },
+  { slug: 'clone', name: 'E2E Clone', plantStageField: 'clone_start' },
+  { slug: 'veg', name: 'E2E Veg', plantStageField: 'veg_start' },
   { slug: 'flower', name: 'E2E Flower', plantStageField: 'flower_start' },
-  { slug: 'dry',    name: 'E2E Dry',    plantStageField: 'dry_start'    },
-  { slug: 'cure',   name: 'E2E Cure',   plantStageField: 'cure_start'   },
+  { slug: 'dry', name: 'E2E Dry', plantStageField: 'dry_start' },
+  { slug: 'cure', name: 'E2E Cure', plantStageField: 'cure_start' },
   {
     slug: 'vwc_veg',
     name: 'E2E VWC Veg',
@@ -154,22 +158,22 @@ function buildSensors(slug: string) {
   const domain = isVwc ? 'input_number' : 'sensor';
   const s = (suffix: string) => `${domain}.e2e_${slug}_${suffix}`;
   return {
-    temperature_sensor:      s('temperature'),
-    humidity_sensor:         s('humidity'),
-    vpd_sensor:              s('vpd'),
-    co2_sensor:              s('co2'),
-    feed_ec_sensors:         [s('feed_ec')],
-    bulk_ec_sensors:         [s('bulk_ec')],
-    pore_ec_sensors:         [s('pore_ec')],
-    runoff_ec_sensors:       [s('runoff_ec')],
-    ph_sensors:              [s('ph')],
+    temperature_sensor: s('temperature'),
+    humidity_sensor: s('humidity'),
+    vpd_sensor: s('vpd'),
+    co2_sensor: s('co2'),
+    feed_ec_sensors: [s('feed_ec')],
+    bulk_ec_sensors: [s('bulk_ec')],
+    pore_ec_sensors: [s('pore_ec')],
+    runoff_ec_sensors: [s('runoff_ec')],
+    ph_sensors: [s('ph')],
     substrate_temperature_sensors: [s('substrate_temperature')],
-    soil_moisture_sensor:    s('substrate_moisture'),
-    power_sensors:           [s('power')],
-    energy_sensors:          [s('energy')],
-    drain_volume_sensors:    [s('drain_volume')],
+    soil_moisture_sensor: s('substrate_moisture'),
+    power_sensors: [s('power')],
+    energy_sensors: [s('energy')],
+    drain_volume_sensors: [s('drain_volume')],
     irrigation_flow_sensors: [s('irrigation_flow')],
-    irrigation_tanks:        [{ sensor_entity: s('irrigation_tank'), volume_liters: 50 }],
+    irrigation_tanks: [{ sensor_entity: s('irrigation_tank'), volume_liters: 50 }],
   };
 }
 
@@ -204,7 +208,9 @@ async function ensureGrowspace(spec: GrowspaceSpec): Promise<string> {
       return id;
     }
   }
-  throw new Error(`Overview sensor sensor.e2e_${spec.slug}_overview never appeared after growspace creation`);
+  throw new Error(
+    `Overview sensor sensor.e2e_${spec.slug}_overview never appeared after growspace creation`
+  );
 }
 
 async function ensureStagePlant(growspaceId: string, spec: GrowspaceSpec): Promise<void> {
@@ -241,7 +247,11 @@ async function configureEnvironment(growspaceId: string, slug: string): Promise<
   });
 }
 
-async function setVwcStrategy(growspaceId: string, slug: string, params: VwcStrategyParams): Promise<void> {
+async function setVwcStrategy(
+  growspaceId: string,
+  slug: string,
+  params: VwcStrategyParams
+): Promise<void> {
   console.log(`  enabling VWC steering strategy…`);
   await callService('growspace_manager', 'set_irrigation_strategy', {
     growspace_id: growspaceId,
@@ -325,7 +335,7 @@ async function main(): Promise<void> {
   writeIdsToEnvFile(results);
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error(err.message ?? err);
   process.exit(1);
 });

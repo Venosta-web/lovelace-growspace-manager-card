@@ -31,27 +31,42 @@ describe('GrowspaceAnalyticsCard', () => {
   const hass = aHass({ growspaces: [growspace] });
 
   test('renders without crash', async () => {
-    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
     expect(handle.element).toBeInstanceOf(GrowspaceAnalyticsCard);
     handle.unmount();
   });
 
   test('throws error on invalid config', async () => {
-    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
     expect(() => handle.element.setConfig(undefined as any)).toThrowError('Invalid configuration');
     handle.unmount();
   });
 
   test('initializes default growspace from config', async () => {
-    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
-    handle.element.setConfig({ type: 'custom:growspace-analytics-card', default_growspace: growspace.growspaceId });
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
+    handle.element.setConfig({
+      type: 'custom:growspace-analytics-card',
+      default_growspace: growspace.growspaceId,
+    });
     expect(handle.element._config?.default_growspace).toBe(growspace.growspaceId);
     expect((handle.element.store as any)._refreshCallback).toBeDefined();
     handle.unmount();
   });
 
   test('renders error state when hass is missing', async () => {
-    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
     handle.element.hass = undefined as any;
     await handle.element.updateComplete;
 
@@ -68,13 +83,19 @@ describe('GrowspaceAnalyticsCard', () => {
   });
 
   test('returns standard card size', async () => {
-    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
     expect(handle.element.getCardSize()).toBe(4);
     handle.unmount();
   });
 
   test('renders loading state when store is loading', async () => {
-    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
     handle.element.store.ui.$isLoading.set(true);
     handle.element.store.ui.$isEditMode.set(false);
     handle.element.store.ui.$viewMode.set(ViewMode.STANDARD);
@@ -87,7 +108,10 @@ describe('GrowspaceAnalyticsCard', () => {
   });
 
   test('renders no-data state when devices array is empty', async () => {
-    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
     handle.element.store.ui.$isLoading.set(false);
     setDevices([]);
     await handle.element.updateComplete;
@@ -99,11 +123,12 @@ describe('GrowspaceAnalyticsCard', () => {
   });
 
   test('renders analytics view when valid device selected', async () => {
-    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
     handle.element.store.ui.$isLoading.set(false);
-    setDevices([
-      { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
-    ]);
+    setDevices([{ deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any]);
     handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
     await handle.element.updateComplete;
 
@@ -114,11 +139,12 @@ describe('GrowspaceAnalyticsCard', () => {
 
   describe('chip-driven chart', () => {
     test('clickChip calls toggleEnvGraph for the selected metric', async () => {
-      const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+      const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+        hass,
+        growspace,
+      });
       handle.element.store.ui.$isLoading.set(false);
-      setDevices([
-        { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
-      ]);
+      setDevices([{ deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any]);
       handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
       await handle.element.updateComplete;
 
@@ -130,7 +156,10 @@ describe('GrowspaceAnalyticsCard', () => {
   });
 
   test('disconnectedCallback destroys store', async () => {
-    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
     const spy = vi.spyOn(handle.element.store, 'destroy');
     handle.element.disconnectedCallback();
     expect(spy).toHaveBeenCalled();
@@ -142,7 +171,10 @@ describe('GrowspaceAnalyticsCard', () => {
   });
 
   test('getLayoutOptions returns grid sizing options', async () => {
-    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
     const opts = handle.element.getLayoutOptions();
     expect(opts).toEqual({
       grid_columns: 8,
@@ -154,11 +186,12 @@ describe('GrowspaceAnalyticsCard', () => {
   });
 
   test('renders error state when devices exist but none matches selectedDevice', async () => {
-    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
     handle.element.store.ui.$isLoading.set(false);
-    setDevices([
-      { deviceId: 'other-device', name: 'Other', plants: [] } as any,
-    ]);
+    setDevices([{ deviceId: 'other-device', name: 'Other', plants: [] } as any]);
     handle.element.store.grid.$selectedDevice.set('no-match-device-id');
     await handle.element.updateComplete;
 
@@ -169,15 +202,16 @@ describe('GrowspaceAnalyticsCard', () => {
   });
 
   test('_handleError calls console.error and hass.callService', async () => {
-    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const testError = new Error('analytics error');
     (handle.element as any)._handleError(testError, { componentStack: 'test' });
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'Growspace Analytics Card caught error:',
-      testError,
-      { componentStack: 'test' }
-    );
+    expect(consoleSpy).toHaveBeenCalledWith('Growspace Analytics Card caught error:', testError, {
+      componentStack: 'test',
+    });
     expect(hass.callService).toHaveBeenCalledWith(
       'system_log',
       'write',
@@ -189,7 +223,10 @@ describe('GrowspaceAnalyticsCard', () => {
 
   test('firstUpdated does not reset graphs when they are already active', async () => {
     // Pre-populate graphs before the card mounts so the if-branch is skipped
-    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
     // After first render, graphs are already set by firstUpdated (truthy-branch covered elsewhere).
     // Now manually add an extra graph and call firstUpdated again to exercise the falsy branch.
     handle.element.store.history.toggleEnvGraph('co2');

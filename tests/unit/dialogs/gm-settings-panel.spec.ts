@@ -26,7 +26,9 @@ describe('GmSettingsPanel — controls', () => {
   it('renders md3-entity-input for assistant_id with conversation domain filter', async () => {
     element.draft = { assistant_id: 'conversation.claude' };
     await element.updateComplete;
-    const picker = element.shadowRoot?.querySelector('md3-entity-input[data-field="assistant_id"]') as any;
+    const picker = element.shadowRoot?.querySelector(
+      'md3-entity-input[data-field="assistant_id"]'
+    ) as any;
     expect(picker).toBeTruthy();
     expect(picker?.domains).toContain('conversation');
   });
@@ -34,7 +36,9 @@ describe('GmSettingsPanel — controls', () => {
   it('renders md3-select for notification_personality with 5 options', async () => {
     element.draft = {};
     await element.updateComplete;
-    const select = element.shadowRoot?.querySelector('md3-select[data-field="notification_personality"]') as any;
+    const select = element.shadowRoot?.querySelector(
+      'md3-select[data-field="notification_personality"]'
+    ) as any;
     expect(select).toBeTruthy();
     expect((select?.options as unknown[]).length).toBe(5);
   });
@@ -42,7 +46,9 @@ describe('GmSettingsPanel — controls', () => {
   it('renders md3-number-input for max_response_length', async () => {
     element.draft = { max_response_length: 250 };
     await element.updateComplete;
-    const field = element.shadowRoot?.querySelector('md3-number-input[data-field="max_response_length"]') as any;
+    const field = element.shadowRoot?.querySelector(
+      'md3-number-input[data-field="max_response_length"]'
+    ) as any;
     expect(field).toBeTruthy();
     expect(field?.value).toBe(250);
   });
@@ -50,7 +56,9 @@ describe('GmSettingsPanel — controls', () => {
   it('renders md3-number-input for briefing_interval_minutes with min 5 and max 1440', async () => {
     element.draft = { briefing_interval_minutes: 30 };
     await element.updateComplete;
-    const field = element.shadowRoot?.querySelector('md3-number-input[data-field="briefing_interval_minutes"]') as any;
+    const field = element.shadowRoot?.querySelector(
+      'md3-number-input[data-field="briefing_interval_minutes"]'
+    ) as any;
     expect(field).toBeTruthy();
     expect(field?.min).toBe(5);
     expect(field?.max).toBe(1440);
@@ -59,7 +67,9 @@ describe('GmSettingsPanel — controls', () => {
   it('renders md3-entity-input for ai_task_entity_id filtered to ai_task domain', async () => {
     element.draft = { ai_task_entity_id: 'ai_task.grow_tasks' };
     await element.updateComplete;
-    const picker = element.shadowRoot?.querySelector('md3-entity-input[data-field="ai_task_entity_id"]') as any;
+    const picker = element.shadowRoot?.querySelector(
+      'md3-entity-input[data-field="ai_task_entity_id"]'
+    ) as any;
     expect(picker).toBeTruthy();
     expect(picker?.domains).toContain('ai_task');
   });
@@ -67,7 +77,9 @@ describe('GmSettingsPanel — controls', () => {
   it('renders config-entity-multi-select for briefing_trigger_entities', async () => {
     element.draft = { briefing_trigger_entities: ['sensor.vpd'] };
     await element.updateComplete;
-    const picker = element.shadowRoot?.querySelector('config-entity-multi-select[data-field="briefing_trigger_entities"]') as any;
+    const picker = element.shadowRoot?.querySelector(
+      'config-entity-multi-select[data-field="briefing_trigger_entities"]'
+    ) as any;
     expect(picker).toBeTruthy();
     expect(picker?.values).toContain('sensor.vpd');
   });
@@ -78,7 +90,9 @@ describe('GmSettingsPanel — controls', () => {
     const changes: any[] = [];
     element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
     const picker = element.shadowRoot?.querySelector('md3-entity-input[data-field="assistant_id"]');
-    picker?.dispatchEvent(new CustomEvent('change', { detail: 'conversation.openai', bubbles: true, composed: true }));
+    picker?.dispatchEvent(
+      new CustomEvent('change', { detail: 'conversation.openai', bubbles: true, composed: true })
+    );
     expect(changes[0]).toMatchObject({ assistant_id: 'conversation.openai' });
   });
 
@@ -87,8 +101,12 @@ describe('GmSettingsPanel — controls', () => {
     await element.updateComplete;
     const changes: any[] = [];
     element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
-    const select = element.shadowRoot?.querySelector('md3-select[data-field="notification_personality"]');
-    select?.dispatchEvent(new CustomEvent('change', { detail: 'Scientific', bubbles: true, composed: true }));
+    const select = element.shadowRoot?.querySelector(
+      'md3-select[data-field="notification_personality"]'
+    );
+    select?.dispatchEvent(
+      new CustomEvent('change', { detail: 'Scientific', bubbles: true, composed: true })
+    );
     expect(changes[0]).toMatchObject({ notification_personality: 'Scientific' });
   });
 
@@ -99,7 +117,9 @@ describe('GmSettingsPanel — controls', () => {
     expect(sw).toBeTruthy();
     const changes: any[] = [];
     element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
-    sw?.dispatchEvent(new CustomEvent('change', { detail: { checked: true }, bubbles: true, composed: true }));
+    sw?.dispatchEvent(
+      new CustomEvent('change', { detail: { checked: true }, bubbles: true, composed: true })
+    );
     expect(changes[0]).toMatchObject({ ai_enabled: true });
   });
 
@@ -108,8 +128,12 @@ describe('GmSettingsPanel — controls', () => {
     await element.updateComplete;
     const changes: any[] = [];
     element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
-    const field = element.shadowRoot?.querySelector('md3-number-input[data-field="max_response_length"]');
-    field?.dispatchEvent(new CustomEvent('change', { detail: '500', bubbles: true, composed: true }));
+    const field = element.shadowRoot?.querySelector(
+      'md3-number-input[data-field="max_response_length"]'
+    );
+    field?.dispatchEvent(
+      new CustomEvent('change', { detail: '500', bubbles: true, composed: true })
+    );
     expect(changes[0]).toMatchObject({ max_response_length: 500 });
   });
 
@@ -127,7 +151,9 @@ describe('GmSettingsPanel — controls', () => {
     expect(sw).toBeTruthy();
     const changes: any[] = [];
     element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
-    sw?.dispatchEvent(new CustomEvent('change', { detail: { checked: true }, bubbles: true, composed: true }));
+    sw?.dispatchEvent(
+      new CustomEvent('change', { detail: { checked: true }, bubbles: true, composed: true })
+    );
     expect(changes[0]).toMatchObject({ vision_checkup_enabled: true });
   });
 
@@ -136,8 +162,12 @@ describe('GmSettingsPanel — controls', () => {
     await element.updateComplete;
     const changes: any[] = [];
     element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
-    const field = element.shadowRoot?.querySelector('md3-number-input[data-field="briefing_interval_minutes"]');
-    field?.dispatchEvent(new CustomEvent('change', { detail: '60', bubbles: true, composed: true }));
+    const field = element.shadowRoot?.querySelector(
+      'md3-number-input[data-field="briefing_interval_minutes"]'
+    );
+    field?.dispatchEvent(
+      new CustomEvent('change', { detail: '60', bubbles: true, composed: true })
+    );
     expect(changes[0]).toMatchObject({ briefing_interval_minutes: 60 });
   });
 
@@ -146,8 +176,12 @@ describe('GmSettingsPanel — controls', () => {
     await element.updateComplete;
     const changes: any[] = [];
     element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
-    const picker = element.shadowRoot?.querySelector('md3-entity-input[data-field="ai_task_entity_id"]');
-    picker?.dispatchEvent(new CustomEvent('change', { detail: null, bubbles: true, composed: true }));
+    const picker = element.shadowRoot?.querySelector(
+      'md3-entity-input[data-field="ai_task_entity_id"]'
+    );
+    picker?.dispatchEvent(
+      new CustomEvent('change', { detail: null, bubbles: true, composed: true })
+    );
     expect(changes[0]).toMatchObject({ ai_task_entity_id: null });
   });
 
@@ -156,8 +190,16 @@ describe('GmSettingsPanel — controls', () => {
     await element.updateComplete;
     const changes: any[] = [];
     element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
-    const picker = element.shadowRoot?.querySelector('config-entity-multi-select[data-field="briefing_trigger_entities"]');
-    picker?.dispatchEvent(new CustomEvent('entity-values-changed', { detail: { values: ['sensor.vpd', 'sensor.temp'] }, bubbles: true, composed: true }));
+    const picker = element.shadowRoot?.querySelector(
+      'config-entity-multi-select[data-field="briefing_trigger_entities"]'
+    );
+    picker?.dispatchEvent(
+      new CustomEvent('entity-values-changed', {
+        detail: { values: ['sensor.vpd', 'sensor.temp'] },
+        bubbles: true,
+        composed: true,
+      })
+    );
     expect(changes[0]).toMatchObject({ briefing_trigger_entities: ['sensor.vpd', 'sensor.temp'] });
   });
 
@@ -166,8 +208,16 @@ describe('GmSettingsPanel — controls', () => {
     await element.updateComplete;
     const changes: any[] = [];
     element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
-    const picker = element.shadowRoot?.querySelector('config-entity-multi-select[data-field="briefing_trigger_entities"]');
-    picker?.dispatchEvent(new CustomEvent('entity-values-changed', { detail: { values: [] }, bubbles: true, composed: true }));
+    const picker = element.shadowRoot?.querySelector(
+      'config-entity-multi-select[data-field="briefing_trigger_entities"]'
+    );
+    picker?.dispatchEvent(
+      new CustomEvent('entity-values-changed', {
+        detail: { values: [] },
+        bubbles: true,
+        composed: true,
+      })
+    );
     expect(changes[0]).toMatchObject({ briefing_trigger_entities: [] });
   });
 

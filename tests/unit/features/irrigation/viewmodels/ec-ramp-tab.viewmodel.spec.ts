@@ -57,7 +57,11 @@ describe('createEcRampTabViewModel', () => {
   });
 
   it('projects the SM editing draft (and its points) into the VM', () => {
-    const draft: EcRampCurveDraft = { name: 'Bloom', stage: 'flower', points: [{ day: 1, target_ec: 1.0 }] };
+    const draft: EcRampCurveDraft = {
+      name: 'Bloom',
+      stage: 'flower',
+      points: [{ day: 1, target_ec: 1.0 }],
+    };
     const sm = transition(createInitialSM(), { type: 'EC_RAMP_EDIT_CURVE', draft });
     const vm = build(sm, { c1: curve() });
     expect(vm.editing).toEqual({ draft, points: draft.points });

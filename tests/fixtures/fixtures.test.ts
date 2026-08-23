@@ -56,8 +56,18 @@ describe('anEnvSnapshot', () => {
 
   it('defaults substrate sensor group to realistic readings', () => {
     const snap = anEnvSnapshot();
-    expect(snap.soilMoisture).toEqual({ avg: 65, sum: 65, perSensor: [65], entityIds: ['sensor.test_tent_soil_moisture'] });
-    expect(snap.substrateTemperature).toEqual({ avg: 22.0, sum: 22.0, perSensor: [22.0], entityIds: ['sensor.test_tent_substrate_temp'] });
+    expect(snap.soilMoisture).toEqual({
+      avg: 65,
+      sum: 65,
+      perSensor: [65],
+      entityIds: ['sensor.test_tent_soil_moisture'],
+    });
+    expect(snap.substrateTemperature).toEqual({
+      avg: 22.0,
+      sum: 22.0,
+      perSensor: [22.0],
+      entityIds: ['sensor.test_tent_substrate_temp'],
+    });
   });
 
   it('defaults irrigation monitoring group to realistic sensor readings', () => {
@@ -100,7 +110,12 @@ describe('aGrowspaceDevice', () => {
   });
 
   it('merges overrides', () => {
-    const device = aGrowspaceDevice({ deviceId: 'veg_room', name: 'Veg Room', rows: 4, plantsPerRow: 5 });
+    const device = aGrowspaceDevice({
+      deviceId: 'veg_room',
+      name: 'Veg Room',
+      rows: 4,
+      plantsPerRow: 5,
+    });
     expect(device.deviceId).toBe('veg_room');
     expect(device.name).toBe('Veg Room');
     expect(device.rows).toBe(4);

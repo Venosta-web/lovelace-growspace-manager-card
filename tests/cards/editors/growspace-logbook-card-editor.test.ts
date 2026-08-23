@@ -17,11 +17,11 @@ describe('GrowspaceLogbookCardEditor', () => {
           state: '2',
           attributes: {
             growspaces: {
-              'gs1': 'Test Tent',
-              'gs2': 'Another Tent',
-            }
-          }
-        }
+              gs1: 'Test Tent',
+              gs2: 'Another Tent',
+            },
+          },
+        },
       },
       connection: {
         subscribeEvents: vi.fn().mockResolvedValue(vi.fn()),
@@ -37,7 +37,7 @@ describe('GrowspaceLogbookCardEditor', () => {
     const config: GrowspaceManagerCardConfig = {
       type: 'custom:growspace-logbook-card',
       default_growspace: 'gs1',
-      default_view: 'timeline'
+      default_view: 'timeline',
     };
     element.setConfig(config);
     expect((element as any)._config).toEqual(config);
@@ -69,7 +69,7 @@ describe('GrowspaceLogbookCardEditor', () => {
     const dispatchEventSpy = vi.spyOn(element, 'dispatchEvent');
 
     (element as any)._valueChanged({
-      detail: { value: { ...config, default_view: 'timeline' } }
+      detail: { value: { ...config, default_view: 'timeline' } },
     } as any);
 
     expect(dispatchEventSpy).toHaveBeenCalled();
@@ -106,8 +106,14 @@ describe('GrowspaceLogbookCardEditor', () => {
     const schema = (element as any)._computeSchema();
     const defaultViewField = schema.find((f: any) => f.name === 'default_view');
     expect(defaultViewField).toBeTruthy();
-    expect(defaultViewField.selector.select.options).toContainEqual({ label: 'List View', value: 'list' });
-    expect(defaultViewField.selector.select.options).toContainEqual({ label: 'Timeline', value: 'timeline' });
+    expect(defaultViewField.selector.select.options).toContainEqual({
+      label: 'List View',
+      value: 'list',
+    });
+    expect(defaultViewField.selector.select.options).toContainEqual({
+      label: 'Timeline',
+      value: 'timeline',
+    });
   });
 
   test('willUpdate() calls controller.update when hass key is present', () => {
@@ -127,8 +133,14 @@ describe('GrowspaceLogbookCardEditor', () => {
     (element as any).willUpdate(new Map([['hass', null]]));
     const schema = (element as any)._computeSchema();
     const growspaceField = schema.find((f: any) => f.name === 'default_growspace');
-    expect(growspaceField.selector.select.options).toContainEqual({ label: 'Test Tent', value: 'gs1' });
-    expect(growspaceField.selector.select.options).toContainEqual({ label: 'Another Tent', value: 'gs2' });
+    expect(growspaceField.selector.select.options).toContainEqual({
+      label: 'Test Tent',
+      value: 'gs1',
+    });
+    expect(growspaceField.selector.select.options).toContainEqual({
+      label: 'Another Tent',
+      value: 'gs2',
+    });
   });
 
   test('render returns empty template if hass is missing', () => {

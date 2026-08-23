@@ -19,9 +19,7 @@ if (!customElements.get('ha-dialog')) {
 
 describe('AddPlantDialog — SM wiring smoke test', () => {
   it('renders without crash when open with default SM state', async () => {
-    const element = await fixture<AddPlantDialog>(
-      html`<add-plant-dialog></add-plant-dialog>`
-    );
+    const element = await fixture<AddPlantDialog>(html`<add-plant-dialog></add-plant-dialog>`);
     element.hass = {} as any;
     element.strainLibrary = [];
     element.open = true;
@@ -34,9 +32,7 @@ describe('AddPlantDialog — SM wiring smoke test', () => {
   });
 
   it('SM activeTab drives rendered tab bar active state', async () => {
-    const element = await fixture<AddPlantDialog>(
-      html`<add-plant-dialog></add-plant-dialog>`
-    );
+    const element = await fixture<AddPlantDialog>(html`<add-plant-dialog></add-plant-dialog>`);
     element.hass = {} as any;
     element.strainLibrary = [];
     element.open = true;
@@ -49,9 +45,7 @@ describe('AddPlantDialog — SM wiring smoke test', () => {
   });
 
   it('SM step-identity sub drives wizard step indicator to step 1', async () => {
-    const element = await fixture<AddPlantDialog>(
-      html`<add-plant-dialog></add-plant-dialog>`
-    );
+    const element = await fixture<AddPlantDialog>(html`<add-plant-dialog></add-plant-dialog>`);
     element.hass = {} as any;
     element.strainLibrary = [];
     element.open = true;
@@ -65,9 +59,7 @@ describe('AddPlantDialog — SM wiring smoke test', () => {
   it('renders plant fixtures without crash', async () => {
     const growspace = aGrowspace();
     const plant = aPlant();
-    const element = await fixture<AddPlantDialog>(
-      html`<add-plant-dialog></add-plant-dialog>`
-    );
+    const element = await fixture<AddPlantDialog>(html`<add-plant-dialog></add-plant-dialog>`);
     element.hass = {} as any;
     element.strainLibrary = [];
     element.siblingPlants = [plant as any];

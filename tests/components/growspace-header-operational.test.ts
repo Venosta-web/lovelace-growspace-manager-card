@@ -33,7 +33,9 @@ async function renderHeader(
 }
 
 function actionsFor(header: GrowspaceHeaderUI): GrowspaceHeaderActionsUI {
-  return header.shadowRoot!.querySelector('growspace-header-actions-ui') as GrowspaceHeaderActionsUI;
+  return header.shadowRoot!.querySelector(
+    'growspace-header-actions-ui'
+  ) as GrowspaceHeaderActionsUI;
 }
 
 describe('growspace header operational priority', () => {
@@ -48,9 +50,8 @@ describe('growspace header operational priority', () => {
 
   it('surfaces attention and offers the available review flow', async () => {
     const header = await renderHeader(deviceWithPlants(3), ['Northern Lights', 'Blue Dream']);
-    const action = actionsFor(header).shadowRoot!.querySelector<HTMLButtonElement>(
-      '.primary-action'
-    )!;
+    const action =
+      actionsFor(header).shadowRoot!.querySelector<HTMLButtonElement>('.primary-action')!;
 
     expect(header.shadowRoot!.querySelector('.operational-summary')!.textContent).toContain(
       '2 plants need attention'
@@ -65,9 +66,8 @@ describe('growspace header operational priority', () => {
       ['Northern Lights'],
       new Set(['plant-1', 'plant-2'])
     );
-    const action = actionsFor(header).shadowRoot!.querySelector<HTMLButtonElement>(
-      '.primary-action'
-    )!;
+    const action =
+      actionsFor(header).shadowRoot!.querySelector<HTMLButtonElement>('.primary-action')!;
 
     expect(action.textContent).toContain('Water selected (2)');
     expect(action.dataset.action).toBe('water');
@@ -88,9 +88,8 @@ describe('growspace header operational priority', () => {
 
   it('offers adding a plant only for a known empty growspace', async () => {
     const header = await renderHeader(deviceWithPlants(0), [], new Set(['stale-selection']));
-    const action = actionsFor(header).shadowRoot!.querySelector<HTMLButtonElement>(
-      '.primary-action'
-    )!;
+    const action =
+      actionsFor(header).shadowRoot!.querySelector<HTMLButtonElement>('.primary-action')!;
 
     expect(header.shadowRoot!.querySelector('.operational-summary')!.textContent).toContain(
       'Ready for plants'
@@ -101,8 +100,8 @@ describe('growspace header operational priority', () => {
   it('organizes every overflow destination under the three intent groups', async () => {
     const header = await renderHeader(deviceWithPlants(2));
     const actions = actionsFor(header);
-    const groupLabels = Array.from(actions.shadowRoot!.querySelectorAll('.menu-header')).map((node) =>
-      node.textContent?.trim()
+    const groupLabels = Array.from(actions.shadowRoot!.querySelectorAll('.menu-header')).map(
+      (node) => node.textContent?.trim()
     );
     const destinations = Array.from(
       actions.shadowRoot!.querySelectorAll<HTMLButtonElement>('.menu-item')

@@ -5,9 +5,7 @@
  * state machine, no slices, no factory — proving the component is a pure
  * function of its `vm` property.
  */
-import type {
-  OverviewTabViewModel,
-} from '../../../../../src/features/irrigation/viewmodels/overview-tab.viewmodel';
+import type { OverviewTabViewModel } from '../../../../../src/features/irrigation/viewmodels/overview-tab.viewmodel';
 import type { DialogCapabilities } from '../../../../../src/features/irrigation/viewmodels/dialog-capabilities';
 
 export type { OverviewTabViewModel };
@@ -23,7 +21,9 @@ const defaultCaps: DialogCapabilities = {
 };
 
 /** A fully-populated, available Overview VM; override any field per test. */
-export function makeOverviewVm(overrides: Partial<OverviewTabViewModel> = {}): OverviewTabViewModel {
+export function makeOverviewVm(
+  overrides: Partial<OverviewTabViewModel> = {}
+): OverviewTabViewModel {
   return {
     unavailable: false,
     scoreText: '0.00',

@@ -128,7 +128,9 @@ export class AddPlantDialog {
     }
 
     if (plantData.phenotype) {
-      const phenotypeInput = this.dialog.locator('md3-text-input[label*="Phenotype" i]').locator('input');
+      const phenotypeInput = this.dialog
+        .locator('md3-text-input[label*="Phenotype" i]')
+        .locator('input');
       await phenotypeInput.fill(plantData.phenotype);
     }
   }
@@ -164,7 +166,10 @@ export class ConfigDialog {
   }
 
   async fillTimeField(label: string, value: string) {
-    await this.dialog.locator(`md3-text-input[type="time"][label="${label}"]`).locator('input').fill(value);
+    await this.dialog
+      .locator(`md3-text-input[type="time"][label="${label}"]`)
+      .locator('input')
+      .fill(value);
   }
 
   getTimeField(label: string): Locator {
@@ -200,7 +205,9 @@ export class WateringDialog {
   }
 
   async fillAmount(amount: number) {
-    const amountInput = this.dialog.locator('md3-number-input[label="Volume (Liters)"]').locator('input');
+    const amountInput = this.dialog
+      .locator('md3-number-input[label="Volume (Liters)"]')
+      .locator('input');
     await amountInput.fill(String(amount));
   }
 
@@ -267,7 +274,9 @@ export class IrrigationDialog {
     const overlay = this.dialog.locator('.overlay-backdrop');
     await expect(overlay).toBeVisible();
     await overlay.locator('md3-text-input[label="Time"] input').fill(time);
-    await overlay.locator('md3-number-input[label="Duration (seconds)"] input').fill(String(duration));
+    await overlay
+      .locator('md3-number-input[label="Duration (seconds)"] input')
+      .fill(String(duration));
     await overlay.locator('button.md3-button.primary', { hasText: 'Add Schedule' }).click();
     await expect(overlay).not.toBeVisible();
   }
@@ -285,9 +294,7 @@ export class IrrigationDialog {
   }
 
   hasIrrigationTime(time: string): Locator {
-    return this.dialog
-      .locator('.irrigation-time-bar')
-      .locator(`.timeline-event[title^="${time}"]`);
+    return this.dialog.locator('.irrigation-time-bar').locator(`.timeline-event[title^="${time}"]`);
   }
 
   // ── VWC / Steering tab ───────────────────────────────────────────────────────
@@ -301,11 +308,16 @@ export class IrrigationDialog {
   }
 
   async isVwcEnabled(): Promise<boolean> {
-    return this.dialog.locator('md3-switch[data-field="enabled"]').evaluate((el: any) => el.checked);
+    return this.dialog
+      .locator('md3-switch[data-field="enabled"]')
+      .evaluate((el: any) => el.checked);
   }
 
   async fillNumberField(label: string, value: number) {
-    await this.dialog.locator(`md3-number-input[label="${label}"]`).locator('input').fill(String(value));
+    await this.dialog
+      .locator(`md3-number-input[label="${label}"]`)
+      .locator('input')
+      .fill(String(value));
   }
 
   getNumberField(label: string): Locator {

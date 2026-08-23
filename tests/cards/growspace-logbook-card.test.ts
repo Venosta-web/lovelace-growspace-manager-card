@@ -22,19 +22,28 @@ describe('GrowspaceLogbookCard', () => {
   const hass = aHass({ growspaces: [growspace] });
 
   test('renders without crash', async () => {
-    const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', {
+      hass,
+      growspace,
+    });
     expect(handle.element).toBeInstanceOf(GrowspaceLogbookCard);
     handle.unmount();
   });
 
   test('throws error on invalid config', async () => {
-    const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', {
+      hass,
+      growspace,
+    });
     expect(() => handle.element.setConfig(undefined as any)).toThrowError('Invalid configuration');
     handle.unmount();
   });
 
   test('initializes default_view from config', async () => {
-    const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', {
+      hass,
+      growspace,
+    });
     handle.element.setConfig({ type: 'custom:growspace-logbook-card', default_view: 'timeline' });
     expect((handle.element as any)._activeTab).toBe('timeline');
     handle.unmount();
@@ -47,16 +56,25 @@ describe('GrowspaceLogbookCard', () => {
   });
 
   test('returns standard card size', async () => {
-    const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', {
+      hass,
+      growspace,
+    });
     expect(handle.element.getCardSize()).toBe(5);
     handle.unmount();
   });
 
   test('renders logbook card with tab bar when valid device selected', async () => {
-    const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', {
+      hass,
+      growspace,
+    });
     (handle.element as any)._viewController = {
       value: {
-        grid: { devices: [{ deviceId: growspace.growspaceId }], selectedDevice: growspace.growspaceId },
+        grid: {
+          devices: [{ deviceId: growspace.growspaceId }],
+          selectedDevice: growspace.growspaceId,
+        },
         ui: { isLoading: false },
       },
     };
@@ -70,10 +88,16 @@ describe('GrowspaceLogbookCard', () => {
 
   describe('list ↔ timeline toggle', () => {
     test('toggleLogbookView switches from list to timeline', async () => {
-      const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', { hass, growspace });
+      const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', {
+        hass,
+        growspace,
+      });
       (handle.element as any)._viewController = {
         value: {
-          grid: { devices: [{ deviceId: growspace.growspaceId }], selectedDevice: growspace.growspaceId },
+          grid: {
+            devices: [{ deviceId: growspace.growspaceId }],
+            selectedDevice: growspace.growspaceId,
+          },
           ui: { isLoading: false },
         },
       };
@@ -91,11 +115,17 @@ describe('GrowspaceLogbookCard', () => {
     });
 
     test('toggleLogbookView switches from timeline back to list', async () => {
-      const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', { hass, growspace });
+      const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', {
+        hass,
+        growspace,
+      });
       handle.element.setConfig({ type: 'custom:growspace-logbook-card', default_view: 'timeline' });
       (handle.element as any)._viewController = {
         value: {
-          grid: { devices: [{ deviceId: growspace.growspaceId }], selectedDevice: growspace.growspaceId },
+          grid: {
+            devices: [{ deviceId: growspace.growspaceId }],
+            selectedDevice: growspace.growspaceId,
+          },
           ui: { isLoading: false },
         },
       };
@@ -112,7 +142,10 @@ describe('GrowspaceLogbookCard', () => {
   });
 
   test('disconnectedCallback destroys store', async () => {
-    const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceLogbookCard>('growspace-logbook-card', {
+      hass,
+      growspace,
+    });
     const spy = vi.spyOn((handle.element as any)._store, 'destroy');
     handle.element.disconnectedCallback();
     expect(spy).toHaveBeenCalled();
