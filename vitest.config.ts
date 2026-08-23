@@ -12,6 +12,9 @@ if (selectedBatchId && !selectedBatch) {
 }
 
 export default defineConfig({
+    // node_modules may be shared by lockfile-identical hub worktrees. Keep the
+    // writable Vite optimiser cache local to this checkout.
+    cacheDir: '.cache/vite',
     test: {
         // Per-test retry absorbs transient in-context flakes (spy timing etc.).
         // It does NOT absorb the browser-mode module-mock race (vitest-dev/

@@ -102,7 +102,7 @@ in-flight work before. For anything beyond a trivial single-turn change:
 git fetch origin
 git worktree add .worktrees/<branch-name> -b <branch-name> origin/dev
 cd .worktrees/<branch-name>
-npm ci   # node_modules is not shared across worktrees — see CLAUDE.md
+npm ci   # standalone worktrees install privately; see CLAUDE.md for hub-managed pairs
 ```
 
 - The pre-commit worktree guard rejects commits made in the main checkout; override
@@ -111,6 +111,9 @@ npm ci   # node_modules is not shared across worktrees — see CLAUDE.md
   not the checkout — another session may have moved HEAD.
 - Base on **fresh `dev`** (every merge auto-releases, so a day-old `dev` is stale),
   unless the feature is explicitly stacked on another unmerged branch.
+- Worktrees created by `growspace_manager_workspace/scripts/feature` or its Codex
+  environment use the guarded sharing policy in `CLAUDE.md`; do not replace that link by
+  running an install command through it.
 
 ## Merge gates & landing order
 
