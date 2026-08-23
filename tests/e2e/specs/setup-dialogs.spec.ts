@@ -1,4 +1,4 @@
-import { haTest as test } from '../fixtures/ha-setup';
+import { expect, haTest as test } from '../fixtures/ha-setup';
 import { GrowspaceCard } from '../pages/GrowspaceCard';
 import {
   ConfigDialog,
@@ -17,10 +17,21 @@ test.describe('Setup dialogs', () => {
   });
 
   test('config dialog opens from Settings icon button', async ({ page }) => {
+    const pageErrors: Error[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error));
+
     // Settings is a standalone icon button in the header, not a menu item
     await growspaceCard.card.locator('[aria-label="Settings"]').click();
     const dialog = new ConfigDialog(page);
     await dialog.waitForOpen();
+
+    const nativePickers = dialog.dialog.locator('ha-entity-picker');
+    await expect(nativePickers).toHaveCount(2);
+    await expect(
+      nativePickers.first().getByText('Select an entity', { exact: true })
+    ).toBeVisible();
+    await expect(nativePickers.nth(1).getByText('Select an entity', { exact: true })).toBeVisible();
+    expect(pageErrors.filter((error) => error.message.includes("reading 'localize'"))).toEqual([]);
   });
 
   test('irrigation dialog opens from menu', async ({ page }) => {
