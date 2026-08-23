@@ -27,7 +27,9 @@ test.describe('Setup dialogs', () => {
 
     const nativePickers = dialog.dialog.locator('ha-entity-picker');
     await expect(nativePickers).toHaveCount(2);
-    await expect(nativePickers.first().getByText('Select an entity', { exact: true })).toBeVisible();
+    await expect(
+      nativePickers.first().getByText('Select an entity', { exact: true })
+    ).toBeVisible();
     await expect(nativePickers.nth(1).getByText('Select an entity', { exact: true })).toBeVisible();
     expect(pageErrors.filter((error) => error.message.includes("reading 'localize'"))).toEqual([]);
   });
