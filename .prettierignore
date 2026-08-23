@@ -23,6 +23,8 @@ tests/e2e/test-reports/
 # ── Vendored / tool-owned ─────────────────────────────────────────────────
 # npm rewrites the lockfiles on every install; Prettier has no say in them.
 package-lock.json
+# The workspace coverage contract rewrites this setup adapter deterministically.
+tests/e2e/fixtures/e2e-entity-coverage.generated.json
 
 # ── Prose ─────────────────────────────────────────────────────────────────
 # Prettier guards code here, not documentation. It reflows hand-wrapped ADR

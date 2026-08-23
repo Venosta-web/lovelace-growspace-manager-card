@@ -1,7 +1,7 @@
 /**
- * One-time setup script: creates the 6 e2e growspaces in a running HA instance,
- * links all sim_e2e_* sensors to them, and writes the resolved growspace IDs
- * back into tests/e2e/.env.test automatically.
+ * One-time setup script: creates every covered capability profile in a running
+ * HA instance, applies the contract-derived entity payloads, and writes the
+ * resolved growspace IDs back into tests/e2e/.env.test automatically.
  *
  * Run once before your first Playwright session:
  *   HA_ACCESS_TOKEN=<token> HA_BASE_URL=http://localhost:8123 npx ts-node tests/e2e/fixtures/e2e-setup.ts
@@ -14,6 +14,32 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+
+interface CoverageSetupProfile {
+  profile: string;
+  slug: string;
+  name: string;
+  plant_stage_field: string;
+  stage_days_ago: number;
+  vwc_strategy?: VwcStrategyParams;
+  services: {
+    configure_environment?: Record<string, unknown>;
+    set_irrigation_settings?: Record<string, unknown>;
+  };
+}
+
+interface CoverageManifest {
+  version: number;
+  profiles: CoverageSetupProfile[];
+}
+
+const coveragePath = path.join(__dirname, 'e2e-entity-coverage.generated.json');
+if (!fs.existsSync(coveragePath)) {
+  throw new Error(
+    `Missing ${coveragePath}. Run growspace_manager_workspace/scripts/gen-e2e-sensors first.`
+  );
+}
+const COVERAGE = JSON.parse(fs.readFileSync(coveragePath, 'utf-8')) as CoverageManifest;
 
 // Load .env.test from the tests/e2e directory if present
 const envPath = path.join(__dirname, '..', '.env.test');
@@ -101,6 +127,8 @@ interface GrowspaceSpec {
    * these parameters. Only set for VWC-enabled growspaces.
    */
   vwcStrategy?: VwcStrategyParams;
+  /** Contract-derived service payloads for this capability profile. */
+  services: CoverageSetupProfile['services'];
 }
 
 const TODAY = new Date().toISOString().split('T')[0];
@@ -113,69 +141,14 @@ function stageDate(daysAgo = 0): string {
   return d.toISOString().split('T')[0];
 }
 
-const GROWSPACES: GrowspaceSpec[] = [
-  { slug: 'mother', name: 'E2E Mother', plantStageField: 'mother_start' },
-  { slug: 'clone', name: 'E2E Clone', plantStageField: 'clone_start' },
-  { slug: 'veg', name: 'E2E Veg', plantStageField: 'veg_start' },
-  { slug: 'flower', name: 'E2E Flower', plantStageField: 'flower_start' },
-  { slug: 'dry', name: 'E2E Dry', plantStageField: 'dry_start' },
-  { slug: 'cure', name: 'E2E Cure', plantStageField: 'cure_start' },
-  {
-    slug: 'vwc_veg',
-    name: 'E2E VWC Veg',
-    plantStageField: 'veg_start',
-    stageDaysAgo: 15,
-    vwcStrategy: {
-      target_vwc_percent: 65,
-      maintenance_dryback_percent: 3,
-      p0_duration_minutes: 60,
-      p2_stop_before_lights_off_minutes: 120,
-      shot_duration_seconds: 10,
-      shot_interval_minutes: 15,
-    },
-  },
-  {
-    slug: 'vwc_flower',
-    name: 'E2E VWC Flower',
-    plantStageField: 'flower_start',
-    stageDaysAgo: 40,
-    vwcStrategy: {
-      target_vwc_percent: 55,
-      maintenance_dryback_percent: 5,
-      p0_duration_minutes: 60,
-      p2_stop_before_lights_off_minutes: 120,
-      shot_duration_seconds: 10,
-      shot_interval_minutes: 15,
-    },
-  },
-];
-
-function buildSensors(slug: string) {
-  // VWC growspaces use input_number helpers so Playwright can set values directly
-  // via callService('input_number', 'set_value', ...). The coordinator accepts any
-  // entity domain, so input_number.* entity IDs work identically to sensor.*.
-  const isVwc = slug.startsWith('vwc_');
-  const domain = isVwc ? 'input_number' : 'sensor';
-  const s = (suffix: string) => `${domain}.e2e_${slug}_${suffix}`;
-  return {
-    temperature_sensor: s('temperature'),
-    humidity_sensor: s('humidity'),
-    vpd_sensor: s('vpd'),
-    co2_sensor: s('co2'),
-    feed_ec_sensors: [s('feed_ec')],
-    bulk_ec_sensors: [s('bulk_ec')],
-    pore_ec_sensors: [s('pore_ec')],
-    runoff_ec_sensors: [s('runoff_ec')],
-    ph_sensors: [s('ph')],
-    substrate_temperature_sensors: [s('substrate_temperature')],
-    soil_moisture_sensor: s('substrate_moisture'),
-    power_sensors: [s('power')],
-    energy_sensors: [s('energy')],
-    drain_volume_sensors: [s('drain_volume')],
-    irrigation_flow_sensors: [s('irrigation_flow')],
-    irrigation_tanks: [{ sensor_entity: s('irrigation_tank'), volume_liters: 50 }],
-  };
-}
+const GROWSPACES: GrowspaceSpec[] = COVERAGE.profiles.map((profile) => ({
+  slug: profile.slug,
+  name: profile.name,
+  plantStageField: profile.plant_stage_field,
+  stageDaysAgo: profile.stage_days_ago,
+  vwcStrategy: profile.vwc_strategy,
+  services: profile.services,
+}));
 
 async function resolveGrowspaceId(slug: string): Promise<string | null> {
   const attrs = await getStateAttributes(`sensor.e2e_${slug}_overview`);
@@ -232,18 +205,17 @@ async function ensureStagePlant(growspaceId: string, spec: GrowspaceSpec): Promi
   });
 }
 
-async function configureEnvironment(growspaceId: string, slug: string): Promise<void> {
+async function configureEnvironment(growspaceId: string, spec: GrowspaceSpec): Promise<void> {
   console.log(`  linking sensors…`);
   await callService('growspace_manager', 'configure_environment', {
     growspace_id: growspaceId,
-    ...buildSensors(slug),
+    ...spec.services.configure_environment,
   });
 
   console.log(`  wiring irrigation & drain pumps…`);
   await callService('growspace_manager', 'set_irrigation_settings', {
     growspace_id: growspaceId,
-    irrigation_pump_entity: `switch.sim_e2e_${slug}_irrigation_pump`,
-    drain_pump_entity: `switch.sim_e2e_${slug}_drain_pump`,
+    ...spec.services.set_irrigation_settings,
   });
 }
 
@@ -323,7 +295,7 @@ async function main(): Promise<void> {
     console.log(`\n[e2e_${spec.slug}]`);
     const growspaceId = await ensureGrowspace(spec);
     await ensureStagePlant(growspaceId, spec);
-    await configureEnvironment(growspaceId, spec.slug);
+    await configureEnvironment(growspaceId, spec);
     if (spec.vwcStrategy) {
       await setVwcStrategy(growspaceId, spec.slug, spec.vwcStrategy);
     }
