@@ -6,14 +6,23 @@ import type { GsHelpTooltip } from '../../../src/features/shared/ui/gs-help-tool
 
 function mockRect(btn: HTMLButtonElement, rect: Partial<DOMRect>) {
   vi.spyOn(btn, 'getBoundingClientRect').mockReturnValue({
-    top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0, x: 0, y: 0,
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    width: 0,
+    height: 0,
+    x: 0,
+    y: 0,
     toJSON: () => ({}),
     ...rect,
   } as DOMRect);
 }
 
 function fireToggle(popover: HTMLElement, newState: 'open' | 'closed') {
-  popover.dispatchEvent(new ToggleEvent('toggle', { newState, oldState: newState === 'open' ? 'closed' : 'open' }));
+  popover.dispatchEvent(
+    new ToggleEvent('toggle', { newState, oldState: newState === 'open' ? 'closed' : 'open' })
+  );
 }
 
 describe('GsHelpTooltip', () => {
@@ -41,9 +50,7 @@ describe('GsHelpTooltip', () => {
   });
 
   it('renders nothing when content is empty', async () => {
-    const el = await fixture<GsHelpTooltip>(html`
-      <gs-help-tooltip content=""></gs-help-tooltip>
-    `);
+    const el = await fixture<GsHelpTooltip>(html` <gs-help-tooltip content=""></gs-help-tooltip> `);
     const btn = el.shadowRoot!.querySelector('.help-trigger');
     expect(btn).toBeNull();
   });

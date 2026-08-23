@@ -15,7 +15,10 @@ import {
   pickEntity,
   pickerOptions,
 } from '../../../../harness/entity-picker';
-import type { TanksTabViewModel, TankRowVM } from '../../../../../src/features/irrigation/viewmodels/tanks-tab.viewmodel';
+import type {
+  TanksTabViewModel,
+  TankRowVM,
+} from '../../../../../src/features/irrigation/viewmodels/tanks-tab.viewmodel';
 import type { TankDraft } from '../../../../../src/dialogs/irrigation-dialog-sm';
 
 if (!customElements.get('ha-svg-icon')) {
@@ -38,7 +41,12 @@ function row(overrides: Partial<TankRowVM> = {}): TankRowVM {
   };
 }
 
-const draft: TankDraft = { sensorEntity: 'sensor.tank_a', name: 'Tank A', volumeLiters: 200, warningLevel: 30 };
+const draft: TankDraft = {
+  sensorEntity: 'sensor.tank_a',
+  name: 'Tank A',
+  volumeLiters: 200,
+  warningLevel: 30,
+};
 
 function makeVm(overrides: Partial<TanksTabViewModel> = {}): TanksTabViewModel {
   return { tanks: [row()], editing: null, ...overrides };
@@ -72,9 +80,11 @@ async function captureIntent(
 
 describe('irrigation-tanks-tab', () => {
   it('holds no @state() of its own — only the `vm` reactive property', () => {
-    const props = (IrrigationTanksTab as unknown as {
-      elementProperties: Map<string, { state?: boolean }>;
-    }).elementProperties;
+    const props = (
+      IrrigationTanksTab as unknown as {
+        elementProperties: Map<string, { state?: boolean }>;
+      }
+    ).elementProperties;
     const stateProps = [...props.entries()].filter(([, def]) => def.state === true);
     expect(stateProps).toEqual([]);
   });
@@ -85,7 +95,9 @@ describe('irrigation-tanks-tab', () => {
   });
 
   it('renders a row per tank from the VM', async () => {
-    const el = await mount(makeVm({ tanks: [row({ name: 'Tank A' }), row({ index: 1, name: 'Tank B' })] }));
+    const el = await mount(
+      makeVm({ tanks: [row({ name: 'Tank A' }), row({ index: 1, name: 'Tank B' })] })
+    );
     const text = norm(el.shadowRoot!.textContent);
     expect(text).toContain('Tank A');
     expect(text).toContain('Tank B');
@@ -101,13 +113,17 @@ describe('irrigation-tanks-tab', () => {
   });
 
   it('renders the edit form from vm.editing and offers the entity options to the picker', async () => {
-    const el = await mount(makeVm({ editing: { index: 0, draft, entityOptions: ['sensor.tank_a', 'sensor.tank_b'] } }));
+    const el = await mount(
+      makeVm({ editing: { index: 0, draft, entityOptions: ['sensor.tank_a', 'sensor.tank_b'] } })
+    );
     expect(el.shadowRoot!.querySelector('.tank-edit-form')).toBeTruthy();
     expect(pickerOptions(el.shadowRoot!)).toEqual(['sensor.tank_a', 'sensor.tank_b']);
   });
 
   it('emits tank-draft-changed with the picked entity', async () => {
-    const el = await mount(makeVm({ editing: { index: 0, draft, entityOptions: ['sensor.tank_b'] } }));
+    const el = await mount(
+      makeVm({ editing: { index: 0, draft, entityOptions: ['sensor.tank_b'] } })
+    );
     const evt = await captureIntent(el, 'tank-draft-changed', () => {
       pickEntity(el.shadowRoot!, 'sensor.tank_b');
     });
@@ -115,7 +131,9 @@ describe('irrigation-tanks-tab', () => {
   });
 
   it('emits an empty sensorEntity when the picker is cleared, never an omitted key', async () => {
-    const el = await mount(makeVm({ editing: { index: 0, draft, entityOptions: ['sensor.tank_b'] } }));
+    const el = await mount(
+      makeVm({ editing: { index: 0, draft, entityOptions: ['sensor.tank_b'] } })
+    );
     const evt = await captureIntent(el, 'tank-draft-changed', () => {
       pickEntity(el.shadowRoot!, '');
     });
@@ -134,7 +152,9 @@ describe('irrigation-tanks-tab', () => {
 
   it('emits tank-draft-changed with null volume when the field is cleared', async () => {
     const el = await mount(makeVm({ editing: { index: 0, draft, entityOptions: [] } }));
-    const volInput = el.shadowRoot!.querySelectorAll<HTMLInputElement>('.md3-input[type="number"]')[0];
+    const volInput = el.shadowRoot!.querySelectorAll<HTMLInputElement>(
+      '.md3-input[type="number"]'
+    )[0];
     const evt = await captureIntent(el, 'tank-draft-changed', () => {
       volInput.value = '';
       volInput.dispatchEvent(new Event('input'));

@@ -4,7 +4,12 @@ import { EventBus } from '../../../../../src/features/shared/events/event-bus';
 import type { ReactiveControllerHost } from 'lit';
 
 function makeHost(): ReactiveControllerHost {
-  return { addController: vi.fn(), removeController: vi.fn(), requestUpdate: vi.fn(), updateComplete: Promise.resolve(true) };
+  return {
+    addController: vi.fn(),
+    removeController: vi.fn(),
+    requestUpdate: vi.fn(),
+    updateComplete: Promise.resolve(true),
+  };
 }
 
 describe('EventBusController', () => {

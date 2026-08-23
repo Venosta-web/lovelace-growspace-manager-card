@@ -18,16 +18,18 @@ const makePlant = (overrides: Partial<PlantEntity['attributes']> = {}): PlantEnt
     context: { id: '', parent_id: null, user_id: null },
     last_changed: '',
     last_updated: '',
-  } as unknown as PlantEntity);
+  }) as unknown as PlantEntity;
 
-const makeStore = (overrides: Partial<{
-  isEditMode: boolean;
-  selectedPlants: Set<string>;
-  strainLibrary: StrainEntry[];
-  nutrientPresets: Record<string, any>;
-  devices: any[];
-  taskState: any;
-}> = {}) => ({
+const makeStore = (
+  overrides: Partial<{
+    isEditMode: boolean;
+    selectedPlants: Set<string>;
+    strainLibrary: StrainEntry[];
+    nutrientPresets: Record<string, any>;
+    devices: any[];
+    taskState: any;
+  }> = {}
+) => ({
   $isEditMode: atom(overrides.isEditMode ?? false),
   $selectedPlants: atom(overrides.selectedPlants ?? new Set<string>()),
   $strainLibrary: atom(overrides.strainLibrary ?? []),

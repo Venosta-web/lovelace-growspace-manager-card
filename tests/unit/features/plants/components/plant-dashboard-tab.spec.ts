@@ -35,17 +35,17 @@ describe('plant-dashboard-tab', () => {
         .showAllDates=${true}
       ></plant-dashboard-tab>
     `);
-    
+
     const identityCard = el.shadowRoot?.querySelector('plant-identity-card') as any;
     expect(identityCard).to.exist;
     expect(identityCard.plant).to.equal(mockPlant);
     expect(identityCard.editedAttributes).to.equal(mockEditedAttributes);
     expect(identityCard.isEditing).to.be.true;
-    
+
     const statsCard = el.shadowRoot?.querySelector('plant-stats-card') as any;
     expect(statsCard).to.exist;
     expect(statsCard.stats).to.equal(mockStats);
-    
+
     const lifecycleCard = el.shadowRoot?.querySelector('plant-lifecycle-dates-card') as any;
     expect(lifecycleCard).to.exist;
     expect(lifecycleCard.editedAttributes).to.equal(mockEditedAttributes);
@@ -61,15 +61,19 @@ describe('plant-dashboard-tab', () => {
           .plantStats=${mockStats}
         ></plant-dashboard-tab>
       `);
-      
+
       let payload: any = null;
-      el.addEventListener('attribute-change', (e: any) => { payload = e.detail; });
-      
+      el.addEventListener('attribute-change', (e: any) => {
+        payload = e.detail;
+      });
+
       const identityCard = el.shadowRoot?.querySelector('plant-identity-card') as HTMLElement;
-      identityCard.dispatchEvent(new CustomEvent('attribute-change', {
-        detail: { key: 'strain', value: 'New Strain' }
-      }));
-      
+      identityCard.dispatchEvent(
+        new CustomEvent('attribute-change', {
+          detail: { key: 'strain', value: 'New Strain' },
+        })
+      );
+
       expect(payload).to.deep.equal({ key: 'strain', value: 'New Strain' });
     });
 
@@ -81,14 +85,20 @@ describe('plant-dashboard-tab', () => {
           .plantStats=${mockStats}
         ></plant-dashboard-tab>
       `);
-      
+
       let toggled = false;
-      el.addEventListener('toggle-dates', () => { toggled = true; });
-      
-      const lifecycleCard = el.shadowRoot?.querySelector('plant-lifecycle-dates-card') as HTMLElement;
+      el.addEventListener('toggle-dates', () => {
+        toggled = true;
+      });
+
+      const lifecycleCard = el.shadowRoot?.querySelector(
+        'plant-lifecycle-dates-card'
+      ) as HTMLElement;
       // The real lifecycle card dispatches with bubbles + composed so it crosses shadow boundaries
-      lifecycleCard.dispatchEvent(new CustomEvent('toggle-dates', { bubbles: true, composed: true }));
-      
+      lifecycleCard.dispatchEvent(
+        new CustomEvent('toggle-dates', { bubbles: true, composed: true })
+      );
+
       expect(toggled).to.be.true;
     });
   });

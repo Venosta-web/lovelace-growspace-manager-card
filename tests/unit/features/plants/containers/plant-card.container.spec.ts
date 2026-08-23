@@ -34,14 +34,14 @@ describe('PlantCardContainer', () => {
         $strainLibrary: atom([]),
         $nutrientPresets: atom({}),
         $devices: atom([]),
-      }
+      },
     };
 
     element = await fixture<PlantCardContainer>(html`
-      <plant-card-container 
-        .plant=${mockPlant} 
-        .row=${1} 
-        .col=${1} 
+      <plant-card-container
+        .plant=${mockPlant}
+        .row=${1}
+        .col=${1}
         .store=${mockStore}
       ></plant-card-container>
     `);
@@ -49,7 +49,7 @@ describe('PlantCardContainer', () => {
     element.plant = mockPlant;
     element.row = 1;
     element.col = 1;
-    
+
     await element.updateComplete;
   });
 
@@ -67,9 +67,11 @@ describe('PlantCardContainer', () => {
 
   it('handles plant-click event to open overview dialog', async () => {
     const cardUI = element.shadowRoot?.querySelector('plant-card-ui') as HTMLElement;
-    cardUI.dispatchEvent(new CustomEvent('plant-click', {
-      detail: { plant: mockPlant }
-    }));
+    cardUI.dispatchEvent(
+      new CustomEvent('plant-click', {
+        detail: { plant: mockPlant },
+      })
+    );
 
     expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
       type: 'PLANT_OVERVIEW',
@@ -83,9 +85,11 @@ describe('PlantCardContainer', () => {
 
   it('handles plant-toggle-selection event', async () => {
     const cardUI = element.shadowRoot?.querySelector('plant-card-ui') as HTMLElement;
-    cardUI.dispatchEvent(new CustomEvent('plant-toggle-selection', {
-      detail: { plant: mockPlant }
-    }));
+    cardUI.dispatchEvent(
+      new CustomEvent('plant-toggle-selection', {
+        detail: { plant: mockPlant },
+      })
+    );
 
     expect(mockStore.ui.togglePlantSelection).toHaveBeenCalledWith('plant_test1');
   });
@@ -96,7 +100,9 @@ describe('PlantCardContainer', () => {
     await element.updateComplete;
     const cardUI = element.shadowRoot?.querySelector('plant-card-ui') as any;
     if (cardUI) {
-      vi.spyOn(cardUI as any, 'focus').mockImplementation(() => { focusCalled = true; });
+      vi.spyOn(cardUI as any, 'focus').mockImplementation(() => {
+        focusCalled = true;
+      });
     }
 
     element.focus();

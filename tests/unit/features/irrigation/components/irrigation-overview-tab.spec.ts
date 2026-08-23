@@ -8,10 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { IrrigationOverviewTab } from '../../../../../src/features/irrigation/components/irrigation-overview-tab';
-import type {
-  OverviewTabViewModel,
-  DialogCapabilitiesLike,
-} from './overview-vm-fixtures';
+import type { OverviewTabViewModel, DialogCapabilitiesLike } from './overview-vm-fixtures';
 import { makeOverviewVm } from './overview-vm-fixtures';
 
 // Stub the HA icon element that is unavailable in the test environment.
@@ -34,9 +31,11 @@ const norm = (s: string | null | undefined): string => (s ?? '').replace(/\s+/g,
 
 describe('irrigation-overview-tab', () => {
   it('holds no @state() of its own — only the `vm` reactive property', () => {
-    const props = (IrrigationOverviewTab as unknown as {
-      elementProperties: Map<string, { state?: boolean }>;
-    }).elementProperties;
+    const props = (
+      IrrigationOverviewTab as unknown as {
+        elementProperties: Map<string, { state?: boolean }>;
+      }
+    ).elementProperties;
     const stateProps = [...props.entries()].filter(([, def]) => def.state === true);
     expect(stateProps).toEqual([]);
   });
@@ -59,9 +58,7 @@ describe('irrigation-overview-tab', () => {
   });
 
   it('shows the on-target intent banner', async () => {
-    const el = await mount(
-      makeOverviewVm({ declared: 'generative', intentBanner: 'ontarget' })
-    );
+    const el = await mount(makeOverviewVm({ declared: 'generative', intentBanner: 'ontarget' }));
     expect(norm(el.shadowRoot!.textContent).toLowerCase()).toContain('on target');
   });
 

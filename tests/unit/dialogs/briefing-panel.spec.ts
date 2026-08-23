@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { GmBriefingPanel } from '../../../src/dialogs/briefing-panel';
 import '../../../src/dialogs/briefing-panel';
-import { aiBriefing$, isAiLoading$, saveAiAgent, briefingError$, startConversation } from '../../../src/slices/ai-insight';
+import {
+  aiBriefing$,
+  isAiLoading$,
+  saveAiAgent,
+  briefingError$,
+  startConversation,
+} from '../../../src/slices/ai-insight';
 import type { AIBriefing } from '../../../src/slices/ai-insight/schema';
 
 vi.mock('../../../src/services/hass-call', () => ({
@@ -192,7 +198,7 @@ describe('GmBriefingPanel — going-well tab', () => {
     await element.updateComplete;
 
     const placeholder = element.shadowRoot?.querySelector('.going-well-content .tab-placeholder');
-    expect(placeholder?.textContent?.trim()).toBe("Nothing flagged as low-impact — keep it up!");
+    expect(placeholder?.textContent?.trim()).toBe('Nothing flagged as low-impact — keep it up!');
   });
 });
 
@@ -221,12 +227,16 @@ describe('GmBriefingPanel — agent setup', () => {
     const picker = element.shadowRoot?.querySelector('ha-entity-picker');
 
     expect(picker?.hasAttribute('allow-custom-entity')).toBe(false);
-    expect((picker as unknown as { allowCustomEntity?: boolean }).allowCustomEntity).toBeUndefined();
+    expect(
+      (picker as unknown as { allowCustomEntity?: boolean }).allowCustomEntity
+    ).toBeUndefined();
   });
 
   it('value-changed on ha-entity-picker enables the save button', async () => {
     const picker = element.shadowRoot?.querySelector('ha-entity-picker');
-    picker?.dispatchEvent(new CustomEvent('value-changed', { detail: { value: 'conversation.home_assistant' } }));
+    picker?.dispatchEvent(
+      new CustomEvent('value-changed', { detail: { value: 'conversation.home_assistant' } })
+    );
     await element.updateComplete;
 
     const btn = element.shadowRoot?.querySelector('.agent-save-btn') as HTMLButtonElement;
@@ -235,12 +245,14 @@ describe('GmBriefingPanel — agent setup', () => {
 
   it('_saveAgent happy path: resolves without error message', async () => {
     const picker = element.shadowRoot?.querySelector('ha-entity-picker');
-    picker?.dispatchEvent(new CustomEvent('value-changed', { detail: { value: 'conversation.home_assistant' } }));
+    picker?.dispatchEvent(
+      new CustomEvent('value-changed', { detail: { value: 'conversation.home_assistant' } })
+    );
     await element.updateComplete;
 
     const btn = element.shadowRoot?.querySelector('.agent-save-btn') as HTMLButtonElement;
     btn.click();
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await element.updateComplete;
 
     expect(vi.mocked(saveAiAgent)).toHaveBeenCalledWith('conversation.home_assistant', '');
@@ -252,12 +264,14 @@ describe('GmBriefingPanel — agent setup', () => {
     vi.mocked(saveAiAgent).mockRejectedValueOnce(new Error('Network error'));
 
     const picker = element.shadowRoot?.querySelector('ha-entity-picker');
-    picker?.dispatchEvent(new CustomEvent('value-changed', { detail: { value: 'conversation.home_assistant' } }));
+    picker?.dispatchEvent(
+      new CustomEvent('value-changed', { detail: { value: 'conversation.home_assistant' } })
+    );
     await element.updateComplete;
 
     const btn = element.shadowRoot?.querySelector('.agent-save-btn') as HTMLButtonElement;
     btn.click();
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await element.updateComplete;
 
     const errorEl = element.shadowRoot?.querySelector('.agent-setup-error');

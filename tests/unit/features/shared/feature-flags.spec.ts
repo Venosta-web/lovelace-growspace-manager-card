@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { FEATURE_FLAGS, isFeatureEnabled } from '../../../../src/features/shared/config/feature-flags';
+import {
+  FEATURE_FLAGS,
+  isFeatureEnabled,
+} from '../../../../src/features/shared/config/feature-flags';
 
 describe('feature-flags', () => {
   describe('FEATURE_FLAGS', () => {

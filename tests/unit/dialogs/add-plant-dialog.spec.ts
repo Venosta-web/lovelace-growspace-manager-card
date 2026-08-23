@@ -58,7 +58,9 @@ describe('AddPlantDialog', () => {
   });
 
   it('should show strain typeahead on step 1', async () => {
-    const strainInput = element.shadowRoot?.querySelector('.strain-typeahead md3-text-input') as any;
+    const strainInput = element.shadowRoot?.querySelector(
+      '.strain-typeahead md3-text-input'
+    ) as any;
     expect(strainInput).toBeTruthy();
     expect(strainInput.label).toBe('Strain *');
   });
@@ -120,7 +122,10 @@ describe('AddPlantDialog', () => {
 
     it('should show mother input when stage is set to mother', async () => {
       (element as any)._sm = transition(sm(element), {
-        type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'mother',
+        type: 'DraftFieldChanged',
+        tab: 'add',
+        field: 'stage',
+        value: 'mother',
       });
       await element.updateComplete;
 
@@ -133,7 +138,10 @@ describe('AddPlantDialog', () => {
 
     it('should show cure input when stage is set to cure', async () => {
       (element as any)._sm = transition(sm(element), {
-        type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'cure',
+        type: 'DraftFieldChanged',
+        tab: 'add',
+        field: 'stage',
+        value: 'cure',
       });
       await element.updateComplete;
 
@@ -146,7 +154,10 @@ describe('AddPlantDialog', () => {
 
     it('should show clone input when stage is set to clone', async () => {
       (element as any)._sm = transition(sm(element), {
-        type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'clone',
+        type: 'DraftFieldChanged',
+        tab: 'add',
+        field: 'stage',
+        value: 'clone',
       });
       await element.updateComplete;
 
@@ -159,7 +170,10 @@ describe('AddPlantDialog', () => {
 
     it('should show dry input when stage is set to dry', async () => {
       (element as any)._sm = transition(sm(element), {
-        type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'dry',
+        type: 'DraftFieldChanged',
+        tab: 'add',
+        field: 'stage',
+        value: 'dry',
       });
       await element.updateComplete;
 
@@ -218,9 +232,9 @@ describe('AddPlantDialog', () => {
       const createSpy = vi.fn();
       element.addEventListener('create-new-strain', createSpy);
 
-      const createBtn = Array.from(
-        element.shadowRoot?.querySelectorAll('button') ?? []
-      ).find((b) => b.textContent?.includes('Create New Strain')) as HTMLElement;
+      const createBtn = Array.from(element.shadowRoot?.querySelectorAll('button') ?? []).find((b) =>
+        b.textContent?.includes('Create New Strain')
+      ) as HTMLElement;
       expect(createBtn).toBeTruthy();
       createBtn.click();
 
@@ -296,7 +310,10 @@ describe('AddPlantDialog', () => {
   it('should handle flower start date change when stage is flower', async () => {
     element.setInitialState(0, 0, 'Blue Dream');
     (element as any)._sm = transition(sm(element), {
-      type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'flower',
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'stage',
+      value: 'flower',
     });
     advanceTo(element, 'step-schedule');
     await element.updateComplete;
@@ -551,7 +568,9 @@ describe('AddPlantDialog', () => {
       });
       await element.updateComplete;
 
-      const continueBtn = element.shadowRoot?.querySelector('.button-group .primary') as HTMLElement;
+      const continueBtn = element.shadowRoot?.querySelector(
+        '.button-group .primary'
+      ) as HTMLElement;
       expect(continueBtn).toBeTruthy();
       continueBtn.click();
       await element.updateComplete;
@@ -746,7 +765,10 @@ describe('AddPlantDialog', () => {
         value: 'Blue Dream',
       });
       (element as any)._sm = transition(sm(element), {
-        type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'veg',
+        type: 'DraftFieldChanged',
+        tab: 'add',
+        field: 'stage',
+        value: 'veg',
       });
       advanceTo(element, 'step-schedule');
       await element.updateComplete;
@@ -803,14 +825,22 @@ describe('AddPlantDialog', () => {
   describe('Strain input else-branch', () => {
     it('should not clear strain when typed value matches the already-selected strain', async () => {
       (element as any)._sm = transition(sm(element), {
-        type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: 'Blue Dream',
+        type: 'DraftFieldChanged',
+        tab: 'add',
+        field: 'strain',
+        value: 'Blue Dream',
       });
       (element as any)._sm = transition(sm(element), {
-        type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: 'Blue Dream',
+        type: 'DraftFieldChanged',
+        tab: 'add',
+        field: 'strainQuery',
+        value: 'Blue Dream',
       });
       await element.updateComplete;
 
-      const input = element.shadowRoot?.querySelector('.strain-typeahead md3-text-input') as HTMLElement;
+      const input = element.shadowRoot?.querySelector(
+        '.strain-typeahead md3-text-input'
+      ) as HTMLElement;
       // Dispatch with the exact same value as the current strain — else branch
       input.dispatchEvent(new CustomEvent('change', { detail: 'Blue Dream' }));
       await element.updateComplete;

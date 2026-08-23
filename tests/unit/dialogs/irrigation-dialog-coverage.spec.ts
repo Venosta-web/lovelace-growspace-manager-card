@@ -1,4 +1,3 @@
-
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { IrrigationDialog } from '../../../src/dialogs/irrigation-dialog';
 import { transition } from '../../../src/dialogs/irrigation-dialog-sm';
@@ -10,20 +9,32 @@ import { setTankLevels, tankLevels$ } from '../../../src/slices/irrigation';
 
 vi.mock('../../../src/features/shared/ui/md3-text-input', () => ({
   Md3TextInput: class extends HTMLElement {
-    get value() { return this.getAttribute('value') || ''; }
-    set value(v: string) { this.setAttribute('value', v); }
+    get value() {
+      return this.getAttribute('value') || '';
+    }
+    set value(v: string) {
+      this.setAttribute('value', v);
+    }
   },
 }));
 vi.mock('../../../src/features/shared/ui/md3-number-input', () => ({
   Md3NumberInput: class extends HTMLElement {
-    get value() { return this.getAttribute('value') || ''; }
-    set value(v: string) { this.setAttribute('value', v); }
+    get value() {
+      return this.getAttribute('value') || '';
+    }
+    set value(v: string) {
+      this.setAttribute('value', v);
+    }
   },
 }));
 vi.mock('../../../src/features/shared/ui/md3-switch', () => ({
   Md3Switch: class extends HTMLElement {
-    get checked() { return this.hasAttribute('checked'); }
-    set checked(v: boolean) { v ? this.setAttribute('checked', '') : this.removeAttribute('checked'); }
+    get checked() {
+      return this.hasAttribute('checked');
+    }
+    set checked(v: boolean) {
+      v ? this.setAttribute('checked', '') : this.removeAttribute('checked');
+    }
   },
 }));
 
@@ -86,7 +97,13 @@ const mockDevice: GrowspaceDevice = {
   environmentAttributes: {
     soilMoistureSensor: 'sensor.sm1',
     irrigationTanks: [
-      { name: 'Tank 1', fillLevel: 50, isWarning: false, hoursRemaining: 48, depletionStatus: 'depleting' },
+      {
+        name: 'Tank 1',
+        fillLevel: 50,
+        isWarning: false,
+        hoursRemaining: 48,
+        depletionStatus: 'depleting',
+      },
     ],
     bulkEcSensors: [{ entity_id: 'sensor.ec1' }],
   } as any,
@@ -133,7 +150,10 @@ function makeMockStore(device: GrowspaceDevice) {
       closeDialog: vi.fn(),
       refreshData: vi.fn().mockResolvedValue(undefined),
       ui: { showToast: vi.fn() },
-      history: {}, grid: {}, hass: {}, syncService: {},
+      history: {},
+      grid: {},
+      hass: {},
+      syncService: {},
     },
     data: dataStore,
     actions: {},
@@ -152,11 +172,19 @@ describe('IrrigationDialog - Coverage', () => {
     element.device = JSON.parse(JSON.stringify(mockDevice));
     (element as any).store = mockStore;
     element.hass = {
-    states: {
-      'switch.pump1': { entity_id: 'switch.pump1', state: 'on', attributes: { friendly_name: 'Pump 1' } },
-      'sensor.ec1': { entity_id: 'sensor.ec1', state: '1.5', attributes: { friendly_name: 'EC Sensor' } },
-    },
-  } as any;
+      states: {
+        'switch.pump1': {
+          entity_id: 'switch.pump1',
+          state: 'on',
+          attributes: { friendly_name: 'Pump 1' },
+        },
+        'sensor.ec1': {
+          entity_id: 'sensor.ec1',
+          state: '1.5',
+          attributes: { friendly_name: 'EC Sensor' },
+        },
+      },
+    } as any;
     element.open = true;
     document.body.appendChild(element);
     await element.updateComplete;
@@ -189,14 +217,18 @@ describe('IrrigationDialog - Coverage', () => {
     });
 
     it('renders the discard-changes dialog when status is confirm-discard', () => {
-      const discardDialog = element.shadowRoot?.querySelector('gs-dialog[heading="Discard Changes?"]');
+      const discardDialog = element.shadowRoot?.querySelector(
+        'gs-dialog[heading="Discard Changes?"]'
+      );
       expect(discardDialog).toBeTruthy();
       const text = element.shadowRoot?.textContent;
       expect(text).toContain('You have unsaved changes');
     });
 
     it('cancels tab switch via dialog @close event (line 1600)', async () => {
-      const gsDialog = element.shadowRoot?.querySelector('gs-dialog[heading="Discard Changes?"]') as HTMLElement;
+      const gsDialog = element.shadowRoot?.querySelector(
+        'gs-dialog[heading="Discard Changes?"]'
+      ) as HTMLElement;
       expect(gsDialog).toBeTruthy();
       gsDialog.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
       await element.updateComplete;
@@ -206,7 +238,7 @@ describe('IrrigationDialog - Coverage', () => {
     it('cancels tab switch via Stay button (line 1615)', async () => {
       // Find the "Stay" button inside the discard dialog
       const buttons = Array.from(element.shadowRoot?.querySelectorAll('button') ?? []);
-      const stayBtn = buttons.find(b => b.textContent?.trim() === 'Stay') as HTMLElement;
+      const stayBtn = buttons.find((b) => b.textContent?.trim() === 'Stay') as HTMLElement;
       expect(stayBtn).toBeTruthy();
       stayBtn.click();
       await element.updateComplete;
@@ -215,7 +247,7 @@ describe('IrrigationDialog - Coverage', () => {
 
     it('discards changes and switches tab via Discard & Switch button (line 1623)', async () => {
       const buttons = Array.from(element.shadowRoot?.querySelectorAll('button') ?? []);
-      const discardBtn = buttons.find(b => b.textContent?.includes('Discard')) as HTMLElement;
+      const discardBtn = buttons.find((b) => b.textContent?.includes('Discard')) as HTMLElement;
       expect(discardBtn).toBeTruthy();
       discardBtn.click();
       await element.updateComplete;
@@ -330,7 +362,10 @@ describe('IrrigationDialog - Coverage', () => {
         ...JSON.parse(JSON.stringify(mockDevice)),
         irrigationConfig: {
           ...mockDevice.irrigationConfig,
-          drainTimes: [{ time: '09:00', duration: 45 }, { time: '15:00', duration: 45 }],
+          drainTimes: [
+            { time: '09:00', duration: 45 },
+            { time: '15:00', duration: 45 },
+          ],
           drainDuration: 45,
         },
       } as any;
@@ -361,9 +396,11 @@ describe('IrrigationDialog - Coverage', () => {
     it('clicking "edit in Steering" link switches to steering tab via the Tab Intent', async () => {
       const root = await waChild();
       const links = Array.from(root.querySelectorAll('a'));
-      const steeringLink = links.find(l => l.textContent?.includes('edit in Steering'));
+      const steeringLink = links.find((l) => l.textContent?.includes('edit in Steering'));
       expect(steeringLink).toBeTruthy();
-      steeringLink!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, cancelable: true }));
+      steeringLink!.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, composed: true, cancelable: true })
+      );
       await element.updateComplete;
       expect((element as any)._sm.activeTab).toBe('steering');
     });
@@ -466,5 +503,4 @@ describe('IrrigationDialog - Coverage', () => {
       expect((element as any)._sm.tabs.ec_ramp.sub.kind).toBe('list');
     });
   });
-
 });

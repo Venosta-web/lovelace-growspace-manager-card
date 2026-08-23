@@ -24,11 +24,17 @@ describe('mutate', () => {
     await mutate(
       {
         type: 'test',
-        optimistic: () => { order.push('optimistic'); },
-        apply: async () => { order.push('apply'); },
-        inverse: () => { order.push('inverse'); },
+        optimistic: () => {
+          order.push('optimistic');
+        },
+        apply: async () => {
+          order.push('apply');
+        },
+        inverse: () => {
+          order.push('inverse');
+        },
       },
-      GS_A,
+      GS_A
     );
 
     expect(order).toEqual(['optimistic', 'apply']);
@@ -43,11 +49,13 @@ describe('mutate', () => {
         {
           type: 'test',
           optimistic,
-          apply: async () => { throw new Error('backend failure'); },
+          apply: async () => {
+            throw new Error('backend failure');
+          },
           inverse,
         },
-        GS_A,
-      ),
+        GS_A
+      )
     ).rejects.toThrow('backend failure');
 
     expect(optimistic).toHaveBeenCalledOnce();
@@ -60,11 +68,13 @@ describe('mutate', () => {
         {
           type: 'test',
           optimistic: vi.fn(),
-          apply: async () => { throw new Error('fail'); },
+          apply: async () => {
+            throw new Error('fail');
+          },
           inverse: vi.fn(),
         },
-        GS_A,
-      ),
+        GS_A
+      )
     ).rejects.toThrow();
 
     expect(canUndo(GS_A)).toBe(false);
@@ -73,7 +83,7 @@ describe('mutate', () => {
   it('pushes inverse to undo stack on success', async () => {
     await mutate(
       { type: 'test', optimistic: vi.fn(), apply: async () => {}, inverse: vi.fn() },
-      GS_A,
+      GS_A
     );
 
     expect(canUndo(GS_A)).toBe(true);
@@ -81,10 +91,7 @@ describe('mutate', () => {
 
   it('undo calls the stored inverse', async () => {
     const inverse = vi.fn();
-    await mutate(
-      { type: 'test', optimistic: vi.fn(), apply: async () => {}, inverse },
-      GS_A,
-    );
+    await mutate({ type: 'test', optimistic: vi.fn(), apply: async () => {}, inverse }, GS_A);
 
     await undo(GS_A);
 
@@ -94,7 +101,7 @@ describe('mutate', () => {
   it('canUndo is false after undo is consumed', async () => {
     await mutate(
       { type: 'test', optimistic: vi.fn(), apply: async () => {}, inverse: vi.fn() },
-      GS_A,
+      GS_A
     );
 
     await undo(GS_A);
@@ -109,7 +116,7 @@ describe('mutate', () => {
   it('canUndo is false for a different growspace that received no actions', async () => {
     await mutate(
       { type: 'test', optimistic: vi.fn(), apply: async () => {}, inverse: vi.fn() },
-      GS_A,
+      GS_A
     );
 
     expect(canUndo(GS_B)).toBe(false);
@@ -121,11 +128,11 @@ describe('mutate', () => {
 
     await mutate(
       { type: 'actionA', optimistic: vi.fn(), apply: async () => {}, inverse: inverseA },
-      GS_A,
+      GS_A
     );
     await mutate(
       { type: 'actionB', optimistic: vi.fn(), apply: async () => {}, inverse: inverseB },
-      GS_B,
+      GS_B
     );
 
     await undo(GS_A);
@@ -141,11 +148,11 @@ describe('mutate', () => {
 
     await mutate(
       { type: 'actionA', optimistic: vi.fn(), apply: async () => {}, inverse: inverseA },
-      GS_A,
+      GS_A
     );
     await mutate(
       { type: 'actionB', optimistic: vi.fn(), apply: async () => {}, inverse: inverseB },
-      GS_B,
+      GS_B
     );
 
     await undo(GS_B);
@@ -168,12 +175,12 @@ describe('mutate', () => {
     for (let i = 0; i < 11; i++) {
       await mutate(
         { type: `action${i}`, optimistic: vi.fn(), apply: async () => {}, inverse: vi.fn() },
-        GS_A,
+        GS_A
       );
     }
     await mutate(
       { type: 'bAction', optimistic: vi.fn(), apply: async () => {}, inverse: vi.fn() },
-      GS_B,
+      GS_B
     );
 
     // tentA still has undo entries (capped at 10, oldest dropped)

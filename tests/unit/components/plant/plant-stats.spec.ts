@@ -25,7 +25,7 @@ describe('GrowspacePlantStats', () => {
         title: 'Veg',
         stage: PlantStage.VEG,
         isCurrent: true,
-        color: '#4caf50'
+        color: '#4caf50',
       },
       {
         days: 10,
@@ -33,8 +33,8 @@ describe('GrowspacePlantStats', () => {
         title: 'Flower',
         stage: PlantStage.FLOWER,
         isCurrent: false,
-        color: '#e91e63'
-      }
+        color: '#e91e63',
+      },
     ];
 
     const el = await fixture<GrowspacePlantStats>(html`

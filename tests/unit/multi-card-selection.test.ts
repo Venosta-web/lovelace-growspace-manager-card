@@ -23,7 +23,10 @@ const DEVICE = {
 } as any;
 
 function aConfig(): GrowspaceManagerCardConfig {
-  return { type: 'custom:growspace-tank-card', default_growspace: 'gs1' } as GrowspaceManagerCardConfig;
+  return {
+    type: 'custom:growspace-tank-card',
+    default_growspace: 'gs1',
+  } as GrowspaceManagerCardConfig;
 }
 
 function makeHost() {

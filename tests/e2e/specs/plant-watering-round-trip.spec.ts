@@ -47,9 +47,7 @@ test.describe('Plant watering round-trip', () => {
     test.setTimeout(45000);
 
     // Verify the icon is absent before watering
-    const wateredIcon = growspaceCard
-      .plantCardAt(1, 1)
-      .locator('[aria-label="Recently watered"]');
+    const wateredIcon = growspaceCard.plantCardAt(1, 1).locator('[aria-label="Recently watered"]');
     await expect(wateredIcon).not.toBeVisible();
 
     // Open plant → water → submit

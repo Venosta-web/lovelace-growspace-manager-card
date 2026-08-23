@@ -1,4 +1,3 @@
-
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { StrainLibraryDialog } from '../../../src/dialogs/strain-library-dialog';
 import { StrainEntry } from '../../../src/types';
@@ -6,302 +5,387 @@ import { PlantUtils } from '../../../src/utils/plant-utils';
 
 // Mock PlantUtils
 vi.mock('../../../src/utils/plant-utils', () => ({
-    PlantUtils: {
-        compressImage: vi.fn().mockResolvedValue('base64string'),
-        encodeLocalPath: vi.fn().mockImplementation((p: string) => p),
-    }
+  PlantUtils: {
+    compressImage: vi.fn().mockResolvedValue('base64string'),
+    encodeLocalPath: vi.fn().mockImplementation((p: string) => p),
+  },
 }));
 
 describe('StrainLibraryDialog Extra Coverage', () => {
-    let element: StrainLibraryDialog;
-    const mockStrains: StrainEntry[] = [
-        { key: '1', strain: 'Blue Dream', phenotype: 'Original', type: 'Sativa', breeder: 'HSO', image: 'hso_logo.jpg' },
-        { key: '2', strain: 'OG Kush', phenotype: '#18', type: 'Indica', breeder: 'Dinafem', image: 'dinafem_logo.jpg' }
-    ];
+  let element: StrainLibraryDialog;
+  const mockStrains: StrainEntry[] = [
+    {
+      key: '1',
+      strain: 'Blue Dream',
+      phenotype: 'Original',
+      type: 'Sativa',
+      breeder: 'HSO',
+      image: 'hso_logo.jpg',
+    },
+    {
+      key: '2',
+      strain: 'OG Kush',
+      phenotype: '#18',
+      type: 'Indica',
+      breeder: 'Dinafem',
+      image: 'dinafem_logo.jpg',
+    },
+  ];
 
-    beforeEach(async () => {
-        element = new StrainLibraryDialog();
-        element.strains = [...mockStrains];
-        element.open = true;
-        document.body.appendChild(element);
-        await element.updateComplete;
+  beforeEach(async () => {
+    element = new StrainLibraryDialog();
+    element.strains = [...mockStrains];
+    element.open = true;
+    document.body.appendChild(element);
+    await element.updateComplete;
+  });
+
+  afterEach(() => {
+    if (element.isConnected) {
+      document.body.removeChild(element);
+    }
+    vi.restoreAllMocks();
+  });
+
+  describe('Breeder Manager', () => {
+    const getBreederManager = () => element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+    const getBreederManagerSR = () => getBreederManager()?.shadowRoot;
+
+    it('should open and close breeder manager', async () => {
+      // Open via browse view Manage menu → Manage Breeders
+      const browseView = element.shadowRoot?.querySelector('strain-browse-view') as any;
+      (browseView?.shadowRoot?.querySelector('.manage-menu-trigger') as HTMLElement)?.click();
+      await browseView?.updateComplete;
+
+      const menuItems = browseView?.shadowRoot?.querySelectorAll('.manage-menu-item');
+      const breederBtn = (Array.from(menuItems || []) as HTMLElement[]).find((i) =>
+        i.textContent?.includes('Breeders')
+      );
+      (breederBtn as HTMLElement)?.click();
+      await element.updateComplete;
+
+      expect((element as any)._breederDialogOpen).toBe(true);
+
+      const dialog = getBreederManagerSR()?.querySelector('gs-dialog');
+      expect(dialog).toBeTruthy();
+
+      // Close it via the footer Close button
+      const closeBtn = getBreederManagerSR()?.querySelector('button.md3-button.tonal');
+      (closeBtn as HTMLElement)?.click();
+      await element.updateComplete;
+      expect((element as any)._breederDialogOpen).toBe(false);
     });
 
-    afterEach(() => {
-        if (element.isConnected) {
-            document.body.removeChild(element);
-        }
-        vi.restoreAllMocks();
+    it('should show empty state in breeder list', async () => {
+      element.strains = [];
+      (element as any)._breederDialogOpen = true;
+      await element.updateComplete;
+      await getBreederManager()?.updateComplete;
+
+      const content = getBreederManagerSR()?.querySelector('.sd-content');
+      expect(content?.textContent).toContain('No breeders found');
     });
 
-    describe('Breeder Manager', () => {
-        const getBreederManager = () => element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-        const getBreederManagerSR = () => getBreederManager()?.shadowRoot;
+    it('should enter breeder edit mode and go back', async () => {
+      (element as any)._breederDialogOpen = true;
+      await element.updateComplete;
 
-        it('should open and close breeder manager', async () => {
-            // Open via browse view Manage menu → Manage Breeders
-            const browseView = element.shadowRoot?.querySelector('strain-browse-view') as any;
-            (browseView?.shadowRoot?.querySelector('.manage-menu-trigger') as HTMLElement)?.click();
-            await browseView?.updateComplete;
+      const breederCard = getBreederManagerSR()?.querySelector('.breeder-card');
+      (breederCard as HTMLElement)?.click();
+      await getBreederManager()?.updateComplete;
 
-            const menuItems = browseView?.shadowRoot?.querySelectorAll('.manage-menu-item');
-            const breederBtn = (Array.from(menuItems || []) as HTMLElement[]).find(i => i.textContent?.includes('Breeders'));
-            (breederBtn as HTMLElement)?.click();
-            await element.updateComplete;
+      expect(getBreederManager()?._sm.activeView).toBe('editor');
+      expect(getBreederManagerSR()?.querySelector('.sd-content')?.textContent).toContain(
+        'Edit Breeder'
+      );
 
-            expect((element as any)._breederDialogOpen).toBe(true);
+      // Click Back
+      const backBtn = (
+        Array.from(
+          getBreederManagerSR()?.querySelectorAll('.sd-content button.tonal') || []
+        ) as HTMLElement[]
+      )?.[0];
+      (backBtn as HTMLElement)?.click();
+      await getBreederManager()?.updateComplete;
 
-            const dialog = getBreederManagerSR()?.querySelector('gs-dialog');
-            expect(dialog).toBeTruthy();
-
-            // Close it via the footer Close button
-            const closeBtn = getBreederManagerSR()?.querySelector('button.md3-button.tonal');
-            (closeBtn as HTMLElement)?.click();
-            await element.updateComplete;
-            expect((element as any)._breederDialogOpen).toBe(false);
-        });
-
-        it('should show empty state in breeder list', async () => {
-            element.strains = [];
-            (element as any)._breederDialogOpen = true;
-            await element.updateComplete;
-            await getBreederManager()?.updateComplete;
-
-            const content = getBreederManagerSR()?.querySelector('.sd-content');
-            expect(content?.textContent).toContain('No breeders found');
-        });
-
-        it('should enter breeder edit mode and go back', async () => {
-            (element as any)._breederDialogOpen = true;
-            await element.updateComplete;
-
-            const breederCard = getBreederManagerSR()?.querySelector('.breeder-card');
-            (breederCard as HTMLElement)?.click();
-            await getBreederManager()?.updateComplete;
-
-            expect(getBreederManager()?._sm.activeView).toBe('editor');
-            expect(getBreederManagerSR()?.querySelector('.sd-content')?.textContent).toContain('Edit Breeder');
-
-            // Click Back
-            const backBtn = (Array.from(getBreederManagerSR()?.querySelectorAll('.sd-content button.tonal') || []) as HTMLElement[])?.[0];
-            (backBtn as HTMLElement)?.click();
-            await getBreederManager()?.updateComplete;
-
-            expect(getBreederManager()?._sm.activeView).toBe('list');
-        });
-
-        it('should handle breeder logo upload', async () => {
-            (element as any)._breederDialogOpen = true;
-            await element.updateComplete;
-
-            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
-            getBreederManager()._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'HSO', logo: 'logo.jpg' });
-            await getBreederManager()?.updateComplete;
-
-            const uploadBtn = (Array.from(getBreederManagerSR()?.querySelectorAll('button') || []) as HTMLElement[])
-                .find(b => b.textContent?.includes('Change Logo'));
-
-            const fileInput = (uploadBtn as HTMLElement)?.nextElementSibling as HTMLInputElement;
-            const file = new File([''], 'logo.png', { type: 'image/png' });
-
-            Object.defineProperty(fileInput, 'files', { get: () => [file] });
-            fileInput.dispatchEvent(new Event('change'));
-
-            await new Promise(resolve => setTimeout(resolve, 0));
-            expect(PlantUtils.compressImage).toHaveBeenCalledWith(file);
-            expect(getBreederManager()?._sm.views.editor.draft.logo).toBe('base64string');
-        });
-
-        it('should handle breeder logo removal', async () => {
-            (element as any)._breederDialogOpen = true;
-            await element.updateComplete;
-
-            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
-            getBreederManager()._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'HSO', logo: 'logo.jpg' });
-            await getBreederManager()?.updateComplete;
-
-            // Find remove logo button (error-color button in logo section)
-            const removeBtn = getBreederManagerSR()?.querySelector('button[style*="color:var(--error-color"]') as HTMLElement;
-            (removeBtn as HTMLElement)?.click();
-            await getBreederManager()?.updateComplete;
-
-            expect(getBreederManager()?._sm.views.editor.draft.logo).toBe('');
-        });
-
-        it('should handle breeder name input', async () => {
-            (element as any)._breederDialogOpen = true;
-            await element.updateComplete;
-
-            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
-            getBreederManager()._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED' });
-            await getBreederManager()?.updateComplete;
-
-            const input = getBreederManagerSR()?.querySelector('.sd-input') as HTMLInputElement;
-            input.value = 'Aha Seeds';
-            input.dispatchEvent(new InputEvent('input'));
-            await getBreederManager()?.updateComplete;
-
-            expect(getBreederManager()?._sm.views.editor.draft.name).toBe('Aha Seeds');
-        });
-
-        it('should enter breeder edit mode via pencil icon', async () => {
-            (element as any)._breederDialogOpen = true;
-            await element.updateComplete;
-
-            const hsoCard = (Array.from(getBreederManagerSR()?.querySelectorAll('.breeder-card') || []) as HTMLElement[])
-                .find(c => c.textContent?.includes('HSO'));
-            const editBtn = hsoCard?.querySelector('.breeder-actions button:first-child');
-            (editBtn as HTMLElement)?.click();
-            await getBreederManager()?.updateComplete;
-
-            expect(getBreederManager()?._sm.activeView).toBe('editor');
-            expect(getBreederManager()?._sm.views.editor.draft.originalName).toBe('HSO');
-        });
-
-        it('should cancel breeder deletion via list button', async () => {
-            (element as any)._breederDialogOpen = true;
-            await element.updateComplete;
-
-            const hsoCard = (Array.from(getBreederManagerSR()?.querySelectorAll('.breeder-card') || []) as HTMLElement[])
-                .find(c => c.textContent?.includes('HSO'));
-            const deleteBtn = hsoCard?.querySelector('.breeder-actions button:last-child');
-
-            (deleteBtn as HTMLElement)?.click();
-            await getBreederManager()?.updateComplete;
-
-            expect(getBreederManager()?._sm.views.list.sub).toEqual({ kind: 'confirm-delete', name: 'HSO' });
-
-            // Cancel delete via confirmation dialog
-            const cancelBtn = (Array.from(getBreederManagerSR()?.querySelectorAll('ha-dialog button') || []) as HTMLElement[])
-                .find(b => b.textContent?.includes('Cancel'));
-
-            (cancelBtn as HTMLElement)?.click();
-            await getBreederManager()?.updateComplete;
-            expect(getBreederManager()?._sm.views.list.sub.kind).toBe('idle');
-        });
-
-        it('should save new breeder', async () => {
-            (element as any)._breederDialogOpen = true;
-            await element.updateComplete;
-
-            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
-            getBreederManager()._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED' });
-            getBreederManager()._sm = t(getBreederManager()._sm, { type: 'FIELD_CHANGED', field: 'name', value: 'New Breeder' });
-            getBreederManager().requestUpdate?.();
-            await getBreederManager()?.updateComplete;
-
-            const saveSpy = vi.fn();
-            element.addEventListener('save-breeder', saveSpy);
-
-            const saveBtn = (Array.from(getBreederManagerSR()?.querySelectorAll('button.primary') || []) as HTMLElement[])
-                .find(b => b.textContent?.includes('Create Breeder'));
-
-            expect(saveBtn).toBeTruthy();
-            expect((saveBtn as any)?.disabled).toBe(false);
-
-            (saveBtn as HTMLElement)?.click();
-            await element.updateComplete;
-
-            expect(saveSpy).toHaveBeenCalled();
-            expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({
-                detail: { name: 'New Breeder', logo: '' }
-            }));
-            expect(getBreederManager()?._sm.activeView).toBe('list');
-        });
-
-        it('should update existing breeder', async () => {
-            (element as any)._breederDialogOpen = true;
-            await element.updateComplete;
-
-            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
-            getBreederManager()._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'HSO', logo: 'old_logo.jpg' });
-            getBreederManager()._sm = t(getBreederManager()._sm, { type: 'FIELD_CHANGED', field: 'name', value: 'HSO Pro' });
-            getBreederManager().requestUpdate?.();
-            await getBreederManager()?.updateComplete;
-
-            const updateSpy = vi.fn();
-            element.addEventListener('update-breeder', updateSpy);
-
-            const saveBtn = (Array.from(getBreederManagerSR()?.querySelectorAll('button.primary') || []) as HTMLElement[])
-                .find(b => b.textContent?.includes('Save Changes'));
-
-            (saveBtn as HTMLElement)?.click();
-            await element.updateComplete;
-
-            expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({
-                detail: { oldName: 'HSO', newName: 'HSO Pro', logo: 'old_logo.jpg' }
-            }));
-        });
-
-        it('should delete breeder via list button', async () => {
-            (element as any)._breederDialogOpen = true;
-            await element.updateComplete;
-
-            const hsoCard = (Array.from(getBreederManagerSR()?.querySelectorAll('.breeder-card') || []) as HTMLElement[])
-                .find(c => c.textContent?.includes('HSO'));
-            const deleteBtn = hsoCard?.querySelector('.breeder-actions button:last-child');
-
-            (deleteBtn as HTMLElement)?.click();
-            await getBreederManager()?.updateComplete;
-
-            expect(getBreederManager()?._sm.views.list.sub).toEqual({ kind: 'confirm-delete', name: 'HSO' });
-
-            const confirmSpy = vi.fn();
-            element.addEventListener('delete-breeder', confirmSpy);
-
-            const confirmBtn = (Array.from(getBreederManagerSR()?.querySelectorAll('ha-dialog button') || []) as HTMLElement[])
-                .find(b => b.textContent?.includes('Remove'));
-
-            (confirmBtn as HTMLElement)?.click();
-            await element.updateComplete;
-
-            expect(confirmSpy).toHaveBeenCalledWith(expect.objectContaining({
-                detail: { name: 'HSO' }
-            }));
-            expect(getBreederManager()?._sm.views.list.sub.kind).toBe('idle');
-        });
-
-        it('should cancel breeder deletion', async () => {
-            (element as any)._breederDialogOpen = true;
-            await element.updateComplete;
-
-            const { transition: t } = await import('../../../src/dialogs/gs-breeder-manager-sm');
-            getBreederManager()._sm = t(getBreederManager()._sm, { type: 'DELETE_REQUESTED', name: 'HSO' });
-            getBreederManager().requestUpdate?.();
-            await getBreederManager()?.updateComplete;
-
-            const cancelBtn = (Array.from(getBreederManagerSR()?.querySelectorAll('ha-dialog button') || []) as HTMLElement[])
-                .find(b => b.textContent?.includes('Cancel'));
-
-            (cancelBtn as HTMLElement)?.click();
-            await getBreederManager()?.updateComplete;
-            expect(getBreederManager()?._sm.views.list.sub.kind).toBe('idle');
-        });
+      expect(getBreederManager()?._sm.activeView).toBe('list');
     });
 
-    describe('Miscellaneous Interactions', () => {
-        it('should handle breeder logo compression error', async () => {
-            (element as any)._breederDialogOpen = true;
-            await element.updateComplete;
+    it('should handle breeder logo upload', async () => {
+      (element as any)._breederDialogOpen = true;
+      await element.updateComplete;
 
-            const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
-            gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'HSO', logo: '' });
-            await gsBreederManager?.updateComplete;
+      const { transition: t, createInitialSM } =
+        await import('../../../src/dialogs/gs-breeder-manager-sm');
+      getBreederManager()._sm = t(createInitialSM(), {
+        type: 'EDIT_REQUESTED',
+        name: 'HSO',
+        logo: 'logo.jpg',
+      });
+      await getBreederManager()?.updateComplete;
 
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            (PlantUtils.compressImage as any).mockRejectedValueOnce('Logo compression failed');
+      const uploadBtn = (
+        Array.from(getBreederManagerSR()?.querySelectorAll('button') || []) as HTMLElement[]
+      ).find((b) => b.textContent?.includes('Change Logo'));
 
-            const uploadBtn = (Array.from(gsBreederManager?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[])
-                .find(b => b.textContent?.includes('Upload Logo'));
-            const fileInput = (uploadBtn as HTMLElement)?.nextElementSibling as HTMLInputElement;
+      const fileInput = (uploadBtn as HTMLElement)?.nextElementSibling as HTMLInputElement;
+      const file = new File([''], 'logo.png', { type: 'image/png' });
 
-            Object.defineProperty(fileInput, 'files', { get: () => [new File([''], 'logo.png')] });
-            fileInput.dispatchEvent(new Event('change'));
+      Object.defineProperty(fileInput, 'files', { get: () => [file] });
+      fileInput.dispatchEvent(new Event('change'));
 
-            await new Promise(resolve => setTimeout(resolve, 0));
-            expect(consoleSpy).toHaveBeenCalledWith('Error compressing logo:', 'Logo compression failed');
-            consoleSpy.mockRestore();
-        });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(PlantUtils.compressImage).toHaveBeenCalledWith(file);
+      expect(getBreederManager()?._sm.views.editor.draft.logo).toBe('base64string');
     });
+
+    it('should handle breeder logo removal', async () => {
+      (element as any)._breederDialogOpen = true;
+      await element.updateComplete;
+
+      const { transition: t, createInitialSM } =
+        await import('../../../src/dialogs/gs-breeder-manager-sm');
+      getBreederManager()._sm = t(createInitialSM(), {
+        type: 'EDIT_REQUESTED',
+        name: 'HSO',
+        logo: 'logo.jpg',
+      });
+      await getBreederManager()?.updateComplete;
+
+      // Find remove logo button (error-color button in logo section)
+      const removeBtn = getBreederManagerSR()?.querySelector(
+        'button[style*="color:var(--error-color"]'
+      ) as HTMLElement;
+      (removeBtn as HTMLElement)?.click();
+      await getBreederManager()?.updateComplete;
+
+      expect(getBreederManager()?._sm.views.editor.draft.logo).toBe('');
+    });
+
+    it('should handle breeder name input', async () => {
+      (element as any)._breederDialogOpen = true;
+      await element.updateComplete;
+
+      const { transition: t, createInitialSM } =
+        await import('../../../src/dialogs/gs-breeder-manager-sm');
+      getBreederManager()._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED' });
+      await getBreederManager()?.updateComplete;
+
+      const input = getBreederManagerSR()?.querySelector('.sd-input') as HTMLInputElement;
+      input.value = 'Aha Seeds';
+      input.dispatchEvent(new InputEvent('input'));
+      await getBreederManager()?.updateComplete;
+
+      expect(getBreederManager()?._sm.views.editor.draft.name).toBe('Aha Seeds');
+    });
+
+    it('should enter breeder edit mode via pencil icon', async () => {
+      (element as any)._breederDialogOpen = true;
+      await element.updateComplete;
+
+      const hsoCard = (
+        Array.from(getBreederManagerSR()?.querySelectorAll('.breeder-card') || []) as HTMLElement[]
+      ).find((c) => c.textContent?.includes('HSO'));
+      const editBtn = hsoCard?.querySelector('.breeder-actions button:first-child');
+      (editBtn as HTMLElement)?.click();
+      await getBreederManager()?.updateComplete;
+
+      expect(getBreederManager()?._sm.activeView).toBe('editor');
+      expect(getBreederManager()?._sm.views.editor.draft.originalName).toBe('HSO');
+    });
+
+    it('should cancel breeder deletion via list button', async () => {
+      (element as any)._breederDialogOpen = true;
+      await element.updateComplete;
+
+      const hsoCard = (
+        Array.from(getBreederManagerSR()?.querySelectorAll('.breeder-card') || []) as HTMLElement[]
+      ).find((c) => c.textContent?.includes('HSO'));
+      const deleteBtn = hsoCard?.querySelector('.breeder-actions button:last-child');
+
+      (deleteBtn as HTMLElement)?.click();
+      await getBreederManager()?.updateComplete;
+
+      expect(getBreederManager()?._sm.views.list.sub).toEqual({
+        kind: 'confirm-delete',
+        name: 'HSO',
+      });
+
+      // Cancel delete via confirmation dialog
+      const cancelBtn = (
+        Array.from(
+          getBreederManagerSR()?.querySelectorAll('ha-dialog button') || []
+        ) as HTMLElement[]
+      ).find((b) => b.textContent?.includes('Cancel'));
+
+      (cancelBtn as HTMLElement)?.click();
+      await getBreederManager()?.updateComplete;
+      expect(getBreederManager()?._sm.views.list.sub.kind).toBe('idle');
+    });
+
+    it('should save new breeder', async () => {
+      (element as any)._breederDialogOpen = true;
+      await element.updateComplete;
+
+      const { transition: t, createInitialSM } =
+        await import('../../../src/dialogs/gs-breeder-manager-sm');
+      getBreederManager()._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED' });
+      getBreederManager()._sm = t(getBreederManager()._sm, {
+        type: 'FIELD_CHANGED',
+        field: 'name',
+        value: 'New Breeder',
+      });
+      getBreederManager().requestUpdate?.();
+      await getBreederManager()?.updateComplete;
+
+      const saveSpy = vi.fn();
+      element.addEventListener('save-breeder', saveSpy);
+
+      const saveBtn = (
+        Array.from(getBreederManagerSR()?.querySelectorAll('button.primary') || []) as HTMLElement[]
+      ).find((b) => b.textContent?.includes('Create Breeder'));
+
+      expect(saveBtn).toBeTruthy();
+      expect((saveBtn as any)?.disabled).toBe(false);
+
+      (saveBtn as HTMLElement)?.click();
+      await element.updateComplete;
+
+      expect(saveSpy).toHaveBeenCalled();
+      expect(saveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: { name: 'New Breeder', logo: '' },
+        })
+      );
+      expect(getBreederManager()?._sm.activeView).toBe('list');
+    });
+
+    it('should update existing breeder', async () => {
+      (element as any)._breederDialogOpen = true;
+      await element.updateComplete;
+
+      const { transition: t, createInitialSM } =
+        await import('../../../src/dialogs/gs-breeder-manager-sm');
+      getBreederManager()._sm = t(createInitialSM(), {
+        type: 'EDIT_REQUESTED',
+        name: 'HSO',
+        logo: 'old_logo.jpg',
+      });
+      getBreederManager()._sm = t(getBreederManager()._sm, {
+        type: 'FIELD_CHANGED',
+        field: 'name',
+        value: 'HSO Pro',
+      });
+      getBreederManager().requestUpdate?.();
+      await getBreederManager()?.updateComplete;
+
+      const updateSpy = vi.fn();
+      element.addEventListener('update-breeder', updateSpy);
+
+      const saveBtn = (
+        Array.from(getBreederManagerSR()?.querySelectorAll('button.primary') || []) as HTMLElement[]
+      ).find((b) => b.textContent?.includes('Save Changes'));
+
+      (saveBtn as HTMLElement)?.click();
+      await element.updateComplete;
+
+      expect(updateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: { oldName: 'HSO', newName: 'HSO Pro', logo: 'old_logo.jpg' },
+        })
+      );
+    });
+
+    it('should delete breeder via list button', async () => {
+      (element as any)._breederDialogOpen = true;
+      await element.updateComplete;
+
+      const hsoCard = (
+        Array.from(getBreederManagerSR()?.querySelectorAll('.breeder-card') || []) as HTMLElement[]
+      ).find((c) => c.textContent?.includes('HSO'));
+      const deleteBtn = hsoCard?.querySelector('.breeder-actions button:last-child');
+
+      (deleteBtn as HTMLElement)?.click();
+      await getBreederManager()?.updateComplete;
+
+      expect(getBreederManager()?._sm.views.list.sub).toEqual({
+        kind: 'confirm-delete',
+        name: 'HSO',
+      });
+
+      const confirmSpy = vi.fn();
+      element.addEventListener('delete-breeder', confirmSpy);
+
+      const confirmBtn = (
+        Array.from(
+          getBreederManagerSR()?.querySelectorAll('ha-dialog button') || []
+        ) as HTMLElement[]
+      ).find((b) => b.textContent?.includes('Remove'));
+
+      (confirmBtn as HTMLElement)?.click();
+      await element.updateComplete;
+
+      expect(confirmSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: { name: 'HSO' },
+        })
+      );
+      expect(getBreederManager()?._sm.views.list.sub.kind).toBe('idle');
+    });
+
+    it('should cancel breeder deletion', async () => {
+      (element as any)._breederDialogOpen = true;
+      await element.updateComplete;
+
+      const { transition: t } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+      getBreederManager()._sm = t(getBreederManager()._sm, {
+        type: 'DELETE_REQUESTED',
+        name: 'HSO',
+      });
+      getBreederManager().requestUpdate?.();
+      await getBreederManager()?.updateComplete;
+
+      const cancelBtn = (
+        Array.from(
+          getBreederManagerSR()?.querySelectorAll('ha-dialog button') || []
+        ) as HTMLElement[]
+      ).find((b) => b.textContent?.includes('Cancel'));
+
+      (cancelBtn as HTMLElement)?.click();
+      await getBreederManager()?.updateComplete;
+      expect(getBreederManager()?._sm.views.list.sub.kind).toBe('idle');
+    });
+  });
+
+  describe('Miscellaneous Interactions', () => {
+    it('should handle breeder logo compression error', async () => {
+      (element as any)._breederDialogOpen = true;
+      await element.updateComplete;
+
+      const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+      const { transition: t, createInitialSM } =
+        await import('../../../src/dialogs/gs-breeder-manager-sm');
+      gsBreederManager._sm = t(createInitialSM(), {
+        type: 'EDIT_REQUESTED',
+        name: 'HSO',
+        logo: '',
+      });
+      await gsBreederManager?.updateComplete;
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      (PlantUtils.compressImage as any).mockRejectedValueOnce('Logo compression failed');
+
+      const uploadBtn = (
+        Array.from(gsBreederManager?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[]
+      ).find((b) => b.textContent?.includes('Upload Logo'));
+      const fileInput = (uploadBtn as HTMLElement)?.nextElementSibling as HTMLInputElement;
+
+      Object.defineProperty(fileInput, 'files', { get: () => [new File([''], 'logo.png')] });
+      fileInput.dispatchEvent(new Event('change'));
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(consoleSpy).toHaveBeenCalledWith('Error compressing logo:', 'Logo compression failed');
+      consoleSpy.mockRestore();
+    });
+  });
 });

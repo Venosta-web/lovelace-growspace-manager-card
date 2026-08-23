@@ -1,6 +1,11 @@
 import { haTest as test } from '../fixtures/ha-setup';
 import { GrowspaceCard } from '../pages/GrowspaceCard';
-import { ConfigDialog, IrrigationDialog, NutrientDialog, StrainLibraryDialog } from '../pages/Dialogs';
+import {
+  ConfigDialog,
+  IrrigationDialog,
+  NutrientDialog,
+  StrainLibraryDialog,
+} from '../pages/Dialogs';
 
 test.describe('Setup dialogs', () => {
   let growspaceCard: GrowspaceCard;

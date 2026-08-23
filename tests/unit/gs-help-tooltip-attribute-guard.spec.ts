@@ -32,11 +32,9 @@ describe('gs-help-tooltip attribute guard', () => {
     }
 
     if (violations.length > 0) {
-      const detail = violations
-        .map(({ file, tag }) => `  ${file}:\n    ${tag.trim()}`)
-        .join('\n');
+      const detail = violations.map(({ file, tag }) => `  ${file}:\n    ${tag.trim()}`).join('\n');
       expect.fail(
-        `gs-help-tooltip uses forbidden "message=" attribute (use "content=" instead):\n${detail}`,
+        `gs-help-tooltip uses forbidden "message=" attribute (use "content=" instead):\n${detail}`
       );
     }
   });

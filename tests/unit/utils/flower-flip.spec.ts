@@ -14,12 +14,14 @@ function makePlant(flowerStart: string | null, name = 'Plant A') {
   } as any;
 }
 
-function makeDevice(overrides: Partial<{
-  plants: any[];
-  deviceId: string;
-  vegDayHours: number;
-  autoLightTracking: boolean;
-}> = {}) {
+function makeDevice(
+  overrides: Partial<{
+    plants: any[];
+    deviceId: string;
+    vegDayHours: number;
+    autoLightTracking: boolean;
+  }> = {}
+) {
   return {
     deviceId: overrides.deviceId ?? 'gs1',
     plants: overrides.plants ?? [],
@@ -28,9 +30,10 @@ function makeDevice(overrides: Partial<{
       drainTimes: [],
       vegDayHours: overrides.vegDayHours,
     },
-    irrigationStrategy: overrides.autoLightTracking !== undefined
-      ? { enabled: true, autoLightTracking: overrides.autoLightTracking } as any
-      : undefined,
+    irrigationStrategy:
+      overrides.autoLightTracking !== undefined
+        ? ({ enabled: true, autoLightTracking: overrides.autoLightTracking } as any)
+        : undefined,
     environmentAttributes: {},
     biologicalMetrics: {},
     stats: {} as any,
@@ -63,7 +66,11 @@ describe('getFlowerFlipInfo', () => {
 
   it('collects all plant names when multiple plants flip today', () => {
     const device = makeDevice({
-      plants: [makePlant(TODAY, 'Blue Dream'), makePlant(TODAY, 'OG Kush'), makePlant(TOMORROW, 'Skunk')],
+      plants: [
+        makePlant(TODAY, 'Blue Dream'),
+        makePlant(TODAY, 'OG Kush'),
+        makePlant(TOMORROW, 'Skunk'),
+      ],
     });
     const result = getFlowerFlipInfo(device, TODAY, {});
     expect(result!.plantNames).toEqual(['Blue Dream', 'OG Kush']);

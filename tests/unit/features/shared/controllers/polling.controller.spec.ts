@@ -3,7 +3,12 @@ import { PollingController } from '../../../../../src/features/shared/controller
 import type { ReactiveControllerHost } from 'lit';
 
 function makeHost(): ReactiveControllerHost {
-  return { addController: vi.fn(), removeController: vi.fn(), requestUpdate: vi.fn(), updateComplete: Promise.resolve(true) };
+  return {
+    addController: vi.fn(),
+    removeController: vi.fn(),
+    requestUpdate: vi.fn(),
+    updateComplete: Promise.resolve(true),
+  };
 }
 
 describe('PollingController', () => {

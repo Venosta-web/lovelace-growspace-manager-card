@@ -17,7 +17,7 @@ export const authenticatedTest = base.extend<{ authContext: AuthContext }>({
 
     if (authContext.token) {
       contextOptions.extraHTTPHeaders = {
-        'Authorization': `Bearer ${authContext.token}`,
+        Authorization: `Bearer ${authContext.token}`,
       };
     }
 

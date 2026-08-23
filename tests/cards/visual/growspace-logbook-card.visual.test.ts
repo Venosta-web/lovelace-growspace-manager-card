@@ -6,42 +6,57 @@ import { GrowspaceLogbookCard } from '../../../src/cards/growspace-logbook-card'
 import { setDevices } from '../../../src/slices/grid';
 import { aHass, aGrowspaceDevice } from '../../fixtures';
 
-
 // Mock the timeline service so growspace-logbook renders empty events instead of fetching
 vi.mock('../../../src/services/timeline-service', () => ({
-    getTimelineService: () => ({
-        fetchGrowspaceEvents: async () => ([
-            { category: 'watering', sensor_type: 'watering', growspace_id: 'test_tent', timestamp: '2026-05-20T10:00:00Z', data: { amount_ml: 500 } },
-            { category: 'training', sensor_type: 'lst', growspace_id: 'test_tent', timestamp: '2026-05-19T14:00:00Z', data: {} },
-        ]),
-    }),
+  getTimelineService: () => ({
+    fetchGrowspaceEvents: async () => [
+      {
+        category: 'watering',
+        sensor_type: 'watering',
+        growspace_id: 'test_tent',
+        timestamp: '2026-05-20T10:00:00Z',
+        data: { amount_ml: 500 },
+      },
+      {
+        category: 'training',
+        sensor_type: 'lst',
+        growspace_id: 'test_tent',
+        timestamp: '2026-05-19T14:00:00Z',
+        data: {},
+      },
+    ],
+  }),
 }));
 vi.mock('../../../src/cards/editors/growspace-logbook-card-editor', () => ({}));
 vi.mock('../../../src/slices/growspace', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../../../src/slices/growspace')>();
-    // Never-resolving mock so the bootstrap controller's async fetch doesn't
-    // race with the manual setDevices() seed in this rendering test.
-    return { ...actual, fetchRawCollection: vi.fn(() => new Promise(() => {})) };
+  const actual = await importOriginal<typeof import('../../../src/slices/growspace')>();
+  // Never-resolving mock so the bootstrap controller's async fetch doesn't
+  // race with the manual setDevices() seed in this rendering test.
+  return { ...actual, fetchRawCollection: vi.fn(() => new Promise(() => {})) };
 });
 
 if (!customElements.get('growspace-logbook-card')) {
-    customElements.define('growspace-logbook-card', GrowspaceLogbookCard);
+  customElements.define('growspace-logbook-card', GrowspaceLogbookCard);
 }
 
 test('growspace-logbook-card visual snapshot', async () => {
-    const element = await fixture<GrowspaceLogbookCard>(html`<growspace-logbook-card></growspace-logbook-card>`);
-    element.hass = aHass() as any;
+  const element = await fixture<GrowspaceLogbookCard>(
+    html`<growspace-logbook-card></growspace-logbook-card>`
+  );
+  element.hass = aHass() as any;
 
+  element.setConfig({
+    type: 'custom:growspace-logbook-card',
+    default_growspace: 'test_tent',
+  } as any);
 
-    element.setConfig({ type: 'custom:growspace-logbook-card', default_growspace: 'test_tent' } as any);
+  (element as any)._store.ui.$isLoading.set(false);
+  setDevices([aGrowspaceDevice()]);
+  (element as any)._store.grid.$selectedDevice.set('test_tent');
+  await element.updateComplete;
+  // Allow the async _fetchEvents to complete
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  await element.updateComplete;
 
-    (element as any)._store.ui.$isLoading.set(false);
-    setDevices([aGrowspaceDevice()]);
-    (element as any)._store.grid.$selectedDevice.set('test_tent');
-    await element.updateComplete;
-    // Allow the async _fetchEvents to complete
-    await new Promise(resolve => setTimeout(resolve, 50));
-    await element.updateComplete;
-
-    await expect(page.elementLocator(element)).toMatchScreenshot();
+  await expect(page.elementLocator(element)).toMatchScreenshot();
 });
