@@ -28,6 +28,8 @@ export function createTestContext(env: TestEnvironment): TestContext {
     vwcVegDashboardPath: env.TEST_VWC_VEG_DASHBOARD_PATH || '',
     vwcFlowerGrowspaceId: env.TEST_VWC_FLOWER_GROWSPACE_ID || '',
     vwcFlowerDashboardPath: env.TEST_VWC_FLOWER_DASHBOARD_PATH || '',
+    irrigationMonitoredGrowspaceId: env.TEST_IRRIGATION_MONITORED_GROWSPACE_ID || '',
+    irrigationTanksGrowspaceId: env.TEST_IRRIGATION_TANKS_GROWSPACE_ID || '',
     vegPlantId: env.TEST_VEG_PLANT_ID || '',
   };
 }
