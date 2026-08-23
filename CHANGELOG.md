@@ -1,3 +1,10 @@
+## [1.1.6-next.4](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.3...v1.1.6-next.4) (2026-08-23)
+
+
+### Bug Fixes
+
+* **e2e:** use generated dashboard for legacy specs ([#715](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/715)) ([445d82b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/445d82baeef726859f7eeb35a4cb0f3ae2e07117))
+
 ## [1.1.8](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.7...v1.1.8) (2026-08-22)
 
 
