@@ -1,37 +1,11 @@
 import { Page } from '@playwright/test';
 import { authenticatedTest } from './authentication';
-import { TestContext } from './types';
+import { createTestContext } from './test-context';
+import type { TestContext } from './types';
 
 export const haTest = authenticatedTest.extend<{ testContext: TestContext }>({
   testContext: async ({}, use) => {
-    const growspaceId = process.env.TEST_GROWSPACE_ID;
-    const dashboardPath = process.env.TEST_DASHBOARD_PATH || '/dashboard-tesat/0';
-
-    if (!growspaceId) {
-      throw new Error('TEST_GROWSPACE_ID environment variable is required');
-    }
-
-    await use({
-      growspaceId,
-      dashboardPath,
-      vegGrowspaceId: process.env.TEST_VEG_GROWSPACE_ID || '',
-      vegDashboardPath: process.env.TEST_VEG_DASHBOARD_PATH || '',
-      cloneGrowspaceId: process.env.TEST_CLONE_GROWSPACE_ID || '',
-      cloneDashboardPath: process.env.TEST_CLONE_DASHBOARD_PATH || '',
-      motherGrowspaceId: process.env.TEST_MOTHER_GROWSPACE_ID || '',
-      motherDashboardPath: process.env.TEST_MOTHER_DASHBOARD_PATH || '',
-      flowerGrowspaceId: process.env.TEST_FLOWER_GROWSPACE_ID || '',
-      flowerDashboardPath: process.env.TEST_FLOWER_DASHBOARD_PATH || '',
-      dryGrowspaceId: process.env.TEST_DRY_GROWSPACE_ID || '',
-      dryDashboardPath: process.env.TEST_DRY_DASHBOARD_PATH || '',
-      cureGrowspaceId: process.env.TEST_CURE_GROWSPACE_ID || '',
-      cureDashboardPath: process.env.TEST_CURE_DASHBOARD_PATH || '',
-      vwcVegGrowspaceId: process.env.TEST_VWC_VEG_GROWSPACE_ID || '',
-      vwcVegDashboardPath: process.env.TEST_VWC_VEG_DASHBOARD_PATH || '',
-      vwcFlowerGrowspaceId: process.env.TEST_VWC_FLOWER_GROWSPACE_ID || '',
-      vwcFlowerDashboardPath: process.env.TEST_VWC_FLOWER_DASHBOARD_PATH || '',
-      vegPlantId: process.env.TEST_VEG_PLANT_ID || '',
-    });
+    await use(createTestContext(process.env));
   },
 });
 
