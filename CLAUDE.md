@@ -69,6 +69,17 @@ If either check fails, the link is removed and that worktree must run its own `n
 dependency drift therefore fails closed instead of silently using another branch's
 hoisting or peer-dependency resolution.
 
+That link is established once, at worktree setup, and nothing re-establishes the agreement
+afterwards — the source checkout can install a new dependency, or a worktree branch can
+change its own lockfile. So this repo re-checks the cheap half itself, in
+`scripts/shared-dependency-link.mjs`: `npm test` runs a `pretest` guard that refuses when
+`node_modules` is a link whose source checkout's `package-lock.json` no longer matches this
+checkout's, and `preinstall` refuses to install *through* a link at all, because deleting
+it is how a worktree stops being hub-managed and that should be a deliberate act. Both are
+inert when `node_modules` is a real directory or absent, so the main checkout and CI are
+unaffected, and neither ever creates, repairs, or removes a link — the fix they print is
+`rm node_modules && npm ci`.
+
 Never run dependency-mutating npm commands through a shared link. That is a rule, not a
 guarantee — the mechanics split in two. Measured: `npm ci` and `npm install` delete the link and put a private install in its place, leaving the main checkout's tree
 untouched. `npm rebuild`, `patch-package`, and dependency postinstalls leave the link
