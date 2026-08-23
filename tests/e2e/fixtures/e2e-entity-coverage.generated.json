@@ -1,0 +1,1752 @@
+{
+  "generated_by": "e2e/entity_coverage.py",
+  "version": 1,
+  "profiles": [
+    {
+      "profile": "stage",
+      "slug": "veg",
+      "name": "E2E Veg",
+      "plant_stage_field": "veg_start",
+      "stage_days_ago": 0,
+      "services": {
+        "configure_environment": {
+          "temperature_sensor": "sensor.e2e_veg_temperature",
+          "humidity_sensor": "sensor.e2e_veg_humidity",
+          "vpd_sensor": "sensor.e2e_veg_vpd",
+          "co2_sensor": "sensor.e2e_veg_co2",
+          "feed_ec_sensors": [
+            "sensor.e2e_veg_feed_ec"
+          ],
+          "bulk_ec_sensors": [
+            "sensor.e2e_veg_bulk_ec"
+          ],
+          "pore_ec_sensors": [
+            "sensor.e2e_veg_pore_ec"
+          ],
+          "runoff_ec_sensors": [
+            "sensor.e2e_veg_runoff_ec"
+          ],
+          "ph_sensors": [
+            "sensor.e2e_veg_ph"
+          ],
+          "substrate_temperature_sensors": [
+            "sensor.e2e_veg_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "sensor.e2e_veg_substrate_moisture",
+          "power_sensors": [
+            "sensor.e2e_veg_power"
+          ],
+          "energy_sensors": [
+            "sensor.e2e_veg_energy"
+          ],
+          "drain_volume_sensors": [
+            "sensor.e2e_veg_drain_volume"
+          ],
+          "irrigation_flow_sensors": [
+            "sensor.e2e_veg_irrigation_flow"
+          ],
+          "irrigation_tanks": [
+            {
+              "sensor_entity": "sensor.e2e_veg_irrigation_tank",
+              "volume_liters": 50
+            }
+          ]
+        },
+        "set_irrigation_settings": {
+          "irrigation_pump_entity": "switch.sim_e2e_veg_irrigation_pump",
+          "drain_pump_entity": "switch.sim_e2e_veg_drain_pump"
+        }
+      }
+    },
+    {
+      "profile": "stage",
+      "slug": "clone",
+      "name": "E2E Clone",
+      "plant_stage_field": "clone_start",
+      "stage_days_ago": 0,
+      "services": {
+        "configure_environment": {
+          "temperature_sensor": "sensor.e2e_clone_temperature",
+          "humidity_sensor": "sensor.e2e_clone_humidity",
+          "vpd_sensor": "sensor.e2e_clone_vpd",
+          "co2_sensor": "sensor.e2e_clone_co2",
+          "feed_ec_sensors": [
+            "sensor.e2e_clone_feed_ec"
+          ],
+          "bulk_ec_sensors": [
+            "sensor.e2e_clone_bulk_ec"
+          ],
+          "pore_ec_sensors": [
+            "sensor.e2e_clone_pore_ec"
+          ],
+          "runoff_ec_sensors": [
+            "sensor.e2e_clone_runoff_ec"
+          ],
+          "ph_sensors": [
+            "sensor.e2e_clone_ph"
+          ],
+          "substrate_temperature_sensors": [
+            "sensor.e2e_clone_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "sensor.e2e_clone_substrate_moisture",
+          "power_sensors": [
+            "sensor.e2e_clone_power"
+          ],
+          "energy_sensors": [
+            "sensor.e2e_clone_energy"
+          ],
+          "drain_volume_sensors": [
+            "sensor.e2e_clone_drain_volume"
+          ],
+          "irrigation_flow_sensors": [
+            "sensor.e2e_clone_irrigation_flow"
+          ],
+          "irrigation_tanks": [
+            {
+              "sensor_entity": "sensor.e2e_clone_irrigation_tank",
+              "volume_liters": 50
+            }
+          ]
+        },
+        "set_irrigation_settings": {
+          "irrigation_pump_entity": "switch.sim_e2e_clone_irrigation_pump",
+          "drain_pump_entity": "switch.sim_e2e_clone_drain_pump"
+        }
+      }
+    },
+    {
+      "profile": "stage",
+      "slug": "mother",
+      "name": "E2E Mother",
+      "plant_stage_field": "mother_start",
+      "stage_days_ago": 0,
+      "services": {
+        "configure_environment": {
+          "temperature_sensor": "sensor.e2e_mother_temperature",
+          "humidity_sensor": "sensor.e2e_mother_humidity",
+          "vpd_sensor": "sensor.e2e_mother_vpd",
+          "co2_sensor": "sensor.e2e_mother_co2",
+          "feed_ec_sensors": [
+            "sensor.e2e_mother_feed_ec"
+          ],
+          "bulk_ec_sensors": [
+            "sensor.e2e_mother_bulk_ec"
+          ],
+          "pore_ec_sensors": [
+            "sensor.e2e_mother_pore_ec"
+          ],
+          "runoff_ec_sensors": [
+            "sensor.e2e_mother_runoff_ec"
+          ],
+          "ph_sensors": [
+            "sensor.e2e_mother_ph"
+          ],
+          "substrate_temperature_sensors": [
+            "sensor.e2e_mother_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "sensor.e2e_mother_substrate_moisture",
+          "power_sensors": [
+            "sensor.e2e_mother_power"
+          ],
+          "energy_sensors": [
+            "sensor.e2e_mother_energy"
+          ],
+          "drain_volume_sensors": [
+            "sensor.e2e_mother_drain_volume"
+          ],
+          "irrigation_flow_sensors": [
+            "sensor.e2e_mother_irrigation_flow"
+          ],
+          "irrigation_tanks": [
+            {
+              "sensor_entity": "sensor.e2e_mother_irrigation_tank",
+              "volume_liters": 50
+            }
+          ]
+        },
+        "set_irrigation_settings": {
+          "irrigation_pump_entity": "switch.sim_e2e_mother_irrigation_pump",
+          "drain_pump_entity": "switch.sim_e2e_mother_drain_pump"
+        }
+      }
+    },
+    {
+      "profile": "stage",
+      "slug": "flower",
+      "name": "E2E Flower",
+      "plant_stage_field": "flower_start",
+      "stage_days_ago": 0,
+      "services": {
+        "configure_environment": {
+          "temperature_sensor": "sensor.e2e_flower_temperature",
+          "humidity_sensor": "sensor.e2e_flower_humidity",
+          "vpd_sensor": "sensor.e2e_flower_vpd",
+          "co2_sensor": "sensor.e2e_flower_co2",
+          "feed_ec_sensors": [
+            "sensor.e2e_flower_feed_ec"
+          ],
+          "bulk_ec_sensors": [
+            "sensor.e2e_flower_bulk_ec"
+          ],
+          "pore_ec_sensors": [
+            "sensor.e2e_flower_pore_ec"
+          ],
+          "runoff_ec_sensors": [
+            "sensor.e2e_flower_runoff_ec"
+          ],
+          "ph_sensors": [
+            "sensor.e2e_flower_ph"
+          ],
+          "substrate_temperature_sensors": [
+            "sensor.e2e_flower_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "sensor.e2e_flower_substrate_moisture",
+          "power_sensors": [
+            "sensor.e2e_flower_power"
+          ],
+          "energy_sensors": [
+            "sensor.e2e_flower_energy"
+          ],
+          "drain_volume_sensors": [
+            "sensor.e2e_flower_drain_volume"
+          ],
+          "irrigation_flow_sensors": [
+            "sensor.e2e_flower_irrigation_flow"
+          ],
+          "irrigation_tanks": [
+            {
+              "sensor_entity": "sensor.e2e_flower_irrigation_tank",
+              "volume_liters": 50
+            }
+          ]
+        },
+        "set_irrigation_settings": {
+          "irrigation_pump_entity": "switch.sim_e2e_flower_irrigation_pump",
+          "drain_pump_entity": "switch.sim_e2e_flower_drain_pump"
+        }
+      }
+    },
+    {
+      "profile": "stage",
+      "slug": "dry",
+      "name": "E2E Dry",
+      "plant_stage_field": "dry_start",
+      "stage_days_ago": 0,
+      "services": {
+        "configure_environment": {
+          "temperature_sensor": "sensor.e2e_dry_temperature",
+          "humidity_sensor": "sensor.e2e_dry_humidity",
+          "vpd_sensor": "sensor.e2e_dry_vpd",
+          "co2_sensor": "sensor.e2e_dry_co2",
+          "feed_ec_sensors": [
+            "sensor.e2e_dry_feed_ec"
+          ],
+          "bulk_ec_sensors": [
+            "sensor.e2e_dry_bulk_ec"
+          ],
+          "pore_ec_sensors": [
+            "sensor.e2e_dry_pore_ec"
+          ],
+          "runoff_ec_sensors": [
+            "sensor.e2e_dry_runoff_ec"
+          ],
+          "ph_sensors": [
+            "sensor.e2e_dry_ph"
+          ],
+          "substrate_temperature_sensors": [
+            "sensor.e2e_dry_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "sensor.e2e_dry_substrate_moisture",
+          "power_sensors": [
+            "sensor.e2e_dry_power"
+          ],
+          "energy_sensors": [
+            "sensor.e2e_dry_energy"
+          ],
+          "drain_volume_sensors": [
+            "sensor.e2e_dry_drain_volume"
+          ],
+          "irrigation_flow_sensors": [
+            "sensor.e2e_dry_irrigation_flow"
+          ],
+          "irrigation_tanks": [
+            {
+              "sensor_entity": "sensor.e2e_dry_irrigation_tank",
+              "volume_liters": 50
+            }
+          ]
+        },
+        "set_irrigation_settings": {
+          "irrigation_pump_entity": "switch.sim_e2e_dry_irrigation_pump",
+          "drain_pump_entity": "switch.sim_e2e_dry_drain_pump"
+        }
+      }
+    },
+    {
+      "profile": "stage",
+      "slug": "cure",
+      "name": "E2E Cure",
+      "plant_stage_field": "cure_start",
+      "stage_days_ago": 0,
+      "services": {
+        "configure_environment": {
+          "temperature_sensor": "sensor.e2e_cure_temperature",
+          "humidity_sensor": "sensor.e2e_cure_humidity",
+          "vpd_sensor": "sensor.e2e_cure_vpd",
+          "co2_sensor": "sensor.e2e_cure_co2",
+          "feed_ec_sensors": [
+            "sensor.e2e_cure_feed_ec"
+          ],
+          "bulk_ec_sensors": [
+            "sensor.e2e_cure_bulk_ec"
+          ],
+          "pore_ec_sensors": [
+            "sensor.e2e_cure_pore_ec"
+          ],
+          "runoff_ec_sensors": [
+            "sensor.e2e_cure_runoff_ec"
+          ],
+          "ph_sensors": [
+            "sensor.e2e_cure_ph"
+          ],
+          "substrate_temperature_sensors": [
+            "sensor.e2e_cure_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "sensor.e2e_cure_substrate_moisture",
+          "power_sensors": [
+            "sensor.e2e_cure_power"
+          ],
+          "energy_sensors": [
+            "sensor.e2e_cure_energy"
+          ],
+          "drain_volume_sensors": [
+            "sensor.e2e_cure_drain_volume"
+          ],
+          "irrigation_flow_sensors": [
+            "sensor.e2e_cure_irrigation_flow"
+          ],
+          "irrigation_tanks": [
+            {
+              "sensor_entity": "sensor.e2e_cure_irrigation_tank",
+              "volume_liters": 50
+            }
+          ]
+        },
+        "set_irrigation_settings": {
+          "irrigation_pump_entity": "switch.sim_e2e_cure_irrigation_pump",
+          "drain_pump_entity": "switch.sim_e2e_cure_drain_pump"
+        }
+      }
+    },
+    {
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "name": "E2E VWC Veg",
+      "plant_stage_field": "veg_start",
+      "stage_days_ago": 15,
+      "services": {
+        "configure_environment": {
+          "temperature_sensor": "input_number.e2e_vwc_veg_temperature",
+          "humidity_sensor": "input_number.e2e_vwc_veg_humidity",
+          "vpd_sensor": "input_number.e2e_vwc_veg_vpd",
+          "co2_sensor": "input_number.e2e_vwc_veg_co2",
+          "feed_ec_sensors": [
+            "input_number.e2e_vwc_veg_feed_ec"
+          ],
+          "bulk_ec_sensors": [
+            "input_number.e2e_vwc_veg_bulk_ec"
+          ],
+          "pore_ec_sensors": [
+            "input_number.e2e_vwc_veg_pore_ec"
+          ],
+          "runoff_ec_sensors": [
+            "input_number.e2e_vwc_veg_runoff_ec"
+          ],
+          "ph_sensors": [
+            "input_number.e2e_vwc_veg_ph"
+          ],
+          "substrate_temperature_sensors": [
+            "input_number.e2e_vwc_veg_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "input_number.e2e_vwc_veg_substrate_moisture",
+          "power_sensors": [
+            "input_number.e2e_vwc_veg_power"
+          ],
+          "energy_sensors": [
+            "input_number.e2e_vwc_veg_energy"
+          ],
+          "drain_volume_sensors": [
+            "input_number.e2e_vwc_veg_drain_volume"
+          ],
+          "irrigation_flow_sensors": [
+            "input_number.e2e_vwc_veg_irrigation_flow"
+          ],
+          "irrigation_tanks": [
+            {
+              "sensor_entity": "input_number.e2e_vwc_veg_irrigation_tank",
+              "volume_liters": 50
+            }
+          ]
+        },
+        "set_irrigation_settings": {
+          "irrigation_pump_entity": "switch.sim_e2e_vwc_veg_irrigation_pump",
+          "drain_pump_entity": "switch.sim_e2e_vwc_veg_drain_pump"
+        }
+      },
+      "vwc_strategy": {
+        "target_vwc_percent": 65,
+        "maintenance_dryback_percent": 3,
+        "p0_duration_minutes": 60,
+        "p2_stop_before_lights_off_minutes": 120,
+        "shot_duration_seconds": 10,
+        "shot_interval_minutes": 15
+      }
+    },
+    {
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "name": "E2E VWC Flower",
+      "plant_stage_field": "flower_start",
+      "stage_days_ago": 40,
+      "services": {
+        "configure_environment": {
+          "temperature_sensor": "input_number.e2e_vwc_flower_temperature",
+          "humidity_sensor": "input_number.e2e_vwc_flower_humidity",
+          "vpd_sensor": "input_number.e2e_vwc_flower_vpd",
+          "co2_sensor": "input_number.e2e_vwc_flower_co2",
+          "feed_ec_sensors": [
+            "input_number.e2e_vwc_flower_feed_ec"
+          ],
+          "bulk_ec_sensors": [
+            "input_number.e2e_vwc_flower_bulk_ec"
+          ],
+          "pore_ec_sensors": [
+            "input_number.e2e_vwc_flower_pore_ec"
+          ],
+          "runoff_ec_sensors": [
+            "input_number.e2e_vwc_flower_runoff_ec"
+          ],
+          "ph_sensors": [
+            "input_number.e2e_vwc_flower_ph"
+          ],
+          "substrate_temperature_sensors": [
+            "input_number.e2e_vwc_flower_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "input_number.e2e_vwc_flower_substrate_moisture",
+          "power_sensors": [
+            "input_number.e2e_vwc_flower_power"
+          ],
+          "energy_sensors": [
+            "input_number.e2e_vwc_flower_energy"
+          ],
+          "drain_volume_sensors": [
+            "input_number.e2e_vwc_flower_drain_volume"
+          ],
+          "irrigation_flow_sensors": [
+            "input_number.e2e_vwc_flower_irrigation_flow"
+          ],
+          "irrigation_tanks": [
+            {
+              "sensor_entity": "input_number.e2e_vwc_flower_irrigation_tank",
+              "volume_liters": 50
+            }
+          ]
+        },
+        "set_irrigation_settings": {
+          "irrigation_pump_entity": "switch.sim_e2e_vwc_flower_irrigation_pump",
+          "drain_pump_entity": "switch.sim_e2e_vwc_flower_drain_pump"
+        }
+      },
+      "vwc_strategy": {
+        "target_vwc_percent": 55,
+        "maintenance_dryback_percent": 5,
+        "p0_duration_minutes": 60,
+        "p2_stop_before_lights_off_minutes": 120,
+        "shot_duration_seconds": 10,
+        "shot_interval_minutes": 15
+      }
+    }
+  ],
+  "entities": [
+    {
+      "entity_id": "sensor.e2e_veg_temperature",
+      "role": "environment.temperature",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_temperature",
+      "role": "environment.temperature",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_temperature",
+      "role": "environment.temperature",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_temperature",
+      "role": "environment.temperature",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_temperature",
+      "role": "environment.temperature",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_temperature",
+      "role": "environment.temperature",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_temperature",
+      "role": "environment.temperature",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_temperature",
+      "role": "environment.temperature",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_humidity",
+      "role": "environment.humidity",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_humidity",
+      "role": "environment.humidity",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_humidity",
+      "role": "environment.humidity",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_humidity",
+      "role": "environment.humidity",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_humidity",
+      "role": "environment.humidity",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_humidity",
+      "role": "environment.humidity",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_humidity",
+      "role": "environment.humidity",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_humidity",
+      "role": "environment.humidity",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_vpd",
+      "role": "environment.vpd",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_vpd",
+      "role": "environment.vpd",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_vpd",
+      "role": "environment.vpd",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_vpd",
+      "role": "environment.vpd",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_vpd",
+      "role": "environment.vpd",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_vpd",
+      "role": "environment.vpd",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_vpd",
+      "role": "environment.vpd",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_vpd",
+      "role": "environment.vpd",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_co2",
+      "role": "environment.co2",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_co2",
+      "role": "environment.co2",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_co2",
+      "role": "environment.co2",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_co2",
+      "role": "environment.co2",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_co2",
+      "role": "environment.co2",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_co2",
+      "role": "environment.co2",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_co2",
+      "role": "environment.co2",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_co2",
+      "role": "environment.co2",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_feed_ec",
+      "role": "irrigation.feed_ec",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_feed_ec",
+      "role": "irrigation.feed_ec",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_feed_ec",
+      "role": "irrigation.feed_ec",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_feed_ec",
+      "role": "irrigation.feed_ec",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_feed_ec",
+      "role": "irrigation.feed_ec",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_feed_ec",
+      "role": "irrigation.feed_ec",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_feed_ec",
+      "role": "irrigation.feed_ec",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_feed_ec",
+      "role": "irrigation.feed_ec",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_bulk_ec",
+      "role": "irrigation.bulk_ec",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_bulk_ec",
+      "role": "irrigation.bulk_ec",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_bulk_ec",
+      "role": "irrigation.bulk_ec",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_bulk_ec",
+      "role": "irrigation.bulk_ec",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_bulk_ec",
+      "role": "irrigation.bulk_ec",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_bulk_ec",
+      "role": "irrigation.bulk_ec",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_bulk_ec",
+      "role": "irrigation.bulk_ec",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_bulk_ec",
+      "role": "irrigation.bulk_ec",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_pore_ec",
+      "role": "irrigation.pore_ec",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_pore_ec",
+      "role": "irrigation.pore_ec",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_pore_ec",
+      "role": "irrigation.pore_ec",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_pore_ec",
+      "role": "irrigation.pore_ec",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_pore_ec",
+      "role": "irrigation.pore_ec",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_pore_ec",
+      "role": "irrigation.pore_ec",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_pore_ec",
+      "role": "irrigation.pore_ec",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_pore_ec",
+      "role": "irrigation.pore_ec",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_runoff_ec",
+      "role": "irrigation.runoff_ec",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_runoff_ec",
+      "role": "irrigation.runoff_ec",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_runoff_ec",
+      "role": "irrigation.runoff_ec",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_runoff_ec",
+      "role": "irrigation.runoff_ec",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_runoff_ec",
+      "role": "irrigation.runoff_ec",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_runoff_ec",
+      "role": "irrigation.runoff_ec",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_runoff_ec",
+      "role": "irrigation.runoff_ec",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_runoff_ec",
+      "role": "irrigation.runoff_ec",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_ph",
+      "role": "irrigation.ph",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_ph",
+      "role": "irrigation.ph",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_ph",
+      "role": "irrigation.ph",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_ph",
+      "role": "irrigation.ph",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_ph",
+      "role": "irrigation.ph",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_ph",
+      "role": "irrigation.ph",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_ph",
+      "role": "irrigation.ph",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_ph",
+      "role": "irrigation.ph",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_power",
+      "role": "environment.power",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_power",
+      "role": "environment.power",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_power",
+      "role": "environment.power",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_power",
+      "role": "environment.power",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_power",
+      "role": "environment.power",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_power",
+      "role": "environment.power",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_power",
+      "role": "environment.power",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_power",
+      "role": "environment.power",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_energy",
+      "role": "environment.energy",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_energy",
+      "role": "environment.energy",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_energy",
+      "role": "environment.energy",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_energy",
+      "role": "environment.energy",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_energy",
+      "role": "environment.energy",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_energy",
+      "role": "environment.energy",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_energy",
+      "role": "environment.energy",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_energy",
+      "role": "environment.energy",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_drain_volume",
+      "role": "irrigation.drain_volume",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_drain_volume",
+      "role": "irrigation.drain_volume",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_drain_volume",
+      "role": "irrigation.drain_volume",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_drain_volume",
+      "role": "irrigation.drain_volume",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_drain_volume",
+      "role": "irrigation.drain_volume",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_drain_volume",
+      "role": "irrigation.drain_volume",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_drain_volume",
+      "role": "irrigation.drain_volume",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_drain_volume",
+      "role": "irrigation.drain_volume",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_irrigation_flow",
+      "role": "irrigation.flow",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_irrigation_flow",
+      "role": "irrigation.flow",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_irrigation_flow",
+      "role": "irrigation.flow",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_irrigation_flow",
+      "role": "irrigation.flow",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_irrigation_flow",
+      "role": "irrigation.flow",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_irrigation_flow",
+      "role": "irrigation.flow",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_irrigation_flow",
+      "role": "irrigation.flow",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_irrigation_flow",
+      "role": "irrigation.flow",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "sensor.e2e_veg_irrigation_tank",
+      "role": "irrigation.tank_level",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_irrigation_tank",
+      "role": "irrigation.tank_level",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_irrigation_tank",
+      "role": "irrigation.tank_level",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_irrigation_tank",
+      "role": "irrigation.tank_level",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_irrigation_tank",
+      "role": "irrigation.tank_level",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_irrigation_tank",
+      "role": "irrigation.tank_level",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_veg_irrigation_tank",
+      "role": "irrigation.tank_level",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_vwc_flower_irrigation_tank",
+      "role": "irrigation.tank_level",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_veg_irrigation_pump",
+      "role": "irrigation.irrigation_pump",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_clone_irrigation_pump",
+      "role": "irrigation.irrigation_pump",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_mother_irrigation_pump",
+      "role": "irrigation.irrigation_pump",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_flower_irrigation_pump",
+      "role": "irrigation.irrigation_pump",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_dry_irrigation_pump",
+      "role": "irrigation.irrigation_pump",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_cure_irrigation_pump",
+      "role": "irrigation.irrigation_pump",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_vwc_veg_irrigation_pump",
+      "role": "irrigation.irrigation_pump",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_vwc_flower_irrigation_pump",
+      "role": "irrigation.irrigation_pump",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_veg_drain_pump",
+      "role": "irrigation.drain_pump",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_clone_drain_pump",
+      "role": "irrigation.drain_pump",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_mother_drain_pump",
+      "role": "irrigation.drain_pump",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_flower_drain_pump",
+      "role": "irrigation.drain_pump",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_dry_drain_pump",
+      "role": "irrigation.drain_pump",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_cure_drain_pump",
+      "role": "irrigation.drain_pump",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_vwc_veg_drain_pump",
+      "role": "irrigation.drain_pump",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_vwc_flower_drain_pump",
+      "role": "irrigation.drain_pump",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_veg_irrigation_pump",
+      "role": "simulation.irrigation_pump_state",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_clone_irrigation_pump",
+      "role": "simulation.irrigation_pump_state",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_mother_irrigation_pump",
+      "role": "simulation.irrigation_pump_state",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_flower_irrigation_pump",
+      "role": "simulation.irrigation_pump_state",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_dry_irrigation_pump",
+      "role": "simulation.irrigation_pump_state",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_cure_irrigation_pump",
+      "role": "simulation.irrigation_pump_state",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_veg_irrigation_pump",
+      "role": "simulation.irrigation_pump_state",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_flower_irrigation_pump",
+      "role": "simulation.irrigation_pump_state",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_veg_drain_pump",
+      "role": "simulation.drain_pump_state",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_clone_drain_pump",
+      "role": "simulation.drain_pump_state",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_mother_drain_pump",
+      "role": "simulation.drain_pump_state",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_flower_drain_pump",
+      "role": "simulation.drain_pump_state",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_dry_drain_pump",
+      "role": "simulation.drain_pump_state",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_cure_drain_pump",
+      "role": "simulation.drain_pump_state",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_veg_drain_pump",
+      "role": "simulation.drain_pump_state",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_flower_drain_pump",
+      "role": "simulation.drain_pump_state",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    }
+  ]
+}
