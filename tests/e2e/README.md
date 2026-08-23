@@ -39,8 +39,8 @@ HA_BASE_URL=http://localhost:8123
 # Generate in HA: Profile → Security → Long-Lived Access Tokens
 HA_ACCESS_TOKEN=your_token_here
 
-# Dashboard path with Growspace Manager card
-TEST_DASHBOARD_PATH=/dashboard-tesat/0
+# Generator-owned veg dashboard used by the legacy specs
+TEST_DASHBOARD_PATH=/e2e-veg/0
 
 # Existing growspace ID to use for tests
 TEST_GROWSPACE_ID=your_growspace_id_here
@@ -49,7 +49,7 @@ TEST_GROWSPACE_ID=your_growspace_id_here
 ### 3. Verify Home Assistant is Running
 
 Ensure HA is accessible at `http://localhost:8123` and you have:
-- A dashboard at the configured path
+- The generated `e2e-veg` dashboard at the configured path
 - The Growspace Manager card on that dashboard
 - At least one growspace configured
 
