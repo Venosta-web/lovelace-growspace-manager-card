@@ -1,3 +1,10 @@
+## [1.1.6-next.3](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.2...v1.1.6-next.3) (2026-08-23)
+
+
+### Bug Fixes
+
+* **tooling:** isolate caches for shared worktrees ([#710](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/710)) ([c518187](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/c5181871ba546fecdec1a07bffd66bda5331fc42))
+
 ## [1.1.6-next.2](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.1...v1.1.6-next.2) (2026-08-22)
 
 
