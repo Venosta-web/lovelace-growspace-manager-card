@@ -20,6 +20,7 @@ async function fixture() {
     'package-lock.json',
     'package.json',
     'rollup.config.js',
+    'scripts/bare-module-specifiers.mjs',
     'scripts/e2e-build-state.mjs',
     'tsconfig.json',
   ]) {
@@ -47,6 +48,15 @@ test('source fingerprint includes build configuration', async (t) => {
 
   const initial = await computeSourceFingerprint(root);
   await writeFile(path.join(root, 'rollup.config.js'), 'changed build config\n');
+  assert.notEqual(await computeSourceFingerprint(root), initial);
+});
+
+test('source fingerprint includes the bare-module-specifier build guard', async (t) => {
+  const root = await fixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+
+  const initial = await computeSourceFingerprint(root);
+  await writeFile(path.join(root, 'scripts', 'bare-module-specifiers.mjs'), 'changed guard\n');
   assert.notEqual(await computeSourceFingerprint(root), initial);
 });
 
