@@ -32,7 +32,8 @@ npm run test:unit:watch
 npm run test:coverage
 npm run test:e2e     # build + Playwright e2e against HA (see AGENTS.md)
 npm run lint         # eslint src/**/*.{ts,js}
-npm run format       # prettier --write
+npm run format       # prettier --write over src/, tests/ and root config
+npm run format:check # same scope, read-only (.prettierignore excludes markdown)
 ```
 
 **Before declaring a change done:** `npm run lint`, `npm test`, and `npm run build` must
