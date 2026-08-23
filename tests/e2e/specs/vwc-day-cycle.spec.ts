@@ -14,6 +14,14 @@ const VWC_TARGET_VEG = 65;
 const VWC_TARGET_FLOWER = 55;
 const MAINTENANCE_DRYBACK = 3;
 
+// Tank levels, in percent of the 50 L reservoir the fixtures register.
+// `IrrigationTank.warning_level` defaults to 30 and the fixtures do not override
+// it, so the coordinator skips every shot while the level is below that — which
+// is what the tank guard test at the bottom of each suite exercises.
+const TANK_WARNING_PERCENT = 30;
+const TANK_READY_PERCENT = 80; // comfortably clear of the cutoff
+const TANK_LOW_PERCENT = 15; // unambiguously under it
+
 // ---------------------------------------------------------------------------
 // Time helpers
 // ---------------------------------------------------------------------------
@@ -58,25 +66,59 @@ async function getEntityState(page: Page, entityId: string): Promise<string> {
   return (data as { state: string }).state;
 }
 
+function tankEntity(slug: string): string {
+  return `input_number.e2e_${slug}_irrigation_tank`;
+}
+
+async function getTankLevel(page: Page, slug: string): Promise<number> {
+  return Number(await getEntityState(page, tankEntity(slug)));
+}
+
 /**
- * Polls until the entity reaches `expected` state or throws after `timeoutMs`.
+ * Throws with the cause when the tank sits under the coordinator's cutoff.
+ *
+ * `beforeEach` fills the tank, so a low reading here means either that fill did
+ * not land or something drained it mid-test. Both are worth naming, and neither
+ * is something more waiting can fix.
  */
-async function waitForEntityState(
+async function assertTankAboveCutoff(page: Page, slug: string, when: string): Promise<void> {
+  const level = await getTankLevel(page, slug);
+  if (Number.isFinite(level) && level >= TANK_WARNING_PERCENT) return;
+  throw new Error(
+    `Tank ${tankEntity(slug)} is at ${level}% ${when}, under the coordinator's ` +
+      `${TANK_WARNING_PERCENT}% cutoff. Every shot is skipped while it is ` +
+      `("Irrigation skipped — tank 'Tank' is low"), so the pump can never turn on. ` +
+      `beforeEach sets it to ${TANK_READY_PERCENT}% — check that the ` +
+      `input_number.set_value call landed.`,
+  );
+}
+
+/**
+ * Polls until the pump switches on, or throws after `timeoutMs`.
+ *
+ * Checks the tank up front and on every poll: a low tank makes the coordinator
+ * refuse to irrigate at all, and waiting out the window only turns a cause we
+ * already know into an opaque timeout.
+ */
+async function waitForPumpOn(
   page: Page,
-  entityId: string,
-  expected: string,
+  slug: string,
+  pumpEntity: string,
   timeoutMs = 90_000,
 ): Promise<void> {
+  await assertTankAboveCutoff(page, slug, 'before waiting for a shot');
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const state = await getEntityState(page, entityId);
-    if (state === expected) return;
+    if ((await getEntityState(page, pumpEntity)) === 'on') return;
+    await assertTankAboveCutoff(page, slug, 'while waiting for a shot');
     await page.waitForTimeout(3_000);
   }
-  const final = await getEntityState(page, entityId);
-  if (final !== expected) {
+  const final = await getEntityState(page, pumpEntity);
+  if (final !== 'on') {
+    const level = await getTankLevel(page, slug);
     throw new Error(
-      `Entity ${entityId} expected "${expected}" but got "${final}" after ${timeoutMs}ms`,
+      `Entity ${pumpEntity} expected "on" but got "${final}" after ${timeoutMs}ms ` +
+        `(tank at ${level}%, cutoff ${TANK_WARNING_PERCENT}%)`,
     );
   }
 }
@@ -190,12 +232,19 @@ for (const gs of gsConfigs) {
         drain_pump_entity: `switch.sim_e2e_${gs.slug}_drain_pump`,
         pause_on_low_tank: false,
         auto_advance_p2_to_p3: false,
-      }).catch(() => {}); // non-fatal — field may not be in schema yet
+      });
 
       // Ensure pump starts off
       await callHAService(page, 'switch', 'turn_off', {
         entity_id: `switch.sim_e2e_${gs.slug}_irrigation_pump`,
       }).catch(() => {});
+
+      // Fill the tank. The guard test below drains it and nothing puts it back,
+      // and an input_number keeps its value across runs — so a suite that
+      // inherited whatever level the instance had irrigated only until the first
+      // low-tank test had run, and skipped every shot from there on.
+      await setTankLevel(page, gs.slug, TANK_READY_PERCENT);
+      await assertTankAboveCutoff(page, gs.slug, 'after the beforeEach fill');
 
       // Neutral VWC — at target so no immediate irrigation trigger
       await setVwcSensor(page, gs.slug, gs.target);
@@ -267,7 +316,7 @@ for (const gs of gsConfigs) {
       // Drop VWC well below target to trigger an irrigation shot
       await setVwcSensor(page, gs.slug, gs.target - 20);
 
-      await waitForEntityState(page, pumpEntity, 'on', 90_000);
+      await waitForPumpOn(page, gs.slug, pumpEntity);
       expect(await getEntityState(page, pumpEntity)).toBe('on');
     });
 
@@ -299,7 +348,7 @@ for (const gs of gsConfigs) {
       // Tick 2: drop VWC below dryback threshold → maintenance shot fires
       await setVwcSensor(page, gs.slug, gs.target - MAINTENANCE_DRYBACK - 1);
 
-      await waitForEntityState(page, pumpEntity, 'on', 90_000);
+      await waitForPumpOn(page, gs.slug, pumpEntity);
       expect(await getEntityState(page, pumpEntity)).toBe('on');
     });
 
@@ -333,7 +382,7 @@ for (const gs of gsConfigs) {
         drain_pump_entity: `switch.sim_e2e_${gs.slug}_drain_pump`,
         pause_on_low_tank: false,
         auto_advance_p2_to_p3: true,
-      }).catch(() => {});
+      });
 
       // Tick 1: VWC at target → coordinator marks target_reached_today = True
       await setVwcSensor(page, gs.slug, gs.target);
@@ -374,7 +423,7 @@ for (const gs of gsConfigs) {
         drain_pump_entity: `switch.sim_e2e_${gs.slug}_drain_pump`,
         pause_on_low_tank: true,
         auto_advance_p2_to_p3: false,
-      }).catch(() => {});
+      });
 
       // Phase = P1: past P0, in ramp-up window
       const lightsOn = addMinutes(nowHHMMSS(), -(P0_DURATION_MIN + 5));
@@ -388,8 +437,9 @@ for (const gs of gsConfigs) {
       // VWC well below target — would normally trigger an irrigation shot
       await setVwcSensor(page, gs.slug, gs.target - 20);
 
-      // Tank at 15% — below warning threshold
-      await setTankLevel(page, gs.slug, 15);
+      // Drain the tank under the warning threshold. beforeEach refills it, so
+      // this does not leak into the tests that follow.
+      await setTankLevel(page, gs.slug, TANK_LOW_PERCENT);
 
       await assertEntityStaysInState(page, pumpEntity, 'off', 70_000);
     });
