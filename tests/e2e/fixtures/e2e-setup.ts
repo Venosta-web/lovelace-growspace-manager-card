@@ -45,6 +45,7 @@ interface CoverageFixtureEntity {
 
 interface CoverageManifest {
   version: number;
+  global_settings: Record<string, string>;
   profiles: CoverageSetupProfile[];
   entities: CoverageFixtureEntity[];
 }
@@ -112,10 +113,10 @@ async function postApi(pathname: string, data: Record<string, unknown>): Promise
   return res.json();
 }
 
-async function callWebSocket(
+async function callWebSocket<T = Record<string, unknown>>(
   type: string,
   data: Record<string, unknown>
-): Promise<Record<string, unknown>> {
+): Promise<T> {
   const url = new URL('/api/websocket', BASE_URL);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
 
@@ -153,7 +154,7 @@ async function callWebSocket(
         );
         return;
       }
-      finish(() => resolve((message.result ?? {}) as Record<string, unknown>));
+      finish(() => resolve((message.result ?? {}) as T));
     });
     socket.addEventListener('error', () =>
       finish(() => reject(new Error(`WebSocket command ${type} could not connect`)))
@@ -224,6 +225,60 @@ async function ensureCameraFixtures(): Promise<void> {
       }
     }
   }
+}
+
+async function ensureGlobalSettings(readinessProbeSlug: string): Promise<void> {
+  const entries = await callWebSocket<Array<{ entry_id: string }>>('config_entries/get', {
+    domain: 'growspace_manager',
+  });
+  if (entries.length !== 1) {
+    throw new Error(`Expected one Growspace Manager config entry, found ${entries.length}`);
+  }
+
+  console.log('\n[global-settings] linking deterministic source-air fixtures…');
+  const started = await postApi('/api/config/config_entries/options/flow', {
+    handler: entries[0].entry_id,
+  });
+  if (started.type !== 'form' || started.step_id !== 'init' || !started.flow_id) {
+    throw new Error(`Could not start Growspace Manager options flow: ${JSON.stringify(started)}`);
+  }
+
+  const globalForm = await postApi(`/api/config/config_entries/options/flow/${started.flow_id}`, {
+    action: 'configure_global',
+  });
+  if (globalForm.type !== 'form' || globalForm.step_id !== 'configure_global') {
+    throw new Error(`Could not open global settings: ${JSON.stringify(globalForm)}`);
+  }
+
+  // Preserve every existing/future global field exposed by the options flow,
+  // then overwrite only the three keys owned by this fixture. The integration's
+  // flow itself copies all unrelated top-level options before saving.
+  const currentGlobal = Object.fromEntries(
+    (globalForm.data_schema ?? [])
+      .filter(
+        (field: { default?: unknown }) => field.default !== null && field.default !== undefined
+      )
+      .map((field: { name: string; default: unknown }) => [field.name, field.default])
+  );
+  const completed = await postApi(`/api/config/config_entries/options/flow/${started.flow_id}`, {
+    ...currentGlobal,
+    ...COVERAGE.global_settings,
+  });
+  if (completed.type !== 'create_entry') {
+    throw new Error(`Could not save global settings: ${JSON.stringify(completed)}`);
+  }
+
+  // Saving options reloads the config entry. The flow response can arrive while
+  // the integration is still unloaded, so wait for a growspace that setup has
+  // already provisioned before issuing another GSM service call.
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await sleep(500);
+    if (await resolveGrowspaceId(readinessProbeSlug)) {
+      console.log('  configured weather and lung-room sensors');
+      return;
+    }
+  }
+  throw new Error('Growspace Manager did not return after saving global settings');
 }
 
 interface VwcStrategyParams {
@@ -479,6 +534,7 @@ async function main(): Promise<void> {
 
   await ensureTestStrain();
   await reloadGrowspaceManager(results);
+  await ensureGlobalSettings('lighting');
 
   writeIdsToEnvFile(results);
 }

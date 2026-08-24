@@ -1,6 +1,11 @@
 {
   "generated_by": "e2e/entity_coverage.py",
-  "version": 1,
+  "version": 2,
+  "global_settings": {
+    "lung_room_temp_sensor": "input_number.e2e_source_air_temperature",
+    "lung_room_humidity_sensor": "input_number.e2e_source_air_humidity",
+    "weather_entity": "weather.e2e_outdoor_conditions"
+  },
   "profiles": [
     {
       "profile": "stage",
@@ -683,7 +688,7 @@
           "vpd_target": 1.1,
           "vpd_tolerance": 0.1,
           "critical_temp_low": null,
-          "critical_temp_high": null,
+          "critical_temp_high": 32,
           "critical_temp_hysteresis": 1
         },
         "set_humidifier_control": {
@@ -807,7 +812,7 @@
           "vpd_target": 1.1,
           "vpd_tolerance": 0.1,
           "critical_temp_low": null,
-          "critical_temp_high": null,
+          "critical_temp_high": 32,
           "critical_temp_hysteresis": 1
         },
         "set_humidifier_control": {
@@ -3274,6 +3279,35 @@
       "translation_key": "sunrise_timer_minutes",
       "device_key": "e2e_ac_infinity_growlight",
       "device_name": "E2E AC Infinity Grow Light Port"
+    },
+    {
+      "entity_id": "input_number.e2e_source_air_temperature",
+      "role": "source_air.temperature",
+      "profile": "source_air",
+      "slug": "source_air",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_source_air_humidity",
+      "role": "source_air.humidity",
+      "profile": "source_air",
+      "slug": "source_air",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "weather.e2e_outdoor_conditions",
+      "role": "source_air.weather",
+      "profile": "source_air",
+      "slug": "source_air",
+      "domain": "weather",
+      "behavior": "read-only",
+      "attributes": {
+        "condition": "cloudy",
+        "temperature": 12,
+        "humidity": 85
+      }
     },
     {
       "entity_id": "camera.e2e_vision_1",
