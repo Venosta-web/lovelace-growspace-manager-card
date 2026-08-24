@@ -591,6 +591,28 @@
           "lights_on_time": "06:00:00"
         }
       }
+    },
+    {
+      "profile": "vision",
+      "slug": "vision",
+      "name": "E2E Vision",
+      "plant_stage_field": "flower_start",
+      "stage_days_ago": 0,
+      "services": {
+        "configure_environment": {
+          "snapshot_interval_hours": 6,
+          "camera_entities": [
+            "camera.e2e_vision_1",
+            "camera.e2e_vision_2"
+          ]
+        },
+        "update_vision_checkup_config": {
+          "enabled": true,
+          "early_check_offset_minutes": 45,
+          "mid_check_hours": 6,
+          "late_check_offset_minutes": 45
+        }
+      }
     }
   ],
   "entities": [
@@ -2645,6 +2667,32 @@
       "slug": "telemetry_multi",
       "domain": "input_boolean",
       "behavior": "controllable"
+    },
+    {
+      "entity_id": "camera.e2e_vision_1",
+      "role": "vision.camera",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "camera",
+      "behavior": "read-only",
+      "fixture": {
+        "handler": "local_file",
+        "name": "E2E Vision 1",
+        "file_path": "/config/www/e2e-camera-assets/e2e_vision_1.jpg"
+      }
+    },
+    {
+      "entity_id": "camera.e2e_vision_2",
+      "role": "vision.camera",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "camera",
+      "behavior": "read-only",
+      "fixture": {
+        "handler": "local_file",
+        "name": "E2E Vision 2",
+        "file_path": "/config/www/e2e-camera-assets/e2e_vision_2.jpg"
+      }
     }
   ]
 }
