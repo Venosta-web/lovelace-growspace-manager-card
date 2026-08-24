@@ -87,6 +87,7 @@ export class GrowspaceHeaderSecondaryUI extends LitElement {
                 .icon=${chip.icon}
                 .label=${chip.label}
                 .value=${chip.value}
+                .multiValues=${chip.multiValues}
                 .status=${chip.status}
                 .active=${chip.active}
                 .linked=${chip.linked}

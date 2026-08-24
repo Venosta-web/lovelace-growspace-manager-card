@@ -51,6 +51,30 @@ describe('GrowspaceHeaderSecondaryUI', () => {
     expect(el).toBeDefined();
   });
 
+  it('renders every reading of a multi-sensor chip, not the placeholder', async () => {
+    // A chip built from more than one sensor carries "Multiple" as its value
+    // and the per-sensor readings in multiValues; dropping the binding would
+    // render the literal word instead of the readings it already computed.
+    const chip = makeChip({
+      key: 'substrate_temperature',
+      label: 'Sub Temp',
+      value: 'Multiple',
+      multiValues: ['18.0°C', '22.0°C'],
+      entityIds: ['sensor.probe_1', 'sensor.probe_2'],
+    });
+
+    const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
+      <growspace-header-secondary-ui .chips=${[chip]}></growspace-header-secondary-ui>
+    `);
+    const rendered = el.shadowRoot!.querySelector('growspace-chip')!;
+    await (rendered as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+
+    const text = rendered.shadowRoot!.textContent!.replace(/\s+/g, ' ');
+    expect(text).toContain('18.0°C');
+    expect(text).toContain('22.0°C');
+    expect(text).not.toContain('Multiple');
+  });
+
   it('renders secondary strip container', async () => {
     const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
       <growspace-header-secondary-ui .chips=${[]}></growspace-header-secondary-ui>
