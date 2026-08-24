@@ -593,6 +593,108 @@
       }
     },
     {
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "name": "E2E Climate Plain",
+      "plant_stage_field": "flower_start",
+      "stage_days_ago": 0,
+      "services": {
+        "configure_environment": {
+          "control_humidifier": true,
+          "humidifier_thresholds": {
+            "flower_early": {
+              "day": {
+                "on": 1.3,
+                "off": 1.1
+              },
+              "night": {
+                "on": 1.3,
+                "off": 1.1
+              }
+            }
+          },
+          "control_dehumidifier": true,
+          "dehumidifier_thresholds": {
+            "flower_early": {
+              "day": {
+                "on": 0.8,
+                "off": 1.0
+              },
+              "night": {
+                "on": 0.8,
+                "off": 1.0
+              }
+            }
+          },
+          "temperature_sensors": [
+            "input_number.e2e_climate_plain_temperature"
+          ],
+          "humidity_sensors": [
+            "input_number.e2e_climate_plain_humidity"
+          ],
+          "vpd_sensors": [
+            "input_number.e2e_climate_plain_vpd"
+          ],
+          "circulation_fan_entities": [
+            "fan.e2e_climate_plain_circulation_fan_percentage",
+            "input_number.e2e_climate_plain_circulation_fan_speed",
+            "switch.e2e_climate_plain_circulation_fan_switch"
+          ],
+          "exhaust_fan_entities": [
+            "fan.e2e_climate_plain_exhaust_fan_percentage",
+            "input_number.e2e_climate_plain_exhaust_fan_speed",
+            "switch.e2e_climate_plain_exhaust_fan_switch"
+          ],
+          "humidifier_entities": [
+            "humidifier.e2e_climate_plain_humidifier_native",
+            "switch.e2e_climate_plain_humidifier_switch"
+          ],
+          "dehumidifier_entities": [
+            "humidifier.e2e_climate_plain_dehumidifier_native",
+            "switch.e2e_climate_plain_dehumidifier_switch"
+          ]
+        },
+        "configure_circulation_fan": {
+          "enabled": true,
+          "regulation_mode": "vpd",
+          "min_speed": 20,
+          "max_speed": 80,
+          "vpd_target": 1.1,
+          "vpd_tolerance": 0.1,
+          "humidity_target": 60,
+          "humidity_tolerance": 5,
+          "temperature_target": 25,
+          "temperature_tolerance": 2,
+          "critical_temp_low": null,
+          "critical_temp_high": null,
+          "critical_temp_hysteresis": 1,
+          "wind_enabled": false,
+          "wind_period_seconds": 60,
+          "wind_amplitude_pct": 10
+        },
+        "configure_exhaust_fan": {
+          "enabled": true,
+          "min_speed": 20,
+          "max_speed": 80,
+          "temperature_target": 25,
+          "temperature_tolerance": 2,
+          "humidity_target": 60,
+          "humidity_tolerance": 5,
+          "vpd_target": 1.1,
+          "vpd_tolerance": 0.1,
+          "critical_temp_low": null,
+          "critical_temp_high": null,
+          "critical_temp_hysteresis": 1
+        },
+        "set_humidifier_control": {
+          "enabled": true
+        },
+        "set_dehumidifier_control": {
+          "enabled": true
+        }
+      }
+    },
+    {
       "profile": "vision",
       "slug": "vision",
       "name": "E2E Vision",
@@ -723,6 +825,14 @@
       "backing_entity_id": "input_number.sim_e2e_telemetry_multi_temperature_2"
     },
     {
+      "entity_id": "input_number.e2e_climate_plain_temperature",
+      "role": "environment.temperature",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
       "entity_id": "sensor.e2e_veg_humidity",
       "role": "environment.humidity",
       "profile": "stage",
@@ -829,6 +939,14 @@
       "backing_entity_id": "input_number.sim_e2e_telemetry_multi_humidity_2"
     },
     {
+      "entity_id": "input_number.e2e_climate_plain_humidity",
+      "role": "environment.humidity",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
       "entity_id": "sensor.e2e_veg_vpd",
       "role": "environment.vpd",
       "profile": "stage",
@@ -933,6 +1051,14 @@
       "device_class": null,
       "state_class": "measurement",
       "backing_entity_id": "input_number.sim_e2e_telemetry_multi_vpd_2"
+    },
+    {
+      "entity_id": "input_number.e2e_climate_plain_vpd",
+      "role": "environment.vpd",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_number",
+      "behavior": "controllable"
     },
     {
       "entity_id": "sensor.e2e_veg_co2",
@@ -2666,6 +2792,166 @@
       "profile": "telemetry_multi",
       "slug": "telemetry_multi",
       "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "fan.e2e_climate_plain_circulation_fan_percentage",
+      "role": "climate.circulation_percentage",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "fan",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_climate_plain_circulation_fan_speed",
+      "role": "climate.circulation_numeric",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.e2e_climate_plain_circulation_fan_switch",
+      "role": "climate.circulation_binary",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "fan.e2e_climate_plain_exhaust_fan_percentage",
+      "role": "climate.exhaust_percentage",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "fan",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_climate_plain_exhaust_fan_speed",
+      "role": "climate.exhaust_numeric",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.e2e_climate_plain_exhaust_fan_switch",
+      "role": "climate.exhaust_binary",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "humidifier.e2e_climate_plain_humidifier_native",
+      "role": "climate.humidifier_native",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "humidifier",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.e2e_climate_plain_humidifier_switch",
+      "role": "climate.humidifier_switch",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "humidifier.e2e_climate_plain_dehumidifier_native",
+      "role": "climate.dehumidifier_native",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "humidifier",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.e2e_climate_plain_dehumidifier_switch",
+      "role": "climate.dehumidifier_switch",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.e2e_climate_plain_circulation_fan_percentage",
+      "role": "simulation.circulation_percentage_state",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.e2e_climate_plain_circulation_fan_switch",
+      "role": "simulation.circulation_binary_state",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.e2e_climate_plain_exhaust_fan_percentage",
+      "role": "simulation.exhaust_percentage_state",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.e2e_climate_plain_exhaust_fan_switch",
+      "role": "simulation.exhaust_binary_state",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.e2e_climate_plain_humidifier_native",
+      "role": "simulation.humidifier_native_state",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.e2e_climate_plain_humidifier_switch",
+      "role": "simulation.humidifier_switch_state",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.e2e_climate_plain_dehumidifier_native",
+      "role": "simulation.dehumidifier_native_state",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.e2e_climate_plain_dehumidifier_switch",
+      "role": "simulation.dehumidifier_switch_state",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_climate_plain_circulation_fan_percentage_value",
+      "role": "simulation.circulation_percentage_value",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_climate_plain_exhaust_fan_percentage_value",
+      "role": "simulation.exhaust_percentage_value",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
