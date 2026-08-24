@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiInformationOutline } from '@mdi/js';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
@@ -7,9 +7,23 @@ import { reducedMotion } from '../../../styles/reduced-motion.styles';
 // promotes the popover element to the document top layer (outside all shadow
 // roots), so `position-anchor` silently breaks. We use a JS fallback instead.
 
+/**
+ * One help explanation: the words, plus the subject they explain.
+ *
+ * Kept as a pair so a call site cannot wire the content of one field to the
+ * accessible label of another — the two always travel together, from the copy
+ * module to the trigger.
+ */
+export interface HelpCopy {
+  /** Short subject name. Becomes the trigger's accessible label. */
+  label: string;
+  /** The explanation. Plain text, or markup for the longer section explainers. */
+  content: string | TemplateResult;
+}
+
 @customElement('gs-help-tooltip')
 export class GsHelpTooltip extends LitElement {
-  @property({ type: String }) content = '';
+  @property() content: string | TemplateResult = '';
   @property({ type: String, reflect: true }) placement: 'top' | 'bottom' | 'left' | 'right' = 'top';
   @property({ type: String }) label = 'Help';
 
@@ -68,7 +82,8 @@ export class GsHelpTooltip extends LitElement {
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
       border-radius: 8px;
       padding: 8px 12px;
-      max-width: 240px;
+      width: max-content;
+      max-width: 320px;
       font-size: var(--font-size-supporting);
       line-height: 1.5;
       color: var(--primary-text-color, rgba(255, 255, 255, 0.9));

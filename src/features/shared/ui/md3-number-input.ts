@@ -1,6 +1,8 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import './gs-help-tooltip';
+import type { HelpCopy } from './gs-help-tooltip';
 
 @customElement('md3-number-input')
 export class Md3NumberInput extends LitElement {
@@ -12,6 +14,12 @@ export class Md3NumberInput extends LitElement {
   @property() placeholder = '';
   @property({ attribute: 'input-aria-label' }) inputAriaLabel = '';
   @property() error = '';
+  /**
+   * Optional explanation for this field, rendered as a help trigger in the
+   * field's top-right corner. Taken as a `{ label, content }` pair so the
+   * accessible label cannot drift from the copy it describes.
+   */
+  @property({ attribute: false }) help?: HelpCopy;
 
   private static _nextInputId = 0;
   private readonly _inputId = `md3-number-input-${Md3NumberInput._nextInputId++}`;
@@ -30,6 +38,17 @@ export class Md3NumberInput extends LitElement {
       }
       .md3-input-group.has-error .md3-input {
         border-bottom-color: var(--error-color, #f44336);
+      }
+      /* The floating .md3-label is pointer-events:none and occupies the
+         field's top-left, so the trigger takes the top-right corner and
+         restores its own interactivity. It sits above the input's own top
+         padding, clear of the vertically-centred unit span. */
+      .md3-help {
+        position: absolute;
+        top: 4px;
+        inset-inline-end: 6px;
+        z-index: 1;
+        pointer-events: auto;
       }
       .md3-error {
         margin-top: 4px;
@@ -52,6 +71,13 @@ export class Md3NumberInput extends LitElement {
     return html`
       <div class="md3-input-group ${this.error ? 'has-error' : ''}">
         <label class="md3-label" for=${this._inputId}>${this.label}</label>
+        ${this.help
+          ? html`<gs-help-tooltip
+              class="md3-help"
+              .content=${this.help.content}
+              label=${this.help.label}
+            ></gs-help-tooltip>`
+          : nothing}
         <div style="display: flex; align-items: center;">
           <input
             type="number"
