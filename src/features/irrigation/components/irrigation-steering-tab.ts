@@ -136,6 +136,12 @@ export class IrrigationSteeringTab extends LitElement {
         color: rgba(255, 255, 255, 0.5);
         margin: 4px 0 0;
       }
+      .field-dependency-hint {
+        font-size: 11.5px;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        line-height: 1.4;
+        margin: 4px 0 0;
+      }
     `,
   ];
 
@@ -314,12 +320,23 @@ export class IrrigationSteeringTab extends LitElement {
             @change=${(e: CustomEvent) =>
               this._updateStrategyField('p0DurationMinutes', parseInt(e.detail))}
           ></md3-number-input>
-          <md3-number-input
-            label="P2 Stop Buffer (min)"
-            .value=${vm.draft.p2StopBeforeLightsOffMinutes}
-            @change=${(e: CustomEvent) =>
-              this._updateStrategyField('p2StopBeforeLightsOffMinutes', parseInt(e.detail))}
-          ></md3-number-input>
+          <div>
+            <md3-number-input
+              data-field="p2StopBeforeLightsOffMinutes"
+              label="P2 Stop Buffer (min)"
+              .value=${vm.draft.p2StopBeforeLightsOffMinutes}
+              .disabled=${!vm.autoAdvanceP2ToP3}
+              @change=${(e: CustomEvent) =>
+                this._updateStrategyField('p2StopBeforeLightsOffMinutes', parseInt(e.detail))}
+            ></md3-number-input>
+            ${
+              !vm.autoAdvanceP2ToP3
+                ? html`<p class="field-dependency-hint">
+                    Enable Auto-advance P2 → P3 in Phase Triggers to use this buffer.
+                  </p>`
+                : nothing
+            }
+          </div>
 
           <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Dosing</h4>
 
