@@ -36,6 +36,9 @@ export interface TestContext {
   /** Dedicated plain Home Assistant climate-actuator capability profile */
   climatePlainGrowspaceId: string;
   climatePlainDashboardPath: string;
+  /** Faithful, network-free AC Infinity port capability profile */
+  acInfinityGrowspaceId: string;
+  acInfinityDashboardPath: string;
   /** Dedicated multi-camera and Vision Checkup capability profile */
   visionGrowspaceId: string;
   visionDashboardPath: string;
