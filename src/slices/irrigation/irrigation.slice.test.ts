@@ -806,7 +806,10 @@ describe('applySteeringMode', () => {
 
 describe('saveIrrigationSettings', () => {
   it('patches irrigationPumpEntity immediately (optimistic)', async () => {
-    setIrrigationConfig('gs1', makeConfig({ irrigationPumpEntity: 'switch.old_pump' }));
+    setIrrigationConfig(
+      'gs1',
+      makeConfig({ irrigationPumpEntity: 'switch.old_pump', pumpFlowRateMlPerSec: 10 })
+    );
 
     await saveIrrigationSettings('gs1', {
       irrigationPumpEntity: 'switch.new_pump',
@@ -816,6 +819,7 @@ describe('saveIrrigationSettings', () => {
     });
 
     expect(irrigationConfigs$.get().get('gs1')?.irrigationPumpEntity).toBe('switch.new_pump');
+    expect(irrigationConfigs$.get().get('gs1')?.pumpFlowRateMlPerSec).toBe(10);
   });
 
   it('calls set_irrigation_settings service with serialized payload', async () => {
@@ -823,6 +827,7 @@ describe('saveIrrigationSettings', () => {
 
     await saveIrrigationSettings('gs1', {
       irrigationPumpEntity: 'switch.pump',
+      pumpFlowRateMlPerSec: 12.5,
       drainPumpEntity: 'switch.drain',
       irrigationDuration: 60,
       drainDuration: 30,
@@ -834,6 +839,7 @@ describe('saveIrrigationSettings', () => {
       expect.objectContaining({
         growspace_id: 'gs1',
         irrigation_pump_entity: 'switch.pump',
+        pump_flow_rate_ml_per_sec: 12.5,
         drain_pump_entity: 'switch.drain',
         irrigation_duration: 60,
         drain_duration: 30,
@@ -846,6 +852,7 @@ describe('saveIrrigationSettings', () => {
 
     await saveIrrigationSettings('gs1', {
       irrigationPumpEntity: 'switch.pump',
+      pumpFlowRateMlPerSec: 12.5,
       drainPumpEntity: 'switch.drain',
       irrigationDuration: 60,
       drainDuration: 30,
@@ -867,6 +874,7 @@ describe('saveIrrigationSettings', () => {
       expect.objectContaining({
         growspace_id: 'gs1',
         irrigation_pump_entity: 'switch.pump',
+        pump_flow_rate_ml_per_sec: 12.5,
         drain_pump_entity: 'switch.drain',
         irrigation_duration: 60,
         drain_duration: 30,

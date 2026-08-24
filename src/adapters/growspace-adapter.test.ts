@@ -18,6 +18,15 @@ function wsWithStrategy(strategy: Record<string, unknown>): GrowspaceAPIResponse
 }
 
 describe('GrowspaceAdapter irrigation strategy', () => {
+  it('deserializes the pump flow rate from irrigation config', () => {
+    const device = GrowspaceAdapter.transformGrowspace(null, {
+      identity: { growspace_id: 'gs1', name: 'Tent', overview_entity_id: 'sensor.gs1' },
+      irrigation: { irrigation_config: { pump_flow_rate_ml_per_sec: 12.5 } },
+    } as unknown as GrowspaceAPIResponse);
+
+    expect(device?.irrigationConfig.pumpFlowRateMlPerSec).toBe(12.5);
+  });
+
   it('deserializes per-phase shot, sizing-mode, and declared-mode fields', () => {
     const device = GrowspaceAdapter.transformGrowspace(
       null,

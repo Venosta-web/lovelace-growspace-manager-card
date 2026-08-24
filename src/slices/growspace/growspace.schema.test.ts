@@ -367,6 +367,16 @@ describe('Growspace Zod Schemas', () => {
     });
 
     describe('IrrigationScheduleItemSchema & IrrigationConfigSchema', () => {
+      it('keeps the configured pump flow rate', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            irrigation_config: { pump_flow_rate_ml_per_sec: 12.5 },
+          },
+        });
+
+        expect(parsed.irrigation.irrigation_config.pump_flow_rate_ml_per_sec).toBe(12.5);
+      });
+
       it('should parse irrigation schedule items using time and duration', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({
           irrigation: {

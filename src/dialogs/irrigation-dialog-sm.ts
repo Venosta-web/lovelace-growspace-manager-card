@@ -86,6 +86,7 @@ export interface SteeringTabState {
 // ─── Config tab ────────────────────────────────────────────────────────────────
 
 export interface ConfigDraft {
+  pumpFlowRateMlPerSec: number;
   soilTriggerPercent: number | null;
   dailyVolumeCapLiters: number | null;
   maxCyclesPerDay: number | null;
@@ -370,6 +371,7 @@ function defaultSteeringDraft(): Partial<IrrigationStrategy> {
 
 function defaultConfigDraft(): ConfigDraft {
   return {
+    pumpFlowRateMlPerSec: 0,
     soilTriggerPercent: null,
     dailyVolumeCapLiters: null,
     maxCyclesPerDay: null,
@@ -479,6 +481,7 @@ function applyDeviceToSM(sm: DialogSM, device: GrowspaceDevice): DialogSM {
   };
 
   const configDraft: ConfigDraft = {
+    pumpFlowRateMlPerSec: config.pumpFlowRateMlPerSec ?? 0,
     soilTriggerPercent: config.soilTriggerPercent ?? null,
     dailyVolumeCapLiters: config.dailyVolumeCapLiters ?? null,
     maxCyclesPerDay: config.maxCyclesPerDay ?? null,
@@ -577,6 +580,7 @@ export function isConfigDirty(sm: DialogSM, device: GrowspaceDevice): boolean {
   const d = sm.tabs.config.draft;
   const c = device.irrigationConfig ?? {};
   return (
+    d.pumpFlowRateMlPerSec !== (c.pumpFlowRateMlPerSec ?? 0) ||
     d.soilTriggerPercent !== (c.soilTriggerPercent ?? null) ||
     d.dailyVolumeCapLiters !== (c.dailyVolumeCapLiters ?? null) ||
     d.maxCyclesPerDay !== (c.maxCyclesPerDay ?? null) ||
@@ -694,6 +698,7 @@ function resetActiveTabDraft(sm: DialogSM, device: GrowspaceDevice): TabStates {
         ...sm.tabs,
         config: {
           draft: {
+            pumpFlowRateMlPerSec: config.pumpFlowRateMlPerSec ?? 0,
             soilTriggerPercent: config.soilTriggerPercent ?? null,
             dailyVolumeCapLiters: config.dailyVolumeCapLiters ?? null,
             maxCyclesPerDay: config.maxCyclesPerDay ?? null,

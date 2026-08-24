@@ -260,6 +260,7 @@ export class GrowspaceAdapter {
       irrigation?.irrigation_config ?? {};
     const irrigationConfig: IrrigationConfig = {
       irrigationPumpEntity: irrigationConfigRaw.irrigation_pump_entity,
+      pumpFlowRateMlPerSec: irrigationConfigRaw.pump_flow_rate_ml_per_sec,
       drainPumpEntity: irrigationConfigRaw.drain_pump_entity,
       irrigationDuration: irrigationConfigRaw.irrigation_duration,
       drainDuration: irrigationConfigRaw.drain_duration,

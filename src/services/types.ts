@@ -98,6 +98,8 @@ export interface IrrigationStrategy {
 
 export interface IrrigationConfig {
   irrigationPumpEntity?: string | null;
+  /** Measured pump output; a positive value is required for Volume Mode. */
+  pumpFlowRateMlPerSec?: number;
   drainPumpEntity?: string | null;
   irrigationDuration?: number | null;
   drainDuration?: number | null;
