@@ -74,6 +74,10 @@ import {
   type EntityRegistrySnapshot,
   type PortDeviceOption,
 } from '../features/config/viewmodels/ac-infinity-port-resolver';
+import {
+  matchesEntityClass,
+  type EntityClassFilter,
+} from '../features/config/viewmodels/entity-filter';
 import type { AcInfinityDevice, AcInfinityGrowLight } from '../slices/growspace/schema';
 
 /** The env-draft AC Infinity bundle fields a Port Pre-fill pick can target. */
@@ -1543,7 +1547,11 @@ export class ConfigDialog extends LitElement {
       .sort((a, b) => a.label.localeCompare(b.label));
   }
 
-  private _getEntities(domains: string[], deviceClass: string | null, platform?: string): string[] {
+  private _getEntities(
+    domains: string[],
+    deviceClass: EntityClassFilter,
+    platform?: string
+  ): string[] {
     if (!this.hass) return [];
     // hass.entities (the entity registry) is present at runtime but not declared
     // on custom-card-helpers' HomeAssistant type; read platform through a cast.
@@ -1566,7 +1574,7 @@ export class ConfigDialog extends LitElement {
         const domain = eid.split('.')[0];
         return (
           domains.includes(domain) &&
-          (!deviceClass || state.attributes.device_class === deviceClass) &&
+          matchesEntityClass(state.attributes, deviceClass) &&
           (!platform || registry?.[eid]?.platform === platform)
         );
       })
@@ -1989,7 +1997,7 @@ export class ConfigDialog extends LitElement {
     const deps = {
       growspaceOptions: this.growspaceOptions,
       notifyServices: this._getMobileAppNotifyServices(),
-      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+      entityOptions: (domains: string[], deviceClass: EntityClassFilter, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
     };
     return html`
@@ -2009,7 +2017,7 @@ export class ConfigDialog extends LitElement {
 
   private _renderSensorsTab() {
     const deps = {
-      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+      entityOptions: (domains: string[], deviceClass: EntityClassFilter, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
       averageSensorValue: (ids: string[]) => this._averageSensorValue(ids),
       sensorReading: (entityId: string) => this._sensorReading(entityId),
@@ -2097,7 +2105,7 @@ export class ConfigDialog extends LitElement {
 
   private _renderClimateTab() {
     const deps = {
-      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+      entityOptions: (domains: string[], deviceClass: EntityClassFilter, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
       acInfinityConflict: (modeEntity: string) => this._acInfinityConflict(modeEntity),
       acInfinityPortDevices: () => this._acInfinityPortDevices(),
@@ -2133,7 +2141,7 @@ export class ConfigDialog extends LitElement {
   private _renderGrowlightTab() {
     const growspaceId = this._sm.environmentDraft.selectedGrowspaceId;
     const deps = {
-      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+      entityOptions: (domains: string[], deviceClass: EntityClassFilter, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
       lightsOnTime: growspaceId
         ? (irrigationStrategies$.get().get(growspaceId)?.lightsOnTime ?? null)
@@ -2168,7 +2176,7 @@ export class ConfigDialog extends LitElement {
 
   private _renderHumidityTab() {
     const deps = {
-      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+      entityOptions: (domains: string[], deviceClass: EntityClassFilter, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
       acInfinityConflict: (modeEntity: string) => this._acInfinityConflict(modeEntity),
       acInfinityPortDevices: () => this._acInfinityPortDevices(),
@@ -2220,7 +2228,7 @@ export class ConfigDialog extends LitElement {
 
   private _renderIrrigationTab() {
     const deps = {
-      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+      entityOptions: (domains: string[], deviceClass: EntityClassFilter, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
     };
     return html`
@@ -2233,7 +2241,7 @@ export class ConfigDialog extends LitElement {
 
   private _renderTanksTab() {
     const deps = {
-      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+      entityOptions: (domains: string[], deviceClass: EntityClassFilter, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
     };
     return html`
@@ -2252,7 +2260,7 @@ export class ConfigDialog extends LitElement {
 
   private _renderVisionTab() {
     const deps = {
-      entityOptions: (domains: string[], deviceClass: string | null, platform?: string) =>
+      entityOptions: (domains: string[], deviceClass: EntityClassFilter, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
     };
     return html`

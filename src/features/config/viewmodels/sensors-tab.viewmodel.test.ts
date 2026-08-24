@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { editBound } from '../moisture-band';
 import { createSensorsTabViewModel, type SensorsTabDeps } from './sensors-tab.viewmodel';
+import { SOIL_MOISTURE_FILTER, type EntityClassFilter } from './entity-filter';
 import { createInitialSM, transition } from '../../../dialogs/config-dialog-sm';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 
@@ -44,11 +45,11 @@ describe('createSensorsTabViewModel — fields', () => {
   });
 
   it('fills options from the injected entityOptions adapter, keyed by domain+class', () => {
-    const calls: Array<[string[], string | null]> = [];
+    const calls: Array<[string[], EntityClassFilter]> = [];
     const deps: SensorsTabDeps = {
       entityOptions: (domains, dc) => {
         calls.push([domains, dc]);
-        return dc === 'moisture' ? ['sensor.soil'] : ['sensor.x'];
+        return dc === SOIL_MOISTURE_FILTER ? ['sensor.soil'] : ['sensor.x'];
       },
       averageSensorValue: () => null,
       sensorReading: () => null,
@@ -57,6 +58,24 @@ describe('createSensorsTabViewModel — fields', () => {
     expect(vm.fields.find((f) => f.key === 'soilMoistureSensor')!.options).toEqual(['sensor.soil']);
     // temperature picker asked for the temperature device_class
     expect(calls).toContainEqual([['sensor', 'input_number'], 'temperature']);
+  });
+
+  it('asks for soil-moisture options by a filter real probes can satisfy, not device_class alone', () => {
+    // ESPHome/template probes ship with no device_class and many report
+    // `humidity`; a strict `moisture` filter hid the grower's own sensor (#37).
+    const calls: EntityClassFilter[] = [];
+    const deps: SensorsTabDeps = {
+      entityOptions: (_domains, dc) => {
+        calls.push(dc);
+        return [];
+      },
+      averageSensorValue: () => null,
+      sensorReading: () => null,
+    };
+    createSensorsTabViewModel(sm(), deps);
+
+    expect(calls).toContainEqual(SOIL_MOISTURE_FILTER);
+    expect(calls).not.toContainEqual('moisture');
   });
 });
 
