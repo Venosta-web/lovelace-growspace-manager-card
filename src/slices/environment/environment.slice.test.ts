@@ -63,6 +63,28 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('computeEnvSnapshot — temperature and humidity', () => {
+  it('returns the backend-aggregated air metrics from nested observations', () => {
+    const device = makeDevice({
+      environmentAttributes: {
+        temperatureSensor: 'sensor.tent_1_temperature',
+        humiditySensor: 'sensor.tent_1_humidity',
+        vpdSensor: 'sensor.tent_1_vpd',
+      },
+    });
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {
+        observations: { temperature: 25, humidity: 45.27, vpd: 1.24 },
+      }),
+      'sensor.tent_1_temperature': makeHassEntity('sensor.tent_1_temperature', '20', {}),
+      'sensor.tent_1_humidity': makeHassEntity('sensor.tent_1_humidity', '40', {}),
+      'sensor.tent_1_vpd': makeHassEntity('sensor.tent_1_vpd', '0.9', {}),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot).toMatchObject({ temperature: 25, humidity: 45.27, vpd: 1.24 });
+  });
+
   it('returns temperature and humidity from the optimal-conditions entity attributes', () => {
     const hassStates: HassStates = {
       [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {
