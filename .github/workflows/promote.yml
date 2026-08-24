@@ -1,0 +1,157 @@
+name: Promote dev to main
+
+# Prepares the release branch that moves dev's accumulated work onto main, and
+# hands back a link to open the PR from.
+#
+# Why this is not simply a `dev` -> `main` pull request:
+# `development-branch-gate` allows the squash method only, so every back-merge
+# of main into dev lands with a single parent. main therefore never becomes an
+# ancestor of dev, and each release cycle re-raises the same conflicts on files
+# both branches have touched since the last shared commit. Cutting the branch
+# from main and merging dev into it takes the merge in the direction that can
+# carry both histories, and `stable-release-branch-gate` allows only the merge
+# method, so the PR lands as a real merge commit.
+#
+# Why this stops at pushing the branch:
+# a pull request opened with GITHUB_TOKEN does not raise `pull_request` events,
+# so `test`, `lint`, `pr-title`, `release-preflight` and `contract-fixture`
+# would never run and the PR could never satisfy the branch ruleset. Opening it
+# by hand from the link below runs them normally. Give the repo a PAT secret and
+# this step can be automated too; a deploy key cannot substitute, because the
+# restriction is on who opens the PR rather than on who pushed the branch.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+          ref: main
+          # Push over SSH as the deploy key, for the same reason release.yml
+          # does: the branch rulesets only support a DeployKey bypass on
+          # user-owned repos.
+          ssh-key: ${{ secrets.RELEASE_SSH_KEY }}
+
+      - name: Identify the branches
+        id: refs
+        run: |
+          git fetch origin main dev --quiet
+          {
+            echo "branch=release/promote-$(date -u +%Y%m%d-%H%M%S)"
+            echo "ahead=$(git rev-list --count origin/main..origin/dev)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Refuse an empty promotion
+        run: |
+          if [ "${{ steps.refs.outputs.ahead }}" -eq 0 ]; then
+            echo "::error::dev has nothing main is missing; there is no release to cut."
+            exit 1
+          fi
+
+      # semantic-release only bumps on feat/fix/BREAKING CHANGE. Surfacing the
+      # bump here means the operator sees what the merge will publish before
+      # opening the PR, rather than after the release job has already run.
+      - name: Work out the bump
+        id: bump
+        run: |
+          log="$(git log --no-merges --format='%s%n%b' origin/main..origin/dev)"
+          if grep -qE 'BREAKING CHANGE|^[a-z]+(\(.*\))?!:' <<<"$log"; then
+            level=major
+          elif grep -qE '^feat(\(.*\))?:' <<<"$log"; then
+            level=minor
+          elif grep -qE '^fix(\(.*\))?:' <<<"$log"; then
+            level=patch
+          else
+            level=none
+          fi
+          echo "level=$level" >> "$GITHUB_OUTPUT"
+          if [ "$level" = none ]; then
+            echo "::warning::No feat/fix/BREAKING CHANGE commits — semantic-release will publish nothing."
+          fi
+
+      - name: Merge dev into a promotion branch
+        id: merge
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git switch -c '${{ steps.refs.outputs.branch }}'
+
+          if git merge --no-ff --no-commit origin/dev; then
+            echo "conflicts=none" >> "$GITHUB_OUTPUT"
+          else
+            # CHANGELOG.md and package.json conflict on essentially every
+            # promotion, because main carries stable release entries while dev
+            # carries prerelease ones. Taking dev's side is correct for both:
+            # dev is where the back-merge already reconciled the two histories,
+            # and semantic-release rewrites the version field on the next
+            # release regardless.
+            #
+            # Nothing else is resolved automatically. A conflict in source is a
+            # real disagreement between two branches, and CI has no business
+            # guessing which side wins.
+            for owned in CHANGELOG.md package.json; do
+              if git diff --name-only --diff-filter=U | grep -qx "$owned"; then
+                git checkout --theirs "$owned"
+                git add "$owned"
+                echo "resolved $owned to dev's side"
+              fi
+            done
+
+            remaining="$(git diff --name-only --diff-filter=U)"
+            if [ -n "$remaining" ]; then
+              echo "::error::Source conflicts need a human — resolve them locally:"
+              printf '%s\n' "$remaining" | sed 's/^/  /'
+              {
+                echo "### Source conflicts — promotion stopped"
+                echo
+                echo 'Resolve locally, then push the branch and open the PR against `main`:'
+                echo
+                echo '```bash'
+                echo "git switch -c ${{ steps.refs.outputs.branch }} origin/main"
+                echo "git merge origin/dev"
+                echo '```'
+                echo
+                echo 'Conflicting files:'
+                printf '%s\n' "$remaining" | sed 's/^/- `/; s/$/`/'
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            echo "conflicts=owned-only" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Separate -m flags become separate paragraphs, which keeps the body
+          # free of this step's YAML indentation.
+          git commit \
+            -m 'fix: promote dev to main' \
+            -m 'Promotes ${{ steps.refs.outputs.ahead }} commits from dev. semantic-release bump: ${{ steps.bump.outputs.level }}.'
+          git push origin '${{ steps.refs.outputs.branch }}'
+
+      - name: Summarise
+        run: |
+          branch='${{ steps.refs.outputs.branch }}'
+          {
+            echo "### Promotion branch ready"
+            echo
+            echo "**[Open the pull request](https://github.com/${{ github.repository }}/compare/main...$branch?expand=1)**"
+            echo
+            echo "- branch: \`$branch\`"
+            echo "- commits promoted: ${{ steps.refs.outputs.ahead }}"
+            echo "- semantic-release bump: \`${{ steps.bump.outputs.level }}\`"
+            echo "- conflict handling: \`${{ steps.merge.outputs.conflicts }}\`"
+            echo
+            echo 'Title the PR as a conventional commit — `pr-title` enforces it.'
+            echo 'Merging it publishes the release, so let the five required checks go green first.'
+            echo
+            echo "<details><summary>Commits being promoted</summary>"
+            echo
+            git log --no-merges --format='- %s' origin/main..origin/dev
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
