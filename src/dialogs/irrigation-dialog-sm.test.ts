@@ -87,6 +87,18 @@ describe('createInitialSM', () => {
     expect(sm.tabs.schedules.draft.irrigationDuration).toBe(60);
   });
 
+  it('seeds the pump flow-rate draft from device irrigationConfig', () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationTimes: [],
+        drainTimes: [],
+        pumpFlowRateMlPerSec: 12.5,
+      },
+    });
+
+    expect(createInitialSM(device).tabs.config.draft.pumpFlowRateMlPerSec).toBe(12.5);
+  });
+
   it('seeds steering phase from device activeSteeringPhase', () => {
     const device = makeDevice();
     const sm = createInitialSM(device);
@@ -1140,6 +1152,16 @@ describe('isConfigDirty', () => {
     sm = transition(sm, {
       type: 'UPDATE_CONFIG_DRAFT',
       partial: { skipDuringDark: true },
+    });
+    expect(isConfigDirty(sm, device)).toBe(true);
+  });
+
+  it('returns true when pump flow rate changes', () => {
+    const device = makeDevice();
+    let sm = createInitialSM(device);
+    sm = transition(sm, {
+      type: 'UPDATE_CONFIG_DRAFT',
+      partial: { pumpFlowRateMlPerSec: 12.5 },
     });
     expect(isConfigDirty(sm, device)).toBe(true);
   });

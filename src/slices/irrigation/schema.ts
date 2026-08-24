@@ -75,6 +75,7 @@ export type ApplySteeringModeResult = z.infer<typeof ApplySteeringModeResultSche
 
 export const SaveIrrigationSettingsPayloadSchema = growspaceIdPayload.extend({
   irrigation_pump_entity: z.string(),
+  pump_flow_rate_ml_per_sec: z.number().nonnegative().optional(),
   drain_pump_entity: z.string(),
   irrigation_duration: z.number().int(),
   drain_duration: z.number().int(),

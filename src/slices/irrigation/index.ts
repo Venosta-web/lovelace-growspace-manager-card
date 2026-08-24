@@ -476,6 +476,7 @@ export async function saveIrrigationSettings(
   growspaceId: string,
   settings: {
     irrigationPumpEntity: string;
+    pumpFlowRateMlPerSec?: number;
     drainPumpEntity: string;
     irrigationDuration: number;
     drainDuration: number;
@@ -509,6 +510,8 @@ export async function saveIrrigationSettings(
     haltOnRunoffEcThreshold: settings.haltOnRunoffEcThreshold,
     activeSteeringPhase: settings.activeSteeringPhase,
   };
+  if (settings.pumpFlowRateMlPerSec !== undefined)
+    patch.pumpFlowRateMlPerSec = settings.pumpFlowRateMlPerSec;
 
   const payload: Record<string, unknown> = {
     growspace_id: growspaceId,
@@ -517,6 +520,8 @@ export async function saveIrrigationSettings(
     irrigation_duration: settings.irrigationDuration,
     drain_duration: settings.drainDuration,
   };
+  if (settings.pumpFlowRateMlPerSec !== undefined)
+    payload.pump_flow_rate_ml_per_sec = settings.pumpFlowRateMlPerSec;
   if (settings.soilTriggerPercent !== undefined)
     payload.soil_trigger_percent = settings.soilTriggerPercent;
   if (settings.dailyVolumeCapLiters !== undefined)

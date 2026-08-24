@@ -153,6 +153,22 @@ export class IrrigationConfigTab extends LitElement {
             vm.pumpEntityOptions,
             'irrigation'
           )}
+          <div class="md3-input-group">
+            <label class="md3-label">Pump flow rate (mL/s)</label>
+            <input
+              class="md3-input"
+              data-field="pump_flow_rate_ml_per_sec"
+              type="number"
+              min="0"
+              step="0.1"
+              .value=${draft.pumpFlowRateMlPerSec > 0 ? String(draft.pumpFlowRateMlPerSec) : ''}
+              placeholder="Required for Volume Mode"
+              @change=${(e: Event) => {
+                const v = (e.target as HTMLInputElement).value;
+                this._updateDraft({ pumpFlowRateMlPerSec: v ? parseFloat(v) : 0 });
+              }}
+            />
+          </div>
           ${this._renderEntitySelect(
             'Drain Pump (Optional)',
             vm.drainPumpEntity,
@@ -178,6 +194,7 @@ export class IrrigationConfigTab extends LitElement {
                   <label class="md3-label">Daily Volume Cap (L)</label>
                   <input
                     class="md3-input"
+                    data-field="daily_volume_cap_liters"
                     type="number"
                     min="0"
                     step="0.1"

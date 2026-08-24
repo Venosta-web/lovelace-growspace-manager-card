@@ -1378,7 +1378,7 @@ describe('IrrigationDialog', () => {
 
       it('should update _dailyVolumeCapLiters from the Daily Volume Cap input', async () => {
         const volInput = configChild().shadowRoot?.querySelector(
-          'input[step="0.1"]'
+          '[data-field="daily_volume_cap_liters"]'
         ) as HTMLInputElement;
         expect(volInput).toBeTruthy();
 
@@ -1397,7 +1397,7 @@ describe('IrrigationDialog', () => {
         await element.updateComplete;
 
         const volInput = configChild().shadowRoot?.querySelector(
-          'input[step="0.1"]'
+          '[data-field="daily_volume_cap_liters"]'
         ) as HTMLInputElement;
         volInput.value = '';
         volInput.dispatchEvent(new Event('change'));
