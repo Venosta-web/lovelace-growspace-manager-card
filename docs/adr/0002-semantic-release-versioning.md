@@ -1,6 +1,6 @@
 # ADR 0002 — Automated versioning with semantic-release
 
-**Status:** Accepted (amended 2026-08-11)
+**Status:** Accepted (amended 2026-08-24)
 
 **Date:** 2026-05-26
 
@@ -17,10 +17,10 @@ We wanted:
 
 ## Decision
 
-Use **`semantic-release`** with two channels configured in `.releaserc.json`:
+Use **`semantic-release`** with two channels configured in `release.config.js`:
 
-```json
-{ "branches": ["main", { "name": "dev", "prerelease": "next" }] }
+```js
+branches: ['main', { name: 'dev', prerelease: 'next' }]
 ```
 
 Every push to `main` or `dev` triggers the release pipeline via `.github/workflows/release.yml`. The tool reads conventional commits since the last tag, computes the next semver, bumps `package.json`, writes `CHANGELOG.md`, commits both back (tagged `[skip ci]` to avoid loops), creates a GitHub Release, and attaches `dist/growspace-manager-card.js` as the HACS-consumable asset.
@@ -36,6 +36,30 @@ The release commit also force-adds `dist/growspace-manager-card.js`, even though
 ## Consequences
 
 - Conventional commit discipline (`feat:`, `fix:`, `chore:`, etc.) is now load-bearing. A non-conventional commit on `main` or `dev` will not block the pipeline but will be invisible to the changelog and version bump logic.
-- `package.json` version on `dev` will carry `-next.N` suffixes between stable releases.
+- `package.json` on `dev` is no longer updated by a release (see the 2026-08-24 amendment); it carries whatever the last stable release wrote. semantic-release computes versions from tags, not from this field.
 - The old `release.yml` trigger (`on: release: published`) is gone. GitHub Releases are now created by the pipeline, not by hand.
 - Each release produces a second cleanup commit that removes the built bundle from branch tracking. The release tag points to the preceding commit and retains the bundle.
+
+## Amendment, 2026-08-24 — the prerelease channel stops rewriting the changelog
+
+The original decision had both channels commit `package.json` and `CHANGELOG.md`
+back to their branch. That made those two files conflict on **every** `dev` →
+`main` promotion: each prerelease put a `chore(release): x.y.z-next.N` commit on
+`dev` touching exactly the files `main` was rewriting with stable versions, so
+the two histories always disagreed there regardless of how recently they had
+been reconciled. The v1.1.10 promotion hit it, and #711 hit it before that.
+
+The stable channel still commits both. The prerelease channel now commits
+neither, which removes the conflict rather than making it easier to resolve.
+Prerelease notes are unaffected — `@semantic-release/github` still publishes
+them on the GitHub release; they simply stop accumulating in the in-repo
+changelog, which is what `main`'s `CHANGELOG.md` is for.
+
+Both channels still commit `dist/*.js`, so every tag stays independently
+installable by HACS, and the follow-up cleanup commit still untracks the bundle.
+The net tree change on `dev` is therefore nothing at all.
+
+A static JSON config cannot vary plugin options by branch, so `.releaserc.json`
+became `release.config.js`. Anything that is not the prerelease branch — an
+undefined `GITHUB_REF_NAME` from a local dry run included — gets the stable
+config, so the complete behaviour is the default rather than the special case.
