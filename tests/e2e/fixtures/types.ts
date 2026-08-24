@@ -31,6 +31,8 @@ export interface TestContext {
   /** Multi-sensor environmental telemetry capability profile */
   telemetryMultiGrowspaceId: string;
   telemetryMultiDashboardPath: string;
+  /** Dedicated light-cycle and plain grow-light capability profile */
+  lightingGrowspaceId: string;
   /** Anchor plant for per-plant E2E tests (row 1, col 1 of veg growspace) */
   vegPlantId: string;
 }
