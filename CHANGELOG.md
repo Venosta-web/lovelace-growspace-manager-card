@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.2.0...v1.2.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* **ui:** keep the help trigger beside the label it explains ([8336594](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/8336594fca019dfd63aef29e024c0b0cbc305385))
+
 # [1.2.0](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.11...v1.2.0) (2026-08-24)
 
 
