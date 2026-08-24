@@ -25,6 +25,7 @@ import {
   parseReading,
   type MoistureClassification,
 } from '../moisture-band';
+import { SOIL_MOISTURE_FILTER, type EntityClassFilter } from './entity-filter';
 import type { EnvironmentDraft, ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 
 /** The draft keys the Sensors tab owns — each a `<datalist>`-backed entity picker. */
@@ -43,7 +44,7 @@ interface SensorFieldDef {
   label: string;
   multi: boolean;
   domains: string[];
-  deviceClass: string | null;
+  deviceClass: EntityClassFilter;
 }
 
 /** Field set + display order, transcribed verbatim from the former inline render. */
@@ -74,7 +75,7 @@ const SENSOR_FIELDS: readonly SensorFieldDef[] = [
     label: 'Soil Moisture Sensor',
     multi: false,
     domains: ['sensor', 'input_number'],
-    deviceClass: 'moisture',
+    deviceClass: SOIL_MOISTURE_FILTER,
   },
   {
     key: 'co2Sensor',
@@ -166,7 +167,7 @@ export interface SensorsTabViewModel {
 /** Hass-reading adapters the shell injects so the component stays hass-free. */
 export interface SensorsTabDeps {
   /** Entity-ids matching the given domains (+ optional device_class), sorted. */
-  entityOptions: (domains: string[], deviceClass: string | null) => string[];
+  entityOptions: (domains: string[], deviceClass: EntityClassFilter) => string[];
   /** Average current value of the given entities, or null when none report. */
   averageSensorValue: (entityIds: string[]) => number | null;
   /**
