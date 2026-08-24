@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.11...v1.2.0) (2026-08-24)
+
+
+### Features
+
+* **irrigation:** add field help to the Steering tab's Timing and Dosing ([39786be](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/39786be2d1295c814f7ee541c2db85dcb3924e00)), closes [Venosta-web/growspace_manager_workspace#41](https://github.com/Venosta-web/growspace_manager_workspace/issues/41)
+
 ## [1.1.11](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.10...v1.1.11) (2026-08-24)
 
 
