@@ -1,0 +1,157 @@
+name: Back-merge drift
+
+# Watches for work that exists on main but not on dev, and prepares the
+# back-merge branch that closes the gap.
+#
+# Why this exists: #702 fixed "block service workers so HA cannot reload the
+# page mid-test" on main, and #704 fixed the identical bug on dev four days
+# later. Neither author could see the other's work, because nothing reports
+# that the branches have diverged. The duplicate only surfaced weeks later as a
+# conflict during the v1.1.10 promotion, and cost more to untangle than the
+# original fix cost to write.
+#
+# Anything merged straight into main — a hotfix, a docs change, a workflow —
+# starts that clock. This job stops it at hours instead of weeks.
+#
+# Release commits are ignored deliberately. semantic-release writes
+# `chore(release):` commits on main that dev is never supposed to receive, so
+# counting them would make the job cry drift on every single release.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Catches drift that a push-triggered run missed, e.g. because the release
+    # commit landed after it.
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+          ref: main
+          # Push over SSH as the deploy key, for the same reason release.yml
+          # does: the branch rulesets only support a DeployKey bypass on
+          # user-owned repos.
+          ssh-key: ${{ secrets.RELEASE_SSH_KEY }}
+
+      - name: Measure the drift
+        id: drift
+        run: |
+          git fetch origin main dev --quiet
+
+          # Commits on main that dev has not got, excluding the release noise
+          # dev is never meant to receive.
+          candidates="$(git log --no-merges --format='%H %h %s' origin/dev..origin/main \
+            | grep -vE 'chore\(release\):' || true)"
+
+          # Reachability alone over-reports badly, because dev's ruleset squashes
+          # every back-merge: the content lands on dev under a brand new SHA and
+          # the original commit still looks missing forever. So drop any commit
+          # whose files are already byte-identical between the two branches.
+          #
+          # This errs towards reporting: a file that differs for an unrelated
+          # reason keeps its commit in the list. Over-reporting drift is
+          # recoverable; missing a duplicated fix is what this job exists to
+          # prevent.
+          missing=''
+          while read -r full short subject; do
+            [ -n "$full" ] || continue
+            files="$(git show --pretty=format: --name-only "$full" | grep -v '^$' | sort -u)"
+            if [ -n "$files" ] && git diff --quiet origin/dev origin/main -- $files 2>/dev/null; then
+              continue
+            fi
+            missing="${missing}${short} ${subject}"$'\n'
+          done <<<"$candidates"
+          missing="$(printf '%s' "$missing" | sed '/^$/d')"
+
+          if [ -z "$missing" ]; then
+            echo "drifted=false" >> "$GITHUB_OUTPUT"
+            echo "dev has everything on main. Nothing to back-merge." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "drifted=true" >> "$GITHUB_OUTPUT"
+          echo "count=$(wc -l <<<"$missing")" >> "$GITHUB_OUTPUT"
+          {
+            echo 'missing<<COMMITS'
+            printf '%s\n' "$missing" | sed 's/^[0-9a-f]* /- /'
+            echo 'COMMITS'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Prepare the back-merge branch
+        id: prepare
+        if: steps.drift.outputs.drifted == 'true'
+        run: |
+          branch="chore/backmerge-$(date -u +%Y%m%d-%H%M%S)"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git switch -c "$branch" origin/dev
+
+          if git merge --no-ff --no-commit origin/main; then
+            echo "conflicts=none" >> "$GITHUB_OUTPUT"
+          else
+            conflicted="$(git diff --name-only --diff-filter=U)"
+            echo "conflicts=yes" >> "$GITHUB_OUTPUT"
+            {
+              echo 'files<<FILES'
+              printf '%s\n' "$conflicted" | sed 's/^/- `/; s/$/`/'
+              echo 'FILES'
+            } >> "$GITHUB_OUTPUT"
+            # Leave the conflict for a human. Resolving a back-merge by rule is
+            # how a duplicated fix gets quietly discarded instead of noticed.
+            git merge --abort
+            exit 0
+          fi
+
+          git commit -m 'chore: back-merge main into dev'
+          git push origin "$branch"
+
+      - name: Report
+        if: steps.drift.outputs.drifted == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          repo='${{ github.repository }}'
+          branch='${{ steps.prepare.outputs.branch }}'
+
+          if [ '${{ steps.prepare.outputs.conflicts }}' = 'none' ]; then
+            action="**[Open the back-merge PR](https://github.com/$repo/compare/dev...$branch?expand=1)** — branch \`$branch\` is pushed and merges cleanly."
+          else
+            action="$(printf 'The back-merge conflicts, so no branch was pushed. Resolve it locally:\n\n```bash\ngit switch -c chore/backmerge origin/dev\ngit merge origin/main\n```\n\nConflicting files:\n%s\n\nA conflict here often means the same fix was written on both branches — check before resolving.' '${{ steps.prepare.outputs.files }}')"
+          fi
+
+          body="$(printf '`main` has %s commit(s) that `dev` does not.\n\n%s\n\n%s\n\n---\nRaised by the `Back-merge drift` workflow. It updates this issue rather than opening a new one; it closes on its own once dev catches up.' \
+            '${{ steps.drift.outputs.count }}' "${{ steps.drift.outputs.missing }}" "$action")"
+
+          printf '%s\n' "$body" >> "$GITHUB_STEP_SUMMARY"
+
+          # One long-lived issue, reused. A new issue per release would be noise
+          # nobody reads.
+          existing="$(gh issue list --label back-merge --state open --limit 1 --json number --jq '.[0].number')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh label create back-merge --description 'dev is behind main' --color FBCA04 2>/dev/null || true
+            gh issue create --title 'dev is behind main' --label back-merge --body "$body"
+          fi
+
+      - name: Close the drift issue once dev has caught up
+        if: steps.drift.outputs.drifted == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing="$(gh issue list --label back-merge --state open --limit 1 --json number --jq '.[0].number')"
+          if [ -n "$existing" ]; then
+            gh issue close "$existing" --comment 'dev now has everything on main.'
+          fi
