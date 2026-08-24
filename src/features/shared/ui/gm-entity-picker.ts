@@ -10,6 +10,14 @@
  * platform filter. `allow-custom-entity` is deliberately never set — a typed
  * value that matches no entity must not be committable.
  *
+ * The one thing `options` may not do is exclude the value already configured.
+ * Home Assistant applies its own `includeDeviceClasses` / `entityFilter` with
+ * an `id === value` escape hatch precisely so a saved entity always survives
+ * its own filter; `includeEntities`, which is what this component drives, has
+ * no such hatch and would render that entity as *"Unknown entity selected"*
+ * (issue #37). `_includeEntities` restores the rule at the seam where the
+ * card took the filtering over.
+ *
  * `hass` here is the entity registry, not growspace data, so reading it in a
  * component does not cross the store layering rule in CLAUDE.md.
  */
@@ -84,11 +92,23 @@ export class GmEntityPicker extends LitElement {
         .hass=${this.hass}
         .label=${this.label}
         .value=${this.value}
-        .includeEntities=${this.options}
+        .includeEntities=${this._includeEntities}
         .disabled=${this.disabled}
         @value-changed=${this._picked}
       ></ha-entity-picker>
     `;
+  }
+
+  /**
+   * The pickable ids, with the configured value unioned in. A value naming no
+   * live entity is still added and still resolves to nothing, so HA's own
+   * "Unknown entity selected" affordance for a renamed or removed entity is
+   * preserved (ADR 0034) — only a *live* entity the caller's filter missed
+   * changes behaviour.
+   */
+  private get _includeEntities(): string[] {
+    if (!this.value || this.options.includes(this.value)) return this.options;
+    return [...this.options, this.value];
   }
 
   private _picked(event: CustomEvent<{ value?: string }>): void {

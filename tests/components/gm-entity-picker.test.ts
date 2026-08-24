@@ -60,6 +60,28 @@ describe('GmEntityPicker', () => {
     );
   });
 
+  it("offers the configured value even when the caller's filter missed it, so a working sensor is not shown as unknown", async () => {
+    // HA's picker treats includeEntities as a hard filter with no keep-the-value
+    // escape hatch, so a saved-but-filtered-out entity renders "Unknown entity
+    // selected" on a config that works (#37).
+    const hass = hassWithEntities({ 'sensor.a': 'Tent A', 'sensor.vwc': 'VWC Links' });
+    const element = await mount({ hass, value: 'sensor.vwc', options: ['sensor.a'] });
+
+    expect(pickerOptions(element.getRootNode() as ParentNode)).toEqual(['sensor.a', 'sensor.vwc']);
+  });
+
+  it('does not duplicate a configured value already in the options', async () => {
+    const element = await mount({ value: 'sensor.b' });
+
+    expect(pickerOptions(element.getRootNode() as ParentNode)).toEqual(['sensor.a', 'sensor.b']);
+  });
+
+  it("leaves the adder's options alone, since it carries no value", async () => {
+    const element = await mount({ clearOnPick: true });
+
+    expect(pickerOptions(element.getRootNode() as ParentNode)).toEqual(['sensor.a', 'sensor.b']);
+  });
+
   it('keeps a saved value that no longer exists, so a stale config is not silently cleared', async () => {
     // HA's picker renders an unknown id with a warning affordance rather than
     // blanking; all this component must do is keep passing the value through.
