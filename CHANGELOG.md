@@ -1,3 +1,18 @@
+## [1.1.10](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.9...v1.1.10) (2026-08-24)
+
+
+### Bug Fixes
+
+* **config:** cover empty humidity entity pickers ([#731](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/731)) ([66d95af](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/66d95af284ca0f3c9b02fd4f806b3c1059d0d097))
+* **e2e:** block service workers so HA cannot reload the page mid-test ([#704](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/704)) ([734755a](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/734755ae3d6c197e62ded47ad04e4c7e71f8557d))
+* **e2e:** use generated dashboard for legacy specs ([#715](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/715)) ([445d82b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/445d82baeef726859f7eeb35a4cb0f3ae2e07117))
+* **environment:** use backend aggregate hero metrics ([#740](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/740)) ([7ca5e03](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7ca5e03073152a91a097da5faeefc7060b196ee6))
+* handle empty carousel growspace filters ([#695](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/695)) ([cbcd1e1](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/cbcd1e1689867fca377ee1303974d63bfb9975c7))
+* **lighting:** report simulated grow-light state ([#734](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/734)) ([e15e42f](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e15e42f231581cfcb48fae4d39d86ac09fec8885))
+* preserve HA contexts for dialog pickers ([#729](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/729)) ([00b7b0b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/00b7b0b26d5f97552f0eb8337c5d431d0d0070d1))
+* promote dev to main for the 1.1.10 release ([45e285f](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/45e285f37ca835c058ffa0d1835c60cbd0fadd1f)), closes [723-#726](https://github.com/723-/issues/726) [#730](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/730) [#722](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/722) [#742](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/742)
+* **tooling:** isolate caches for shared worktrees ([#710](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/710)) ([c518187](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/c5181871ba546fecdec1a07bffd66bda5331fc42))
+
 ## [1.1.9](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.8...v1.1.9) (2026-08-24)
 
 
