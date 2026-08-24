@@ -1,3 +1,11 @@
+## [1.1.11](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.10...v1.1.11) (2026-08-24)
+
+
+### Bug Fixes
+
+* promote dev to main ([bec7cbd](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/bec7cbd1185da9ca5212f88fae8f2f50231f3892))
+* **release:** stop the prerelease channel rewriting the changelog ([#745](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/745)) ([3279ccf](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/3279ccf3c55143b1192bf0deb5610f2aa173226a)), closes [#711](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/711)
+
 ## [1.1.10](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.9...v1.1.10) (2026-08-24)
 
 
