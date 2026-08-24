@@ -44,21 +44,30 @@ describe('GrowspaceAiInsightCard', () => {
 
   test('renders without crash', async () => {
     resetAtoms();
-    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', {
+      hass,
+      growspace,
+    });
     expect(handle.element).toBeInstanceOf(GrowspaceAiInsightCard);
     handle.unmount();
   });
 
   test('throws error on invalid config', async () => {
     resetAtoms();
-    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', {
+      hass,
+      growspace,
+    });
     expect(() => handle.element.setConfig(undefined as any)).toThrowError('Invalid configuration');
     handle.unmount();
   });
 
   test('renders error state when hass is missing', async () => {
     resetAtoms();
-    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', {
+      hass,
+      growspace,
+    });
     handle.element.hass = undefined as any;
     await handle.element.updateComplete;
 
@@ -76,17 +85,21 @@ describe('GrowspaceAiInsightCard', () => {
 
   test('returns standard card size', async () => {
     resetAtoms();
-    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', {
+      hass,
+      growspace,
+    });
     expect(handle.element.getCardSize()).toBe(4);
     handle.unmount();
   });
 
   test('renders loading spinner when isAiLoading$ is true', async () => {
     resetAtoms();
-    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
-    setDevices([
-      { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
-    ]);
+    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', {
+      hass,
+      growspace,
+    });
+    setDevices([{ deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any]);
     handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
     isAiLoading$.set(true);
     await handle.element.updateComplete;
@@ -98,10 +111,11 @@ describe('GrowspaceAiInsightCard', () => {
 
   test('renders response box when aiInsight$ has text', async () => {
     resetAtoms();
-    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
-    setDevices([
-      { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
-    ]);
+    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', {
+      hass,
+      growspace,
+    });
+    setDevices([{ deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any]);
     handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
     isAiLoading$.set(false);
     aiInsight$.set('The AI says grow more');
@@ -114,10 +128,11 @@ describe('GrowspaceAiInsightCard', () => {
 
   test('renders error state when aiError$ has a message', async () => {
     resetAtoms();
-    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
-    setDevices([
-      { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
-    ]);
+    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', {
+      hass,
+      growspace,
+    });
+    setDevices([{ deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any]);
     handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
     aiError$.set('Oops AI failed');
     await handle.element.updateComplete;
@@ -130,15 +145,18 @@ describe('GrowspaceAiInsightCard', () => {
   describe('regenerate briefing flow', () => {
     test('clicking Analyze All calls analyzeAllGrowspaces', async () => {
       resetAtoms();
-      const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
-      setDevices([
-        { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
-      ]);
+      const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', {
+        hass,
+        growspace,
+      });
+      setDevices([{ deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any]);
       handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
       await handle.element.updateComplete;
 
       const { analyzeAllGrowspaces } = await import('../../src/slices/ai-insight');
-      const allBtn = handle.element.shadowRoot?.querySelectorAll('.md3-button')[0] as HTMLButtonElement;
+      const allBtn = handle.element.shadowRoot?.querySelectorAll(
+        '.md3-button'
+      )[0] as HTMLButtonElement;
       allBtn.click();
       await handle.element.updateComplete;
 
@@ -148,16 +166,19 @@ describe('GrowspaceAiInsightCard', () => {
 
     test('clicking Analyze Specific calls askGrowAdvice with selected device', async () => {
       resetAtoms();
-      const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
-      setDevices([
-        { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
-      ]);
+      const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', {
+        hass,
+        growspace,
+      });
+      setDevices([{ deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any]);
       handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
       (handle.element as any)._userQuery = 'test query';
       await handle.element.updateComplete;
 
       const { askGrowAdvice } = await import('../../src/slices/ai-insight');
-      const specificBtn = handle.element.shadowRoot?.querySelectorAll('.md3-button')[1] as HTMLButtonElement;
+      const specificBtn = handle.element.shadowRoot?.querySelectorAll(
+        '.md3-button'
+      )[1] as HTMLButtonElement;
       specificBtn.click();
       await new Promise((r) => setTimeout(r, 0));
 
@@ -168,7 +189,10 @@ describe('GrowspaceAiInsightCard', () => {
 
   test('disconnectedCallback destroys store', async () => {
     resetAtoms();
-    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
+    const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', {
+      hass,
+      growspace,
+    });
     const spy = vi.spyOn(handle.element.store, 'destroy');
     handle.element.disconnectedCallback();
     expect(spy).toHaveBeenCalled();

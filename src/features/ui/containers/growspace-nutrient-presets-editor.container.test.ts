@@ -36,14 +36,18 @@ describe('GrowspaceNutrientPresetsEditorContainer', () => {
 
   it('renders nothing when presets atom is null', async () => {
     nutrientPresets$.set(null);
-    const el = await fixture(html`<growspace-nutrient-presets-editor></growspace-nutrient-presets-editor>`);
+    const el = await fixture(
+      html`<growspace-nutrient-presets-editor></growspace-nutrient-presets-editor>`
+    );
     expect(el.shadowRoot?.querySelector('growspace-nutrient-presets-editor-ui')).toBeNull();
   });
 
   it('renders the editor-ui when presets atom is populated', async () => {
     nutrientPresets$.set(aPresets());
     nutrientInventory$.set(aInventory());
-    const el = await fixture<any>(html`<growspace-nutrient-presets-editor></growspace-nutrient-presets-editor>`);
+    const el = await fixture<any>(
+      html`<growspace-nutrient-presets-editor></growspace-nutrient-presets-editor>`
+    );
     await el.updateComplete;
     expect(el.shadowRoot?.querySelector('growspace-nutrient-presets-editor-ui')).not.toBeNull();
   });

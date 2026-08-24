@@ -905,7 +905,11 @@ describe('saveIrrigationSettings', () => {
       createGrowspaceDevice({
         deviceId: 'gs1',
         name: 'G1',
-        irrigationConfig: { irrigationTimes: [], drainTimes: [], irrigationPumpEntity: 'switch.old' },
+        irrigationConfig: {
+          irrigationTimes: [],
+          drainTimes: [],
+          irrigationPumpEntity: 'switch.old',
+        },
       }),
     ]);
     setIrrigationConfig('gs1', makeConfig({ irrigationPumpEntity: 'switch.old' }));
@@ -998,18 +1002,28 @@ describe('setEcTargetRanges', () => {
     ]);
 
     expect(hassCall.callService).toHaveBeenCalledTimes(2);
-    expect(hassCall.callService).toHaveBeenNthCalledWith(1, 'growspace_manager', 'set_ec_target_range', {
-      growspace_id: 'gs1',
-      stage: 'veg',
-      feed_ec_min: 1.2,
-      feed_ec_max: 1.8,
-    });
-    expect(hassCall.callService).toHaveBeenNthCalledWith(2, 'growspace_manager', 'set_ec_target_range', {
-      growspace_id: 'gs1',
-      stage: 'flower_early',
-      feed_ec_min: 1.5,
-      feed_ec_max: 2.2,
-    });
+    expect(hassCall.callService).toHaveBeenNthCalledWith(
+      1,
+      'growspace_manager',
+      'set_ec_target_range',
+      {
+        growspace_id: 'gs1',
+        stage: 'veg',
+        feed_ec_min: 1.2,
+        feed_ec_max: 1.8,
+      }
+    );
+    expect(hassCall.callService).toHaveBeenNthCalledWith(
+      2,
+      'growspace_manager',
+      'set_ec_target_range',
+      {
+        growspace_id: 'gs1',
+        stage: 'flower_early',
+        feed_ec_min: 1.5,
+        feed_ec_max: 2.2,
+      }
+    );
   });
 });
 
@@ -1211,8 +1225,14 @@ describe('CropSteeringHistorySchema', () => {
     expect(result.growspace_id).toBe('gs1');
     expect(result.lights_on).toBe('2024-06-01T06:00:00+00:00');
     expect(result.soil_moisture).toHaveLength(2);
-    expect(result.soil_moisture[0]).toEqual({ timestamp: '2024-06-01T04:00:00+00:00', value: 42.5 });
-    expect(result.soil_moisture[1]).toEqual({ timestamp: '2024-06-01T04:05:00+00:00', value: null });
+    expect(result.soil_moisture[0]).toEqual({
+      timestamp: '2024-06-01T04:00:00+00:00',
+      value: 42.5,
+    });
+    expect(result.soil_moisture[1]).toEqual({
+      timestamp: '2024-06-01T04:05:00+00:00',
+      value: null,
+    });
     expect(result.pore_ec).toBeUndefined();
     expect(result.bulk_ec).toBeUndefined();
   });

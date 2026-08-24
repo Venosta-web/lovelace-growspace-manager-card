@@ -112,7 +112,7 @@ describe('irrigation-water-analytics-tab', () => {
     expect(text).not.toContain('Cycle Telemetry');
   });
 
-  it('hides Today\'s Usage for a tank-only grower (hasPump false, hasTank true)', async () => {
+  it("hides Today's Usage for a tank-only grower (hasPump false, hasTank true)", async () => {
     const el = await mount(
       makeVm({
         hasPump: false,

@@ -25,6 +25,23 @@ export interface TestContext {
   vwcVegDashboardPath: string;
   vwcFlowerGrowspaceId: string;
   vwcFlowerDashboardPath: string;
+  /** Dedicated irrigation hardware capability profiles */
+  irrigationMonitoredGrowspaceId: string;
+  irrigationTanksGrowspaceId: string;
+  /** Multi-sensor environmental telemetry capability profile */
+  telemetryMultiGrowspaceId: string;
+  telemetryMultiDashboardPath: string;
+  /** Dedicated light-cycle and plain grow-light capability profile */
+  lightingGrowspaceId: string;
+  /** Dedicated plain Home Assistant climate-actuator capability profile */
+  climatePlainGrowspaceId: string;
+  climatePlainDashboardPath: string;
+  /** Faithful, network-free AC Infinity port capability profile */
+  acInfinityGrowspaceId: string;
+  acInfinityDashboardPath: string;
+  /** Dedicated multi-camera and Vision Checkup capability profile */
+  visionGrowspaceId: string;
+  visionDashboardPath: string;
   /** Anchor plant for per-plant E2E tests (row 1, col 1 of veg growspace) */
   vegPlantId: string;
 }

@@ -9,13 +9,19 @@ import type { PlantOverviewContainer } from '../../../../../src/features/plants/
 import type { PlantEntity } from '../../../../../src/types';
 
 // Mock dependencies
-vi.mock('../../../../../src/features/plants/components/plant-dashboard-tab', () => ({ default: class { } }));
-vi.mock('../../../../../src/features/plants/components/plant-actions-tab', () => ({ default: class { } }));
-vi.mock('../../../../../src/features/plants/components/plant-timeline-tab', () => ({ default: class { } }));
+vi.mock('../../../../../src/features/plants/components/plant-dashboard-tab', () => ({
+  default: class {},
+}));
+vi.mock('../../../../../src/features/plants/components/plant-actions-tab', () => ({
+  default: class {},
+}));
+vi.mock('../../../../../src/features/plants/components/plant-timeline-tab', () => ({
+  default: class {},
+}));
 vi.mock('../../../../../src/slices/logbook', () => ({
-  fetchPlantEvents: vi.fn().mockResolvedValue([
-    { event_id: 'e1', timestamp: '2026-01-15T10:00:00Z', category: 'note' },
-  ]),
+  fetchPlantEvents: vi
+    .fn()
+    .mockResolvedValue([{ event_id: 'e1', timestamp: '2026-01-15T10:00:00Z', category: 'note' }]),
   fetchGrowspaceEvents: vi.fn().mockResolvedValue([]),
 }));
 
@@ -47,7 +53,7 @@ describe('PlantOverviewContainer', () => {
     },
     context: { id: '1', parent_id: null, user_id: null },
     last_changed: '2023-01-01',
-    last_updated: '2023-01-01'
+    last_updated: '2023-01-01',
   } as unknown as PlantEntity;
 
   beforeEach(async () => {
@@ -61,11 +67,11 @@ describe('PlantOverviewContainer', () => {
       actions: {
         plant: {
           delete: vi.fn(),
-        }
+        },
       },
       updatePlantFromDialog: vi.fn(),
       data: {
-        $strainLibrary: { get: () => [], listen: () => () => { } },
+        $strainLibrary: { get: () => [], listen: () => () => {} },
       },
       grid: {
         $growspaceOptions: atom({}),
@@ -74,23 +80,29 @@ describe('PlantOverviewContainer', () => {
       plants: { get: () => [] },
       $state: {
         get: () => ({ plants: [mockPlant] }),
-        listen: () => () => { },
-      }
+        listen: () => () => {},
+      },
     };
 
     mockHass = {
       callService: vi.fn(),
       callWS: vi.fn(),
       connection: {
-        subscribeEvents: vi.fn(() => Promise.resolve(() => { })),
+        subscribeEvents: vi.fn(() => Promise.resolve(() => {})),
       },
     };
 
     // Render component inside context providers
     // Lit's @consume requires the context to be available on connection.
     const Wrapper = class extends HTMLElement {
-      private hassProvider = new ContextProvider(this, { context: hassContext, initialValue: mockHass });
-      private storeProvider = new ContextProvider(this, { context: storeContext, initialValue: mockStore });
+      private hassProvider = new ContextProvider(this, {
+        context: hassContext,
+        initialValue: mockHass,
+      });
+      private storeProvider = new ContextProvider(this, {
+        context: storeContext,
+        initialValue: mockStore,
+      });
 
       connectedCallback() {
         this.innerHTML = '<plant-overview-container></plant-overview-container>';
@@ -156,7 +168,9 @@ describe('PlantOverviewContainer', () => {
   });
 
   it('should call closeDialog on Close button click', async () => {
-    const closeBtn = element.shadowRoot!.querySelector('button[aria-label="Close"]') as HTMLButtonElement;
+    const closeBtn = element.shadowRoot!.querySelector(
+      'button[aria-label="Close"]'
+    ) as HTMLButtonElement;
     expect(closeBtn).toBeTruthy();
 
     closeBtn.click();
@@ -175,13 +189,13 @@ describe('PlantOverviewContainer', () => {
     actionsTab!.dispatchEvent(new CustomEvent('action-click', { detail: { actionId: 'water' } }));
     expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
       type: 'WATERING',
-      payload: { plantIds: ['plant_1'], growspaceId: 'space_1', mode: 'plant' }
+      payload: { plantIds: ['plant_1'], growspaceId: 'space_1', mode: 'plant' },
     });
 
     actionsTab!.dispatchEvent(new CustomEvent('action-click', { detail: { actionId: 'clone' } }));
     expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
       type: 'TAKE_CLONE',
-      payload: { sourcePlant: mockPlant, defaultGrowspaceId: 'space_1' }
+      payload: { sourcePlant: mockPlant, defaultGrowspaceId: 'space_1' },
     });
   });
 
@@ -192,7 +206,9 @@ describe('PlantOverviewContainer', () => {
     const actionsTab = element.shadowRoot!.querySelector('plant-actions-tab');
     expect(actionsTab).toBeTruthy();
 
-    actionsTab!.dispatchEvent(new CustomEvent('action-click', { detail: { actionId: 'training' } }));
+    actionsTab!.dispatchEvent(
+      new CustomEvent('action-click', { detail: { actionId: 'training' } })
+    );
     expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
       type: 'TRAINING',
       payload: { isOpen: true, plantIds: ['plant_1'], growspaceId: 'space_1' },
@@ -204,7 +220,9 @@ describe('PlantOverviewContainer', () => {
       payload: { plantIds: ['plant_1'], growspaceId: 'space_1' },
     });
 
-    actionsTab!.dispatchEvent(new CustomEvent('action-click', { detail: { actionId: 'print_label' } }));
+    actionsTab!.dispatchEvent(
+      new CustomEvent('action-click', { detail: { actionId: 'print_label' } })
+    );
     expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
       type: 'PRINT_LABEL',
       payload: { plantId: 'plant_1' },
@@ -246,8 +264,14 @@ describe('PlantOverviewContainer', () => {
 
   it('should create viewmodel in connectedCallback when plant is pre-set before DOM insertion', async () => {
     const WrapperPreset = class extends HTMLElement {
-      private hassProvider = new ContextProvider(this, { context: hassContext, initialValue: mockHass });
-      private storeProvider = new ContextProvider(this, { context: storeContext, initialValue: mockStore });
+      private hassProvider = new ContextProvider(this, {
+        context: hassContext,
+        initialValue: mockHass,
+      });
+      private storeProvider = new ContextProvider(this, {
+        context: storeContext,
+        initialValue: mockStore,
+      });
 
       connectedCallback() {
         const el = document.createElement('plant-overview-container') as PlantOverviewContainer;
@@ -450,7 +474,9 @@ describe('PlantOverviewContainer', () => {
   });
 
   it('should open Strain Editor from header button', async () => {
-    const editStrainBtn = element.shadowRoot!.querySelector('button[title="Edit Strain Library Entry"]') as HTMLButtonElement;
+    const editStrainBtn = element.shadowRoot!.querySelector(
+      'button[title="Edit Strain Library Entry"]'
+    ) as HTMLButtonElement;
     expect(editStrainBtn).toBeTruthy();
 
     editStrainBtn.click();
@@ -472,17 +498,21 @@ describe('PlantOverviewContainer', () => {
           image: '',
           sativa_percentage: 50,
           indica_percentage: 50,
-        }
-      }
+        },
+      },
     });
   });
 
   it('should save changes format appropriately', async () => {
-    const saveBtn = Array.from(element.shadowRoot!.querySelectorAll('button.filled')).find(b => b.textContent?.includes('Save')) as HTMLButtonElement;
+    const saveBtn = Array.from(element.shadowRoot!.querySelectorAll('button.filled')).find((b) =>
+      b.textContent?.includes('Save')
+    ) as HTMLButtonElement;
     expect(saveBtn).toBeTruthy();
 
     // Make simple edit change locally
-    element['_handleAttributeChange'](new CustomEvent('attribute-change', { detail: { key: 'strain', value: 'New Strain' } }));
+    element['_handleAttributeChange'](
+      new CustomEvent('attribute-change', { detail: { key: 'strain', value: 'New Strain' } })
+    );
     await element.updateComplete;
 
     // Capture the update-plant event dispatched by the container
@@ -533,7 +563,9 @@ describe('PlantOverviewContainer', () => {
   });
 
   it('should handle deletion confirmation cycle', async () => {
-    const deleteBtn = Array.from(element.shadowRoot!.querySelectorAll('button.danger')).find(b => b.textContent?.includes('Delete')) as HTMLButtonElement;
+    const deleteBtn = Array.from(element.shadowRoot!.querySelectorAll('button.danger')).find((b) =>
+      b.textContent?.includes('Delete')
+    ) as HTMLButtonElement;
     expect(deleteBtn).toBeTruthy();
 
     // Click initial delete
@@ -553,7 +585,9 @@ describe('PlantOverviewContainer', () => {
     deleteBtn.click();
     await element.updateComplete;
 
-    const confirmBtn = element.shadowRoot!.querySelector('.delete-overlay button.danger') as HTMLButtonElement;
+    const confirmBtn = element.shadowRoot!.querySelector(
+      '.delete-overlay button.danger'
+    ) as HTMLButtonElement;
     confirmBtn.click();
 
     expect(deletePlant).toHaveBeenCalledWith('plant_1');

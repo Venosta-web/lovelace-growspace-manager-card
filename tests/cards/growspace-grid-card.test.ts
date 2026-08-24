@@ -102,9 +102,7 @@ describe('GrowspaceGridCard', () => {
 
   test('event handlers trigger store actions', async () => {
     element.store.ui.$isLoading.set(false);
-    setDevices([
-      { deviceId: 'test_tent', name: 'Test Tent', plants: [] } as any,
-    ]);
+    setDevices([{ deviceId: 'test_tent', name: 'Test Tent', plants: [] } as any]);
     element.store.grid.$selectedDevice.set('test_tent');
     await element.updateComplete;
 
@@ -130,7 +128,10 @@ describe('GrowspaceGridCard', () => {
 
     const dialogSpy = vi.spyOn(element.store.ui, 'setActiveDialog');
     cardContainer?.dispatchEvent(new CustomEvent('batch-add-plants'));
-    expect(dialogSpy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: { growspaceId: 'test_tent' } });
+    expect(dialogSpy).toHaveBeenCalledWith({
+      type: 'ADD_PLANTS',
+      payload: { growspaceId: 'test_tent' },
+    });
 
     const deviceSpy = vi.spyOn(element.store, 'handleDeviceChange');
     cardContainer?.dispatchEvent(new CustomEvent('growspace-changed', { detail: 'other_tent' }));
@@ -139,9 +140,7 @@ describe('GrowspaceGridCard', () => {
 
   test('transplant-mode event triggers startTransplant flow', async () => {
     element.store.ui.$isLoading.set(false);
-    setDevices([
-      { deviceId: 'test_tent', name: 'Test Tent', plants: [] } as any,
-    ]);
+    setDevices([{ deviceId: 'test_tent', name: 'Test Tent', plants: [] } as any]);
     element.store.grid.$selectedDevice.set('test_tent');
     await element.updateComplete;
 
@@ -198,7 +197,9 @@ describe('GrowspaceGridCard', () => {
 
     const errorDiv = element.shadowRoot?.querySelector('.error');
     expect(errorDiv).toBeTruthy();
-    expect(errorDiv?.textContent).toContain('No valid growspace selected. Please configure the card.');
+    expect(errorDiv?.textContent).toContain(
+      'No valid growspace selected. Please configure the card.'
+    );
   });
 
   test('renders grid view and handles all mapped UI events', async () => {
@@ -256,7 +257,10 @@ describe('GrowspaceGridCard', () => {
     expect(waterSpy).toHaveBeenCalled();
     expect(trainingSpy).toHaveBeenCalled();
     expect(ipmSpy).toHaveBeenCalled();
-    expect(setActiveDialogSpy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: { growspaceId: 'selected_tent' } });
+    expect(setActiveDialogSpy).toHaveBeenCalledWith({
+      type: 'ADD_PLANTS',
+      payload: { growspaceId: 'selected_tent' },
+    });
     expect(deleteSpy).toHaveBeenCalled();
     expect(setEditModeSpy).toHaveBeenCalledWith(false);
   });

@@ -209,8 +209,10 @@ export class LogbookDialog extends LitElement {
 
   protected willUpdate(changedProperties: Map<string | number | symbol, unknown>) {
     const tabChanged = changedProperties.has('_activeTab') && this._activeTab === 'report';
-    const openedAndReport = changedProperties.has('open') && this.open && this._activeTab === 'report';
-    const growspaceChanged = changedProperties.has('growspaceId') && this.growspaceId && this._activeTab === 'report';
+    const openedAndReport =
+      changedProperties.has('open') && this.open && this._activeTab === 'report';
+    const growspaceChanged =
+      changedProperties.has('growspaceId') && this.growspaceId && this._activeTab === 'report';
 
     if (tabChanged || openedAndReport || growspaceChanged) {
       this._loadReport();
@@ -244,7 +246,13 @@ export class LogbookDialog extends LitElement {
     if (this._error) {
       return html`
         <ha-alert alert-type="error"> ${this._error} </ha-alert>
-        <button class="md3-button primary" style="margin-top: 8px;" @click=${() => this._loadReport()}>Retry</button>
+        <button
+          class="md3-button primary"
+          style="margin-top: 8px;"
+          @click=${() => this._loadReport()}
+        >
+          Retry
+        </button>
       `;
     }
 
@@ -253,8 +261,7 @@ export class LogbookDialog extends LitElement {
     }
 
     return html`
-      ${this._renderSummarySection()}
-      ${this._renderEnvironmentSection()}
+      ${this._renderSummarySection()} ${this._renderEnvironmentSection()}
       ${this._renderHarvestSection()}
       <div class="report-actions">
         <button

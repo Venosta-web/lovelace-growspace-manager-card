@@ -21,10 +21,18 @@ type PresetsEditorEvent =
   | { type: 'DeleteRequested'; id: string; name: string }
   | { type: 'DeleteConfirmed' }
   | { type: 'DeleteCancelled' }
-  | { type: 'PresetDraftChanged'; field: keyof Omit<NutrientPresetDraft, 'nutrients'>; value: string | number | null | undefined }
+  | {
+      type: 'PresetDraftChanged';
+      field: keyof Omit<NutrientPresetDraft, 'nutrients'>;
+      value: string | number | null | undefined;
+    }
   | { type: 'PresetNutrientRowAdded' }
   | { type: 'PresetNutrientRowRemoved'; index: number }
-  | { type: 'PresetNutrientRowUpdated'; index: number; patch: Partial<{ nutrient_id: string; dose_ml_l: number; name: string }> };
+  | {
+      type: 'PresetNutrientRowUpdated';
+      index: number;
+      patch: Partial<{ nutrient_id: string; dose_ml_l: number; name: string }>;
+    };
 import { dialogStyles } from '../../../styles/dialog.styles';
 
 // ─── Stage colors ─────────────────────────────────────────────────────────────
@@ -48,7 +56,11 @@ function draftFromPreset(preset: NutrientPresetsResponse[string]): NutrientPrese
     week: preset.week,
     ec_target: preset.ec_target ?? null,
     ph_target: preset.ph_target ?? null,
-    nutrients: (preset.nutrients ?? []).map((n) => ({ nutrient_id: n.nutrient_id, dose_ml_l: n.dose_ml_l, name: n.name })),
+    nutrients: (preset.nutrients ?? []).map((n) => ({
+      nutrient_id: n.nutrient_id,
+      dose_ml_l: n.dose_ml_l,
+      name: n.name,
+    })),
   };
 }
 
@@ -82,7 +94,9 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         transition: background 0.15s;
       }
 
-      .list-item:hover { background: rgba(255, 255, 255, 0.08); }
+      .list-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
 
       .stage-dot {
         width: 10px;
@@ -91,7 +105,10 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         flex-shrink: 0;
       }
 
-      .item-body { flex: 1; min-width: 0; }
+      .item-body {
+        flex: 1;
+        min-width: 0;
+      }
 
       .item-name {
         font-weight: 500;
@@ -124,7 +141,9 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         margin-bottom: 12px;
       }
 
-      .add-btn:hover { background: rgba(255, 255, 255, 0.09); }
+      .add-btn:hover {
+        background: rgba(255, 255, 255, 0.09);
+      }
 
       .empty-state {
         text-align: center;
@@ -154,11 +173,21 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         transition: background 0.15s;
       }
 
-      .back-btn:hover { background: rgba(255, 255, 255, 0.08); }
+      .back-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
 
-      .detail-title { flex: 1; font-size: 1rem; font-weight: 500; margin: 0; }
+      .detail-title {
+        flex: 1;
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0;
+      }
 
-      .detail-actions { display: flex; gap: 8px; }
+      .detail-actions {
+        display: flex;
+        gap: 8px;
+      }
 
       .icon-btn {
         background: none;
@@ -172,8 +201,12 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         transition: background 0.15s;
       }
 
-      .icon-btn:hover { background: rgba(255, 255, 255, 0.08); }
-      .icon-btn.danger { color: var(--error-color, #f44336); }
+      .icon-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .icon-btn.danger {
+        color: var(--error-color, #f44336);
+      }
 
       .detail-section {
         background: rgba(255, 255, 255, 0.04);
@@ -199,8 +232,12 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       }
 
-      .detail-row:last-child { border-bottom: none; }
-      .detail-label { color: var(--secondary-text-color); }
+      .detail-row:last-child {
+        border-bottom: none;
+      }
+      .detail-label {
+        color: var(--secondary-text-color);
+      }
 
       .mix-row {
         display: flex;
@@ -211,7 +248,9 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       }
 
-      .mix-row:last-child { border-bottom: none; }
+      .mix-row:last-child {
+        border-bottom: none;
+      }
 
       .orphan-badge {
         font-size: 0.7rem;
@@ -229,8 +268,13 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         gap: 14px;
       }
 
-      .form-row { display: flex; gap: 12px; }
-      .form-row > * { flex: 1; }
+      .form-row {
+        display: flex;
+        gap: 12px;
+      }
+      .form-row > * {
+        flex: 1;
+      }
 
       .form-label {
         font-size: 0.75rem;
@@ -253,7 +297,9 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         transition: border-color 0.15s;
       }
 
-      .form-input:focus { border-color: var(--primary-color, #4caf50); }
+      .form-input:focus {
+        border-color: var(--primary-color, #4caf50);
+      }
 
       .form-select {
         width: 100%;
@@ -293,8 +339,12 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         margin-bottom: 8px;
       }
 
-      .nutrient-row-item > .form-select { flex: 2; }
-      .nutrient-row-item > .form-input  { flex: 1; }
+      .nutrient-row-item > .form-select {
+        flex: 2;
+      }
+      .nutrient-row-item > .form-input {
+        flex: 1;
+      }
 
       .btn-icon-small {
         background: none;
@@ -308,7 +358,9 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         flex-shrink: 0;
       }
 
-      .btn-icon-small:hover { background: rgba(244, 67, 54, 0.1); }
+      .btn-icon-small:hover {
+        background: rgba(244, 67, 54, 0.1);
+      }
 
       .add-row-btn {
         display: flex;
@@ -327,7 +379,9 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         justify-content: center;
       }
 
-      .add-row-btn:hover { background: rgba(255, 255, 255, 0.05); }
+      .add-row-btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
 
       .form-footer {
         display: flex;
@@ -346,14 +400,19 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         transition: background 0.15s;
       }
 
-      .btn:disabled { opacity: 0.5; cursor: default; }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
 
       .btn-text {
         background: transparent;
         color: var(--secondary-text-color);
       }
 
-      .btn-text:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); }
+      .btn-text:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.06);
+      }
 
       .btn-primary {
         background: var(--primary-color, #4caf50);
@@ -363,7 +422,9 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         gap: 6px;
       }
 
-      .btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+      .btn-primary:hover:not(:disabled) {
+        filter: brightness(1.1);
+      }
 
       /* Confirm-delete */
       .confirm-box {
@@ -374,7 +435,10 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         text-align: center;
       }
 
-      .confirm-box p { margin: 0 0 16px; font-size: 0.9rem; }
+      .confirm-box p {
+        margin: 0 0 16px;
+        font-size: 0.9rem;
+      }
 
       .confirm-name {
         font-weight: 600;
@@ -392,12 +456,16 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         color: var(--on-error);
       }
 
-      .btn-danger:hover { filter: brightness(1.1); }
+      .btn-danger:hover {
+        filter: brightness(1.1);
+      }
     `,
   ];
 
   private _dispatch(event: PresetsEditorEvent): void {
-    this.dispatchEvent(new CustomEvent('sm-event', { detail: event, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent('sm-event', { detail: event, bubbles: true, composed: true })
+    );
   }
 
   render() {
@@ -434,17 +502,16 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         data-action="add"
         @click=${() => this._dispatch({ type: 'NewItemRequested' })}
       >
-        <ha-svg-icon .path=${mdiPlus} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+        <ha-svg-icon
+          .path=${mdiPlus}
+          style="width:18px;height:18px;fill:currentColor"
+        ></ha-svg-icon>
         Add Preset
       </button>
 
       ${entries.length === 0
         ? html`<div class="empty-state">No presets defined yet.</div>`
-        : html`
-            <div class="list">
-              ${entries.map((p) => this._renderListItem(p))}
-            </div>
-          `}
+        : html` <div class="list">${entries.map((p) => this._renderListItem(p))}</div> `}
     `;
   }
 
@@ -463,8 +530,8 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
           <div class="item-name">${preset.name}</div>
           <div class="item-meta">
             ${preset.stage ? html`${preset.stage}` : nothing}
-            ${preset.week ? html` · Week ${preset.week}` : nothing}
-            · ${count} nutrient${count !== 1 ? 's' : ''}
+            ${preset.week ? html` · Week ${preset.week}` : nothing} · ${count}
+            nutrient${count !== 1 ? 's' : ''}
           </div>
         </div>
       </div>
@@ -483,7 +550,10 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
           data-action="back"
           @click=${() => this._dispatch({ type: 'BackToList' })}
         >
-          <ha-svg-icon .path=${mdiArrowLeft} style="width:20px;height:20px;fill:currentColor"></ha-svg-icon>
+          <ha-svg-icon
+            .path=${mdiArrowLeft}
+            style="width:20px;height:20px;fill:currentColor"
+          ></ha-svg-icon>
         </button>
         <h3 class="detail-title">${preset.name}</h3>
         <div class="detail-actions">
@@ -492,14 +562,21 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
             data-action="edit"
             @click=${() => this._dispatch({ type: 'EditStarted', draft: draftFromPreset(preset) })}
           >
-            <ha-svg-icon .path=${mdiPencil} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+            <ha-svg-icon
+              .path=${mdiPencil}
+              style="width:18px;height:18px;fill:currentColor"
+            ></ha-svg-icon>
           </button>
           <button
             class="icon-btn danger"
             data-action="delete"
-            @click=${() => this._dispatch({ type: 'DeleteRequested', id: preset.id, name: preset.name })}
+            @click=${() =>
+              this._dispatch({ type: 'DeleteRequested', id: preset.id, name: preset.name })}
           >
-            <ha-svg-icon .path=${mdiDelete} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+            <ha-svg-icon
+              .path=${mdiDelete}
+              style="width:18px;height:18px;fill:currentColor"
+            ></ha-svg-icon>
           </button>
         </div>
       </div>
@@ -547,9 +624,14 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
           const isOrphan = !stock;
           return html`
             <div class="mix-row">
-              <ha-svg-icon .path=${mdiFlask} style="width:14px;height:14px;fill:currentColor;opacity:0.5"></ha-svg-icon>
+              <ha-svg-icon
+                .path=${mdiFlask}
+                style="width:14px;height:14px;fill:currentColor;opacity:0.5"
+              ></ha-svg-icon>
               ${isOrphan
-                ? html`<span class="orphan-badge" data-orphan style="flex:1">${row.name ?? row.nutrient_id} (missing)</span>`
+                ? html`<span class="orphan-badge" data-orphan style="flex:1"
+                    >${row.name ?? row.nutrient_id} (missing)</span
+                  >`
                 : html`<span style="flex:1">${stock!.name}</span>`}
               <span style="color:var(--secondary-text-color)">${row.dose_ml_l} ml/L</span>
             </div>
@@ -574,7 +656,11 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
             type="text"
             .value=${draft.name}
             @input=${(e: Event) =>
-              this._dispatch({ type: 'PresetDraftChanged', field: 'name', value: (e.target as HTMLInputElement).value })}
+              this._dispatch({
+                type: 'PresetDraftChanged',
+                field: 'name',
+                value: (e.target as HTMLInputElement).value,
+              })}
           />
         </div>
 
@@ -585,7 +671,11 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
               class="form-select"
               .value=${draft.stage ?? ''}
               @change=${(e: Event) =>
-                this._dispatch({ type: 'PresetDraftChanged', field: 'stage', value: (e.target as HTMLSelectElement).value || undefined })}
+                this._dispatch({
+                  type: 'PresetDraftChanged',
+                  field: 'stage',
+                  value: (e.target as HTMLSelectElement).value || undefined,
+                })}
             >
               <option value="">—</option>
               <option value="seedling">Seedling</option>
@@ -604,7 +694,11 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
               .value=${String(draft.week ?? '')}
               @input=${(e: Event) => {
                 const v = parseInt((e.target as HTMLInputElement).value);
-                this._dispatch({ type: 'PresetDraftChanged', field: 'week', value: isNaN(v) ? undefined : v });
+                this._dispatch({
+                  type: 'PresetDraftChanged',
+                  field: 'week',
+                  value: isNaN(v) ? undefined : v,
+                });
               }}
             />
           </div>
@@ -621,7 +715,11 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
               .value=${String(draft.ec_target ?? '')}
               @input=${(e: Event) => {
                 const v = parseFloat((e.target as HTMLInputElement).value);
-                this._dispatch({ type: 'PresetDraftChanged', field: 'ec_target', value: isNaN(v) ? null : v });
+                this._dispatch({
+                  type: 'PresetDraftChanged',
+                  field: 'ec_target',
+                  value: isNaN(v) ? null : v,
+                });
               }}
             />
           </div>
@@ -636,7 +734,11 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
               .value=${String(draft.ph_target ?? '')}
               @input=${(e: Event) => {
                 const v = parseFloat((e.target as HTMLInputElement).value);
-                this._dispatch({ type: 'PresetDraftChanged', field: 'ph_target', value: isNaN(v) ? null : v });
+                this._dispatch({
+                  type: 'PresetDraftChanged',
+                  field: 'ph_target',
+                  value: isNaN(v) ? null : v,
+                });
               }}
             />
           </div>
@@ -650,7 +752,10 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
               data-action="add-row"
               @click=${() => this._dispatch({ type: 'PresetNutrientRowAdded' })}
             >
-              <ha-svg-icon .path=${mdiPlus} style="width:14px;height:14px;fill:currentColor"></ha-svg-icon>
+              <ha-svg-icon
+                .path=${mdiPlus}
+                style="width:14px;height:14px;fill:currentColor"
+              ></ha-svg-icon>
               Add row
             </button>
           </div>
@@ -672,7 +777,10 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
             ?disabled=${applying}
             @click=${() => this._dispatch({ type: 'SaveRequested' })}
           >
-            <ha-svg-icon .path=${mdiCheck} style="width:16px;height:16px;fill:currentColor"></ha-svg-icon>
+            <ha-svg-icon
+              .path=${mdiCheck}
+              style="width:16px;height:16px;fill:currentColor"
+            ></ha-svg-icon>
             ${applying ? 'Saving…' : 'Save'}
           </button>
         </div>
@@ -680,7 +788,10 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
     `;
   }
 
-  private _renderNutrientRow(row: { nutrient_id: string; dose_ml_l: number; name?: string }, index: number) {
+  private _renderNutrientRow(
+    row: { nutrient_id: string; dose_ml_l: number; name?: string },
+    index: number
+  ) {
     const stocks = Object.values(this.inventory?.stocks ?? {});
     const isOrphan = row.nutrient_id !== '' && !this.inventory?.stocks[row.nutrient_id];
 
@@ -692,12 +803,25 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
           @change=${(e: Event) => {
             const nutrient_id = (e.target as HTMLSelectElement).value;
             const name = this.inventory?.stocks[nutrient_id]?.name ?? '';
-            this._dispatch({ type: 'PresetNutrientRowUpdated', index, patch: { nutrient_id, name } });
+            this._dispatch({
+              type: 'PresetNutrientRowUpdated',
+              index,
+              patch: { nutrient_id, name },
+            });
           }}
         >
           <option value="" ?selected=${row.nutrient_id === ''}>— select nutrient —</option>
-          ${isOrphan ? html`<option value=${row.nutrient_id} selected>${row.name ?? row.nutrient_id} (missing)</option>` : nothing}
-          ${stocks.map((s) => html`<option value=${s.nutrient_id} ?selected=${s.nutrient_id === row.nutrient_id}>${s.name}</option>`)}
+          ${isOrphan
+            ? html`<option value=${row.nutrient_id} selected>
+                ${row.name ?? row.nutrient_id} (missing)
+              </option>`
+            : nothing}
+          ${stocks.map(
+            (s) =>
+              html`<option value=${s.nutrient_id} ?selected=${s.nutrient_id === row.nutrient_id}>
+                ${s.name}
+              </option>`
+          )}
         </select>
         <input
           class="form-input"
@@ -718,7 +842,10 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
           data-action="remove-row"
           @click=${() => this._dispatch({ type: 'PresetNutrientRowRemoved', index })}
         >
-          <ha-svg-icon .path=${mdiDelete} style="width:16px;height:16px;fill:currentColor"></ha-svg-icon>
+          <ha-svg-icon
+            .path=${mdiDelete}
+            style="width:16px;height:16px;fill:currentColor"
+          ></ha-svg-icon>
         </button>
       </div>
     `;
@@ -754,8 +881,13 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
 
   private _renderError(sub: { kind: 'error'; draft: NutrientPresetDraft; message: string }) {
     return html`
-      <div style="display:flex;align-items:center;gap:8px;background:rgba(244,67,54,0.1);border-radius: var(--border-radius-sm, 8px);padding:10px 14px;margin-bottom:12px;font-size:0.875rem;color:var(--error-color,#f44336)">
-        <ha-svg-icon .path=${mdiAlertCircle} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+      <div
+        style="display:flex;align-items:center;gap:8px;background:rgba(244,67,54,0.1);border-radius: var(--border-radius-sm, 8px);padding:10px 14px;margin-bottom:12px;font-size:0.875rem;color:var(--error-color,#f44336)"
+      >
+        <ha-svg-icon
+          .path=${mdiAlertCircle}
+          style="width:18px;height:18px;fill:currentColor"
+        ></ha-svg-icon>
         ${sub.message}
       </div>
       ${this._renderEditForm({ kind: 'editing', draft: sub.draft })}

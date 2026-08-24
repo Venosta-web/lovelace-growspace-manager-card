@@ -64,7 +64,9 @@ describe('createTanksTabViewModel', () => {
   });
 
   it('shows N/A and clamps the bar when no fill level reports', () => {
-    const vm = build(createInitialSM(), [tank({ fillLevel: null, hoursRemaining: null, depletionStatus: null })]);
+    const vm = build(createInitialSM(), [
+      tank({ fillLevel: null, hoursRemaining: null, depletionStatus: null }),
+    ]);
     expect(vm.tanks[0].fillLabel).toBe('N/A');
     expect(vm.tanks[0].barWidthPct).toBe(0);
     expect(vm.tanks[0].subLine).toBeNull();
@@ -73,7 +75,9 @@ describe('createTanksTabViewModel', () => {
   it('colours warning tanks red and days-remaining for long horizons', () => {
     const warn = build(createInitialSM(), [tank({ isWarning: true })]);
     expect(warn.tanks[0].color).toBe(token['--gm-error-color']);
-    const long = build(createInitialSM(), [tank({ isWarning: false, hoursRemaining: 72, depletionStatus: 'static' })]);
+    const long = build(createInitialSM(), [
+      tank({ isWarning: false, hoursRemaining: 72, depletionStatus: 'static' }),
+    ]);
     expect(long.tanks[0].color).toBe(token['--gm-primary-color']);
     expect(long.tanks[0].subLine).toBe('— Stable · 3d left');
   });
@@ -85,10 +89,19 @@ describe('createTanksTabViewModel', () => {
   });
 
   it('projects the SM editing sub-state (with entity options) into the VM', () => {
-    const draft: TankDraft = { sensorEntity: 'sensor.tank_a', name: 'Tank A', volumeLiters: 200, warningLevel: 30 };
+    const draft: TankDraft = {
+      sensorEntity: 'sensor.tank_a',
+      name: 'Tank A',
+      volumeLiters: 200,
+      warningLevel: 30,
+    };
     const sm = transition(createInitialSM(), { type: 'EDIT_TANK', index: 0, draft });
     const vm = build(sm, [tank()], ['sensor.tank_a', 'sensor.tank_b']);
-    expect(vm.editing).toEqual({ index: 0, draft, entityOptions: ['sensor.tank_a', 'sensor.tank_b'] });
+    expect(vm.editing).toEqual({
+      index: 0,
+      draft,
+      entityOptions: ['sensor.tank_a', 'sensor.tank_b'],
+    });
   });
 
   it('editing is null when idle', () => {
@@ -97,7 +110,12 @@ describe('createTanksTabViewModel', () => {
 });
 
 describe('mergeTankDraft', () => {
-  const draft: TankDraft = { sensorEntity: 'sensor.new', name: 'Renamed', volumeLiters: 500, warningLevel: 45 };
+  const draft: TankDraft = {
+    sensorEntity: 'sensor.new',
+    name: 'Renamed',
+    volumeLiters: 500,
+    warningLevel: 45,
+  };
 
   it('overwrites config fields but preserves live level fields', () => {
     const tanks = [tank(), tank({ sensorEntity: 'sensor.tank_b', name: 'Tank B' })];

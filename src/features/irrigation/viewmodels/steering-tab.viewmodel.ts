@@ -157,9 +157,7 @@ export function createSteeringTabViewModel(
       const sizeField = (
         isVolume ? `${p.id}ShotVolumePercent` : `${p.id}ShotDurationSeconds`
       ) as keyof IrrigationStrategy;
-      const sizeLabel = isVolume
-        ? `${p.label} Shot Size (%)`
-        : `${p.label} Shot Duration (sec)`;
+      const sizeLabel = isVolume ? `${p.label} Shot Size (%)` : `${p.label} Shot Duration (sec)`;
       const intervalField = `${p.id}ShotIntervalMinutes` as keyof IrrigationStrategy;
       return {
         id: p.id,

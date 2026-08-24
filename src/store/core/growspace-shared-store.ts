@@ -42,6 +42,8 @@ export class GrowspaceSharedStore {
   }
 
   private _handleEvent(_event: unknown): void {
-    this._staleCallbacks.forEach((cb) => { cb().catch(() => {}); });
+    this._staleCallbacks.forEach((cb) => {
+      cb().catch(() => {});
+    });
   }
 }

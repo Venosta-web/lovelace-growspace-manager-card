@@ -126,10 +126,11 @@ function _envEntityId(slug: string, deviceType: GrowspaceDevice['type']): string
   return `binary_sensor.${slug}_optimal_conditions`;
 }
 
-/** Read a numeric attribute from an entity, returning null if absent or NaN. */
+/** Read a numeric observation, falling back to a legacy flat attribute. */
 function _numAttr(entity: HassEntity | undefined, key: string): number | null {
   if (!entity) return null;
-  const val = entity.attributes[key];
+  const observations = entity.attributes.observations as Record<string, unknown> | undefined;
+  const val = observations?.[key] ?? entity.attributes[key];
   if (val === undefined || val === null) return null;
   const n = Number(val);
   return isNaN(n) ? null : n;
@@ -305,7 +306,10 @@ export function computeEnvSnapshot(device: GrowspaceDevice, hassStates: HassStat
   const co2 = isSpecial ? null : co2Raw;
 
   // Lights
-  const isLightsOnRaw = envEntity?.attributes?.is_lights_on;
+  // The backend's Bayesian environment sensor publishes assembled readings
+  // under `observations`; retain the flat fallback for older payloads/tests.
+  const observations = envEntity?.attributes?.observations as Record<string, unknown> | undefined;
+  const isLightsOnRaw = envEntity?.attributes?.is_lights_on ?? observations?.is_lights_on;
   const hasLightSensor = isLightsOnRaw !== undefined && isLightsOnRaw !== null;
   const isLightsOn = hasLightSensor ? isLightsOnRaw === true : null;
 

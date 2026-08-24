@@ -134,6 +134,22 @@ describe('computeDeviceSnapshot — light sensor percentage', () => {
 
     expect(snapshot.lightSensors!.value).toBe('0%');
   });
+
+  it("ignores a dimmable grow light's retained brightness while it is off", () => {
+    const device = makeDevice({
+      environmentAttributes: { growlightEntities: ['light.sim_flower_grow_light'] },
+    });
+    const hassStates: HassStates = {
+      'light.sim_flower_grow_light': makeHassEntity('light.sim_flower_grow_light', 'off', {
+        brightness: 166,
+        supported_color_modes: ['brightness'],
+      }),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.lightSensors!.value).toBe('0%');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -532,22 +548,19 @@ describe('computeDeviceSnapshot — fan device binary domain with numeric state'
     ['switch', '0', 'Off'],
     ['input_boolean', '1', 'On'],
     ['input_boolean', '0', 'Off'],
-  ] as const)(
-    '%s domain with numeric state "%s" shows "%s"',
-    (domain, state, expected) => {
-      const entityId = `${domain}.fan`;
-      const device = makeDevice({
-        environmentAttributes: { exhaustFanEntities: [entityId] },
-      });
-      const hassStates: HassStates = {
-        [entityId]: makeHassEntity(entityId, state, {}),
-      };
+  ] as const)('%s domain with numeric state "%s" shows "%s"', (domain, state, expected) => {
+    const entityId = `${domain}.fan`;
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: [entityId] },
+    });
+    const hassStates: HassStates = {
+      [entityId]: makeHassEntity(entityId, state, {}),
+    };
 
-      const snapshot = computeDeviceSnapshot(device, hassStates);
+    const snapshot = computeDeviceSnapshot(device, hassStates);
 
-      expect(snapshot.exhaustFans!.value).toBe(expected);
-    }
-  );
+    expect(snapshot.exhaustFans!.value).toBe(expected);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -683,63 +696,63 @@ describe('deviceSnapshots$ atom and setDeviceSnapshot', () => {
     expect(deviceSnapshots$.get().get('gs1')!.exhaustFans!.value).toBe('Off');
   });
 
-// ---------------------------------------------------------------------------
-// Cycle 10 — Speed sensor at 0 and 1 (issue #224)
-// ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Cycle 10 — Speed sensor at 0 and 1 (issue #224)
+  // ---------------------------------------------------------------------------
 
-describe('computeDeviceSnapshot — speed sensor at boundary values', () => {
-  it('shows "0" for a speed sensor with state "0" (not "-")', () => {
-    const device = makeDevice({
-      environmentAttributes: { exhaustFanEntities: ['sensor.fan_speed'] },
+  describe('computeDeviceSnapshot — speed sensor at boundary values', () => {
+    it('shows "0" for a speed sensor with state "0" (not "-")', () => {
+      const device = makeDevice({
+        environmentAttributes: { exhaustFanEntities: ['sensor.fan_speed'] },
+      });
+      const hassStates: HassStates = {
+        'sensor.fan_speed': makeHassEntity('sensor.fan_speed', '0', {}),
+      };
+
+      const snapshot = computeDeviceSnapshot(device, hassStates);
+
+      expect(snapshot.exhaustFans!.value).toBe('0');
     });
-    const hassStates: HassStates = {
-      'sensor.fan_speed': makeHassEntity('sensor.fan_speed', '0', {}),
-    };
 
-    const snapshot = computeDeviceSnapshot(device, hassStates);
+    it('shows "1" for a speed sensor with state "1" (not "-")', () => {
+      const device = makeDevice({
+        environmentAttributes: { circulationFanEntities: ['sensor.fan_speed'] },
+      });
+      const hassStates: HassStates = {
+        'sensor.fan_speed': makeHassEntity('sensor.fan_speed', '1', {}),
+      };
 
-    expect(snapshot.exhaustFans!.value).toBe('0');
-  });
+      const snapshot = computeDeviceSnapshot(device, hassStates);
 
-  it('shows "1" for a speed sensor with state "1" (not "-")', () => {
-    const device = makeDevice({
-      environmentAttributes: { circulationFanEntities: ['sensor.fan_speed'] },
+      expect(snapshot.circulationFans!.value).toBe('1');
     });
-    const hassStates: HassStates = {
-      'sensor.fan_speed': makeHassEntity('sensor.fan_speed', '1', {}),
-    };
 
-    const snapshot = computeDeviceSnapshot(device, hassStates);
+    it('still shows "On" for a switch domain at state "1"', () => {
+      const device = makeDevice({
+        environmentAttributes: { exhaustFanEntities: ['switch.fan'] },
+      });
+      const hassStates: HassStates = {
+        'switch.fan': makeHassEntity('switch.fan', 'on', {}),
+      };
 
-    expect(snapshot.circulationFans!.value).toBe('1');
-  });
+      const snapshot = computeDeviceSnapshot(device, hassStates);
 
-  it('still shows "On" for a switch domain at state "1"', () => {
-    const device = makeDevice({
-      environmentAttributes: { exhaustFanEntities: ['switch.fan'] },
+      expect(snapshot.exhaustFans!.value).toBe('On');
     });
-    const hassStates: HassStates = {
-      'switch.fan': makeHassEntity('switch.fan', 'on', {}),
-    };
 
-    const snapshot = computeDeviceSnapshot(device, hassStates);
+    it('still shows "Off" for an input_boolean domain at state "off"', () => {
+      const device = makeDevice({
+        environmentAttributes: { exhaustFanEntities: ['input_boolean.fan'] },
+      });
+      const hassStates: HassStates = {
+        'input_boolean.fan': makeHassEntity('input_boolean.fan', 'off', {}),
+      };
 
-    expect(snapshot.exhaustFans!.value).toBe('On');
-  });
+      const snapshot = computeDeviceSnapshot(device, hassStates);
 
-  it('still shows "Off" for an input_boolean domain at state "off"', () => {
-    const device = makeDevice({
-      environmentAttributes: { exhaustFanEntities: ['input_boolean.fan'] },
+      expect(snapshot.exhaustFans!.value).toBe('Off');
     });
-    const hassStates: HassStates = {
-      'input_boolean.fan': makeHassEntity('input_boolean.fan', 'off', {}),
-    };
-
-    const snapshot = computeDeviceSnapshot(device, hassStates);
-
-    expect(snapshot.exhaustFans!.value).toBe('Off');
   });
-});
 
   it('setDeviceSnapshot stores independent snapshots for different growspaces', () => {
     const device1 = makeDevice({
@@ -1053,7 +1066,9 @@ describe('computeDeviceSnapshot — AC Infinity device bundles', () => {
     const speedEntity = 'number.ac_infinity_speed';
     const device = makeDevice({
       environmentAttributes: {
-        [attr]: [{ mode_entity: 'select.ac_infinity_mode', speed_entity: speedEntity, on_speed: 5 }],
+        [attr]: [
+          { mode_entity: 'select.ac_infinity_mode', speed_entity: speedEntity, on_speed: 5 },
+        ],
       },
     });
     const hassStates: HassStates = {

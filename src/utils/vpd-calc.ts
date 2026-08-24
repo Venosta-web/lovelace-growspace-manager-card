@@ -5,7 +5,7 @@ function calculateSvp(temperatureC: number): number {
 export function calculateVpdWithLstOffset(
   airTempC: number,
   humidityRh: number,
-  lstOffset: number,
+  lstOffset: number
 ): number | null {
   if (!Number.isFinite(airTempC) || !Number.isFinite(humidityRh) || !Number.isFinite(lstOffset)) {
     return null;

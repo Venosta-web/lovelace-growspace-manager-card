@@ -269,7 +269,9 @@ export class AddPlantsDialog extends LitElement {
                 ></md3-switch>
               </div>
 
-              ${this.libraryError ? html`<ha-alert alert-type="error">${this.libraryError}</ha-alert>` : nothing}
+              ${this.libraryError
+                ? html`<ha-alert alert-type="error">${this.libraryError}</ha-alert>`
+                : nothing}
 
               <div class="row-col-grid">
                 <md3-number-input

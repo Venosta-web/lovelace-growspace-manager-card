@@ -29,7 +29,11 @@
 
 import { atom, computed, type ReadableAtom, type WritableAtom } from 'nanostores';
 import type { GrowspaceDevice, PlantEntity } from '../../types';
-import type { EnvironmentAttributes, IrrigationConfig, IrrigationStrategy } from '../../services/types';
+import type {
+  EnvironmentAttributes,
+  IrrigationConfig,
+  IrrigationStrategy,
+} from '../../services/types';
 import { PlantUtils } from '../../utils/plant-utils';
 
 // ---------------------------------------------------------------------------
@@ -173,10 +177,7 @@ export function patchDeviceIrrigationConfig(
  * device the dialog reads, so the Steering tab relabel and the toggles update
  * optimistically rather than waiting for a full device sync.
  */
-export function patchDeviceStrategy(
-  growspaceId: string,
-  patch: Partial<IrrigationStrategy>
-): void {
+export function patchDeviceStrategy(growspaceId: string, patch: Partial<IrrigationStrategy>): void {
   const current = devices$.get();
   const idx = current.findIndex((d) => d.deviceId === growspaceId);
   if (idx === -1) return;
@@ -247,7 +248,11 @@ export function makePerCardGridSlice(): GridSliceRef {
       const device = devices.find((d) => d.deviceId === selectedId);
       if (!device) return { effectiveRows: 0, grid: [] };
       const effectiveRows = PlantUtils.calculateEffectiveRows(device);
-      const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plantsPerRow);
+      const { grid } = PlantUtils.createGridLayout(
+        device.plants,
+        effectiveRows,
+        device.plantsPerRow
+      );
       return { effectiveRows, grid };
     }
   );

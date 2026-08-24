@@ -17,7 +17,9 @@ describe('growspace-toast-ui', () => {
 
   it('renders visible with correct type class when notification is set', async () => {
     const el = await fixture<GrowspaceToastUI>(html`
-      <growspace-toast-ui .notification=${{ message: 'Saved', type: 'success' }}></growspace-toast-ui>
+      <growspace-toast-ui
+        .notification=${{ message: 'Saved', type: 'success' }}
+      ></growspace-toast-ui>
     `);
     const div = el.shadowRoot!.querySelector('.toast-notification');
     expect(div?.classList.contains('visible')).toBe(true);
@@ -28,7 +30,11 @@ describe('growspace-toast-ui', () => {
   it('renders action button when notification has action', async () => {
     const el = await fixture<GrowspaceToastUI>(html`
       <growspace-toast-ui
-        .notification=${{ message: 'Deleted', type: 'info', action: { label: 'Undo', callback: () => {} } }}
+        .notification=${{
+          message: 'Deleted',
+          type: 'info',
+          action: { label: 'Undo', callback: () => {} },
+        }}
       ></growspace-toast-ui>
     `);
     const btn = el.shadowRoot!.querySelector('.toast-action');
@@ -39,7 +45,11 @@ describe('growspace-toast-ui', () => {
     const handler = vi.fn();
     const el = await fixture<GrowspaceToastUI>(html`
       <growspace-toast-ui
-        .notification=${{ message: 'Deleted', type: 'info', action: { label: 'Undo', callback: () => {} } }}
+        .notification=${{
+          message: 'Deleted',
+          type: 'info',
+          action: { label: 'Undo', callback: () => {} },
+        }}
         @toast-action-clicked=${handler as EventListener}
       ></growspace-toast-ui>
     `);

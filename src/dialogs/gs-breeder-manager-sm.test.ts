@@ -5,11 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  createInitialSM,
-  transition,
-  type BreederManagerSM,
-} from './gs-breeder-manager-sm';
+import { createInitialSM, transition, type BreederManagerSM } from './gs-breeder-manager-sm';
 
 // ─── createInitialSM ─────────────────────────────────────────────────────────
 
@@ -52,13 +48,21 @@ describe('createInitialSM', () => {
 describe('EDIT_REQUESTED', () => {
   it('switches to editor view', () => {
     const sm = createInitialSM();
-    const next = transition(sm, { type: 'EDIT_REQUESTED', name: 'Royal Queen Seeds', logo: 'data:img' });
+    const next = transition(sm, {
+      type: 'EDIT_REQUESTED',
+      name: 'Royal Queen Seeds',
+      logo: 'data:img',
+    });
     expect(next.activeView).toBe('editor');
   });
 
   it('seeds draft with provided name and logo', () => {
     const sm = createInitialSM();
-    const next = transition(sm, { type: 'EDIT_REQUESTED', name: 'Royal Queen Seeds', logo: 'data:img' });
+    const next = transition(sm, {
+      type: 'EDIT_REQUESTED',
+      name: 'Royal Queen Seeds',
+      logo: 'data:img',
+    });
     expect(next.views.editor.draft.name).toBe('Royal Queen Seeds');
     expect(next.views.editor.draft.logo).toBe('data:img');
   });
@@ -126,19 +130,17 @@ describe('LOGO_UPLOAD_STARTED', () => {
 
 describe('LOGO_UPLOAD_RESOLVED', () => {
   it('sets logo in draft from base64', () => {
-    const sm = transition(
-      transition(createInitialSM(), { type: 'EDIT_REQUESTED' }),
-      { type: 'LOGO_UPLOAD_STARTED' },
-    );
+    const sm = transition(transition(createInitialSM(), { type: 'EDIT_REQUESTED' }), {
+      type: 'LOGO_UPLOAD_STARTED',
+    });
     const next = transition(sm, { type: 'LOGO_UPLOAD_RESOLVED', base64: 'data:compressed' });
     expect(next.views.editor.draft.logo).toBe('data:compressed');
   });
 
   it('returns editor sub to idle', () => {
-    const sm = transition(
-      transition(createInitialSM(), { type: 'EDIT_REQUESTED' }),
-      { type: 'LOGO_UPLOAD_STARTED' },
-    );
+    const sm = transition(transition(createInitialSM(), { type: 'EDIT_REQUESTED' }), {
+      type: 'LOGO_UPLOAD_STARTED',
+    });
     const next = transition(sm, { type: 'LOGO_UPLOAD_RESOLVED', base64: 'data:compressed' });
     expect(next.views.editor.sub.kind).toBe('idle');
   });
@@ -176,7 +178,7 @@ describe('DELETE_RESOLVED', () => {
   it('returns status to idle', () => {
     const sm = transition(
       transition(createInitialSM(), { type: 'DELETE_REQUESTED', name: 'Barney Farm' }),
-      { type: 'DELETE_CONFIRMED' },
+      { type: 'DELETE_CONFIRMED' }
     );
     const next = transition(sm, { type: 'DELETE_RESOLVED' });
     expect(next.status.kind).toBe('idle');
@@ -185,7 +187,7 @@ describe('DELETE_RESOLVED', () => {
   it('resets list sub to idle', () => {
     const sm = transition(
       transition(createInitialSM(), { type: 'DELETE_REQUESTED', name: 'Barney Farm' }),
-      { type: 'DELETE_CONFIRMED' },
+      { type: 'DELETE_CONFIRMED' }
     );
     const next = transition(sm, { type: 'DELETE_RESOLVED' });
     expect(next.views.list.sub.kind).toBe('idle');
@@ -194,7 +196,7 @@ describe('DELETE_RESOLVED', () => {
   it('sets a toast message', () => {
     const sm = transition(
       transition(createInitialSM(), { type: 'DELETE_REQUESTED', name: 'Barney Farm' }),
-      { type: 'DELETE_CONFIRMED' },
+      { type: 'DELETE_CONFIRMED' }
     );
     const next = transition(sm, { type: 'DELETE_RESOLVED' });
     expect(next.toast).toBeDefined();
@@ -205,7 +207,7 @@ describe('DELETE_FAILED', () => {
   it('sets status to error with message', () => {
     const sm = transition(
       transition(createInitialSM(), { type: 'DELETE_REQUESTED', name: 'Barney Farm' }),
-      { type: 'DELETE_CONFIRMED' },
+      { type: 'DELETE_CONFIRMED' }
     );
     const next = transition(sm, { type: 'DELETE_FAILED', message: 'Server error' });
     expect(next.status).toEqual({ kind: 'error', message: 'Server error' });
@@ -224,28 +226,25 @@ describe('SAVE_REQUESTED', () => {
 
 describe('SAVE_RESOLVED', () => {
   it('returns status to idle', () => {
-    const sm = transition(
-      transition(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'RQS' }),
-      { type: 'SAVE_REQUESTED' },
-    );
+    const sm = transition(transition(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'RQS' }), {
+      type: 'SAVE_REQUESTED',
+    });
     const next = transition(sm, { type: 'SAVE_RESOLVED' });
     expect(next.status.kind).toBe('idle');
   });
 
   it('switches back to list view', () => {
-    const sm = transition(
-      transition(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'RQS' }),
-      { type: 'SAVE_REQUESTED' },
-    );
+    const sm = transition(transition(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'RQS' }), {
+      type: 'SAVE_REQUESTED',
+    });
     const next = transition(sm, { type: 'SAVE_RESOLVED' });
     expect(next.activeView).toBe('list');
   });
 
   it('sets a toast message', () => {
-    const sm = transition(
-      transition(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'RQS' }),
-      { type: 'SAVE_REQUESTED' },
-    );
+    const sm = transition(transition(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'RQS' }), {
+      type: 'SAVE_REQUESTED',
+    });
     const next = transition(sm, { type: 'SAVE_RESOLVED' });
     expect(next.toast).toBeDefined();
   });
@@ -253,10 +252,9 @@ describe('SAVE_RESOLVED', () => {
 
 describe('SAVE_FAILED', () => {
   it('sets status to error with message', () => {
-    const sm = transition(
-      transition(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'RQS' }),
-      { type: 'SAVE_REQUESTED' },
-    );
+    const sm = transition(transition(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'RQS' }), {
+      type: 'SAVE_REQUESTED',
+    });
     const next = transition(sm, { type: 'SAVE_FAILED', message: 'Network error' });
     expect(next.status).toEqual({ kind: 'error', message: 'Network error' });
   });

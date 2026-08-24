@@ -2,6 +2,7 @@ export const BROWSER_TEST_INCLUDE = [
   'tests/unit/**/*.{test,spec}.ts',
   'tests/cards/**/*.{test,spec}.ts',
   'tests/components/**/*.{test,spec}.ts',
+  'tests/e2e/{fixtures,pages}/**/*.{test,spec}.ts',
   'tests/fixtures/**/*.{test,spec}.ts',
   'src/**/*.{test,spec}.ts',
 ];

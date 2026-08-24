@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 vi.unmock('../../../src/features/shared/layouts/growspace-view-switcher');
 import { fixture, html } from '@open-wc/testing-helpers';
@@ -64,7 +63,10 @@ describe('GrowspaceViewSwitcher', () => {
     // store.ui, not the page-global atom.
     const store = { ui: new GrowspaceUIStore() };
     const el = await fixture<GrowspaceViewSwitcher>(html`
-      <growspace-view-switcher .device=${mockDevice} .store=${store as never}></growspace-view-switcher>
+      <growspace-view-switcher
+        .device=${mockDevice}
+        .store=${store as never}
+      ></growspace-view-switcher>
     `);
     await el.updateComplete;
 

@@ -7,7 +7,11 @@ import {
 import type { AcInfinityConflict } from '../components/ac-infinity-conflict';
 import type { AcInfinityDevice } from '../../../slices/growspace/schema';
 
-const dev = (mode_entity: string): AcInfinityDevice => ({ mode_entity, speed_entity: '', on_speed: 10 });
+const dev = (mode_entity: string): AcInfinityDevice => ({
+  mode_entity,
+  speed_entity: '',
+  on_speed: 10,
+});
 const conflict = (name: string): AcInfinityConflict => ({ deviceName: name, mode: 'Auto' });
 
 describe('buildAcInfinityConflicts', () => {
@@ -99,7 +103,14 @@ describe('buildDuplicatePortWarnings', () => {
       humidifierAcInfinityDevices: [],
       dehumidifierAcInfinityDevices: [],
       growlightAcInfinityDevices: [
-        { mode_entity: 'select.shared', on_time_entity: '', off_time_entity: '', power_entity: '', sunrise_switch_entity: '', sunrise_duration_entity: '' },
+        {
+          mode_entity: 'select.shared',
+          on_time_entity: '',
+          off_time_entity: '',
+          power_entity: '',
+          sunrise_switch_entity: '',
+          sunrise_duration_entity: '',
+        },
       ],
     };
     const result = buildDuplicatePortWarnings(acInfinityRoleLists(draft));

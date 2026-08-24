@@ -5,6 +5,34 @@
 
 * **config:** keep a configured soil-moisture sensor pickable ([#37](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/37)) ([bfbb713](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/bfbb7130053ab70d1e2965353625b22cba23bf92))
 
+## [1.1.6-next.7](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.6...v1.1.6-next.7) (2026-08-24)
+
+
+### Bug Fixes
+
+* **lighting:** report simulated grow-light state ([#734](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/734)) ([e15e42f](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e15e42f231581cfcb48fae4d39d86ac09fec8885))
+
+## [1.1.6-next.6](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.5...v1.1.6-next.6) (2026-08-23)
+
+
+### Bug Fixes
+
+* **config:** cover empty humidity entity pickers ([#731](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/731)) ([66d95af](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/66d95af284ca0f3c9b02fd4f806b3c1059d0d097))
+
+## [1.1.6-next.5](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.4...v1.1.6-next.5) (2026-08-23)
+
+
+### Bug Fixes
+
+* preserve HA contexts for dialog pickers ([#729](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/729)) ([00b7b0b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/00b7b0b26d5f97552f0eb8337c5d431d0d0070d1))
+
+## [1.1.6-next.4](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.3...v1.1.6-next.4) (2026-08-23)
+
+
+### Bug Fixes
+
+* **e2e:** use generated dashboard for legacy specs ([#715](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/715)) ([445d82b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/445d82baeef726859f7eeb35a4cb0f3ae2e07117))
+
 ## [1.1.8](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.7...v1.1.8) (2026-08-22)
 
 
@@ -25,6 +53,27 @@
 ### Bug Fixes
 
 * **design:** bring irrigation dialog nav rail onto the type ramp ([20cd11e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/20cd11e565364155e460d442b56530c32faa6623))
+
+## [1.1.6-next.3](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.2...v1.1.6-next.3) (2026-08-23)
+
+
+### Bug Fixes
+
+* **tooling:** isolate caches for shared worktrees ([#710](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/710)) ([c518187](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/c5181871ba546fecdec1a07bffd66bda5331fc42))
+
+## [1.1.6-next.2](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.1...v1.1.6-next.2) (2026-08-22)
+
+
+### Bug Fixes
+
+* **e2e:** block service workers so HA cannot reload the page mid-test ([#704](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/704)) ([734755a](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/734755ae3d6c197e62ded47ad04e4c7e71f8557d))
+
+## [1.1.6-next.1](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.5...v1.1.6-next.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* handle empty carousel growspace filters ([#695](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/695)) ([cbcd1e1](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/cbcd1e1689867fca377ee1303974d63bfb9975c7))
 
 ## [1.1.5](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.4...v1.1.5) (2026-08-22)
 

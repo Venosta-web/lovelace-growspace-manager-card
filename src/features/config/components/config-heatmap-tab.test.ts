@@ -37,7 +37,12 @@ describe('ConfigHeatmapTab — render', () => {
   });
 
   it('renders a row per group with its name and coords', async () => {
-    const el = await mount(makeVm({ showEmpty: false, groups: [group(), group({ id: 'g2', name: 'Group B', x: 4, y: 5, z: 6 })] }));
+    const el = await mount(
+      makeVm({
+        showEmpty: false,
+        groups: [group(), group({ id: 'g2', name: 'Group B', x: 4, y: 5, z: 6 })],
+      })
+    );
     const rows = el.shadowRoot!.querySelectorAll('div[style*="rgba(255,255,255,0.05)"]');
     expect(rows.length).toBe(2);
     const text = el.shadowRoot!.textContent!.replace(/\s+/g, ' ');
@@ -51,7 +56,9 @@ describe('ConfigHeatmapTab — intents out', () => {
     const el = await mount(makeVm());
     let fired = 0;
     el.addEventListener('add-group-requested', () => fired++);
-    [...el.shadowRoot!.querySelectorAll('button')].find((b) => b.textContent?.includes('Add Group'))!.click();
+    [...el.shadowRoot!.querySelectorAll('button')]
+      .find((b) => b.textContent?.includes('Add Group'))!
+      .click();
     expect(fired).toBe(1);
   });
 

@@ -17,14 +17,12 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
   private _isAnimating = false;
 
   public setConfig(config: GrowspaceCarouselCardConfig): void {
-    if (!config.growspaces || config.growspaces.length === 0) {
-      throw new Error('You need to define at least one growspace');
-    }
-
     this._config = {
       interval: 15,
       ...config,
+      growspaces: config.growspaces ?? [],
     };
+    this._currentIndex = 0;
   }
 
   public getCardSize(): number {
@@ -67,13 +65,29 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
     if (!this._config?.filter_empty || !this.hass) return all;
 
     const raw = this.hass.states['sensor.growspaces_list']?.attributes?.growspaces ?? {};
-    const active = all.filter((id) => {
+    return all.filter((id) => {
       const entry = raw[id];
-      if (!entry) return false;
-      const count = typeof entry === 'object' ? (entry.total_plants ?? 0) : 0;
-      return count > 0;
+      return this._plantCount(id, entry) > 0;
     });
-    return active.length > 0 ? active : all;
+  }
+
+  /** Resolve counts from either an enriched list entry or the integration's overview sensor. */
+  private _plantCount(growspaceId: string, listEntry: unknown): number {
+    if (listEntry && typeof listEntry === 'object') {
+      const directCount = Number((listEntry as Record<string, unknown>).total_plants);
+      if (Number.isFinite(directCount)) return directCount;
+    }
+
+    const overview = Object.values(this.hass?.states ?? {}).find(
+      (state) => state.attributes?.growspace_id === growspaceId
+    );
+    if (!overview) return 0;
+
+    const attributeCount = Number(overview.attributes?.total_plants);
+    if (Number.isFinite(attributeCount)) return attributeCount;
+
+    const stateCount = Number(overview.state);
+    return Number.isFinite(stateCount) ? stateCount : 0;
   }
 
   private _startTimer() {
@@ -133,12 +147,24 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
   }
 
   protected render() {
-    if (!this._config || !this._config.growspaces || this._config.growspaces.length === 0) {
-      return html``;
+    const configured = this._config?.growspaces ?? [];
+    if (!this._config || configured.length === 0) {
+      return this._renderEmptyState(
+        'Growspace filter not configured',
+        'Configure the growspace filter in the card settings to choose which growspaces to display.'
+      );
     }
 
-    // Use current growspace as default for the inner card config
-    const currentDeviceId = this._config.growspaces[this._currentIndex];
+    const active = this._activeGrowspaces;
+    if (this._config.filter_empty && active.length === 0) {
+      return this._renderEmptyState(
+        'No growspaces with plants',
+        'None of the filtered growspaces have any plants.'
+      );
+    }
+
+    // Use the filtered list for both index advancement and rendering.
+    const currentDeviceId = active[this._currentIndex % active.length];
 
     const managerConfig = {
       type: 'custom:growspace-manager-card',
@@ -158,6 +184,17 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
           ></growspace-manager-card>
         </div>
       </div>
+    `;
+  }
+
+  private _renderEmptyState(title: string, message: string) {
+    return html`
+      <ha-card>
+        <div class="empty-state" role="status">
+          <div class="empty-state-title">${title}</div>
+          <div>${message}</div>
+        </div>
+      </ha-card>
     `;
   }
 
@@ -188,6 +225,23 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
       transition: none;
       transform: translateX(30px);
       opacity: 0;
+    }
+    .empty-state {
+      box-sizing: border-box;
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 32px;
+      text-align: center;
+      color: var(--secondary-text-color);
+    }
+    .empty-state-title {
+      color: var(--primary-text-color);
+      font-size: 1rem;
+      font-weight: 600;
     }
 
     ${reducedMotion}

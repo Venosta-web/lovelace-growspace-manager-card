@@ -1,5 +1,7 @@
 const FIELD_LABELS: Record<string, string> = {
   default_growspace: 'Default Growspace',
+  growspaces: 'Growspace Filter',
+  filter_empty: 'Only Growspaces With Plants',
   growspace_id: 'Parent Growspace',
   subarea_id: 'Subarea',
   theme: 'Theme',

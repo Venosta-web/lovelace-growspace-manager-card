@@ -62,9 +62,11 @@ async function captureIntent(
 
 describe('irrigation-ec-ramp-tab', () => {
   it('holds no @state() of its own — only the `vm` reactive property', () => {
-    const props = (IrrigationEcRampTab as unknown as {
-      elementProperties: Map<string, { state?: boolean }>;
-    }).elementProperties;
+    const props = (
+      IrrigationEcRampTab as unknown as {
+        elementProperties: Map<string, { state?: boolean }>;
+      }
+    ).elementProperties;
     const stateProps = [...props.entries()].filter(([, def]) => def.state === true);
     expect(stateProps).toEqual([]);
   });
@@ -75,7 +77,9 @@ describe('irrigation-ec-ramp-tab', () => {
   });
 
   it('renders a row per curve with its summary', async () => {
-    const el = await mount(makeVm({ curves: [row({ name: 'Veg Ramp' }), row({ id: 'c2', name: 'Bloom' })] }));
+    const el = await mount(
+      makeVm({ curves: [row({ name: 'Veg Ramp' }), row({ id: 'c2', name: 'Bloom' })] })
+    );
     const text = norm(el.shadowRoot!.textContent);
     expect(text).toContain('Veg Ramp');
     expect(text).toContain('Bloom');
@@ -106,7 +110,9 @@ describe('irrigation-ec-ramp-tab', () => {
   });
 
   it('renders the edit form from vm.editing and surfaces the error bar', async () => {
-    const el = await mount(makeVm({ editing: { draft, points: draft.points! }, error: 'Curve name is required' }));
+    const el = await mount(
+      makeVm({ editing: { draft, points: draft.points! }, error: 'Curve name is required' })
+    );
     expect(el.shadowRoot!.querySelector('.preset-form')).toBeTruthy();
     expect(el.shadowRoot!.querySelector('md3-text-input')).toBeTruthy();
     expect(norm(el.shadowRoot!.textContent)).toContain('Curve name is required');
@@ -133,7 +139,9 @@ describe('irrigation-ec-ramp-tab', () => {
   it('emits ec-ramp-add-point, ec-ramp-cancel-edit and ec-ramp-save-curve', async () => {
     const el = await mount(makeVm({ editing: { draft, points: draft.points! } }));
     const byText = (t: string) =>
-      Array.from(el.shadowRoot!.querySelectorAll('button')).find((b) => b.textContent?.includes(t))!;
+      Array.from(el.shadowRoot!.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes(t)
+      )!;
 
     const add = await captureIntent(el, 'ec-ramp-add-point', () => byText('Add Point').click());
     expect(add.type).toBe('ec-ramp-add-point');

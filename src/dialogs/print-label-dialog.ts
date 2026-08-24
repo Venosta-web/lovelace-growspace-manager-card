@@ -7,7 +7,13 @@ import { mdiPrinter, mdiCheck } from '@mdi/js';
 import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/label-preview';
 import '../features/shared/ui/printer-status-strip';
-import type { PrintLabelDialogState, LabelFieldVisibility, LabelSizeId, PrintDensity, QrTarget } from '../lib/types/dialog';
+import type {
+  PrintLabelDialogState,
+  LabelFieldVisibility,
+  LabelSizeId,
+  PrintDensity,
+  QrTarget,
+} from '../lib/types/dialog';
 import { printLabel } from '../slices/plant';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
@@ -297,7 +303,9 @@ export class PrintLabelDialog extends LitElement {
         cursor: pointer;
         font-size: var(--font-size-supporting);
         opacity: 0.6;
-        transition: background 0.15s, opacity 0.15s;
+        transition:
+          background 0.15s,
+          opacity 0.15s;
       }
       .density-seg button.active {
         background: rgba(255, 255, 255, 0.12);
@@ -537,115 +545,120 @@ export class PrintLabelDialog extends LitElement {
           <div class="settings-wrapper">
             <button
               class="mobile-pill-toggle ${this._settingsOpen ? 'open' : ''}"
-              @click=${() => { this._settingsOpen = !this._settingsOpen; }}
+              @click=${() => {
+                this._settingsOpen = !this._settingsOpen;
+              }}
             >
               <span>Print settings</span>
               <span class="pill-chevron ${this._settingsOpen ? 'open' : ''}">›</span>
             </button>
             <div class="settings-col ${this._settingsOpen ? 'mobile-open' : ''}">
-            <!-- Label content -->
-            <div class="settings-section">
-              <div class="settings-section-title">Label content</div>
-              ${this._renderFieldRow('name', 'Strain name')}
-              ${this._renderFieldRow('phenotype', 'Phenotype')}
-              ${this._renderFieldRow('breeder', 'Breeder')}
-              ${this._renderFieldRow('lineage', 'Lineage')}
-              ${this._renderFieldRow('startDate', 'Start date')}
-              ${this._renderFieldRow('stageAge', 'Stage & age')}
-              ${this._renderFieldRow('plantId', 'Plant ID')}
-              ${this._renderFieldRow('logo', 'Logo')}
-              ${this._renderFieldRow('qr', 'QR code')}
-            </div>
+              <!-- Label content -->
+              <div class="settings-section">
+                <div class="settings-section-title">Label content</div>
+                ${this._renderFieldRow('name', 'Strain name')}
+                ${this._renderFieldRow('phenotype', 'Phenotype')}
+                ${this._renderFieldRow('breeder', 'Breeder')}
+                ${this._renderFieldRow('lineage', 'Lineage')}
+                ${this._renderFieldRow('startDate', 'Start date')}
+                ${this._renderFieldRow('stageAge', 'Stage & age')}
+                ${this._renderFieldRow('plantId', 'Plant ID')}
+                ${this._renderFieldRow('logo', 'Logo')} ${this._renderFieldRow('qr', 'QR code')}
+              </div>
 
-            <!-- QR target (only when qr is on) -->
-            ${this._fields.qr
-        ? html`
-                  <div class="qr-target-card">
-                    <div class="settings-section-title">QR code links to</div>
-                    <md3-select
-                      .value=${this._qrTarget}
-                      .options=${[
-            { label: 'Web (default)', value: 'web' },
-            { label: 'Deep link', value: 'deeplink' },
-          ]}
-                      @change=${(e: CustomEvent) => {
-            this._qrTarget = e.detail as QrTarget;
-          }}
-                    ></md3-select>
-                    <div class="qr-url-hint">${qrValue}</div>
+              <!-- QR target (only when qr is on) -->
+              ${this._fields.qr
+                ? html`
+                    <div class="qr-target-card">
+                      <div class="settings-section-title">QR code links to</div>
+                      <md3-select
+                        .value=${this._qrTarget}
+                        .options=${[
+                          { label: 'Web (default)', value: 'web' },
+                          { label: 'Deep link', value: 'deeplink' },
+                        ]}
+                        @change=${(e: CustomEvent) => {
+                          this._qrTarget = e.detail as QrTarget;
+                        }}
+                      ></md3-select>
+                      <div class="qr-url-hint">${qrValue}</div>
+                    </div>
+                  `
+                : nothing}
+
+              <!-- Copies + density -->
+              <div class="settings-section">
+                <div class="settings-section-title">Copies &amp; density</div>
+                <div class="copies-density-row">
+                  <div class="copies-stepper">
+                    <button
+                      @click=${() => {
+                        if (this._copies > 1) this._copies--;
+                      }}
+                    >
+                      −
+                    </button>
+                    <span class="copies-value">${this._copies}</span>
+                    <button
+                      @click=${() => {
+                        if (this._copies < 50) this._copies++;
+                      }}
+                    >
+                      +
+                    </button>
                   </div>
-                `
-        : nothing}
-
-            <!-- Copies + density -->
-            <div class="settings-section">
-              <div class="settings-section-title">Copies &amp; density</div>
-              <div class="copies-density-row">
-                <div class="copies-stepper">
-                  <button
-                    @click=${() => {
-        if (this._copies > 1) this._copies--;
-      }}
-                  >−</button>
-                  <span class="copies-value">${this._copies}</span>
-                  <button
-                    @click=${() => {
-        if (this._copies < 50) this._copies++;
-      }}
-                  >+</button>
+                  <div class="density-seg">
+                    ${(['low', 'normal', 'high'] as PrintDensity[]).map(
+                      (d) => html`
+                        <button
+                          class=${this._density === d ? 'active' : ''}
+                          @click=${() => {
+                            this._density = d;
+                          }}
+                        >
+                          ${d === 'low' ? 'Light' : d === 'normal' ? 'Normal' : 'Dark'}
+                        </button>
+                      `
+                    )}
+                  </div>
                 </div>
-                <div class="density-seg">
-                  ${(['low', 'normal', 'high'] as PrintDensity[]).map(
-        (d) => html`
+              </div>
+
+              <!-- Size chips -->
+              <div class="settings-section">
+                <div class="settings-section-title">Print settings</div>
+                <div class="size-chips">
+                  ${LABEL_SIZES.map(
+                    (s) => html`
                       <button
-                        class=${this._density === d ? 'active' : ''}
+                        class="size-chip ${this._sizeId === s.id ? 'active' : ''}"
                         @click=${() => {
-            this._density = d;
-          }}
+                          this._sizeId = s.id;
+                        }}
                       >
-                        ${d === 'low' ? 'Light' : d === 'normal' ? 'Normal' : 'Dark'}
+                        ${s.label}
                       </button>
                     `
-      )}
+                  )}
                 </div>
               </div>
-            </div>
 
-            <!-- Size chips -->
-            <div class="settings-section">
-              <div class="settings-section-title">Print settings</div>
-              <div class="size-chips">
-                ${LABEL_SIZES.map(
-        (s) => html`
-                    <button
-                      class="size-chip ${this._sizeId === s.id ? 'active' : ''}"
-                      @click=${() => {
-            this._sizeId = s.id;
-          }}
-                    >
-                      ${s.label}
-                    </button>
-                  `
-      )}
+              <!-- Printer -->
+              <div class="settings-section">
+                <div class="settings-section-title">Printer</div>
+                <md3-select
+                  label="Niimbot Printer"
+                  .value=${this._selectedDeviceId || ''}
+                  .options=${[
+                    { label: 'Default / Auto', value: '' },
+                    ...printers.map((p) => ({ label: p.name, value: p.id })),
+                  ]}
+                  @change=${(e: CustomEvent) => {
+                    this._selectedDeviceId = e.detail;
+                  }}
+                ></md3-select>
               </div>
             </div>
-
-            <!-- Printer -->
-            <div class="settings-section">
-              <div class="settings-section-title">Printer</div>
-              <md3-select
-                label="Niimbot Printer"
-                .value=${this._selectedDeviceId || ''}
-                .options=${[
-        { label: 'Default / Auto', value: '' },
-        ...printers.map((p) => ({ label: p.name, value: p.id })),
-      ]}
-                @change=${(e: CustomEvent) => {
-        this._selectedDeviceId = e.detail;
-      }}
-              ></md3-select>
-            </div>
-          </div>
           </div>
 
           <!-- Preview (second in DOM; CSS grid places it in col 1 on desktop) -->
@@ -674,11 +687,7 @@ export class PrintLabelDialog extends LitElement {
             <button class="md3-button tonal" @click=${this._close} ?disabled=${isPrinting}>
               Cancel
             </button>
-            <button
-              class="btn-print"
-              @click=${this._submit}
-              ?disabled=${isPrinting}
-            >
+            <button class="btn-print" @click=${this._submit} ?disabled=${isPrinting}>
               <ha-svg-icon .path=${mdiCheck}></ha-svg-icon>
               ${isPrinting ? `Printing… ${this._printProgress}%` : 'Print Now'}
             </button>

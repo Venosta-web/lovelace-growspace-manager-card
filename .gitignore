@@ -1,5 +1,10 @@
-# Node modules
-node_modules/
+# Node modules.
+# No trailing slash: that form matches directories only, so the node_modules
+# *symlink* that `scripts/feature` creates in a worktree stayed untracked-but-
+# visible, leaving every worktree permanently dirty and one `git add -A` away
+# from committing the link. Bare `node_modules` matches a directory or a
+# symlink, and still matches at any depth (tests/e2e/ installs its own).
+node_modules
 
 # Build output
 build/
@@ -36,6 +41,7 @@ server.log
 # Ignore test output
 test_*.txt
 test-*.txt
+/.cache/
 
 # Playwright
 playwright-report/

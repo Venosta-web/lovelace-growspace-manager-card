@@ -1,0 +1,38 @@
+# What Prettier owns in this repo: the code under src/, tests/ and the root
+# config files. Everything below is either machine-written or prose, so
+# formatting it produces churn no human asked for.
+
+# ── Build output ──────────────────────────────────────────────────────────
+# rollup writes dist/, then `npm run build` copies the bundle chunks to the
+# repo root (`cp dist/*.js .`). Both are untracked; neither is hand-edited.
+dist/
+build/
+/growspace-*.js
+/growspace-*.js.map
+
+# ── Coverage and test results ─────────────────────────────────────────────
+coverage/
+.nyc_output/
+test-results/
+test-results-mock/
+playwright-report/
+playwright-report-mock/
+tests/e2e/test-reports/
+.vitest-attachments/
+
+# ── Vendored / tool-owned ─────────────────────────────────────────────────
+# npm rewrites the lockfiles on every install; Prettier has no say in them.
+package-lock.json
+# The workspace coverage contract rewrites this setup adapter deterministically.
+tests/e2e/fixtures/e2e-entity-coverage.generated.json
+
+# ── Prose ─────────────────────────────────────────────────────────────────
+# Prettier guards code here, not documentation. It reflows hand-wrapped ADR
+# prose and rewrites tables, which rewrites `git blame` across ~45 files for
+# no runtime benefit.
+**/*.md
+
+# semantic-release regenerates CHANGELOG.md on every release, so formatting it
+# once guarantees it drifts again on the next one. Listed separately from the
+# blanket markdown rule so it stays ignored if that rule is ever narrowed.
+CHANGELOG.md

@@ -10,7 +10,10 @@ import { fixture, html } from '@open-wc/testing-helpers';
 import '../../../src/features/ui/components/growspace-nutrient-presets-editor-ui';
 import { GrowspaceNutrientPresetsEditorUI } from '../../../src/features/ui/components/growspace-nutrient-presets-editor-ui';
 import type { SMEvent } from '../../../src/dialogs/feed-and-water-dialog-sm';
-import type { NutrientPresetsResponse, NutrientInventoryResponse } from '../../../src/slices/nutrient';
+import type {
+  NutrientPresetsResponse,
+  NutrientInventoryResponse,
+} from '../../../src/slices/nutrient';
 
 // ─── Stubs ────────────────────────────────────────────────────────────────────
 
@@ -25,16 +28,54 @@ for (const tag of stubs) {
 
 function aPresets(): NutrientPresetsResponse {
   return {
-    p1: { id: 'p1', name: 'Veg Week 1', stage: 'veg', week: 1, ec_target: 1.2, ph_target: 6.0, nutrients: [{ nutrient_id: 'n1', dose_ml_l: 2 }] },
-    p2: { id: 'p2', name: 'Bloom Week 4', stage: 'flower', week: 4, ec_target: 1.8, ph_target: 5.8, nutrients: [{ nutrient_id: 'n2', dose_ml_l: 3 }] },
+    p1: {
+      id: 'p1',
+      name: 'Veg Week 1',
+      stage: 'veg',
+      week: 1,
+      ec_target: 1.2,
+      ph_target: 6.0,
+      nutrients: [{ nutrient_id: 'n1', dose_ml_l: 2 }],
+    },
+    p2: {
+      id: 'p2',
+      name: 'Bloom Week 4',
+      stage: 'flower',
+      week: 4,
+      ec_target: 1.8,
+      ph_target: 5.8,
+      nutrients: [{ nutrient_id: 'n2', dose_ml_l: 3 }],
+    },
   };
 }
 
 function aInventory(): NutrientInventoryResponse {
   return {
     stocks: {
-      n1: { nutrient_id: 'n1', name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, last_updated: '2026-01-01', brand: 'GH', type: 'calmag', npk: '', dose_ml_l: 2, notes: '' },
-      n2: { nutrient_id: 'n2', name: 'Bloom A', current_ml: 200, initial_ml: 1000, last_updated: '2026-01-01', brand: 'GH', type: 'bloom', npk: '', dose_ml_l: 3, notes: '' },
+      n1: {
+        nutrient_id: 'n1',
+        name: 'Cal-Mag',
+        current_ml: 500,
+        initial_ml: 1000,
+        last_updated: '2026-01-01',
+        brand: 'GH',
+        type: 'calmag',
+        npk: '',
+        dose_ml_l: 2,
+        notes: '',
+      },
+      n2: {
+        nutrient_id: 'n2',
+        name: 'Bloom A',
+        current_ml: 200,
+        initial_ml: 1000,
+        last_updated: '2026-01-01',
+        brand: 'GH',
+        type: 'bloom',
+        npk: '',
+        dose_ml_l: 3,
+        notes: '',
+      },
     },
   };
 }
@@ -47,7 +88,7 @@ function collectSmEvents(el: Element): SMEvent[] {
 
 async function mountList(
   presets = aPresets(),
-  inventory = aInventory(),
+  inventory = aInventory()
 ): Promise<GrowspaceNutrientPresetsEditorUI> {
   return fixture<GrowspaceNutrientPresetsEditorUI>(html`
     <growspace-nutrient-presets-editor-ui
@@ -172,7 +213,13 @@ describe('detail view — renders', () => {
 
   it('shows an orphan warning when nutrient_id has no match in inventory', async () => {
     const presetsWithOrphan: NutrientPresetsResponse = {
-      p1: { id: 'p1', name: 'Test', stage: 'veg', week: 1, nutrients: [{ nutrient_id: 'missing-id', dose_ml_l: 1 }] },
+      p1: {
+        id: 'p1',
+        name: 'Test',
+        stage: 'veg',
+        week: 1,
+        nutrients: [{ nutrient_id: 'missing-id', dose_ml_l: 1 }],
+      },
     };
     const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
       <growspace-nutrient-presets-editor-ui
@@ -193,7 +240,10 @@ describe('detail view — interactions', () => {
     el.shadowRoot!.querySelector<HTMLElement>('[data-action="edit"]')!.click();
     expect(events[0].type).toBe('EditStarted');
     if (events[0].type === 'EditStarted') {
-      expect(events[0].draft).toMatchObject({ name: 'Veg Week 1', nutrients: [{ nutrient_id: 'n1', dose_ml_l: 2 }] });
+      expect(events[0].draft).toMatchObject({
+        name: 'Veg Week 1',
+        nutrients: [{ nutrient_id: 'n1', dose_ml_l: 2 }],
+      });
     }
   });
 
@@ -389,37 +439,61 @@ describe('nutrient row — field interactions', () => {
   it('dispatches PresetNutrientRowUpdated with nutrient_id when nutrient select changes', async () => {
     const el = await mountEditing();
     const events = collectSmEvents(el);
-    const nutrientSelect = el.shadowRoot!.querySelector<HTMLSelectElement>('[data-nutrient-row] select')!;
+    const nutrientSelect = el.shadowRoot!.querySelector<HTMLSelectElement>(
+      '[data-nutrient-row] select'
+    )!;
     nutrientSelect.value = 'n2';
     nutrientSelect.dispatchEvent(new Event('change'));
-    expect(events[0]).toEqual({ type: 'PresetNutrientRowUpdated', index: 0, patch: { nutrient_id: 'n2', name: 'Bloom A' } });
+    expect(events[0]).toEqual({
+      type: 'PresetNutrientRowUpdated',
+      index: 0,
+      patch: { nutrient_id: 'n2', name: 'Bloom A' },
+    });
   });
 
   it('dispatches PresetNutrientRowUpdated with empty name when blank option is selected', async () => {
     const el = await mountEditing();
     const events = collectSmEvents(el);
-    const nutrientSelect = el.shadowRoot!.querySelector<HTMLSelectElement>('[data-nutrient-row] select')!;
+    const nutrientSelect = el.shadowRoot!.querySelector<HTMLSelectElement>(
+      '[data-nutrient-row] select'
+    )!;
     nutrientSelect.value = '';
     nutrientSelect.dispatchEvent(new Event('change'));
-    expect(events[0]).toEqual({ type: 'PresetNutrientRowUpdated', index: 0, patch: { nutrient_id: '', name: '' } });
+    expect(events[0]).toEqual({
+      type: 'PresetNutrientRowUpdated',
+      index: 0,
+      patch: { nutrient_id: '', name: '' },
+    });
   });
 
   it('dispatches PresetNutrientRowUpdated with dose_ml_l when dose input changes', async () => {
     const el = await mountEditing();
     const events = collectSmEvents(el);
-    const doseInput = el.shadowRoot!.querySelector<HTMLInputElement>('[data-nutrient-row] input[type="number"]')!;
+    const doseInput = el.shadowRoot!.querySelector<HTMLInputElement>(
+      '[data-nutrient-row] input[type="number"]'
+    )!;
     doseInput.value = '5';
     doseInput.dispatchEvent(new Event('input'));
-    expect(events[0]).toEqual({ type: 'PresetNutrientRowUpdated', index: 0, patch: { dose_ml_l: 5 } });
+    expect(events[0]).toEqual({
+      type: 'PresetNutrientRowUpdated',
+      index: 0,
+      patch: { dose_ml_l: 5 },
+    });
   });
 
   it('dispatches PresetNutrientRowUpdated with dose_ml_l 0 when dose input is cleared', async () => {
     const el = await mountEditing();
     const events = collectSmEvents(el);
-    const doseInput = el.shadowRoot!.querySelector<HTMLInputElement>('[data-nutrient-row] input[type="number"]')!;
+    const doseInput = el.shadowRoot!.querySelector<HTMLInputElement>(
+      '[data-nutrient-row] input[type="number"]'
+    )!;
     doseInput.value = '';
     doseInput.dispatchEvent(new Event('input'));
-    expect(events[0]).toEqual({ type: 'PresetNutrientRowUpdated', index: 0, patch: { dose_ml_l: 0 } });
+    expect(events[0]).toEqual({
+      type: 'PresetNutrientRowUpdated',
+      index: 0,
+      patch: { dose_ml_l: 0 },
+    });
   });
 });
 
@@ -490,7 +564,12 @@ describe('confirm-delete view', () => {
 describe('orphaned nutrient rows', () => {
   const orphanPresets: NutrientPresetsResponse = {
     p1: {
-      id: 'p1', name: 'Veg Week 1', stage: 'veg', week: 1, ec_target: 1.2, ph_target: 6.0,
+      id: 'p1',
+      name: 'Veg Week 1',
+      stage: 'veg',
+      week: 1,
+      ec_target: 1.2,
+      ph_target: 6.0,
       nutrients: [{ nutrient_id: 'deleted_n', dose_ml_l: 2, name: 'Old Cal-Mag' }],
     },
   };
@@ -501,10 +580,17 @@ describe('orphaned nutrient rows', () => {
         .presets=${orphanPresets}
         .inventory=${aInventory()}
         .selectedId=${'p1'}
-        .sub=${{ kind: 'editing', draft: {
-          name: 'Veg Week 1', stage: 'veg', week: 1, ec_target: 1.2, ph_target: 6.0,
-          nutrients: [{ nutrient_id: 'deleted_n', dose_ml_l: 2, name: 'Old Cal-Mag' }],
-        }}}
+        .sub=${{
+          kind: 'editing',
+          draft: {
+            name: 'Veg Week 1',
+            stage: 'veg',
+            week: 1,
+            ec_target: 1.2,
+            ph_target: 6.0,
+            nutrients: [{ nutrient_id: 'deleted_n', dose_ml_l: 2, name: 'Old Cal-Mag' }],
+          },
+        }}
       ></growspace-nutrient-presets-editor-ui>
     `);
   }
@@ -550,7 +636,9 @@ describe('stageColor — unknown stage fallback', () => {
   it('uses secondary-text-color for a stage not in STAGE_COLOR', async () => {
     const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
       <growspace-nutrient-presets-editor-ui
-        .presets=${{ p1: { id: 'p1', name: 'Custom', stage: 'unknown-stage', week: 1, nutrients: [] } }}
+        .presets=${{
+          p1: { id: 'p1', name: 'Custom', stage: 'unknown-stage', week: 1, nutrients: [] },
+        }}
         .inventory=${aInventory()}
         .selectedId=${null}
         .sub=${{ kind: 'idle' }}
@@ -564,7 +652,13 @@ describe('stageColor — unknown stage fallback', () => {
 describe('draftFromPreset — optional fields absent', () => {
   it('seeds ec_target as null when preset has no ec_target', async () => {
     const presets: NutrientPresetsResponse = {
-      p1: { id: 'p1', name: 'No Targets', stage: 'veg', week: 1, nutrients: [{ nutrient_id: 'n1', dose_ml_l: 1 }] },
+      p1: {
+        id: 'p1',
+        name: 'No Targets',
+        stage: 'veg',
+        week: 1,
+        nutrients: [{ nutrient_id: 'n1', dose_ml_l: 1 }],
+      },
     };
     const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
       <growspace-nutrient-presets-editor-ui
@@ -633,7 +727,7 @@ describe('list item — optional stage and week', () => {
     `);
     const meta = el.shadowRoot!.querySelector('.item-meta')!;
     expect(meta.textContent).not.toContain('Week');
-    expect(meta.textContent).toContain('0 nutrients');
+    expect(meta.textContent!.replace(/\s+/g, ' ')).toContain('0 nutrients');
   });
 });
 
@@ -672,10 +766,17 @@ describe('nutrient row — null inventory', () => {
         .presets=${aPresets()}
         .inventory=${null}
         .selectedId=${'p1'}
-        .sub=${{ kind: 'editing', draft: {
-          name: 'Veg Week 1', stage: 'veg', week: 1, ec_target: 1.2, ph_target: 6.0,
-          nutrients: [{ nutrient_id: 'n1', dose_ml_l: 2 }],
-        } }}
+        .sub=${{
+          kind: 'editing',
+          draft: {
+            name: 'Veg Week 1',
+            stage: 'veg',
+            week: 1,
+            ec_target: 1.2,
+            ph_target: 6.0,
+            nutrients: [{ nutrient_id: 'n1', dose_ml_l: 2 }],
+          },
+        }}
       ></growspace-nutrient-presets-editor-ui>
     `);
     const select = el.shadowRoot!.querySelector<HTMLSelectElement>('[data-nutrient-row] select')!;
@@ -690,10 +791,17 @@ describe('nutrient row — orphan without stored name', () => {
         .presets=${aPresets()}
         .inventory=${aInventory()}
         .selectedId=${'p1'}
-        .sub=${{ kind: 'editing', draft: {
-          name: 'Veg Week 1', stage: 'veg', week: 1, ec_target: 1.2, ph_target: 6.0,
-          nutrients: [{ nutrient_id: 'deleted_n', dose_ml_l: 2 }],
-        } }}
+        .sub=${{
+          kind: 'editing',
+          draft: {
+            name: 'Veg Week 1',
+            stage: 'veg',
+            week: 1,
+            ec_target: 1.2,
+            ph_target: 6.0,
+            nutrients: [{ nutrient_id: 'deleted_n', dose_ml_l: 2 }],
+          },
+        }}
       ></growspace-nutrient-presets-editor-ui>
     `);
     const select = el.shadowRoot!.querySelector<HTMLSelectElement>('[data-nutrient-row] select')!;

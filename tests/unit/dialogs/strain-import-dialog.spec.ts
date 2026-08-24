@@ -111,7 +111,7 @@ describe('StrainImportDialog', () => {
       url: 'url1',
     });
     expect((element as any)._details).toEqual(mockDetails);
-    
+
     const detailsPreview = element.shadowRoot?.querySelector('.details-preview');
     expect(detailsPreview).toBeTruthy();
     expect(detailsPreview?.textContent).toContain('Blue Dream');
@@ -120,15 +120,16 @@ describe('StrainImportDialog', () => {
   it('toggles fields to import', async () => {
     element.open = true;
     await element.updateComplete;
-    
+
     (element as any)._details = { name: 'Test' };
     await element.updateComplete;
 
     expect((element as any)._importFields.has('name')).toBe(true);
-    
+
     // Toggle name off
-    const nameField = Array.from(element.shadowRoot?.querySelectorAll('.field-row') || [])
-      .find(el => el.textContent?.includes('Name'));
+    const nameField = Array.from(element.shadowRoot?.querySelectorAll('.field-row') || []).find(
+      (el) => el.textContent?.includes('Name')
+    );
     expect(nameField).toBeTruthy();
     (nameField as HTMLElement)?.click();
     expect((element as any)._importFields.has('name')).toBe(false);
@@ -155,7 +156,7 @@ describe('StrainImportDialog', () => {
     // Unselect some fields
     (element as any)._importFields.delete('image');
     (element as any)._importFields.delete('description');
-    
+
     const importSpy = vi.fn();
     element.addEventListener('import', importSpy);
 
@@ -170,7 +171,7 @@ describe('StrainImportDialog', () => {
 
   it('handles search errors', async () => {
     mockHass.callWS.mockRejectedValue(new Error('Network error'));
-    
+
     element.open = true;
     await element.updateComplete;
     (element as any)._searchQuery = 'Blue Dream';
@@ -183,7 +184,7 @@ describe('StrainImportDialog', () => {
 
   it('handles detail fetching errors', async () => {
     mockHass.callWS.mockRejectedValue(new Error('Fetch failed'));
-    
+
     element.open = true;
     await element.updateComplete;
     await (element as any)._selectResult({ name: 'Blue Dream', breeder: 'HSO', url: 'url1' });
@@ -228,7 +229,7 @@ describe('StrainImportDialog', () => {
 
     const input = element.shadowRoot?.querySelector('md3-text-input');
     input?.dispatchEvent(new CustomEvent('change', { detail: 'OG Kush' }));
-    
+
     expect((element as any)._searchQuery).toBe('OG Kush');
   });
 
@@ -239,7 +240,7 @@ describe('StrainImportDialog', () => {
 
     const input = element.shadowRoot?.querySelector('md3-text-input');
     input?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    
+
     expect(searchSpy).toHaveBeenCalled();
   });
 
@@ -247,10 +248,10 @@ describe('StrainImportDialog', () => {
     (element as any)._error = 'Some error';
     (element as any)._results = [{ name: 'Result', breeder: 'B', url: 'u' }];
     (element as any)._details = { name: 'Details' };
-    
+
     element.open = true;
     await element.updateComplete;
-    
+
     expect((element as any)._error).toBeNull();
     expect((element as any)._results).toEqual([]);
     expect((element as any)._details).toBeNull();
@@ -290,12 +291,12 @@ describe('StrainImportDialog', () => {
       height: 'Tall',
       thc: 20,
       awards: ['Cup 1'],
-      parents: { mother: 'P1' }
+      parents: { mother: 'P1' },
     };
     element.open = true;
     await element.updateComplete;
     (element as any)._details = mockDetails;
-    
+
     const importSpy = vi.fn();
     element.addEventListener('import', importSpy);
 
@@ -315,7 +316,7 @@ describe('StrainImportDialog', () => {
     mockHass.callWS.mockResolvedValue([]);
     element.open = true;
     await element.updateComplete;
-    
+
     (element as any)._searchQuery = 'NonExistentStrain';
     await (element as any)._search();
     await element.updateComplete;
@@ -327,7 +328,7 @@ describe('StrainImportDialog', () => {
     mockHass.callWS.mockRejectedValue({}); // No message
     element.open = true;
     await element.updateComplete;
-    
+
     (element as any)._searchQuery = 'Test';
     await (element as any)._search();
     await element.updateComplete;
@@ -364,7 +365,7 @@ describe('StrainImportDialog', () => {
       image: 'img.png',
       awards: ['Award 1'],
       description: 'Desc',
-      parents: { mother: 'M' }
+      parents: { mother: 'M' },
     };
     await element.updateComplete;
     expect(element.shadowRoot?.querySelector('img.preview-image')).toBeTruthy();
@@ -399,7 +400,9 @@ describe('StrainImportDialog', () => {
     await element.updateComplete;
     (element as any)._details = mockDetails;
 
-    mockHass.connection = { sendMessagePromise: vi.fn().mockResolvedValue({ path: '/local/dl/gelato.jpg' }) };
+    mockHass.connection = {
+      sendMessagePromise: vi.fn().mockResolvedValue({ path: '/local/dl/gelato.jpg' }),
+    };
     element.hass = mockHass;
 
     const importSpy = vi.fn();

@@ -64,7 +64,10 @@ function makePlant(overrides: Partial<PlantEntity['attributes']> = {}): PlantEnt
 }
 
 /** Plant with no plant_id — exercises the entity_id fallback in all id-resolution paths. */
-function makePlantNoId(entityId: string, overrides: Partial<PlantEntity['attributes']> = {}): PlantEntity {
+function makePlantNoId(
+  entityId: string,
+  overrides: Partial<PlantEntity['attributes']> = {}
+): PlantEntity {
   const { plant_id: _omit, ...base } = {
     strain: 'AK47',
     stage: 'veg' as const,
@@ -386,9 +389,7 @@ describe('swapPlants', () => {
     const p1 = makePlant({ plant_id: 'abc', row: 0, col: 0, growspace_id: 'gs1' });
     const p2 = makePlant({ plant_id: 'xyz', row: 1, col: 2, growspace_id: 'gs1' });
     setPlants([p1, p2]);
-    setDevices([
-      { deviceId: 'gs1', plants: [{ ...p1 }, { ...p2 }] } as any,
-    ]);
+    setDevices([{ deviceId: 'gs1', plants: [{ ...p1 }, { ...p2 }] } as any]);
 
     await swapPlants('abc', 'xyz');
 

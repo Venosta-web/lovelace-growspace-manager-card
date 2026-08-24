@@ -15,8 +15,16 @@ import {
   mdiTestTube,
   mdiBug,
 } from '@mdi/js';
-import type { NutrientInventoryResponse, NutrientStock, NutrientStockType } from '../../../slices/nutrient';
-import type { InventorySub, NutrientStockDraft, SMEvent } from '../../../dialogs/feed-and-water-dialog-sm';
+import type {
+  NutrientInventoryResponse,
+  NutrientStock,
+  NutrientStockType,
+} from '../../../slices/nutrient';
+import type {
+  InventorySub,
+  NutrientStockDraft,
+  SMEvent,
+} from '../../../dialogs/feed-and-water-dialog-sm';
 import { dialogStyles } from '../../../styles/dialog.styles';
 
 // ─── Type-color map ───────────────────────────────────────────────────────────
@@ -108,7 +116,11 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
          template: the type colours are var() references, and
          'var(--nutrient-bloom, #e91e63)22' is not a colour. */
       .type-icon {
-        background: color-mix(in srgb, var(--stock-c, var(--primary-color, #4caf50)) 13%, transparent);
+        background: color-mix(
+          in srgb,
+          var(--stock-c, var(--primary-color, #4caf50)) 13%,
+          transparent
+        );
         color: var(--stock-c, var(--primary-color, #4caf50));
         width: 36px;
         height: 36px;
@@ -155,8 +167,12 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         transition: transform var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
       }
 
-      .fill-bar.warning { background: var(--gm-warning-color, #ff9800); }
-      .fill-bar.danger  { background: var(--gm-error-color); }
+      .fill-bar.warning {
+        background: var(--gm-warning-color, #ff9800);
+      }
+      .fill-bar.danger {
+        background: var(--gm-error-color);
+      }
 
       .add-btn {
         display: flex;
@@ -175,7 +191,9 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         margin-bottom: 12px;
       }
 
-      .add-btn:hover { background: rgba(255, 255, 255, 0.09); }
+      .add-btn:hover {
+        background: rgba(255, 255, 255, 0.09);
+      }
 
       .empty-state {
         text-align: center;
@@ -205,7 +223,9 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         transition: background 0.15s;
       }
 
-      .back-btn:hover { background: rgba(255, 255, 255, 0.08); }
+      .back-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
 
       .detail-title {
         flex: 1;
@@ -231,8 +251,12 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         color: var(--primary-text-color);
       }
 
-      .icon-btn:hover { background: rgba(255, 255, 255, 0.08); }
-      .icon-btn.danger { color: var(--error-color, #f44336); }
+      .icon-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .icon-btn.danger {
+        color: var(--error-color, #f44336);
+      }
 
       .detail-section {
         background: rgba(255, 255, 255, 0.04);
@@ -258,8 +282,12 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       }
 
-      .detail-row:last-child { border-bottom: none; }
-      .detail-label { color: var(--secondary-text-color); }
+      .detail-row:last-child {
+        border-bottom: none;
+      }
+      .detail-label {
+        color: var(--secondary-text-color);
+      }
 
       .detail-fill-bar-wrap {
         height: 6px;
@@ -281,7 +309,9 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         gap: 12px;
       }
 
-      .form-row > * { flex: 1; }
+      .form-row > * {
+        flex: 1;
+      }
 
       .form-label {
         font-size: 0.75rem;
@@ -304,7 +334,9 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         transition: border-color 0.15s;
       }
 
-      .form-input:focus { border-color: var(--primary-color, #4caf50); }
+      .form-input:focus {
+        border-color: var(--primary-color, #4caf50);
+      }
 
       .form-select {
         width: 100%;
@@ -340,14 +372,19 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         transition: background 0.15s;
       }
 
-      .btn:disabled { opacity: 0.5; cursor: default; }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
 
       .btn-text {
         background: transparent;
         color: var(--secondary-text-color);
       }
 
-      .btn-text:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); }
+      .btn-text:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.06);
+      }
 
       .btn-primary {
         background: var(--primary-color, #4caf50);
@@ -357,7 +394,9 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         gap: 6px;
       }
 
-      .btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+      .btn-primary:hover:not(:disabled) {
+        filter: brightness(1.1);
+      }
 
       /* Confirm-delete overlay */
       .confirm-box {
@@ -368,7 +407,10 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         text-align: center;
       }
 
-      .confirm-box p { margin: 0 0 16px; font-size: 0.9rem; }
+      .confirm-box p {
+        margin: 0 0 16px;
+        font-size: 0.9rem;
+      }
 
       .confirm-box .confirm-name {
         font-weight: 600;
@@ -386,7 +428,9 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         color: var(--on-error);
       }
 
-      .btn-danger:hover { filter: brightness(1.1); }
+      .btn-danger:hover {
+        filter: brightness(1.1);
+      }
 
       /* Error banner */
       .error-banner {
@@ -404,7 +448,9 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
   ];
 
   private _dispatch(event: SMEvent): void {
-    this.dispatchEvent(new CustomEvent('sm-event', { detail: event, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent('sm-event', { detail: event, bubbles: true, composed: true })
+    );
   }
 
   render() {
@@ -441,17 +487,16 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         data-action="add"
         @click=${() => this._dispatch({ type: 'NewItemRequested' })}
       >
-        <ha-svg-icon .path=${mdiPlus} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+        <ha-svg-icon
+          .path=${mdiPlus}
+          style="width:18px;height:18px;fill:currentColor"
+        ></ha-svg-icon>
         Add Nutrient
       </button>
 
       ${stocks.length === 0
         ? html`<div class="empty-state">No nutrient stock items tracked.</div>`
-        : html`
-            <div class="list">
-              ${stocks.map((s) => this._renderListItem(s))}
-            </div>
-          `}
+        : html` <div class="list">${stocks.map((s) => this._renderListItem(s))}</div> `}
     `;
   }
 
@@ -471,7 +516,9 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         </div>
         <div class="item-body">
           <div class="item-name">${stock.name}</div>
-          <div class="item-meta">${stock.current_ml.toFixed(0)} / ${stock.initial_ml.toFixed(0)} ml</div>
+          <div class="item-meta">
+            ${stock.current_ml.toFixed(0)} / ${stock.initial_ml.toFixed(0)} ml
+          </div>
           <div class="fill-bar-wrap">
             <div class="fill-bar ${fillClass(pct)}" style="transform:scaleX(${pct / 100})"></div>
           </div>
@@ -493,7 +540,10 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
           data-action="back"
           @click=${() => this._dispatch({ type: 'BackToList' })}
         >
-          <ha-svg-icon .path=${mdiArrowLeft} style="width:20px;height:20px;fill:currentColor"></ha-svg-icon>
+          <ha-svg-icon
+            .path=${mdiArrowLeft}
+            style="width:20px;height:20px;fill:currentColor"
+          ></ha-svg-icon>
         </button>
         <h3 class="detail-title">${stock.name}</h3>
         <div class="detail-actions">
@@ -502,14 +552,21 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
             data-action="edit"
             @click=${() => this._dispatch({ type: 'EditStarted', draft: draftFromStock(stock) })}
           >
-            <ha-svg-icon .path=${mdiPencil} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+            <ha-svg-icon
+              .path=${mdiPencil}
+              style="width:18px;height:18px;fill:currentColor"
+            ></ha-svg-icon>
           </button>
           <button
             class="icon-btn danger"
             data-action="delete"
-            @click=${() => this._dispatch({ type: 'DeleteRequested', id: stock.nutrient_id, name: stock.name })}
+            @click=${() =>
+              this._dispatch({ type: 'DeleteRequested', id: stock.nutrient_id, name: stock.name })}
           >
-            <ha-svg-icon .path=${mdiDelete} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+            <ha-svg-icon
+              .path=${mdiDelete}
+              style="width:18px;height:18px;fill:currentColor"
+            ></ha-svg-icon>
           </button>
         </div>
       </div>
@@ -525,7 +582,10 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
           <span>${stock.initial_ml.toFixed(0)} ml</span>
         </div>
         <div class="detail-fill-bar-wrap" data-fill-bar>
-          <div class="fill-bar ${fillClass(pct)}" style="transform:scaleX(${pct / 100});background:${color}"></div>
+          <div
+            class="fill-bar ${fillClass(pct)}"
+            style="transform:scaleX(${pct / 100});background:${color}"
+          ></div>
         </div>
       </div>
 
@@ -556,7 +616,6 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
             </div>
           `
         : nothing}
-
       ${stock.notes
         ? html`
             <div class="detail-section">
@@ -583,7 +642,11 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
             type="text"
             .value=${draft.name}
             @input=${(e: Event) =>
-              this._dispatch({ type: 'StockDraftChanged', field: 'name', value: (e.target as HTMLInputElement).value })}
+              this._dispatch({
+                type: 'StockDraftChanged',
+                field: 'name',
+                value: (e.target as HTMLInputElement).value,
+              })}
           />
         </div>
 
@@ -594,7 +657,11 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
             type="text"
             .value=${draft.brand}
             @input=${(e: Event) =>
-              this._dispatch({ type: 'StockDraftChanged', field: 'brand', value: (e.target as HTMLInputElement).value })}
+              this._dispatch({
+                type: 'StockDraftChanged',
+                field: 'brand',
+                value: (e.target as HTMLInputElement).value,
+              })}
           />
         </div>
 
@@ -604,7 +671,11 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
             class="form-select"
             .value=${draft.stockType}
             @change=${(e: Event) =>
-              this._dispatch({ type: 'StockDraftChanged', field: 'stockType', value: (e.target as HTMLSelectElement).value })}
+              this._dispatch({
+                type: 'StockDraftChanged',
+                field: 'stockType',
+                value: (e.target as HTMLSelectElement).value,
+              })}
           >
             <option value="base">Base</option>
             <option value="bloom">Bloom</option>
@@ -624,7 +695,11 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
               min="0"
               .value=${String(draft.current_ml)}
               @input=${(e: Event) =>
-                this._dispatch({ type: 'StockDraftChanged', field: 'current_ml', value: parseFloat((e.target as HTMLInputElement).value) || 0 })}
+                this._dispatch({
+                  type: 'StockDraftChanged',
+                  field: 'current_ml',
+                  value: parseFloat((e.target as HTMLInputElement).value) || 0,
+                })}
             />
           </div>
           <div>
@@ -635,7 +710,11 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
               min="0"
               .value=${String(draft.initial_ml)}
               @input=${(e: Event) =>
-                this._dispatch({ type: 'StockDraftChanged', field: 'initial_ml', value: parseFloat((e.target as HTMLInputElement).value) || 0 })}
+                this._dispatch({
+                  type: 'StockDraftChanged',
+                  field: 'initial_ml',
+                  value: parseFloat((e.target as HTMLInputElement).value) || 0,
+                })}
             />
           </div>
         </div>
@@ -648,7 +727,11 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
               type="text"
               .value=${draft.npk}
               @input=${(e: Event) =>
-                this._dispatch({ type: 'StockDraftChanged', field: 'npk', value: (e.target as HTMLInputElement).value })}
+                this._dispatch({
+                  type: 'StockDraftChanged',
+                  field: 'npk',
+                  value: (e.target as HTMLInputElement).value,
+                })}
             />
           </div>
           <div>
@@ -660,7 +743,11 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
               step="0.1"
               .value=${String(draft.dose_ml_l)}
               @input=${(e: Event) =>
-                this._dispatch({ type: 'StockDraftChanged', field: 'dose_ml_l', value: parseFloat((e.target as HTMLInputElement).value) || 0 })}
+                this._dispatch({
+                  type: 'StockDraftChanged',
+                  field: 'dose_ml_l',
+                  value: parseFloat((e.target as HTMLInputElement).value) || 0,
+                })}
             />
           </div>
         </div>
@@ -672,7 +759,11 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
             type="text"
             .value=${draft.notes}
             @input=${(e: Event) =>
-              this._dispatch({ type: 'StockDraftChanged', field: 'notes', value: (e.target as HTMLInputElement).value })}
+              this._dispatch({
+                type: 'StockDraftChanged',
+                field: 'notes',
+                value: (e.target as HTMLInputElement).value,
+              })}
           />
         </div>
 
@@ -690,7 +781,10 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
             ?disabled=${applying}
             @click=${() => this._dispatch({ type: 'SaveRequested' })}
           >
-            <ha-svg-icon .path=${mdiCheck} style="width:16px;height:16px;fill:currentColor"></ha-svg-icon>
+            <ha-svg-icon
+              .path=${mdiCheck}
+              style="width:16px;height:16px;fill:currentColor"
+            ></ha-svg-icon>
             ${applying ? 'Saving…' : 'Save'}
           </button>
         </div>
@@ -729,7 +823,10 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
   private _renderError(sub: { kind: 'error'; draft: NutrientStockDraft; message: string }) {
     return html`
       <div class="error-banner">
-        <ha-svg-icon .path=${mdiAlertCircle} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+        <ha-svg-icon
+          .path=${mdiAlertCircle}
+          style="width:18px;height:18px;fill:currentColor"
+        ></ha-svg-icon>
         ${sub.message}
       </div>
       ${this._renderEditForm({ kind: 'editing', draft: sub.draft })}

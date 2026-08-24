@@ -51,7 +51,9 @@ describe('HarvestScoringDialog', () => {
   // browser-mode ESM-mock unreliability that made the prior vi.mock('slices/plant')
   // flake on CI ("[AsyncFunction scorePlant] is not a spy").
   const wsCommands = (): string[] =>
-    (hass.callWS as ReturnType<typeof vi.fn>).mock.calls.map((c) => (c[0] as { type: string })?.type);
+    (hass.callWS as ReturnType<typeof vi.fn>).mock.calls.map(
+      (c) => (c[0] as { type: string })?.type
+    );
 
   beforeEach(async () => {
     mockStore = makeMockStore();
@@ -129,7 +131,9 @@ describe('HarvestScoringDialog', () => {
     saveBtn.click();
     await element.updateComplete;
 
-    const cancelBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.outlined') as HTMLButtonElement;
+    const cancelBtn = element.shadowRoot?.querySelector(
+      '.confirm-bar .md3-button.outlined'
+    ) as HTMLButtonElement;
     cancelBtn.click();
     await element.updateComplete;
 
@@ -171,7 +175,9 @@ describe('HarvestScoringDialog', () => {
     await element.updateComplete;
 
     // Click confirm harvest
-    const confirmBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.filled') as HTMLButtonElement;
+    const confirmBtn = element.shadowRoot?.querySelector(
+      '.confirm-bar .md3-button.filled'
+    ) as HTMLButtonElement;
     confirmBtn.click();
     await element.updateComplete;
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -190,7 +196,9 @@ describe('HarvestScoringDialog', () => {
     await element.updateComplete;
 
     // Click confirm
-    const confirmBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.filled') as HTMLButtonElement;
+    const confirmBtn = element.shadowRoot?.querySelector(
+      '.confirm-bar .md3-button.filled'
+    ) as HTMLButtonElement;
     confirmBtn.click();
     await element.updateComplete;
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -208,7 +216,9 @@ describe('HarvestScoringDialog', () => {
     const saveBtn = element.shadowRoot?.querySelector('.md3-button.filled') as HTMLButtonElement;
     saveBtn.click();
     await element.updateComplete;
-    const confirmBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.filled') as HTMLButtonElement;
+    const confirmBtn = element.shadowRoot?.querySelector(
+      '.confirm-bar .md3-button.filled'
+    ) as HTMLButtonElement;
     confirmBtn.click();
     await element.updateComplete;
     await new Promise((resolve) => setTimeout(resolve, 50));
@@ -326,7 +336,9 @@ describe('HarvestScoringDialog', () => {
     await element.updateComplete;
 
     // Confirm harvest
-    const confirmBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.filled') as HTMLButtonElement;
+    const confirmBtn = element.shadowRoot?.querySelector(
+      '.confirm-bar .md3-button.filled'
+    ) as HTMLButtonElement;
     confirmBtn.click();
     await element.updateComplete;
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -335,4 +347,3 @@ describe('HarvestScoringDialog', () => {
     expect(wsCommands()).toContain(WS_HARVEST);
   });
 });
-

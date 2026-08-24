@@ -15,7 +15,13 @@ import type {
   PhaseShotDescriptor,
 } from '../../../../../src/features/irrigation/viewmodels/steering-tab.viewmodel';
 
-for (const tag of ['ha-svg-icon', 'md3-number-input', 'md3-switch', 'md3-text-input', 'gs-help-tooltip']) {
+for (const tag of [
+  'ha-svg-icon',
+  'md3-number-input',
+  'md3-switch',
+  'md3-text-input',
+  'gs-help-tooltip',
+]) {
   if (!customElements.get(tag)) customElements.define(tag, class extends HTMLElement {});
 }
 // `gs-dialog` slots its content; give the stub a shadow root with a <slot> so the
@@ -117,9 +123,11 @@ const norm = (s: string | null | undefined): string => (s ?? '').replace(/\s+/g,
 
 describe('irrigation-steering-tab', () => {
   it('holds no @state() of its own — only the `vm` reactive property', () => {
-    const props = (IrrigationSteeringTab as unknown as {
-      elementProperties: Map<string, { state?: boolean }>;
-    }).elementProperties;
+    const props = (
+      IrrigationSteeringTab as unknown as {
+        elementProperties: Map<string, { state?: boolean }>;
+      }
+    ).elementProperties;
     expect([...props.entries()].filter(([, d]) => d.state === true)).toEqual([]);
   });
 
@@ -137,7 +145,9 @@ describe('irrigation-steering-tab', () => {
 
   it('emits steering-draft-changed when Enable VWC Steering toggles', async () => {
     const el = await mount(makeVm());
-    const sw = el.shadowRoot!.querySelector('[data-field="enabled"]') as HTMLElement & { checked: boolean };
+    const sw = el.shadowRoot!.querySelector('[data-field="enabled"]') as HTMLElement & {
+      checked: boolean;
+    };
     const evt = await captureIntent(el, 'steering-draft-changed', () => {
       (sw as unknown as { checked: boolean }).checked = false;
       sw.dispatchEvent(new Event('change'));
@@ -147,7 +157,9 @@ describe('irrigation-steering-tab', () => {
 
   it('emits steering-draft-changed parsing P1 shot duration with parseInt (Seconds mode)', async () => {
     const el = await mount(makeVm());
-    const input = el.shadowRoot!.querySelector('[data-field="p1ShotDurationSeconds"]') as HTMLElement;
+    const input = el.shadowRoot!.querySelector(
+      '[data-field="p1ShotDurationSeconds"]'
+    ) as HTMLElement;
     const evt = await captureIntent(el, 'steering-draft-changed', () =>
       input.dispatchEvent(new CustomEvent('change', { detail: '22.7' }))
     );
@@ -156,8 +168,26 @@ describe('irrigation-steering-tab', () => {
 
   it('emits steering-draft-changed parsing the shot size with parseFloat (Volume mode)', async () => {
     const volShots: PhaseShotDescriptor[] = [
-      { id: 'p1', label: 'P1', sizeField: 'p1ShotVolumePercent', sizeLabel: 'P1 Shot Size (%)', sizeValue: 4, intervalField: 'p1ShotIntervalMinutes', intervalValue: 15, isVolume: true },
-      { id: 'p2', label: 'P2', sizeField: 'p2ShotVolumePercent', sizeLabel: 'P2 Shot Size (%)', sizeValue: 4, intervalField: 'p2ShotIntervalMinutes', intervalValue: 15, isVolume: true },
+      {
+        id: 'p1',
+        label: 'P1',
+        sizeField: 'p1ShotVolumePercent',
+        sizeLabel: 'P1 Shot Size (%)',
+        sizeValue: 4,
+        intervalField: 'p1ShotIntervalMinutes',
+        intervalValue: 15,
+        isVolume: true,
+      },
+      {
+        id: 'p2',
+        label: 'P2',
+        sizeField: 'p2ShotVolumePercent',
+        sizeLabel: 'P2 Shot Size (%)',
+        sizeValue: 4,
+        intervalField: 'p2ShotIntervalMinutes',
+        intervalValue: 15,
+        isVolume: true,
+      },
     ];
     const el = await mount(makeVm({ phaseShots: volShots }));
     const input = el.shadowRoot!.querySelector('[data-field="p1ShotVolumePercent"]') as HTMLElement;
@@ -168,7 +198,9 @@ describe('irrigation-steering-tab', () => {
   });
 
   it('hides the Adaptive Shot tunables when adaptiveEnabled is false', async () => {
-    const el = await mount(makeVm({ adaptiveEnabled: false, draft: { ...makeVm().draft, dynamicShotEnabled: false } }));
+    const el = await mount(
+      makeVm({ adaptiveEnabled: false, draft: { ...makeVm().draft, dynamicShotEnabled: false } })
+    );
     expect(el.shadowRoot!.querySelector('[data-field="dynamicAggressiveness"]')).toBeNull();
   });
 
@@ -177,9 +209,7 @@ describe('irrigation-steering-tab', () => {
   it('emits steering-config-changed for the P2 Direct Trigger field', async () => {
     const el = await mount(makeVm());
     // P2 Direct Trigger is the md3-number-input with placeholder "Off".
-    const inputs = Array.from(
-      el.shadowRoot!.querySelectorAll('md3-number-input')
-    ) as HTMLElement[];
+    const inputs = Array.from(el.shadowRoot!.querySelectorAll('md3-number-input')) as HTMLElement[];
     const p2direct = inputs.find((i) => i.getAttribute('placeholder') === 'Off')!;
     const evt = await captureIntent(el, 'steering-config-changed', () =>
       p2direct.dispatchEvent(new CustomEvent('change', { detail: '38' }))
@@ -189,7 +219,9 @@ describe('irrigation-steering-tab', () => {
 
   it('emits steering-config-changed when Auto-advance P1 → P2 toggles', async () => {
     const el = await mount(makeVm());
-    const sw = el.shadowRoot!.querySelector('[data-field="autoAdvanceP1ToP2"]') as HTMLElement & { checked: boolean };
+    const sw = el.shadowRoot!.querySelector('[data-field="autoAdvanceP1ToP2"]') as HTMLElement & {
+      checked: boolean;
+    };
     const evt = await captureIntent(el, 'steering-config-changed', () => {
       (sw as unknown as { checked: boolean }).checked = true;
       sw.dispatchEvent(new Event('change'));
@@ -199,7 +231,9 @@ describe('irrigation-steering-tab', () => {
 
   it('emits steering-config-changed setting the halt-EC threshold to 4.0 on enable', async () => {
     const el = await mount(makeVm({ haltOnRunoffEcThreshold: null }));
-    const sw = el.shadowRoot!.querySelector('[data-field="haltOnRunoffEc"]') as HTMLElement & { checked: boolean };
+    const sw = el.shadowRoot!.querySelector('[data-field="haltOnRunoffEc"]') as HTMLElement & {
+      checked: boolean;
+    };
     const evt = await captureIntent(el, 'steering-config-changed', () => {
       (sw as unknown as { checked: boolean }).checked = true;
       sw.dispatchEvent(new Event('change'));
@@ -218,7 +252,9 @@ describe('irrigation-steering-tab', () => {
 
   it('renders the mode-confirm overlay and emits confirmed / cancelled', async () => {
     const el = await mount(makeVm({ confirmMode: 'balanced' }));
-    const apply = el.shadowRoot!.querySelector('[data-action="confirm-steering-mode"]') as HTMLButtonElement;
+    const apply = el.shadowRoot!.querySelector(
+      '[data-action="confirm-steering-mode"]'
+    ) as HTMLButtonElement;
     // The mode overlay is the gs-dialog that owns the Apply button.
     const modeOverlay = apply.closest('gs-dialog')!;
     expect(modeOverlay.getAttribute('heading')).toBe('Apply Steering Mode');
@@ -247,7 +283,9 @@ describe('irrigation-steering-tab', () => {
     const cards = Array.from(el.shadowRoot!.querySelectorAll('.phase-card')) as HTMLElement[];
     const p2Card = cards.find((c) => norm(c.textContent).includes('Maintenance'))!;
     let fired = false;
-    el.addEventListener('phase-change-requested', () => { fired = true; });
+    el.addEventListener('phase-change-requested', () => {
+      fired = true;
+    });
     p2Card.click();
     await el.updateComplete;
     expect(fired).toBe(false);
@@ -255,7 +293,9 @@ describe('irrigation-steering-tab', () => {
 
   it('renders the phase-confirm overlay and emits confirmed / cancelled', async () => {
     const el = await mount(makeVm({ activePhase: 'p2', confirmPhase: 'p1' }));
-    const buttons = Array.from(el.shadowRoot!.querySelectorAll('.md3-button')) as HTMLButtonElement[];
+    const buttons = Array.from(
+      el.shadowRoot!.querySelectorAll('.md3-button')
+    ) as HTMLButtonElement[];
     const confirmBtn = buttons.find((b) => norm(b.textContent) === 'Confirm')!;
     const phaseOverlay = confirmBtn.closest('gs-dialog')!;
     expect(phaseOverlay.getAttribute('heading')).toBe('Confirm Phase Transition');

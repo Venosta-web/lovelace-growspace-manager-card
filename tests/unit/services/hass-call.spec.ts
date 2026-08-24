@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
-import { hassCall, setHass, callService, callFetch, callServiceReturning } from '../../../src/services/hass-call';
+import {
+  hassCall,
+  setHass,
+  callService,
+  callFetch,
+  callServiceReturning,
+} from '../../../src/services/hass-call';
 import { WSError } from '../../../src/services/errors';
 
 function makeMockHass(callWSImpl: (msg: unknown) => unknown = () => ({})) {
@@ -18,10 +24,18 @@ describe('hassCall', () => {
     const mockHass = makeMockHass(() => ({ plant_id: 'abc' }));
     setHass(mockHass);
 
-    const result = await hassCall('growspace_manager/water_plant', { plant_id: 'abc', amount: 100 }, schema);
+    const result = await hassCall(
+      'growspace_manager/water_plant',
+      { plant_id: 'abc', amount: 100 },
+      schema
+    );
 
     expect(result).toEqual({ plant_id: 'abc' });
-    expect(mockHass.callWS).toHaveBeenCalledWith({ type: 'growspace_manager/water_plant', plant_id: 'abc', amount: 100 });
+    expect(mockHass.callWS).toHaveBeenCalledWith({
+      type: 'growspace_manager/water_plant',
+      plant_id: 'abc',
+      amount: 100,
+    });
   });
 
   it('throws WSError with typed code when backend returns error', async () => {
@@ -31,8 +45,9 @@ describe('hassCall', () => {
     });
     setHass(mockHass);
 
-    await expect(hassCall('growspace_manager/water_plant', { plant_id: 'x' }, schema))
-      .rejects.toMatchObject({ name: 'WSError', code: 'entity_not_found' });
+    await expect(
+      hassCall('growspace_manager/water_plant', { plant_id: 'x' }, schema)
+    ).rejects.toMatchObject({ name: 'WSError', code: 'entity_not_found' });
   });
 
   it('maps unknown error code to internal_error', async () => {
@@ -42,8 +57,10 @@ describe('hassCall', () => {
     });
     setHass(mockHass);
 
-    await expect(hassCall('growspace_manager/do_something', {}, schema))
-      .rejects.toMatchObject({ name: 'WSError', code: 'internal_error' });
+    await expect(hassCall('growspace_manager/do_something', {}, schema)).rejects.toMatchObject({
+      name: 'WSError',
+      code: 'internal_error',
+    });
   });
 
   it('wraps plain Error as internal_error WSError', async () => {
@@ -53,8 +70,11 @@ describe('hassCall', () => {
     });
     setHass(mockHass);
 
-    await expect(hassCall('growspace_manager/do_something', {}, schema))
-      .rejects.toMatchObject({ name: 'WSError', code: 'internal_error', message: 'network failure' });
+    await expect(hassCall('growspace_manager/do_something', {}, schema)).rejects.toMatchObject({
+      name: 'WSError',
+      code: 'internal_error',
+      message: 'network failure',
+    });
   });
 
   it('wraps non-Error thrown value as internal_error WSError', async () => {
@@ -65,8 +85,10 @@ describe('hassCall', () => {
     });
     setHass(mockHass);
 
-    await expect(hassCall('growspace_manager/do_something', {}, schema))
-      .rejects.toMatchObject({ name: 'WSError', code: 'internal_error' });
+    await expect(hassCall('growspace_manager/do_something', {}, schema)).rejects.toMatchObject({
+      name: 'WSError',
+      code: 'internal_error',
+    });
   });
 
   it('throws WSError when response fails zod schema', async () => {
@@ -75,15 +97,15 @@ describe('hassCall', () => {
     const mockHass = makeMockHass(() => ({ wrong_field: 42 }));
     setHass(mockHass);
 
-    await expect(hassCall('growspace_manager/water_plant', { plant_id: 'abc' }, schema))
-      .rejects.toMatchObject({ name: 'WSError', code: 'internal_error' });
+    await expect(
+      hassCall('growspace_manager/water_plant', { plant_id: 'abc' }, schema)
+    ).rejects.toMatchObject({ name: 'WSError', code: 'internal_error' });
   });
 
   it('throws when hass is not set', async () => {
     const schema = z.object({});
 
-    await expect(hassCall('any_command', {}, schema))
-      .rejects.toThrow();
+    await expect(hassCall('any_command', {}, schema)).rejects.toThrow();
   });
 });
 
@@ -100,11 +122,10 @@ describe('callService', () => {
 
     await callService('growspace_manager', 'water_plant', { plant_id: 'p1', amount: 250 });
 
-    expect(mockHass.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'water_plant',
-      { plant_id: 'p1', amount: 250 }
-    );
+    expect(mockHass.callService).toHaveBeenCalledWith('growspace_manager', 'water_plant', {
+      plant_id: 'p1',
+      amount: 250,
+    });
   });
 
   it('uses empty object as default serviceData', async () => {
@@ -119,8 +140,7 @@ describe('callService', () => {
   });
 
   it('throws WSError when hass is not set', async () => {
-    await expect(callService('growspace_manager', 'water_plant'))
-      .rejects.toThrow(WSError);
+    await expect(callService('growspace_manager', 'water_plant')).rejects.toThrow(WSError);
   });
 });
 
@@ -139,10 +159,9 @@ describe('callFetch', () => {
     const result = await callFetch('/api/growspace_manager/import_strains', { method: 'POST' });
 
     expect(result).toBe(fakeResponse);
-    expect(mockHass.fetchWithAuth).toHaveBeenCalledWith(
-      '/api/growspace_manager/import_strains',
-      { method: 'POST' }
-    );
+    expect(mockHass.fetchWithAuth).toHaveBeenCalledWith('/api/growspace_manager/import_strains', {
+      method: 'POST',
+    });
   });
 
   it('forwards path without init options', async () => {
@@ -158,8 +177,7 @@ describe('callFetch', () => {
   });
 
   it('throws WSError when hass is not set', async () => {
-    await expect(callFetch('/api/growspace_manager/status'))
-      .rejects.toThrow(WSError);
+    await expect(callFetch('/api/growspace_manager/status')).rejects.toThrow(WSError);
   });
 });
 

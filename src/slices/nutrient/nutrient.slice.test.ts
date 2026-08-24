@@ -152,7 +152,13 @@ describe('fetchNutrientInventory', () => {
   it('updates nutrientInventory$ with the full response on success', async () => {
     const inventory = {
       stocks: {
-        n1: { nutrient_id: 'n1', name: 'Grow A', current_ml: 500, initial_ml: 1000, last_updated: '2026-01-01' },
+        n1: {
+          nutrient_id: 'n1',
+          name: 'Grow A',
+          current_ml: 500,
+          initial_ml: 1000,
+          last_updated: '2026-01-01',
+        },
       },
     };
     vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce(inventory);
@@ -210,7 +216,11 @@ describe('fetchECRampCurves', () => {
 
 describe('saveNutrientPreset', () => {
   it('calls callService with the correct domain, service, and payload', async () => {
-    const data = { name: 'Veg Week 1', nutrients: [{ nutrient_id: 'base_nutrient', dose_ml_l: 2 }], stage: 'veg' };
+    const data = {
+      name: 'Veg Week 1',
+      nutrients: [{ nutrient_id: 'base_nutrient', dose_ml_l: 2 }],
+      stage: 'veg',
+    };
 
     await saveNutrientPreset(data);
 
@@ -256,7 +266,11 @@ describe('removeNutrientPreset', () => {
 
 describe('saveIPMPreset', () => {
   it('calls callService with the correct domain, service, and payload', async () => {
-    const data = { name: 'Neem', type: 'foliar', items: [{ name: 'Neem Oil', dose_amount: 5, dose_unit: 'ml/L' }] };
+    const data = {
+      name: 'Neem',
+      type: 'foliar',
+      items: [{ name: 'Neem Oil', dose_amount: 5, dose_unit: 'ml/L' }],
+    };
 
     await saveIPMPreset(data);
 
@@ -270,7 +284,9 @@ describe('saveIPMPreset', () => {
   it('re-throws on failure', async () => {
     vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('save failed'));
 
-    await expect(saveIPMPreset({ name: 'X', type: 'foliar', items: [] })).rejects.toThrow('save failed');
+    await expect(saveIPMPreset({ name: 'X', type: 'foliar', items: [] })).rejects.toThrow(
+      'save failed'
+    );
   });
 });
 
@@ -306,11 +322,7 @@ describe('applyIPM', () => {
 
     await applyIPM(data);
 
-    expect(hassCallModule.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'apply_ipm',
-      data
-    );
+    expect(hassCallModule.callService).toHaveBeenCalledWith('growspace_manager', 'apply_ipm', data);
   });
 
   it('re-throws on failure', async () => {
@@ -328,7 +340,17 @@ describe('updateNutrientStock', () => {
   it('calls hassCall with the update_nutrient_stock WS command and all fields', async () => {
     vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce(undefined);
 
-    await updateNutrientStock('n1', 'Grow A', 500, 1000, 'Canna', 'bloom', '0-15-14', 1.5, 'Use late');
+    await updateNutrientStock(
+      'n1',
+      'Grow A',
+      500,
+      1000,
+      'Canna',
+      'bloom',
+      '0-15-14',
+      1.5,
+      'Use late'
+    );
 
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/update_nutrient_stock',
@@ -409,7 +431,10 @@ describe('saveECRampCurve', () => {
     await saveECRampCurve({
       name: 'Flower Ramp',
       stage: 'flower',
-      points: [{ day: 1, target_ec: 1.0 }, { day: 8, target_ec: 1.5 }],
+      points: [
+        { day: 1, target_ec: 1.0 },
+        { day: 8, target_ec: 1.5 },
+      ],
     });
 
     expect(hassCallModule.callService).toHaveBeenCalledWith(

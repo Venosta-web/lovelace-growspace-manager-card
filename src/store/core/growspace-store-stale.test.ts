@@ -23,8 +23,6 @@ describe('GrowspaceStore stale wiring', () => {
 
     expect(refreshCb).toHaveBeenCalledOnce();
     expect(emitSpy).toHaveBeenCalledWith(DATA_STALE_EVENT, undefined);
-    expect(refreshCb.mock.invocationCallOrder[0]).toBeLessThan(
-      emitSpy.mock.invocationCallOrder[0]
-    );
+    expect(refreshCb.mock.invocationCallOrder[0]).toBeLessThan(emitSpy.mock.invocationCallOrder[0]);
   });
 });

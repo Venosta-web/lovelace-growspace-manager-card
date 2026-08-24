@@ -62,7 +62,7 @@ describe('Plant slice', () => {
       await waterPlant('plant-1', 500);
       expect(mutate).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'waterPlant' }),
-        expect.any(String),
+        expect.any(String)
       );
     });
 
@@ -72,7 +72,7 @@ describe('Plant slice', () => {
       expect(hassCall).toHaveBeenCalledWith(
         'growspace_manager/water_plant',
         expect.objectContaining({ plant_id: 'plant-1', amount: 250 }),
-        expect.anything(),
+        expect.anything()
       );
     });
 
@@ -82,7 +82,7 @@ describe('Plant slice', () => {
       expect(hassCall).toHaveBeenCalledWith(
         'growspace_manager/water_plant',
         expect.objectContaining({ nutrients: { nitrogen: 5 } }),
-        expect.anything(),
+        expect.anything()
       );
     });
   });

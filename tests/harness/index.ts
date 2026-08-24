@@ -74,8 +74,7 @@ export async function renderCard<T extends HTMLElement = HTMLElement>(
     },
 
     clickPlantCell(row: number, col: number) {
-      const grid =
-        (hass as any).states?.[`sensor.${growspace.growspaceId}`]?.attributes?.grid;
+      const grid = (hass as any).states?.[`sensor.${growspace.growspaceId}`]?.attributes?.grid;
       const slot = grid?.[`position_${row}_${col}`];
       if (!slot?.plant_id) {
         throw new Error(
@@ -91,8 +90,7 @@ export async function renderCard<T extends HTMLElement = HTMLElement>(
 
     selectBriefingTab(tab: BriefingTab) {
       const idx = BRIEFING_TAB_INDICES[tab];
-      const panel =
-        (element.shadowRoot?.querySelector('gm-briefing-panel') as any) ?? element;
+      const panel = (element.shadowRoot?.querySelector('gm-briefing-panel') as any) ?? element;
       const root = panel.shadowRoot ?? panel;
       const buttons = root.querySelectorAll<HTMLButtonElement>('.v1-nav-item');
       if (buttons[idx]) {

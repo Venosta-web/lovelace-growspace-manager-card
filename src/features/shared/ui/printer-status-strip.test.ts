@@ -289,7 +289,10 @@ describe('PrinterStatusStrip – battery colour thresholds', () => {
   async function renderWithBattery(pct: number, connected = true) {
     const states = {
       ...connectedPrinterStates('niimbot_6649b9', pct),
-      'binary_sensor.niimbot_6649b9_connection': { state: connected ? 'on' : 'off', attributes: {} },
+      'binary_sensor.niimbot_6649b9_connection': {
+        state: connected ? 'on' : 'off',
+        attributes: {},
+      },
     };
     return fixture<PrinterStatusStrip>(html`
       <printer-status-strip

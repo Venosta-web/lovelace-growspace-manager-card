@@ -25,15 +25,15 @@ describe('plant-stats-card', () => {
     const el = await fixture<PlantStatsCard>(html`
       <plant-stats-card .stats=${mockStats}></plant-stats-card>
     `);
-    
+
     const items = el.shadowRoot?.querySelectorAll('.stat-item');
     expect(items?.length).to.equal(3);
-    
+
     const firstItem = items?.[0] as HTMLElement;
     expect(firstItem.querySelector('.stat-value')?.textContent).to.include('14');
     expect(firstItem.querySelector('.stat-unit')?.textContent).to.equal('days');
     expect(firstItem.querySelector('.stat-label')?.textContent).to.equal('Age');
-    
+
     const thirdItem = items?.[2] as HTMLElement;
     expect(thirdItem.querySelector('.stat-value')?.textContent).to.include('Testing');
     expect(thirdItem.querySelector('.stat-unit')).to.not.exist;

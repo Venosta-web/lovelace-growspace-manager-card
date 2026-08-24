@@ -48,7 +48,9 @@ export class FeedAndWaterDialog extends LitElement {
   static styles = [
     dialogStyles,
     css`
-      :host { display: contents; }
+      :host {
+        display: contents;
+      }
 
       /* Body: nav-rail + content */
       .body {
@@ -84,10 +86,14 @@ export class FeedAndWaterDialog extends LitElement {
         font-size: var(--font-size-xs);
         font-family: inherit;
         width: 56px;
-        transition: background 0.15s, color 0.15s;
+        transition:
+          background 0.15s,
+          color 0.15s;
       }
 
-      .nav-item:hover { background: rgba(255, 255, 255, 0.06); }
+      .nav-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
 
       .nav-item[aria-pressed='true'] {
         color: var(--primary-color, #4caf50);
@@ -122,10 +128,14 @@ export class FeedAndWaterDialog extends LitElement {
         font-weight: 500;
         background: var(--primary-color, #4caf50);
         color: var(--on-primary);
-        transition: filter 0.15s, opacity 0.15s;
+        transition:
+          filter 0.15s,
+          opacity 0.15s;
       }
 
-      .btn-record:hover:not(:disabled) { filter: brightness(1.1); }
+      .btn-record:hover:not(:disabled) {
+        filter: brightness(1.1);
+      }
 
       .btn-record:disabled {
         opacity: 0.4;
@@ -152,8 +162,15 @@ export class FeedAndWaterDialog extends LitElement {
         margin: 16px;
       }
 
-      .confirm-discard-box h3 { margin: 0 0 8px; font-size: 1rem; }
-      .confirm-discard-box p { margin: 0 0 20px; font-size: 0.875rem; color: var(--secondary-text-color); }
+      .confirm-discard-box h3 {
+        margin: 0 0 8px;
+        font-size: 1rem;
+      }
+      .confirm-discard-box p {
+        margin: 0 0 20px;
+        font-size: 0.875rem;
+        color: var(--secondary-text-color);
+      }
 
       .confirm-discard-actions {
         display: flex;
@@ -170,11 +187,21 @@ export class FeedAndWaterDialog extends LitElement {
         font-family: inherit;
       }
 
-      .btn-text { background: transparent; color: var(--secondary-text-color); }
-      .btn-text:hover { background: rgba(255,255,255,0.06); }
+      .btn-text {
+        background: transparent;
+        color: var(--secondary-text-color);
+      }
+      .btn-text:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
 
-      .btn-danger { background: var(--error-color, #f44336); color: var(--on-error); }
-      .btn-danger:hover { filter: brightness(1.1); }
+      .btn-danger {
+        background: var(--error-color, #f44336);
+        color: var(--on-error);
+      }
+      .btn-danger:hover {
+        filter: brightness(1.1);
+      }
 
       /* Toast */
       .toast {
@@ -197,7 +224,7 @@ export class FeedAndWaterDialog extends LitElement {
         align-items: center;
         justify-content: center;
         height: 200px;
-        color: var(--secondary-text-color, rgba(255,255,255,0.5));
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
         font-size: 0.875rem;
       }
 
@@ -334,10 +361,7 @@ export class FeedAndWaterDialog extends LitElement {
 
   private _isFooterBlocked(): boolean {
     const { activeTab, tabs } = this._sm;
-    return (
-      activeTab !== 'watering' ||
-      tabs.watering.sub.kind === 'submitting'
-    );
+    return activeTab !== 'watering' || tabs.watering.sub.kind === 'submitting';
   }
 
   render() {
@@ -379,18 +403,21 @@ export class FeedAndWaterDialog extends LitElement {
     return html`
       <nav class="nav-rail">
         ${navItems.map(
-      ({ tab, icon, label }) => html`
+          ({ tab, icon, label }) => html`
             <button
               class="nav-item"
               data-nav=${tab}
               aria-pressed=${sm.activeTab === tab ? 'true' : 'false'}
               @click=${() => this._applyEvent({ type: 'TabSelected', tab })}
             >
-              <ha-svg-icon .path=${icon} style="width:22px;height:22px;fill:currentColor"></ha-svg-icon>
+              <ha-svg-icon
+                .path=${icon}
+                style="width:22px;height:22px;fill:currentColor"
+              ></ha-svg-icon>
               <span>${label}</span>
             </button>
           `
-    )}
+        )}
       </nav>
     `;
   }
@@ -432,7 +459,7 @@ export class FeedAndWaterDialog extends LitElement {
     `;
   }
 
-  private _applyPresetEvent(event: { type: string;[key: string]: unknown }) {
+  private _applyPresetEvent(event: { type: string; [key: string]: unknown }) {
     const PRESET_MAP: Record<string, string> = {
       ItemSelected: 'PresetItemSelected',
       BackToList: 'PresetBackToList',
@@ -456,13 +483,16 @@ export class FeedAndWaterDialog extends LitElement {
     return html`
       <div data-tab="watering">
         ${this.hasPhiWarning
-        ? html`
+          ? html`
               <div class="phi-warning" data-testid="phi-warning">
-                <ha-svg-icon .path=${mdiInformation} style="width:18px;height:18px;fill:currentColor;flex-shrink:0"></ha-svg-icon>
+                <ha-svg-icon
+                  .path=${mdiInformation}
+                  style="width:18px;height:18px;fill:currentColor;flex-shrink:0"
+                ></ha-svg-icon>
                 ${this.phiWarningText}
               </div>
             `
-        : nothing}
+          : nothing}
 
         <md3-number-input
           label="Volume (Liters)"
@@ -470,9 +500,9 @@ export class FeedAndWaterDialog extends LitElement {
           .min=${0.1}
           unit="L"
           @change=${(e: CustomEvent) => {
-        const v = parseFloat(e.detail);
-        if (!isNaN(v) && v > 0) this._applyEvent({ type: 'WateringVolumeChanged', volume: v });
-      }}
+            const v = parseFloat(e.detail);
+            if (!isNaN(v) && v > 0) this._applyEvent({ type: 'WateringVolumeChanged', volume: v });
+          }}
         ></md3-number-input>
 
         <md3-select
@@ -480,17 +510,17 @@ export class FeedAndWaterDialog extends LitElement {
           .value=${draft.presetId}
           .options=${this.presetOptions}
           @change=${(e: CustomEvent) =>
-        this._applyEvent({ type: 'WateringPresetChanged', presetId: e.detail })}
+            this._applyEvent({ type: 'WateringPresetChanged', presetId: e.detail })}
         ></md3-select>
 
         ${this.targetText
-        ? html`
+          ? html`
               <div class="targeting-summary">
                 <span class="targeting-label">Targeting:</span>
                 <span class="targeting-value">${this.targetText}</span>
               </div>
             `
-        : nothing}
+          : nothing}
       </div>
     `;
   }

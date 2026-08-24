@@ -108,7 +108,9 @@ describe('createWaterAnalyticsTabViewModel', () => {
   it('null avg tank level when no tank reports a fill level', () => {
     const vm = build(
       createInitialSM(),
-      device({ environmentAttributes: { irrigationTanks: [{ name: 'A', fillLevel: null }] } as any })
+      device({
+        environmentAttributes: { irrigationTanks: [{ name: 'A', fillLevel: null }] } as any,
+      })
     );
     expect(vm.avgTankLevel).toBeNull();
   });
@@ -120,9 +122,7 @@ describe('createWaterAnalyticsTabViewModel', () => {
     volumeLiters: 100,
     waterHistory: {
       buckets_24h: [{ ts: '2026-01-02T10:00:00Z', liters: 2 }],
-      recent_refills: [
-        { event_type: 'refill', timestamp: '2026-01-02T08:00:00Z', liters: 50 },
-      ],
+      recent_refills: [{ event_type: 'refill', timestamp: '2026-01-02T08:00:00Z', liters: 50 }],
       daily_7d: [
         { date: '2026-01-01', consumed: 4 },
         { date: '2026-01-02', consumed: 6 },
@@ -211,7 +211,10 @@ describe('createWaterAnalyticsTabViewModel', () => {
     const vm = build(
       sm,
       device({
-        irrigationConfig: { drainTimes: [{ time: '09:00', duration: 45 }], drainDuration: 45 } as any,
+        irrigationConfig: {
+          drainTimes: [{ time: '09:00', duration: 45 }],
+          drainDuration: 45,
+        } as any,
       })
     );
     expect(vm.isCropSteering).toBe(true);

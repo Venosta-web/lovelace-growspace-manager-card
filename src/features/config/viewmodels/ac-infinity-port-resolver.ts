@@ -93,11 +93,14 @@ export function deviceIdForModeEntity(
 }
 
 /** The actuator bundle's two resolved roles, in the order the warning names them. */
-const ACTUATOR_ROLES: { role: AcInfinityRole; label: string; field: 'mode_entity' | 'speed_entity' }[] =
-  [
-    { role: 'mode', label: 'Mode', field: 'mode_entity' },
-    { role: 'power', label: 'Speed', field: 'speed_entity' },
-  ];
+const ACTUATOR_ROLES: {
+  role: AcInfinityRole;
+  label: string;
+  field: 'mode_entity' | 'speed_entity';
+}[] = [
+  { role: 'mode', label: 'Mode', field: 'mode_entity' },
+  { role: 'power', label: 'Speed', field: 'speed_entity' },
+];
 
 /**
  * Apply a port pick to an actuator bundle: overwrite both role fields from the
