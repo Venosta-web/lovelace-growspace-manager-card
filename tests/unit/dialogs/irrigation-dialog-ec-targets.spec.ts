@@ -15,14 +15,22 @@ import { irrigationConfigs$ } from '../../../src/slices/irrigation';
 
 vi.mock('../../../src/features/shared/ui/md3-number-input', () => ({
   Md3NumberInput: class extends HTMLElement {
-    get value() { return this.getAttribute('value') || ''; }
-    set value(v: string) { this.setAttribute('value', v); }
+    get value() {
+      return this.getAttribute('value') || '';
+    }
+    set value(v: string) {
+      this.setAttribute('value', v);
+    }
   },
 }));
 vi.mock('../../../src/features/shared/ui/md3-switch', () => ({
   Md3Switch: class extends HTMLElement {
-    get checked() { return this.hasAttribute('checked'); }
-    set checked(v: boolean) { v ? this.setAttribute('checked', '') : this.removeAttribute('checked'); }
+    get checked() {
+      return this.hasAttribute('checked');
+    }
+    set checked(v: boolean) {
+      v ? this.setAttribute('checked', '') : this.removeAttribute('checked');
+    }
   },
 }));
 
@@ -47,8 +55,14 @@ function makeMockStore(device: GrowspaceDevice) {
   return {
     context: {
       data: { $devices: { get: () => $devicesValue }, patchDeviceIrrigationConfig: vi.fn() },
-      showToast: vi.fn(), closeDialog: vi.fn(), refreshData: vi.fn().mockResolvedValue(undefined),
-      ui: { showToast: vi.fn() }, history: {}, grid: {}, hass: {}, syncService: {},
+      showToast: vi.fn(),
+      closeDialog: vi.fn(),
+      refreshData: vi.fn().mockResolvedValue(undefined),
+      ui: { showToast: vi.fn() },
+      history: {},
+      grid: {},
+      hass: {},
+      syncService: {},
     },
     ui: { showToast: vi.fn() },
   };
@@ -64,7 +78,10 @@ const baseDevice: GrowspaceDevice = {
   grid: {},
   biologicalMetrics: {} as any,
   // poreEcSensors → substrate_ec tab is visible; feedEcSensors for completeness.
-  environmentAttributes: { feedEcSensors: ['sensor.feed_ec'], poreEcSensors: ['sensor.pore_ec'] } as any,
+  environmentAttributes: {
+    feedEcSensors: ['sensor.feed_ec'],
+    poreEcSensors: ['sensor.pore_ec'],
+  } as any,
   stats: {} as any,
   waterUsage: { litersToday: 0 } as any,
   drainConfig: null as any,
@@ -112,8 +129,16 @@ describe('IrrigationDialog – Substrate & EC tab: feed-EC ranges', () => {
     const tab = await openOnSubstrateTab();
     const rows = tab.shadowRoot.querySelectorAll('.ec-target-row');
     expect(rows.length).toBe(5);
-    const labels = Array.from(rows).map((r) => r.querySelector('.ec-stage-label')?.textContent?.trim());
-    expect(labels).toEqual(['Seedling', 'Veg', 'Early Flower', 'Mid Flower', 'Late Flower / Flush']);
+    const labels = Array.from(rows).map((r) =>
+      r.querySelector('.ec-stage-label')?.textContent?.trim()
+    );
+    expect(labels).toEqual([
+      'Seedling',
+      'Veg',
+      'Early Flower',
+      'Mid Flower',
+      'Late Flower / Flush',
+    ]);
   });
 
   it('loads ecTargetRanges from device config into the child inputs', async () => {
@@ -134,7 +159,8 @@ describe('IrrigationDialog – Substrate & EC tab: feed-EC ranges', () => {
     const tab = await openOnSubstrateTab();
 
     const rows = tab.shadowRoot.querySelectorAll('.ec-target-row');
-    const inputs = (row: Element) => Array.from(row.querySelectorAll('input[type="number"]')) as HTMLInputElement[];
+    const inputs = (row: Element) =>
+      Array.from(row.querySelectorAll('input[type="number"]')) as HTMLInputElement[];
     expect(inputs(rows[0])[0].value).toBe('0.8');
     expect(inputs(rows[0])[1].value).toBe('1.2');
     expect(inputs(rows[1])[0].value).toBe('1.5');
@@ -143,7 +169,9 @@ describe('IrrigationDialog – Substrate & EC tab: feed-EC ranges', () => {
 
   it('updates the SM draft when a min EC input changes (buffered, ADR-0017)', async () => {
     const tab = await openOnSubstrateTab();
-    const firstMin = tab.shadowRoot.querySelector('.ec-target-row input[type="number"]') as HTMLInputElement;
+    const firstMin = tab.shadowRoot.querySelector(
+      '.ec-target-row input[type="number"]'
+    ) as HTMLInputElement;
     firstMin.value = '1.1';
     firstMin.dispatchEvent(new Event('input', { bubbles: true }));
     await element.updateComplete;
@@ -152,7 +180,9 @@ describe('IrrigationDialog – Substrate & EC tab: feed-EC ranges', () => {
 
   it('updates the SM draft when a max EC input changes', async () => {
     const tab = await openOnSubstrateTab();
-    const firstMax = tab.shadowRoot.querySelectorAll('.ec-target-row input[type="number"]')[1] as HTMLInputElement;
+    const firstMax = tab.shadowRoot.querySelectorAll(
+      '.ec-target-row input[type="number"]'
+    )[1] as HTMLInputElement;
     firstMax.value = '2.5';
     firstMax.dispatchEvent(new Event('input', { bubbles: true }));
     await element.updateComplete;
@@ -168,11 +198,15 @@ describe('IrrigationDialog – Substrate & EC tab: feed-EC ranges', () => {
     (element as any).store = makeMockStore(element.device!);
     const tab = await openOnSubstrateTab();
 
-    const volumeBtn = tab.shadowRoot.querySelector('button[data-sizing-mode="volume"]') as HTMLButtonElement;
+    const volumeBtn = tab.shadowRoot.querySelector(
+      'button[data-sizing-mode="volume"]'
+    ) as HTMLButtonElement;
     volumeBtn.click();
     await element.updateComplete;
 
-    expect(sliceMocks.updateIrrigationStrategy).toHaveBeenCalledWith('gs1', { shotSizingMode: 'volume' });
+    expect(sliceMocks.updateIrrigationStrategy).toHaveBeenCalledWith('gs1', {
+      shotSizingMode: 'volume',
+    });
     // and it does NOT land in the buffered draft
     expect((element as any)._sm.tabs.substrate_ec.draft).not.toHaveProperty('shotSizingMode');
   });

@@ -24,7 +24,7 @@ import * as hassCallMod from '../services/hass-call';
 const stubTags = ['ha-dialog', 'ha-svg-icon', 'ha-icon', 'ha-entity-picker'];
 for (const tag of stubTags) {
   if (!customElements.get(tag)) {
-    customElements.define(tag, class extends HTMLElement { });
+    customElements.define(tag, class extends HTMLElement {});
   }
 }
 
@@ -74,7 +74,7 @@ function stubFileReader(dataUrl: string): void {
           .then(() => this.onload?.())
           .catch(() => {});
       }
-    },
+    }
   );
 }
 
@@ -89,7 +89,7 @@ beforeEach(() => {
   aiError$.set(null);
   aiEnabled$.set(null);
   vi.clearAllMocks();
-  vi.mocked(hassCallMod.hassCall).mockReturnValue(new Promise(() => { }));
+  vi.mocked(hassCallMod.hassCall).mockReturnValue(new Promise(() => {}));
 });
 
 afterEach(() => {
@@ -103,14 +103,18 @@ afterEach(() => {
 
 describe('GmChatPanel — welcome state', () => {
   it('renders .welcome when no active thread exists', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.welcome')).not.toBeNull();
   });
 
   it('renders 4 .prompt-card buttons in the welcome grid', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelectorAll('.prompt-card').length).toBe(4);
@@ -123,7 +127,9 @@ describe('GmChatPanel — welcome state', () => {
       messages: [],
     });
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.prompt-card')!.click();
@@ -132,7 +138,7 @@ describe('GmChatPanel — welcome state', () => {
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/start_conversation',
       expect.objectContaining({ growspace_id: GS_ID }),
-      expect.anything(),
+      expect.anything()
     );
   });
 });
@@ -143,14 +149,18 @@ describe('GmChatPanel — welcome state', () => {
 
 describe('GmChatPanel — composer', () => {
   it('send button is disabled when textarea is empty', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector<HTMLButtonElement>('.send')!.disabled).toBe(true);
   });
 
   it('send button is enabled when textarea has text', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea')!;
@@ -162,7 +172,9 @@ describe('GmChatPanel — composer', () => {
   });
 
   it('calls hassCall with start_conversation when no thread is active', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea')!;
@@ -176,14 +188,16 @@ describe('GmChatPanel — composer', () => {
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/start_conversation',
       expect.objectContaining({ growspace_id: GS_ID, message: 'How is my grow?' }),
-      expect.anything(),
+      expect.anything()
     );
   });
 
   it('calls hassCall with send_message when a thread is active', async () => {
     setActiveThread();
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea')!;
@@ -197,12 +211,14 @@ describe('GmChatPanel — composer', () => {
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/send_message',
       expect.objectContaining({ conversation_id: THREAD_ID, message: 'Follow-up question' }),
-      expect.anything(),
+      expect.anything()
     );
   });
 
   it('clears textarea immediately after clicking send', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea')!;
@@ -217,7 +233,9 @@ describe('GmChatPanel — composer', () => {
   });
 
   it('Enter key in textarea triggers send', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea')!;
@@ -231,12 +249,14 @@ describe('GmChatPanel — composer', () => {
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/start_conversation',
       expect.objectContaining({ message: 'VPD question' }),
-      expect.anything(),
+      expect.anything()
     );
   });
 
   it('Shift+Enter does not trigger send', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea')!;
@@ -244,7 +264,9 @@ describe('GmChatPanel — composer', () => {
     textarea.dispatchEvent(new Event('input'));
     await el.updateComplete;
 
-    textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }));
+    textarea.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true })
+    );
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).not.toHaveBeenCalled();
@@ -259,7 +281,9 @@ describe('GmChatPanel — composer error display', () => {
   it('renders .composer-error when aiError$ is set', async () => {
     aiError$.set('Connection timeout');
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const errEl = el.shadowRoot!.querySelector('.composer-error');
@@ -268,7 +292,9 @@ describe('GmChatPanel — composer error display', () => {
   });
 
   it('does not render .composer-error when aiError$ is null', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.composer-error')).toBeNull();
@@ -281,14 +307,18 @@ describe('GmChatPanel — composer error display', () => {
 
 describe('GmChatPanel — suggestion chips', () => {
   it('renders .suggest-chip buttons in the composer', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelectorAll('.suggest-chip').length).toBeGreaterThan(0);
   });
 
   it('clicking a suggest chip populates the textarea', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const chip = el.shadowRoot!.querySelector<HTMLElement>('.suggest-chip')!;
@@ -296,7 +326,9 @@ describe('GmChatPanel — suggestion chips', () => {
     chip.click();
     await el.updateComplete;
 
-    expect(el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea')!.value).toBe(chipText);
+    expect(el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea')!.value).toBe(
+      chipText
+    );
   });
 });
 
@@ -306,14 +338,18 @@ describe('GmChatPanel — suggestion chips', () => {
 
 describe('GmChatPanel — attach button', () => {
   it('renders .attach-btn in the composer', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.attach-btn')).not.toBeNull();
   });
 
   it('renders a hidden file input in the composer', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector<HTMLInputElement>('input[type="file"]')).not.toBeNull();
@@ -338,7 +374,9 @@ describe('GmChatPanel — attachment preview', () => {
   }
 
   it('shows .attachment-preview after a file is selected', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     await selectFile(el);
@@ -347,7 +385,9 @@ describe('GmChatPanel — attachment preview', () => {
   });
 
   it('shows an img tag with the data URL inside .attachment-preview', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     await selectFile(el);
@@ -358,7 +398,9 @@ describe('GmChatPanel — attachment preview', () => {
   });
 
   it('remove button in .attachment-preview clears the attachment', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     await selectFile(el);
@@ -402,7 +444,9 @@ describe('GmChatPanel — imageEntityId wire-up', () => {
       messages: [],
     });
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     await attachAndType(el, 'Check this image');
@@ -412,7 +456,7 @@ describe('GmChatPanel — imageEntityId wire-up', () => {
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/start_conversation',
       expect.objectContaining({ image_entities: [DATA_URL] }),
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -424,7 +468,9 @@ describe('GmChatPanel — imageEntityId wire-up', () => {
       messages: [],
     });
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     await attachAndType(el, 'See this');
@@ -434,7 +480,7 @@ describe('GmChatPanel — imageEntityId wire-up', () => {
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/send_message',
       expect.objectContaining({ image_entities: [DATA_URL] }),
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -445,7 +491,9 @@ describe('GmChatPanel — imageEntityId wire-up', () => {
       messages: [],
     });
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     await attachAndType(el, 'Message with attachment');
@@ -464,30 +512,67 @@ describe('GmChatPanel — imageEntityId wire-up', () => {
 
 describe('GmChatPanel — thread rail', () => {
   it('renders .chat-rail', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.chat-rail')).not.toBeNull();
   });
 
   it('renders a .thread-row for each thread in the growspace', async () => {
-    conversationThreads$.set(new Map([
-      ['t1', { thread_id: 't1', growspace_id: GS_ID, messages: [USER_MSG], pinned: false, updated_at: NOW_S }],
-      ['t2', { thread_id: 't2', growspace_id: GS_ID, messages: [{ ...USER_MSG, text: 'Second' }], pinned: false, updated_at: NOW_S - 10 }],
-    ]));
+    conversationThreads$.set(
+      new Map([
+        [
+          't1',
+          {
+            thread_id: 't1',
+            growspace_id: GS_ID,
+            messages: [USER_MSG],
+            pinned: false,
+            updated_at: NOW_S,
+          },
+        ],
+        [
+          't2',
+          {
+            thread_id: 't2',
+            growspace_id: GS_ID,
+            messages: [{ ...USER_MSG, text: 'Second' }],
+            pinned: false,
+            updated_at: NOW_S - 10,
+          },
+        ],
+      ])
+    );
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelectorAll('.thread-row').length).toBe(2);
   });
 
   it('does not render threads from other growspaces', async () => {
-    conversationThreads$.set(new Map([
-      ['t1', { thread_id: 't1', growspace_id: 'other-gs', messages: [USER_MSG], pinned: false, updated_at: NOW_S }],
-    ]));
+    conversationThreads$.set(
+      new Map([
+        [
+          't1',
+          {
+            thread_id: 't1',
+            growspace_id: 'other-gs',
+            messages: [USER_MSG],
+            pinned: false,
+            updated_at: NOW_S,
+          },
+        ],
+      ])
+    );
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.thread-row')).toBeNull();
@@ -496,20 +581,44 @@ describe('GmChatPanel — thread rail', () => {
   it('active thread row has aria-pressed="true"', async () => {
     setActiveThread();
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.thread-row[aria-pressed="true"]')).not.toBeNull();
   });
 
   it('clicking an inactive thread row switches to that thread', async () => {
-    conversationThreads$.set(new Map([
-      ['t1', { thread_id: 't1', growspace_id: GS_ID, messages: [USER_MSG], pinned: false, updated_at: NOW_S }],
-      ['t2', { thread_id: 't2', growspace_id: GS_ID, messages: [{ ...USER_MSG, text: 'Second' }], pinned: false, updated_at: NOW_S - 10 }],
-    ]));
+    conversationThreads$.set(
+      new Map([
+        [
+          't1',
+          {
+            thread_id: 't1',
+            growspace_id: GS_ID,
+            messages: [USER_MSG],
+            pinned: false,
+            updated_at: NOW_S,
+          },
+        ],
+        [
+          't2',
+          {
+            thread_id: 't2',
+            growspace_id: GS_ID,
+            messages: [{ ...USER_MSG, text: 'Second' }],
+            pinned: false,
+            updated_at: NOW_S - 10,
+          },
+        ],
+      ])
+    );
     activeThreadId$.set(new Map([[GS_ID, 't1']]));
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.thread-row[data-thread-id="t2"]')!.click();
@@ -520,11 +629,24 @@ describe('GmChatPanel — thread rail', () => {
   });
 
   it('renders a Pinned section when pinned threads exist', async () => {
-    conversationThreads$.set(new Map([
-      ['t1', { thread_id: 't1', growspace_id: GS_ID, messages: [USER_MSG], pinned: true, updated_at: NOW_S }],
-    ]));
+    conversationThreads$.set(
+      new Map([
+        [
+          't1',
+          {
+            thread_id: 't1',
+            growspace_id: GS_ID,
+            messages: [USER_MSG],
+            pinned: true,
+            updated_at: NOW_S,
+          },
+        ],
+      ])
+    );
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const labels = [...el.shadowRoot!.querySelectorAll('.rail-section-label')];
@@ -532,11 +654,24 @@ describe('GmChatPanel — thread rail', () => {
   });
 
   it('renders a Recent section when unpinned threads exist', async () => {
-    conversationThreads$.set(new Map([
-      ['t1', { thread_id: 't1', growspace_id: GS_ID, messages: [USER_MSG], pinned: false, updated_at: NOW_S }],
-    ]));
+    conversationThreads$.set(
+      new Map([
+        [
+          't1',
+          {
+            thread_id: 't1',
+            growspace_id: GS_ID,
+            messages: [USER_MSG],
+            pinned: false,
+            updated_at: NOW_S,
+          },
+        ],
+      ])
+    );
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const labels = [...el.shadowRoot!.querySelectorAll('.rail-section-label')];
@@ -546,7 +681,9 @@ describe('GmChatPanel — thread rail', () => {
   it('New conversation button clears the active thread', async () => {
     setActiveThread();
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.chat-area')).not.toBeNull();
@@ -559,23 +696,37 @@ describe('GmChatPanel — thread rail', () => {
 
   it('pin button in thread row calls hassCall with save_conversation_threads', async () => {
     vi.mocked(hassCallMod.hassCall).mockResolvedValue({});
-    conversationThreads$.set(new Map([
-      ['t1', { thread_id: 't1', growspace_id: GS_ID, messages: [USER_MSG], pinned: false, updated_at: NOW_S }],
-    ]));
+    conversationThreads$.set(
+      new Map([
+        [
+          't1',
+          {
+            thread_id: 't1',
+            growspace_id: GS_ID,
+            messages: [USER_MSG],
+            pinned: false,
+            updated_at: NOW_S,
+          },
+        ],
+      ])
+    );
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     // Nested <button> inside <button> is ejected by the browser parser — find via rail container
-    const railPinBtn = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.pin-btn')]
-      .find((b) => !b.closest('.thread-header'))!;
+    const railPinBtn = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.pin-btn')].find(
+      (b) => !b.closest('.thread-header')
+    )!;
     railPinBtn.click();
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/save_conversation_threads',
       expect.objectContaining({ growspace_id: GS_ID }),
-      expect.anything(),
+      expect.anything()
     );
   });
 });
@@ -590,28 +741,36 @@ describe('GmChatPanel — thread view', () => {
   });
 
   it('renders .chat-area when a thread is active', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.chat-area')).not.toBeNull();
   });
 
   it('renders a .msg for each message in the thread', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelectorAll('.msg').length).toBe(2);
   });
 
   it('user messages have class .user', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.msg.user')).not.toBeNull();
   });
 
   it('AI messages have class .ai', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.msg.ai')).not.toBeNull();
@@ -620,21 +779,27 @@ describe('GmChatPanel — thread view', () => {
   it('shows .typing indicator when isAiLoading$ is true', async () => {
     isAiLoading$.set(true);
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.typing')).not.toBeNull();
   });
 
   it('hides .typing indicator when isAiLoading$ is false', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.typing')).toBeNull();
   });
 
   it('renders .thread-breadcrumb in .thread-header', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const bc = el.shadowRoot!.querySelector('.thread-breadcrumb');
@@ -645,7 +810,9 @@ describe('GmChatPanel — thread view', () => {
   it('pin button in thread header calls hassCall with save_conversation_threads', async () => {
     vi.mocked(hassCallMod.hassCall).mockResolvedValue({});
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.thread-header .pin-btn')!.click();
@@ -654,7 +821,7 @@ describe('GmChatPanel — thread view', () => {
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/save_conversation_threads',
       expect.objectContaining({ growspace_id: GS_ID }),
-      expect.anything(),
+      expect.anything()
     );
   });
 });
@@ -667,7 +834,9 @@ describe('GmChatPanel — message confidence display', () => {
   it('renders a confidence badge for AI messages with confidence >= 0.8', async () => {
     setActiveThread({ messages: [{ ...AI_MSG, confidence: 0.9 }] });
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const badge = el.shadowRoot!.querySelector('.conf');
@@ -678,7 +847,9 @@ describe('GmChatPanel — message confidence display', () => {
   it('confidence badge has class .mid for confidence 0.5–0.79', async () => {
     setActiveThread({ messages: [{ ...AI_MSG, confidence: 0.65 }] });
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.conf.mid')).not.toBeNull();
@@ -688,7 +859,9 @@ describe('GmChatPanel — message confidence display', () => {
     const { confidence: _c, ...noConf } = AI_MSG;
     setActiveThread({ messages: [noConf] });
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.conf')).toBeNull();
@@ -702,17 +875,21 @@ describe('GmChatPanel — message confidence display', () => {
 describe('GmChatPanel — sensor snapshot in message', () => {
   it('renders .data-snap with one .snap-cell per sensor', async () => {
     setActiveThread({
-      messages: [{
-        ...AI_MSG,
-        sensorSnapshot: [
-          { label: 'VPD', value: '1.2', unit: 'kPa', delta: '+0.1' },
-          { label: 'Temp', value: '24', unit: '°C' },
-          { label: 'RH', value: '65', unit: '%' },
-        ],
-      }],
+      messages: [
+        {
+          ...AI_MSG,
+          sensorSnapshot: [
+            { label: 'VPD', value: '1.2', unit: 'kPa', delta: '+0.1' },
+            { label: 'Temp', value: '24', unit: '°C' },
+            { label: 'RH', value: '65', unit: '%' },
+          ],
+        },
+      ],
     });
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.data-snap')).not.toBeNull();
@@ -722,7 +899,9 @@ describe('GmChatPanel — sensor snapshot in message', () => {
   it('does not render .data-snap when sensorSnapshot is empty', async () => {
     setActiveThread({ messages: [{ ...AI_MSG, sensorSnapshot: [] }] });
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.data-snap')).toBeNull();
@@ -736,16 +915,20 @@ describe('GmChatPanel — sensor snapshot in message', () => {
 describe('GmChatPanel — citations in message', () => {
   it('renders one .cite-chip per citation', async () => {
     setActiveThread({
-      messages: [{
-        ...AI_MSG,
-        citations: [
-          { label: 'Temp sensor', source: 'sensor' as const },
-          { label: 'Day 12 log', source: 'logbook' as const },
-        ],
-      }],
+      messages: [
+        {
+          ...AI_MSG,
+          citations: [
+            { label: 'Temp sensor', source: 'sensor' as const },
+            { label: 'Day 12 log', source: 'logbook' as const },
+          ],
+        },
+      ],
     });
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const chips = el.shadowRoot!.querySelectorAll('.cite-chip');
@@ -761,15 +944,19 @@ describe('GmChatPanel — citations in message', () => {
 describe('GmChatPanel — image in user message bubble', () => {
   it('renders an img thumbnail inside .msg bubble when imageEntityId is set', async () => {
     setActiveThread({
-      messages: [{
-        role: 'user' as const,
-        text: 'Look at this',
-        timestamp: NOW_S,
-        imageEntityId: 'data:image/png;base64,abc123',
-      }],
+      messages: [
+        {
+          role: 'user' as const,
+          text: 'Look at this',
+          timestamp: NOW_S,
+          imageEntityId: 'data:image/png;base64,abc123',
+        },
+      ],
     });
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const img = el.shadowRoot!.querySelector<HTMLImageElement>('.msg-image');
@@ -795,14 +982,18 @@ describe('GmChatPanel — action card', () => {
   });
 
   it('renders .act-card when message has suggestedAction', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.act-card')).not.toBeNull();
   });
 
   it('Apply button calls callService with the suggested action', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.apply-btn')!.click();
@@ -811,12 +1002,14 @@ describe('GmChatPanel — action card', () => {
     expect(hassCallMod.callService).toHaveBeenCalledWith(
       ACTION.service,
       ACTION.target_entity_id,
-      ACTION.service_data,
+      ACTION.service_data
     );
   });
 
   it('Dismiss button hides the action card', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.act-card')).not.toBeNull();
@@ -835,7 +1028,7 @@ describe('GmChatPanel — action card', () => {
 describe('GmChatPanel — context chips', () => {
   it('seeds a growspace chip from growspacename on connect', async () => {
     const el = await fixture<GmChatPanel>(
-      html`<gm-chat-panel growspaceid=${GS_ID} growspacename="Tent Alpha"></gm-chat-panel>`,
+      html`<gm-chat-panel growspaceid=${GS_ID} growspacename="Tent Alpha"></gm-chat-panel>`
     );
     await el.updateComplete;
 
@@ -845,7 +1038,9 @@ describe('GmChatPanel — context chips', () => {
   });
 
   it('does not render .ctx-chip when growspacename is empty', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.ctx-chip')).toBeNull();
@@ -853,7 +1048,7 @@ describe('GmChatPanel — context chips', () => {
 
   it('remove button on ctx-chip removes the chip', async () => {
     const el = await fixture<GmChatPanel>(
-      html`<gm-chat-panel growspaceid=${GS_ID} growspacename="Tent Alpha"></gm-chat-panel>`,
+      html`<gm-chat-panel growspaceid=${GS_ID} growspacename="Tent Alpha"></gm-chat-panel>`
     );
     await el.updateComplete;
 
@@ -872,7 +1067,9 @@ describe('GmChatPanel — AI unavailable banner', () => {
   it('shows .agent-setup-banner when aiEnabled$ is false', async () => {
     aiEnabled$.set(false);
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.agent-setup-banner')).not.toBeNull();
@@ -881,14 +1078,18 @@ describe('GmChatPanel — AI unavailable banner', () => {
   it('does not show .agent-setup-banner when aiEnabled$ is true', async () => {
     aiEnabled$.set(true);
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.agent-setup-banner')).toBeNull();
   });
 
   it('does not show .agent-setup-banner when aiEnabled$ is null', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.agent-setup-banner')).toBeNull();
@@ -897,7 +1098,9 @@ describe('GmChatPanel — AI unavailable banner', () => {
   it('composer has .composer--disabled when AI is unavailable', async () => {
     aiEnabled$.set(false);
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.composer--disabled')).not.toBeNull();
@@ -914,43 +1117,59 @@ describe('GmChatPanel — agent setup', () => {
   });
 
   it('agent-save-btn is disabled when no agent is selected', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector<HTMLButtonElement>('.agent-save-btn')!.disabled).toBe(true);
   });
 
   it('never allows a custom entity, so a typed non-agent cannot be committed', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     const picker = el.shadowRoot!.querySelector('ha-entity-picker')!;
     expect(picker.hasAttribute('allow-custom-entity')).toBe(false);
     expect(
-      (picker as unknown as { allowCustomEntity?: boolean }).allowCustomEntity,
+      (picker as unknown as { allowCustomEntity?: boolean }).allowCustomEntity
     ).toBeUndefined();
   });
 
   it('agent-save-btn is enabled after selecting an agent via value-changed', async () => {
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
-    await el.updateComplete;
-
-    el.shadowRoot!.querySelector('ha-entity-picker')!.dispatchEvent(
-      new CustomEvent('value-changed', { detail: { value: 'conversation.my_agent' }, bubbles: true }),
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
     );
     await el.updateComplete;
 
-    expect(el.shadowRoot!.querySelector<HTMLButtonElement>('.agent-save-btn')!.disabled).toBe(false);
+    el.shadowRoot!.querySelector('ha-entity-picker')!.dispatchEvent(
+      new CustomEvent('value-changed', {
+        detail: { value: 'conversation.my_agent' },
+        bubbles: true,
+      })
+    );
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector<HTMLButtonElement>('.agent-save-btn')!.disabled).toBe(
+      false
+    );
   });
 
   it('clicking Enable AI calls hassCall with save_ai_agent', async () => {
     vi.mocked(hassCallMod.hassCall).mockResolvedValue({});
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     el.shadowRoot!.querySelector('ha-entity-picker')!.dispatchEvent(
-      new CustomEvent('value-changed', { detail: { value: 'conversation.my_agent' }, bubbles: true }),
+      new CustomEvent('value-changed', {
+        detail: { value: 'conversation.my_agent' },
+        bubbles: true,
+      })
     );
     await el.updateComplete;
 
@@ -960,18 +1179,23 @@ describe('GmChatPanel — agent setup', () => {
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/save_ai_agent',
       { agent_id: 'conversation.my_agent' },
-      expect.anything(),
+      expect.anything()
     );
   });
 
   it('shows .agent-setup-error when saveAiAgent throws', async () => {
     vi.mocked(hassCallMod.hassCall).mockRejectedValue(new Error('Agent not found'));
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     el.shadowRoot!.querySelector('ha-entity-picker')!.dispatchEvent(
-      new CustomEvent('value-changed', { detail: { value: 'conversation.bad_agent' }, bubbles: true }),
+      new CustomEvent('value-changed', {
+        detail: { value: 'conversation.bad_agent' },
+        bubbles: true,
+      })
     );
     await el.updateComplete;
 
@@ -992,14 +1216,25 @@ describe('GmChatPanel — agent setup', () => {
 describe('GmChatPanel — relative timestamps in thread rail', () => {
   function threadWithTs(ts: number) {
     return new Map([
-      ['t1', { thread_id: 't1', growspace_id: GS_ID, messages: [{ ...USER_MSG, timestamp: ts }], pinned: false, updated_at: ts }],
+      [
+        't1',
+        {
+          thread_id: 't1',
+          growspace_id: GS_ID,
+          messages: [{ ...USER_MSG, timestamp: ts }],
+          pinned: false,
+          updated_at: ts,
+        },
+      ],
     ]);
   }
 
   it('shows "just now" for timestamps < 60 seconds ago', async () => {
     conversationThreads$.set(threadWithTs(NOW_S - 30));
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.thread-time')!.textContent).toContain('just now');
@@ -1008,7 +1243,9 @@ describe('GmChatPanel — relative timestamps in thread rail', () => {
   it('shows "Xm ago" for timestamps 1–59 minutes ago', async () => {
     conversationThreads$.set(threadWithTs(NOW_S - 120));
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.thread-time')!.textContent).toContain('m ago');
@@ -1017,7 +1254,9 @@ describe('GmChatPanel — relative timestamps in thread rail', () => {
   it('shows "Xh ago" for timestamps 1–23 hours ago', async () => {
     conversationThreads$.set(threadWithTs(NOW_S - 7200));
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.thread-time')!.textContent).toContain('h ago');
@@ -1026,18 +1265,27 @@ describe('GmChatPanel — relative timestamps in thread rail', () => {
   it('shows "Xd ago" for timestamps 1+ days ago', async () => {
     conversationThreads$.set(threadWithTs(NOW_S - 172800));
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.thread-time')!.textContent).toContain('d ago');
   });
 
   it('shows empty string when thread has no messages', async () => {
-    conversationThreads$.set(new Map([
-      ['t1', { thread_id: 't1', growspace_id: GS_ID, messages: [], pinned: false, updated_at: NOW_S }],
-    ]));
+    conversationThreads$.set(
+      new Map([
+        [
+          't1',
+          { thread_id: 't1', growspace_id: GS_ID, messages: [], pinned: false, updated_at: NOW_S },
+        ],
+      ])
+    );
 
-    const el = await fixture<GmChatPanel>(html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`);
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${GS_ID}></gm-chat-panel>`
+    );
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.thread-time')!.textContent).toBe('');
@@ -1053,7 +1301,7 @@ describe('GmChatPanel — render-once smoke test (Fixture Builder)', () => {
     const gs = aGrowspace({ growspaceId: 'smoke-tent', name: 'Smoke Tent' });
 
     const el = await fixture<GmChatPanel>(
-      html`<gm-chat-panel growspaceid=${gs.growspaceId} growspacename=${gs.name}></gm-chat-panel>`,
+      html`<gm-chat-panel growspaceid=${gs.growspaceId} growspacename=${gs.name}></gm-chat-panel>`
     );
     await el.updateComplete;
 
@@ -1066,7 +1314,7 @@ describe('GmChatPanel — render-once smoke test (Fixture Builder)', () => {
     const gs = aGrowspace({ name: 'Smoke Tent' });
 
     const el = await fixture<GmChatPanel>(
-      html`<gm-chat-panel growspaceid=${gs.growspaceId} growspacename=${gs.name}></gm-chat-panel>`,
+      html`<gm-chat-panel growspaceid=${gs.growspaceId} growspacename=${gs.name}></gm-chat-panel>`
     );
     await el.updateComplete;
 
@@ -1079,7 +1327,7 @@ describe('GmChatPanel — render-once smoke test (Fixture Builder)', () => {
     const gs = aGrowspace();
 
     const el = await fixture<GmChatPanel>(
-      html`<gm-chat-panel growspaceid=${gs.growspaceId} growspacename=${gs.name}></gm-chat-panel>`,
+      html`<gm-chat-panel growspaceid=${gs.growspaceId} growspacename=${gs.name}></gm-chat-panel>`
     );
     await el.updateComplete;
 

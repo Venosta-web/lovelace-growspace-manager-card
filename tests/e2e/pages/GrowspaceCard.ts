@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import type { Page, Locator } from '@playwright/test';
 import { PlantData, Position } from './types';
 
 export class GrowspaceCard {
@@ -22,7 +22,15 @@ export class GrowspaceCard {
    */
   async navigate(dashboardPath: string) {
     await this.page.goto(dashboardPath);
-    await this.card.waitFor({ state: 'visible', timeout: 10000 });
+    try {
+      await this.card.waitFor({ state: 'visible', timeout: 10000 });
+    } catch (error) {
+      throw new Error(
+        `No Growspace Manager card found at dashboard "${dashboardPath}". ` +
+          'The dashboard may not exist or may not contain the card.',
+        { cause: error }
+      );
+    }
     await this.page.waitForLoadState('networkidle');
     // Give card time to initialize
     await this.page.waitForTimeout(1000);

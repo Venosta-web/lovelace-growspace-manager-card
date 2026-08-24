@@ -15,7 +15,9 @@ describe('GrowspaceGridViewModel', () => {
   let mockPlants: (PlantEntity | null)[][];
 
   beforeEach(() => {
-    setDevices([{ deviceId: 'test-growspace', biologicalMetrics: { vpdStatus: 'ok' }, plants: [] } as any]);
+    setDevices([
+      { deviceId: 'test-growspace', biologicalMetrics: { vpdStatus: 'ok' }, plants: [] } as any,
+    ]);
 
     // Mock store with necessary atoms
     mockStore = {
@@ -206,14 +208,22 @@ describe('GrowspaceGridViewModel', () => {
 
     // Test WARNING status
     setDevices([
-      { deviceId: 'test-growspace', biologicalMetrics: { vpdStatus: StatusLevel.WARNING }, plants: [] } as any,
+      {
+        deviceId: 'test-growspace',
+        biologicalMetrics: { vpdStatus: StatusLevel.WARNING },
+        plants: [],
+      } as any,
     ]);
     viewModel = createGrowspaceGridViewModel(mockPlants, 2, 2, mockStore as GrowspaceStore);
     expect(viewModel.get().cells[0].overlayColor).toContain('255, 152, 0'); // WARNING color
 
     // Test DANGER status
     setDevices([
-      { deviceId: 'test-growspace', biologicalMetrics: { vpdStatus: StatusLevel.DANGER }, plants: [] } as any,
+      {
+        deviceId: 'test-growspace',
+        biologicalMetrics: { vpdStatus: StatusLevel.DANGER },
+        plants: [],
+      } as any,
     ]);
     viewModel = createGrowspaceGridViewModel(mockPlants, 2, 2, mockStore as GrowspaceStore);
     expect(viewModel.get().cells[0].overlayColor).toContain('244, 67, 54'); // DANGER color

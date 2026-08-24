@@ -150,7 +150,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this._dialogUnsubscribe?.();
     this._dialogUnsubscribe = undefined;
     if (this._dialogPortal) {
-      document.body.removeChild(this._dialogPortal);
+      this._dialogPortal.remove();
       this._dialogPortal = null;
     }
     this.store.destroy();
@@ -166,7 +166,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     portal.store = this.store;
     if (this.hass) portal.hass = this.hass;
     if (this._config) portal.config = this._config;
-    document.body.appendChild(portal);
+    // Current Home Assistant form controls consume internal Lit contexts
+    // instead of reading a `.hass` property. Keep the portal below HA's root
+    // context provider; a body-level sibling leaves those controls without
+    // states, registries, config, or internationalization data.
+    const homeAssistantRoot = document.querySelector('home-assistant')?.shadowRoot;
+    (homeAssistantRoot ?? document.body).appendChild(portal);
     this._dialogPortal = portal;
   }
 

@@ -94,7 +94,9 @@ export class HarvestScoringDialog extends LitElement {
         font-weight: 500;
         opacity: 0.6;
         padding: 10px 16px;
-        transition: opacity 0.15s, border-color 0.15s;
+        transition:
+          opacity 0.15s,
+          border-color 0.15s;
       }
 
       .tab-btn.active {
@@ -352,7 +354,10 @@ export class HarvestScoringDialog extends LitElement {
       this._transition({ type: 'SaveResolved' });
       this._dispatchClose();
     } catch (e) {
-      this._transition({ type: 'SaveFailed', message: e instanceof Error ? e.message : 'Harvest failed' });
+      this._transition({
+        type: 'SaveFailed',
+        message: e instanceof Error ? e.message : 'Harvest failed',
+      });
     }
   }
 
@@ -420,12 +425,16 @@ export class HarvestScoringDialog extends LitElement {
               class="tab-btn ${sm.activeTab === 'scoring' ? 'active' : ''}"
               @click=${() => this._selectTab('scoring')}
               ?disabled=${isBusy}
-            >Scoring</button>
+            >
+              Scoring
+            </button>
             <button
               class="tab-btn ${sm.activeTab === 'metrics' ? 'active' : ''}"
               @click=${() => this._selectTab('metrics')}
               ?disabled=${isBusy}
-            >Yield &amp; Lab</button>
+            >
+              Yield &amp; Lab
+            </button>
           </div>
 
           <!-- TAB CONTENT -->
@@ -437,9 +446,7 @@ export class HarvestScoringDialog extends LitElement {
             : nothing}
 
           <!-- ACTIONS -->
-          ${sm.status.kind === 'confirming'
-            ? this._renderConfirmBar()
-            : this._renderActionBar()}
+          ${sm.status.kind === 'confirming' ? this._renderConfirmBar() : this._renderActionBar()}
         </div>
       </ha-dialog>
     `;
@@ -475,7 +482,8 @@ export class HarvestScoringDialog extends LitElement {
               step="0.1"
               placeholder="e.g. 120"
               .value=${draft.wetWeight}
-              @input=${(e: InputEvent) => this._setMetricField('wetWeight', (e.target as HTMLInputElement).value)}
+              @input=${(e: InputEvent) =>
+                this._setMetricField('wetWeight', (e.target as HTMLInputElement).value)}
               ?disabled=${isBusy}
             />
           </div>
@@ -488,7 +496,8 @@ export class HarvestScoringDialog extends LitElement {
               step="0.1"
               placeholder="e.g. 28"
               .value=${draft.dryWeight}
-              @input=${(e: InputEvent) => this._setMetricField('dryWeight', (e.target as HTMLInputElement).value)}
+              @input=${(e: InputEvent) =>
+                this._setMetricField('dryWeight', (e.target as HTMLInputElement).value)}
               ?disabled=${isBusy}
             />
           </div>
@@ -501,7 +510,8 @@ export class HarvestScoringDialog extends LitElement {
               step="0.1"
               placeholder="e.g. 5"
               .value=${draft.trimWeight}
-              @input=${(e: InputEvent) => this._setMetricField('trimWeight', (e.target as HTMLInputElement).value)}
+              @input=${(e: InputEvent) =>
+                this._setMetricField('trimWeight', (e.target as HTMLInputElement).value)}
               ?disabled=${isBusy}
             />
           </div>
@@ -524,7 +534,8 @@ export class HarvestScoringDialog extends LitElement {
               step="0.1"
               placeholder="e.g. 24.5"
               .value=${draft.thcPercentage}
-              @input=${(e: InputEvent) => this._setMetricField('thcPercentage', (e.target as HTMLInputElement).value)}
+              @input=${(e: InputEvent) =>
+                this._setMetricField('thcPercentage', (e.target as HTMLInputElement).value)}
               ?disabled=${isBusy}
             />
           </div>
@@ -538,7 +549,8 @@ export class HarvestScoringDialog extends LitElement {
               step="0.1"
               placeholder="e.g. 0.3"
               .value=${draft.cbdPercentage}
-              @input=${(e: InputEvent) => this._setMetricField('cbdPercentage', (e.target as HTMLInputElement).value)}
+              @input=${(e: InputEvent) =>
+                this._setMetricField('cbdPercentage', (e.target as HTMLInputElement).value)}
               ?disabled=${isBusy}
             />
           </div>
@@ -549,7 +561,8 @@ export class HarvestScoringDialog extends LitElement {
               rows="2"
               placeholder="e.g. myrcene, limonene, caryophyllene"
               .value=${draft.terpeneProfile}
-              @input=${(e: InputEvent) => this._setMetricField('terpeneProfile', (e.target as HTMLTextAreaElement).value)}
+              @input=${(e: InputEvent) =>
+                this._setMetricField('terpeneProfile', (e.target as HTMLTextAreaElement).value)}
               ?disabled=${isBusy}
             ></textarea>
           </div>
@@ -561,15 +574,10 @@ export class HarvestScoringDialog extends LitElement {
   private _renderConfirmBar(): TemplateResult {
     return html`
       <div class="confirm-bar">
-        <p class="confirm-text">
-          Harvest is permanent and cannot be undone. Confirm to proceed.
-        </p>
+        <p class="confirm-text">Harvest is permanent and cannot be undone. Confirm to proceed.</p>
         <div style="display:flex; justify-content:flex-end; gap:12px;">
           <button class="md3-button outlined" @click=${this._handleHarvestCancelled}>Cancel</button>
-          <button
-            class="md3-button filled"
-            @click=${this._handleHarvestConfirmed}
-          >
+          <button class="md3-button filled" @click=${this._handleHarvestConfirmed}>
             Confirm harvest
           </button>
         </div>
@@ -584,18 +592,10 @@ export class HarvestScoringDialog extends LitElement {
       <div
         style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; flex-wrap:wrap;"
       >
-        <button
-          class="md3-button outlined"
-          @click=${this._handleSkipClicked}
-          ?disabled=${isBusy}
-        >
+        <button class="md3-button outlined" @click=${this._handleSkipClicked} ?disabled=${isBusy}>
           Skip scoring &amp; harvest
         </button>
-        <button
-          class="md3-button filled"
-          @click=${this._handleSaveClicked}
-          ?disabled=${isBusy}
-        >
+        <button class="md3-button filled" @click=${this._handleSaveClicked} ?disabled=${isBusy}>
           ${isBusy ? 'Harvesting…' : '🌾 Save & harvest'}
         </button>
       </div>

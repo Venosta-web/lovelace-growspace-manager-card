@@ -26,9 +26,7 @@ describe('AddPlantDialog – self-fetch on open', () => {
   it('fetches the strain library itself when mounted', async () => {
     mockHassCall.mockResolvedValue({ strains: [] });
 
-    await fixture<AddPlantDialog>(
-      html`<add-plant-dialog .open=${true}></add-plant-dialog>`
-    );
+    await fixture<AddPlantDialog>(html`<add-plant-dialog .open=${true}></add-plant-dialog>`);
     await flush();
 
     expect(mockHassCall).toHaveBeenCalledWith(

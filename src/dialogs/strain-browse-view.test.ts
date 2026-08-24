@@ -105,7 +105,9 @@ describe('StrainBrowseView – Empty States', () => {
       expect(title?.textContent?.trim()).toBe('No strains match the "Active" filter');
 
       const subtitle = container?.querySelector('.empty-state-subtitle');
-      expect(subtitle?.textContent?.trim()).toContain('Try a different filter to see your strains.');
+      expect(subtitle?.textContent?.trim()).toContain(
+        'Try a different filter to see your strains.'
+      );
 
       const button = container?.querySelector('.empty-state-actions button');
       expect(button?.textContent?.trim()).toBe('Show all strains');
@@ -126,9 +128,7 @@ describe('StrainBrowseView – Empty States', () => {
         emittedDetail = (e as CustomEvent).detail;
       });
 
-      const button = el.shadowRoot?.querySelector<HTMLButtonElement>(
-        '.empty-state-actions button'
-      );
+      const button = el.shadowRoot?.querySelector<HTMLButtonElement>('.empty-state-actions button');
       button?.click();
 
       expect(emittedDetail).toEqual({ filter: 'all' });
@@ -139,16 +139,11 @@ describe('StrainBrowseView – Empty States', () => {
     it('displays original query casing and offers "Clear search"', async () => {
       const strains = [makeStrain({ strain: 'Northern Lights' })];
       const el = await fixture<StrainBrowseView>(html`
-        <strain-browse-view
-          .strains=${strains}
-          .libraryFilter=${'all'}
-        ></strain-browse-view>
+        <strain-browse-view .strains=${strains} .libraryFilter=${'all'}></strain-browse-view>
       `);
 
       const searchInput = el.shadowRoot?.querySelector('md3-text-input');
-      searchInput?.dispatchEvent(
-        new CustomEvent('change', { detail: 'Purple Punch Haze' })
-      );
+      searchInput?.dispatchEvent(new CustomEvent('change', { detail: 'Purple Punch Haze' }));
       await el.updateComplete;
 
       const container = el.shadowRoot?.querySelector('.empty-state-container');
@@ -169,10 +164,7 @@ describe('StrainBrowseView – Empty States', () => {
     it('clears the query when Clear search is clicked', async () => {
       const strains = [makeStrain({ strain: 'Northern Lights' })];
       const el = await fixture<StrainBrowseView>(html`
-        <strain-browse-view
-          .strains=${strains}
-          .libraryFilter=${'all'}
-        ></strain-browse-view>
+        <strain-browse-view .strains=${strains} .libraryFilter=${'all'}></strain-browse-view>
       `);
 
       const searchInput = el.shadowRoot?.querySelector('md3-text-input');
@@ -213,7 +205,9 @@ describe('StrainBrowseView – Empty States', () => {
       expect(container).not.toBeNull();
 
       const title = container?.querySelector('.empty-state-title');
-      expect(title?.textContent?.trim()).toBe('No strains match "Sour Diesel" in Active');
+      expect(title?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+        'No strains match "Sour Diesel" in Active'
+      );
 
       const subtitle = container?.querySelector('.empty-state-subtitle');
       expect(subtitle?.textContent?.trim()).toContain('Remove the filter or broaden your search.');

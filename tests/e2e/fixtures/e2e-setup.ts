@@ -1,7 +1,7 @@
 /**
- * One-time setup script: creates the 6 e2e growspaces in a running HA instance,
- * links all sim_e2e_* sensors to them, and writes the resolved growspace IDs
- * back into tests/e2e/.env.test automatically.
+ * One-time setup script: creates every covered capability profile in a running
+ * HA instance, applies the contract-derived entity payloads, and writes the
+ * resolved growspace IDs back into tests/e2e/.env.test automatically.
  *
  * Run once before your first Playwright session:
  *   HA_ACCESS_TOKEN=<token> HA_BASE_URL=http://localhost:8123 npx ts-node tests/e2e/fixtures/e2e-setup.ts
@@ -14,6 +14,49 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+
+interface CoverageSetupProfile {
+  profile: string;
+  slug: string;
+  name: string;
+  plant_stage_field: string;
+  stage_days_ago: number;
+  vwc_strategy?: VwcStrategyParams;
+  services: {
+    configure_environment?: Record<string, unknown>;
+    set_irrigation_settings?: Record<string, unknown>;
+    set_irrigation_strategy?: Record<string, unknown>;
+    configure_circulation_fan?: Record<string, unknown>;
+    configure_exhaust_fan?: Record<string, unknown>;
+    set_humidifier_control?: Record<string, unknown>;
+    set_dehumidifier_control?: Record<string, unknown>;
+    update_vision_checkup_config?: Record<string, unknown>;
+  };
+}
+
+interface CoverageFixtureEntity {
+  entity_id: string;
+  fixture?: {
+    handler: 'local_file';
+    name: string;
+    file_path: string;
+  };
+}
+
+interface CoverageManifest {
+  version: number;
+  global_settings: Record<string, string>;
+  profiles: CoverageSetupProfile[];
+  entities: CoverageFixtureEntity[];
+}
+
+const coveragePath = path.join(__dirname, 'e2e-entity-coverage.generated.json');
+if (!fs.existsSync(coveragePath)) {
+  throw new Error(
+    `Missing ${coveragePath}. Run growspace_manager_workspace/scripts/gen-e2e-sensors first.`
+  );
+}
+const COVERAGE = JSON.parse(fs.readFileSync(coveragePath, 'utf-8')) as CoverageManifest;
 
 // Load .env.test from the tests/e2e directory if present
 const envPath = path.join(__dirname, '..', '.env.test');
@@ -42,7 +85,11 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
-async function callService(domain: string, service: string, data: Record<string, unknown>): Promise<void> {
+async function callService(
+  domain: string,
+  service: string,
+  data: Record<string, unknown>
+): Promise<void> {
   const res = await fetch(`${BASE_URL}/api/services/${domain}/${service}`, {
     method: 'POST',
     headers,
@@ -54,22 +101,184 @@ async function callService(domain: string, service: string, data: Record<string,
   }
 }
 
+async function postApi(pathname: string, data: Record<string, unknown>): Promise<any> {
+  const res = await fetch(`${BASE_URL}${pathname}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    throw new Error(`POST ${pathname} failed (${res.status}): ${await res.text()}`);
+  }
+  return res.json();
+}
+
+async function callWebSocket<T = Record<string, unknown>>(
+  type: string,
+  data: Record<string, unknown>
+): Promise<T> {
+  const url = new URL('/api/websocket', BASE_URL);
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(url);
+    const commandId = 1;
+    const timeout = setTimeout(() => {
+      socket.close();
+      reject(new Error(`WebSocket command ${type} timed out`));
+    }, 10_000);
+    const finish = (callback: () => void) => {
+      clearTimeout(timeout);
+      socket.close();
+      callback();
+    };
+
+    socket.addEventListener('message', (event) => {
+      const message = JSON.parse(String(event.data)) as Record<string, any>;
+      if (message.type === 'auth_required') {
+        socket.send(JSON.stringify({ type: 'auth', access_token: TOKEN }));
+        return;
+      }
+      if (message.type === 'auth_invalid') {
+        finish(() => reject(new Error('Home Assistant WebSocket authentication failed')));
+        return;
+      }
+      if (message.type === 'auth_ok') {
+        socket.send(JSON.stringify({ id: commandId, type, ...data }));
+        return;
+      }
+      if (message.id !== commandId) return;
+      if (!message.success) {
+        finish(() =>
+          reject(new Error(`WebSocket command ${type} failed: ${JSON.stringify(message.error)}`))
+        );
+        return;
+      }
+      finish(() => resolve((message.result ?? {}) as T));
+    });
+    socket.addEventListener('error', () =>
+      finish(() => reject(new Error(`WebSocket command ${type} could not connect`)))
+    );
+  });
+}
+
 async function getStateAttributes(entityId: string): Promise<Record<string, unknown> | null> {
   const res = await fetch(`${BASE_URL}/api/states/${entityId}`, { headers });
   if (!res.ok) return null;
-  const data = await res.json() as { attributes: Record<string, unknown> };
+  const data = (await res.json()) as { attributes: Record<string, unknown> };
   return data.attributes;
 }
 
 async function getStateValue(entityId: string): Promise<string | null> {
   const res = await fetch(`${BASE_URL}/api/states/${entityId}`, { headers });
   if (!res.ok) return null;
-  const data = await res.json() as { state: string };
+  const data = (await res.json()) as { state: string };
   return data.state;
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(r => setTimeout(r, ms));
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function ensureCameraFixtures(): Promise<void> {
+  const fixtures = COVERAGE.entities.filter((entity) => entity.fixture);
+  if (fixtures.length === 0) return;
+
+  console.log('\n[cameras] provisioning deterministic local-file fixtures…');
+  for (const entity of fixtures) {
+    const fixture = entity.fixture!;
+    const existing = await getStateAttributes(entity.entity_id);
+    if (existing) {
+      if (existing.file_path !== fixture.file_path) {
+        await callService('local_file', 'update_file_path', {
+          entity_id: entity.entity_id,
+          file_path: fixture.file_path,
+        });
+      }
+      console.log(`  ${entity.entity_id} already available`);
+      continue;
+    }
+
+    const started = await postApi('/api/config/config_entries/flow', {
+      handler: fixture.handler,
+    });
+    if (started.type !== 'form' || !started.flow_id) {
+      throw new Error(`Could not start ${fixture.handler} flow: ${JSON.stringify(started)}`);
+    }
+    const completed = await postApi(`/api/config/config_entries/flow/${started.flow_id}`, {
+      name: fixture.name,
+      file_path: fixture.file_path,
+    });
+    if (completed.type !== 'create_entry' && completed.type !== 'abort') {
+      throw new Error(`Could not create ${entity.entity_id}: ${JSON.stringify(completed)}`);
+    }
+
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await sleep(250);
+      const attributes = await getStateAttributes(entity.entity_id);
+      if (attributes?.file_path === fixture.file_path) {
+        console.log(`  created ${entity.entity_id}`);
+        break;
+      }
+      if (attempt === 19) {
+        throw new Error(`${entity.entity_id} did not become available at ${fixture.file_path}`);
+      }
+    }
+  }
+}
+
+async function ensureGlobalSettings(readinessProbeSlug: string): Promise<void> {
+  const entries = await callWebSocket<Array<{ entry_id: string }>>('config_entries/get', {
+    domain: 'growspace_manager',
+  });
+  if (entries.length !== 1) {
+    throw new Error(`Expected one Growspace Manager config entry, found ${entries.length}`);
+  }
+
+  console.log('\n[global-settings] linking deterministic source-air fixtures…');
+  const started = await postApi('/api/config/config_entries/options/flow', {
+    handler: entries[0].entry_id,
+  });
+  if (started.type !== 'form' || started.step_id !== 'init' || !started.flow_id) {
+    throw new Error(`Could not start Growspace Manager options flow: ${JSON.stringify(started)}`);
+  }
+
+  const globalForm = await postApi(`/api/config/config_entries/options/flow/${started.flow_id}`, {
+    action: 'configure_global',
+  });
+  if (globalForm.type !== 'form' || globalForm.step_id !== 'configure_global') {
+    throw new Error(`Could not open global settings: ${JSON.stringify(globalForm)}`);
+  }
+
+  // Preserve every existing/future global field exposed by the options flow,
+  // then overwrite only the three keys owned by this fixture. The integration's
+  // flow itself copies all unrelated top-level options before saving.
+  const currentGlobal = Object.fromEntries(
+    (globalForm.data_schema ?? [])
+      .filter(
+        (field: { default?: unknown }) => field.default !== null && field.default !== undefined
+      )
+      .map((field: { name: string; default: unknown }) => [field.name, field.default])
+  );
+  const completed = await postApi(`/api/config/config_entries/options/flow/${started.flow_id}`, {
+    ...currentGlobal,
+    ...COVERAGE.global_settings,
+  });
+  if (completed.type !== 'create_entry') {
+    throw new Error(`Could not save global settings: ${JSON.stringify(completed)}`);
+  }
+
+  // Saving options reloads the config entry. The flow response can arrive while
+  // the integration is still unloaded, so wait for a growspace that setup has
+  // already provisioned before issuing another GSM service call.
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await sleep(500);
+    if (await resolveGrowspaceId(readinessProbeSlug)) {
+      console.log('  configured weather and lung-room sensors');
+      return;
+    }
+  }
+  throw new Error('Growspace Manager did not return after saving global settings');
 }
 
 interface VwcStrategyParams {
@@ -97,6 +306,8 @@ interface GrowspaceSpec {
    * these parameters. Only set for VWC-enabled growspaces.
    */
   vwcStrategy?: VwcStrategyParams;
+  /** Contract-derived service payloads for this capability profile. */
+  services: CoverageSetupProfile['services'];
 }
 
 const TODAY = new Date().toISOString().split('T')[0];
@@ -109,69 +320,14 @@ function stageDate(daysAgo = 0): string {
   return d.toISOString().split('T')[0];
 }
 
-const GROWSPACES: GrowspaceSpec[] = [
-  { slug: 'mother', name: 'E2E Mother', plantStageField: 'mother_start' },
-  { slug: 'clone',  name: 'E2E Clone',  plantStageField: 'clone_start'  },
-  { slug: 'veg',    name: 'E2E Veg',    plantStageField: 'veg_start'    },
-  { slug: 'flower', name: 'E2E Flower', plantStageField: 'flower_start' },
-  { slug: 'dry',    name: 'E2E Dry',    plantStageField: 'dry_start'    },
-  { slug: 'cure',   name: 'E2E Cure',   plantStageField: 'cure_start'   },
-  {
-    slug: 'vwc_veg',
-    name: 'E2E VWC Veg',
-    plantStageField: 'veg_start',
-    stageDaysAgo: 15,
-    vwcStrategy: {
-      target_vwc_percent: 65,
-      maintenance_dryback_percent: 3,
-      p0_duration_minutes: 60,
-      p2_stop_before_lights_off_minutes: 120,
-      shot_duration_seconds: 10,
-      shot_interval_minutes: 15,
-    },
-  },
-  {
-    slug: 'vwc_flower',
-    name: 'E2E VWC Flower',
-    plantStageField: 'flower_start',
-    stageDaysAgo: 40,
-    vwcStrategy: {
-      target_vwc_percent: 55,
-      maintenance_dryback_percent: 5,
-      p0_duration_minutes: 60,
-      p2_stop_before_lights_off_minutes: 120,
-      shot_duration_seconds: 10,
-      shot_interval_minutes: 15,
-    },
-  },
-];
-
-function buildSensors(slug: string) {
-  // VWC growspaces use input_number helpers so Playwright can set values directly
-  // via callService('input_number', 'set_value', ...). The coordinator accepts any
-  // entity domain, so input_number.* entity IDs work identically to sensor.*.
-  const isVwc = slug.startsWith('vwc_');
-  const domain = isVwc ? 'input_number' : 'sensor';
-  const s = (suffix: string) => `${domain}.e2e_${slug}_${suffix}`;
-  return {
-    temperature_sensor:      s('temperature'),
-    humidity_sensor:         s('humidity'),
-    vpd_sensor:              s('vpd'),
-    co2_sensor:              s('co2'),
-    feed_ec_sensors:         [s('feed_ec')],
-    bulk_ec_sensors:         [s('bulk_ec')],
-    pore_ec_sensors:         [s('pore_ec')],
-    runoff_ec_sensors:       [s('runoff_ec')],
-    ph_sensors:              [s('ph')],
-    substrate_temperature_sensors: [s('substrate_temperature')],
-    soil_moisture_sensor:    s('substrate_moisture'),
-    power_sensors:           [s('power')],
-    energy_sensors:          [s('energy')],
-    drain_volume_sensors:    [s('drain_volume')],
-    irrigation_flow_sensors: [s('irrigation_flow')],
-    irrigation_tanks:        [{ sensor_entity: s('irrigation_tank'), volume_liters: 50 }],
-  };
-}
+const GROWSPACES: GrowspaceSpec[] = COVERAGE.profiles.map((profile) => ({
+  slug: profile.slug,
+  name: profile.name,
+  plantStageField: profile.plant_stage_field,
+  stageDaysAgo: profile.stage_days_ago,
+  vwcStrategy: profile.vwc_strategy,
+  services: profile.services,
+}));
 
 async function resolveGrowspaceId(slug: string): Promise<string | null> {
   const attrs = await getStateAttributes(`sensor.e2e_${slug}_overview`);
@@ -204,7 +360,9 @@ async function ensureGrowspace(spec: GrowspaceSpec): Promise<string> {
       return id;
     }
   }
-  throw new Error(`Overview sensor sensor.e2e_${spec.slug}_overview never appeared after growspace creation`);
+  throw new Error(
+    `Overview sensor sensor.e2e_${spec.slug}_overview never appeared after growspace creation`
+  );
 }
 
 async function ensureStagePlant(growspaceId: string, spec: GrowspaceSpec): Promise<void> {
@@ -226,22 +384,34 @@ async function ensureStagePlant(growspaceId: string, spec: GrowspaceSpec): Promi
   });
 }
 
-async function configureEnvironment(growspaceId: string, slug: string): Promise<void> {
-  console.log(`  linking sensors…`);
-  await callService('growspace_manager', 'configure_environment', {
-    growspace_id: growspaceId,
-    ...buildSensors(slug),
-  });
+async function configureProfileServices(growspaceId: string, spec: GrowspaceSpec): Promise<void> {
+  const orderedServices = [
+    'configure_environment',
+    'set_irrigation_settings',
+    'configure_circulation_fan',
+    'configure_exhaust_fan',
+    'set_humidifier_control',
+    'set_dehumidifier_control',
+  ] as const;
 
-  console.log(`  wiring irrigation & drain pumps…`);
-  await callService('growspace_manager', 'set_irrigation_settings', {
-    growspace_id: growspaceId,
-    irrigation_pump_entity: `switch.sim_e2e_${slug}_irrigation_pump`,
-    drain_pump_entity: `switch.sim_e2e_${slug}_drain_pump`,
-  });
+  for (const service of orderedServices) {
+    const payload = spec.services[service];
+    if (!payload) continue;
+    console.log(`  applying ${service}…`);
+    // Every service has patch semantics. Send only fields owned by this
+    // capability profile so a setup rerun cannot erase unrelated hardware.
+    await callService('growspace_manager', service, {
+      growspace_id: growspaceId,
+      ...payload,
+    });
+  }
 }
 
-async function setVwcStrategy(growspaceId: string, slug: string, params: VwcStrategyParams): Promise<void> {
+async function setVwcStrategy(
+  growspaceId: string,
+  slug: string,
+  params: VwcStrategyParams
+): Promise<void> {
   console.log(`  enabling VWC steering strategy…`);
   await callService('growspace_manager', 'set_irrigation_strategy', {
     growspace_id: growspaceId,
@@ -264,6 +434,27 @@ async function ensureTestStrain(): Promise<void> {
     // add_strain is idempotent — duplicate errors are expected on re-runs
     console.log('  already exists or non-fatal error:', err.message);
   }
+}
+
+async function reloadGrowspaceManager(results: Array<{ slug: string; id: string }>): Promise<void> {
+  const lighting = results.find((result) => result.slug === 'lighting');
+  if (!lighting) return;
+
+  // Growspace sub-coordinators are selected when the config entry loads. A
+  // single reload after all profile writes activates the light-cycle tracker
+  // (and the VWC coordinator profiles) against their final configuration.
+  console.log('\n[integration] reloading Growspace Manager with final profile configuration…');
+  await callService('homeassistant', 'reload_config_entry', {
+    entity_id: 'sensor.e2e_lighting_overview',
+  });
+  for (let i = 0; i < 20; i++) {
+    await sleep(500);
+    if (await resolveGrowspaceId('lighting')) {
+      console.log('  reloaded');
+      return;
+    }
+  }
+  throw new Error('Growspace Manager did not return after config-entry reload');
 }
 
 /**
@@ -309,23 +500,46 @@ async function main(): Promise<void> {
 
   const results: Array<{ slug: string; id: string }> = [];
 
+  await ensureCameraFixtures();
+
   for (const spec of GROWSPACES) {
     console.log(`\n[e2e_${spec.slug}]`);
     const growspaceId = await ensureGrowspace(spec);
     await ensureStagePlant(growspaceId, spec);
-    await configureEnvironment(growspaceId, spec.slug);
-    if (spec.vwcStrategy) {
+    await configureProfileServices(growspaceId, spec);
+    if (spec.services.update_vision_checkup_config) {
+      console.log(`  configuring Vision Checkup schedule…`);
+      await callWebSocket('growspace_manager/update_vision_checkup_config', {
+        growspace_id: growspaceId,
+        ...spec.services.update_vision_checkup_config,
+      });
+    }
+    if (spec.services.set_irrigation_strategy) {
+      console.log(`  configuring light-cycle tracking…`);
+      await callService('growspace_manager', 'set_irrigation_strategy', {
+        growspace_id: growspaceId,
+        ...spec.services.set_irrigation_strategy,
+      });
+    } else if (spec.vwcStrategy) {
       await setVwcStrategy(growspaceId, spec.slug, spec.vwcStrategy);
+    } else {
+      // A rerun must also remove strategy capability from non-VWC profiles.
+      await callService('growspace_manager', 'set_irrigation_strategy', {
+        growspace_id: growspaceId,
+        enabled: false,
+      });
     }
     results.push({ slug: spec.slug, id: growspaceId });
   }
 
   await ensureTestStrain();
+  await reloadGrowspaceManager(results);
+  await ensureGlobalSettings('lighting');
 
   writeIdsToEnvFile(results);
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error(err.message ?? err);
   process.exit(1);
 });

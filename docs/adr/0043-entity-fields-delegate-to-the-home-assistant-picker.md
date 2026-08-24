@@ -55,8 +55,11 @@ entity identity changes nothing about where growspace data flows.
   re-expressed.
 - Chips label with `friendly_name` and keep the entity id as secondary text
   (dropped when the entity is unknown, where the id is all we have).
-- `hass` reaches the pickers through `hassContext`; `config-dialog` now provides
-  it. Tabs keep the ADR 0019 contract — view model in, intents out, no `hass`.
+- Card-owned picker data reaches `gm-entity-picker` through `hassContext`;
+  `config-dialog` provides it. The native `ha-entity-picker` additionally
+  consumes Home Assistant's internal Lit contexts, so the dialog portal stays
+  below Home Assistant's root provider. Tabs keep the ADR 0019 contract — view
+  model in, intents out, no `hass`.
 
 ### Rejected: `ha-entities-picker` (the plural, multi-value element)
 
@@ -81,7 +84,8 @@ and permanently behind the platform's.
   registers. Until then the field shows its label, never a free-text box — there
   is deliberately **no** datalist fallback, because a fallback that accepts typed
   text would reopen the defect this ADR closes.
-- Without `hass` the picker renders nothing rather than degrading to free text.
+- Outside Home Assistant's root context provider the native picker cannot
+  initialize; the dialog portal placement is therefore part of this contract.
 - Tests drive the picker through `tests/harness/entity-picker.ts`: a stub
   `ha-entity-picker` with the same `value` / `value-changed` contract, a
   `test-hass-provider`, and `pickEntity` / `pickerOptions` helpers.

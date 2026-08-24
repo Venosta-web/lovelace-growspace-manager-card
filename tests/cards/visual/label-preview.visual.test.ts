@@ -4,11 +4,22 @@ import { page } from 'vitest/browser';
 import { html } from 'lit';
 import '../../../src/features/shared/ui/label-preview';
 import type { LabelPreview } from '../../../src/features/shared/ui/label-preview';
-import type { LabelSizeId, LabelFieldVisibility, LabelFieldValues } from '../../../src/lib/types/dialog';
+import type {
+  LabelSizeId,
+  LabelFieldVisibility,
+  LabelFieldValues,
+} from '../../../src/lib/types/dialog';
 
 const allFields: LabelFieldVisibility = {
-  name: true, phenotype: true, breeder: true, lineage: true,
-  startDate: true, stageAge: true, plantId: true, logo: false, qr: true,
+  name: true,
+  phenotype: true,
+  breeder: true,
+  lineage: true,
+  startDate: true,
+  stageAge: true,
+  plantId: true,
+  logo: false,
+  qr: true,
 };
 
 const allValues: LabelFieldValues = {
@@ -22,15 +33,24 @@ const allValues: LabelFieldValues = {
   logo: '',
 };
 
-async function makeLabel(props: Partial<{
-  sizeId: LabelSizeId;
-  fields: LabelFieldVisibility;
-  values: LabelFieldValues;
-  qrValue: string;
-  density: 'low' | 'normal' | 'high';
-  width: number;
-}>): Promise<LabelPreview> {
-  const { sizeId = '50x30', fields = allFields, values = allValues, qrValue = 'https://growspace.app', density = 'normal', width = 300 } = props;
+async function makeLabel(
+  props: Partial<{
+    sizeId: LabelSizeId;
+    fields: LabelFieldVisibility;
+    values: LabelFieldValues;
+    qrValue: string;
+    density: 'low' | 'normal' | 'high';
+    width: number;
+  }>
+): Promise<LabelPreview> {
+  const {
+    sizeId = '50x30',
+    fields = allFields,
+    values = allValues,
+    qrValue = 'https://growspace.app',
+    density = 'normal',
+    width = 300,
+  } = props;
   const el = await fixture<LabelPreview>(html`
     <label-preview
       .sizeId=${sizeId}
@@ -90,7 +110,17 @@ test('50x30 – name and QR off', async () => {
 
 test('50x30 – all fields off', async () => {
   const el = await makeLabel({
-    fields: { name: false, phenotype: false, breeder: false, lineage: false, startDate: false, stageAge: false, plantId: false, logo: false, qr: false },
+    fields: {
+      name: false,
+      phenotype: false,
+      breeder: false,
+      lineage: false,
+      startDate: false,
+      stageAge: false,
+      plantId: false,
+      logo: false,
+      qr: false,
+    },
   });
   await expect(page.elementLocator(el)).toMatchScreenshot();
 });

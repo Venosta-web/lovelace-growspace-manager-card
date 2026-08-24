@@ -2,7 +2,11 @@ import type { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice } from '../types';
 
 export class SensorTypeUtils {
-  static isLight(device: GrowspaceDevice | undefined, hass: HomeAssistant | undefined, entityId: string): boolean {
+  static isLight(
+    device: GrowspaceDevice | undefined,
+    hass: HomeAssistant | undefined,
+    entityId: string
+  ): boolean {
     if (!device || !entityId) return false;
 
     // Priority 1: Explicit mapping
@@ -33,7 +37,11 @@ export class SensorTypeUtils {
     return isIlluminance || isLightId;
   }
 
-  static isTemperature(device: GrowspaceDevice | undefined, hass: HomeAssistant | undefined, entityId: string): boolean {
+  static isTemperature(
+    device: GrowspaceDevice | undefined,
+    hass: HomeAssistant | undefined,
+    entityId: string
+  ): boolean {
     if (!device || !entityId) return false;
     const env = device.environmentAttributes;
     const sensorTypes = env?.sensorTypes;
@@ -53,7 +61,11 @@ export class SensorTypeUtils {
     );
   }
 
-  static isHumidity(device: GrowspaceDevice | undefined, hass: HomeAssistant | undefined, entityId: string): boolean {
+  static isHumidity(
+    device: GrowspaceDevice | undefined,
+    hass: HomeAssistant | undefined,
+    entityId: string
+  ): boolean {
     if (!device || !entityId) return false;
     const env = device.environmentAttributes;
     const sensorTypes = env?.sensorTypes;
@@ -78,7 +90,11 @@ export class SensorTypeUtils {
     );
   }
 
-  static isVPD(device: GrowspaceDevice | undefined, hass: HomeAssistant | undefined, entityId: string): boolean {
+  static isVPD(
+    device: GrowspaceDevice | undefined,
+    hass: HomeAssistant | undefined,
+    entityId: string
+  ): boolean {
     if (!device || !entityId) return false;
     const env = device.environmentAttributes;
     const sensorTypes = env?.sensorTypes;
@@ -191,7 +207,11 @@ export class SensorTypeUtils {
     );
   }
 
-  static getSensorIcon(device: GrowspaceDevice | undefined, hass: HomeAssistant | undefined, entityId: string): string {
+  static getSensorIcon(
+    device: GrowspaceDevice | undefined,
+    hass: HomeAssistant | undefined,
+    entityId: string
+  ): string {
     if (this.isTemperature(device, hass, entityId)) return 'mdi:thermometer';
     if (this.isHumidity(device, hass, entityId)) return 'mdi:water-percent';
     if (this.isVPD(device, hass, entityId)) return 'mdi:cloud-outline';

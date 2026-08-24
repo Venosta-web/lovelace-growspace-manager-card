@@ -44,6 +44,21 @@ describe('GrowspaceManagerCard', () => {
     await vi.waitFor(() => expect((element as any)._dialogPortal).not.toBeNull());
   });
 
+  test('mounts the dialog portal inside Home Assistant so native pickers inherit its contexts', async () => {
+    const homeAssistant = document.createElement('home-assistant');
+    const homeAssistantRoot = homeAssistant.attachShadow({ mode: 'open' });
+    document.body.appendChild(homeAssistant);
+
+    try {
+      element.store.ui.setActiveDialog({ type: 'ADD_PLANT', payload: { row: 0, col: 0 } });
+
+      await vi.waitFor(() => expect((element as any)._dialogPortal).not.toBeNull());
+      expect((element as any)._dialogPortal.parentNode).toBe(homeAssistantRoot);
+    } finally {
+      homeAssistant.remove();
+    }
+  });
+
   test('throws error on invalid config', () => {
     expect(() => element.setConfig(undefined as any)).toThrowError('Invalid configuration');
   });

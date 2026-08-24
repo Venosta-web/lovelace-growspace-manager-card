@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  getFlowerVegPlants,
-  getPlantLabel,
-} from '../../../src/dialogs/seeds-genetics-tab-logic';
+import { getFlowerVegPlants, getPlantLabel } from '../../../src/dialogs/seeds-genetics-tab-logic';
 import type { GrowspaceDevice } from '../../../src/types';
 
 function makePlant(overrides: Record<string, unknown> = {}) {
@@ -139,7 +136,9 @@ describe('getPlantLabel', () => {
   });
 
   it('returns plant_id when plant strain is empty and no phenotype', () => {
-    const device = makeDevice('Tent', [makePlant({ plant_id: 'p-empty', strain: '', phenotype: '' })]);
+    const device = makeDevice('Tent', [
+      makePlant({ plant_id: 'p-empty', strain: '', phenotype: '' }),
+    ]);
     expect(getPlantLabel([device] as GrowspaceDevice[], 'p-empty')).toBe('p-empty');
   });
 

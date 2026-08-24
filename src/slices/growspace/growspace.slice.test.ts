@@ -228,9 +228,7 @@ describe('updateGrowspace', () => {
     growspaceDevices$.set([{ deviceId: 'gs1', name: 'Original' } as GrowspaceDevice]);
     vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('fail'));
 
-    await expect(updateGrowspace({ growspaceId: 'gs1', name: 'Bad Name' })).rejects.toThrow(
-      'fail'
-    );
+    await expect(updateGrowspace({ growspaceId: 'gs1', name: 'Bad Name' })).rejects.toThrow('fail');
 
     expect(growspaceDevices$.get()![0].name).toBe('Original');
   });
@@ -612,16 +610,18 @@ describe('configureEnvironment', () => {
       flowerMidDayHours: 11.5,
       flowerLateDayHours: 11,
       minimumSourceAirTemperature: 15,
-      sensorGroups: [{
-        id: 'group1',
-        name: 'Group 1',
-        x: 1,
-        y: 2,
-        z: 3,
-        temperature_sensors: ['sensor.temp'],
-        humidity_sensors: ['sensor.hum'],
-        vpd_sensors: ['sensor.vpd'],
-      }],
+      sensorGroups: [
+        {
+          id: 'group1',
+          name: 'Group 1',
+          x: 1,
+          y: 2,
+          z: 3,
+          temperature_sensors: ['sensor.temp'],
+          humidity_sensors: ['sensor.hum'],
+          vpd_sensors: ['sensor.vpd'],
+        },
+      ],
       sensorCoordinates: { 'sensor.temp': { x: 1, y: 2, z: 3, rotation: 45 } },
       irrigationTanks: [
         { sensorEntity: 'sensor.tank1', name: 'Tank 1', warningLevel: 20, volumeLiters: 100 },
@@ -672,16 +672,18 @@ describe('configureEnvironment', () => {
         flower_mid_day_hours: 11.5,
         flower_late_day_hours: 11,
         minimum_source_air_temperature: 15,
-        sensor_groups: [{
-          id: 'group1',
-          name: 'Group 1',
-          x: 1,
-          y: 2,
-          z: 3,
-          temperature_sensors: ['sensor.temp'],
-          humidity_sensors: ['sensor.hum'],
-          vpd_sensors: ['sensor.vpd'],
-        }],
+        sensor_groups: [
+          {
+            id: 'group1',
+            name: 'Group 1',
+            x: 1,
+            y: 2,
+            z: 3,
+            temperature_sensors: ['sensor.temp'],
+            humidity_sensors: ['sensor.hum'],
+            vpd_sensors: ['sensor.vpd'],
+          },
+        ],
         sensor_coordinates: { 'sensor.temp': { x: 1, y: 2, z: 3, rotation: 45 } },
         irrigation_tanks: [
           { sensor_entity: 'sensor.tank1', name: 'Tank 1', warning_level: 20, volume_liters: 100 },
@@ -724,7 +726,11 @@ describe('configureEnvironment', () => {
   });
 
   it('omits vpd_optimal_overrides from payload when not provided', async () => {
-    await configureEnvironment({ growspaceId: 'gs1', temperatureSensors: ['sensor.temp'], humiditySensors: ['sensor.hum'] });
+    await configureEnvironment({
+      growspaceId: 'gs1',
+      temperatureSensors: ['sensor.temp'],
+      humiditySensors: ['sensor.hum'],
+    });
 
     const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
     expect(payload).not.toHaveProperty('vpd_optimal_overrides');

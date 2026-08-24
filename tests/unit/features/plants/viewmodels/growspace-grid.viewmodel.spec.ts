@@ -18,7 +18,7 @@ const makePlant = (overrides: Partial<PlantEntity['attributes']> = {}): PlantEnt
     context: { id: '', parent_id: null, user_id: null },
     last_changed: '',
     last_updated: '',
-  } as unknown as PlantEntity);
+  }) as unknown as PlantEntity;
 
 const makeDevice = (overrides: Record<string, any> = {}) => ({
   deviceId: 'gs1',
@@ -27,7 +27,10 @@ const makeDevice = (overrides: Record<string, any> = {}) => ({
   ...overrides,
 });
 
-const makeStore = (deviceOverrides: Record<string, any> = {}, hassStates: Record<string, any> = {}) => {
+const makeStore = (
+  deviceOverrides: Record<string, any> = {},
+  hassStates: Record<string, any> = {}
+) => {
   setDevices([makeDevice(deviceOverrides)] as any);
   return {
     ui: {
@@ -172,7 +175,10 @@ describe('createGrowspaceGridViewModel', () => {
         'binary_sensor.gs1_plants_under_stress': { state: 'off' },
         'binary_sensor.gs1_high_mold_risk': { state: 'off' },
       };
-      const store = makeStore({ biologicalMetrics: { vpdStatus: StatusLevel.WARNING } }, hassStates);
+      const store = makeStore(
+        { biologicalMetrics: { vpdStatus: StatusLevel.WARNING } },
+        hassStates
+      );
       store.ui.$gridOverlayMode.set(GridOverlayMode.BIO_STATUS);
       const vm$ = createGrowspaceGridViewModel([[mockPlant]], 1, 1, store as any);
       expect(vm$.get().cells[0].overlayColor).toContain('255, 152, 0');

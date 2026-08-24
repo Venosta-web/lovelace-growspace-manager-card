@@ -10,7 +10,7 @@ describe('ChartUtils.normalizeSensorValue — fan domain (issue #225)', () => {
     const result = ChartUtils.normalizeSensorValue(
       { state: 'on', attributes: { percentage: 70 } },
       'exhaust',
-      'fan.exhaust',
+      'fan.exhaust'
     );
     expect(result).toBe(70);
   });
@@ -19,25 +19,18 @@ describe('ChartUtils.normalizeSensorValue — fan domain (issue #225)', () => {
     const result = ChartUtils.normalizeSensorValue(
       { state: 'off', attributes: { percentage: 0 } },
       'exhaust',
-      'fan.exhaust',
+      'fan.exhaust'
     );
     expect(result).toBe(0);
   });
 
   it('returns 100 (not undefined) for a fan entity missing the percentage attribute', () => {
-    const result = ChartUtils.normalizeSensorValue(
-      { state: 'on' },
-      'exhaust',
-      'fan.exhaust',
-    );
+    const result = ChartUtils.normalizeSensorValue({ state: 'on' }, 'exhaust', 'fan.exhaust');
     expect(result).toBe(100);
   });
 
   it('does not affect non-fan entities', () => {
-    const result = ChartUtils.normalizeSensorValue(
-      { state: '5' },
-      'exhaust',
-    );
+    const result = ChartUtils.normalizeSensorValue({ state: '5' }, 'exhaust');
     expect(result).toBe(5);
   });
 });

@@ -7,7 +7,14 @@ import type { Subarea } from '../../../slices/subarea';
 const subA = { id: 'sa1', name: 'Zone A' } as Subarea;
 
 function makeVm(over: Partial<SubareasTabViewModel> = {}): SubareasTabViewModel {
-  return { hasGrowspace: true, adding: null, loading: false, subareas: [], showEmpty: true, ...over };
+  return {
+    hasGrowspace: true,
+    adding: null,
+    loading: false,
+    subareas: [],
+    showEmpty: true,
+    ...over,
+  };
 }
 
 async function mount(vm: SubareasTabViewModel): Promise<ConfigSubareasTab> {
@@ -56,7 +63,9 @@ describe('ConfigSubareasTab — render', () => {
     expect(text).toContain('Zone A');
     expect(text).toContain('ID: sa1');
     expect(text).toContain('Remove Zone B?');
-    expect([...el.shadowRoot!.querySelectorAll('button')].some((b) => b.textContent?.trim() === 'Yes')).toBe(true);
+    expect(
+      [...el.shadowRoot!.querySelectorAll('button')].some((b) => b.textContent?.trim() === 'Yes')
+    ).toBe(true);
   });
 
   it('renders the add form when adding', async () => {
@@ -71,7 +80,9 @@ describe('ConfigSubareasTab — intents out', () => {
     const el = await mount(makeVm());
     let fired = 0;
     el.addEventListener('add-subarea-requested', () => fired++);
-    [...el.shadowRoot!.querySelectorAll('button')].find((b) => b.textContent?.includes('Add Subarea'))!.click();
+    [...el.shadowRoot!.querySelectorAll('button')]
+      .find((b) => b.textContent?.includes('Add Subarea'))!
+      .click();
     expect(fired).toBe(1);
   });
 
@@ -87,12 +98,16 @@ describe('ConfigSubareasTab — intents out', () => {
     expect(names).toEqual([{ name: 'Renamed' }]);
 
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    [...el.shadowRoot!.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Add')!.click();
+    [...el.shadowRoot!.querySelectorAll('button')]
+      .find((b) => b.textContent?.trim() === 'Add')!
+      .click();
     expect(committed).toBe(2); // Enter + Add button
   });
 
   it('emits edit/delete row intents and confirm/cancel delete', async () => {
-    const el = await mount(makeVm({ showEmpty: false, subareas: [{ subarea: subA, confirmingDelete: false }] }));
+    const el = await mount(
+      makeVm({ showEmpty: false, subareas: [{ subarea: subA, confirmingDelete: false }] })
+    );
     const edits = listen<{ subarea: Subarea }>(el, 'edit-subarea-requested');
     const deletes = listen<{ id: string }>(el, 'delete-subarea-requested');
     const rowButtons = el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.md3-button.text');
@@ -102,7 +117,9 @@ describe('ConfigSubareasTab — intents out', () => {
     expect(deletes).toEqual([{ id: 'sa1' }]);
 
     document.body.innerHTML = '';
-    const confirming = await mount(makeVm({ showEmpty: false, subareas: [{ subarea: subA, confirmingDelete: true }] }));
+    const confirming = await mount(
+      makeVm({ showEmpty: false, subareas: [{ subarea: subA, confirmingDelete: true }] })
+    );
     let confirmed = 0;
     let cancelled = 0;
     confirming.addEventListener('confirm-delete-subarea', (e) => {

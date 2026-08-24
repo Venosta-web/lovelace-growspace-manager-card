@@ -11,7 +11,9 @@ function sm(): ConfigDialogSM {
 
 describe('createVisionTabViewModel', () => {
   it('requests camera-domain options and reflects hasCameras=false when empty', () => {
-    const deps: VisionTabDeps = { entityOptions: (domains) => (domains[0] === 'camera' ? ['camera.a'] : []) };
+    const deps: VisionTabDeps = {
+      entityOptions: (domains) => (domains[0] === 'camera' ? ['camera.a'] : []),
+    };
     const vm = createVisionTabViewModel(sm(), deps);
     expect(vm.cameraOptions).toEqual(['camera.a']);
     expect(vm.hasCameras).toBe(false);
@@ -19,7 +21,10 @@ describe('createVisionTabViewModel', () => {
   });
 
   it('flips hasCameras once a camera is configured', () => {
-    const s = transition(sm(), { type: 'UPDATE_ENV_DRAFT', partial: { cameraEntities: ['camera.a'] } });
+    const s = transition(sm(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { cameraEntities: ['camera.a'] },
+    });
     const vm = createVisionTabViewModel(s, noDeps);
     expect(vm.hasCameras).toBe(true);
     expect(vm.cameraEntities).toEqual(['camera.a']);
@@ -28,7 +33,12 @@ describe('createVisionTabViewModel', () => {
   it('projects the checkup schedule fields from the draft', () => {
     const s = transition(sm(), {
       type: 'UPDATE_ENV_DRAFT',
-      partial: { visionEnabled: true, visionEarlyOffset: 30, visionMidHours: 6, visionLateOffset: 45 },
+      partial: {
+        visionEnabled: true,
+        visionEarlyOffset: 30,
+        visionMidHours: 6,
+        visionLateOffset: 45,
+      },
     });
     const vm = createVisionTabViewModel(s, noDeps);
     expect(vm.visionEnabled).toBe(true);

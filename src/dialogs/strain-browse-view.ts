@@ -847,13 +847,21 @@ export class StrainBrowseView extends LitElement {
             </p>
             <div class="empty-state-actions">
               <button class="md3-button primary" @click=${() => this._emit('new-strain')}>
-                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24" aria-hidden="true">
+                <svg
+                  style="width:18px;height:18px;fill:currentColor;"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
                   <path d="${mdiPlus}"></path>
                 </svg>
                 Create first strain
               </button>
               <button class="md3-button tonal" @click=${() => this._emit('import-requested')}>
-                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24" aria-hidden="true">
+                <svg
+                  style="width:18px;height:18px;fill:currentColor;"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
                   <path d="${mdiCloudUpload}"></path>
                 </svg>
                 Import library
@@ -868,10 +876,10 @@ export class StrainBrowseView extends LitElement {
             <svg class="empty-state-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="${mdiFilterRemoveOutline}"></path>
             </svg>
-            <p class="empty-state-title">No strains match the "${StrainBrowseView.FILTER_LABELS[this.libraryFilter]}" filter</p>
-            <p class="empty-state-subtitle">
-              Try a different filter to see your strains.
+            <p class="empty-state-title">
+              No strains match the "${StrainBrowseView.FILTER_LABELS[this.libraryFilter]}" filter
             </p>
+            <p class="empty-state-subtitle">Try a different filter to see your strains.</p>
             <div class="empty-state-actions">
               <button class="md3-button tonal" @click=${() => this._resetFilter()}>
                 Show all strains
@@ -887,9 +895,7 @@ export class StrainBrowseView extends LitElement {
               <path d="${mdiMagnify}"></path>
             </svg>
             <p class="empty-state-title">No strains match "${this._searchQuery}"</p>
-            <p class="empty-state-subtitle">
-              Check spelling or try a broader search term.
-            </p>
+            <p class="empty-state-subtitle">Check spelling or try a broader search term.</p>
             <div class="empty-state-actions">
               <button class="md3-button tonal" @click=${() => this._clearSearch()}>
                 Clear search
@@ -904,10 +910,11 @@ export class StrainBrowseView extends LitElement {
             <svg class="empty-state-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="${mdiFilterRemoveOutline}"></path>
             </svg>
-            <p class="empty-state-title">No strains match "${this._searchQuery}" in ${StrainBrowseView.FILTER_LABELS[this.libraryFilter]}</p>
-            <p class="empty-state-subtitle">
-              Remove the filter or broaden your search.
+            <p class="empty-state-title">
+              No strains match "${this._searchQuery}" in
+              ${StrainBrowseView.FILTER_LABELS[this.libraryFilter]}
             </p>
+            <p class="empty-state-subtitle">Remove the filter or broaden your search.</p>
             <div class="empty-state-actions">
               <button class="md3-button tonal" @click=${() => this._clearSearch()}>
                 Clear search

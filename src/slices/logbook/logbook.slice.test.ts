@@ -326,9 +326,7 @@ describe('fetchPlantEvents', () => {
   });
 
   it('handles missing plantId key in response gracefully (empty arrays)', async () => {
-    vi.mocked(hassCallModule.hassCall)
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({});
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({}).mockResolvedValueOnce({});
 
     await fetchPlantEvents('p1', 'gs1');
     expect(plantEvents$.get()).toEqual([]);
@@ -459,9 +457,6 @@ describe('deleteEvent', () => {
 
     await deleteEvent('non-existent-event-id');
 
-    expect(mutateModule.mutate).toHaveBeenCalledWith(
-      expect.any(Object),
-      ''
-    );
+    expect(mutateModule.mutate).toHaveBeenCalledWith(expect.any(Object), '');
   });
 });

@@ -435,7 +435,7 @@ export class SeedsGeneticsTab extends LitElement {
           <button
             class="md3-button text close"
             @click=${() =>
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }))}
+              this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }))}
             style="min-width:auto; padding:8px; margin-left: auto;"
           >
             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
@@ -451,30 +451,30 @@ export class SeedsGeneticsTab extends LitElement {
             <button
               class="md3-button filled"
               @click=${() => {
-        this._sm = transition(this._sm, { type: 'BEGIN_ADD_BATCH' });
-      }}
+                this._sm = transition(this._sm, { type: 'BEGIN_ADD_BATCH' });
+              }}
             >
               Add batch
             </button>
           </div>
           ${this.seedBatches.length === 0
-        ? html`<p class="empty-state">No seed batches yet.</p>`
-        : this.seedBatches.map((b) => this._renderSeedBatchCard(b, listSub))}
+            ? html`<p class="empty-state">No seed batches yet.</p>`
+            : this.seedBatches.map((b) => this._renderSeedBatchCard(b, listSub))}
 
           <div class="seeds-header">
             <h3>Pollination log</h3>
             <button
               class="md3-button tonal"
               @click=${() => {
-        this._sm = transition(this._sm, { type: 'BEGIN_LOG_POLLINATION' });
-      }}
+                this._sm = transition(this._sm, { type: 'BEGIN_LOG_POLLINATION' });
+              }}
             >
               Log pollination
             </button>
           </div>
           ${this.pollinationEvents.length === 0
-        ? html`<p class="empty-state">No pollination events yet.</p>`
-        : this.pollinationEvents.map((e) => this._renderPollinationCard(e, listSub))}
+            ? html`<p class="empty-state">No pollination events yet.</p>`
+            : this.pollinationEvents.map((e) => this._renderPollinationCard(e, listSub))}
         </div>
       </div>
     `;
@@ -496,26 +496,26 @@ export class SeedsGeneticsTab extends LitElement {
             class="seed-batch-edit-btn"
             title="Edit batch"
             @click=${() => {
-        const draft: BatchDraft = {
-          strainName: b.strain_name,
-          breeder: b.breeder,
-          quantity: b.quantity,
-          acquisitionDate: b.acquisition_date,
-          generation: b.generation,
-          parent1Key: b.parent_1_strain
-            ? `${b.parent_1_strain}||${b.parent_1_phenotype ?? ''}`
-            : '',
-          parent2Key: b.parent_2_strain
-            ? `${b.parent_2_strain}||${b.parent_2_phenotype ?? ''}`
-            : '',
-          notes: b.notes ?? '',
-        };
-        this._sm = transition(this._sm, {
-          type: 'BEGIN_EDIT_BATCH',
-          batchId: b.batch_id,
-          draft,
-        });
-      }}
+              const draft: BatchDraft = {
+                strainName: b.strain_name,
+                breeder: b.breeder,
+                quantity: b.quantity,
+                acquisitionDate: b.acquisition_date,
+                generation: b.generation,
+                parent1Key: b.parent_1_strain
+                  ? `${b.parent_1_strain}||${b.parent_1_phenotype ?? ''}`
+                  : '',
+                parent2Key: b.parent_2_strain
+                  ? `${b.parent_2_strain}||${b.parent_2_phenotype ?? ''}`
+                  : '',
+                notes: b.notes ?? '',
+              };
+              this._sm = transition(this._sm, {
+                type: 'BEGIN_EDIT_BATCH',
+                batchId: b.batch_id,
+                draft,
+              });
+            }}
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path d="${mdiPencil}"></path>
@@ -526,30 +526,30 @@ export class SeedsGeneticsTab extends LitElement {
           ${b.breeder} · ${b.generation} · ${b.quantity} seeds · ${b.acquisition_date}
         </div>
         ${b.parent_1_strain || b.parent_2_strain
-        ? html`
+          ? html`
               <div class="seed-batch-parents">
                 ${b.parent_1_strain
-            ? html`<span class="seed-batch-parent-chip"
+                  ? html`<span class="seed-batch-parent-chip"
                       >♀
                       ${b.parent_1_strain}${b.parent_1_phenotype
-                ? ` (${b.parent_1_phenotype})`
-                : ''}</span
+                        ? ` (${b.parent_1_phenotype})`
+                        : ''}</span
                     >`
-            : nothing}
+                  : nothing}
                 ${b.parent_1_strain && b.parent_2_strain
-            ? html`<span class="seed-batch-parent-sep">×</span>`
-            : nothing}
+                  ? html`<span class="seed-batch-parent-sep">×</span>`
+                  : nothing}
                 ${b.parent_2_strain
-            ? html`<span class="seed-batch-parent-chip"
+                  ? html`<span class="seed-batch-parent-chip"
                       >♂
                       ${b.parent_2_strain}${b.parent_2_phenotype
-                ? ` (${b.parent_2_phenotype})`
-                : ''}</span
+                        ? ` (${b.parent_2_phenotype})`
+                        : ''}</span
                     >`
-            : nothing}
+                  : nothing}
               </div>
             `
-        : nothing}
+          : nothing}
         ${b.lineage ? html`<div class="seed-batch-lineage">${b.lineage}</div>` : nothing}
         ${b.notes ? html`<div class="seed-batch-notes">${b.notes}</div>` : nothing}
         <div class="seed-batch-actions">
@@ -557,30 +557,30 @@ export class SeedsGeneticsTab extends LitElement {
             class="md3-button tonal"
             style="font-size:12px;"
             @click=${() => {
-        if (isSowOpen) {
-          this._sm = transition(this._sm, { type: 'SOW_CANCELLED' });
-        } else {
-          this._sm = transition(this._sm, {
-            type: 'SOW_OPENED',
-            batchId: b.batch_id,
-            defaultGrowspaceId: this.plants[0]?.deviceId ?? '',
-          });
-        }
-      }}
+              if (isSowOpen) {
+                this._sm = transition(this._sm, { type: 'SOW_CANCELLED' });
+              } else {
+                this._sm = transition(this._sm, {
+                  type: 'SOW_OPENED',
+                  batchId: b.batch_id,
+                  defaultGrowspaceId: this.plants[0]?.deviceId ?? '',
+                });
+              }
+            }}
           >
             🌱 Sow seeds
           </button>
           ${isDeleteConfirm
-        ? html`
+            ? html`
                 <span style="font-size:12px; color:var(--secondary-text-color);">Delete?</span>
                 <button
                   class="icon-btn danger"
                   title="Confirm delete"
                   @click=${async () => {
-            await this.onDeleteSeedBatch?.(b.batch_id);
-            this._sm = transition(this._sm, { type: 'DELETE_CONFIRMED' });
-            this.onSeedDataChanged?.();
-          }}
+                    await this.onDeleteSeedBatch?.(b.batch_id);
+                    this._sm = transition(this._sm, { type: 'DELETE_CONFIRMED' });
+                    this.onSeedDataChanged?.();
+                  }}
                 >
                   <svg viewBox="0 0 24 24" width="16" height="16">
                     <path d="${mdiCheck}"></path>
@@ -590,24 +590,24 @@ export class SeedsGeneticsTab extends LitElement {
                   class="icon-btn"
                   title="Cancel"
                   @click=${() => {
-            this._sm = transition(this._sm, { type: 'DELETE_CANCELLED' });
-          }}
+                    this._sm = transition(this._sm, { type: 'DELETE_CANCELLED' });
+                  }}
                 >
                   <svg viewBox="0 0 24 24" width="16" height="16">
                     <path d="${mdiClose}"></path>
                   </svg>
                 </button>
               `
-        : html`
+            : html`
                 <button
                   class="icon-btn danger"
                   title="Delete batch"
                   @click=${() => {
-            this._sm = transition(this._sm, {
-              type: 'DELETE_BATCH_REQUESTED',
-              batchId: b.batch_id,
-            });
-          }}
+                    this._sm = transition(this._sm, {
+                      type: 'DELETE_BATCH_REQUESTED',
+                      batchId: b.batch_id,
+                    });
+                  }}
                 >
                   <svg viewBox="0 0 24 24" width="16" height="16">
                     <path d="${mdiDelete}"></path>
@@ -616,25 +616,25 @@ export class SeedsGeneticsTab extends LitElement {
               `}
         </div>
         ${isSowOpen && listSub.kind === 'sow'
-        ? html`
+          ? html`
               <div class="sow-form">
                 <select
                   class="sow-select"
                   .value=${listSub.growspaceId}
                   @change=${(e: Event) => {
-            this._sm = transition(this._sm, {
-              type: 'SOW_FIELD_CHANGED',
-              partial: { growspaceId: (e.target as HTMLSelectElement).value },
-            });
-          }}
+                    this._sm = transition(this._sm, {
+                      type: 'SOW_FIELD_CHANGED',
+                      partial: { growspaceId: (e.target as HTMLSelectElement).value },
+                    });
+                  }}
                 >
                   ${this.plants.map(
-            (g) => html`
+                    (g) => html`
                       <option value=${g.deviceId} ?selected=${g.deviceId === listSub.growspaceId}>
                         ${g.name}
                       </option>
                     `
-          )}
+                  )}
                 </select>
                 <input
                   type="number"
@@ -643,11 +643,11 @@ export class SeedsGeneticsTab extends LitElement {
                   max=${b.quantity}
                   .value=${String(listSub.quantity)}
                   @input=${(e: Event) => {
-            this._sm = transition(this._sm, {
-              type: 'SOW_FIELD_CHANGED',
-              partial: { quantity: Number((e.target as HTMLInputElement).value) },
-            });
-          }}
+                    this._sm = transition(this._sm, {
+                      type: 'SOW_FIELD_CHANGED',
+                      partial: { quantity: Number((e.target as HTMLInputElement).value) },
+                    });
+                  }}
                   placeholder="Seeds"
                 />
                 <button
@@ -655,22 +655,22 @@ export class SeedsGeneticsTab extends LitElement {
                   style="font-size:12px;"
                   ?disabled=${listSub.sub.kind === 'applying' || !listSub.growspaceId}
                   @click=${async () => {
-            if (!listSub.growspaceId || listSub.kind !== 'sow') return;
-            this._sm = transition(this._sm, { type: 'SOW_APPLY_REQUESTED' });
-            try {
-              await this.onSowSeeds?.({
-                growspace_id: listSub.growspaceId,
-                strain: b.strain_name,
-                amount: listSub.quantity,
-                seed_batch_id: b.batch_id,
-                generation: b.generation,
-              });
-              this._sm = transition(this._sm, { type: 'SOW_CANCELLED' });
-              this.onSeedDataChanged?.();
-            } catch {
-              this._sm = transition(this._sm, { type: 'SOW_APPLY_FAILED' });
-            }
-          }}
+                    if (!listSub.growspaceId || listSub.kind !== 'sow') return;
+                    this._sm = transition(this._sm, { type: 'SOW_APPLY_REQUESTED' });
+                    try {
+                      await this.onSowSeeds?.({
+                        growspace_id: listSub.growspaceId,
+                        strain: b.strain_name,
+                        amount: listSub.quantity,
+                        seed_batch_id: b.batch_id,
+                        generation: b.generation,
+                      });
+                      this._sm = transition(this._sm, { type: 'SOW_CANCELLED' });
+                      this.onSeedDataChanged?.();
+                    } catch {
+                      this._sm = transition(this._sm, { type: 'SOW_APPLY_FAILED' });
+                    }
+                  }}
                 >
                   ${listSub.sub.kind === 'applying' ? 'Planting…' : 'Plant'}
                 </button>
@@ -678,14 +678,14 @@ export class SeedsGeneticsTab extends LitElement {
                   class="md3-button text"
                   style="font-size:12px;"
                   @click=${() => {
-            this._sm = transition(this._sm, { type: 'SOW_CANCELLED' });
-          }}
+                    this._sm = transition(this._sm, { type: 'SOW_CANCELLED' });
+                  }}
                 >
                   Cancel
                 </button>
               </div>
             `
-        : nothing}
+          : nothing}
       </div>
     `;
   }
@@ -706,35 +706,35 @@ export class SeedsGeneticsTab extends LitElement {
               class="icon-btn"
               title="Edit"
               @click=${() => {
-        const draft: PollinationDraft = {
-          date: e.date,
-          donorPlantId: e.donor_plant_id,
-          receiverPlantId: e.receiver_plant_id,
-          notes: e.notes ?? '',
-          donorActivePlantsOnly: !e.donor_plant_id.includes('||'),
-        };
-        this._sm = transition(this._sm, {
-          type: 'BEGIN_EDIT_POLLINATION',
-          eventId: e.event_id,
-          draft,
-        });
-      }}
+                const draft: PollinationDraft = {
+                  date: e.date,
+                  donorPlantId: e.donor_plant_id,
+                  receiverPlantId: e.receiver_plant_id,
+                  notes: e.notes ?? '',
+                  donorActivePlantsOnly: !e.donor_plant_id.includes('||'),
+                };
+                this._sm = transition(this._sm, {
+                  type: 'BEGIN_EDIT_POLLINATION',
+                  eventId: e.event_id,
+                  draft,
+                });
+              }}
             >
               <svg viewBox="0 0 24 24" width="16" height="16">
                 <path d="${mdiPencil}"></path>
               </svg>
             </button>
             ${isDeleteConfirm
-        ? html`
+              ? html`
                   <span class="delete-confirm-text">Delete?</span>
                   <button
                     class="icon-btn danger"
                     title="Confirm delete"
                     @click=${async () => {
-            await this.onDeletePollination?.(e.event_id);
-            this._sm = transition(this._sm, { type: 'DELETE_CONFIRMED' });
-            this.onSeedDataChanged?.();
-          }}
+                      await this.onDeletePollination?.(e.event_id);
+                      this._sm = transition(this._sm, { type: 'DELETE_CONFIRMED' });
+                      this.onSeedDataChanged?.();
+                    }}
                   >
                     <svg viewBox="0 0 24 24" width="16" height="16">
                       <path d="${mdiCheck}"></path>
@@ -744,24 +744,24 @@ export class SeedsGeneticsTab extends LitElement {
                     class="icon-btn"
                     title="Cancel"
                     @click=${() => {
-            this._sm = transition(this._sm, { type: 'DELETE_CANCELLED' });
-          }}
+                      this._sm = transition(this._sm, { type: 'DELETE_CANCELLED' });
+                    }}
                   >
                     <svg viewBox="0 0 24 24" width="16" height="16">
                       <path d="${mdiClose}"></path>
                     </svg>
                   </button>
                 `
-        : html`
+              : html`
                   <button
                     class="icon-btn danger"
                     title="Delete"
                     @click=${() => {
-            this._sm = transition(this._sm, {
-              type: 'DELETE_POLLINATION_REQUESTED',
-              eventId: e.event_id,
-            });
-          }}
+                      this._sm = transition(this._sm, {
+                        type: 'DELETE_POLLINATION_REQUESTED',
+                        eventId: e.event_id,
+                      });
+                    }}
                   >
                     <svg viewBox="0 0 24 24" width="16" height="16">
                       <path d="${mdiDelete}"></path>
@@ -771,23 +771,24 @@ export class SeedsGeneticsTab extends LitElement {
           </div>
         </div>
         <div class="pollination-plants">
-          ♂ ${this._getPlantLabel(e.donor_plant_id)}${e.donor_plant_id.includes('||')
-        ? html`<span class="library-tag">· library</span>`
-        : nothing}
+          ♂
+          ${this._getPlantLabel(e.donor_plant_id)}${e.donor_plant_id.includes('||')
+            ? html`<span class="library-tag">· library</span>`
+            : nothing}
           × ♀ ${this._getPlantLabel(e.receiver_plant_id)}
         </div>
         ${e.notes ? html`<div class="pollination-notes">${e.notes}</div>` : nothing}
         ${e.result_seed_batch_id
-        ? html`<span class="badge success">Seeds harvested</span>`
-        : html`
+          ? html`<span class="badge success">Seeds harvested</span>`
+          : html`
               <button
                 class="md3-button tonal"
                 @click=${() => {
-            this._sm = transition(this._sm, {
-              type: 'BEGIN_HARVEST',
-              eventId: e.event_id,
-            });
-          }}
+                  this._sm = transition(this._sm, {
+                    type: 'BEGIN_HARVEST',
+                    eventId: e.event_id,
+                  });
+                }}
               >
                 Harvest seeds
               </button>
@@ -821,8 +822,8 @@ export class SeedsGeneticsTab extends LitElement {
           <button
             class="md3-button tonal"
             @click=${() => {
-        this._sm = transition(this._sm, { type: 'NAVIGATE_BACK' });
-      }}
+              this._sm = transition(this._sm, { type: 'NAVIGATE_BACK' });
+            }}
           >
             ← Back
           </button>
@@ -834,11 +835,11 @@ export class SeedsGeneticsTab extends LitElement {
             type="text"
             .value=${draft.strainName}
             @input=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_BATCH_DRAFT',
-          partial: { strainName: (e.target as HTMLInputElement).value },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { strainName: (e.target as HTMLInputElement).value },
+              });
+            }}
           />
         </label>
         <label
@@ -848,11 +849,11 @@ export class SeedsGeneticsTab extends LitElement {
             list="batch-breeder-suggestions"
             .value=${draft.breeder}
             @input=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_BATCH_DRAFT',
-          partial: { breeder: (e.target as HTMLInputElement).value },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { breeder: (e.target as HTMLInputElement).value },
+              });
+            }}
           />
         </label>
         <label
@@ -862,11 +863,11 @@ export class SeedsGeneticsTab extends LitElement {
             min="1"
             .value=${String(draft.quantity)}
             @input=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_BATCH_DRAFT',
-          partial: { quantity: parseInt((e.target as HTMLInputElement).value) || 1 },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { quantity: parseInt((e.target as HTMLInputElement).value) || 1 },
+              });
+            }}
           />
         </label>
         <label
@@ -875,11 +876,11 @@ export class SeedsGeneticsTab extends LitElement {
             type="date"
             .value=${draft.acquisitionDate}
             @input=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_BATCH_DRAFT',
-          partial: { acquisitionDate: (e.target as HTMLInputElement).value },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { acquisitionDate: (e.target as HTMLInputElement).value },
+              });
+            }}
           />
         </label>
         <label
@@ -889,49 +890,49 @@ export class SeedsGeneticsTab extends LitElement {
             placeholder="F1, S1, BX1…"
             .value=${draft.generation}
             @input=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_BATCH_DRAFT',
-          partial: { generation: (e.target as HTMLInputElement).value },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { generation: (e.target as HTMLInputElement).value },
+              });
+            }}
           />
         </label>
         <label
           >Parent 1
           <select
             @change=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_BATCH_DRAFT',
-          partial: { parent1Key: (e.target as HTMLSelectElement).value },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { parent1Key: (e.target as HTMLSelectElement).value },
+              });
+            }}
           >
             <option value="">— none —</option>
             ${strainOptions.map(
-        (o) =>
-          html`<option value="${o.key}" ?selected=${draft.parent1Key === o.key}>
+              (o) =>
+                html`<option value="${o.key}" ?selected=${draft.parent1Key === o.key}>
                   ${o.label}
                 </option>`
-      )}
+            )}
           </select>
         </label>
         <label
           >Parent 2
           <select
             @change=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_BATCH_DRAFT',
-          partial: { parent2Key: (e.target as HTMLSelectElement).value },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { parent2Key: (e.target as HTMLSelectElement).value },
+              });
+            }}
           >
             <option value="">— none —</option>
             ${strainOptions.map(
-        (o) =>
-          html`<option value="${o.key}" ?selected=${draft.parent2Key === o.key}>
+              (o) =>
+                html`<option value="${o.key}" ?selected=${draft.parent2Key === o.key}>
                   ${o.label}
                 </option>`
-      )}
+            )}
           </select>
         </label>
         <label
@@ -940,11 +941,11 @@ export class SeedsGeneticsTab extends LitElement {
             type="text"
             .value=${draft.notes}
             @input=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_BATCH_DRAFT',
-          partial: { notes: (e.target as HTMLInputElement).value },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { notes: (e.target as HTMLInputElement).value },
+              });
+            }}
           />
         </label>
         ${sub.kind === 'error' ? html`<p class="form-error">${sub.message}</p>` : nothing}
@@ -952,8 +953,8 @@ export class SeedsGeneticsTab extends LitElement {
           <button
             class="md3-button tonal"
             @click=${() => {
-        this._sm = transition(this._sm, { type: 'NAVIGATE_BACK' });
-      }}
+              this._sm = transition(this._sm, { type: 'NAVIGATE_BACK' });
+            }}
           >
             Cancel
           </button>
@@ -990,8 +991,8 @@ export class SeedsGeneticsTab extends LitElement {
           <button
             class="md3-button tonal"
             @click=${() => {
-        this._sm = transition(this._sm, { type: 'NAVIGATE_BACK' });
-      }}
+              this._sm = transition(this._sm, { type: 'NAVIGATE_BACK' });
+            }}
           >
             ← Back
           </button>
@@ -1003,49 +1004,49 @@ export class SeedsGeneticsTab extends LitElement {
             type="date"
             .value=${draft.date}
             @input=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_POLLINATION_DRAFT',
-          partial: { date: (e.target as HTMLInputElement).value },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_POLLINATION_DRAFT',
+                partial: { date: (e.target as HTMLInputElement).value },
+              });
+            }}
           />
         </label>
         <label
           >Donor plant (male / pollen donor)
           <select
             @change=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_POLLINATION_DRAFT',
-          partial: { donorPlantId: (e.target as HTMLSelectElement).value },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_POLLINATION_DRAFT',
+                partial: { donorPlantId: (e.target as HTMLSelectElement).value },
+              });
+            }}
           >
             <option value="">— select plant —</option>
             ${donorOptions.map(
-        (o) => html`
+              (o) => html`
                 <option value="${o.key}" ?selected=${draft.donorPlantId === o.key}>
                   ${o.label}
                 </option>
               `
-      )}
+            )}
           </select>
           ${draft.donorPlantId?.includes('||')
-        ? html`<div class="field-hint">· library donor</div>`
-        : nothing}
+            ? html`<div class="field-hint">· library donor</div>`
+            : nothing}
         </label>
         <label class="checkbox-label">
           <input
             type="checkbox"
             .checked=${draft.donorActivePlantsOnly}
             @change=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_POLLINATION_DRAFT',
-          partial: {
-            donorActivePlantsOnly: (e.target as HTMLInputElement).checked,
-            donorPlantId: '',
-          },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_POLLINATION_DRAFT',
+                partial: {
+                  donorActivePlantsOnly: (e.target as HTMLInputElement).checked,
+                  donorPlantId: '',
+                },
+              });
+            }}
           />
           Active plants only
         </label>
@@ -1053,20 +1054,20 @@ export class SeedsGeneticsTab extends LitElement {
           >Receiver plant (female / seed bearer)
           <select
             @change=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_POLLINATION_DRAFT',
-          partial: { receiverPlantId: (e.target as HTMLSelectElement).value },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_POLLINATION_DRAFT',
+                partial: { receiverPlantId: (e.target as HTMLSelectElement).value },
+              });
+            }}
           >
             <option value="">— select plant —</option>
             ${eligiblePlants.map(
-        (p) => html`
+              (p) => html`
                 <option value="${p.plant_id}" ?selected=${draft.receiverPlantId === p.plant_id}>
                   ${p.label}
                 </option>
               `
-      )}
+            )}
           </select>
         </label>
         <label
@@ -1075,11 +1076,11 @@ export class SeedsGeneticsTab extends LitElement {
             type="text"
             .value=${draft.notes}
             @input=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_POLLINATION_DRAFT',
-          partial: { notes: (e.target as HTMLInputElement).value },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_POLLINATION_DRAFT',
+                partial: { notes: (e.target as HTMLInputElement).value },
+              });
+            }}
           />
         </label>
         ${sub.kind === 'error' ? html`<p class="form-error">${sub.message}</p>` : nothing}
@@ -1087,8 +1088,8 @@ export class SeedsGeneticsTab extends LitElement {
           <button
             class="md3-button tonal"
             @click=${() => {
-        this._sm = transition(this._sm, { type: 'NAVIGATE_BACK' });
-      }}
+              this._sm = transition(this._sm, { type: 'NAVIGATE_BACK' });
+            }}
           >
             Cancel
           </button>
@@ -1114,8 +1115,8 @@ export class SeedsGeneticsTab extends LitElement {
           <button
             class="md3-button tonal"
             @click=${() => {
-        this._sm = transition(this._sm, { type: 'NAVIGATE_BACK' });
-      }}
+              this._sm = transition(this._sm, { type: 'NAVIGATE_BACK' });
+            }}
           >
             ← Back
           </button>
@@ -1128,11 +1129,11 @@ export class SeedsGeneticsTab extends LitElement {
             min="1"
             .value=${String(draft.quantity)}
             @input=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_HARVEST_DRAFT',
-          partial: { quantity: parseInt((e.target as HTMLInputElement).value) || 1 },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_HARVEST_DRAFT',
+                partial: { quantity: parseInt((e.target as HTMLInputElement).value) || 1 },
+              });
+            }}
           />
         </label>
         <label
@@ -1141,11 +1142,11 @@ export class SeedsGeneticsTab extends LitElement {
             type="text"
             .value=${draft.notes}
             @input=${(e: Event) => {
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_HARVEST_DRAFT',
-          partial: { notes: (e.target as HTMLInputElement).value },
-        });
-      }}
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_HARVEST_DRAFT',
+                partial: { notes: (e.target as HTMLInputElement).value },
+              });
+            }}
           />
         </label>
         ${sub.kind === 'error' ? html`<p class="form-error">${sub.message}</p>` : nothing}
@@ -1153,8 +1154,8 @@ export class SeedsGeneticsTab extends LitElement {
           <button
             class="md3-button tonal"
             @click=${() => {
-        this._sm = transition(this._sm, { type: 'NAVIGATE_BACK' });
-      }}
+              this._sm = transition(this._sm, { type: 'NAVIGATE_BACK' });
+            }}
           >
             Cancel
           </button>
@@ -1275,7 +1276,11 @@ export class SeedsGeneticsTab extends LitElement {
     }
     this._sm = transition(this._sm, { type: 'SAVE_REQUESTED' });
     try {
-      await this.onHarvestSeeds?.({ event_id: eventId, quantity: draft.quantity, notes: draft.notes });
+      await this.onHarvestSeeds?.({
+        event_id: eventId,
+        quantity: draft.quantity,
+        notes: draft.notes,
+      });
       this._sm = transition(this._sm, { type: 'SAVE_RESOLVED' });
       this.onSeedDataChanged?.();
     } catch (e) {

@@ -1651,6 +1651,33 @@ describe('Cycle 13 — light chip icon and value', () => {
     expect(chip.multiValues).toEqual(['70%', '0%']);
     expect(chip.entityIds).toEqual(['sensor.light_1', 'sensor.light_2']);
   });
+
+  it('derives the light chip state from multiple readings when isLightsOn is absent', () => {
+    const snapshot = makeDeviceSnapshot({
+      lightSensors: makeDeviceEntry({
+        entityIds: ['binary_sensor.light_state', 'switch.growlight', 'light.dimmable'],
+        value: 'Multiple',
+        multiValues: ['On', 'On', '65%'],
+      }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      makeEnvSnapshot(),
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    const chip = deviceChips.find((candidate) => candidate.key === MetricKey.LIGHT)!;
+    expect(chip.value).toBe('On');
+    expect(chip.icon).toBe(mdiLightbulbOn);
+    expect(chip.multiValues).toEqual(['On', 'On', '65%']);
+  });
 });
 
 // ---------------------------------------------------------------------------

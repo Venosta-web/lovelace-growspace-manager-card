@@ -180,10 +180,11 @@ function _evictThreads(
   const gsThreads = [...threads.values()].filter((t) => t.growspace_id === growspaceId);
   const pinned = gsThreads.filter((t) => t.pinned).sort((a, b) => b.updated_at - a.updated_at);
   const recent = gsThreads.filter((t) => !t.pinned).sort((a, b) => b.updated_at - a.updated_at);
-  const keep = new Set([
-    ...pinned.slice(0, MAX_PINNED_THREADS),
-    ...recent.slice(0, MAX_RECENT_THREADS),
-  ].map((t) => t.thread_id));
+  const keep = new Set(
+    [...pinned.slice(0, MAX_PINNED_THREADS), ...recent.slice(0, MAX_RECENT_THREADS)].map(
+      (t) => t.thread_id
+    )
+  );
   const result = new Map(threads);
   for (const [id, t] of result) {
     if (t.growspace_id === growspaceId && !keep.has(id)) result.delete(id);
@@ -461,7 +462,11 @@ export type AiSettingsDraft = {
 };
 
 export async function saveAiSettings(draft: AiSettingsDraft): Promise<void> {
-  await hassCall('growspace_manager/save_ai_settings', draft as Record<string, unknown>, z.unknown());
+  await hassCall(
+    'growspace_manager/save_ai_settings',
+    draft as Record<string, unknown>,
+    z.unknown()
+  );
 }
 
 /**

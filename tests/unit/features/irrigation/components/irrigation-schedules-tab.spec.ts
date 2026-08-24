@@ -52,7 +52,9 @@ function drainSection(overrides: Partial<ScheduleSectionVM> = {}): ScheduleSecti
   };
 }
 
-function cropSteeringPanel(overrides: Partial<CropSteeringScheduleVM> = {}): CropSteeringScheduleVM {
+function cropSteeringPanel(
+  overrides: Partial<CropSteeringScheduleVM> = {}
+): CropSteeringScheduleVM {
   return {
     configured: true,
     shotCount: 9,
@@ -60,8 +62,22 @@ function cropSteeringPanel(overrides: Partial<CropSteeringScheduleVM> = {}): Cro
     lightsOnLabel: '06:00',
     lightsOffLabel: '18:00',
     phases: [
-      { id: 'p1', label: 'P1', name: 'Saturation', color: '#4CAF50', target: 'Reach FC', shotCount: null },
-      { id: 'p2', label: 'P2', name: 'Maintenance', color: '#2196F3', target: 'Runoff target', shotCount: 9 },
+      {
+        id: 'p1',
+        label: 'P1',
+        name: 'Saturation',
+        color: '#4CAF50',
+        target: 'Reach FC',
+        shotCount: null,
+      },
+      {
+        id: 'p2',
+        label: 'P2',
+        name: 'Maintenance',
+        color: '#2196F3',
+        target: 'Runoff target',
+        shotCount: 9,
+      },
     ],
     hasPoreEc: true,
     hasBulkEc: true,
@@ -109,9 +125,11 @@ const byText = (el: IrrigationSchedulesTab, t: string): HTMLButtonElement =>
 
 describe('irrigation-schedules-tab', () => {
   it('holds no @state() of its own — only the `vm` reactive property', () => {
-    const props = (IrrigationSchedulesTab as unknown as {
-      elementProperties: Map<string, { state?: boolean }>;
-    }).elementProperties;
+    const props = (
+      IrrigationSchedulesTab as unknown as {
+        elementProperties: Map<string, { state?: boolean }>;
+      }
+    ).elementProperties;
     const stateProps = [...props.entries()].filter(([, def]) => def.state === true);
     expect(stateProps).toEqual([]);
   });
@@ -175,10 +193,14 @@ describe('irrigation-schedules-tab', () => {
     );
     expect(upd.detail).toEqual({ type: 'irrigation', time: '14:30' });
 
-    const save = await captureIntent(el, 'schedules-save-add', () => byText(el, 'Add Schedule').click());
+    const save = await captureIntent(el, 'schedules-save-add', () =>
+      byText(el, 'Add Schedule').click()
+    );
     expect(save.detail).toEqual({ type: 'irrigation', time: '12:00', duration: 60 });
 
-    const cancel = await captureIntent(el, 'schedules-cancel-inline', () => byText(el, 'Cancel').click());
+    const cancel = await captureIntent(el, 'schedules-cancel-inline', () =>
+      byText(el, 'Cancel').click()
+    );
     expect(cancel.type).toBe('schedules-cancel-inline');
   });
 

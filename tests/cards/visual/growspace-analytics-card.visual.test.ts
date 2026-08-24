@@ -6,47 +6,80 @@ import { GrowspaceAnalyticsCard } from '../../../src/cards/growspace-analytics-c
 import { setDevices } from '../../../src/slices/grid';
 import { aHass, aGrowspaceDevice } from '../../fixtures';
 
-
 vi.mock('../../../src/cards/editors/growspace-analytics-card-editor', () => ({
-    GrowspaceAnalyticsCardEditor: class extends HTMLElement {}
+  GrowspaceAnalyticsCardEditor: class extends HTMLElement {},
 }));
 
 vi.mock('../../../src/slices/growspace', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../../../src/slices/growspace')>();
-    // Never-resolving mock so the bootstrap controller's async fetch doesn't
-    // race with the manual setDevices() seed in this rendering test.
-    return { ...actual, fetchRawCollection: vi.fn(() => new Promise(() => {})) };
+  const actual = await importOriginal<typeof import('../../../src/slices/growspace')>();
+  // Never-resolving mock so the bootstrap controller's async fetch doesn't
+  // race with the manual setDevices() seed in this rendering test.
+  return { ...actual, fetchRawCollection: vi.fn(() => new Promise(() => {})) };
 });
 
 if (!customElements.get('growspace-analytics-card')) {
-    customElements.define('growspace-analytics-card', GrowspaceAnalyticsCard);
+  customElements.define('growspace-analytics-card', GrowspaceAnalyticsCard);
 }
 
 test('growspace-analytics-card visual snapshot', async () => {
-    const element = await fixture<GrowspaceAnalyticsCard>(html`<growspace-analytics-card></growspace-analytics-card>`);
-    element.hass = aHass() as any;
+  const element = await fixture<GrowspaceAnalyticsCard>(
+    html`<growspace-analytics-card></growspace-analytics-card>`
+  );
+  element.hass = aHass() as any;
 
+  element.setConfig({
+    type: 'custom:growspace-analytics-card',
+    default_growspace: 'test_tent',
+  } as any);
 
-    element.setConfig({ type: 'custom:growspace-analytics-card', default_growspace: 'test_tent' } as any);
+  element.store.ui.$isLoading.set(false);
+  setDevices([aGrowspaceDevice()]);
+  element.store.grid.$selectedDevice.set('test_tent');
+  element.store.history.$historyLoaded.set(true);
+  element.store.history.$historyCache.setKey('temperature', [
+    {
+      entity_id: 'sensor.test_tent_temp',
+      state: '23.5',
+      attributes: {},
+      last_changed: '2026-05-20T10:00:00Z',
+    },
+    {
+      entity_id: 'sensor.test_tent_temp',
+      state: '24.0',
+      attributes: {},
+      last_changed: '2026-05-20T11:00:00Z',
+    },
+    {
+      entity_id: 'sensor.test_tent_temp',
+      state: '24.2',
+      attributes: {},
+      last_changed: '2026-05-20T12:00:00Z',
+    },
+  ]);
+  element.store.history.$historyCache.setKey('humidity', [
+    {
+      entity_id: 'sensor.test_tent_humidity',
+      state: '58',
+      attributes: {},
+      last_changed: '2026-05-20T10:00:00Z',
+    },
+    {
+      entity_id: 'sensor.test_tent_humidity',
+      state: '60',
+      attributes: {},
+      last_changed: '2026-05-20T11:00:00Z',
+    },
+    {
+      entity_id: 'sensor.test_tent_humidity',
+      state: '62',
+      attributes: {},
+      last_changed: '2026-05-20T12:00:00Z',
+    },
+  ]);
+  element.store.history.$activeEnvGraphs.set(new Set(['temperature', 'humidity']));
+  await element.updateComplete;
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await element.updateComplete;
 
-    element.store.ui.$isLoading.set(false);
-    setDevices([aGrowspaceDevice()]);
-    element.store.grid.$selectedDevice.set('test_tent');
-    element.store.history.$historyLoaded.set(true);
-    element.store.history.$historyCache.setKey('temperature', [
-        { entity_id: 'sensor.test_tent_temp', state: '23.5', attributes: {}, last_changed: '2026-05-20T10:00:00Z' },
-        { entity_id: 'sensor.test_tent_temp', state: '24.0', attributes: {}, last_changed: '2026-05-20T11:00:00Z' },
-        { entity_id: 'sensor.test_tent_temp', state: '24.2', attributes: {}, last_changed: '2026-05-20T12:00:00Z' },
-    ]);
-    element.store.history.$historyCache.setKey('humidity', [
-        { entity_id: 'sensor.test_tent_humidity', state: '58', attributes: {}, last_changed: '2026-05-20T10:00:00Z' },
-        { entity_id: 'sensor.test_tent_humidity', state: '60', attributes: {}, last_changed: '2026-05-20T11:00:00Z' },
-        { entity_id: 'sensor.test_tent_humidity', state: '62', attributes: {}, last_changed: '2026-05-20T12:00:00Z' },
-    ]);
-    element.store.history.$activeEnvGraphs.set(new Set(['temperature', 'humidity']));
-    await element.updateComplete;
-    await new Promise(resolve => setTimeout(resolve, 0));
-    await element.updateComplete;
-
-    await expect(page.elementLocator(element)).toMatchScreenshot();
+  await expect(page.elementLocator(element)).toMatchScreenshot();
 });

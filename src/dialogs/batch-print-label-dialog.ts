@@ -116,7 +116,9 @@ export class BatchPrintLabelDialog extends LitElement {
         cursor: pointer;
         font-size: var(--font-size-supporting);
         opacity: 0.6;
-        transition: background 0.15s, opacity 0.15s;
+        transition:
+          background 0.15s,
+          opacity 0.15s;
       }
       .density-seg button.active {
         background: rgba(255, 255, 255, 0.12);
@@ -293,7 +295,10 @@ export class BatchPrintLabelDialog extends LitElement {
           ${this._isSubmitting
             ? html`
                 <div class="progress-bar-wrap">
-                  <div class="progress-bar" style="transform: scaleX(${this._progress / 100})"></div>
+                  <div
+                    class="progress-bar"
+                    style="transform: scaleX(${this._progress / 100})"
+                  ></div>
                 </div>
               `
             : nothing}

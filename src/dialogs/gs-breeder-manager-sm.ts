@@ -23,17 +23,13 @@ export interface BreederDraft {
 
 // ─── View states ──────────────────────────────────────────────────────────────
 
-export type ListSubState =
-  | { kind: 'idle' }
-  | { kind: 'confirm-delete'; name: string };
+export type ListSubState = { kind: 'idle' } | { kind: 'confirm-delete'; name: string };
 
 export interface ListViewState {
   sub: ListSubState;
 }
 
-export type EditorSubState =
-  | { kind: 'idle' }
-  | { kind: 'uploading' };
+export type EditorSubState = { kind: 'idle' } | { kind: 'uploading' };
 
 export interface EditorViewState {
   draft: BreederDraft;

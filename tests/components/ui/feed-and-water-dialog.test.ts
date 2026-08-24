@@ -10,7 +10,10 @@ import { describe, it, expect, afterEach, vi, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import '../../../src/dialogs/feed-and-water-dialog';
 import { FeedAndWaterDialog } from '../../../src/dialogs/feed-and-water-dialog';
-import type { NutrientInventoryResponse, NutrientPresetsResponse } from '../../../src/slices/nutrient';
+import type {
+  NutrientInventoryResponse,
+  NutrientPresetsResponse,
+} from '../../../src/slices/nutrient';
 import type { SMEvent } from '../../../src/dialogs/feed-and-water-dialog-sm';
 
 vi.mock('../../../src/slices/nutrient', async (importOriginal) => {
@@ -31,9 +34,14 @@ vi.mock('../../../src/slices/nutrient', async (importOriginal) => {
 const stubs = ['ha-dialog', 'ha-svg-icon', 'gs-dialog', 'md3-number-input', 'md3-select'];
 for (const tag of stubs) {
   if (!customElements.get(tag)) {
-    customElements.define(tag, class extends HTMLElement {
-      connectedCallback() { this.style.display = 'block'; }
-    });
+    customElements.define(
+      tag,
+      class extends HTMLElement {
+        connectedCallback() {
+          this.style.display = 'block';
+        }
+      }
+    );
   }
 }
 
@@ -42,18 +50,41 @@ for (const tag of stubs) {
 function aInventory(): NutrientInventoryResponse {
   return {
     stocks: {
-      n1: { nutrient_id: 'n1', name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, last_updated: '', brand: '', type: 'calmag', npk: '', dose_ml_l: 2, notes: '' },
+      n1: {
+        nutrient_id: 'n1',
+        name: 'Cal-Mag',
+        current_ml: 500,
+        initial_ml: 1000,
+        last_updated: '',
+        brand: '',
+        type: 'calmag',
+        npk: '',
+        dose_ml_l: 2,
+        notes: '',
+      },
     },
   };
 }
 
 function aPresets(): NutrientPresetsResponse {
   return {
-    p1: { id: 'p1', name: 'Veg Week 1', stage: 'veg', week: 1, nutrients: [{ nutrient_id: 'n1', dose_ml_l: 2 }] },
+    p1: {
+      id: 'p1',
+      name: 'Veg Week 1',
+      stage: 'veg',
+      week: 1,
+      nutrients: [{ nutrient_id: 'n1', dose_ml_l: 2 }],
+    },
   };
 }
 
-async function mountOpen(overrides: Partial<{ inventory: NutrientInventoryResponse; presets: NutrientPresetsResponse; presetOptions: { label: string; value: string }[] }> = {}): Promise<FeedAndWaterDialog> {
+async function mountOpen(
+  overrides: Partial<{
+    inventory: NutrientInventoryResponse;
+    presets: NutrientPresetsResponse;
+    presetOptions: { label: string; value: string }[];
+  }> = {}
+): Promise<FeedAndWaterDialog> {
   return fixture<FeedAndWaterDialog>(html`
     <feed-and-water-dialog
       .open=${true}
@@ -70,7 +101,9 @@ function clickNav(el: FeedAndWaterDialog, tab: 'watering' | 'inventory' | 'prese
 
 function dispatchSmEventFromContent(el: FeedAndWaterDialog, event: object) {
   const content = el.shadowRoot!.querySelector('.content')!;
-  content.dispatchEvent(new CustomEvent('sm-event', { detail: event, bubbles: true, composed: true }));
+  content.dispatchEvent(
+    new CustomEvent('sm-event', { detail: event, bubbles: true, composed: true })
+  );
 }
 
 // ─── Tab rendering ────────────────────────────────────────────────────────────
@@ -239,14 +272,33 @@ describe('service calls — inventory', () => {
     await el.updateComplete;
     dispatchSmEventFromContent(el, {
       type: 'EditStarted',
-      draft: { name: 'Cal-Mag', current_ml: 400, initial_ml: 1000, brand: 'GH', stockType: 'calmag', npk: '', dose_ml_l: 2, notes: '' },
+      draft: {
+        name: 'Cal-Mag',
+        current_ml: 400,
+        initial_ml: 1000,
+        brand: 'GH',
+        stockType: 'calmag',
+        npk: '',
+        dose_ml_l: 2,
+        notes: '',
+      },
     });
     await el.updateComplete;
     dispatchSmEventFromContent(el, { type: 'SaveRequested' });
     await el.updateComplete;
 
     await vi.waitFor(() => expect(updateNutrientStock).toHaveBeenCalled());
-    expect(updateNutrientStock).toHaveBeenCalledWith('n1', 'Cal-Mag', 400, 1000, 'GH', 'calmag', '', 2, '');
+    expect(updateNutrientStock).toHaveBeenCalledWith(
+      'n1',
+      'Cal-Mag',
+      400,
+      1000,
+      'GH',
+      'calmag',
+      '',
+      2,
+      ''
+    );
   });
 
   it('SaveRequested on a new stock uses a generated ID', async () => {
@@ -331,18 +383,27 @@ describe('service calls — presets', () => {
     await el.updateComplete;
     dispatchFromPresetsUi(el, {
       type: 'EditStarted',
-      draft: { name: 'Veg Week 1', stage: 'veg', week: 1, ec_target: 1.2, ph_target: 6.0, nutrients: [{ nutrient_id: 'n1', dose_ml_l: 2 }] },
+      draft: {
+        name: 'Veg Week 1',
+        stage: 'veg',
+        week: 1,
+        ec_target: 1.2,
+        ph_target: 6.0,
+        nutrients: [{ nutrient_id: 'n1', dose_ml_l: 2 }],
+      },
     });
     await el.updateComplete;
     dispatchFromPresetsUi(el, { type: 'SaveRequested' });
     await el.updateComplete;
 
     await vi.waitFor(() => expect(saveNutrientPreset).toHaveBeenCalled());
-    expect(saveNutrientPreset).toHaveBeenCalledWith(expect.objectContaining({
-      preset_id: 'p1',
-      name: 'Veg Week 1',
-      stage: 'veg',
-    }));
+    expect(saveNutrientPreset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        preset_id: 'p1',
+        name: 'Veg Week 1',
+        stage: 'veg',
+      })
+    );
   });
 
   it('PresetSaveRequested on a new preset omits preset_id', async () => {
@@ -354,7 +415,9 @@ describe('service calls — presets', () => {
     await el.updateComplete;
 
     await vi.waitFor(() => expect(saveNutrientPreset).toHaveBeenCalled());
-    expect(saveNutrientPreset).toHaveBeenCalledWith(expect.objectContaining({ preset_id: undefined }));
+    expect(saveNutrientPreset).toHaveBeenCalledWith(
+      expect.objectContaining({ preset_id: undefined })
+    );
   });
 
   it('PresetDeleteConfirmed calls removeNutrientPreset with the confirmed id', async () => {
@@ -392,7 +455,9 @@ describe('close event', () => {
   it('dispatches a close CustomEvent when gs-dialog emits close', async () => {
     const el = await mountOpen();
     let fired = false;
-    el.addEventListener('close', () => { fired = true; });
+    el.addEventListener('close', () => {
+      fired = true;
+    });
 
     const gsDialog = el.shadowRoot!.querySelector('gs-dialog')!;
     gsDialog.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
@@ -407,7 +472,9 @@ describe('watering tab — record watering button', () => {
   it('dispatches submit-watering with current draft when Record Watering is clicked', async () => {
     const el = await mountOpen();
     let detail: unknown;
-    el.addEventListener('submit-watering', (e: Event) => { detail = (e as CustomEvent).detail; });
+    el.addEventListener('submit-watering', (e: Event) => {
+      detail = (e as CustomEvent).detail;
+    });
 
     el.shadowRoot!.querySelector<HTMLElement>('[data-action="record-watering"]')!.click();
 
@@ -419,11 +486,15 @@ describe('watering tab — volume change handler', () => {
   it('updates SM draft volume when a valid value is dispatched', async () => {
     const el = await mountOpen();
     const input = el.shadowRoot!.querySelector('md3-number-input')!;
-    input.dispatchEvent(new CustomEvent('change', { detail: '2.5', bubbles: true, composed: true }));
+    input.dispatchEvent(
+      new CustomEvent('change', { detail: '2.5', bubbles: true, composed: true })
+    );
     await el.updateComplete;
 
     let detail: unknown;
-    el.addEventListener('submit-watering', (e: Event) => { detail = (e as CustomEvent).detail; });
+    el.addEventListener('submit-watering', (e: Event) => {
+      detail = (e as CustomEvent).detail;
+    });
     el.shadowRoot!.querySelector<HTMLElement>('[data-action="record-watering"]')!.click();
 
     expect((detail as any).volume).toBe(2.5);
@@ -432,11 +503,15 @@ describe('watering tab — volume change handler', () => {
   it('does not update SM draft when value is NaN', async () => {
     const el = await mountOpen();
     const input = el.shadowRoot!.querySelector('md3-number-input')!;
-    input.dispatchEvent(new CustomEvent('change', { detail: 'not-a-number', bubbles: true, composed: true }));
+    input.dispatchEvent(
+      new CustomEvent('change', { detail: 'not-a-number', bubbles: true, composed: true })
+    );
     await el.updateComplete;
 
     let detail: unknown;
-    el.addEventListener('submit-watering', (e: Event) => { detail = (e as CustomEvent).detail; });
+    el.addEventListener('submit-watering', (e: Event) => {
+      detail = (e as CustomEvent).detail;
+    });
     el.shadowRoot!.querySelector<HTMLElement>('[data-action="record-watering"]')!.click();
 
     expect((detail as any).volume).toBe(1.0);
@@ -449,7 +524,9 @@ describe('watering tab — volume change handler', () => {
     await el.updateComplete;
 
     let detail: unknown;
-    el.addEventListener('submit-watering', (e: Event) => { detail = (e as CustomEvent).detail; });
+    el.addEventListener('submit-watering', (e: Event) => {
+      detail = (e as CustomEvent).detail;
+    });
     el.shadowRoot!.querySelector<HTMLElement>('[data-action="record-watering"]')!.click();
 
     expect((detail as any).volume).toBe(1.0);
@@ -461,11 +538,15 @@ describe('watering tab — volume change handler', () => {
       presetOptions: [{ label: 'Veg Week 1', value: 'p1' }],
     });
     const select = el.shadowRoot!.querySelector('md3-select')!;
-    select.dispatchEvent(new CustomEvent('change', { detail: 'p1', bubbles: true, composed: true }));
+    select.dispatchEvent(
+      new CustomEvent('change', { detail: 'p1', bubbles: true, composed: true })
+    );
     await el.updateComplete;
 
     let detail: unknown;
-    el.addEventListener('submit-watering', (e: Event) => { detail = (e as CustomEvent).detail; });
+    el.addEventListener('submit-watering', (e: Event) => {
+      detail = (e as CustomEvent).detail;
+    });
     el.shadowRoot!.querySelector<HTMLElement>('[data-action="record-watering"]')!.click();
 
     expect((detail as any).presetId).toBe('p1');

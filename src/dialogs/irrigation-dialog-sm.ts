@@ -120,9 +120,7 @@ export interface TankDraft {
  * known limitation carried over from the pre-decomposition component state,
  * tracked separately, deliberately not fixed in this refactor.
  */
-export type TanksSubState =
-  | { kind: 'idle' }
-  | { kind: 'editing'; index: number; draft: TankDraft };
+export type TanksSubState = { kind: 'idle' } | { kind: 'editing'; index: number; draft: TankDraft };
 
 export interface TanksTabState {
   sub: TanksSubState;
@@ -188,9 +186,7 @@ export type EcRampCurveDraft = Partial<ECRampCurve>;
  * carries synchronous validation copy (name required, ≥1 valid point); save and
  * remove *rejections* surface as a root toast instead (ADR-0015).
  */
-export type EcRampSubState =
-  | { kind: 'list' }
-  | { kind: 'editing'; draft: EcRampCurveDraft };
+export type EcRampSubState = { kind: 'list' } | { kind: 'editing'; draft: EcRampCurveDraft };
 
 export interface EcRampTabState {
   sub: EcRampSubState;
@@ -793,9 +789,7 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
           // Reset the EC Ramp tab to its list view when leaving it, so re-entering
           // never reopens a stale editor draft (replaces the old willUpdate reset).
           ec_ramp:
-            sm.activeTab === 'ec_ramp'
-              ? { sub: { kind: 'list' }, error: null }
-              : sm.tabs.ec_ramp,
+            sm.activeTab === 'ec_ramp' ? { sub: { kind: 'list' }, error: null } : sm.tabs.ec_ramp,
         },
       };
 
@@ -1157,7 +1151,10 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
             ...sm.tabs.ec_ramp,
             sub: {
               ...sub,
-              draft: { ...sub.draft, points: [...points, { day: lastDay + 7, target_ec: lastEc + 0.2 }] },
+              draft: {
+                ...sub.draft,
+                points: [...points, { day: lastDay + 7, target_ec: lastEc + 0.2 }],
+              },
             },
           },
         },

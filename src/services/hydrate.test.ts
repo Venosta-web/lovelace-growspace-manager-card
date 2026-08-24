@@ -56,7 +56,14 @@ describe('hydrate()', () => {
         identity: { growspace_id: 'gs-1', name: 'Tent A', type: 'flower' },
         grid: {
           grid: {
-            '0-0': { entity_id: 'sensor.plant_1', row: 0, col: 0, strain: 'OG', phenotype: 'A', stage: 'flower' },
+            '0-0': {
+              entity_id: 'sensor.plant_1',
+              row: 0,
+              col: 0,
+              strain: 'OG',
+              phenotype: 'A',
+              stage: 'flower',
+            },
           },
         },
       },
@@ -92,7 +99,14 @@ describe('hydrate()', () => {
         identity: { growspace_id: 'gs-1', name: 'Tent A', type: 'flower' },
         grid: {
           grid: {
-            '0-0': { entity_id: 'sensor.plant_1', row: 0, col: 0, strain: 'OG', phenotype: 'A', stage: 'flower' },
+            '0-0': {
+              entity_id: 'sensor.plant_1',
+              row: 0,
+              col: 0,
+              strain: 'OG',
+              phenotype: 'A',
+              stage: 'flower',
+            },
           },
         },
       },

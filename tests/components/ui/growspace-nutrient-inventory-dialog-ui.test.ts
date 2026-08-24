@@ -42,7 +42,9 @@ function simulateChange(el: HTMLSelectElement, value: string): void {
   el.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
 }
 
-function aInventory(overrides: Partial<NutrientInventoryResponse['stocks']> = {}): NutrientInventoryResponse {
+function aInventory(
+  overrides: Partial<NutrientInventoryResponse['stocks']> = {}
+): NutrientInventoryResponse {
   return {
     stocks: {
       n1: {
@@ -90,7 +92,10 @@ async function mountList(inventory = aInventory()): Promise<GrowspaceNutrientInv
   `);
 }
 
-async function mountDetail(id = 'n1', inventory = aInventory()): Promise<GrowspaceNutrientInventoryDialogUI> {
+async function mountDetail(
+  id = 'n1',
+  inventory = aInventory()
+): Promise<GrowspaceNutrientInventoryDialogUI> {
   return fixture<GrowspaceNutrientInventoryDialogUI>(html`
     <growspace-nutrient-inventory-dialog-ui
       .inventory=${inventory}
@@ -218,7 +223,16 @@ describe('editing view — renders', () => {
         .selectedId=${'n1'}
         .sub=${{
           kind: 'editing',
-          draft: { name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, brand: 'GH', stockType: 'calmag', npk: '', dose_ml_l: 2, notes: '' },
+          draft: {
+            name: 'Cal-Mag',
+            current_ml: 500,
+            initial_ml: 1000,
+            brand: 'GH',
+            stockType: 'calmag',
+            npk: '',
+            dose_ml_l: 2,
+            notes: '',
+          },
         }}
       ></growspace-nutrient-inventory-dialog-ui>
     `);
@@ -232,7 +246,16 @@ describe('editing view — renders', () => {
         .selectedId=${'n1'}
         .sub=${{
           kind: 'editing',
-          draft: { name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, brand: 'GH', stockType: 'calmag', npk: '', dose_ml_l: 2, notes: '' },
+          draft: {
+            name: 'Cal-Mag',
+            current_ml: 500,
+            initial_ml: 1000,
+            brand: 'GH',
+            stockType: 'calmag',
+            npk: '',
+            dose_ml_l: 2,
+            notes: '',
+          },
         }}
       ></growspace-nutrient-inventory-dialog-ui>
     `);
@@ -247,7 +270,16 @@ describe('editing view — renders', () => {
         .selectedId=${'n1'}
         .sub=${{
           kind: 'applying',
-          draft: { name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, brand: 'GH', stockType: 'calmag', npk: '', dose_ml_l: 2, notes: '' },
+          draft: {
+            name: 'Cal-Mag',
+            current_ml: 500,
+            initial_ml: 1000,
+            brand: 'GH',
+            stockType: 'calmag',
+            npk: '',
+            dose_ml_l: 2,
+            notes: '',
+          },
         }}
       ></growspace-nutrient-inventory-dialog-ui>
     `);
@@ -264,7 +296,16 @@ describe('editing view — interactions', () => {
         .selectedId=${'n1'}
         .sub=${{
           kind: 'editing',
-          draft: { name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, brand: 'GH', stockType: 'calmag', npk: '', dose_ml_l: 2, notes: '' },
+          draft: {
+            name: 'Cal-Mag',
+            current_ml: 500,
+            initial_ml: 1000,
+            brand: 'GH',
+            stockType: 'calmag',
+            npk: '',
+            dose_ml_l: 2,
+            notes: '',
+          },
         }}
       ></growspace-nutrient-inventory-dialog-ui>
     `);
@@ -281,7 +322,16 @@ describe('editing view — interactions', () => {
         .selectedId=${'n1'}
         .sub=${{
           kind: 'editing',
-          draft: { name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, brand: 'GH', stockType: 'calmag', npk: '', dose_ml_l: 2, notes: '' },
+          draft: {
+            name: 'Cal-Mag',
+            current_ml: 500,
+            initial_ml: 1000,
+            brand: 'GH',
+            stockType: 'calmag',
+            npk: '',
+            dose_ml_l: 2,
+            notes: '',
+          },
         }}
       ></growspace-nutrient-inventory-dialog-ui>
     `);
@@ -301,7 +351,16 @@ async function mountEditing(): Promise<GrowspaceNutrientInventoryDialogUI> {
       .selectedId=${'n1'}
       .sub=${{
         kind: 'editing',
-        draft: { name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, brand: 'GH', stockType: 'calmag', npk: '0-0-0', dose_ml_l: 2, notes: '' },
+        draft: {
+          name: 'Cal-Mag',
+          current_ml: 500,
+          initial_ml: 1000,
+          brand: 'GH',
+          stockType: 'calmag',
+          npk: '0-0-0',
+          dose_ml_l: 2,
+          notes: '',
+        },
       }}
     ></growspace-nutrient-inventory-dialog-ui>
   `);
@@ -375,7 +434,11 @@ describe('editing view — form field inputs', () => {
     const el = await mountEditing();
     const events = collectSmEvents(el);
     simulateInput(fieldInput(el.shadowRoot!, 'Notes') as HTMLInputElement, 'keep refrigerated');
-    expect(events[0]).toEqual({ type: 'StockDraftChanged', field: 'notes', value: 'keep refrigerated' });
+    expect(events[0]).toEqual({
+      type: 'StockDraftChanged',
+      field: 'notes',
+      value: 'keep refrigerated',
+    });
   });
 });
 
@@ -389,7 +452,16 @@ describe('new item form', () => {
         .selectedId=${null}
         .sub=${{
           kind: 'editing',
-          draft: { name: '', current_ml: 0, initial_ml: 0, brand: '', stockType: 'base', npk: '', dose_ml_l: 0, notes: '' },
+          draft: {
+            name: '',
+            current_ml: 0,
+            initial_ml: 0,
+            brand: '',
+            stockType: 'base',
+            npk: '',
+            dose_ml_l: 0,
+            notes: '',
+          },
         }}
       ></growspace-nutrient-inventory-dialog-ui>
     `);
@@ -463,9 +535,7 @@ describe('edge cases and fallback logic', () => {
     // it. The old form concatenated an alpha suffix onto this value, which is why the
     // assertion used to read `var(--primary-color, #4caf50)22` — a value that never
     // parsed, so this chip rendered untinted.
-    expect(iconContainer.style.getPropertyValue('--stock-c')).toBe(
-      'var(--primary-color, #4caf50)'
-    );
+    expect(iconContainer.style.getPropertyValue('--stock-c')).toBe('var(--primary-color, #4caf50)');
     expect(getComputedStyle(iconContainer).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
   });
 
@@ -495,12 +565,14 @@ describe('edge cases and fallback logic', () => {
       initial_ml: 1000,
     };
 
-    const el = await mountList(aInventory({
-      n1: zeroCapStock,
-      n2: dangerStock,
-      n3: overfilledStock,
-      n4: negativeStock,
-    }));
+    const el = await mountList(
+      aInventory({
+        n1: zeroCapStock,
+        n2: dangerStock,
+        n3: overfilledStock,
+        n4: negativeStock,
+      })
+    );
 
     const item1 = el.shadowRoot!.querySelector('[data-stock-id="n1"]')!;
     const bar1 = item1.querySelector('.fill-bar') as HTMLElement;
@@ -614,7 +686,16 @@ describe('editing view — additional inputs', () => {
 
 describe('error state view', () => {
   it('renders error banner and edit form when sub.kind is error', async () => {
-    const draft = { name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, brand: 'GH', stockType: 'calmag', npk: '0-0-0', dose_ml_l: 2, notes: '' };
+    const draft = {
+      name: 'Cal-Mag',
+      current_ml: 500,
+      initial_ml: 1000,
+      brand: 'GH',
+      stockType: 'calmag',
+      npk: '0-0-0',
+      dose_ml_l: 2,
+      notes: '',
+    };
     const el = await fixture<GrowspaceNutrientInventoryDialogUI>(html`
       <growspace-nutrient-inventory-dialog-ui
         .inventory=${aInventory()}

@@ -4,8 +4,28 @@ import type { GrowspaceHeaderSecondaryUI } from '../../../../src/features/ui/com
 import '../../../../src/features/ui/components/growspace-header-secondary-ui';
 import type { FlowerFlipInfo } from '../../../../src/utils/flower-flip';
 
-const OPTIMAL_CHIP = { key: 'optimal', icon: 'test-icon', label: '', value: 'Optimal', status: 'optimal', active: false, linked: false, tooltip: '', groupIndex: 0 };
-const DLI_CHIP = { key: 'dli', icon: 'test-icon', label: '', value: '30', status: '', active: false, linked: false, tooltip: '', groupIndex: 0 };
+const OPTIMAL_CHIP = {
+  key: 'optimal',
+  icon: 'test-icon',
+  label: '',
+  value: 'Optimal',
+  status: 'optimal',
+  active: false,
+  linked: false,
+  tooltip: '',
+  groupIndex: 0,
+};
+const DLI_CHIP = {
+  key: 'dli',
+  icon: 'test-icon',
+  label: '',
+  value: '30',
+  status: '',
+  active: false,
+  linked: false,
+  tooltip: '',
+  groupIndex: 0,
+};
 
 const baseInfo: FlowerFlipInfo = {
   plantNames: ['Blue Dream'],

@@ -12,7 +12,6 @@ vi.mock('../slices/plant', async (importOriginal) => ({
   printLabel: vi.fn().mockResolvedValue(undefined),
 }));
 
-
 // ---------------------------------------------------------------------------
 // GrowspaceStore.openBatchPrintLabelsDialog
 // ---------------------------------------------------------------------------
@@ -552,7 +551,9 @@ describe('BatchPrintLabelDialog – render', () => {
       <batch-print-label-dialog .open=${true}></batch-print-label-dialog>
     `);
     await el.updateComplete;
-    const btns = el.shadowRoot!.querySelectorAll('.density-seg button') as NodeListOf<HTMLButtonElement>;
+    const btns = el.shadowRoot!.querySelectorAll(
+      '.density-seg button'
+    ) as NodeListOf<HTMLButtonElement>;
     // click "Light" (index 0)
     btns[0].click();
     await el.updateComplete;

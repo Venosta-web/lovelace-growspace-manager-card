@@ -95,9 +95,7 @@ describe('GmBriefingPanel — loading state', () => {
   it('renders .briefing-loading when isAiLoading$ is true and aiBriefing$ is null', async () => {
     isAiLoading$.set(true);
 
-    const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
-    `);
+    const el = await fixture<GmBriefingPanel>(html` <gm-briefing-panel></gm-briefing-panel> `);
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.briefing-loading')).not.toBeNull();
@@ -175,7 +173,11 @@ describe('GmBriefingPanel — confidence meter', () => {
 
   it('does not render .conf-meter when confidence is absent', async () => {
     const { confidence: _c, ...noConf } = BRIEFING;
-    aiBriefing$.set(new Map([['gs1', { ...noConf, kpis: BRIEFING.kpis, recommendations: BRIEFING.recommendations }]]));
+    aiBriefing$.set(
+      new Map([
+        ['gs1', { ...noConf, kpis: BRIEFING.kpis, recommendations: BRIEFING.recommendations }],
+      ])
+    );
 
     const el = await fixture<GmBriefingPanel>(html`
       <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
@@ -332,7 +334,7 @@ describe('GmBriefingPanel — Apply button', () => {
     expect(hassCallMod.callService).toHaveBeenCalledWith(
       'climate.set_temperature',
       'climate.tent_1',
-      { temperature: 24 },
+      { temperature: 24 }
     );
   });
 });
@@ -367,7 +369,7 @@ describe('GmBriefingPanel — Regenerate button', () => {
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_briefing',
       { growspace_id: 'gs1', force_refresh: true },
-      expect.anything(),
+      expect.anything()
     );
   });
 });
@@ -392,7 +394,9 @@ describe('GmBriefingPanel — follow-up input', () => {
 
   it('Enter in follow-up calls hassCall with start_conversation', async () => {
     vi.mocked(hassCallMod.hassCall).mockResolvedValue({
-      thread_id: 't1', growspace_id: 'gs1', messages: [],
+      thread_id: 't1',
+      growspace_id: 'gs1',
+      messages: [],
     });
 
     const el = await fixture<GmBriefingPanel>(html`
@@ -411,13 +415,15 @@ describe('GmBriefingPanel — follow-up input', () => {
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/start_conversation',
       expect.objectContaining({ growspace_id: 'gs1', message: 'Why is VPD rising?' }),
-      expect.anything(),
+      expect.anything()
     );
   });
 
   it('Enter in follow-up switches aiMode$ to chat', async () => {
     vi.mocked(hassCallMod.hassCall).mockResolvedValue({
-      thread_id: 't1', growspace_id: 'gs1', messages: [],
+      thread_id: 't1',
+      growspace_id: 'gs1',
+      messages: [],
     });
 
     const el = await fixture<GmBriefingPanel>(html`
@@ -479,7 +485,7 @@ describe('GmBriefingPanel — error state', () => {
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_briefing',
       { growspace_id: 'gs1' },
-      expect.anything(),
+      expect.anything()
     );
   });
 

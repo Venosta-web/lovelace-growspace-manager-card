@@ -27,7 +27,7 @@ const mockDeviceFull = {
   },
   environmentAttributes: {
     feedEcSensors: ['sensor.ec'],
-  }
+  },
 } as any;
 
 describe('GrowspaceHeaderActionsUI', () => {
@@ -57,9 +57,7 @@ describe('GrowspaceHeaderActionsUI', () => {
         @action-triggered=${handler}
       ></growspace-header-actions-ui>
     `);
-    const selectPlants = el.shadowRoot!.querySelector<HTMLElement>(
-      '[data-action="select_plants"]'
-    );
+    const selectPlants = el.shadowRoot!.querySelector<HTMLElement>('[data-action="select_plants"]');
     selectPlants?.click();
     expect(handler).toHaveBeenCalledOnce();
     expect(handler.mock.calls[0][0].detail.action).toBe('select_plants');
@@ -93,9 +91,7 @@ describe('GrowspaceHeaderActionsUI', () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui activeTask="select_plants"></growspace-header-actions-ui>
     `);
-    const selectPlants = el.shadowRoot!.querySelector<HTMLElement>(
-      '[data-action="select_plants"]'
-    );
+    const selectPlants = el.shadowRoot!.querySelector<HTMLElement>('[data-action="select_plants"]');
     expect(selectPlants?.classList.contains('active')).toBe(true);
   });
 
@@ -119,7 +115,10 @@ describe('GrowspaceHeaderActionsUI', () => {
   it('does not dispatch the removed toggle-mobile-link event', async () => {
     const handler = vi.fn();
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isMobile=${true} @toggle-mobile-link=${handler}></growspace-header-actions-ui>
+      <growspace-header-actions-ui
+        .isMobile=${true}
+        @toggle-mobile-link=${handler}
+      ></growspace-header-actions-ui>
     `);
     const mobileLinkBtn = el.shadowRoot!.querySelector('.icon-button.mobile-link') as HTMLElement;
     mobileLinkBtn?.click();
@@ -155,7 +154,9 @@ describe('GrowspaceHeaderActionsUI', () => {
 
   it('shows Water Selected in menu when plants are selected', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .selectedPlants=${new Set(['p1', 'p2'])}></growspace-header-actions-ui>
+      <growspace-header-actions-ui
+        .selectedPlants=${new Set(['p1', 'p2'])}
+      ></growspace-header-actions-ui>
     `);
     const menuItems = el.shadowRoot!.querySelectorAll('.menu-item-label');
     const labels = Array.from(menuItems).map((i) => i.textContent);
@@ -199,14 +200,20 @@ describe('GrowspaceHeaderActionsUI', () => {
 
   it('chip is not draggable in mobile mode without mobileLink', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isMobile=${true} .mobileLink=${false}></growspace-header-actions-ui>
+      <growspace-header-actions-ui
+        .isMobile=${true}
+        .mobileLink=${false}
+      ></growspace-header-actions-ui>
     `);
     expect((el as any)._chipDraggable).toBe('false');
   });
 
   it('chip remains non-draggable when legacy mobileLink is enabled', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isMobile=${true} .mobileLink=${true}></growspace-header-actions-ui>
+      <growspace-header-actions-ui
+        .isMobile=${true}
+        .mobileLink=${true}
+      ></growspace-header-actions-ui>
     `);
     expect((el as any)._chipDraggable).toBe('false');
   });
@@ -224,17 +231,17 @@ describe('GrowspaceHeaderActionsUI', () => {
         <growspace-header-actions-ui .deviceChips=${[mockChip]}></growspace-header-actions-ui>
       `);
       const chip = el.shadowRoot!.querySelector('growspace-chip') as HTMLElement;
-      
+
       const dataTransfer = {
         setData: vi.fn(),
         effectAllowed: '',
       };
-      
+
       const event = new DragEvent('dragstart', { bubbles: true, composed: true });
       Object.defineProperty(event, 'dataTransfer', { value: dataTransfer });
-      
+
       chip.dispatchEvent(event);
-      
+
       expect(dataTransfer.effectAllowed).toBe('move');
       expect(dataTransfer.setData).toHaveBeenCalledWith('text/plain', mockChip.key);
     });
@@ -244,15 +251,19 @@ describe('GrowspaceHeaderActionsUI', () => {
         <growspace-header-actions-ui .deviceChips=${[mockChip]}></growspace-header-actions-ui>
       `);
       const chip = el.shadowRoot!.querySelector('growspace-chip') as HTMLElement;
-      
+
       // We need to trigger dragstart first to set _draggedMetric
       chip.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true }));
-      
-      const dragOverEvent = new DragEvent('dragover', { bubbles: true, composed: true, cancelable: true });
+
+      const dragOverEvent = new DragEvent('dragover', {
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+      });
       const preventDefaultSpy = vi.spyOn(dragOverEvent, 'preventDefault');
-      
+
       chip.dispatchEvent(dragOverEvent);
-      
+
       expect(preventDefaultSpy).toHaveBeenCalled();
     });
 
@@ -261,67 +272,71 @@ describe('GrowspaceHeaderActionsUI', () => {
         <growspace-header-actions-ui .deviceChips=${[mockChip]}></growspace-header-actions-ui>
       `);
       const chip = el.shadowRoot!.querySelector('growspace-chip') as HTMLElement;
-      
-      const dragOverEvent = new DragEvent('dragover', { bubbles: true, composed: true, cancelable: true });
+
+      const dragOverEvent = new DragEvent('dragover', {
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+      });
       const preventDefaultSpy = vi.spyOn(dragOverEvent, 'preventDefault');
-      
+
       chip.dispatchEvent(dragOverEvent);
-      
+
       expect(preventDefaultSpy).not.toHaveBeenCalled();
     });
 
     it('dispatches chip-drop when dropped on different chip', async () => {
       const handler = vi.fn();
       const el = await fixture<GrowspaceHeaderActionsUI>(html`
-        <growspace-header-actions-ui 
-          .deviceChips=${[mockChip, { ...mockChip, key: 'humidity' }]} 
+        <growspace-header-actions-ui
+          .deviceChips=${[mockChip, { ...mockChip, key: 'humidity' }]}
           @chip-drop=${handler}
         ></growspace-header-actions-ui>
       `);
       const chips = el.shadowRoot!.querySelectorAll('growspace-chip');
-      
+
       // Start dragging first chip
       chips[0].dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true }));
-      
+
       // Drop on second chip
       const dropEvent = new DragEvent('drop', { bubbles: true, composed: true });
       chips[1].dispatchEvent(dropEvent);
-      
+
       expect(handler).toHaveBeenCalledOnce();
       expect(handler.mock.calls[0][0].detail).toEqual({
         sourceMetric: 'temperature',
-        targetMetric: 'humidity'
+        targetMetric: 'humidity',
       });
     });
 
     it('does not dispatch chip-drop if dropped on same chip', async () => {
       const handler = vi.fn();
       const el = await fixture<GrowspaceHeaderActionsUI>(html`
-        <growspace-header-actions-ui 
-          .deviceChips=${[mockChip]} 
+        <growspace-header-actions-ui
+          .deviceChips=${[mockChip]}
           @chip-drop=${handler}
         ></growspace-header-actions-ui>
       `);
       const chip = el.shadowRoot!.querySelector('growspace-chip') as HTMLElement;
-      
+
       chip.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true }));
       chip.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true }));
-      
+
       expect(handler).not.toHaveBeenCalled();
     });
 
     it('does not dispatch chip-drop if no chip is being dragged', async () => {
       const handler = vi.fn();
       const el = await fixture<GrowspaceHeaderActionsUI>(html`
-        <growspace-header-actions-ui 
-          .deviceChips=${[mockChip]} 
+        <growspace-header-actions-ui
+          .deviceChips=${[mockChip]}
           @chip-drop=${handler}
         ></growspace-header-actions-ui>
       `);
       const chip = el.shadowRoot!.querySelector('growspace-chip') as HTMLElement;
-      
+
       chip.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true }));
-      
+
       expect(handler).not.toHaveBeenCalled();
     });
   });
@@ -329,35 +344,42 @@ describe('GrowspaceHeaderActionsUI', () => {
   it('dispatches unlink-graphs event when chip emits unlink', async () => {
     const handler = vi.fn();
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui 
-        .deviceChips=${[mockChip]} 
+      <growspace-header-actions-ui
+        .deviceChips=${[mockChip]}
         @unlink-graphs=${handler}
       ></growspace-header-actions-ui>
     `);
     const chip = el.shadowRoot!.querySelector('growspace-chip') as HTMLElement;
     chip.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
-    
+
     expect(handler).toHaveBeenCalledOnce();
     expect(handler.mock.calls[0][0].detail.groupIndex).toBe(0);
   });
 
   describe('Menu Actions', () => {
     const actions = [
-      'add_plant', 'water', 'ipm', 'training',
-      'irrigation', 'nutrients', 'strains',
-      'logbook', 'snapshots', 'ai'
+      'add_plant',
+      'water',
+      'ipm',
+      'training',
+      'irrigation',
+      'nutrients',
+      'strains',
+      'logbook',
+      'snapshots',
+      'ai',
     ];
 
-    actions.forEach(action => {
+    actions.forEach((action) => {
       it(`triggers action: ${action}`, async () => {
         const handler = vi.fn();
         const el = await fixture<GrowspaceHeaderActionsUI>(html`
-          <growspace-header-actions-ui 
+          <growspace-header-actions-ui
             .device=${mockDeviceFull}
             @action-triggered=${handler}
           ></growspace-header-actions-ui>
         `);
-        
+
         const menuItem = el.shadowRoot!.querySelector<HTMLElement>(`[data-action="${action}"]`);
         menuItem?.click();
         expect(handler).toHaveBeenCalled();
@@ -370,13 +392,13 @@ describe('GrowspaceHeaderActionsUI', () => {
         <growspace-header-actions-ui></growspace-header-actions-ui>
       `);
       const menu = el.shadowRoot!.getElementById('header-menu') as any;
-      
+
       // Mock hidePopover
       menu.hidePopover = vi.fn();
-      
+
       // Trigger an action
       (el as any)._triggerAction('test');
-      
+
       expect(menu.hidePopover).toHaveBeenCalled();
     });
 
@@ -385,10 +407,12 @@ describe('GrowspaceHeaderActionsUI', () => {
         <growspace-header-actions-ui></growspace-header-actions-ui>
       `);
       const menu = el.shadowRoot!.getElementById('header-menu') as any;
-      
+
       // Mock hidePopover to throw
-      menu.hidePopover = vi.fn(() => { throw new Error('fail'); });
-      
+      menu.hidePopover = vi.fn(() => {
+        throw new Error('fail');
+      });
+
       // Trigger an action - should not throw
       expect(() => (el as any)._triggerAction('test')).not.toThrow();
     });
@@ -399,7 +423,7 @@ describe('GrowspaceHeaderActionsUI', () => {
       `);
       // Mock shadowRoot to return null for getElementById
       vi.spyOn(el.shadowRoot!, 'getElementById').mockReturnValue(null);
-      
+
       expect(() => (el as any)._triggerAction('test')).not.toThrow();
     });
 
@@ -409,24 +433,30 @@ describe('GrowspaceHeaderActionsUI', () => {
       `);
       const menu = el.shadowRoot!.getElementById('header-menu') as any;
       delete menu.hidePopover;
-      
+
       expect(() => (el as any)._triggerAction('test')).not.toThrow();
     });
 
     it('updates labels based on selectedPlants count', async () => {
       const el = await fixture<GrowspaceHeaderActionsUI>(html`
-        <growspace-header-actions-ui .selectedPlants=${new Set(['p1'])}></growspace-header-actions-ui>
+        <growspace-header-actions-ui
+          .selectedPlants=${new Set(['p1'])}
+        ></growspace-header-actions-ui>
       `);
-      
-      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
+
+      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(
+        (l) => l.textContent
+      );
       expect(labels).toContain('Water Selected');
       expect(labels).toContain('Apply IPM to Selected');
       expect(labels).toContain('Train Selected');
-      
+
       el.selectedPlants = new Set();
       await el.updateComplete;
-      
-      const newLabels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
+
+      const newLabels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(
+        (l) => l.textContent
+      );
       expect(newLabels).toContain('Water Growspace');
       expect(newLabels).toContain('Log / Manage IPM');
       expect(newLabels).toContain('Log Training');

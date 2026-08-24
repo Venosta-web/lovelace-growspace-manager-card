@@ -10,7 +10,11 @@ import { describe, it, expect } from 'vitest';
 import { atom } from 'nanostores';
 import { createGrowspaceDevice } from '../../../../../src/services/types';
 import type { GrowspaceDevice } from '../../../../../src/services/types';
-import { createInitialSM, transition, type DialogSM } from '../../../../../src/dialogs/irrigation-dialog-sm';
+import {
+  createInitialSM,
+  transition,
+  type DialogSM,
+} from '../../../../../src/dialogs/irrigation-dialog-sm';
 import type { DialogCapabilities } from '../../../../../src/features/irrigation/viewmodels/dialog-capabilities';
 import { createSubstrateEcTabViewModel } from '../../../../../src/features/irrigation/viewmodels/substrate-ec-tab.viewmodel';
 
@@ -59,7 +63,11 @@ describe('createSubstrateEcTabViewModel', () => {
   });
 
   it('falls back to a coco/0 profile when the strategy has none', () => {
-    const vm = build(createInitialSM(), device({ irrigationStrategy: { enabled: true } as never }), caps());
+    const vm = build(
+      createInitialSM(),
+      device({ irrigationStrategy: { enabled: true } as never }),
+      caps()
+    );
     expect(vm.profile).toEqual({ mediaType: 'coco', litersPerPot: 0 });
     expect(vm.sizingMode).toBe('seconds');
   });
@@ -67,7 +75,11 @@ describe('createSubstrateEcTabViewModel', () => {
   it('reads volumeModeCapable + sizingModeLabel from $caps (server-authoritative)', () => {
     const locked = build(createInitialSM(), device(), caps({ volumeModeCapable: false }));
     expect(locked.volumeModeCapable).toBe(false);
-    const unlocked = build(createInitialSM(), device(), caps({ volumeModeCapable: true, sizingModeLabel: 'Volume' }));
+    const unlocked = build(
+      createInitialSM(),
+      device(),
+      caps({ volumeModeCapable: true, sizingModeLabel: 'Volume' })
+    );
     expect(unlocked.volumeModeCapable).toBe(true);
     expect(unlocked.sizingModeLabel).toBe('Volume');
   });
@@ -83,7 +95,12 @@ describe('createSubstrateEcTabViewModel', () => {
     expect(withLiters.volumeLockHint).toBe('Set a pump flow rate to enable Volume Mode');
     const noLiters = build(
       createInitialSM(),
-      device({ irrigationStrategy: { enabled: true, substrateProfile: { mediaType: 'coco', litersPerPot: 0 } } as never }),
+      device({
+        irrigationStrategy: {
+          enabled: true,
+          substrateProfile: { mediaType: 'coco', litersPerPot: 0 },
+        } as never,
+      }),
       caps()
     );
     expect(noLiters.volumeLockHint).toBe('Set liters per pot to enable Volume Mode');

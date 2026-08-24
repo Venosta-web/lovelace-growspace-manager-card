@@ -164,8 +164,18 @@ describe('_seedFromDevice irrigation tanks mapping', () => {
     } as any);
     const tanks = (el as any)._sm.environmentDraft.irrigationTanks;
     expect(tanks).toHaveLength(2);
-    expect(tanks[0]).toEqual({ sensorEntity: 'sensor.tank1', name: 'Main Tank', volumeLiters: 50, warningLevel: 20 });
-    expect(tanks[1]).toEqual({ sensorEntity: 'sensor.tank2', name: 'Tank', volumeLiters: null, warningLevel: 30 });
+    expect(tanks[0]).toEqual({
+      sensorEntity: 'sensor.tank1',
+      name: 'Main Tank',
+      volumeLiters: 50,
+      warningLevel: 20,
+    });
+    expect(tanks[1]).toEqual({
+      sensorEntity: 'sensor.tank2',
+      name: 'Tank',
+      volumeLiters: null,
+      warningLevel: 30,
+    });
   });
 });
 
@@ -250,7 +260,12 @@ describe('timed notifications — add flow', () => {
 describe('timed notifications — edit flow', () => {
   it('_startEditTimedNotification transitions sub to editing with pre-populated draft', () => {
     const el = makeEl();
-    const draft = { message: 'Check roots', triggerType: 'veg' as const, day: 7, growspaceIds: ['gs1'] };
+    const draft = {
+      message: 'Check roots',
+      triggerType: 'veg' as const,
+      day: 7,
+      growspaceIds: ['gs1'],
+    };
     (el as any)._startEditTimedNotification('notif-1', draft);
     const sub = (el as any)._sm.tabs.notifications.sub;
     expect(sub.kind).toBe('editing');
@@ -277,7 +292,9 @@ describe('timed notifications — confirm-delete flow', () => {
         ...(el as any)._sm.tabs,
         notifications: {
           draft: (el as any)._sm.tabs.notifications.draft,
-          timedNotifications: [{ id: 'notif-1', message: 'msg', triggerType: 'veg', day: 3, growspaceIds: [] }],
+          timedNotifications: [
+            { id: 'notif-1', message: 'msg', triggerType: 'veg', day: 3, growspaceIds: [] },
+          ],
           sub: { kind: 'confirm-delete', id: 'notif-1' },
         },
       },
@@ -306,7 +323,13 @@ describe('_submitNotifications — timed notifications persistence', () => {
         notifications: {
           draft: (el as any)._sm.tabs.notifications.draft,
           timedNotifications: [
-            { id: 'notif-1', message: 'Feed me', triggerType: 'veg', day: 3, growspaceIds: ['gs-1'] },
+            {
+              id: 'notif-1',
+              message: 'Feed me',
+              triggerType: 'veg',
+              day: 3,
+              growspaceIds: ['gs-1'],
+            },
           ],
           sub: { kind: 'idle' },
         },
@@ -407,7 +430,9 @@ describe('_getVpdOptimalValue', () => {
     (el as any)._t({
       type: 'UPDATE_ENV_DRAFT',
       partial: {
-        vpdOptimalOverrides: { veg: { day: { low: 0.6, high: 1.0 }, night: { low: 0.5, high: 0.9 } } },
+        vpdOptimalOverrides: {
+          veg: { day: { low: 0.6, high: 1.0 }, night: { low: 0.5, high: 0.9 } },
+        },
       },
     });
     const overrides = (el as any)._sm.environmentDraft.vpdOptimalOverrides;
@@ -432,7 +457,9 @@ describe('_updateVpdOptimal', () => {
     (el as any)._t({
       type: 'UPDATE_ENV_DRAFT',
       partial: {
-        vpdOptimalOverrides: { veg: { day: { low: 0.6, high: 1.0 }, night: { low: 0.5, high: 0.9 } } },
+        vpdOptimalOverrides: {
+          veg: { day: { low: 0.6, high: 1.0 }, night: { low: 0.5, high: 0.9 } },
+        },
       },
     });
     (el as any)._updateVpdOptimal('seedling', 'day', 'low', '0.5');
@@ -446,7 +473,9 @@ describe('_updateVpdOptimal', () => {
     (el as any)._t({
       type: 'UPDATE_ENV_DRAFT',
       partial: {
-        vpdOptimalOverrides: { veg: { day: { low: 0.6, high: 1.0 }, night: { low: 0.5, high: 0.9 } } },
+        vpdOptimalOverrides: {
+          veg: { day: { low: 0.6, high: 1.0 }, night: { low: 0.5, high: 0.9 } },
+        },
       },
     });
     (el as any)._updateVpdOptimal('veg', 'day', 'low', '');
@@ -499,7 +528,10 @@ describe('_getEntities — platform filter', () => {
   it('ignores platform (returns all matching domains) when none is given', () => {
     const el = makeEl();
     el.hass = hassWith();
-    expect((el as any)._getEntities(['select'], null)).toEqual(['select.aci_mode', 'select.zha_mode']);
+    expect((el as any)._getEntities(['select'], null)).toEqual([
+      'select.aci_mode',
+      'select.zha_mode',
+    ]);
   });
 
   it('excludes entities missing from the registry when a platform is required', () => {
@@ -637,7 +669,9 @@ describe('Port Pre-fill — pick handler', () => {
       'Speed',
     ]);
     (el as any)._setEnv({
-      exhaustFanAcInfinityDevices: [{ mode_entity: 'select.p2_mode', speed_entity: 'number.x', on_speed: 7 }],
+      exhaustFanAcInfinityDevices: [
+        { mode_entity: 'select.p2_mode', speed_entity: 'number.x', on_speed: 7 },
+      ],
     });
     expect((el as any)._acInfinityPrefillWarnings['exhaustFanAcInfinityDevices:0']).toBeUndefined();
   });
@@ -649,16 +683,56 @@ describe('Port Pre-fill — grow light six-role fill', () => {
     return {
       states: {},
       entities: {
-        'select.g1_mode': { platform: 'ac_infinity', device_id: 'dev1', translation_key: 'active_mode' },
-        'time.g1_on': { platform: 'ac_infinity', device_id: 'dev1', translation_key: 'schedule_mode_on_time' },
-        'time.g1_off': { platform: 'ac_infinity', device_id: 'dev1', translation_key: 'schedule_mode_off_time' },
-        'number.g1_power': { platform: 'ac_infinity', device_id: 'dev1', translation_key: 'on_power' },
-        'switch.g1_sunrise': { platform: 'ac_infinity', device_id: 'dev1', translation_key: 'sunrise_timer_enabled' },
-        'number.g1_sunrise_min': { platform: 'ac_infinity', device_id: 'dev1', translation_key: 'sunrise_timer_minutes' },
-        'select.g2_mode': { platform: 'ac_infinity', device_id: 'dev2', translation_key: 'active_mode' },
-        'time.g2_on': { platform: 'ac_infinity', device_id: 'dev2', translation_key: 'schedule_mode_on_time' },
-        'time.g2_off': { platform: 'ac_infinity', device_id: 'dev2', translation_key: 'schedule_mode_off_time' },
-        'number.g2_power': { platform: 'ac_infinity', device_id: 'dev2', translation_key: 'on_power' },
+        'select.g1_mode': {
+          platform: 'ac_infinity',
+          device_id: 'dev1',
+          translation_key: 'active_mode',
+        },
+        'time.g1_on': {
+          platform: 'ac_infinity',
+          device_id: 'dev1',
+          translation_key: 'schedule_mode_on_time',
+        },
+        'time.g1_off': {
+          platform: 'ac_infinity',
+          device_id: 'dev1',
+          translation_key: 'schedule_mode_off_time',
+        },
+        'number.g1_power': {
+          platform: 'ac_infinity',
+          device_id: 'dev1',
+          translation_key: 'on_power',
+        },
+        'switch.g1_sunrise': {
+          platform: 'ac_infinity',
+          device_id: 'dev1',
+          translation_key: 'sunrise_timer_enabled',
+        },
+        'number.g1_sunrise_min': {
+          platform: 'ac_infinity',
+          device_id: 'dev1',
+          translation_key: 'sunrise_timer_minutes',
+        },
+        'select.g2_mode': {
+          platform: 'ac_infinity',
+          device_id: 'dev2',
+          translation_key: 'active_mode',
+        },
+        'time.g2_on': {
+          platform: 'ac_infinity',
+          device_id: 'dev2',
+          translation_key: 'schedule_mode_on_time',
+        },
+        'time.g2_off': {
+          platform: 'ac_infinity',
+          device_id: 'dev2',
+          translation_key: 'schedule_mode_off_time',
+        },
+        'number.g2_power': {
+          platform: 'ac_infinity',
+          device_id: 'dev2',
+          translation_key: 'on_power',
+        },
       },
       devices: { dev1: { name: 'Light Port 1' }, dev2: { name: 'Light Port 2' } },
     };

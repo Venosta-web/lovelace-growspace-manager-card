@@ -188,7 +188,10 @@ export class BatchCloneDialog extends LitElement {
           ${this._isSubmitting
             ? html`
                 <div class="progress-bar-wrap">
-                  <div class="progress-bar" style="transform: scaleX(${this._progress / 100})"></div>
+                  <div
+                    class="progress-bar"
+                    style="transform: scaleX(${this._progress / 100})"
+                  ></div>
                 </div>
               `
             : nothing}

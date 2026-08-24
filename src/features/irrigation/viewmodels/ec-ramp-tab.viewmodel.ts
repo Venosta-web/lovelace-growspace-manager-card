@@ -105,8 +105,7 @@ export function createEcRampTabViewModel(
     const sub = tab.sub;
     return {
       curves: rows,
-      editing:
-        sub.kind === 'editing' ? { draft: sub.draft, points: sub.draft.points ?? [] } : null,
+      editing: sub.kind === 'editing' ? { draft: sub.draft, points: sub.draft.points ?? [] } : null,
       error: tab.error,
     };
   });

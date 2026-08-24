@@ -69,11 +69,7 @@ describe('createClimateTabViewModel — circulation fan panel', () => {
     // Fan Controller was never saved comes through with the key missing. `vm.mode`
     // must still be a real FanRegulationMode, or <md3-select>'s bound .value
     // matches no <option> and the control renders with no visible selection.
-    const vm = createClimateTabViewModel(
-      withFan({ regulation_mode: undefined }),
-      deps,
-      collapsed
-    );
+    const vm = createClimateTabViewModel(withFan({ regulation_mode: undefined }), deps, collapsed);
     expect(vm.fan.mode).toBe('vpd');
     expect(vm.fan.showStageVpd).toBe(true);
   });

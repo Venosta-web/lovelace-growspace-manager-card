@@ -67,8 +67,18 @@ describe('TabSelected', () => {
 
   it('switching back to add resets wizard to step-identity', () => {
     let sm = createInitialSM({ row: 0, col: 0 });
-    sm = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: 'OG Kush' });
-    sm = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: 'OG Kush' });
+    sm = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'strain',
+      value: 'OG Kush',
+    });
+    sm = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'strainQuery',
+      value: 'OG Kush',
+    });
     sm = transition(sm, { type: 'WizardAdvanced' });
     expect(sm.tabs.add.sub.kind).toBe('step-source');
 
@@ -83,7 +93,12 @@ describe('TabSelected', () => {
 describe('WizardAdvanced', () => {
   it('advances from step-identity to step-source when strain is set', () => {
     let sm = createInitialSM({ row: 0, col: 0 });
-    sm = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: 'OG Kush' });
+    sm = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'strain',
+      value: 'OG Kush',
+    });
     sm = transition(sm, { type: 'WizardAdvanced' });
     expect(sm.tabs.add.sub.kind).toBe('step-source');
   });
@@ -96,7 +111,12 @@ describe('WizardAdvanced', () => {
 
   it('advances from step-source to step-schedule', () => {
     let sm = createInitialSM({ row: 0, col: 0 });
-    sm = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: 'OG Kush' });
+    sm = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'strain',
+      value: 'OG Kush',
+    });
     sm = transition(sm, { type: 'WizardAdvanced' });
     sm = transition(sm, { type: 'WizardAdvanced' });
     expect(sm.tabs.add.sub.kind).toBe('step-schedule');
@@ -104,7 +124,12 @@ describe('WizardAdvanced', () => {
 
   it('is a no-op from step-schedule (last step)', () => {
     let sm = createInitialSM({ row: 0, col: 0 });
-    sm = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: 'OG Kush' });
+    sm = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'strain',
+      value: 'OG Kush',
+    });
     sm = transition(sm, { type: 'WizardAdvanced' });
     sm = transition(sm, { type: 'WizardAdvanced' });
     const next = transition(sm, { type: 'WizardAdvanced' });
@@ -115,7 +140,12 @@ describe('WizardAdvanced', () => {
 describe('WizardBacked', () => {
   it('goes from step-source back to step-identity', () => {
     let sm = createInitialSM({ row: 0, col: 0 });
-    sm = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: 'OG Kush' });
+    sm = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'strain',
+      value: 'OG Kush',
+    });
     sm = transition(sm, { type: 'WizardAdvanced' });
     sm = transition(sm, { type: 'WizardBacked' });
     expect(sm.tabs.add.sub.kind).toBe('step-identity');
@@ -123,7 +153,12 @@ describe('WizardBacked', () => {
 
   it('goes from step-schedule back to step-source', () => {
     let sm = createInitialSM({ row: 0, col: 0 });
-    sm = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: 'OG Kush' });
+    sm = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'strain',
+      value: 'OG Kush',
+    });
     sm = transition(sm, { type: 'WizardAdvanced' });
     sm = transition(sm, { type: 'WizardAdvanced' });
     sm = transition(sm, { type: 'WizardBacked' });
@@ -142,37 +177,67 @@ describe('WizardBacked', () => {
 describe('DraftFieldChanged — add tab', () => {
   it('updates strain', () => {
     const sm = createInitialSM({ row: 0, col: 0 });
-    const next = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: 'White Widow' });
+    const next = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'strain',
+      value: 'White Widow',
+    });
     expect(next.tabs.add.draft.strain).toBe('White Widow');
   });
 
   it('updates strainQuery', () => {
     const sm = createInitialSM({ row: 0, col: 0 });
-    const next = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: 'White' });
+    const next = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'strainQuery',
+      value: 'White',
+    });
     expect(next.tabs.add.draft.strainQuery).toBe('White');
   });
 
   it('updates phenotype', () => {
     const sm = createInitialSM({ row: 0, col: 0 });
-    const next = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: '#3' });
+    const next = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'phenotype',
+      value: '#3',
+    });
     expect(next.tabs.add.draft.phenotype).toBe('#3');
   });
 
   it('updates addToLibrary', () => {
     const sm = createInitialSM({ row: 0, col: 0 });
-    const next = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: true });
+    const next = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'addToLibrary',
+      value: true,
+    });
     expect(next.tabs.add.draft.addToLibrary).toBe(true);
   });
 
   it('updates sourceType', () => {
     const sm = createInitialSM({ row: 0, col: 0 });
-    const next = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' });
+    const next = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'sourceType',
+      value: 'clone',
+    });
     expect(next.tabs.add.draft.sourceType).toBe('clone');
   });
 
   it('updates a date field (vegStart)', () => {
     const sm = createInitialSM({ row: 0, col: 0 });
-    const next = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'vegStart', value: '2026-05-01' });
+    const next = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'vegStart',
+      value: '2026-05-01',
+    });
     expect(next.tabs.add.draft.vegStart).toBe('2026-05-01');
   });
 
@@ -184,16 +249,36 @@ describe('DraftFieldChanged — add tab', () => {
   it('stage change sets the new stage and its date to today', () => {
     const today = new Date().toISOString().split('T')[0];
     const sm = createInitialSM({ row: 0, col: 0 });
-    const next = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'veg' });
+    const next = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'stage',
+      value: 'veg',
+    });
     expect(next.tabs.add.draft.stage).toBe('veg');
     expect(next.tabs.add.draft.vegStart).toBe(today);
   });
 
   it('stage change clears all other date fields', () => {
     let sm = createInitialSM({ row: 0, col: 0 });
-    sm = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'seedlingStart', value: '2026-01-01' });
-    sm = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'flowerStart', value: '2026-02-01' });
-    const next = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'veg' });
+    sm = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'seedlingStart',
+      value: '2026-01-01',
+    });
+    sm = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'flowerStart',
+      value: '2026-02-01',
+    });
+    const next = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'add',
+      field: 'stage',
+      value: 'veg',
+    });
     expect(next.tabs.add.draft.seedlingStart).toBe('');
     expect(next.tabs.add.draft.flowerStart).toBe('');
     expect(next.tabs.add.draft.motherStart).toBe('');
@@ -213,7 +298,12 @@ describe('DraftFieldChanged — clone tab', () => {
   it('updates selectedPlantId', () => {
     let sm = createInitialSM({ row: 0, col: 0 });
     sm = transition(sm, { type: 'TabSelected', tab: 'clone' });
-    const next = transition(sm, { type: 'DraftFieldChanged', tab: 'clone', field: 'selectedPlantId', value: 'plant-42' });
+    const next = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'clone',
+      field: 'selectedPlantId',
+      value: 'plant-42',
+    });
     expect(next.tabs.clone.draft.selectedPlantId).toBe('plant-42');
   });
 });
@@ -222,7 +312,12 @@ describe('DraftFieldChanged — seedling tab', () => {
   it('updates selectedPlantId', () => {
     let sm = createInitialSM({ row: 0, col: 0 });
     sm = transition(sm, { type: 'TabSelected', tab: 'seedling' });
-    const next = transition(sm, { type: 'DraftFieldChanged', tab: 'seedling', field: 'selectedPlantId', value: 'plant-99' });
+    const next = transition(sm, {
+      type: 'DraftFieldChanged',
+      tab: 'seedling',
+      field: 'selectedPlantId',
+      value: 'plant-99',
+    });
     expect(next.tabs.seedling.draft.selectedPlantId).toBe('plant-99');
   });
 });

@@ -22,14 +22,24 @@ import { portalVariables } from '../../../styles/variables';
 vi.mock('../../../slices/plant', () => ({
   waterPlant: vi.fn(),
   plants$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
-  addPlant: vi.fn(), addPlants: vi.fn(), updatePlant: vi.fn(), deletePlant: vi.fn(),
-  harvestPlant: vi.fn(), takeClone: vi.fn(), moveClone: vi.fn(), swapPlants: vi.fn(),
-  printLabel: vi.fn(), scorePlant: vi.fn(), saveHarvestMetrics: vi.fn(),
-  logDryingWeight: vi.fn(), logMoistureReading: vi.fn(), setVisualTag: vi.fn(),
+  addPlant: vi.fn(),
+  addPlants: vi.fn(),
+  updatePlant: vi.fn(),
+  deletePlant: vi.fn(),
+  harvestPlant: vi.fn(),
+  takeClone: vi.fn(),
+  moveClone: vi.fn(),
+  swapPlants: vi.fn(),
+  printLabel: vi.fn(),
+  scorePlant: vi.fn(),
+  saveHarvestMetrics: vi.fn(),
+  logDryingWeight: vi.fn(),
+  logMoistureReading: vi.fn(),
+  setVisualTag: vi.fn(),
   movePlantToGrowspace: vi.fn(),
   advancePlantStage: vi.fn().mockResolvedValue('dry'),
   movePlantPosition: vi.fn(),
-    waterGrowspace: vi.fn().mockResolvedValue(undefined),
+  waterGrowspace: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../slices/growspace', async (importOriginal) => ({
@@ -43,11 +53,21 @@ vi.mock('../../../slices/growspace', async (importOriginal) => ({
 vi.mock('../../../slices/genetics', () => ({
   seedBatches$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
   pollinationEvents$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
-  fetchGeneticsData: vi.fn(), addSeedBatch: vi.fn(), updateSeedBatch: vi.fn(),
-  removeSeedBatch: vi.fn(), logPollinationEvent: vi.fn(), updatePollinationEvent: vi.fn(),
-  deletePollinationEvent: vi.fn(), harvestSeeds: vi.fn(), sowSeed: vi.fn(),
-  setPlantSex: vi.fn(), unlinkSeedBatch: vi.fn(), getLineageTree: vi.fn(),
-  getStrainLineageTree: vi.fn(), updateStrainLineageTree: vi.fn(), importStrainLineageTree: vi.fn(),
+  fetchGeneticsData: vi.fn(),
+  addSeedBatch: vi.fn(),
+  updateSeedBatch: vi.fn(),
+  removeSeedBatch: vi.fn(),
+  logPollinationEvent: vi.fn(),
+  updatePollinationEvent: vi.fn(),
+  deletePollinationEvent: vi.fn(),
+  harvestSeeds: vi.fn(),
+  sowSeed: vi.fn(),
+  setPlantSex: vi.fn(),
+  unlinkSeedBatch: vi.fn(),
+  getLineageTree: vi.fn(),
+  getStrainLineageTree: vi.fn(),
+  updateStrainLineageTree: vi.fn(),
+  importStrainLineageTree: vi.fn(),
 }));
 
 vi.mock('../../../slices/notification', () => ({
@@ -546,7 +566,7 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
     wind_enabled: false,
     wind_period_seconds: 60,
     wind_amplitude_pct: 10,
-  stage_vpd_enabled: false,
+    stage_vpd_enabled: false,
   };
 
   function makeEnvStore() {

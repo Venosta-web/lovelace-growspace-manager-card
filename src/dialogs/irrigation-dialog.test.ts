@@ -3,7 +3,12 @@ import { fixture, html } from '@open-wc/testing-helpers';
 import type { LitElement } from 'lit';
 import { atom } from 'nanostores';
 import { transition } from './irrigation-dialog-sm';
-import { cropSteeringHistory$, irrigationConfigs$, setTankLevels, tankLevels$ } from '../slices/irrigation';
+import {
+  cropSteeringHistory$,
+  irrigationConfigs$,
+  setTankLevels,
+  tankLevels$,
+} from '../slices/irrigation';
 import { createGrowspaceDevice } from '../services/types';
 import type { IrrigationDialog } from './irrigation-dialog';
 import './irrigation-dialog';
@@ -166,19 +171,22 @@ describe('IrrigationDialog – footer meta timestamps', () => {
     ['infiltrating', 'Next Held'],
     ['no_pump', 'Next Held'],
     ['zero_volume', 'Next Held'],
-  ])('labels the projected shot window as held while suppressed by %s', async (reason, expected) => {
-    const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog
-        .open=${true}
-        .device=${steeringDevice(reason)}
-        growspaceName="Tent 1"
-      ></irrigation-dialog>
-    `);
-    await el.updateComplete;
+  ])(
+    'labels the projected shot window as held while suppressed by %s',
+    async (reason, expected) => {
+      const el = await fixture<IrrigationDialog>(html`
+        <irrigation-dialog
+          .open=${true}
+          .device=${steeringDevice(reason)}
+          growspaceName="Tent 1"
+        ></irrigation-dialog>
+      `);
+      await el.updateComplete;
 
-    const meta = el.shadowRoot!.querySelector('.dlg-footer-meta');
-    expect(normalize(meta?.textContent)).toContain(expected);
-  });
+      const meta = el.shadowRoot!.querySelector('.dlg-footer-meta');
+      expect(normalize(meta?.textContent)).toContain(expected);
+    }
+  );
 
   it.each([
     ['an ordinary cooldown wait', 'cooldown'],
@@ -297,7 +305,11 @@ describe('IrrigationDialog – Config tab: pump-gated panels', () => {
   it('shows the Behaviour and Manual Override panels when a pump is configured', async () => {
     const device = withPump();
     const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'config'}></irrigation-dialog>
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'config'}
+      ></irrigation-dialog>
     `);
     await el.updateComplete;
 
@@ -360,9 +372,7 @@ describe('IrrigationDialog – tank-based mode recognition', () => {
     expect(hints.some((h) => h.includes('Tank-based irrigation detected'))).toBe(true);
     // The pump-centric crop-steering and schedules nags are suppressed for tank mode.
     expect(hints.some((h) => h.includes('to enable Crop Steering features.'))).toBe(false);
-    expect(
-      hints.some((h) => h.includes('to enable Schedules, manual run controls'))
-    ).toBe(false);
+    expect(hints.some((h) => h.includes('to enable Schedules, manual run controls'))).toBe(false);
   });
 
   it('still nags to configure a pump when neither a pump nor a tank exists', async () => {
@@ -399,9 +409,7 @@ describe('IrrigationDialog – tank-based mode recognition', () => {
     expect(normalize(tab!.shadowRoot!.textContent)).not.toContain("Today's Usage");
   });
 
-  async function configTabText(
-    device: ReturnType<typeof createGrowspaceDevice>
-  ): Promise<string> {
+  async function configTabText(device: ReturnType<typeof createGrowspaceDevice>): Promise<string> {
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog
         .open=${true}
@@ -540,7 +548,9 @@ function makeSteeringDevice(overrides: Partial<Parameters<typeof createGrowspace
 }
 
 function makeStrategy(
-  overrides: Partial<NonNullable<Parameters<typeof createGrowspaceDevice>[0]['irrigationStrategy']>> = {}
+  overrides: Partial<
+    NonNullable<Parameters<typeof createGrowspaceDevice>[0]['irrigationStrategy']>
+  > = {}
 ) {
   return {
     enabled: true,
@@ -556,7 +566,9 @@ function makeStrategy(
 }
 
 function makeMetrics(
-  overrides: Partial<NonNullable<Parameters<typeof createGrowspaceDevice>[0]['steeringMetrics']>> = {}
+  overrides: Partial<
+    NonNullable<Parameters<typeof createGrowspaceDevice>[0]['steeringMetrics']>
+  > = {}
 ) {
   return {
     overnightDryback: null,
@@ -953,10 +965,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
 // ADR-0019: the Steering tab renders in the decomposed <irrigation-steering-tab>
 // child; DOM queries pierce its shadow. Draft/SM assertions still read el._sm,
 // which the Dialog Shell updates from the child's Tab Intents.
-async function mountSteering(
-  device: ReturnType<typeof createGrowspaceDevice>,
-  store?: unknown
-) {
+async function mountSteering(device: ReturnType<typeof createGrowspaceDevice>, store?: unknown) {
   const el = await fixture<IrrigationDialog>(html`
     <irrigation-dialog
       .open=${true}
@@ -982,7 +991,10 @@ describe('IrrigationDialog – Steering tab: auto light tracking', () => {
   it('shows auto-track toggle when device has at least one light sensor', async () => {
     const { tab } = await mountSteering(
       makeSteeringDevice({
-        environmentAttributes: { soilMoistureSensor: 'sensor.soil', lightSensors: ['sensor.light_1'] },
+        environmentAttributes: {
+          soilMoistureSensor: 'sensor.soil',
+          lightSensors: ['sensor.light_1'],
+        },
       })
     );
     expect(tab.shadowRoot!.querySelector('[data-field="autoLightTracking"]')).not.toBeNull();
@@ -991,7 +1003,10 @@ describe('IrrigationDialog – Steering tab: auto light tracking', () => {
   it('toggling auto-track switch sets autoLightTracking on strategy', async () => {
     const { el, tab } = await mountSteering(
       makeSteeringDevice({
-        environmentAttributes: { soilMoistureSensor: 'sensor.soil', lightSensors: ['sensor.light_1'] },
+        environmentAttributes: {
+          soilMoistureSensor: 'sensor.soil',
+          lightSensors: ['sensor.light_1'],
+        },
       })
     );
     const toggle = tab.shadowRoot!.querySelector('[data-field="autoLightTracking"]') as any;
@@ -1020,7 +1035,9 @@ describe('IrrigationDialog – Steering tab: auto light tracking', () => {
 
   it('edits an Adaptive Shot Control tunable into the steering draft', async () => {
     const { el, tab } = await mountSteering(makeSteeringDevice());
-    const input = tab.shadowRoot!.querySelector('[data-field="dynamicAggressiveness"]') as HTMLElement;
+    const input = tab.shadowRoot!.querySelector(
+      '[data-field="dynamicAggressiveness"]'
+    ) as HTMLElement;
     expect(input).not.toBeNull();
     input.dispatchEvent(new CustomEvent('change', { detail: '2.5' }));
     await el.updateComplete;
@@ -1122,7 +1139,9 @@ describe('IrrigationDialog – Steering tab: Steering Mode selector', () => {
 
   it('marks the declared mode as active', async () => {
     const { tab } = await mountSteering(
-      makeSteeringDevice({ irrigationStrategy: steeringStrategy({ declaredSteeringMode: 'generative' }) })
+      makeSteeringDevice({
+        irrigationStrategy: steeringStrategy({ declaredSteeringMode: 'generative' }),
+      })
     );
     const active = tab.shadowRoot!.querySelector('[data-steering-mode].active');
     expect(active?.getAttribute('data-steering-mode')).toBe('generative');
@@ -1137,7 +1156,10 @@ describe('IrrigationDialog – Steering tab: Steering Mode selector', () => {
     (tab.shadowRoot!.querySelector('[data-steering-mode="vegetative"]') as HTMLElement).click();
     await el.updateComplete;
     expect(applyFn).not.toHaveBeenCalled();
-    expect((el as any)._sm.tabs.steering.sub).toEqual({ kind: 'confirm-mode', pending: 'vegetative' });
+    expect((el as any)._sm.tabs.steering.sub).toEqual({
+      kind: 'confirm-mode',
+      pending: 'vegetative',
+    });
   });
 
   it('stamps the chosen mode through the slice action on confirm', async () => {
@@ -1149,7 +1171,9 @@ describe('IrrigationDialog – Steering tab: Steering Mode selector', () => {
     (tab.shadowRoot!.querySelector('[data-steering-mode="generative"]') as HTMLElement).click();
     await el.updateComplete;
     await tab.updateComplete;
-    const confirmBtn = tab.shadowRoot!.querySelector('[data-action="confirm-steering-mode"]') as HTMLElement;
+    const confirmBtn = tab.shadowRoot!.querySelector(
+      '[data-action="confirm-steering-mode"]'
+    ) as HTMLElement;
     confirmBtn.click();
     await el.updateComplete;
     expect(sliceApplySteeringMode).toHaveBeenCalledWith('gs1', 'generative');
@@ -1186,7 +1210,10 @@ describe('IrrigationDialog – Steering tab: per-phase shot params', () => {
   it('edits a per-phase shot field into the steering draft', async () => {
     const { el, tab } = await mountSteering(
       makeSteeringDevice({
-        irrigationStrategy: steeringStrategy({ shotSizingMode: 'seconds', p2ShotIntervalMinutes: 30 }),
+        irrigationStrategy: steeringStrategy({
+          shotSizingMode: 'seconds',
+          p2ShotIntervalMinutes: 30,
+        }),
       })
     );
     const input = tab.shadowRoot!.querySelector('[data-field="p2ShotIntervalMinutes"]') as any;
@@ -1228,7 +1255,11 @@ function makeSubstrateEcDevice(
 // <irrigation-substrate-ec-tab> child; DOM queries pierce its shadow.
 async function mountSubstrateEc(device: ReturnType<typeof createGrowspaceDevice>) {
   const el = await fixture<IrrigationDialog>(html`
-    <irrigation-dialog .open=${true} .device=${device} .initialTab=${'substrate_ec'}></irrigation-dialog>
+    <irrigation-dialog
+      .open=${true}
+      .device=${device}
+      .initialTab=${'substrate_ec'}
+    ></irrigation-dialog>
   `);
   await el.updateComplete;
   const tab = el.shadowRoot!.querySelector('irrigation-substrate-ec-tab') as LitElement & {
@@ -1240,8 +1271,12 @@ async function mountSubstrateEc(device: ReturnType<typeof createGrowspaceDevice>
 
 describe('IrrigationDialog – Substrate & EC tab', () => {
   it('locks Volume Mode with a "liters per pot" hint when no profile is configured', async () => {
-    const { tab } = await mountSubstrateEc(makeSubstrateEcDevice({}, {}, { volumeModeCapable: false }));
-    const volumeBtn = tab.shadowRoot.querySelector('[data-sizing-mode="volume"]') as HTMLButtonElement;
+    const { tab } = await mountSubstrateEc(
+      makeSubstrateEcDevice({}, {}, { volumeModeCapable: false })
+    );
+    const volumeBtn = tab.shadowRoot.querySelector(
+      '[data-sizing-mode="volume"]'
+    ) as HTMLButtonElement;
     expect(volumeBtn.disabled).toBe(true);
     const hint = tab.shadowRoot.querySelector('.capability-unlock-hint')?.textContent ?? '';
     expect(hint).toContain('liters per pot');
@@ -1255,7 +1290,9 @@ describe('IrrigationDialog – Substrate & EC tab', () => {
         { volumeModeCapable: false }
       )
     );
-    const volumeBtn = tab.shadowRoot.querySelector('[data-sizing-mode="volume"]') as HTMLButtonElement;
+    const volumeBtn = tab.shadowRoot.querySelector(
+      '[data-sizing-mode="volume"]'
+    ) as HTMLButtonElement;
     expect(volumeBtn.disabled).toBe(true);
     const hint = tab.shadowRoot.querySelector('.capability-unlock-hint')?.textContent ?? '';
     expect(hint).toContain('pump flow rate');
@@ -1269,7 +1306,9 @@ describe('IrrigationDialog – Substrate & EC tab', () => {
         { volumeModeCapable: true }
       )
     );
-    const volumeBtn = tab.shadowRoot.querySelector('[data-sizing-mode="volume"]') as HTMLButtonElement;
+    const volumeBtn = tab.shadowRoot.querySelector(
+      '[data-sizing-mode="volume"]'
+    ) as HTMLButtonElement;
     expect(volumeBtn.disabled).toBe(false);
   });
 
@@ -1734,7 +1773,6 @@ describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
   });
 });
 
-
 // ---------------------------------------------------------------------------
 // Tanks tab inline edit (decomposed into <irrigation-tanks-tab> — ADR-0019)
 // ---------------------------------------------------------------------------
@@ -1885,7 +1923,9 @@ function makeSoilBuckets(count: number, baseValue = 42.0, nullAt?: number) {
   }));
 }
 
-function makeHistoryResponse(overrides: { soil_moisture?: Array<{ timestamp: string; value: number | null }> } = {}) {
+function makeHistoryResponse(
+  overrides: { soil_moisture?: Array<{ timestamp: string; value: number | null }> } = {}
+) {
   return {
     growspace_id: 'gs1',
     lights_on: LIGHTS_ON_UTC,
@@ -1970,7 +2010,6 @@ describe('IrrigationDialog – Crop Steering Schedule: real VWC trace', () => {
     expect(text).toContain('Bulk EC not configured');
   });
 });
-
 
 // ---------------------------------------------------------------------------
 // _saveAll validation: P2 Direct Trigger vs Saturation Target
@@ -2137,13 +2176,20 @@ function mkBucket(minutesAfterLightsOn: number, v: number | null) {
 // history atom, exercised below.
 describe('IrrigationDialog – Crop Steering Day Chart legend: EC sensor presence', () => {
   it('shows no "not configured" notes when both EC series are present', async () => {
-    cropSteeringHistory$.set(new Map([['gs1', {
-      growspace_id: 'gs1',
-      lights_on: LIGHTS_ON_ISO,
-      soil_moisture: [mkBucket(0, 55), mkBucket(5, 57)],
-      pore_ec: [mkBucket(0, 2.1), mkBucket(5, 2.2)],
-      bulk_ec: [mkBucket(0, 1.8), mkBucket(5, 1.9)],
-    }]]));
+    cropSteeringHistory$.set(
+      new Map([
+        [
+          'gs1',
+          {
+            growspace_id: 'gs1',
+            lights_on: LIGHTS_ON_ISO,
+            soil_moisture: [mkBucket(0, 55), mkBucket(5, 57)],
+            pore_ec: [mkBucket(0, 2.1), mkBucket(5, 2.2)],
+            bulk_ec: [mkBucket(0, 1.8), mkBucket(5, 1.9)],
+          },
+        ],
+      ])
+    );
 
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog
@@ -2165,12 +2211,19 @@ describe('IrrigationDialog – Crop Steering Day Chart legend: EC sensor presenc
   });
 
   it('shows a "Pore EC not configured" note when pore_ec is absent', async () => {
-    cropSteeringHistory$.set(new Map([['gs1', {
-      growspace_id: 'gs1',
-      lights_on: LIGHTS_ON_ISO,
-      soil_moisture: [mkBucket(0, 55), mkBucket(5, 57)],
-      bulk_ec: [mkBucket(0, 1.8), mkBucket(5, 1.9)],
-    }]]));
+    cropSteeringHistory$.set(
+      new Map([
+        [
+          'gs1',
+          {
+            growspace_id: 'gs1',
+            lights_on: LIGHTS_ON_ISO,
+            soil_moisture: [mkBucket(0, 55), mkBucket(5, 57)],
+            bulk_ec: [mkBucket(0, 1.8), mkBucket(5, 1.9)],
+          },
+        ],
+      ])
+    );
 
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog
@@ -2192,11 +2245,18 @@ describe('IrrigationDialog – Crop Steering Day Chart legend: EC sensor presenc
   });
 
   it('shows both "not configured" notes when both EC series are absent', async () => {
-    cropSteeringHistory$.set(new Map([['gs1', {
-      growspace_id: 'gs1',
-      lights_on: LIGHTS_ON_ISO,
-      soil_moisture: [mkBucket(0, 55), mkBucket(5, 57)],
-    }]]));
+    cropSteeringHistory$.set(
+      new Map([
+        [
+          'gs1',
+          {
+            growspace_id: 'gs1',
+            lights_on: LIGHTS_ON_ISO,
+            soil_moisture: [mkBucket(0, 55), mkBucket(5, 57)],
+          },
+        ],
+      ])
+    );
 
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog

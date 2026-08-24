@@ -1,6 +1,11 @@
 import { haTest as test, expect } from '../fixtures/ha-setup';
 import { GrowspaceCard } from '../pages/GrowspaceCard';
-import { LogbookDialog, SnapshotsDialog, GrowReportDialog, GrowMasterDialog } from '../pages/Dialogs';
+import {
+  LogbookDialog,
+  SnapshotsDialog,
+  GrowReportDialog,
+  GrowMasterDialog,
+} from '../pages/Dialogs';
 
 test.describe('Insights dialogs', () => {
   let growspaceCard: GrowspaceCard;
@@ -8,9 +13,6 @@ test.describe('Insights dialogs', () => {
   test.beforeEach(async ({ page, testContext }) => {
     growspaceCard = new GrowspaceCard(page);
     await growspaceCard.navigate(testContext.dashboardPath);
-    await growspaceCard.waitForCardReady();
-    // Auth redirect causes deferred re-render on first load → reload after auth settles
-    await page.reload();
     await growspaceCard.waitForCardReady();
   });
 

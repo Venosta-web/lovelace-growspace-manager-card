@@ -30,7 +30,10 @@ function renderPrefillWarning(missing: string[] | undefined): TemplateResult | t
       style="display:flex;gap:6px;margin-top:6px;padding:8px;font-size:0.857143rem;line-height:1.35;border-radius: var(--border-radius-sm, 8px);color:var(--warning-color,#e6a700);background:rgba(230,167,0,0.10);border:1px solid rgba(230,167,0,0.35);"
     >
       <span aria-hidden="true">⚠</span>
-      <span>No ${missing.join(' or ')} entity found on this device — cleared it; pick manually below.</span>
+      <span
+        >No ${missing.join(' or ')} entity found on this device — cleared it; pick manually
+        below.</span
+      >
     </div>
   `;
 }

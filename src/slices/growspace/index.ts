@@ -275,11 +275,9 @@ export async function configureEnvironment(data: {
   if (data.lightSensor) payload.light_sensor = data.lightSensor;
   if (data.lightSensors !== undefined) payload.light_sensors = data.lightSensors;
   if (data.exhaustEntity) payload.exhaust_entity = data.exhaustEntity;
-  if (data.exhaustFanEntities !== undefined)
-    payload.exhaust_fan_entities = data.exhaustFanEntities;
+  if (data.exhaustFanEntities !== undefined) payload.exhaust_fan_entities = data.exhaustFanEntities;
   if (data.humidifierEntity) payload.humidifier_entity = data.humidifierEntity;
-  if (data.humidifierEntities !== undefined)
-    payload.humidifier_entities = data.humidifierEntities;
+  if (data.humidifierEntities !== undefined) payload.humidifier_entities = data.humidifierEntities;
   if (data.humidifierThresholds !== undefined)
     payload.humidifier_thresholds = data.humidifierThresholds;
   if (data.controlHumidifier !== undefined) payload.control_humidifier = data.controlHumidifier;

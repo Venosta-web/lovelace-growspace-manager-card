@@ -20,7 +20,7 @@ describe('plant-lifecycle-dates-card', () => {
         .showAllDates=${false}
       ></plant-lifecycle-dates-card>
     `);
-    
+
     const dateInputs = el.shadowRoot?.querySelectorAll('md3-date-input');
     expect(dateInputs?.length).to.equal(2);
     expect((dateInputs?.[0] as any).value).to.equal('2026-01-01');
@@ -34,7 +34,7 @@ describe('plant-lifecycle-dates-card', () => {
         .showAllDates=${true}
       ></plant-lifecycle-dates-card>
     `);
-    
+
     const dateInputs = el.shadowRoot?.querySelectorAll('md3-date-input');
     expect(dateInputs?.length).to.equal(7);
   });
@@ -46,10 +46,10 @@ describe('plant-lifecycle-dates-card', () => {
         .showAllDates=${false}
       ></plant-lifecycle-dates-card>
     `);
-    
+
     const dateInputs = el.shadowRoot?.querySelectorAll('md3-date-input');
     expect(dateInputs?.length).to.equal(0);
-    
+
     const p = el.shadowRoot?.querySelector('p');
     expect(p?.textContent).to.include('Click the edit button to add dates');
   });
@@ -61,13 +61,15 @@ describe('plant-lifecycle-dates-card', () => {
         .showAllDates=${false}
       ></plant-lifecycle-dates-card>
     `);
-    
+
     let toggled = false;
-    el.addEventListener('toggle-dates', () => { toggled = true; });
-    
+    el.addEventListener('toggle-dates', () => {
+      toggled = true;
+    });
+
     const btn = el.shadowRoot?.querySelector('.toggle-button') as HTMLButtonElement;
     btn.click();
-    
+
     expect(toggled).to.be.true;
   });
 
@@ -80,7 +82,9 @@ describe('plant-lifecycle-dates-card', () => {
     `);
 
     let payload: any = null;
-    el.addEventListener('attribute-change', (e: any) => { payload = e.detail; });
+    el.addEventListener('attribute-change', (e: any) => {
+      payload = e.detail;
+    });
 
     const dateInput = el.shadowRoot?.querySelector('md3-date-input') as HTMLElement;
     dateInput.dispatchEvent(new CustomEvent('change', { detail: '2026-01-02' }));
@@ -106,12 +110,28 @@ describe('plant-lifecycle-dates-card', () => {
       ></plant-lifecycle-dates-card>
     `);
 
-    const inputs = Array.from(el.shadowRoot?.querySelectorAll('md3-date-input') ?? []) as HTMLElement[];
-    const expectedKeys = ['seedling_start', 'mother_start', 'clone_start', 'veg_start', 'flower_start', 'dry_start', 'cure_start'];
+    const inputs = Array.from(
+      el.shadowRoot?.querySelectorAll('md3-date-input') ?? []
+    ) as HTMLElement[];
+    const expectedKeys = [
+      'seedling_start',
+      'mother_start',
+      'clone_start',
+      'veg_start',
+      'flower_start',
+      'dry_start',
+      'cure_start',
+    ];
 
     for (let i = 0; i < inputs.length; i++) {
       let payload: any = null;
-      el.addEventListener('attribute-change', (e: any) => { payload = e.detail; }, { once: true });
+      el.addEventListener(
+        'attribute-change',
+        (e: any) => {
+          payload = e.detail;
+        },
+        { once: true }
+      );
       inputs[i].dispatchEvent(new CustomEvent('change', { detail: `2026-0${i + 1}-01` }));
       expect(payload).to.deep.equal({ key: expectedKeys[i], value: `2026-0${i + 1}-01` });
     }
@@ -125,12 +145,20 @@ describe('plant-lifecycle-dates-card', () => {
       ></plant-lifecycle-dates-card>
     `);
 
-    const inputs = Array.from(el.shadowRoot?.querySelectorAll('md3-date-input') ?? []) as HTMLElement[];
+    const inputs = Array.from(
+      el.shadowRoot?.querySelectorAll('md3-date-input') ?? []
+    ) as HTMLElement[];
     const expectedKeys = ['veg_start', 'flower_start'];
 
     for (let i = 0; i < inputs.length; i++) {
       let payload: any = null;
-      el.addEventListener('attribute-change', (e: any) => { payload = e.detail; }, { once: true });
+      el.addEventListener(
+        'attribute-change',
+        (e: any) => {
+          payload = e.detail;
+        },
+        { once: true }
+      );
       inputs[i].dispatchEvent(new CustomEvent('change', { detail: '2026-03-01' }));
       expect(payload).to.deep.equal({ key: expectedKeys[i], value: '2026-03-01' });
     }
@@ -149,13 +177,21 @@ describe('plant-lifecycle-dates-card', () => {
       ></plant-lifecycle-dates-card>
     `);
 
-    const inputs = Array.from(el.shadowRoot?.querySelectorAll('md3-date-input') ?? []) as HTMLElement[];
+    const inputs = Array.from(
+      el.shadowRoot?.querySelectorAll('md3-date-input') ?? []
+    ) as HTMLElement[];
     expect(inputs.length).to.equal(2);
 
     const expectedKeys = ['dry_start', 'cure_start'];
     for (let i = 0; i < inputs.length; i++) {
       let payload: any = null;
-      el.addEventListener('attribute-change', (e: any) => { payload = e.detail; }, { once: true });
+      el.addEventListener(
+        'attribute-change',
+        (e: any) => {
+          payload = e.detail;
+        },
+        { once: true }
+      );
       inputs[i].dispatchEvent(new CustomEvent('change', { detail: '2026-03-01' }));
       expect(payload).to.deep.equal({ key: expectedKeys[i], value: '2026-03-01' });
     }

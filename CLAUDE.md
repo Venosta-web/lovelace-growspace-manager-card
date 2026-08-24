@@ -32,7 +32,8 @@ npm run test:unit:watch
 npm run test:coverage
 npm run test:e2e     # build + Playwright e2e against HA (see AGENTS.md)
 npm run lint         # eslint src/**/*.{ts,js}
-npm run format       # prettier --write
+npm run format       # prettier --write over src/, tests/ and root config
+npm run format:check # same scope, read-only (.prettierignore excludes markdown)
 ```
 
 **Before declaring a change done:** `npm run lint`, `npm test`, and `npm run build` must
@@ -60,11 +61,47 @@ prek install --hook-type commit-msg  # not installed by the plain form above, de
                                       # default_install_hook_types in .pre-commit-config.yaml
 ```
 
-Unlike `growspace_manager`'s single shared `.venv`, there is **no shared `node_modules`
-across `.worktrees/<branch>` checkouts** here — each worktree needs its own `npm ci`. A
-symlinked/shared `node_modules` was considered and rejected: hoisting and peer-dep
-resolution can drift between branches, and that class of bug is worse than a few minutes
-of install time per worktree.
+Standalone worktrees install their own `node_modules` with `npm ci`. Worktrees created by
+the sibling `growspace_manager_workspace` hub **share the main card checkout's
+`node_modules` only while their `package-lock.json` SHA-256 hashes are identical**. The hub
+also runs `npm ci --dry-run` and requires a zero-add/change/remove plan before linking it.
+If either check fails, the link is removed and that worktree must run its own `npm ci`;
+dependency drift therefore fails closed instead of silently using another branch's
+hoisting or peer-dependency resolution.
+
+That link is established once, at worktree setup, and nothing re-establishes the agreement
+afterwards — the source checkout can install a new dependency, or a worktree branch can
+change its own lockfile. So this repo re-checks the cheap half itself, in
+`scripts/shared-dependency-link.mjs`: `npm test` runs a `pretest` guard that refuses when
+`node_modules` is a link whose source checkout's `package-lock.json` no longer matches this
+checkout's, and `preinstall` refuses to install *through* a link at all, because deleting
+it is how a worktree stops being hub-managed and that should be a deliberate act. Both are
+inert when `node_modules` is a real directory or absent, so the main checkout and CI are
+unaffected, and neither ever creates, repairs, or removes a link — the fix they print is
+`rm node_modules && npm ci`.
+
+Never run dependency-mutating npm commands through a shared link. That is a rule, not a
+guarantee — the mechanics split in two. Measured: `npm ci` and `npm install` delete the link and put a private install in its place, leaving the main checkout's tree
+untouched. `npm rebuild`, `patch-package`, and dependency postinstalls leave the link
+intact and **write straight through into the main checkout's dependency tree**. That second
+class never runs the root package's `preinstall` script, so **no npm hook can catch it**;
+the risk is accepted and unguardable, not covered. If it happens, repair it with `npm ci`
+in the main card checkout. When changing dependencies deliberately, unlink `node_modules`,
+run `npm ci` in the worktree, and keep that real directory private.
+
+Vite's optimiser cache and browser-test reports live under the checkout-local `.cache/`,
+not under `node_modules`, and the Vitest commands use Vite's runner config loader so it does
+not create `node_modules/.vite-temp`. Concurrent worktrees therefore do not contend on
+writable test caches.
+
+The decision, the measurements behind it (465 MB tree, 2.4 s warm private `npm ci`, 0.47 s
+guard, two lockfile changes on `dev` in 90 days), and the accepted risk are recorded in the
+hub's ADR — `growspace_manager_workspace/docs/adr/0001-guarded-shared-card-dependencies.md`
+([online](https://github.com/Venosta-web/growspace_manager_workspace/blob/main/docs/adr/0001-guarded-shared-card-dependencies.md)),
+from issue #706. It also sets the ownership boundary this repo works under: **the hub heals,
+the card detects.** Hub setup may create, re-link, or remove a shared link; a check on this
+side may refuse to run against a mismatched tree, but must never create or repair a link —
+sharing one checkout's dependencies with another is hub policy.
 
 ## Architecture
 

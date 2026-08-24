@@ -14,7 +14,6 @@ vi.mock('../slices/plant', async (importOriginal) => ({
   takeClone: vi.fn().mockResolvedValue(true),
 }));
 
-
 // ---------------------------------------------------------------------------
 // GrowspaceStore.openBatchCloneDialog
 // ---------------------------------------------------------------------------

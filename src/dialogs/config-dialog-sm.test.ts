@@ -21,7 +21,13 @@ import type { CirculationFanConfig, ExhaustFanConfig } from '../slices/growspace
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function makeDevice(overrides: Partial<Parameters<typeof createGrowspaceDevice>[0]> = {}) {
-  return createGrowspaceDevice({ deviceId: 'gs1', name: 'Tent 1', rows: 4, plantsPerRow: 4, ...overrides });
+  return createGrowspaceDevice({
+    deviceId: 'gs1',
+    name: 'Tent 1',
+    rows: 4,
+    plantsPerRow: 4,
+    ...overrides,
+  });
 }
 
 function makeSubarea() {
@@ -296,20 +302,20 @@ describe('isNotificationsDirty', () => {
     const device = makeDevice({ timedNotifications: [] });
     const sm = createInitialSM(device);
     // no adding sub — ADD_TIMED_NOTIFICATION is a no-op without prior START_ADD; seed one manually
-    const smWithAdd = transition(
-      transition(sm, { type: 'START_ADD_TIMED_NOTIFICATION' }),
-      { type: 'ADD_TIMED_NOTIFICATION', id: 'n1' }
-    );
+    const smWithAdd = transition(transition(sm, { type: 'START_ADD_TIMED_NOTIFICATION' }), {
+      type: 'ADD_TIMED_NOTIFICATION',
+      id: 'n1',
+    });
     expect(isNotificationsDirty(smWithAdd, device)).toBe(true);
   });
 
   it('returns true when sub is adding with a non-empty message', () => {
     const device = makeDevice();
     const sm = createInitialSM(device);
-    const adding = transition(
-      transition(sm, { type: 'START_ADD_TIMED_NOTIFICATION' }),
-      { type: 'UPDATE_TIMED_DRAFT', partial: { message: 'Check roots' } }
-    );
+    const adding = transition(transition(sm, { type: 'START_ADD_TIMED_NOTIFICATION' }), {
+      type: 'UPDATE_TIMED_DRAFT',
+      partial: { message: 'Check roots' },
+    });
     expect(isNotificationsDirty(adding, device)).toBe(true);
   });
 
@@ -359,7 +365,11 @@ describe('isNotificationsDirty', () => {
 
   it('returns true when sub is editing with a changed draft', () => {
     const notification = {
-      id: 'n1', message: 'Original', triggerType: 'clone' as const, day: 7, growspaceIds: [],
+      id: 'n1',
+      message: 'Original',
+      triggerType: 'clone' as const,
+      day: 7,
+      growspaceIds: [],
     };
     const device = makeDevice({ timedNotifications: [notification] });
     const sm = createInitialSM(device);
@@ -403,7 +413,11 @@ describe('notifications dirty guard', () => {
   it('discardAndSwitch resets notifications tab from device and switches', () => {
     const device = makeDevice({ notificationSettings: { criticalCooldownMinutes: 60 } });
     const sm = transition(
-      { ...createInitialSM(device), activeTab: 'notifications', status: { kind: 'confirm-discard', pendingTab: 'sensors' } },
+      {
+        ...createInitialSM(device),
+        activeTab: 'notifications',
+        status: { kind: 'confirm-discard', pendingTab: 'sensors' },
+      },
       { type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { criticalCooldownMinutes: 120 } }
     );
     const dirtyThenRequest = {
@@ -429,7 +443,10 @@ describe('SWITCH_TAB', () => {
 
   it('clears status to idle', () => {
     const sm = createInitialSM();
-    const withStatus: ConfigDialogSM = { ...sm, status: { kind: 'confirm-discard', pendingTab: 'climate' } };
+    const withStatus: ConfigDialogSM = {
+      ...sm,
+      status: { kind: 'confirm-discard', pendingTab: 'climate' },
+    };
     const next = transition(withStatus, { type: 'SWITCH_TAB', tab: 'climate' });
     expect(next.status.kind).toBe('idle');
   });
@@ -458,7 +475,9 @@ describe('DISCARD_AND_SWITCH', () => {
       status: { kind: 'confirm-discard', pendingTab: 'climate' },
       tabs: {
         ...sm.tabs,
-        growspaces: { sub: { kind: 'adding', name: 'Test', rows: 4, plantsPerRow: 4, notificationService: '' } },
+        growspaces: {
+          sub: { kind: 'adding', name: 'Test', rows: 4, plantsPerRow: 4, notificationService: '' },
+        },
       },
     };
     const next = transition(withPending, { type: 'DISCARD_AND_SWITCH' });
@@ -474,7 +493,9 @@ describe('DISCARD_AND_SWITCH', () => {
       status: { kind: 'confirm-discard', pendingTab: 'climate' },
       tabs: {
         ...sm.tabs,
-        growspaces: { sub: { kind: 'adding', name: 'X', rows: 4, plantsPerRow: 4, notificationService: '' } },
+        growspaces: {
+          sub: { kind: 'adding', name: 'X', rows: 4, plantsPerRow: 4, notificationService: '' },
+        },
       },
     };
     const next = transition(withPending, { type: 'DISCARD_AND_SWITCH' });
@@ -491,7 +512,10 @@ describe('DISCARD_AND_SWITCH', () => {
 describe('CANCEL_TAB_SWITCH', () => {
   it('clears confirm-discard status without switching', () => {
     const sm = createInitialSM();
-    const withStatus: ConfigDialogSM = { ...sm, status: { kind: 'confirm-discard', pendingTab: 'climate' } };
+    const withStatus: ConfigDialogSM = {
+      ...sm,
+      status: { kind: 'confirm-discard', pendingTab: 'climate' },
+    };
     const next = transition(withStatus, { type: 'CANCEL_TAB_SWITCH' });
     expect(next.status.kind).toBe('idle');
     expect(next.activeTab).toBe('sensors');
@@ -518,7 +542,10 @@ describe('UPDATE_ADD_DRAFT', () => {
   it('merges partial fields into the adding sub-state', () => {
     const sm = createInitialSM();
     const adding = transition(sm, { type: 'START_ADD_GROWSPACE' });
-    const next = transition(adding, { type: 'UPDATE_ADD_DRAFT', partial: { name: 'Veg Tent', rows: 3 } });
+    const next = transition(adding, {
+      type: 'UPDATE_ADD_DRAFT',
+      partial: { name: 'Veg Tent', rows: 3 },
+    });
     const sub = next.tabs.growspaces.sub;
     expect(sub.kind).toBe('adding');
     if (sub.kind === 'adding') {
@@ -566,7 +593,10 @@ describe('UPDATE_EDIT_DRAFT', () => {
       plantsPerRow: 4,
       notificationService: '',
     });
-    const next = transition(editing, { type: 'UPDATE_EDIT_DRAFT', partial: { name: 'Flower Tent' } });
+    const next = transition(editing, {
+      type: 'UPDATE_EDIT_DRAFT',
+      partial: { name: 'Flower Tent' },
+    });
     const sub = next.tabs.growspaces.sub;
     expect(sub.kind).toBe('editing');
     if (sub.kind === 'editing') {
@@ -978,7 +1008,10 @@ describe('isGrowspacesDirty', () => {
       plantsPerRow: 4,
       notificationService: '',
     });
-    const changed = transition(editing, { type: 'UPDATE_EDIT_DRAFT', partial: { name: 'Changed' } });
+    const changed = transition(editing, {
+      type: 'UPDATE_EDIT_DRAFT',
+      partial: { name: 'Changed' },
+    });
     expect(isGrowspacesDirty(changed, device)).toBe(true);
   });
 });
@@ -1028,10 +1061,10 @@ describe('requestTabSwitch', () => {
 
   it('enters confirm-discard when growspaces tab is dirty', () => {
     const sm: ConfigDialogSM = { ...createInitialSM(), activeTab: 'growspaces' };
-    const withName = transition(
-      transition(sm, { type: 'START_ADD_GROWSPACE' }),
-      { type: 'UPDATE_ADD_DRAFT', partial: { name: 'Dirty' } }
-    );
+    const withName = transition(transition(sm, { type: 'START_ADD_GROWSPACE' }), {
+      type: 'UPDATE_ADD_DRAFT',
+      partial: { name: 'Dirty' },
+    });
     const device = makeDevice();
     const next = requestTabSwitch(withName, 'climate', device);
     expect(next.status).toEqual({ kind: 'confirm-discard', pendingTab: 'climate' });
@@ -1048,7 +1081,9 @@ describe('discardAndSwitch', () => {
       status: { kind: 'confirm-discard', pendingTab: 'humidity' },
       tabs: {
         ...createInitialSM().tabs,
-        growspaces: { sub: { kind: 'adding', name: 'Dirty', rows: 4, plantsPerRow: 4, notificationService: '' } },
+        growspaces: {
+          sub: { kind: 'adding', name: 'Dirty', rows: 4, plantsPerRow: 4, notificationService: '' },
+        },
       },
     };
     const device = makeDevice();
@@ -1189,10 +1224,10 @@ describe('START_ADD_TIMED_NOTIFICATION', () => {
 
 describe('UPDATE_TIMED_DRAFT', () => {
   it('patches the adding draft', () => {
-    const sm = transition(
-      transition(createInitialSM(), { type: 'START_ADD_TIMED_NOTIFICATION' }),
-      { type: 'UPDATE_TIMED_DRAFT', partial: { message: 'Check roots', day: 7 } }
-    );
+    const sm = transition(transition(createInitialSM(), { type: 'START_ADD_TIMED_NOTIFICATION' }), {
+      type: 'UPDATE_TIMED_DRAFT',
+      partial: { message: 'Check roots', day: 7 },
+    });
     const sub = sm.tabs.notifications.sub;
     expect(sub.kind).toBe('adding');
     if (sub.kind === 'adding') {
@@ -1211,16 +1246,20 @@ describe('UPDATE_TIMED_DRAFT', () => {
 describe('ADD_TIMED_NOTIFICATION', () => {
   it('commits the draft to timedNotifications and returns to idle', () => {
     const sm = transition(
-      transition(
-        transition(createInitialSM(), { type: 'START_ADD_TIMED_NOTIFICATION' }),
-        { type: 'UPDATE_TIMED_DRAFT', partial: { message: 'Check roots', day: 7, growspaceIds: ['gs1'] } }
-      ),
+      transition(transition(createInitialSM(), { type: 'START_ADD_TIMED_NOTIFICATION' }), {
+        type: 'UPDATE_TIMED_DRAFT',
+        partial: { message: 'Check roots', day: 7, growspaceIds: ['gs1'] },
+      }),
       { type: 'ADD_TIMED_NOTIFICATION', id: 'n1' }
     );
     expect(sm.tabs.notifications.sub.kind).toBe('idle');
     expect(sm.tabs.notifications.timedNotifications).toHaveLength(1);
     expect(sm.tabs.notifications.timedNotifications[0]).toEqual({
-      id: 'n1', message: 'Check roots', triggerType: 'clone', day: 7, growspaceIds: ['gs1'],
+      id: 'n1',
+      message: 'Check roots',
+      triggerType: 'clone',
+      day: 7,
+      growspaceIds: ['gs1'],
     });
   });
 
@@ -1233,8 +1272,17 @@ describe('ADD_TIMED_NOTIFICATION', () => {
 
 describe('START_EDIT_TIMED_NOTIFICATION', () => {
   it('enters editing sub-state with the given draft', () => {
-    const draft = { message: 'Original', triggerType: 'veg' as const, day: 14, growspaceIds: ['gs1'] };
-    const sm = transition(createInitialSM(), { type: 'START_EDIT_TIMED_NOTIFICATION', id: 'n1', draft });
+    const draft = {
+      message: 'Original',
+      triggerType: 'veg' as const,
+      day: 14,
+      growspaceIds: ['gs1'],
+    };
+    const sm = transition(createInitialSM(), {
+      type: 'START_EDIT_TIMED_NOTIFICATION',
+      id: 'n1',
+      draft,
+    });
     const sub = sm.tabs.notifications.sub;
     expect(sub.kind).toBe('editing');
     if (sub.kind === 'editing') {
@@ -1247,7 +1295,11 @@ describe('START_EDIT_TIMED_NOTIFICATION', () => {
 describe('EDIT_TIMED_NOTIFICATION', () => {
   it('updates the item in the list and returns to idle', () => {
     const existing = {
-      id: 'n1', message: 'Original', triggerType: 'clone' as const, day: 7, growspaceIds: [],
+      id: 'n1',
+      message: 'Original',
+      triggerType: 'clone' as const,
+      day: 7,
+      growspaceIds: [],
     };
     const device = makeDevice({ timedNotifications: [existing] });
     const sm = transition(
@@ -1263,17 +1315,20 @@ describe('EDIT_TIMED_NOTIFICATION', () => {
     );
     expect(sm.tabs.notifications.sub.kind).toBe('idle');
     expect(sm.tabs.notifications.timedNotifications[0]).toEqual({
-      id: 'n1', message: 'Updated', triggerType: 'clone', day: 10, growspaceIds: [],
+      id: 'n1',
+      message: 'Updated',
+      triggerType: 'clone',
+      day: 10,
+      growspaceIds: [],
     });
   });
 });
 
 describe('CANCEL_TIMED_NOTIFICATION', () => {
   it('resets sub to idle from adding', () => {
-    const sm = transition(
-      transition(createInitialSM(), { type: 'START_ADD_TIMED_NOTIFICATION' }),
-      { type: 'CANCEL_TIMED_NOTIFICATION' }
-    );
+    const sm = transition(transition(createInitialSM(), { type: 'START_ADD_TIMED_NOTIFICATION' }), {
+      type: 'CANCEL_TIMED_NOTIFICATION',
+    });
     expect(sm.tabs.notifications.sub.kind).toBe('idle');
   });
 
@@ -1305,7 +1360,11 @@ describe('DELETE_TIMED_NOTIFICATION + CONFIRM_DELETE', () => {
 
   it('removes the item from the list on CONFIRM_DELETE', () => {
     const existing = {
-      id: 'n1', message: 'Delete me', triggerType: 'clone' as const, day: 3, growspaceIds: [],
+      id: 'n1',
+      message: 'Delete me',
+      triggerType: 'clone' as const,
+      day: 3,
+      growspaceIds: [],
     };
     const device = makeDevice({ timedNotifications: [existing] });
     const sm = transition(
@@ -1319,10 +1378,9 @@ describe('DELETE_TIMED_NOTIFICATION + CONFIRM_DELETE', () => {
 
 describe('SAVE_NOTIFICATIONS', () => {
   it('resets sub to idle', () => {
-    const sm = transition(
-      transition(createInitialSM(), { type: 'START_ADD_TIMED_NOTIFICATION' }),
-      { type: 'SAVE_NOTIFICATIONS' }
-    );
+    const sm = transition(transition(createInitialSM(), { type: 'START_ADD_TIMED_NOTIFICATION' }), {
+      type: 'SAVE_NOTIFICATIONS',
+    });
     expect(sm.tabs.notifications.sub.kind).toBe('idle');
   });
 });
@@ -1332,13 +1390,17 @@ describe('RESET_FROM_DEVICE re-seeds notifications', () => {
     const device1 = makeDevice({ notificationSettings: { criticalCooldownMinutes: 60 } });
     const sm = transition(
       transition(createInitialSM(device1), {
-        type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { criticalCooldownMinutes: 120 },
+        type: 'UPDATE_NOTIFICATIONS_DRAFT',
+        partial: { criticalCooldownMinutes: 120 },
       }),
       {
         type: 'RESET_FROM_DEVICE',
-        device: makeDevice({ notificationSettings: { criticalCooldownMinutes: 90 }, timedNotifications: [
-          { id: 'n1', message: 'New', triggerType: 'veg', day: 5, growspaceIds: [] },
-        ] }),
+        device: makeDevice({
+          notificationSettings: { criticalCooldownMinutes: 90 },
+          timedNotifications: [
+            { id: 'n1', message: 'New', triggerType: 'veg', day: 5, growspaceIds: [] },
+          ],
+        }),
       }
     );
     expect(sm.tabs.notifications.draft.criticalCooldownMinutes).toBe(90);
@@ -1379,7 +1441,8 @@ describe('lstOffset on EnvironmentDraft', () => {
 
   it('RESET_FROM_DEVICE re-seeds lstOffset', () => {
     const sm = transition(createInitialSM(), {
-      type: 'UPDATE_ENV_DRAFT', partial: { lstOffset: -8.0 },
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { lstOffset: -8.0 },
     });
     expect(sm.environmentDraft.lstOffset).toBe(-8.0);
 

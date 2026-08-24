@@ -48,7 +48,10 @@ export async function commitPlantLayout(
     growspaceId: response.growspace_id,
     layoutRevision: response.layout_revision,
     layout: Object.fromEntries(
-      response.placements.map(({ plant_id, row, col }) => [plant_id, { row: row - 1, col: col - 1 }])
+      response.placements.map(({ plant_id, row, col }) => [
+        plant_id,
+        { row: row - 1, col: col - 1 },
+      ])
     ),
   };
 }

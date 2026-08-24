@@ -50,10 +50,7 @@ export interface TanksTabDeps {
  * Pure factory: the Config Dialog SM + injected hass adapter → one Tanks tab
  * ViewModel. Testable with no DOM and no host.
  */
-export function createTanksTabViewModel(
-  sm: ConfigDialogSM,
-  deps: TanksTabDeps
-): TanksTabViewModel {
+export function createTanksTabViewModel(sm: ConfigDialogSM, deps: TanksTabDeps): TanksTabViewModel {
   const tanks = sm.environmentDraft.irrigationTanks;
   const sub = sm.tabs.tanks.sub;
   const editing =

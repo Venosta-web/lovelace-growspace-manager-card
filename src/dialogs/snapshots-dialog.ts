@@ -409,7 +409,8 @@ export class SnapshotsDialog extends LitElement {
                               <span style="font-size:var(--font-size-supporting);opacity:0.6;"
                                 >${this._formatDate(entry.timestamp)}</span
                               >
-                              <span style="text-transform:capitalize;font-size:var(--font-size-supporting);opacity:0.7;"
+                              <span
+                                style="text-transform:capitalize;font-size:var(--font-size-supporting);opacity:0.7;"
                                 >${entry.check_type}</span
                               >
                               <span

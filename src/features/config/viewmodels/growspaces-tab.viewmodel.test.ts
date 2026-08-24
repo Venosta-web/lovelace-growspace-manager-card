@@ -56,8 +56,14 @@ describe('createGrowspacesTabViewModel — detail state', () => {
       plantsPerRow: 4,
       notificationService: 'mobile_app_phone',
     });
-    s = transition(s, { type: 'UPDATE_ENV_DRAFT', partial: { lungroomTempSensors: ['sensor.lr'], cameraEntities: ['camera.a'] } });
-    const deps: GrowspacesTabDeps = { ...baseDeps, entityOptions: (d) => (d[0] === 'camera' ? ['camera.a', 'camera.b'] : ['sensor.lr']) };
+    s = transition(s, {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { lungroomTempSensors: ['sensor.lr'], cameraEntities: ['camera.a'] },
+    });
+    const deps: GrowspacesTabDeps = {
+      ...baseDeps,
+      entityOptions: (d) => (d[0] === 'camera' ? ['camera.a', 'camera.b'] : ['sensor.lr']),
+    };
     const vm = createGrowspacesTabViewModel(s, deps);
     expect(vm.state.mode).toBe('editing');
     if (vm.state.mode === 'editing') {

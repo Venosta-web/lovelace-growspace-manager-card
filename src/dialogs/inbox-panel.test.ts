@@ -21,7 +21,7 @@ import * as aiInsightMod from '../slices/ai-insight';
 const stubTags = ['ha-svg-icon', 'ha-icon'];
 for (const tag of stubTags) {
   if (!customElements.get(tag)) {
-    customElements.define(tag, class extends HTMLElement { });
+    customElements.define(tag, class extends HTMLElement {});
   }
 }
 
@@ -112,9 +112,7 @@ afterEach(() => {
 
 describe('GmInboxPanel — connectedCallback', () => {
   it('calls fetchAlerts with growspaceid on connect', async () => {
-    await fixture<GmInboxPanel>(html`
-      <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>
-    `);
+    await fixture<GmInboxPanel>(html` <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel> `);
 
     expect(aiInsightMod.fetchAlerts).toHaveBeenCalledWith('gs1');
   });
@@ -126,7 +124,9 @@ describe('GmInboxPanel — connectedCallback', () => {
 
 describe('GmInboxPanel — formatRelative timestamps', () => {
   it('shows seconds-ago label for a very recent alert', async () => {
-    aiAlerts$.set(new Map([['gs1', [{ ...ALERT_DANGER, timestamp: Math.floor(Date.now() / 1000) - 10 }]]]));
+    aiAlerts$.set(
+      new Map([['gs1', [{ ...ALERT_DANGER, timestamp: Math.floor(Date.now() / 1000) - 10 }]]])
+    );
 
     const el = await fixture<GmInboxPanel>(html`
       <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>
@@ -138,7 +138,9 @@ describe('GmInboxPanel — formatRelative timestamps', () => {
   });
 
   it('shows minutes-ago label for an alert ~2 min old', async () => {
-    aiAlerts$.set(new Map([['gs1', [{ ...ALERT_DANGER, timestamp: Math.floor(Date.now() / 1000) - 120 }]]]));
+    aiAlerts$.set(
+      new Map([['gs1', [{ ...ALERT_DANGER, timestamp: Math.floor(Date.now() / 1000) - 120 }]]])
+    );
 
     const el = await fixture<GmInboxPanel>(html`
       <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>
@@ -150,7 +152,9 @@ describe('GmInboxPanel — formatRelative timestamps', () => {
   });
 
   it('shows hours-ago label for an alert ~2 h old', async () => {
-    aiAlerts$.set(new Map([['gs1', [{ ...ALERT_WARNING, timestamp: Math.floor(Date.now() / 1000) - 7200 }]]]));
+    aiAlerts$.set(
+      new Map([['gs1', [{ ...ALERT_WARNING, timestamp: Math.floor(Date.now() / 1000) - 7200 }]]])
+    );
 
     const el = await fixture<GmInboxPanel>(html`
       <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>
@@ -162,7 +166,9 @@ describe('GmInboxPanel — formatRelative timestamps', () => {
   });
 
   it('shows days-ago label for an alert >24 h old', async () => {
-    aiAlerts$.set(new Map([['gs1', [{ ...ALERT_DANGER, timestamp: Math.floor(Date.now() / 1000) - 90000 }]]]));
+    aiAlerts$.set(
+      new Map([['gs1', [{ ...ALERT_DANGER, timestamp: Math.floor(Date.now() / 1000) - 90000 }]]])
+    );
 
     const el = await fixture<GmInboxPanel>(html`
       <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>
@@ -741,7 +747,9 @@ describe('GmInboxPanel — mark all read', () => {
     `);
     await el.updateComplete;
 
-    const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('.inbox-rail-footer .mark-all-read-btn');
+    const btn = el.shadowRoot!.querySelector<HTMLButtonElement>(
+      '.inbox-rail-footer .mark-all-read-btn'
+    );
     expect(btn).not.toBeNull();
     expect(btn!.textContent?.trim()).toBe('Mark all read');
   });

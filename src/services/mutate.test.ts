@@ -82,8 +82,12 @@ describe('mutate', () => {
     const gsId = uniqueGsId();
     const callOrder: string[] = [];
     const action = makeAction({
-      optimistic: vi.fn(() => { callOrder.push('optimistic'); }),
-      apply: vi.fn(async () => { callOrder.push('apply'); }),
+      optimistic: vi.fn(() => {
+        callOrder.push('optimistic');
+      }),
+      apply: vi.fn(async () => {
+        callOrder.push('apply');
+      }),
     });
 
     await mutate(action, gsId);
@@ -276,10 +280,7 @@ describe('setMutateListener', () => {
 
     await mutate(makeAction({ type: 'waterPlant', label: 'Watered plant' }), gsId);
 
-    expect(listener).toHaveBeenCalledWith(
-      { type: 'waterPlant', label: 'Watered plant' },
-      gsId
-    );
+    expect(listener).toHaveBeenCalledWith({ type: 'waterPlant', label: 'Watered plant' }, gsId);
   });
 
   it('listener receives undefined label when Action has no label', async () => {

@@ -358,11 +358,26 @@ export class AddPlantDialog extends LitElement {
       value: deriveDefaultStage(this.growspaceName),
     });
     if (strain) {
-      this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
-      this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
+      this._sm = transition(this._sm, {
+        type: 'DraftFieldChanged',
+        tab: 'add',
+        field: 'strain',
+        value: strain,
+      });
+      this._sm = transition(this._sm, {
+        type: 'DraftFieldChanged',
+        tab: 'add',
+        field: 'strainQuery',
+        value: strain,
+      });
     }
     if (phenotype) {
-      this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: phenotype });
+      this._sm = transition(this._sm, {
+        type: 'DraftFieldChanged',
+        tab: 'add',
+        field: 'phenotype',
+        value: phenotype,
+      });
     }
   }
 
@@ -438,7 +453,11 @@ export class AddPlantDialog extends LitElement {
       };
       this._sm = transition(this._sm, { type: 'SaveRequested' });
       this.dispatchEvent(
-        new CustomEvent('transplant-plant-submit', { detail: payload, bubbles: true, composed: true })
+        new CustomEvent('transplant-plant-submit', {
+          detail: payload,
+          bubbles: true,
+          composed: true,
+        })
       );
     }
   }
@@ -567,9 +586,11 @@ export class AddPlantDialog extends LitElement {
               ? html`
                   <button
                     class="md3-button tonal"
-                    @click=${addSub.kind === 'step-identity' ? this._close : () => {
-                      this._sm = transition(this._sm, { type: 'WizardBacked' });
-                    }}
+                    @click=${addSub.kind === 'step-identity'
+                      ? this._close
+                      : () => {
+                          this._sm = transition(this._sm, { type: 'WizardBacked' });
+                        }}
                   >
                     ${addSub.kind === 'step-identity' ? 'Cancel' : 'Back'}
                   </button>
@@ -651,8 +672,13 @@ export class AddPlantDialog extends LitElement {
     `;
   }
 
-  private _renderWizardStep(sub: AddSubState, uniqueStrains: string[], relevantPhenotypes: string[]) {
-    if (sub.kind === 'step-identity') return this._renderStep1Identity(uniqueStrains, relevantPhenotypes);
+  private _renderWizardStep(
+    sub: AddSubState,
+    uniqueStrains: string[],
+    relevantPhenotypes: string[]
+  ) {
+    if (sub.kind === 'step-identity')
+      return this._renderStep1Identity(uniqueStrains, relevantPhenotypes);
     if (sub.kind === 'step-source') return this._renderStep2Source();
     return this._renderStep3Schedule();
   }
@@ -679,9 +705,19 @@ export class AddPlantDialog extends LitElement {
             .value=${draft.strainQuery || draft.strain}
             placeholder="Search strain library…"
             @change=${(e: CustomEvent) => {
-              this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: e.detail });
+              this._sm = transition(this._sm, {
+                type: 'DraftFieldChanged',
+                tab: 'add',
+                field: 'strainQuery',
+                value: e.detail,
+              });
               if (e.detail !== draft.strain) {
-                this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: '' });
+                this._sm = transition(this._sm, {
+                  type: 'DraftFieldChanged',
+                  tab: 'add',
+                  field: 'strain',
+                  value: '',
+                });
               }
             }}
           ></md3-text-input>
@@ -694,8 +730,18 @@ export class AddPlantDialog extends LitElement {
                       <div
                         class="strain-option"
                         @click=${() => {
-                          this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: s });
-                          this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: s });
+                          this._sm = transition(this._sm, {
+                            type: 'DraftFieldChanged',
+                            tab: 'add',
+                            field: 'strain',
+                            value: s,
+                          });
+                          this._sm = transition(this._sm, {
+                            type: 'DraftFieldChanged',
+                            tab: 'add',
+                            field: 'strainQuery',
+                            value: s,
+                          });
                         }}
                       >
                         <span>${s}</span>
@@ -717,7 +763,12 @@ export class AddPlantDialog extends LitElement {
                 .value=${draft.phenotype}
                 .suggestions=${relevantPhenotypes}
                 @change=${(e: CustomEvent) =>
-                  (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: e.detail }))}
+                  (this._sm = transition(this._sm, {
+                    type: 'DraftFieldChanged',
+                    tab: 'add',
+                    field: 'phenotype',
+                    value: e.detail,
+                  }))}
               ></md3-text-input>
             `
           : nothing}
@@ -736,7 +787,9 @@ export class AddPlantDialog extends LitElement {
           "
               >
                 ${selectedEntry.breeder
-                  ? html`<span><b style="color:var(--text-primary)">${selectedEntry.breeder}</b></span>`
+                  ? html`<span
+                      ><b style="color:var(--text-primary)">${selectedEntry.breeder}</b></span
+                    >`
                   : nothing}
                 ${selectedEntry.type ? html`<span>${selectedEntry.type}</span>` : nothing}
                 ${selectedEntry.flowering_days_min
@@ -760,7 +813,12 @@ export class AddPlantDialog extends LitElement {
           <md3-switch
             .checked=${draft.addToLibrary}
             @change=${(e: Event) =>
-              (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: (e.target as HTMLInputElement).checked }))}
+              (this._sm = transition(this._sm, {
+                type: 'DraftFieldChanged',
+                tab: 'add',
+                field: 'addToLibrary',
+                value: (e.target as HTMLInputElement).checked,
+              }))}
             ?disabled=${!draft.strain}
           ></md3-switch>
         </div>
@@ -795,8 +853,18 @@ export class AddPlantDialog extends LitElement {
           <button
             class="source-btn ${draft.sourceType === 'seed' ? 'active' : ''}"
             @click=${() => {
-              this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'seed' });
-              this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'siblingPlantId', value: null });
+              this._sm = transition(this._sm, {
+                type: 'DraftFieldChanged',
+                tab: 'add',
+                field: 'sourceType',
+                value: 'seed',
+              });
+              this._sm = transition(this._sm, {
+                type: 'DraftFieldChanged',
+                tab: 'add',
+                field: 'siblingPlantId',
+                value: null,
+              });
             }}
           >
             🌱 Seed
@@ -804,7 +872,12 @@ export class AddPlantDialog extends LitElement {
           <button
             class="source-btn ${draft.sourceType === 'clone' ? 'active' : ''}"
             @click=${() =>
-              (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' }))}
+              (this._sm = transition(this._sm, {
+                type: 'DraftFieldChanged',
+                tab: 'add',
+                field: 'sourceType',
+                value: 'clone',
+              }))}
             ?disabled=${clonable.length === 0}
           >
             ✂️ Clone
@@ -848,7 +921,10 @@ export class AddPlantDialog extends LitElement {
                       </div>
                       ${isSelected
                         ? html`
-                            <svg style="width:18px;height:18px;fill:var(--on-primary-container-bright);" viewBox="0 0 24 24">
+                            <svg
+                              style="width:18px;height:18px;fill:var(--on-primary-container-bright);"
+                              viewBox="0 0 24 24"
+                            >
                               <path d="${mdiCheck}"></path>
                             </svg>
                           `
@@ -877,13 +953,23 @@ export class AddPlantDialog extends LitElement {
             label="Row"
             .value=${draft.row + 1}
             @change=${(e: CustomEvent) =>
-              (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'row', value: parseInt(e.detail) - 1 }))}
+              (this._sm = transition(this._sm, {
+                type: 'DraftFieldChanged',
+                tab: 'add',
+                field: 'row',
+                value: parseInt(e.detail) - 1,
+              }))}
           ></md3-number-input>
           <md3-number-input
             label="Col"
             .value=${draft.col + 1}
             @change=${(e: CustomEvent) =>
-              (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'col', value: parseInt(e.detail) - 1 }))}
+              (this._sm = transition(this._sm, {
+                type: 'DraftFieldChanged',
+                tab: 'add',
+                field: 'col',
+                value: parseInt(e.detail) - 1,
+              }))}
           ></md3-number-input>
         </div>
       </div>
@@ -904,14 +990,24 @@ export class AddPlantDialog extends LitElement {
           .value=${draft.stage}
           .options=${STAGE_OPTIONS}
           @change=${(e: CustomEvent) =>
-            (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: e.detail }))}
+            (this._sm = transition(this._sm, {
+              type: 'DraftFieldChanged',
+              tab: 'add',
+              field: 'stage',
+              value: e.detail,
+            }))}
         ></md3-select>
         ${dateField
           ? html`<md3-date-input
               label=${dateLabel}
               .value=${dateValue}
               @change=${(e: CustomEvent) =>
-                (this._sm = transition(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: dateField, value: e.detail }))}
+                (this._sm = transition(this._sm, {
+                  type: 'DraftFieldChanged',
+                  tab: 'add',
+                  field: dateField,
+                  value: e.detail,
+                }))}
             ></md3-date-input>`
           : nothing}
       </div>
@@ -961,9 +1057,7 @@ export class AddPlantDialog extends LitElement {
                     type: 'DraftFieldChanged',
                     tab: stage,
                     field: 'selectedPlantId',
-                    value: plants.find((p) => p.attributes.plant_id === e.detail)
-                      ? e.detail
-                      : null,
+                    value: plants.find((p) => p.attributes.plant_id === e.detail) ? e.detail : null,
                   });
                 }}
               ></md3-select>

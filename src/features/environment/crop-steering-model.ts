@@ -41,7 +41,12 @@ export function computeCropSteeringCycle(
   >,
   isFlower: boolean
 ): CropSteeringShot[] {
-  if (!strategy.lightsOnTime || !strategy.shotIntervalMinutes || strategy.shotIntervalMinutes <= 0 || !strategy.shotDurationSeconds) {
+  if (
+    !strategy.lightsOnTime ||
+    !strategy.shotIntervalMinutes ||
+    strategy.shotIntervalMinutes <= 0 ||
+    !strategy.shotDurationSeconds
+  ) {
     return [];
   }
 
@@ -79,7 +84,10 @@ export function computePhases(
     | 'maintenanceDrybackPercent'
   >,
   isFlower: boolean,
-  irrigationConfig: Pick<IrrigationConfig, 'activeSteeringPhase' | 'phaseChangedAt'> | null | undefined
+  irrigationConfig:
+    | Pick<IrrigationConfig, 'activeSteeringPhase' | 'phaseChangedAt'>
+    | null
+    | undefined
 ): CropSteeringPhases | null {
   const anchorLightsOnTime = strategy.detectedLightsOnTime ?? strategy.lightsOnTime;
   if (!anchorLightsOnTime) return null;

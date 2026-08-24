@@ -58,9 +58,11 @@ const norm = (s: string | null | undefined): string => (s ?? '').replace(/\s+/g,
 
 describe('irrigation-substrate-ec-tab', () => {
   it('holds no @state() of its own — only the `vm` reactive property', () => {
-    const props = (IrrigationSubstrateEcTab as unknown as {
-      elementProperties: Map<string, { state?: boolean }>;
-    }).elementProperties;
+    const props = (
+      IrrigationSubstrateEcTab as unknown as {
+        elementProperties: Map<string, { state?: boolean }>;
+      }
+    ).elementProperties;
     expect([...props.entries()].filter(([, d]) => d.state === true)).toEqual([]);
   });
 
@@ -79,7 +81,9 @@ describe('irrigation-substrate-ec-tab', () => {
 
   it('emits substrate-ec-profile-changed with the media-type partial', async () => {
     const el = await mount(makeVm());
-    const select = el.shadowRoot!.querySelector('select[data-field="substrate_media_type"]') as HTMLSelectElement;
+    const select = el.shadowRoot!.querySelector(
+      'select[data-field="substrate_media_type"]'
+    ) as HTMLSelectElement;
     const evt = await captureIntent(el, 'substrate-ec-profile-changed', () => {
       select.value = 'rockwool';
       select.dispatchEvent(new Event('change'));
@@ -89,21 +93,34 @@ describe('irrigation-substrate-ec-tab', () => {
 
   it('emits substrate-ec-sizing-mode-changed when Volume is clicked (and it is capable)', async () => {
     const el = await mount(makeVm({ sizingMode: 'seconds', volumeModeCapable: true }));
-    const volumeBtn = el.shadowRoot!.querySelector('button[data-sizing-mode="volume"]') as HTMLButtonElement;
-    const evt = await captureIntent(el, 'substrate-ec-sizing-mode-changed', () => volumeBtn.click());
+    const volumeBtn = el.shadowRoot!.querySelector(
+      'button[data-sizing-mode="volume"]'
+    ) as HTMLButtonElement;
+    const evt = await captureIntent(el, 'substrate-ec-sizing-mode-changed', () =>
+      volumeBtn.click()
+    );
     expect(evt.detail).toEqual({ mode: 'volume' });
   });
 
   it('disables the Volume button and shows the lock hint when not capable', async () => {
-    const el = await mount(makeVm({ volumeModeCapable: false, volumeLockHint: 'Set liters per pot to enable Volume Mode' }));
-    const volumeBtn = el.shadowRoot!.querySelector('button[data-sizing-mode="volume"]') as HTMLButtonElement;
+    const el = await mount(
+      makeVm({
+        volumeModeCapable: false,
+        volumeLockHint: 'Set liters per pot to enable Volume Mode',
+      })
+    );
+    const volumeBtn = el.shadowRoot!.querySelector(
+      'button[data-sizing-mode="volume"]'
+    ) as HTMLButtonElement;
     expect(volumeBtn.disabled).toBe(true);
     expect(norm(el.shadowRoot!.textContent)).toContain('Set liters per pot to enable Volume Mode');
   });
 
   it('emits substrate-ec-modulation-toggled when the switch changes (sensors present)', async () => {
     const el = await mount(makeVm({ hasPoreEcSensors: true }));
-    const sw = el.shadowRoot!.querySelector('[data-field="ec_modulation_enabled"]') as HTMLElement & { checked: boolean };
+    const sw = el.shadowRoot!.querySelector(
+      '[data-field="ec_modulation_enabled"]'
+    ) as HTMLElement & { checked: boolean };
     const evt = await captureIntent(el, 'substrate-ec-modulation-toggled', () => {
       (sw as unknown as { checked: boolean }).checked = true;
       sw.dispatchEvent(new Event('change'));
@@ -115,7 +132,9 @@ describe('irrigation-substrate-ec-tab', () => {
 
   it('emits substrate-ec-pore-band-changed carrying both edges', async () => {
     const el = await mount(makeVm({ poreEcMin: null, poreEcMax: 3 }));
-    const minInput = el.shadowRoot!.querySelector('[data-field="pore_ec_target_min"]') as HTMLElement;
+    const minInput = el.shadowRoot!.querySelector(
+      '[data-field="pore_ec_target_min"]'
+    ) as HTMLElement;
     const evt = await captureIntent(el, 'substrate-ec-pore-band-changed', () =>
       minInput.dispatchEvent(new CustomEvent('change', { detail: '1.5' }))
     );
@@ -124,7 +143,9 @@ describe('irrigation-substrate-ec-tab', () => {
 
   it('emits substrate-ec-targets-changed with the full updated ranges on a stage edit', async () => {
     const el = await mount(makeVm());
-    const firstMin = el.shadowRoot!.querySelectorAll('.ec-target-row input[type="number"]')[0] as HTMLInputElement;
+    const firstMin = el.shadowRoot!.querySelectorAll(
+      '.ec-target-row input[type="number"]'
+    )[0] as HTMLInputElement;
     const evt = await captureIntent(el, 'substrate-ec-targets-changed', () => {
       firstMin.value = '1.1';
       firstMin.dispatchEvent(new Event('input'));

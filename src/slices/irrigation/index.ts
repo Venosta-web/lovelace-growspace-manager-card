@@ -45,10 +45,7 @@ import { callService, hassCall } from '../../services/hass-call';
 import type { IrrigationMode, PhaseWindows, IrrigationAnalytics } from './schema';
 import { IrrigationAnalyticsSchema } from './schema';
 import { patchDeviceIrrigationConfig, patchDeviceStrategy } from '../grid';
-import {
-  CropSteeringHistorySchema,
-  type CropSteeringHistory,
-} from '../../schemas/api-schema';
+import { CropSteeringHistorySchema, type CropSteeringHistory } from '../../schemas/api-schema';
 import { ApplySteeringModeResultSchema, type SteeringMode } from './schema';
 import { token } from '../../styles/variables';
 
@@ -448,10 +445,7 @@ export async function updateIrrigationStrategy(
  * selected mode so the selector highlights immediately — the stamped numeric
  * field values arrive through the normal device sync.
  */
-export async function applySteeringMode(
-  growspaceId: string,
-  mode: SteeringMode
-): Promise<void> {
+export async function applySteeringMode(growspaceId: string, mode: SteeringMode): Promise<void> {
   const prev = _getStrategy(growspaceId);
 
   await mutate(

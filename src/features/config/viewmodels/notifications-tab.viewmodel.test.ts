@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  createNotificationsTabViewModel,
-  TRIGGER_OPTIONS,
-} from './notifications-tab.viewmodel';
+import { createNotificationsTabViewModel, TRIGGER_OPTIONS } from './notifications-tab.viewmodel';
 import { createInitialSM, transition } from '../../../dialogs/config-dialog-sm';
 import type { GrowspaceDevice } from '../../../types';
 

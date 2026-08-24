@@ -14,7 +14,12 @@ import {
   type ECRampPoint,
 } from './schema';
 
-export type { NutrientPresetsResponse, IPMPresetsResponse, NutrientInventoryResponse, ECRampCurvesResponse };
+export type {
+  NutrientPresetsResponse,
+  IPMPresetsResponse,
+  NutrientInventoryResponse,
+  ECRampCurvesResponse,
+};
 export type { ECRampPoint };
 export type { IPMPreset, ECRampCurve, NutrientStock, NutrientStockType } from './schema';
 export { NUTRIENT_STOCK_TYPES } from './schema';
@@ -223,7 +228,11 @@ export async function saveECRampCurve(data: {
       ec_max: p.target_ec + 0.4,
     })),
   };
-  await callService('growspace_manager', 'save_ec_ramp_curve', backendData as Record<string, unknown>);
+  await callService(
+    'growspace_manager',
+    'save_ec_ramp_curve',
+    backendData as Record<string, unknown>
+  );
 }
 
 export async function removeECRampCurve(curveId: string): Promise<void> {

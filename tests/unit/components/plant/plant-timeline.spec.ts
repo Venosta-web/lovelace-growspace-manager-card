@@ -22,7 +22,7 @@ import {
   mdiLeaf,
   mdiWeatherSunny,
   mdiWeatherNight,
-  mdiDumbbell
+  mdiDumbbell,
 } from '@mdi/js';
 import { vi, describe, it, beforeEach, expect } from 'vitest';
 
@@ -140,8 +140,12 @@ describe('PlantTimeline', () => {
     });
 
     it('handles environmental_report icons', () => {
-      expect((element as any)._getIcon({ type: 'environmental_report', sensor_type: 'day_report' })).to.equal(mdiWeatherSunny);
-      expect((element as any)._getIcon({ type: 'environmental_report', sensor_type: 'night_report' })).to.equal(mdiWeatherNight);
+      expect(
+        (element as any)._getIcon({ type: 'environmental_report', sensor_type: 'day_report' })
+      ).to.equal(mdiWeatherSunny);
+      expect(
+        (element as any)._getIcon({ type: 'environmental_report', sensor_type: 'night_report' })
+      ).to.equal(mdiWeatherNight);
     });
 
     it('handles unknown types with fallback icon', () => {
@@ -151,7 +155,9 @@ describe('PlantTimeline', () => {
     it('handles stage color mapping for all stages', () => {
       expect((element as any)._getStageColor('flower')).to.equal('var(--stage-flower, #ff9800)');
       expect((element as any)._getStageColor('veg')).to.equal('var(--stage-veg, #4caf50)');
-      expect((element as any)._getStageColor('seedling')).to.equal('var(--stage-seedling, #8bc34a)');
+      expect((element as any)._getStageColor('seedling')).to.equal(
+        'var(--stage-seedling, #8bc34a)'
+      );
       expect((element as any)._getStageColor('clone')).to.equal('var(--stage-clone, #26c6da)');
       expect((element as any)._getStageColor('mother')).to.equal('var(--stage-mother, #e91e63)');
       expect((element as any)._getStageColor('dry')).to.equal('var(--stage-dry, #9c27b0)');
@@ -167,7 +173,7 @@ describe('PlantTimeline', () => {
 
     const events: PlantTimelineEvent[] = [
       { type: 'alert', severity: 'high', message: 'Hot!', date: alertDate.toISOString() },
-      { type: 'note', text: 'Turned on fan', date: noteDate.toISOString() }
+      { type: 'note', text: 'Turned on fan', date: noteDate.toISOString() },
     ];
 
     element.events = events;
@@ -178,7 +184,10 @@ describe('PlantTimeline', () => {
 
     // Test non-correlated (too far apart)
     const lateNoteDate = new Date(alertDate.getTime() + 1000 * 60 * 60 * 3); // 3 hours later
-    const isNotCorrelated = (element as any)._isCorrelated({ type: 'note', date: lateNoteDate.toISOString() }, events);
+    const isNotCorrelated = (element as any)._isCorrelated(
+      { type: 'note', date: lateNoteDate.toISOString() },
+      events
+    );
     expect(isNotCorrelated).to.be.false;
   });
 
@@ -186,7 +195,10 @@ describe('PlantTimeline', () => {
     const alertDate = new Date();
     const events = [{ type: 'alert', severity: 'low', date: alertDate.toISOString() }];
     const lateNoteDate = new Date(alertDate.getTime() + 1000 * 60 * 60 * 3); // 3 hours later
-    const isNotCorrelated = (element as any)._isCorrelated({ type: 'note', date: lateNoteDate.toISOString() }, events);
+    const isNotCorrelated = (element as any)._isCorrelated(
+      { type: 'note', date: lateNoteDate.toISOString() },
+      events
+    );
     expect(isNotCorrelated).to.be.false;
   });
 
@@ -214,30 +226,36 @@ describe('PlantTimeline', () => {
       vi.useFakeTimers();
       const input = element.shadowRoot?.querySelector('quick-note-input');
       mockAddPlantNote.mockResolvedValueOnce(undefined);
-      
-      input?.dispatchEvent(new CustomEvent('submit', {
-        detail: { text: 'New Note', images: ['img1.jpg'] }
-      }));
-      
+
+      input?.dispatchEvent(
+        new CustomEvent('submit', {
+          detail: { text: 'New Note', images: ['img1.jpg'] },
+        })
+      );
+
       // Advance timers to skip the 1s delay before refresh dispatch
       await vi.runAllTimersAsync();
-      
+
       expect(mockAddPlantNote).toHaveBeenCalled();
       vi.useRealTimers();
 
       // Error case
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockAddPlantNote.mockRejectedValueOnce(new Error('Fail'));
-      input?.dispatchEvent(new CustomEvent('submit', {
-        detail: { text: 'Fail Note', images: [] }
-      }));
+      input?.dispatchEvent(
+        new CustomEvent('submit', {
+          detail: { text: 'Fail Note', images: [] },
+        })
+      );
       await element.updateComplete;
       expect(errorSpy).toHaveBeenCalled();
       errorSpy.mockRestore();
     });
 
     it('handles event deletion flow', async () => {
-      element.events = [{ event_id: '123', type: 'note', text: 'To delete', date: new Date().toISOString() }];
+      element.events = [
+        { event_id: '123', type: 'note', text: 'To delete', date: new Date().toISOString() },
+      ];
       await element.updateComplete;
 
       const deleteBtn = element.shadowRoot?.querySelector('.delete-btn') as HTMLElement;
@@ -263,12 +281,14 @@ describe('PlantTimeline', () => {
     });
 
     it('handles image hover and overlay', async () => {
-      element.events = [{
-        type: 'note',
-        text: 'test',
-        date: new Date().toISOString(),
-        images: ['test.jpg']
-      }];
+      element.events = [
+        {
+          type: 'note',
+          text: 'test',
+          date: new Date().toISOString(),
+          images: ['test.jpg'],
+        },
+      ];
       await element.updateComplete;
 
       const img = element.shadowRoot?.querySelector('.image-grid img') as HTMLImageElement;
@@ -283,12 +303,14 @@ describe('PlantTimeline', () => {
 
     it('opens image in new tab on click', async () => {
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
-      element.events = [{
-        type: 'note',
-        text: 'test',
-        date: new Date().toISOString(),
-        images: ['test.jpg']
-      }];
+      element.events = [
+        {
+          type: 'note',
+          text: 'test',
+          date: new Date().toISOString(),
+          images: ['test.jpg'],
+        },
+      ];
       await element.updateComplete;
 
       const img = element.shadowRoot?.querySelector('.image-grid img') as HTMLImageElement;
@@ -297,24 +319,28 @@ describe('PlantTimeline', () => {
     });
 
     it('renders data-URI images correctly', async () => {
-      element.events = [{
-        type: 'note',
-        text: 'data-img',
-        date: new Date().toISOString(),
-        images: ['data:image/png;base64,123']
-      }];
+      element.events = [
+        {
+          type: 'note',
+          text: 'data-img',
+          date: new Date().toISOString(),
+          images: ['data:image/png;base64,123'],
+        },
+      ];
       await element.updateComplete;
       const img = element.shadowRoot?.querySelector('.image-grid img') as HTMLImageElement;
       expect(img.src).to.contain('data:image/png;base64,123');
     });
 
     it('renders metadata with EC and PH labels correctly', async () => {
-      element.events = [{
-        type: 'action',
-        action: 'water',
-        date: new Date().toISOString(),
-        metadata: { ec: 2.0, ph: 6.5 }
-      }];
+      element.events = [
+        {
+          type: 'action',
+          action: 'water',
+          date: new Date().toISOString(),
+          metadata: { ec: 2.0, ph: 6.5 },
+        },
+      ];
       await element.updateComplete;
       const chips = element.shadowRoot?.querySelectorAll('.chip');
       expect(chips?.[0].textContent).to.contain('pH 6.5');
@@ -330,10 +356,10 @@ describe('PlantTimeline', () => {
         vpd: 1.2,
         ph: 6.0,
         ec: 1.8,
-        amount_ml: 500
+        amount_ml: 500,
       };
       const events: PlantTimelineEvent[] = [
-        { type: 'note', text: 'Data', date: new Date().toISOString(), metadata }
+        { type: 'note', text: 'Data', date: new Date().toISOString(), metadata },
       ];
       element.events = events;
       await element.updateComplete;
@@ -443,7 +469,15 @@ describe('PlantTimeline', () => {
 
     it('handles various stage mappings in _getCurrentStage', async () => {
       const testMapping = async (to: string, expected: string) => {
-        element.events = [{ type: 'stage_change', from: 'seedling', to, date: new Date().toISOString() }, { type: 'environmental_report', sensor_type: 'day_report', date: new Date().toISOString(), metadata: { temperature: 25, humidity: 50 } }];
+        element.events = [
+          { type: 'stage_change', from: 'seedling', to, date: new Date().toISOString() },
+          {
+            type: 'environmental_report',
+            sensor_type: 'day_report',
+            date: new Date().toISOString(),
+            metadata: { temperature: 25, humidity: 50 },
+          },
+        ];
         await element.updateComplete;
         return (element.shadowRoot?.querySelector('vpd-heatmap') as any)?.stage;
       };
@@ -456,12 +490,14 @@ describe('PlantTimeline', () => {
     });
 
     it('handles fallback parsing in environmental report', async () => {
-      element.events = [{
-        type: 'environmental_report',
-        sensor_type: 'day_report',
-        date: new Date().toISOString(),
-        reasons: ['Temperature: 25.5°C', 'Humidity: 60.2%', 'VPD: 1.1 kPa']
-      }];
+      element.events = [
+        {
+          type: 'environmental_report',
+          sensor_type: 'day_report',
+          date: new Date().toISOString(),
+          reasons: ['Temperature: 25.5°C', 'Humidity: 60.2%', 'VPD: 1.1 kPa'],
+        },
+      ];
       await element.updateComplete;
       const heatmap = element.shadowRoot?.querySelector('vpd-heatmap') as any;
       expect(heatmap?.temperature).to.equal(25.5);
@@ -473,7 +509,12 @@ describe('PlantTimeline', () => {
       element.events = [
         { type: 'stage_change', from: 'veg', to: 'flower', date: '2023-01-02T12:00:00Z' },
         { type: 'stage_change', from: 'seedling', to: 'veg', date: '2023-01-01T12:00:00Z' },
-        { type: 'environmental_report', sensor_type: 'day_report', date: new Date().toISOString(), metadata: { temperature: 25, humidity: 50 } }
+        {
+          type: 'environmental_report',
+          sensor_type: 'day_report',
+          date: new Date().toISOString(),
+          metadata: { temperature: 25, humidity: 50 },
+        },
       ];
       await element.updateComplete;
       expect((element.shadowRoot?.querySelector('vpd-heatmap') as any)?.stage).to.equal('flower');
@@ -501,11 +542,13 @@ describe('PlantTimeline', () => {
         { to: 'seedling', expected: 'seedling' },
         { to: 'veg', expected: 'vegetative' },
         { to: 'ripen', expected: 'late_flower' },
-        { to: 'dry', expected: 'late_flower' }
+        { to: 'dry', expected: 'late_flower' },
       ];
 
       for (const { to, expected } of cases) {
-        element.events = [{ type: 'stage_change', from: 'Veg', to, date: new Date().toISOString() }];
+        element.events = [
+          { type: 'stage_change', from: 'Veg', to, date: new Date().toISOString() },
+        ];
         expect((element as any)._getCurrentStage()).to.equal(expected);
       }
     });
@@ -519,7 +562,7 @@ describe('PlantTimeline', () => {
 
       element.events = [{ type: 'milestone', label: 'unknown', date: new Date().toISOString() }];
       expect((element as any)._getCurrentStage()).to.equal('vegetative');
-      
+
       element.events = [{ type: 'milestone', label: 'Dry', date: new Date().toISOString() }];
       expect((element as any)._getCurrentStage()).to.equal('late_flower');
     });
@@ -545,7 +588,9 @@ describe('PlantTimeline', () => {
     it('renders various stage_change icons correctly', async () => {
       const stages = ['flower', 'dry', 'cure', 'veg'];
       for (const to of stages) {
-        element.events = [{ type: 'stage_change', from: 'veg', to, date: new Date().toISOString() }];
+        element.events = [
+          { type: 'stage_change', from: 'veg', to, date: new Date().toISOString() },
+        ];
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('.icon-wrapper svg path')).to.exist;
       }
@@ -556,24 +601,28 @@ describe('PlantTimeline', () => {
       expect((element as any)._getCurrentStage()).to.equal('vegetative');
     });
     it('handles empty or non-matching reasons in environmental report', async () => {
-      element.events = [{
-        type: 'environmental_report',
-        sensor_type: 'day_report',
-        date: new Date().toISOString(),
-        reasons: ['No Data Here', 'Temperature: invalid']
-      }];
+      element.events = [
+        {
+          type: 'environmental_report',
+          sensor_type: 'day_report',
+          date: new Date().toISOString(),
+          reasons: ['No Data Here', 'Temperature: invalid'],
+        },
+      ];
       await element.updateComplete;
       expect(element.shadowRoot?.querySelector('vpd-heatmap')).to.not.exist;
     });
 
     it('handles partial metadata with fallback reasons', async () => {
-      element.events = [{
-        type: 'environmental_report',
-        sensor_type: 'day_report',
-        date: new Date().toISOString(),
-        metadata: { temperature: 22 },
-        reasons: ['Humidity: 55%', 'VPD: 0.8 kPa']
-      }];
+      element.events = [
+        {
+          type: 'environmental_report',
+          sensor_type: 'day_report',
+          date: new Date().toISOString(),
+          metadata: { temperature: 22 },
+          reasons: ['Humidity: 55%', 'VPD: 0.8 kPa'],
+        },
+      ];
       await element.updateComplete;
       const heatmap = element.shadowRoot?.querySelector('vpd-heatmap');
       expect(heatmap).to.exist;
@@ -600,7 +649,7 @@ describe('PlantTimeline', () => {
       const event: any = {
         type: 'environmental_report',
         metadata: { temperature: 20, humidity: 50, vpd: 1.0 },
-        reasons: ['Temperature: 100'] // Should be ignored
+        reasons: ['Temperature: 100'], // Should be ignored
       };
       // @ts-ignore
       const data = element._getEnvironmentalData(event);
@@ -608,12 +657,14 @@ describe('PlantTimeline', () => {
     });
 
     it('renders night environmental reports correctly', async () => {
-      element.events = [{
-        type: 'environmental_report',
-        sensor_type: 'night_report',
-        date: new Date().toISOString(),
-        metadata: { temperature: 18, humidity: 65, vpd: 0.9 }
-      }];
+      element.events = [
+        {
+          type: 'environmental_report',
+          sensor_type: 'night_report',
+          date: new Date().toISOString(),
+          metadata: { temperature: 18, humidity: 65, vpd: 0.9 },
+        },
+      ];
       await element.updateComplete;
       const eventEl = element.shadowRoot?.querySelector('.event.is-night');
       expect(eventEl).to.exist;
@@ -621,10 +672,12 @@ describe('PlantTimeline', () => {
     });
 
     it('handles milestone without label', async () => {
-      element.events = [{
-        type: 'milestone',
-        date: new Date().toISOString()
-      }] as any;
+      element.events = [
+        {
+          type: 'milestone',
+          date: new Date().toISOString(),
+        },
+      ] as any;
       await element.updateComplete;
       const icon = element.shadowRoot?.querySelector('svg path');
       expect(icon?.getAttribute('d')).to.equal(mdiSprout);
@@ -640,17 +693,17 @@ describe('PlantTimeline', () => {
       vi.useFakeTimers();
       const dispatchSpy = vi.fn();
       element.addEventListener('growspace-refresh', dispatchSpy);
-      
+
       const noteInput = element.shadowRoot?.querySelector('quick-note-input');
       expect(noteInput).to.exist;
 
       // Trigger note submit via event dispatch
       const detail = { text: 'Test Note', images: [] };
       noteInput?.dispatchEvent(new CustomEvent('submit', { detail }));
-      
+
       // Wait for service call and timers
       await vi.runAllTimersAsync();
-      
+
       expect(dispatchSpy).toHaveBeenCalled();
       vi.useRealTimers();
     });
@@ -661,7 +714,7 @@ describe('PlantTimeline', () => {
 
       // @ts-ignore
       await element._handleNoteSubmit({ detail: { text: 'FAIL', images: [] } } as any);
-      
+
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
@@ -669,7 +722,7 @@ describe('PlantTimeline', () => {
     it('handles event deletion flow', async () => {
       const dispatchSpy = vi.fn();
       element.addEventListener('growspace-refresh', dispatchSpy);
-      
+
       // Trigger delete via internal method to set up state
       // @ts-ignore
       element._deleteEvent({ stopPropagation: () => {} } as any, 'event_123');
@@ -679,7 +732,7 @@ describe('PlantTimeline', () => {
       const dialog = element.shadowRoot?.querySelector('confirm-delete-dialog');
       expect(dialog).to.exist;
       dialog?.dispatchEvent(new CustomEvent('confirm'));
-      
+
       // Wait for async handler
       await waitUntil(() => dispatchSpy.mock.calls.length > 0);
       expect(dispatchSpy).toHaveBeenCalled();
@@ -688,12 +741,12 @@ describe('PlantTimeline', () => {
     it('handles delete error', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockDeleteEvent.mockRejectedValueOnce(new Error('Delete fail'));
-      
+
       // @ts-ignore
       element._deletingEventId = 'fail_id';
       // @ts-ignore
       await element._confirmDeleteEvent();
-      
+
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
     });

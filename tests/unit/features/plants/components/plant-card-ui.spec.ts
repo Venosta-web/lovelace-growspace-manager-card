@@ -61,7 +61,7 @@ describe('plant-card-ui', () => {
         .statusIndicators=${defaultStatus}
       ></plant-card-ui>
     `);
-    
+
     expect(el.shadowRoot?.querySelector('.plant-card-rich')).to.exist;
     expect(el.shadowRoot?.querySelector('.pc-strain-name')?.textContent).to.equal('Test Strain');
     expect(el.shadowRoot?.querySelector('.pc-pheno')?.textContent).to.equal('Pheno 1');
@@ -75,11 +75,13 @@ describe('plant-card-ui', () => {
         .statusIndicators=${defaultStatus}
       ></plant-card-ui>
     `);
-    
+
     const cardEl = el.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
     let focusCalled = false;
-    cardEl.focus = () => { focusCalled = true; };
-    
+    cardEl.focus = () => {
+      focusCalled = true;
+    };
+
     el.focus();
     expect(focusCalled).to.be.true;
   });
@@ -94,7 +96,7 @@ describe('plant-card-ui', () => {
           .statusIndicators=${defaultStatus}
         ></plant-card-ui>
       `);
-      
+
       const img = el.shadowRoot?.querySelector('img.plant-card-bg') as HTMLImageElement;
       expect(img).to.exist;
       expect(img.srcset).to.include('image_small.webp 320w');
@@ -110,7 +112,7 @@ describe('plant-card-ui', () => {
           .statusIndicators=${defaultStatus}
         ></plant-card-ui>
       `);
-      
+
       const img = el.shadowRoot?.querySelector('img.plant-card-bg');
       expect(img).to.not.exist;
     });
@@ -177,7 +179,7 @@ describe('plant-card-ui', () => {
       `);
       expect(el.shadowRoot?.querySelector('.status-icon.deviation.ahead')).to.exist;
     });
-    
+
     it('renders growth deviation icon (behind)', async () => {
       const status = { ...defaultStatus, hasGrowthDeviation: true };
       const el = await fixture<PlantCardUI>(html`
@@ -190,7 +192,7 @@ describe('plant-card-ui', () => {
       `);
       expect(el.shadowRoot?.querySelector('.status-icon.deviation.behind')).to.exist;
     });
-    
+
     it('renders recommended preset star', async () => {
       const status = { ...defaultStatus, hasRecommendedPreset: true };
       const el = await fixture<PlantCardUI>(html`
@@ -242,15 +244,19 @@ describe('plant-card-ui', () => {
           .statusIndicators=${defaultStatus}
         ></plant-card-ui>
       `);
-      
+
       let eventPayload: any = null;
       let hapticCalled = false;
-      el.addEventListener('plant-click', (e: any) => { eventPayload = e.detail; });
-      el.addEventListener('haptic', () => { hapticCalled = true; });
-      
+      el.addEventListener('plant-click', (e: any) => {
+        eventPayload = e.detail;
+      });
+      el.addEventListener('haptic', () => {
+        hapticCalled = true;
+      });
+
       const card = el.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
       card.click();
-      
+
       expect(eventPayload?.plant).to.deep.equal(defaultPlant);
       expect(hapticCalled).to.be.true;
     });
@@ -264,15 +270,19 @@ describe('plant-card-ui', () => {
           .isEditMode=${true}
         ></plant-card-ui>
       `);
-      
+
       let eventPayload: any = null;
       let hapticCalled = false;
-      el.addEventListener('plant-toggle-selection', (e: any) => { eventPayload = e.detail; });
-      el.addEventListener('haptic', () => { hapticCalled = true; });
-      
+      el.addEventListener('plant-toggle-selection', (e: any) => {
+        eventPayload = e.detail;
+      });
+      el.addEventListener('haptic', () => {
+        hapticCalled = true;
+      });
+
       const checkbox = el.shadowRoot?.querySelector('.plant-card-checkbox') as HTMLElement;
       checkbox.click();
-      
+
       expect(eventPayload?.plant).to.deep.equal(defaultPlant);
       expect(hapticCalled).to.be.true;
     });
@@ -285,13 +295,15 @@ describe('plant-card-ui', () => {
           .statusIndicators=${defaultStatus}
         ></plant-card-ui>
       `);
-      
+
       let clicked = false;
-      el.addEventListener('plant-click', () => { clicked = true; });
-      
+      el.addEventListener('plant-click', () => {
+        clicked = true;
+      });
+
       const card = el.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
       card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-      
+
       expect(clicked).to.be.true;
     });
 
@@ -304,13 +316,15 @@ describe('plant-card-ui', () => {
           .isEditMode=${true}
         ></plant-card-ui>
       `);
-      
+
       let toggled = false;
-      el.addEventListener('plant-toggle-selection', () => { toggled = true; });
-      
+      el.addEventListener('plant-toggle-selection', () => {
+        toggled = true;
+      });
+
       const checkbox = el.shadowRoot?.querySelector('.plant-card-checkbox') as HTMLElement;
       checkbox.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' })); // Space bar
-      
+
       expect(toggled).to.be.true;
     });
   });

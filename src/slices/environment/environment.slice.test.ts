@@ -63,6 +63,28 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('computeEnvSnapshot — temperature and humidity', () => {
+  it('returns the backend-aggregated air metrics from nested observations', () => {
+    const device = makeDevice({
+      environmentAttributes: {
+        temperatureSensor: 'sensor.tent_1_temperature',
+        humiditySensor: 'sensor.tent_1_humidity',
+        vpdSensor: 'sensor.tent_1_vpd',
+      },
+    });
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {
+        observations: { temperature: 25, humidity: 45.27, vpd: 1.24 },
+      }),
+      'sensor.tent_1_temperature': makeHassEntity('sensor.tent_1_temperature', '20', {}),
+      'sensor.tent_1_humidity': makeHassEntity('sensor.tent_1_humidity', '40', {}),
+      'sensor.tent_1_vpd': makeHassEntity('sensor.tent_1_vpd', '0.9', {}),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot).toMatchObject({ temperature: 25, humidity: 45.27, vpd: 1.24 });
+  });
+
   it('returns temperature and humidity from the optimal-conditions entity attributes', () => {
     const hassStates: HassStates = {
       [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {
@@ -532,6 +554,19 @@ describe('computeEnvSnapshot — isLightsOn and hasLightSensor', () => {
     expect(snapshot.hasLightSensor).toBe(true);
   });
 
+  it('reads is_lights_on from the backend Bayesian observations payload', () => {
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {
+        observations: { is_lights_on: true },
+      }),
+    };
+
+    const snapshot = computeEnvSnapshot(makeDevice(), hassStates);
+
+    expect(snapshot.isLightsOn).toBe(true);
+    expect(snapshot.hasLightSensor).toBe(true);
+  });
+
   it('returns hasLightSensor false when is_lights_on is absent', () => {
     const hassStates: HassStates = {
       [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {}),
@@ -904,10 +939,20 @@ describe('EnvSnapshotSchema', () => {
       optimalConditions: null,
       ...NULL_SENSOR_FIELDS,
       soilMoisture: { avg: 42.5, sum: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] },
-      substrateTemperature: { avg: null, sum: null, perSensor: [null, null], entityIds: ['sensor.st_1', 'sensor.st_2'] },
+      substrateTemperature: {
+        avg: null,
+        sum: null,
+        perSensor: [null, null],
+        entityIds: ['sensor.st_1', 'sensor.st_2'],
+      },
     };
     const parsed = EnvSnapshotSchema.parse(payload);
-    expect(parsed.soilMoisture).toEqual({ avg: 42.5, sum: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] });
+    expect(parsed.soilMoisture).toEqual({
+      avg: 42.5,
+      sum: 42.5,
+      perSensor: [42.5],
+      entityIds: ['sensor.sm_1'],
+    });
     expect(parsed.substrateTemperature!.avg).toBeNull();
   });
 
@@ -1162,7 +1207,12 @@ describe('subareaEnvSnapshots$ atom and setSubareaEnvSnapshot', () => {
       'sensor.t': makeHassEntity('sensor.t', '23.5'),
     };
 
-    setSubareaEnvSnapshot('sa1', makeSubarea({ temperature_sensor: 'sensor.t' }), PARENT, hassStates);
+    setSubareaEnvSnapshot(
+      'sa1',
+      makeSubarea({ temperature_sensor: 'sensor.t' }),
+      PARENT,
+      hassStates
+    );
 
     expect(subareaEnvSnapshots$.get().get('sa1')!.temperature).toBe(23.5);
   });
@@ -1173,7 +1223,12 @@ describe('subareaEnvSnapshots$ atom and setSubareaEnvSnapshot', () => {
       'sensor.t2': makeHassEntity('sensor.t2', '26'),
     };
 
-    setSubareaEnvSnapshot('sa1', makeSubarea({ temperature_sensor: 'sensor.t1' }), PARENT, hassStates);
+    setSubareaEnvSnapshot(
+      'sa1',
+      makeSubarea({ temperature_sensor: 'sensor.t1' }),
+      PARENT,
+      hassStates
+    );
     const firstMap = subareaEnvSnapshots$.get();
     setSubareaEnvSnapshot(
       'sa2',
