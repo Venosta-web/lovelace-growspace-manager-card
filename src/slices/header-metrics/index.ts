@@ -510,6 +510,21 @@ function _buildLightChip(
   }
 
   const multiValues = entry?.multiValues;
+  if (value === undefined && multiValues && multiValues.length > 0) {
+    const readings = multiValues.map((reading) => {
+      if (reading === 'On') return true;
+      if (reading === 'Off') return false;
+      const numeric = parseFloat(reading);
+      return isNaN(numeric) ? null : numeric > 0;
+    });
+    if (readings.some((reading) => reading === true)) {
+      value = 'On';
+      icon = mdiLightbulbOn;
+    } else if (readings.every((reading) => reading === false)) {
+      value = 'Off';
+      icon = mdiLightbulbOff;
+    }
+  }
   if (value === undefined && (!multiValues || multiValues.length === 0)) return null;
 
   return _makeChip(

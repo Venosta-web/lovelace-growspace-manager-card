@@ -532,6 +532,19 @@ describe('computeEnvSnapshot — isLightsOn and hasLightSensor', () => {
     expect(snapshot.hasLightSensor).toBe(true);
   });
 
+  it('reads is_lights_on from the backend Bayesian observations payload', () => {
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {
+        observations: { is_lights_on: true },
+      }),
+    };
+
+    const snapshot = computeEnvSnapshot(makeDevice(), hassStates);
+
+    expect(snapshot.isLightsOn).toBe(true);
+    expect(snapshot.hasLightSensor).toBe(true);
+  });
+
   it('returns hasLightSensor false when is_lights_on is absent', () => {
     const hassStates: HassStates = {
       [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {}),

@@ -30,6 +30,7 @@ export function createTestContext(env: TestEnvironment): TestContext {
     vwcFlowerDashboardPath: env.TEST_VWC_FLOWER_DASHBOARD_PATH || '',
     irrigationMonitoredGrowspaceId: env.TEST_IRRIGATION_MONITORED_GROWSPACE_ID || '',
     irrigationTanksGrowspaceId: env.TEST_IRRIGATION_TANKS_GROWSPACE_ID || '',
+    lightingGrowspaceId: env.TEST_LIGHTING_GROWSPACE_ID || '',
     vegPlantId: env.TEST_VEG_PLANT_ID || '',
   };
 }

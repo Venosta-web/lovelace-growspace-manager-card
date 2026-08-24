@@ -508,6 +508,35 @@
           "irrigation_pump_entity": "switch.sim_e2e_irrigation_tanks_irrigation_pump"
         }
       }
+    },
+    {
+      "profile": "lighting",
+      "slug": "lighting",
+      "name": "E2E Lighting",
+      "plant_stage_field": "flower_start",
+      "stage_days_ago": 0,
+      "services": {
+        "configure_environment": {
+          "growlight_config": {
+            "enabled": true,
+            "power": 65,
+            "sunrise_enabled": false,
+            "sunrise_minutes": 0
+          },
+          "light_sensors": [
+            "binary_sensor.e2e_lighting_light_state"
+          ],
+          "growlight_entities": [
+            "switch.e2e_lighting_growlight_switch",
+            "light.e2e_lighting_growlight_dimmable"
+          ]
+        },
+        "set_irrigation_strategy": {
+          "enabled": true,
+          "auto_light_tracking": true,
+          "lights_on_time": "06:00:00"
+        }
+      }
     }
   ],
   "entities": [
@@ -1837,6 +1866,54 @@
       "profile": "irrigation_monitored",
       "slug": "irrigation_monitored",
       "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "binary_sensor.e2e_lighting_light_state",
+      "role": "lighting.state",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "binary_sensor",
+      "behavior": "read-only"
+    },
+    {
+      "entity_id": "switch.e2e_lighting_growlight_switch",
+      "role": "lighting.growlight_switch",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "light.e2e_lighting_growlight_dimmable",
+      "role": "lighting.growlight_dimmable",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "light",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.e2e_lighting_growlight_switch",
+      "role": "simulation.growlight_switch_state",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.e2e_lighting_growlight_dimmable",
+      "role": "simulation.growlight_dimmable_state",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.e2e_lighting_growlight_dimmable_brightness",
+      "role": "simulation.growlight_dimmable_brightness",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "input_number",
       "behavior": "controllable"
     }
   ]

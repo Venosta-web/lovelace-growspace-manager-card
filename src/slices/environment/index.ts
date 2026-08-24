@@ -305,7 +305,10 @@ export function computeEnvSnapshot(device: GrowspaceDevice, hassStates: HassStat
   const co2 = isSpecial ? null : co2Raw;
 
   // Lights
-  const isLightsOnRaw = envEntity?.attributes?.is_lights_on;
+  // The backend's Bayesian environment sensor publishes assembled readings
+  // under `observations`; retain the flat fallback for older payloads/tests.
+  const observations = envEntity?.attributes?.observations as Record<string, unknown> | undefined;
+  const isLightsOnRaw = envEntity?.attributes?.is_lights_on ?? observations?.is_lights_on;
   const hasLightSensor = isLightsOnRaw !== undefined && isLightsOnRaw !== null;
   const isLightsOn = hasLightSensor ? isLightsOnRaw === true : null;
 
