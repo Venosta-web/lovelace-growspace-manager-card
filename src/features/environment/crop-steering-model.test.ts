@@ -26,24 +26,24 @@ describe('computeCropSteeringCycle', () => {
   };
 
   it('returns an empty cycle when required strategy fields are missing', () => {
-    expect(computeCropSteeringCycle({ ...baseStrategy, lightsOnTime: '' }, false)).toEqual([]);
+    expect(computeCropSteeringCycle({ ...baseStrategy, lightsOnTime: '' }, 12)).toEqual([]);
   });
 
   it('generates shots from the first-shot time to the P2→P3 cutoff', () => {
     // Veg (18h): lights-on 06:00 + p0 30min = first shot 06:30; lights-off 00:00,
     // cutoff 120min before = 22:00. Hourly shots from 06:30 to (exclusive) 22:00.
-    const shots = computeCropSteeringCycle(baseStrategy, false);
+    const shots = computeCropSteeringCycle(baseStrategy, 18);
 
     expect(shots[0]).toEqual({ time: '06:30:00', duration: 30 });
     expect(shots[shots.length - 1].time).toBe('21:30:00');
     expect(shots.every((s) => s.duration === 30)).toBe(true);
   });
 
-  it('uses a shorter 12h photoperiod for flowering plants', () => {
-    // Flower (12h): lights-off 18:00, cutoff 120min before = 16:00 → last shot 15:30
-    const shots = computeCropSteeringCycle(baseStrategy, true);
+  it('uses the resolved photoperiod for the shot cutoff', () => {
+    // 11h: lights-off 17:00, cutoff 120min before = 15:00 → last shot 14:30
+    const shots = computeCropSteeringCycle(baseStrategy, 11);
 
-    expect(shots[shots.length - 1].time).toBe('15:30:00');
+    expect(shots[shots.length - 1].time).toBe('14:30:00');
   });
 });
 
@@ -57,11 +57,11 @@ describe('computePhases', () => {
   };
 
   it('returns null when no lights-on time is configured', () => {
-    expect(computePhases({ ...baseStrategy, lightsOnTime: '' }, false, null)).toBeNull();
+    expect(computePhases({ ...baseStrategy, lightsOnTime: '' }, 12, null)).toBeNull();
   });
 
   it('derives P1/P2/P3 windows from lights-on time and photoperiod (veg, 18h)', () => {
-    const result = computePhases(baseStrategy, false, null);
+    const result = computePhases(baseStrategy, 18, null);
 
     // lights-on 06:00 (360min), p0 60min → P1 ends 07:00 (420min)
     // lights-off 00:00 next day (1440min), p2Stop 120min → scheduled P3 at 22:00 (1320min)
@@ -77,7 +77,7 @@ describe('computePhases', () => {
   it('prefers detectedLightsOnTime over the configured lightsOnTime as the anchor', () => {
     const result = computePhases(
       { ...baseStrategy, lightsOnTime: '06:00', detectedLightsOnTime: '06:30' },
-      false,
+      18,
       null
     );
 
@@ -89,7 +89,7 @@ describe('computePhases', () => {
     const phaseChangedAt = new Date();
     phaseChangedAt.setHours(21, 0, 0, 0);
 
-    const result = computePhases(baseStrategy, false, {
+    const result = computePhases(baseStrategy, 18, {
       activeSteeringPhase: 'p3',
       phaseChangedAt: phaseChangedAt.toISOString(),
     });
@@ -102,12 +102,25 @@ describe('computePhases', () => {
     const phaseChangedAt = new Date();
     phaseChangedAt.setHours(21, 0, 0, 0);
 
-    const result = computePhases(baseStrategy, false, {
+    const result = computePhases(baseStrategy, 18, {
       activeSteeringPhase: 'p2',
       phaseChangedAt: phaseChangedAt.toISOString(),
     });
 
     expect(result!.phases[2].start).toBe(1320); // falls back to the scheduled boundary
+  });
+
+  it('derives every boundary from a non-default resolved photoperiod', () => {
+    const result = computePhases(baseStrategy, 11, null);
+
+    expect(result).toMatchObject({
+      lightsOnMin: 360,
+      lightsOffMin: 1020,
+      lightHours: 11,
+    });
+    expect(result!.phases[0].end).toBe(420);
+    expect(result!.phases[1].end).toBe(900);
+    expect(result!.phases[2]).toMatchObject({ start: 900, end: 1020 });
   });
 });
 

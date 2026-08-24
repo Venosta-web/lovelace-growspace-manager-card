@@ -162,6 +162,42 @@ describe('GrowspaceAdapter irrigation strategy through the wire schema', () => {
       ?.irrigationStrategy;
   }
 
+  it('surfaces the server-resolved photoperiod without schema stripping', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      identity: {
+        growspace_id: 'gs1',
+        name: 'Tent',
+        overview_entity_id: 'sensor.gs1',
+        type: 'normal',
+      },
+      irrigation: { irrigation_config: { resolved_day_hours: 11 } },
+    });
+
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      parsed as unknown as GrowspaceAPIResponse
+    );
+    expect(device?.irrigationConfig.resolvedDayHours).toBe(11);
+  });
+
+  it('matches the backend fallback while hydrating an older payload', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      identity: {
+        growspace_id: 'gs1',
+        name: 'Tent',
+        overview_entity_id: 'sensor.gs1',
+        type: 'normal',
+      },
+      irrigation: { irrigation_config: {} },
+    });
+
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      parsed as unknown as GrowspaceAPIResponse
+    );
+    expect(device?.irrigationConfig.resolvedDayHours).toBe(12);
+  });
+
   const fullStrategy = {
     enabled: true,
     lights_on_time: '07:30:00',

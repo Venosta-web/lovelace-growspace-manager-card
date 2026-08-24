@@ -125,12 +125,12 @@ function deriveCropSteeringPanel(
   strategy: Partial<IrrigationStrategy>,
   history: CropSteeringHistory | undefined
 ): CropSteeringScheduleVM {
-  const isFlower = (device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
+  const dayHours = device?.irrigationConfig?.resolvedDayHours ?? 12;
   const shots: CropSteeringShot[] = computeCropSteeringCycle(
     strategy as IrrigationStrategy,
-    isFlower
+    dayHours
   );
-  const phases = computePhases(strategy as IrrigationStrategy, isFlower, device?.irrigationConfig);
+  const phases = computePhases(strategy as IrrigationStrategy, dayHours, device?.irrigationConfig);
 
   if (!phases) {
     return {

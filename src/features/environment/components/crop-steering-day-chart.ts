@@ -453,7 +453,7 @@ export class CropSteeringDayChart extends LitElement {
    */
   private _buildRollingPhaseSegments(
     strategy: Parameters<typeof computePhases>[0],
-    isFlower: boolean,
+    dayHours: number,
     irrigationConfig: Parameters<typeof computePhases>[2],
     lightsOnMin: number,
     lightsOffMin: number,
@@ -476,7 +476,7 @@ export class CropSteeringDayChart extends LitElement {
       if (cycleEndMs <= windowStart || cycleStartMs >= windowEnd) continue;
 
       const containsNow = nowMs >= cycleStartMs && nowMs < cycleEndMs;
-      const cyclePhases = computePhases(strategy, isFlower, containsNow ? irrigationConfig : null);
+      const cyclePhases = computePhases(strategy, dayHours, containsNow ? irrigationConfig : null);
       if (!cyclePhases) continue;
 
       const atMin = (m: number) => cycleStartMs + ((m - viewStart + 1440) % 1440) * 60000;
@@ -642,9 +642,9 @@ export class CropSteeringDayChart extends LitElement {
       return html`<div class="placeholder">No strategy configured.</div>`;
     }
 
-    const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
-    const shots: CropSteeringShot[] = computeCropSteeringCycle(strategy, isFlower);
-    const phases = computePhases(strategy, isFlower, this.device?.irrigationConfig);
+    const dayHours = this.device?.irrigationConfig?.resolvedDayHours ?? 12;
+    const shots: CropSteeringShot[] = computeCropSteeringCycle(strategy, dayHours);
+    const phases = computePhases(strategy, dayHours, this.device?.irrigationConfig);
 
     if (!phases) {
       return html`<div class="placeholder">
@@ -838,7 +838,7 @@ export class CropSteeringDayChart extends LitElement {
       this.rollingWindow && this.range === '24h'
         ? this._buildRollingPhaseSegments(
             strategy,
-            isFlower,
+            dayHours,
             this.device?.irrigationConfig,
             lightsOnMin,
             lightsOffMin,

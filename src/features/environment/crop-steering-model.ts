@@ -39,7 +39,7 @@ export function computeCropSteeringCycle(
     | 'p0DurationMinutes'
     | 'p2StopBeforeLightsOffMinutes'
   >,
-  isFlower: boolean
+  dayHours: number
 ): CropSteeringShot[] {
   if (
     !strategy.lightsOnTime ||
@@ -50,10 +50,9 @@ export function computeCropSteeringCycle(
     return [];
   }
 
-  const lightHours = isFlower ? 12 : 18;
   const [hh, mm] = strategy.lightsOnTime.split(':').map(Number);
   const lightsOnMin = hh * 60 + (mm || 0);
-  const lightsOffMin = lightsOnMin + lightHours * 60;
+  const lightsOffMin = lightsOnMin + dayHours * 60;
   const firstShotMin = lightsOnMin + (strategy.p0DurationMinutes ?? 0);
   const cutoffMin = lightsOffMin - (strategy.p2StopBeforeLightsOffMinutes ?? 0);
 
@@ -83,7 +82,7 @@ export function computePhases(
     | 'p2StopBeforeLightsOffMinutes'
     | 'maintenanceDrybackPercent'
   >,
-  isFlower: boolean,
+  dayHours: number,
   irrigationConfig:
     | Pick<IrrigationConfig, 'activeSteeringPhase' | 'phaseChangedAt'>
     | null
@@ -92,10 +91,9 @@ export function computePhases(
   const anchorLightsOnTime = strategy.detectedLightsOnTime ?? strategy.lightsOnTime;
   if (!anchorLightsOnTime) return null;
 
-  const lightHours = isFlower ? 12 : 18;
   const [hh, mm] = anchorLightsOnTime.split(':').map(Number);
   const lightsOnMin = hh * 60 + (mm || 0);
-  const lightsOffMin = lightsOnMin + lightHours * 60;
+  const lightsOffMin = lightsOnMin + dayHours * 60;
   const p1End = lightsOnMin + (strategy.p0DurationMinutes ?? 60);
   const scheduledP3Start = Math.max(
     p1End,
@@ -112,7 +110,7 @@ export function computePhases(
   return {
     lightsOnMin,
     lightsOffMin,
-    lightHours,
+    lightHours: dayHours,
     phases: [
       {
         id: 'p1',

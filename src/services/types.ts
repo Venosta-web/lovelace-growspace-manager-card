@@ -106,6 +106,8 @@ export interface IrrigationConfig {
   irrigationTimes: IrrigationScheduleItem[];
   drainTimes: IrrigationScheduleItem[];
   vegDayHours?: number;
+  /** Server-resolved lit-period length used by crop-steering boundary math. */
+  resolvedDayHours?: number;
   soilTriggerPercent?: number | null;
   dailyVolumeCapLiters?: number | null;
   maxCyclesPerDay?: number | null;

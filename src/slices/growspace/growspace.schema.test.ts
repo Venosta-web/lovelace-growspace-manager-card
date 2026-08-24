@@ -377,6 +377,16 @@ describe('Growspace Zod Schemas', () => {
         expect(parsed.irrigation.irrigation_config.pump_flow_rate_ml_per_sec).toBe(12.5);
       });
 
+      it('keeps the server-resolved crop-steering photoperiod', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            irrigation_config: { resolved_day_hours: 11 },
+          },
+        });
+
+        expect(parsed.irrigation.irrigation_config.resolved_day_hours).toBe(11);
+      });
+
       it('should parse irrigation schedule items using time and duration', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({
           irrigation: {

@@ -84,6 +84,9 @@ export const IrrigationConfigSchema = z.object({
     .optional()
     .default([]),
   veg_day_hours: z.number().optional(),
+  // Server-authoritative crop-steering photoperiod. The integration owns the
+  // flower-first resolution rule; consumers must not reconstruct it by stage.
+  resolved_day_hours: z.number().optional(),
   // Emitted by IrrigationConfig.to_dict() (ADR 0028 made it model-complete).
   pump_flow_rate_ml_per_sec: z.number().optional(),
   soil_trigger_percent: z.number().nullable().optional(),

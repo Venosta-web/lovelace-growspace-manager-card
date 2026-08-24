@@ -287,9 +287,8 @@ function _minutesToHHMM(minutes: number): string {
 function _steeringChipValue(
   phase: 'p1' | 'p2' | 'p3',
   strategy: IrrigationStrategy,
-  isFlower: boolean
+  dayHours: number
 ): string {
-  const lightHours = isFlower ? 12 : 18;
   const lightsOnParts = strategy.lightsOnTime.split(':');
   const lightsOnMin = Number(lightsOnParts[0]) * 60 + Number(lightsOnParts[1]);
 
@@ -298,7 +297,7 @@ function _steeringChipValue(
   }
 
   if (phase === 'p2') {
-    const lightsOffMin = lightsOnMin + lightHours * 60;
+    const lightsOffMin = lightsOnMin + dayHours * 60;
     const p3StartMin = lightsOffMin - strategy.p2StopBeforeLightsOffMinutes;
     return `P2 · ${_minutesToHHMM(p3StartMin)}`;
   }
@@ -716,11 +715,10 @@ export function computeHeaderMetrics(
       // Drain schedule runs regardless of irrigation mode, so the drain chip is unaffected.
       const phase = irrigationConfig.activeSteeringPhase;
       if (phase != null) {
-        const isFlower = dominantRaw?.stage === 'flower';
         const steeringChip = _makeChip(
           MetricKey.STEERING_PHASE,
           mdiWater,
-          _steeringChipValue(phase, irrigationStrategy!, isFlower),
+          _steeringChipValue(phase, irrigationStrategy!, irrigationConfig.resolvedDayHours ?? 12),
           { label: 'Phase' },
           activeEnvGraphs,
           linkedGraphGroups
