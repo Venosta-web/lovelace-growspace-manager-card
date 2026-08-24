@@ -26,6 +26,10 @@ interface CoverageSetupProfile {
     configure_environment?: Record<string, unknown>;
     set_irrigation_settings?: Record<string, unknown>;
     set_irrigation_strategy?: Record<string, unknown>;
+    configure_circulation_fan?: Record<string, unknown>;
+    configure_exhaust_fan?: Record<string, unknown>;
+    set_humidifier_control?: Record<string, unknown>;
+    set_dehumidifier_control?: Record<string, unknown>;
     update_vision_checkup_config?: Record<string, unknown>;
   };
 }
@@ -325,33 +329,27 @@ async function ensureStagePlant(growspaceId: string, spec: GrowspaceSpec): Promi
   });
 }
 
-async function configureEnvironment(growspaceId: string, spec: GrowspaceSpec): Promise<void> {
-  console.log(`  linking sensors…`);
-  await callService('growspace_manager', 'configure_environment', {
-    growspace_id: growspaceId,
-    // Hardware profiles are exclusive. Explicit clears make reruns converge
-    // even when an older fixture wired flow, drain, or tanks into every space.
-    irrigation_tanks: [],
-    irrigation_flow_sensors: [],
-    drain_volume_sensors: [],
-    light_sensors: [],
-    growlight_entities: [],
-    growlight_config: {
-      enabled: false,
-      power: 100,
-      sunrise_enabled: false,
-      sunrise_minutes: 0,
-    },
-    ...spec.services.configure_environment,
-  });
+async function configureProfileServices(growspaceId: string, spec: GrowspaceSpec): Promise<void> {
+  const orderedServices = [
+    'configure_environment',
+    'set_irrigation_settings',
+    'configure_circulation_fan',
+    'configure_exhaust_fan',
+    'set_humidifier_control',
+    'set_dehumidifier_control',
+  ] as const;
 
-  console.log(`  wiring irrigation & drain pumps…`);
-  await callService('growspace_manager', 'set_irrigation_settings', {
-    growspace_id: growspaceId,
-    irrigation_pump_entity: '',
-    drain_pump_entity: '',
-    ...spec.services.set_irrigation_settings,
-  });
+  for (const service of orderedServices) {
+    const payload = spec.services[service];
+    if (!payload) continue;
+    console.log(`  applying ${service}…`);
+    // Every service has patch semantics. Send only fields owned by this
+    // capability profile so a setup rerun cannot erase unrelated hardware.
+    await callService('growspace_manager', service, {
+      growspace_id: growspaceId,
+      ...payload,
+    });
+  }
 }
 
 async function setVwcStrategy(
@@ -453,7 +451,7 @@ async function main(): Promise<void> {
     console.log(`\n[e2e_${spec.slug}]`);
     const growspaceId = await ensureGrowspace(spec);
     await ensureStagePlant(growspaceId, spec);
-    await configureEnvironment(growspaceId, spec);
+    await configureProfileServices(growspaceId, spec);
     if (spec.services.update_vision_checkup_config) {
       console.log(`  configuring Vision Checkup schedule…`);
       await callWebSocket('growspace_manager/update_vision_checkup_config', {

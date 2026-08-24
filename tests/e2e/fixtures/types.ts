@@ -33,6 +33,9 @@ export interface TestContext {
   telemetryMultiDashboardPath: string;
   /** Dedicated light-cycle and plain grow-light capability profile */
   lightingGrowspaceId: string;
+  /** Dedicated plain Home Assistant climate-actuator capability profile */
+  climatePlainGrowspaceId: string;
+  climatePlainDashboardPath: string;
   /** Dedicated multi-camera and Vision Checkup capability profile */
   visionGrowspaceId: string;
   visionDashboardPath: string;
