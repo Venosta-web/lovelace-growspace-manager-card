@@ -47,6 +47,9 @@ A [[Chip]] that appears in place of the regular irrigation next-time chip when [
 
 When [[Crop Steering (VWC)]] is active, this chip moves out of the secondary strip and is _promoted to the hero deck_ — it does not appear in both places (rendered alongside the env-metric hero chips, not in the secondary strip). It is a "special" hero item: clicking it follows [[Custom Graph Routing]] — instead of toggling the standard inline [[Env Graph]], it opens the [[Crop Steering Day Chart]] inline, in the same graph slot.
 
+**Field Help**
+An explanation attached to one configuration control, or to one section of them: a `{ label, content }` pair — the words plus the subject they name — surfaced by `gs-help-tooltip` as an info trigger that opens a popover. The pairing is the point: `label` becomes the trigger's accessible name, so binding the two together stops a call site wiring one field's sentence to another field's label. Numeric fields carry it directly (`md3-number-input`'s optional `help` property, rendered in the field's top-right corner); headings and read-only rows place the trigger themselves. Content is plain text for a single control and may be markup for a section explainer, which is what lets the Steering tab's Timing explainer draw the photoperiod rather than describe it in sequence. For a feature area with enough of this copy to read as a body of writing, the strings live together as plain data in that area's `help-copy.ts` rather than inline at each call site — see ADR-0046, which also records why `localize`/`en.json` is not that home.
+
 **Context Chip**
 A tag attached to a composed message that provides contextual scope — growspace, time range, or sensor — so the [[Conversation Agent]] can ground its response. Displayed in the Composer bar of the [[Growmaster Dialog]] Chat panel; removable individually. Distinct from the environment metric Chip in the header.
 
