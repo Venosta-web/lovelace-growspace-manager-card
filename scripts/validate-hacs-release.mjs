@@ -7,7 +7,7 @@ const execFileAsync = promisify(execFile);
 
 const bundlePath = 'dist/growspace-manager-card.js';
 const bundlePattern = 'dist/*.js';
-const releaseConfig = JSON.parse(await readFile('.releaserc.json', 'utf8'));
+const { createReleaseConfig } = await import('../release.config.js');
 const releaseWorkflow = await readFile('.github/workflows/release.yml', 'utf8');
 const hacsConfig = JSON.parse(await readFile('hacs.json', 'utf8'));
 
@@ -21,7 +21,7 @@ if (/\[(?:skip ci|ci skip|no ci|skip actions|actions skip)\]/i.test(cleanupCommi
   throw new Error('Release cleanup commit must run required checks');
 }
 
-const pluginOptions = (pluginName) => {
+const pluginOptions = (releaseConfig, pluginName) => {
   const plugin = releaseConfig.plugins.find(
     (candidate) => Array.isArray(candidate) && candidate[0] === pluginName
   );
@@ -33,16 +33,34 @@ const pluginOptions = (pluginName) => {
   return plugin[1];
 };
 
-const gitAssets = pluginOptions('@semantic-release/git').assets;
-if (!gitAssets.includes(bundlePattern)) {
-  throw new Error(
-    `${bundlePattern} must be committed by semantic-release so HACS can install the entry and chunks`
-  );
+// Both channels are checked, not just the one this run happens to be on. The
+// config branches on GITHUB_REF_NAME, so validating only the ambient branch
+// would let a change break the other channel's release and not surface until
+// that channel next ran.
+for (const branch of ['main', 'dev']) {
+  const releaseConfig = createReleaseConfig(branch);
+
+  const gitAssets = pluginOptions(releaseConfig, '@semantic-release/git').assets;
+  if (!gitAssets.includes(bundlePattern)) {
+    throw new Error(
+      `${bundlePattern} must be committed by semantic-release on ${branch} so HACS can install the entry and chunks`
+    );
+  }
+
+  const githubAssets = pluginOptions(releaseConfig, '@semantic-release/github').assets;
+  if (!githubAssets.some((asset) => asset.path === bundlePattern)) {
+    throw new Error(`${bundlePattern} must be uploaded as GitHub release assets on ${branch}`);
+  }
 }
 
-const githubAssets = pluginOptions('@semantic-release/github').assets;
-if (!githubAssets.some((asset) => asset.path === bundlePattern)) {
-  throw new Error(`${bundlePattern} must be uploaded as GitHub release assets`);
+// The stable channel is the one that has to keep a durable record of what
+// shipped. The prerelease channel deliberately does not commit these — see
+// release.config.js — so this assertion is main-only on purpose.
+const stableGitAssets = pluginOptions(createReleaseConfig('main'), '@semantic-release/git').assets;
+for (const versioned of ['package.json', 'CHANGELOG.md']) {
+  if (!stableGitAssets.includes(versioned)) {
+    throw new Error(`${versioned} must be committed by semantic-release on main`);
+  }
 }
 
 if (path.basename(bundlePath) !== hacsConfig.filename) {
