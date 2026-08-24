@@ -267,6 +267,9 @@ export class GrowspaceAdapter {
       irrigationTimes: irrigationConfigRaw.irrigation_times ?? [],
       drainTimes: irrigationConfigRaw.drain_times ?? [],
       vegDayHours: irrigationConfigRaw.veg_day_hours,
+      // Older integrations omit this additive field; match the backend
+      // resolver's no-config fallback during the rolling upgrade window.
+      resolvedDayHours: irrigationConfigRaw.resolved_day_hours ?? 12,
       soilTriggerPercent: irrigationConfigRaw.soil_trigger_percent,
       dailyVolumeCapLiters: irrigationConfigRaw.daily_volume_cap_liters,
       maxCyclesPerDay: irrigationConfigRaw.max_cycles_per_day,

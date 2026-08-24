@@ -141,7 +141,17 @@ describe('createSchedulesTabViewModel — crop-steering mode', () => {
         shotIntervalMinutes: 60,
         maintenanceDrybackPercent: 3,
       },
-      biologicalMetrics: { flowerWeek: 1 }, // flower → 12h photoperiod
+      // Stage is deliberately irrelevant; the backend-resolved value below wins.
+      biologicalMetrics: { flowerWeek: 1 },
+      irrigationConfig: {
+        irrigationPumpEntity: 'switch.pump',
+        drainPumpEntity: '',
+        irrigationDuration: 60,
+        drainDuration: 60,
+        irrigationTimes: [],
+        drainTimes: [],
+        resolvedDayHours: 11,
+      },
     } as unknown as Partial<GrowspaceDevice>);
   }
 
@@ -158,13 +168,13 @@ describe('createSchedulesTabViewModel — crop-steering mode', () => {
     const vm = build(createInitialSM(dev), dev);
     const cs = vm.cropSteering!;
     expect(cs.configured).toBe(true);
-    expect(cs.lightHours).toBe(12);
+    expect(cs.lightHours).toBe(11);
     expect(cs.lightsOnLabel).toBe('06:00');
-    expect(cs.lightsOffLabel).toBe('18:00');
-    // P1 (60m) ends 07:00; P2 cutoff at 16:00 (18:00 − 120m); shots every 60m → 9.
-    expect(cs.shotCount).toBe(9);
+    expect(cs.lightsOffLabel).toBe('17:00');
+    // P1 (60m) ends 07:00; P2 cutoff at 15:00 (17:00 − 120m); shots every 60m → 8.
+    expect(cs.shotCount).toBe(8);
     const p2 = cs.phases.find((p) => p.id === 'p2')!;
-    expect(p2.shotCount).toBe(9);
+    expect(p2.shotCount).toBe(8);
     expect(cs.phases.find((p) => p.id === 'p1')!.shotCount).toBeNull();
   });
 

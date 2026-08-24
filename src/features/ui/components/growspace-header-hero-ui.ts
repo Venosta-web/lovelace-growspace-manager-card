@@ -1024,7 +1024,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     ];
     const chart = this._buildPhaseChart(historyData, targetVwc, triggerVwc, CHART_W, CHART_H);
 
-    const phases = computePhases(strategy, this.isFlower, config);
+    const phases = computePhases(strategy, config?.resolvedDayHours ?? 12, config);
 
     // Parse chip value: "P3 · 22:40"
     const valueMatch = chip.value?.match(/^(P[123])\s*·\s*(.+)$/);

@@ -985,8 +985,8 @@ describe('Cycle N — irrigation monitoring chips', () => {
 
 describe('Cycle 11 — crop steering phase chip', () => {
   // Strategy: lightsOnTime 06:00, p2StopBeforeLightsOffMinutes 120, targetVwcPercent 80
-  // Veg photoperiod = 18h → lights-off 00:00, P3 start = 22:00
-  // Flower photoperiod = 12h → lights-off 18:00, P3 start = 16:00
+  // Resolved 18h photoperiod → lights-off 00:00, P3 start = 22:00
+  // Resolved 12h photoperiod → lights-off 18:00, P3 start = 16:00
 
   it('shows P1 chip with VWC target when crop steering is enabled and phase is p1', () => {
     const config = makeIrrigationConfig({
@@ -1013,9 +1013,11 @@ describe('Cycle 11 — crop steering phase chip', () => {
     expect(chips.find((c) => c.key === MetricKey.STEERING_PHASE)).toBeUndefined();
   });
 
-  it('shows P2 chip with P3-start time (non-flower / 18h photoperiod) when phase is p2', () => {
-    const config = makeIrrigationConfig({ activeSteeringPhase: 'p2' });
-    // No flower plants → isFlower = false → 18h photoperiod
+  it('shows P2 chip with P3-start time for the resolved 18h photoperiod', () => {
+    const config = makeIrrigationConfig({
+      activeSteeringPhase: 'p2',
+      resolvedDayHours: 18,
+    });
     // Lights-on 06:00, 18h → lights-off 00:00 next day (1440 min), p2Stop 120 → P3 at 22:00
     const strategy = makeIrrigationStrategy({
       enabled: true,
@@ -1031,8 +1033,11 @@ describe('Cycle 11 — crop steering phase chip', () => {
     expect(chip!.value).toBe('P2 · 22:00');
   });
 
-  it('shows P2 chip with P3-start time (flower, 12h photoperiod) when phase is p2', () => {
-    const config = makeIrrigationConfig({ activeSteeringPhase: 'p2' });
+  it('shows P2 chip with P3-start time for the resolved 12h photoperiod', () => {
+    const config = makeIrrigationConfig({
+      activeSteeringPhase: 'p2',
+      resolvedDayHours: 12,
+    });
     // Lights-on 06:00, 12h photoperiod → lights-off 18:00, p2Stop 120min → P3 at 16:00
     const strategy = makeIrrigationStrategy({
       enabled: true,
