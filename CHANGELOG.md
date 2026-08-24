@@ -1,3 +1,10 @@
+## [1.1.9](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.8...v1.1.9) (2026-08-24)
+
+
+### Bug Fixes
+
+* **config:** keep a configured soil-moisture sensor pickable ([#37](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/37)) ([bfbb713](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/bfbb7130053ab70d1e2965353625b22cba23bf92))
+
 ## [1.1.6-next.7](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.6-next.6...v1.1.6-next.7) (2026-08-24)
 
 
