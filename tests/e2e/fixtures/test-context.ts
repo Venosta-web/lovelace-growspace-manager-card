@@ -36,6 +36,8 @@ export function createTestContext(env: TestEnvironment): TestContext {
     lightingGrowspaceId: env.TEST_LIGHTING_GROWSPACE_ID || '',
     climatePlainGrowspaceId: env.TEST_CLIMATE_PLAIN_GROWSPACE_ID || '',
     climatePlainDashboardPath: env.TEST_CLIMATE_PLAIN_DASHBOARD_PATH || '/e2e-climate-plain/0',
+    acInfinityGrowspaceId: env.TEST_AC_INFINITY_GROWSPACE_ID || '',
+    acInfinityDashboardPath: env.TEST_AC_INFINITY_DASHBOARD_PATH || '/e2e-ac-infinity/0',
     visionGrowspaceId: env.TEST_VISION_GROWSPACE_ID || '',
     visionDashboardPath: env.TEST_VISION_DASHBOARD_PATH || '',
     vegPlantId: env.TEST_VEG_PLANT_ID || '',
