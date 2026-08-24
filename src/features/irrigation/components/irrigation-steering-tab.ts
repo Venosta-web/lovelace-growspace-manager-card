@@ -490,10 +490,8 @@ export class IrrigationSteeringTab extends LitElement {
       <p style="margin:0 0 8px;">${TIMING.section.lead}</p>
       <p style="margin:0 0 10px;">${TIMING.section.body}</p>
       <div style="display:flex;border-radius:4px;overflow:hidden;">
-        ${seg('P0', 0.7, 'rgba(158,158,158,0.35)')}
-        ${seg('P1', 1.5, 'rgba(33,150,243,0.4)')}
-        ${seg('P2', 2.6, 'rgba(76,175,80,0.4)')}
-        ${seg('P3', 1.2, 'rgba(255,152,0,0.35)')}
+        ${seg('P0', 0.7, 'rgba(158,158,158,0.35)')} ${seg('P1', 1.5, 'rgba(33,150,243,0.4)')}
+        ${seg('P2', 2.6, 'rgba(76,175,80,0.4)')} ${seg('P3', 1.2, 'rgba(255,152,0,0.35)')}
       </div>
       <div
         style="display:flex;justify-content:space-between;font-size:10px;opacity:0.6;margin-top:3px;"
