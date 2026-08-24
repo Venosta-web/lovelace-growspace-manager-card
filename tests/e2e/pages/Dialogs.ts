@@ -390,7 +390,9 @@ export class SnapshotsDialog {
 
   constructor(page: Page) {
     this.page = page;
-    this.dialog = page.locator('snapshots-dialog ha-dialog');
+    // Snapshot content is slotted into gs-dialog, so it is not a DOM descendant
+    // of the ha-dialog inside gs-dialog's shadow root.
+    this.dialog = page.locator('snapshots-dialog gs-dialog');
   }
 
   async waitForOpen() {

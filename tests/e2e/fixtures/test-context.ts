@@ -34,6 +34,8 @@ export function createTestContext(env: TestEnvironment): TestContext {
     telemetryMultiDashboardPath:
       env.TEST_TELEMETRY_MULTI_DASHBOARD_PATH || '/e2e-telemetry-multi/0',
     lightingGrowspaceId: env.TEST_LIGHTING_GROWSPACE_ID || '',
+    visionGrowspaceId: env.TEST_VISION_GROWSPACE_ID || '',
+    visionDashboardPath: env.TEST_VISION_DASHBOARD_PATH || '',
     vegPlantId: env.TEST_VEG_PLANT_ID || '',
   };
 }

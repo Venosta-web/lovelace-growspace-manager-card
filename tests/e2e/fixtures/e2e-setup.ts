@@ -26,12 +26,23 @@ interface CoverageSetupProfile {
     configure_environment?: Record<string, unknown>;
     set_irrigation_settings?: Record<string, unknown>;
     set_irrigation_strategy?: Record<string, unknown>;
+    update_vision_checkup_config?: Record<string, unknown>;
+  };
+}
+
+interface CoverageFixtureEntity {
+  entity_id: string;
+  fixture?: {
+    handler: 'local_file';
+    name: string;
+    file_path: string;
   };
 }
 
 interface CoverageManifest {
   version: number;
   profiles: CoverageSetupProfile[];
+  entities: CoverageFixtureEntity[];
 }
 
 const coveragePath = path.join(__dirname, 'e2e-entity-coverage.generated.json');
@@ -85,6 +96,67 @@ async function callService(
   }
 }
 
+async function postApi(pathname: string, data: Record<string, unknown>): Promise<any> {
+  const res = await fetch(`${BASE_URL}${pathname}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    throw new Error(`POST ${pathname} failed (${res.status}): ${await res.text()}`);
+  }
+  return res.json();
+}
+
+async function callWebSocket(
+  type: string,
+  data: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const url = new URL('/api/websocket', BASE_URL);
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(url);
+    const commandId = 1;
+    const timeout = setTimeout(() => {
+      socket.close();
+      reject(new Error(`WebSocket command ${type} timed out`));
+    }, 10_000);
+    const finish = (callback: () => void) => {
+      clearTimeout(timeout);
+      socket.close();
+      callback();
+    };
+
+    socket.addEventListener('message', (event) => {
+      const message = JSON.parse(String(event.data)) as Record<string, any>;
+      if (message.type === 'auth_required') {
+        socket.send(JSON.stringify({ type: 'auth', access_token: TOKEN }));
+        return;
+      }
+      if (message.type === 'auth_invalid') {
+        finish(() => reject(new Error('Home Assistant WebSocket authentication failed')));
+        return;
+      }
+      if (message.type === 'auth_ok') {
+        socket.send(JSON.stringify({ id: commandId, type, ...data }));
+        return;
+      }
+      if (message.id !== commandId) return;
+      if (!message.success) {
+        finish(() =>
+          reject(new Error(`WebSocket command ${type} failed: ${JSON.stringify(message.error)}`))
+        );
+        return;
+      }
+      finish(() => resolve((message.result ?? {}) as Record<string, unknown>));
+    });
+    socket.addEventListener('error', () =>
+      finish(() => reject(new Error(`WebSocket command ${type} could not connect`)))
+    );
+  });
+}
+
 async function getStateAttributes(entityId: string): Promise<Record<string, unknown> | null> {
   const res = await fetch(`${BASE_URL}/api/states/${entityId}`, { headers });
   if (!res.ok) return null;
@@ -101,6 +173,53 @@ async function getStateValue(entityId: string): Promise<string | null> {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+async function ensureCameraFixtures(): Promise<void> {
+  const fixtures = COVERAGE.entities.filter((entity) => entity.fixture);
+  if (fixtures.length === 0) return;
+
+  console.log('\n[cameras] provisioning deterministic local-file fixtures…');
+  for (const entity of fixtures) {
+    const fixture = entity.fixture!;
+    const existing = await getStateAttributes(entity.entity_id);
+    if (existing) {
+      if (existing.file_path !== fixture.file_path) {
+        await callService('local_file', 'update_file_path', {
+          entity_id: entity.entity_id,
+          file_path: fixture.file_path,
+        });
+      }
+      console.log(`  ${entity.entity_id} already available`);
+      continue;
+    }
+
+    const started = await postApi('/api/config/config_entries/flow', {
+      handler: fixture.handler,
+    });
+    if (started.type !== 'form' || !started.flow_id) {
+      throw new Error(`Could not start ${fixture.handler} flow: ${JSON.stringify(started)}`);
+    }
+    const completed = await postApi(`/api/config/config_entries/flow/${started.flow_id}`, {
+      name: fixture.name,
+      file_path: fixture.file_path,
+    });
+    if (completed.type !== 'create_entry' && completed.type !== 'abort') {
+      throw new Error(`Could not create ${entity.entity_id}: ${JSON.stringify(completed)}`);
+    }
+
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await sleep(250);
+      const attributes = await getStateAttributes(entity.entity_id);
+      if (attributes?.file_path === fixture.file_path) {
+        console.log(`  created ${entity.entity_id}`);
+        break;
+      }
+      if (attempt === 19) {
+        throw new Error(`${entity.entity_id} did not become available at ${fixture.file_path}`);
+      }
+    }
+  }
 }
 
 interface VwcStrategyParams {
@@ -328,11 +447,20 @@ async function main(): Promise<void> {
 
   const results: Array<{ slug: string; id: string }> = [];
 
+  await ensureCameraFixtures();
+
   for (const spec of GROWSPACES) {
     console.log(`\n[e2e_${spec.slug}]`);
     const growspaceId = await ensureGrowspace(spec);
     await ensureStagePlant(growspaceId, spec);
     await configureEnvironment(growspaceId, spec);
+    if (spec.services.update_vision_checkup_config) {
+      console.log(`  configuring Vision Checkup schedule…`);
+      await callWebSocket('growspace_manager/update_vision_checkup_config', {
+        growspace_id: growspaceId,
+        ...spec.services.update_vision_checkup_config,
+      });
+    }
     if (spec.services.set_irrigation_strategy) {
       console.log(`  configuring light-cycle tracking…`);
       await callService('growspace_manager', 'set_irrigation_strategy', {
