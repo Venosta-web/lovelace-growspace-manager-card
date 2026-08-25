@@ -60,11 +60,14 @@ export class CropSteeringDayChart extends LitElement {
 
   static styles = css`
     :host {
-      display: block;
+      display: flex;
+      flex-direction: column;
     }
     .cs-model {
       position: relative;
-      height: 300px;
+      height: auto;
+      flex: 1 0 var(--gs-env-chart-height, 300px);
+      min-height: var(--gs-env-chart-height, 300px);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: var(--border-radius-md, 12px);
       background: rgba(0, 0, 0, 0.2);
@@ -215,6 +218,7 @@ export class CropSteeringDayChart extends LitElement {
     }
     .cs-phase-strip {
       position: relative;
+      flex: none;
       height: 52px;
       margin-bottom: 10px;
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -261,6 +265,7 @@ export class CropSteeringDayChart extends LitElement {
     }
     .cs-track {
       position: relative;
+      flex: none;
       height: 108px;
       margin-bottom: 10px;
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1197,21 +1202,29 @@ export class CropSteeringDayChart extends LitElement {
         <!-- The bottom tick would sit on top of the axis caps, so it is left unlabelled. -->
         ${ticks.slice(1).map(
           (t) => html`
-            <span class="cm-tick left" style="top:${t.y.toFixed(1)}px;">${t.vwc}</span>
-            <span class="cm-tick right" style="top:${t.y.toFixed(1)}px;">${t.ec}</span>
+            <span class="cm-tick left" style="top:${((t.y / svgH) * 100).toFixed(3)}%;"
+              >${t.vwc}</span
+            >
+            <span class="cm-tick right" style="top:${((t.y / svgH) * 100).toFixed(3)}%;"
+              >${t.ec}</span
+            >
           `
         )}
 
-        <span class="cm-target" style="top:${targetY.toFixed(1)}px;color:${vwcColor};"
+        <span
+          class="cm-target"
+          style="top:${((targetY / svgH) * 100).toFixed(3)}%;color:${vwcColor};"
           >Target ${target.toFixed(0)}%</span
         >
-        <span class="cm-target" style="top:${p2TriggerY.toFixed(1)}px;color:${STATUS_WARNING};"
+        <span
+          class="cm-target"
+          style="top:${((p2TriggerY / svgH) * 100).toFixed(3)}%;color:${STATUS_WARNING};"
           >P2 trigger ${p2Trigger.toFixed(0)}%</span
         >
         ${ecTargetMid !== null
           ? html`<span
               class="cm-target right"
-              style="top:${ecTargetY.toFixed(1)}px;color:${poreEcColor};"
+              style="top:${((ecTargetY / svgH) * 100).toFixed(3)}%;color:${poreEcColor};"
               >Pore EC target ${ecTargetMid.toFixed(1)}</span
             >`
           : nothing}

@@ -119,7 +119,7 @@ test would be ceremony over two booleans.
 so height is the only dimension that responds. Without it a 1440p Wall is six
 postage stamps in a field of background. No separate ADR — small, obvious,
 reversible. The crop-steering and tank charts compute their own SVG heights and
-so do not read it; sizing them to the Wall is #758.
+did not read it in v1; the #758 amendment below resolves that deferral.
 
 ## Amendment — explicit Graph Wall startup (#757)
 
@@ -203,6 +203,29 @@ that grows into its row, which is why `.gs-env-graph-card` became a full-height
 flex column and why the card's `margin-top` moved to `:host` — a margin inside
 the host pushes a `height: 100%` card past its row, and only a margin on the host
 is reachable from the Wall's stylesheet.
+
+## Amendment — one Wall height contract for custom-routed charts (#758)
+
+The Wall keeps equal-height cells; it does not give the Crop Steering and Tank
+Water charts differently-sized rows. A row's size has no domain meaning, and
+[[Custom Graph Routing]] can replace a generic graph with either dedicated chart
+in the same Open Env Graph set, so chart-specific row heights would make the Wall
+jump as well as leaving mixed sets visibly uneven.
+
+`--gs-env-chart-height` is the one sizing interface for all three charts. The
+generic chart, the Tank Water SVG, and the Crop Steering trace area each read it
+as their plot floor, while their outer wrappers stretch to the grid row. The
+Wall uses `grid-auto-rows: minmax(max-content, 1fr)`: `max-content` preserves
+fixed chart chrome such as the Phase Strip and Shot Track, and the shared `1fr`
+makes every row equal while distributing spare viewport height. Once those
+equal rows exceed the viewport, the dialog body remains the scroll container.
+
+The Crop Steering chart keeps its fixed 1000×300 internal coordinate system and
+its Phase Strip / Shot Track budgets. Only the trace area flexes. Its HTML tick
+and target overlays now express their SVG Y coordinates as percentages rather
+than CSS pixels, so stretching the trace cannot separate those labels from the
+gridlines they annotate. The shared `lightsOnMin − 120` horizontal anchor is
+unchanged.
 
 ## Consequences
 

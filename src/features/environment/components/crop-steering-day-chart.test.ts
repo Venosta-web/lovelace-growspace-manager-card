@@ -232,6 +232,23 @@ describe('CropSteeringDayChart – rendering', () => {
 
     expect(el.shadowRoot!.querySelector('.cs-model-tooltip')).not.toBeNull();
   });
+
+  it('grows the trace under the shared Env Graph height without desynchronizing overlays', async () => {
+    const el = createElement();
+    el.style.setProperty('--gs-env-chart-height', '420px');
+    el.device = makeDevice();
+    await vi.waitFor(() => el.shadowRoot!.querySelector('.cs-model') !== null);
+
+    const model = el.shadowRoot!.querySelector<HTMLElement>('.cs-model')!;
+    expect(getComputedStyle(model).flexBasis).toBe('420px');
+    expect(getComputedStyle(model).minHeight).toBe('420px');
+
+    const overlayPositions = Array.from(
+      el.shadowRoot!.querySelectorAll<HTMLElement>('.cm-tick, .cm-target')
+    ).map((overlay) => overlay.style.top);
+    expect(overlayPositions.length).toBeGreaterThan(0);
+    expect(overlayPositions.every((position) => position.endsWith('%'))).toBe(true);
+  });
 });
 
 describe('CropSteeringDayChart – rolling window mode', () => {
