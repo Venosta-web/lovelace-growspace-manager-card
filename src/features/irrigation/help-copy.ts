@@ -41,6 +41,24 @@ export const TIMING = {
       'Activation delay: how long after lights-on before the first shot may fire. No irrigation happens during P0 — it lets the canopy wake and begin transpiring before P1 ramp-up.',
   },
 
+  /**
+   * Names for the boundaries drawn on the day bar, shown beside the time each
+   * one falls at for this growspace. The times are derived per growspace in the
+   * Steering tab's viewmodel; only the naming lives here.
+   *
+   * `scheduledP3` and `actualP3` are the glossary's two distinct boundaries, not
+   * two wordings of one: the stop buffer sets the scheduled one, and
+   * Auto-Advance P2→P3 moves the day's real one earlier. The explainer shows
+   * `actualP3` only once it has fired, so a row is never a guess.
+   */
+  boundaries: {
+    lightsOn: 'Lights on',
+    p0End: 'P0 ends — shot window opens',
+    actualP3: 'Actual P3 Boundary — Auto-Advance P2→P3 fired',
+    scheduledP3: 'Scheduled P3 Boundary',
+    lightsOff: 'Lights off',
+  },
+
   // The caveat is load-bearing: `determine_time_period` keeps returning WINDOW
   // past this boundary unless auto-advance is on. Tracked as
   // Venosta-web/growspace_manager_workspace#41 (issues live in the hub repo);

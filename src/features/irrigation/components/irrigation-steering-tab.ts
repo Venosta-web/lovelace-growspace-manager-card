@@ -480,42 +480,85 @@ export class IrrigationSteeringTab extends LitElement {
   // ─── Section explainers ───────────────────────────────────────────────────
 
   /**
-   * The Timing section's explainer: the prose, then the photoperiod drawn as
-   * one bar so the ordering of the phases is readable at a glance.
+   * The Timing section's explainer: the prose, then this growspace's own day
+   * drawn as one bar with the times its boundaries fall at.
    *
-   * The bar is deliberately schematic — the segment widths are illustrative,
-   * not this growspace's real boundaries. Rendering the grower's actual times
-   * needs the resolved photoperiod plumbed into this tab's viewmodel, which is
-   * tracked separately.
+   * Every number comes from the viewmodel, which derives it through the shared
+   * `computePhases` the Phase Strip and the Crop Steering Day Chart draw from.
+   * Nothing here does boundary arithmetic — a second implementation of it is
+   * what made the card's phases disagree with the integration's (#42).
+   *
+   * Two things stay schematic on purpose. The P1|P2 divider is nominal, because
+   * that boundary is decided by measured VWC rather than by the clock. And with
+   * no lights-on to anchor the day, the whole bar falls back to illustrative
+   * widths with no times at all: an unanchored day has no boundaries to name,
+   * and a row of dashes would be a worse answer than the picture.
    *
    * Styles are inline because this markup renders inside `gs-help-tooltip`'s
    * shadow root, where this component's own stylesheet does not reach. The
-   * existing [[Phase Strip]] already owns the real, data-driven version of this
+   * existing [[Phase Strip]] already owns the full data-driven version of this
    * picture; a second styled element here would be a third rendering of one
-   * concept for a static diagram (see ADR-0046).
+   * concept (see ADR-0046).
    */
   private _renderTimingExplainer(): TemplateResult {
-    const seg = (label: string, flex: number, bg: string): TemplateResult => html`
-      <div
-        style="flex:${flex};background:${bg};padding:5px 0;text-align:center;font-size:10px;font-weight:600;letter-spacing:0.05em;"
-      >
-        ${label}
-      </div>
-    `;
+    const tint: Record<string, string> = {
+      p0: 'rgba(158,158,158,0.35)',
+      p1: 'rgba(33,150,243,0.4)',
+      p2: 'rgba(76,175,80,0.4)',
+      p3: 'rgba(255,152,0,0.35)',
+    };
+    // The widths the bar ships with when there is nothing to anchor it to.
+    const schematic = [
+      { id: 'p0', label: 'P0', weight: 0.7 },
+      { id: 'p1', label: 'P1', weight: 1.5 },
+      { id: 'p2', label: 'P2', weight: 2.6 },
+      { id: 'p3', label: 'P3', weight: 1.2 },
+    ];
+
+    const derived = this.vm.timingExplainer;
+    const segments = derived?.segments ?? schematic;
 
     return html`
       <p style="margin:0 0 8px;">${TIMING.section.lead}</p>
       <p style="margin:0 0 10px;">${TIMING.section.body}</p>
       <div style="display:flex;border-radius:4px;overflow:hidden;">
-        ${seg('P0', 0.7, 'rgba(158,158,158,0.35)')} ${seg('P1', 1.5, 'rgba(33,150,243,0.4)')}
-        ${seg('P2', 2.6, 'rgba(76,175,80,0.4)')} ${seg('P3', 1.2, 'rgba(255,152,0,0.35)')}
+        ${segments.map(
+          (seg) => html`
+            <div
+              data-phase=${seg.id}
+              style="flex:${seg.weight};overflow:hidden;background:${tint[
+                seg.id
+              ]};padding:5px 0;text-align:center;font-size:10px;font-weight:600;letter-spacing:0.05em;"
+            >
+              ${seg.label}
+            </div>
+          `
+        )}
       </div>
-      <div
-        style="display:flex;justify-content:space-between;font-size:10px;opacity:0.6;margin-top:3px;"
-      >
-        <span>lights on</span>
-        <span>lights off</span>
-      </div>
+      ${derived
+        ? html`
+            <div
+              class="timing-boundaries"
+              style="display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:10.5px;line-height:1.5;margin-top:7px;opacity:0.8;"
+            >
+              ${derived.boundaries.map(
+                (b) => html`
+                  <span data-boundary=${b.id} style="font-variant-numeric:tabular-nums;"
+                    >${b.time}</span
+                  >
+                  <span>${TIMING.boundaries[b.id]}</span>
+                `
+              )}
+            </div>
+          `
+        : html`
+            <div
+              style="display:flex;justify-content:space-between;font-size:10px;opacity:0.6;margin-top:3px;"
+            >
+              <span>lights on</span>
+              <span>lights off</span>
+            </div>
+          `}
       <div style="margin-top:9px;font-size:10.5px;opacity:0.75;line-height:1.5;">
         <div>P0 Duration sets how far P0 extends from lights-on.</div>
         <div>P2 Stop Buffer sets where P3 begins, measured back from lights-off.</div>
