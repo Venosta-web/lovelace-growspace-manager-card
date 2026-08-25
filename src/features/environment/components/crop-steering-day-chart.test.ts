@@ -182,10 +182,34 @@ describe('CropSteeringDayChart – rendering', () => {
 
     const strip = el.shadowRoot!.querySelector('.cs-phase-strip');
     expect(strip).not.toBeNull();
-    // P1 (Saturation) should start at the detected lights-on time (07:30), not the configured one (06:00).
+    // P0 (Activation) should start at the detected lights-on time (07:30), not the configured one (06:00).
     const text = strip!.textContent?.replace(/\s+/g, ' ') ?? '';
-    expect(text).toContain('07:30–08:00 · Reach FC');
-    expect(text).not.toContain('06:00–06:30 · Reach FC');
+    expect(text).toContain('P0 · Activation 07:30–08:00');
+    expect(text).not.toContain('06:00–06:30');
+  });
+
+  it('gives the phase strip a P0 block, and starts P1 where it ends', async () => {
+    const el = createElement();
+    el.device = makeDevice({
+      irrigationStrategy: {
+        enabled: true,
+        lightsOnTime: '06:00:00',
+        p0DurationMinutes: 30,
+        p2StopBeforeLightsOffMinutes: 60,
+        targetVwcPercent: 65,
+        maintenanceDrybackPercent: 3,
+        shotDurationSeconds: 30,
+        shotIntervalMinutes: 20,
+      },
+    });
+    await el.updateComplete;
+
+    const text =
+      el.shadowRoot!.querySelector('.cs-phase-strip')!.textContent?.replace(/\s+/g, ' ') ?? '';
+
+    // P0 owns the pre-first-shot hold; P1 begins at 06:30 where P0 ends.
+    expect(text).toContain('P0 · Activation 06:00–06:30 · No shots');
+    expect(text).toContain('P1 · Saturation 06:30');
   });
 
   it('shows a tooltip when the mouse moves over the chart', async () => {
