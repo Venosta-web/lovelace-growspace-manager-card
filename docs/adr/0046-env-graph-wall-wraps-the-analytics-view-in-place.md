@@ -122,6 +122,75 @@ postage stamps in a field of background. No separate ADR — small, obvious,
 reversible. The crop-steering and tank charts compute their own SVG heights and
 so do not read it; sizing them to the Wall is #758.
 
+## Amendment — what "fullscreen" actually took
+
+The first implementation was full screen in name only, and both gaps came from
+believing an attribute rather than measuring the result.
+
+### `width="full"` is 95vw, and the height was never set at all
+
+`ha-dialog` resolves `width="full"` to `--ha-dialog-width-full`, which defaults
+to `min(95vw, var(--safe-width))`, and it caps the surface at
+`calc(var(--safe-height) - var(--ha-space-20))` with a content-driven height
+below that. A Wall of two graphs therefore floated in the middle of the screen
+inside a scrim margin.
+
+The Wall now sets the six theme hooks that make the surface edge-to-edge:
+`--ha-dialog-width-full`, `--ha-dialog-max-width`, `--ha-dialog-min-height`,
+`--ha-dialog-max-height`, `--ha-dialog-border-radius` and
+`--dialog-surface-margin-top`. `--safe-width` / `--safe-height` are 100vw / 100vh
+minus the safe-area insets, which is what fullscreen means on a device with a
+notch.
+
+Home Assistant *has* a first-class fullscreen mode — the `dialog-set-fullscreen`
+event toggles a `[fullscreen]` attribute that sets the same geometry. The Wall
+does not use it, because it also sets `.body { overflow: hidden }`, and `.body`
+is the Wall's only scroll container once the graphs outgrow the viewport.
+
+One consequence of the surface being exactly `--safe-height`: the Wall sizes
+itself with `min-height: var(--safe-height, 100vh)` rather than `min-height: 100%`.
+The percentage does not resolve — ha-dialog's `.body` is a flex-grown item with
+`height: auto`, and Chromium leaves a percentage against it unresolved. Measured
+at `:8123`: the Wall stopped at its 472px content height inside a 1000px surface.
+
+### The graphs stack full width; they do not tile into columns
+
+The original `repeat(auto-fit, minmax(520px, 1fr))` was a tiling grid, and it was
+wrong twice over.
+
+It was wrong in principle: an Env Graph is a time series, and width is the axis
+that carries the data. Half a wall is half the readable time resolution. The Wall
+now uses a single `1fr` column, so every graph spans the full width and they
+stack vertically.
+
+It was also wrong in fact, in a way worth writing down because it is easy to
+reintroduce. `auto-fit` collapses *empty* repeated tracks, and a track spanned by
+an item is not empty. The toolbar's `grid-column: 1 / -1` therefore occupied
+every track the grid had room for, so nothing collapsed and each graph got a
+fixed `1824 / 3` share — one open graph sat in a third of the width with two
+empty tracks beside it. Measured in Chrome: 597px of 1824px with the spanning row
+present, 1824px without it.
+
+So the Wall is two elements: `.graphs-container` is the vertical frame, holding
+the sticky toolbar, and a nested `.graphs` is the stack. Two rather than one so
+that the toolbar is not a grid row — `.graphs` stretches its rows to spend the
+viewport height, and a toolbar inside it would take an equal share of that space.
+`.graphs` is `display: contents` inline, so the charts remain direct flex
+children of `.graphs-container` outside the Wall and the relocation contract
+above is untouched.
+
+`.graphs` takes `flex: 1 0 auto` and stretched rows, which is what spends the
+viewport height: one open graph fills the Wall, a handful share it evenly, and
+once they need more than the viewport the rows fall back to their floor and
+`.body` scrolls.
+
+`--gs-env-chart-height` changed meaning with it. It is now a floor, not a fixed
+height: `env-chart` reads it as `flex-basis` plus `min-height` on a chart body
+that grows into its row, which is why `.gs-env-graph-card` became a full-height
+flex column and why the card's `margin-top` moved to `:host` — a margin inside
+the host pushes a `height: 100%` card past its row, and only a margin on the host
+is reachable from the Wall's stylesheet.
+
 ## Consequences
 
 - The Wall ships on all three analytics hosts at once, including the standalone
@@ -133,6 +202,11 @@ so do not read it; sizing them to the Wall is #758.
   `.graphs-container` stay **static** siblings. Wrapping either in a conditional,
   or interposing a directive, reintroduces the child part and silently restores
   the remount. The identity tests fail if that happens, which is what they are for.
+- The Wall depends on six `ha-dialog` custom properties instead of one. They are
+  that component's own theme hooks, but only `--dialog-content-padding` is in its
+  documented `@cssprop` list; the other five are read from its stylesheet. A
+  frontend release that renames them degrades to a centred, content-sized dialog
+  rather than to a broken one.
 - Two more raw English strings join the untranslated set in this view; neither
   `growspace-analytics-ui` nor `env-chart` calls `localize` today, and #759 tracks
   the sweep.

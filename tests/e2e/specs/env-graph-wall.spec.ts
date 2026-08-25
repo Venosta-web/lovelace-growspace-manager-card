@@ -2,9 +2,11 @@ import type { Locator, Page } from '@playwright/test';
 import { haTest as test, expect } from '../fixtures/ha-setup';
 import { GrowspaceCard } from '../pages/GrowspaceCard';
 
-// Two questions no jsdom test can answer, and the reason this spec exists:
+// The questions no jsdom test can answer, and the reason this spec exists:
 // whether the overlay actually escapes the card's glass column (which is a
-// containing block *and* clips overflow), and whether the graphs tile.
+// containing block *and* clips overflow), whether it then covers the whole
+// viewport, and how the graphs stack into it — every graph the full width of
+// the wall, sharing the height the surface now has.
 //
 // Everything about *when* the toggle appears, and about the charts surviving
 // the move, is covered far more cheaply in tests/components/env-graph-wall.
@@ -18,13 +20,13 @@ const wall = (page: Page): Locator =>
 const toggle = (page: Page): Locator =>
   page.locator('growspace-manager-card growspace-analytics-ui .fullscreen-toggle').first();
 
-async function openTwoGraphs(page: Page, card: GrowspaceCard) {
+async function openGraphs(page: Page, howMany: number) {
   const heroes = page.locator('growspace-manager-card button.hero-card');
   await expect(heroes.first()).toBeVisible();
   const count = await heroes.count();
-  expect(count).toBeGreaterThanOrEqual(2);
+  expect(count).toBeGreaterThanOrEqual(howMany);
 
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < howMany; i++) {
     await heroes.nth(i).click();
     await page.waitForTimeout(400);
   }
@@ -32,6 +34,9 @@ async function openTwoGraphs(page: Page, card: GrowspaceCard) {
     page.locator('growspace-manager-card growspace-analytics-ui growspace-env-chart').first()
   ).toBeVisible();
 }
+
+const chartBodies = (page: Page): Locator =>
+  page.locator('growspace-manager-card growspace-analytics-ui .gs-env-chart-container');
 
 test.describe('Env Graph Wall', () => {
   test.use({ viewport: WIDE });
@@ -42,10 +47,10 @@ test.describe('Env Graph Wall', () => {
     card = new GrowspaceCard(page);
     await card.navigate(testContext.dashboardPath);
     await card.waitForCardReady();
-    await openTwoGraphs(page, card);
   });
 
   test('the overlay escapes the card column it is nested inside', async ({ page }) => {
+    await openGraphs(page, 2);
     const glass = page.locator('growspace-manager-card .unified-growspace-card').first();
     const glassBox = (await glass.boundingBox())!;
     expect(glassBox.width).toBeLessThan(WIDE.width * 0.7);
@@ -54,8 +59,13 @@ test.describe('Env Graph Wall', () => {
     await page.waitForTimeout(700);
 
     const wallBox = (await wall(page).boundingBox())!;
-    // Wider than the column that clips it, and starting to the left of it.
-    expect(wallBox.width).toBeGreaterThan(glassBox.width * 1.5);
+    // Not merely wider than the column that clips it: the whole viewport, with
+    // no scrim margin on any side. --safe-width / --safe-height are 100vw/100vh
+    // minus the safe-area insets, which are zero on a desktop browser.
+    expect(wallBox.x).toBe(0);
+    expect(wallBox.y).toBe(0);
+    expect(Math.round(wallBox.width)).toBe(WIDE.width);
+    expect(Math.round(wallBox.height)).toBe(WIDE.height);
     expect(wallBox.x).toBeLessThan(glassBox.x);
 
     // Nothing from the dashboard is painted over the middle of the overlay.
@@ -78,41 +88,48 @@ test.describe('Env Graph Wall', () => {
     expect(onTop).toContain('growspace-analytics-ui');
   });
 
-  test('graphs tile into a responsive grid and grow past the inline height', async ({ page }) => {
-    const chartBoxBefore = (await page
-      .locator('growspace-manager-card growspace-analytics-ui .gs-env-chart-container')
-      .first()
-      .boundingBox())!;
+  test('graphs stack full width and grow past the inline height', async ({ page }) => {
+    await openGraphs(page, 2);
+    const chartBoxBefore = (await chartBodies(page).first().boundingBox())!;
     expect(Math.round(chartBoxBefore.height)).toBe(180);
 
     await toggle(page).click();
     await page.waitForTimeout(700);
 
-    const charts = page.locator(
-      'growspace-manager-card growspace-analytics-ui .gs-env-chart-container'
-    );
-    const first = (await charts.nth(0).boundingBox())!;
-    const second = (await charts.nth(1).boundingBox())!;
+    const first = (await chartBodies(page).nth(0).boundingBox())!;
+    const second = (await chartBodies(page).nth(1).boundingBox())!;
 
-    // --gs-env-chart-height reached the charts through the move.
-    expect(first.height).toBeGreaterThan(180);
+    // Each graph spans the wall, and the two stack rather than sharing a row.
+    expect(first.width).toBeGreaterThan(WIDE.width - 80);
+    expect(second.width).toBeGreaterThan(WIDE.width - 80);
+    expect(Math.abs(first.x - second.x)).toBeLessThan(2);
+    expect(second.y).toBeGreaterThan(first.y + first.height - 4);
 
-    // Two graphs share a row: same top, different left.
-    expect(Math.abs(first.y - second.y)).toBeLessThan(4);
-    expect(second.x).toBeGreaterThan(first.x + first.width - 4);
+    // Between them they spend the height the full-bleed surface now has,
+    // instead of stopping at the inline 180px.
+    expect(first.height + second.height).toBeGreaterThan(WIDE.height * 0.6);
   });
 
-  test('Escape closes the wall but a scrim click does not', async ({ page }) => {
+  test('a single open graph takes the whole wall', async ({ page }) => {
+    await openGraphs(page, 1);
+    await toggle(page).click();
+    await page.waitForTimeout(700);
+
+    const only = (await chartBodies(page).first().boundingBox())!;
+    expect(only.width).toBeGreaterThan(WIDE.width - 80);
+    expect(only.height).toBeGreaterThan(WIDE.height * 0.7);
+  });
+
+  test('Escape closes the wall', async ({ page }) => {
+    await openGraphs(page, 2);
     await toggle(page).click();
     await page.waitForTimeout(700);
     const dialog = page.locator('growspace-manager-card growspace-analytics-ui ha-dialog').first();
     await expect(dialog).toHaveAttribute('open', '');
 
-    // The 1600px viewport leaves a thin scrim margin; clicking it must not close.
-    await page.mouse.click(4, 4);
-    await page.waitForTimeout(500);
-    await expect(dialog).toHaveAttribute('open', '');
-
+    // `prevent-scrim-close` is still set, but full bleed leaves no scrim to
+    // click, so Escape is the only dismissal there is — and it is handled here
+    // rather than by the dialog, which that attribute also silences.
     await page.keyboard.press('Escape');
     await page.waitForTimeout(600);
     await expect(dialog).not.toHaveAttribute('open', '');

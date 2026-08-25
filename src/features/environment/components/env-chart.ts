@@ -640,9 +640,22 @@ export class GrowspaceEnvChart extends LitElement {
     :host {
       display: block;
       position: relative;
+      /* Spacing for the inline stack. It lives on the host, not on the card,
+         so the Env Graph Wall can zero it — a margin inside the host would
+         push a height:100% card past its grid row. */
+      margin-top: 12px;
+    }
+    /* The card must reach the host's full height for the chart body to grow
+       into a Wall row; error-boundary sits between them on the happy path. */
+    error-boundary {
+      display: block;
+      height: 100%;
     }
     .gs-env-graph-card {
-      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      box-sizing: border-box;
       background: var(--card-background-color, #1a1a1a);
       border-radius: 12px;
       padding: 16px;
@@ -659,8 +672,14 @@ export class GrowspaceEnvChart extends LitElement {
       position: relative;
       /* The Env Graph Wall tiles these charts far larger than the inline slot
          does; the SVG stretches a fixed 800x200 viewBox with
-         preserveAspectRatio="none", so height is the only knob that matters. */
-      height: var(--gs-env-chart-height, 180px);
+         preserveAspectRatio="none", so height is the only knob that matters.
+         It is a floor, not a fixed height: inline there is no free space and
+         the basis is the whole story, while in the Wall the chart body grows
+         into whatever height the stretched grid row hands it. */
+      flex-grow: 1;
+      flex-shrink: 0;
+      flex-basis: var(--gs-env-chart-height, 180px);
+      min-height: var(--gs-env-chart-height, 180px);
       background: var(--secondary-background-color, #0d0d0d);
       border-radius: 8px;
       cursor: crosshair;
