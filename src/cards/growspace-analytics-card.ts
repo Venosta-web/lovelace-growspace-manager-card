@@ -40,6 +40,10 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
   @property({ attribute: false })
   hass!: HomeAssistant;
 
+  /** Set by Home Assistant while this card is rendered in the card editor. */
+  @property({ type: Boolean })
+  preview = false;
+
   @provide({ context: configContext })
   @property({ attribute: false })
   _config!: GrowspaceAnalyticsCardConfig;
@@ -170,6 +174,7 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
             <growspace-analytics
               .device=${selectedDeviceData}
               .startInGraphWall=${this._config.start_in_graph_wall ?? false}
+              .cardPreview=${this.preview}
             ></growspace-analytics>
           </div>
         </ha-card>
