@@ -98,3 +98,6 @@ test-results-mock/.last-run.json
 coverage.txt
 test_run.log
 .sandcastle/*
+
+# Demo site assembled by .github/workflows/demo.yaml
+/_site/
