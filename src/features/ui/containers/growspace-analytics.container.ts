@@ -31,6 +31,8 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   @property({ type: Boolean, attribute: false }) historyManagedExternally = false;
   /** One-shot startup request supplied only by the standalone analytics card. */
   @property({ type: Boolean, attribute: false }) startInGraphWall = false;
+  /** Home Assistant card-editor previews must stay inside the editor surface. */
+  @property({ type: Boolean, attribute: false }) cardPreview = false;
   private _deviceSnapshotsController!: StoreController<Map<string, DeviceSnapshot>>;
   private _taskStateController!: StoreController<CardTaskState>;
   /** Whether the [[Env Graph Wall]] is showing for this mounted container. */
@@ -123,13 +125,13 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   }
 
   /**
-   * Two conditions gate the wall toggle, and neither is worth extracting:
-   * the overlay is desktop-only, and it must not bury a provisional Metric
-   * Comparison or Arrangement Draft under a modal mid-transaction.
+   * The overlay is unavailable in card-editor previews and on mobile, and it
+   * must not bury a provisional Metric Comparison or Arrangement Draft under
+   * a modal mid-transaction.
    */
   private get _canFullscreen(): boolean {
     const task = this._taskStateController?.value ?? { kind: 'idle' };
-    return !this._resize.isMobile && task.kind === 'idle';
+    return !this.cardPreview && !this._resize.isMobile && task.kind === 'idle';
   }
 
   private get _items(): AnalyticsItem[] {

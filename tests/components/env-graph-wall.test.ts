@@ -33,6 +33,7 @@ function buildStore(
     activeEnvGraphs?: Set<string>;
     taskState?: CardTaskState;
     startInGraphWall?: boolean;
+    cardPreview?: boolean;
   } = {}
 ) {
   const $analyticsViewState = atom({
@@ -73,6 +74,7 @@ async function mountContainer(opts: Parameters<typeof buildStore>[0] = {}) {
   (element as any).device = DEVICE;
   (element as any).deviceSnapshot = null;
   (element as any).startInGraphWall = opts.startInGraphWall ?? false;
+  (element as any).cardPreview = opts.cardPreview ?? false;
   (element as any)._initControllers();
   element.requestUpdate();
   await element.updateComplete;
@@ -99,6 +101,12 @@ describe('Env Graph Wall — when the toggle exists at all', () => {
   it('withholds the toggle on mobile, so the overlay is desktop-only', async () => {
     setViewportIsMobile(true);
     const { element } = await mountContainer();
+
+    expect(uiOf(element).canFullscreen).toBe(false);
+  });
+
+  it('withholds the toggle in Home Assistant card-editor previews', async () => {
+    const { element } = await mountContainer({ cardPreview: true });
 
     expect(uiOf(element).canFullscreen).toBe(false);
   });
@@ -141,6 +149,18 @@ describe('Env Graph Wall — opening and closing', () => {
     await element.updateComplete;
 
     expect(ui.fullscreen).toBe(false);
+  });
+
+  it('does not consume Graph Wall startup while rendered in the card editor', async () => {
+    const { element } = await mountContainer({
+      startInGraphWall: true,
+      cardPreview: true,
+    });
+    const ui = uiOf(element);
+    await ui.updateComplete;
+
+    expect(ui.fullscreen).toBe(false);
+    expect(ui.shadowRoot!.querySelector('ha-dialog')!.hasAttribute('open')).toBe(false);
   });
 
   it('waits for the standalone card to open its default graphs before starting the Wall', async () => {

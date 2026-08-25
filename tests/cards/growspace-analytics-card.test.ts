@@ -160,6 +160,22 @@ describe('GrowspaceAnalyticsCard', () => {
     handle.unmount();
   });
 
+  test('marks its analytics view as a Home Assistant card-editor preview', async () => {
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
+    handle.element.preview = true;
+    handle.element.store.ui.$isLoading.set(false);
+    setDevices([{ deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any]);
+    handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
+    await handle.element.updateComplete;
+
+    const analytics = handle.element.shadowRoot?.querySelector('growspace-analytics') as any;
+    expect(analytics.cardPreview).toBe(true);
+    handle.unmount();
+  });
+
   describe('chip-driven chart', () => {
     test('clickChip calls toggleEnvGraph for the selected metric', async () => {
       const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
