@@ -36,6 +36,7 @@ import '../../../features/shared/ui';
 import '../../../features/shared/ui/md3-number-input';
 import '../../../features/shared/ui/md3-switch';
 import '../../../features/shared/ui/gs-help-tooltip';
+import { TIMING, DOSING, ADAPTIVE } from '../help-copy';
 
 @customElement('irrigation-steering-tab')
 export class IrrigationSteeringTab extends LitElement {
@@ -300,13 +301,23 @@ export class IrrigationSteeringTab extends LitElement {
           </div>
         </div>
 
-          <h4 style="margin:4px 0;margin-top:12px;">Timing</h4>
+          <div style="display:flex;align-items:center;gap:8px;margin:12px 0 4px;">
+            <h4 style="margin:0;">Timing</h4>
+            <gs-help-tooltip
+              .content=${this._renderTimingExplainer()}
+              label=${TIMING.section.label}
+            ></gs-help-tooltip>
+          </div>
 
           <div style="display:flex;align-items:center;gap:8px;" data-scroll-target="lightsOnTime">
             <div class="lights-on-readonly">
               <span class="ro-label">Lights On Time</span>
               <span class="ro-value">${vm.draft.lightsOnTime || '—'}</span>
             </div>
+            <gs-help-tooltip
+              content=${TIMING.lightsOnTime.content}
+              label=${TIMING.lightsOnTime.label}
+            ></gs-help-tooltip>
             ${
               vm.detectedLightsOnTime
                 ? html` <span class="auto-lights-badge">auto: ${vm.detectedLightsOnTime}</span> `
@@ -316,6 +327,7 @@ export class IrrigationSteeringTab extends LitElement {
           <p class="lights-on-hint">Set in Config → Growlights.</p>
           <md3-number-input
             label="P0 Duration (min)"
+            .help=${TIMING.p0Duration}
             .value=${vm.draft.p0DurationMinutes}
             @change=${(e: CustomEvent) =>
               this._updateStrategyField('p0DurationMinutes', parseInt(e.detail))}
@@ -324,6 +336,7 @@ export class IrrigationSteeringTab extends LitElement {
             <md3-number-input
               data-field="p2StopBeforeLightsOffMinutes"
               label="P2 Stop Buffer (min)"
+              .help=${TIMING.p2StopBuffer}
               .value=${vm.draft.p2StopBeforeLightsOffMinutes}
               .disabled=${!vm.autoAdvanceP2ToP3}
               @change=${(e: CustomEvent) =>
@@ -338,7 +351,15 @@ export class IrrigationSteeringTab extends LitElement {
             }
           </div>
 
-          <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Dosing</h4>
+          <div
+            style="grid-column:span 2;display:flex;align-items:center;gap:8px;margin:12px 0 4px;"
+          >
+            <h4 style="margin:0;">Dosing</h4>
+            <gs-help-tooltip
+              .content=${this._renderDosingExplainer()}
+              label=${DOSING.section.label}
+            ></gs-help-tooltip>
+          </div>
 
           ${this._renderPhaseShotParams()}
           ${this._renderAdaptiveShotControl()}
@@ -456,6 +477,103 @@ export class IrrigationSteeringTab extends LitElement {
     `;
   }
 
+  // ─── Section explainers ───────────────────────────────────────────────────
+
+  /**
+   * The Timing section's explainer: the prose, then this growspace's own day
+   * drawn as one bar with the times its boundaries fall at.
+   *
+   * Every number comes from the viewmodel, which derives it through the shared
+   * `computePhases` the Phase Strip and the Crop Steering Day Chart draw from.
+   * Nothing here does boundary arithmetic — a second implementation of it is
+   * what made the card's phases disagree with the integration's (#42).
+   *
+   * Two things stay schematic on purpose. The P1|P2 divider is nominal, because
+   * that boundary is decided by measured VWC rather than by the clock. And with
+   * no lights-on to anchor the day, the whole bar falls back to illustrative
+   * widths with no times at all: an unanchored day has no boundaries to name,
+   * and a row of dashes would be a worse answer than the picture.
+   *
+   * Styles are inline because this markup renders inside `gs-help-tooltip`'s
+   * shadow root, where this component's own stylesheet does not reach. The
+   * existing [[Phase Strip]] already owns the full data-driven version of this
+   * picture; a second styled element here would be a third rendering of one
+   * concept (see ADR-0046).
+   */
+  private _renderTimingExplainer(): TemplateResult {
+    const tint: Record<string, string> = {
+      p0: 'rgba(158,158,158,0.35)',
+      p1: 'rgba(33,150,243,0.4)',
+      p2: 'rgba(76,175,80,0.4)',
+      p3: 'rgba(255,152,0,0.35)',
+    };
+    // The widths the bar ships with when there is nothing to anchor it to.
+    const schematic = [
+      { id: 'p0', label: 'P0', weight: 0.7 },
+      { id: 'p1', label: 'P1', weight: 1.5 },
+      { id: 'p2', label: 'P2', weight: 2.6 },
+      { id: 'p3', label: 'P3', weight: 1.2 },
+    ];
+
+    const derived = this.vm.timingExplainer;
+    const segments = derived?.segments ?? schematic;
+
+    return html`
+      <p style="margin:0 0 8px;">${TIMING.section.lead}</p>
+      <p style="margin:0 0 10px;">${TIMING.section.body}</p>
+      <div style="display:flex;border-radius:4px;overflow:hidden;">
+        ${segments.map(
+          (seg) => html`
+            <div
+              data-phase=${seg.id}
+              style="flex:${seg.weight};overflow:hidden;background:${tint[
+                seg.id
+              ]};padding:5px 0;text-align:center;font-size:10px;font-weight:600;letter-spacing:0.05em;"
+            >
+              ${seg.label}
+            </div>
+          `
+        )}
+      </div>
+      ${derived
+        ? html`
+            <div
+              class="timing-boundaries"
+              style="display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:10.5px;line-height:1.5;margin-top:7px;opacity:0.8;"
+            >
+              ${derived.boundaries.map(
+                (b) => html`
+                  <span data-boundary=${b.id} style="font-variant-numeric:tabular-nums;"
+                    >${b.time}</span
+                  >
+                  <span>${TIMING.boundaries[b.id]}</span>
+                `
+              )}
+            </div>
+          `
+        : html`
+            <div
+              style="display:flex;justify-content:space-between;font-size:10px;opacity:0.6;margin-top:3px;"
+            >
+              <span>lights on</span>
+              <span>lights off</span>
+            </div>
+          `}
+      <div style="margin-top:9px;font-size:10.5px;opacity:0.75;line-height:1.5;">
+        <div>P0 Duration sets how far P0 extends from lights-on.</div>
+        <div>P2 Stop Buffer sets where P3 begins, measured back from lights-off.</div>
+      </div>
+    `;
+  }
+
+  /** The Dosing section's explainer. Prose only — there is no shape to draw. */
+  private _renderDosingExplainer(): TemplateResult {
+    return html`
+      <p style="margin:0 0 8px;">${DOSING.section.lead}</p>
+      <p style="margin:0;">${DOSING.section.body}</p>
+    `;
+  }
+
   // ─── Phase cards ──────────────────────────────────────────────────────────
 
   private _handlePhaseCardClick(phaseId: Phase): void {
@@ -564,10 +682,13 @@ export class IrrigationSteeringTab extends LitElement {
 
   private _renderPhaseShotParams(): TemplateResult[] {
     return this.vm.phaseShots.map((p) => {
+      const sizeCopy = p.id === 'p1' ? DOSING.p1Size : DOSING.p2Size;
+      const intervalCopy = p.id === 'p1' ? DOSING.p1Interval : DOSING.p2Interval;
       return html`
         <md3-number-input
           data-field=${p.sizeField}
           label=${p.sizeLabel}
+          .help=${p.isVolume ? sizeCopy.volume : sizeCopy.duration}
           .value=${String(p.sizeValue ?? '')}
           @change=${(e: CustomEvent) =>
             this._updateStrategyField(
@@ -578,6 +699,7 @@ export class IrrigationSteeringTab extends LitElement {
         <md3-number-input
           data-field=${p.intervalField}
           label="${p.label} Shot Interval (min)"
+          .help=${intervalCopy}
           .value=${String(p.intervalValue ?? '')}
           @change=${(e: CustomEvent) =>
             this._updateStrategyField(p.intervalField, parseInt(e.detail))}
@@ -617,6 +739,7 @@ export class IrrigationSteeringTab extends LitElement {
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
                 <md3-number-input
                   data-field="dynamicAggressiveness"
+                  .help=${ADAPTIVE.aggressiveness}
                   label="Aggressiveness"
                   step="0.1"
                   .value=${String(draft.dynamicAggressiveness ?? 1.0)}
@@ -625,6 +748,7 @@ export class IrrigationSteeringTab extends LitElement {
                 ></md3-number-input>
                 <md3-number-input
                   data-field="dynamicRecovery"
+                  .help=${ADAPTIVE.recovery}
                   label="Recovery"
                   step="0.05"
                   .value=${String(draft.dynamicRecovery ?? 0.1)}
@@ -633,6 +757,7 @@ export class IrrigationSteeringTab extends LitElement {
                 ></md3-number-input>
                 <md3-number-input
                   data-field="dynamicShotSizeFloor"
+                  .help=${ADAPTIVE.sizeFloor}
                   label="Shot Size Floor (×)"
                   step="0.05"
                   .value=${String(draft.dynamicShotSizeFloor ?? 0.5)}
@@ -641,6 +766,7 @@ export class IrrigationSteeringTab extends LitElement {
                 ></md3-number-input>
                 <md3-number-input
                   data-field="dynamicIntervalCeiling"
+                  .help=${ADAPTIVE.intervalCeiling}
                   label="Interval Ceiling (×)"
                   step="0.1"
                   .value=${String(draft.dynamicIntervalCeiling ?? 1.5)}
