@@ -1,21 +1,118 @@
 name: Deploy Demo
+
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+  # Pull requests build and verify the site but do not deploy, so a change to
+  # the demo is reviewable before it reaches Pages — the failure this workflow
+  # guards against was invisible until after merge.
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
 permissions:
   contents: write
+
+concurrency:
+  group: demo-pages-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6.0.2
-      - name: Install and Build
+
+      - uses: actions/setup-node@v6.4.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install and build
         run: |
           npm ci
           npm run build
+
+      # The site is assembled into a dedicated directory rather than published
+      # from the repository root. Publishing `./` copies .gitignore into the
+      # gh-pages worktree, and `/dist/*.js` is ignored there (the bundle ships
+      # as a release asset, not in the tree) — so the built card was silently
+      # dropped from every deploy and the demo 404'd on its own bundle. A
+      # separate directory carries no .gitignore, and the root-anchored pattern
+      # would not match `_site/dist/` anyway.
+      - name: Assemble the demo site
+        run: |
+          mkdir -p _site/demo
+          cp -R dist _site/dist
+          # Sourcemaps are ~12MB and nothing on the demo needs them.
+          find _site/dist -name '*.map' -delete
+          cp demo/index.html demo/ha-shims.js demo/demo-data.json _site/demo/
+          cp -R demo/stages _site/demo/stages
+          touch _site/.nojekyll
+          cat > _site/index.html <<'HTML'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <title>Growspace Manager Card</title>
+              <meta http-equiv="refresh" content="0; url=./demo/" />
+              <link rel="canonical" href="./demo/" />
+            </head>
+            <body>
+              <p><a href="./demo/">Continue to the Growspace Manager Card demo</a></p>
+            </body>
+          </html>
+          HTML
+
+      # Fail loudly instead of deploying a site whose demo cannot load the card.
+      - name: Verify the assembled site
+        run: |
+          test -f _site/dist/growspace-manager-card.js \
+            || { echo "::error::dist/growspace-manager-card.js is missing from _site"; exit 1; }
+          test -f _site/demo/demo-data.json \
+            || { echo "::error::demo/demo-data.json is missing from _site"; exit 1; }
+          test -f _site/demo/ha-shims.js \
+            || { echo "::error::demo/ha-shims.js is missing from _site"; exit 1; }
+          test -f _site/demo/stages/flower.webp \
+            || { echo "::error::demo/stages artwork is missing from _site"; exit 1; }
+          chunks=$(find _site/dist -name 'growspace-*.js' | wc -l)
+          echo "Bundle chunks staged: $chunks"
+          [ "$chunks" -gt 1 ] \
+            || { echo "::error::the card is code-split; expected lazy chunks beside the entry"; exit 1; }
+
+      # Boot the assembled site in a real browser and require the card to mount
+      # with no failed requests. The static checks above cannot catch a demo
+      # that loads its files and then renders nothing.
+      - name: Smoke-test the assembled site in a browser
+        run: |
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8080 --bind 127.0.0.1 --directory _site &
+          for _ in $(seq 1 30); do
+            curl -sf -o /dev/null http://127.0.0.1:8080/demo/ && break
+            sleep 1
+          done
+          node .github/scripts/smoke-demo.mjs http://127.0.0.1:8080
+
+      - name: Upload the assembled site
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-site
+          path: _site
+          retention-days: 14
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: demo-site
+          path: _site
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./ # Publishes root (containing mockup.html and dist folder)
-          destination_dir: ./
+          publish_dir: ./_site
+          force_orphan: true

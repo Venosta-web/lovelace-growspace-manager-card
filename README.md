@@ -2,10 +2,15 @@
 
 A premium, feature-rich **Home Assistant Lovelace custom card** designed for the modern grower. Manage multiple growspaces, track complex plant lifecycles, and leverage AI to optimize your environment—all from a sleek, glassmorphism-inspired interface.
 
-![Growspace Manager Card]()
-_Unified view showing plant grid, light cycle history, and environmental stats_
+![Growspace Manager Card](assets/screenshots/overview.png)
+_Unified view: plant grid with per-stage imagery and day counters, environmental
+sparklines, and the live crop-steering phase._
 
-[**View Live Demo**](https://Venosta-web.github.io/lovelace-growspace-manager-card/mockup.html)
+[**Try the live demo →**](https://Venosta-web.github.io/lovelace-growspace-manager-card/demo/)
+
+The demo is the real card running against a recorded snapshot of a Home Assistant
+growspace — open a plant, browse the strain library, page through the irrigation
+dialogs. Nothing is persisted; reload to reset.
 
 ---
 
@@ -66,12 +71,39 @@ This card is the frontend companion to the **Growspace Manager Backend** integra
 
 ## Screenshots
 
-### Strain Library
+### Plant management
 
-Manage your genetics with a powerful visual library.
-| Browse View | Editor View |
-|:---:|:---:|
-| ![Strain Library Browse]() | ![Strain Library Editor]() |
+Click any plant for its full lifecycle: stage timeline with day counts, identity
+and grid position, watering history, and one-tap actions for cloning and harvest.
+
+![Plant management dialog](assets/screenshots/plant-dialog.png)
+
+### Crop steering
+
+Phase-driven irrigation (P0–P3) computed from VWC targets, with the live
+substrate model projected forward against the day's photoperiod.
+
+![Crop steering and irrigation schedule](assets/screenshots/crop-steering.png)
+
+### Strain library
+
+Manage your genetics with a searchable visual library — breeder, type, flowering
+window, and how many plants of each strain are currently running.
+
+![Strain library](assets/screenshots/strain-library-grid.png)
+
+### Logbook
+
+Environmental alerts and your own notes on one timeline, filterable by category.
+
+![Events logbook](assets/screenshots/logbook.png)
+
+### Mobile
+
+On narrow screens the environment readings become a swipeable carousel and the
+plant grid stacks into a single column.
+
+<img src="assets/screenshots/mobile.png" alt="Mobile layout" width="360" />
 
 ---
 
