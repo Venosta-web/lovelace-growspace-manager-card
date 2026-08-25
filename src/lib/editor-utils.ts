@@ -10,6 +10,7 @@ const FIELD_LABELS: Record<string, string> = {
   keyboard_rotate_speed: 'Rotation Speed',
   default_view: 'Default View',
   hidden_chips: 'Hidden Chips',
+  start_in_graph_wall: 'Start in Graph Wall',
 };
 
 export const computeEditorLabel = (schema: { name: string }): string =>
