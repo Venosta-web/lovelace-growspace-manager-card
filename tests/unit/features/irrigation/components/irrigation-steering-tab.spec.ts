@@ -14,6 +14,12 @@ import type {
   SteeringTabViewModel,
   PhaseShotDescriptor,
 } from '../../../../../src/features/irrigation/viewmodels/steering-tab.viewmodel';
+import {
+  TIMING,
+  DOSING,
+  ADAPTIVE,
+} from '../../../../../src/features/irrigation/help-copy';
+import type { HelpCopy } from '../../../../../src/features/shared/ui/gs-help-tooltip';
 
 for (const tag of [
   'ha-svg-icon',
@@ -64,6 +70,15 @@ function secondsPhaseShots(): PhaseShotDescriptor[] {
       isVolume: false,
     },
   ];
+}
+
+function volumePhaseShots(): PhaseShotDescriptor[] {
+  return secondsPhaseShots().map((p) => ({
+    ...p,
+    sizeField: `${p.id}ShotVolumePercent` as PhaseShotDescriptor['sizeField'],
+    sizeLabel: `${p.label} Shot Size (%)`,
+    isVolume: true,
+  }));
 }
 
 function makeVm(overrides: Partial<SteeringTabViewModel> = {}): SteeringTabViewModel {
@@ -306,5 +321,82 @@ describe('irrigation-steering-tab', () => {
     const cancelBtn = phaseOverlay.querySelector('.md3-button.tonal') as HTMLButtonElement;
     const cancelled = await captureIntent(el, 'phase-change-cancelled', () => cancelBtn.click());
     expect(cancelled.type).toBe('phase-change-cancelled');
+  });
+  // ─── Field help copy ──────────────────────────────────────────────────────
+  //
+  // These assert copy IDENTITY, not merely presence: the realistic failure for
+  // a dozen hand-wired tooltips is a copy/paste that puts P1's sentence on P2's
+  // field. Comparing against the imported constant is what catches that.
+  //
+  // Lit's property binding assigns straight onto the element, so the plain
+  // `md3-number-input` stub records `.help` without needing to declare it.
+
+  describe('field help copy', () => {
+    const helpOf = (el: IrrigationSteeringTab, field: string): HelpCopy | undefined =>
+      (
+        el.shadowRoot!.querySelector(`md3-number-input[data-field="${field}"]`) as unknown as {
+          help?: HelpCopy;
+        } | null
+      )?.help;
+
+    const helpByLabel = (el: IrrigationSteeringTab, label: string): Element | undefined =>
+      Array.from(el.shadowRoot!.querySelectorAll('gs-help-tooltip')).find(
+        (t) => t.getAttribute('label') === label
+      );
+
+    it('wires each Timing field to its own copy', async () => {
+      const el = await mount(makeVm());
+      // P0 Duration and P2 Stop Buffer carry no data-field, so query by label.
+      const inputs = Array.from(
+        el.shadowRoot!.querySelectorAll('md3-number-input')
+      ) as unknown as { label?: string; getAttribute(n: string): string | null; help?: HelpCopy }[];
+      const byLabel = (label: string) =>
+        inputs.find((i) => i.getAttribute('label') === label)?.help;
+
+      expect(byLabel('P0 Duration (min)')).toBe(TIMING.p0Duration);
+      expect(byLabel('P2 Stop Buffer (min)')).toBe(TIMING.p2StopBuffer);
+    });
+
+    it('gives read-only Lights On Time its own tooltip, alongside the navigational hint', async () => {
+      const el = await mount(makeVm());
+      const tip = helpByLabel(el, TIMING.lightsOnTime.label);
+      expect(tip?.getAttribute('content')).toBe(TIMING.lightsOnTime.content);
+      // The visible hint answers a different question and must survive.
+      expect(norm(el.shadowRoot!.querySelector('.lights-on-hint')?.textContent)).toBe(
+        'Set in Config → Growlights.'
+      );
+    });
+
+    it('renders a section explainer for Timing and for Dosing', async () => {
+      const el = await mount(makeVm());
+      expect(helpByLabel(el, TIMING.section.label)).toBeTruthy();
+      expect(helpByLabel(el, DOSING.section.label)).toBeTruthy();
+    });
+
+    it('wires each phase shot interval to its own copy', async () => {
+      const el = await mount(makeVm());
+      expect(helpOf(el, 'p1ShotIntervalMinutes')).toBe(DOSING.p1Interval);
+      expect(helpOf(el, 'p2ShotIntervalMinutes')).toBe(DOSING.p2Interval);
+    });
+
+    it('picks duration-mode shot-size copy when the sizing mode is seconds', async () => {
+      const el = await mount(makeVm({ phaseShots: secondsPhaseShots() }));
+      expect(helpOf(el, 'p1ShotDurationSeconds')).toBe(DOSING.p1Size.duration);
+      expect(helpOf(el, 'p2ShotDurationSeconds')).toBe(DOSING.p2Size.duration);
+    });
+
+    it('picks volume-mode shot-size copy when the sizing mode is volume', async () => {
+      const el = await mount(makeVm({ phaseShots: volumePhaseShots() }));
+      expect(helpOf(el, 'p1ShotVolumePercent')).toBe(DOSING.p1Size.volume);
+      expect(helpOf(el, 'p2ShotVolumePercent')).toBe(DOSING.p2Size.volume);
+    });
+
+    it('wires each Adaptive Shot Control tunable to its own copy', async () => {
+      const el = await mount(makeVm({ adaptiveEnabled: true }));
+      expect(helpOf(el, 'dynamicAggressiveness')).toBe(ADAPTIVE.aggressiveness);
+      expect(helpOf(el, 'dynamicRecovery')).toBe(ADAPTIVE.recovery);
+      expect(helpOf(el, 'dynamicShotSizeFloor')).toBe(ADAPTIVE.sizeFloor);
+      expect(helpOf(el, 'dynamicIntervalCeiling')).toBe(ADAPTIVE.intervalCeiling);
+    });
   });
 });

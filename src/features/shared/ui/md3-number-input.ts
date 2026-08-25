@@ -1,6 +1,8 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import './gs-help-tooltip';
+import type { HelpCopy } from './gs-help-tooltip';
 
 @customElement('md3-number-input')
 export class Md3NumberInput extends LitElement {
@@ -13,6 +15,12 @@ export class Md3NumberInput extends LitElement {
   @property({ attribute: 'input-aria-label' }) inputAriaLabel = '';
   @property() error = '';
   @property({ type: Boolean, reflect: true }) disabled = false;
+  /**
+   * Optional explanation for this field, rendered as a help trigger in the
+   * field's top-right corner. Taken as a `{ label, content }` pair so the
+   * accessible label cannot drift from the copy it describes.
+   */
+  @property({ attribute: false }) help?: HelpCopy;
 
   private static _nextInputId = 0;
   private readonly _inputId = `md3-number-input-${Md3NumberInput._nextInputId++}`;
@@ -31,6 +39,40 @@ export class Md3NumberInput extends LitElement {
       }
       .md3-input-group.has-error .md3-input {
         border-bottom-color: var(--error-color, #f44336);
+      }
+      /* The trigger has to sit beside the label text it explains. Anchoring it
+         to the field's top-right corner looked right in isolation, but these
+         fields render ~700px wide inside a dialog, which left the icon most of
+         a field-width away from its label and reading as unattached.
+
+         So label and trigger share one absolutely-positioned row, occupying the
+         slot .md3-label held on its own. The row inherits the label's
+         pointer-events:none; only the trigger takes interactivity back.
+
+         This layout applies ONLY when help is set — a field without help
+         renders exactly the markup it always did. .md3-label is shared by
+         every dialog's inputs, so the no-help path stays byte-identical rather
+         than re-positioning a label thousands of call sites depend on. */
+      .md3-label-row {
+        position: absolute;
+        top: 8px;
+        left: 16px;
+        right: 16px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        pointer-events: none;
+        z-index: 1;
+      }
+      /* Two classes, so this beats the shared single-class .md3-label rule
+         regardless of stylesheet order. */
+      .md3-label-row .md3-label {
+        position: static;
+        left: auto;
+        top: auto;
+      }
+      .md3-label-row .md3-help {
+        pointer-events: auto;
       }
       .md3-error {
         margin-top: 4px;
@@ -58,7 +100,16 @@ export class Md3NumberInput extends LitElement {
   render() {
     return html`
       <div class="md3-input-group ${this.error ? 'has-error' : ''}">
-        <label class="md3-label" for=${this._inputId}>${this.label}</label>
+        ${this.help
+          ? html`<div class="md3-label-row">
+              <label class="md3-label" for=${this._inputId}>${this.label}</label>
+              <gs-help-tooltip
+                class="md3-help"
+                .content=${this.help.content}
+                label=${this.help.label}
+              ></gs-help-tooltip>
+            </div>`
+          : html`<label class="md3-label" for=${this._inputId}>${this.label}</label>`}
         <div style="display: flex; align-items: center;">
           <input
             type="number"
