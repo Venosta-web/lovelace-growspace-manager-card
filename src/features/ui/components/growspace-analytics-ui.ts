@@ -5,6 +5,7 @@ import { mdiFullscreen, mdiFullscreenExit } from '@mdi/js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { GrowspaceDevice, SensorHistories, HistoryTimeRange } from '../../../types';
 import type { MetricDescriptor } from '../../../slices/metric-descriptors';
+import { localizeWithParams } from '../../../localize/localize';
 import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
 import '../../../growspace-env-chart';
@@ -38,6 +39,10 @@ export class GrowspaceAnalyticsUI extends LitElement {
 
   @query('.graphs-container') private _graphs!: HTMLElement | null;
   @query('ha-dialog') private _dialog!: HTMLElement | null;
+
+  private _localize(key: string, params: Record<string, string | number> = {}): string {
+    return localizeWithParams(key, params, this.hass?.locale?.language ?? 'en');
+  }
 
   static styles = [
     growspaceCardStyles,
@@ -222,7 +227,7 @@ export class GrowspaceAnalyticsUI extends LitElement {
             class="loading-spinner"
             style="width:24px;height:24px;border:2px solid var(--gm-primary-color);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"
           ></div>
-          <span style="margin-left:12px;">Loading history data...</span>
+          <span style="margin-left:12px;">${this._localize('analytics.loading_history')}</span>
         </div>
       `;
     }
@@ -266,6 +271,9 @@ export class GrowspaceAnalyticsUI extends LitElement {
 
   private _renderTimeRangeSelector(): TemplateResult {
     const ranges: HistoryTimeRange[] = ['1h', '6h', '24h', '7d'];
+    const fullscreenLabel = this._localize(
+      this.fullscreen ? 'analytics.exit_graph_wall' : 'analytics.open_graph_wall'
+    );
     return html`
       <div class="time-range-selector">
         ${ranges.map(
@@ -283,8 +291,8 @@ export class GrowspaceAnalyticsUI extends LitElement {
               <ha-icon-button
                 class="fullscreen-toggle"
                 .path=${this.fullscreen ? mdiFullscreenExit : mdiFullscreen}
-                .label=${this.fullscreen ? 'Exit graph wall' : 'Open graph wall'}
-                title=${this.fullscreen ? 'Exit graph wall' : 'Open graph wall'}
+                .label=${fullscreenLabel}
+                title=${fullscreenLabel}
                 @click=${() => this._emitSetFullscreen(!this.fullscreen)}
               ></ha-icon-button>
             `
