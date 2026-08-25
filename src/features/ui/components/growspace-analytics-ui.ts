@@ -51,6 +51,11 @@ export class GrowspaceAnalyticsUI extends LitElement {
         flex-direction: column;
         gap: 12px;
       }
+      /* Inline, .graphs is a grouping element only — the charts stay direct
+         flex children of .graphs-container. In the wall it becomes the grid. */
+      .graphs {
+        display: contents;
+      }
       @keyframes spin {
         to {
           transform: rotate(360deg);
@@ -69,34 +74,63 @@ export class GrowspaceAnalyticsUI extends LitElement {
 
       /* ---- Env Graph Wall ---- */
 
+      /*
+       * width="full" alone is not full bleed: --ha-dialog-width-full
+       * defaults to min(95vw, var(--safe-width)), and the surface height is
+       * content-driven under max-height: calc(var(--safe-height) - space-20).
+       * Both leave a scrim margin the Wall has no use for. The properties below
+       * are ha-dialog's own theme hooks; --safe-width / --safe-height are
+       * 100vw / 100vh minus the safe-area insets, which is what "fullscreen"
+       * means on a device with a notch.
+       *
+       * Home Assistant's own [fullscreen] attribute sets the same geometry,
+       * but it also sets .body { overflow: hidden } — and .body is the
+       * Wall's only scroll container once the graphs outgrow the viewport.
+       */
       ha-dialog {
         --dialog-content-padding: 0;
+        --ha-dialog-width-full: var(--safe-width, 100vw);
+        --ha-dialog-max-width: var(--safe-width, 100vw);
+        --ha-dialog-min-height: var(--safe-height, 100vh);
+        --ha-dialog-max-height: var(--safe-height, 100vh);
+        --ha-dialog-border-radius: 0;
+        --dialog-surface-margin-top: 0;
       }
 
       /*
        * The wall is the same .graphs-container node, relocated into the dialog
        * (see _syncWallPlacement). Everything below is therefore an override of
        * the inline layout above, not a second layout.
+       *
+       * The container is the vertical frame — toolbar, then graphs — and
+       * .graphs is the stack. They are two elements rather than one so that the
+       * toolbar is not a grid row: the stack stretches its rows to spend the
+       * viewport height, and a toolbar inside it would take an equal share of
+       * that space.
        */
       .graphs-container.wall {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(520px, 1fr));
-        align-content: start;
-        gap: 16px;
-        padding: 0 16px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        /*
+         * The surface is exactly --safe-height and carries no header, footer or
+         * content padding, so its scrollable body is that tall too. A percentage
+         * cannot say this: ha-dialog's body is a flex-grown item with height:auto,
+         * and Chromium leaves min-height:100% unresolved against it — measured
+         * at :8123, where the wall stopped at its content height of 472px inside
+         * a 1000px surface.
+         */
+        min-height: var(--safe-height, 100vh);
         box-sizing: border-box;
-        min-height: 100%;
-        /* env-chart reads this; without it a 1440p wall is six postage stamps. */
-        --gs-env-chart-height: clamp(240px, 32vh, 420px);
       }
-      /* The time-range row spans the grid and sticks to the top of the overlay. */
+      /* Sticky against ha-dialog's .body, which is the scroller. */
       .graphs-container.wall .time-range-selector {
-        grid-column: 1 / -1;
         position: sticky;
         top: 0;
         z-index: 1;
+        flex: none;
         justify-content: flex-start;
-        margin: 0 -16px 0;
+        margin: 0;
         padding: 12px 16px;
         background: var(--card-background-color, #1a1a1a);
         border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
@@ -104,9 +138,41 @@ export class GrowspaceAnalyticsUI extends LitElement {
       .graphs-container.wall .time-range-selector .fullscreen-toggle {
         margin-left: auto;
       }
-      /* env-chart's own top margin fights the grid gap. */
-      .graphs-container.wall > * {
+      /*
+       * flex: 1 0 auto plus stretched rows is what spends the full viewport
+       * height: one open graph fills the wall, a handful share it evenly, and
+       * once they need more than the viewport the rows fall back to their floor
+       * and .body scrolls.
+       */
+      .graphs-container.wall .graphs {
+        display: grid;
+        /* One full-width column: the graphs stack vertically, each spanning the
+           whole wall, rather than tiling into columns. */
+        grid-template-columns: 1fr;
+        align-content: stretch;
+        gap: 16px;
+        padding: 16px;
+        box-sizing: border-box;
+        flex: 1 0 auto;
+        /* The floor a chart body grows from; without it a 1440p wall is six
+           postage stamps. env-chart reads it as a flex-basis, not a fixed
+           height. */
+        --gs-env-chart-height: clamp(240px, 30vh, 460px);
+      }
+      .graphs-container.wall .graphs > * {
         min-width: 0;
+      }
+      /* env-chart's top margin is spacing for the inline stack; here the grid
+         gap owns it, and a margin would push the card past its stretched row. */
+      .graphs-container.wall .graphs > growspace-env-chart {
+        margin-top: 0;
+      }
+      /* These two carry fixed internal geometry and cannot use a taller row
+         yet — issue 758 — so they sit at its top rather than stretching
+         around it. */
+      .graphs-container.wall .graphs > tank-water-chart,
+      .graphs-container.wall .graphs > crop-steering-day-chart {
+        align-self: start;
       }
     `,
   ];
@@ -139,7 +205,10 @@ export class GrowspaceAnalyticsUI extends LitElement {
         prevent-scrim-close
         @closed=${this._handleDialogClosed}
       ></ha-dialog>
-      <div class="graphs-container">${this._renderTimeRangeSelector()} ${this._renderBody()}</div>
+      <div class="graphs-container">
+        ${this._renderTimeRangeSelector()}
+        <div class="graphs">${this._renderBody()}</div>
+      </div>
     `;
   }
 
