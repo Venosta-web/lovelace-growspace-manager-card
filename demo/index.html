@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Growspace Manager Card — Live Demo</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        color-scheme: dark;
+
+        /* The subset of Home Assistant's theme variables the card actually
+           reads. Values mirror HA's built-in dark theme so the demo looks like
+           the real dashboard rather than an unstyled page. */
+        --primary-color: #03a9f4;
+        --accent-color: #ff9800;
+        --primary-background-color: #111111;
+        --secondary-background-color: #202020;
+        --card-background-color: #1c1c1c;
+        --ha-card-background: #1c1c1c;
+        --primary-text-color: #e1e1e1;
+        --secondary-text-color: #9b9b9b;
+        --disabled-text-color: #6f6f6f;
+        --divider-color: rgba(225, 225, 225, 0.12);
+        --error-color: #db4437;
+        --warning-color: #ffa600;
+        --success-color: #43a047;
+        --info-color: #039be5;
+        --state-icon-color: #9b9b9b;
+        --ha-card-border-radius: 12px;
+        --ha-card-border-width: 1px;
+        --ha-card-border-color: rgba(225, 225, 225, 0.12);
+        --ha-card-box-shadow: none;
+        --mdc-theme-primary: #03a9f4;
+        --mdc-theme-surface: #1c1c1c;
+        --mdc-theme-on-surface: #e1e1e1;
+        --material-background-color: #1c1c1c;
+        --material-secondary-background-color: #202020;
+        --text-primary-color: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0 0 48px;
+        background: var(--primary-background-color);
+        color: var(--primary-text-color);
+        font-family:
+          Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 24px;
+        align-items: baseline;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--divider-color);
+        background: var(--secondary-background-color);
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+      }
+
+      header p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--secondary-text-color);
+        max-width: 62ch;
+        line-height: 1.5;
+      }
+
+      header a {
+        color: var(--primary-color);
+      }
+
+      .badge {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+        white-space: nowrap;
+      }
+
+      main {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 24px 16px 0;
+      }
+
+      #status {
+        padding: 48px 16px;
+        text-align: center;
+        color: var(--secondary-text-color);
+      }
+
+      #status.error {
+        color: var(--error-color);
+        text-align: left;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      #status pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 0.8rem;
+        background: var(--card-background-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        padding: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Growspace Manager Card</h1>
+      <span class="badge">Live demo</span>
+      <p>
+        The real card, running against a recorded snapshot of a Home Assistant
+        growspace — no backend required. Open a plant, browse the strain
+        library, or page through the irrigation dialogs. Writes are accepted and
+        shown, but nothing is persisted; reload to reset.
+        <a href="https://github.com/Venosta-web/lovelace-growspace-manager-card"
+          >Source on GitHub</a
+        >
+      </p>
+    </header>
+
+    <main>
+      <div id="status">Loading demo data…</div>
+      <div id="mount"></div>
+    </main>
+
+    <script type="module">
+      const status = document.getElementById("status");
+      const mount = document.getElementById("mount");
+
+      const fail = (heading, detail) => {
+        status.className = "error";
+        status.innerHTML = `<p><strong>${heading}</strong></p><pre>${String(detail)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")}</pre>`;
+      };
+
+      // -- 1. Load the recorded snapshot -------------------------------------
+      let data;
+      try {
+        const res = await fetch("./demo-data.json", { cache: "no-cache" });
+        if (!res.ok) throw new Error(`demo-data.json → HTTP ${res.status}`);
+        data = await res.json();
+      } catch (err) {
+        fail("Could not load the recorded demo data.", err);
+        throw err;
+      }
+
+      // -- 2. Re-base every timestamp onto "now" -----------------------------
+      // The snapshot is frozen at capture time. Without this the demo would
+      // drift: graphs would show a 24h window that ended months ago and plants
+      // would age a day for every day the page went un-redeployed. Shifting all
+      // ISO-8601 instants by (now - capturedAt) keeps "46 days in flower" and
+      // "last 24 hours" true whenever someone opens the page.
+      const SHIFT_MS = Date.now() - new Date(data.capturedAt).getTime();
+      const ISO_RE = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
+
+      const shift = (value) => {
+        if (typeof value === "string") {
+          if (!ISO_RE.test(value)) return value;
+          const t = Date.parse(value);
+          if (Number.isNaN(t)) return value;
+          const moved = new Date(t + SHIFT_MS);
+          // Preserve date-only strings (lifecycle dates) as date-only.
+          return value.length === 10
+            ? moved.toISOString().slice(0, 10)
+            : moved.toISOString();
+        }
+        if (Array.isArray(value)) return value.map(shift);
+        if (value && typeof value === "object") {
+          const out = {};
+          for (const [k, v] of Object.entries(value)) out[k] = shift(v);
+          return out;
+        }
+        return value;
+      };
+
+      const states = shift(data.states);
+      const history = shift(data.history);
+      const responses = shift(data.responses);
+
+      // -- 3. Build the states map ------------------------------------------
+      const stateMap = {};
+      for (const s of states) {
+        stateMap[s.entity_id] = {
+          entity_id: s.entity_id,
+          state: s.state,
+          attributes: s.attributes ?? {},
+          last_changed: s.last_changed,
+          last_updated: s.last_updated,
+          context: { id: "demo", parent_id: null, user_id: null },
+        };
+      }
+
+      // -- 4. The mock Home Assistant connection ----------------------------
+      // Every backend read in the card funnels through hassCall() in
+      // src/services/hass-call.ts, which is a thin wrapper over hass.callWS.
+      // Serving the recorded responses here is therefore enough to drive the
+      // whole UI.
+      const unhandled = new Set();
+
+      const callWS = async (msg) => {
+        const type = msg?.type;
+
+        if (type === "growspace_manager/get_history_stats") {
+          const wanted = msg.entity_ids ?? Object.keys(history);
+          const out = {};
+          for (const id of wanted) if (history[id]) out[id] = history[id];
+          return out;
+        }
+
+        if (type in responses && responses[type] != null) {
+          return structuredClone(responses[type]);
+        }
+
+        // Anything not recorded is a write (add/move/water/…) or a command this
+        // snapshot never exercised. Resolve permissively so the UI completes
+        // its optimistic update instead of surfacing a transport error.
+        if (typeof type === "string" && type.startsWith("growspace_manager/")) {
+          if (!unhandled.has(type)) {
+            unhandled.add(type);
+            console.info(`[demo] no recorded response for "${type}" — returning {}`);
+          }
+          return {};
+        }
+        return {};
+      };
+
+      // -- 4b. Default stage artwork ----------------------------------------
+      // The card falls back to `/growspace_manager/static/stages/<stage>.png`
+      // (src/utils/plant-utils.ts), a root-absolute path served by the Python
+      // integration. This is a project Pages site served from a sub-path, so
+      // that URL resolves off-site and 404s. Rewrite it as the attribute is
+      // set — which also reaches images inside the card's shadow roots — to
+      // downscaled WebP copies shipped alongside this page.
+      const STAGE_RE = /^\/growspace_manager\/static\/stages\/([a-z]+)\.png$/;
+      const stageUrl = (name) =>
+        new URL(`./stages/${name}.webp`, import.meta.url).href;
+      const nativeSetAttribute = Element.prototype.setAttribute;
+      Element.prototype.setAttribute = function (name, value) {
+        if (name === "src" && typeof value === "string") {
+          const match = STAGE_RE.exec(value);
+          if (match) value = stageUrl(match[1]);
+        }
+        return nativeSetAttribute.call(this, name, value);
+      };
+
+      const noopUnsub = async () => () => {};
+
+      const hass = {
+        states: stateMap,
+        config: {
+          time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          unit_system: {
+            length: "km",
+            mass: "kg",
+            temperature: "°C",
+            volume: "L",
+            pressure: "Pa",
+            wind_speed: "km/h",
+            accumulated_precipitation: "mm",
+          },
+          location_name: "Demo",
+          version: "demo",
+          components: ["growspace_manager"],
+        },
+        themes: { default_theme: "default", darkMode: true, themes: {} },
+        selectedTheme: { dark: true, theme: "default" },
+        language: "en",
+        locale: {
+          language: "en",
+          number_format: "language",
+          time_format: "24",
+          date_format: "DMY",
+          first_weekday: "monday",
+        },
+        user: { id: "demo", name: "Demo Grower", is_admin: true, is_owner: true },
+        localize: (key) => key,
+        formatEntityState: (stateObj) => stateObj?.state ?? "",
+        formatEntityAttributeValue: (_s, _a, value) => String(value ?? ""),
+        callWS,
+        sendWS: (msg) => void callWS(msg),
+        callService: async (domain, service, serviceData) => {
+          console.info("[demo] callService", domain, service, serviceData);
+          return { context: { id: "demo" }, response: {} };
+        },
+        callApi: async (method, path) => {
+          console.info("[demo] callApi", method, path);
+          return {};
+        },
+        fetchWithAuth: async (path) => new Response("{}", { status: 200 }),
+        connection: {
+          subscribeEvents: noopUnsub,
+          subscribeMessage: noopUnsub,
+          sendMessagePromise: callWS,
+          sendMessage: (msg) => void callWS(msg),
+          addEventListener() {},
+          removeEventListener() {},
+        },
+      };
+
+      // -- 5. Load the card bundle and mount --------------------------------
+      // The shims must be registered first: the card renders <ha-dialog> and
+      // friends expecting Home Assistant's frontend to have defined them.
+      try {
+        await import("./ha-shims.js");
+      } catch (err) {
+        fail("Could not load the Home Assistant component stand-ins.", err);
+        throw err;
+      }
+
+      try {
+        await import("../dist/growspace-manager-card.js");
+      } catch (err) {
+        fail(
+          "Could not load the card bundle from ../dist/growspace-manager-card.js.",
+          err
+        );
+        throw err;
+      }
+
+      try {
+        await customElements.whenDefined("growspace-manager-card");
+      } catch (err) {
+        fail("The card bundle loaded but never defined <growspace-manager-card>.", err);
+        throw err;
+      }
+
+      const card = document.createElement("growspace-manager-card");
+      card.setConfig({
+        type: "custom:growspace-manager-card",
+        default_growspace: data.growspaceId,
+      });
+      card.hass = hass;
+      mount.appendChild(card);
+      status.remove();
+
+      // Keep `hass` identity-stable but re-assign so Lit sees an update, the
+      // same way Home Assistant's own dashboard does on each state change.
+      setInterval(() => {
+        card.hass = { ...hass };
+      }, 5000);
+    </script>
+  </body>
+</html>
