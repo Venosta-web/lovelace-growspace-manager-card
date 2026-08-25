@@ -19,6 +19,7 @@ import { describe, it, expect } from 'vitest';
 import { token } from './variables.generated';
 
 const PHASE_TOKENS = [
+  '--phase-p0',
   '--phase-p1',
   '--phase-p2',
   '--phase-p3',

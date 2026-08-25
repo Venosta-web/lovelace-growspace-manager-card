@@ -451,8 +451,14 @@ export const groups: TokenGroup[] = [
   },
   {
     title: 'Crop steering phases',
-    note: "P1/P2/P3 are painted as chart bands, listed as phase chips and worn as the hero's phase badge, all from one family that lived as three literals in slices/irrigation/index.ts. Values unchanged. See ADR 0042 §1.",
+    note: "P0/P1/P2/P3 are painted as chart bands, listed as phase chips and worn as the hero's phase badge, all from one family that lived as three literals in slices/irrigation/index.ts. The P1/P2/P3 values are unchanged from those literals. See ADR 0042 §1.",
     tokens: [
+      {
+        css: '--phase-p0',
+        value: '#7e57c2',
+        doc: 'colors.phase-p0',
+        note: 'Activation — the post-lights-on hold before the first shot. The one phase in which no irrigation fires, so it is deliberately off the P1→P3 green/blue/orange progression rather than a fourth step along it.',
+      },
       { css: '--phase-p1', value: '#4caf50', doc: 'colors.phase-p1', note: 'Saturation' },
       { css: '--phase-p2', value: '#2196f3', doc: 'colors.phase-p2', note: 'Maintenance' },
       {

@@ -113,9 +113,14 @@ colors:
   stage-flower-early: '#ff9800'
   stage-flower-mid: '#fb8c00'
   stage-flower-late: '#ef6c00'
-  # Crop steering phases — P1/P2/P3 are painted as chart bands, listed as phase chips and
-  # worn as the hero's phase badge, all from one family that lived as three literals in
-  # slices/irrigation/index.ts. Values unchanged. See ADR 0042 §1.
+  # Crop steering phases — P0/P1/P2/P3 are painted as chart bands, listed as phase chips
+  # and worn as the hero's phase badge, all from one family that lived as three literals
+  # in slices/irrigation/index.ts. The P1/P2/P3 values are unchanged from those literals.
+  # See ADR 0042 §1.
+  # Activation — the post-lights-on hold before the first shot. The one phase in which no
+  # irrigation fires, so it is deliberately off the P1→P3 green/blue/orange progression
+  # rather than a fourth step along it.
+  phase-p0: '#7e57c2'
   # Saturation
   phase-p1: '#4caf50'
   # Maintenance
@@ -472,7 +477,7 @@ One pair everywhere the light cycle is reported — timeline icons, logbook entr
 
 ### Crop Steering Phases
 
-- **P1 Saturation** `#4caf50` (`--phase-p1`), **P2 Maintenance** `#2196f3` (`--phase-p2`), **P3 Dryback** `#ff9800` (`--phase-p3`) — chart bands, phase chips, and the hero's dryback badge, from one family. P3 shares a value with Flowering Orange and is not it.
+- **P0 Activation** `#7e57c2` (`--phase-p0`), **P1 Saturation** `#4caf50` (`--phase-p1`), **P2 Maintenance** `#2196f3` (`--phase-p2`), **P3 Dryback** `#ff9800` (`--phase-p3`) — chart bands, phase chips, and the hero's dryback badge, from one family. P3 shares a value with Flowering Orange and is not it. P0 is the one phase in which no irrigation fires, so it sits off the green→blue→orange progression rather than extending it.
 
 ### Gradients
 

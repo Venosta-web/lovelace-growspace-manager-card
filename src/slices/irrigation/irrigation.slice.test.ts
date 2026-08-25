@@ -139,7 +139,7 @@ describe('computePhaseWindows', () => {
     expect(windows?.lightsOnMin).toBe(360); // 6 * 60
   });
 
-  it('derives p1 window starting at lightsOnMin', () => {
+  it('derives the p0 window starting at lightsOnMin', () => {
     const windows = computePhaseWindows(
       makeStrategy({
         lightsOnTime: '06:00',
@@ -147,10 +147,11 @@ describe('computePhaseWindows', () => {
       }),
       18
     );
-    // P1 (Saturation): lightsOnMin to lightsOnMin + p0DurationMinutes
-    expect(windows?.phases[0].id).toBe('p1');
-    expect(windows?.phases[0].start).toBe(360);
-    expect(windows?.phases[0].end).toBe(420); // 360 + 60
+    // P0 (Activation): lightsOnMin to lightsOnMin + p0DurationMinutes. P1 starts
+    // where it ends, at the first shot — not at lights-on.
+    expect(windows?.phases.map((p) => p.id)).toEqual(['p0', 'p1', 'p2', 'p3']);
+    expect(windows?.phases[0]).toMatchObject({ id: 'p0', start: 360, end: 420 });
+    expect(windows?.phases[1]).toMatchObject({ id: 'p1', start: 420 });
   });
 
   it('derives p3 window ending at lightsOffMin', () => {
@@ -164,8 +165,8 @@ describe('computePhaseWindows', () => {
     );
     // lightsOffMin = 360 + 18*60 = 1440
     const lightsOffMin = 360 + 18 * 60;
-    expect(windows?.phases[2].id).toBe('p3');
-    expect(windows?.phases[2].end).toBe(lightsOffMin);
+    expect(windows?.phases[3].id).toBe('p3');
+    expect(windows?.phases[3].end).toBe(lightsOffMin);
   });
 
   it('uses default 18h photoperiod when vegDayHours not specified', () => {
@@ -188,14 +189,14 @@ describe('computePhaseWindows', () => {
     // Default photoperiod 18h -> lightsOffMin = 360 + 18 * 60 = 1440
     expect(windows?.lightsOffMin).toBe(1440);
 
-    // Default p0DurationMinutes 60 -> p1End = 360 + 60 = 420
+    // Default p0DurationMinutes 60 -> p0End = 360 + 60 = 420
     expect(windows?.phases[0].end).toBe(420);
 
     // Default p2StopBeforeLightsOffMinutes 120 -> p3Start = 1440 - 120 = 1320
-    expect(windows?.phases[2].start).toBe(1320);
+    expect(windows?.phases[3].start).toBe(1320);
 
     // Default maintenanceDrybackPercent 3 -> label incorporates '−3% VWC'
-    expect(windows?.phases[2].target).toBe('−3% VWC');
+    expect(windows?.phases[3].target).toBe('−3% VWC');
   });
 });
 
