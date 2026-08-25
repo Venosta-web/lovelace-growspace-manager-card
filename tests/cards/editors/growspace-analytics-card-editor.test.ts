@@ -2,7 +2,7 @@ import { expect, test, describe, beforeEach, vi } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 
 import { GrowspaceAnalyticsCardEditor } from '../../../src/cards/editors/growspace-analytics-card-editor';
-import type { GrowspaceManagerCardConfig } from '../../../src/lib/types/config';
+import type { GrowspaceAnalyticsCardConfig } from '../../../src/lib/types/config';
 
 if (!customElements.get('growspace-analytics-card-editor')) {
   customElements.define('growspace-analytics-card-editor', GrowspaceAnalyticsCardEditor);
@@ -37,7 +37,7 @@ describe('GrowspaceAnalyticsCardEditor', () => {
   });
 
   test('setConfig stores config', () => {
-    const config: GrowspaceManagerCardConfig = {
+    const config: GrowspaceAnalyticsCardConfig = {
       type: 'custom:growspace-analytics-card',
       default_growspace: 'gs1',
     };
@@ -46,7 +46,7 @@ describe('GrowspaceAnalyticsCardEditor', () => {
   });
 
   test('loads configured value on setConfig via _default_growspace getter', () => {
-    const config: GrowspaceManagerCardConfig = {
+    const config: GrowspaceAnalyticsCardConfig = {
       type: 'custom:growspace-analytics-card',
       default_growspace: 'gs1',
     };
@@ -63,7 +63,7 @@ describe('GrowspaceAnalyticsCardEditor', () => {
   });
 
   test('dispatches config-changed event via _valueChanged', () => {
-    const config: GrowspaceManagerCardConfig = {
+    const config: GrowspaceAnalyticsCardConfig = {
       type: 'custom:growspace-analytics-card',
       default_growspace: '',
     };
@@ -136,7 +136,7 @@ describe('GrowspaceAnalyticsCardEditor', () => {
   });
 
   test('renders form when hass and config are provided', async () => {
-    const config: GrowspaceManagerCardConfig = {
+    const config: GrowspaceAnalyticsCardConfig = {
       type: 'custom:growspace-analytics-card',
       default_growspace: 'gs1',
     };
@@ -152,7 +152,7 @@ describe('GrowspaceAnalyticsCardEditor', () => {
   });
 
   test('render returns empty template when hass is missing', async () => {
-    const config: GrowspaceManagerCardConfig = {
+    const config: GrowspaceAnalyticsCardConfig = {
       type: 'custom:growspace-analytics-card',
     };
     const el = await fixture<GrowspaceAnalyticsCardEditor>(html`
@@ -184,5 +184,9 @@ describe('GrowspaceAnalyticsCardEditor', () => {
     expect(schema[0].selector.select.options.length).toBe(4); // 1 default + 3 from mock
     expect(schema[0].selector.select.options[0].label).toBe('Select a growspace...');
     expect(schema[0].selector.select.options[1].value).toBe('all');
+    expect(schema[1]).toEqual({
+      name: 'start_in_graph_wall',
+      selector: { boolean: {} },
+    });
   });
 });

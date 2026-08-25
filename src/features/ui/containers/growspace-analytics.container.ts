@@ -1,4 +1,4 @@
-import { LitElement, html } from 'lit';
+import { LitElement, html, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
@@ -29,13 +29,13 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   @property({ attribute: false }) metricSensors: Record<string, string[]> | undefined;
   /** The host owns history requests (used by subareas with their own sensor set). */
   @property({ type: Boolean, attribute: false }) historyManagedExternally = false;
+  /** One-shot startup request supplied only by the standalone analytics card. */
+  @property({ type: Boolean, attribute: false }) startInGraphWall = false;
   private _deviceSnapshotsController!: StoreController<Map<string, DeviceSnapshot>>;
   private _taskStateController!: StoreController<CardTaskState>;
-  /**
-   * Whether the [[Env Graph Wall]] is showing. Ephemeral by design — it dies on
-   * reload; persisting it is tracked separately on #757.
-   */
+  /** Whether the [[Env Graph Wall]] is showing for this mounted container. */
   @state() private _fullscreen = false;
+  private _graphWallStartupHandled = false;
   private _resize = new ResizeController(this);
 
   private _controller!: StoreController<{
@@ -77,6 +77,23 @@ export class GrowspaceAnalyticsContainer extends LitElement {
       !this._controller?.value?.historyLoaded
     ) {
       this.store.history.loadHistoryOnDemand();
+    }
+  }
+
+  protected willUpdate(changedProps: PropertyValues<this>) {
+    if (changedProps.has('startInGraphWall') && this.startInGraphWall) {
+      this._graphWallStartupHandled = false;
+    }
+
+    const state = this._controller?.value;
+    if (
+      !this._graphWallStartupHandled &&
+      this.startInGraphWall &&
+      this._canFullscreen &&
+      this._canShowWall(state)
+    ) {
+      this._graphWallStartupHandled = true;
+      this._fullscreen = true;
     }
   }
 

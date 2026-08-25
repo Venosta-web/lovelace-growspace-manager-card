@@ -101,8 +101,7 @@ the one `.graphs-container` it already renders. `growspace-dialog-host` is not
 involved.
 
 `_fullscreen` is a `@state` on `growspace-analytics.container`, passed down as a
-property. It is ephemeral by design and dies on reload (#757 revisits that as a
-card config option, not as remembered UI state). The container closes it when the
+property. The container closes it when the
 Open Env Graph set empties, and when the right to show the toggle is lost — a
 resize down to mobile must not strand a grower in an overlay whose exit control
 has just been removed from the DOM.
@@ -121,6 +120,20 @@ so height is the only dimension that responds. Without it a 1440p Wall is six
 postage stamps in a field of background. No separate ADR — small, obvious,
 reversible. The crop-steering and tank charts compute their own SVG heights and
 so do not read it; sizing them to the Wall is #758.
+
+## Amendment — explicit Graph Wall startup (#757)
+
+The standalone analytics card may set `start_in_graph_wall: true`. This is a
+one-shot startup declaration passed to the shared analytics container, not
+remembered UI state and not a forced mode: the container consumes it once when
+desktop, task, device, and Open Env Graph prerequisites are all eligible, after
+which the grower may exit normally until the next reload. The main and subarea
+hosts do not pass the declaration and therefore retain ephemeral Wall state.
+
+Keeping the option specific to `growspace-analytics-card` makes the dashboard
+author's intent explicit: this card is serving as a dedicated Graph Wall. It also
+avoids a per-card persistence key and prevents a fullscreen overlay from restoring
+itself because of a click remembered from an unrelated browser session.
 
 ## Amendment — what "fullscreen" actually took
 

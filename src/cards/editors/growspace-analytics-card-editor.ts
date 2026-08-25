@@ -1,7 +1,7 @@
 import { LitElement, html, css, CSSResultGroup, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
-import type { GrowspaceManagerCardConfig } from '../../lib/types/config';
+import type { GrowspaceAnalyticsCardConfig } from '../../lib/types/config';
 import { GrowspaceOptionsController } from '../../controllers/growspace-options-controller';
 import { computeEditorLabel } from '../../lib/editor-utils';
 import { sharedStyles } from '../../styles/shared.styles';
@@ -9,11 +9,11 @@ import { sharedStyles } from '../../styles/shared.styles';
 @customElement('growspace-analytics-card-editor')
 export class GrowspaceAnalyticsCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) private _config!: GrowspaceManagerCardConfig;
+  @property({ attribute: false }) private _config!: GrowspaceAnalyticsCardConfig;
 
   private _gsController = new GrowspaceOptionsController(this);
 
-  public setConfig(config: GrowspaceManagerCardConfig): void {
+  public setConfig(config: GrowspaceAnalyticsCardConfig): void {
     this._config = config;
   }
 
@@ -35,6 +35,10 @@ export class GrowspaceAnalyticsCardEditor extends LitElement implements Lovelace
             ],
           },
         },
+      },
+      {
+        name: 'start_in_graph_wall',
+        selector: { boolean: {} },
       },
     ]);
   }
@@ -82,8 +86,8 @@ export class GrowspaceAnalyticsCardEditor extends LitElement implements Lovelace
           @value-changed=${this._valueChanged}
         ></ha-form>
         <div class="info-text">
-          This card will permanently display the analytics charts and history for the selected
-          growspace.
+          Enable Start in Graph Wall to reopen this card in its desktop fullscreen view after a
+          dashboard reload. Exiting the Wall remains temporary until the next reload.
         </div>
       </div>
     `;

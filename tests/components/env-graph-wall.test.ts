@@ -32,6 +32,7 @@ function buildStore(
   opts: {
     activeEnvGraphs?: Set<string>;
     taskState?: CardTaskState;
+    startInGraphWall?: boolean;
   } = {}
 ) {
   const $analyticsViewState = atom({
@@ -71,6 +72,7 @@ async function mountContainer(opts: Parameters<typeof buildStore>[0] = {}) {
   (element as any).store = built.store;
   (element as any).device = DEVICE;
   (element as any).deviceSnapshot = null;
+  (element as any).startInGraphWall = opts.startInGraphWall ?? false;
   (element as any)._initControllers();
   element.requestUpdate();
   await element.updateComplete;
@@ -123,6 +125,42 @@ describe('Env Graph Wall — when the toggle exists at all', () => {
 
 describe('Env Graph Wall — opening and closing', () => {
   beforeEach(() => setViewportIsMobile(false));
+
+  it('starts open when the analytics card explicitly configures Graph Wall startup', async () => {
+    const { element } = await mountContainer({ startInGraphWall: true });
+    const ui = uiOf(element);
+    await ui.updateComplete;
+
+    expect(ui.fullscreen).toBe(true);
+    expect(ui.shadowRoot!.querySelector('ha-dialog')!.hasAttribute('open')).toBe(true);
+
+    ui.shadowRoot!.querySelector<HTMLElement>('.fullscreen-toggle')!.click();
+    await element.updateComplete;
+    await ui.updateComplete;
+    element.requestUpdate();
+    await element.updateComplete;
+
+    expect(ui.fullscreen).toBe(false);
+  });
+
+  it('waits for the standalone card to open its default graphs before starting the Wall', async () => {
+    const { element, $analyticsViewState } = await mountContainer({
+      activeEnvGraphs: new Set(),
+      startInGraphWall: true,
+    });
+
+    expect(element.shadowRoot!.querySelector('growspace-analytics-ui')).toBeNull();
+
+    $analyticsViewState.set({
+      ...$analyticsViewState.get(),
+      activeEnvGraphs: new Set(['temperature', 'humidity']),
+    });
+    await element.updateComplete;
+    const ui = uiOf(element);
+    await ui.updateComplete;
+
+    expect(ui.fullscreen).toBe(true);
+  });
 
   it('opens on the toggle and closes on the same button', async () => {
     const { element } = await mountContainer();
