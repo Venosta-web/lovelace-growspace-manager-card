@@ -283,4 +283,19 @@ describe('Env Graph Wall — one instance of every chart', () => {
     expect(ui.shadowRoot!.querySelector('ha-dialog')!.contains(row)).toBe(true);
     expect(ui.shadowRoot!.querySelector('.time-range-selector')).toBe(row);
   });
+
+  it('uses equal flexible rows and lets custom-routed charts stretch with them', async () => {
+    const ui = await mountUI();
+    ui.fullscreen = true;
+    await ui.updateComplete;
+
+    const graphs = ui.shadowRoot!.querySelector<HTMLElement>('.graphs')!;
+    const tank = document.createElement('tank-water-chart');
+    const steering = document.createElement('crop-steering-day-chart');
+    graphs.append(tank, steering);
+
+    expect(getComputedStyle(graphs).gridAutoRows).toBe('minmax(max-content, 1fr)');
+    expect(getComputedStyle(tank).alignSelf).not.toBe('start');
+    expect(getComputedStyle(steering).alignSelf).not.toBe('start');
+  });
 });

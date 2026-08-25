@@ -154,6 +154,10 @@ export class GrowspaceAnalyticsUI extends LitElement {
         /* One full-width column: the graphs stack vertically, each spanning the
            whole wall, rather than tiling into columns. */
         grid-template-columns: 1fr;
+        /* Every chart gets the same row height. max-content preserves each
+           chart's intrinsic chrome (including the steering phase strip), while
+           1fr lets a small set share spare viewport height evenly. */
+        grid-auto-rows: minmax(max-content, 1fr);
         align-content: stretch;
         gap: 16px;
         padding: 16px;
@@ -171,13 +175,6 @@ export class GrowspaceAnalyticsUI extends LitElement {
          gap owns it, and a margin would push the card past its stretched row. */
       .graphs-container.wall .graphs > growspace-env-chart {
         margin-top: 0;
-      }
-      /* These two carry fixed internal geometry and cannot use a taller row
-         yet — issue 758 — so they sit at its top rather than stretching
-         around it. */
-      .graphs-container.wall .graphs > tank-water-chart,
-      .graphs-container.wall .graphs > crop-steering-day-chart {
-        align-self: start;
       }
     `,
   ];

@@ -210,6 +210,23 @@ describe('TankWaterChart – _renderBars', () => {
     expect(el.shadowRoot!.querySelector('svg')).not.toBeNull();
   });
 
+  it('uses the shared Env Graph height as its wall plot floor', async () => {
+    const el = createElement();
+    el.style.setProperty('--gs-env-chart-height', '420px');
+    el.device = { deviceId: 'gs-1' } as any;
+    await vi.waitFor(() => el.shadowRoot!.querySelector('svg') !== null);
+
+    const wrapper = el.shadowRoot!.querySelector<HTMLElement>('.chart-wrapper')!;
+
+    expect(getComputedStyle(wrapper).display).toBe('flex');
+    expect(wrapper.getBoundingClientRect().height).toBe(el.getBoundingClientRect().height);
+    await vi.waitFor(() => {
+      const chart = el.shadowRoot!.querySelector('svg')!;
+      expect(getComputedStyle(chart).flexBasis).toBe('420px');
+      expect(getComputedStyle(chart).minHeight).toBe('420px');
+    });
+  });
+
   it('each bar has a title with timestamp and liter value', async () => {
     const el = createElement();
     el.device = { deviceId: 'gs-1' } as any;
