@@ -657,7 +657,10 @@ export class GrowspaceEnvChart extends LitElement {
     }
     .gs-env-chart-container {
       position: relative;
-      height: 180px;
+      /* The Env Graph Wall tiles these charts far larger than the inline slot
+         does; the SVG stretches a fixed 800x200 viewBox with
+         preserveAspectRatio="none", so height is the only knob that matters. */
+      height: var(--gs-env-chart-height, 180px);
       background: var(--secondary-background-color, #0d0d0d);
       border-radius: 8px;
       cursor: crosshair;
