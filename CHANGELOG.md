@@ -1,3 +1,12 @@
+## [1.3.1](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.3.0...v1.3.1) (2026-08-26)
+
+
+### Bug Fixes
+
+* **camera:** make snapshot viewer vertically scrollable ([381a974](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/381a97401456871a024523cf9cc1b24f73d4985d))
+* **irrigation:** avoid echoing unchanged pump flow rate ([57b0b33](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/57b0b33c35d64b0e0b4d15b44cd5c81624b45fbd))
+* **irrigation:** correct hero trigger label ([0de1dad](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/0de1dad6a89a2fbba0481c6d95088a5615c4dad0))
+
 # [1.3.0](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.2.1...v1.3.0) (2026-08-26)
 
 
