@@ -1259,7 +1259,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
                     Target ${targetVwc}%
                   </text>
 
-                  <!-- P3 trigger reference line -->
+                  <!-- P2 trigger reference line -->
                   <line
                     x1="0"
                     y1="${chart.triggerY.toFixed(1)}"
@@ -1279,7 +1279,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
                     font-family="var(--font-family, sans-serif)"
                     opacity="0.85"
                   >
-                    P3 trigger ${triggerVwc.toFixed(0)}%
+                    P2 trigger ${triggerVwc.toFixed(0)}%
                   </text>
 
                   <!-- Now dot (hidden while hovering) -->

@@ -716,10 +716,10 @@ describe('GrowspaceHeaderHeroUI', () => {
     const svg = el.shadowRoot!.querySelector('.phase-chart-svg');
     expect(svg).not.toBeNull();
 
-    // Verify SVG elements (lines, texts for Target VWC and P3 trigger VWC)
+    // Verify SVG elements (lines, texts for Target VWC and P2 trigger VWC)
     const texts = Array.from(svg!.querySelectorAll('text'));
     expect(texts.some((t) => t.textContent?.includes('Target 60%'))).toBe(true);
-    expect(texts.some((t) => t.textContent?.includes('P3 trigger 45%'))).toBe(true);
+    expect(texts.some((t) => t.textContent?.includes('P2 trigger 45%'))).toBe(true);
   });
 
   it('handles mousemove and mouseleave on SVG chart for hover details', async () => {
