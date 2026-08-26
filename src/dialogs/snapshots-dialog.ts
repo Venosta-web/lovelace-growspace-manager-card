@@ -295,6 +295,7 @@ export class SnapshotsDialog extends LitElement {
       .viewer {
         flex: 1;
         min-width: 0;
+        overflow-y: auto;
         display: flex;
         flex-direction: column;
         padding: 20px 20px 20px 24px;
