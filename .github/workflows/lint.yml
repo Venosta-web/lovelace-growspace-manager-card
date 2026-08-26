@@ -1,53 +1,57 @@
 name: Lint & Build
 
 on:
+  workflow_call:
   push:
-    branches: [ "main", "dev" ]
+    branches: ['main', 'dev']
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: ['main', 'dev']
   workflow_dispatch:
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.2
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v6.4.0
-      with:
-        node-version: 24
-        cache: 'npm'
+      - name: Set up Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Run Lint
-      run: npm run lint
+      - name: Run Lint
+        run: npm run lint
 
-    - name: Typecheck
-      run: npm run typecheck
+      - name: Typecheck
+        run: npm run typecheck
 
-    # Fails if variables.generated.ts or DESIGN.md's frontmatter differ from what
-    # src/styles/tokens.ts produces, so a forgotten `npm run tokens:generate`
-    # cannot ship the doc-vs-runtime drift ADR 0035 exists to end.
-    - name: Check generated design tokens
-      run: npm run tokens:check
+      - name: Check release workflow policy
+        run: npm run test:ci-policy
 
-    # Advisory until the #574 migration issues are cleared: fails only when a PR
-    # adds bare colour literals above the committed baseline, never on the
-    # existing backlog. Ratchet the baseline down as each migration lands.
-    - name: Audit colour literals
-      run: npm run tokens:audit -- --check
+      # Fails if variables.generated.ts or DESIGN.md's frontmatter differ from what
+      # src/styles/tokens.ts produces, so a forgotten `npm run tokens:generate`
+      # cannot ship the doc-vs-runtime drift ADR 0035 exists to end.
+      - name: Check generated design tokens
+        run: npm run tokens:check
 
-    - name: Build
-      run: npm run build
+      # Advisory until the #574 migration issues are cleared: fails only when a PR
+      # adds bare colour literals above the committed baseline, never on the
+      # existing backlog. Ratchet the baseline down as each migration lands.
+      - name: Audit colour literals
+        run: npm run tokens:audit -- --check
 
-    - name: Validate HACS release layout
-      run: npm run validate:hacs-release
+      - name: Build
+        run: npm run build
 
-    - name: Check Formatting
-      run: npm run format:check
+      - name: Validate HACS release layout
+        run: npm run validate:hacs-release
+
+      - name: Check Formatting
+        run: npm run format:check
 
   # Runs the Release job's install + build under the Node version Release pins,
   # so a lockfile that only npm 11 can resolve fails on the PR instead of on dev.
@@ -63,19 +67,19 @@ jobs:
   release-preflight:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.2
 
-    - name: Set up Node.js (matching release.yml)
-      uses: actions/setup-node@v6.4.0
-      with:
-        node-version: '22'
-        cache: 'npm'
+      - name: Set up Node.js (matching release.yml)
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
 
-    - name: Install with the Release job's npm
-      run: npm ci
+      - name: Install with the Release job's npm
+        run: npm ci
 
-    - name: Build
-      run: npm run build
+      - name: Build
+        run: npm run build
 
-    - name: Validate HACS release layout
-      run: npm run validate:hacs-release
+      - name: Validate HACS release layout
+        run: npm run validate:hacs-release
