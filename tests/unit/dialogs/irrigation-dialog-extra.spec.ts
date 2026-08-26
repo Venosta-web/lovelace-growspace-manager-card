@@ -692,6 +692,48 @@ describe('IrrigationDialog - Extra Coverage', () => {
       expect(mocks.configureDrainMonitoring).toHaveBeenCalled();
     });
 
+    it('omits an unchanged pump flow rate from the settings save', async () => {
+      element.device = {
+        ...mockDevice,
+        irrigationConfig: {
+          ...mockDevice.irrigationConfig,
+          pumpFlowRateMlPerSec: 12.5,
+        },
+      } as GrowspaceDevice;
+      (element as any)._initializeState();
+
+      (element as any)._saveAll();
+      await runController(element);
+
+      expect(sliceMocks.saveIrrigationSettings).toHaveBeenCalledWith(
+        'gs1',
+        expect.not.objectContaining({ pumpFlowRateMlPerSec: expect.anything() })
+      );
+    });
+
+    it('includes a changed pump flow rate in the settings save', async () => {
+      element.device = {
+        ...mockDevice,
+        irrigationConfig: {
+          ...mockDevice.irrigationConfig,
+          pumpFlowRateMlPerSec: 12.5,
+        },
+      } as GrowspaceDevice;
+      (element as any)._initializeState();
+      (element as any)._sm = transition((element as any)._sm, {
+        type: 'UPDATE_CONFIG_DRAFT',
+        partial: { pumpFlowRateMlPerSec: 15.5 },
+      });
+
+      (element as any)._saveAll();
+      await runController(element);
+
+      expect(sliceMocks.saveIrrigationSettings).toHaveBeenCalledWith(
+        'gs1',
+        expect.objectContaining({ pumpFlowRateMlPerSec: 15.5 })
+      );
+    });
+
     it('surfaces a save-all failure as an error toast', async () => {
       mocks.configureDrainMonitoring.mockRejectedValueOnce(new Error('Test error'));
       (element as any)._saveAll();

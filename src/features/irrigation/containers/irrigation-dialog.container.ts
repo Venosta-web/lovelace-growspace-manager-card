@@ -178,7 +178,7 @@ interface NavDef {
 
 interface SaveSettingsParams {
   irrigationPumpEntity: string;
-  pumpFlowRateMlPerSec: number;
+  pumpFlowRateMlPerSec?: number;
   drainPumpEntity: string;
   irrigationDuration: number;
   drainDuration: number;
@@ -921,9 +921,8 @@ export class IrrigationDialog extends LitElement {
   private _buildSettingsParams(): SaveSettingsParams {
     const s = this._sm.tabs.schedules.draft;
     const cfg = this._sm.tabs.config.draft;
-    return {
+    const params: SaveSettingsParams = {
       irrigationPumpEntity: s.irrigationPumpEntity,
-      pumpFlowRateMlPerSec: cfg.pumpFlowRateMlPerSec,
       drainPumpEntity: s.drainPumpEntity,
       irrigationDuration: s.irrigationDuration,
       drainDuration: s.drainDuration,
@@ -938,6 +937,16 @@ export class IrrigationDialog extends LitElement {
       haltOnRunoffEcThreshold: cfg.haltOnRunoffEcThreshold,
       activeSteeringPhase: this._sm.tabs.steering.phase,
     };
+
+    // Older integration releases expose this value in the growspace payload but
+    // reject it in set_irrigation_settings. Only send the newer service field
+    // when the user actually changes it, so unrelated saves remain compatible.
+    const persistedPumpFlowRate = this.device?.irrigationConfig?.pumpFlowRateMlPerSec ?? 0;
+    if (cfg.pumpFlowRateMlPerSec !== persistedPumpFlowRate) {
+      params.pumpFlowRateMlPerSec = cfg.pumpFlowRateMlPerSec;
+    }
+
+    return params;
   }
 
   /**
