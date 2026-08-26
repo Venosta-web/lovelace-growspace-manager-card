@@ -188,5 +188,15 @@ describe('GrowspaceAnalyticsCardEditor', () => {
       name: 'start_in_graph_wall',
       selector: { boolean: {} },
     });
+    expect(schema[2].name).toBe('hidden_graphs');
+    expect(schema[2].selector.select.multiple).toBe(true);
+    expect(schema[2].selector.select.options).toContainEqual({
+      label: 'Temperature',
+      value: 'temperature',
+    });
+    expect(schema[2].selector.select.options).toContainEqual({
+      label: 'Steering Phase',
+      value: 'steering_phase',
+    });
   });
 });
