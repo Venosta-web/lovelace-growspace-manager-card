@@ -23,6 +23,20 @@ const TankWaterHistorySchema = z.object({
 
 type TankWaterBucket = z.infer<typeof TankWaterBucketSchema>;
 
+interface TankLevelTrace {
+  id: string;
+  title: string;
+  path: string;
+  points: { time: number; value: number }[];
+  refills: { x: number; y: number }[];
+}
+
+interface TankLevelTooltip {
+  x: number;
+  time: string;
+  items: { title: string; value: string }[];
+}
+
 /**
  * The level pane's geometry and its **fixed** value axis.
  *
@@ -148,6 +162,7 @@ export class TankWaterChart extends LitElement {
   @state() private _buckets: TankWaterBucket[] = [];
   @state() private _loading = false;
   @state() private _error = false;
+  @state() private _levelTooltip: TankLevelTooltip | undefined;
 
   private _lastRequestKey: string | undefined;
   private _requestVersion = 0;
@@ -262,6 +277,48 @@ export class TankWaterChart extends LitElement {
       stroke: currentColor;
       stroke-width: 2;
       vector-effect: non-scaling-stroke;
+    }
+    .tank-tooltip {
+      position: absolute;
+      top: 8px;
+      z-index: 10;
+      padding: 8px 12px;
+      transform: translateX(-50%);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 8px;
+      background: var(--card-background-color, rgba(30, 30, 35, 0.95));
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      color: var(--primary-text-color, #fff);
+      font-size: var(--font-size-xs);
+      line-height: 1.4;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .tank-tooltip-time {
+      padding-bottom: 2px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      font-weight: 700;
+      text-align: center;
+    }
+    .tank-tooltip-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 2px;
+    }
+    .tank-tooltip-value {
+      font-family: monospace;
+      font-weight: 700;
+    }
+    .tank-cursor-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 5;
+      border-left: 1px dashed rgba(255, 255, 255, 0.5);
+      pointer-events: none;
     }
 
     .tank-readout {
@@ -543,7 +600,7 @@ export class TankWaterChart extends LitElement {
    * a single point has no slope, and `generatePathFromValues` returns an empty
    * path for it anyway.
    */
-  private get _levelTraces(): { id: string; path: string; refills: { x: number; y: number }[] }[] {
+  private get _levelTraces(): TankLevelTrace[] {
     const tanks = this._tanks;
     if (tanks.length === 0) return [];
 
@@ -576,7 +633,8 @@ export class TankWaterChart extends LitElement {
           ? [{ x: ((point.time - startTime) / (now - startTime)) * width, y: levelY(point.value) }]
           : []
       );
-      return [{ id: entityId, path, refills }];
+      const title = tanks.find((tank) => tank.sensorEntity === entityId)?.name ?? entityId;
+      return [{ id: entityId, title, path, points, refills }];
     });
   }
 
@@ -600,7 +658,12 @@ export class TankWaterChart extends LitElement {
     const warning = this._warningLevel;
 
     return html`
-      <div class="level-pane">
+      <div
+        class="level-pane"
+        @mousemove=${this._handleLevelHover}
+        @mouseleave=${this._clearLevelTooltip}
+      >
+        ${this._renderLevelTooltip()}
         <span class="level-axis-max">${max}%</span>
         <span class="level-axis-min">${min}%</span>
         <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
@@ -627,6 +690,60 @@ export class TankWaterChart extends LitElement {
           )}
         </svg>
       </div>
+    `;
+  }
+
+  private _handleLevelHover = (event: MouseEvent): void => {
+    const traces = this._levelTraces;
+    if (traces.length === 0) {
+      this._clearLevelTooltip();
+      return;
+    }
+
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
+    const now = Date.now();
+    const startTime = now - RANGE_DURATION_MS[this.range];
+    const hoverTime = startTime + (rect.width > 0 ? x / rect.width : 0.5) * (now - startTime);
+
+    this._levelTooltip = {
+      x,
+      time: new Date(hoverTime).toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      items: traces.map((trace) => {
+        const closest = trace.points.reduce((candidate, point) =>
+          Math.abs(point.time - hoverTime) < Math.abs(candidate.time - hoverTime)
+            ? point
+            : candidate
+        );
+        return { title: trace.title, value: `${closest.value.toFixed(1)} %` };
+      }),
+    };
+  };
+
+  private _clearLevelTooltip = (): void => {
+    this._levelTooltip = undefined;
+  };
+
+  private _renderLevelTooltip(): TemplateResult | typeof nothing {
+    const tooltip = this._levelTooltip;
+    if (!tooltip) return nothing;
+
+    return html`
+      <div class="tank-tooltip" role="tooltip" style="left: ${tooltip.x}px">
+        <div class="tank-tooltip-time">${tooltip.time}</div>
+        ${tooltip.items.map(
+          (item) => html`
+            <div class="tank-tooltip-row">
+              <span>${item.title}:</span>
+              <span class="tank-tooltip-value">${item.value}</span>
+            </div>
+          `
+        )}
+      </div>
+      <div class="tank-cursor-line" style="left: ${tooltip.x}px"></div>
     `;
   }
 

@@ -564,6 +564,84 @@ describe('TankWaterChart – level pane', () => {
   });
 });
 
+// ─── level tooltip ────────────────────────────────────────────────────────────
+
+describe('TankWaterChart – level tooltip', () => {
+  beforeEach(() => {
+    mockHassCall.mockResolvedValue({ buckets: [] });
+  });
+
+  function levelHistory(values: Array<{ minutesAgo: number; value: number }>) {
+    const now = Date.now();
+    return values.map(({ minutesAgo, value }) => ({
+      entity_id: 'sensor.tank_1_level',
+      state: String(value),
+      attributes: { unit_of_measurement: '%' },
+      last_changed: new Date(now - minutesAgo * 60_000).toISOString(),
+    }));
+  }
+
+  it('shows tank fill percentage and cursor time on hover', async () => {
+    const el = createElement();
+    el.device = mkDevice([mkTank({ name: 'Main Tank' })]);
+    el.range = '1h';
+    el.sensorHistory = {
+      irrigation_tank_level: levelHistory([
+        { minutesAgo: 50, value: 40 },
+        { minutesAgo: 30, value: 42 },
+      ]),
+    };
+    await el.updateComplete;
+
+    const pane = el.shadowRoot!.querySelector<HTMLElement>('.level-pane')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 800,
+      height: 200,
+    } as DOMRect);
+
+    pane.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 400 }));
+    await el.updateComplete;
+
+    const tooltip = el.shadowRoot!.querySelector<HTMLElement>('.tank-tooltip');
+    expect(tooltip).not.toBeNull();
+    expect(tooltip!.textContent).toContain('Main Tank');
+    expect(tooltip!.textContent).toContain('42.0 %');
+    expect(tooltip!.textContent).toMatch(/\d{2}:\d{2}/);
+    expect(tooltip!.style.left).toBe('400px');
+  });
+
+  it('clears the tooltip when the pointer leaves the level pane', async () => {
+    const el = createElement();
+    el.device = mkDevice([mkTank()]);
+    el.range = '1h';
+    el.sensorHistory = {
+      irrigation_tank_level: levelHistory([
+        { minutesAgo: 50, value: 40 },
+        { minutesAgo: 30, value: 42 },
+      ]),
+    };
+    await el.updateComplete;
+
+    const pane = el.shadowRoot!.querySelector<HTMLElement>('.level-pane')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 800,
+      height: 200,
+    } as DOMRect);
+    pane.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 400 }));
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector('.tank-tooltip')).not.toBeNull();
+
+    pane.dispatchEvent(new MouseEvent('mouseleave'));
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.tank-tooltip')).toBeNull();
+  });
+});
+
 // ─── refill markers ───────────────────────────────────────────────────────────
 
 describe('TankWaterChart – refill markers', () => {
