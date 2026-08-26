@@ -47,7 +47,7 @@ import { IrrigationAnalyticsSchema } from './schema';
 import { patchDeviceIrrigationConfig, patchDeviceStrategy } from '../grid';
 import { CropSteeringHistorySchema, type CropSteeringHistory } from '../../schemas/api-schema';
 import { ApplySteeringModeResultSchema, type SteeringMode } from './schema';
-import { token } from '../../styles/variables';
+import { computePhases } from '../../features/environment/crop-steering-model';
 
 // ---------------------------------------------------------------------------
 // Atoms (public read)
@@ -95,56 +95,25 @@ export function computeIrrigationMode(strategy: IrrigationStrategy | undefined):
 /**
  * Derive P0–P3 phase windows from a crop-steering strategy.
  *
- * Returns null when strategy is undefined or disabled.
- * P1 = Saturation (lightsOn → lightsOn + p0Duration)
- * P2 = Maintenance (P1 end → P3 start)
- * P3 = Dryback (P3 start → lightsOff)
- * P0 is the pre-lights period (dark before lights-on), not explicitly windowed here.
+ * Returns null when strategy is undefined or disabled. Otherwise a thin wrapper
+ * over `computePhases` — the one implementation of the [[Phase Windows]] — so the
+ * two cannot drift apart again. It once carried its own copy, which is how P0 came
+ * to be missing from one and present in the other.
+ *
+ * Schedule-only: it passes no live `IrrigationConfig` and no measured Saturation
+ * Target crossing, so P3 sits on its scheduled boundary and P1 owns the whole shot
+ * window. A view that has either should call `computePhases` directly.
  */
 export function computePhaseWindows(
   strategy: IrrigationStrategy | undefined,
   vegDayHours = 18
 ): PhaseWindows | null {
   if (!strategy?.enabled) return null;
-
-  const [hh, mm] = (strategy.lightsOnTime ?? '06:00').split(':').map(Number);
-  const lightsOnMin = hh * 60 + (mm || 0);
-  const lightsOffMin = lightsOnMin + vegDayHours * 60;
-
-  const p1End = lightsOnMin + (strategy.p0DurationMinutes ?? 60);
-  const p3Start = Math.max(p1End, lightsOffMin - (strategy.p2StopBeforeLightsOffMinutes ?? 120));
-
-  const phases = [
-    {
-      id: 'p1' as const,
-      label: 'P1',
-      name: 'Saturation',
-      start: lightsOnMin,
-      end: p1End,
-      color: token['--phase-p1'],
-      target: 'Reach FC',
-    },
-    {
-      id: 'p2' as const,
-      label: 'P2',
-      name: 'Maintenance',
-      start: p1End,
-      end: p3Start,
-      color: token['--phase-p2'],
-      target: 'Runoff target',
-    },
-    {
-      id: 'p3' as const,
-      label: 'P3',
-      name: 'Dryback',
-      start: p3Start,
-      end: lightsOffMin,
-      color: token['--phase-p3'],
-      target: `−${strategy.maintenanceDrybackPercent ?? 3}% VWC`,
-    },
-  ];
-
-  return { lightsOnMin, lightsOffMin, lightHours: vegDayHours, phases };
+  return computePhases(
+    { ...strategy, lightsOnTime: strategy.lightsOnTime ?? '06:00' },
+    vegDayHours,
+    null
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -476,6 +445,7 @@ export async function saveIrrigationSettings(
   growspaceId: string,
   settings: {
     irrigationPumpEntity: string;
+    pumpFlowRateMlPerSec?: number;
     drainPumpEntity: string;
     irrigationDuration: number;
     drainDuration: number;
@@ -509,6 +479,8 @@ export async function saveIrrigationSettings(
     haltOnRunoffEcThreshold: settings.haltOnRunoffEcThreshold,
     activeSteeringPhase: settings.activeSteeringPhase,
   };
+  if (settings.pumpFlowRateMlPerSec !== undefined)
+    patch.pumpFlowRateMlPerSec = settings.pumpFlowRateMlPerSec;
 
   const payload: Record<string, unknown> = {
     growspace_id: growspaceId,
@@ -517,6 +489,8 @@ export async function saveIrrigationSettings(
     irrigation_duration: settings.irrigationDuration,
     drain_duration: settings.drainDuration,
   };
+  if (settings.pumpFlowRateMlPerSec !== undefined)
+    payload.pump_flow_rate_ml_per_sec = settings.pumpFlowRateMlPerSec;
   if (settings.soilTriggerPercent !== undefined)
     payload.soil_trigger_percent = settings.soilTriggerPercent;
   if (settings.dailyVolumeCapLiters !== undefined)

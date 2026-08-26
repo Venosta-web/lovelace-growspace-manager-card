@@ -313,6 +313,16 @@ export class IrrigationDialog {
       .evaluate((el: any) => el.checked);
   }
 
+  async toggleAutoAdvanceP2ToP3() {
+    await this.dialog.locator('md3-switch[data-field="autoAdvanceP2ToP3"]').click();
+  }
+
+  async isAutoAdvanceP2ToP3Enabled(): Promise<boolean> {
+    return this.dialog
+      .locator('md3-switch[data-field="autoAdvanceP2ToP3"]')
+      .evaluate((el: any) => el.checked);
+  }
+
   async fillNumberField(label: string, value: number) {
     await this.dialog
       .locator(`md3-number-input[label="${label}"]`)

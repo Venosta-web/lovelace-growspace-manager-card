@@ -5,6 +5,7 @@ import { aHass, aGrowspace } from '../fixtures';
 import { renderCard } from '../harness';
 import { setDevices } from '../../src/slices/grid';
 import * as uiSlice from '../../src/slices/ui';
+import type { GrowspaceAnalyticsCardConfig } from '../../src/lib/types/config';
 
 // Chip clicks toggle env graphs through the slice op the card calls directly.
 // `{ spy: true }` keeps every real atom/mutator while recording calls.
@@ -80,6 +81,7 @@ describe('GrowspaceAnalyticsCard', () => {
     const stub = GrowspaceAnalyticsCard.getStubConfig();
     expect(stub.type).toBe('custom:growspace-analytics-card');
     expect(stub).toHaveProperty('default_growspace');
+    expect(stub.start_in_graph_wall).toBe(false);
   });
 
   test('returns standard card size', async () => {
@@ -134,6 +136,43 @@ describe('GrowspaceAnalyticsCard', () => {
 
     const cardContainer = handle.element.shadowRoot?.querySelector('.unified-growspace-card');
     expect(cardContainer).toBeTruthy();
+    handle.unmount();
+  });
+
+  test('passes explicit Graph Wall startup config only to its analytics view', async () => {
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
+    const config: GrowspaceAnalyticsCardConfig = {
+      type: 'custom:growspace-analytics-card',
+      default_growspace: growspace.growspaceId,
+      start_in_graph_wall: true,
+    };
+    handle.element.setConfig(config);
+    handle.element.store.ui.$isLoading.set(false);
+    setDevices([{ deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any]);
+    handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
+    await handle.element.updateComplete;
+
+    const analytics = handle.element.shadowRoot?.querySelector('growspace-analytics') as any;
+    expect(analytics.startInGraphWall).toBe(true);
+    handle.unmount();
+  });
+
+  test('marks its analytics view as a Home Assistant card-editor preview', async () => {
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+    });
+    handle.element.preview = true;
+    handle.element.store.ui.$isLoading.set(false);
+    setDevices([{ deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any]);
+    handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
+    await handle.element.updateComplete;
+
+    const analytics = handle.element.shadowRoot?.querySelector('growspace-analytics') as any;
+    expect(analytics.cardPreview).toBe(true);
     handle.unmount();
   });
 

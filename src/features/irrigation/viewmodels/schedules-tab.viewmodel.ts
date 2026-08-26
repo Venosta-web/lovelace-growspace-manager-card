@@ -35,8 +35,10 @@ import {
   computeCropSteeringCycle,
   computePhases,
   fmtMinuteOfDay,
+  resolveSaturationCrossing,
   type CropSteeringShot,
   type CropSteeringPhase,
+  type VwcSample,
 } from '../../../features/environment/crop-steering-model';
 
 /** One scheduled time block (config row, formatted for the timeline + chips). */
@@ -125,12 +127,28 @@ function deriveCropSteeringPanel(
   strategy: Partial<IrrigationStrategy>,
   history: CropSteeringHistory | undefined
 ): CropSteeringScheduleVM {
-  const isFlower = (device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
+  const dayHours = device?.irrigationConfig?.resolvedDayHours ?? 12;
   const shots: CropSteeringShot[] = computeCropSteeringCycle(
     strategy as IrrigationStrategy,
-    isFlower
+    dayHours
   );
-  const phases = computePhases(strategy as IrrigationStrategy, isFlower, device?.irrigationConfig);
+  // P1 and P2 are split by the measured Saturation Target crossing, not the clock.
+  const vwcSamples: VwcSample[] = (history?.soil_moisture ?? []).flatMap((b) => {
+    const atMs = Date.parse(b.timestamp);
+    return b.value == null || Number.isNaN(atMs) ? [] : [{ atMs, vwc: b.value }];
+  });
+  const phases = computePhases(
+    strategy as IrrigationStrategy,
+    dayHours,
+    device?.irrigationConfig,
+    resolveSaturationCrossing(
+      strategy as IrrigationStrategy,
+      dayHours,
+      vwcSamples,
+      Date.now(),
+      history ? Date.parse(history.lights_on) : null
+    )
+  );
 
   if (!phases) {
     return {
@@ -146,6 +164,19 @@ function deriveCropSteeringPanel(
   }
 
   const shotCount = shots.length;
+
+  // Shots per phase window, so P1's ramp and P2's maintenance each own their own
+  // count instead of P2 being credited with the whole day. P0 and P3 fire none —
+  // they get no count at all rather than a "0 shots" chip.
+  const shotsIn = (phase: CropSteeringPhase): number =>
+    shots.filter((shot) => {
+      const [hh, mm] = shot.time.split(':').map(Number);
+      const minuteOfDay = hh * 60 + (mm || 0);
+      const lifted =
+        phases.lightsOnMin + ((((minuteOfDay - phases.lightsOnMin) % 1440) + 1440) % 1440);
+      return lifted >= phase.start && lifted < phase.end;
+    }).length;
+
   return {
     configured: true,
     shotCount,
@@ -159,7 +190,7 @@ function deriveCropSteeringPanel(
         name: p.name,
         color: p.color,
         target: p.target,
-        shotCount: p.id === 'p2' ? shotCount : null,
+        shotCount: p.id === 'p1' || p.id === 'p2' ? shotsIn(p) : null,
       })
     ),
     hasPoreEc: history?.pore_ec !== undefined,

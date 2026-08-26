@@ -18,6 +18,15 @@ function wsWithStrategy(strategy: Record<string, unknown>): GrowspaceAPIResponse
 }
 
 describe('GrowspaceAdapter irrigation strategy', () => {
+  it('deserializes the pump flow rate from irrigation config', () => {
+    const device = GrowspaceAdapter.transformGrowspace(null, {
+      identity: { growspace_id: 'gs1', name: 'Tent', overview_entity_id: 'sensor.gs1' },
+      irrigation: { irrigation_config: { pump_flow_rate_ml_per_sec: 12.5 } },
+    } as unknown as GrowspaceAPIResponse);
+
+    expect(device?.irrigationConfig.pumpFlowRateMlPerSec).toBe(12.5);
+  });
+
   it('deserializes per-phase shot, sizing-mode, and declared-mode fields', () => {
     const device = GrowspaceAdapter.transformGrowspace(
       null,
@@ -152,6 +161,42 @@ describe('GrowspaceAdapter irrigation strategy through the wire schema', () => {
     return GrowspaceAdapter.transformGrowspace(null, parsed as unknown as GrowspaceAPIResponse)
       ?.irrigationStrategy;
   }
+
+  it('surfaces the server-resolved photoperiod without schema stripping', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      identity: {
+        growspace_id: 'gs1',
+        name: 'Tent',
+        overview_entity_id: 'sensor.gs1',
+        type: 'normal',
+      },
+      irrigation: { irrigation_config: { resolved_day_hours: 11 } },
+    });
+
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      parsed as unknown as GrowspaceAPIResponse
+    );
+    expect(device?.irrigationConfig.resolvedDayHours).toBe(11);
+  });
+
+  it('matches the backend fallback while hydrating an older payload', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      identity: {
+        growspace_id: 'gs1',
+        name: 'Tent',
+        overview_entity_id: 'sensor.gs1',
+        type: 'normal',
+      },
+      irrigation: { irrigation_config: {} },
+    });
+
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      parsed as unknown as GrowspaceAPIResponse
+    );
+    expect(device?.irrigationConfig.resolvedDayHours).toBe(12);
+  });
 
   const fullStrategy = {
     enabled: true,

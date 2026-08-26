@@ -178,6 +178,7 @@ interface NavDef {
 
 interface SaveSettingsParams {
   irrigationPumpEntity: string;
+  pumpFlowRateMlPerSec: number;
   drainPumpEntity: string;
   irrigationDuration: number;
   drainDuration: number;
@@ -922,6 +923,7 @@ export class IrrigationDialog extends LitElement {
     const cfg = this._sm.tabs.config.draft;
     return {
       irrigationPumpEntity: s.irrigationPumpEntity,
+      pumpFlowRateMlPerSec: cfg.pumpFlowRateMlPerSec,
       drainPumpEntity: s.drainPumpEntity,
       irrigationDuration: s.irrigationDuration,
       drainDuration: s.drainDuration,

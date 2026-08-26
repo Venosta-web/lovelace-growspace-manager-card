@@ -43,6 +43,10 @@ test.describe('VWC strategy — Schedules tab conditional display', () => {
     if (!isEnabled) {
       await dialog.toggleVwcSwitch();
     }
+    const isP2AutoAdvanceEnabled = await dialog.isAutoAdvanceP2ToP3Enabled();
+    if (!isP2AutoAdvanceEnabled) {
+      await dialog.toggleAutoAdvanceP2ToP3();
+    }
 
     await dialog.fillNumberField('Saturation Target (%)', SENTINEL.saturationTargetPercent);
     await dialog.fillNumberField('Maintenance Dryback (%)', SENTINEL.maintenanceDrybackPercent);

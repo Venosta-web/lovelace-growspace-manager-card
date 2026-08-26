@@ -145,6 +145,17 @@ Standard Lovelace configuration options:
 | View Mode         | string | `initial_view_mode` | Initial view: `standard`, `compact` or `header` |
 | Theme             | string | `theme`             | Override theme: `default`, `dark`, `green`      |
 
+The standalone analytics card can be declared as a dedicated Graph Wall:
+
+```yaml
+type: custom:growspace-analytics-card
+default_growspace: your_growspace_id_or_name
+start_in_graph_wall: true
+```
+
+`start_in_graph_wall` defaults to `false`. When enabled, the card opens its desktop Graph Wall
+after each dashboard reload; exiting the Wall affects only the current page load.
+
 ### UI Configuration
 
 Most advanced configuration is handled via the **UI Configuration Dialog** (Cog icon) inside the card itself:

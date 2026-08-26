@@ -1,5 +1,227 @@
 # Lovelace Growspace Manager Card — Domain Glossary
 
+## Cultivation
+
+**Growspace**
+An enduring cultivation venue that exists independently of any one crop or operating episode. Its Grow Runs partition its historical activity without replacing its identity.
+_Avoid_: run, crop, batch
+
+**Grow Run**
+A bounded, growspace-local operating episode whose records belong to one enduring Growspace. A Growspace has at most one active Grow Run; runs never overlap, their boundaries are explicitly started and completed, and a Plant may participate in different runs as it moves between growspaces.
+_Avoid_: Grow Cycle, reporting window, harvest batch
+
+**Run Participation**
+One half-open interval during which a Plant occupied the Growspace of an active Grow Run. Participation opens and closes from actual Plant movement or Run boundaries; re-entry creates another interval rather than rewriting the earlier one.
+_Avoid_: run membership, current growspace
+
+**Run Participant**
+A Plant with at least one Run Participation in a Grow Run. Each Plant counts once in the Run's participant total even if it has multiple participation intervals.
+_Avoid_: starting plant, current plant
+
+**Harvest Source Run**
+The active Grow Run in the source Growspace when a Plant transitions into dry. That Run owns the Plant's later harvest outcome updates; without an active source Run, the outcome is unattributed.
+_Avoid_: dry run, current run
+
+**Harvest Window**
+The local-date interval from the first through the last Harvest Source Plant entering dry. It is absent for a Grow Run with no harvest outcomes and displays as one date when both boundaries fall on the same day.
+_Avoid_: harvest date, run completion date
+
+**Yield** _(Grow Run)_
+The sum of final dry weights from a Grow Run's Harvest Source Plants. It remains incomplete until every contributing Plant has a dry weight or is explicitly recorded as producing no usable yield; wet and trim weights are secondary outcomes.
+_Avoid_: wet yield, projected yield
+
+**Yield per Harvest Source Plant**
+A Grow Run's Yield divided by the number of its Harvest Source Plants. It excludes Run Participants that never became harvest sources so replacements and non-harvested Plants do not distort the result.
+_Avoid_: yield per participant, yield per starting plant
+
+**No Usable Yield**
+An explicit Harvest Source Plant outcome recording zero usable dry Yield together with a grower-supplied reason. It remains in the Harvest Source Plant denominator and loss counts; an absent dry weight remains unknown rather than zero.
+_Avoid_: missing yield, zero-filled weight
+
+**Average VPD Deviation**
+The time-weighted mean absolute distance between observed VPD and the midpoint of the applicable target band, with that target resolved from the observation's Plant stage, transition blend, and day/night state. Time in the target band is a separate metric.
+_Avoid_: average VPD, signed VPD error
+
+**Water Applied**
+Irrigation delivered to Plants in a Grow Run's Growspace through automated or recorded manual watering. Tank refills, evaporation, leaks, and unrelated reservoir loss are excluded, and each application has one measurement source so inferred and direct readings cannot double-count it.
+_Avoid_: tank depletion, water loss, reservoir use
+
+**Water Productivity**
+A Grow Run's dry Yield in grams divided by its Water Applied in litres. Total Water Applied is neutral context; Water Productivity is the comparable efficiency outcome.
+_Avoid_: water efficiency percentage, lower water use
+
+**Run Energy**
+Electricity consumed during a Grow Run's half-open operating interval by equipment attributed to its Growspace. It prefers positive deltas from cumulative energy sensors, may explicitly fall back to integrated power, detects meter resets, and is incomplete below 80 percent Metric Coverage.
+_Avoid_: current power, energy baseline
+
+**Energy Accounting Boundary**
+The non-overlapping meter set whose consumption constitutes one Growspace's Run Energy. It is either one whole-Growspace meter or an explicit sum of non-overlapping device meters; a shared multi-Growspace meter requires an explicit allocation rule.
+_Avoid_: all energy sensors, shared meter guess
+
+**Energy Productivity**
+A Harvest Source Run's dry Yield in grams divided by its Growspace-local Run Energy in kilowatt-hours. Energy used by downstream drying or curing Growspaces belongs to their own Runs rather than this metric.
+_Avoid_: whole-crop energy efficiency, power efficiency
+
+**Derived Run Metric**
+A comparison metric calculated from other Run metrics. It exists only when every input is complete and its denominator is positive; otherwise it reports the missing prerequisite rather than a provisional value.
+_Avoid_: estimated final metric, partial efficiency
+
+**Comparison Direction**
+The increase, decrease, or equality of one Run metric relative to another. Direction is neutral for totals and receives an improvement judgment only for metrics with an agreed monotonic goal.
+_Avoid_: improvement arrow, score
+
+**Mold-Risk Episode**
+One inactive-to-active transition of the Growspace's mold-risk condition during a Grow Run. It counts once regardless of later resolution or notification delivery; a condition already active at Run start counts only if it clears and begins again.
+_Avoid_: unresolved mold alert, mold notification
+
+**Metric Coverage**
+The proportion of a metric's required observation interval supported by valid data. Missing observations are never zero; time-series metrics below their required coverage are incomplete and receive no comparison direction.
+_Avoid_: data availability flag, zero fill
+
+**Metric Definition Version**
+The identity of the calculation rules used to freeze one comparison metric. Values with different definition versions are not directly comparable and historical values are never silently rewritten.
+_Avoid_: schema version, app version
+
+**Metric Source Segment**
+A contiguous portion of a Grow Run metric produced from one compatible sensor source and unit. Compatible segments may be combined, while uncovered gaps reduce Metric Coverage and overlapping or incompatible sources require explicit resolution.
+_Avoid_: sensor history, merged source
+
+**Observation Validity Window**
+The maximum interval for which one time-series observation may represent a continuing value, defaulting to three times the sensor's expected update interval subject to a configurable cap. Time after that window is uncovered rather than filled from a stale value.
+_Avoid_: sample interval, forward fill
+
+**Completed Grow Run**
+A Grow Run whose operating interval has ended but which may still receive linked post-harvest outcomes.
+_Avoid_: closed run, finalized run
+
+**Finalized Grow Run**
+A completed Grow Run whose comparison facts are frozen and remain readable even if its Growspace or participating Plants are later removed.
+_Avoid_: completed run, archived growspace
+
+**Run Reopening**
+The audited return of a Finalized Grow Run to Completed status so a grower can correct its facts before finalizing it again. It requires a grower-supplied reason.
+_Avoid_: edit finalized run, silent correction
+
+**Voided Grow Run**
+A retained Grow Run declared invalid and excluded from comparisons. Only an empty Run with no attributed activity may instead be discarded entirely.
+_Avoid_: deleted run, cancelled run
+
+**Imported Run**
+A historical Grow Run created directly as Finalized from a confirmed, otherwise unsaved import draft containing manually supplied summary facts. It is visibly marked as imported and participates in comparisons only for complete, definition-compatible metrics; unverifiable metrics remain incomplete.
+_Avoid_: reconstructed run, inferred run
+
+**Run Comparison**
+A two-column comparison of exactly two Finalized Grow Runs belonging to the same Growspace. It defaults to the newest Run and its predecessor; cross-growspace and multi-Run comparison are outside the initial model.
+_Avoid_: growspace comparison, live comparison
+
+**Active Run Sensor**
+The single lightweight Home Assistant entity that exposes one Growspace's current Grow Run for dashboards and automations. Its state is the active Run Sequence Number or `none`, with compact identity, label, start, duration, participant-count, and Run Revision attributes; detailed history remains behind the integration API.
+_Avoid_: run entity collection, historical run sensor
+
+**Grow Run State Graph**
+The allowed lifecycle transitions `Active → Completed → Finalized`, `Finalized → Completed` through Run Reopening, and `Active | Completed → Voided`. Reopening never resumes the operating interval, Voided is terminal except Purge Run History, and only an activity-free Active Run may be discarded.
+_Avoid_: planned run, resumed run
+
+**Grow Run View**
+The dedicated product surface for a selected Grow Run's overview, participants, performance, history, and comparison. It replaces the unversioned aggregate Grow Report as the canonical reporting surface.
+_Avoid_: grow report, logbook report
+
+**Harvest Attribution Correction**
+An audited assignment of a Plant's harvest outcome to a Completed Harvest Source Run after the Plant entered dry without the intended Run active. Correcting a Finalized Grow Run requires Run Reopening first.
+_Avoid_: manual yield edit, silent run assignment
+
+**Run Boundary Correction**
+An audited transactional change to one or more adjacent Grow Run boundaries that previews and transfers every affected fact and participation interval without creating overlap. Every affected Finalized Grow Run must be reopened first.
+_Avoid_: date edit, independent boundary update
+
+**Activity Fact**
+An immutable, uniquely identified record emitted durably by a successful cultivation mutation and projected idempotently into Run history and summaries. Projection may retry, but the source mutation does not report success until its fact is durable.
+_Avoid_: log message, Run projection
+
+**Run Opening Baseline**
+The relevant condition and equipment states captured at Grow Run start. Conditions already active are carried-in context rather than new episodes; only a later clear-to-active transition increments the Run's episode count.
+_Avoid_: opening alert, initial event
+
+**Grow Run Lifecycle Event**
+An auditable event emitted when a Grow Run starts, completes, finalizes, reopens, or is voided, or when harvest attribution is corrected. Reopen, void, and correction events carry the grower-supplied reason required by their corresponding authenticated command.
+_Avoid_: UI action log, card event
+
+**Run Configuration Timeline**
+The Growspace's cultivation-affecting configuration at Run start plus each later change to environmental targets, lighting, irrigation, sensor assignment, equipment control, or dimensions. Cosmetic dashboard and card settings are excluded.
+_Avoid_: final configuration, card history
+
+**Run Activity Timeline**
+The durable sequence of Growspace Manager cultivation events attributed to a Grow Run, including Plant movement and lifecycle changes, watering, IPM, alerts, configuration changes, notes, harvest actions, corrections, and Run lifecycle events. Arbitrary Home Assistant state changes and raw telemetry are excluded.
+_Avoid_: HA history, logbook query
+
+**Run Media**
+An image explicitly attached to a Grow Run as cover, progress, problem, or harvest context. It follows Run retention and purge rules; ordinary camera history and incidental event media are not copied into the Run.
+_Avoid_: camera history, automatic snapshot archive
+
+**Participant Identity Snapshot**
+The Plant name, Strain identity and name, and Phenotype identity and name retained with a Run Participant. Corrections before finalization update it; later source renames do not rewrite a Finalized Grow Run.
+_Avoid_: current plant name, live strain lookup
+
+**Run Metadata**
+The editable descriptive label, tags, goals, and retrospective notes of a Grow Run. Audited metadata edits do not require Run Reopening because they do not change identity, boundaries, attribution, or comparison facts.
+_Avoid_: run facts, metric annotations
+
+**Run Lifecycle Suggestion**
+A dismissible prompt to start, complete, or finalize a Grow Run based on observed cultivation activity and outcome readiness. It never changes Run state without an explicit authorized command.
+_Avoid_: automatic run transition, lifecycle automation
+
+**Live Run Metrics**
+The provisional metrics of an Active Grow Run, recalculated as facts arrive and excluded from historical comparison judgments.
+_Avoid_: finalized metrics, projected yield
+
+**Pending Run Metrics**
+The provisional metrics of a Completed Grow Run while linked post-harvest outcomes may still arrive. They remain excluded from Run Comparison until finalization freezes them.
+_Avoid_: final metrics, live metrics
+
+**Run Completion Preview**
+The confirmation view of a proposed completion boundary, duration, participation intervals that will close, Plants still present, missing harvest outcomes, coverage, attribution gaps, and retrospective note. Warnings do not block completion but require explicit acknowledgement when Plants or outcomes remain at risk.
+_Avoid_: completion summary, automatic close
+
+**Run Finalization Snapshot**
+The exact values, canonical units, coverage, Metric Definition Versions, missing prerequisites, Participant Identity Snapshots, and configuration boundary frozen when a Grow Run is finalized. Incomplete finalization requires explicit acknowledgement and later factual changes require Run Reopening.
+_Avoid_: current report, cached metrics
+
+**Run Export**
+A JSON or PDF representation of one selected Grow Run containing its identity, status, metadata, boundaries, timezone, participants, harvest outcomes, versioned metrics, configuration and activity timelines, audit history, and retained media references or thumbnails. A Finalized Grow Run exports its frozen snapshot.
+_Avoid_: grow report export, live dashboard dump
+
+**Run Lifecycle Authorization**
+The permission rule that Growspace controllers may start, complete, finalize, and edit descriptive metadata, while only Home Assistant administrators may reopen, void, correct harvest attribution, or purge Run history.
+_Avoid_: card-only permission, unaudited automation
+
+**Run Audit Entry**
+The immutable record of a lifecycle, correction, metadata, or purge command containing its timestamp, stable Home Assistant actor or automation/system origin, command identity, prior and resulting Run Revision, and any required reason.
+_Avoid_: display-name history, logbook entry
+
+**Run Timezone**
+The IANA timezone frozen when a Grow Run starts and used for local dates, duration, daily summaries, and day/night interpretation. Canonical measurements remain grams, litres, kilowatt-hours, and kilopascals and convert only for display or export.
+_Avoid_: current HA timezone, display timezone
+
+**Unattributed Activity**
+Valid cultivation activity that occurred in a Growspace while it had no active Grow Run. It does not belong to a Grow Run and is excluded from comparisons.
+_Avoid_: default run, implicit run
+
+**Unattributed Activity Ledger**
+The Growspace-level facts and daily summaries retained while no Grow Run is active so a backdated Run can claim eligible activity transactionally. Its retention is configurable and defaults to 365 days; older history can only become an incomplete Imported Run.
+_Avoid_: implicit run, Recorder history
+
+**Run Sequence Number**
+A monotonic display number allocated within one Growspace. Allocated numbers are never reused after a Run is voided or discarded, while the Run's opaque identity remains its stable reference.
+_Avoid_: run ID, calendar run number
+
+**Run Revision**
+The monotonic version of one Growspace's Run collection used to reject stale lifecycle commands and atomically preserve the zero-or-one-active-Run rule.
+_Avoid_: updated timestamp, run sequence
+
+**Purge Run History**
+The explicit administrator-authorized irreversible removal of a Finalized or Voided Grow Run. Plant or Growspace deletion never performs this purge implicitly.
+_Avoid_: delete growspace, cascade delete, void run
+
 ## Repository workflow
 
 **Pull request title**
@@ -50,6 +272,8 @@ When [[Crop Steering (VWC)]] is active, this chip moves out of the secondary str
 **Field Help**
 An explanation attached to one configuration control, or to one section of them: a `{ label, content }` pair — the words plus the subject they name — surfaced by `gs-help-tooltip` as an info trigger that opens a popover. The pairing is the point: `label` becomes the trigger's accessible name, so binding the two together stops a call site wiring one field's sentence to another field's label. Numeric fields carry it directly (`md3-number-input`'s optional `help` property, rendered in the field's top-right corner); headings and read-only rows place the trigger themselves. Content is plain text for a single control and may be markup for a section explainer, which is what lets the Steering tab's Timing explainer draw the photoperiod rather than describe it in sequence. For a feature area with enough of this copy to read as a body of writing, the strings live together as plain data in that area's `help-copy.ts` rather than inline at each call site — see ADR-0046, which also records why `localize`/`en.json` is not that home.
 
+Copy is static text with one exception: the Timing explainer names the growspace's own [[Phase Windows]] boundaries — lights-on, P0's end, the **Scheduled P3 Boundary** (and the **Actual P3 Boundary** once Auto-Advance P2→P3 has moved it), lights-off. Those times are derived in the Steering tab's viewmodel through the same `computePhases` the [[Phase Strip]] draws from, over the resolved photoperiod (`resolvedDayHours`), and the copy module still holds only the naming. With no lights-on to anchor the day the explainer falls back to a schematic bar and shows no times, because an unanchored day has no boundaries to name.
+
 **Context Chip**
 A tag attached to a composed message that provides contextual scope — growspace, time range, or sensor — so the [[Conversation Agent]] can ground its response. Displayed in the Composer bar of the [[Growmaster Dialog]] Chat panel; removable individually. Distinct from the environment metric Chip in the header.
 
@@ -73,6 +297,13 @@ _Avoid_: metric config (that is `METRIC_CONFIG`, one of its inputs), metric spec
 **Env Series**
 The value-space render input of an [[Env Graph]]: per series `{ id, title, color, unit, points: { time, value, meta }[], min, max, avg, chartType, vpdBands?, sensor? }` — `sensor` present only on a multi-sensor metric's series, carrying the `{ entityId, name }` ref it traces — domain units and timestamps only, **no pixels and no SVG paths**. Built by the pure `computeEnvSeries(descriptors, histories, range, now)` in `features/environment/env-series.ts`, alongside the existing pure `crop-steering-model.ts`; `<growspace-env-chart>` owns width and height and turns Env Series into path strings at render time. Keeping geometry out of the derivation is what makes multi-sensor grouping, step-vs-line detection, per-metric axis scaling and the VPD day/night status bands assertable without mounting the element — the private-field reaches (`(element as any)._renderSeries`, `_computeGraphSeries`) that the pre-split shape forced on its tests are gone, and `env-chart.spec` now covers only scrolling, tooltips, observers, event dispatch and the no-data render (#472). See ADR-0030.
 _Avoid_: `GraphSeries` (the pre-split type, which carried `path` and pixel-space `vpdSegments`).
+
+**Open Env Graph**
+A metric currently in `activeEnvGraphs` — one whose [[Env Graph]] is showing. The set is what a [[Chip]] or Hero Card toggles, what `growspace-analytics.container` renders from, and what the [[Env Graph Wall]] is live-bound to.
+
+**Env Graph Wall**
+A desktop-only fullscreen presentation of every [[Open Env Graph]] at once, so a grower can dedicate a browser tab to environment monitoring. Main-card and subarea-card Wall use remains ephemeral, while a standalone [[Growspace Analytics Card]] may explicitly declare itself to start as a Wall after every reload; this declaration is dashboard configuration, never remembered click state. The Wall closes when no Env Graph remains open and is unavailable while any card task state is non-idle.
+_Avoid_: **expanded graph** — collides with the header-expanded view mode (`ViewMode.HEADER` / `toggleHeaderExpansion`).
 
 **Device Graph**
 Variant of the Env Graph for device-type metrics (e.g. irrigation device state). Same toggle mechanism.
@@ -391,10 +622,12 @@ Automated irrigation mode driven by volumetric water content (VWC) targets rathe
 **Phase Windows** (P0 / P1 / P2 / P3)
 The four daily phases that structure a Crop Steering day, all derived from the growspace's `IrrigationStrategy` settings:
 
-- P0 — Activation: first shot(s) at lights-on, lasting `p0DurationMinutes`
+- P0 — Activation: the hold after lights-on, lasting `p0DurationMinutes`. **No shots fire in it** — the substrate is left to dry back and the first shot lands at its end (`SteeringPhaseMachine` returns P0 with no shot request; `computeCropSteeringCycle` puts the first shot at `lightsOn + p0DurationMinutes`)
 - P1 — Ramp-up: shots fire until substrate reaches the **Saturation Target** (`targetVwcPercent`)
 - P2 — Maintenance: shots fire when VWC drops below the **P2 trigger threshold** — either the **P2 Direct Trigger** (`soilTriggerPercent`) if set, or `targetVwcPercent − maintenanceDrybackPercent` (the **Maintenance Dryback**) otherwise
 - P3 — Dry-back: no irrigation; nominally starts `p2StopBeforeLightsOffMinutes` before lights-off (**Scheduled P3 Boundary**), but may start earlier when **Auto-Advance P2→P3** fires (**Actual P3 Boundary**). The authoritative start time is `phase_changed_at` on `IrrigationConfig`; fall back to the scheduled boundary when absent.
+
+Three of the four boundaries are clock-driven and derive from the strategy alone. The **P1→P2 boundary** is not: the backend flips the moment measured VWC reaches the Saturation Target, and — unlike the P3 transition — never stamps that moment anywhere (`phase_changed_at` is written for `"p3"` only, and `active_steering_phase` collapses P0 into `"p1"`, so it cannot distinguish the two either). The card therefore re-derives it from the same measurement the backend watched: `findSaturationCrossing` / `resolveSaturationCrossing` in `crop-steering-model.ts` return the minute-of-day of the first VWC reading at or above the target inside the shot window, and `computePhases` takes it as `saturationReachedAt`. With no crossing — no history, or the target not reached yet — P1 owns the whole shot window and P2 is a zero-width window: nothing has been observed reaching the target, so P2 has not begun. Views keep its legend chip and skip drawing it.
 
 **Projected Shot Window** (`projected_shot_window`)
 The crop-steering counterpart to the manual-mode `next_scheduled_cycle` value, surfaced as "Next" in the Irrigation Dialog's `.dlg-footer`. Where manual mode shows a single point-in-time read off a configured schedule, Crop Steering has no fixed schedule to read — so this is a `{ start, end }` range (e.g. "Next 14:15–14:50") representing the backend's best estimate of when the next shot will fire. Bounded by operational guardrails rather than statistical confidence intervals, with phase-specific anchors for both ends of the range:
@@ -419,7 +652,7 @@ The combined live-history-plus-projection visualization plotted in the chart's t
 **History line continuity:** The live trace connects straight across buckets with no reading (`value: null` from `crop_steering_history.py`'s 5-minute bucketing — happens whenever the sensor didn't report a significant state in that window) rather than breaking into disconnected fragments at each gap. This matches the original design intent (`generateSubstrateModel` in the Stitch design prototype produced one continuous path because its synthetic data had no gaps) — a real sensor's reporting cadence is sparser, and rendering a broken-up trace looked like missing/non-rendering data rather than a legitimate, if imperfectly sampled, history.
 
 **Phase Strip** (`.cs-phase-strip`)
-A row of labeled blocks spanning the photoperiod-anchored day, rendered as the topmost section of the [[Crop Steering Day Chart]] — Dark (pre-lights-on / post-lights-off) blocks bookending the [[Phase Windows]] (P0–P3), each block showing its label, name, time range, and target. Owned by the chart component itself (not a separate sibling element a host must place), so it appears consistently wherever the chart does — the Irrigation Dialog's Schedule panel and the chip's inline graph slot alike. Shares the chart's `lightsOnMin − 120` axis anchor so phase boundaries line up with the [[Shot Track]] and traces beneath.
+A row of labeled blocks spanning the photoperiod-anchored day, rendered as the topmost section of the [[Crop Steering Day Chart]] — Dark (pre-lights-on / post-lights-off) blocks bookending the [[Phase Windows]] (P0–P3), each block showing its label, name, time range, and target. A phase whose window is zero-width (P2 before the Saturation Target is reached) is skipped rather than drawn as a sliver. Owned by the chart component itself (not a separate sibling element a host must place), so it appears consistently wherever the chart does — the Irrigation Dialog's Schedule panel and the chip's inline graph slot alike. Shares the chart's `lightsOnMin − 120` axis anchor so phase boundaries line up with the [[Shot Track]] and traces beneath.
 
 **Shot Track** (`.cs-track`)
 The middle section of the [[Crop Steering Day Chart]], stacked between the [[Phase Strip]] and the substrate-model trace area: a photoperiod-anchored timeline showing the lit-period band, dashed phase-window backgrounds, an hour grid, each computed irrigation shot as a colored block (dimmed once it has passed), and the now-line. Owned by the chart component, gated by its `hideShotTrack` property — shown in the Irrigation Dialog's Schedule panel (where the precise shot-by-shot timing matters) and suppressed in the chip's inline graph slot (where the chart is read as a compact at-a-glance summary, not a scheduling tool). Shares the same axis anchor as the Phase Strip and trace area so all three line up.

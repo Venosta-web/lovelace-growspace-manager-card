@@ -12,6 +12,7 @@ describe('computeEditorLabel', () => {
       'Keyboard Rotation (3D View)'
     );
     expect(computeEditorLabel({ name: 'keyboard_rotate_speed' })).toBe('Rotation Speed');
+    expect(computeEditorLabel({ name: 'start_in_graph_wall' })).toBe('Start in Graph Wall');
   });
 
   it('returns the field name itself for unknown fields', () => {

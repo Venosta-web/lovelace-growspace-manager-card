@@ -31,6 +31,23 @@
     "load_failed": "Water history could not be loaded.",
     "retry": "Try again"
   },
+  "analytics": {
+    "loading_history": "Loading history data...",
+    "open_graph_wall": "Open graph wall",
+    "exit_graph_wall": "Exit graph wall"
+  },
+  "environment_chart": {
+    "graph": "Graph",
+    "no_data": "No Data",
+    "no_history_for_range": "No history data available for {range}",
+    "render_failed": "Failed to render environment chart",
+    "unlink_graphs": "Unlink Graphs",
+    "now": "Now",
+    "on": "ON",
+    "off": "OFF",
+    "optimal": "Optimal",
+    "not_optimal": "Not Optimal"
+  },
   "tasks": {
     "menu": "Tasks",
     "arrange": "Arrange",

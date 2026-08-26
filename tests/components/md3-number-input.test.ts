@@ -31,4 +31,14 @@ describe('Md3NumberInput', () => {
     expect(input.getAttribute('aria-describedby')).toBe(error.id);
     expect(error.textContent).toContain('High must be above low.');
   });
+
+  it('propagates its disabled state to the native input', async () => {
+    const element = await fixture<Md3NumberInput>(html`
+      <md3-number-input label="Buffer" disabled></md3-number-input>
+    `);
+    const input = element.shadowRoot!.querySelector('input')!;
+
+    expect(element.disabled).toBe(true);
+    expect(input.disabled).toBe(true);
+  });
 });

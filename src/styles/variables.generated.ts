@@ -212,10 +212,16 @@ export const variables: CSSResult = css`
     --stage-flower-late: #ef6c00;
 
     /* Crop steering phases */
-    /* P1/P2/P3 are painted as chart bands, listed as phase chips and worn as the hero's phase
-       badge, all from one family that lived as three literals in slices/irrigation/index.ts.
-       Values unchanged. See ADR 0042 §1.
+    /* P0/P1/P2/P3 are painted as chart bands, listed as phase chips and worn as the hero's
+       phase badge, all from one family that lived as three literals in
+       slices/irrigation/index.ts. The P1/P2/P3 values are unchanged from those literals. See
+       ADR 0042 §1.
     */
+    /* Activation — the post-lights-on hold before the first shot. The one phase in which no
+       irrigation fires, so it is deliberately off the P1→P3 green/blue/orange progression
+       rather than a fourth step along it.
+    */
+    --phase-p0: #7e57c2;
     /* Saturation */
     --phase-p1: #4caf50;
     /* Maintenance */
@@ -639,10 +645,16 @@ export const portalVariables: CSSResult = css`
     --stage-flower-late: #ef6c00;
 
     /* Crop steering phases */
-    /* P1/P2/P3 are painted as chart bands, listed as phase chips and worn as the hero's phase
-       badge, all from one family that lived as three literals in slices/irrigation/index.ts.
-       Values unchanged. See ADR 0042 §1.
+    /* P0/P1/P2/P3 are painted as chart bands, listed as phase chips and worn as the hero's
+       phase badge, all from one family that lived as three literals in
+       slices/irrigation/index.ts. The P1/P2/P3 values are unchanged from those literals. See
+       ADR 0042 §1.
     */
+    /* Activation — the post-lights-on hold before the first shot. The one phase in which no
+       irrigation fires, so it is deliberately off the P1→P3 green/blue/orange progression
+       rather than a fourth step along it.
+    */
+    --phase-p0: #7e57c2;
     /* Saturation */
     --phase-p1: #4caf50;
     /* Maintenance */
@@ -955,6 +967,7 @@ export const token = {
   '--stage-flower-early': '#ff9800',
   '--stage-flower-mid': '#fb8c00',
   '--stage-flower-late': '#ef6c00',
+  '--phase-p0': '#7e57c2',
   '--phase-p1': '#4caf50',
   '--phase-p2': '#2196f3',
   '--phase-p3': '#ff9800',

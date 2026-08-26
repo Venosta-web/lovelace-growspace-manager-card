@@ -14,6 +14,7 @@ export class Md3NumberInput extends LitElement {
   @property() placeholder = '';
   @property({ attribute: 'input-aria-label' }) inputAriaLabel = '';
   @property() error = '';
+  @property({ type: Boolean, reflect: true }) disabled = false;
   /**
    * Optional explanation for this field, rendered as a help trigger in the
    * field's top-right corner. Taken as a `{ label, content }` pair so the
@@ -79,6 +80,12 @@ export class Md3NumberInput extends LitElement {
         line-height: 1.4;
         overflow-wrap: anywhere;
       }
+      :host([disabled]) {
+        opacity: 0.55;
+      }
+      .md3-input:disabled {
+        cursor: not-allowed;
+      }
     `,
   ];
 
@@ -111,6 +118,7 @@ export class Md3NumberInput extends LitElement {
             aria-label=${this.inputAriaLabel || nothing}
             aria-invalid=${this.error ? 'true' : nothing}
             aria-describedby=${this.error ? this._errorId : nothing}
+            ?disabled=${this.disabled}
             .min=${this.min}
             .max=${this.max}
             .step=${this.step}

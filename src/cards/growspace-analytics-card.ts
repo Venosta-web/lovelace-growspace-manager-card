@@ -6,7 +6,7 @@ import { hassContext, configContext } from '../lib/context';
 import { storeContext } from '../lib/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 
-import type { GrowspaceManagerCardConfig } from '../lib/types/config';
+import type { GrowspaceAnalyticsCardConfig } from '../lib/types/config';
 
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
 import '../features/ui/containers/growspace-analytics.container';
@@ -40,9 +40,13 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
   @property({ attribute: false })
   hass!: HomeAssistant;
 
+  /** Set by Home Assistant while this card is rendered in the card editor. */
+  @property({ type: Boolean })
+  preview = false;
+
   @provide({ context: configContext })
   @property({ attribute: false })
-  _config!: GrowspaceManagerCardConfig;
+  _config!: GrowspaceAnalyticsCardConfig;
 
   static styles: CSSResultGroup = [
     variables,
@@ -103,10 +107,11 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
     return {
       type: 'custom:growspace-analytics-card',
       default_growspace: '',
+      start_in_graph_wall: false,
     };
   }
 
-  public setConfig(config: GrowspaceManagerCardConfig): void {
+  public setConfig(config: GrowspaceAnalyticsCardConfig): void {
     if (!config) throw new Error('Invalid configuration');
     this._config = config;
     if (!this._bootstrapCtrl) {
@@ -166,7 +171,11 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
       >
         <ha-card>
           <div class="unified-growspace-card glass-surface glass-panel">
-            <growspace-analytics .device=${selectedDeviceData}></growspace-analytics>
+            <growspace-analytics
+              .device=${selectedDeviceData}
+              .startInGraphWall=${this._config.start_in_graph_wall ?? false}
+              .cardPreview=${this.preview}
+            ></growspace-analytics>
           </div>
         </ha-card>
       </error-boundary>

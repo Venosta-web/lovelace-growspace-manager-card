@@ -141,7 +141,17 @@ describe('createSchedulesTabViewModel — crop-steering mode', () => {
         shotIntervalMinutes: 60,
         maintenanceDrybackPercent: 3,
       },
-      biologicalMetrics: { flowerWeek: 1 }, // flower → 12h photoperiod
+      // Stage is deliberately irrelevant; the backend-resolved value below wins.
+      biologicalMetrics: { flowerWeek: 1 },
+      irrigationConfig: {
+        irrigationPumpEntity: 'switch.pump',
+        drainPumpEntity: '',
+        irrigationDuration: 60,
+        drainDuration: 60,
+        irrigationTimes: [],
+        drainTimes: [],
+        resolvedDayHours: 11,
+      },
     } as unknown as Partial<GrowspaceDevice>);
   }
 
@@ -158,14 +168,20 @@ describe('createSchedulesTabViewModel — crop-steering mode', () => {
     const vm = build(createInitialSM(dev), dev);
     const cs = vm.cropSteering!;
     expect(cs.configured).toBe(true);
-    expect(cs.lightHours).toBe(12);
+    expect(cs.lightHours).toBe(11);
     expect(cs.lightsOnLabel).toBe('06:00');
-    expect(cs.lightsOffLabel).toBe('18:00');
-    // P1 (60m) ends 07:00; P2 cutoff at 16:00 (18:00 − 120m); shots every 60m → 9.
-    expect(cs.shotCount).toBe(9);
-    const p2 = cs.phases.find((p) => p.id === 'p2')!;
-    expect(p2.shotCount).toBe(9);
-    expect(cs.phases.find((p) => p.id === 'p1')!.shotCount).toBeNull();
+    expect(cs.lightsOffLabel).toBe('17:00');
+    // P0 (60m) ends 07:00, where the first shot lands; the P2 cutoff is 15:00
+    // (17:00 − 120m); shots every 60m → 8.
+    expect(cs.shotCount).toBe(8);
+    expect(cs.phases.map((p) => p.id)).toEqual(['p0', 'p1', 'p2', 'p3']);
+    // With no VWC history the Saturation Target crossing is unknown, so P1 owns
+    // the whole shot window and every shot counts as a ramp shot.
+    expect(cs.phases.find((p) => p.id === 'p1')!.shotCount).toBe(8);
+    expect(cs.phases.find((p) => p.id === 'p2')!.shotCount).toBe(0);
+    // No shots fire in P0 or P3, so neither carries a count at all.
+    expect(cs.phases.find((p) => p.id === 'p0')!.shotCount).toBeNull();
+    expect(cs.phases.find((p) => p.id === 'p3')!.shotCount).toBeNull();
   });
 
   it('still renders the drain section in crop-steering mode when a drain pump is set', () => {
@@ -198,6 +214,57 @@ describe('createSchedulesTabViewModel — crop-steering mode', () => {
     } as unknown as Partial<GrowspaceDevice>);
     const vm = build(createInitialSM(dev), dev);
     expect(vm.cropSteering!.configured).toBe(false);
+  });
+
+  it('splits P1 from P2 at the measured Saturation Target crossing', () => {
+    const dev = device({
+      irrigationStrategy: {
+        enabled: true,
+        lightsOnTime: '06:00:00',
+        p0DurationMinutes: 60,
+        p2StopBeforeLightsOffMinutes: 120,
+        targetVwcPercent: 65,
+        maintenanceDrybackPercent: 3,
+        shotDurationSeconds: 15,
+        shotIntervalMinutes: 60,
+      },
+      irrigationConfig: {
+        irrigationPumpEntity: 'switch.pump',
+        drainPumpEntity: '',
+        irrigationTimes: [],
+        drainTimes: [],
+        resolvedDayHours: 11,
+      },
+    } as unknown as Partial<GrowspaceDevice>);
+
+    // Lights on 06:00, P0 ends 07:00, P3 starts 15:00. VWC reaches the 65% target
+    // at 09:00, which is where P1 hands over to P2.
+    const at = (hh: number) => {
+      const d = new Date();
+      d.setHours(hh, 0, 0, 0);
+      return d;
+    };
+    const history = new Map<string, CropSteeringHistory>([
+      [
+        'gs1',
+        {
+          growspace_id: 'gs1',
+          lights_on: at(6).toISOString(),
+          soil_moisture: [
+            { timestamp: at(7).toISOString(), value: 52 },
+            { timestamp: at(8).toISOString(), value: 61 },
+            { timestamp: at(9).toISOString(), value: 66 },
+            { timestamp: at(10).toISOString(), value: 64 },
+          ],
+        } as unknown as CropSteeringHistory,
+      ],
+    ]);
+
+    const cs = build(createInitialSM(dev), dev, history).cropSteering!;
+
+    // Hourly shots from 07:00 to 14:00: two land in P1's ramp, six in P2.
+    expect(cs.phases.find((p) => p.id === 'p1')!.shotCount).toBe(2);
+    expect(cs.phases.find((p) => p.id === 'p2')!.shotCount).toBe(6);
   });
 
   it('flags missing pore/bulk EC sensors from the history atom', () => {

@@ -35,6 +35,10 @@ export class TankWaterChart extends LitElement {
       display: block;
     }
     .chart-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      box-sizing: border-box;
       background: var(--card-background-color, #1c1c1e);
       border-radius: 12px;
       padding: 16px;
@@ -67,6 +71,11 @@ export class TankWaterChart extends LitElement {
     }
     .empty,
     .error {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       padding: 32px;
       text-align: center;
       color: var(--text-muted);
@@ -92,6 +101,9 @@ export class TankWaterChart extends LitElement {
     }
     svg {
       width: 100%;
+      height: auto;
+      flex: 1 0 var(--gs-env-chart-height, 80px);
+      min-height: var(--gs-env-chart-height, 80px);
       overflow: visible;
     }
     .bar {

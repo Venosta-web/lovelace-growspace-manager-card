@@ -98,12 +98,16 @@ export interface IrrigationStrategy {
 
 export interface IrrigationConfig {
   irrigationPumpEntity?: string | null;
+  /** Measured pump output; a positive value is required for Volume Mode. */
+  pumpFlowRateMlPerSec?: number;
   drainPumpEntity?: string | null;
   irrigationDuration?: number | null;
   drainDuration?: number | null;
   irrigationTimes: IrrigationScheduleItem[];
   drainTimes: IrrigationScheduleItem[];
   vegDayHours?: number;
+  /** Server-resolved lit-period length used by crop-steering boundary math. */
+  resolvedDayHours?: number;
   soilTriggerPercent?: number | null;
   dailyVolumeCapLiters?: number | null;
   maxCyclesPerDay?: number | null;

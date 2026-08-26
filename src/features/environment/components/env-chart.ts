@@ -10,6 +10,7 @@ import type { GraphSeries, TooltipData, SensorHistories } from '../types';
 import { ChartUtils } from '../../../utils/chart-utils';
 import { computeEnvSeries } from '../env-series';
 import type { MetricDescriptor } from '../../../slices/metric-descriptors';
+import { localizeWithParams } from '../../../localize/localize';
 import {
   METRIC_CONFIG,
   MetricKey,
@@ -63,6 +64,10 @@ export class GrowspaceEnvChart extends LitElement {
   // Optimization: Cache bounding rect for tooltip
   private _cachedChartRect: DOMRect | null = null;
   private _tooltipRafId: number | null = null;
+
+  private _localize(key: string, params: Record<string, string | number> = {}): string {
+    return localizeWithParams(key, params, this.hass?.locale?.language ?? 'en');
+  }
 
   private _scrollChips(direction: ScrollDirection) {
     const container = this._chipsContainerRef.value;
@@ -234,19 +239,21 @@ export class GrowspaceEnvChart extends LitElement {
           <div class="gs-env-graph-header">
             <div style="display:flex; align-items:center; gap:8px;">
               ${this.icon ? html`<ha-svg-icon .path=${this.icon}></ha-svg-icon>` : ''}
-              <span>${this.title || 'Graph'}</span>
+              <span>${this.title || this._localize('environment_chart.graph')}</span>
             </div>
-            <span style="opacity:0.6; font-size:0.9em">No Data</span>
+            <span style="opacity:0.6; font-size:0.9em"
+              >${this._localize('environment_chart.no_data')}</span
+            >
           </div>
           <div class="gs-env-chart-container empty">
-            No history data available for ${this.range}
+            ${this._localize('environment_chart.no_history_for_range', { range: this.range })}
           </div>
         </div>
       `;
     }
 
     return html`
-      <error-boundary .fallbackMessage=${'Failed to render environment chart'}>
+      <error-boundary .fallbackMessage=${this._localize('environment_chart.render_failed')}>
         <div class="gs-env-graph-card">
           ${this.isCombined
             ? this._renderCombinedHeader(series)
@@ -393,9 +400,13 @@ export class GrowspaceEnvChart extends LitElement {
         if (s.id === MetricKey.OPTIMAL)
           valStr =
             closest.value === 1
-              ? 'Optimal'
-              : ((closest.meta as Record<string, unknown>)?.reasons as string) || 'Not Optimal';
-        else valStr = closest.value === 1 ? 'ON' : 'OFF';
+              ? this._localize('environment_chart.optimal')
+              : ((closest.meta as Record<string, unknown>)?.reasons as string) ||
+                this._localize('environment_chart.not_optimal');
+        else
+          valStr = this._localize(
+            closest.value === 1 ? 'environment_chart.on' : 'environment_chart.off'
+          );
       } else if (
         (s.id === MetricKey.EXHAUST || s.id === MetricKey.HUMIDIFIER) &&
         (closest.meta as Record<string, unknown>)?.state
@@ -433,9 +444,13 @@ export class GrowspaceEnvChart extends LitElement {
         if (series.id === MetricKey.OPTIMAL)
           valStr =
             last.value === 1
-              ? 'Optimal'
-              : ((last.meta as Record<string, unknown>)?.reasons as string) || 'Not Optimal';
-        else valStr = last.value === 1 ? 'ON' : 'OFF';
+              ? this._localize('environment_chart.optimal')
+              : ((last.meta as Record<string, unknown>)?.reasons as string) ||
+                this._localize('environment_chart.not_optimal');
+        else
+          valStr = this._localize(
+            last.value === 1 ? 'environment_chart.on' : 'environment_chart.off'
+          );
       } else if (
         (series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) &&
         (last.meta as Record<string, unknown>)?.state
@@ -466,6 +481,7 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   private _renderCombinedHeader(seriesList: GraphSeries[]) {
+    const unlinkGraphsLabel = this._localize('environment_chart.unlink_graphs');
     return html`
       <div class="gs-env-graph-header">
         <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
@@ -545,7 +561,8 @@ export class GrowspaceEnvChart extends LitElement {
               this.dispatchEvent(
                 new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true })
               )}
-            title="Unlink Graphs"
+            .label=${unlinkGraphsLabel}
+            title=${unlinkGraphsLabel}
           ></ha-icon-button>
         </div>
       </div>
@@ -606,13 +623,17 @@ export class GrowspaceEnvChart extends LitElement {
 
   private _renderXAxisHTML(range: string) {
     return html`<span class="gs-axis-cap left">-${range}</span>
-      <span class="gs-axis-cap right">Now</span>`;
+      <span class="gs-axis-cap right">${this._localize('environment_chart.now')}</span>`;
   }
 
   private _renderYAxisHTML(min: number, max: number, unit: string) {
     if (unit === 'state' || (max === 1 && min === 0)) {
-      return html`<span class="gs-axis-target" style="top: 8px;">ON</span>
-        <span class="gs-axis-target" style="bottom: 8px;">OFF</span>`;
+      return html`<span class="gs-axis-target" style="top: 8px;"
+          >${this._localize('environment_chart.on')}</span
+        >
+        <span class="gs-axis-target" style="bottom: 8px;"
+          >${this._localize('environment_chart.off')}</span
+        >`;
     }
     return html`
       <span class="gs-axis-target" style="top: 8px;">${max.toFixed(0)}${unit}</span>
@@ -640,9 +661,22 @@ export class GrowspaceEnvChart extends LitElement {
     :host {
       display: block;
       position: relative;
+      /* Spacing for the inline stack. It lives on the host, not on the card,
+         so the Env Graph Wall can zero it — a margin inside the host would
+         push a height:100% card past its grid row. */
+      margin-top: 12px;
+    }
+    /* The card must reach the host's full height for the chart body to grow
+       into a Wall row; error-boundary sits between them on the happy path. */
+    error-boundary {
+      display: block;
+      height: 100%;
     }
     .gs-env-graph-card {
-      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      box-sizing: border-box;
       background: var(--card-background-color, #1a1a1a);
       border-radius: 12px;
       padding: 16px;
@@ -657,7 +691,16 @@ export class GrowspaceEnvChart extends LitElement {
     }
     .gs-env-chart-container {
       position: relative;
-      height: 180px;
+      /* The Env Graph Wall tiles these charts far larger than the inline slot
+         does; the SVG stretches a fixed 800x200 viewBox with
+         preserveAspectRatio="none", so height is the only knob that matters.
+         It is a floor, not a fixed height: inline there is no free space and
+         the basis is the whole story, while in the Wall the chart body grows
+         into whatever height the stretched grid row hands it. */
+      flex-grow: 1;
+      flex-shrink: 0;
+      flex-basis: var(--gs-env-chart-height, 180px);
+      min-height: var(--gs-env-chart-height, 180px);
       background: var(--secondary-background-color, #0d0d0d);
       border-radius: 8px;
       cursor: crosshair;

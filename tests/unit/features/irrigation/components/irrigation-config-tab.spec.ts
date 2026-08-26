@@ -27,6 +27,7 @@ if (!customElements.get('irrigation-config-tab')) {
 
 function draft(overrides: Partial<ConfigDraft> = {}): ConfigDraft {
   return {
+    pumpFlowRateMlPerSec: 0,
     soilTriggerPercent: null,
     dailyVolumeCapLiters: null,
     maxCyclesPerDay: null,
@@ -50,6 +51,7 @@ function makeVm(overrides: Partial<ConfigTabViewModel> = {}): ConfigTabViewModel
     hasPump: false,
     isRunningNow: false,
     isApplying: false,
+    irrigationMethod: 'none',
     ...overrides,
   };
 }
@@ -102,6 +104,22 @@ describe('irrigation-config-tab', () => {
     expect(opts).toEqual(['switch.pump1', 'input_boolean.valve']);
   });
 
+  it('renders and edits the pump flow rate required by Volume Mode', async () => {
+    const el = await mount(makeVm({ draft: draft({ pumpFlowRateMlPerSec: 12.5 }) }));
+    const input = el.shadowRoot!.querySelector(
+      '[data-field="pump_flow_rate_ml_per_sec"]'
+    ) as HTMLInputElement;
+    expect(input.value).toBe('12.5');
+    expect(input.min).toBe('0');
+    expect(input.step).toBe('0.1');
+
+    input.value = '15.5';
+    const evt = await captureIntent(el, 'config-draft-changed', () =>
+      input.dispatchEvent(new Event('change'))
+    );
+    expect(evt.detail).toEqual({ partial: { pumpFlowRateMlPerSec: 15.5 } });
+  });
+
   it('hides the Safety Caps card when steering is disabled, shows it when enabled', async () => {
     expect(norm((await mount(makeVm())).shadowRoot!.textContent)).not.toContain('Safety Caps');
     const el = await mount(makeVm({ steeringEnabled: true }));
@@ -151,7 +169,9 @@ describe('irrigation-config-tab', () => {
 
   it('emits config-draft-changed with the parsed Daily Volume Cap', async () => {
     const el = await mount(makeVm({ steeringEnabled: true }));
-    const input = el.shadowRoot!.querySelector('input[type="number"]') as HTMLInputElement;
+    const input = el.shadowRoot!.querySelector(
+      '[data-field="daily_volume_cap_liters"]'
+    ) as HTMLInputElement;
     input.value = '12.5';
     const evt = await captureIntent(el, 'config-draft-changed', () =>
       input.dispatchEvent(new Event('change'))

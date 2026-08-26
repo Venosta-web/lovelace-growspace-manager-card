@@ -9,16 +9,14 @@
  */
 import { describe, it, expect } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+import { render, type TemplateResult } from 'lit';
 import { IrrigationSteeringTab } from '../../../../../src/features/irrigation/components/irrigation-steering-tab';
 import type {
   SteeringTabViewModel,
   PhaseShotDescriptor,
+  TimingExplainerVM,
 } from '../../../../../src/features/irrigation/viewmodels/steering-tab.viewmodel';
-import {
-  TIMING,
-  DOSING,
-  ADAPTIVE,
-} from '../../../../../src/features/irrigation/help-copy';
+import { TIMING, DOSING, ADAPTIVE } from '../../../../../src/features/irrigation/help-copy';
 import type { HelpCopy } from '../../../../../src/features/shared/ui/gs-help-tooltip';
 
 for (const tag of [
@@ -81,6 +79,25 @@ function volumePhaseShots(): PhaseShotDescriptor[] {
   }));
 }
 
+/** A derived Timing explainer for a 06:00 → 18:00 day with the shipped defaults. */
+function timingExplainer(overrides: Partial<TimingExplainerVM> = {}): TimingExplainerVM {
+  return {
+    segments: [
+      { id: 'p0', label: 'P0', weight: 60 },
+      { id: 'p1', label: 'P1', weight: 198 },
+      { id: 'p2', label: 'P2', weight: 342 },
+      { id: 'p3', label: 'P3', weight: 120 },
+    ],
+    boundaries: [
+      { id: 'lightsOn', time: '06:00' },
+      { id: 'p0End', time: '07:00' },
+      { id: 'scheduledP3', time: '16:00' },
+      { id: 'lightsOff', time: '18:00' },
+    ],
+    ...overrides,
+  };
+}
+
 function makeVm(overrides: Partial<SteeringTabViewModel> = {}): SteeringTabViewModel {
   return {
     declaredMode: null,
@@ -110,6 +127,8 @@ function makeVm(overrides: Partial<SteeringTabViewModel> = {}): SteeringTabViewM
     hasLightSensors: true,
     detectedLightsOnTime: null,
     phaseShots: secondsPhaseShots(),
+    resolvedDayHours: 12,
+    timingExplainer: null,
     adaptiveEnabled: true,
     soilTriggerPercent: null,
     autoAdvanceP1ToP2: false,
@@ -347,9 +366,11 @@ describe('irrigation-steering-tab', () => {
     it('wires each Timing field to its own copy', async () => {
       const el = await mount(makeVm());
       // P0 Duration and P2 Stop Buffer carry no data-field, so query by label.
-      const inputs = Array.from(
-        el.shadowRoot!.querySelectorAll('md3-number-input')
-      ) as unknown as { label?: string; getAttribute(n: string): string | null; help?: HelpCopy }[];
+      const inputs = Array.from(el.shadowRoot!.querySelectorAll('md3-number-input')) as unknown as {
+        label?: string;
+        getAttribute(n: string): string | null;
+        help?: HelpCopy;
+      }[];
       const byLabel = (label: string) =>
         inputs.find((i) => i.getAttribute('label') === label)?.help;
 
@@ -397,6 +418,82 @@ describe('irrigation-steering-tab', () => {
       expect(helpOf(el, 'dynamicRecovery')).toBe(ADAPTIVE.recovery);
       expect(helpOf(el, 'dynamicShotSizeFloor')).toBe(ADAPTIVE.sizeFloor);
       expect(helpOf(el, 'dynamicIntervalCeiling')).toBe(ADAPTIVE.intervalCeiling);
+    });
+  });
+  // ── Timing explainer — this growspace's own boundaries (issue #43) ──
+
+  describe('the Timing explainer', () => {
+    /**
+     * The explainer is handed to `gs-help-tooltip` as a `TemplateResult`, and the
+     * stub tooltip here never renders it. Take it off the property and render it
+     * directly — the assertions are about the markup the tab composes, not about
+     * the popover mechanics the tooltip's own spec covers.
+     */
+    const explainerOf = async (vm: SteeringTabViewModel): Promise<HTMLElement> => {
+      const el = await mount(vm);
+      const tip = Array.from(el.shadowRoot!.querySelectorAll('gs-help-tooltip')).find(
+        (t) => t.getAttribute('label') === TIMING.section.label
+      ) as (Element & { content?: TemplateResult }) | undefined;
+      const host = document.createElement('div');
+      render(tip!.content!, host);
+      return host;
+    };
+
+    const rows = (host: HTMLElement): Array<[string, string, string]> =>
+      Array.from(host.querySelectorAll('[data-boundary]')).map((time) => [
+        time.getAttribute('data-boundary')!,
+        norm(time.textContent),
+        norm(time.nextElementSibling?.textContent),
+      ]);
+
+    it("names each derived boundary with its time and the glossary's wording", async () => {
+      const host = await explainerOf(makeVm({ timingExplainer: timingExplainer() }));
+      expect(rows(host)).toEqual([
+        ['lightsOn', '06:00', TIMING.boundaries.lightsOn],
+        ['p0End', '07:00', TIMING.boundaries.p0End],
+        ['scheduledP3', '16:00', TIMING.boundaries.scheduledP3],
+        ['lightsOff', '18:00', TIMING.boundaries.lightsOff],
+      ]);
+    });
+
+    it('distinguishes the Actual P3 Boundary from the scheduled one', async () => {
+      const host = await explainerOf(
+        makeVm({
+          timingExplainer: timingExplainer({
+            boundaries: [
+              { id: 'actualP3', time: '15:20' },
+              { id: 'scheduledP3', time: '16:00' },
+            ],
+          }),
+        })
+      );
+      expect(rows(host)).toEqual([
+        ['actualP3', '15:20', TIMING.boundaries.actualP3],
+        ['scheduledP3', '16:00', TIMING.boundaries.scheduledP3],
+      ]);
+    });
+
+    it('sizes the day bar from the derived windows', async () => {
+      const host = await explainerOf(makeVm({ timingExplainer: timingExplainer() }));
+      const segments = Array.from(host.querySelectorAll<HTMLElement>('[data-phase]'));
+      expect(segments.map((seg) => seg.getAttribute('data-phase'))).toEqual([
+        'p0',
+        'p1',
+        'p2',
+        'p3',
+      ]);
+      expect(segments.map((seg) => seg.style.flexGrow)).toEqual(['60', '198', '342', '120']);
+    });
+
+    it('keeps the schematic bar, with no times at all, when nothing anchors the day', async () => {
+      const host = await explainerOf(makeVm({ timingExplainer: null }));
+      expect(host.querySelectorAll('[data-boundary]')).toHaveLength(0);
+      // No placeholder times either — the bar and its end captions are the whole answer.
+      expect(norm(host.textContent)).not.toMatch(/\d\d:\d\d/);
+      const segments = Array.from(host.querySelectorAll<HTMLElement>('[data-phase]'));
+      expect(segments.map((seg) => seg.style.flexGrow)).toEqual(['0.7', '1.5', '2.6', '1.2']);
+      expect(norm(host.textContent)).toContain('lights on');
+      expect(norm(host.textContent)).toContain('lights off');
     });
   });
 });

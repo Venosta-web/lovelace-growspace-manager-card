@@ -176,9 +176,9 @@ export function createWaterAnalyticsTabViewModel(
     const readings = device?.drainConfig?.readings ?? [];
 
     const isCropSteering = !!sm.tabs.steering.draft.enabled;
-    const isFlower = (device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
+    const dayHours = device?.irrigationConfig?.resolvedDayHours ?? 12;
     const csShots: CropSteeringShot[] = isCropSteering
-      ? computeCropSteeringCycle(sm.tabs.steering.draft as IrrigationStrategy, isFlower)
+      ? computeCropSteeringCycle(sm.tabs.steering.draft as IrrigationStrategy, dayHours)
       : [];
 
     const hasPump = !!(

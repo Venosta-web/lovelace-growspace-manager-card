@@ -4,12 +4,13 @@
  * Feeds input atoms and asserts the derived VM output. No DOM. Covers the two
  * drafts (steering vs config), the confirm sub-state projection, the cross-tab
  * sizing-mode read from `$caps`, the per-phase shot descriptors, the light-sensor
- * gate, and the Adaptive Shot Control flag.
+ * gate, the Adaptive Shot Control flag, and the Timing explainer's derived
+ * boundary times.
  */
 import { describe, it, expect } from 'vitest';
 import { atom } from 'nanostores';
 import { createGrowspaceDevice } from '../../../../../src/services/types';
-import type { GrowspaceDevice } from '../../../../../src/services/types';
+import type { GrowspaceDevice, IrrigationConfig } from '../../../../../src/services/types';
 import {
   createInitialSM,
   transition,
@@ -28,6 +29,10 @@ function caps(overrides: Partial<DialogCapabilities> = {}): DialogCapabilities {
     sizingModeLabel: 'Seconds',
     ...overrides,
   };
+}
+
+function config(overrides: Partial<IrrigationConfig> = {}): IrrigationConfig {
+  return { irrigationTimes: [], drainTimes: [], ...overrides };
 }
 
 function device(overrides: Partial<GrowspaceDevice> = {}): GrowspaceDevice {
@@ -149,5 +154,163 @@ describe('createSteeringTabViewModel', () => {
     expect(vm.autoAdvanceP1ToP2).toBe(true);
     expect(vm.autoAdvanceP2ToP3).toBe(true);
     expect(vm.haltOnRunoffEcThreshold).toBe(4.5);
+  });
+  // ── Timing explainer — derived boundary times (issue #43) ──
+
+  describe('the Timing explainer', () => {
+    /** A steering draft anchored at 06:00 with the shipped P0 / stop-buffer defaults. */
+    const timed = (partial: Record<string, unknown> = {}): DialogSM =>
+      transition(createInitialSM(), {
+        type: 'UPDATE_STEERING_DRAFT',
+        partial: {
+          lightsOnTime: '06:00:00',
+          p0DurationMinutes: 60,
+          p2StopBeforeLightsOffMinutes: 120,
+          ...partial,
+        } as never,
+      });
+
+    const timesById = (vm: ReturnType<typeof build>): Record<string, string> =>
+      Object.fromEntries((vm.timingExplainer?.boundaries ?? []).map((b) => [b.id, b.time]));
+
+    it('exposes the resolved photoperiod the integration serialized', () => {
+      const vm = build(
+        createInitialSM(),
+        device({ irrigationConfig: config({ resolvedDayHours: 20 }) }),
+        caps()
+      );
+      expect(vm.resolvedDayHours).toBe(20);
+    });
+
+    it('falls back to 12 hours when the integration sent no resolved photoperiod', () => {
+      expect(build(createInitialSM(), device(), caps()).resolvedDayHours).toBe(12);
+    });
+
+    it("names the clock boundaries of the growspace's own day", () => {
+      const vm = build(
+        timed(),
+        device({ irrigationConfig: config({ resolvedDayHours: 12 }) }),
+        caps()
+      );
+      expect(timesById(vm)).toEqual({
+        lightsOn: '06:00',
+        p0End: '07:00',
+        scheduledP3: '16:00',
+        lightsOff: '18:00',
+      });
+    });
+
+    it('moves every boundary with the resolved photoperiod, not with a stage constant', () => {
+      const vm = build(
+        timed(),
+        device({ irrigationConfig: config({ resolvedDayHours: 20 }) }),
+        caps()
+      );
+      // A 20 h day pushes lights-off and the Scheduled P3 Boundary out with it;
+      // P0 is anchored at the other end and does not move.
+      expect(timesById(vm)).toMatchObject({
+        p0End: '07:00',
+        scheduledP3: '00:00',
+        lightsOff: '02:00',
+      });
+    });
+
+    it('follows the draft, so an edited stop buffer moves the Scheduled P3 Boundary', () => {
+      const vm = build(
+        timed({ p2StopBeforeLightsOffMinutes: 240 }),
+        device({ irrigationConfig: config({ resolvedDayHours: 12 }) }),
+        caps()
+      );
+      expect(timesById(vm).scheduledP3).toBe('14:00');
+    });
+
+    it('prefers the detected lights-on when auto light tracking has found one', () => {
+      const vm = build(
+        timed({ detectedLightsOnTime: '05:30:00' }),
+        device({ irrigationConfig: config({ resolvedDayHours: 12 }) }),
+        caps()
+      );
+      expect(timesById(vm)).toMatchObject({ lightsOn: '05:30', p0End: '06:30' });
+    });
+
+    it('names the Actual P3 Boundary alongside the scheduled one once auto-advance has fired', () => {
+      const vm = build(
+        timed(),
+        device({
+          irrigationConfig: config({
+            resolvedDayHours: 12,
+            activeSteeringPhase: 'p3',
+            phaseChangedAt: new Date(2026, 0, 1, 15, 20).toISOString(),
+          }),
+        }),
+        caps()
+      );
+      expect(timesById(vm)).toMatchObject({ actualP3: '15:20', scheduledP3: '16:00' });
+      // Chronological: the boundary that actually happened comes first.
+      expect(vm.timingExplainer?.boundaries.map((b) => b.id)).toEqual([
+        'lightsOn',
+        'p0End',
+        'actualP3',
+        'scheduledP3',
+        'lightsOff',
+      ]);
+    });
+
+    it('names only the scheduled boundary while the day is still running to it', () => {
+      const vm = build(
+        timed(),
+        device({
+          irrigationConfig: config({
+            resolvedDayHours: 12,
+            activeSteeringPhase: 'p2',
+            phaseChangedAt: new Date(2026, 0, 1, 15, 20).toISOString(),
+          }),
+        }),
+        caps()
+      );
+      expect(vm.timingExplainer?.boundaries.map((b) => b.id)).not.toContain('actualP3');
+    });
+
+    it('sizes the bar from the derived windows, splitting the shot window nominally', () => {
+      const vm = build(
+        timed(),
+        device({ irrigationConfig: config({ resolvedDayHours: 12 }) }),
+        caps()
+      );
+      const weights = Object.fromEntries(
+        (vm.timingExplainer?.segments ?? []).map((s) => [s.id, s.weight])
+      );
+      // 60 min P0, a 540 min shot window, 120 min P3.
+      expect(weights.p0).toBe(60);
+      expect(weights.p3).toBe(120);
+      expect(weights.p1 + weights.p2).toBeCloseTo(540, 6);
+      // The P1|P2 divider is nominal — that boundary is VWC-driven, not clock-driven.
+      expect(weights.p1).toBeLessThan(weights.p2);
+    });
+
+    it('collapses rather than inverts a window the photoperiod is too short for', () => {
+      const vm = build(
+        timed({ p0DurationMinutes: 240, p2StopBeforeLightsOffMinutes: 240 }),
+        device({ irrigationConfig: config({ resolvedDayHours: 4 }) }),
+        caps()
+      );
+      for (const seg of vm.timingExplainer?.segments ?? []) {
+        expect(seg.weight).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it('derives nothing without a lights-on anchor, so the explainer stays schematic', () => {
+      const vm = build(
+        transition(createInitialSM(), {
+          type: 'UPDATE_STEERING_DRAFT',
+          partial: { lightsOnTime: '', detectedLightsOnTime: null } as never,
+        }),
+        device({ irrigationConfig: config({ resolvedDayHours: 12 }) }),
+        caps()
+      );
+      expect(vm.timingExplainer).toBeNull();
+      // The photoperiod is still known — it does not depend on the anchor.
+      expect(vm.resolvedDayHours).toBe(12);
+    });
   });
 });

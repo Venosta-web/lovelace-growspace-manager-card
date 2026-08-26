@@ -16,8 +16,10 @@ import {
   computePhases,
   fmtMinuteOfDay,
   generateSubstrateProjection,
+  resolveSaturationCrossing,
   type CropSteeringPhase,
   type CropSteeringShot,
+  type VwcSample,
 } from '../crop-steering-model';
 
 type TracePt = { offset: number; v: number };
@@ -58,11 +60,14 @@ export class CropSteeringDayChart extends LitElement {
 
   static styles = css`
     :host {
-      display: block;
+      display: flex;
+      flex-direction: column;
     }
     .cs-model {
       position: relative;
-      height: 300px;
+      height: auto;
+      flex: 1 0 var(--gs-env-chart-height, 300px);
+      min-height: var(--gs-env-chart-height, 300px);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: var(--border-radius-md, 12px);
       background: rgba(0, 0, 0, 0.2);
@@ -213,6 +218,7 @@ export class CropSteeringDayChart extends LitElement {
     }
     .cs-phase-strip {
       position: relative;
+      flex: none;
       height: 52px;
       margin-bottom: 10px;
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -259,6 +265,7 @@ export class CropSteeringDayChart extends LitElement {
     }
     .cs-track {
       position: relative;
+      flex: none;
       height: 108px;
       margin-bottom: 10px;
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -446,15 +453,35 @@ export class CropSteeringDayChart extends LitElement {
   }
 
   /**
+   * The measured Substrate VWC series as absolutely-timestamped samples, for the
+   * P1→P2 crossing. Reads the crop-steering history in both windowing modes: it
+   * is fetched either way, it is the same series the backend's phase machine
+   * watched, and its timestamps are absolute, so the crossing does not depend on
+   * which axis the chart happens to be drawing.
+   */
+  private _vwcSamples(history: CropSteeringHistory | undefined): VwcSample[] {
+    const samples: VwcSample[] = [];
+    for (const b of history?.soil_moisture ?? []) {
+      if (b.value == null) continue;
+      const atMs = Date.parse(b.timestamp);
+      if (Number.isNaN(atMs)) continue;
+      samples.push({ atMs, vwc: b.value });
+    }
+    return samples;
+  }
+
+  /**
    * Re-anchors the Phase Strip to the rolling now-24h→now axis, covering up to two
    * photoperiod cycles. The cycle containing "now" gets live phase adjustment
-   * (activeSteeringPhase/phaseChangedAt); the other cycle uses the scheduled template
-   * (irrigationConfig=null) so live adjustment of the current cycle doesn't leak backward.
+   * (activeSteeringPhase/phaseChangedAt and the measured P1→P2 crossing); the other
+   * cycle uses the scheduled template (irrigationConfig=null, no crossing) so live
+   * adjustment of the current cycle doesn't leak backward.
    */
   private _buildRollingPhaseSegments(
     strategy: Parameters<typeof computePhases>[0],
-    isFlower: boolean,
+    dayHours: number,
     irrigationConfig: Parameters<typeof computePhases>[2],
+    saturationReachedAt: number | null,
     lightsOnMin: number,
     lightsOffMin: number,
     viewStart: number,
@@ -476,7 +503,12 @@ export class CropSteeringDayChart extends LitElement {
       if (cycleEndMs <= windowStart || cycleStartMs >= windowEnd) continue;
 
       const containsNow = nowMs >= cycleStartMs && nowMs < cycleEndMs;
-      const cyclePhases = computePhases(strategy, isFlower, containsNow ? irrigationConfig : null);
+      const cyclePhases = computePhases(
+        strategy,
+        dayHours,
+        containsNow ? irrigationConfig : null,
+        containsNow ? saturationReachedAt : null
+      );
       if (!cyclePhases) continue;
 
       const atMin = (m: number) => cycleStartMs + ((m - viewStart + 1440) % 1440) * 60000;
@@ -642,9 +674,29 @@ export class CropSteeringDayChart extends LitElement {
       return html`<div class="placeholder">No strategy configured.</div>`;
     }
 
-    const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
-    const shots: CropSteeringShot[] = computeCropSteeringCycle(strategy, isFlower);
-    const phases = computePhases(strategy, isFlower, this.device?.irrigationConfig);
+    const dayHours = this.device?.irrigationConfig?.resolvedDayHours ?? 12;
+    const shots: CropSteeringShot[] = computeCropSteeringCycle(strategy, dayHours);
+
+    const growspaceId = this.device?.deviceId ?? '';
+    const history = this._historyController?.value?.get(growspaceId);
+
+    // The P1→P2 boundary is threshold-driven, so it comes from the measured VWC
+    // series rather than the strategy — read off the cycle whose lights-on the
+    // history itself reports.
+    const saturationReachedAt = resolveSaturationCrossing(
+      strategy,
+      dayHours,
+      this._vwcSamples(history),
+      Date.now(),
+      history ? Date.parse(history.lights_on) : null
+    );
+
+    const phases = computePhases(
+      strategy,
+      dayHours,
+      this.device?.irrigationConfig,
+      saturationReachedAt
+    );
 
     if (!phases) {
       return html`<div class="placeholder">
@@ -665,8 +717,6 @@ export class CropSteeringDayChart extends LitElement {
     const dryback = strategy.maintenanceDrybackPercent ?? 3;
     const p2Trigger = target - dryback;
 
-    const growspaceId = this.device?.deviceId ?? '';
-    const history = this._historyController?.value?.get(growspaceId);
     const vwcColor = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
     const poreEcColor = METRIC_CONFIG[MetricKey.PORE_EC].color;
     const bulkEcColor = METRIC_CONFIG[MetricKey.BULK_EC].color;
@@ -838,8 +888,9 @@ export class CropSteeringDayChart extends LitElement {
       this.rollingWindow && this.range === '24h'
         ? this._buildRollingPhaseSegments(
             strategy,
-            isFlower,
+            dayHours,
             this.device?.irrigationConfig,
+            saturationReachedAt,
             lightsOnMin,
             lightsOffMin,
             viewStart,
@@ -848,6 +899,11 @@ export class CropSteeringDayChart extends LitElement {
             nowMs
           )
         : [];
+
+    // A phase that has not begun is a zero-width window (P2 before the Saturation
+    // Target is reached). It keeps its legend chip, but drawing it would paint a
+    // padding-wide sliver of label over the phase beside it.
+    const drawnPhases = phases.phases.filter((p) => p.end > p.start);
 
     return html`
       ${showPhaseStrip
@@ -887,7 +943,7 @@ export class CropSteeringDayChart extends LitElement {
                         ${fmtMinuteOfDay(viewStart)}–${fmtMinuteOfDay(lightsOnMin)} · no irrigation
                       </div>
                     </div>
-                    ${phases.phases.map(
+                    ${drawnPhases.map(
                       (p) => html`
                         <div
                           class="cs-phase-block"
@@ -925,7 +981,7 @@ export class CropSteeringDayChart extends LitElement {
                 100}%;"
               ></div>
 
-              ${phases.phases.map(
+              ${drawnPhases.map(
                 (p) => html`
                   <div
                     class="cs-phase-bg"
@@ -1146,21 +1202,29 @@ export class CropSteeringDayChart extends LitElement {
         <!-- The bottom tick would sit on top of the axis caps, so it is left unlabelled. -->
         ${ticks.slice(1).map(
           (t) => html`
-            <span class="cm-tick left" style="top:${t.y.toFixed(1)}px;">${t.vwc}</span>
-            <span class="cm-tick right" style="top:${t.y.toFixed(1)}px;">${t.ec}</span>
+            <span class="cm-tick left" style="top:${((t.y / svgH) * 100).toFixed(3)}%;"
+              >${t.vwc}</span
+            >
+            <span class="cm-tick right" style="top:${((t.y / svgH) * 100).toFixed(3)}%;"
+              >${t.ec}</span
+            >
           `
         )}
 
-        <span class="cm-target" style="top:${targetY.toFixed(1)}px;color:${vwcColor};"
+        <span
+          class="cm-target"
+          style="top:${((targetY / svgH) * 100).toFixed(3)}%;color:${vwcColor};"
           >Target ${target.toFixed(0)}%</span
         >
-        <span class="cm-target" style="top:${p2TriggerY.toFixed(1)}px;color:${STATUS_WARNING};"
+        <span
+          class="cm-target"
+          style="top:${((p2TriggerY / svgH) * 100).toFixed(3)}%;color:${STATUS_WARNING};"
           >P2 trigger ${p2Trigger.toFixed(0)}%</span
         >
         ${ecTargetMid !== null
           ? html`<span
               class="cm-target right"
-              style="top:${ecTargetY.toFixed(1)}px;color:${poreEcColor};"
+              style="top:${((ecTargetY / svgH) * 100).toFixed(3)}%;color:${poreEcColor};"
               >Pore EC target ${ecTargetMid.toFixed(1)}</span
             >`
           : nothing}

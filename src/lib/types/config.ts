@@ -14,6 +14,10 @@ export interface GrowspaceLogbookCardConfig extends GrowspaceManagerCardConfig {
   default_view?: 'list' | 'timeline';
 }
 
+export interface GrowspaceAnalyticsCardConfig extends GrowspaceManagerCardConfig {
+  start_in_graph_wall?: boolean;
+}
+
 export type GrowspaceViewMode = ViewMode;
 
 export interface GrowspaceCarouselCardConfig extends LovelaceCardConfig {

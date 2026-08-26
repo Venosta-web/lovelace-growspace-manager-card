@@ -13,7 +13,11 @@ import {
   STATUS_CUES,
   toStatusLevel,
 } from '../../../features/environment/constants';
-import { computePhases } from '../../../features/environment/crop-steering-model';
+import {
+  computePhases,
+  resolveSaturationCrossing,
+  type VwcSample,
+} from '../../../features/environment/crop-steering-model';
 import type { IrrigationStrategy, IrrigationConfig } from '../../../services/types';
 import type { RawHistoryDataPoint } from '../../../adapters/hass-types';
 import type { HomeAssistant } from 'custom-card-helpers';
@@ -1024,7 +1028,20 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     ];
     const chart = this._buildPhaseChart(historyData, targetVwc, triggerVwc, CHART_W, CHART_H);
 
-    const phases = computePhases(strategy, this.isFlower, config);
+    const dayHours = config?.resolvedDayHours ?? 12;
+    // The P1→P2 boundary the backend decides on the measurement rather than the
+    // clock, re-derived from the same VWC series this card already plots.
+    const vwcSamples: VwcSample[] = (historyData ?? []).flatMap((d) => {
+      const vwc = parseFloat(d.state);
+      const atMs = Date.parse(d.last_changed);
+      return isNaN(vwc) || Number.isNaN(atMs) ? [] : [{ atMs, vwc }];
+    });
+    const phases = computePhases(
+      strategy,
+      dayHours,
+      config,
+      resolveSaturationCrossing(strategy, dayHours, vwcSamples, Date.now())
+    );
 
     // Parse chip value: "P3 · 22:40"
     const valueMatch = chip.value?.match(/^(P[123])\s*·\s*(.+)$/);

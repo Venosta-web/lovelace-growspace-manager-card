@@ -1529,6 +1529,7 @@ export class GrowspaceDialogHost extends LitElement {
         .open=${true}
         .dialogState=${active.payload}
         .growspaceName=${selectedDeviceData?.name || ''}
+        .device=${selectedDeviceData}
         @close=${() => this._closeDialogIfActive('SNAPSHOTS')}
         @data-changed=${() => this._handleDataChanged()}
       ></snapshots-dialog>
