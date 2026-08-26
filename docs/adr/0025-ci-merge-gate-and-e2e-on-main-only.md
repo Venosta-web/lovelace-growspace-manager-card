@@ -77,3 +77,23 @@ the gap came with three refinements:
    required-check path. The nightly suite includes a config-dialog full round-trip
    spec (populate → save → reopen → assert; clear → save → reopen → assert), the
    only automated net for the env-draft-seeder class of regression.
+
+## Amendment (2026-08-26) — stable publishing owns its validation gate
+
+The promotion that published 1.1.0 exposed a different gap: validation and Release
+were independent workflows triggered by the same `main` push. Release finished first,
+so successful publishing did not imply that validation had passed. The promotion PR
+also had no recorded checks, making a pre-merge E2E requirement ineffective in that
+release path.
+
+Stable validation now runs after the promotion commit lands on `main`, inside the
+Release workflow's explicit dependency graph. Its stable semantic-release job needs
+lint/build (including the Node 22 release preflight), unit tests, contract-fixture
+validation, and the real Home Assistant Playwright suite. A failed or cancelled need
+therefore skips publishing. The E2E workflow is callable from that graph and manually
+dispatchable, but has no `push` or `pull_request` trigger of its own.
+
+The `dev` prerelease job remains separate and has no validation or E2E dependency.
+This supersedes the unenforced nightly/PR mechanics described above: expensive E2E is
+main-push-only, plus deliberate manual dispatch. `scripts/ci-release-policy.test.mjs`
+locks down these branch and dependency conditions in the fast lint job.

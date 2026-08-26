@@ -12,6 +12,7 @@
     "build:coverage": "COVERAGE=true rollup -c",
     "test": "node scripts/run-browser-tests.mjs",
     "test:contract-fixture": "vitest run --config vitest.contract.config.ts",
+    "test:ci-policy": "node --test scripts/ci-release-policy.test.mjs",
     "test:e2e": "npm run build && npm run test:ha",
     "test:ha": "npm --prefix tests/e2e run test",
     "test:ha:headed": "npm --prefix tests/e2e run test:headed",
@@ -72,7 +73,8 @@
     "semantic-release": "^25.0.3",
     "source-map-support": "^0.5.21",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.8",
+    "yaml": "^2.9.0"
   },
   "dependencies": {
     "@lit-labs/virtualizer": "^2.1.1",
