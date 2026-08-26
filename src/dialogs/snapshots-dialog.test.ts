@@ -139,6 +139,13 @@ describe('SnapshotsDialog', () => {
     await element.updateComplete;
   });
 
+  it('keeps the desktop hero stage at least 300px tall', async () => {
+    await mount();
+
+    expect(window.matchMedia('(min-width: 861px)').matches).toBe(true);
+    expect(getComputedStyle(q(element, '.stage') as HTMLElement).minHeight).toBe('300px');
+  });
+
   afterEach(() => {
     element.remove();
     vi.clearAllMocks();

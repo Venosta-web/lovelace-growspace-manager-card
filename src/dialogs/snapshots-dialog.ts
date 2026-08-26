@@ -311,7 +311,7 @@ export class SnapshotsDialog extends LitElement {
       .stage {
         position: relative;
         flex: 1;
-        min-height: 0;
+        min-height: 300px;
         border-radius: var(--border-radius-lg, 16px);
         overflow: hidden;
         background: var(--surface-dim, var(--secondary-background-color));
