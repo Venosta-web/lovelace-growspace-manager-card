@@ -80,10 +80,6 @@ export interface StrainLibraryDialogState {
   prefilledReceiverId?: string;
 }
 
-export interface EnvironmentConfigDialogState {
-  deviceId: string;
-}
-
 export interface VisionCheckupConfigEventDetail {
   growspaceId: string;
   visionCheckupConfig: VisionCheckupConfig;

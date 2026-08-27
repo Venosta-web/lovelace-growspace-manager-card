@@ -243,8 +243,6 @@ export class GrowspaceDialogHost extends LitElement {
               return this._renderIrrigationDialog(active, effectiveDeviceData);
             case 'LOGBOOK':
               return this._renderLogbookDialog(active, effectiveDeviceData);
-            case 'ENVIRONMENT_CONFIG':
-              return this._renderEnvironmentConfigDialog(active);
             case 'WATERING':
               return this._renderWateringDialog(
                 active,
@@ -1657,29 +1655,6 @@ export class GrowspaceDialogHost extends LitElement {
         @data-changed=${() => this._handleDataChanged()}
       ></harvest-scoring-dialog>
     `;
-  }
-
-  private _renderEnvironmentConfigDialog(active: ActiveDialogState): TemplateResult {
-    if (active.type !== 'ENVIRONMENT_CONFIG') return html``;
-    return html`
-      <growspace-environment-config-dialog
-        .open=${true}
-        .deviceId=${active.payload?.deviceId}
-        @close=${() => uiSlice.closeDialog()}
-        @save-config=${(e: CustomEvent) => this._handleEnvironmentConfigSubmit(e)}
-      ></growspace-environment-config-dialog>
-    `;
-  }
-
-  private async _handleEnvironmentConfigSubmit(e: CustomEvent) {
-    try {
-      await configureEnvironment(e.detail);
-      showToast('Environment configured successfully!', 'success');
-      await this._handleDataChanged();
-      uiSlice.closeDialog();
-    } catch (err) {
-      showError(err, 'Failed to configure environment');
-    }
   }
 
   private _handleOpenLogPollination(e: CustomEvent): void {

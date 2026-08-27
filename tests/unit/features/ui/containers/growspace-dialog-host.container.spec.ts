@@ -568,34 +568,6 @@ describe('GrowspaceDialogHostContainer', () => {
     });
   });
 
-  it('should handle environment config with all optional fields populated', async () => {
-    const activeState = {
-      type: 'ENVIRONMENT_CONFIG',
-      payload: { deviceId: 'grow1' },
-    };
-    mockStore.ui.$activeDialog.set(activeState);
-    await element.updateComplete;
-    await element.updateComplete;
-
-    const dialog = element.shadowRoot?.querySelector('growspace-environment-config-dialog');
-    dialog?.dispatchEvent(
-      new CustomEvent('save-config', {
-        detail: {
-          growspaceId: 'grow1',
-          vpdSettings: { target: 1.2 },
-          co2Settings: { target: 800 },
-        },
-      })
-    );
-
-    expect(sliceConfigureEnvironment).toHaveBeenCalledWith(
-      expect.objectContaining({
-        vpdSettings: { target: 1.2 },
-        co2Settings: { target: 800 },
-      })
-    );
-  });
-
   it('should navigate to STRAIN_LIBRARY from @create-new-strain event', async () => {
     const activeState = {
       type: 'ADD_PLANT',
@@ -1066,26 +1038,6 @@ describe('GrowspaceDialogHostContainer', () => {
     );
   });
 
-  it('should handle environment config submit failure', async () => {
-    vi.mocked(sliceConfigureEnvironment).mockRejectedValueOnce(new Error('Network error'));
-
-    mockStore.ui.$activeDialog.set({ type: 'ENVIRONMENT_CONFIG', payload: { deviceId: 'g1' } });
-    await element.updateComplete;
-    await element.updateComplete;
-
-    const dialog = element.shadowRoot?.querySelector('growspace-environment-config-dialog');
-    dialog?.dispatchEvent(new CustomEvent('save-config', { detail: { growspaceId: 'g1' } }));
-
-    await vi.waitFor(() => {
-      expect(notification$.get()).toEqual(
-        expect.objectContaining({
-          message: expect.stringContaining('Failed to configure environment'),
-          type: 'error',
-        })
-      );
-    });
-  });
-
   it('should handle @vision-checkup-config-submit on config-dialog', async () => {
     mockStore.ui.$activeDialog.set({ type: 'CONFIG', payload: {} });
     await element.updateComplete;
@@ -1460,11 +1412,6 @@ describe('GrowspaceDialogHostContainer', () => {
 
     it('should handle @close on HARVEST_SCORING', () =>
       testDialogEvent('HARVEST_SCORING', 'harvest-scoring-dialog', 'close', () =>
-        expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()
-      ));
-
-    it('should handle @close on ENVIRONMENT_CONFIG', () =>
-      testDialogEvent('ENVIRONMENT_CONFIG', 'growspace-environment-config-dialog', 'close', () =>
         expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()
       ));
   });
@@ -3066,7 +3013,6 @@ describe('GrowspaceDialogHostContainer', () => {
         { name: '_renderBatchPrintLabelsDialog', args: [badActive] },
         { name: '_renderBatchCloneDialog', args: [badActive, {}] },
         { name: '_renderHarvestScoringDialog', args: [badActive] },
-        { name: '_renderEnvironmentConfigDialog', args: [badActive] },
       ];
 
       for (const helper of renderHelpers) {
@@ -3075,28 +3021,6 @@ describe('GrowspaceDialogHostContainer', () => {
         expect(result).toBeDefined();
         expect(result.strings).toBeDefined();
       }
-    });
-
-    it('should handle @save-config failure on ENVIRONMENT_CONFIG dialog', async () => {
-      vi.mocked(sliceConfigureEnvironment).mockRejectedValueOnce(new Error('Config failed'));
-      await openDialog('ENVIRONMENT_CONFIG', { deviceId: 'g1' });
-      const dialog = element.shadowRoot?.querySelector('growspace-environment-config-dialog');
-      expect(dialog).toBeTruthy();
-
-      dialog?.dispatchEvent(
-        new CustomEvent('save-config', {
-          detail: { deviceId: 'g1', temp: 75 },
-        })
-      );
-
-      await vi.waitFor(() => {
-        expect(notification$.get()).toEqual(
-          expect.objectContaining({
-            message: expect.stringContaining('Failed to configure environment'),
-            type: 'error',
-          })
-        );
-      });
     });
 
     describe('100% Branch Coverage Gaps', () => {
