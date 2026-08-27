@@ -16,7 +16,6 @@ import type {
   BatchCloneDialogState,
   HarvestScoringDialogState,
   SnapshotsDialogState,
-  EnvironmentConfigDialogState,
   IrrigationDialogState,
 } from '../../lib/types/dialog';
 
@@ -43,5 +42,4 @@ export type ActiveDialogState =
   | { type: 'NUTRIENT_INVENTORY'; payload: Record<string, never> }
   | { type: 'NUTRIENTS'; payload: Record<string, never> }
   | { type: 'HARVEST_SCORING'; payload: HarvestScoringDialogState }
-  | { type: 'SNAPSHOTS'; payload: SnapshotsDialogState }
-  | { type: 'ENVIRONMENT_CONFIG'; payload: EnvironmentConfigDialogState };
+  | { type: 'SNAPSHOTS'; payload: SnapshotsDialogState };
