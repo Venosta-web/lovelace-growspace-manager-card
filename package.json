@@ -14,7 +14,7 @@
     "test:contract-fixture": "vitest run --config vitest.contract.config.ts",
     "test:ci-policy": "node --test scripts/ci-release-policy.test.mjs",
     "test:e2e-runtime-harness": "node --test scripts/e2e-build-state.test.mjs scripts/e2e-runtime-harness.test.mjs tests/e2e/global-setup.test.mjs",
-    "test:e2e": "npm run build && npm run test:ha",
+    "test:e2e": "node scripts/run-e2e-runtime-harness.mjs managed",
     "test:ha": "node scripts/run-e2e-runtime-harness.mjs attached",
     "test:ha:headed": "node scripts/run-e2e-runtime-harness.mjs attached --headed",
     "test:ha:debug": "node scripts/run-e2e-runtime-harness.mjs attached --debug",
