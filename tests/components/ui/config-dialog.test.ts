@@ -328,7 +328,7 @@ describe('config dialog environment save gate', () => {
     (element as any).envHumiditySensors = ['sensor.humidity'];
     await element.updateComplete;
     const submit = vi.fn();
-    element.addEventListener('configure-environment-submit', submit);
+    element.addEventListener('environment-change-requested', submit);
 
     const save = buttonByText(element, 'Save Environment');
     expect(element.shadowRoot!.querySelector('.save-gate-message')).toBeNull();
@@ -346,7 +346,7 @@ describe('config dialog environment save gate', () => {
     const edit = vi.fn();
     const environment = vi.fn();
     element.addEventListener('edit-growspace-submit', edit);
-    element.addEventListener('configure-environment-submit', environment);
+    element.addEventListener('environment-change-requested', environment);
 
     (element as any)._submitGrowspaceAndEnv();
 

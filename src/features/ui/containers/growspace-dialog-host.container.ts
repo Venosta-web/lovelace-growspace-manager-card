@@ -28,8 +28,11 @@ import {
 import { updateVisionCheckupConfig } from '../../../slices/camera';
 import { getStrainRecommendation } from '../../../slices/ai-insight';
 import { PlantUtils } from '../../../utils/plant-utils';
-import { needsExhaustCall } from '../../config/environment-save';
-import { environmentPatchToServiceData } from '../../config/environment-service-mapping';
+import {
+  applyEnvironmentChange,
+  type EnvironmentChangeRequest,
+} from '../../config/environment-change';
+import { createEnvironmentChangeAdapter } from '../../../slices/growspace/environment-change.adapter';
 import {
   updateBreeder,
   deleteBreeder,
@@ -44,8 +47,6 @@ import {
   addGrowspace,
   updateGrowspace,
   removeGrowspace,
-  configureEnvironment,
-  configureExhaustFan,
   removeEnvironment,
 } from '../../../slices/growspace';
 import { saveNotificationSettings } from '../../../slices/notification';
@@ -69,7 +70,6 @@ import {
   PlantOverviewDialogState,
 } from '../../../types';
 import type {
-  EnvironmentConfigEventDetail,
   VisionCheckupConfigEventDetail,
   StrainLibraryDialogState,
 } from '../../../lib/types/dialog';
@@ -243,8 +243,6 @@ export class GrowspaceDialogHost extends LitElement {
               return this._renderIrrigationDialog(active, effectiveDeviceData);
             case 'LOGBOOK':
               return this._renderLogbookDialog(active, effectiveDeviceData);
-            case 'ENVIRONMENT_CONFIG':
-              return this._renderEnvironmentConfigDialog(active);
             case 'WATERING':
               return this._renderWateringDialog(
                 active,
@@ -1065,7 +1063,8 @@ export class GrowspaceDialogHost extends LitElement {
         @remove-environment-submit=${(e: CustomEvent<RemoveEnvironmentEventDetail>) => {
           e.detail.completion = this._handleRemoveEnvironment(e.detail);
         }}
-        @configure-environment-submit=${(e: CustomEvent) => this._handleEnvironmentConfig(e.detail)}
+        @environment-change-requested=${(e: CustomEvent<EnvironmentChangeRequest>) =>
+          this._handleEnvironmentChange(e.detail)}
         @save-notification-settings-submit=${(e: CustomEvent) =>
           this._handleSaveNotificationSettings(e.detail)}
         @vision-checkup-config-submit=${(e: CustomEvent) =>
@@ -1101,43 +1100,16 @@ export class GrowspaceDialogHost extends LitElement {
     }
   }
 
-  /**
-   * Guard the mandatory sensors — but only for a patch that actually carries
-   * them. Under sparse saves (ADR-0032) an untouched Sensors tab omits both
-   * keys, and the stored sensors still stand; rejecting that save would make
-   * every other tab unsavable.
-   */
-  private _isEnvironmentPatchValid(detail: EnvironmentConfigEventDetail): boolean {
-    const clearsTemperature =
-      'temperatureSensors' in detail && !(detail.temperatureSensors ?? []).length;
-    const clearsHumidity = 'humiditySensors' in detail && !(detail.humiditySensors ?? []).length;
-
-    if (!detail.selectedGrowspaceId || clearsTemperature || clearsHumidity) {
-      uiSlice.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
-      return false;
-    }
-    return true;
-  }
-
-  private async _handleEnvironmentConfig(detail: EnvironmentConfigEventDetail) {
-    if (!this._isEnvironmentPatchValid(detail)) return;
-
+  private async _handleEnvironmentChange(request: EnvironmentChangeRequest) {
     try {
-      await configureEnvironment(environmentPatchToServiceData(detail));
-      // Exhaust config can't ride the configure_environment payload (the backend
-      // service doesn't accept it), so persist it via its dedicated service.
-      // Under patch semantics (GSM ADR-0026) configure_environment preserves
-      // exhaust_fan_config, so the ordering is no longer load-bearing.
-      // Only when the user actually edited it (ADR-0032): an unrelated
-      // environment edit must not re-write the stored exhaust config.
-      if (needsExhaustCall(detail) && detail.exhaustFanConfig) {
-        await configureExhaustFan({
-          growspaceId: detail.selectedGrowspaceId,
-          fanConfig: detail.exhaustFanConfig,
-        });
-      }
+      await applyEnvironmentChange(
+        request,
+        createEnvironmentChangeAdapter(async () => {
+          if (!this.store) throw new Error('Growspace store is unavailable');
+          await this.store.refreshData();
+        })
+      );
       showToast('Environment configured successfully!', 'success');
-      await this._handleDataChanged();
       uiSlice.closeDialog();
     } catch (e: unknown) {
       showError(e, 'Failed to configure environment');
@@ -1657,29 +1629,6 @@ export class GrowspaceDialogHost extends LitElement {
         @data-changed=${() => this._handleDataChanged()}
       ></harvest-scoring-dialog>
     `;
-  }
-
-  private _renderEnvironmentConfigDialog(active: ActiveDialogState): TemplateResult {
-    if (active.type !== 'ENVIRONMENT_CONFIG') return html``;
-    return html`
-      <growspace-environment-config-dialog
-        .open=${true}
-        .deviceId=${active.payload?.deviceId}
-        @close=${() => uiSlice.closeDialog()}
-        @save-config=${(e: CustomEvent) => this._handleEnvironmentConfigSubmit(e)}
-      ></growspace-environment-config-dialog>
-    `;
-  }
-
-  private async _handleEnvironmentConfigSubmit(e: CustomEvent) {
-    try {
-      await configureEnvironment(e.detail);
-      showToast('Environment configured successfully!', 'success');
-      await this._handleDataChanged();
-      uiSlice.closeDialog();
-    } catch (err) {
-      showError(err, 'Failed to configure environment');
-    }
   }
 
   private _handleOpenLogPollination(e: CustomEvent): void {

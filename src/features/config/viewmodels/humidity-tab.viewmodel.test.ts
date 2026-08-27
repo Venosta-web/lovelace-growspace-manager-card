@@ -9,7 +9,6 @@ import {
 import { createInitialSM, transition } from '../../../dialogs/config-dialog-sm';
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 import { createGrowspaceDevice } from '../../../services/types';
-import { composeEnvironmentConfig } from '../environment-save';
 import { FAN_VPD_STAGE_COLORS, FAN_VPD_STAGE_KEYS } from '../../../features/environment/constants';
 
 const deps: HumidityTabDeps = {
@@ -83,22 +82,17 @@ describe('createHumidityTabViewModel — stages', () => {
     expect(DEFAULT_DEHUM_THRESHOLDS[early.dehumKey]).toBeDefined();
   });
 
-  it('round-trips a clone humidity threshold through save and reopen', () => {
+  it('round-trips a clone humidity threshold through the device seeder', () => {
     const thresholds = {
       clone: { day: { on: 0.81, off: 0.62 }, night: { on: 0.74, off: 0.58 } },
     };
-    const edited = transition(sm(), {
-      type: 'UPDATE_ENV_DRAFT',
-      partial: { humidifierThresholds: thresholds },
-    });
-    const saved = composeEnvironmentConfig(edited.environmentDraft, edited.environmentDirty);
     const reopened = createInitialSM(
       createGrowspaceDevice({
         deviceId: 'gs1',
         name: 'Tent 1',
         rows: 4,
         plantsPerRow: 4,
-        environmentAttributes: { humidifierThresholds: saved.humidifierThresholds },
+        environmentAttributes: { humidifierThresholds: thresholds },
       })
     );
     const clone = createHumidityTabViewModel(reopened, deps, collapsed).stages.find(

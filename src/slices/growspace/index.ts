@@ -8,13 +8,8 @@ import {
   GrowspaceAPICollectionSchema,
   GrowReportSchema,
   type GrowReport,
-  type AcInfinityDevice,
-  type AcInfinityGrowLight,
   type CirculationFanConfig,
-  type ExhaustFanConfig,
-  type GrowLightConfig,
 } from './schema';
-import type { SensorGroup } from '../../features/environment/types';
 import type { GrowspaceDevice, GrowspaceAPIResponse } from '../../services/types';
 
 export type { GrowReport } from './schema';
@@ -184,175 +179,6 @@ export async function updateSensorCoordinates(
   );
 }
 
-export async function configureEnvironment(data: {
-  growspaceId: string;
-  temperatureSensors?: string[];
-  humiditySensors?: string[];
-  vpdSensors?: string[];
-  co2Sensor?: string | null;
-  circulationFanEntity?: string;
-  circulationFanEntities?: string[];
-  stressThreshold?: number | null;
-  moldThreshold?: number | null;
-  lightSensor?: string;
-  lightSensors?: string[];
-  exhaustEntity?: string;
-  exhaustFanEntities?: string[];
-  exhaustFanAcInfinityDevices?: AcInfinityDevice[];
-  circulationFanAcInfinityDevices?: AcInfinityDevice[];
-  humidifierEntity?: string;
-  humidifierEntities?: string[];
-  humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  humidifierAcInfinityDevices?: AcInfinityDevice[];
-  controlHumidifier?: boolean;
-  dehumidifierEntity?: string;
-  dehumidifierEntities?: string[];
-  dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  dehumidifierAcInfinityDevices?: AcInfinityDevice[];
-  soilMoistureSensor?: string | null;
-  /**
-   * Acceptable Moisture Band override. Both null clears back to the inherited
-   * band; both numbers set a custom pair. The backend rejects a lone bound, so
-   * these are only ever sent together (see the payload builder below).
-   */
-  soilMoistureMin?: number | null;
-  soilMoistureMax?: number | null;
-  controlDehumidifier?: boolean;
-  vegDayHours?: number;
-  flowerEarlyDayHours?: number;
-  flowerMidDayHours?: number;
-  flowerLateDayHours?: number;
-  minimumSourceAirTemperature?: number;
-  sensorGroups?: SensorGroup[];
-  sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
-  irrigationTanks?: {
-    sensorEntity: string;
-    name: string;
-    warningLevel: number;
-    volumeLiters?: number | null;
-  }[];
-  cameraEntities?: string[];
-  lungroomTempSensors?: string[];
-  substrateTemperatureSensors?: string[];
-  phSensors?: string[];
-  feedEcSensors?: string[];
-  bulkEcSensors?: string[];
-  poreEcSensors?: string[];
-  runoffEcSensors?: string[];
-  drainVolumeSensors?: string[];
-  irrigationFlowSensors?: string[];
-  powerSensors?: string[];
-  energySensors?: string[];
-  circulationFanConfig?: CirculationFanConfig;
-  growlightEntities?: string[];
-  growlightAcInfinityDevices?: AcInfinityGrowLight[];
-  growlightConfig?: GrowLightConfig;
-  vpdOptimalOverrides?: Record<
-    string,
-    { day: { low: number; high: number }; night: { low: number; high: number } }
-  >;
-  lstOffset?: number;
-}): Promise<void> {
-  // configure_environment is patch semantics (GSM ADR-0026): an omitted key keeps
-  // the backend value; a present key — including [] or null — is a deliberate
-  // set/clear. Gates must therefore be `!== undefined`, never truthiness/length,
-  // or clearing a field silently stops working.
-  const payload: Record<string, unknown> = { growspace_id: data.growspaceId };
-
-  if (data.temperatureSensors !== undefined) payload.temperature_sensors = data.temperatureSensors;
-  if (data.humiditySensors !== undefined) payload.humidity_sensors = data.humiditySensors;
-  if (data.vpdSensors !== undefined) payload.vpd_sensors = data.vpdSensors;
-  if (data.co2Sensor !== undefined) payload.co2_sensor = data.co2Sensor;
-  if (data.circulationFanEntity) payload.circulation_fan_entity = data.circulationFanEntity;
-  if (data.circulationFanEntities !== undefined)
-    payload.circulation_fan_entities = data.circulationFanEntities;
-  // The backend validates these two with `vol.Coerce(float)`, so a null would
-  // fail the entire save — a clear is not expressible until GSM#586 makes them
-  // nullable. `!= null` still fixes 0, which is a legal threshold the old
-  // truthiness gate dropped.
-  if (data.stressThreshold != null) payload.stress_threshold = data.stressThreshold;
-  if (data.moldThreshold != null) payload.mold_threshold = data.moldThreshold;
-  if (data.lightSensor) payload.light_sensor = data.lightSensor;
-  if (data.lightSensors !== undefined) payload.light_sensors = data.lightSensors;
-  if (data.exhaustEntity) payload.exhaust_entity = data.exhaustEntity;
-  if (data.exhaustFanEntities !== undefined) payload.exhaust_fan_entities = data.exhaustFanEntities;
-  if (data.humidifierEntity) payload.humidifier_entity = data.humidifierEntity;
-  if (data.humidifierEntities !== undefined) payload.humidifier_entities = data.humidifierEntities;
-  if (data.humidifierThresholds !== undefined)
-    payload.humidifier_thresholds = data.humidifierThresholds;
-  if (data.controlHumidifier !== undefined) payload.control_humidifier = data.controlHumidifier;
-  if (data.dehumidifierEntity) payload.dehumidifier_entity = data.dehumidifierEntity;
-  if (data.dehumidifierEntities !== undefined)
-    payload.dehumidifier_entities = data.dehumidifierEntities;
-  if (data.dehumidifierThresholds !== undefined)
-    payload.dehumidifier_thresholds = data.dehumidifierThresholds;
-  // AC Infinity bundles are already snake_case objects ({mode_entity, speed_entity,
-  // on_speed}); send straight to the wire. An empty array is an explicit clear; an
-  // omitted (undefined) field is preserved by the backend (ADR-0022).
-  if (data.exhaustFanAcInfinityDevices !== undefined)
-    payload.exhaust_fan_ac_infinity_devices = data.exhaustFanAcInfinityDevices;
-  if (data.circulationFanAcInfinityDevices !== undefined)
-    payload.circulation_fan_ac_infinity_devices = data.circulationFanAcInfinityDevices;
-  if (data.humidifierAcInfinityDevices !== undefined)
-    payload.humidifier_ac_infinity_devices = data.humidifierAcInfinityDevices;
-  if (data.dehumidifierAcInfinityDevices !== undefined)
-    payload.dehumidifier_ac_infinity_devices = data.dehumidifierAcInfinityDevices;
-  if (data.soilMoistureSensor !== undefined) payload.soil_moisture_sensor = data.soilMoistureSensor;
-  // Atomic pair: the backend raises on a lone bound and fails the whole save,
-  // so both keys go on the wire together or neither does. Never gate these on
-  // truthiness — 0 is a legal minimum, and null is the deliberate clear.
-  if (data.soilMoistureMin !== undefined && data.soilMoistureMax !== undefined) {
-    payload.soil_moisture_min = data.soilMoistureMin;
-    payload.soil_moisture_max = data.soilMoistureMax;
-  }
-  if (data.controlDehumidifier !== undefined)
-    payload.control_dehumidifier = data.controlDehumidifier;
-  if (data.vegDayHours) payload.veg_day_hours = data.vegDayHours;
-  if (data.flowerEarlyDayHours) payload.flower_early_day_hours = data.flowerEarlyDayHours;
-  if (data.flowerMidDayHours) payload.flower_mid_day_hours = data.flowerMidDayHours;
-  if (data.flowerLateDayHours) payload.flower_late_day_hours = data.flowerLateDayHours;
-  if (data.minimumSourceAirTemperature)
-    payload.minimum_source_air_temperature = data.minimumSourceAirTemperature;
-  if (data.sensorGroups !== undefined) payload.sensor_groups = data.sensorGroups;
-  if (data.sensorCoordinates !== undefined) payload.sensor_coordinates = data.sensorCoordinates;
-  if (data.irrigationTanks !== undefined) {
-    payload.irrigation_tanks = data.irrigationTanks.map((t) => ({
-      sensor_entity: t.sensorEntity,
-      name: t.name,
-      warning_level: t.warningLevel,
-      ...(t.volumeLiters != null ? { volume_liters: t.volumeLiters } : {}),
-    }));
-  }
-  if (data.cameraEntities !== undefined) payload.camera_entities = data.cameraEntities;
-  if (data.lungroomTempSensors !== undefined)
-    payload.lung_room_temp_sensors = data.lungroomTempSensors;
-  if (data.substrateTemperatureSensors !== undefined)
-    payload.substrate_temperature_sensors = data.substrateTemperatureSensors;
-  if (data.phSensors !== undefined) payload.ph_sensors = data.phSensors;
-  if (data.feedEcSensors !== undefined) payload.feed_ec_sensors = data.feedEcSensors;
-  if (data.bulkEcSensors !== undefined) payload.bulk_ec_sensors = data.bulkEcSensors;
-  if (data.poreEcSensors !== undefined) payload.pore_ec_sensors = data.poreEcSensors;
-  if (data.runoffEcSensors !== undefined) payload.runoff_ec_sensors = data.runoffEcSensors;
-  if (data.drainVolumeSensors !== undefined) payload.drain_volume_sensors = data.drainVolumeSensors;
-  if (data.irrigationFlowSensors !== undefined)
-    payload.irrigation_flow_sensors = data.irrigationFlowSensors;
-  if (data.powerSensors !== undefined) payload.power_sensors = data.powerSensors;
-  if (data.energySensors !== undefined) payload.energy_sensors = data.energySensors;
-  if (data.circulationFanConfig !== undefined)
-    payload.circulation_fan_config = data.circulationFanConfig;
-  if (data.growlightEntities !== undefined) payload.growlight_entities = data.growlightEntities;
-  if (data.growlightAcInfinityDevices !== undefined)
-    payload.growlight_ac_infinity_devices = data.growlightAcInfinityDevices;
-  if (data.growlightConfig !== undefined) payload.growlight_config = data.growlightConfig;
-  if (data.vpdOptimalOverrides !== undefined)
-    payload.vpd_optimal_overrides = data.vpdOptimalOverrides;
-  // 0 is a legal LST offset; the old `!= null` gate was fine for null but the
-  // surrounding truthiness gates were not — keep this one explicit.
-  if (data.lstOffset !== undefined) payload.lst_offset = data.lstOffset;
-
-  await callService('growspace_manager', 'configure_environment', payload);
-}
-
 export async function configureCirculationFan({
   growspaceId,
   fanConfig,
@@ -361,19 +187,6 @@ export async function configureCirculationFan({
   fanConfig: CirculationFanConfig;
 }): Promise<void> {
   await callService('growspace_manager', 'configure_circulation_fan', {
-    growspace_id: growspaceId,
-    ...fanConfig,
-  });
-}
-
-export async function configureExhaustFan({
-  growspaceId,
-  fanConfig,
-}: {
-  growspaceId: string;
-  fanConfig: ExhaustFanConfig;
-}): Promise<void> {
-  await callService('growspace_manager', 'configure_exhaust_fan', {
     growspace_id: growspaceId,
     ...fanConfig,
   });

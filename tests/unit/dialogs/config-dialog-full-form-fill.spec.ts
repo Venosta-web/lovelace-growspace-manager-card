@@ -373,7 +373,7 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
 
     it('should fill out ALL environment fields and submit', async () => {
       const listener = vi.fn();
-      element.addEventListener('configure-environment-submit', listener);
+      element.addEventListener('environment-change-requested', listener);
 
       // Select growspace
       (element as any).envSelectedId = 'gs1';
@@ -424,39 +424,45 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
       expect(listener).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: expect.objectContaining({
-            selectedGrowspaceId: 'gs1',
-            temperatureSensors: expect.arrayContaining(['sensor.temp_main', 'sensor.temp_backup']),
-            humiditySensors: expect.arrayContaining(['sensor.humidity_main']),
-            vpdSensors: expect.arrayContaining(['sensor.vpd_main']),
-            co2Sensor: 'sensor.co2_main',
-            soilMoistureSensor: 'sensor.soil_moisture_1',
-            lightSensors: expect.arrayContaining([
-              'switch.light_main',
-              'switch.light_side',
-              'sensor.light_intensity',
-            ]),
-            exhaustFanEntities: expect.arrayContaining([
-              'fan.exhaust_main',
-              'switch.exhaust_backup',
-            ]),
-            circulationFanEntities: expect.arrayContaining([
-              'fan.circulation_top',
-              'fan.circulation_bottom',
-              'switch.circulation_wall',
-            ]),
-            humidifierEntities: expect.arrayContaining([
-              'humidifier.main',
-              'switch.humidifier_backup',
-            ]),
-            dehumidifierEntities: expect.arrayContaining([
-              'humidifier.dehumidifier_main',
-              'switch.dehumidifier_backup',
-            ]),
-            phSensors: expect.arrayContaining(['sensor.ph_main']),
-            feedEcSensors: expect.arrayContaining(['sensor.ec_feed']),
-            energySensors: expect.arrayContaining(['sensor.energy']),
-            stressThreshold: 0.75,
-            moldThreshold: 0.85,
+            kind: 'shared-environment-draft',
+            draft: expect.objectContaining({
+              selectedGrowspaceId: 'gs1',
+              temperatureSensors: expect.arrayContaining([
+                'sensor.temp_main',
+                'sensor.temp_backup',
+              ]),
+              humiditySensors: expect.arrayContaining(['sensor.humidity_main']),
+              vpdSensors: expect.arrayContaining(['sensor.vpd_main']),
+              co2Sensor: 'sensor.co2_main',
+              soilMoistureSensor: 'sensor.soil_moisture_1',
+              lightSensors: expect.arrayContaining([
+                'switch.light_main',
+                'switch.light_side',
+                'sensor.light_intensity',
+              ]),
+              exhaustFanEntities: expect.arrayContaining([
+                'fan.exhaust_main',
+                'switch.exhaust_backup',
+              ]),
+              circulationFanEntities: expect.arrayContaining([
+                'fan.circulation_top',
+                'fan.circulation_bottom',
+                'switch.circulation_wall',
+              ]),
+              humidifierEntities: expect.arrayContaining([
+                'humidifier.main',
+                'switch.humidifier_backup',
+              ]),
+              dehumidifierEntities: expect.arrayContaining([
+                'humidifier.dehumidifier_main',
+                'switch.dehumidifier_backup',
+              ]),
+              phSensors: expect.arrayContaining(['sensor.ph_main']),
+              feedEcSensors: expect.arrayContaining(['sensor.ec_feed']),
+              energySensors: expect.arrayContaining(['sensor.energy']),
+              stressThreshold: 0.75,
+              moldThreshold: 0.85,
+            }),
           }),
         })
       );
@@ -464,7 +470,7 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
 
     it('should handle redundant sensor configuration', async () => {
       const listener = vi.fn();
-      element.addEventListener('configure-environment-submit', listener);
+      element.addEventListener('environment-change-requested', listener);
 
       // Configure with backup sensors everywhere
       (element as any).envSelectedId = 'gs2';
@@ -487,9 +493,11 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
       expect(listener).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: expect.objectContaining({
-            selectedGrowspaceId: 'gs2',
-            temperatureSensors: expect.arrayContaining(['sensor.temp_backup']),
-            lightSensors: expect.arrayContaining(['switch.light_main', 'switch.light_side']),
+            draft: expect.objectContaining({
+              selectedGrowspaceId: 'gs2',
+              temperatureSensors: expect.arrayContaining(['sensor.temp_backup']),
+              lightSensors: expect.arrayContaining(['switch.light_main', 'switch.light_side']),
+            }),
           }),
         })
       );
@@ -504,7 +512,7 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
 
     it('should fill out ALL dehumidifier thresholds for ALL stages', async () => {
       const listener = vi.fn();
-      element.addEventListener('configure-environment-submit', listener);
+      element.addEventListener('environment-change-requested', listener);
 
       (element as any).envSelectedId = 'gs1';
 
@@ -545,14 +553,16 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
       expect(listener).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: expect.objectContaining({
-            dehumidifierThresholds: expect.objectContaining({
-              [DehumidifierStage.SEEDLING]: thresholdData[DehumidifierStage.SEEDLING],
-              [DehumidifierStage.VEGETATIVE]: thresholdData[DehumidifierStage.VEGETATIVE],
-              [DehumidifierStage.EARLY_FLOWER]: thresholdData[DehumidifierStage.EARLY_FLOWER],
-              [DehumidifierStage.MID_FLOWER]: thresholdData[DehumidifierStage.MID_FLOWER],
-              [DehumidifierStage.LATE_FLOWER]: thresholdData[DehumidifierStage.LATE_FLOWER],
-              [DehumidifierStage.DRYING]: thresholdData[DehumidifierStage.DRYING],
-              [DehumidifierStage.CURING]: thresholdData[DehumidifierStage.CURING],
+            draft: expect.objectContaining({
+              dehumidifierThresholds: expect.objectContaining({
+                [DehumidifierStage.SEEDLING]: thresholdData[DehumidifierStage.SEEDLING],
+                [DehumidifierStage.VEGETATIVE]: thresholdData[DehumidifierStage.VEGETATIVE],
+                [DehumidifierStage.EARLY_FLOWER]: thresholdData[DehumidifierStage.EARLY_FLOWER],
+                [DehumidifierStage.MID_FLOWER]: thresholdData[DehumidifierStage.MID_FLOWER],
+                [DehumidifierStage.LATE_FLOWER]: thresholdData[DehumidifierStage.LATE_FLOWER],
+                [DehumidifierStage.DRYING]: thresholdData[DehumidifierStage.DRYING],
+                [DehumidifierStage.CURING]: thresholdData[DehumidifierStage.CURING],
+              }),
             }),
           }),
         })
@@ -731,7 +741,7 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
       await element.updateComplete;
 
       const listener = vi.fn();
-      element.addEventListener('configure-environment-submit', listener);
+      element.addEventListener('environment-change-requested', listener);
 
       // Configure with maximum entities everywhere
       (element as any).envSelectedId = 'gs1';
@@ -758,17 +768,19 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
       expect(listener).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: expect.objectContaining({
-            lightSensors: expect.any(Array),
-            exhaustFanEntities: expect.any(Array),
-            circulationFanEntities: expect.any(Array),
-            humidifierEntities: expect.any(Array),
-            dehumidifierEntities: expect.any(Array),
+            draft: expect.objectContaining({
+              lightSensors: expect.any(Array),
+              exhaustFanEntities: expect.any(Array),
+              circulationFanEntities: expect.any(Array),
+              humidifierEntities: expect.any(Array),
+              dehumidifierEntities: expect.any(Array),
+            }),
           }),
         })
       );
 
       // Verify all arrays have the correct lengths
-      const detail = listener.mock.calls[0][0].detail;
+      const detail = listener.mock.calls[0][0].detail.draft;
       expect(detail.lightSensors.length).toBe(3);
       expect(detail.exhaustFanEntities.length).toBe(2);
       expect(detail.circulationFanEntities.length).toBe(3);

@@ -1,16 +1,16 @@
 /**
  * GrowspaceDialogHost – watering submit handler, IPM apply handler,
- * log-pollination handler, _handleEnvironmentConfig handler, and
+ * log-pollination handler, _handleEnvironmentChange handler, and
  * _initControllers idempotency guard.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { waterPlant as mockWaterPlant } from '../../../slices/plant';
 import {
-  configureEnvironment as mockConfigureEnvironment,
   removeEnvironment as mockRemoveEnvironment,
   updateGrowspace as mockUpdateGrowspace,
 } from '../../../slices/growspace';
+import { applyEnvironmentChange as mockApplyEnvironmentChange } from '../../config/environment-change';
 import { applyIPM as mockApplyIPM } from '../../../slices/nutrient';
 import { saveNotificationSettings as mockSaveNotificationSettings } from '../../../slices/notification';
 import { notification$, activeDialog$ } from '../../../slices/ui';
@@ -44,10 +44,13 @@ vi.mock('../../../slices/plant', () => ({
 
 vi.mock('../../../slices/growspace', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../slices/growspace')>()),
-  configureEnvironment: vi.fn().mockResolvedValue(undefined),
-  configureExhaustFan: vi.fn().mockResolvedValue(undefined),
   removeEnvironment: vi.fn().mockResolvedValue(undefined),
   updateGrowspace: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../config/environment-change', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../config/environment-change')>()),
+  applyEnvironmentChange: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../slices/genetics', () => ({
@@ -539,36 +542,10 @@ describe('GrowspaceDialogHost – render() multi-instance portal guard', () => {
 });
 
 // ---------------------------------------------------------------------------
-// _handleEnvironmentConfig
+// _handleEnvironmentChange
 // ---------------------------------------------------------------------------
 
-describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
-  const minimalValidDetail = {
-    selectedGrowspaceId: 'gs-1',
-    temperatureSensors: ['sensor.temp'],
-    humiditySensors: ['sensor.humid'],
-  };
-
-  const fanConfig = {
-    enabled: true,
-    regulation_mode: 'vpd' as const,
-    min_speed: 10,
-    max_speed: 90,
-    vpd_target: 1.1,
-    vpd_tolerance: 0.2,
-    humidity_target: 60,
-    humidity_tolerance: 5,
-    temperature_target: 25,
-    temperature_tolerance: 2,
-    critical_temp_low: null,
-    critical_temp_high: null,
-    critical_temp_hysteresis: 1,
-    wind_enabled: false,
-    wind_period_seconds: 60,
-    wind_amplitude_pct: 10,
-    stage_vpd_enabled: false,
-  };
-
+describe('GrowspaceDialogHost – _handleEnvironmentChange', () => {
   function makeEnvStore() {
     return {
       ui: { $activeDialog: { get: vi.fn().mockReturnValue({ type: 'NONE' }) } },
@@ -594,43 +571,15 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
     (el as any).store = store;
   });
 
-  it('calls environment.configure with the mapped payload', async () => {
-    await (el as any)._handleEnvironmentConfig(minimalValidDetail);
+  it('forwards one request to the Environment Change interface', async () => {
+    const request = {
+      kind: 'tank-config-change' as const,
+      growspaceId: 'gs-1',
+      irrigationTanks: [],
+    };
+    await (el as any)._handleEnvironmentChange(request);
 
-    expect(mockConfigureEnvironment).toHaveBeenCalledWith(
-      expect.objectContaining({ growspaceId: 'gs-1' })
-    );
-  });
-
-  it('passes circulationFanConfig to configure when present', async () => {
-    await (el as any)._handleEnvironmentConfig({
-      ...minimalValidDetail,
-      circulationFanConfig: fanConfig,
-    });
-
-    expect(mockConfigureEnvironment).toHaveBeenCalledWith(
-      expect.objectContaining({ circulationFanConfig: fanConfig })
-    );
-  });
-
-  it('does not pass circulationFanConfig to configure when absent', async () => {
-    await (el as any)._handleEnvironmentConfig(minimalValidDetail);
-
-    expect(mockConfigureEnvironment).toHaveBeenCalledWith(
-      expect.not.objectContaining({ circulationFanConfig: expect.anything() })
-    );
-  });
-
-  it('shows a toast and returns early when mandatory sensors are missing', async () => {
-    await (el as any)._handleEnvironmentConfig({
-      selectedGrowspaceId: 'gs-1',
-      temperatureSensors: [],
-      humiditySensors: [],
-    });
-
-    expect(notification$.get()?.type).toBe('error');
-    expect(notification$.get()?.message).toContain('mandatory');
-    expect(mockConfigureEnvironment).not.toHaveBeenCalled();
+    expect(mockApplyEnvironmentChange).toHaveBeenCalledWith(request, expect.any(Object));
   });
 });
 
