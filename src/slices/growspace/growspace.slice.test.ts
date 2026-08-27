@@ -415,11 +415,11 @@ describe('updateSensorCoordinates', () => {
 describe('configureEnvironment', () => {
   it('calls configure_environment service with growspace_id and mapped snake_case fields', async () => {
     await configureEnvironment({
-      growspaceId: 'gs1',
+      selectedGrowspaceId: 'gs1',
       temperatureSensors: ['sensor.temp'],
       humiditySensors: ['sensor.hum'],
-      vegDayHours: 18,
-      controlDehumidifier: true,
+      cameraEntities: ['camera.grow'],
+      lstOffset: 0,
     });
 
     expect(hassCallModule.callService).toHaveBeenCalledWith(
@@ -429,8 +429,8 @@ describe('configureEnvironment', () => {
         growspace_id: 'gs1',
         temperature_sensors: ['sensor.temp'],
         humidity_sensors: ['sensor.hum'],
-        veg_day_hours: 18,
-        control_dehumidifier: true,
+        camera_entities: ['camera.grow'],
+        lst_offset: 0,
       })
     );
   });
@@ -439,7 +439,7 @@ describe('configureEnvironment', () => {
     // Patch semantics: present-empty clears the backend field; an omitted
     // (undefined) field is preserved. Truthiness/length gates would silently
     // turn a clear into a keep.
-    await configureEnvironment({ growspaceId: 'gs1', temperatureSensors: [] });
+    await configureEnvironment({ selectedGrowspaceId: 'gs1', temperatureSensors: [] });
 
     const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
     expect(payload).toHaveProperty('temperature_sensors', []);
@@ -448,7 +448,7 @@ describe('configureEnvironment', () => {
 
   it('omits null stress and mold thresholds so older backends preserve stored values', async () => {
     await configureEnvironment({
-      growspaceId: 'gs1',
+      selectedGrowspaceId: 'gs1',
       stressThreshold: null,
       moldThreshold: null,
     });
@@ -460,7 +460,7 @@ describe('configureEnvironment', () => {
 
   it('sends empty sensor lists and tank list as deliberate clears (ADR-0026)', async () => {
     await configureEnvironment({
-      growspaceId: 'gs1',
+      selectedGrowspaceId: 'gs1',
       poreEcSensors: [],
       drainVolumeSensors: [],
       irrigationFlowSensors: [],
@@ -476,11 +476,11 @@ describe('configureEnvironment', () => {
     expect(payload).toHaveProperty('irrigation_tanks', []);
   });
 
-  it('sends explicit null to clear nullable scalar sensors (ADR-0026)', async () => {
+  it('maps cleared scalar sensor pickers to explicit null (ADR-0026)', async () => {
     await configureEnvironment({
-      growspaceId: 'gs1',
-      co2Sensor: null,
-      soilMoistureSensor: null,
+      selectedGrowspaceId: 'gs1',
+      co2Sensor: '',
+      soilMoistureSensor: '',
     });
 
     const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
@@ -490,7 +490,7 @@ describe('configureEnvironment', () => {
 
   it('sends the Acceptable Moisture Band as an atomic pair', async () => {
     await configureEnvironment({
-      growspaceId: 'gs1',
+      selectedGrowspaceId: 'gs1',
       soilMoistureMin: 32.5,
       soilMoistureMax: 54,
     });
@@ -502,7 +502,7 @@ describe('configureEnvironment', () => {
 
   it('sends both band bounds as null to clear the override', async () => {
     await configureEnvironment({
-      growspaceId: 'gs1',
+      selectedGrowspaceId: 'gs1',
       soilMoistureMin: null,
       soilMoistureMax: null,
     });
@@ -513,7 +513,11 @@ describe('configureEnvironment', () => {
   });
 
   it('keeps a zero band minimum rather than dropping it as falsy', async () => {
-    await configureEnvironment({ growspaceId: 'gs1', soilMoistureMin: 0, soilMoistureMax: 45 });
+    await configureEnvironment({
+      selectedGrowspaceId: 'gs1',
+      soilMoistureMin: 0,
+      soilMoistureMax: 45,
+    });
 
     const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
     expect(payload).toHaveProperty('soil_moisture_min', 0);
@@ -522,7 +526,9 @@ describe('configureEnvironment', () => {
   it('omits both band keys when only one bound is supplied', async () => {
     // The backend rejects a lone bound and fails the entire call, so a half
     // pair must never reach the wire.
-    await configureEnvironment({ growspaceId: 'gs1', soilMoistureMin: 30 });
+    // @ts-expect-error A half pair is rejected by the action interface; retain
+    // this runtime assertion as defence against untyped event producers.
+    await configureEnvironment({ selectedGrowspaceId: 'gs1', soilMoistureMin: 30 });
 
     const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
     expect(payload).not.toHaveProperty('soil_moisture_min');
@@ -533,8 +539,10 @@ describe('configureEnvironment', () => {
     // The irrigation dialog's tank save sends only irrigationTanks; under
     // patch semantics everything else must stay untouched (omitted).
     await configureEnvironment({
-      growspaceId: 'gs1',
-      irrigationTanks: [{ sensorEntity: 'sensor.tank', name: 'Tank', warningLevel: 20 }],
+      selectedGrowspaceId: 'gs1',
+      irrigationTanks: [
+        { sensorEntity: 'sensor.tank', name: 'Tank', warningLevel: 20, volumeLiters: null },
+      ],
     });
 
     const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
@@ -546,7 +554,7 @@ describe('configureEnvironment', () => {
 
   it('sends AC Infinity bundles as snake_case objects on the wire (ADR-0022)', async () => {
     await configureEnvironment({
-      growspaceId: 'gs1',
+      selectedGrowspaceId: 'gs1',
       exhaustFanAcInfinityDevices: [
         { mode_entity: 'select.port1_mode', speed_entity: 'number.port1_speed', on_speed: 8 },
       ],
@@ -572,7 +580,7 @@ describe('configureEnvironment', () => {
   it('sends an empty AC Infinity list as an explicit clear, omits when undefined', async () => {
     // Empty array → backend clears; undefined → backend preserves (omitted).
     await configureEnvironment({
-      growspaceId: 'gs1',
+      selectedGrowspaceId: 'gs1',
       exhaustFanAcInfinityDevices: [],
     });
 
@@ -583,33 +591,21 @@ describe('configureEnvironment', () => {
 
   it('calls configure_environment with all optional fields and mapped snake_case properties', async () => {
     await configureEnvironment({
-      growspaceId: 'gs1',
+      selectedGrowspaceId: 'gs1',
       temperatureSensors: ['sensor.temp'],
       humiditySensors: ['sensor.hum'],
       vpdSensors: ['sensor.vpd'],
       co2Sensor: 'sensor.co2',
-      circulationFanEntity: 'fan.circ',
       circulationFanEntities: ['fan.circ1', 'fan.circ2'],
       stressThreshold: 2.5,
       moldThreshold: 3.5,
-      lightSensor: 'sensor.light',
       lightSensors: ['sensor.light1', 'sensor.light2'],
-      exhaustEntity: 'fan.exhaust',
       exhaustFanEntities: ['fan.exhaust1'],
-      humidifierEntity: 'humidifier.main',
       humidifierEntities: ['humidifier.sub'],
       humidifierThresholds: { room1: { day: { on: 40, off: 60 } } },
-      controlHumidifier: true,
-      dehumidifierEntity: 'dehumidifier.main',
       dehumidifierEntities: ['dehumidifier.sub'],
       dehumidifierThresholds: { room1: { day: { on: 50, off: 40 } } },
       soilMoistureSensor: 'sensor.soil',
-      controlDehumidifier: false,
-      vegDayHours: 18,
-      flowerEarlyDayHours: 12,
-      flowerMidDayHours: 11.5,
-      flowerLateDayHours: 11,
-      minimumSourceAirTemperature: 15,
       sensorGroups: [
         {
           id: 'group1',
@@ -650,28 +646,16 @@ describe('configureEnvironment', () => {
         humidity_sensors: ['sensor.hum'],
         vpd_sensors: ['sensor.vpd'],
         co2_sensor: 'sensor.co2',
-        circulation_fan_entity: 'fan.circ',
         circulation_fan_entities: ['fan.circ1', 'fan.circ2'],
         stress_threshold: 2.5,
         mold_threshold: 3.5,
-        light_sensor: 'sensor.light',
         light_sensors: ['sensor.light1', 'sensor.light2'],
-        exhaust_entity: 'fan.exhaust',
         exhaust_fan_entities: ['fan.exhaust1'],
-        humidifier_entity: 'humidifier.main',
         humidifier_entities: ['humidifier.sub'],
         humidifier_thresholds: { room1: { day: { on: 40, off: 60 } } },
-        control_humidifier: true,
-        dehumidifier_entity: 'dehumidifier.main',
         dehumidifier_entities: ['dehumidifier.sub'],
         dehumidifier_thresholds: { room1: { day: { on: 50, off: 40 } } },
         soil_moisture_sensor: 'sensor.soil',
-        control_dehumidifier: false,
-        veg_day_hours: 18,
-        flower_early_day_hours: 12,
-        flower_mid_day_hours: 11.5,
-        flower_late_day_hours: 11,
-        minimum_source_air_temperature: 15,
         sensor_groups: [
           {
             id: 'group1',
@@ -710,7 +694,7 @@ describe('configureEnvironment', () => {
       flower_mid: { day: { low: 0.5, high: 1.45 }, night: { low: 0.6, high: 1.0 } },
     };
     await configureEnvironment({
-      growspaceId: 'gs1',
+      selectedGrowspaceId: 'gs1',
       temperatureSensors: ['sensor.temp'],
       humiditySensors: ['sensor.hum'],
       vpdOptimalOverrides: overrides,
@@ -727,7 +711,7 @@ describe('configureEnvironment', () => {
 
   it('omits vpd_optimal_overrides from payload when not provided', async () => {
     await configureEnvironment({
-      growspaceId: 'gs1',
+      selectedGrowspaceId: 'gs1',
       temperatureSensors: ['sensor.temp'],
       humiditySensors: ['sensor.hum'],
     });

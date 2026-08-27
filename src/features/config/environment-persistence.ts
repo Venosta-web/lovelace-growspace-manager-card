@@ -30,7 +30,7 @@ export type EnvironmentDraftKey = keyof EnvironmentDraft;
  * Total classification of the Shared Environment Draft. Keep this exhaustive —
  * the `Record` type is what makes an unclassified new field fail to compile.
  */
-export const ENV_PERSISTENCE: Record<EnvironmentDraftKey, PersistenceClass> = {
+export const ENV_PERSISTENCE = {
   selectedGrowspaceId: 'routing',
 
   // Air sensors
@@ -103,7 +103,12 @@ export const ENV_PERSISTENCE: Record<EnvironmentDraftKey, PersistenceClass> = {
   // VPD
   vpdOptimalOverrides: 'buffered',
   lstOffset: 'buffered',
-};
+} as const satisfies Record<EnvironmentDraftKey, PersistenceClass>;
+
+/** Draft keys owned by the buffered `configure_environment` action. */
+export type BufferedEnvironmentDraftKey = {
+  [Key in EnvironmentDraftKey]: (typeof ENV_PERSISTENCE)[Key] extends 'buffered' ? Key : never;
+}[EnvironmentDraftKey];
 
 /**
  * Keys that must be written together or not at all.
@@ -163,10 +168,12 @@ export function isGroupDirty(
 /** The dirty keys the buffered `configure_environment` patch may carry. */
 export function bufferedDirtyKeys(
   dirty: ReadonlySet<EnvironmentDraftKey>
-): ReadonlySet<EnvironmentDraftKey> {
-  const buffered = new Set<EnvironmentDraftKey>();
+): ReadonlySet<BufferedEnvironmentDraftKey> {
+  const buffered = new Set<BufferedEnvironmentDraftKey>();
   for (const key of dirty) {
-    if (ENV_PERSISTENCE[key] === 'buffered') buffered.add(key);
+    if (ENV_PERSISTENCE[key] === 'buffered') {
+      buffered.add(key as BufferedEnvironmentDraftKey);
+    }
   }
   return buffered;
 }

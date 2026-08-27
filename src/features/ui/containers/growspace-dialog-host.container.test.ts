@@ -598,7 +598,7 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
     await (el as any)._handleEnvironmentConfig(minimalValidDetail);
 
     expect(mockConfigureEnvironment).toHaveBeenCalledWith(
-      expect.objectContaining({ growspaceId: 'gs-1' })
+      expect.objectContaining({ selectedGrowspaceId: 'gs-1' })
     );
   });
 

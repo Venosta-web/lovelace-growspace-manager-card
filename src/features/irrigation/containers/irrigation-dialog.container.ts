@@ -1743,8 +1743,11 @@ export class IrrigationDialog extends LitElement {
   /** Effect: persist tank config through the Growspace slice. Reads only params. */
   private async _effectSaveTank(params: SaveTankParams) {
     await configureEnvironment({
-      growspaceId: params.growspaceId,
-      irrigationTanks: params.irrigationTanks,
+      selectedGrowspaceId: params.growspaceId,
+      irrigationTanks: params.irrigationTanks.map((tank) => ({
+        ...tank,
+        volumeLiters: tank.volumeLiters ?? null,
+      })),
     });
   }
 
