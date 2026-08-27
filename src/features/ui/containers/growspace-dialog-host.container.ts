@@ -29,7 +29,6 @@ import { updateVisionCheckupConfig } from '../../../slices/camera';
 import { getStrainRecommendation } from '../../../slices/ai-insight';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { needsExhaustCall } from '../../config/environment-save';
-import { environmentPatchToServiceData } from '../../config/environment-service-mapping';
 import {
   updateBreeder,
   deleteBreeder,
@@ -1121,7 +1120,7 @@ export class GrowspaceDialogHost extends LitElement {
     if (!this._isEnvironmentPatchValid(detail)) return;
 
     try {
-      await configureEnvironment(environmentPatchToServiceData(detail));
+      await configureEnvironment(detail);
       // Exhaust config can't ride the configure_environment payload (the backend
       // service doesn't accept it), so persist it via its dedicated service.
       // Under patch semantics (GSM ADR-0026) configure_environment preserves

@@ -1,12 +1,11 @@
 import type { PlantEntity, PlantAttributes, StrainEntry } from '../../features/plants/types';
-import type { SensorGroup } from '../../features/environment/types';
 import type { VisionCheckupConfig } from '../../slices/camera';
+import type { EnvironmentDraft } from '../../dialogs/config-dialog-sm';
+import type { BufferedEnvironmentDraftKey } from '../../features/config/environment-persistence';
 import type {
   AcInfinityDevice,
-  AcInfinityGrowLight,
   CirculationFanConfig,
   ExhaustFanConfig,
-  GrowLightConfig,
 } from '../../slices/growspace/schema';
 
 export type { VisionCheckupConfig };
@@ -98,65 +97,20 @@ export interface VisionCheckupConfigEventDetail {
  * (`set_humidifier_control` / `set_dehumidifier_control`) and must never be
  * re-sent by the buffered Save.
  */
-export interface EnvironmentConfigEventDetail {
-  selectedGrowspaceId: string;
-  // Multi sensors
-  temperatureSensors?: string[];
-  humiditySensors?: string[];
-  vpdSensors?: string[];
-  co2Sensor?: string | null;
-  soilMoistureSensor?: string | null;
-  // Acceptable Moisture Band — only ever present as a complete pair.
-  soilMoistureMin?: number | null;
-  soilMoistureMax?: number | null;
-  // Fans
-  circulationFanEntity?: string | null;
-  circulationFanEntities?: string[];
-  exhaustEntity?: string | null;
-  exhaustFanEntities?: string[];
-  exhaustFanAcInfinityDevices?: AcInfinityDevice[];
-  circulationFanAcInfinityDevices?: AcInfinityDevice[];
-  stressThreshold?: number | null;
-  moldThreshold?: number | null;
-  lightSensor?: string | null;
-  lightSensors?: string[];
-  // Humidifier
-  humidifierEntity?: string | null;
-  humidifierEntities?: string[];
-  humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  humidifierAcInfinityDevices?: AcInfinityDevice[];
-  // Dehumidifier
-  dehumidifierEntity?: string | null;
-  dehumidifierEntities?: string[];
-  dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  dehumidifierAcInfinityDevices?: AcInfinityDevice[];
-  growlightEntities?: string[];
-  growlightAcInfinityDevices?: AcInfinityGrowLight[];
-  growlightConfig?: GrowLightConfig;
-  sensorGroups?: SensorGroup[];
-  sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
-  irrigationTanks?: any[];
-  cameraEntities?: string[];
-  lungroomTempSensors?: string[];
-  // Advanced / irrigation monitoring
-  substrateTemperatureSensors?: string[];
-  phSensors?: string[];
-  feedEcSensors?: string[];
-  bulkEcSensors?: string[];
-  poreEcSensors?: string[];
-  runoffEcSensors?: string[];
-  drainVolumeSensors?: string[];
-  irrigationFlowSensors?: string[];
-  powerSensors?: string[];
-  energySensors?: string[];
-  circulationFanConfig?: CirculationFanConfig;
-  exhaustFanConfig?: ExhaustFanConfig;
-  vpdOptimalOverrides?: Record<
-    string,
-    { day: { low: number; high: number }; night: { low: number; high: number } }
-  >;
-  lstOffset?: number;
-}
+type MoistureBandKey = 'soilMoistureMin' | 'soilMoistureMax';
+
+type SparseBufferedEnvironmentPatch = Partial<
+  Pick<EnvironmentDraft, Exclude<BufferedEnvironmentDraftKey, MoistureBandKey>>
+>;
+
+type AtomicMoistureBandPatch =
+  | { soilMoistureMin?: never; soilMoistureMax?: never }
+  | Pick<EnvironmentDraft, MoistureBandKey>;
+
+export type EnvironmentConfigEventDetail = Pick<EnvironmentDraft, 'selectedGrowspaceId'> &
+  SparseBufferedEnvironmentPatch &
+  AtomicMoistureBandPatch &
+  Partial<Pick<EnvironmentDraft, 'exhaustFanConfig'>>;
 
 export interface ConfigDialogState {
   currentTab:
