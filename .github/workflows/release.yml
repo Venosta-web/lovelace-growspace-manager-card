@@ -80,3 +80,11 @@ jobs:
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
         run: npm run publishing:publish -- stable
+
+  # The public demo is release output. Calling its reusable workflow here keeps
+  # Pages behind the same validation and stable-publishing transaction instead
+  # of racing it as an independent main-push workflow.
+  deploy-demo:
+    if: github.ref == 'refs/heads/main'
+    needs: stable-release
+    uses: ./.github/workflows/demo.yaml

@@ -72,3 +72,28 @@ test('the GitHub adapter retains only routing, validation edges, and module invo
   assert.equal(releaseRuntime.runs.steps[0].with['node-version'], '22');
   assert.equal(releaseRuntime.runs.steps[0].with.cache, 'npm');
 });
+
+test('the public demo deploys only after a successful stable release', async () => {
+  const release = await readWorkflow('release.yml');
+  const demo = await readWorkflow('demo.yaml');
+
+  assert.equal(
+    demo.on.push,
+    undefined,
+    'an independent main push must not deploy before stable publishing finishes'
+  );
+  assert.ok('workflow_call' in demo.on, 'the stable release can call the demo workflow');
+  assert.deepEqual(demo.on.pull_request.branches, ['main']);
+
+  const deployment = release.jobs['deploy-demo'];
+  assert.equal(deployment.if, "github.ref == 'refs/heads/main'");
+  assert.equal(deployment.needs, 'stable-release');
+  assert.equal(deployment.uses, './.github/workflows/demo.yaml');
+
+  assert.equal(demo.jobs.deploy.needs, 'build');
+  assert.equal(
+    demo.jobs.deploy.if,
+    "github.event_name != 'pull_request'",
+    'pull requests verify the assembled demo without publishing Pages'
+  );
+});
