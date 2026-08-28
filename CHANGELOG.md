@@ -1,3 +1,35 @@
+## [1.3.1](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.3.0...v1.3.1) (2026-08-26)
+
+
+### Bug Fixes
+
+* **camera:** make snapshot viewer vertically scrollable ([381a974](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/381a97401456871a024523cf9cc1b24f73d4985d))
+* **irrigation:** avoid echoing unchanged pump flow rate ([57b0b33](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/57b0b33c35d64b0e0b4d15b44cd5c81624b45fbd))
+* **irrigation:** correct hero trigger label ([0de1dad](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/0de1dad6a89a2fbba0481c6d95088a5615c4dad0))
+
+# [1.3.0](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.2.1...v1.3.0) (2026-08-26)
+
+
+### Bug Fixes
+
+* **analytics:** keep graph wall out of card editor ([1f244d3](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1f244d31ccaefe85eeadde609be4381bc14efd3f))
+* **analytics:** make the Env Graph Wall actually fullscreen ([e49c3d4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e49c3d4ecb8899522ed37a483a2429374dc73921)), closes [#756](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/756)
+* **camera:** preserve desktop snapshot stage height ([14e09ab](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/14e09abdfb6d242353251175e01f6cffca4a5b42))
+* **crop-steering:** give P0 its own phase window ([483fa5b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/483fa5bbb8f5fba1109fc01dc745b7039e3061c5)), closes [#7e57c2](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/7e57c2)
+* **irrigation:** add pump flow rate input ([d80e219](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/d80e219da0423d40e3889962bf6a36192859e069))
+* **irrigation:** expose P2 stop buffer dependency ([0291aae](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/0291aae6c3eb135bd0a144a128e70b5f8f27f092))
+* **irrigation:** use resolved photoperiod boundaries ([11e54b1](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/11e54b1357406762631f1ff8714b6c223313831a))
+
+
+### Features
+
+* **analytics:** add configured Graph Wall startup ([fcf3bec](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/fcf3bec95f2f702cbb29a64706e4d00f642402f1))
+* **analytics:** add the Env Graph Wall fullscreen overlay ([1a255e3](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1a255e3f69e396791dd4048adc49c30c675385d7)), closes [#756](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/756)
+* **analytics:** size custom charts to graph wall ([bb6f3a8](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/bb6f3a8d9cb1bc394bf54f339ef5c38116df9628))
+* **camera:** redesign snapshot review dialog ([5585051](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/5585051a891650ce19e29520f13047a37065189d))
+* **irrigation:** name this growspace's phase boundaries in the Timing explainer ([902f3c5](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/902f3c5794d0adcaed34b89e8761bab655bcf0dd)), closes [#42](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/42) [Venosta-web/growspace_manager_workspace#43](https://github.com/Venosta-web/growspace_manager_workspace/issues/43)
+* localize environment analytics copy ([6730695](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/6730695f2f8afabc8bc49dbe89623a4aa9a7e9a1))
+
 ## [1.2.1](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.2.0...v1.2.1) (2026-08-24)
 
 
