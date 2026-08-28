@@ -50,7 +50,9 @@ interface CoverageManifest {
   entities: CoverageFixtureEntity[];
 }
 
-const coveragePath = path.join(__dirname, 'e2e-entity-coverage.generated.json');
+const coveragePath =
+  process.env.GROWSPACE_E2E_COVERAGE_PATH ??
+  path.join(__dirname, 'e2e-entity-coverage.generated.json');
 if (!fs.existsSync(coveragePath)) {
   throw new Error(
     `Missing ${coveragePath}. Run growspace_manager_workspace/scripts/gen-e2e-sensors first.`
@@ -59,7 +61,7 @@ if (!fs.existsSync(coveragePath)) {
 const COVERAGE = JSON.parse(fs.readFileSync(coveragePath, 'utf-8')) as CoverageManifest;
 
 // Load .env.test from the tests/e2e directory if present
-const envPath = path.join(__dirname, '..', '.env.test');
+const envPath = process.env.GROWSPACE_E2E_ENV_PATH ?? path.join(__dirname, '..', '.env.test');
 if (fs.existsSync(envPath)) {
   for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
     const trimmed = line.trim();

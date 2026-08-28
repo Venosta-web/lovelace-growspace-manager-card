@@ -13,7 +13,8 @@ import {
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const bundlePath = path.join(rootDirectory, 'dist', 'growspace-manager-card.js');
-const envPath = path.join(rootDirectory, 'tests', 'e2e', '.env.test');
+const envPath =
+  process.env.GROWSPACE_E2E_ENV_PATH ?? path.join(rootDirectory, 'tests', 'e2e', '.env.test');
 
 dotenv.config({ path: envPath, quiet: true });
 

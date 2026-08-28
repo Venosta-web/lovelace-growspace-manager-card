@@ -5,7 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const envPath = path.join(rootDirectory, 'tests', 'e2e', '.env.test');
+const envPath =
+  process.env.GROWSPACE_E2E_ENV_PATH ?? path.join(rootDirectory, 'tests', 'e2e', '.env.test');
 const manifestPath = path.join(
   rootDirectory,
   'tests',
