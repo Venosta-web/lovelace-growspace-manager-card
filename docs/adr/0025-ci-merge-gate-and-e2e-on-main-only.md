@@ -120,3 +120,28 @@ release dependency graph and available for deliberate manual dispatch, with no p
 pull-request trigger of its own. The stable publishing job keeps the default successful-
 `needs` condition, so a failed or cancelled E2E dependency prevents publishing; the dev
 prerelease path has no E2E dependency.
+
+## Amendment (2026-08-28) — workflow policy stops defining publishing behavior
+
+The deep Publishing Interface now owns install, build, artifact-plan validation,
+semantic-release ordering, bundle cleanup, successful outcomes, stage failures,
+and retry behavior for both channels. The GitHub workflow is only its forge
+adapter: `main` maps to the explicit `stable` channel, `dev` maps to
+`prerelease`, both consume the shared release-only Node runtime, and each invokes
+the interface once. Copied preparation and cleanup shell sequences are not a
+supported publishing interface.
+
+Stable validation remains directly auditable in GitHub Actions. The stable job
+has explicit `needs` edges to lint/build (including release preflight), unit
+tests, Contract Fixture validation, and real Home Assistant E2E. Its only `if`
+condition is the `main` branch route, so GitHub's default all-needs-succeeded
+behavior skips publishing when any validation job fails or is cancelled. The
+prerelease job has no such edges.
+
+The structural CI policy test is intentionally limited to those GitHub adapter
+facts: branch routing, stable validation edges, default successful-`needs`
+behavior, shared runtime consumption, and one Publishing Interface invocation
+per channel. Publishing behavior is tested through mock command,
+semantic-release, and Git adapters at the module seam instead of by parsing job
+names, copied commands, or cleanup shell text. Artifact ownership and the
+failure/retry contract are recorded in ADR 0002.

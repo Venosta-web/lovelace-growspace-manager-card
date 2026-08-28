@@ -10,161 +10,65 @@ const readWorkflow = async (name) =>
 const readAction = async (name) =>
   parse(await readFile(new URL(`../.github/actions/${name}/action.yml`, import.meta.url), 'utf8'));
 
-const branchesFor = (workflow, event) => workflow.on?.[event]?.branches ?? [];
-const hasEvent = (workflow, event) => Object.hasOwn(workflow.on ?? {}, event);
+function publishingJobForBranch(workflow, branch) {
+  const branchCondition = `github.ref == 'refs/heads/${branch}'`;
+  const matches = Object.values(workflow.jobs).filter(
+    (job) => job.if === branchCondition && Array.isArray(job.steps)
+  );
+  assert.equal(matches.length, 1, `${branch} must route to exactly one publishing job`);
+  return matches[0];
+}
 
-test('stable publishing is gated while dev prereleases stay E2E-free', async () => {
+function runCommands(job) {
+  return job.steps.filter((step) => step.run).map((step) => step.run);
+}
+
+function releaseRuntimeUses(job) {
+  return job.steps.filter((step) => step.uses === './.github/actions/setup-release-node');
+}
+
+test('the GitHub adapter retains only routing, validation edges, and module invocations', async () => {
   const release = await readWorkflow('release.yml');
-  const e2e = await readWorkflow('e2e-frontend.yaml');
   const lint = await readWorkflow('lint.yml');
-  const unit = await readWorkflow('test.yml');
-  const contract = await readWorkflow('contract-fixture.yml');
+  const releaseRuntime = await readAction('setup-release-node');
 
-  assert.deepEqual(branchesFor(release, 'push'), ['main', 'dev']);
-  assert.ok(hasEvent(release, 'workflow_dispatch'), 'release keeps optional manual dispatch');
+  assert.deepEqual(release.on.push.branches, ['main', 'dev']);
 
-  const stable = release.jobs['stable-release'];
-  assert.ok(stable, 'release defines a dedicated stable-release job');
-  assert.deepEqual(stable.needs, ['lint-and-build', 'unit-tests', 'contract-fixture', 'e2e']);
-  assert.match(stable.if, /refs\/heads\/main/);
-  assert.doesNotMatch(
-    stable.if,
-    /always\(\)|failure\(\)|cancelled\(\)/,
-    'stable publishing must retain the implicit all-needs-succeeded condition'
-  );
-  assert.equal(
-    stable['continue-on-error'],
-    undefined,
-    'stable publishing must fail when the publishing transaction fails'
-  );
+  const stable = publishingJobForBranch(release, 'main');
   assert.deepEqual(
-    stable.steps.filter((step) => step.run).map((step) => step.run),
-    ['npm run publishing:publish -- stable'],
-    'main maps to one stable Publishing Interface invocation'
-  );
-
-  const prerelease = release.jobs.prerelease;
-  assert.ok(prerelease, 'release defines a dedicated prerelease job');
-  assert.equal(prerelease.needs, undefined, 'dev prerelease must not wait for stable validation');
-  assert.match(prerelease.if, /refs\/heads\/dev/);
-  assert.deepEqual(
-    prerelease.steps.filter((step) => step.run).map((step) => step.run),
-    ['npm run publishing:publish -- prerelease'],
-    'dev maps to one prerelease Publishing Interface invocation'
-  );
-
-  for (const jobName of ['lint-and-build', 'unit-tests', 'contract-fixture', 'e2e']) {
-    assert.match(release.jobs[jobName].if, /refs\/heads\/main/);
-  }
-
-  assert.ok(hasEvent(e2e, 'workflow_call'), 'the main release gate can call the E2E workflow');
-  assert.ok(hasEvent(e2e, 'workflow_dispatch'), 'E2E keeps optional manual dispatch');
-  assert.equal(e2e.on.push, undefined, 'E2E must not independently run for dev or main pushes');
-  assert.equal(e2e.on.pull_request, undefined, 'E2E must not run for pull requests');
-  for (const [name, workflow] of [
-    ['lint', lint],
-    ['unit tests', unit],
-    ['contract fixture', contract],
-  ]) {
-    assert.ok(hasEvent(workflow, 'workflow_call'), `${name} is reusable by the release gate`);
-  }
-
-  const steps = e2e.jobs['e2e-tests'].steps;
-  const checkoutSteps = steps.filter((step) => step.uses?.startsWith('actions/checkout@'));
-  assert.equal(checkoutSteps.length, 3, 'the GitHub adapter owns all three checkouts');
-  assert.equal(checkoutSteps[0].with, undefined, 'the card uses the triggering checkout');
-  assert.deepEqual(
-    checkoutSteps.slice(1).map((step) => ({
-      repository: step.with.repository,
-      ref: step.with.ref,
-      path: step.with.path,
-    })),
+    stable.needs.map((jobName) => release.jobs[jobName].uses),
     [
-      {
-        repository: 'Venosta-web/growspace_manager',
-        ref: 'prerelease',
-        path: '.e2e/growspace_manager',
-      },
-      {
-        repository: 'Venosta-web/growspace_manager_workspace',
-        ref: 'main',
-        path: '.e2e/workspace',
-      },
-    ]
+      './.github/workflows/lint.yml',
+      './.github/workflows/test.yml',
+      './.github/workflows/contract-fixture.yml',
+      './.github/workflows/e2e-frontend.yaml',
+    ],
+    'stable publishing keeps every explicit validation edge'
   );
-
-  const nodeSetup = steps.find((step) => step.uses?.startsWith('actions/setup-node@'));
-  assert.equal(nodeSetup?.with.cache, 'npm', 'the GitHub adapter retains npm caching');
-  assert.ok(
-    steps.some((step) => step.run?.includes('playwright install --with-deps chromium')),
-    'the GitHub adapter installs the browser and its runner dependencies'
-  );
-
-  const commands = steps
-    .map((step) => step.run)
-    .filter(Boolean)
-    .join('\n');
-  const harnessSteps = steps.filter((step) => step.run?.includes('npm run test:e2e'));
-  assert.equal(harnessSteps.length, 1, 'E2E delegates to one managed runtime-harness invocation');
-  assert.match(harnessSteps[0].run, /--integration-root/);
-  assert.match(harnessSteps[0].run, /--workspace-root/);
-  assert.doesNotMatch(
-    commands,
-    /docker (?:run|rm|logs)|ci-e2e-environment\.mjs|verify-e2e-bundle\.mjs/,
-    'the GitHub adapter must not duplicate runtime lifecycle ordering'
-  );
-
-  const rootSelection = steps.find((step) => step.id === 'checkout-roots');
-  assert.ok(rootSelection, 'the GitHub adapter selects explicit checkout roots');
-  assert.match(rootSelection.run, /manifest\.json/);
-  assert.match(rootSelection.run, /e2e_simulated_sensors\.yaml/);
-
-  const artifactUpload = steps.find((step) => step.uses?.startsWith('actions/upload-artifact@'));
-  assert.ok(artifactUpload, 'the GitHub adapter uploads harness failure evidence');
-  assert.match(artifactUpload.if, /failure\(\)/);
-  assert.match(artifactUpload.if, /cancelled\(\)/);
-  assert.equal(artifactUpload.with.path, '.artifacts/e2e-managed/');
-  assert.equal(artifactUpload.with['if-no-files-found'], 'error');
-  assert.equal(e2e.jobs['e2e-tests']['continue-on-error'], undefined);
-});
-
-test('the GitHub adapter delegates release preparation to the publishing interface', async () => {
-  const release = await readWorkflow('release.yml');
-  const lint = await readWorkflow('lint.yml');
-  const releaseNode = await readAction('setup-release-node');
-
   assert.equal(
-    releaseNode.runs.steps[0].with['node-version'],
-    '22',
-    'the release-only Node source remains visible in the GitHub adapter'
+    stable.if,
+    "github.ref == 'refs/heads/main'",
+    'the branch condition must retain GitHub default successful-needs behavior'
   );
-  assert.equal(releaseNode.runs.steps[0].with.cache, 'npm');
+  assert.equal(stable['continue-on-error'], undefined);
+  assert.deepEqual(runCommands(stable), ['npm run publishing:publish -- stable']);
 
-  const preflightSteps = lint.jobs['release-preflight'].steps;
-  assert.equal(
-    preflightSteps.filter((step) => step.uses === './.github/actions/setup-release-node').length,
-    1
-  );
-  assert.deepEqual(
-    preflightSteps.filter((step) => step.run).map((step) => step.run),
-    ['npm run publishing:verify']
-  );
+  const prerelease = publishingJobForBranch(release, 'dev');
+  assert.equal(prerelease.needs, undefined, 'dev prereleases stay outside stable validation');
+  assert.deepEqual(runCommands(prerelease), ['npm run publishing:publish -- prerelease']);
 
-  for (const [jobName, channel] of [
-    ['stable-release', 'stable'],
-    ['prerelease', 'prerelease'],
-  ]) {
-    const steps = release.jobs[jobName].steps;
+  const verificationJobs = Object.values(lint.jobs).filter((job) =>
+    runCommands(job).includes('npm run publishing:verify')
+  );
+  assert.equal(verificationJobs.length, 1, 'preflight enters the Publishing Interface once');
+
+  for (const job of [stable, prerelease, verificationJobs[0]]) {
     assert.equal(
-      steps.filter((step) => step.uses === './.github/actions/setup-release-node').length,
-      1
-    );
-    const commands = steps.filter((step) => step.run).map((step) => step.run);
-    assert.deepEqual(commands, [`npm run publishing:publish -- ${channel}`]);
-    assert.doesNotMatch(
-      commands.join('\n'),
-      /npm ci|npm run build|validate:hacs-release|npx semantic-release|git rm|git push/,
-      'the GitHub adapter must not duplicate publishing implementation details'
+      releaseRuntimeUses(job).length,
+      1,
+      'every publishing entry uses the shared runtime'
     );
   }
+  assert.equal(releaseRuntime.runs.steps[0].with['node-version'], '22');
+  assert.equal(releaseRuntime.runs.steps[0].with.cache, 'npm');
 });

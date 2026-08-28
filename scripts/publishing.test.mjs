@@ -3,6 +3,27 @@ import test from 'node:test';
 
 import { runPublishing } from './publishing.mjs';
 
+const CHANNELS = [
+  {
+    channel: 'stable',
+    branch: 'main',
+    version: '1.3.0',
+    gitAssets: ['package.json', 'CHANGELOG.md', 'dist/*.js'],
+  },
+  {
+    channel: 'prerelease',
+    branch: 'dev',
+    version: '1.3.0-next.1',
+    gitAssets: ['dist/*.js'],
+  },
+];
+
+const SUCCESSFUL_PUBLISHING_STAGES = [
+  'command:npm ci',
+  'command:npm run build',
+  'command:npm run validate:hacs-release',
+];
+
 function releaseConfigFor(branch, { includePrereleaseVersionedAssets = false } = {}) {
   const versionedAssets =
     branch === 'main' || includePrereleaseVersionedAssets ? ['package.json', 'CHANGELOG.md'] : [];
@@ -14,50 +35,97 @@ function releaseConfigFor(branch, { includePrereleaseVersionedAssets = false } =
   };
 }
 
-test('verify prepares once and verifies both release channels without publishing', async () => {
-  const executions = [];
+function pluginOptions(releaseConfig, name) {
+  return releaseConfig.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === name)[1];
+}
+
+function createMockAdapters({
+  release = { nextRelease: { version: '1.3.0' } },
+  cleanupCommitted = true,
+  failureStage,
+} = {}) {
+  const calls = {
+    events: [],
+    commands: [],
+    semanticRelease: [],
+    cleanupCommits: [],
+    cleanupPushes: [],
+    output: '',
+  };
+  const failure = Object.assign(new Error(`${failureStage} adapter diagnostic`), { status: 17 });
+
+  return {
+    calls,
+    commandRunner: async (execution) => {
+      calls.commands.push(execution);
+      calls.events.push(`command:${execution.command} ${execution.arguments.join(' ')}`);
+      if (execution.stage === failureStage) throw failure;
+    },
+    semanticReleaseAdapter: {
+      publish: async (options) => {
+        calls.semanticRelease.push(options);
+        calls.events.push(`semantic-release:${options.branch}`);
+        if (failureStage === 'publishing') throw failure;
+        return release;
+      },
+    },
+    gitAdapter: {
+      commitBundleCleanup: async (options) => {
+        calls.cleanupCommits.push(options);
+        calls.events.push('cleanup-commit');
+        if (failureStage === 'cleanup-commit') throw failure;
+        return cleanupCommitted;
+      },
+      pushCleanup: async (options) => {
+        calls.cleanupPushes.push(options);
+        calls.events.push(`cleanup-push:${options.branch}`);
+        if (failureStage === 'cleanup-push') throw failure;
+      },
+    },
+    writeOutput: (message) => (calls.output += message),
+  };
+}
+
+function publishingOptions(mockAdapters) {
+  return {
+    commandRunner: mockAdapters.commandRunner,
+    semanticReleaseAdapter: mockAdapters.semanticReleaseAdapter,
+    gitAdapter: mockAdapters.gitAdapter,
+    writeOutput: mockAdapters.writeOutput,
+  };
+}
+
+test('verify prepares once and verifies both channel plans without publishing or Git mutation', async () => {
   const plannedBranches = [];
-  let output = '';
+  const mockAdapters = createMockAdapters();
 
   const result = await runPublishing({
     mode: 'verify',
-    commandRunner: async (execution) => executions.push(execution),
+    ...publishingOptions(mockAdapters),
     releaseConfigFactory: (branch) => {
       plannedBranches.push(branch);
       return releaseConfigFor(branch);
     },
-    writeOutput: (message) => (output += message),
   });
 
   assert.deepEqual(result, {
     outcome: 'verified',
     channels: ['stable', 'prerelease'],
   });
-  assert.deepEqual(
-    executions.map(({ command, arguments: arguments_, stage }) => ({
-      command,
-      arguments: arguments_,
-      stage,
-    })),
-    [
-      { command: 'npm', arguments: ['ci'], stage: 'preparation' },
-      { command: 'npm', arguments: ['run', 'build'], stage: 'preparation' },
-      {
-        command: 'npm',
-        arguments: ['run', 'validate:hacs-release'],
-        stage: 'artifact-verification',
-      },
-    ]
-  );
+  assert.deepEqual(mockAdapters.calls.events, SUCCESSFUL_PUBLISHING_STAGES);
   assert.deepEqual(plannedBranches, ['main', 'dev']);
-  assert.equal(output, 'verified\n');
+  assert.equal(mockAdapters.calls.semanticRelease.length, 0);
+  assert.equal(mockAdapters.calls.cleanupCommits.length, 0);
+  assert.equal(mockAdapters.calls.cleanupPushes.length, 0);
+  assert.equal(mockAdapters.calls.output, 'verified\n');
 });
 
 test('verify accepts the repository stable and prerelease artifact plans', async () => {
+  const mockAdapters = createMockAdapters();
+
   const result = await runPublishing({
     mode: 'verify',
-    commandRunner: async () => {},
-    writeOutput: () => {},
+    ...publishingOptions(mockAdapters),
   });
 
   assert.deepEqual(result, {
@@ -66,403 +134,179 @@ test('verify accepts the repository stable and prerelease artifact plans', async
   });
 });
 
-for (const [channel, branch] of [
-  ['stable', 'main'],
-  ['prerelease', 'dev'],
-]) {
-  test(`publish ${channel} uses the verified preparation path before semantic-release`, async () => {
-    const executions = [];
+for (const { channel, branch, version, gitAssets } of CHANNELS) {
+  test(`publish ${channel} owns channel assets and orders release before cleanup`, async () => {
+    const mockAdapters = createMockAdapters({ release: { nextRelease: { version } } });
 
     const result = await runPublishing({
       mode: 'publish',
       channel,
       environment: { RELEASE_TEST: 'present' },
-      commandRunner: async (execution) => executions.push(execution),
+      ...publishingOptions(mockAdapters),
       releaseConfigFactory: releaseConfigFor,
-      semanticReleaseAdapter: {
-        publish: async ({ environment }) => {
-          executions.push({
-            command: 'semantic-release',
-            arguments: [],
-            stage: 'publishing',
-            environment,
-          });
-          return { nextRelease: { version: '1.3.0' } };
-        },
-      },
-      gitAdapter: {
-        commitBundleCleanup: async () => false,
-        pushCleanup: async () => assert.fail('completed cleanup must not be pushed'),
-      },
-      writeOutput: () => {},
     });
 
     assert.deepEqual(result, { outcome: 'published', channel });
-    assert.deepEqual(
-      executions.map(({ command, arguments: arguments_, stage }) => ({
-        command,
-        arguments: arguments_,
-        stage,
-      })),
-      [
-        { command: 'npm', arguments: ['ci'], stage: 'preparation' },
-        { command: 'npm', arguments: ['run', 'build'], stage: 'preparation' },
-        {
-          command: 'npm',
-          arguments: ['run', 'validate:hacs-release'],
-          stage: 'artifact-verification',
-        },
-        { command: 'semantic-release', arguments: [], stage: 'publishing' },
-      ]
-    );
-    assert.deepEqual(executions.at(-1).environment, {
+    assert.deepEqual(mockAdapters.calls.events, [
+      ...SUCCESSFUL_PUBLISHING_STAGES,
+      `semantic-release:${branch}`,
+      'cleanup-commit',
+      `cleanup-push:${branch}`,
+    ]);
+
+    const releaseCall = mockAdapters.calls.semanticRelease[0];
+    assert.equal(releaseCall.branch, branch);
+    assert.deepEqual(releaseCall.environment, {
       RELEASE_TEST: 'present',
       GITHUB_REF_NAME: branch,
     });
+    assert.deepEqual(
+      pluginOptions(releaseCall.releaseConfig, '@semantic-release/git').assets,
+      gitAssets
+    );
+    assert.deepEqual(pluginOptions(releaseCall.releaseConfig, '@semantic-release/github').assets, [
+      { path: 'dist/*.js' },
+    ]);
+
+    assert.equal(
+      mockAdapters.calls.cleanupCommits[0].commitMessage,
+      'chore(release): untrack built bundle'
+    );
+    assert.doesNotMatch(mockAdapters.calls.cleanupCommits[0].commitMessage, /skip ci/i);
+    assert.equal(mockAdapters.calls.cleanupPushes[0].branch, branch);
+    assert.equal(mockAdapters.calls.output, 'published\n');
   });
+
+  test(`publish ${channel} finishes pending cleanup after semantic-release reports no release`, async () => {
+    const mockAdapters = createMockAdapters({ release: false });
+
+    const result = await runPublishing({
+      mode: 'publish',
+      channel,
+      environment: { GITHUB_REF_NAME: branch },
+      ...publishingOptions(mockAdapters),
+      releaseConfigFactory: releaseConfigFor,
+    });
+
+    assert.deepEqual(result, { outcome: 'no-release', channel });
+    assert.deepEqual(mockAdapters.calls.events, [
+      ...SUCCESSFUL_PUBLISHING_STAGES,
+      `semantic-release:${branch}`,
+      'cleanup-commit',
+      `cleanup-push:${branch}`,
+    ]);
+    assert.equal(mockAdapters.calls.output, 'no-release\n');
+  });
+
+  test(`cleanup-triggered ${channel} retry is an idempotent no-release`, async () => {
+    const mockAdapters = createMockAdapters({ release: false, cleanupCommitted: false });
+
+    const result = await runPublishing({
+      mode: 'publish',
+      channel,
+      environment: { GITHUB_REF_NAME: branch },
+      ...publishingOptions(mockAdapters),
+      releaseConfigFactory: releaseConfigFor,
+    });
+
+    assert.deepEqual(result, { outcome: 'no-release', channel });
+    assert.deepEqual(mockAdapters.calls.events, [
+      ...SUCCESSFUL_PUBLISHING_STAGES,
+      `semantic-release:${branch}`,
+      'cleanup-commit',
+    ]);
+    assert.equal(mockAdapters.calls.cleanupCommits.length, 1);
+    assert.equal(mockAdapters.calls.cleanupPushes.length, 0);
+    assert.equal(mockAdapters.calls.output, 'no-release\n');
+  });
+
+  for (const failedStage of [
+    'preparation',
+    'artifact-verification',
+    'publishing',
+    'cleanup-commit',
+    'cleanup-push',
+  ]) {
+    test(`publish ${channel} preserves ${failedStage} adapter diagnostics`, async () => {
+      const mockAdapters = createMockAdapters({ failureStage: failedStage });
+
+      await assert.rejects(
+        runPublishing({
+          mode: 'publish',
+          channel,
+          environment: { GITHUB_REF_NAME: branch },
+          ...publishingOptions(mockAdapters),
+          releaseConfigFactory: releaseConfigFor,
+        }),
+        (error) => {
+          assert.equal(error.status, 17);
+          assert.equal(
+            error.message,
+            `Publishing ${failedStage} failed: ${failedStage} adapter diagnostic`
+          );
+          return true;
+        }
+      );
+
+      assert.equal(mockAdapters.calls.output, '');
+    });
+  }
 }
 
-test('publish rejects a branch that does not match the selected channel', async () => {
+test('publish rejects a branch that does not match the selected channel before adapters run', async () => {
+  const mockAdapters = createMockAdapters();
+
   await assert.rejects(
     runPublishing({
       mode: 'publish',
       channel: 'prerelease',
       environment: { GITHUB_REF_NAME: 'feature/not-dev' },
-      commandRunner: async () => assert.fail('unsupported branches must fail before preparation'),
-      semanticReleaseAdapter: {
-        publish: async () => assert.fail('unsupported branches must not publish'),
-      },
-      gitAdapter: {
-        commitBundleCleanup: async () => assert.fail('unsupported branches must not clean up'),
-        pushCleanup: async () => assert.fail('unsupported branches must not push'),
-      },
+      ...publishingOptions(mockAdapters),
     }),
     /Unsupported publishing branch: feature\/not-dev; prerelease publishes from dev/
   );
+
+  assert.deepEqual(mockAdapters.calls.events, []);
 });
-
-test('publish prerelease reports publication after committing and pushing bundle cleanup', async () => {
-  const events = [];
-  let output = '';
-
-  const result = await runPublishing({
-    mode: 'publish',
-    channel: 'prerelease',
-    environment: { GITHUB_REF_NAME: 'dev' },
-    commandRunner: async ({ stage }) => events.push(stage),
-    releaseConfigFactory: releaseConfigFor,
-    semanticReleaseAdapter: {
-      publish: async ({ branch }) => {
-        events.push(`semantic-release:${branch}`);
-        return { nextRelease: { version: '1.3.0-next.1' } };
-      },
-    },
-    gitAdapter: {
-      commitBundleCleanup: async ({ commitMessage }) => {
-        assert.equal(commitMessage, 'chore(release): untrack built bundle');
-        assert.doesNotMatch(commitMessage, /skip ci/i);
-        events.push('cleanup-commit');
-        return true;
-      },
-      pushCleanup: async ({ branch }) => events.push(`cleanup-push:${branch}`),
-    },
-    writeOutput: (message) => (output += message),
-  });
-
-  assert.deepEqual(result, { outcome: 'published', channel: 'prerelease' });
-  assert.deepEqual(events, [
-    'preparation',
-    'preparation',
-    'artifact-verification',
-    'semantic-release:dev',
-    'cleanup-commit',
-    'cleanup-push:dev',
-  ]);
-  assert.equal(output, 'published\n');
-});
-
-test('publish stable records stable assets before committing and pushing bundle cleanup', async () => {
-  const events = [];
-  let output = '';
-
-  const result = await runPublishing({
-    mode: 'publish',
-    channel: 'stable',
-    environment: { GITHUB_REF_NAME: 'main' },
-    commandRunner: async ({ stage }) => events.push(stage),
-    releaseConfigFactory: releaseConfigFor,
-    semanticReleaseAdapter: {
-      publish: async ({ branch, releaseConfig }) => {
-        const gitAssets = releaseConfig.plugins.find(
-          (plugin) => Array.isArray(plugin) && plugin[0] === '@semantic-release/git'
-        )[1].assets;
-        const githubAssets = releaseConfig.plugins.find(
-          (plugin) => Array.isArray(plugin) && plugin[0] === '@semantic-release/github'
-        )[1].assets;
-        assert.equal(branch, 'main');
-        assert.deepEqual(gitAssets, ['package.json', 'CHANGELOG.md', 'dist/*.js']);
-        assert.deepEqual(githubAssets, [{ path: 'dist/*.js' }]);
-        events.push('semantic-release:main');
-        return { nextRelease: { version: '1.3.0' } };
-      },
-    },
-    gitAdapter: {
-      commitBundleCleanup: async ({ commitMessage }) => {
-        assert.equal(commitMessage, 'chore(release): untrack built bundle');
-        assert.doesNotMatch(commitMessage, /skip ci/i);
-        events.push('cleanup-commit');
-        return true;
-      },
-      pushCleanup: async ({ branch }) => events.push(`cleanup-push:${branch}`),
-    },
-    writeOutput: (message) => (output += message),
-  });
-
-  assert.deepEqual(result, { outcome: 'published', channel: 'stable' });
-  assert.deepEqual(events, [
-    'preparation',
-    'preparation',
-    'artifact-verification',
-    'semantic-release:main',
-    'cleanup-commit',
-    'cleanup-push:main',
-  ]);
-  assert.equal(output, 'published\n');
-});
-
-test('publish prerelease reports no-release after safely pushing pending bundle cleanup', async () => {
-  const events = [];
-  let output = '';
-
-  const result = await runPublishing({
-    mode: 'publish',
-    channel: 'prerelease',
-    environment: { GITHUB_REF_NAME: 'dev' },
-    commandRunner: async () => {},
-    releaseConfigFactory: releaseConfigFor,
-    semanticReleaseAdapter: {
-      publish: async () => {
-        events.push('semantic-release:no-release');
-        return false;
-      },
-    },
-    gitAdapter: {
-      commitBundleCleanup: async () => {
-        events.push('cleanup-commit');
-        return true;
-      },
-      pushCleanup: async ({ branch }) => events.push(`cleanup-push:${branch}`),
-    },
-    writeOutput: (message) => (output += message),
-  });
-
-  assert.deepEqual(result, { outcome: 'no-release', channel: 'prerelease' });
-  assert.deepEqual(events, ['semantic-release:no-release', 'cleanup-commit', 'cleanup-push:dev']);
-  assert.equal(output, 'no-release\n');
-});
-
-test('publish stable reports no-release after safely pushing pending bundle cleanup', async () => {
-  const events = [];
-  let output = '';
-
-  const result = await runPublishing({
-    mode: 'publish',
-    channel: 'stable',
-    environment: { GITHUB_REF_NAME: 'main' },
-    commandRunner: async () => {},
-    releaseConfigFactory: releaseConfigFor,
-    semanticReleaseAdapter: {
-      publish: async () => {
-        events.push('semantic-release:no-release');
-        return false;
-      },
-    },
-    gitAdapter: {
-      commitBundleCleanup: async () => {
-        events.push('cleanup-commit');
-        return true;
-      },
-      pushCleanup: async ({ branch }) => events.push(`cleanup-push:${branch}`),
-    },
-    writeOutput: (message) => (output += message),
-  });
-
-  assert.deepEqual(result, { outcome: 'no-release', channel: 'stable' });
-  assert.deepEqual(events, ['semantic-release:no-release', 'cleanup-commit', 'cleanup-push:main']);
-  assert.equal(output, 'no-release\n');
-});
-
-test('a cleanup-triggered prerelease invocation completes without another commit', async () => {
-  let cleanupChecks = 0;
-
-  const result = await runPublishing({
-    mode: 'publish',
-    channel: 'prerelease',
-    environment: { GITHUB_REF_NAME: 'dev' },
-    commandRunner: async () => {},
-    releaseConfigFactory: releaseConfigFor,
-    semanticReleaseAdapter: { publish: async () => false },
-    gitAdapter: {
-      commitBundleCleanup: async () => {
-        cleanupChecks += 1;
-        return false;
-      },
-      pushCleanup: async () => assert.fail('completed cleanup must not be pushed'),
-    },
-    writeOutput: () => {},
-  });
-
-  assert.deepEqual(result, { outcome: 'no-release', channel: 'prerelease' });
-  assert.equal(cleanupChecks, 1);
-});
-
-test('a cleanup-triggered stable invocation reports no-release without another commit', async () => {
-  let cleanupChecks = 0;
-  let output = '';
-
-  const result = await runPublishing({
-    mode: 'publish',
-    channel: 'stable',
-    environment: { GITHUB_REF_NAME: 'main' },
-    commandRunner: async () => {},
-    releaseConfigFactory: releaseConfigFor,
-    semanticReleaseAdapter: { publish: async () => false },
-    gitAdapter: {
-      commitBundleCleanup: async () => {
-        cleanupChecks += 1;
-        return false;
-      },
-      pushCleanup: async () => assert.fail('completed cleanup must not be pushed'),
-    },
-    writeOutput: (message) => (output += message),
-  });
-
-  assert.deepEqual(result, { outcome: 'no-release', channel: 'stable' });
-  assert.equal(cleanupChecks, 1);
-  assert.equal(output, 'no-release\n');
-});
-
-for (const [failedStage, diagnostic] of [
-  ['cleanup-commit', 'git commit rejected the stable cleanup tree'],
-  ['cleanup-push', 'remote rejected HEAD:main'],
-]) {
-  test(`publish stable reports the ${failedStage} stage with adapter diagnostics`, async () => {
-    const adapterFailure = new Error(diagnostic);
-    adapterFailure.status = 17;
-
-    await assert.rejects(
-      runPublishing({
-        mode: 'publish',
-        channel: 'stable',
-        environment: { GITHUB_REF_NAME: 'main' },
-        commandRunner: async () => {},
-        releaseConfigFactory: releaseConfigFor,
-        semanticReleaseAdapter: {
-          publish: async () => ({ nextRelease: { version: '1.3.0' } }),
-        },
-        gitAdapter: {
-          commitBundleCleanup: async () => {
-            if (failedStage === 'cleanup-commit') throw adapterFailure;
-            return true;
-          },
-          pushCleanup: async () => {
-            if (failedStage === 'cleanup-push') throw adapterFailure;
-          },
-        },
-        writeOutput: () => assert.fail('failed publication must not report an outcome'),
-      }),
-      (error) => {
-        assert.equal(error.status, 17);
-        assert.match(error.message, new RegExp(`Publishing ${failedStage} failed:`));
-        assert.match(error.message, new RegExp(diagnostic));
-        return true;
-      }
-    );
-  });
-}
-
-for (const [failedStage, diagnostic] of [
-  ['artifact-verification', 'Missing required lazy chunk: dist/growspace-analytics-*.js'],
-  ['publishing', 'semantic-release could not upload growspace-manager-card.js'],
-  ['cleanup-commit', 'git commit rejected the cleanup tree'],
-  ['cleanup-push', 'remote rejected HEAD:dev'],
-]) {
-  test(`publish prerelease reports the ${failedStage} stage with adapter diagnostics`, async () => {
-    const adapterFailure = new Error(diagnostic);
-    adapterFailure.status = 17;
-
-    await assert.rejects(
-      runPublishing({
-        mode: 'publish',
-        channel: 'prerelease',
-        environment: { GITHUB_REF_NAME: 'dev' },
-        commandRunner: async ({ stage }) => {
-          if (stage === failedStage) throw adapterFailure;
-        },
-        releaseConfigFactory: releaseConfigFor,
-        semanticReleaseAdapter: {
-          publish: async () => {
-            if (failedStage === 'publishing') throw adapterFailure;
-            return { nextRelease: { version: '1.3.0-next.1' } };
-          },
-        },
-        gitAdapter: {
-          commitBundleCleanup: async () => {
-            if (failedStage === 'cleanup-commit') throw adapterFailure;
-            return true;
-          },
-          pushCleanup: async () => {
-            if (failedStage === 'cleanup-push') throw adapterFailure;
-          },
-        },
-        writeOutput: () => assert.fail('failed publication must not report an outcome'),
-      }),
-      (error) => {
-        assert.equal(error.status, 17);
-        assert.match(error.message, new RegExp(`Publishing ${failedStage} failed:`));
-        assert.match(error.message, new RegExp(diagnostic.replaceAll('*', '\\*')));
-        return true;
-      }
-    );
-  });
-}
 
 test('verify rejects a prerelease plan that would commit stable-only artifacts', async () => {
+  const mockAdapters = createMockAdapters();
+
   await assert.rejects(
     runPublishing({
       mode: 'verify',
-      commandRunner: async () => {},
+      ...publishingOptions(mockAdapters),
       releaseConfigFactory: (branch) =>
         releaseConfigFor(branch, { includePrereleaseVersionedAssets: branch === 'dev' }),
-      writeOutput: () => assert.fail('failed verification must not report verified'),
     }),
     /Publishing artifact-verification failed: package\.json must not be committed on prerelease/
   );
+
+  assert.equal(mockAdapters.calls.output, '');
 });
 
-for (const [failedStage, diagnostic] of [
-  ['preparation', 'npm ERR! lockfile is not installable'],
-  ['artifact-verification', 'Missing required lazy chunk: dist/growspace-heatmap-3d-*.js'],
-]) {
-  test(`verify reports the ${failedStage} stage and preserves command diagnostics`, async () => {
-    const executions = [];
+for (const failedStage of ['preparation', 'artifact-verification']) {
+  test(`verify preserves ${failedStage} adapter diagnostics`, async () => {
+    const mockAdapters = createMockAdapters({ failureStage: failedStage });
 
     await assert.rejects(
       runPublishing({
         mode: 'verify',
-        commandRunner: async (execution) => {
-          executions.push(execution);
-          if (execution.stage === failedStage) throw new Error(diagnostic);
-        },
-        writeOutput: () => assert.fail('failed verification must not report verified'),
+        ...publishingOptions(mockAdapters),
       }),
-      new RegExp(`Publishing ${failedStage} failed: .*${diagnostic.replaceAll('*', '\\*')}`)
+      (error) => {
+        assert.equal(error.status, 17);
+        assert.equal(
+          error.message,
+          `Publishing ${failedStage} failed: ${failedStage} adapter diagnostic`
+        );
+        return true;
+      }
     );
 
-    assert.equal(executions.at(-1).stage, failedStage);
-    assert.ok(
-      executions.every(({ command }) => command !== 'npx'),
-      'verification never invokes semantic-release'
-    );
+    assert.equal(mockAdapters.calls.semanticRelease.length, 0);
+    assert.equal(mockAdapters.calls.cleanupCommits.length, 0);
+    assert.equal(mockAdapters.calls.cleanupPushes.length, 0);
+    assert.equal(mockAdapters.calls.output, '');
   });
 }
