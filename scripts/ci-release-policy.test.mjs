@@ -24,6 +24,11 @@ test('stable publishing is gated while dev prereleases stay E2E-free', async () 
   assert.ok(stable, 'release defines a dedicated stable-release job');
   assert.deepEqual(stable.needs, ['lint-and-build', 'unit-tests', 'contract-fixture', 'e2e']);
   assert.match(stable.if, /refs\/heads\/main/);
+  assert.doesNotMatch(
+    stable.if,
+    /always\(\)|failure\(\)|cancelled\(\)/,
+    'stable publishing must retain the implicit all-needs-succeeded condition'
+  );
 
   const prerelease = release.jobs.prerelease;
   assert.ok(prerelease, 'release defines a dedicated prerelease job');
@@ -46,9 +51,61 @@ test('stable publishing is gated while dev prereleases stay E2E-free', async () 
     assert.ok(hasEvent(workflow, 'workflow_call'), `${name} is reusable by the release gate`);
   }
 
-  const e2eCommands = e2e.jobs['e2e-tests'].steps
+  const steps = e2e.jobs['e2e-tests'].steps;
+  const checkoutSteps = steps.filter((step) => step.uses?.startsWith('actions/checkout@'));
+  assert.equal(checkoutSteps.length, 3, 'the GitHub adapter owns all three checkouts');
+  assert.equal(checkoutSteps[0].with, undefined, 'the card uses the triggering checkout');
+  assert.deepEqual(
+    checkoutSteps.slice(1).map((step) => ({
+      repository: step.with.repository,
+      ref: step.with.ref,
+      path: step.with.path,
+    })),
+    [
+      {
+        repository: 'Venosta-web/growspace_manager',
+        ref: 'prerelease',
+        path: '.e2e/growspace_manager',
+      },
+      {
+        repository: 'Venosta-web/growspace_manager_workspace',
+        ref: 'main',
+        path: '.e2e/workspace',
+      },
+    ]
+  );
+
+  const nodeSetup = steps.find((step) => step.uses?.startsWith('actions/setup-node@'));
+  assert.equal(nodeSetup?.with.cache, 'npm', 'the GitHub adapter retains npm caching');
+  assert.ok(
+    steps.some((step) => step.run?.includes('playwright install --with-deps chromium')),
+    'the GitHub adapter installs the browser and its runner dependencies'
+  );
+
+  const commands = steps
     .map((step) => step.run)
     .filter(Boolean)
     .join('\n');
-  assert.match(e2eCommands, /npm run test:(?:e2e|ha)/, 'E2E runs the Home Assistant suite');
+  const harnessSteps = steps.filter((step) => step.run?.includes('npm run test:e2e'));
+  assert.equal(harnessSteps.length, 1, 'E2E delegates to one managed runtime-harness invocation');
+  assert.match(harnessSteps[0].run, /--integration-root/);
+  assert.match(harnessSteps[0].run, /--workspace-root/);
+  assert.doesNotMatch(
+    commands,
+    /docker (?:run|rm|logs)|ci-e2e-environment\.mjs|verify-e2e-bundle\.mjs/,
+    'the GitHub adapter must not duplicate runtime lifecycle ordering'
+  );
+
+  const rootSelection = steps.find((step) => step.id === 'checkout-roots');
+  assert.ok(rootSelection, 'the GitHub adapter selects explicit checkout roots');
+  assert.match(rootSelection.run, /manifest\.json/);
+  assert.match(rootSelection.run, /e2e_simulated_sensors\.yaml/);
+
+  const artifactUpload = steps.find((step) => step.uses?.startsWith('actions/upload-artifact@'));
+  assert.ok(artifactUpload, 'the GitHub adapter uploads harness failure evidence');
+  assert.match(artifactUpload.if, /failure\(\)/);
+  assert.match(artifactUpload.if, /cancelled\(\)/);
+  assert.equal(artifactUpload.with.path, '.artifacts/e2e-managed/');
+  assert.equal(artifactUpload.with['if-no-files-found'], 'error');
+  assert.equal(e2e.jobs['e2e-tests']['continue-on-error'], undefined);
 });

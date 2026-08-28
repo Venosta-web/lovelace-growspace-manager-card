@@ -951,6 +951,15 @@ A colour describing what a drawn object is made of rather than what it means —
 
 ## Build
 
+**E2E Runtime Harness**
+The repository-owned interface for running the Home Assistant Playwright suite. In
+managed mode it owns card build, runtime assembly, lifecycle ordering, verification,
+failure evidence, and cleanup around a disposable Home Assistant container; in attached
+mode it verifies an already-running Home Assistant before invoking Playwright. GitHub
+Actions is an adapter that owns only forge checkouts, tool setup, caching, explicit
+checkout-root selection, invocation, and upload of the harness's stable artifact directory.
+_Avoid_: CI E2E script, GitHub E2E lifecycle
+
 **`__VERSION__`**
 Build-time constant injected by the bundler. Holds the card's semver version string for startup logging and diagnostics.
 
