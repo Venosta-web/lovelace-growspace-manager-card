@@ -1,67 +1,81 @@
 name: E2E Frontend Tests
 
 on:
-  # The Docker-backed PR job referenced a Compose file removed in 80236b51.
-  # Keep manual execution available while a reachable HA runner is provisioned.
+  # The release workflow calls this only for main. Manual dispatch remains
+  # available for deliberate diagnostics; dev pushes and PRs never invoke it.
+  workflow_call:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   e2e-tests:
+    timeout-minutes: 75
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout card
         uses: actions/checkout@v6.0.2
 
-      - name: Setup Node.js
+      # E2E exercises the real cross-repo runtime. The integration lands before
+      # the card, so prerelease is the contract-compatible backend for a card
+      # promotion. The workspace supplies the generated HA entity fixtures.
+      - name: Checkout Growspace Manager integration
+        uses: actions/checkout@v6.0.2
+        with:
+          repository: Venosta-web/growspace_manager
+          ref: prerelease
+          path: .e2e/growspace_manager
+
+      - name: Checkout Growspace workspace fixtures
+        uses: actions/checkout@v6.0.2
+        with:
+          repository: Venosta-web/growspace_manager_workspace
+          ref: main
+          path: .e2e/workspace
+
+      - name: Set up Node.js
         uses: actions/setup-node@v6.4.0
         with:
-          node-version: 24
+          node-version: '24'
           cache: 'npm'
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright Browsers
+      - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Build Card
-        run: npm run build
-
-      - name: Start Test Environment
-        run: docker compose -f tests/e2e/docker-compose.test.yml up -d
-
-      - name: Wait for Home Assistant
+      # Checkout placement is forge-owned. Resolve and validate those roots here,
+      # then hand them to the repository-owned runtime harness explicitly.
+      - name: Select E2E checkout roots
+        id: checkout-roots
+        shell: bash
         run: |
-          echo "Waiting for Home Assistant to be ready..."
-          timeout=120
-          elapsed=0
-          interval=5
-          while [ $elapsed -lt $timeout ]; do
-            status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8123 || echo "000")
-            if [ "$status_code" -eq 200 ] || [ "$status_code" -eq 401 ]; then
-              echo "Home Assistant is ready (Status: $status_code)!"
-              exit 0
-            fi
-            echo "Waiting... (Status: $status_code, Elapsed: ${elapsed}s)"
-            sleep $interval
-            elapsed=$((elapsed + interval))
-          done
-          echo "Timed out waiting for Home Assistant."
+          card_root="$(realpath "${{ github.workspace }}")"
+          integration_root="$(realpath "${{ github.workspace }}/.e2e/growspace_manager")"
+          workspace_root="$(realpath "${{ github.workspace }}/.e2e/workspace")"
 
-          # Print container logs for debugging
-          echo "::group::Home Assistant Logs"
-          docker compose -f tests/e2e/docker-compose.test.yml logs
-          echo "::endgroup::"
-          exit 1
+          test -f "$integration_root/custom_components/growspace_manager/manifest.json"
+          test -f "$workspace_root/ha-dev/packages/e2e_simulated_sensors.yaml"
 
-      - name: Run Playwright Tests
-        run: npx playwright test
+          echo "card=$card_root" >> "$GITHUB_OUTPUT"
+          echo "integration=$integration_root" >> "$GITHUB_OUTPUT"
+          echo "workspace=$workspace_root" >> "$GITHUB_OUTPUT"
 
-      - name: Upload Test Report
-        if: failure()
+      - name: Run managed E2E Runtime Harness
+        working-directory: ${{ steps.checkout-roots.outputs.card }}
+        run: |
+          npm run test:e2e -- \
+            --integration-root "${{ steps.checkout-roots.outputs.integration }}" \
+            --workspace-root "${{ steps.checkout-roots.outputs.workspace }}"
+
+      - name: Upload failure artifacts
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: e2e-failure-artifacts
+          path: .artifacts/e2e-managed/
+          if-no-files-found: error
           retention-days: 7

@@ -124,6 +124,46 @@ describe('growspace-analytics-ui – _renderItem routing', () => {
     expect(el.shadowRoot!.querySelector('growspace-env-chart')).toBeNull();
   });
 
+  it('renders tank-water-chart for MetricKey.IRRIGATION_TANK_LEVEL', async () => {
+    // The combined graph is the extended view behind *both* tank hero chips —
+    // tank level and water usage open the same card, not two half-cards.
+    const item: AnalyticsItem = { type: 'single', metrics: [MetricKey.IRRIGATION_TANK_LEVEL] };
+    const el = await fixture<GrowspaceAnalyticsUI>(html`
+      <growspace-analytics-ui .items=${[item]} .isLoading=${false} .range=${'24h'}>
+      </growspace-analytics-ui>
+    `);
+    expect(el.shadowRoot!.querySelector('tank-water-chart')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('growspace-env-chart')).toBeNull();
+  });
+
+  it('threads the sensor history the level pane traces into the chart', async () => {
+    // Without it the usage pane still draws — it fetches its own buckets — so
+    // a dropped binding would blank only the level trace, silently.
+    const item: AnalyticsItem = { type: 'single', metrics: [MetricKey.WATER] };
+    const sensorHistory = { irrigation_tank_level: [] } as any;
+    const el = await fixture<GrowspaceAnalyticsUI>(html`
+      <growspace-analytics-ui
+        .items=${[item]}
+        .isLoading=${false}
+        .range=${'24h'}
+        .sensorHistory=${sensorHistory}
+      >
+      </growspace-analytics-ui>
+    `);
+    const chart = el.shadowRoot!.querySelector('tank-water-chart') as any;
+    expect(chart.sensorHistory).toBe(sensorHistory);
+  });
+
+  it('tells the chart which metric routed to it, so closing it closes that graph', async () => {
+    const item: AnalyticsItem = { type: 'single', metrics: [MetricKey.IRRIGATION_TANK_LEVEL] };
+    const el = await fixture<GrowspaceAnalyticsUI>(html`
+      <growspace-analytics-ui .items=${[item]} .isLoading=${false} .range=${'24h'}>
+      </growspace-analytics-ui>
+    `);
+    const chart = el.shadowRoot!.querySelector('tank-water-chart') as any;
+    expect(chart.metricKey).toBe(MetricKey.IRRIGATION_TANK_LEVEL);
+  });
+
   it('renders crop-steering-day-chart for MetricKey.STEERING_PHASE', async () => {
     const item: AnalyticsItem = { type: 'single', metrics: [MetricKey.STEERING_PHASE] };
     const el = await fixture<GrowspaceAnalyticsUI>(html`

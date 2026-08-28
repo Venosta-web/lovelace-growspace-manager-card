@@ -82,6 +82,7 @@ describe('GrowspaceAnalyticsCard', () => {
     expect(stub.type).toBe('custom:growspace-analytics-card');
     expect(stub).toHaveProperty('default_growspace');
     expect(stub.start_in_graph_wall).toBe(false);
+    expect(stub.hidden_graphs).toEqual([]);
   });
 
   test('returns standard card size', async () => {
@@ -173,6 +174,26 @@ describe('GrowspaceAnalyticsCard', () => {
 
     const analytics = handle.element.shadowRoot?.querySelector('growspace-analytics') as any;
     expect(analytics.cardPreview).toBe(true);
+    handle.unmount();
+  });
+
+  test('passes configured hidden graphs only to its analytics view', async () => {
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', {
+      hass,
+      growspace,
+      config: {
+        type: 'custom:growspace-analytics-card',
+        default_growspace: growspace.growspaceId,
+        hidden_graphs: ['humidity', 'co2'],
+      },
+    });
+    handle.element.store.ui.$isLoading.set(false);
+    setDevices([{ deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any]);
+    handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
+    await handle.element.updateComplete;
+
+    const analytics = handle.element.shadowRoot?.querySelector('growspace-analytics') as any;
+    expect(analytics.hiddenMetrics).toEqual(['humidity', 'co2']);
     handle.unmount();
   });
 

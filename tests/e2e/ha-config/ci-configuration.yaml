@@ -1,0 +1,49 @@
+default_config:
+
+homeassistant:
+  name: Growspace E2E
+  packages: !include_dir_named packages
+  time_zone: UTC
+  unit_system: metric
+  country: DE
+  allowlist_external_dirs:
+    - /config/www/e2e-camera-assets
+
+lovelace:
+  mode: storage
+
+recorder:
+  db_url: sqlite:////config/home-assistant_v2.db
+  purge_keep_days: 1
+  commit_interval: 1
+
+input_number:
+  e2e_source_air_temperature:
+    name: E2E source air temperature
+    min: -20
+    max: 60
+    step: 0.1
+    initial: 24
+    unit_of_measurement: "°C"
+  e2e_source_air_humidity:
+    name: E2E source air humidity
+    min: 0
+    max: 100
+    step: 0.1
+    initial: 60
+    unit_of_measurement: "%"
+
+script:
+  e2e_reset_source_air:
+    alias: Reset E2E source air
+    sequence:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.e2e_source_air_temperature
+        data:
+          value: 24
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.e2e_source_air_humidity
+        data:
+          value: 60

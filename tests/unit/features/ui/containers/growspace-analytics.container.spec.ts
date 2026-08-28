@@ -160,6 +160,41 @@ describe('GrowspaceAnalyticsContainer', () => {
     expect(items[0].metrics).toContain('humidity');
   });
 
+  it('_items omits configured metrics without changing shared open graphs', async () => {
+    (element as any).hiddenMetrics = [MetricKey.HUMIDITY];
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([
+      { type: 'single', metrics: ['temperature'], sortIndex: 0 },
+    ]);
+    expect($analyticsViewState.get().activeEnvGraphs).toEqual(new Set(['temperature', 'humidity']));
+  });
+
+  it('_items removes hidden metrics from linked graph groups', async () => {
+    $analyticsViewState.set({
+      ...$analyticsViewState.get(),
+      linkedGraphGroups: [['temperature', 'humidity']],
+    });
+    (element as any).hiddenMetrics = [MetricKey.HUMIDITY];
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([
+      { type: 'group', metrics: ['temperature'], sortIndex: 0 },
+    ]);
+  });
+
+  it('_items hides sensor-specific metrics by their base metric key', async () => {
+    $analyticsViewState.set({
+      ...$analyticsViewState.get(),
+      activeEnvGraphs: new Set(['temperature:sensor.canopy']),
+    });
+    (element as any).hiddenMetrics = [MetricKey.TEMPERATURE];
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([]);
+    expect(element.shadowRoot?.querySelector('growspace-analytics-ui')).toBeNull();
+  });
+
   it('_items only includes active graph metrics from a group', async () => {
     $analyticsViewState.set({
       historyLoading: false,

@@ -55,16 +55,49 @@ Ensure HA is accessible at `http://localhost:8123` and you have:
 
 ## Running Tests
 
+### Disposable managed runtime
+
+From the repository root, `npm run test:e2e` builds the card, discovers the sibling
+`growspace_manager` integration and `growspace_manager_workspace` checkouts, creates an
+isolated Home Assistant container on a Docker-assigned port, prepares all fixtures and
+dashboards, verifies the exact served build, and runs Playwright. It removes the container
+and temporary configuration after success, failure, or interruption.
+
+```bash
+npm run test:e2e
+npm run test:e2e -- specs/smoke.spec.ts --grep "renders"
+```
+
+Paired or non-conventional checkouts can override discovery before the Playwright
+arguments:
+
+```bash
+npm run test:e2e -- \
+  --integration-root /path/to/growspace_manager \
+  --workspace-root /path/to/growspace_manager_workspace \
+  -- specs/smoke.spec.ts
+```
+
+The equivalent environment overrides are `GROWSPACE_E2E_INTEGRATION_ROOT` and
+`GROWSPACE_E2E_WORKSPACE_ROOT`. Failures preserve Home Assistant logs and Playwright
+reports under `.artifacts/e2e-managed/`; successful runs leave that directory absent.
+
+GitHub's stable-main validation and deliberate manual dispatch use this same managed
+command. The workflow checks out the integration and workspace, installs dependencies and
+Chromium, validates their absolute roots, and passes those roots to `npm run test:e2e`.
+The harness owns all Home Assistant and Playwright lifecycle work. On failure or
+cancellation, the workflow uploads `.artifacts/e2e-managed/` after the harness captures
+evidence and tears the disposable runtime down.
+
 ### All Tests
 ```bash
 npm test
 ```
 
-When invoked through the repository root (`npm run test:ha`, headed, or debug), a
-preflight first verifies that `dist/` matches the current runtime source and that Home
-Assistant serves that exact build. Use root-level `npm run test:e2e` after source changes;
-it builds, recreates HA with the new `dist/` mount, waits for it, and then starts Playwright.
-The Playwright config applies the same preflight to commands run from this directory.
+When invoked through the repository root (`npm run test:ha`, headed, or debug), attached
+E2E runs first verify that `dist/` matches the current runtime source and that Home
+Assistant serves that exact build, then forward all remaining arguments to Playwright. The
+Playwright config applies the same preflight to commands run directly from this directory.
 Set `E2E_CARD_URL` in `.env.test` only if the card is registered at a non-workspace URL.
 
 ### Specific Test File

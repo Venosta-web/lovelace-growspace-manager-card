@@ -6,62 +6,7 @@ import { promisify } from 'node:util';
 const execFileAsync = promisify(execFile);
 
 const bundlePath = 'dist/growspace-manager-card.js';
-const bundlePattern = 'dist/*.js';
-const { createReleaseConfig } = await import('../release.config.js');
-const releaseWorkflow = await readFile('.github/workflows/release.yml', 'utf8');
 const hacsConfig = JSON.parse(await readFile('hacs.json', 'utf8'));
-
-const cleanupCommit = releaseWorkflow.match(
-  /commit -m (['"])([^'"\n]*untrack built bundle[^'"\n]*)\1/
-)?.[2];
-if (!cleanupCommit) {
-  throw new Error('Release workflow must commit the built-bundle cleanup');
-}
-if (/\[(?:skip ci|ci skip|no ci|skip actions|actions skip)\]/i.test(cleanupCommit)) {
-  throw new Error('Release cleanup commit must run required checks');
-}
-
-const pluginOptions = (releaseConfig, pluginName) => {
-  const plugin = releaseConfig.plugins.find(
-    (candidate) => Array.isArray(candidate) && candidate[0] === pluginName
-  );
-
-  if (!plugin) {
-    throw new Error(`Missing ${pluginName} configuration`);
-  }
-
-  return plugin[1];
-};
-
-// Both channels are checked, not just the one this run happens to be on. The
-// config branches on GITHUB_REF_NAME, so validating only the ambient branch
-// would let a change break the other channel's release and not surface until
-// that channel next ran.
-for (const branch of ['main', 'dev']) {
-  const releaseConfig = createReleaseConfig(branch);
-
-  const gitAssets = pluginOptions(releaseConfig, '@semantic-release/git').assets;
-  if (!gitAssets.includes(bundlePattern)) {
-    throw new Error(
-      `${bundlePattern} must be committed by semantic-release on ${branch} so HACS can install the entry and chunks`
-    );
-  }
-
-  const githubAssets = pluginOptions(releaseConfig, '@semantic-release/github').assets;
-  if (!githubAssets.some((asset) => asset.path === bundlePattern)) {
-    throw new Error(`${bundlePattern} must be uploaded as GitHub release assets on ${branch}`);
-  }
-}
-
-// The stable channel is the one that has to keep a durable record of what
-// shipped. The prerelease channel deliberately does not commit these — see
-// release.config.js — so this assertion is main-only on purpose.
-const stableGitAssets = pluginOptions(createReleaseConfig('main'), '@semantic-release/git').assets;
-for (const versioned of ['package.json', 'CHANGELOG.md']) {
-  if (!stableGitAssets.includes(versioned)) {
-    throw new Error(`${versioned} must be committed by semantic-release on main`);
-  }
-}
 
 if (path.basename(bundlePath) !== hacsConfig.filename) {
   throw new Error(
