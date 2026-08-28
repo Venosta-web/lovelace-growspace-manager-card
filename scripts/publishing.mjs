@@ -1,7 +1,5 @@
 import { spawn } from 'node:child_process';
 
-import semanticRelease from 'semantic-release';
-
 import { createReleaseConfig } from '../release.config.js';
 
 const RELEASE_BRANCHES = {
@@ -114,8 +112,10 @@ function captureCommand({ command, arguments: arguments_, rootDirectory, environ
 }
 
 const productionSemanticReleaseAdapter = {
-  publish: ({ releaseConfig, rootDirectory, environment }) =>
-    semanticRelease(releaseConfig, { cwd: rootDirectory, env: environment }),
+  async publish({ releaseConfig, rootDirectory, environment }) {
+    const { default: semanticRelease } = await import('semantic-release');
+    return semanticRelease(releaseConfig, { cwd: rootDirectory, env: environment });
+  },
 };
 
 const productionGitAdapter = {
