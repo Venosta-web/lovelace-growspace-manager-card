@@ -63,3 +63,18 @@ A static JSON config cannot vary plugin options by branch, so `.releaserc.json`
 became `release.config.js`. Anything that is not the prerelease branch — an
 undefined `GITHUB_REF_NAME` from a local dry run included — gets the stable
 config, so the complete behaviour is the default rather than the special case.
+
+## Amendment, 2026-08-28 — preflight and publishing share one interface
+
+Release preflight and actual publishing now enter the same Publishing Interface.
+It owns the locked dependency install, bundle build, HACS layout validation, and
+channel-specific artifact-plan validation. Verification prepares once, evaluates
+both stable and prerelease plans, reports `verified`, and stops before
+semantic-release; publishing traverses that same path for its selected channel
+before allowing semantic-release to mutate release history.
+
+GitHub Actions remains an adapter: it owns checkout, credentials, caching, and one
+release-only Node 22 source shared by preflight and both publishing jobs. Node 24
+remains the default for the rest of CI. This replaces three workflow copies of the
+preparation sequence and two independent Node pins, which could drift while still
+looking locally correct.

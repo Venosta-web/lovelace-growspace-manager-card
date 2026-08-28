@@ -7,6 +7,9 @@ import { parse } from 'yaml';
 const readWorkflow = async (name) =>
   parse(await readFile(new URL(`../.github/workflows/${name}`, import.meta.url), 'utf8'));
 
+const readAction = async (name) =>
+  parse(await readFile(new URL(`../.github/actions/${name}/action.yml`, import.meta.url), 'utf8'));
+
 const branchesFor = (workflow, event) => workflow.on?.[event]?.branches ?? [];
 const hasEvent = (workflow, event) => Object.hasOwn(workflow.on ?? {}, event);
 
@@ -108,4 +111,48 @@ test('stable publishing is gated while dev prereleases stay E2E-free', async () 
   assert.equal(artifactUpload.with.path, '.artifacts/e2e-managed/');
   assert.equal(artifactUpload.with['if-no-files-found'], 'error');
   assert.equal(e2e.jobs['e2e-tests']['continue-on-error'], undefined);
+});
+
+test('the GitHub adapter delegates release preparation to the publishing interface', async () => {
+  const release = await readWorkflow('release.yml');
+  const lint = await readWorkflow('lint.yml');
+  const releaseNode = await readAction('setup-release-node');
+
+  assert.equal(
+    releaseNode.runs.steps[0].with['node-version'],
+    '22',
+    'the release-only Node source remains visible in the GitHub adapter'
+  );
+  assert.equal(releaseNode.runs.steps[0].with.cache, 'npm');
+
+  const preflightSteps = lint.jobs['release-preflight'].steps;
+  assert.equal(
+    preflightSteps.filter((step) => step.uses === './.github/actions/setup-release-node').length,
+    1
+  );
+  assert.deepEqual(
+    preflightSteps.filter((step) => step.run).map((step) => step.run),
+    ['npm run publishing:verify']
+  );
+
+  for (const [jobName, channel] of [
+    ['stable-release', 'stable'],
+    ['prerelease', 'prerelease'],
+  ]) {
+    const steps = release.jobs[jobName].steps;
+    assert.equal(
+      steps.filter((step) => step.uses === './.github/actions/setup-release-node').length,
+      1
+    );
+    const commands = steps
+      .map((step) => step.run)
+      .filter(Boolean)
+      .join('\n');
+    assert.match(commands, new RegExp(`npm run publishing:publish -- ${channel}`));
+    assert.doesNotMatch(
+      commands,
+      /npm ci|npm run build|validate:hacs-release|npx semantic-release/,
+      'the GitHub adapter must not duplicate publishing implementation details'
+    );
+  }
 });
