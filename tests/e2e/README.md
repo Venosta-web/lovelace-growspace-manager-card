@@ -82,6 +82,13 @@ The equivalent environment overrides are `GROWSPACE_E2E_INTEGRATION_ROOT` and
 `GROWSPACE_E2E_WORKSPACE_ROOT`. Failures preserve Home Assistant logs and Playwright
 reports under `.artifacts/e2e-managed/`; successful runs leave that directory absent.
 
+GitHub's stable-main validation and deliberate manual dispatch use this same managed
+command. The workflow checks out the integration and workspace, installs dependencies and
+Chromium, validates their absolute roots, and passes those roots to `npm run test:e2e`.
+The harness owns all Home Assistant and Playwright lifecycle work. On failure or
+cancellation, the workflow uploads `.artifacts/e2e-managed/` after the harness captures
+evidence and tears the disposable runtime down.
+
 ### All Tests
 ```bash
 npm test

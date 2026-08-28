@@ -47,67 +47,35 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Build card
-        run: npm run build
-
-      - name: Assemble Home Assistant configuration
+      # Checkout placement is forge-owned. Resolve and validate those roots here,
+      # then hand them to the repository-owned runtime harness explicitly.
+      - name: Select E2E checkout roots
+        id: checkout-roots
+        shell: bash
         run: |
-          mkdir -p .e2e/ha-config/packages \
-            .e2e/ha-config/www/e2e-camera-assets
-          cp .e2e/workspace/ha-dev/packages/e2e_simulated_sensors.yaml \
-            .e2e/ha-config/packages/e2e_simulated_sensors.yaml
-          cp tests/e2e/ha-config/ci-configuration.yaml \
-            .e2e/ha-config/configuration.yaml
-          cp brand/icon.png \
-            .e2e/ha-config/www/e2e-camera-assets/e2e_vision_1.jpg
-          cp brand/icon.png \
-            .e2e/ha-config/www/e2e-camera-assets/e2e_vision_2.jpg
+          card_root="$(realpath "${{ github.workspace }}")"
+          integration_root="$(realpath "${{ github.workspace }}/.e2e/growspace_manager")"
+          workspace_root="$(realpath "${{ github.workspace }}/.e2e/workspace")"
 
-      - name: Start Home Assistant
+          test -f "$integration_root/custom_components/growspace_manager/manifest.json"
+          test -f "$workspace_root/ha-dev/packages/e2e_simulated_sensors.yaml"
+
+          echo "card=$card_root" >> "$GITHUB_OUTPUT"
+          echo "integration=$integration_root" >> "$GITHUB_OUTPUT"
+          echo "workspace=$workspace_root" >> "$GITHUB_OUTPUT"
+
+      - name: Run managed E2E Runtime Harness
+        working-directory: ${{ steps.checkout-roots.outputs.card }}
         run: |
-          docker run --detach --name growspace-ha-e2e \
-            --publish 8123:8123 \
-            --volume "$PWD/.e2e/ha-config:/config" \
-            --volume "$PWD/.e2e/growspace_manager/custom_components/growspace_manager:/config/custom_components/growspace_manager:ro" \
-            --volume "$PWD/dist:/config/www/community/lovelace-growspace-manager-card:ro" \
-            --env TZ=UTC \
-            homeassistant/home-assistant:stable
-
-      - name: Bootstrap Home Assistant and integration
-        run: node scripts/ci-e2e-environment.mjs bootstrap
-
-      - name: Seed E2E growspaces
-        run: |
-          npx tsc tests/e2e/fixtures/e2e-setup.ts --ignoreConfig \
-            --module commonjs --target es2022 --types node \
-            --esModuleInterop --skipLibCheck \
-            --outDir .e2e/compiled
-          cp .e2e/compiled/e2e-setup.js \
-            tests/e2e/fixtures/.e2e-setup.run.cjs
-          node tests/e2e/fixtures/.e2e-setup.run.cjs
-          rm tests/e2e/fixtures/.e2e-setup.run.cjs
-
-      - name: Create E2E dashboards
-        run: node scripts/ci-e2e-environment.mjs dashboards
-
-      - name: Run Home Assistant Playwright suite
-        run: npm run test:ha
-
-      - name: Capture Home Assistant logs
-        if: failure()
-        run: docker logs growspace-ha-e2e > home-assistant-e2e.log 2>&1 || true
+          npm run test:e2e -- \
+            --integration-root "${{ steps.checkout-roots.outputs.integration }}" \
+            --workspace-root "${{ steps.checkout-roots.outputs.workspace }}"
 
       - name: Upload failure artifacts
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v7.0.1
         with:
           name: e2e-failure-artifacts
-          path: |
-            home-assistant-e2e.log
-            tests/e2e/test-reports/
-            tests/e2e/test-results/
+          path: .artifacts/e2e-managed/
+          if-no-files-found: error
           retention-days: 7
-
-      - name: Stop Home Assistant
-        if: always()
-        run: docker rm --force growspace-ha-e2e || true

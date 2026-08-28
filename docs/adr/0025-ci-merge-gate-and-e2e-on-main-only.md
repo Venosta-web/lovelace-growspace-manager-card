@@ -97,3 +97,26 @@ The `dev` prerelease job remains separate and has no validation or E2E dependenc
 This supersedes the unenforced nightly/PR mechanics described above: expensive E2E is
 main-push-only, plus deliberate manual dispatch. `scripts/ci-release-policy.test.mjs`
 locks down these branch and dependency conditions in the fast lint job.
+
+## Amendment (2026-08-28) — one E2E Runtime Harness across local and GitHub runs
+
+Stable-main and deliberate manual E2E validation now invoke the same repository-owned
+[[E2E Runtime Harness]] used by local managed runs. Managed mode owns the card build,
+Home Assistant configuration assembly and disposable-container lifecycle, integration
+bootstrap, growspace and dashboard seeding, served-bundle verification, Playwright run,
+failure evidence capture, and teardown. Attached mode instead accepts an existing Home
+Assistant runtime and owns only served-bundle verification plus the Playwright run; it
+never starts or stops that runtime.
+
+The GitHub workflow is an adapter at the forge boundary. It retains the three checkouts,
+dependency and browser setup, npm caching, explicit validation and selection of checkout
+roots, the single managed-harness invocation, and upload from the stable
+`.artifacts/e2e-managed/` location. It does not encode Home Assistant lifecycle ordering
+or capture logs itself. This keeps diagnostics ahead of teardown in every environment and
+deletes the CI-only copy of runtime assembly and cleanup knowledge.
+
+The trigger and publishing policy is unchanged: E2E remains callable by the stable
+release dependency graph and available for deliberate manual dispatch, with no push or
+pull-request trigger of its own. The stable publishing job keeps the default successful-
+`needs` condition, so a failed or cancelled E2E dependency prevents publishing; the dev
+prerelease path has no E2E dependency.
