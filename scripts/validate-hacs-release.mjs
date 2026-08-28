@@ -6,18 +6,7 @@ import { promisify } from 'node:util';
 const execFileAsync = promisify(execFile);
 
 const bundlePath = 'dist/growspace-manager-card.js';
-const releaseWorkflow = await readFile('.github/workflows/release.yml', 'utf8');
 const hacsConfig = JSON.parse(await readFile('hacs.json', 'utf8'));
-
-const cleanupCommit = releaseWorkflow.match(
-  /commit -m (['"])([^'"\n]*untrack built bundle[^'"\n]*)\1/
-)?.[2];
-if (!cleanupCommit) {
-  throw new Error('Release workflow must commit the built-bundle cleanup');
-}
-if (/\[(?:skip ci|ci skip|no ci|skip actions|actions skip)\]/i.test(cleanupCommit)) {
-  throw new Error('Release cleanup commit must run required checks');
-}
 
 if (path.basename(bundlePath) !== hacsConfig.filename) {
   throw new Error(
