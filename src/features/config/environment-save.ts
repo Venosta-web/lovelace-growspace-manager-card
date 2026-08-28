@@ -25,27 +25,27 @@
  *
  * Architecture note: the Config Dialog persists the environment by dispatching
  * `configure-environment-submit`, which the Growspace Dialog Host fulfils as
- * `configure_environment` plus a conditional `configure_exhaust_fan` (the host
- * owns the detail→service mapping). So this composer produces the **event
- * detail**, not the `configure_environment` service payload. `needsExhaustCall`
- * is the shared predicate gating that second call.
+ * `configure_environment` plus a conditional `configure_exhaust_fan`. The
+ * Growspace action owns the compile-time-total detail→service mapping; the host
+ * owns orchestration. So this composer produces the **event detail**, not the
+ * `configure_environment` service payload. `needsExhaustCall` is the shared
+ * predicate gating that second call.
  */
 
 import type { EnvironmentDraft } from '../../dialogs/config-dialog-sm';
 import type { EnvironmentConfigEventDetail } from '../../lib/types/dialog';
 import { bandSavePayload } from './moisture-band';
 import {
+  ENV_ATOMIC_GROUPS,
   ENV_PERSISTENCE,
   bufferedDirtyKeys,
   isGroupDirty,
   type EnvironmentDraftKey,
 } from './environment-persistence';
 
-/** Draft keys the composer never copies verbatim — they need their own handling. */
-const MANUALLY_COMPOSED: ReadonlySet<EnvironmentDraftKey> = new Set([
-  'soilMoistureMin',
-  'soilMoistureMax',
-]);
+function belongsToAtomicGroup(key: EnvironmentDraftKey): boolean {
+  return ENV_ATOMIC_GROUPS.some((group) => group.includes(key));
+}
 
 /**
  * Whether the dirty moisture band can be saved.
@@ -70,14 +70,14 @@ export function composeEnvironmentConfig(
   draft: EnvironmentDraft,
   dirty: ReadonlySet<EnvironmentDraftKey>
 ): EnvironmentConfigEventDetail {
-  const detail: Record<string, unknown> = {
+  const detail: EnvironmentConfigEventDetail = {
     // Routing metadata: always present, never a patch field.
     selectedGrowspaceId: draft.selectedGrowspaceId,
   };
 
   for (const key of bufferedDirtyKeys(dirty)) {
-    if (MANUALLY_COMPOSED.has(key)) continue;
-    detail[key] = draft[key];
+    if (belongsToAtomicGroup(key)) continue;
+    Object.assign(detail, { [key]: draft[key] });
   }
 
   // Atomic pair. `bandSavePayload` returns both bounds for a valid custom pair
@@ -86,18 +86,20 @@ export function composeEnvironmentConfig(
   if (isGroupDirty(dirty, ['soilMoistureMin', 'soilMoistureMax'])) {
     const band = bandSavePayload({ min: draft.soilMoistureMin, max: draft.soilMoistureMax });
     if (band) {
-      detail.soilMoistureMin = band.min;
-      detail.soilMoistureMax = band.max;
+      Object.assign(detail, {
+        soilMoistureMin: band.min,
+        soilMoistureMax: band.max,
+      });
     }
   }
 
   // The exhaust config rides the detail so the host can forward it to its
   // dedicated service, but only when the user actually edited it.
   if (dirty.has('exhaustFanConfig') && ENV_PERSISTENCE.exhaustFanConfig === 'dedicated') {
-    detail.exhaustFanConfig = draft.exhaustFanConfig;
+    Object.assign(detail, { exhaustFanConfig: draft.exhaustFanConfig });
   }
 
-  return detail as unknown as EnvironmentConfigEventDetail;
+  return detail;
 }
 
 /**

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { composeEnvironmentConfig } from './environment-save';
-import { environmentPatchToServiceData } from './environment-service-mapping';
 import { expandAtomicGroups, type EnvironmentDraftKey } from './environment-persistence';
 import { createInitialSM } from '../../dialogs/config-dialog-sm';
 
@@ -24,9 +23,7 @@ async function wirePayload(
   const d = createInitialSM().environmentDraft;
   d.selectedGrowspaceId = 'growspace_1';
   mutate(d);
-  await configureEnvironment(
-    environmentPatchToServiceData(composeEnvironmentConfig(d, dirty(...keys)))
-  );
+  await configureEnvironment(composeEnvironmentConfig(d, dirty(...keys)));
   const calls = vi.mocked(callService).mock.calls;
   return calls[calls.length - 1][2] as Record<string, unknown>;
 }
@@ -70,6 +67,14 @@ describe('card → configure_environment mapping', () => {
     expect(payload.ph_sensors).toEqual([]);
   });
 
+  it('carries a deliberate clear of an object field', async () => {
+    const payload = await wirePayload((d) => {
+      d.vpdOptimalOverrides = {};
+    }, 'vpdOptimalOverrides');
+
+    expect(payload.vpd_optimal_overrides).toEqual({});
+  });
+
   it('maps a cleared entity picker to an explicit null', async () => {
     const payload = await wirePayload((d) => {
       d.co2Sensor = '';
@@ -100,6 +105,16 @@ describe('card → configure_environment mapping', () => {
 
     expect(payload.soil_moisture_min).toBe(0);
     expect(payload.soil_moisture_max).toBe(45);
+  });
+
+  it('carries a deliberate null clear as a complete moisture band', async () => {
+    const payload = await wirePayload((d) => {
+      d.soilMoistureMin = null;
+      d.soilMoistureMax = null;
+    }, 'soilMoistureMin');
+
+    expect(payload.soil_moisture_min).toBeNull();
+    expect(payload.soil_moisture_max).toBeNull();
   });
 
   it('keeps a zero threshold that the old truthiness gate dropped', async () => {

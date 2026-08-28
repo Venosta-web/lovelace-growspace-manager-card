@@ -1,7 +1,20 @@
 import { spawnSync } from 'node:child_process';
 import * as path from 'node:path';
 
+import {
+  E2E_PREFLIGHT_COMPLETE,
+  E2E_PREFLIGHT_ENVIRONMENT_VARIABLE,
+} from '../../scripts/e2e-runtime-harness.mjs';
+
+export function shouldBypassE2EBundlePreflight(
+  environment: Record<string, string | undefined>
+): boolean {
+  return environment[E2E_PREFLIGHT_ENVIRONMENT_VARIABLE] === E2E_PREFLIGHT_COMPLETE;
+}
+
 export default function verifyE2EBundle(): void {
+  if (shouldBypassE2EBundlePreflight(process.env)) return;
+
   const rootDirectory = path.resolve(__dirname, '..', '..');
   const result = spawnSync(
     process.execPath,

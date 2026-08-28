@@ -1,7 +1,7 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { atom } from 'nanostores';
-import { ViewMode } from '../../src/constants';
+import { MetricKey, ViewMode } from '../../src/constants';
 import type { CardTaskState } from '../../src/features/tasks/task-state';
 import '../../src/features/ui/containers/growspace-analytics.container';
 import type { GrowspaceAnalyticsContainer } from '../../src/features/ui/containers/growspace-analytics.container';
@@ -34,6 +34,7 @@ function buildStore(
     taskState?: CardTaskState;
     startInGraphWall?: boolean;
     cardPreview?: boolean;
+    hiddenMetrics?: MetricKey[];
   } = {}
 ) {
   const $analyticsViewState = atom({
@@ -75,6 +76,7 @@ async function mountContainer(opts: Parameters<typeof buildStore>[0] = {}) {
   (element as any).deviceSnapshot = null;
   (element as any).startInGraphWall = opts.startInGraphWall ?? false;
   (element as any).cardPreview = opts.cardPreview ?? false;
+  (element as any).hiddenMetrics = opts.hiddenMetrics ?? [];
   (element as any)._initControllers();
   element.requestUpdate();
   await element.updateComplete;
@@ -161,6 +163,17 @@ describe('Env Graph Wall — opening and closing', () => {
 
     expect(ui.fullscreen).toBe(false);
     expect(ui.shadowRoot!.querySelector('ha-dialog')!.hasAttribute('open')).toBe(false);
+  });
+
+  it('does not start Graph Wall when every open graph is hidden by the card', async () => {
+    const { element } = await mountContainer({
+      activeEnvGraphs: new Set(['temperature', 'humidity']),
+      startInGraphWall: true,
+      hiddenMetrics: [MetricKey.TEMPERATURE, MetricKey.HUMIDITY],
+    });
+
+    expect(element.shadowRoot!.querySelector('growspace-analytics-ui')).toBeNull();
+    expect((element as any)._fullscreen).toBe(false);
   });
 
   it('waits for the standalone card to open its default graphs before starting the Wall', async () => {

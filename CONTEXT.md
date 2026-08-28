@@ -568,7 +568,7 @@ The Climate [[Tab Component]] (`<config-climate-tab>`) forwards a _partial_ fan/
 The Config Dialog's Tanks tab is the first **independent-draft** tab decomposed, but it is really a _hybrid_: the tank **list** lives in `environmentDraft.irrigationTanks` (so the tab rides the [[Environment Save Composer]] like the env-cluster tabs — add/delete dispatch `UPDATE_ENV_DRAFT`), while the inline add/edit **draft** is its own `tabs.tanks.sub` SM sub-state (`idle | adding | editing`, like the Notifications tab). The [[Tab ViewModel]] projects both — formatted list rows from the env draft, the open editor from the sub-state. The dumb component emits `add-/edit-/delete-tank-requested`, `tank-draft-changed`, `cancel-tank`, `save-tank-requested`; the Shell keeps `_openAddTank` / `_editTank` / `_deleteTank` / `_saveTank` / `_cancelTank` (which dispatch the `BEGIN_ADD_TANK` / `BEGIN_EDIT_TANK` / `COMMIT_TANK` SM events) as the intent handlers. **Not** the Irrigation _dialog_'s `<irrigation-tanks-tab>`, which edits live [[Tank Levels]] through the Irrigation slice — this one edits [[Tank Config]] in the config dialog's env draft (see [[Tank Config vs Tank Levels]]).
 
 **Environment Save Composer** _(implemented #358, `features/config/environment-save.ts`)_
-The pure function that turns the [[Shared Environment Draft]] plus its [[Dirty Write Set]] into the outbound `configure-environment-submit` **event detail** — _not_ the `configure_environment` service payload. Under ADR-0032 it emits routing metadata plus only dirty persisted fields; explicit empty values remain present as clears, while untouched fields are omitted and preserved by GSM ADR-0026 patch semantics. The [[Atomic Dirty Group]] for the Acceptable Moisture Band ensures its two bounds are emitted together or not at all. **Architecture:** the Config Dialog persists by _dispatching_ `configure-environment-submit`; the [[Growspace Dialog Host]] fulfils it as `configure_environment` plus dirty-gated dedicated services. So the host — not the dialog — owns the detail→service mapping and orchestration (config-dialog has no [[MutationRunController]]). Card implementation is tracked by #519 after backend prerequisite growspace_manager#586.
+The pure function that turns the [[Shared Environment Draft]] plus its [[Dirty Write Set]] into the outbound `configure-environment-submit` **event detail** — _not_ the `configure_environment` service payload. Under ADR-0032 it emits routing metadata plus only dirty persisted fields; explicit empty values remain present as clears, while untouched fields are omitted and preserved by GSM ADR-0026 patch semantics. The [[Atomic Dirty Group]] for the Acceptable Moisture Band ensures its two bounds are emitted together or not at all. **Architecture:** the Config Dialog persists by _dispatching_ `configure-environment-submit`; the [[Growspace Dialog Host]] orchestrates `configure_environment` plus dirty-gated dedicated services, while the Growspace action owns the compile-time-total detail→service mapping. Card implementation is tracked by #519 after backend prerequisite growspace_manager#586.
 
 **Dirty Write Set** _(accepted ADR-0032; implementation #519)_
 The set of top-level [[Shared Environment Draft]] keys the grower actually edited. It is stored alongside, not inside, the complete draft. Presence in the set records write intent independently of value truthiness, so `null`, `''`, `[]`, and `{}` can express deliberate clears while an untouched seeded default is omitted. A successful save and refresh clears the set; a failed save retains it for retry. Every draft key has one total persistence classification: routing metadata, buffered environment patch field, dedicated-service field, or immediate-persist field.
@@ -950,6 +950,19 @@ A colour describing what a drawn object is made of rather than what it means —
 `--marker-now`, the current-time cursor on the day charts, and the one chart colour deliberately outside the data palette. A cursor crosses every band, so any data hue reads as a band where it overlaps one — and the `#ff9800` both charts used was exactly the P3 band it lands in. See ADR 0042 §1.
 
 ## Build
+
+**Publishing Interface**
+The single release operation that prepares a card release and validates its stable or prerelease artifact plan. Verification evaluates both channels without publication or repository-history changes. Publication invokes semantic-release, reports `published` or `no-release`, and owns the idempotent follow-up commit and push that remove tagged bundles from `main` or `dev`. GitHub Actions supplies the forge adapter; semantic-release and Git sit behind internal adapter seams.
+_Avoid_: release workflow steps, copied publishing-policy checks, release preflight script
+
+**E2E Runtime Harness**
+The repository-owned interface for running the Home Assistant Playwright suite. In
+managed mode it owns card build, runtime assembly, lifecycle ordering, verification,
+failure evidence, and cleanup around a disposable Home Assistant container; in attached
+mode it verifies an already-running Home Assistant before invoking Playwright. GitHub
+Actions is an adapter that owns only forge checkouts, tool setup, caching, explicit
+checkout-root selection, invocation, and upload of the harness's stable artifact directory.
+_Avoid_: CI E2E script, GitHub E2E lifecycle
 
 **`__VERSION__`**
 Build-time constant injected by the bundler. Holds the card's semver version string for startup logging and diagnostics.

@@ -1899,7 +1899,7 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
 
     expect(configureEnvironment).toHaveBeenCalledOnce();
     const [call] = vi.mocked(configureEnvironment).mock.calls;
-    expect((call[0] as { growspaceId: string }).growspaceId).toBe('gs1');
+    expect(call[0].selectedGrowspaceId).toBe('gs1');
     const tanks = (call[0] as { irrigationTanks: Array<{ warningLevel: number; name: string }> })
       .irrigationTanks;
     expect(tanks[0].warningLevel).toBe(25);

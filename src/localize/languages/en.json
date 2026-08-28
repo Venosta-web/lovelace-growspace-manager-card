@@ -27,9 +27,15 @@
   "water_chart": {
     "title": "Water Consumption",
     "loading": "Loading water history...",
-    "empty": "No water data for this period.",
     "load_failed": "Water history could not be loaded.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "tank_level_title": "Tank Level",
+    "days_left": "{days} d left",
+    "hours_left": "{hours} h left",
+    "no_irrigation": "No irrigation in this range",
+    "bucket_minutes": "{count} × {width} min",
+    "bucket_hours": "{count} × {width} h",
+    "bucket_days": "{count} × {width} d"
   },
   "analytics": {
     "loading_history": "Loading history data...",

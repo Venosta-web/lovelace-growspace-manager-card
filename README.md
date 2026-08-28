@@ -151,10 +151,16 @@ The standalone analytics card can be declared as a dedicated Graph Wall:
 type: custom:growspace-analytics-card
 default_growspace: your_growspace_id_or_name
 start_in_graph_wall: true
+hidden_graphs:
+  - humidity
+  - co2
 ```
 
 `start_in_graph_wall` defaults to `false`. When enabled, the card opens its desktop Graph Wall
-after each dashboard reload; exiting the Wall affects only the current page load.
+after each dashboard reload; exiting the Wall affects only the current page load. Use
+`hidden_graphs` (or the **Hidden Graphs** selector in the visual editor) to omit selected metrics
+from both the inline analytics card and its Graph Wall. This is card-local and does not close the
+same graphs in other Growspace Manager cards.
 
 ### UI Configuration
 

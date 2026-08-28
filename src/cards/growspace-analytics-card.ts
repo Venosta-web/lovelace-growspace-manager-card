@@ -108,6 +108,7 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
       type: 'custom:growspace-analytics-card',
       default_growspace: '',
       start_in_graph_wall: false,
+      hidden_graphs: [],
     };
   }
 
@@ -174,6 +175,7 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
             <growspace-analytics
               .device=${selectedDeviceData}
               .startInGraphWall=${this._config.start_in_graph_wall ?? false}
+              .hiddenMetrics=${this._config.hidden_graphs ?? []}
               .cardPreview=${this.preview}
             ></growspace-analytics>
           </div>

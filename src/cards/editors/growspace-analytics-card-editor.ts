@@ -5,6 +5,12 @@ import type { GrowspaceAnalyticsCardConfig } from '../../lib/types/config';
 import { GrowspaceOptionsController } from '../../controllers/growspace-options-controller';
 import { computeEditorLabel } from '../../lib/editor-utils';
 import { sharedStyles } from '../../styles/shared.styles';
+import { METRIC_CONFIG, METRIC_SORT_ORDER, MetricKey } from '../../features/environment/constants';
+
+const GRAPH_OPTIONS = METRIC_SORT_ORDER.map((metric) => ({
+  label: metric === MetricKey.STEERING_PHASE ? 'Steering Phase' : METRIC_CONFIG[metric].title,
+  value: metric,
+}));
 
 @customElement('growspace-analytics-card-editor')
 export class GrowspaceAnalyticsCardEditor extends LitElement implements LovelaceCardEditor {
@@ -39,6 +45,15 @@ export class GrowspaceAnalyticsCardEditor extends LitElement implements Lovelace
       {
         name: 'start_in_graph_wall',
         selector: { boolean: {} },
+      },
+      {
+        name: 'hidden_graphs',
+        selector: {
+          select: {
+            multiple: true,
+            options: GRAPH_OPTIONS,
+          },
+        },
       },
     ]);
   }
@@ -87,7 +102,8 @@ export class GrowspaceAnalyticsCardEditor extends LitElement implements Lovelace
         ></ha-form>
         <div class="info-text">
           Enable Start in Graph Wall to reopen this card in its desktop fullscreen view after a
-          dashboard reload. Exiting the Wall remains temporary until the next reload.
+          dashboard reload. Exiting the Wall remains temporary until the next reload. Hidden Graphs
+          are omitted from both the card and Graph Wall without changing graphs opened elsewhere.
         </div>
       </div>
     `;

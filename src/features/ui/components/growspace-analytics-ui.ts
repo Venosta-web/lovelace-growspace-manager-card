@@ -315,9 +315,20 @@ export class GrowspaceAnalyticsUI extends LitElement {
         ></growspace-env-chart>
       `;
     }
-    if (item.metrics[0] === MetricKey.WATER) {
+    // Both tank metrics open the same card: the combined graph draws the level
+    // trace and the consumption bars over one X axis, so routing them apart
+    // would give the grower two halves of one story (design 2a).
+    if (
+      item.metrics[0] === MetricKey.WATER ||
+      item.metrics[0] === MetricKey.IRRIGATION_TANK_LEVEL
+    ) {
       return html`
-        <tank-water-chart .device=${this.device} .range=${this.range}></tank-water-chart>
+        <tank-water-chart
+          .device=${this.device}
+          .range=${this.range}
+          .sensorHistory=${this.sensorHistory}
+          .metricKey=${item.metrics[0]}
+        ></tank-water-chart>
       `;
     }
     if (item.metrics[0] === MetricKey.STEERING_PHASE) {

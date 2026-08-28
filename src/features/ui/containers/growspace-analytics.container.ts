@@ -31,6 +31,8 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   @property({ type: Boolean, attribute: false }) historyManagedExternally = false;
   /** One-shot startup request supplied only by the standalone analytics card. */
   @property({ type: Boolean, attribute: false }) startInGraphWall = false;
+  /** Metrics this host wants omitted without mutating the shared open-graph state. */
+  @property({ attribute: false }) hiddenMetrics: MetricKey[] = [];
   /** Home Assistant card-editor previews must stay inside the editor surface. */
   @property({ type: Boolean, attribute: false }) cardPreview = false;
   private _deviceSnapshotsController!: StoreController<Map<string, DeviceSnapshot>>;
@@ -121,7 +123,7 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   }
 
   private _canShowWall(state = this._controller?.value): boolean {
-    return !!this.device && (state?.activeEnvGraphs?.size ?? 0) > 0;
+    return !!this.device && !!state && this._items.length > 0;
   }
 
   /**
@@ -146,9 +148,13 @@ export class GrowspaceAnalyticsContainer extends LitElement {
 
     const items: (AnalyticsItem & { sortIndex: number })[] = [];
     const processed = new Set<string>();
+    const isVisible = (metric: string) => {
+      const base = metric.includes(':') ? metric.split(':')[0] : metric;
+      return !this.hiddenMetrics.includes(base as MetricKey);
+    };
 
     linkedGraphGroups.forEach((group) => {
-      const active = group.filter((m) => activeEnvGraphs.has(m));
+      const active = group.filter((m) => activeEnvGraphs.has(m) && isVisible(m));
       if (active.length > 0) {
         items.push({
           type: 'group',
@@ -160,7 +166,7 @@ export class GrowspaceAnalyticsContainer extends LitElement {
     });
 
     activeEnvGraphs.forEach((metric) => {
-      if (!processed.has(metric)) {
+      if (!processed.has(metric) && isVisible(metric)) {
         const base = metric.includes(':') ? metric.split(':')[0] : metric;
         items.push({ type: 'single', metrics: [metric], sortIndex: getSortIndex(base) });
       }
@@ -171,7 +177,8 @@ export class GrowspaceAnalyticsContainer extends LitElement {
 
   render() {
     const state = this._controller?.value;
-    if (!state || state.activeEnvGraphs?.size === 0 || !this.device) return html``;
+    const items = this._items;
+    if (!state || items.length === 0 || !this.device) return html``;
 
     const deviceSnapshot =
       this.deviceSnapshot === undefined
@@ -193,7 +200,7 @@ export class GrowspaceAnalyticsContainer extends LitElement {
 
     return html`
       <growspace-analytics-ui
-        .items=${this._items}
+        .items=${items}
         .isLoading=${state.historyLoading}
         .range=${this.store.history.getRange()}
         .hass=${this.hass}

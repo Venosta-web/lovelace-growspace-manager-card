@@ -16,6 +16,7 @@ export interface GrowspaceLogbookCardConfig extends GrowspaceManagerCardConfig {
 
 export interface GrowspaceAnalyticsCardConfig extends GrowspaceManagerCardConfig {
   start_in_graph_wall?: boolean;
+  hidden_graphs?: MetricKey[];
 }
 
 export type GrowspaceViewMode = ViewMode;
