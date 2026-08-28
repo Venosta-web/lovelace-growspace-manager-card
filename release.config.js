@@ -18,8 +18,8 @@
  * changelog, which is what main's CHANGELOG.md is for.
  *
  * Both channels still commit `dist/*.js`, so every tag — prerelease included —
- * stays independently installable by HACS. release.yml untracks the bundle
- * again afterwards, so the net tree change on dev is nothing at all.
+ * stays independently installable by HACS. The publishing path untracks the
+ * bundle again afterwards, so the net tree change on dev is nothing at all.
  */
 
 const STABLE_BRANCH = 'main';

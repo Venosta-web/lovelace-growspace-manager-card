@@ -952,7 +952,7 @@ A colour describing what a drawn object is made of rather than what it means —
 ## Build
 
 **Publishing Interface**
-The single release operation that prepares a card release and validates its stable or prerelease artifact plan. Verification evaluates both channels without publication or repository-history changes.
+The single release operation that prepares a card release and validates its stable or prerelease artifact plan. Verification evaluates both channels without publication or repository-history changes. Prerelease publication invokes semantic-release, reports whether it published a release, and owns the idempotent follow-up commit and push that remove tagged bundles from `dev`.
 _Avoid_: release workflow steps, release preflight script
 
 **E2E Runtime Harness**

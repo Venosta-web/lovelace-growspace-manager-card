@@ -37,6 +37,11 @@ test('stable publishing is gated while dev prereleases stay E2E-free', async () 
   assert.ok(prerelease, 'release defines a dedicated prerelease job');
   assert.equal(prerelease.needs, undefined, 'dev prerelease must not wait for stable validation');
   assert.match(prerelease.if, /refs\/heads\/dev/);
+  assert.deepEqual(
+    prerelease.steps.filter((step) => step.run).map((step) => step.run),
+    ['npm run publishing:publish -- prerelease'],
+    'dev maps to one prerelease Publishing Interface invocation'
+  );
 
   for (const jobName of ['lint-and-build', 'unit-tests', 'contract-fixture', 'e2e']) {
     assert.match(release.jobs[jobName].if, /refs\/heads\/main/);
