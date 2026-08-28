@@ -9,6 +9,9 @@ const RELEASE_BRANCHES = {
 const RELEASE_CHANNELS = Object.keys(RELEASE_BRANCHES);
 const BUNDLE_PATTERN = 'dist/*.js';
 const VERSIONED_ASSETS = ['package.json', 'CHANGELOG.md'];
+const CLEANUP_COMMIT_MESSAGE = 'chore(release): untrack built bundle';
+const GIT_AUTHOR = 'github-actions[bot]';
+const GIT_AUTHOR_EMAIL = 'github-actions[bot]@users.noreply.github.com';
 
 class CommandFailure extends Error {
   constructor(message, status = 1) {
@@ -48,6 +51,8 @@ function verifyArtifactPlan(channel, releaseConfigFactory) {
       throw new Error(`${versionedAsset} must not be committed on prerelease`);
     }
   }
+
+  return releaseConfig;
 }
 
 function publishingFailure(stage, error) {
@@ -80,6 +85,82 @@ function executeCommand({ command, arguments: arguments_, rootDirectory, environ
   });
 }
 
+function captureCommand({ command, arguments: arguments_, rootDirectory, environment }) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, arguments_, {
+      cwd: rootDirectory,
+      env: environment,
+      stdio: ['ignore', 'pipe', 'inherit'],
+    });
+    let output = '';
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => (output += chunk));
+    child.on('error', (error) => {
+      reject(
+        new CommandFailure(`Could not start ${commandName(command, arguments_)}: ${error.message}`)
+      );
+    });
+    child.on('close', (status, signal) => {
+      if (status === 0) {
+        resolve(output);
+        return;
+      }
+      const detail = status === null ? `received ${signal}` : `exited with status ${status}`;
+      reject(new CommandFailure(`${commandName(command, arguments_)} ${detail}`, status ?? 1));
+    });
+  });
+}
+
+const productionSemanticReleaseAdapter = {
+  async publish({ releaseConfig, rootDirectory, environment }) {
+    const { default: semanticRelease } = await import('semantic-release');
+    return semanticRelease(releaseConfig, { cwd: rootDirectory, env: environment });
+  },
+};
+
+const productionGitAdapter = {
+  async commitBundleCleanup({ commitMessage, rootDirectory, environment }) {
+    const trackedBundles = await captureCommand({
+      command: 'git',
+      arguments: ['ls-files', '-z', '--', BUNDLE_PATTERN],
+      rootDirectory,
+      environment,
+    });
+    if (trackedBundles.length === 0) return false;
+
+    await executeCommand({
+      command: 'git',
+      arguments: ['rm', '--cached', '--', BUNDLE_PATTERN],
+      rootDirectory,
+      environment,
+    });
+    await executeCommand({
+      command: 'git',
+      arguments: [
+        '-c',
+        `user.name=${GIT_AUTHOR}`,
+        '-c',
+        `user.email=${GIT_AUTHOR_EMAIL}`,
+        'commit',
+        '-m',
+        commitMessage,
+      ],
+      rootDirectory,
+      environment,
+    });
+    return true;
+  },
+
+  pushCleanup({ branch, rootDirectory, environment }) {
+    return executeCommand({
+      command: 'git',
+      arguments: ['push', 'origin', `HEAD:${branch}`],
+      rootDirectory,
+      environment,
+    });
+  },
+};
+
 export async function runPublishing({
   mode,
   channel,
@@ -87,6 +168,8 @@ export async function runPublishing({
   environment = process.env,
   commandRunner = executeCommand,
   releaseConfigFactory = createReleaseConfig,
+  semanticReleaseAdapter = productionSemanticReleaseAdapter,
+  gitAdapter = productionGitAdapter,
   writeOutput = (message) => process.stdout.write(message),
 }) {
   if (!['verify', 'publish'].includes(mode)) {
@@ -94,6 +177,15 @@ export async function runPublishing({
   }
   if (mode === 'publish' && !RELEASE_CHANNELS.includes(channel)) {
     throw new Error(`Unsupported release channel: ${channel}`);
+  }
+  if (
+    mode === 'publish' &&
+    environment.GITHUB_REF_NAME !== undefined &&
+    environment.GITHUB_REF_NAME !== RELEASE_BRANCHES[channel]
+  ) {
+    throw new Error(
+      `Unsupported publishing branch: ${environment.GITHUB_REF_NAME}; ${channel} publishes from ${RELEASE_BRANCHES[channel]}`
+    );
   }
 
   const run = async (execution) => {
@@ -122,9 +214,10 @@ export async function runPublishing({
     rootDirectory,
     environment,
   });
+  const releasePlans = new Map();
   try {
     for (const releaseChannel of channels) {
-      verifyArtifactPlan(releaseChannel, releaseConfigFactory);
+      releasePlans.set(releaseChannel, verifyArtifactPlan(releaseChannel, releaseConfigFactory));
     }
   } catch (error) {
     throw publishingFailure('artifact-verification', error);
@@ -135,12 +228,42 @@ export async function runPublishing({
     return { outcome: 'verified', channels };
   }
 
-  await run({
-    command: 'npx',
-    arguments: ['semantic-release'],
-    stage: 'publishing',
-    rootDirectory,
-    environment: { ...environment, GITHUB_REF_NAME: RELEASE_BRANCHES[channel] },
-  });
-  return { outcome: 'published', channel };
+  const branch = RELEASE_BRANCHES[channel];
+  const releaseEnvironment = { ...environment, GITHUB_REF_NAME: branch };
+  let release;
+  try {
+    release = await semanticReleaseAdapter.publish({
+      branch,
+      releaseConfig: releasePlans.get(channel),
+      rootDirectory,
+      environment: releaseEnvironment,
+    });
+  } catch (error) {
+    throw publishingFailure('publishing', error);
+  }
+
+  if (channel === 'prerelease') {
+    let cleanupCommitted;
+    try {
+      cleanupCommitted = await gitAdapter.commitBundleCleanup({
+        commitMessage: CLEANUP_COMMIT_MESSAGE,
+        rootDirectory,
+        environment: releaseEnvironment,
+      });
+    } catch (error) {
+      throw publishingFailure('cleanup-commit', error);
+    }
+
+    if (cleanupCommitted) {
+      try {
+        await gitAdapter.pushCleanup({ branch, rootDirectory, environment: releaseEnvironment });
+      } catch (error) {
+        throw publishingFailure('cleanup-push', error);
+      }
+    }
+  }
+
+  const outcome = release ? 'published' : 'no-release';
+  writeOutput(`${outcome}\n`);
+  return { outcome, channel };
 }
