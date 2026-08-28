@@ -32,6 +32,16 @@ test('stable publishing is gated while dev prereleases stay E2E-free', async () 
     /always\(\)|failure\(\)|cancelled\(\)/,
     'stable publishing must retain the implicit all-needs-succeeded condition'
   );
+  assert.equal(
+    stable['continue-on-error'],
+    undefined,
+    'stable publishing must fail when the publishing transaction fails'
+  );
+  assert.deepEqual(
+    stable.steps.filter((step) => step.run).map((step) => step.run),
+    ['npm run publishing:publish -- stable'],
+    'main maps to one stable Publishing Interface invocation'
+  );
 
   const prerelease = release.jobs.prerelease;
   assert.ok(prerelease, 'release defines a dedicated prerelease job');
@@ -149,14 +159,11 @@ test('the GitHub adapter delegates release preparation to the publishing interfa
       steps.filter((step) => step.uses === './.github/actions/setup-release-node').length,
       1
     );
-    const commands = steps
-      .map((step) => step.run)
-      .filter(Boolean)
-      .join('\n');
-    assert.match(commands, new RegExp(`npm run publishing:publish -- ${channel}`));
+    const commands = steps.filter((step) => step.run).map((step) => step.run);
+    assert.deepEqual(commands, [`npm run publishing:publish -- ${channel}`]);
     assert.doesNotMatch(
-      commands,
-      /npm ci|npm run build|validate:hacs-release|npx semantic-release/,
+      commands.join('\n'),
+      /npm ci|npm run build|validate:hacs-release|npx semantic-release|git rm|git push/,
       'the GitHub adapter must not duplicate publishing implementation details'
     );
   }

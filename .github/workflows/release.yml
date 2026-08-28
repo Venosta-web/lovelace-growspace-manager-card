@@ -80,13 +80,3 @@ jobs:
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
         run: npm run publishing:publish -- stable
-
-      - name: Keep built bundles in release tag only
-        run: |
-          if git ls-files 'dist/*.js' | grep -q .; then
-            git rm --cached dist/*.js
-            git -c user.name='github-actions[bot]' \
-              -c user.email='github-actions[bot]@users.noreply.github.com' \
-              commit -m 'chore(release): untrack built bundle'
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-          fi

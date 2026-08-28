@@ -242,24 +242,22 @@ export async function runPublishing({
     throw publishingFailure('publishing', error);
   }
 
-  if (channel === 'prerelease') {
-    let cleanupCommitted;
-    try {
-      cleanupCommitted = await gitAdapter.commitBundleCleanup({
-        commitMessage: CLEANUP_COMMIT_MESSAGE,
-        rootDirectory,
-        environment: releaseEnvironment,
-      });
-    } catch (error) {
-      throw publishingFailure('cleanup-commit', error);
-    }
+  let cleanupCommitted;
+  try {
+    cleanupCommitted = await gitAdapter.commitBundleCleanup({
+      commitMessage: CLEANUP_COMMIT_MESSAGE,
+      rootDirectory,
+      environment: releaseEnvironment,
+    });
+  } catch (error) {
+    throw publishingFailure('cleanup-commit', error);
+  }
 
-    if (cleanupCommitted) {
-      try {
-        await gitAdapter.pushCleanup({ branch, rootDirectory, environment: releaseEnvironment });
-      } catch (error) {
-        throw publishingFailure('cleanup-push', error);
-      }
+  if (cleanupCommitted) {
+    try {
+      await gitAdapter.pushCleanup({ branch, rootDirectory, environment: releaseEnvironment });
+    } catch (error) {
+      throw publishingFailure('cleanup-push', error);
     }
   }
 
