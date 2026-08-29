@@ -98,4 +98,54 @@ describe('growspace-phase-hero-card', () => {
       'transform',
     ]);
   });
+
+  it.each([300, 600])(
+    'keeps chart strokes, labels, and the now marker undistorted in a %spx column',
+    async (width) => {
+      const now = Date.now();
+      const historyCache = {
+        soil_moisture: [
+          { last_changed: new Date(now - 24 * 60 * 60 * 1000).toISOString(), state: '50.0' },
+          { last_changed: new Date(now - 12 * 60 * 60 * 1000).toISOString(), state: '62.0' },
+          { last_changed: new Date(now).toISOString(), state: '55.5' },
+        ],
+      };
+      const element = await fixture<GrowspaceHeaderHeroUI>(html`
+        <growspace-header-hero-ui
+          style="width:${width}px"
+          .chips=${[chip('steering_phase')]}
+          .irrigationStrategy=${strategy}
+          .historyCache=${historyCache}
+        ></growspace-header-hero-ui>
+      `);
+      const phaseCard = element.shadowRoot!.querySelector(
+        'growspace-phase-hero-card'
+      ) as GrowspacePhaseHeroCard;
+      await phaseCard.updateComplete;
+
+      const container = element.shadowRoot!.querySelector('.phase-chart-container') as HTMLElement;
+      const chart = container.querySelector('.phase-chart-svg') as SVGSVGElement;
+      await vi.waitFor(() => {
+        const rendered = chart.getBoundingClientRect();
+        expect(chart.viewBox.baseVal.width).toBeCloseTo(rendered.width, 1);
+        expect(chart.viewBox.baseVal.height).toBeCloseTo(rendered.height, 1);
+      });
+
+      const rendered = chart.getBoundingClientRect();
+      const viewBox = chart.viewBox.baseVal;
+      expect(rendered.width).toBeGreaterThan(width * 0.8);
+      expect(rendered.width / viewBox.width).toBeCloseTo(rendered.height / viewBox.height, 3);
+      expect(chart.getAttribute('preserveAspectRatio')).not.toBe('none');
+      expect(chart.querySelector('text')).toBeNull();
+      expect(chart.querySelector('circle')).toBeNull();
+
+      const labels = Array.from(container.querySelectorAll<HTMLElement>('.phase-reference-label'));
+      expect(labels).toHaveLength(2);
+      expect(labels.every((label) => getComputedStyle(label).fontSize === '11px')).toBe(true);
+
+      const dot = container.querySelector('.phase-now-dot') as HTMLElement;
+      const dotBounds = dot.getBoundingClientRect();
+      expect(dotBounds.width).toBeCloseTo(dotBounds.height, 3);
+    }
+  );
 });

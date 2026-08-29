@@ -743,16 +743,17 @@ describe('GrowspaceHeaderHeroUI', () => {
     const svg = el.shadowRoot!.querySelector('.phase-chart-svg');
     expect(svg).not.toBeNull();
 
-    // Verify SVG elements (lines, texts for Target VWC and P2 trigger VWC)
-    const texts = Array.from(svg!.querySelectorAll('text'));
-    expect(texts.some((t) => t.textContent?.includes('Target 60%'))).toBe(true);
-    expect(texts.some((t) => t.textContent?.includes('P2 trigger 45%'))).toBe(true);
+    // Reference labels stay in HTML so responsive SVG coordinates cannot distort type.
+    const targetLabel = el.shadowRoot!.querySelector('.phase-target-label') as HTMLElement;
+    const triggerLabel = el.shadowRoot!.querySelector('.phase-trigger-label') as HTMLElement;
+    expect(targetLabel.textContent).toContain('Target 60%');
+    expect(triggerLabel.textContent).toContain('P2 trigger 45%');
+    expect(targetLabel.namespaceURI).toBe('http://www.w3.org/1999/xhtml');
+    expect(triggerLabel.namespaceURI).toBe('http://www.w3.org/1999/xhtml');
     expect(svg!.querySelector('.phase-trigger-line')?.getAttribute('stroke')).toBe(
       'var(--phase-p2, #2196f3)'
     );
-    expect(svg!.querySelector('.phase-trigger-label')?.getAttribute('fill')).toBe(
-      'var(--phase-p2, #2196f3)'
-    );
+    expect(getComputedStyle(triggerLabel).color).toBe('rgb(33, 150, 243)');
   });
 
   it('handles mousemove and mouseleave on SVG chart for hover details', async () => {

@@ -39,7 +39,6 @@ interface PhaseBarSegment {
 
 interface PhaseHeroDerivation {
   series: PhaseChartSeries | null;
-  chart: PhaseChartGeometry | null;
   phases: CropSteeringPhases | null;
   segments: PhaseBarSegment[];
   targetVwc: number;
@@ -55,12 +54,16 @@ function fracOfWindow(series: PhaseChartSeries, atMs: number): number {
   return Math.max(0, Math.min(1, (atMs - series.window.startMs) / series.window.spanMs));
 }
 
-/** Turns the value-space series into the phase card's fixed SVG geometry. */
-function phaseChartGeometry(series: PhaseChartSeries): PhaseChartGeometry {
+/** Projects the value-space series into the chart's measured CSS-pixel coordinate space. */
+function phaseChartGeometry(
+  series: PhaseChartSeries,
+  width: number,
+  height: number
+): PhaseChartGeometry {
   const { startMs, spanMs } = series.window;
   const vwcRange = series.max - series.min || 1;
-  const xOf = (atMs: number) => ((atMs - startMs) / spanMs) * CHART_W;
-  const yOf = (vwc: number) => CHART_H - ((vwc - series.min) / vwcRange) * CHART_H;
+  const xOf = (atMs: number) => ((atMs - startMs) / spanMs) * width;
+  const yOf = (vwc: number) => height - ((vwc - series.min) / vwcRange) * height;
   const points = series.points.map((point) => ({ x: xOf(point.atMs), y: yOf(point.vwc) }));
   const linePath = points
     .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)},${point.y.toFixed(1)}`)
@@ -69,7 +72,7 @@ function phaseChartGeometry(series: PhaseChartSeries): PhaseChartGeometry {
 
   return {
     linePath,
-    areaPath: `${linePath} L ${CHART_W},${CHART_H} L 0,${CHART_H} Z`,
+    areaPath: `${linePath} L ${width},${height} L 0,${height} Z`,
     targetY: yOf(series.targetVwc),
     triggerY: yOf(series.triggerVwc),
     nowX: last.x,
@@ -92,10 +95,20 @@ export class GrowspacePhaseHeroCard extends LitElement {
   @property() public timeRange = '24h';
 
   @state() private _hoverPosition: number | null = null;
+  @state() private _chartSize = { width: CHART_W, height: CHART_H };
   private _derived: PhaseHeroDerivation | null = null;
+  private _chartObserver: ResizeObserver | undefined;
+  private _observedChart: HTMLElement | undefined;
 
   protected createRenderRoot() {
     return this;
+  }
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    void this.updateComplete.then(() => {
+      if (this.isConnected) this._observeChartContainer();
+    });
   }
 
   protected willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
@@ -110,12 +123,48 @@ export class GrowspacePhaseHeroCard extends LitElement {
     }
   }
 
+  protected updated(): void {
+    this._observeChartContainer();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._chartObserver?.disconnect();
+    this._chartObserver = undefined;
+    this._observedChart = undefined;
+  }
+
+  private _observeChartContainer(): void {
+    const container = this.querySelector<HTMLElement>('.phase-chart-container') ?? undefined;
+    if (container === this._observedChart) return;
+
+    this._chartObserver?.disconnect();
+    this._chartObserver = undefined;
+    this._observedChart = container;
+    if (!container) return;
+
+    this._chartObserver = new ResizeObserver(([entry]) => {
+      if (entry) this._measureChart(entry.contentRect);
+    });
+    this._chartObserver.observe(container);
+  }
+
+  private _measureChart(rect: Pick<DOMRectReadOnly, 'width' | 'height'>): void {
+    if (rect.width <= 0 || rect.height <= 0) return;
+    if (
+      Math.abs(rect.width - this._chartSize.width) < 0.1 &&
+      Math.abs(rect.height - this._chartSize.height) < 0.1
+    ) {
+      return;
+    }
+    this._chartSize = { width: rect.width, height: rect.height };
+  }
+
   /** Expensive work belongs exclusively to data-input updates, never hover updates. */
   private _derive(): PhaseHeroDerivation {
     const targetVwc = this.strategy.targetVwcPercent;
     const triggerVwc = targetVwc - this.strategy.maintenanceDrybackPercent;
     const series = computePhaseChartSeries(this.historyData, targetVwc, triggerVwc);
-    const chart = series ? phaseChartGeometry(series) : null;
     const dayHours = this.config?.resolvedDayHours ?? 12;
     const phases = computePhases(
       this.strategy,
@@ -161,7 +210,6 @@ export class GrowspacePhaseHeroCard extends LitElement {
 
     return {
       series,
-      chart,
       phases,
       segments,
       targetVwc,
@@ -221,7 +269,10 @@ export class GrowspacePhaseHeroCard extends LitElement {
     const derived = this._derived;
     if (!derived) return nothing;
 
-    const { series, chart, phases, segments, targetVwc, triggerVwc } = derived;
+    const { series, phases, segments, targetVwc, triggerVwc } = derived;
+    const chart = series
+      ? phaseChartGeometry(series, this._chartSize.width, this._chartSize.height)
+      : null;
     const hoverPosition = this._hoverPosition;
     const hovered =
       hoverPosition != null && series ? samplePhaseChartAt(series, hoverPosition) : null;
@@ -274,8 +325,7 @@ export class GrowspacePhaseHeroCard extends LitElement {
               <div class="phase-chart-container">
                 <svg
                   class="phase-chart-svg"
-                  viewBox="0 0 ${CHART_W} ${CHART_H}"
-                  preserveAspectRatio="none"
+                  viewBox="0 0 ${this._chartSize.width} ${this._chartSize.height}"
                   @mousemove=${this._handlePointerMove}
                   @mouseleave=${() => {
                     this._hoverPosition = null;
@@ -299,64 +349,61 @@ export class GrowspacePhaseHeroCard extends LitElement {
                   <line
                     x1="0"
                     y1="${chart.targetY.toFixed(1)}"
-                    x2="${CHART_W}"
+                    x2="${this._chartSize.width}"
                     y2="${chart.targetY.toFixed(1)}"
                     stroke="${chartColor}"
                     stroke-width="1"
                     stroke-dasharray="4 4"
                     opacity="0.45"
                   />
-                  <text
-                    x="${CHART_W - 4}"
-                    y="${Math.max(9, chart.targetY - 3).toFixed(1)}"
-                    fill="${chartColor}"
-                    font-size="6"
-                    text-anchor="end"
-                    font-family="var(--font-family, sans-serif)"
-                    opacity="0.85"
-                  >
-                    Target ${targetVwc}%
-                  </text>
                   <line
                     class="phase-trigger-line"
                     x1="0"
                     y1="${chart.triggerY.toFixed(1)}"
-                    x2="${CHART_W}"
+                    x2="${this._chartSize.width}"
                     y2="${chart.triggerY.toFixed(1)}"
                     stroke="var(--phase-p2, #2196f3)"
                     stroke-width="1"
                     stroke-dasharray="4 4"
                     opacity="0.45"
                   />
-                  <text
-                    class="phase-trigger-label"
-                    x="${CHART_W - 4}"
-                    y="${Math.min(CHART_H - 3, chart.triggerY + 10).toFixed(1)}"
-                    fill="var(--phase-p2, #2196f3)"
-                    font-size="6"
-                    text-anchor="end"
-                    font-family="var(--font-family, sans-serif)"
-                    opacity="0.85"
-                  >
-                    P2 trigger ${triggerVwc.toFixed(0)}%
-                  </text>
                   ${hoverPosition == null
-                    ? svg`
-                      <circle class="phase-now-pulse" cx="${chart.nowX.toFixed(1)}" cy="${chart.nowY.toFixed(1)}" r="4" fill="${chartColor}" opacity="0.35" />
-                      <circle cx="${chart.nowX.toFixed(1)}" cy="${chart.nowY.toFixed(1)}" r="3.2" fill="${chartColor}" stroke="var(--card-background-color, #1e1e1e)" stroke-width="1.4" />
-                    `
+                    ? nothing
                     : svg`
                       <line
-                        x1="${(hoverPosition * CHART_W).toFixed(1)}"
+                        x1="${(hoverPosition * this._chartSize.width).toFixed(1)}"
                         y1="0"
-                        x2="${(hoverPosition * CHART_W).toFixed(1)}"
-                        y2="${CHART_H}"
+                        x2="${(hoverPosition * this._chartSize.width).toFixed(1)}"
+                        y2="${this._chartSize.height}"
                         stroke="rgba(255,255,255,0.45)"
                         stroke-width="1"
                       />
                     `}
                 </svg>
 
+                <span
+                  class="phase-reference-label phase-target-label"
+                  style="top:${Math.max(14, chart.targetY).toFixed(1)}px;color:${chartColor};"
+                  >Target ${targetVwc}%</span
+                >
+                <span
+                  class="phase-reference-label phase-trigger-label"
+                  style="top:${Math.min(this._chartSize.height - 14, chart.triggerY).toFixed(1)}px;"
+                  >P2 trigger ${triggerVwc.toFixed(0)}%</span
+                >
+                ${hoverPosition == null
+                  ? html`
+                      <span
+                        class="phase-now-marker"
+                        style="left:${chart.nowX.toFixed(1)}px;top:${chart.nowY.toFixed(
+                          1
+                        )}px;color:${chartColor};"
+                      >
+                        <span class="phase-now-pulse"></span>
+                        <span class="phase-now-dot"></span>
+                      </span>
+                    `
+                  : nothing}
                 ${hoverPosition != null && hovered
                   ? html`
                       <div
