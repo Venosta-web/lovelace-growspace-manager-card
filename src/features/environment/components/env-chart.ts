@@ -296,6 +296,7 @@ export class GrowspaceEnvChart extends LitElement {
       guideBands: series.guideBands,
       guideLines: series.guideLines,
       guideLimits: series.guideLimits,
+      darkPeriods: series.darkPeriods,
       metricColor: series.metricColor,
     }));
   }
@@ -373,6 +374,11 @@ export class GrowspaceEnvChart extends LitElement {
             ${this._renderXAxisHTML(this.range)}
 
             <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
+              ${
+                // One backdrop for the pane, not one per trace: a combined
+                // chart's metrics share a window, so they share its nights.
+                this._renderDarkPeriods(series[0].darkPeriods, this._renderWindow)
+              }
               ${this._renderGrid(width, height)}
               ${series.map((s) => this._renderGuideBands(s, this._renderWindow))}
               ${series.map((s) => this._renderGuideLines(s, this._renderWindow))}
@@ -883,6 +889,39 @@ export class GrowspaceEnvChart extends LitElement {
     );
   }
 
+  /**
+   * The window's unlit stretches, shaded behind everything else.
+   *
+   * Drawn from the series' own `darkPeriods`, which is the same photoperiod list
+   * its stepped marks are cut on — a step landing where the shading still says
+   * daylight would read as a rendering glitch rather than as the boundary it is.
+   * Every Env Graph gets this, including one with no target to step: a nightly
+   * temperature dip is otherwise left for the grower to infer, and shading that
+   * came and went with unrelated config changes would be worse than none.
+   *
+   * The contrast is deliberately low. It is a backdrop the gridlines and the
+   * trace sit on top of, not a mark competing with them for attention.
+   */
+  private _renderDarkPeriods(
+    darkPeriods: GraphSeries['darkPeriods'],
+    { startTimeMs, durationMillis }: ChartWindow
+  ) {
+    if (!darkPeriods?.length) return svg``;
+
+    const { width, height } = CHART_PANE;
+    const xAt = (time: number) => ((time - startTimeMs) / durationMillis) * width;
+
+    return svg`${darkPeriods.map((period) => {
+      const left = xAt(period.startTime);
+      const right = xAt(period.endTime);
+      return svg`<rect
+        class="gs-dark-period"
+        x="${left}" y="0"
+        width="${Math.max(0, right - left)}" height="${height}"
+      />`;
+    })}`;
+  }
+
   private _renderGrid(width: number, height: number) {
     return svg`
         ${GRIDLINE_FRACTIONS.map(
@@ -1003,6 +1042,14 @@ export class GrowspaceEnvChart extends LitElement {
       height: 100%;
       overflow: visible;
       display: block;
+    }
+
+    /* Low enough to read as unlit rather than as a mark. The theme's own text
+       colour is used so the shading darkens a light theme and lightens a dark
+       one, which is the direction that reads as "the lights were off" in both. */
+    .gs-dark-period {
+      fill: var(--primary-text-color, #e1e1e1);
+      fill-opacity: 0.06;
     }
 
     .gs-axis-cap {

@@ -36,6 +36,11 @@ export interface GraphSeries {
   /** Limits never widen the value domain; off-scale ones render at its edge. */
   guideLimits?: import('./env-series').EnvGuideLimit[];
   /**
+   * The window's unlit stretches, shaded behind the gridlines. Empty when the
+   * growspace reported no light history.
+   */
+  darkPeriods?: import('./env-series').EnvDarkPeriod[];
+  /**
    * The metric's own colour, which a guide mark is drawn in.
    *
    * `color` above is not it for VPD: that trace takes a status colour, and a
