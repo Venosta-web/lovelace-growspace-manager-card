@@ -539,6 +539,57 @@ describe('computeEnvSeries — setpoints', () => {
   });
 });
 
+describe('computeEnvSeries — limits', () => {
+  function temperatureWithLimit(limit: number) {
+    const device = {
+      deviceId: 'g1',
+      name: 'Tent',
+      biologicalMetrics: { granularStage: 'veg' },
+      environmentAttributes: {
+        circulationFanConfig: {
+          critical_temp_low: null,
+          critical_temp_high: limit,
+        },
+      },
+      irrigationConfig: {},
+    } as unknown as GrowspaceDevice;
+    const descriptors = computeMetricDescriptors(null, {}, undefined, device);
+    return computeEnvSeries(
+      descriptors,
+      temperatureHistory(reading(50, '20'), reading(20, '24')),
+      [MetricKey.TEMPERATURE],
+      windowOf(1)
+    )[0];
+  }
+
+  it('carries a Limit in value space without unioning it into the axis', () => {
+    const series = temperatureWithLimit(100);
+
+    expect({ min: series.min, max: series.max }).toEqual({ min: 20, max: 24 });
+    expect(series.guideLimits).toEqual([
+      {
+        id: 'circulation-critical-temperature-high',
+        side: 'upper',
+        status: 'danger',
+        segments: [
+          {
+            startTime: NOW.getTime() - HOUR_MS,
+            endTime: NOW.getTime(),
+            value: 100,
+          },
+        ],
+        current: 100,
+      },
+    ]);
+  });
+
+  it('keeps an in-range Limit in the same unchanged data domain', () => {
+    const series = temperatureWithLimit(22);
+
+    expect({ min: series.min, max: series.max }).toEqual({ min: 20, max: 24 });
+    expect(series.guideLimits?.[0].current).toBe(22);
+  });
+});
 describe('computeEnvSeries — descriptor-owned chart shape and axes', () => {
   it.each([
     [MetricKey.OPTIMAL, 'on', ChartType.STEP, 0, 1],

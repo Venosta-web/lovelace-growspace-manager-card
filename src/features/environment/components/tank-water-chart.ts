@@ -2,15 +2,27 @@ import { LitElement, html, css, svg, nothing, type TemplateResult, type Property
 import { customElement, property, state } from 'lit/decorators.js';
 import { z } from 'zod';
 import type { GrowspaceDevice, IrrigationTank } from '../../../services/types';
-import { ChartType, MetricKey, type HistoryTimeRange } from '../constants';
+import {
+  ChartType,
+  MetricKey,
+  StatusLevel,
+  STATUS_COLORS,
+  type HistoryTimeRange,
+} from '../constants';
 import { hassCall } from '../../../services/hass-call';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
 import { localize, localizeWithParams } from '../../../localize/localize';
 import { mdiBarrel } from '@mdi/js';
-import { metricHistoryKeys } from '../../../slices/metric-descriptors';
+import {
+  computeMetricTargets,
+  isLimit,
+  metricHistoryKeys,
+  type LimitTarget,
+} from '../../../slices/metric-descriptors';
 import { ChartUtils } from '../../../utils/chart-utils';
 import type { RawHistoryDataPoint } from '../../../adapters/hass-types';
 import type { SensorHistories } from '../types';
+import { renderGuideLimitMark } from './guide-limit-mark';
 
 const TankWaterBucketSchema = z.object({
   timestamp: z.string(),
@@ -256,12 +268,6 @@ export class TankWaterChart extends LitElement {
     .level-midline {
       stroke-width: 0.5;
       stroke-dasharray: 4 4;
-    }
-    .level-warning {
-      stroke: var(--gm-status-danger, var(--error-color, #f44336));
-      stroke-opacity: 0.55;
-      stroke-width: 1;
-      stroke-dasharray: 6 5;
     }
     .level-fill {
       fill: url(#tank-level-fill);
@@ -641,21 +647,24 @@ export class TankWaterChart extends LitElement {
   /**
    * The level a tank is considered low at.
    *
-   * The lowest configured `warningLevel` wins: with several tanks the growspace
-   * is in trouble as soon as the first of them is, so the line marks the point
-   * the earliest warning fires.
+   * Preserve the chart's existing shared-boundary rule when several tank Limits
+   * exist: the lowest configured warning level wins.
    */
-  private get _warningLevel(): number | undefined {
-    const levels = this._tanks
-      .map((tank) => tank.warningLevel)
-      .filter((level): level is number => level != null);
-    return levels.length === 0 ? undefined : Math.min(...levels);
+  private get _warningLimit(): LimitTarget | undefined {
+    if (!this.device) return undefined;
+    const limits = computeMetricTargets(MetricKey.IRRIGATION_TANK_LEVEL, this.device).filter(
+      isLimit
+    );
+    return limits.reduce<LimitTarget | undefined>(
+      (lowest, limit) => (!lowest || limit.day < lowest.day ? limit : lowest),
+      undefined
+    );
   }
 
   private _renderLevelPane(): TemplateResult {
     const { width, height, min, max } = LEVEL_PANE;
     const traces = this._levelTraces;
-    const warning = this._warningLevel;
+    const warning = this._warningLimit;
 
     return html`
       <div
@@ -677,7 +686,19 @@ export class TankWaterChart extends LitElement {
           <line class="level-midline" x1="0" y1=${height / 2} x2=${width} y2=${height / 2}></line>
           ${warning == null
             ? nothing
-            : svg`<line class="level-warning" x1="0" y1="${levelY(warning)}" x2="${width}" y2="${levelY(warning)}"></line>`}
+            : renderGuideLimitMark({
+                id: warning.id,
+                value: warning.day,
+                min,
+                max,
+                width,
+                height,
+                color:
+                  warning.status === 'warning'
+                    ? STATUS_COLORS[StatusLevel.WARNING]
+                    : STATUS_COLORS[StatusLevel.DANGER],
+                className: 'tank-warning-limit',
+              })}
           ${traces.map(
             (trace) => svg`
               <path class="level-fill" d="${trace.path} V ${height} H 0 Z"></path>
@@ -712,14 +733,19 @@ export class TankWaterChart extends LitElement {
         hour: '2-digit',
         minute: '2-digit',
       }),
-      items: traces.map((trace) => {
-        const closest = trace.points.reduce((candidate, point) =>
-          Math.abs(point.time - hoverTime) < Math.abs(candidate.time - hoverTime)
-            ? point
-            : candidate
-        );
-        return { title: trace.title, value: `${closest.value.toFixed(1)} %` };
-      }),
+      items: [
+        ...traces.map((trace) => {
+          const closest = trace.points.reduce((candidate, point) =>
+            Math.abs(point.time - hoverTime) < Math.abs(candidate.time - hoverTime)
+              ? point
+              : candidate
+          );
+          return { title: trace.title, value: `${closest.value.toFixed(1)} %` };
+        }),
+        ...(this._warningLimit == null
+          ? []
+          : [{ title: 'Warning limit', value: `${this._warningLimit.day.toFixed(1)} %` }]),
+      ],
     };
   };
 

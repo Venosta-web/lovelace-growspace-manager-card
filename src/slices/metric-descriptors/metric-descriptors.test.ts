@@ -118,6 +118,7 @@ describe('computeMetricDescriptors', () => {
         kind: GuideMarkKind.LIMIT,
         id: 'vpd-danger-low',
         side: 'lower',
+        status: 'danger',
         day: 0.5,
         night: 0.2,
       },
@@ -125,6 +126,7 @@ describe('computeMetricDescriptors', () => {
         kind: GuideMarkKind.LIMIT,
         id: 'vpd-danger-high',
         side: 'upper',
+        status: 'danger',
         day: 2.5,
         night: 0.8,
       },
@@ -543,6 +545,90 @@ describe('computeMetricDescriptors — controller setpoints', () => {
   });
 });
 
+describe('computeMetricDescriptors — device-sourced limits', () => {
+  function targetsFor(key: string, overrides: Record<string, unknown>) {
+    const device = {
+      deviceId: 'g1',
+      name: 'Tent',
+      biologicalMetrics: { granularStage: 'flower_mid' },
+      environmentAttributes: {},
+      irrigationConfig: {},
+      ...overrides,
+    } as unknown as GrowspaceDevice;
+    return computeMetricDescriptors(null, {}, undefined, device)[key].targets;
+  }
+
+  it('normalises both critical-temperature bounds as danger limits', () => {
+    expect(
+      targetsFor(MetricKey.TEMPERATURE, {
+        environmentAttributes: {
+          circulationFanConfig: { critical_temp_low: 17, critical_temp_high: 31 },
+        },
+      })
+    ).toEqual([
+      {
+        kind: GuideMarkKind.LIMIT,
+        id: 'circulation-critical-temperature-low',
+        side: 'lower',
+        status: 'danger',
+        day: 17,
+        night: 17,
+      },
+      {
+        kind: GuideMarkKind.LIMIT,
+        id: 'circulation-critical-temperature-high',
+        side: 'upper',
+        status: 'danger',
+        day: 31,
+        night: 31,
+      },
+    ]);
+  });
+
+  it('normalises every tank warning level as a warning limit', () => {
+    const targets = targetsFor(MetricKey.IRRIGATION_TANK_LEVEL, {
+      environmentAttributes: {
+        irrigationTanks: [{ warningLevel: 20 }, { warningLevel: 30 }],
+      },
+    });
+
+    expect(targets).toEqual([
+      {
+        kind: GuideMarkKind.LIMIT,
+        id: 'tank-warning-0',
+        side: 'lower',
+        status: 'warning',
+        day: 20,
+        night: 20,
+      },
+      {
+        kind: GuideMarkKind.LIMIT,
+        id: 'tank-warning-1',
+        side: 'lower',
+        status: 'warning',
+        day: 30,
+        night: 30,
+      },
+    ]);
+  });
+
+  it('normalises the runoff EC halt threshold as an upper danger limit', () => {
+    expect(
+      targetsFor(MetricKey.RUNOFF_EC, {
+        irrigationConfig: { haltOnRunoffEcThreshold: 4.2 },
+      })
+    ).toEqual([
+      {
+        kind: GuideMarkKind.LIMIT,
+        id: 'runoff-ec-halt',
+        side: 'upper',
+        status: 'danger',
+        day: 4.2,
+        night: 4.2,
+      },
+    ]);
+  });
+});
 describe('computeMetricDescriptors — sensors', () => {
   const device = {
     deviceId: 'g1',

@@ -180,6 +180,22 @@ describe('GrowspaceEnvChart', () => {
   });
 
   describe('geometry and axes', () => {
+    async function showTemperatureLimit(low: number | null, high: number | null) {
+      element.descriptors = computeMetricDescriptors(null, {}, undefined, {
+        deviceId: 'd1',
+        name: 'Tent',
+        biologicalMetrics: { granularStage: 'veg' },
+        environmentAttributes: {
+          circulationFanConfig: {
+            critical_temp_low: low,
+            critical_temp_high: high,
+          },
+        },
+        irrigationConfig: {},
+      } as any);
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(1_800_000, '24'));
+    }
+
     it('renders a trace and the latest value for a single metric', async () => {
       await showMetric(
         MetricKey.TEMPERATURE,
@@ -226,6 +242,34 @@ describe('GrowspaceEnvChart', () => {
     it('falls back to the VPD colour for an unknown status', () => {
       expect((element as any)._getVpdStatusColor('unknown')).toBe('#9c27b0');
       expect((element as any)._getVpdStatusColor('danger')).toBe(STATUS_COLORS[StatusLevel.DANGER]);
+    });
+
+    it('renders an in-range Limit as a tight-dashed status-coloured line', async () => {
+      await showTemperatureLimit(null, 22);
+
+      const mark = element.shadowRoot?.querySelector(
+        '[data-guide-id="circulation-critical-temperature-high"]'
+      );
+      expect(mark?.tagName.toLowerCase()).toBe('line');
+      expect(mark?.getAttribute('data-guide-placement')).toBe('line');
+      expect(mark?.getAttribute('stroke')).toBe(STATUS_COLORS[StatusLevel.DANGER]);
+      expect(mark?.getAttribute('stroke-dasharray')).toBe('2 2.5');
+      expect(element.shadowRoot?.querySelector('.gs-guide-label')).toBeNull();
+    });
+
+    it('renders far Limits as chevrons at the edge each one crossed', async () => {
+      await showTemperatureLimit(0, 100);
+
+      const low = element.shadowRoot?.querySelector(
+        '[data-guide-id="circulation-critical-temperature-low"]'
+      );
+      const high = element.shadowRoot?.querySelector(
+        '[data-guide-id="circulation-critical-temperature-high"]'
+      );
+      expect(low?.tagName.toLowerCase()).toBe('path');
+      expect(low?.getAttribute('data-guide-placement')).toBe('lower-edge');
+      expect(high?.tagName.toLowerCase()).toBe('path');
+      expect(high?.getAttribute('data-guide-placement')).toBe('upper-edge');
     });
 
     it('labels the Y axis numerically, and as ON/OFF for binary ranges', async () => {
@@ -281,6 +325,68 @@ describe('GrowspaceEnvChart', () => {
 
       const tooltip = element.shadowRoot?.querySelector('.gs-tooltip');
       expect(tooltip?.textContent).toContain('Temperature');
+
+      vi.useRealTimers();
+    });
+
+    it('shows optimal-band and unlabeled Limit values in the scrub tooltip', async () => {
+      vi.useFakeTimers();
+      await showMetric(MetricKey.VPD, reading(3_600_000, '1.0'), reading(0, '1.1'));
+
+      const container = element.shadowRoot?.querySelector('.gs-env-chart-container');
+      vi.spyOn(container as Element, 'getBoundingClientRect').mockReturnValue({
+        left: 0,
+        width: 800,
+        top: 0,
+        height: 200,
+      } as DOMRect);
+      container?.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 400 }));
+      await vi.runAllTimersAsync();
+      await element.updateComplete;
+
+      const tooltip = element.shadowRoot?.querySelector('.gs-tooltip')?.textContent ?? '';
+      expect(tooltip).toContain('VPD optimal');
+      expect(tooltip).toContain('0.8 kPa–1.2 kPa');
+      expect(tooltip).toContain('VPD lower limit');
+      expect(tooltip).toContain('0.4 kPa');
+      expect(tooltip).toContain('VPD upper limit');
+      expect(tooltip).toContain('1.6 kPa');
+
+      vi.useRealTimers();
+    });
+
+    it('shows Setpoint values in the scrub tooltip alongside their names', async () => {
+      vi.useFakeTimers();
+      const setpointDevice: any = {
+        ...mockDevice,
+        biologicalMetrics: { granularStage: 'flower_mid' },
+        environmentAttributes: {
+          exhaustFanConfig: {
+            enabled: true,
+            temperature_target: 24,
+            temperature_tolerance: 1.5,
+          },
+        },
+        irrigationConfig: {},
+      };
+      element.device = setpointDevice;
+      element.descriptors = computeMetricDescriptors(null, {}, undefined, setpointDevice);
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '22'), reading(0, '23'));
+
+      const container = element.shadowRoot?.querySelector('.gs-env-chart-container');
+      vi.spyOn(container as Element, 'getBoundingClientRect').mockReturnValue({
+        left: 0,
+        width: 800,
+        top: 0,
+        height: 200,
+      } as DOMRect);
+      container?.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 400 }));
+      await vi.runAllTimersAsync();
+      await element.updateComplete;
+
+      const tooltip = element.shadowRoot?.querySelector('.gs-tooltip')?.textContent ?? '';
+      expect(tooltip).toContain('Temperature Exhaust');
+      expect(tooltip).toContain('24 °C');
 
       vi.useRealTimers();
     });

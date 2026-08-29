@@ -33,6 +33,8 @@ export interface GraphSeries {
   guideBands?: import('./env-series').EnvGuideBand[];
   /** The [[Setpoint]]s to draw over this series, in its own value space. */
   guideLines?: import('./env-series').EnvGuideLine[];
+  /** Limits never widen the value domain; off-scale ones render at its edge. */
+  guideLimits?: import('./env-series').EnvGuideLimit[];
   /**
    * The metric's own colour, which a guide mark is drawn in.
    *

@@ -16,11 +16,9 @@
  * - **The records carry numbers, not strings.** Formatting a bound with its unit
  *   is the chart's job; this module stays pure of localisation.
  *
- * [[Optimal Band]] and [[Setpoint]] are both constructed for their own sake. The
- * VPD danger bounds are normalised as [[Limit]]s because absorbing
- * `vpdThresholds` has to be lossless — the VPD status bands classify against
- * them — but no other Limit source is read here and nothing draws a Limit mark
- * yet; both arrive with #50.
+ * [[Optimal Band]], [[Setpoint]], and [[Limit]] are all constructed for their
+ * own sake. The VPD danger bounds remain the source of the VPD status bands,
+ * while the other limits preserve the semantic status of their source.
  *
  * A source is normalised only where the controller is actually acting on it. A
  * disabled fan, a regulation mode the fan is not in, and an appliance the card
@@ -93,6 +91,8 @@ export interface LimitTarget {
   kind: GuideMarkKind.LIMIT;
   id: string;
   side: 'lower' | 'upper';
+  /** The semantic status colour the boundary is drawn in. */
+  status: 'warning' | 'danger';
   day: number;
   night: number;
 }
@@ -175,6 +175,7 @@ function _vpdTargets(overviewEntity?: OverviewEntitySnapshot): MetricTarget[] {
       kind: GuideMarkKind.LIMIT,
       id: 'vpd-danger-low',
       side: 'lower',
+      status: 'danger',
       day: day.dangerMin,
       night: night.dangerMin,
     },
@@ -182,6 +183,7 @@ function _vpdTargets(overviewEntity?: OverviewEntitySnapshot): MetricTarget[] {
       kind: GuideMarkKind.LIMIT,
       id: 'vpd-danger-high',
       side: 'upper',
+      status: 'danger',
       day: day.dangerMax,
       night: night.dangerMax,
     },
@@ -398,6 +400,43 @@ function _feedEcTargets(device: GrowspaceDevice): MetricTarget[] {
   return _flatBand('feed-ec-band', range.minEc, range.maxEc);
 }
 
+function _flatLimit(
+  id: string,
+  side: LimitTarget['side'],
+  status: LimitTarget['status'],
+  value: number | null | undefined
+): MetricTarget[] {
+  if (value === null || value === undefined || !Number.isFinite(value)) return [];
+  return [{ kind: GuideMarkKind.LIMIT, id, side, status, day: value, night: value }];
+}
+
+function _temperatureLimits(device: GrowspaceDevice): MetricTarget[] {
+  const configs = [
+    ['circulation', device.environmentAttributes?.circulationFanConfig],
+    ['exhaust', device.environmentAttributes?.exhaustFanConfig],
+  ] as const;
+
+  return configs.flatMap(([id, config]) => [
+    ..._flatLimit(`${id}-critical-temperature-low`, 'lower', 'danger', config?.critical_temp_low),
+    ..._flatLimit(`${id}-critical-temperature-high`, 'upper', 'danger', config?.critical_temp_high),
+  ]);
+}
+
+function _tankLimits(device: GrowspaceDevice): MetricTarget[] {
+  return (device.environmentAttributes?.irrigationTanks ?? []).flatMap((tank, index) =>
+    _flatLimit(`tank-warning-${index}`, 'lower', 'warning', tank.warningLevel)
+  );
+}
+
+function _runoffEcLimits(device: GrowspaceDevice): MetricTarget[] {
+  return _flatLimit(
+    'runoff-ec-halt',
+    'upper',
+    'danger',
+    device.irrigationConfig?.haltOnRunoffEcThreshold
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -430,6 +469,12 @@ export function computeMetricTargets(
     case MetricKey.VPD:
       targets.push(..._humidityApplianceTargets(device));
       break;
+    case MetricKey.TEMPERATURE:
+      targets.push(..._temperatureLimits(device));
+      break;
+    case MetricKey.IRRIGATION_TANK_LEVEL:
+      targets.push(..._tankLimits(device));
+      break;
     case MetricKey.SOIL_MOISTURE:
       targets.push(..._soilMoistureTargets(device));
       break;
@@ -438,6 +483,9 @@ export function computeMetricTargets(
       break;
     case MetricKey.FEED_EC:
       targets.push(..._feedEcTargets(device));
+      break;
+    case MetricKey.RUNOFF_EC:
+      targets.push(..._runoffEcLimits(device));
       break;
   }
 
