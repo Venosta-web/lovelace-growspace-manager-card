@@ -127,10 +127,12 @@ describe('GrowspaceAnalyticsContainer', () => {
   });
 
   it('_items returns single-type item for each active graph without groups', async () => {
+    // Metrics the card pairs into no Curated Combo: an ungrouped open graph is
+    // a plain single item, which is the rule this asserts.
     $analyticsViewState.set({
       historyLoading: false,
       historyLoaded: true,
-      activeEnvGraphs: new Set(['temperature', 'humidity']),
+      activeEnvGraphs: new Set(['humidity', 'co2']),
       linkedGraphGroups: [],
       combinedHistory: {},
       graphRanges: {},
@@ -140,6 +142,41 @@ describe('GrowspaceAnalyticsContainer', () => {
     const items = (element as any)._items;
     expect(items).toHaveLength(2);
     expect(items.every((i: any) => i.type === 'single')).toBe(true);
+  });
+
+  it('_items types a metric the card pairs into a Curated Combo as a combo', async () => {
+    $analyticsViewState.set({
+      historyLoading: false,
+      historyLoaded: true,
+      activeEnvGraphs: new Set(['temperature']),
+      linkedGraphGroups: [],
+      combinedHistory: {},
+      graphRanges: {},
+    });
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([
+      { type: 'combo', metrics: ['temperature', 'exhaust'], sortIndex: 0 },
+    ]);
+  });
+
+  it('_items keeps a Metric Comparison of the combo pair a group', async () => {
+    // The two types are orthogonal (ADR-0051): a grower who composed
+    // temperature and exhaust into a Comparison owns that grouping, and it
+    // must not be silently re-read as the card's editorial claim.
+    $analyticsViewState.set({
+      historyLoading: false,
+      historyLoaded: true,
+      activeEnvGraphs: new Set(['temperature', 'exhaust']),
+      linkedGraphGroups: [['temperature', 'exhaust']],
+      combinedHistory: {},
+      graphRanges: {},
+    });
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([
+      { type: 'group', metrics: ['temperature', 'exhaust'], sortIndex: 0 },
+    ]);
   });
 
   it('_items groups linked metrics into group-type items', async () => {
@@ -161,13 +198,15 @@ describe('GrowspaceAnalyticsContainer', () => {
   });
 
   it('_items omits configured metrics without changing shared open graphs', async () => {
+    $analyticsViewState.set({
+      ...($analyticsViewState.get() as any),
+      activeEnvGraphs: new Set(['co2', 'humidity']),
+    });
     (element as any).hiddenMetrics = [MetricKey.HUMIDITY];
     await element.updateComplete;
 
-    expect((element as any)._items).toEqual([
-      { type: 'single', metrics: ['temperature'], sortIndex: 0 },
-    ]);
-    expect($analyticsViewState.get().activeEnvGraphs).toEqual(new Set(['temperature', 'humidity']));
+    expect((element as any)._items).toEqual([{ type: 'single', metrics: ['co2'], sortIndex: 3 }]);
+    expect($analyticsViewState.get().activeEnvGraphs).toEqual(new Set(['co2', 'humidity']));
   });
 
   it('_items removes hidden metrics from linked graph groups', async () => {

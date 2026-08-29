@@ -24,6 +24,9 @@
   "errors": {
     "fetch_failed": "Failed to fetch data"
   },
+  "metric_combo": {
+    "duty_label": "{metric} duty"
+  },
   "water_chart": {
     "title": "Water Consumption",
     "loading": "Loading water history...",
