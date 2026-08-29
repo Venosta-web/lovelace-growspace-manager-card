@@ -9,6 +9,12 @@
  * A metric is derived here only when the descriptor table carries it. That table
  * covers every metric the card knows, so an absent key means "not a metric".
  *
+ * [[Guide Mark]]s come from the same table's [[Metric Target]]s, so the VPD status
+ * bands and the [[Optimal Band]] drawn over them classify against one set of
+ * numbers (ADR-0050). The value range this module reports is the **union of the
+ * data and the bands**: anchoring on a target alone flattens real readings
+ * against an axis edge, and ignoring it clips the target out of the frame.
+ *
  * Multi-sensor grouping is carried structurally: a descriptor's `sensors` decide
  * how many series a metric has, in what order, and what each is called. This
  * module never parses a history key and never scans the map to discover which
@@ -18,9 +24,29 @@
 
 import { ChartType, MetricKey, StatusLevel, STATUS_COLORS } from './constants';
 import type { HistorySensorState, SensorHistories } from './types';
-import { metricHistoryKeys } from '../../slices/metric-descriptors';
-import type { MetricDescriptor, MetricSensorRef } from '../../slices/metric-descriptors';
+import {
+  isLimit,
+  isOptimalBand,
+  metricHistoryKeys,
+  targetForPeriod,
+} from '../../slices/metric-descriptors';
+import type {
+  MetricDescriptor,
+  MetricSensorRef,
+  MetricTarget,
+} from '../../slices/metric-descriptors';
 import { ChartUtils } from '../../utils/chart-utils';
+import type { NormalizedHistoryPoint } from '../../adapters/hass-types';
+
+/**
+ * How far past the union of the data and its bands an auto-scaled axis reaches,
+ * as a fraction of that union.
+ *
+ * A band edge drawn exactly on the frame edge reads as a clipped mark rather
+ * than as the bound it is, so the pad exists to keep it inboard. It applies only
+ * where a band is drawn; a metric with no target keeps the bounds it had.
+ */
+const GUIDE_BAND_AXIS_PAD = 0.08;
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -39,11 +65,45 @@ export interface VpdBand {
   endTime: number;
 }
 
+/**
+ * One interval of an [[Optimal Band]], with the bounds in force over it.
+ *
+ * A band whose source is period-indexed has one of these per photoperiod, which
+ * is how the mark steps at lights-on and lights-off (ADR-0048); one whose source
+ * is not has a single interval spanning the window. Value and time space only —
+ * the chart turns these into geometry.
+ */
+export interface EnvGuideBandSegment {
+  startTime: number;
+  endTime: number;
+  min: number;
+  max: number;
+}
+
+/** An [[Optimal Band]] resolved against this series' window. */
+export interface EnvGuideBand {
+  id: string;
+  segments: EnvGuideBandSegment[];
+  /**
+   * The bounds under the window's current time — its right edge.
+   *
+   * A stepped mark has no single value to name, so this is the segment its
+   * inline labels read, per ADR-0048.
+   */
+  current: { min: number; max: number };
+}
+
 /** One metric's history, shaped for rendering but still in domain units. */
 export interface EnvSeries {
   id: string;
   title: string;
   color: string;
+  /**
+   * The metric's own colour, which is not always `color`: a VPD trace takes the
+   * colour of its current status, and a [[Guide Mark]] drawn in that would
+   * change colour as the reading crossed the very bound it marks.
+   */
+  metricColor: string;
   unit: string;
   icon: string;
   points: EnvSeriesPoint[];
@@ -54,6 +114,12 @@ export interface EnvSeries {
   avg: number;
   chartType: ChartType;
   vpdBands?: VpdBand[];
+  /**
+   * The [[Optimal Band]]s this series' axis was widened to contain, absent when
+   * the metric has no configured target. Present for any metric that has one —
+   * `vpdBands` above is a different thing, the VPD trace's own status colouring.
+   */
+  guideBands?: EnvGuideBand[];
   /**
    * The sensor this series traces, present only when its metric has more than
    * one. Consumers that draw multi-sensor metrics differently — a flat fill
@@ -163,48 +229,138 @@ function _reduce(points: EnvSeriesPoint[]): { min: number; max: number; avg: num
 function _axisBounds(
   descriptor: MetricDescriptor,
   reduced: { min: number; max: number },
-  isCombined: boolean
+  isCombined: boolean,
+  guideBands: EnvGuideBand[]
 ): { min: number; max: number } {
   if (descriptor.axis !== 'auto') return { ...descriptor.axis };
 
-  const { min, max } = reduced;
+  let { min, max } = reduced;
+  for (const band of guideBands) {
+    for (const segment of band.segments) {
+      if (segment.min < min) min = segment.min;
+      if (segment.max > max) max = segment.max;
+    }
+  }
+
+  if (guideBands.length > 0) {
+    // The union of the data and the band, never either alone: anchoring on the
+    // target flattens real readings against an axis edge, and ignoring it clips
+    // the target out of the frame. `crop-steering-day-chart` reached the same
+    // rule for its EC scale first.
+    const pad = (max - min) * GUIDE_BAND_AXIS_PAD || 1;
+    return { min: min - pad, max: max + pad };
+  }
+
   if (!isCombined && max === min && descriptor.chartType !== ChartType.STEP) {
     return { min: min - 1, max: max + 1 };
   }
   return { min, max };
 }
 
-function _vpdStatus(
-  value: number,
-  thresholds: NonNullable<MetricDescriptor['vpdThresholds']>,
-  isDay: boolean
-): StatusLevel {
-  const range = isDay ? thresholds.day : thresholds.night;
-  if (value < range.dangerMin || value > range.dangerMax) return StatusLevel.DANGER;
-  if (value < range.targetMin || value > range.targetMax) return StatusLevel.WARNING;
+/**
+ * The photoperiods covering the window, as contiguous intervals.
+ *
+ * Built from the light history's own transition times rather than sampled, so a
+ * mark that steps at lights-on steps exactly there. An absent light history is
+ * one all-day interval, the same default `ChartUtils.getIsDay` takes.
+ */
+function _photoperiods(
+  lightHistory: NormalizedHistoryPoint[],
+  startTimeMs: number,
+  nowMs: number
+): { startTime: number; endTime: number; isDay: boolean }[] {
+  const boundaries = [startTimeMs];
+  for (const point of lightHistory) {
+    if (point.time > startTimeMs && point.time < nowMs) boundaries.push(point.time);
+  }
+
+  const periods: { startTime: number; endTime: number; isDay: boolean }[] = [];
+  for (let i = 0; i < boundaries.length; i++) {
+    const startTime = boundaries[i];
+    const endTime = boundaries[i + 1] ?? nowMs;
+    if (endTime <= startTime) continue;
+
+    const isDay = ChartUtils.getIsDay(startTime, lightHistory);
+    const previous = periods[periods.length - 1];
+    // A light history can report the same state twice; that is not a transition.
+    if (previous && previous.isDay === isDay) previous.endTime = endTime;
+    else periods.push({ startTime, endTime, isDay });
+  }
+
+  return periods;
+}
+
+/** Whether a target's bounds differ between day and night, and so step. */
+function _stepsWithPhotoperiod(target: MetricTarget): boolean {
+  if (isOptimalBand(target)) {
+    return target.day.min !== target.night.min || target.day.max !== target.night.max;
+  }
+  return target.day !== target.night;
+}
+
+/** Resolve the metric's [[Optimal Band]]s against the window's photoperiods. */
+function _guideBands(
+  targets: MetricTarget[],
+  photoperiods: { startTime: number; endTime: number; isDay: boolean }[],
+  startTimeMs: number,
+  nowMs: number
+): EnvGuideBand[] {
+  return targets.filter(isOptimalBand).map((target) => {
+    const segments: EnvGuideBandSegment[] = _stepsWithPhotoperiod(target)
+      ? photoperiods.map((period) => ({
+          startTime: period.startTime,
+          endTime: period.endTime,
+          ...targetForPeriod(target, period.isDay),
+        }))
+      : [{ startTime: startTimeMs, endTime: nowMs, ...target.day }];
+
+    const atNow = segments[segments.length - 1] ?? { min: target.day.min, max: target.day.max };
+    return { id: target.id, segments, current: { min: atNow.min, max: atNow.max } };
+  });
+}
+
+/**
+ * Where a value sits against a metric's targets: outside a [[Limit]] is danger,
+ * outside the [[Optimal Band]] is warning, inside both is optimal.
+ *
+ * This is the VPD rule, generalised — it reads the normalised targets rather
+ * than a VPD-shaped record, so the status bands and the guide marks drawn over
+ * them cannot resolve from different numbers (ADR-0050).
+ */
+function _targetStatus(targets: MetricTarget[], value: number, isDay: boolean): StatusLevel {
+  for (const target of targets) {
+    if (!isLimit(target)) continue;
+    const bound = targetForPeriod(target, isDay);
+    if (target.side === 'lower' ? value < bound : value > bound) return StatusLevel.DANGER;
+  }
+  for (const target of targets) {
+    if (!isOptimalBand(target)) continue;
+    const bounds = targetForPeriod(target, isDay);
+    if (value < bounds.min || value > bounds.max) return StatusLevel.WARNING;
+  }
   return StatusLevel.OPTIMAL;
 }
 
 function _vpdBands(
   points: EnvSeriesPoint[],
-  thresholds: NonNullable<MetricDescriptor['vpdThresholds']>,
+  targets: MetricTarget[],
   lightHistory: EnvSeriesPoint[]
 ): VpdBand[] {
   if (points.length < 2) return [];
 
   const bands: VpdBand[] = [];
   let startTime = points[0].time;
-  let status = _vpdStatus(
+  let status = _targetStatus(
+    targets,
     points[0].value,
-    thresholds,
     ChartUtils.getIsDay(points[0].time, lightHistory)
   );
 
   for (let i = 1; i < points.length; i++) {
     const point = points[i];
-    const pointStatus = _vpdStatus(
+    const pointStatus = _targetStatus(
+      targets,
       point.value,
-      thresholds,
       ChartUtils.getIsDay(point.time, lightHistory)
     );
     if (pointStatus !== status) {
@@ -314,31 +470,41 @@ function _buildSeries(
   if (points.length === 0) return undefined;
 
   const reduced = _reduce(points);
-  const bounds = _axisBounds(descriptor, reduced, isCombined);
+  const targets = descriptor.targets ?? [];
   // Status bands describe *the* VPD trace; a multi-sensor VPD metric draws one
   // trace per sensor, which stay on the metric colour rather than each claiming
   // to be the growspace's status.
-  const vpdThresholds =
-    key === MetricKey.VPD && !spec.sensor ? descriptor.vpdThresholds : undefined;
-  const lightHistory = vpdThresholds
-    ? ChartUtils.normalizeHistory(histories[MetricKey.LIGHT] ?? [], MetricKey.LIGHT)
-    : [];
-  const vpdBands = vpdThresholds ? _vpdBands(points, vpdThresholds, lightHistory) : undefined;
+  const statusTargets = key === MetricKey.VPD && !spec.sensor ? targets : undefined;
+  // The light history is what makes a period-indexed mark step, so it is read
+  // whenever the status bands need it or a target actually varies by period.
+  const lightHistory =
+    statusTargets || targets.some(_stepsWithPhotoperiod)
+      ? ChartUtils.normalizeHistory(histories[MetricKey.LIGHT] ?? [], MetricKey.LIGHT)
+      : [];
+  const guideBands = _guideBands(
+    targets,
+    _photoperiods(lightHistory, startTimeMs, nowMs),
+    startTimeMs,
+    nowMs
+  );
+  const bounds = _axisBounds(descriptor, reduced, isCombined, guideBands);
+  const vpdBands = statusTargets ? _vpdBands(points, statusTargets, lightHistory) : undefined;
 
   let color = spec.color;
-  if (vpdThresholds) {
+  if (statusTargets) {
     const lastPoint = points[points.length - 1];
     // Preserve the legacy current-status rule: absent light history means day;
     // otherwise the latest light state decides the series/header colour.
     const currentIsDay =
       lightHistory.length === 0 || lightHistory[lightHistory.length - 1].value === 1;
-    color = STATUS_COLORS[_vpdStatus(lastPoint.value, vpdThresholds, currentIsDay)];
+    color = STATUS_COLORS[_targetStatus(statusTargets, lastPoint.value, currentIsDay)];
   }
 
   return {
     id: spec.id,
     title: spec.title,
     color,
+    metricColor: spec.color,
     unit: descriptor.unit,
     icon: descriptor.icon,
     points,
@@ -347,6 +513,7 @@ function _buildSeries(
     avg: reduced.avg,
     chartType: descriptor.chartType,
     ...(vpdBands ? { vpdBands } : {}),
+    ...(guideBands.length > 0 ? { guideBands } : {}),
     ...(spec.sensor ? { sensor: spec.sensor } : {}),
   };
 }

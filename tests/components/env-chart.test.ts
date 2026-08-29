@@ -1,11 +1,11 @@
 /**
- * `<growspace-env-chart>` — the hygiene guarantees an Env Graph makes about its
- * own marks (#48).
+ * `<growspace-env-chart>` — the marks an Env Graph draws over its traces.
  *
- * Everything here is about the chart not contradicting itself: one window behind
- * the paths and the axis, one decision behind the header and the scrub, and no
- * dashed mark that a grower could mistake for a configured [[Guide Mark]]
- * (ADR-0048). Rendering behaviour at large is specified in
+ * The hygiene half (#48) is about the chart not contradicting itself: one window
+ * behind the paths and the axis, one decision behind the header and the scrub,
+ * and no dashed mark that a grower could mistake for a configured
+ * [[Guide Mark]]. The [[Optimal Band]] half (#49) is the first real guide mark
+ * drawn on top of that. Rendering behaviour at large is specified in
  * `tests/unit/growspace-env-chart.spec.ts`.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -15,7 +15,7 @@ import '../../src/features/environment/components/env-chart';
 import type { GrowspaceEnvChart } from '../../src/features/environment/components/env-chart';
 import { hassContext } from '../../src/context';
 import { computeMetricDescriptors } from '../../src/slices/metric-descriptors';
-import { MetricKey } from '../../src/features/environment/constants';
+import { METRIC_CONFIG, MetricKey } from '../../src/features/environment/constants';
 
 const OVERVIEW_ENTITY = {
   attributes: {
@@ -177,6 +177,84 @@ describe('GrowspaceEnvChart hygiene', () => {
       expect(tooltip.textContent).toContain(
         new Date(builtAt).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
       );
+    });
+  });
+
+  describe('optimal band', () => {
+    /** The dashed marks, which the hygiene rules leave as the only ones on the pane. */
+    function dashedMarks() {
+      return Array.from(chartSvg().querySelectorAll('[stroke-dasharray]'));
+    }
+
+    function bandLabels() {
+      return Array.from(element.shadowRoot?.querySelectorAll('.gs-guide-label') ?? []);
+    }
+
+    async function showVpd() {
+      await showMetric(MetricKey.VPD, reading(3_600_000, '1.0'), reading(0, '1.1'));
+    }
+
+    it('draws the band as a tinted region with dashed edges in the metric colour', async () => {
+      await showVpd();
+
+      const region = chartSvg().querySelector('rect');
+      expect(region).not.toBeNull();
+      expect(Number(region!.getAttribute('fill-opacity'))).toBeGreaterThan(0);
+      expect(region!.getAttribute('fill')).toBe(METRIC_CONFIG[MetricKey.VPD].color);
+
+      // Two edges, both in the metric colour rather than the trace's status colour.
+      expect(dashedMarks()).toHaveLength(2);
+      for (const edge of dashedMarks()) {
+        expect(edge.getAttribute('stroke')).toBe(METRIC_CONFIG[MetricKey.VPD].color);
+        expect(edge.getAttribute('vector-effect')).toBe('non-scaling-stroke');
+      }
+    });
+
+    it('labels both bounds with the values the grower configured', async () => {
+      await showVpd();
+
+      expect(bandLabels().map((label) => label.textContent?.trim())).toEqual([
+        '1.2 kPa',
+        '0.8 kPa',
+      ]);
+    });
+
+    it('contains the band in the value axis rather than clipping it', async () => {
+      // Every reading sat well below the 0.8–1.2 window.
+      await showMetric(MetricKey.VPD, reading(3_600_000, '0.2'), reading(0, '0.25'));
+
+      const edges = dashedMarks().map((edge) => Number(edge.getAttribute('y1')));
+      for (const y of edges) {
+        expect(y).toBeGreaterThan(0);
+        expect(y).toBeLessThan(200);
+      }
+    });
+
+    it('keeps the labels at one type size and percentage position when stretched', async () => {
+      await showVpd();
+
+      const before = bandLabels().map((label) => label.getAttribute('style'));
+      const sizeBefore = bandLabels().map((label) => getComputedStyle(label).fontSize);
+
+      // The Graph Wall hands the chart body a far taller row; the pane's viewBox
+      // is stretched into it rather than redrawn.
+      const container = element.shadowRoot?.querySelector('.gs-env-chart-container') as HTMLElement;
+      container.style.height = '640px';
+      await element.updateComplete;
+
+      expect(bandLabels().map((label) => label.getAttribute('style'))).toEqual(before);
+      expect(bandLabels().map((label) => getComputedStyle(label).fontSize)).toEqual(sizeBefore);
+      for (const style of before) {
+        expect(style).toMatch(/top:\d+(\.\d+)?%/);
+      }
+    });
+
+    it('draws nothing extra for a metric with no configured target', async () => {
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '22'));
+
+      expect(chartSvg().querySelector('rect')).toBeNull();
+      expect(dashedMarks()).toHaveLength(0);
+      expect(bandLabels()).toHaveLength(0);
     });
   });
 

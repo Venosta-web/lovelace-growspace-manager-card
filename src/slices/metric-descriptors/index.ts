@@ -1,7 +1,7 @@
 /**
  * Metric Descriptor module — the single owner of the per-`MetricKey` facts that a
  * header chip and an Env Graph must agree on: display title, colour, unit, icon,
- * chart type and axis scale.
+ * chart type, axis scale and [[Metric Target]]s.
  *
  * Public API (pure computation):
  *   computeMetricDescriptors() — derive the descriptor table.
@@ -9,8 +9,8 @@
  * Like `computeHeaderMetrics`, this module reads no atoms and no injected `hass` —
 
  * everything it needs is passed in. Fan entity modes are derived from DeviceEntry
- * entity ids; the light unit reads the supplied states snapshot, and VPD thresholds
- * read the supplied overview-entity snapshot (ADR-0030).
+ * entity ids; the light unit reads the supplied states snapshot, and the VPD
+ * targets read the supplied overview-entity snapshot (ADR-0030).
  *
  * The table covers **every metric in `METRIC_CONFIG`** — that set is closed, and
  * `history-store` only ever fetches within it, so a key with no descriptor is a
@@ -20,10 +20,16 @@
  * Since #471 a descriptor also carries the sensors backing its metric, as
  * structured `{ entityId, name }` refs — the grouping consumers used to
  * rediscover by splitting `':'`-joined history keys.
+ *
+ * Since #49 it also carries `targets` — the normalised guide-mark records of
+ * `metric-targets.ts`, which **absorbed** the raw VPD-only threshold field this
+ * table used to expose (ADR-0050). Resolving them reads
+ * `biologicalMetrics.granularStage` off the `device` this function already
+ * receives, because the feed-EC band is per stage and a target that ignores the
+ * stage is the wrong number rather than a coarse one.
  */
 
 import { ChartType, METRIC_CONFIG, MetricKey } from '../../features/environment/constants';
-import { DEFAULTS } from '../../lib/constants';
 import {
   classifyFanEntity,
   fanReadingToAxisScale,
@@ -31,10 +37,26 @@ import {
   type DeviceSnapshot,
 } from '../device-state';
 import { resolveMetricEntityIds } from './metric-entities';
+import { computeMetricTargets } from './metric-targets';
+import type { MetricTarget, OverviewEntitySnapshot } from './metric-targets';
 import type { GrowspaceDevice } from '../../services/types';
 
 export { resolveMetricEntityIds, metricHistoryKeys } from './metric-entities';
 export type { MetricHistoryKey } from './metric-entities';
+export {
+  GuideMarkKind,
+  computeMetricTargets,
+  isLimit,
+  isOptimalBand,
+  targetForPeriod,
+} from './metric-targets';
+export type {
+  LimitTarget,
+  MetricTarget,
+  MetricTargetBounds,
+  OptimalBandTarget,
+  OverviewEntitySnapshot,
+} from './metric-targets';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -47,18 +69,6 @@ export type { MetricHistoryKey } from './metric-entities';
  * `{ min, max }` — fixed bounds (fan scales, light %, binary/step metrics).
  */
 export type MetricAxis = 'auto' | { min: number; max: number };
-
-export interface VpdThresholdRange {
-  targetMin: number;
-  targetMax: number;
-  dangerMin: number;
-  dangerMax: number;
-}
-
-export interface VpdThresholds {
-  day: VpdThresholdRange;
-  night: VpdThresholdRange;
-}
 
 /**
  * One sensor backing a metric.
@@ -80,7 +90,13 @@ export interface MetricDescriptor {
   icon: string;
   chartType: ChartType;
   axis: MetricAxis;
-  vpdThresholds?: VpdThresholds;
+  /**
+   * The normalised guide-mark records for this metric (ADR-0050), empty when
+   * nothing is configured. It **absorbed** the raw VPD-only threshold field this
+   * descriptor used to carry: a raw field beside a normalised collection
+   * guarantees VPD is drawn from one and every other metric from the other.
+   */
+  targets: MetricTarget[];
   /** The entity whose reading shape decides how history values normalize (fan, light). */
   entityId?: string;
   /**
@@ -88,32 +104,6 @@ export interface MetricDescriptor {
    * the metric renders one series per sensor. Empty when no device was supplied.
    */
   sensors: MetricSensorRef[];
-}
-
-export interface OverviewEntitySnapshot {
-  attributes?: Record<string, unknown>;
-}
-
-function _vpdThresholds(overviewEntity?: OverviewEntitySnapshot): VpdThresholds {
-  const attrs = overviewEntity?.attributes ?? {};
-  const day = {
-    targetMin: Number(attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? DEFAULTS.VPD.TARGET_MIN),
-    targetMax: Number(attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? DEFAULTS.VPD.TARGET_MAX),
-    dangerMin: Number(attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? DEFAULTS.VPD.DANGER_MIN),
-    dangerMax: Number(attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? DEFAULTS.VPD.DANGER_MAX),
-  };
-
-  return {
-    day,
-    // Missing night values intentionally inherit the resolved day values, including
-    // legacy keys and defaults.
-    night: {
-      targetMin: Number(attrs.night_vpd_target_min ?? day.targetMin),
-      targetMax: Number(attrs.night_vpd_target_max ?? day.targetMax),
-      dangerMin: Number(attrs.night_vpd_danger_min ?? day.dangerMin),
-      dangerMax: Number(attrs.night_vpd_danger_max ?? day.dangerMax),
-    },
-  };
 }
 
 type HassStates = Record<
@@ -145,6 +135,7 @@ function _fanDescriptor(
     axis: fanReadingToAxisScale(kind),
     entityId,
     sensors: [],
+    targets: [],
   };
 }
 
@@ -173,6 +164,7 @@ function _lightDescriptor(
     axis: isPercentage ? { min: 0, max: 100 } : { min: 0, max: 1 },
     entityId,
     sensors: [],
+    targets: [],
   };
 }
 
@@ -192,6 +184,7 @@ function _descriptor(
     chartType,
     axis,
     sensors: [],
+    targets: [],
   };
 }
 
@@ -232,12 +225,13 @@ export function computeMetricDescriptors(
   device?: GrowspaceDevice | null,
   metricSensorIds?: Record<string, string[]>
 ): Record<string, MetricDescriptor> {
-  const table = _descriptorTable(deviceSnapshot, hassStates, overviewEntity);
+  const table = _descriptorTable(deviceSnapshot, hassStates);
 
   for (const [key, descriptor] of Object.entries(table)) {
     const entityIds =
       metricSensorIds?.[key] ?? (device ? resolveMetricEntityIds(device, key, hassStates) : []);
     descriptor.sensors = _sensorsForMetric(entityIds, hassStates);
+    descriptor.targets = computeMetricTargets(key, device, overviewEntity);
 
     // A snapshot can legitimately lag behind configuration during bootstrap.
     // Fan type is stable and encoded in the configured entity id, so do not
@@ -271,8 +265,7 @@ function _defaultAxis(key: string, chartType: ChartType): MetricAxis {
 
 function _descriptorTable(
   deviceSnapshot: DeviceSnapshot | null,
-  hassStates: HassStates,
-  overviewEntity?: OverviewEntitySnapshot
+  hassStates: HassStates
 ): Record<string, MetricDescriptor> {
   const table: Record<string, MetricDescriptor> = {};
 
@@ -284,10 +277,6 @@ function _descriptorTable(
     table[key] = _descriptor(key, chartType, _defaultAxis(key, chartType));
   }
 
-  table[MetricKey.VPD] = {
-    ...table[MetricKey.VPD],
-    vpdThresholds: _vpdThresholds(overviewEntity),
-  };
   table[MetricKey.EXHAUST] = _fanDescriptor(MetricKey.EXHAUST, deviceSnapshot?.exhaustFans);
   table[MetricKey.CIRCULATION_FAN] = _fanDescriptor(
     MetricKey.CIRCULATION_FAN,

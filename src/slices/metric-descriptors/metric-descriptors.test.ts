@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { computeMetricDescriptors, resolveMetricEntityIds } from './index';
+import {
+  computeMetricDescriptors,
+  GuideMarkKind,
+  isLimit,
+  isOptimalBand,
+  resolveMetricEntityIds,
+} from './index';
+import type { MetricDescriptor } from './index';
 import type { GrowspaceDevice } from '../../services/types';
 import { ChartType, METRIC_CONFIG, MetricKey } from '../../features/environment/constants';
 import { DEFAULTS } from '../../lib/constants';
@@ -24,6 +31,10 @@ function overview(attributes: Record<string, unknown>) {
   return computeMetricDescriptors(null, {}, { attributes });
 }
 
+function optimalBand({ targets }: Pick<MetricDescriptor, 'targets'>) {
+  return targets.find(isOptimalBand);
+}
+
 describe('computeMetricDescriptors', () => {
   it('describes temperature as an auto-scaled line', () => {
     const descriptor = computeMetricDescriptors()[MetricKey.TEMPERATURE];
@@ -37,6 +48,7 @@ describe('computeMetricDescriptors', () => {
       chartType: ChartType.LINE,
       axis: 'auto',
       sensors: [],
+      targets: [],
     });
   });
 
@@ -62,6 +74,7 @@ describe('computeMetricDescriptors', () => {
       chartType: ChartType.LINE,
       axis: 'auto',
       sensors: [],
+      targets: [],
     });
   });
 
@@ -81,8 +94,8 @@ describe('computeMetricDescriptors', () => {
     expect(descriptor.axis).toEqual(axis);
   });
 
-  it('reads explicit day and night VPD thresholds from the overview entity', () => {
-    const descriptor = overview({
+  it('normalises the day and night VPD window into one optimal band and two limits', () => {
+    const targets = overview({
       day_vpd_target_min: 1,
       day_vpd_target_max: 2,
       day_vpd_danger_min: 0.5,
@@ -91,52 +104,67 @@ describe('computeMetricDescriptors', () => {
       night_vpd_target_max: 0.6,
       night_vpd_danger_min: 0.2,
       night_vpd_danger_max: 0.8,
-    })[MetricKey.VPD];
+    })[MetricKey.VPD].targets;
 
-    expect(descriptor.vpdThresholds).toEqual({
-      day: { targetMin: 1, targetMax: 2, dangerMin: 0.5, dangerMax: 2.5 },
-      night: { targetMin: 0.4, targetMax: 0.6, dangerMin: 0.2, dangerMax: 0.8 },
-    });
+    expect(targets).toEqual([
+      {
+        kind: GuideMarkKind.OPTIMAL_BAND,
+        id: 'vpd-optimal',
+        day: { min: 1, max: 2 },
+        night: { min: 0.4, max: 0.6 },
+      },
+      {
+        kind: GuideMarkKind.LIMIT,
+        id: 'vpd-danger-low',
+        side: 'lower',
+        day: 0.5,
+        night: 0.2,
+      },
+      {
+        kind: GuideMarkKind.LIMIT,
+        id: 'vpd-danger-high',
+        side: 'upper',
+        day: 2.5,
+        night: 0.8,
+      },
+    ]);
+  });
+
+  it('exposes no raw VPD threshold field beside the normalised targets', () => {
+    const descriptor = overview({ vpd_target_min: 0.9 })[MetricKey.VPD];
+
+    expect(Object.keys(descriptor)).not.toContain('vpdThresholds');
   });
 
   it('falls day thresholds back through legacy values to defaults', () => {
-    const legacy = overview({
-      vpd_target_min: 0.9,
-      vpd_target_max: 1.3,
-      vpd_danger_min: 0.3,
-      vpd_danger_max: 1.7,
-    })[MetricKey.VPD].vpdThresholds;
-    const defaults = computeMetricDescriptors()[MetricKey.VPD].vpdThresholds;
+    const legacy = optimalBand(
+      overview({
+        vpd_target_min: 0.9,
+        vpd_target_max: 1.3,
+        vpd_danger_min: 0.3,
+        vpd_danger_max: 1.7,
+      })[MetricKey.VPD]
+    );
+    const defaults = optimalBand(computeMetricDescriptors()[MetricKey.VPD]);
 
-    expect(legacy?.day).toEqual({
-      targetMin: 0.9,
-      targetMax: 1.3,
-      dangerMin: 0.3,
-      dangerMax: 1.7,
-    });
+    expect(legacy?.day).toEqual({ min: 0.9, max: 1.3 });
     expect(defaults?.day).toEqual({
-      targetMin: DEFAULTS.VPD.TARGET_MIN,
-      targetMax: DEFAULTS.VPD.TARGET_MAX,
-      dangerMin: DEFAULTS.VPD.DANGER_MIN,
-      dangerMax: DEFAULTS.VPD.DANGER_MAX,
+      min: DEFAULTS.VPD.TARGET_MIN,
+      max: DEFAULTS.VPD.TARGET_MAX,
     });
   });
 
   it('falls each missing night threshold back to its resolved day value', () => {
-    const thresholds = overview({
+    const targets = overview({
       day_vpd_target_min: 1,
       vpd_target_max: 2,
       day_vpd_danger_min: 0.5,
       vpd_danger_max: 2.5,
       night_vpd_target_max: 1.8,
-    })[MetricKey.VPD].vpdThresholds;
+    })[MetricKey.VPD].targets;
 
-    expect(thresholds?.night).toEqual({
-      targetMin: 1,
-      targetMax: 1.8,
-      dangerMin: 0.5,
-      dangerMax: 2.5,
-    });
+    expect(optimalBand({ targets })?.night).toEqual({ min: 1, max: 1.8 });
+    expect(targets.filter(isLimit).map((limit) => limit.night)).toEqual([0.5, 2.5]);
   });
 
   it.each([
@@ -204,6 +232,109 @@ describe('computeMetricDescriptors', () => {
       axis: { min: 0, max: 1 },
       chartType: ChartType.STEP,
     });
+  });
+});
+
+describe('computeMetricDescriptors — device-sourced optimal bands', () => {
+  function device(overrides: Record<string, unknown>): GrowspaceDevice {
+    return {
+      deviceId: 'g1',
+      name: 'Tent',
+      biologicalMetrics: { granularStage: 'flower_mid' },
+      environmentAttributes: {},
+      irrigationConfig: {},
+      ...overrides,
+    } as unknown as GrowspaceDevice;
+  }
+
+  function targetsFor(key: string, overrides: Record<string, unknown>) {
+    return computeMetricDescriptors(null, {}, undefined, device(overrides))[key].targets;
+  }
+
+  it('has no targets for a metric with nothing configured', () => {
+    expect(targetsFor(MetricKey.TEMPERATURE, {})).toEqual([]);
+    expect(targetsFor(MetricKey.SOIL_MOISTURE, {})).toEqual([]);
+    expect(targetsFor(MetricKey.PORE_EC, {})).toEqual([]);
+    expect(targetsFor(MetricKey.FEED_EC, {})).toEqual([]);
+  });
+
+  it('normalises the applied moisture band, which does not vary by photoperiod', () => {
+    const targets = targetsFor(MetricKey.SOIL_MOISTURE, {
+      environmentAttributes: {
+        soilMoistureBand: { min: 40, max: 65, is_custom: true },
+        soilMoistureBandCompatible: true,
+      },
+    });
+
+    expect(targets).toEqual([
+      {
+        kind: GuideMarkKind.OPTIMAL_BAND,
+        id: 'soil-moisture-band',
+        day: { min: 40, max: 65 },
+        night: { min: 40, max: 65 },
+      },
+    ]);
+  });
+
+  it('drops the moisture band when the sensor does not read in percent', () => {
+    expect(
+      targetsFor(MetricKey.SOIL_MOISTURE, {
+        environmentAttributes: {
+          soilMoistureBand: { min: 40, max: 65, is_custom: true },
+          soilMoistureBandCompatible: false,
+        },
+      })
+    ).toEqual([]);
+  });
+
+  it('normalises the pore EC target band from the irrigation strategy', () => {
+    expect(
+      targetsFor(MetricKey.PORE_EC, {
+        irrigationStrategy: { poreEcTargetMin: 3, poreEcTargetMax: 5.5 },
+      })
+    ).toEqual([
+      {
+        kind: GuideMarkKind.OPTIMAL_BAND,
+        id: 'pore-ec-band',
+        day: { min: 3, max: 5.5 },
+        night: { min: 3, max: 5.5 },
+      },
+    ]);
+  });
+
+  it('resolves the feed EC band against the growspace stage, not the first row', () => {
+    const ranges = {
+      irrigationConfig: {
+        ecTargetRanges: [
+          { stage: 'veg', minEc: 1.4, maxEc: 1.8 },
+          { stage: 'flower_mid', minEc: 2.6, maxEc: 3.2 },
+        ],
+      },
+    };
+
+    expect(optimalBand({ targets: targetsFor(MetricKey.FEED_EC, ranges) })).toMatchObject({
+      day: { min: 2.6, max: 3.2 },
+    });
+    expect(
+      optimalBand({
+        targets: computeMetricDescriptors(
+          null,
+          {},
+          undefined,
+          device({ ...ranges, biologicalMetrics: { granularStage: 'veg' } })
+        )[MetricKey.FEED_EC].targets,
+      })
+    ).toMatchObject({ day: { min: 1.4, max: 1.8 } });
+  });
+
+  it('drops a stage row the grower never configured', () => {
+    expect(
+      targetsFor(MetricKey.FEED_EC, {
+        irrigationConfig: {
+          ecTargetRanges: [{ stage: 'flower_mid', minEc: 0, maxEc: 0 }],
+        },
+      })
+    ).toEqual([]);
   });
 });
 
