@@ -3,7 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import type { GrowspaceDevice } from '../../../services/types';
 import type { MetricDescriptor } from '../../../slices/metric-descriptors';
 import type { SensorHistories } from '../types';
-import type { HistoryTimeRange } from '../constants';
+import type { ComboSecondary, HistoryTimeRange } from '../constants';
 import { computeComboIntervalPane, type ComboIntervalPane } from '../combo-series';
 import { localizeWithParams } from '../../../localize/localize';
 import '../../../growspace-env-chart';
@@ -60,8 +60,11 @@ export class MetricComboChart extends LitElement {
   @property({ type: String }) range: HistoryTimeRange = '24h';
   /** The metric the combo is about, drawn as the line pane. */
   @property({ type: String }) primary = '';
-  /** The [[Interval Metric]] that gives it context, drawn as bars beneath. */
-  @property({ type: String }) secondary = '';
+  /**
+   * The subordinate panes that give it context, one each, stacked beneath the
+   * primary in the order given.
+   */
+  @property({ attribute: false }) secondaries: ComboSecondary[] = [];
 
   static styles = css`
     /* The inline stack's spacing sits here rather than on the Env Graph inside,
@@ -137,10 +140,73 @@ export class MetricComboChart extends LitElement {
       fill: currentColor;
       opacity: 0.85;
     }
+    /* Dashed so it reads as a threshold rather than as another bar's edge, and
+       drawn in the pane's own metric colour like everything else in it. The
+       non-scaling stroke keeps it one hairline through the pane's non-uniform
+       stretch, which would otherwise squash it to nothing. */
+    .duty-limit {
+      stroke: currentColor;
+      stroke-width: 1;
+      stroke-dasharray: 3 3;
+      opacity: 0.9;
+      vector-effect: non-scaling-stroke;
+    }
   `;
 
   private _localize(key: string, params: Record<string, string | number> = {}): string {
     return localizeWithParams(key, params, 'en');
+  }
+
+  /**
+   * The pane's eyebrow.
+   *
+   * A duty pane says whose effort it is reading; a pane carrying the metric's
+   * own unit is already named by the metric, and calling watts "duty" would
+   * claim a full scale that does not exist.
+   */
+  private _paneLabel(pane: ComboIntervalPane): string {
+    if (pane.baselineTitle) {
+      return this._localize('metric_combo.delta_label', {
+        metric: pane.title,
+        baseline: pane.baselineTitle,
+      });
+    }
+    return pane.unit === '%'
+      ? this._localize('metric_combo.duty_label', { metric: pane.title })
+      : pane.title;
+  }
+
+  /**
+   * The peak cap, formatted.
+   *
+   * A percentage reads whole and closed up against its sign; a unit is a word
+   * beside the number. The cap is a scale rather than a measurement, so it keeps
+   * one decimal only where the number is small enough for the decimal to carry
+   * information.
+   */
+  private _capLabel(pane: ComboIntervalPane): string {
+    // A configured ceiling replaces the peak as the readout, because it is what
+    // the bars are being read against — a peak beside it would name the taller
+    // of the two as the scale and leave the reader to work out which.
+    if (pane.limit !== undefined) {
+      return this._localize('metric_combo.limit_cap', {
+        value: `${pane.limit.toFixed(pane.limit >= 100 ? 0 : 1)} ${pane.unit}`,
+      });
+    }
+    if (pane.unit === '%') return `${pane.peak.toFixed(0)}%`;
+    return `${pane.peak.toFixed(pane.peak >= 100 ? 0 : 1)} ${pane.unit}`;
+  }
+
+  /**
+   * What full pane height is worth.
+   *
+   * Normally the peak: the tallest bar spends the whole box, so holding back
+   * headroom would only shrink every bar for nothing. Where a limit is
+   * configured it is the scale instead — but a breach must still fit, so the
+   * taller of the two wins and the rule slides down inside the box.
+   */
+  private _paneScale(pane: ComboIntervalPane): number {
+    return Math.max(pane.peak, pane.limit ?? 0);
   }
 
   /** The window both panes are drawn against, anchored once per render. */
@@ -151,16 +217,24 @@ export class MetricComboChart extends LitElement {
 
   render(): TemplateResult {
     const { startTimeMs, durationMillis } = this._window;
-    const pane = computeComboIntervalPane(
-      this.descriptors,
-      this.sensorHistory ?? {},
-      this.secondary,
-      {
-        startTimeMs,
-        nowMs: startTimeMs + durationMillis,
-        barCount: DUTY_BAR_TARGET[this.range] ?? DUTY_BAR_TARGET['24h'],
-      }
-    );
+    const options = {
+      startTimeMs,
+      nowMs: startTimeMs + durationMillis,
+      barCount: DUTY_BAR_TARGET[this.range] ?? DUTY_BAR_TARGET['24h'],
+    };
+    const panes = this.secondaries
+      .map((secondary) =>
+        computeComboIntervalPane(this.descriptors, this.sensorHistory ?? {}, secondary, {
+          ...options,
+          // The recipe names where a threshold comes from; the growspace holds
+          // the number. Resolving it here keeps the derivation free of the
+          // device and this component free of per-recipe knowledge.
+          limit: this.device ? secondary.limitOf?.(this.device) : undefined,
+        })
+      )
+      // A secondary the growspace has no sensor for drops out on its own, so a
+      // combo degrades one pane at a time rather than all-or-nothing.
+      .filter((pane): pane is ComboIntervalPane => pane !== undefined);
 
     return html`
       <growspace-env-chart
@@ -172,41 +246,37 @@ export class MetricComboChart extends LitElement {
         .range=${this.range}
         .chartWindow=${{ startTimeMs, durationMillis }}
       >
-        ${this._renderIntervalPane(pane, startTimeMs, durationMillis)}
+        ${panes.map((pane) => this._renderIntervalPane(pane, startTimeMs, durationMillis))}
       </growspace-env-chart>
     `;
   }
 
   /**
-   * The subordinate pane, or nothing at all.
+   * One subordinate pane.
    *
-   * A combo whose secondary has no sensor degrades to its primary alone: an
+   * A combo whose secondaries have no sensors degrades to its primary alone: an
    * empty frame under a temperature trace claims a context the growspace cannot
    * report.
    */
   private _renderIntervalPane(
-    pane: ComboIntervalPane | undefined,
+    pane: ComboIntervalPane,
     startTimeMs: number,
     durationMillis: number
   ) {
-    if (!pane) return nothing;
-
     const { width, height } = DUTY_PANE;
     const xAt = (time: number) => ((time - startTimeMs) / durationMillis) * width;
+    const scale = this._paneScale(pane);
 
     return html`
       <div slot="secondary-pane" style="color:${pane.color}">
         <div class="duty-eyebrow">
-          <span>${this._localize('metric_combo.duty_label', { metric: pane.title })}</span>
+          <span>${this._paneLabel(pane)}</span>
         </div>
         <div class="duty-pane">
-          <span class="duty-readout">${pane.peak.toFixed(0)}${pane.unit}</span>
+          <span class="duty-readout">${this._capLabel(pane)}</span>
           <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
             ${pane.bars.map((bar) => {
-              // The tallest bar spends the whole box: the peak cap is what says
-              // what full height is worth, so holding back headroom would only
-              // shrink every bar for nothing.
-              const barHeight = pane.peak > 0 ? (bar.value / pane.peak) * height : 0;
+              const barHeight = scale > 0 ? Math.max(0, (bar.value / scale) * height) : 0;
               const left = xAt(bar.startTime);
               const barWidth = Math.max(0, xAt(bar.endTime) - left);
               const gap = Math.min(0.5, barWidth * 0.2);
@@ -216,10 +286,30 @@ export class MetricComboChart extends LitElement {
                 width="${Math.max(0, barWidth - gap)}" height="${barHeight}" rx="1"
               ></rect>`;
             })}
+            ${this._renderLimitRule(pane, scale)}
           </svg>
         </div>
       </div>
     `;
+  }
+
+  /**
+   * The configured ceiling, drawn across the pane.
+   *
+   * It is the one mark a subordinate pane carries. A [[Guide Mark]] on the
+   * primary is a value the metric is steered to; this is the threshold the
+   * pane's own bars are read against, which is why it lives here and not in the
+   * Env Graph above.
+   */
+  private _renderLimitRule(pane: ComboIntervalPane, scale: number) {
+    if (pane.limit === undefined || scale <= 0) return nothing;
+
+    const { width, height } = DUTY_PANE;
+    const y = height - (pane.limit / scale) * height;
+    return svg`<line
+      class="duty-limit"
+      x1="0" x2="${width}" y1="${y}" y2="${y}"
+    ></line>`;
   }
 }
 

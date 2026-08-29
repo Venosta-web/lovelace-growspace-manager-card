@@ -8,7 +8,7 @@ import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { toggleEnvGraph } from '../../../slices/ui';
 import type { GrowspaceDevice } from '../../../types';
 import { METRIC_SORT_ORDER, type MetricKey } from '../../../constants';
-import { metricComboFor } from '../../environment/constants';
+import { metricComboFor, metricComboKeys } from '../../environment/constants';
 import type { AnalyticsItem } from '../components/growspace-analytics-ui';
 import { deviceSnapshots$, type DeviceSnapshot } from '../../../slices/device-state';
 import { computeMetricDescriptors } from '../../../slices/metric-descriptors';
@@ -177,7 +177,7 @@ export class GrowspaceAnalyticsContainer extends LitElement {
           combo
             ? {
                 type: 'combo',
-                metrics: [combo.primary, combo.secondary],
+                metrics: metricComboKeys(combo),
                 sortIndex: getSortIndex(base),
               }
             : { type: 'single', metrics: [metric], sortIndex: getSortIndex(base) }

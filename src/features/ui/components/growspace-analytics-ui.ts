@@ -9,7 +9,7 @@ import { localizeWithParams } from '../../../localize/localize';
 import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
 import '../../../growspace-env-chart';
-import { MetricKey } from '../../environment/constants';
+import { MetricKey, metricComboFor } from '../../environment/constants';
 import '../../environment/components/tank-water-chart';
 import '../../environment/components/crop-steering-day-chart';
 import '../../environment/components/metric-combo-chart';
@@ -316,14 +316,18 @@ export class GrowspaceAnalyticsUI extends LitElement {
       // card's claim, not a grouping the grower can dismantle. `toggle-graph`
       // needs no redispatch either — the chart's own event is composed, so it
       // crosses this component's shadow boundary on its way to the container.
-      const [primary, secondary] = item.metrics;
+      // `item.metrics` is the combo's identity — the flat key list that keys the
+      // render and says what history is needed. Its *structure* is the recipe's,
+      // which is the only place a pairing is declared, so the panes are read
+      // from there rather than reconstructed from the flattening.
+      const recipe = metricComboFor(item.metrics[0]);
       return html`
         <metric-combo-chart
           .device=${this.device}
           .sensorHistory=${this.sensorHistory}
           .descriptors=${this.descriptors}
-          .primary=${primary}
-          .secondary=${secondary}
+          .primary=${item.metrics[0]}
+          .secondaries=${recipe?.secondaries ?? []}
           .range=${this.range}
         ></metric-combo-chart>
       `;

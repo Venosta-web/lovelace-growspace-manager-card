@@ -25,6 +25,7 @@ import {
   mdiAlertOctagon,
 } from '@mdi/js';
 import { token } from '../../styles/variables';
+import type { GrowspaceDevice } from '../../services/types';
 
 export enum MetricKey {
   TEMPERATURE = 'temperature',
@@ -276,12 +277,46 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
 };
 
 /**
+ * One subordinate pane of a [[Curated Combo]].
+ *
+ * A pane usually reports one [[Interval Metric]]. Where the *difference*
+ * between two is the diagnostic — feed EC against runoff EC says whether the
+ * substrate is accumulating salt, which neither absolute trace says alone — the
+ * pane reports `metric` minus `relativeTo`. That is still one pane of bars under
+ * a cap; what changes is what a bar is, not how it is drawn.
+ */
+export interface ComboSecondary {
+  metric: MetricKey;
+  /** When set, the pane reports `metric` minus this one. */
+  relativeTo?: MetricKey;
+  /**
+   * The configured value the pane is read against, resolved from the growspace.
+   *
+   * A limit is device configuration rather than a constant, so the table names
+   * *where it comes from* and never the number. It is a function so the renderer
+   * needs no per-recipe knowledge: a second pane with a threshold adds a line
+   * here and no branch there.
+   */
+  limitOf?: (device: GrowspaceDevice) => number | undefined;
+}
+
+/**
  * One [[Curated Combo]]: the pairing the card asserts, and which side of it is
  * the primary metric.
  */
 export interface MetricComboRecipe {
   primary: MetricKey;
-  secondary: MetricKey;
+  /**
+   * The subordinate panes that give the primary context, in the order they are
+   * stacked beneath it.
+   *
+   * A list rather than one metric because some questions have two halves that
+   * do not collapse into each other: humidity drifting with the humidifier idle
+   * and humidity drifting with the dehumidifier pinned are different readings of
+   * the same trace, so each takes its own pane. This is the primitive repeated,
+   * not new geometry — nothing here says how a pane is drawn.
+   */
+  secondaries: ComboSecondary[];
 }
 
 /**
@@ -295,7 +330,40 @@ export interface MetricComboRecipe {
  * follows from the secondary's data shape (ADR-0049).
  */
 export const METRIC_COMBOS: Record<string, MetricComboRecipe> = {
-  [MetricKey.TEMPERATURE]: { primary: MetricKey.TEMPERATURE, secondary: MetricKey.EXHAUST },
+  [MetricKey.TEMPERATURE]: {
+    primary: MetricKey.TEMPERATURE,
+    secondaries: [{ metric: MetricKey.EXHAUST }],
+  },
+  // The same actuator-effort reading as temperature, in both directions: the
+  // {on, off} thresholds already render as setpoint pairs on the primary pane.
+  [MetricKey.HUMIDITY]: {
+    primary: MetricKey.HUMIDITY,
+    secondaries: [{ metric: MetricKey.HUMIDIFIER }, { metric: MetricKey.DEHUMIDIFIER }],
+  },
+  // Exhaust dumps CO2, so the anticorrelation is the whole story — and it is
+  // invisible while the two are separate charts.
+  [MetricKey.CO2]: { primary: MetricKey.CO2, secondaries: [{ metric: MetricKey.EXHAUST }] },
+  // The literal stock-and-flow case: substrate water content over the shots
+  // that fill it.
+  [MetricKey.SOIL_MOISTURE]: {
+    primary: MetricKey.SOIL_MOISTURE,
+    secondaries: [{ metric: MetricKey.IRRIGATION }],
+  },
+  // The delta between feed and runoff is the diagnostic, and the configured
+  // maximum EC delta is the mark to read it against.
+  [MetricKey.PORE_EC]: {
+    primary: MetricKey.PORE_EC,
+    secondaries: [
+      {
+        metric: MetricKey.RUNOFF_EC,
+        relativeTo: MetricKey.FEED_EC,
+        limitOf: (device) => device.drainConfig?.maxEcDelta,
+      },
+    ],
+  },
+  // The tank pattern in another unit: an instantaneous draw over the
+  // accumulated consumption.
+  [MetricKey.ENERGY]: { primary: MetricKey.ENERGY, secondaries: [{ metric: MetricKey.POWER }] },
 };
 
 /**
@@ -307,6 +375,23 @@ export const METRIC_COMBOS: Record<string, MetricComboRecipe> = {
  */
 export function metricComboFor(metric: string): MetricComboRecipe | undefined {
   return METRIC_COMBOS[metric];
+}
+
+/**
+ * Every metric key a recipe involves, primary first.
+ *
+ * This is the combo's *identity* — what keys a render list and what a consumer
+ * needs history for — and deliberately not its structure: a delta pane
+ * contributes both of its metrics here, flattened, because both must be
+ * fetched. Whoever draws the panes reads the recipe itself.
+ */
+export function metricComboKeys(recipe: MetricComboRecipe): string[] {
+  return [
+    recipe.primary,
+    ...recipe.secondaries.flatMap((secondary) =>
+      secondary.relativeTo ? [secondary.metric, secondary.relativeTo] : [secondary.metric]
+    ),
+  ];
 }
 
 export enum StatusLevel {
