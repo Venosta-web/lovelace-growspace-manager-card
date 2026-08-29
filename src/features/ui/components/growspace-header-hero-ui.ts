@@ -30,7 +30,10 @@ export class GrowspaceHeaderHeroUI extends LitElement {
   @property({ type: Boolean }) public isFlower = false;
 
   @state() private _deckIndex = 0;
+  @state() private _sparklineSizes: Record<string, { width: number; height: number }> = {};
   @query('.deck-scroll') private _deckEl?: HTMLElement;
+  private _sparklineObserver: ResizeObserver | undefined;
+  private _observedSparklines = new Set<SVGSVGElement>();
 
   private _prioritizeExceptions(chips: HeaderChip[]): HeaderChip[] {
     const highestPriorityIndex = chips.findIndex((chip) => chip.status === 'danger');
@@ -67,6 +70,64 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     if (changedProperties.has('chips') || changedProperties.has('additionalChips')) {
       this._deckIndex = 0;
     }
+  }
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    void this.updateComplete.then(() => {
+      if (this.isConnected) this._observeSparklines();
+    });
+  }
+
+  protected updated(): void {
+    this._observeSparklines();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._sparklineObserver?.disconnect();
+    this._sparklineObserver = undefined;
+    this._observedSparklines.clear();
+  }
+
+  private _observeSparklines(): void {
+    const sparklines = new Set(
+      this.renderRoot.querySelectorAll<SVGSVGElement>('.hero-sparkline[data-sparkline-key]')
+    );
+
+    this._sparklineObserver ??= new ResizeObserver((entries) => {
+      let nextSizes: Record<string, { width: number; height: number }> | undefined;
+
+      for (const entry of entries) {
+        const key = (entry.target as SVGSVGElement).dataset.sparklineKey;
+        const { width, height } = entry.contentRect;
+        if (!key) continue;
+
+        const current = this._sparklineSizes[key];
+        if (
+          width <= 0 ||
+          height <= 0 ||
+          (current &&
+            Math.abs(current.width - width) < 0.1 &&
+            Math.abs(current.height - height) < 0.1)
+        ) {
+          continue;
+        }
+
+        nextSizes ??= { ...this._sparklineSizes };
+        nextSizes[key] = { width, height };
+      }
+
+      if (nextSizes) this._sparklineSizes = nextSizes;
+    });
+
+    for (const observed of this._observedSparklines) {
+      if (!sparklines.has(observed)) this._sparklineObserver.unobserve(observed);
+    }
+    for (const sparkline of sparklines) {
+      if (!this._observedSparklines.has(sparkline)) this._sparklineObserver.observe(sparkline);
+    }
+    this._observedSparklines = sparklines;
   }
 
   private _onDeckScroll() {
@@ -993,8 +1054,10 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     const val = match ? match[1] : chip.value;
     const unit = match ? match[2] : '';
 
-    const sparklineWidth = 140;
-    const sparklineHeight = 80;
+    const { width: sparklineWidth, height: sparklineHeight } = this._sparklineSizes[chip.key] ?? {
+      width: 140,
+      height: 80,
+    };
 
     const timeRange = this.timeRange;
     const isVpd = chip.key === 'vpd';
@@ -1086,8 +1149,8 @@ export class GrowspaceHeaderHeroUI extends LitElement {
           ? html`
               <svg
                 class="hero-sparkline"
+                data-sparkline-key=${chip.key}
                 viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
-                preserveAspectRatio="none"
                 style="overflow: visible;"
               >
                 <rect
@@ -1108,8 +1171,8 @@ export class GrowspaceHeaderHeroUI extends LitElement {
             ? html`
                 <svg
                   class="hero-sparkline"
+                  data-sparkline-key=${chip.key}
                   viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
-                  preserveAspectRatio="none"
                 >
                   <defs>
                     <linearGradient
