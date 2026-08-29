@@ -1,12 +1,15 @@
-import { LitElement, html, css, svg, nothing, type TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { LitElement, html, css, svg, nothing, type PropertyValues, type TemplateResult } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
 import type { GrowspaceDevice } from '../../../services/types';
 import type { MetricDescriptor } from '../../../slices/metric-descriptors';
 import type { SensorHistories } from '../types';
 import type { ComboSecondary, HistoryTimeRange } from '../constants';
 import { computeComboIntervalPane, type ComboIntervalPane } from '../combo-series';
+import { computeEnvSeries } from '../env-series';
 import { localizeWithParams } from '../../../localize/localize';
 import '../../../growspace-env-chart';
+import './chart-scrub-tooltip';
+import type { ChartScrubDetail, ChartScrubRow } from './chart-scrub-tooltip';
 
 /**
  * A [[Curated Combo]]: a primary [[Env Graph]] over a subordinate bar pane, on
@@ -65,6 +68,8 @@ export class MetricComboChart extends LitElement {
    * primary in the order given.
    */
   @property({ attribute: false }) secondaries: ComboSecondary[] = [];
+  @state() private _scrub: { position: number; rows: ChartScrubRow[] } | undefined;
+  private _renderWindow = this._windowFor(this.range);
 
   static styles = css`
     /* The inline stack's spacing sits here rather than on the Env Graph inside,
@@ -102,6 +107,7 @@ export class MetricComboChart extends LitElement {
       background: var(--gs-chart-surface, var(--secondary-background-color, #0d0d0d));
       border-radius: 8px;
       overflow: hidden;
+      touch-action: pan-y;
     }
     /*
      * The peak cap, and the pane's only readout. It is the scale — the same
@@ -209,20 +215,38 @@ export class MetricComboChart extends LitElement {
     return Math.max(pane.peak, pane.limit ?? 0);
   }
 
-  /** The window both panes are drawn against, anchored once per render. */
-  private get _window() {
-    const durationMillis = RANGE_DURATION_MS[this.range] ?? RANGE_DURATION_MS['24h'];
+  /** Anchor a window when chart inputs change, never when only the scrub moves. */
+  private _windowFor(range: HistoryTimeRange) {
+    const durationMillis = RANGE_DURATION_MS[range] ?? RANGE_DURATION_MS['24h'];
     return { startTimeMs: Date.now() - durationMillis, durationMillis };
   }
 
-  render(): TemplateResult {
-    const { startTimeMs, durationMillis } = this._window;
+  protected willUpdate(changed: PropertyValues<this>): void {
+    if (
+      changed.has('device') ||
+      changed.has('sensorHistory') ||
+      changed.has('descriptors') ||
+      changed.has('range') ||
+      changed.has('primary') ||
+      changed.has('secondaries')
+    ) {
+      this._renderWindow = this._windowFor(this.range);
+    }
+  }
+
+  /**
+   * The subordinate panes, in recipe order.
+   *
+   * A secondary the growspace has no sensor for drops out on its own, so a
+   * combo degrades one pane at a time rather than all-or-nothing.
+   */
+  private _panesFor(startTimeMs: number, durationMillis: number): ComboIntervalPane[] {
     const options = {
       startTimeMs,
       nowMs: startTimeMs + durationMillis,
       barCount: DUTY_BAR_TARGET[this.range] ?? DUTY_BAR_TARGET['24h'],
     };
-    const panes = this.secondaries
+    return this.secondaries
       .map((secondary) =>
         computeComboIntervalPane(this.descriptors, this.sensorHistory ?? {}, secondary, {
           ...options,
@@ -232,9 +256,12 @@ export class MetricComboChart extends LitElement {
           limit: this.device ? secondary.limitOf?.(this.device) : undefined,
         })
       )
-      // A secondary the growspace has no sensor for drops out on its own, so a
-      // combo degrades one pane at a time rather than all-or-nothing.
       .filter((pane): pane is ComboIntervalPane => pane !== undefined);
+  }
+
+  render(): TemplateResult {
+    const { startTimeMs, durationMillis } = this._renderWindow;
+    const panes = this._panesFor(startTimeMs, durationMillis);
 
     return html`
       <growspace-env-chart
@@ -245,9 +272,20 @@ export class MetricComboChart extends LitElement {
         .metrics=${[this.primary]}
         .range=${this.range}
         .chartWindow=${{ startTimeMs, durationMillis }}
+        .delegateScrub=${panes.length > 0}
+        @chart-scrub=${(event: CustomEvent<ChartScrubDetail>) =>
+          this._scrubPrimaryPane(event, panes, startTimeMs, durationMillis)}
+        @pointerleave=${this._clearScrub}
+        @pointercancel=${this._clearScrub}
       >
         ${panes.map((pane) => this._renderIntervalPane(pane, startTimeMs, durationMillis))}
       </growspace-env-chart>
+      ${this._scrub
+        ? html`<chart-scrub-tooltip
+            .position=${this._scrub.position}
+            .rows=${this._scrub.rows}
+          ></chart-scrub-tooltip>`
+        : nothing}
     `;
   }
 
@@ -272,7 +310,11 @@ export class MetricComboChart extends LitElement {
         <div class="duty-eyebrow">
           <span>${this._paneLabel(pane)}</span>
         </div>
-        <div class="duty-pane">
+        <div
+          class="duty-pane"
+          @pointermove=${(event: PointerEvent) =>
+            this._scrubIntervalPane(event, startTimeMs, durationMillis)}
+        >
           <span class="duty-readout">${this._capLabel(pane)}</span>
           <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
             ${pane.bars.map((bar) => {
@@ -311,6 +353,124 @@ export class MetricComboChart extends LitElement {
       x1="0" x2="${width}" y1="${y}" y2="${y}"
     ></line>`;
   }
+
+  /**
+   * The scrub, entered from a subordinate pane.
+   *
+   * Two panes over one X axis means one scrub owner (ADR-0049), and that holds
+   * however many panes there are: the tooltip carries the primary's reading at
+   * the instant plus one interval row per pane, so hovering any of them reports
+   * the same moment across all of them rather than only the one under the
+   * pointer.
+   */
+  private _scrubIntervalPane(
+    event: PointerEvent,
+    startTimeMs: number,
+    durationMillis: number
+  ): void {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const position =
+      rect.width > 0 ? Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)) : 0.5;
+    const hoverTime = startTimeMs + position * durationMillis;
+    const primary = computeEnvSeries(this.descriptors, this.sensorHistory ?? {}, [this.primary], {
+      startTimeMs,
+      nowMs: startTimeMs + durationMillis,
+      isCombined: false,
+    })[0];
+    const primaryPoint = primary?.points.reduce((closest, point) =>
+      Math.abs(point.time - hoverTime) < Math.abs(closest.time - hoverTime) ? point : closest
+    );
+
+    this._scrub = {
+      position,
+      rows: [
+        ...(primary && primaryPoint
+          ? [
+              {
+                title: primary.title,
+                time: { kind: 'moment' as const, time: hoverTime },
+                value: `${primaryPoint.value.toFixed(1)} ${primary.unit}`,
+                color: primary.color,
+              },
+            ]
+          : []),
+        ...this._intervalRows(hoverTime, startTimeMs, durationMillis),
+      ],
+    };
+  }
+
+  /** The scrub, entered from the primary pane, which reports its own rows. */
+  private _scrubPrimaryPane(
+    event: CustomEvent<ChartScrubDetail>,
+    panes: ComboIntervalPane[],
+    startTimeMs: number,
+    durationMillis: number
+  ): void {
+    if (panes.length === 0) return;
+    const hoverTime = startTimeMs + event.detail.position * durationMillis;
+    this._scrub = {
+      position: event.detail.position,
+      rows: [...event.detail.rows, ...this._intervalRows(hoverTime, startTimeMs, durationMillis)],
+    };
+  }
+
+  /**
+   * One row per subordinate pane, for the bucket under `hoverTime`.
+   *
+   * Derived from the panes rather than taken as an argument so both entry points
+   * read the same buckets — the panes are cheap to recompute and a second
+   * derivation is a second chance for the two tooltips to disagree.
+   */
+  private _intervalRows(
+    hoverTime: number,
+    startTimeMs: number,
+    durationMillis: number
+  ): ChartScrubRow[] {
+    return this._panesFor(startTimeMs, durationMillis).flatMap((pane) => {
+      const interval = this._intervalAt(pane, hoverTime);
+      return interval ? [this._intervalRow(pane, interval)] : [];
+    });
+  }
+
+  /**
+   * The bucket covering `hoverTime`, or the nearest one, or nothing at all when
+   * the pane has no bars — a metric whose sensor reported nothing across the
+   * window has no reading to name.
+   */
+  private _intervalAt(
+    pane: ComboIntervalPane,
+    hoverTime: number
+  ): ComboIntervalPane['bars'][number] | undefined {
+    if (pane.bars.length === 0) return undefined;
+    return (
+      pane.bars.find((bar) => bar.startTime <= hoverTime && hoverTime <= bar.endTime) ??
+      pane.bars.reduce((closest, bar) =>
+        Math.abs(bar.startTime - hoverTime) < Math.abs(closest.startTime - hoverTime)
+          ? bar
+          : closest
+      )
+    );
+  }
+
+  private _intervalRow(
+    pane: ComboIntervalPane,
+    interval: ComboIntervalPane['bars'][number]
+  ): ChartScrubRow {
+    return {
+      title: pane.title,
+      time: {
+        kind: 'interval',
+        startTime: interval.startTime,
+        endTime: interval.endTime,
+      },
+      value: `${interval.value.toFixed(1)} ${pane.unit}`,
+      color: pane.color,
+    };
+  }
+
+  private _clearScrub = (): void => {
+    this._scrub = undefined;
+  };
 }
 
 declare global {

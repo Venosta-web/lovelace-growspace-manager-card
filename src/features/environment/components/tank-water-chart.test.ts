@@ -279,16 +279,48 @@ describe('TankWaterChart – _renderBars', () => {
     });
   });
 
-  it('each bar has a title with timestamp and liter value', async () => {
+  it('does not attach a browser-native title tooltip to usage bars', async () => {
     const el = createElement();
     el.device = { deviceId: 'gs-1' } as any;
     await el.updateComplete;
     await vi.waitFor(() => el.shadowRoot!.querySelectorAll('rect').length === 3);
-    const titles = Array.from(el.shadowRoot!.querySelectorAll('rect title')).map(
-      (t) => t.textContent ?? ''
+    expect(el.shadowRoot!.querySelector('.bar title')).toBeNull();
+  });
+
+  it('makes interval bar values reachable by touch through the shared tooltip', async () => {
+    mockHassCall.mockResolvedValue({
+      buckets: Array.from({ length: 24 }, (_, hour) =>
+        mkBucket(new Date(Date.UTC(2024, 0, 1, hour)).toISOString(), hour === 0 ? 1 : 0.5)
+      ),
+    });
+    const el = createElement();
+    el.device = { deviceId: 'gs-1' } as any;
+    el.range = '24h';
+    await el.updateComplete;
+    await vi.waitFor(() => expect(el.shadowRoot!.querySelectorAll('.bar')).toHaveLength(24));
+    const pane = el.shadowRoot!.querySelector<HTMLElement>('.usage-pane')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 240,
+      height: 64,
+    } as DOMRect);
+
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 5,
+        pointerId: 1,
+        pointerType: 'touch',
+      })
     );
-    expect(titles[0]).toContain('4.0 L');
-    expect(titles[1]).toContain('2.0 L');
+    await el.updateComplete;
+
+    const overlay = el.shadowRoot!.querySelector('chart-scrub-tooltip');
+    expect(overlay).not.toBeNull();
+    expect(overlay!.shadowRoot!.textContent).toContain('Water Consumption');
+    expect(overlay!.shadowRoot!.textContent).toMatch(/\d{2}:\d{2}–\d{2}:\d{2}\s*·\s*1\.0 L/);
+    expect(getComputedStyle(pane).touchAction).toBe('pan-y');
   });
 
   it('tallest bar corresponds to the bucket with most liters', async () => {
@@ -362,10 +394,26 @@ describe('TankWaterChart – usage bucket folding', () => {
     await el.updateComplete;
     await vi.waitFor(() => expect(el.shadowRoot!.querySelectorAll('.bar').length).toBe(24));
 
-    const titles = Array.from(el.shadowRoot!.querySelectorAll('.bar title')).map(
-      (t) => t.textContent ?? ''
+    const pane = el.shadowRoot!.querySelector<HTMLElement>('.usage-pane')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 240,
+      height: 64,
+    } as DOMRect);
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 5,
+        pointerId: 1,
+        pointerType: 'touch',
+      })
     );
-    expect(titles.every((title) => title.includes('4.0 L'))).toBe(true);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('chart-scrub-tooltip')!.shadowRoot!.textContent).toContain(
+      '4.0 L'
+    );
   });
 
   it('folds a 168-bucket 7d response into 7 daily bars', async () => {
