@@ -19,6 +19,7 @@ import type { IrrigationConfig, IrrigationStrategy } from '../../../services/typ
 
 const CHART_W = 300;
 const CHART_H = 68;
+const POINTER_DRAG_THRESHOLD_PX = 4;
 
 interface PhaseChartGeometry {
   linePath: string;
@@ -99,6 +100,12 @@ export class GrowspacePhaseHeroCard extends LitElement {
   private _derived: PhaseHeroDerivation | null = null;
   private _chartObserver: ResizeObserver | undefined;
   private _observedChart: HTMLElement | undefined;
+  private _activePointerId: number | null = null;
+  private _pointerStartX = 0;
+  private _pointerDragged = false;
+  private _suppressNextClick = false;
+  private _clickSuppressionTimer: number | undefined;
+  private _keyboardSampleIndex: number | null = null;
 
   protected createRenderRoot() {
     return this;
@@ -132,6 +139,7 @@ export class GrowspacePhaseHeroCard extends LitElement {
     this._chartObserver?.disconnect();
     this._chartObserver = undefined;
     this._observedChart = undefined;
+    if (this._clickSuppressionTimer != null) window.clearTimeout(this._clickSuppressionTimer);
   }
 
   private _observeChartContainer(): void {
@@ -221,9 +229,92 @@ export class GrowspacePhaseHeroCard extends LitElement {
     };
   }
 
-  private _handlePointerMove(event: MouseEvent): void {
+  private _setScrubPosition(event: PointerEvent): void {
     const rect = (event.currentTarget as SVGElement).getBoundingClientRect();
+    if (rect.width <= 0) return;
     this._hoverPosition = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+  }
+
+  private _handlePointerDown(event: PointerEvent): void {
+    if (!event.isPrimary) return;
+    this._activePointerId = event.pointerId;
+    this._pointerStartX = event.clientX;
+    this._pointerDragged = false;
+    this._keyboardSampleIndex = null;
+    this._setScrubPosition(event);
+  }
+
+  private _handlePointerMove(event: PointerEvent): void {
+    if (!event.isPrimary) return;
+
+    const isMouseHover = event.pointerType === 'mouse' && this._activePointerId == null;
+    if (!isMouseHover && event.pointerId !== this._activePointerId) return;
+
+    if (
+      this._activePointerId === event.pointerId &&
+      Math.abs(event.clientX - this._pointerStartX) >= POINTER_DRAG_THRESHOLD_PX
+    ) {
+      this._pointerDragged = true;
+      if (event.cancelable) event.preventDefault();
+    }
+
+    this._keyboardSampleIndex = null;
+    this._setScrubPosition(event);
+  }
+
+  private _handlePointerEnd(event: PointerEvent): void {
+    if (event.pointerId !== this._activePointerId) return;
+
+    if (this._pointerDragged) {
+      this._suppressNextClick = true;
+      if (this._clickSuppressionTimer != null) window.clearTimeout(this._clickSuppressionTimer);
+      this._clickSuppressionTimer = window.setTimeout(() => {
+        this._suppressNextClick = false;
+        this._clickSuppressionTimer = undefined;
+      });
+    }
+
+    this._activePointerId = null;
+    this._pointerDragged = false;
+  }
+
+  private _clearScrubber(): void {
+    this._hoverPosition = null;
+    this._keyboardSampleIndex = null;
+    this._activePointerId = null;
+    this._pointerDragged = false;
+  }
+
+  private _handleKeyDown(event: KeyboardEvent): void {
+    const series = this._derived?.series;
+    if (!series) return;
+
+    const lastIndex = series.points.length - 1;
+    let index = this._keyboardSampleIndex ?? lastIndex;
+    switch (event.key) {
+      case 'ArrowLeft':
+      case 'ArrowDown':
+        index -= 1;
+        break;
+      case 'ArrowRight':
+      case 'ArrowUp':
+        index += 1;
+        break;
+      case 'Home':
+        index = 0;
+        break;
+      case 'End':
+        index = lastIndex;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    this._keyboardSampleIndex = Math.max(0, Math.min(lastIndex, index));
+    const atMs = series.points[this._keyboardSampleIndex].atMs;
+    this._hoverPosition = fracOfWindow(series, atMs);
   }
 
   private _handleDragStart(event: DragEvent): void {
@@ -255,7 +346,14 @@ export class GrowspacePhaseHeroCard extends LitElement {
     event.preventDefault();
   }
 
-  private _toggleGraph(): void {
+  private _handleClick(event: MouseEvent): void {
+    if (this._suppressNextClick) {
+      event.preventDefault();
+      event.stopPropagation();
+      this._suppressNextClick = false;
+      return;
+    }
+
     this.dispatchEvent(
       new CustomEvent('toggle-graph', {
         detail: { metric: this.chip.key },
@@ -282,6 +380,13 @@ export class GrowspacePhaseHeroCard extends LitElement {
             (phase) => hovered.minuteOfDay >= phase.start && hovered.minuteOfDay < phase.end
           ) ?? null)
         : null;
+    const accessibleDescription = hovered
+      ? [
+          hoveredPhase ? `Phase ${hoveredPhase.label}.` : 'Outside a phase window.',
+          `Time ${fmtMinuteOfDay(hovered.minuteOfDay)}.`,
+          `VWC ${hovered.vwc.toFixed(1)}%.`,
+        ].join(' ')
+      : derived.description;
     const currentVwcDisplay = series?.currentVwc?.toFixed(1) ?? null;
     const vwcDisplay = hovered ? hovered.vwc.toFixed(1) : currentVwcDisplay;
     const chartColor = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
@@ -298,10 +403,18 @@ export class GrowspacePhaseHeroCard extends LitElement {
         @dragstart=${this._handleDragStart}
         @drop=${this._handleDrop}
         @dragover=${this._handleDragOver}
-        @click=${this._toggleGraph}
+        @keydown=${this._handleKeyDown}
+        @blur=${this._clearScrubber}
+        @click=${this._handleClick}
         title=${this.chip.tooltip || nothing}
       >
-        <span id="steering-phase-state" class="visually-hidden">${derived.description}</span>
+        <span
+          id="steering-phase-state"
+          class="visually-hidden"
+          aria-live="polite"
+          aria-atomic="true"
+          >${accessibleDescription}</span
+        >
         <div class="hero-header">
           <ha-svg-icon class="hero-icon" .path=${this.chip.icon}></ha-svg-icon>
           <span class="hero-label">${this.chip.label ?? 'Phase'}</span>
@@ -326,10 +439,11 @@ export class GrowspacePhaseHeroCard extends LitElement {
                 <svg
                   class="phase-chart-svg"
                   viewBox="0 0 ${this._chartSize.width} ${this._chartSize.height}"
-                  @mousemove=${this._handlePointerMove}
-                  @mouseleave=${() => {
-                    this._hoverPosition = null;
-                  }}
+                  @pointerdown=${this._handlePointerDown}
+                  @pointermove=${this._handlePointerMove}
+                  @pointerup=${this._handlePointerEnd}
+                  @pointercancel=${this._clearScrubber}
+                  @pointerleave=${this._clearScrubber}
                 >
                   <defs>
                     <linearGradient id="phase-area-grad" x1="0" y1="0" x2="0" y2="1">

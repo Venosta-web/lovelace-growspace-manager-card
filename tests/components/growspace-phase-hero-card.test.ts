@@ -37,6 +37,31 @@ function sevenDaysOfMinuteReadings() {
   }));
 }
 
+function pointerEvent(type: string, clientX: number, pointerType: 'mouse' | 'touch' = 'touch') {
+  return new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX,
+    isPrimary: true,
+    pointerId: 1,
+    pointerType,
+  });
+}
+
+function stubChartBounds(chart: SVGElement) {
+  vi.spyOn(chart, 'getBoundingClientRect').mockReturnValue({
+    left: 10,
+    top: 10,
+    width: 100,
+    height: 50,
+    right: 110,
+    bottom: 60,
+    x: 10,
+    y: 10,
+    toJSON: () => {},
+  });
+}
+
 describe('growspace-phase-hero-card', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -63,26 +88,148 @@ describe('growspace-phase-hero-card', () => {
     expect(element.shadowRoot!.querySelectorAll('.phase-bar-seg').length).toBeGreaterThan(5);
     const siblingRenderCount = renderHero.mock.calls.length;
     const chart = element.shadowRoot!.querySelector('.phase-chart-svg') as SVGElement;
-    vi.spyOn(chart, 'getBoundingClientRect').mockReturnValue({
-      left: 10,
-      top: 10,
-      width: 100,
-      height: 50,
-      right: 110,
-      bottom: 60,
-      x: 10,
-      y: 10,
-      toJSON: () => {},
-    });
+    stubChartBounds(chart);
 
     for (const clientX of [20, 60, 100]) {
-      chart.dispatchEvent(new MouseEvent('mousemove', { clientX, bubbles: true }));
+      chart.dispatchEvent(pointerEvent('pointermove', clientX, 'mouse'));
       await phaseCard.updateComplete;
     }
 
     expect(element.shadowRoot!.querySelector('.phase-tooltip')).not.toBeNull();
     expect(derive).toHaveBeenCalledTimes(1);
     expect(renderHero).toHaveBeenCalledTimes(siblingRenderCount);
+  });
+
+  it('scrubs with touch without toggling after a drag, while a tap still toggles', async () => {
+    const now = Date.now();
+    const element = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${[chip('steering_phase')]}
+        .irrigationStrategy=${strategy}
+        .historyCache=${{
+          soil_moisture: [
+            { last_changed: new Date(now - 2 * MINUTE_MS).toISOString(), state: '50' },
+            { last_changed: new Date(now - MINUTE_MS).toISOString(), state: '55' },
+            { last_changed: new Date(now).toISOString(), state: '60' },
+          ],
+        }}
+      ></growspace-header-hero-ui>
+    `);
+    const phaseCard = element.shadowRoot!.querySelector(
+      'growspace-phase-hero-card'
+    ) as GrowspacePhaseHeroCard;
+    const button = element.shadowRoot!.querySelector('.phase-hero-card') as HTMLButtonElement;
+    const chart = element.shadowRoot!.querySelector('.phase-chart-svg') as SVGElement;
+    const toggle = vi.fn();
+    phaseCard.addEventListener('toggle-graph', toggle);
+    stubChartBounds(chart);
+
+    chart.dispatchEvent(pointerEvent('pointerdown', 20));
+    chart.dispatchEvent(pointerEvent('pointermove', 60));
+    chart.dispatchEvent(pointerEvent('pointerup', 60));
+    button.click();
+    await phaseCard.updateComplete;
+
+    expect(element.shadowRoot!.querySelector('.phase-tooltip')).not.toBeNull();
+    expect(toggle).not.toHaveBeenCalled();
+
+    chart.dispatchEvent(pointerEvent('pointerdown', 60));
+    chart.dispatchEvent(pointerEvent('pointerup', 60));
+    button.click();
+
+    expect(toggle).toHaveBeenCalledOnce();
+  });
+
+  it('steps through samples with arrow keys and announces the landed reading', async () => {
+    const sampleTimes = [
+      new Date(2026, 7, 29, 9, 0),
+      new Date(2026, 7, 29, 10, 0),
+      new Date(2026, 7, 29, 11, 0),
+    ];
+    const element = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${[chip('steering_phase')]}
+        .irrigationStrategy=${strategy}
+        .historyCache=${{
+          soil_moisture: sampleTimes.map((at, index) => ({
+            last_changed: at.toISOString(),
+            state: String(50 + index * 5),
+          })),
+        }}
+      ></growspace-header-hero-ui>
+    `);
+    const phaseCard = element.shadowRoot!.querySelector(
+      'growspace-phase-hero-card'
+    ) as GrowspacePhaseHeroCard;
+    const button = element.shadowRoot!.querySelector('.phase-hero-card') as HTMLButtonElement;
+    const toggle = vi.fn();
+    phaseCard.addEventListener('toggle-graph', toggle);
+    button.focus();
+
+    const handled = !button.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true })
+    );
+    await phaseCard.updateComplete;
+
+    const state = element.shadowRoot!.querySelector('#steering-phase-state') as HTMLElement;
+    expect(handled).toBe(true);
+    expect(state.getAttribute('aria-live')).toBe('polite');
+    expect(state.textContent).toBe('Phase P1. Time 10:00. VWC 55.0%.');
+    expect(element.shadowRoot!.querySelector('.phase-vwc-readout')?.textContent).toContain('55.0%');
+    expect(toggle).not.toHaveBeenCalled();
+
+    button.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true })
+    );
+    await phaseCard.updateComplete;
+    expect(state.textContent).toBe('Phase P1. Time 09:00. VWC 50.0%.');
+
+    button.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true })
+    );
+    await phaseCard.updateComplete;
+    expect(state.textContent).toBe('Phase P1. Time 10:00. VWC 55.0%.');
+  });
+
+  it('clears the scrubber on pointer leave and blur', async () => {
+    const now = Date.now();
+    const element = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${[chip('steering_phase')]}
+        .irrigationStrategy=${strategy}
+        .historyCache=${{
+          soil_moisture: [
+            { last_changed: new Date(now - MINUTE_MS).toISOString(), state: '50' },
+            { last_changed: new Date(now).toISOString(), state: '60' },
+          ],
+        }}
+      ></growspace-header-hero-ui>
+    `);
+    const phaseCard = element.shadowRoot!.querySelector(
+      'growspace-phase-hero-card'
+    ) as GrowspacePhaseHeroCard;
+    const button = element.shadowRoot!.querySelector('.phase-hero-card') as HTMLButtonElement;
+    const chart = element.shadowRoot!.querySelector('.phase-chart-svg') as SVGElement;
+    stubChartBounds(chart);
+
+    chart.dispatchEvent(pointerEvent('pointermove', 60, 'mouse'));
+    await phaseCard.updateComplete;
+    expect(element.shadowRoot!.querySelector('.phase-tooltip')).not.toBeNull();
+
+    chart.dispatchEvent(pointerEvent('pointerleave', 60, 'mouse'));
+    await phaseCard.updateComplete;
+    expect(element.shadowRoot!.querySelector('.phase-tooltip')).toBeNull();
+
+    button.focus();
+    button.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true })
+    );
+    await phaseCard.updateComplete;
+    expect(element.shadowRoot!.querySelector('.phase-tooltip')).not.toBeNull();
+
+    button.blur();
+    await phaseCard.updateComplete;
+    expect(element.shadowRoot!.querySelector('.phase-tooltip')).toBeNull();
   });
 
   it('transitions only the visual properties intended for hero-card interaction', async () => {

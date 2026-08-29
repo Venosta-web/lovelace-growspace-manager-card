@@ -783,6 +783,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         width: 100%;
         height: 100%;
         cursor: crosshair;
+        touch-action: pan-y;
         overflow: visible;
       }
 

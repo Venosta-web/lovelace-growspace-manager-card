@@ -756,7 +756,7 @@ describe('GrowspaceHeaderHeroUI', () => {
     expect(getComputedStyle(triggerLabel).color).toBe('rgb(33, 150, 243)');
   });
 
-  it('handles mousemove and mouseleave on SVG chart for hover details', async () => {
+  it('handles pointermove and pointerleave on SVG chart for hover details', async () => {
     const chips = [makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30' })];
     const strategy = {
       enabled: true,
@@ -800,10 +800,13 @@ describe('GrowspaceHeaderHeroUI', () => {
     });
 
     // 1. Hover at 50% width
-    const moveEvent = new MouseEvent('mousemove', {
+    const moveEvent = new PointerEvent('pointermove', {
       clientX: 60, // (60 - 10) / 100 = 0.5
       clientY: 25,
       bubbles: true,
+      isPrimary: true,
+      pointerId: 1,
+      pointerType: 'mouse',
     });
     svg.dispatchEvent(moveEvent);
     await el.updateComplete;
@@ -815,7 +818,13 @@ describe('GrowspaceHeaderHeroUI', () => {
     expect(tooltip.style.left).toBe('50%');
 
     // 2. Mouse leave should clear hover details
-    svg.dispatchEvent(new MouseEvent('mouseleave'));
+    svg.dispatchEvent(
+      new PointerEvent('pointerleave', {
+        isPrimary: true,
+        pointerId: 1,
+        pointerType: 'mouse',
+      })
+    );
     await el.updateComplete;
 
     // Verify tooltip is removed
