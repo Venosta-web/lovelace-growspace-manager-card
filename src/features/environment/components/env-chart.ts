@@ -25,6 +25,7 @@ import { consume } from '@lit/context';
 import { hassContext } from '../../../lib/context';
 import '../../shared/ui/error-boundary';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
+import { renderGuideLimitMark } from './guide-limit-mark';
 
 /**
  * The pane every trace, band and gridline is drawn into.
@@ -294,6 +295,7 @@ export class GrowspaceEnvChart extends LitElement {
       vpdBands: series.vpdBands,
       guideBands: series.guideBands,
       guideLines: series.guideLines,
+      guideLimits: series.guideLimits,
       darkPeriods: series.darkPeriods,
       metricColor: series.metricColor,
     }));
@@ -380,6 +382,7 @@ export class GrowspaceEnvChart extends LitElement {
               ${this._renderGrid(width, height)}
               ${series.map((s) => this._renderGuideBands(s, this._renderWindow))}
               ${series.map((s) => this._renderGuideLines(s, this._renderWindow))}
+              ${series.map((s) => this._renderGuideLimits(s, this._renderWindow))}
               ${series.map((s) => {
                 // VPD bands remain in value/time space until this render step, where
                 // the component has the chart dimensions needed to create paths.
@@ -462,7 +465,7 @@ export class GrowspaceEnvChart extends LitElement {
     const relX = rect.width > 0 ? Math.max(0, Math.min(1, mouseX / rect.width)) : 0.5;
     const hoverTime = chartWindow.startTimeMs + relX * chartWindow.durationMillis;
 
-    const items = seriesList.map((s) => {
+    const items = seriesList.flatMap((s) => {
       let closest = s.points[0];
       let minDiff = Number.MAX_VALUE;
       let lo = 0;
@@ -484,11 +487,60 @@ export class GrowspaceEnvChart extends LitElement {
         }
       }
 
-      return {
+      const reading = {
         title: s.title,
         value: formatSeriesValue(s, closest, (key) => this._localize(key)),
         color: s.color,
       };
+
+      const metricColor = s.metricColor ?? s.color;
+      const bandItems = (s.guideBands ?? []).flatMap((band) => {
+        const segment =
+          band.segments.find(
+            (candidate) => candidate.startTime <= hoverTime && hoverTime <= candidate.endTime
+          ) ?? band.segments[band.segments.length - 1];
+        if (!segment) return [];
+        return [
+          {
+            title: `${s.title} optimal`,
+            value: `${formatGuideBound(segment.min, s.unit)}–${formatGuideBound(segment.max, s.unit)}`,
+            color: metricColor,
+          },
+        ];
+      });
+      const lineItems = (s.guideLines ?? []).flatMap((line) => {
+        const segment =
+          line.segments.find(
+            (candidate) => candidate.startTime <= hoverTime && hoverTime <= candidate.endTime
+          ) ?? line.segments[line.segments.length - 1];
+        if (!segment) return [];
+        return [
+          {
+            title: `${s.title} ${this._guideMarkLabel(line.id)}`,
+            value: formatGuideBound(segment.value, s.unit),
+            color: metricColor,
+          },
+        ];
+      });
+      const limitItems = (s.guideLimits ?? []).flatMap((limit) => {
+        const segment =
+          limit.segments.find(
+            (candidate) => candidate.startTime <= hoverTime && hoverTime <= candidate.endTime
+          ) ?? limit.segments[limit.segments.length - 1];
+        if (!segment) return [];
+        return [
+          {
+            title: `${s.title} ${limit.side === 'lower' ? 'lower' : 'upper'} limit`,
+            value: formatGuideBound(segment.value, s.unit),
+            color:
+              limit.status === 'warning'
+                ? STATUS_COLORS[StatusLevel.WARNING]
+                : STATUS_COLORS[StatusLevel.DANGER],
+          },
+        ];
+      });
+
+      return [reading, ...bandItems, ...lineItems, ...limitItems];
     });
 
     const locale = this.hass?.locale?.language || undefined;
@@ -696,7 +748,7 @@ export class GrowspaceEnvChart extends LitElement {
    * the controller's deadband as a faint region around it (ADR-0048).
    *
    * The dash is looser than a band edge's rather than tighter, so a setpoint is
-   * not read as the [[Limit]] mark that arrives with #50. The deadband is drawn
+   * not read as a [[Limit]]. The deadband is drawn
    * without edges of its own for the same reason: `target ± tolerance` says how
    * far the metric may drift before the controller responds, and edges would
    * make it read as an [[Optimal Band]] — a preference the config does not hold.
@@ -776,6 +828,37 @@ export class GrowspaceEnvChart extends LitElement {
     const key = `guide_marks.${id}`;
     const label = this._localize(key);
     return label === key ? id : label;
+  }
+
+  /**
+   * Status-coloured [[Limit]]s, using an edge chevron instead of widening the
+   * axis when a boundary falls outside the visible data domain (ADR-0048).
+   */
+  private _renderGuideLimits(series: GraphSeries, { startTimeMs, durationMillis }: ChartWindow) {
+    if (!series.guideLimits?.length) return svg``;
+
+    const { width, height } = CHART_PANE;
+    const xAt = (time: number) => ((time - startTimeMs) / durationMillis) * width;
+
+    return svg`${series.guideLimits.map((limit) => {
+      const color =
+        limit.status === 'warning'
+          ? STATUS_COLORS[StatusLevel.WARNING]
+          : STATUS_COLORS[StatusLevel.DANGER];
+      return limit.segments.map((segment) =>
+        renderGuideLimitMark({
+          id: limit.id,
+          value: segment.value,
+          min: series.min,
+          max: series.max,
+          width,
+          height,
+          color,
+          x1: xAt(segment.startTime),
+          x2: xAt(segment.endTime),
+        })
+      );
+    })}`;
   }
 
   /**

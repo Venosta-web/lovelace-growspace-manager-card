@@ -107,6 +107,13 @@ export interface EnvGuideLineSegment {
   value: number;
 }
 
+/** One time interval of a [[Limit]], in value and time space only. */
+export interface EnvGuideLimitSegment {
+  startTime: number;
+  endTime: number;
+  value: number;
+}
+
 /** A [[Setpoint]] resolved against this series' window. */
 export interface EnvGuideLine {
   id: string;
@@ -122,6 +129,16 @@ export interface EnvGuideLine {
    * far the metric may drift before the controller responds.
    */
   tolerance?: number;
+}
+
+/** A [[Limit]] resolved against this series' window. */
+export interface EnvGuideLimit {
+  id: string;
+  side: 'lower' | 'upper';
+  status: 'warning' | 'danger';
+  segments: EnvGuideLimitSegment[];
+  /** The value in force at the window's current-time edge. */
+  current: number;
 }
 
 /**
@@ -164,6 +181,8 @@ export interface EnvSeries {
    * `vpdBands` above is a different thing, the VPD trace's own status colouring.
    */
   guideBands?: EnvGuideBand[];
+  /** Limits never widen the axis; an off-scale segment renders as a chevron. */
+  guideLimits?: EnvGuideLimit[];
   /**
    * The [[Setpoint]]s this series' axis was widened to contain, absent when the
    * metric has none configured. Separate from `guideBands` because they are a
@@ -425,9 +444,36 @@ function _guideLines(
   });
 }
 
+/** Resolve the metric's [[Limit]]s without feeding them into its value axis. */
+function _guideLimits(
+  targets: MetricTarget[],
+  photoperiods: Photoperiod[],
+  startTimeMs: number,
+  nowMs: number
+): EnvGuideLimit[] {
+  return targets.filter(isLimit).map((target) => {
+    const segments: EnvGuideLimitSegment[] = _stepsWithPhotoperiod(target)
+      ? photoperiods.map((period) => ({
+          startTime: period.startTime,
+          endTime: period.endTime,
+          value: targetForPeriod(target, period.isDay),
+        }))
+      : [{ startTime: startTimeMs, endTime: nowMs, value: target.day }];
+
+    return {
+      id: target.id,
+      side: target.side,
+      status: target.status,
+      segments,
+      current: segments[segments.length - 1]?.value ?? target.day,
+    };
+  });
+}
+
 /**
- * Where a value sits against a metric's targets: outside a [[Limit]] is danger,
- * outside the [[Optimal Band]] is warning, inside both is optimal.
+ * Where a value sits against a metric's targets: outside a [[Limit]] takes the
+ * boundary's status, outside the [[Optimal Band]] is warning, and inside both
+ * is optimal.
  *
  * This is the VPD rule, generalised — it reads the normalised targets rather
  * than a VPD-shaped record, so the status bands and the guide marks drawn over
@@ -437,7 +483,9 @@ function _targetStatus(targets: MetricTarget[], value: number, isDay: boolean): 
   for (const target of targets) {
     if (!isLimit(target)) continue;
     const bound = targetForPeriod(target, isDay);
-    if (target.side === 'lower' ? value < bound : value > bound) return StatusLevel.DANGER;
+    if (target.side === 'lower' ? value < bound : value > bound) {
+      return target.status === 'warning' ? StatusLevel.WARNING : StatusLevel.DANGER;
+    }
   }
   for (const target of targets) {
     if (!isOptimalBand(target)) continue;
@@ -600,6 +648,7 @@ function _buildSeries(
   const statusTargets = key === MetricKey.VPD && !spec.sensor ? targets : undefined;
   const guideBands = _guideBands(targets, photoperiods, startTimeMs, nowMs);
   const guideLines = _guideLines(targets, photoperiods, startTimeMs, nowMs);
+  const guideLimits = _guideLimits(targets, photoperiods, startTimeMs, nowMs);
   const bounds = _axisBounds(descriptor, reduced, isCombined, guideBands, guideLines);
   const vpdBands = statusTargets ? _vpdBands(points, statusTargets, lightHistory) : undefined;
 
@@ -631,6 +680,7 @@ function _buildSeries(
     ...(vpdBands ? { vpdBands } : {}),
     ...(guideBands.length > 0 ? { guideBands } : {}),
     ...(guideLines.length > 0 ? { guideLines } : {}),
+    ...(guideLimits.length > 0 ? { guideLimits } : {}),
     ...(spec.sensor ? { sensor: spec.sensor } : {}),
   };
 }
