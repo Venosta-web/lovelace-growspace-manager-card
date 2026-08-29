@@ -611,6 +611,7 @@ describe('TankWaterChart – level tooltip', () => {
     await el.updateComplete;
 
     const pane = el.shadowRoot!.querySelector<HTMLElement>('.level-pane')!;
+    expect(getComputedStyle(pane).touchAction).toBe('pan-y');
     vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
       left: 0,
       top: 0,
@@ -618,7 +619,14 @@ describe('TankWaterChart – level tooltip', () => {
       height: 200,
     } as DOMRect);
 
-    pane.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 400 }));
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 400,
+        pointerId: 1,
+        pointerType: 'touch',
+      })
+    );
     await el.updateComplete;
 
     const tooltip = el.shadowRoot!.querySelector<HTMLElement>('.tank-tooltip');
@@ -629,6 +637,34 @@ describe('TankWaterChart – level tooltip', () => {
     expect(tooltip!.textContent).toContain('25.0 %');
     expect(tooltip!.textContent).toMatch(/\d{2}:\d{2}/);
     expect(tooltip!.style.left).toBe('400px');
+  });
+
+  it('exposes the level metric, window, statistics and current value as one image', async () => {
+    const el = createElement();
+    el.device = mkDevice([mkTank({ name: 'Main Tank' })]);
+    el.range = '1h';
+    el.sensorHistory = {
+      irrigation_tank_level: levelHistory([
+        { minutesAgo: 50, value: 40 },
+        { minutesAgo: 30, value: 60 },
+      ]),
+    };
+    await el.updateComplete;
+
+    const svg = el.shadowRoot!.querySelector('.level-pane svg')!;
+    expect(svg.getAttribute('role')).toBe('img');
+    expect(svg.getAttribute('aria-label')).toBe(
+      'Tank Level, 1h window. Main Tank: range 40.0 % to 60.0 %, average 50.0 %, current 60.0 %.'
+    );
+  });
+
+  it('names the level chart as having no data before history arrives', async () => {
+    const el = createElement();
+    el.device = mkDevice([mkTank()]);
+    await el.updateComplete;
+
+    const svg = el.shadowRoot!.querySelector('.level-pane svg')!;
+    expect(svg.getAttribute('aria-label')).toBe('Tank Level, 24h window, no data.');
   });
 
   it('clears the tooltip when the pointer leaves the level pane', async () => {
@@ -650,11 +686,18 @@ describe('TankWaterChart – level tooltip', () => {
       width: 800,
       height: 200,
     } as DOMRect);
-    pane.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 400 }));
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 400,
+        pointerId: 1,
+        pointerType: 'mouse',
+      })
+    );
     await el.updateComplete;
     expect(el.shadowRoot!.querySelector('.tank-tooltip')).not.toBeNull();
 
-    pane.dispatchEvent(new MouseEvent('mouseleave'));
+    pane.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 1, pointerType: 'touch' }));
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.tank-tooltip')).toBeNull();

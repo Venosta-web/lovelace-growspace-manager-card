@@ -26,6 +26,7 @@ import { hassContext } from '../../../lib/context';
 import '../../shared/ui/error-boundary';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
 import { renderGuideLimitMark } from './guide-limit-mark';
+import { accessibleChartSummary } from '../chart-accessibility';
 
 /**
  * The pane every trace, band and gridline is drawn into.
@@ -330,6 +331,10 @@ export class GrowspaceEnvChart extends LitElement {
     const series = this._renderSeries;
 
     if (series.length === 0) {
+      const chartName =
+        this.title ||
+        METRIC_CONFIG[this.metricKey]?.title ||
+        this._localize('environment_chart.graph');
       return html`
         <div class="gs-env-graph-card">
           <div class="gs-env-graph-header">
@@ -342,7 +347,18 @@ export class GrowspaceEnvChart extends LitElement {
             >
           </div>
           <div class="gs-env-chart-container empty">
-            ${this._localize('environment_chart.no_history_for_range', { range: this.range })}
+            <svg
+              class="chart-svg empty-chart-svg"
+              viewBox="0 0 ${width} ${height}"
+              preserveAspectRatio="none"
+              role="img"
+              aria-label=${accessibleChartSummary(chartName, this.range, [])}
+            ></svg>
+            <span class="empty-message"
+              >${this._localize('environment_chart.no_history_for_range', {
+                range: this.range,
+              })}</span
+            >
           </div>
         </div>
       `;
@@ -358,8 +374,9 @@ export class GrowspaceEnvChart extends LitElement {
           <div
             class="gs-env-chart-container"
             ${ref(this._chartContainerRef)}
-            @mousemove=${(e: MouseEvent) => this._onMouseMove(e, series, this._renderWindow)}
-            @mouseleave=${this._onMouseLeave}
+            @pointermove=${(e: PointerEvent) => this._onPointerMove(e, series, this._renderWindow)}
+            @pointerleave=${this._onPointerLeave}
+            @pointercancel=${this._onPointerLeave}
             @click=${() => this._onChartClick()}
           >
             ${this._renderTooltip()}
@@ -382,7 +399,13 @@ export class GrowspaceEnvChart extends LitElement {
             }
             ${this._renderXAxisHTML(this.range)}
 
-            <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
+            <svg
+              viewBox="0 0 ${width} ${height}"
+              preserveAspectRatio="none"
+              class="chart-svg"
+              role="img"
+              aria-label=${this._accessibleSummary(series)}
+            >
               ${
                 // One backdrop for the pane, not one per trace: a combined
                 // chart's metrics share a window, so they share its nights.
@@ -434,7 +457,7 @@ export class GrowspaceEnvChart extends LitElement {
     `;
   }
 
-  private _onMouseMove(e: MouseEvent, seriesList: GraphSeries[], chartWindow: ChartWindow) {
+  private _onPointerMove(e: PointerEvent, seriesList: GraphSeries[], chartWindow: ChartWindow) {
     if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
 
     this._tooltipRafId = requestAnimationFrame(() => {
@@ -443,7 +466,7 @@ export class GrowspaceEnvChart extends LitElement {
     });
   }
 
-  private _onMouseLeave = () => {
+  private _onPointerLeave = () => {
     if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
     this._activeTooltip = null;
     this._hoverTime = null;
@@ -461,7 +484,7 @@ export class GrowspaceEnvChart extends LitElement {
     }
   }
 
-  private _handleGraphHover(e: MouseEvent, seriesList: GraphSeries[], chartWindow: ChartWindow) {
+  private _handleGraphHover(e: PointerEvent, seriesList: GraphSeries[], chartWindow: ChartWindow) {
     if (!this._cachedChartRect) {
       const container = this._chartContainerRef.value;
       if (!container) return;
@@ -560,6 +583,36 @@ export class GrowspaceEnvChart extends LitElement {
       items,
     };
     this._hoverTime = hoverTime;
+  }
+
+  private _accessibleSummary(seriesList: GraphSeries[]): string {
+    const chartName = this.isCombined
+      ? this.title || 'Environment metrics'
+      : seriesList[0]?.title ||
+        this.title ||
+        METRIC_CONFIG[this.metricKey]?.title ||
+        this._localize('environment_chart.graph');
+
+    return accessibleChartSummary(
+      chartName,
+      this.range,
+      seriesList.flatMap((series) => {
+        const latest = series.points[series.points.length - 1];
+        if (!latest) return [];
+        const values = series.points.map((point) => point.value);
+        return [
+          {
+            name: series.title,
+            min: series.observedMin ?? Math.min(...values),
+            max: series.observedMax ?? Math.max(...values),
+            average:
+              series.avg ?? values.reduce((total, value) => total + value, 0) / values.length,
+            current: formatSeriesValue(series, latest, (key) => this._localize(key)),
+            unit: series.unit === 'state' ? '' : series.unit,
+          },
+        ];
+      })
+    );
   }
 
   private _renderSingleHeader(series: GraphSeries) {
@@ -1041,6 +1094,7 @@ export class GrowspaceEnvChart extends LitElement {
       border-radius: 8px;
       cursor: crosshair;
       overflow: hidden;
+      touch-action: pan-y;
     }
     .gs-env-chart-container.empty {
       display: flex;
@@ -1048,6 +1102,14 @@ export class GrowspaceEnvChart extends LitElement {
       justify-content: center;
       color: var(--text-muted);
       cursor: default;
+    }
+    .empty-chart-svg {
+      position: absolute;
+      inset: 0;
+    }
+    .empty-message {
+      position: relative;
+      z-index: 1;
     }
     .chart-svg {
       width: 100%;

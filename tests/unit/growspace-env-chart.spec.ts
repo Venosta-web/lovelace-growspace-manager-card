@@ -319,7 +319,14 @@ describe('GrowspaceEnvChart', () => {
         height: 200,
       } as DOMRect);
 
-      container?.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 400 }));
+      container?.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: 400,
+          pointerId: 1,
+          pointerType: 'mouse',
+        })
+      );
       await vi.runAllTimersAsync();
       await element.updateComplete;
 
@@ -340,7 +347,14 @@ describe('GrowspaceEnvChart', () => {
         top: 0,
         height: 200,
       } as DOMRect);
-      container?.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 400 }));
+      container?.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: 400,
+          pointerId: 1,
+          pointerType: 'touch',
+        })
+      );
       await vi.runAllTimersAsync();
       await element.updateComplete;
 
@@ -380,7 +394,14 @@ describe('GrowspaceEnvChart', () => {
         top: 0,
         height: 200,
       } as DOMRect);
-      container?.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 400 }));
+      container?.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: 400,
+          pointerId: 1,
+          pointerType: 'touch',
+        })
+      );
       await vi.runAllTimersAsync();
       await element.updateComplete;
 
@@ -408,11 +429,25 @@ describe('GrowspaceEnvChart', () => {
         height: 200,
       } as DOMRect);
 
-      container?.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 0 }));
+      container?.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: 0,
+          pointerId: 1,
+          pointerType: 'touch',
+        })
+      );
       await vi.runAllTimersAsync();
       expect(element.shadowRoot?.querySelector('.gs-tooltip')?.textContent).toContain('10');
 
-      container?.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 790 }));
+      container?.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: 790,
+          pointerId: 1,
+          pointerType: 'touch',
+        })
+      );
       await vi.runAllTimersAsync();
       await element.updateComplete;
       expect(element.shadowRoot?.querySelector('.gs-tooltip')?.textContent).toContain('30');
@@ -493,8 +528,8 @@ describe('GrowspaceEnvChart', () => {
         height: 200,
       } as any);
 
-      (element as any)._onMouseMove(
-        new MouseEvent('mousemove', { clientX: 100 }),
+      (element as any)._onPointerMove(
+        new PointerEvent('pointermove', { clientX: 100 }),
         (element as any)._renderSeries,
         { startTimeMs: Date.now() - 3600000, durationMillis: 3600000 }
       );
@@ -533,11 +568,11 @@ describe('GrowspaceEnvChart', () => {
       ).toThrow();
     });
 
-    it('cancels a pending frame on the next mousemove', () => {
+    it('cancels a pending frame on the next pointermove', () => {
       const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame');
       (element as any)._tooltipRafId = 123;
 
-      (element as any)._onMouseMove({ clientX: 50 } as MouseEvent, [], {
+      (element as any)._onPointerMove({ clientX: 50 } as PointerEvent, [], {
         startTimeMs: Date.now(),
         durationMillis: 1000,
       });
@@ -546,25 +581,25 @@ describe('GrowspaceEnvChart', () => {
       cancelSpy.mockRestore();
     });
 
-    it('cancels a pending frame and clears the tooltip on mouseleave', () => {
+    it('cancels a pending frame and clears the tooltip on pointerleave', () => {
       const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame');
       (element as any)._tooltipRafId = 456;
       (element as any)._activeTooltip = { id: 'test' };
 
-      (element as any)._onMouseLeave();
+      (element as any)._onPointerLeave();
 
       expect(cancelSpy).toHaveBeenCalledWith(456);
       expect((element as any)._activeTooltip).toBeNull();
       cancelSpy.mockRestore();
     });
 
-    it('clears the tooltip on mouseleave without a pending frame', () => {
+    it('clears the tooltip on pointerleave without a pending frame', () => {
       const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame');
       (element as any)._tooltipRafId = null;
       (element as any)._activeTooltip = { id: 'test' };
       (element as any)._hoverTime = 12345;
 
-      (element as any)._onMouseLeave();
+      (element as any)._onPointerLeave();
 
       expect(cancelSpy).not.toHaveBeenCalled();
       expect((element as any)._activeTooltip).toBeNull();
