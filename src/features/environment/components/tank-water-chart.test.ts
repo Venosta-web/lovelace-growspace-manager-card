@@ -543,16 +543,33 @@ describe('TankWaterChart – level pane', () => {
     expect(traceYs(el)).toSatisfy((ys: number[]) => ys.every((y) => Math.abs(y - 100) < 0.001));
   });
 
-  it('marks the tank warning level with a threshold line', async () => {
+  it('renders the tank warning level as an in-range warning Limit', async () => {
     const el = createElement();
     el.device = mkDevice([mkTank({ warningLevel: 25 })]);
     el.sensorHistory = { irrigation_tank_level: levelHistory([90, 84]) };
     await el.updateComplete;
-    await vi.waitFor(() => expect(el.shadowRoot!.querySelector('.level-warning')).not.toBeNull());
+    await vi.waitFor(() =>
+      expect(el.shadowRoot!.querySelector('[data-guide-id="tank-warning-0"]')).not.toBeNull()
+    );
 
     // 25% on a 20-100 domain over a 200-unit box: (100 - 25) / 80 * 200 = 187.5
-    const line = el.shadowRoot!.querySelector('.level-warning')!;
+    const line = el.shadowRoot!.querySelector('[data-guide-id="tank-warning-0"]')!;
+    expect(line.tagName.toLowerCase()).toBe('line');
+    expect(line.getAttribute('data-guide-placement')).toBe('line');
+    expect(line.getAttribute('stroke')).toContain('--gm-status-warning');
+    expect(line.getAttribute('stroke-dasharray')).toBe('2 2.5');
     expect(parseFloat(line.getAttribute('y1')!)).toBeCloseTo(187.5, 1);
+  });
+
+  it('renders an off-scale tank warning Limit as a lower-edge chevron', async () => {
+    const el = createElement();
+    el.device = mkDevice([mkTank({ warningLevel: 10 })]);
+    el.sensorHistory = { irrigation_tank_level: levelHistory([90, 84]) };
+    await el.updateComplete;
+
+    const mark = el.shadowRoot!.querySelector('[data-guide-id="tank-warning-0"]')!;
+    expect(mark.tagName.toLowerCase()).toBe('path');
+    expect(mark.getAttribute('data-guide-placement')).toBe('lower-edge');
   });
 
   it('keeps the level pane framed when no history has arrived yet', async () => {
@@ -608,6 +625,8 @@ describe('TankWaterChart – level tooltip', () => {
     expect(tooltip).not.toBeNull();
     expect(tooltip!.textContent).toContain('Main Tank');
     expect(tooltip!.textContent).toContain('42.0 %');
+    expect(tooltip!.textContent).toContain('Warning limit');
+    expect(tooltip!.textContent).toContain('25.0 %');
     expect(tooltip!.textContent).toMatch(/\d{2}:\d{2}/);
     expect(tooltip!.style.left).toBe('400px');
   });
