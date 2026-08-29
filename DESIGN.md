@@ -113,6 +113,12 @@ colors:
   stage-flower-early: '#ff9800'
   stage-flower-mid: '#fb8c00'
   stage-flower-late: '#ef6c00'
+  # Feature chrome — Identity accents for feature surfaces, not plotted data. A feature
+  # accent may share a value with a stage or metric today while remaining free to diverge
+  # with its own UI role.
+  # The Steering Phase Hero Card's border, tint, active ring and icon. Its VWC trace
+  # remains on --metric-soil-moisture; phase data remains on --phase-p*. See ADR 0047.
+  crop-steering-accent: '#26c6da'
   # Crop steering phases — P0/P1/P2/P3 are painted as chart bands, listed as phase chips
   # and worn as the hero's phase badge, all from one family that lived as three literals
   # in slices/irrigation/index.ts. The P1/P2/P3 values are unchanged from those literals.
@@ -478,6 +484,12 @@ One pair everywhere the light cycle is reported — timeline icons, logbook entr
 ### Crop Steering Phases
 
 - **P0 Activation** `#7e57c2` (`--phase-p0`), **P1 Saturation** `#4caf50` (`--phase-p1`), **P2 Maintenance** `#2196f3` (`--phase-p2`), **P3 Dryback** `#ff9800` (`--phase-p3`) — chart bands, phase chips, and the hero's dryback badge, from one family. P3 shares a value with Flowering Orange and is not it. P0 is the one phase in which no irrigation fires, so it sits off the green→blue→orange progression rather than extending it.
+
+The Steering Phase Hero Card's chrome uses **Crop Steering Accent** `#26c6da`
+(`--crop-steering-accent`) for its border, background tints, interaction states, inset ring,
+and icon. This is a feature-chrome role, not the colour of the VWC data plotted inside it;
+the trace remains on `--metric-soil-moisture`, and the threshold guides use the phase
+palette. See ADR 0047.
 
 ### Gradients
 

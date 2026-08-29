@@ -455,16 +455,13 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
       .hero-card.active .hero-value,
       .hero-card.active .hero-label,
-      .hero-card.active .hero-unit,
-      .hero-card.active .hero-icon {
+      .hero-card.active .hero-unit {
         color: var(--primary-text-color, #fff) !important;
-        fill: var(--primary-text-color, #fff) !important;
       }
 
-      /* Phase card keeps its own colours when active */
-      .phase-hero-card.active .hero-icon {
-        color: rgba(38, 198, 218, 0.85) !important;
-        fill: rgba(38, 198, 218, 0.85) !important;
+      .hero-card.active .hero-icon {
+        color: var(--primary-text-color, #fff);
+        fill: currentColor;
       }
 
       .phase-hero-card.active .hero-label {
@@ -734,9 +731,13 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 4px;
-        border-color: rgba(38, 198, 218, 0.16);
+        border-color: color-mix(in srgb, var(--crop-steering-accent) 16%, transparent);
         background:
-          linear-gradient(180deg, rgba(38, 198, 218, 0.045) 0%, rgba(38, 198, 218, 0.012) 100%),
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--crop-steering-accent) 4.5%, transparent) 0%,
+            color-mix(in srgb, var(--crop-steering-accent) 1.2%, transparent) 100%
+          ),
           var(--glass-bg, rgba(255, 255, 255, 0.05));
         backdrop-filter: var(--glass-blur);
         box-shadow:
@@ -746,9 +747,13 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
       .phase-hero-card:hover {
         background:
-          linear-gradient(180deg, rgba(38, 198, 218, 0.055) 0%, rgba(38, 198, 218, 0.018) 100%),
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--crop-steering-accent) 5.5%, transparent) 0%,
+            color-mix(in srgb, var(--crop-steering-accent) 1.8%, transparent) 100%
+          ),
           var(--secondary-background-color, rgba(255, 255, 255, 0.08));
-        border-color: rgba(38, 198, 218, 0.28);
+        border-color: color-mix(in srgb, var(--crop-steering-accent) 28%, transparent);
         box-shadow:
           0 8px 32px -4px rgba(0, 0, 0, 0.3),
           0 0 0 1px rgba(255, 255, 255, 0.05) inset;
@@ -757,21 +762,25 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
       .phase-hero-card.active {
         background:
-          linear-gradient(180deg, rgba(38, 198, 218, 0.08) 0%, rgba(38, 198, 218, 0.025) 100%),
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--crop-steering-accent) 8%, transparent) 0%,
+            color-mix(in srgb, var(--crop-steering-accent) 2.5%, transparent) 100%
+          ),
           var(--glass-bg, rgba(255, 255, 255, 0.05));
-        border-color: rgba(38, 198, 218, 0.3);
+        border-color: color-mix(in srgb, var(--crop-steering-accent) 30%, transparent);
         box-shadow:
           0 8px 32px -4px rgba(0, 0, 0, 0.3),
-          0 0 0 1px rgba(38, 198, 218, 0.35) inset;
+          0 0 0 1px color-mix(in srgb, var(--crop-steering-accent) 35%, transparent) inset;
       }
 
       .phase-hero-card .hero-header {
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
       }
 
-      .phase-hero-card .hero-icon {
-        color: rgba(38, 198, 218, 0.85) !important;
-        fill: rgba(38, 198, 218, 0.85) !important;
+      .hero-card.phase-hero-card .hero-icon {
+        color: color-mix(in srgb, var(--crop-steering-accent) 85%, transparent);
+        fill: currentColor;
       }
 
       .phase-hero-card .hero-label {
@@ -1132,19 +1141,21 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
                   <!-- P2 trigger reference line -->
                   <line
+                    class="phase-trigger-line"
                     x1="0"
                     y1="${chart.triggerY.toFixed(1)}"
                     x2="${CHART_W}"
                     y2="${chart.triggerY.toFixed(1)}"
-                    stroke="var(--phase-p3, #ff9800)"
+                    stroke="var(--phase-p2, #2196f3)"
                     stroke-width="1"
                     stroke-dasharray="4 4"
                     opacity="0.45"
                   />
                   <text
+                    class="phase-trigger-label"
                     x="${CHART_W - 4}"
                     y="${Math.min(CHART_H - 3, chart.triggerY + 10).toFixed(1)}"
-                    fill="var(--phase-p3, #ff9800)"
+                    fill="var(--phase-p2, #2196f3)"
                     font-size="6"
                     text-anchor="end"
                     font-family="var(--font-family, sans-serif)"
