@@ -141,6 +141,15 @@ export class GrowspaceEnvChart extends LitElement {
   // For combined graphs
   @property({ type: Array }) metrics: string[] = [];
   @property({ type: Boolean }) isCombined = false;
+  /**
+   * The window to draw, when a host owns one.
+   *
+   * A [[Curated Combo]] draws a bar pane beneath this chart over the same X
+   * axis, and two now-anchored windows resolved a moment apart are a silently
+   * misaligned axis — the same reason [[Env Series]] takes its window as a
+   * parameter. Absent, the chart anchors its own from `range` as it always has.
+   */
+  @property({ attribute: false }) chartWindow: ChartWindow | undefined;
 
   @state() private _activeTooltip: TooltipData | null = null;
   @state() private _hoverTime: number | null = null;
@@ -315,9 +324,10 @@ export class GrowspaceEnvChart extends LitElement {
       changedProperties.has('range') ||
       changedProperties.has('metricKey') ||
       changedProperties.has('metrics') ||
-      changedProperties.has('isCombined')
+      changedProperties.has('isCombined') ||
+      changedProperties.has('chartWindow')
     ) {
-      this._renderWindow = this._windowFor(this.range);
+      this._renderWindow = this.chartWindow ?? this._windowFor(this.range);
       this._renderSeries = this._buildRenderSeries(this._renderWindow);
     }
   }
@@ -429,6 +439,12 @@ export class GrowspaceEnvChart extends LitElement {
               })}
             </svg>
           </div>
+          <!--
+            A subordinate pane, when a host projects one: the bar half of a
+            [[Curated Combo]]. It sits inside this card rather than beside it,
+            so the two panes read as one chart over one X axis.
+          -->
+          <slot name="secondary-pane"></slot>
         </div>
       </error-boundary>
     `;

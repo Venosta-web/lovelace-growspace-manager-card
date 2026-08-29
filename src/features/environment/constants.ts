@@ -275,6 +275,40 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
   [MetricKey.POWER]: { color: token['--metric-power'], title: 'Power', unit: 'W', icon: mdiFlash },
 };
 
+/**
+ * One [[Curated Combo]]: the pairing the card asserts, and which side of it is
+ * the primary metric.
+ */
+export interface MetricComboRecipe {
+  primary: MetricKey;
+  secondary: MetricKey;
+}
+
+/**
+ * The combo recipes, keyed by their primary metric.
+ *
+ * Hard-coded beside `METRIC_CONFIG`, where the pairing sits next to the colour,
+ * unit and icon facts it depends on, and deliberately **not** card YAML: the
+ * editorial claim is the whole value of a combo, and a `combos:` key would have
+ * growers curating before there is an established sense of what a good one is
+ * (ADR-0051). Which geometry a recipe gets is not stated here either — it
+ * follows from the secondary's data shape (ADR-0049).
+ */
+export const METRIC_COMBOS: Record<string, MetricComboRecipe> = {
+  [MetricKey.TEMPERATURE]: { primary: MetricKey.TEMPERATURE, secondary: MetricKey.EXHAUST },
+};
+
+/**
+ * The combo `metric` is the primary of, if any.
+ *
+ * Matched on the whole key, so a per-sensor graph id (`temperature:sensor.x`)
+ * resolves nothing: a combo is a claim about the growspace's temperature, not
+ * about one of several probes reporting it.
+ */
+export function metricComboFor(metric: string): MetricComboRecipe | undefined {
+  return METRIC_COMBOS[metric];
+}
+
 export enum StatusLevel {
   OPTIMAL = 'optimal',
   WARNING = 'warning',
