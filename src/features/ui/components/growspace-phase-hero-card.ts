@@ -391,6 +391,12 @@ export class GrowspacePhaseHeroCard extends LitElement {
     const vwcDisplay = hovered ? hovered.vwc.toFixed(1) : currentVwcDisplay;
     const chartColor = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
     const percent = (fraction: number) => `${(fraction * 100).toFixed(2)}%`;
+    const tooltipAnchor =
+      hoverPosition == null || hoverPosition <= 0.18
+        ? 'start'
+        : hoverPosition >= 0.82
+          ? 'end'
+          : 'center';
 
     return html`
       <button
@@ -521,13 +527,13 @@ export class GrowspacePhaseHeroCard extends LitElement {
                 ${hoverPosition != null && hovered
                   ? html`
                       <div
-                        class="phase-tooltip"
-                        style="left: ${Math.max(4, Math.min(82, hoverPosition * 100)).toFixed(0)}%"
+                        class="phase-tooltip phase-tooltip--anchor-${tooltipAnchor}"
+                        style="left:${percent(hoverPosition)}"
                       >
                         ${hoveredPhase
                           ? html`<span
                               class="phase-tooltip-phase"
-                              style="color:${hoveredPhase.color};"
+                              style="--phase-tooltip-accent:${hoveredPhase.color};"
                               >${hoveredPhase.label}</span
                             >`
                           : nothing}
