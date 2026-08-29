@@ -15,13 +15,57 @@ import {
 } from '../../../features/environment/constants';
 import {
   computePhases,
+  fmtMinuteOfDay,
   resolveSaturationCrossing,
-  type VwcSample,
 } from '../../../features/environment/crop-steering-model';
+import {
+  computePhaseChartSeries,
+  computePhaseWindowSegments,
+  samplePhaseChartAt,
+  type PhaseChartSeries,
+} from '../../../features/environment/phase-chart-series';
 import type { IrrigationStrategy, IrrigationConfig } from '../../../services/types';
 import type { RawHistoryDataPoint } from '../../../adapters/hass-types';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { mdiChevronDown } from '@mdi/js';
+
+/**
+ * Where a timestamp sits across the chart's window, as a 0..1 fraction. Clamped,
+ * because the phase bar's blocks are day-aligned and routinely start before the
+ * window or end after it.
+ */
+function fracOfWindow(series: PhaseChartSeries, atMs: number): number {
+  return Math.max(0, Math.min(1, (atMs - series.window.startMs) / series.window.spanMs));
+}
+
+/**
+ * Turns a [[Phase Chart Series]] into the pixel geometry of the VWC chart.
+ *
+ * The Hero Card owns width and height, so this is the only place the two meet:
+ * the value space above it knows nothing about either, and the template below it
+ * only interpolates what comes out.
+ */
+function phaseChartGeometry(series: PhaseChartSeries, chartW: number, chartH: number) {
+  const { startMs, spanMs } = series.window;
+  const vwcRange = series.max - series.min || 1;
+  const xOf = (atMs: number) => ((atMs - startMs) / spanMs) * chartW;
+  const yOf = (vwc: number) => chartH - ((vwc - series.min) / vwcRange) * chartH;
+
+  const pts = series.points.map((p) => ({ x: xOf(p.atMs), y: yOf(p.vwc) }));
+  const linePath = pts
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(' ');
+  const last = pts[pts.length - 1];
+
+  return {
+    linePath,
+    areaPath: `${linePath} L ${chartW},${chartH} L 0,${chartH} Z`,
+    targetY: yOf(series.targetVwc),
+    triggerY: yOf(series.triggerVwc),
+    nowX: last.x,
+    nowY: last.y,
+  };
+}
 
 @customElement('growspace-header-hero-ui')
 export class GrowspaceHeaderHeroUI extends LitElement {
@@ -897,119 +941,6 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     `;
   }
 
-  // ── Phase hero card helpers ────────────────────────────────────────────────
-
-  private _buildPhaseChart(
-    historyData: RawHistoryDataPoint[] | undefined,
-    targetVwc: number,
-    triggerVwc: number,
-    chartW: number,
-    chartH: number
-  ): {
-    linePath: string;
-    areaPath: string;
-    targetY: number;
-    triggerY: number;
-    nowX: number;
-    nowY: number;
-    currentVwc: number;
-    hoverVwc: (t: number) => number;
-    hoverTime: (t: number) => string;
-    hoverMinuteOfDay: (t: number) => number;
-    /** Map a unix-ms timestamp to a 0..1 chart fraction (clamped). */
-    tsToFrac: (ts: number) => number;
-    minTime: number;
-    timeSpan: number;
-  } | null {
-    if (!historyData || historyData.length < 2) return null;
-
-    const sorted = [...historyData].sort(
-      (a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()
-    );
-    const valid = sorted.filter((d) => {
-      const v = parseFloat(d.state);
-      return !isNaN(v) && d.state !== 'unavailable' && d.state !== 'unknown';
-    });
-    if (valid.length < 2) return null;
-
-    let minVal = Infinity;
-    let maxVal = -Infinity;
-    let minTime = Infinity;
-    let maxTime = -Infinity;
-    for (const d of valid) {
-      const v = parseFloat(d.state);
-      const t = new Date(d.last_changed).getTime();
-      if (v < minVal) minVal = v;
-      if (v > maxVal) maxVal = v;
-      if (t < minTime) minTime = t;
-      if (t > maxTime) maxTime = t;
-    }
-
-    const vwcMin = Math.min(minVal, triggerVwc - 5);
-    const vwcMax = Math.max(maxVal, targetVwc + 5);
-    const vwcRange = vwcMax - vwcMin || 1;
-    const timeSpan = maxTime - minTime || 1;
-
-    const xOf = (t: number) => ((t - minTime) / timeSpan) * chartW;
-    const yOf = (v: number) => chartH - ((v - vwcMin) / vwcRange) * chartH;
-
-    const pts = valid.map((d) => ({
-      x: xOf(new Date(d.last_changed).getTime()),
-      y: yOf(parseFloat(d.state)),
-      v: parseFloat(d.state),
-    }));
-
-    const linePath = pts
-      .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`)
-      .join(' ');
-    const areaPath = `${linePath} L ${chartW},${chartH} L 0,${chartH} Z`;
-
-    const currentVwc = pts[pts.length - 1].v;
-
-    const hoverVwc = (t: number): number => {
-      const x = t * chartW;
-      for (let i = 1; i < pts.length; i++) {
-        if (pts[i].x >= x) {
-          const frac = (x - pts[i - 1].x) / (pts[i].x - pts[i - 1].x + 0.001);
-          return pts[i - 1].v + frac * (pts[i].v - pts[i - 1].v);
-        }
-      }
-      return currentVwc;
-    };
-
-    // Map hover fraction (0..1) to a wall-clock timestamp, return HH:MM string.
-    const hoverTime = (t: number): string => {
-      const ms = minTime + t * timeSpan;
-      const d = new Date(ms);
-      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    };
-
-    // Map hover fraction to minute-of-day (0..1439) for phase lookup.
-    const hoverMinuteOfDay = (t: number): number => {
-      const ms = minTime + t * timeSpan;
-      const d = new Date(ms);
-      return d.getHours() * 60 + d.getMinutes();
-    };
-
-    const tsToFrac = (ts: number) => Math.max(0, Math.min(1, (ts - minTime) / timeSpan));
-
-    return {
-      linePath,
-      areaPath,
-      targetY: yOf(targetVwc),
-      triggerY: yOf(triggerVwc),
-      nowX: pts[pts.length - 1].x,
-      nowY: pts[pts.length - 1].y,
-      currentVwc,
-      hoverVwc,
-      hoverTime,
-      hoverMinuteOfDay,
-      tsToFrac,
-      minTime,
-      timeSpan,
-    };
-  }
-
   private _renderPhaseHeroCard(chip: HeaderChip) {
     const strategy = this.irrigationStrategy!;
     const config = this.irrigationConfig;
@@ -1026,21 +957,17 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     const historyData = (this.historyCache as Record<string, RawHistoryDataPoint[]>)?.[
       MetricKey.SOIL_MOISTURE
     ];
-    const chart = this._buildPhaseChart(historyData, targetVwc, triggerVwc, CHART_W, CHART_H);
+    const series = computePhaseChartSeries(historyData, targetVwc, triggerVwc);
+    const chart = series ? phaseChartGeometry(series, CHART_W, CHART_H) : null;
 
     const dayHours = config?.resolvedDayHours ?? 12;
     // The P1→P2 boundary the backend decides on the measurement rather than the
     // clock, re-derived from the same VWC series this card already plots.
-    const vwcSamples: VwcSample[] = (historyData ?? []).flatMap((d) => {
-      const vwc = parseFloat(d.state);
-      const atMs = Date.parse(d.last_changed);
-      return isNaN(vwc) || Number.isNaN(atMs) ? [] : [{ atMs, vwc }];
-    });
     const phases = computePhases(
       strategy,
       dayHours,
       config,
-      resolveSaturationCrossing(strategy, dayHours, vwcSamples, Date.now())
+      resolveSaturationCrossing(strategy, dayHours, series?.points ?? [], Date.now())
     );
 
     // Parse chip value: "P3 · 22:40"
@@ -1050,9 +977,10 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     const isP3 = currentPhase === 'P3';
 
     const hv = this._phaseHoverX;
-    const hovVwc = hv != null && chart ? chart.hoverVwc(hv) : null;
-    const hovTimeStr = hv != null && chart ? chart.hoverTime(hv) : null;
-    const hovMinute = hv != null && chart ? chart.hoverMinuteOfDay(hv) : null;
+    const hovered = hv != null && series ? samplePhaseChartAt(series, hv) : null;
+    const hovVwc = hovered?.vwc ?? null;
+    const hovTimeStr = hovered ? fmtMinuteOfDay(hovered.minuteOfDay) : null;
+    const hovMinute = hovered?.minuteOfDay ?? null;
 
     // Determine which crop-steering phase the hovered minute falls in.
     const hovPhase =
@@ -1060,110 +988,24 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         ? (phases.phases.find((p) => hovMinute >= p.start && hovMinute < p.end) ?? null)
         : null;
 
-    const vwcDisplay = hovVwc != null ? hovVwc.toFixed(1) : (chart?.currentVwc?.toFixed(1) ?? null);
+    const vwcDisplay =
+      hovVwc != null ? hovVwc.toFixed(1) : (series?.currentVwc?.toFixed(1) ?? null);
 
-    // Phase bar: map minute-of-day → chart timestamp → chart fraction.
-    // Uses the same coordinate space as the VWC sparkline so labels align with the chart.
+    // Phase bar: the derived phase windows, placed on the same time window as the
+    // VWC trace above so the two cannot drift apart.
     const pct = (f: number) => `${(f * 100).toFixed(2)}%`;
     const segBar =
-      phases && chart
-        ? (() => {
-            const { lightsOnMin, lightsOffMin, phases: ph } = phases;
-
-            const DAY_MS = 24 * 60 * 60 * 1000;
-
-            // Get midnight of the day that contains the latest data point.
-            const latest = new Date(chart.minTime + chart.timeSpan);
-            const todayMidnight = new Date(
-              latest.getFullYear(),
-              latest.getMonth(),
-              latest.getDate()
-            ).getTime();
-
-            if (this.timeRange === '7d') {
-              // Enumerate every calendar day in the chart window and emit phase segments
-              // for each. Only the last (rightmost) day gets labels to avoid clutter.
-              const result: Array<{
-                key: string;
-                leftFrac: number;
-                widthFrac: number;
-                c: string;
-                label: string | null;
-              }> = [];
-              const firstDayTs = new Date(chart.minTime);
-              let dayRef = new Date(
-                firstDayTs.getFullYear(),
-                firstDayTs.getMonth(),
-                firstDayTs.getDate()
-              ).getTime();
-              let dayIndex = 0;
-              while (dayRef <= chart.minTime + chart.timeSpan) {
-                const isLastDay = dayRef + DAY_MS > chart.minTime + chart.timeSpan;
-                const seg7 = (
-                  key: string,
-                  startMin: number,
-                  endMin: number,
-                  c: string,
-                  label: string | null
-                ) => {
-                  const leftFrac = chart.tsToFrac(dayRef + startMin * 60 * 1000);
-                  const rightFrac = chart.tsToFrac(dayRef + endMin * 60 * 1000);
-                  return {
-                    key: `${key}-${dayIndex}`,
-                    leftFrac,
-                    widthFrac: Math.max(0, rightFrac - leftFrac),
-                    c,
-                    label: isLastDay ? label : null,
-                  };
-                };
-                result.push(
-                  seg7('pre', 0, lightsOnMin, 'rgba(255,255,255,0.07)', null),
-                  seg7('p1', ph[0].start, ph[0].end, ph[0].color, ph[0].label),
-                  seg7('p2', ph[1].start, ph[1].end, ph[1].color, ph[1].label),
-                  seg7('p3', ph[2].start, ph[2].end, ph[2].color, ph[2].label),
-                  seg7('post', lightsOffMin, 1440, 'rgba(255,255,255,0.07)', null)
-                );
-                dayRef += DAY_MS;
-                dayIndex++;
-              }
-              return result;
-            }
-
-            // Single-day logic for 1h/6h/24h.
-            // For each segment, pick a single day reference from the START minute and
-            // apply it to both start and end — avoids rightFrac < leftFrac when the end
-            // minute is past maxTime and the per-minute heuristic picks different days.
-            const mid = chart.minTime + chart.timeSpan / 2;
-
-            const dayRefFor = (startMin: number): number => {
-              const todayTs = todayMidnight + startMin * 60 * 1000;
-              const yesterdayTs = todayMidnight - DAY_MS + startMin * 60 * 1000;
-              return Math.abs(todayTs - mid) <= Math.abs(yesterdayTs - mid)
-                ? todayMidnight
-                : todayMidnight - DAY_MS;
+      series && phases
+        ? computePhaseWindowSegments(series, phases, this.timeRange).map((seg) => {
+            const leftFrac = fracOfWindow(series, seg.startMs);
+            return {
+              key: seg.key,
+              leftFrac,
+              widthFrac: Math.max(0, fracOfWindow(series, seg.endMs) - leftFrac),
+              c: seg.color,
+              label: seg.label,
             };
-
-            const seg = (
-              key: string,
-              startMin: number,
-              endMin: number,
-              c: string,
-              label: string | null
-            ) => {
-              const ref = dayRefFor(startMin);
-              const leftFrac = chart.tsToFrac(ref + startMin * 60 * 1000);
-              const rightFrac = chart.tsToFrac(ref + endMin * 60 * 1000);
-              return { key, leftFrac, widthFrac: Math.max(0, rightFrac - leftFrac), c, label };
-            };
-
-            return [
-              seg('pre', 0, lightsOnMin, 'rgba(255,255,255,0.07)', null),
-              seg('p1', ph[0].start, ph[0].end, ph[0].color, ph[0].label),
-              seg('p2', ph[1].start, ph[1].end, ph[1].color, ph[1].label),
-              seg('p3', ph[2].start, ph[2].end, ph[2].color, ph[2].label),
-              seg('post', lightsOffMin, 1440, 'rgba(255,255,255,0.07)', null),
-            ];
-          })()
+          })
         : [];
 
     return html`
@@ -1300,12 +1142,6 @@ export class GrowspaceHeaderHeroUI extends LitElement {
                         y2="${CHART_H}"
                         stroke="rgba(255,255,255,0.45)"
                         stroke-width="1"
-                      />
-                      <circle
-                        cx="${(hv * CHART_W).toFixed(1)}"
-                        cy="${chart.targetY + (chart.triggerY - chart.targetY) * 0.5 /* approx — will update */}"
-                        r="0"
-                        fill="transparent"
                       />
                     `
                     : nothing}

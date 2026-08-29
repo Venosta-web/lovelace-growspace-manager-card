@@ -913,17 +913,4 @@ describe('GrowspaceHeaderHeroUI', () => {
     expect(badge).not.toBeNull();
     expect(badge?.textContent).toBe('Dryback');
   });
-
-  it('handles hover calculation edge cases directly', () => {
-    const el = new GrowspaceHeaderHeroUI();
-    const now = Date.now();
-    const historyData = [
-      { last_changed: new Date(now - 3600000).toISOString(), state: '50.0' },
-      { last_changed: new Date(now).toISOString(), state: '60.0' },
-    ];
-    const chart = (el as any)._buildPhaseChart(historyData, 60, 45, 300, 68);
-    expect(chart).not.toBeNull();
-    // Pass t = 1.5 to trigger the fallback return currentVwc line (line 611)
-    expect(chart.hoverVwc(1.5)).toBe(60.0);
-  });
 });
