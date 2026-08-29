@@ -6,7 +6,7 @@ import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import type { GrowspaceDevice } from '../../../services/types';
-import type { GraphSeries, TooltipData, SensorHistories } from '../types';
+import type { GraphDataPoint, GraphSeries, TooltipData, SensorHistories } from '../types';
 import { ChartUtils } from '../../../utils/chart-utils';
 import { computeEnvSeries } from '../env-series';
 import type { MetricDescriptor } from '../../../slices/metric-descriptors';
@@ -25,6 +25,79 @@ import { consume } from '@lit/context';
 import { hassContext } from '../../../lib/context';
 import '../../shared/ui/error-boundary';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
+
+/**
+ * The pane every trace, band and gridline is drawn into.
+ *
+ * `preserveAspectRatio="none"` stretches the viewBox to whatever box the chart
+ * body is given, so these are drawing units rather than pixels. One definition,
+ * the way `tank-water-chart` keeps one `LEVEL_PANE`.
+ */
+const CHART_PANE = { width: 800, height: 200 } as const;
+
+/**
+ * Horizontal gridlines, as fractions of the pane height — the flat set the
+ * crop-steering model dialog draws.
+ *
+ * Evenly spaced and unlabelled on purpose. A dashed line at a data-derived value
+ * reads exactly like a [[Guide Mark]] (ADR-0048) while encoding nothing anyone
+ * configured, and it moves as the data moves.
+ */
+const GRIDLINE_FRACTIONS = [0, 0.25, 0.5, 0.75, 1] as const;
+
+/** The window one render pass draws — its traces, its bands and its axis alike. */
+interface ChartWindow {
+  startTimeMs: number;
+  durationMillis: number;
+}
+
+/**
+ * Whether a metric reads as on/off rather than as a number.
+ *
+ * `unit === 'state'` is deliberately not part of the test: `exhaust`,
+ * `humidifier` and `circulation_fan` carry that unit for a multi-level speed,
+ * which they report through `meta.state`.
+ */
+function isBinaryMetric(id: string, unit: string): boolean {
+  return (
+    SENSOR_CHART_DEFAULTS[id]?.binary === true ||
+    id === MetricKey.OPTIMAL ||
+    id === MetricKey.DEHUMIDIFIER ||
+    id === MetricKey.IRRIGATION ||
+    id === MetricKey.DRAIN ||
+    (id === MetricKey.LIGHT && unit !== '%')
+  );
+}
+
+/**
+ * The one readout for a point on a trace.
+ *
+ * The header value and the scrub tooltip both go through this, so they cannot
+ * disagree about the same metric: deciding independently had an irrigation chart
+ * showing `1.0 state` under an `On` header.
+ */
+function formatSeriesValue(
+  series: Pick<GraphSeries, 'id' | 'unit'>,
+  point: GraphDataPoint,
+  localize: (key: string) => string
+): string {
+  const meta = point.meta as Record<string, unknown> | undefined;
+
+  if (isBinaryMetric(series.id, series.unit)) {
+    if (series.id === MetricKey.OPTIMAL) {
+      return point.value === 1
+        ? localize('environment_chart.optimal')
+        : (meta?.reasons as string) || localize('environment_chart.not_optimal');
+    }
+    return localize(point.value === 1 ? 'environment_chart.on' : 'environment_chart.off');
+  }
+
+  if ((series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) && meta?.state) {
+    return meta.state as string;
+  }
+
+  return `${point.value.toFixed(1)} ${series.unit}`;
+}
 
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
@@ -56,6 +129,15 @@ export class GrowspaceEnvChart extends LitElement {
   @state() private _canScrollLeft = false;
   @state() private _canScrollRight = false;
   @state() private _renderSeries: GraphSeries[] = [];
+  /**
+   * The window `_renderSeries` was built against.
+   *
+   * Held rather than recomputed in `render()`: the path build runs only when one
+   * of a handful of properties changes, so a re-render for any other reason
+   * would otherwise draw the axis and the scrub against a `now` the paths know
+   * nothing about — the silent misalignment [[EnvSeriesWindow]] warns about.
+   */
+  private _renderWindow: ChartWindow = this._windowFor(this.range);
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
   private _chartContainerRef: Ref<HTMLDivElement> = createRef();
@@ -168,19 +250,13 @@ export class GrowspaceEnvChart extends LitElement {
    * the one step that needs the chart's pixel dimensions, and the only part of the
    * derivation this component still owns (ADR-0030).
    */
-  private _buildRenderSeries(
-    width: number,
-    height: number,
-    startTime: Date,
-    durationMillis: number,
-    now: Date
-  ): GraphSeries[] {
-    const startTimeMs = startTime.getTime();
+  private _buildRenderSeries({ startTimeMs, durationMillis }: ChartWindow): GraphSeries[] {
+    const { width, height } = CHART_PANE;
     const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
 
     return computeEnvSeries(this.descriptors, this.sensorHistory ?? {}, metricKeys, {
       startTimeMs,
-      nowMs: now.getTime(),
+      nowMs: startTimeMs + durationMillis,
       isCombined: this.isCombined,
     }).map((series) => ({
       id: series.id,
@@ -216,21 +292,16 @@ export class GrowspaceEnvChart extends LitElement {
       changedProperties.has('metrics') ||
       changedProperties.has('isCombined')
     ) {
-      const durationMillis = this._getDurationMillis(this.range);
-      const now = new Date();
-      const startTime = new Date(now.getTime() - durationMillis);
-      this._renderSeries = this._buildRenderSeries(800, 200, startTime, durationMillis, now);
+      this._renderWindow = this._windowFor(this.range);
+      this._renderSeries = this._buildRenderSeries(this._renderWindow);
     }
   }
 
   render() {
     if (!this.device) return html``;
 
-    const width = 800;
-    const height = 200;
-    const durationMillis = this._getDurationMillis(this.range);
-    const now = new Date();
-    const startTime = new Date(now.getTime() - durationMillis);
+    const { width, height } = CHART_PANE;
+    const { startTimeMs, durationMillis } = this._renderWindow;
     const series = this._renderSeries;
 
     if (series.length === 0) {
@@ -262,7 +333,7 @@ export class GrowspaceEnvChart extends LitElement {
           <div
             class="gs-env-chart-container"
             ${ref(this._chartContainerRef)}
-            @mousemove=${(e: MouseEvent) => this._onMouseMove(e, series, startTime, durationMillis)}
+            @mousemove=${(e: MouseEvent) => this._onMouseMove(e, series, this._renderWindow)}
             @mouseleave=${this._onMouseLeave}
             @click=${() => this._onChartClick()}
           >
@@ -285,12 +356,12 @@ export class GrowspaceEnvChart extends LitElement {
                     const path = ChartUtils.generatePathFromValues(bandPoints, width, height, {
                       min: s.min,
                       max: s.max,
-                      startTime: startTime.getTime(),
-                      endTime: startTime.getTime() + durationMillis,
+                      startTime: startTimeMs,
+                      endTime: startTimeMs + durationMillis,
                       type: ChartType.LINE,
                       timeRange: this.range,
                     });
-                    return svg`<path d="${path}" fill="none" stroke="${this._getVpdStatusColor(band.status)}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`;
+                    return svg`<path d="${path}" fill="none" stroke="${this._getVpdStatusColor(band.status)}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />`;
                   })}`;
                 }
 
@@ -304,7 +375,7 @@ export class GrowspaceEnvChart extends LitElement {
                   ${
                     s.fillType === 'gradient'
                       ? svg`<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
-                      : svg`<path d="${s.path} V ${height} H ${((s.points[0].time - startTime.getTime()) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`
+                      : svg`<path d="${s.path} V ${height} H ${((s.points[0].time - startTimeMs) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`
                   }
                   <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" vector-effect="non-scaling-stroke" />
                 `;
@@ -316,16 +387,11 @@ export class GrowspaceEnvChart extends LitElement {
     `;
   }
 
-  private _onMouseMove(
-    e: MouseEvent,
-    seriesList: GraphSeries[],
-    startTime: Date,
-    durationMillis: number
-  ) {
+  private _onMouseMove(e: MouseEvent, seriesList: GraphSeries[], chartWindow: ChartWindow) {
     if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
 
     this._tooltipRafId = requestAnimationFrame(() => {
-      this._handleGraphHover(e, seriesList, startTime, durationMillis);
+      this._handleGraphHover(e, seriesList, chartWindow);
       this._tooltipRafId = null;
     });
   }
@@ -348,12 +414,7 @@ export class GrowspaceEnvChart extends LitElement {
     }
   }
 
-  private _handleGraphHover(
-    e: MouseEvent,
-    seriesList: GraphSeries[],
-    startTime: Date,
-    durationMillis: number
-  ) {
+  private _handleGraphHover(e: MouseEvent, seriesList: GraphSeries[], chartWindow: ChartWindow) {
     if (!this._cachedChartRect) {
       const container = this._chartContainerRef.value;
       if (!container) return;
@@ -364,7 +425,7 @@ export class GrowspaceEnvChart extends LitElement {
     const mouseX = e.clientX - rect.left;
 
     const relX = rect.width > 0 ? Math.max(0, Math.min(1, mouseX / rect.width)) : 0.5;
-    const hoverTime = startTime.getTime() + relX * durationMillis;
+    const hoverTime = chartWindow.startTimeMs + relX * chartWindow.durationMillis;
 
     const items = seriesList.map((s) => {
       let closest = s.points[0];
@@ -388,33 +449,11 @@ export class GrowspaceEnvChart extends LitElement {
         }
       }
 
-      let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
-      const defaults = SENSOR_CHART_DEFAULTS[s.id];
-      const isBinary =
-        defaults?.binary ||
-        s.id === MetricKey.OPTIMAL ||
-        s.id === MetricKey.DEHUMIDIFIER ||
-        s.unit === 'state';
-
-      if (isBinary) {
-        if (s.id === MetricKey.OPTIMAL)
-          valStr =
-            closest.value === 1
-              ? this._localize('environment_chart.optimal')
-              : ((closest.meta as Record<string, unknown>)?.reasons as string) ||
-                this._localize('environment_chart.not_optimal');
-        else
-          valStr = this._localize(
-            closest.value === 1 ? 'environment_chart.on' : 'environment_chart.off'
-          );
-      } else if (
-        (s.id === MetricKey.EXHAUST || s.id === MetricKey.HUMIDIFIER) &&
-        (closest.meta as Record<string, unknown>)?.state
-      ) {
-        valStr = (closest.meta as Record<string, unknown>).state as string;
-      }
-
-      return { title: s.title, value: valStr, color: s.color };
+      return {
+        title: s.title,
+        value: formatSeriesValue(s, closest, (key) => this._localize(key)),
+        color: s.color,
+      };
     });
 
     const locale = this.hass?.locale?.language || undefined;
@@ -428,38 +467,8 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   private _renderSingleHeader(series: GraphSeries) {
-    let valStr = '-';
-    if (series.points.length > 0) {
-      const last = series.points[series.points.length - 1];
-      const defaults = SENSOR_CHART_DEFAULTS[series.id];
-      const isBinary =
-        defaults?.binary ||
-        series.id === MetricKey.OPTIMAL ||
-        series.id === MetricKey.DEHUMIDIFIER ||
-        (series.id === MetricKey.LIGHT && series.unit !== '%') ||
-        series.id === MetricKey.IRRIGATION ||
-        series.id === MetricKey.DRAIN;
-
-      if (isBinary) {
-        if (series.id === MetricKey.OPTIMAL)
-          valStr =
-            last.value === 1
-              ? this._localize('environment_chart.optimal')
-              : ((last.meta as Record<string, unknown>)?.reasons as string) ||
-                this._localize('environment_chart.not_optimal');
-        else
-          valStr = this._localize(
-            last.value === 1 ? 'environment_chart.on' : 'environment_chart.off'
-          );
-      } else if (
-        (series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) &&
-        (last.meta as Record<string, unknown>)?.state
-      ) {
-        valStr = (last.meta as Record<string, unknown>).state as string;
-      } else {
-        valStr = `${last.value.toFixed(1)} ${series.unit}`;
-      }
-    }
+    const last = series.points[series.points.length - 1];
+    const valStr = last ? formatSeriesValue(series, last, (key) => this._localize(key)) : '-';
 
     return html`
       <div class="gs-env-graph-header" @click=${() => this._toggleEnvGraph()}>
@@ -606,9 +615,12 @@ export class GrowspaceEnvChart extends LitElement {
 
   private _renderGrid(width: number, height: number) {
     return svg`
+        ${GRIDLINE_FRACTIONS.map(
+          (fraction) =>
+            svg`<line x1="0" y1="${height - fraction * height}" x2="${width}" y2="${height - fraction * height}" stroke="var(--divider-color, rgba(255, 255, 255, 0.12))" stroke-width="0.5" />`
+        )}
         <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="var(--divider-color, rgba(255, 255, 255, 0.12))" stroke-width="1" />
         <line x1="0" y1="0" x2="0" y2="${height}" stroke="var(--divider-color, rgba(255, 255, 255, 0.12))" stroke-width="1" />
-        <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="var(--divider-color, rgba(255, 255, 255, 0.12))" stroke-width="0.5" stroke-dasharray="4 4" />
     `;
   }
 
@@ -637,11 +649,14 @@ export class GrowspaceEnvChart extends LitElement {
     }
     return html`
       <span class="gs-axis-target" style="top: 8px;">${max.toFixed(0)}${unit}</span>
-      <span class="gs-axis-target" style="top: 50%; transform: translateY(-50%);">
-        ${((max + min) / 2).toFixed(1)}
-      </span>
       <span class="gs-axis-target" style="bottom: 8px;">${min.toFixed(0)}${unit}</span>
     `;
+  }
+
+  /** The window a range names, anchored once at the moment it is asked for. */
+  private _windowFor(range: string): ChartWindow {
+    const durationMillis = this._getDurationMillis(range);
+    return { startTimeMs: Date.now() - durationMillis, durationMillis };
   }
 
   private _getDurationMillis(range: string): number {
