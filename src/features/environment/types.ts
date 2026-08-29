@@ -34,6 +34,11 @@ export interface GraphSeries {
   /** The [[Setpoint]]s to draw over this series, in its own value space. */
   guideLines?: import('./env-series').EnvGuideLine[];
   /**
+   * The window's unlit stretches, shaded behind the gridlines. Empty when the
+   * growspace reported no light history.
+   */
+  darkPeriods?: import('./env-series').EnvDarkPeriod[];
+  /**
    * The metric's own colour, which a guide mark is drawn in.
    *
    * `color` above is not it for VPD: that trace takes a status colour, and a

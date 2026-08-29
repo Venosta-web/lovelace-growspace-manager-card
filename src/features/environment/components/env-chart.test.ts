@@ -1,0 +1,220 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import './env-chart';
+import type { GrowspaceEnvChart } from './env-chart';
+import { computeMetricDescriptors } from '../../../slices/metric-descriptors';
+import { MetricKey } from '../constants';
+import type { HistorySensorState, SensorHistories } from '../types';
+import type { GrowspaceDevice } from '../../../services/types';
+
+/**
+ * The chart seam for [[Guide Mark]]s and dark-period shading (ADR-0048).
+ *
+ * Everything here is asserted on the rendered pane rather than on the series
+ * derivation: a stepped mark that a grower cannot see stepping is the bug the
+ * issue describes, and `env-series.test.ts` already pins the value-space side.
+ */
+
+const NOW = new Date('2026-05-01T12:00:00.000Z');
+const MINUTE_MS = 60 * 1000;
+
+/** The pane the chart draws into — `CHART_PANE`, in its own drawing units. */
+const PANE_WIDTH = 800;
+
+function entry(entityId: string, minutesAgo: number, state: string): HistorySensorState {
+  return {
+    entity_id: entityId,
+    state,
+    attributes: {},
+    last_changed: new Date(NOW.getTime() - minutesAgo * MINUTE_MS).toISOString(),
+  };
+}
+
+const DEVICE = { deviceId: 'gs-1', name: 'Tent' } as unknown as GrowspaceDevice;
+
+/** A growspace steering VPD to 1–2 kPa by day and 0.4–0.6 by night. */
+const VPD_DESCRIPTORS = computeMetricDescriptors(
+  null,
+  {},
+  {
+    attributes: {
+      day_vpd_target_min: 1,
+      day_vpd_target_max: 2,
+      day_vpd_danger_min: 0.5,
+      day_vpd_danger_max: 2.5,
+      night_vpd_target_min: 0.4,
+      night_vpd_target_max: 0.6,
+      night_vpd_danger_min: 0.2,
+      night_vpd_danger_max: 0.8,
+    },
+  }
+);
+
+/** VPD readings across the window, with the lights going off half way. */
+function vpdHistory(lights: HistorySensorState[]): SensorHistories {
+  return {
+    [MetricKey.VPD]: [entry('sensor.tent_vpd', 50, '1.5'), entry('sensor.tent_vpd', 10, '1.5')],
+    ...(lights.length > 0 ? { [MetricKey.LIGHT]: lights } : {}),
+  };
+}
+
+async function mountChart(options: {
+  descriptors: ReturnType<typeof computeMetricDescriptors>;
+  history: SensorHistories;
+  metricKey: MetricKey;
+}): Promise<GrowspaceEnvChart> {
+  const el = document.createElement('growspace-env-chart') as GrowspaceEnvChart;
+  el.device = DEVICE;
+  el.descriptors = options.descriptors;
+  el.sensorHistory = options.history;
+  el.metricKey = options.metricKey;
+  el.range = '1h';
+  document.body.appendChild(el);
+  await el.updateComplete;
+  return el;
+}
+
+function pane(el: GrowspaceEnvChart): SVGSVGElement {
+  const svg = el.shadowRoot?.querySelector('svg.chart-svg');
+  if (!svg) throw new Error('chart pane did not render');
+  return svg as SVGSVGElement;
+}
+
+/** The inline guide-mark labels, in the order the chart renders them. */
+function guideLabels(el: GrowspaceEnvChart): string[] {
+  return [...(el.shadowRoot?.querySelectorAll('.gs-guide-label') ?? [])].map(
+    (span) => span.textContent?.trim() ?? ''
+  );
+}
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(NOW);
+});
+
+afterEach(() => {
+  document.body.innerHTML = '';
+  vi.useRealTimers();
+});
+
+describe('GrowspaceEnvChart — dark-period shading', () => {
+  it('shades the dark period on a chart with no targets at all', async () => {
+    // Temperature carries no configured target here, and getIsDay reads the
+    // half-hour before the first OFF event as lit.
+    const el = await mountChart({
+      descriptors: computeMetricDescriptors(),
+      history: {
+        [MetricKey.TEMPERATURE]: [
+          entry('sensor.tent_temperature', 50, '24'),
+          entry('sensor.tent_temperature', 10, '22'),
+        ],
+        [MetricKey.LIGHT]: [entry('light.tent', 30, 'off')],
+      },
+      metricKey: MetricKey.TEMPERATURE,
+    });
+
+    const shading = [...pane(el).querySelectorAll('rect.gs-dark-period')];
+    expect(shading).toHaveLength(1);
+    // The last half of a one-hour window is the unlit half.
+    expect(Number(shading[0].getAttribute('x'))).toBeCloseTo(PANE_WIDTH / 2, 0);
+    expect(Number(shading[0].getAttribute('width'))).toBeCloseTo(PANE_WIDTH / 2, 0);
+  });
+
+  it('paints the shading behind the gridlines', async () => {
+    const el = await mountChart({
+      descriptors: computeMetricDescriptors(),
+      history: {
+        [MetricKey.TEMPERATURE]: [entry('sensor.tent_temperature', 50, '24')],
+        [MetricKey.LIGHT]: [entry('light.tent', 30, 'off')],
+      },
+      metricKey: MetricKey.TEMPERATURE,
+    });
+
+    const svg = pane(el);
+    const shading = svg.querySelector('rect.gs-dark-period')!;
+    const gridline = svg.querySelector('line')!;
+    // SVG paints in document order, so "behind" is "drawn first".
+    expect(
+      shading.compareDocumentPosition(gridline) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('renders unshaded when the growspace has no light history', async () => {
+    const el = await mountChart({
+      descriptors: computeMetricDescriptors(),
+      history: {
+        [MetricKey.TEMPERATURE]: [entry('sensor.tent_temperature', 50, '24')],
+      },
+      metricKey: MetricKey.TEMPERATURE,
+    });
+
+    expect(pane(el).querySelectorAll('rect.gs-dark-period')).toHaveLength(0);
+  });
+});
+
+describe('GrowspaceEnvChart — period-indexed guide marks', () => {
+  it('steps an optimal band at lights-off instead of drawing one flat line', async () => {
+    const el = await mountChart({
+      descriptors: VPD_DESCRIPTORS,
+      history: vpdHistory([entry('light.tent', 30, 'off')]),
+      metricKey: MetricKey.VPD,
+    });
+
+    // Two segments, each its own region: the lit half at 1–2 and the unlit at
+    // 0.4–0.6. A flat line would be one region spanning the whole pane.
+    const regions = [...pane(el).querySelectorAll('rect')].filter(
+      (rect) => !rect.classList.contains('gs-dark-period')
+    );
+    expect(regions).toHaveLength(2);
+
+    const [lit, unlit] = regions.map((rect) => ({
+      x: Number(rect.getAttribute('x')),
+      y: Number(rect.getAttribute('y')),
+    }));
+    expect(lit.x).toBeCloseTo(0, 0);
+    expect(unlit.x).toBeCloseTo(PANE_WIDTH / 2, 0);
+    // The night band sits lower in value space, so lower on the pane.
+    expect(unlit.y).toBeGreaterThan(lit.y);
+  });
+
+  it('labels the band with the bounds in force at the current time', async () => {
+    const el = await mountChart({
+      descriptors: VPD_DESCRIPTORS,
+      history: vpdHistory([entry('light.tent', 30, 'off')]),
+      metricKey: MetricKey.VPD,
+    });
+
+    // The lights are off now, so the night bounds are the ones a grower is
+    // steering to — the day bounds have not applied for half an hour.
+    expect(guideLabels(el)).toEqual(['0.6 kPa', '0.4 kPa']);
+  });
+
+  it('steps exactly where the dark-period shading begins', async () => {
+    const el = await mountChart({
+      descriptors: VPD_DESCRIPTORS,
+      history: vpdHistory([entry('light.tent', 30, 'off')]),
+      metricKey: MetricKey.VPD,
+    });
+
+    const rects = [...pane(el).querySelectorAll('rect')];
+    const shading = rects.find((rect) => rect.classList.contains('gs-dark-period'))!;
+    const nightBand = rects.filter((rect) => !rect.classList.contains('gs-dark-period'))[1];
+
+    // Not "both near lights-off" — the same number. They are cut from one
+    // photoperiod list precisely so they cannot round apart.
+    expect(nightBand.getAttribute('x')).toBe(shading.getAttribute('x'));
+    expect(nightBand.getAttribute('width')).toBe(shading.getAttribute('width'));
+  });
+
+  it('falls back to the day bounds, unshaded, with no light history', async () => {
+    const el = await mountChart({
+      descriptors: VPD_DESCRIPTORS,
+      history: vpdHistory([]),
+      metricKey: MetricKey.VPD,
+    });
+
+    expect(pane(el).querySelectorAll('rect.gs-dark-period')).toHaveLength(0);
+    expect(guideLabels(el)).toEqual(['2.0 kPa', '1.0 kPa']);
+    // One region for the whole window, not a step with nothing to step on.
+    expect(pane(el).querySelectorAll('rect')).toHaveLength(1);
+  });
+});

@@ -17,6 +17,11 @@
  * anchoring on a target alone flattens real readings against an axis edge, and
  * ignoring it clips the target out of the frame.
  *
+ * The window's photoperiods are resolved **once per call** and every series
+ * reads that one list — both for the steps a period-indexed mark is cut on and
+ * for the `darkPeriods` the chart shades behind its gridlines. Resolving them
+ * twice would let a mark step where the shading still said daylight.
+ *
  * Multi-sensor grouping is carried structurally: a descriptor's `sensors` decide
  * how many series a metric has, in what order, and what each is called. This
  * module never parses a history key and never scans the map to discover which
@@ -119,6 +124,19 @@ export interface EnvGuideLine {
   tolerance?: number;
 }
 
+/**
+ * An unlit stretch of the window, in time space only.
+ *
+ * The complement of the photoperiods a period-indexed [[Guide Mark]] steps on,
+ * taken from that same list rather than resolved a second time — a mark and the
+ * shading beneath it cannot disagree about when night began if neither of them
+ * asked separately.
+ */
+export interface EnvDarkPeriod {
+  startTime: number;
+  endTime: number;
+}
+
 /** One metric's history, shaped for rendering but still in domain units. */
 export interface EnvSeries {
   id: string;
@@ -153,6 +171,16 @@ export interface EnvSeries {
    * one metric routinely carries both.
    */
   guideLines?: EnvGuideLine[];
+  /**
+   * The unlit stretches of this window, empty when the growspace reported no
+   * light history.
+   *
+   * Carried by every series rather than only by one whose marks step: a
+   * temperature chart's nightly dip is left for the grower to infer otherwise,
+   * and shading that appeared only when a target happened to step would come
+   * and go with unrelated config changes.
+   */
+  darkPeriods: EnvDarkPeriod[];
   /**
    * The sensor this series traces, present only when its metric has more than
    * one. Consumers that draw multi-sensor metrics differently — a flat fill
@@ -302,6 +330,13 @@ function _axisBounds(
   return { min, max };
 }
 
+/** One lit or unlit stretch of the window. */
+interface Photoperiod {
+  startTime: number;
+  endTime: number;
+  isDay: boolean;
+}
+
 /**
  * The photoperiods covering the window, as contiguous intervals.
  *
@@ -313,13 +348,13 @@ function _photoperiods(
   lightHistory: NormalizedHistoryPoint[],
   startTimeMs: number,
   nowMs: number
-): { startTime: number; endTime: number; isDay: boolean }[] {
+): Photoperiod[] {
   const boundaries = [startTimeMs];
   for (const point of lightHistory) {
     if (point.time > startTimeMs && point.time < nowMs) boundaries.push(point.time);
   }
 
-  const periods: { startTime: number; endTime: number; isDay: boolean }[] = [];
+  const periods: Photoperiod[] = [];
   for (let i = 0; i < boundaries.length; i++) {
     const startTime = boundaries[i];
     const endTime = boundaries[i + 1] ?? nowMs;
@@ -346,7 +381,7 @@ function _stepsWithPhotoperiod(target: MetricTarget): boolean {
 /** Resolve the metric's [[Optimal Band]]s against the window's photoperiods. */
 function _guideBands(
   targets: MetricTarget[],
-  photoperiods: { startTime: number; endTime: number; isDay: boolean }[],
+  photoperiods: Photoperiod[],
   startTimeMs: number,
   nowMs: number
 ): EnvGuideBand[] {
@@ -367,7 +402,7 @@ function _guideBands(
 /** Resolve the metric's [[Setpoint]]s against the window's photoperiods. */
 function _guideLines(
   targets: MetricTarget[],
-  photoperiods: { startTime: number; endTime: number; isDay: boolean }[],
+  photoperiods: Photoperiod[],
   startTimeMs: number,
   nowMs: number
 ): EnvGuideLine[] {
@@ -508,6 +543,15 @@ export function computeEnvSeries(
 
   const series: EnvSeries[] = [];
 
+  // Resolved once for the whole pass, not once per series: the dark-period
+  // shading and every stepped mark drawn over it read this one list, which is
+  // what stops a step landing where the shading says it is still light.
+  const lightHistory = ChartUtils.normalizeHistory(
+    histories[MetricKey.LIGHT] ?? [],
+    MetricKey.LIGHT
+  );
+  const photoperiods = _photoperiods(lightHistory, startTimeMs, nowMs);
+
   for (const key of metricKeys) {
     const descriptor = descriptors[key];
     if (!descriptor) continue;
@@ -517,6 +561,8 @@ export function computeEnvSeries(
         startTimeMs,
         nowMs,
         isCombined,
+        lightHistory,
+        photoperiods,
       });
       if (built) series.push(built);
     }
@@ -529,9 +575,15 @@ function _buildSeries(
   descriptor: MetricDescriptor,
   spec: SeriesSpec,
   histories: SensorHistories,
-  window: { startTimeMs: number; nowMs: number; isCombined: boolean }
+  window: {
+    startTimeMs: number;
+    nowMs: number;
+    isCombined: boolean;
+    lightHistory: NormalizedHistoryPoint[];
+    photoperiods: Photoperiod[];
+  }
 ): EnvSeries | undefined {
-  const { startTimeMs, nowMs, isCombined } = window;
+  const { startTimeMs, nowMs, isCombined, lightHistory, photoperiods } = window;
   const key = descriptor.key;
 
   const history = histories[spec.historyKey] ?? [];
@@ -546,13 +598,6 @@ function _buildSeries(
   // trace per sensor, which stay on the metric colour rather than each claiming
   // to be the growspace's status.
   const statusTargets = key === MetricKey.VPD && !spec.sensor ? targets : undefined;
-  // The light history is what makes a period-indexed mark step, so it is read
-  // whenever the status bands need it or a target actually varies by period.
-  const lightHistory =
-    statusTargets || targets.some(_stepsWithPhotoperiod)
-      ? ChartUtils.normalizeHistory(histories[MetricKey.LIGHT] ?? [], MetricKey.LIGHT)
-      : [];
-  const photoperiods = _photoperiods(lightHistory, startTimeMs, nowMs);
   const guideBands = _guideBands(targets, photoperiods, startTimeMs, nowMs);
   const guideLines = _guideLines(targets, photoperiods, startTimeMs, nowMs);
   const bounds = _axisBounds(descriptor, reduced, isCombined, guideBands, guideLines);
@@ -580,6 +625,9 @@ function _buildSeries(
     max: bounds.max,
     avg: reduced.avg,
     chartType: descriptor.chartType,
+    darkPeriods: photoperiods
+      .filter((period) => !period.isDay)
+      .map(({ startTime, endTime }) => ({ startTime, endTime })),
     ...(vpdBands ? { vpdBands } : {}),
     ...(guideBands.length > 0 ? { guideBands } : {}),
     ...(guideLines.length > 0 ? { guideLines } : {}),
