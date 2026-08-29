@@ -4,6 +4,7 @@ import {
   GuideMarkKind,
   isLimit,
   isOptimalBand,
+  isSetpoint,
   resolveMetricEntityIds,
 } from './index';
 import type { MetricDescriptor } from './index';
@@ -335,6 +336,210 @@ describe('computeMetricDescriptors — device-sourced optimal bands', () => {
         },
       })
     ).toEqual([]);
+  });
+});
+
+describe('computeMetricDescriptors — controller setpoints', () => {
+  function fanConfig(overrides: Record<string, unknown> = {}) {
+    return {
+      enabled: true,
+      min_speed: 20,
+      max_speed: 100,
+      temperature_target: 24,
+      temperature_tolerance: 1.5,
+      humidity_target: 60,
+      humidity_tolerance: 5,
+      vpd_target: 1.2,
+      vpd_tolerance: 0.15,
+      critical_temp_low: null,
+      critical_temp_high: null,
+      critical_temp_hysteresis: 1,
+      stage_vpd_enabled: false,
+      stage_vpd_overrides: {},
+      ...overrides,
+    };
+  }
+
+  function device(environment: Record<string, unknown>, stage = 'flower_mid'): GrowspaceDevice {
+    return {
+      deviceId: 'g1',
+      name: 'Tent',
+      biologicalMetrics: { granularStage: stage },
+      environmentAttributes: environment,
+      irrigationConfig: {},
+    } as unknown as GrowspaceDevice;
+  }
+
+  function targetsFor(key: string, environment: Record<string, unknown>, stage?: string) {
+    return computeMetricDescriptors(null, {}, undefined, device(environment, stage))[key].targets;
+  }
+
+  it('normalises a fan target and its tolerance as a setpoint, never as a band', () => {
+    const targets = targetsFor(MetricKey.TEMPERATURE, {
+      exhaustFanConfig: fanConfig(),
+    });
+
+    expect(targets).toEqual([
+      {
+        kind: GuideMarkKind.SETPOINT,
+        id: 'exhaust-fan-target',
+        day: 24,
+        night: 24,
+        tolerance: 1.5,
+      },
+    ]);
+    expect(targets.filter(isOptimalBand)).toEqual([]);
+  });
+
+  it('marks every signal the exhaust fan holds, since its demand is combined', () => {
+    const environment = { exhaustFanConfig: fanConfig() };
+
+    expect(targetsFor(MetricKey.HUMIDITY, environment)).toMatchObject([{ day: 60, tolerance: 5 }]);
+    expect(targetsFor(MetricKey.VPD, environment).filter(isSetpoint)).toMatchObject([
+      { id: 'exhaust-fan-target', day: 1.2, tolerance: 0.15 },
+    ]);
+  });
+
+  it('marks only the signal a circulation fan actually regulates on', () => {
+    const environment = {
+      circulationFanConfig: fanConfig({ regulation_mode: 'vpd' }),
+    };
+
+    expect(targetsFor(MetricKey.TEMPERATURE, environment)).toEqual([]);
+    expect(targetsFor(MetricKey.HUMIDITY, environment)).toEqual([]);
+    expect(targetsFor(MetricKey.VPD, environment).filter(isSetpoint)).toMatchObject([
+      { id: 'circulation-fan-target', day: 1.2 },
+    ]);
+  });
+
+  it('marks nothing for a fan that is switched off', () => {
+    expect(
+      targetsFor(MetricKey.TEMPERATURE, { exhaustFanConfig: fanConfig({ enabled: false }) })
+    ).toEqual([]);
+  });
+
+  it('carries no tolerance when the controller declares no deadband', () => {
+    expect(
+      targetsFor(MetricKey.TEMPERATURE, {
+        exhaustFanConfig: fanConfig({ temperature_tolerance: 0 }),
+      })
+    ).toEqual([{ kind: GuideMarkKind.SETPOINT, id: 'exhaust-fan-target', day: 24, night: 24 }]);
+  });
+
+  it('drops an untouched target rather than marking a setpoint at zero', () => {
+    expect(
+      targetsFor(MetricKey.TEMPERATURE, { exhaustFanConfig: fanConfig({ temperature_target: 0 }) })
+    ).toEqual([]);
+  });
+
+  it('renders both fans regulating one metric as two separately named setpoints', () => {
+    const targets = targetsFor(MetricKey.TEMPERATURE, {
+      exhaustFanConfig: fanConfig({ temperature_target: 26 }),
+      circulationFanConfig: fanConfig({ regulation_mode: 'temperature', temperature_target: 24 }),
+    });
+
+    expect(targets.map((target) => target.id)).toEqual([
+      'circulation-fan-target',
+      'exhaust-fan-target',
+    ]);
+    expect(targets).toMatchObject([{ day: 24 }, { day: 26 }]);
+  });
+
+  it('normalises a hysteresis pair into two period-indexed setpoints, never a band', () => {
+    const targets = targetsFor(MetricKey.VPD, {
+      humidifierControlEnabled: true,
+      humidifierThresholds: {
+        flower_mid: { day: { on: 1.6, off: 1.4 }, night: { on: 1.2, off: 1.0 } },
+      },
+    }).filter(isSetpoint);
+
+    expect(targets).toEqual([
+      { kind: GuideMarkKind.SETPOINT, id: 'humidifier-on', day: 1.6, night: 1.2 },
+      { kind: GuideMarkKind.SETPOINT, id: 'humidifier-off', day: 1.4, night: 1.0 },
+    ]);
+  });
+
+  it('resolves a hysteresis pair against the growspace stage, not the first row', () => {
+    const environment = {
+      dehumidifierControlEnabled: true,
+      dehumidifierThresholds: {
+        veg: { day: { on: 0.6, off: 0.7 }, night: { on: 0.65, off: 0.75 } },
+        flower_mid: { day: { on: 1.25, off: 1.35 }, night: { on: 0.9, off: 1.0 } },
+      },
+    };
+
+    expect(targetsFor(MetricKey.VPD, environment).filter(isSetpoint)).toMatchObject([
+      { id: 'dehumidifier-on', day: 1.25 },
+      { id: 'dehumidifier-off', day: 1.35 },
+    ]);
+    expect(targetsFor(MetricKey.VPD, environment, 'veg').filter(isSetpoint)).toMatchObject([
+      { id: 'dehumidifier-on', day: 0.6 },
+      { id: 'dehumidifier-off', day: 0.7 },
+    ]);
+  });
+
+  it('draws nothing for a stage the grower never configured', () => {
+    expect(
+      targetsFor(
+        MetricKey.VPD,
+        {
+          humidifierControlEnabled: true,
+          humidifierThresholds: {
+            veg: { day: { on: 1.0, off: 0.8 }, night: { on: 0.85, off: 0.65 } },
+          },
+        },
+        'flower_late'
+      ).filter(isSetpoint)
+    ).toEqual([]);
+  });
+
+  it('falls a missing night threshold back to its day value', () => {
+    expect(
+      targetsFor(MetricKey.VPD, {
+        humidifierControlEnabled: true,
+        humidifierThresholds: { flower_mid: { day: { on: 1.6, off: 1.4 } } },
+      }).filter(isSetpoint)
+    ).toMatchObject([
+      { id: 'humidifier-on', day: 1.6, night: 1.6 },
+      { id: 'humidifier-off', day: 1.4, night: 1.4 },
+    ]);
+  });
+
+  it('marks nothing for an appliance the card does not control', () => {
+    expect(
+      targetsFor(MetricKey.VPD, {
+        humidifierControlEnabled: false,
+        humidifierThresholds: {
+          flower_mid: { day: { on: 1.6, off: 1.4 }, night: { on: 1.2, off: 1.0 } },
+        },
+      }).filter(isSetpoint)
+    ).toEqual([]);
+  });
+
+  it('carries a control setpoint beside the VPD window and its danger bounds', () => {
+    const targets = targetsFor(MetricKey.VPD, {
+      exhaustFanConfig: fanConfig(),
+      humidifierControlEnabled: true,
+      humidifierThresholds: {
+        flower_mid: { day: { on: 1.6, off: 1.4 }, night: { on: 1.2, off: 1.0 } },
+      },
+    });
+
+    // Every mark keeps its own kind and its own id, so a chart can tell four
+    // separately configured facts apart rather than reconciling them.
+    expect(targets.map((target) => [target.kind, target.id])).toEqual([
+      [GuideMarkKind.OPTIMAL_BAND, 'vpd-optimal'],
+      [GuideMarkKind.LIMIT, 'vpd-danger-low'],
+      [GuideMarkKind.LIMIT, 'vpd-danger-high'],
+      [GuideMarkKind.SETPOINT, 'humidifier-on'],
+      [GuideMarkKind.SETPOINT, 'humidifier-off'],
+      [GuideMarkKind.SETPOINT, 'exhaust-fan-target'],
+    ]);
+    expect(new Set(targets.map((target) => target.id)).size).toBe(targets.length);
+  });
+
+  it('leaves a metric no controller regulates untouched', () => {
+    expect(targetsFor(MetricKey.CO2, { exhaustFanConfig: fanConfig() })).toEqual([]);
   });
 });
 

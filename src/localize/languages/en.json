@@ -152,5 +152,13 @@
     "view_mode_standard": "Standard",
     "view_mode_compact": "Compact (Grid Only)",
     "view_mode_header": "Header Only"
+  },
+  "guide_marks": {
+    "circulation-fan-target": "Circulation",
+    "exhaust-fan-target": "Exhaust",
+    "humidifier-on": "Humidifier on",
+    "humidifier-off": "Humidifier off",
+    "dehumidifier-on": "Dehumidifier on",
+    "dehumidifier-off": "Dehumidifier off"
   }
 }

@@ -11,9 +11,11 @@
  *
  * [[Guide Mark]]s come from the same table's [[Metric Target]]s, so the VPD status
  * bands and the [[Optimal Band]] drawn over them classify against one set of
- * numbers (ADR-0050). The value range this module reports is the **union of the
- * data and the bands**: anchoring on a target alone flattens real readings
- * against an axis edge, and ignoring it clips the target out of the frame.
+ * numbers (ADR-0050). Bands and [[Setpoint]]s are reported separately because
+ * they are separately drawn marks, and one metric routinely carries both. The
+ * value range this module reports is the **union of the data and both of them**:
+ * anchoring on a target alone flattens real readings against an axis edge, and
+ * ignoring it clips the target out of the frame.
  *
  * Multi-sensor grouping is carried structurally: a descriptor's `sensors` decide
  * how many series a metric has, in what order, and what each is called. This
@@ -27,6 +29,7 @@ import type { HistorySensorState, SensorHistories } from './types';
 import {
   isLimit,
   isOptimalBand,
+  isSetpoint,
   metricHistoryKeys,
   targetForPeriod,
 } from '../../slices/metric-descriptors';
@@ -93,6 +96,29 @@ export interface EnvGuideBand {
   current: { min: number; max: number };
 }
 
+export interface EnvGuideLineSegment {
+  startTime: number;
+  endTime: number;
+  value: number;
+}
+
+/** A [[Setpoint]] resolved against this series' window. */
+export interface EnvGuideLine {
+  id: string;
+  segments: EnvGuideLineSegment[];
+  /**
+   * The value under the window's current time — its right edge, read by the
+   * inline label for the same reason a stepped band's is.
+   */
+  current: number;
+  /**
+   * The controller's deadband half-width, when its source declares one. Drawn
+   * as a region around the line, and never as an [[Optimal Band]]: it says how
+   * far the metric may drift before the controller responds.
+   */
+  tolerance?: number;
+}
+
 /** One metric's history, shaped for rendering but still in domain units. */
 export interface EnvSeries {
   id: string;
@@ -120,6 +146,13 @@ export interface EnvSeries {
    * `vpdBands` above is a different thing, the VPD trace's own status colouring.
    */
   guideBands?: EnvGuideBand[];
+  /**
+   * The [[Setpoint]]s this series' axis was widened to contain, absent when the
+   * metric has none configured. Separate from `guideBands` because they are a
+   * different guide-mark kind and are drawn as a different mark (ADR-0048) —
+   * one metric routinely carries both.
+   */
+  guideLines?: EnvGuideLine[];
   /**
    * The sensor this series traces, present only when its metric has more than
    * one. Consumers that draw multi-sensor metrics differently — a flat fill
@@ -230,7 +263,8 @@ function _axisBounds(
   descriptor: MetricDescriptor,
   reduced: { min: number; max: number },
   isCombined: boolean,
-  guideBands: EnvGuideBand[]
+  guideBands: EnvGuideBand[],
+  guideLines: EnvGuideLine[]
 ): { min: number; max: number } {
   if (descriptor.axis !== 'auto') return { ...descriptor.axis };
 
@@ -241,9 +275,20 @@ function _axisBounds(
       if (segment.max > max) max = segment.max;
     }
   }
+  // Setpoints are unioned in exactly as bands are, deadband included: what is
+  // drawn is what the axis must contain. Limits are the kind that is *not*
+  // unioned — a mould threshold far from the data would flatten the real trace
+  // — and they arrive with their own off-scale treatment (ADR-0048).
+  for (const line of guideLines) {
+    const tolerance = line.tolerance ?? 0;
+    for (const segment of line.segments) {
+      if (segment.value - tolerance < min) min = segment.value - tolerance;
+      if (segment.value + tolerance > max) max = segment.value + tolerance;
+    }
+  }
 
-  if (guideBands.length > 0) {
-    // The union of the data and the band, never either alone: anchoring on the
+  if (guideBands.length > 0 || guideLines.length > 0) {
+    // The union of the data and the marks, never either alone: anchoring on the
     // target flattens real readings against an axis edge, and ignoring it clips
     // the target out of the frame. `crop-steering-day-chart` reached the same
     // rule for its EC scale first.
@@ -316,6 +361,32 @@ function _guideBands(
 
     const atNow = segments[segments.length - 1] ?? { min: target.day.min, max: target.day.max };
     return { id: target.id, segments, current: { min: atNow.min, max: atNow.max } };
+  });
+}
+
+/** Resolve the metric's [[Setpoint]]s against the window's photoperiods. */
+function _guideLines(
+  targets: MetricTarget[],
+  photoperiods: { startTime: number; endTime: number; isDay: boolean }[],
+  startTimeMs: number,
+  nowMs: number
+): EnvGuideLine[] {
+  return targets.filter(isSetpoint).map((target) => {
+    const segments: EnvGuideLineSegment[] = _stepsWithPhotoperiod(target)
+      ? photoperiods.map((period) => ({
+          startTime: period.startTime,
+          endTime: period.endTime,
+          value: targetForPeriod(target, period.isDay),
+        }))
+      : [{ startTime: startTimeMs, endTime: nowMs, value: target.day }];
+
+    const atNow = segments[segments.length - 1];
+    return {
+      id: target.id,
+      segments,
+      current: atNow ? atNow.value : target.day,
+      ...(target.tolerance !== undefined ? { tolerance: target.tolerance } : {}),
+    };
   });
 }
 
@@ -481,13 +552,10 @@ function _buildSeries(
     statusTargets || targets.some(_stepsWithPhotoperiod)
       ? ChartUtils.normalizeHistory(histories[MetricKey.LIGHT] ?? [], MetricKey.LIGHT)
       : [];
-  const guideBands = _guideBands(
-    targets,
-    _photoperiods(lightHistory, startTimeMs, nowMs),
-    startTimeMs,
-    nowMs
-  );
-  const bounds = _axisBounds(descriptor, reduced, isCombined, guideBands);
+  const photoperiods = _photoperiods(lightHistory, startTimeMs, nowMs);
+  const guideBands = _guideBands(targets, photoperiods, startTimeMs, nowMs);
+  const guideLines = _guideLines(targets, photoperiods, startTimeMs, nowMs);
+  const bounds = _axisBounds(descriptor, reduced, isCombined, guideBands, guideLines);
   const vpdBands = statusTargets ? _vpdBands(points, statusTargets, lightHistory) : undefined;
 
   let color = spec.color;
@@ -514,6 +582,7 @@ function _buildSeries(
     chartType: descriptor.chartType,
     ...(vpdBands ? { vpdBands } : {}),
     ...(guideBands.length > 0 ? { guideBands } : {}),
+    ...(guideLines.length > 0 ? { guideLines } : {}),
     ...(spec.sensor ? { sensor: spec.sensor } : {}),
   };
 }

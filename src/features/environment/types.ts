@@ -31,6 +31,8 @@ export interface GraphSeries {
   vpdBands?: import('./env-series').VpdBand[];
   /** The [[Optimal Band]]s to draw over this series, in its own value space. */
   guideBands?: import('./env-series').EnvGuideBand[];
+  /** The [[Setpoint]]s to draw over this series, in its own value space. */
+  guideLines?: import('./env-series').EnvGuideLine[];
   /**
    * The metric's own colour, which a guide mark is drawn in.
    *
