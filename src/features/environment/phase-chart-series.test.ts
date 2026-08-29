@@ -72,6 +72,24 @@ describe('computePhaseChartSeries', () => {
     expect(series.currentVwc).toBe(38);
   });
 
+  it('parses each history timestamp once before sorting the series', () => {
+    let timestampReads = 0;
+    const history = [at(1, 20), at(1, 8), at(1, 14)].map((atMs, index) => {
+      const point = { state: String(40 + index) } as RawHistoryDataPoint;
+      Object.defineProperty(point, 'last_changed', {
+        enumerable: true,
+        get: () => {
+          timestampReads++;
+          return new Date(atMs).toISOString();
+        },
+      });
+      return point;
+    });
+
+    expect(computePhaseChartSeries(history, TARGET_VWC, TRIGGER_VWC)).not.toBeNull();
+    expect(timestampReads).toBe(history.length);
+  });
+
   it('holds the axis open around the reference levels', () => {
     const series = seriesOf(reading(at(1, 8), '40'), reading(at(1, 9), '41'))!;
 

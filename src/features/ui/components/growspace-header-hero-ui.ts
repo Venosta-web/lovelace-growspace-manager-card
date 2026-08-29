@@ -7,65 +7,12 @@ import { HeaderChip } from '../../../slices/header-metrics';
 import { metricHistoryKeys } from '../../../slices/metric-descriptors';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { statusTokens } from '../../../styles/status.styles';
-import {
-  METRIC_CONFIG,
-  MetricKey,
-  STATUS_CUES,
-  toStatusLevel,
-} from '../../../features/environment/constants';
-import {
-  computePhases,
-  fmtMinuteOfDay,
-  resolveSaturationCrossing,
-} from '../../../features/environment/crop-steering-model';
-import {
-  computePhaseChartSeries,
-  computePhaseWindowSegments,
-  samplePhaseChartAt,
-  type PhaseChartSeries,
-} from '../../../features/environment/phase-chart-series';
+import { MetricKey, STATUS_CUES, toStatusLevel } from '../../../features/environment/constants';
 import type { IrrigationStrategy, IrrigationConfig } from '../../../services/types';
 import type { RawHistoryDataPoint } from '../../../adapters/hass-types';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { mdiChevronDown } from '@mdi/js';
-
-/**
- * Where a timestamp sits across the chart's window, as a 0..1 fraction. Clamped,
- * because the phase bar's blocks are day-aligned and routinely start before the
- * window or end after it.
- */
-function fracOfWindow(series: PhaseChartSeries, atMs: number): number {
-  return Math.max(0, Math.min(1, (atMs - series.window.startMs) / series.window.spanMs));
-}
-
-/**
- * Turns a [[Phase Chart Series]] into the pixel geometry of the VWC chart.
- *
- * The Hero Card owns width and height, so this is the only place the two meet:
- * the value space above it knows nothing about either, and the template below it
- * only interpolates what comes out.
- */
-function phaseChartGeometry(series: PhaseChartSeries, chartW: number, chartH: number) {
-  const { startMs, spanMs } = series.window;
-  const vwcRange = series.max - series.min || 1;
-  const xOf = (atMs: number) => ((atMs - startMs) / spanMs) * chartW;
-  const yOf = (vwc: number) => chartH - ((vwc - series.min) / vwcRange) * chartH;
-
-  const pts = series.points.map((p) => ({ x: xOf(p.atMs), y: yOf(p.vwc) }));
-  const linePath = pts
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`)
-    .join(' ');
-  const last = pts[pts.length - 1];
-
-  return {
-    linePath,
-    areaPath: `${linePath} L ${chartW},${chartH} L 0,${chartH} Z`,
-    targetY: yOf(series.targetVwc),
-    triggerY: yOf(series.triggerVwc),
-    nowX: last.x,
-    nowY: last.y,
-  };
-}
+import './growspace-phase-hero-card';
 
 @customElement('growspace-header-hero-ui')
 export class GrowspaceHeaderHeroUI extends LitElement {
@@ -83,7 +30,6 @@ export class GrowspaceHeaderHeroUI extends LitElement {
   @property({ type: Boolean }) public isFlower = false;
 
   @state() private _deckIndex = 0;
-  @state() private _phaseHoverX: number | null = null;
   @query('.deck-scroll') private _deckEl?: HTMLElement;
 
   private _prioritizeExceptions(chips: HeaderChip[]): HeaderChip[] {
@@ -339,6 +285,10 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         min-height: 50px;
       }
 
+      growspace-phase-hero-card {
+        display: contents;
+      }
+
       .hero-card {
         background: var(--glass-bg, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
@@ -354,7 +304,11 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         gap: 8px;
         position: relative;
         cursor: grab;
-        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        transition:
+          background-color 0.2s cubic-bezier(0.2, 0, 0, 1),
+          border-color 0.2s cubic-bezier(0.2, 0, 0, 1),
+          box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1),
+          transform 0.2s cubic-bezier(0.2, 0, 0, 1);
         overflow: hidden;
         min-height: 110px;
         width: 100%;
@@ -963,294 +917,20 @@ export class GrowspaceHeaderHeroUI extends LitElement {
   }
 
   private _renderPhaseHeroCard(chip: HeaderChip) {
-    const strategy = this.irrigationStrategy!;
-    const config = this.irrigationConfig;
-
-    const CHART_W = 300;
-    const CHART_H = 68;
-    // The same VWC series crop-steering-day-chart plots, read through the same
-    // descriptor so the two charts cannot drift apart again (ADR 0045 §3).
-    const CS = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
-
-    const targetVwc = strategy.targetVwcPercent;
-    const triggerVwc = targetVwc - strategy.maintenanceDrybackPercent;
-
     const historyData = (this.historyCache as Record<string, RawHistoryDataPoint[]>)?.[
       MetricKey.SOIL_MOISTURE
     ];
-    const series = computePhaseChartSeries(historyData, targetVwc, triggerVwc);
-    const chart = series ? phaseChartGeometry(series, CHART_W, CHART_H) : null;
-
-    const dayHours = config?.resolvedDayHours ?? 12;
-    // The P1→P2 boundary the backend decides on the measurement rather than the
-    // clock, re-derived from the same VWC series this card already plots.
-    const phases = computePhases(
-      strategy,
-      dayHours,
-      config,
-      resolveSaturationCrossing(strategy, dayHours, series?.points ?? [], Date.now())
-    );
-
-    // Parse chip value: "P3 · 22:40"
-    const valueMatch = chip.value?.match(/^(P[123])\s*·\s*(.+)$/);
-    const currentPhase = valueMatch?.[1] ?? chip.value ?? '';
-    const transitionTime = valueMatch?.[2] ?? '';
-    const isP3 = currentPhase === 'P3';
-
-    const hv = this._phaseHoverX;
-    const hovered = hv != null && series ? samplePhaseChartAt(series, hv) : null;
-    const hovVwc = hovered?.vwc ?? null;
-    const hovTimeStr = hovered ? fmtMinuteOfDay(hovered.minuteOfDay) : null;
-    const hovMinute = hovered?.minuteOfDay ?? null;
-
-    // Determine which crop-steering phase the hovered minute falls in.
-    const hovPhase =
-      hovMinute != null && phases
-        ? (phases.phases.find((p) => hovMinute >= p.start && hovMinute < p.end) ?? null)
-        : null;
-
-    const currentVwcDisplay = series?.currentVwc?.toFixed(1) ?? null;
-    const vwcDisplay = hovVwc != null ? hovVwc.toFixed(1) : currentVwcDisplay;
-    const transitionDescription = transitionTime
-      ? currentPhase === 'P1'
-        ? `P1 ends at target VWC ${transitionTime}.`
-        : `Next transition at ${transitionTime}.`
-      : '';
-    const phaseDescription = [
-      currentPhase ? `Active phase ${currentPhase}.` : '',
-      transitionDescription,
-      currentVwcDisplay ? `Current VWC ${currentVwcDisplay}%.` : '',
-      `Target VWC ${targetVwc}%.`,
-      `P2 trigger ${triggerVwc.toFixed(0)}%.`,
-      isP3 ? 'Dryback.' : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-
-    // Phase bar: the derived phase windows, placed on the same time window as the
-    // VWC trace above so the two cannot drift apart.
-    const pct = (f: number) => `${(f * 100).toFixed(2)}%`;
-    const segBar =
-      series && phases
-        ? computePhaseWindowSegments(series, phases, this.timeRange).map((seg) => {
-            const leftFrac = fracOfWindow(series, seg.startMs);
-            return {
-              key: seg.key,
-              leftFrac,
-              widthFrac: Math.max(0, fracOfWindow(series, seg.endMs) - leftFrac),
-              c: seg.color,
-              label: seg.label,
-            };
-          })
-        : [];
 
     return html`
-      <button
-        class="hero-card ${chip.active ? 'active' : ''} phase-hero-card"
-        type="button"
-        aria-label="Toggle ${chip.label ?? 'phase'} graph${chip.linked ? ', linked' : ''}"
-        aria-describedby="steering-phase-state"
-        aria-pressed=${chip.active}
-        draggable="false"
-        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
-        @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
-        @dragover=${(e: DragEvent) => this._handleDragOver(e)}
-        @click=${() => this._toggleEnvGraph(chip.key)}
-        title=${chip.tooltip || nothing}
-      >
-        <span id="steering-phase-state" class="visually-hidden">${phaseDescription}</span>
-        <!-- Header: label (left) + live VWC readout (right) -->
-        <div class="hero-header">
-          <ha-svg-icon class="hero-icon" .path=${chip.icon}></ha-svg-icon>
-          <span class="hero-label">${chip.label ?? 'Phase'}</span>
-          ${vwcDisplay != null
-            ? html`<span class="phase-vwc-readout">VWC&nbsp;${vwcDisplay}%</span>`
-            : nothing}
-        </div>
-
-        <!-- Value: current phase + transition time + optional badge -->
-        <div class="hero-value-group">
-          <span class="hero-value">${currentPhase}</span>
-          ${transitionTime
-            ? html`<span class="hero-unit">&nbsp;·&nbsp;${transitionTime}</span>`
-            : nothing}
-          ${isP3 ? html`<span class="phase-badge phase-badge--dryback">Dryback</span>` : nothing}
-        </div>
-
-        <!-- VWC chart -->
-        ${chart
-          ? html`
-              <div class="phase-chart-container">
-                <svg
-                  class="phase-chart-svg"
-                  viewBox="0 0 ${CHART_W} ${CHART_H}"
-                  preserveAspectRatio="none"
-                  @mousemove=${(e: MouseEvent) => {
-                    const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
-                    this._phaseHoverX = Math.max(
-                      0,
-                      Math.min(1, (e.clientX - rect.left) / rect.width)
-                    );
-                  }}
-                  @mouseleave=${() => {
-                    this._phaseHoverX = null;
-                  }}
-                >
-                  <defs>
-                    <linearGradient id="phase-area-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="${CS}" stop-opacity="0.38" />
-                      <stop offset="100%" stop-color="${CS}" stop-opacity="0" />
-                    </linearGradient>
-                  </defs>
-
-                  <!-- Area fill -->
-                  <path d="${chart.areaPath}" fill="url(#phase-area-grad)" />
-
-                  <!-- VWC line -->
-                  <path
-                    d="${chart.linePath}"
-                    fill="none"
-                    stroke="${CS}"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-
-                  <!-- Target VWC reference line -->
-                  <line
-                    x1="0"
-                    y1="${chart.targetY.toFixed(1)}"
-                    x2="${CHART_W}"
-                    y2="${chart.targetY.toFixed(1)}"
-                    stroke="${CS}"
-                    stroke-width="1"
-                    stroke-dasharray="4 4"
-                    opacity="0.45"
-                  />
-                  <text
-                    x="${CHART_W - 4}"
-                    y="${Math.max(9, chart.targetY - 3).toFixed(1)}"
-                    fill="${CS}"
-                    font-size="6"
-                    text-anchor="end"
-                    font-family="var(--font-family, sans-serif)"
-                    opacity="0.85"
-                  >
-                    Target ${targetVwc}%
-                  </text>
-
-                  <!-- P2 trigger reference line -->
-                  <line
-                    class="phase-trigger-line"
-                    x1="0"
-                    y1="${chart.triggerY.toFixed(1)}"
-                    x2="${CHART_W}"
-                    y2="${chart.triggerY.toFixed(1)}"
-                    stroke="var(--phase-p2, #2196f3)"
-                    stroke-width="1"
-                    stroke-dasharray="4 4"
-                    opacity="0.45"
-                  />
-                  <text
-                    class="phase-trigger-label"
-                    x="${CHART_W - 4}"
-                    y="${Math.min(CHART_H - 3, chart.triggerY + 10).toFixed(1)}"
-                    fill="var(--phase-p2, #2196f3)"
-                    font-size="6"
-                    text-anchor="end"
-                    font-family="var(--font-family, sans-serif)"
-                    opacity="0.85"
-                  >
-                    P2 trigger ${triggerVwc.toFixed(0)}%
-                  </text>
-
-                  <!-- Now dot (hidden while hovering) -->
-                  ${hv == null
-                    ? svg`
-                      <circle class="phase-now-pulse" cx="${chart.nowX.toFixed(1)}" cy="${chart.nowY.toFixed(1)}" r="4" fill="${CS}" opacity="0.35" />
-                      <circle cx="${chart.nowX.toFixed(1)}" cy="${chart.nowY.toFixed(1)}" r="3.2" fill="${CS}" stroke="var(--card-background-color, #1e1e1e)" stroke-width="1.4" />
-                    `
-                    : nothing}
-
-                  <!-- Hover scrubber -->
-                  ${hv != null && chart
-                    ? svg`
-                      <line
-                        x1="${(hv * CHART_W).toFixed(1)}"
-                        y1="0"
-                        x2="${(hv * CHART_W).toFixed(1)}"
-                        y2="${CHART_H}"
-                        stroke="rgba(255,255,255,0.45)"
-                        stroke-width="1"
-                      />
-                    `
-                    : nothing}
-                </svg>
-
-                <!-- Hover tooltip -->
-                ${hv != null && hovVwc != null
-                  ? html`
-                      <div
-                        class="phase-tooltip"
-                        style="left: ${Math.max(4, Math.min(82, hv * 100)).toFixed(0)}%"
-                      >
-                        ${hovPhase
-                          ? html`<span class="phase-tooltip-phase" style="color:${hovPhase.color};"
-                              >${hovPhase.label}</span
-                            >`
-                          : nothing}
-                        ${hovTimeStr
-                          ? html`<span class="phase-tooltip-time">${hovTimeStr}</span>`
-                          : nothing}
-                        <span class="phase-tooltip-vwc">VWC ${hovVwc.toFixed(1)}%</span>
-                      </div>
-                    `
-                  : nothing}
-              </div>
-            `
-          : nothing}
-
-        <!-- Phase bar (absolutely-positioned segments matching cs-phase-strip approach) -->
-        ${segBar.length
-          ? html`
-              <div class="phase-bar">
-                <div class="phase-bar-track">
-                  ${segBar.map(
-                    (s) => html`
-                      <div
-                        class="phase-bar-seg"
-                        style="left:${pct(s.leftFrac)};width:${pct(s.widthFrac)};background:${s.c};"
-                      ></div>
-                    `
-                  )}
-                  <!-- now notch aligned with the chart's now-dot -->
-                  ${chart
-                    ? html`<div
-                        class="phase-bar-now"
-                        style="left:${pct(chart.nowX / CHART_W)}"
-                      ></div>`
-                    : nothing}
-                </div>
-                <div class="phase-bar-labels">
-                  ${segBar
-                    .filter((s) => s.label)
-                    .map(
-                      (s) => html`
-                        <span
-                          class="phase-bar-label"
-                          style="left:${pct(s.leftFrac + s.widthFrac / 2)};color:${s.c};"
-                          >${s.label}</span
-                        >
-                      `
-                    )}
-                </div>
-              </div>
-            `
-          : nothing}
-      </button>
+      <growspace-phase-hero-card
+        .chip=${chip}
+        .strategy=${this.irrigationStrategy!}
+        .config=${this.irrigationConfig}
+        .historyData=${historyData}
+        .timeRange=${this.timeRange}
+      ></growspace-phase-hero-card>
     `;
   }
-
   private _renderHeroCard(chip: HeaderChip) {
     if (chip.key === MetricKey.STEERING_PHASE && this.irrigationStrategy?.enabled) {
       return this._renderPhaseHeroCard(chip);
