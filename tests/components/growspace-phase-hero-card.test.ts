@@ -62,6 +62,26 @@ function stubChartBounds(chart: SVGElement) {
   });
 }
 
+function contrastRatio(foreground: string, background: string): number {
+  const luminance = (color: string) => {
+    const channels = color
+      .match(/[\d.]+/g)
+      ?.slice(0, 3)
+      .map(Number);
+    if (!channels || channels.length !== 3) throw new Error(`Unsupported CSS color: ${color}`);
+    const [red, green, blue] = channels.map((channel) => {
+      const normalized = channel / 255;
+      return normalized <= 0.04045
+        ? normalized / 12.92
+        : Math.pow((normalized + 0.055) / 1.055, 2.4);
+    });
+    return red * 0.2126 + green * 0.7152 + blue * 0.0722;
+  };
+  const lighter = Math.max(luminance(foreground), luminance(background));
+  const darker = Math.min(luminance(foreground), luminance(background));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 describe('growspace-phase-hero-card', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -98,6 +118,85 @@ describe('growspace-phase-hero-card', () => {
     expect(element.shadowRoot!.querySelector('.phase-tooltip')).not.toBeNull();
     expect(derive).toHaveBeenCalledTimes(1);
     expect(renderHero).toHaveBeenCalledTimes(siblingRenderCount);
+  });
+
+  it.each([
+    { clientX: 10, left: '0%', anchor: 'start' },
+    { clientX: 60, left: '50%', anchor: 'center' },
+    { clientX: 110, left: '100%', anchor: 'end' },
+  ])(
+    'keeps the tooltip on the scrubber and anchors it $anchor at the chart edge',
+    async (sample) => {
+      const now = Date.now();
+      const element = await fixture<GrowspaceHeaderHeroUI>(html`
+        <growspace-header-hero-ui
+          .chips=${[chip('steering_phase')]}
+          .irrigationStrategy=${strategy}
+          .historyCache=${{
+            soil_moisture: [
+              { last_changed: new Date(now - 2 * MINUTE_MS).toISOString(), state: '50' },
+              { last_changed: new Date(now - MINUTE_MS).toISOString(), state: '55' },
+              { last_changed: new Date(now).toISOString(), state: '60' },
+            ],
+          }}
+        ></growspace-header-hero-ui>
+      `);
+      const phaseCard = element.shadowRoot!.querySelector(
+        'growspace-phase-hero-card'
+      ) as GrowspacePhaseHeroCard;
+      const chart = element.shadowRoot!.querySelector('.phase-chart-svg') as SVGElement;
+      stubChartBounds(chart);
+
+      chart.dispatchEvent(pointerEvent('pointermove', sample.clientX, 'mouse'));
+      await phaseCard.updateComplete;
+
+      const tooltip = element.shadowRoot!.querySelector('.phase-tooltip') as HTMLElement;
+      expect(tooltip.style.left).toBe(sample.left);
+      expect(tooltip.classList).toContain(`phase-tooltip--anchor-${sample.anchor}`);
+    }
+  );
+
+  it('keeps every tooltip label at AA contrast under a light Home Assistant theme', async () => {
+    const sampleTimes = [
+      new Date(2026, 7, 29, 9, 0),
+      new Date(2026, 7, 29, 10, 0),
+      new Date(2026, 7, 29, 11, 0),
+    ];
+    const element = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        style="--primary-text-color:#212121;--secondary-text-color:#333333"
+        .chips=${[chip('steering_phase')]}
+        .irrigationStrategy=${strategy}
+        .historyCache=${{
+          soil_moisture: sampleTimes.map((at, index) => ({
+            last_changed: at.toISOString(),
+            state: String(50 + index * 5),
+          })),
+        }}
+      ></growspace-header-hero-ui>
+    `);
+    const phaseCard = element.shadowRoot!.querySelector(
+      'growspace-phase-hero-card'
+    ) as GrowspacePhaseHeroCard;
+    const chart = element.shadowRoot!.querySelector('.phase-chart-svg') as SVGElement;
+    stubChartBounds(chart);
+
+    chart.dispatchEvent(pointerEvent('pointermove', 60, 'mouse'));
+    await phaseCard.updateComplete;
+
+    const tooltip = element.shadowRoot!.querySelector('.phase-tooltip') as HTMLElement;
+    const tooltipStyle = getComputedStyle(tooltip);
+    const labels = Array.from(tooltip.children) as HTMLElement[];
+    expect(labels).toHaveLength(3);
+    expect(tooltipStyle.backgroundColor).toBe('rgb(20, 20, 20)');
+    expect(labels.every((label) => getComputedStyle(label).color === tooltipStyle.color)).toBe(
+      true
+    );
+    expect(
+      labels.every(
+        (label) => contrastRatio(getComputedStyle(label).color, tooltipStyle.backgroundColor) >= 4.5
+      )
+    ).toBe(true);
   });
 
   it('scrubs with touch without toggling after a drag, while a tap still toggles', async () => {

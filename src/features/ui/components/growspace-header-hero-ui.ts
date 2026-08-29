@@ -941,11 +941,11 @@ export class GrowspaceHeaderHeroUI extends LitElement {
       .phase-tooltip {
         position: absolute;
         top: -4px;
-        transform: translateX(-50%);
         padding: 3px 7px;
         border-radius: var(--border-radius-sm, 8px);
         pointer-events: none;
-        background: rgba(20, 20, 24, 0.85);
+        background: var(--surface-dim, #141414);
+        color: var(--on-overlay-primary, #ffffff);
         backdrop-filter: blur(8px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         font-size: 0.67rem;
@@ -955,17 +955,42 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         z-index: 10;
       }
 
+      .phase-tooltip--anchor-start {
+        transform: translateX(0);
+      }
+
+      .phase-tooltip--anchor-center {
+        transform: translateX(-50%);
+      }
+
+      .phase-tooltip--anchor-end {
+        transform: translateX(-100%);
+      }
+
       .phase-tooltip-phase {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        color: inherit;
         font-weight: 700;
       }
 
+      .phase-tooltip-phase::before {
+        content: '';
+        width: 0.5em;
+        height: 0.5em;
+        border-radius: 50%;
+        background: var(--phase-tooltip-accent);
+        flex-shrink: 0;
+      }
+
       .phase-tooltip-time {
-        color: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
+        color: inherit;
         font-variant-numeric: tabular-nums;
       }
 
       .phase-tooltip-vwc {
-        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        color: inherit;
         font-variant-numeric: tabular-nums;
       }
 
