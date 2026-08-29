@@ -23,8 +23,12 @@ export interface GraphSeries {
   unit: string;
   icon?: string;
   points: GraphDataPoint[];
+  /** Axis bounds used to scale the trace. */
   min: number;
   max: number;
+  /** Observed extrema shown on a Metric Comparison's legend chip. */
+  observedMin: number;
+  observedMax: number;
   avg?: number;
   path: string;
   fillType: 'gradient' | 'flat' | 'none';

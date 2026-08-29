@@ -792,6 +792,33 @@ describe('GrowspaceEnvChart', () => {
       expect(element.shadowRoot?.querySelectorAll('.gs-legend-item')?.length).toBe(2);
     });
 
+    it('labels a combined pane as normalised and puts observed ranges on its chips', async () => {
+      await showCombined({
+        [MetricKey.TEMPERATURE]: [reading(3_600_000, '20.5'), reading(0, '22')],
+        [MetricKey.HUMIDITY]: [reading(3_600_000, '54'), reading(0, '60.5')],
+      });
+
+      expect(element.shadowRoot?.querySelector('.gs-axis-normalised')?.textContent?.trim()).toBe(
+        'Normalised'
+      );
+      expect(
+        Array.from(element.shadowRoot?.querySelectorAll('.gs-legend-item') ?? []).map((chip) =>
+          chip.textContent?.replace(/\s+/g, ' ').trim()
+        )
+      ).toEqual(['Temperature 20.5–22.0 °C', 'Humidity 54.0–60.5 %']);
+    });
+
+    it('leaves a single-metric graph with its value axis and no normalised label', async () => {
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '22'));
+
+      expect(element.shadowRoot?.querySelector('.gs-axis-normalised')).toBeNull();
+      expect(
+        Array.from(element.shadowRoot?.querySelectorAll('.gs-axis-target') ?? []).map((cap) =>
+          cap.textContent?.trim()
+        )
+      ).toEqual(['22°C', '20°C']);
+    });
+
     it('dispatches chart-clicked with the hovered timestamp', async () => {
       await showMetric(MetricKey.TEMPERATURE, reading(1000, '20'));
       const now = Date.now();

@@ -112,6 +112,11 @@ function formatGuideBound(value: number, unit: string): string {
   return unit === '%' ? `${text}%` : `${text} ${unit}`;
 }
 
+/** The observed domain a combined trace maps into its independently scaled pane. */
+function formatObservedRange(min: number, max: number, unit: string): string {
+  return `${min.toFixed(1)}–${max.toFixed(1)}${unit ? ` ${unit}` : ''}`;
+}
+
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
   @consume({ context: hassContext, subscribe: true })
@@ -280,6 +285,8 @@ export class GrowspaceEnvChart extends LitElement {
       points: series.points,
       min: series.min,
       max: series.max,
+      observedMin: series.observedMin,
+      observedMax: series.observedMax,
       avg: series.avg,
       path: ChartUtils.generatePathFromValues(series.points, width, height, {
         min: series.min,
@@ -358,7 +365,9 @@ export class GrowspaceEnvChart extends LitElement {
             ${this._renderTooltip()}
             ${!this.isCombined
               ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
-              : ''}
+              : html`<span class="gs-axis-normalised"
+                  >${this._localize('environment_chart.normalised')}</span
+                >`}
             ${
               // Inline labels only on a single-metric chart: a combined chart's
               // four bands would be eight labels on a 180px pane, which is a
@@ -632,7 +641,10 @@ export class GrowspaceEnvChart extends LitElement {
                         </svg>
                       </div>`
                     : ''}
-                  <span style="color:${s.color}; font-weight:500;">${s.title}</span>
+                  <span class="gs-legend-title" style="color:${s.color};">${s.title}</span>
+                  <span class="gs-legend-range"
+                    >${formatObservedRange(s.observedMin, s.observedMax, s.unit)}</span
+                  >
                 </div>
               `
             )}
@@ -1087,6 +1099,25 @@ export class GrowspaceEnvChart extends LitElement {
       pointer-events: none;
     }
 
+    /* A combined chart has no shared value ticks. Name its per-series geometry
+       where a value axis would begin, before the eye reaches the traces. */
+    .gs-axis-normalised {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: 3;
+      padding: 3px 6px;
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+      border-radius: 999px;
+      background: var(--card-background-color, rgba(30, 30, 35, 0.9));
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      pointer-events: none;
+    }
+
     /* Guide-mark labels sit inboard of the value-axis caps at the left edge, the
        way the model dialog keeps its target labels clear of its tick column. */
     .gs-guide-label {
@@ -1161,6 +1192,19 @@ export class GrowspaceEnvChart extends LitElement {
       cursor: pointer;
       opacity: 0.8;
       transition: opacity 0.2s;
+    }
+    .gs-legend-title {
+      font-weight: 500;
+    }
+    .gs-legend-range {
+      margin-left: 5px;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+      font-size: var(--font-size-xs);
+      font-variant-numeric: tabular-nums;
+    }
+    .gs-legend-range::before {
+      content: '·';
+      margin-right: 5px;
     }
     .gs-legend-item:hover {
       opacity: 1;
