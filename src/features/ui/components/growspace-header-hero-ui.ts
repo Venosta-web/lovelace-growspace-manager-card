@@ -786,6 +786,58 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         overflow: visible;
       }
 
+      .phase-reference-label {
+        position: absolute;
+        right: 4px;
+        z-index: 2;
+        font-family: var(--font-family, sans-serif);
+        font-size: var(--font-size-xs, 0.6875rem);
+        font-weight: 500;
+        line-height: 1;
+        white-space: nowrap;
+        opacity: 0.85;
+        pointer-events: none;
+      }
+
+      .phase-target-label {
+        transform: translateY(calc(-100% - 3px));
+      }
+
+      .phase-trigger-label {
+        color: var(--phase-p2, #2196f3);
+        transform: translateY(3px);
+      }
+
+      .phase-now-marker {
+        position: absolute;
+        z-index: 2;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+      }
+
+      .phase-now-dot,
+      .phase-now-pulse {
+        position: absolute;
+        top: 0;
+        left: 0;
+        border-radius: 50%;
+        background: currentColor;
+        transform: translate(-50%, -50%);
+      }
+
+      .phase-now-dot {
+        width: 6.4px;
+        height: 6.4px;
+        border: 1.4px solid var(--card-background-color, #1e1e1e);
+      }
+
+      .phase-now-pulse {
+        width: 8px;
+        height: 8px;
+        opacity: 0.35;
+      }
+
       .phase-now-pulse {
         animation: phase-pulse 2.4s ease-out infinite;
         transform-box: fill-box;
@@ -794,12 +846,12 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
       @keyframes phase-pulse {
         0% {
-          transform: scale(1);
+          transform: translate(-50%, -50%) scale(1);
           opacity: 0.4;
         }
         70%,
         100% {
-          transform: scale(2.6);
+          transform: translate(-50%, -50%) scale(2.6);
           opacity: 0;
         }
       }
