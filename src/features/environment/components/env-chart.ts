@@ -27,6 +27,7 @@ import '../../shared/ui/error-boundary';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
 import { renderGuideLimitMark } from './guide-limit-mark';
 import { accessibleChartSummary } from '../chart-accessibility';
+import type { ChartScrubDetail } from './chart-scrub-tooltip';
 
 /**
  * The pane every trace, band and gridline is drawn into.
@@ -151,6 +152,8 @@ export class GrowspaceEnvChart extends LitElement {
    * parameter. Absent, the chart anchors its own from `range` as it always has.
    */
   @property({ attribute: false }) chartWindow: ChartWindow | undefined;
+  /** Lets a two-pane host own the one scrub overlay spanning both panes. */
+  @property({ type: Boolean }) delegateScrub = false;
 
   @state() private _activeTooltip: TooltipData | null = null;
   @state() private _hoverTime: number | null = null;
@@ -592,12 +595,30 @@ export class GrowspaceEnvChart extends LitElement {
     });
 
     const locale = this.hass?.locale?.language || undefined;
-    this._activeTooltip = {
+    const tooltip = {
       id: 'hover',
       x: mouseX,
       time: new Date(hoverTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
       items,
     };
+    if (this.delegateScrub) {
+      this._activeTooltip = null;
+      this.dispatchEvent(
+        new CustomEvent<ChartScrubDetail>('chart-scrub', {
+          detail: {
+            position: relX,
+            rows: items.map((item) => ({
+              ...item,
+              time: { kind: 'moment' as const, time: hoverTime },
+            })),
+          },
+          bubbles: true,
+          composed: true,
+        })
+      );
+    } else {
+      this._activeTooltip = tooltip;
+    }
     this._hoverTime = hoverTime;
   }
 
@@ -747,7 +768,7 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   private _renderTooltip() {
-    if (!this._activeTooltip) return html``;
+    if (this.delegateScrub || !this._activeTooltip) return html``;
     const { x, time, items } = this._activeTooltip;
     return html`
       <div class="gs-tooltip" style=${styleMap({ left: `${x}px`, top: '0' })}>

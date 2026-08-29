@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import '../../src/features/environment/components/metric-combo-chart';
 import type { MetricComboChart } from '../../src/features/environment/components/metric-combo-chart';
@@ -97,6 +97,138 @@ describe('metric-combo-chart', () => {
       node.textContent!.trim()
     );
     expect(readouts).toEqual(['80%']);
+  });
+
+  it('scrubs the interval pane with one tooltip and one cursor shared by both panes', async () => {
+    const el = await mount();
+    const pane = el.shadowRoot!.querySelector<HTMLElement>('.duty-pane')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 64,
+    } as DOMRect);
+
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 50,
+        pointerId: 1,
+        pointerType: 'touch',
+      })
+    );
+    await el.updateComplete;
+
+    const overlays = el.shadowRoot!.querySelectorAll('chart-scrub-tooltip');
+    expect(overlays).toHaveLength(1);
+    expect(overlays[0].shadowRoot!.textContent).toContain('Temperature');
+    expect(overlays[0].shadowRoot!.textContent).toContain('Exhaust');
+    expect(overlays[0].shadowRoot!.querySelectorAll('.chart-scrub-cursor')).toHaveLength(1);
+    expect(getComputedStyle(pane).touchAction).toBe('pan-y');
+  });
+
+  it('delegates primary-pane scrubbing to the same combo tooltip', async () => {
+    const el = await mount();
+    const chart = el.shadowRoot!.querySelector('growspace-env-chart') as HTMLElement & {
+      updateComplete: Promise<unknown>;
+    };
+    await chart.updateComplete;
+    const pane = chart.shadowRoot!.querySelector<HTMLElement>('.gs-env-chart-container')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 800,
+      height: 200,
+    } as DOMRect);
+
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 200,
+        pointerId: 1,
+        pointerType: 'mouse',
+      })
+    );
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await el.updateComplete;
+
+    const overlay = el.shadowRoot!.querySelector('chart-scrub-tooltip')!;
+    expect(overlay).not.toBeNull();
+    expect((overlay as any).position).toBeCloseTo(0.25);
+    expect(overlay.shadowRoot!.textContent).toContain('Temperature');
+    expect(overlay.shadowRoot!.textContent).toContain('Exhaust');
+    expect(chart.shadowRoot!.querySelector('.gs-tooltip')).toBeNull();
+  });
+
+  it('clears the shared tooltip and cursor together when the combo is left', async () => {
+    const el = await mount();
+    const intervalPane = el.shadowRoot!.querySelector<HTMLElement>('.duty-pane')!;
+    vi.spyOn(intervalPane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 64,
+    } as DOMRect);
+    intervalPane.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, clientX: 50, pointerId: 1 })
+    );
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector('chart-scrub-tooltip')).not.toBeNull();
+
+    el.shadowRoot!.querySelector('growspace-env-chart')!.dispatchEvent(
+      new PointerEvent('pointerleave', { pointerId: 1 })
+    );
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('chart-scrub-tooltip')).toBeNull();
+  });
+
+  it('labels instantaneous rows with a moment and interval rows with their bucket span', async () => {
+    const el = await mount();
+    const pane = el.shadowRoot!.querySelector<HTMLElement>('.duty-pane')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 64,
+    } as DOMRect);
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, clientX: 50, pointerId: 1 })
+    );
+    await el.updateComplete;
+
+    const rows = el
+      .shadowRoot!.querySelector('chart-scrub-tooltip')!
+      .shadowRoot!.querySelectorAll('.chart-scrub-row');
+    expect(rows[0].textContent).toMatch(/\d{2}:\d{2}\s*·\s*24\.5 °C/);
+    expect(rows[0].textContent).not.toContain('–');
+    expect(rows[1].textContent).toMatch(/\d{2}:\d{2}–\d{2}:\d{2}\s*·\s*80\.0 %/);
+  });
+
+  it('keeps the shared time window anchored while the pointer moves', async () => {
+    const el = await mount();
+    const chart = el.shadowRoot!.querySelector('growspace-env-chart') as HTMLElement & {
+      chartWindow: { startTimeMs: number; durationMillis: number };
+    };
+    const windowBeforeScrub = chart.chartWindow;
+    const now = vi
+      .spyOn(Date, 'now')
+      .mockReturnValue(windowBeforeScrub.startTimeMs + windowBeforeScrub.durationMillis + 60_000);
+    const pane = el.shadowRoot!.querySelector<HTMLElement>('.duty-pane')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 64,
+    } as DOMRect);
+
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, clientX: 50, pointerId: 1 })
+    );
+    await el.updateComplete;
+    now.mockRestore();
+
+    expect(chart.chartWindow).toEqual(windowBeforeScrub);
   });
 
   it('degrades to the primary alone when the secondary has no configured sensor', async () => {

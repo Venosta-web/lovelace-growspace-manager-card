@@ -24,6 +24,8 @@ import type { RawHistoryDataPoint } from '../../../adapters/hass-types';
 import type { SensorHistories } from '../types';
 import { renderGuideLimitMark } from './guide-limit-mark';
 import { accessibleChartSummary } from '../chart-accessibility';
+import './chart-scrub-tooltip';
+import type { ChartScrubDetail } from './chart-scrub-tooltip';
 
 const TankWaterBucketSchema = z.object({
   timestamp: z.string(),
@@ -176,6 +178,7 @@ export class TankWaterChart extends LitElement {
   @state() private _loading = false;
   @state() private _error = false;
   @state() private _levelTooltip: TankLevelTooltip | undefined;
+  @state() private _scrub: ChartScrubDetail | undefined;
 
   private _lastRequestKey: string | undefined;
   private _requestVersion = 0;
@@ -185,6 +188,7 @@ export class TankWaterChart extends LitElement {
       display: block;
     }
     .chart-wrapper {
+      position: relative;
       display: flex;
       flex-direction: column;
       height: 100%;
@@ -383,6 +387,7 @@ export class TankWaterChart extends LitElement {
       background: var(--gs-chart-surface, #0d0d0d);
       border-radius: 8px;
       overflow: hidden;
+      touch-action: pan-y;
     }
     .usage-pane--message {
       height: auto;
@@ -814,6 +819,12 @@ export class TankWaterChart extends LitElement {
               </span>`}
         </div>
         ${this._renderUsagePane(bars)}
+        ${this._scrub
+          ? html`<chart-scrub-tooltip
+              .position=${this._scrub.position}
+              .rows=${this._scrub.rows}
+            ></chart-scrub-tooltip>`
+          : nothing}
       </div>
     `;
   }
@@ -875,7 +886,12 @@ export class TankWaterChart extends LitElement {
     // not fit the plot's 64px. Those two states are allowed to grow; the plot
     // and the empty pane are not, so switching range never resizes the card.
     return html`
-      <div class="usage-pane ${axis ? '' : 'usage-pane--message'}">
+      <div
+        class="usage-pane ${axis ? '' : 'usage-pane--message'}"
+        @pointermove=${axis ? this._handleUsagePointerMove : nothing}
+        @pointerleave=${this._clearScrub}
+        @pointercancel=${this._clearScrub}
+      >
         ${body}
         ${axis
           ? html`
@@ -908,6 +924,42 @@ export class TankWaterChart extends LitElement {
     return foldUsageBuckets(this._buckets, USAGE_BAR_TARGET[this.range]);
   }
 
+  private _handleUsagePointerMove = (event: PointerEvent): void => {
+    const bars = this._bars;
+    if (bars.length === 0) return;
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const position =
+      rect.width > 0 ? Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)) : 0.5;
+    const index = Math.min(bars.length - 1, Math.floor(position * bars.length));
+    const bucket = bars[index];
+    const startTime = new Date(bucket.timestamp).getTime();
+    const nextStart = bars[index + 1] ? new Date(bars[index + 1].timestamp).getTime() : undefined;
+    const previousStart = bars[index - 1]
+      ? new Date(bars[index - 1].timestamp).getTime()
+      : undefined;
+    const bucketDuration =
+      nextStart != null
+        ? nextStart - startTime
+        : previousStart != null
+          ? startTime - previousStart
+          : RANGE_DURATION_MS[this.range] / bars.length;
+
+    this._scrub = {
+      position,
+      rows: [
+        {
+          title: localize('water_chart.title'),
+          time: { kind: 'interval', startTime, endTime: startTime + bucketDuration },
+          value: `${bucket.liters.toFixed(1)} L`,
+        },
+      ],
+    };
+  };
+
+  private _clearScrub = (): void => {
+    this._scrub = undefined;
+  };
+
   private _renderBars(bars: TankWaterBucket[]): TemplateResult {
     const max = Math.max(...bars.map((b) => b.liters), 0.001);
     const chartH = 80;
@@ -937,13 +989,14 @@ export class TankWaterChart extends LitElement {
           const barH = (bucket.liters / max) * chartH;
           const x = i * barW + gap / 2;
           const y = chartH - barH;
-          return svg`
-            <rect class="bar" x="${x}" y="${y}" width="${barW - gap}" height="${barH}" rx="1">
-              <title>
-                ${new Date(bucket.timestamp).toLocaleTimeString()} — ${bucket.liters.toFixed(1)} L
-              </title>
-            </rect>
-          `;
+          return svg`<rect
+            class="bar"
+            x="${x}"
+            y="${y}"
+            width="${barW - gap}"
+            height="${barH}"
+            rx="1"
+          ></rect>`;
         })}
       </svg>
     `;

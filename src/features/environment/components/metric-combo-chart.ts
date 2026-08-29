@@ -1,12 +1,15 @@
-import { LitElement, html, css, svg, nothing, type TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { LitElement, html, css, svg, nothing, type PropertyValues, type TemplateResult } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
 import type { GrowspaceDevice } from '../../../services/types';
 import type { MetricDescriptor } from '../../../slices/metric-descriptors';
 import type { SensorHistories } from '../types';
 import type { HistoryTimeRange } from '../constants';
 import { computeComboIntervalPane, type ComboIntervalPane } from '../combo-series';
+import { computeEnvSeries } from '../env-series';
 import { localizeWithParams } from '../../../localize/localize';
 import '../../../growspace-env-chart';
+import './chart-scrub-tooltip';
+import type { ChartScrubDetail, ChartScrubRow } from './chart-scrub-tooltip';
 
 /**
  * A [[Curated Combo]]: a primary [[Env Graph]] over a subordinate bar pane, on
@@ -62,6 +65,8 @@ export class MetricComboChart extends LitElement {
   @property({ type: String }) primary = '';
   /** The [[Interval Metric]] that gives it context, drawn as bars beneath. */
   @property({ type: String }) secondary = '';
+  @state() private _scrub: { position: number; rows: ChartScrubRow[] } | undefined;
+  private _renderWindow = this._windowFor(this.range);
 
   static styles = css`
     /* The inline stack's spacing sits here rather than on the Env Graph inside,
@@ -99,6 +104,7 @@ export class MetricComboChart extends LitElement {
       background: var(--gs-chart-surface, var(--secondary-background-color, #0d0d0d));
       border-radius: 8px;
       overflow: hidden;
+      touch-action: pan-y;
     }
     /*
      * The peak cap, and the pane's only readout. It is the scale — the same
@@ -143,14 +149,27 @@ export class MetricComboChart extends LitElement {
     return localizeWithParams(key, params, 'en');
   }
 
-  /** The window both panes are drawn against, anchored once per render. */
-  private get _window() {
-    const durationMillis = RANGE_DURATION_MS[this.range] ?? RANGE_DURATION_MS['24h'];
+  /** Anchor a window when chart inputs change, never when only the scrub moves. */
+  private _windowFor(range: HistoryTimeRange) {
+    const durationMillis = RANGE_DURATION_MS[range] ?? RANGE_DURATION_MS['24h'];
     return { startTimeMs: Date.now() - durationMillis, durationMillis };
   }
 
+  protected willUpdate(changed: PropertyValues<this>): void {
+    if (
+      changed.has('device') ||
+      changed.has('sensorHistory') ||
+      changed.has('descriptors') ||
+      changed.has('range') ||
+      changed.has('primary') ||
+      changed.has('secondary')
+    ) {
+      this._renderWindow = this._windowFor(this.range);
+    }
+  }
+
   render(): TemplateResult {
-    const { startTimeMs, durationMillis } = this._window;
+    const { startTimeMs, durationMillis } = this._renderWindow;
     const pane = computeComboIntervalPane(
       this.descriptors,
       this.sensorHistory ?? {},
@@ -171,9 +190,20 @@ export class MetricComboChart extends LitElement {
         .metrics=${[this.primary]}
         .range=${this.range}
         .chartWindow=${{ startTimeMs, durationMillis }}
+        .delegateScrub=${pane != null}
+        @chart-scrub=${(event: CustomEvent<ChartScrubDetail>) =>
+          this._scrubPrimaryPane(event, pane, startTimeMs, durationMillis)}
+        @pointerleave=${this._clearScrub}
+        @pointercancel=${this._clearScrub}
       >
         ${this._renderIntervalPane(pane, startTimeMs, durationMillis)}
       </growspace-env-chart>
+      ${this._scrub
+        ? html`<chart-scrub-tooltip
+            .position=${this._scrub.position}
+            .rows=${this._scrub.rows}
+          ></chart-scrub-tooltip>`
+        : nothing}
     `;
   }
 
@@ -199,7 +229,11 @@ export class MetricComboChart extends LitElement {
         <div class="duty-eyebrow">
           <span>${this._localize('metric_combo.duty_label', { metric: pane.title })}</span>
         </div>
-        <div class="duty-pane">
+        <div
+          class="duty-pane"
+          @pointermove=${(event: PointerEvent) =>
+            this._scrubIntervalPane(event, pane, startTimeMs, durationMillis)}
+        >
           <span class="duty-readout">${pane.peak.toFixed(0)}${pane.unit}</span>
           <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
             ${pane.bars.map((bar) => {
@@ -221,6 +255,91 @@ export class MetricComboChart extends LitElement {
       </div>
     `;
   }
+
+  private _scrubIntervalPane(
+    event: PointerEvent,
+    pane: ComboIntervalPane,
+    startTimeMs: number,
+    durationMillis: number
+  ): void {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const position =
+      rect.width > 0 ? Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)) : 0.5;
+    const hoverTime = startTimeMs + position * durationMillis;
+    const primary = computeEnvSeries(this.descriptors, this.sensorHistory ?? {}, [this.primary], {
+      startTimeMs,
+      nowMs: startTimeMs + durationMillis,
+      isCombined: false,
+    })[0];
+    const primaryPoint = primary?.points.reduce((closest, point) =>
+      Math.abs(point.time - hoverTime) < Math.abs(closest.time - hoverTime) ? point : closest
+    );
+    const interval =
+      pane.bars.find((bar) => bar.startTime <= hoverTime && hoverTime <= bar.endTime) ??
+      pane.bars.reduce((closest, bar) =>
+        Math.abs(bar.startTime - hoverTime) < Math.abs(closest.startTime - hoverTime)
+          ? bar
+          : closest
+      );
+
+    this._scrub = {
+      position,
+      rows: [
+        ...(primary && primaryPoint
+          ? [
+              {
+                title: primary.title,
+                time: { kind: 'moment' as const, time: hoverTime },
+                value: `${primaryPoint.value.toFixed(1)} ${primary.unit}`,
+                color: primary.color,
+              },
+            ]
+          : []),
+        this._intervalRow(pane, interval),
+      ],
+    };
+  }
+
+  private _scrubPrimaryPane(
+    event: CustomEvent<ChartScrubDetail>,
+    pane: ComboIntervalPane | undefined,
+    startTimeMs: number,
+    durationMillis: number
+  ): void {
+    if (!pane) return;
+    const hoverTime = startTimeMs + event.detail.position * durationMillis;
+    const interval =
+      pane.bars.find((bar) => bar.startTime <= hoverTime && hoverTime <= bar.endTime) ??
+      pane.bars.reduce((closest, bar) =>
+        Math.abs(bar.startTime - hoverTime) < Math.abs(closest.startTime - hoverTime)
+          ? bar
+          : closest
+      );
+    this._scrub = {
+      position: event.detail.position,
+      rows: [...event.detail.rows, this._intervalRow(pane, interval)],
+    };
+  }
+
+  private _intervalRow(
+    pane: ComboIntervalPane,
+    interval: ComboIntervalPane['bars'][number]
+  ): ChartScrubRow {
+    return {
+      title: pane.title,
+      time: {
+        kind: 'interval',
+        startTime: interval.startTime,
+        endTime: interval.endTime,
+      },
+      value: `${interval.value.toFixed(1)} ${pane.unit}`,
+      color: pane.color,
+    };
+  }
+
+  private _clearScrub = (): void => {
+    this._scrub = undefined;
+  };
 }
 
 declare global {
