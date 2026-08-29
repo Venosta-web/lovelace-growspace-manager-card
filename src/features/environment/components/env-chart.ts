@@ -293,6 +293,7 @@ export class GrowspaceEnvChart extends LitElement {
       fillType: this.isCombined || series.sensor ? ('flat' as const) : ('gradient' as const),
       vpdBands: series.vpdBands,
       guideBands: series.guideBands,
+      guideLines: series.guideLines,
       metricColor: series.metricColor,
     }));
   }
@@ -356,17 +357,23 @@ export class GrowspaceEnvChart extends LitElement {
               ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
               : ''}
             ${
-              // Only band edges carry inline labels, and only on a single-metric
-              // chart: a combined chart's four bands would be eight labels on a
-              // 180px pane, which is a density problem rather than a collision
-              // one (ADR-0048).
-              !this.isCombined ? this._renderGuideLabelsHTML(series[0]) : ''
+              // Inline labels only on a single-metric chart: a combined chart's
+              // four bands would be eight labels on a 180px pane, which is a
+              // density problem rather than a collision one (ADR-0048). Band
+              // edges carry their values; setpoints carry only their names.
+              !this.isCombined
+                ? [
+                    this._renderGuideLabelsHTML(series[0]),
+                    this._renderGuideLineLabelsHTML(series[0]),
+                  ]
+                : ''
             }
             ${this._renderXAxisHTML(this.range)}
 
             <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
               ${this._renderGrid(width, height)}
               ${series.map((s) => this._renderGuideBands(s, this._renderWindow))}
+              ${series.map((s) => this._renderGuideLines(s, this._renderWindow))}
               ${series.map((s) => {
                 // VPD bands remain in value/time space until this render step, where
                 // the component has the chart dimensions needed to create paths.
@@ -679,6 +686,93 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   /**
+   * A series' [[Setpoint]]s: one dashed line in the metric colour per mark, with
+   * the controller's deadband as a faint region around it (ADR-0048).
+   *
+   * The dash is looser than a band edge's rather than tighter, so a setpoint is
+   * not read as the [[Limit]] mark that arrives with #50. The deadband is drawn
+   * without edges of its own for the same reason: `target ± tolerance` says how
+   * far the metric may drift before the controller responds, and edges would
+   * make it read as an [[Optimal Band]] — a preference the config does not hold.
+   *
+   * Each segment is drawn on its own, so a period-indexed pair — the humidifier
+   * and dehumidifier thresholds are indexed by cycle as well as by stage — steps
+   * at lights-on and lights-off instead of sitting at a value that was wrong for
+   * half the window.
+   */
+  private _renderGuideLines(series: GraphSeries, { startTimeMs, durationMillis }: ChartWindow) {
+    if (!series.guideLines?.length) return svg``;
+
+    const { width, height } = CHART_PANE;
+    const span = series.max - series.min || 1;
+    const xAt = (time: number) => ((time - startTimeMs) / durationMillis) * width;
+    const yAt = (value: number) => height - ((value - series.min) / span) * height;
+    const color = series.metricColor ?? series.color;
+
+    return svg`${series.guideLines.map(
+      (line) =>
+        svg`${line.segments.map((segment) => {
+          const left = xAt(segment.startTime);
+          const right = xAt(segment.endTime);
+          const y = yAt(segment.value);
+          const deadband = line.tolerance
+            ? svg`<rect
+                x="${left}" y="${yAt(segment.value + line.tolerance)}"
+                width="${Math.max(0, right - left)}"
+                height="${Math.max(0, yAt(segment.value - line.tolerance) - yAt(segment.value + line.tolerance))}"
+                fill="${color}" fill-opacity="0.05"
+              />`
+            : svg``;
+          return svg`
+          ${deadband}
+          <line x1="${left}" x2="${right}" y1="${y}" y2="${y}"
+                stroke="${color}" stroke-opacity="0.85" stroke-width="1"
+                stroke-dasharray="10 6" vector-effect="non-scaling-stroke" />
+        `;
+        })}`
+    )}`;
+  }
+
+  /**
+   * The setpoints, named.
+   *
+   * A setpoint's label is its **name**, not its value: a metric can carry
+   * several from different sources — a fan's control target and both halves of
+   * an appliance's hysteresis pair — and the thing a grower cannot recover from
+   * the chart is which line is which. Values stay on the [[Optimal Band]] edges,
+   * where ADR-0048 put them, rather than adding a second number per line to a
+   * 180px pane.
+   *
+   * Anchored to the right so they cannot collide with the band labels on the
+   * left, and read from the segment under the current time for the same reason a
+   * stepped band's label does.
+   */
+  private _renderGuideLineLabelsHTML(series: GraphSeries) {
+    if (!series.guideLines?.length) return '';
+
+    const span = series.max - series.min || 1;
+    const topPercent = (value: number) => (((series.max - value) / span) * 100).toFixed(3);
+    const color = series.metricColor ?? series.color;
+
+    return series.guideLines.map(
+      (line) => html`
+        <span
+          class="gs-guide-label setpoint"
+          style="top:${topPercent(line.current)}%;color:${color};"
+          >${this._guideMarkLabel(line.id)}</span
+        >
+      `
+    );
+  }
+
+  /** A guide mark's display name, falling back to its id rather than to a key path. */
+  private _guideMarkLabel(id: string): string {
+    const key = `guide_marks.${id}`;
+    const label = this._localize(key);
+    return label === key ? id : label;
+  }
+
+  /**
    * The band's bounds, labelled.
    *
    * HTML positioned by percentage rather than SVG text, because the pane is a
@@ -880,6 +974,18 @@ export class GrowspaceEnvChart extends LitElement {
         0 1px 4px rgba(0, 0, 0, 0.95),
         0 0 4px rgba(0, 0, 0, 0.8);
       pointer-events: none;
+    }
+
+    /*
+     * A setpoint's name sits on the right so it cannot collide with the band
+     * value labels on the left, and lighter than them because it names a mark
+     * rather than reporting a reading.
+     */
+    .gs-guide-label.setpoint {
+      left: auto;
+      right: 8px;
+      font-weight: 500;
+      opacity: 0.8;
     }
 
     svg path {

@@ -16,11 +16,23 @@
  * - **The records carry numbers, not strings.** Formatting a bound with its unit
  *   is the chart's job; this module stays pure of localisation.
  *
- * Only the [[Optimal Band]] kind is constructed for its own sake today. The VPD
- * danger bounds are normalised as [[Limit]]s because absorbing `vpdThresholds`
- * has to be lossless — the VPD status bands classify against them — but nothing
- * draws a Limit mark yet, and no [[Setpoint]] record is built at all. Both
- * arrive with their own tickets.
+ * [[Optimal Band]] and [[Setpoint]] are both constructed for their own sake. The
+ * VPD danger bounds are normalised as [[Limit]]s because absorbing
+ * `vpdThresholds` has to be lossless — the VPD status bands classify against
+ * them — but no other Limit source is read here and nothing draws a Limit mark
+ * yet; both arrive with #50.
+ *
+ * A source is normalised only where the controller is actually acting on it. A
+ * disabled fan, a regulation mode the fan is not in, and an appliance the card
+ * does not control all yield no target, for the reason an incompatible moisture
+ * sensor does: a mark asserts what the metric is being steered to, and a number
+ * nothing acts on is not that.
+ *
+ * Two of ADR-0050's bare scalars are deliberately absent. `targetRunoffPercent`
+ * is a Setpoint, but runoff percent is not a `MetricKey` — there is no chart for
+ * it to mark. The DLI targets are a Setpoint too, and the growspace payload does
+ * not carry `dli_target_veg` / `dli_target_flower` at all; wiring them is a
+ * cross-repo change to the view model, not a normalisation this module can make.
  */
 
 import { MetricKey } from '../../features/environment/constants';
@@ -59,6 +71,23 @@ export interface OptimalBandTarget {
   night: MetricTargetBounds;
 }
 
+/** A single value a controller acts on. */
+export interface SetpointTarget {
+  kind: GuideMarkKind.SETPOINT;
+  id: string;
+  day: number;
+  night: number;
+  /**
+   * The controller's deadband half-width around the setpoint, when the source
+   * declares one.
+   *
+   * It is symmetric, and it is **not** an [[Optimal Band]]: it says how far the
+   * metric may drift before the controller responds, not where the grower wants
+   * the metric to sit. A consumer that draws it must not draw it as a band.
+   */
+  tolerance?: number;
+}
+
 /** A boundary the metric should not cross; `side` says which way is bad. */
 export interface LimitTarget {
   kind: GuideMarkKind.LIMIT;
@@ -68,7 +97,7 @@ export interface LimitTarget {
   night: number;
 }
 
-export type MetricTarget = OptimalBandTarget | LimitTarget;
+export type MetricTarget = OptimalBandTarget | SetpointTarget | LimitTarget;
 
 export interface OverviewEntitySnapshot {
   attributes?: Record<string, unknown>;
@@ -76,6 +105,10 @@ export interface OverviewEntitySnapshot {
 
 export function isOptimalBand(target: MetricTarget): target is OptimalBandTarget {
   return target.kind === GuideMarkKind.OPTIMAL_BAND;
+}
+
+export function isSetpoint(target: MetricTarget): target is SetpointTarget {
+  return target.kind === GuideMarkKind.SETPOINT;
 }
 
 export function isLimit(target: MetricTarget): target is LimitTarget {
@@ -155,6 +188,172 @@ function _vpdTargets(overviewEntity?: OverviewEntitySnapshot): MetricTarget[] {
   ];
 }
 
+/**
+ * A configured number, or `undefined` where the source holds none.
+ *
+ * Zero is read as unconfigured rather than as a value. These are grow-room
+ * setpoints — nobody steers a tent to 0 °C, 0 % or 0 kPa — and zero is exactly
+ * what an untouched field holds, the same reason a `{0, 0}` EC range is absent
+ * rather than a real band at zero.
+ */
+function _configured(value: number | null | undefined): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+/** A setpoint that does not vary with the photoperiod, with its deadband. */
+function _setpoint(
+  id: string,
+  value: number | null | undefined,
+  tolerance?: number | null
+): MetricTarget[] {
+  const configured = _configured(value);
+  if (configured === undefined) return [];
+
+  const target: SetpointTarget = {
+    kind: GuideMarkKind.SETPOINT,
+    id,
+    day: configured,
+    night: configured,
+  };
+  const band = _configured(tolerance);
+  if (band !== undefined) target.tolerance = band;
+  return [target];
+}
+
+/** A setpoint that steps with the photoperiod; a missing night value inherits day. */
+function _periodSetpoint(
+  id: string,
+  day: number | null | undefined,
+  night: number | null | undefined
+): MetricTarget[] {
+  const dayValue = _configured(day);
+  if (dayValue === undefined) return [];
+
+  return [
+    {
+      kind: GuideMarkKind.SETPOINT,
+      id,
+      day: dayValue,
+      night: _configured(night) ?? dayValue,
+    },
+  ];
+}
+
+/** The signal a fan config holds a `target`/`tolerance` pair for. */
+type FanRegulatedSignal = 'temperature' | 'humidity' | 'vpd';
+
+/** The signal each metric's fan setpoint is stored under, if it has one. */
+const FAN_REGULATED_SIGNAL: Record<string, FanRegulatedSignal> = {
+  [MetricKey.TEMPERATURE]: 'temperature',
+  [MetricKey.HUMIDITY]: 'humidity',
+  [MetricKey.VPD]: 'vpd',
+};
+
+/**
+ * The shape both fan configs share.
+ *
+ * `regulation_mode` is the circulation fan's alone — exhaust demand is always
+ * combined, so the exhaust config declares no mode and every signal it holds is
+ * in force at once.
+ */
+interface FanControlConfig {
+  enabled: boolean;
+  regulation_mode?: FanRegulatedSignal;
+  temperature_target: number;
+  temperature_tolerance: number;
+  humidity_target: number;
+  humidity_tolerance: number;
+  vpd_target: number;
+  vpd_tolerance: number;
+}
+
+function _fanSetpoint(
+  id: string,
+  config: FanControlConfig | undefined,
+  signal: FanRegulatedSignal
+): MetricTarget[] {
+  if (!config?.enabled) return [];
+  // A circulation fan regulates on exactly one signal. It still stores a target
+  // for the other two, but it does not steer to them, so marking one would name
+  // a number nothing is acting on.
+  if (config.regulation_mode !== undefined && config.regulation_mode !== signal) return [];
+
+  return _setpoint(id, config[`${signal}_target`], config[`${signal}_tolerance`]);
+}
+
+/**
+ * The control setpoints the two fans hold for `key`.
+ *
+ * Both fans can regulate the same metric, and a chart carrying two of these is
+ * the configuration being reported rather than a duplicate — which is why the
+ * ids name their source.
+ */
+function _fanSetpoints(key: string, device: GrowspaceDevice): MetricTarget[] {
+  const signal = FAN_REGULATED_SIGNAL[key];
+  if (!signal) return [];
+
+  const environment = device.environmentAttributes;
+  return [
+    ..._fanSetpoint('circulation-fan-target', environment?.circulationFanConfig, signal),
+    ..._fanSetpoint('exhaust-fan-target', environment?.exhaustFanConfig, signal),
+  ];
+}
+
+/** The Stage Hysteresis Threshold table: stage → cycle → the pair. */
+type StageHysteresisThresholds = Record<string, Record<string, { on: number; off: number }>>;
+
+/**
+ * One appliance's `{on, off}` pair, as **two setpoints and never a band**
+ * (ADR-0048).
+ *
+ * `{on, off}` says what the controller does, not where the grower wants the
+ * metric to sit; a band drawn between them would assert a preference the config
+ * does not contain. The table is per stage as well as per period, so it resolves
+ * through `granularStage` for the same reason the feed-EC range does.
+ */
+function _hysteresisSetpoints(
+  id: string,
+  controlEnabled: boolean | undefined,
+  thresholds: StageHysteresisThresholds | undefined,
+  stage: string | undefined
+): MetricTarget[] {
+  // The table is stored whether or not the card drives the appliance, so the
+  // control flag is what decides whether anything is acting on these numbers.
+  if (controlEnabled !== true || !stage) return [];
+
+  const cycles = thresholds?.[stage];
+  if (!cycles) return [];
+
+  return [
+    ..._periodSetpoint(`${id}-on`, cycles.day?.on, cycles.night?.on),
+    ..._periodSetpoint(`${id}-off`, cycles.day?.off, cycles.night?.off),
+  ];
+}
+
+/**
+ * The humidifier and dehumidifier switching thresholds, which are VPD values in
+ * kPa rather than relative humidity — the appliances are driven off VPD.
+ */
+function _humidityApplianceTargets(device: GrowspaceDevice): MetricTarget[] {
+  const environment = device.environmentAttributes;
+  const stage = device.biologicalMetrics?.granularStage;
+
+  return [
+    ..._hysteresisSetpoints(
+      'humidifier',
+      environment?.humidifierControlEnabled,
+      environment?.humidifierThresholds,
+      stage
+    ),
+    ..._hysteresisSetpoints(
+      'dehumidifier',
+      environment?.dehumidifierControlEnabled,
+      environment?.dehumidifierThresholds,
+      stage
+    ),
+  ];
+}
+
 /** A band that does not vary with the photoperiod, dropped when it is degenerate. */
 function _flatBand(
   id: string,
@@ -208,23 +407,42 @@ function _feedEcTargets(device: GrowspaceDevice): MetricTarget[] {
  *
  * A metric with nothing configured returns an empty list, which is the whole of
  * what "no guide marks" means downstream — there is no second place to look.
+ *
+ * Several targets for one metric is the normal case, not a conflict to resolve
+ * here: VPD alone can hold its optimal window, its danger bounds, a fan's
+ * control setpoint and both appliances' switching thresholds, and each of those
+ * is a true and separately configured fact. Telling them apart is the chart's
+ * job, which is what the stable `id` on each record is for.
  */
 export function computeMetricTargets(
   key: string,
   device?: GrowspaceDevice | null,
   overviewEntity?: OverviewEntitySnapshot
 ): MetricTarget[] {
-  if (key === MetricKey.VPD) return _vpdTargets(overviewEntity);
-  if (!device) return [];
+  const targets: MetricTarget[] = [];
+
+  // The one source that resolves to defaults rather than to nothing, and the
+  // only one that does not need a device.
+  if (key === MetricKey.VPD) targets.push(..._vpdTargets(overviewEntity));
+  if (!device) return targets;
 
   switch (key) {
+    case MetricKey.VPD:
+      targets.push(..._humidityApplianceTargets(device));
+      break;
     case MetricKey.SOIL_MOISTURE:
-      return _soilMoistureTargets(device);
+      targets.push(..._soilMoistureTargets(device));
+      break;
     case MetricKey.PORE_EC:
-      return _poreEcTargets(device);
+      targets.push(..._poreEcTargets(device));
+      break;
     case MetricKey.FEED_EC:
-      return _feedEcTargets(device);
-    default:
-      return [];
+      targets.push(..._feedEcTargets(device));
+      break;
   }
+
+  // Not switched on above: which metric a fan marks is the fan's regulation
+  // mode, not a property of the metric.
+  targets.push(..._fanSetpoints(key, device));
+  return targets;
 }

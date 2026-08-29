@@ -406,6 +406,139 @@ describe('computeEnvSeries — optimal bands', () => {
   });
 });
 
+describe('computeEnvSeries — setpoints', () => {
+  function entry(entityId: string, minutesAgo: number, state: string): HistorySensorState {
+    return { ...reading(minutesAgo, state), entity_id: entityId };
+  }
+
+  function deviceWith(environment: Record<string, unknown>): GrowspaceDevice {
+    return {
+      deviceId: 'g1',
+      name: 'Tent',
+      biologicalMetrics: { granularStage: 'flower_mid' },
+      environmentAttributes: environment,
+      irrigationConfig: {},
+    } as unknown as GrowspaceDevice;
+  }
+
+  const fanConfig = {
+    enabled: true,
+    min_speed: 20,
+    max_speed: 100,
+    temperature_target: 24,
+    temperature_tolerance: 1.5,
+    humidity_target: 60,
+    humidity_tolerance: 5,
+    vpd_target: 1.2,
+    vpd_tolerance: 0.15,
+    critical_temp_low: null,
+    critical_temp_high: null,
+    critical_temp_hysteresis: 1,
+    stage_vpd_enabled: false,
+    stage_vpd_overrides: {},
+  };
+
+  function temperatureSeries(environment: Record<string, unknown>, histories: SensorHistories) {
+    const descriptors = computeMetricDescriptors(null, {}, undefined, deviceWith(environment));
+    return computeEnvSeries(descriptors, histories, [MetricKey.TEMPERATURE], windowOf(1))[0];
+  }
+
+  it('spans the window with one segment for a setpoint that does not step', () => {
+    const series = temperatureSeries(
+      { exhaustFanConfig: fanConfig },
+      temperatureHistory(reading(50, '22'), reading(20, '23'))
+    );
+
+    expect(series.guideLines).toEqual([
+      {
+        id: 'exhaust-fan-target',
+        segments: [{ startTime: NOW.getTime() - HOUR_MS, endTime: NOW.getTime(), value: 24 }],
+        current: 24,
+        tolerance: 1.5,
+      },
+    ]);
+  });
+
+  it('contains the setpoint and its deadband in full when the data never reached them', () => {
+    const series = temperatureSeries(
+      { exhaustFanConfig: fanConfig },
+      temperatureHistory(reading(50, '18'), reading(20, '19'))
+    );
+
+    expect(series.max).toBeGreaterThan(24 + 1.5);
+  });
+
+  it('steps a period-indexed hysteresis setpoint at lights-on', () => {
+    const descriptors = computeMetricDescriptors(
+      null,
+      {},
+      undefined,
+      deviceWith({
+        humidifierControlEnabled: true,
+        humidifierThresholds: {
+          flower_mid: { day: { on: 1.6, off: 1.4 }, night: { on: 1.2, off: 1.0 } },
+        },
+      })
+    );
+
+    const [series] = computeEnvSeries(
+      descriptors,
+      {
+        [MetricKey.VPD]: [entry('sensor.tent_vpd', 50, '1.3'), entry('sensor.tent_vpd', 20, '1.5')],
+        [MetricKey.LIGHT]: [entry('light.tent', 30, 'on')],
+      },
+      [MetricKey.VPD],
+      windowOf(1)
+    );
+
+    expect(series.guideLines?.map((line) => line.id)).toEqual(['humidifier-on', 'humidifier-off']);
+    expect(series.guideLines?.[0].segments).toEqual([
+      { startTime: NOW.getTime() - HOUR_MS, endTime: NOW.getTime() - 30 * 60 * 1000, value: 1.2 },
+      { startTime: NOW.getTime() - 30 * 60 * 1000, endTime: NOW.getTime(), value: 1.6 },
+    ]);
+    // The label reads the segment in force now, not the one the window opened on.
+    expect(series.guideLines?.[0].current).toBe(1.6);
+  });
+
+  it('reports a band and its setpoints separately, so neither is drawn as the other', () => {
+    const descriptors = computeMetricDescriptors(
+      null,
+      {},
+      { attributes: { vpd_target_min: 0.8, vpd_target_max: 1.4 } },
+      deviceWith({
+        humidifierControlEnabled: true,
+        humidifierThresholds: { flower_mid: { day: { on: 1.6, off: 1.4 } } },
+      })
+    );
+
+    const [series] = computeEnvSeries(
+      descriptors,
+      { [MetricKey.VPD]: [entry('sensor.tent_vpd', 30, '1.1')] },
+      [MetricKey.VPD],
+      windowOf(1)
+    );
+
+    expect(series.guideBands?.map((band) => band.id)).toEqual(['vpd-optimal']);
+    expect(series.guideLines?.map((line) => line.id)).toEqual(['humidifier-on', 'humidifier-off']);
+  });
+
+  it('carries no tolerance for a setpoint whose source declares no deadband', () => {
+    const series = temperatureSeries(
+      { exhaustFanConfig: { ...fanConfig, temperature_tolerance: 0 } },
+      temperatureHistory(reading(50, '22'), reading(20, '23'))
+    );
+
+    expect(series.guideLines?.[0]).not.toHaveProperty('tolerance');
+  });
+
+  it('leaves a metric with no configured setpoint exactly as it was', () => {
+    const [series] = computeTemperature(temperatureHistory(reading(50, '20'), reading(20, '24')));
+
+    expect(series.guideLines).toBeUndefined();
+    expect({ min: series.min, max: series.max }).toEqual({ min: 20, max: 24 });
+  });
+});
+
 describe('computeEnvSeries — descriptor-owned chart shape and axes', () => {
   it.each([
     [MetricKey.OPTIMAL, 'on', ChartType.STEP, 0, 1],

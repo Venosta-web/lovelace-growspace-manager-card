@@ -25,8 +25,9 @@
  * `metric-targets.ts`, which **absorbed** the raw VPD-only threshold field this
  * table used to expose (ADR-0050). Resolving them reads
  * `biologicalMetrics.granularStage` off the `device` this function already
- * receives, because the feed-EC band is per stage and a target that ignores the
- * stage is the wrong number rather than a coarse one.
+ * receives, because the feed-EC band and the appliance switching thresholds are
+ * per stage, and a target that ignores the stage is the wrong number rather
+ * than a coarse one.
  */
 
 import { ChartType, METRIC_CONFIG, MetricKey } from '../../features/environment/constants';
@@ -48,6 +49,7 @@ export {
   computeMetricTargets,
   isLimit,
   isOptimalBand,
+  isSetpoint,
   targetForPeriod,
 } from './metric-targets';
 export type {
@@ -56,6 +58,7 @@ export type {
   MetricTargetBounds,
   OptimalBandTarget,
   OverviewEntitySnapshot,
+  SetpointTarget,
 } from './metric-targets';
 
 // ---------------------------------------------------------------------------
