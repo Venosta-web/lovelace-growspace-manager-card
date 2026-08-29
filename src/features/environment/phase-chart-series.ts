@@ -147,14 +147,21 @@ export function samplePhaseChartAt(series: PhaseChartSeries, position: number): 
   const atMs = series.window.startMs + clamped * series.window.spanMs;
   const points = series.points;
 
-  let vwc = points[points.length - 1].vwc;
-  for (let i = 1; i < points.length; i++) {
-    if (points[i].atMs < atMs) continue;
-    const span = points[i].atMs - points[i - 1].atMs;
-    const frac = span > 0 ? (atMs - points[i - 1].atMs) / span : 0;
-    vwc = points[i - 1].vwc + frac * (points[i].vwc - points[i - 1].vwc);
-    break;
+  // The series is sorted during derivation, so scrubbing can find the first
+  // point at or after the pointer in logarithmic time even at minute-resolution 7d.
+  let low = 1;
+  let high = points.length - 1;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (points[middle].atMs < atMs) low = middle + 1;
+    else high = middle;
   }
+
+  const before = points[low - 1];
+  const after = points[low];
+  const span = after.atMs - before.atMs;
+  const fraction = span > 0 ? (atMs - before.atMs) / span : 0;
+  const vwc = before.vwc + fraction * (after.vwc - before.vwc);
 
   return { atMs, minuteOfDay: minuteOfDay(atMs), vwc };
 }
