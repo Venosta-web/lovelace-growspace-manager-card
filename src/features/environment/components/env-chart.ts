@@ -99,6 +99,18 @@ function formatSeriesValue(
   return `${point.value.toFixed(1)} ${series.unit}`;
 }
 
+/**
+ * One bound of an [[Optimal Band]], as its inline label reads it.
+ *
+ * A decimal is kept only where the metric's range needs one — `0.8 kPa` and
+ * `2.4 mS/cm` are all signal, `30.0%` is noise — and a percent sign hugs its
+ * number the way the value-axis caps above and below it do.
+ */
+function formatGuideBound(value: number, unit: string): string {
+  const text = value.toFixed(Math.abs(value) < 10 ? 1 : 0);
+  return unit === '%' ? `${text}%` : `${text} ${unit}`;
+}
+
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
   @consume({ context: hassContext, subscribe: true })
@@ -280,6 +292,8 @@ export class GrowspaceEnvChart extends LitElement {
       // sensors — take a flat fill; a lone trace keeps its gradient.
       fillType: this.isCombined || series.sensor ? ('flat' as const) : ('gradient' as const),
       vpdBands: series.vpdBands,
+      guideBands: series.guideBands,
+      metricColor: series.metricColor,
     }));
   }
 
@@ -341,10 +355,18 @@ export class GrowspaceEnvChart extends LitElement {
             ${!this.isCombined
               ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
               : ''}
+            ${
+              // Only band edges carry inline labels, and only on a single-metric
+              // chart: a combined chart's four bands would be eight labels on a
+              // 180px pane, which is a density problem rather than a collision
+              // one (ADR-0048).
+              !this.isCombined ? this._renderGuideLabelsHTML(series[0]) : ''
+            }
             ${this._renderXAxisHTML(this.range)}
 
             <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
               ${this._renderGrid(width, height)}
+              ${series.map((s) => this._renderGuideBands(s, this._renderWindow))}
               ${series.map((s) => {
                 // VPD bands remain in value/time space until this render step, where
                 // the component has the chart dimensions needed to create paths.
@@ -613,6 +635,77 @@ export class GrowspaceEnvChart extends LitElement {
     `;
   }
 
+  /**
+   * A series' [[Optimal Band]]s: a tinted region with dashed edges in the metric
+   * colour (ADR-0048).
+   *
+   * Every segment is drawn as its own region, so a period-indexed band steps at
+   * lights-on and lights-off instead of sitting at a value that was wrong for
+   * half the window. The edges take `vector-effect="non-scaling-stroke"` for the
+   * same reason the traces do: on a pane stretched into a Graph Wall row, the
+   * marks and the trace they guide must render at one weight.
+   */
+  private _renderGuideBands(series: GraphSeries, { startTimeMs, durationMillis }: ChartWindow) {
+    if (!series.guideBands?.length) return svg``;
+
+    const { width, height } = CHART_PANE;
+    const span = series.max - series.min || 1;
+    const xAt = (time: number) => ((time - startTimeMs) / durationMillis) * width;
+    const yAt = (value: number) => height - ((value - series.min) / span) * height;
+    const color = series.metricColor ?? series.color;
+
+    return svg`${series.guideBands.map(
+      (band) =>
+        svg`${band.segments.map((segment) => {
+          const left = xAt(segment.startTime);
+          const right = xAt(segment.endTime);
+          const top = yAt(segment.max);
+          const bottom = yAt(segment.min);
+          return svg`
+          <rect
+            x="${left}" y="${top}"
+            width="${Math.max(0, right - left)}" height="${Math.max(0, bottom - top)}"
+            fill="${color}" fill-opacity="0.08"
+          />
+          <line x1="${left}" x2="${right}" y1="${top}" y2="${top}"
+                stroke="${color}" stroke-opacity="0.6" stroke-width="1"
+                stroke-dasharray="6 4" vector-effect="non-scaling-stroke" />
+          <line x1="${left}" x2="${right}" y1="${bottom}" y2="${bottom}"
+                stroke="${color}" stroke-opacity="0.6" stroke-width="1"
+                stroke-dasharray="6 4" vector-effect="non-scaling-stroke" />
+        `;
+        })}`
+    )}`;
+  }
+
+  /**
+   * The band's bounds, labelled.
+   *
+   * HTML positioned by percentage rather than SVG text, because the pane is a
+   * fixed viewBox stretched with `preserveAspectRatio="none"` — SVG text in it
+   * would be squashed or blown up with the geometry, while these keep one type
+   * size at any chart height. A stepped band labels the segment under the
+   * current time; there is no single value for the whole window to name.
+   */
+  private _renderGuideLabelsHTML(series: GraphSeries) {
+    if (!series.guideBands?.length) return '';
+
+    const span = series.max - series.min || 1;
+    const topPercent = (value: number) => (((series.max - value) / span) * 100).toFixed(3);
+    const color = series.metricColor ?? series.color;
+
+    return series.guideBands.map(
+      (band) => html`
+        <span class="gs-guide-label" style="top:${topPercent(band.current.max)}%;color:${color};"
+          >${formatGuideBound(band.current.max, series.unit)}</span
+        >
+        <span class="gs-guide-label" style="top:${topPercent(band.current.min)}%;color:${color};"
+          >${formatGuideBound(band.current.min, series.unit)}</span
+        >
+      `
+    );
+  }
+
   private _renderGrid(width: number, height: number) {
     return svg`
         ${GRIDLINE_FRACTIONS.map(
@@ -767,6 +860,25 @@ export class GrowspaceEnvChart extends LitElement {
       opacity: 0.5;
       text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
       line-height: 1;
+      pointer-events: none;
+    }
+
+    /* Guide-mark labels sit inboard of the value-axis caps at the left edge, the
+       way the model dialog keeps its target labels clear of its tick column. */
+    .gs-guide-label {
+      position: absolute;
+      left: 44px;
+      z-index: 2;
+      transform: translateY(-50%);
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      opacity: 0.95;
+      text-shadow:
+        0 1px 4px rgba(0, 0, 0, 0.95),
+        0 0 4px rgba(0, 0, 0, 0.8);
       pointer-events: none;
     }
 

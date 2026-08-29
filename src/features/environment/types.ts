@@ -29,6 +29,16 @@ export interface GraphSeries {
   path: string;
   fillType: 'gradient' | 'flat' | 'none';
   vpdBands?: import('./env-series').VpdBand[];
+  /** The [[Optimal Band]]s to draw over this series, in its own value space. */
+  guideBands?: import('./env-series').EnvGuideBand[];
+  /**
+   * The metric's own colour, which a guide mark is drawn in.
+   *
+   * `color` above is not it for VPD: that trace takes a status colour, and a
+   * band drawn in the colour of the status it is being compared against would
+   * change colour as the reading crossed it.
+   */
+  metricColor?: string;
 }
 
 export interface TooltipItem {

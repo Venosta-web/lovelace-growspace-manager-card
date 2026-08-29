@@ -276,6 +276,136 @@ describe('computeEnvSeries — VPD', () => {
   });
 });
 
+describe('computeEnvSeries — optimal bands', () => {
+  const vpdDescriptors = computeMetricDescriptors(
+    null,
+    {},
+    {
+      attributes: {
+        day_vpd_target_min: 1,
+        day_vpd_target_max: 2,
+        day_vpd_danger_min: 0.5,
+        day_vpd_danger_max: 2.5,
+        night_vpd_target_min: 0.4,
+        night_vpd_target_max: 0.6,
+        night_vpd_danger_min: 0.2,
+        night_vpd_danger_max: 0.8,
+      },
+    }
+  );
+
+  function entry(entityId: string, minutesAgo: number, state: string): HistorySensorState {
+    return { ...reading(minutesAgo, state), entity_id: entityId };
+  }
+
+  function vpdSeries(histories: SensorHistories) {
+    return computeEnvSeries(vpdDescriptors, histories, [MetricKey.VPD], windowOf(1))[0];
+  }
+
+  it('steps the VPD band at lights-on, and labels the segment under now', () => {
+    const series = vpdSeries({
+      [MetricKey.VPD]: [entry('sensor.tent_vpd', 50, '1.5'), entry('sensor.tent_vpd', 20, '1.5')],
+      // Before the first ON event getIsDay infers night; after it, day.
+      [MetricKey.LIGHT]: [entry('light.tent', 30, 'on')],
+    });
+
+    expect(series.guideBands).toEqual([
+      {
+        id: 'vpd-optimal',
+        segments: [
+          {
+            startTime: NOW.getTime() - HOUR_MS,
+            endTime: NOW.getTime() - 30 * 60 * 1000,
+            min: 0.4,
+            max: 0.6,
+          },
+          {
+            startTime: NOW.getTime() - 30 * 60 * 1000,
+            endTime: NOW.getTime(),
+            min: 1,
+            max: 2,
+          },
+        ],
+        current: { min: 1, max: 2 },
+      },
+    ]);
+  });
+
+  it('spans the window with one segment when day and night agree', () => {
+    const flat = computeMetricDescriptors(
+      null,
+      {},
+      { attributes: { vpd_target_min: 0.8, vpd_target_max: 1.2 } }
+    );
+    const [series] = computeEnvSeries(
+      flat,
+      {
+        [MetricKey.VPD]: [entry('sensor.tent_vpd', 50, '1.0'), entry('sensor.tent_vpd', 20, '1.1')],
+        [MetricKey.LIGHT]: [entry('light.tent', 30, 'on')],
+      },
+      [MetricKey.VPD],
+      windowOf(1)
+    );
+
+    expect(series.guideBands?.[0].segments).toEqual([
+      { startTime: NOW.getTime() - HOUR_MS, endTime: NOW.getTime(), min: 0.8, max: 1.2 },
+    ]);
+  });
+
+  it('contains the band in full when the data never reached it', () => {
+    const series = vpdSeries({
+      [MetricKey.VPD]: [entry('sensor.tent_vpd', 50, '1.5'), entry('sensor.tent_vpd', 20, '1.5')],
+      [MetricKey.LIGHT]: [entry('light.tent', 120, 'on')],
+    });
+
+    // Day band is 1–2 and every reading sat at 1.5; the axis still shows both bounds.
+    expect(series.min).toBeLessThan(1);
+    expect(series.max).toBeGreaterThan(2);
+  });
+
+  it('contains the data in full when it ran outside the band', () => {
+    const series = vpdSeries({
+      [MetricKey.VPD]: [entry('sensor.tent_vpd', 50, '0.2'), entry('sensor.tent_vpd', 20, '3.4')],
+      [MetricKey.LIGHT]: [entry('light.tent', 120, 'on')],
+    });
+
+    // Anchoring on the band alone would have flattened these readings against an edge.
+    expect(series.min).toBeLessThan(0.2);
+    expect(series.max).toBeGreaterThan(3.4);
+  });
+
+  it('draws a device-configured moisture band with no photoperiod to consult', () => {
+    const device = {
+      deviceId: 'g1',
+      name: 'Tent',
+      biologicalMetrics: { granularStage: 'veg' },
+      environmentAttributes: {
+        soilMoistureBand: { min: 40, max: 65, is_custom: true },
+        soilMoistureBandCompatible: true,
+      },
+    } as unknown as GrowspaceDevice;
+    const descriptors = computeMetricDescriptors(null, {}, undefined, device);
+
+    const [series] = computeEnvSeries(
+      descriptors,
+      { [MetricKey.SOIL_MOISTURE]: [entry('sensor.tent_moisture', 30, '52')] },
+      [MetricKey.SOIL_MOISTURE],
+      windowOf(1)
+    );
+
+    expect(series.guideBands?.[0].current).toEqual({ min: 40, max: 65 });
+    expect(series.min).toBeLessThan(40);
+    expect(series.max).toBeGreaterThan(65);
+  });
+
+  it('leaves a metric with no configured target exactly as it was', () => {
+    const [series] = computeTemperature(temperatureHistory(reading(50, '20'), reading(20, '24')));
+
+    expect(series.guideBands).toBeUndefined();
+    expect({ min: series.min, max: series.max }).toEqual({ min: 20, max: 24 });
+  });
+});
+
 describe('computeEnvSeries — descriptor-owned chart shape and axes', () => {
   it.each([
     [MetricKey.OPTIMAL, 'on', ChartType.STEP, 0, 1],
