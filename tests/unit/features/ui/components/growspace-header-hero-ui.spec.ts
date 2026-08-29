@@ -3,6 +3,7 @@ import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceHeaderHeroUI } from '../../../../../src/features/ui/components/growspace-header-hero-ui';
 import type { HeaderChip } from '../../../../../src/slices/header-metrics';
 import { ChartUtils } from '../../../../../src/utils/chart-utils';
+import { token } from '../../../../../src/styles/variables.generated';
 
 if (!customElements.get('growspace-header-hero-ui')) {
   customElements.define('growspace-header-hero-ui', GrowspaceHeaderHeroUI);
@@ -639,6 +640,32 @@ describe('GrowspaceHeaderHeroUI', () => {
     expect(el.shadowRoot!.querySelector('.phase-chart-svg')).toBeNull();
   });
 
+  it('binds the phase card chrome to the crop-steering accent role', async () => {
+    const chips = [
+      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30', active: true }),
+    ];
+    const strategy = {
+      enabled: true,
+      targetVwcPercent: 60,
+      maintenanceDrybackPercent: 15,
+      lightsOnTime: '06:00',
+      p0DurationMinutes: 60,
+      p2StopBeforeLightsOffMinutes: 120,
+    };
+    const el = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        style="--crop-steering-accent: ${token['--crop-steering-accent']}"
+        .chips=${chips}
+        .irrigationStrategy=${strategy}
+      ></growspace-header-hero-ui>
+    `);
+
+    const card = el.shadowRoot!.querySelector('.phase-hero-card') as HTMLElement;
+    const icon = el.shadowRoot!.querySelector('.phase-hero-card .hero-icon') as HTMLElement;
+    expect(getComputedStyle(card).borderColor).toBe('color(srgb 0.14902 0.776471 0.854902 / 0.3)');
+    expect(getComputedStyle(icon).color).toBe('color(srgb 0.14902 0.776471 0.854902 / 0.85)');
+  });
+
   it('returns null chart and does not render SVG when historyCache is invalid or lacks enough data points', async () => {
     const chips = [makeChip({ key: 'steering_phase', label: 'Phase', value: 'P3 · 22:40' })];
     const strategy = {
@@ -720,6 +747,12 @@ describe('GrowspaceHeaderHeroUI', () => {
     const texts = Array.from(svg!.querySelectorAll('text'));
     expect(texts.some((t) => t.textContent?.includes('Target 60%'))).toBe(true);
     expect(texts.some((t) => t.textContent?.includes('P2 trigger 45%'))).toBe(true);
+    expect(svg!.querySelector('.phase-trigger-line')?.getAttribute('stroke')).toBe(
+      'var(--phase-p2, #2196f3)'
+    );
+    expect(svg!.querySelector('.phase-trigger-label')?.getAttribute('fill')).toBe(
+      'var(--phase-p2, #2196f3)'
+    );
   });
 
   it('handles mousemove and mouseleave on SVG chart for hover details', async () => {
