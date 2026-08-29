@@ -219,18 +219,54 @@ describe('CropSteeringDayChart – rendering', () => {
     await vi.waitFor(() => el.shadowRoot!.querySelector('.cs-model') !== null);
 
     const model = el.shadowRoot!.querySelector('.cs-model') as HTMLElement;
+    expect(getComputedStyle(model).touchAction).toBe('pan-y');
     const rect = model.getBoundingClientRect();
     model.dispatchEvent(
-      new MouseEvent('mousemove', {
+      new PointerEvent('pointermove', {
         clientX: rect.left + rect.width / 2,
         clientY: rect.top + rect.height / 2,
         bubbles: true,
+        pointerId: 1,
+        pointerType: 'touch',
       })
     );
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.cs-model-tooltip')).not.toBeNull();
+  });
+
+  it('exposes the model as one named image with its window and measured VWC summary', async () => {
+    const el = createElement();
+    el.device = makeDevice();
+    await el.updateComplete;
+    await vi.waitFor(() => el.shadowRoot!.querySelector('.cs-model') !== null);
+
+    const svg = el.shadowRoot!.querySelector('.cs-model svg')!;
+    expect(svg.getAttribute('role')).toBe('img');
+    expect(svg.getAttribute('aria-label')).toMatch(
+      /^Crop steering substrate model, 24h window\. VWC: range 55\.0 % to 58\.0 %, average 56\.5 %, current 58\.0 %\.$/
+    );
+  });
+
+  it('names the model as having no data when no measured trace is available', async () => {
+    mockHassCall.mockResolvedValue({
+      growspace_id: 'gs1',
+      lights_on: LIGHTS_ON_ISO,
+      soil_moisture: [],
+    });
+    const el = createElement();
+    el.device = makeDevice();
+    await el.updateComplete;
+    await vi.waitFor(
+      () =>
+        el.shadowRoot!.querySelector('.cs-model svg')?.getAttribute('aria-label') ===
+        'Crop steering substrate model, 24h window, no data.'
+    );
+
+    expect(el.shadowRoot!.querySelector('.cs-model svg')!.getAttribute('aria-label')).toBe(
+      'Crop steering substrate model, 24h window, no data.'
+    );
   });
 
   it('grows the trace under the shared Env Graph height without desynchronizing overlays', async () => {

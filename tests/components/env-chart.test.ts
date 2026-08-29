@@ -94,11 +94,48 @@ describe('GrowspaceEnvChart hygiene', () => {
   async function scrubToNow() {
     const container = mockChartRect();
     (element as any)._cachedChartRect = null;
-    container.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 800 }));
+    container.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 800,
+        pointerId: 1,
+        pointerType: 'touch',
+      })
+    );
     await vi.runAllTimersAsync();
     await element.updateComplete;
     return element.shadowRoot?.querySelector('.gs-tooltip') as HTMLElement;
   }
+
+  describe('pointer and screen-reader access', () => {
+    it('summarises the metric, window, observed range, average and current value', async () => {
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '24'));
+
+      const svg = chartSvg();
+      expect(svg.getAttribute('role')).toBe('img');
+      expect(svg.getAttribute('aria-label')).toBe(
+        'Temperature, 24h window. range 20.0 °C to 24.0 °C, average 22.0 °C, current 24.0 °C.'
+      );
+    });
+
+    it('gives an empty chart an explicit no-data name', async () => {
+      element.metricKey = MetricKey.TEMPERATURE;
+      element.title = 'Temperature';
+      element.sensorHistory = {};
+      await element.updateComplete;
+
+      const svg = chartSvg();
+      expect(svg.getAttribute('role')).toBe('img');
+      expect(svg.getAttribute('aria-label')).toBe('Temperature, 24h window, no data.');
+    });
+
+    it('keeps vertical page panning available while the chart handles pointer scrubbing', async () => {
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '24'));
+      const container = element.shadowRoot!.querySelector('.gs-env-chart-container')!;
+
+      expect(getComputedStyle(container).touchAction).toBe('pan-y');
+    });
+  });
 
   describe('gridlines', () => {
     it('draws a flat gridline set and no dashed mark of its own', async () => {

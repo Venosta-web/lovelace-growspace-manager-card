@@ -11,6 +11,7 @@ import { PollingController } from '../../shared/controllers/polling.controller';
 import { METRIC_CONFIG, MetricKey } from '../constants';
 import { metricHistoryKeys, resolveMetricEntityIds } from '../../../slices/metric-descriptors';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
+import { accessibleChartSummary, type AccessibleChartSeries } from '../chart-accessibility';
 import {
   computeCropSteeringCycle,
   computePhases,
@@ -73,6 +74,7 @@ export class CropSteeringDayChart extends LitElement {
       background: rgba(0, 0, 0, 0.2);
       overflow: hidden;
       cursor: crosshair;
+      touch-action: pan-y;
     }
     .cs-model-cursor {
       position: absolute;
@@ -535,14 +537,14 @@ export class CropSteeringDayChart extends LitElement {
       .filter((s) => s.widthPct > 0);
   }
 
-  private _onCsModelMouseLeave = () => {
+  private _onCsModelPointerLeave = () => {
     if (this._csModelRafId) cancelAnimationFrame(this._csModelRafId);
     this._csModelRafId = null;
     this._csModelTooltip = null;
   };
 
-  private _onCsModelMouseMove(
-    e: MouseEvent,
+  private _onCsModelPointerMove(
+    e: PointerEvent,
     ctx: {
       vwcPts: TracePt[];
       poreEcPts: TracePt[] | null;
@@ -883,6 +885,32 @@ export class CropSteeringDayChart extends LitElement {
     const curPore = lastKnown(poreEcPts ?? []) ?? seedPore;
     const curBulk = lastKnown(bulkEcPts ?? []) ?? Math.max(0.8, curPore * (cur.v / 100) * 1.32);
 
+    const summarizeTrace = (
+      name: string,
+      unit: string,
+      points: TracePt[] | null,
+      decimals = 1
+    ): AccessibleChartSeries[] => {
+      if (!points?.length) return [];
+      const values = points.map((point) => point.v);
+      return [
+        {
+          name,
+          min: Math.min(...values),
+          max: Math.max(...values),
+          average: values.reduce((total, value) => total + value, 0) / values.length,
+          current: `${values[values.length - 1].toFixed(decimals)} ${unit}`,
+          unit,
+          decimals,
+        },
+      ];
+    };
+    const accessibleSummary = accessibleChartSummary('Crop steering substrate model', this.range, [
+      ...summarizeTrace('VWC', '%', vwcPts),
+      ...summarizeTrace('Pore EC', 'mS/cm', poreEcPts, 2),
+      ...summarizeTrace('Bulk EC', 'mS/cm', bulkEcPts, 2),
+    ]);
+
     const showPhaseStrip = !this.rollingWindow || this.range === '24h';
     const rollingPhaseSegments =
       this.rollingWindow && this.range === '24h'
@@ -1031,8 +1059,8 @@ export class CropSteeringDayChart extends LitElement {
 
       <div
         class="cs-model"
-        @mousemove=${(e: MouseEvent) =>
-          this._onCsModelMouseMove(e, {
+        @pointermove=${(e: PointerEvent) =>
+          this._onCsModelPointerMove(e, {
             vwcPts,
             poreEcPts,
             bulkEcPts,
@@ -1041,7 +1069,8 @@ export class CropSteeringDayChart extends LitElement {
             day,
             anchorMs,
           })}
-        @mouseleave=${this._onCsModelMouseLeave}
+        @pointerleave=${this._onCsModelPointerLeave}
+        @pointercancel=${this._onCsModelPointerLeave}
       >
         ${this._renderCsModelTooltip()}
         <span class="cm-title">Substrate model · live + projected</span>
@@ -1063,6 +1092,8 @@ export class CropSteeringDayChart extends LitElement {
           viewBox="0 0 ${svgW} ${svgH}"
           preserveAspectRatio="none"
           style="width:100%;height:100%;display:block;"
+          role="img"
+          aria-label=${accessibleSummary}
         >
           <defs>
             <linearGradient id="vwcModelArea-${growspaceId}" x1="0" y1="0" x2="0" y2="1">

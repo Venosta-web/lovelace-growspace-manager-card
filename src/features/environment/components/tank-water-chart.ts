@@ -23,6 +23,7 @@ import { ChartUtils } from '../../../utils/chart-utils';
 import type { RawHistoryDataPoint } from '../../../adapters/hass-types';
 import type { SensorHistories } from '../types';
 import { renderGuideLimitMark } from './guide-limit-mark';
+import { accessibleChartSummary } from '../chart-accessibility';
 
 const TankWaterBucketSchema = z.object({
   timestamp: z.string(),
@@ -233,6 +234,7 @@ export class TankWaterChart extends LitElement {
       background: var(--gs-chart-surface, #0d0d0d);
       border-radius: 8px;
       overflow: hidden;
+      touch-action: pan-y;
     }
     .level-axis-max,
     .level-axis-min {
@@ -669,13 +671,19 @@ export class TankWaterChart extends LitElement {
     return html`
       <div
         class="level-pane"
-        @mousemove=${this._handleLevelHover}
-        @mouseleave=${this._clearLevelTooltip}
+        @pointermove=${this._handleLevelPointerMove}
+        @pointerleave=${this._clearLevelTooltip}
+        @pointercancel=${this._clearLevelTooltip}
       >
         ${this._renderLevelTooltip()}
         <span class="level-axis-max">${max}%</span>
         <span class="level-axis-min">${min}%</span>
-        <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+        <svg
+          viewBox="0 0 ${width} ${height}"
+          preserveAspectRatio="none"
+          role="img"
+          aria-label=${this._levelAccessibleSummary(traces)}
+        >
           <defs>
             <linearGradient id="tank-level-fill" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stop-color="currentColor" stop-opacity="0.4"></stop>
@@ -714,7 +722,7 @@ export class TankWaterChart extends LitElement {
     `;
   }
 
-  private _handleLevelHover = (event: MouseEvent): void => {
+  private _handleLevelPointerMove = (event: PointerEvent): void => {
     const traces = this._levelTraces;
     if (traces.length === 0) {
       this._clearLevelTooltip();
@@ -752,6 +760,24 @@ export class TankWaterChart extends LitElement {
   private _clearLevelTooltip = (): void => {
     this._levelTooltip = undefined;
   };
+
+  private _levelAccessibleSummary(traces: TankLevelTrace[]): string {
+    return accessibleChartSummary(
+      localize('water_chart.tank_level_title'),
+      this.range,
+      traces.map((trace) => {
+        const values = trace.points.map((point) => point.value);
+        return {
+          name: trace.title,
+          min: Math.min(...values),
+          max: Math.max(...values),
+          average: values.reduce((total, value) => total + value, 0) / values.length,
+          current: `${values[values.length - 1].toFixed(1)} %`,
+          unit: '%',
+        };
+      })
+    );
+  }
 
   private _renderLevelTooltip(): TemplateResult | typeof nothing {
     const tooltip = this._levelTooltip;
@@ -889,7 +915,21 @@ export class TankWaterChart extends LitElement {
     const gap = Math.min(0.5, barW * 0.2);
 
     return html`
-      <svg viewBox="0 0 100 ${chartH}" preserveAspectRatio="none">
+      <svg
+        viewBox="0 0 100 ${chartH}"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label=${accessibleChartSummary(localize('water_chart.title'), this.range, [
+          {
+            name: localize('water_chart.title'),
+            min: Math.min(...bars.map((bar) => bar.liters)),
+            max: Math.max(...bars.map((bar) => bar.liters)),
+            average: bars.reduce((total, bar) => total + bar.liters, 0) / bars.length,
+            current: `${bars[bars.length - 1].liters.toFixed(1)} L`,
+            unit: 'L',
+          },
+        ])}
+      >
         ${bars.map((bucket, i) => {
           // The tallest bar spends the whole box: the peak cap above the pane
           // is what says how many liters full height is worth, so holding back
