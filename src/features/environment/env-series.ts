@@ -172,6 +172,10 @@ export interface EnvSeries {
   min: number;
   /** Upper bound of the value axis. */
   max: number;
+  /** Lowest observed value in the window, before axis widening or fixed bounds. */
+  observedMin: number;
+  /** Highest observed value in the window, before axis widening or fixed bounds. */
+  observedMax: number;
   avg: number;
   chartType: ChartType;
   vpdBands?: VpdBand[];
@@ -672,6 +676,8 @@ function _buildSeries(
     points,
     min: bounds.min,
     max: bounds.max,
+    observedMin: reduced.min,
+    observedMax: reduced.max,
     avg: reduced.avg,
     chartType: descriptor.chartType,
     darkPeriods: photoperiods

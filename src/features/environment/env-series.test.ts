@@ -361,6 +361,8 @@ describe('computeEnvSeries — optimal bands', () => {
     // Day band is 1–2 and every reading sat at 1.5; the axis still shows both bounds.
     expect(series.min).toBeLessThan(1);
     expect(series.max).toBeGreaterThan(2);
+    // Legend copy reports the readings, not the axis widened around that band.
+    expect({ min: series.observedMin, max: series.observedMax }).toEqual({ min: 1.5, max: 1.5 });
   });
 
   it('contains the data in full when it ran outside the band', () => {

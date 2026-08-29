@@ -48,6 +48,7 @@
     "no_history_for_range": "No history data available for {range}",
     "render_failed": "Failed to render environment chart",
     "unlink_graphs": "Unlink Graphs",
+    "normalised": "Normalised",
     "now": "Now",
     "on": "ON",
     "off": "OFF",
