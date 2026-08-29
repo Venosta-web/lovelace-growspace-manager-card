@@ -359,7 +359,10 @@ describe('GrowspaceEnvChart', () => {
       ] as any;
 
       (element as any)._cachedChartRect = { left: 0, width: 100, top: 0, height: 100 };
-      (element as any)._handleGraphHover({ clientX: 50 } as any, series, new Date(0), 2000);
+      (element as any)._handleGraphHover({ clientX: 50 } as any, series, {
+        startTimeMs: 0,
+        durationMillis: 2000,
+      });
       await element.updateComplete;
 
       const tooltip = (element as any)._activeTooltip;
@@ -387,8 +390,7 @@ describe('GrowspaceEnvChart', () => {
       (element as any)._onMouseMove(
         new MouseEvent('mousemove', { clientX: 100 }),
         (element as any)._renderSeries,
-        new Date(Date.now() - 3600000),
-        3600000
+        { startTimeMs: Date.now() - 3600000, durationMillis: 3600000 }
       );
       await vi.runAllTimersAsync();
       await element.updateComplete;
@@ -403,7 +405,10 @@ describe('GrowspaceEnvChart', () => {
       (element as any)._chartContainerRef = { value: null };
 
       expect(() =>
-        (element as any)._handleGraphHover({ clientX: 50 } as any, [], new Date(), 1000)
+        (element as any)._handleGraphHover({ clientX: 50 } as any, [], {
+          startTimeMs: Date.now(),
+          durationMillis: 1000,
+        })
       ).not.toThrow();
       expect((element as any)._activeTooltip).toBeFalsy();
     });
@@ -415,7 +420,10 @@ describe('GrowspaceEnvChart', () => {
       ] as any;
 
       expect(() =>
-        (element as any)._handleGraphHover({ clientX: 100 } as any, series, new Date(0), 2000)
+        (element as any)._handleGraphHover({ clientX: 100 } as any, series, {
+          startTimeMs: 0,
+          durationMillis: 2000,
+        })
       ).toThrow();
     });
 
@@ -423,7 +431,10 @@ describe('GrowspaceEnvChart', () => {
       const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame');
       (element as any)._tooltipRafId = 123;
 
-      (element as any)._onMouseMove({ clientX: 50 } as MouseEvent, [], new Date(), 1000);
+      (element as any)._onMouseMove({ clientX: 50 } as MouseEvent, [], {
+        startTimeMs: Date.now(),
+        durationMillis: 1000,
+      });
 
       expect(cancelSpy).toHaveBeenCalledWith(123);
       cancelSpy.mockRestore();
