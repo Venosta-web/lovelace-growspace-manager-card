@@ -209,7 +209,7 @@ export class GrowspaceChip extends LitElement {
     return html`
       <button
         class="stat-chip ${statusClass} ${this.linked ? 'has-link' : ''}"
-        title="${this.tooltip}"
+        title=${this.tooltip || nothing}
         type="button"
         aria-label=${this.actionLabel || nothing}
         aria-pressed=${this.toggle ? String(this.active) : nothing}

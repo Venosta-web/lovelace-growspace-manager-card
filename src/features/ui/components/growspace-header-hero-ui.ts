@@ -369,6 +369,18 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         outline-offset: 3px;
       }
 
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
       .hero-card:active {
         cursor: grabbing;
         transform: scale(0.98);
@@ -988,8 +1000,23 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         ? (phases.phases.find((p) => hovMinute >= p.start && hovMinute < p.end) ?? null)
         : null;
 
-    const vwcDisplay =
-      hovVwc != null ? hovVwc.toFixed(1) : (series?.currentVwc?.toFixed(1) ?? null);
+    const currentVwcDisplay = series?.currentVwc?.toFixed(1) ?? null;
+    const vwcDisplay = hovVwc != null ? hovVwc.toFixed(1) : currentVwcDisplay;
+    const transitionDescription = transitionTime
+      ? currentPhase === 'P1'
+        ? `P1 ends at target VWC ${transitionTime}.`
+        : `Next transition at ${transitionTime}.`
+      : '';
+    const phaseDescription = [
+      currentPhase ? `Active phase ${currentPhase}.` : '',
+      transitionDescription,
+      currentVwcDisplay ? `Current VWC ${currentVwcDisplay}%.` : '',
+      `Target VWC ${targetVwc}%.`,
+      `P2 trigger ${triggerVwc.toFixed(0)}%.`,
+      isP3 ? 'Dryback.' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     // Phase bar: the derived phase windows, placed on the same time window as the
     // VWC trace above so the two cannot drift apart.
@@ -1013,14 +1040,16 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         class="hero-card ${chip.active ? 'active' : ''} phase-hero-card"
         type="button"
         aria-label="Toggle ${chip.label ?? 'phase'} graph${chip.linked ? ', linked' : ''}"
+        aria-describedby="steering-phase-state"
         aria-pressed=${chip.active}
         draggable="false"
         @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
         @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
         @dragover=${(e: DragEvent) => this._handleDragOver(e)}
         @click=${() => this._toggleEnvGraph(chip.key)}
-        title="${chip.tooltip || ''}"
+        title=${chip.tooltip || nothing}
       >
+        <span id="steering-phase-state" class="visually-hidden">${phaseDescription}</span>
         <!-- Header: label (left) + live VWC readout (right) -->
         <div class="hero-header">
           <ha-svg-icon class="hero-icon" .path=${chip.icon}></ha-svg-icon>
@@ -1307,7 +1336,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
         @dragover=${(e: DragEvent) => this._handleDragOver(e)}
         @click=${() => this._toggleEnvGraph(chip.key)}
-        title="${chip.tooltip || ''}"
+        title=${chip.tooltip || nothing}
       >
         ${useVpdSegments
           ? html`
