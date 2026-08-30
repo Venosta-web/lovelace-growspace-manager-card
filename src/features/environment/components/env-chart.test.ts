@@ -61,12 +61,16 @@ async function mountChart(options: {
   descriptors: ReturnType<typeof computeMetricDescriptors>;
   history: SensorHistories;
   metricKey: MetricKey;
+  metrics?: MetricKey[];
+  isCombined?: boolean;
 }): Promise<GrowspaceEnvChart> {
   const el = document.createElement('growspace-env-chart') as GrowspaceEnvChart;
   el.device = DEVICE;
   el.descriptors = options.descriptors;
   el.sensorHistory = options.history;
   el.metricKey = options.metricKey;
+  el.metrics = options.metrics ?? [];
+  el.isCombined = options.isCombined ?? false;
   el.range = '1h';
   document.body.appendChild(el);
   await el.updateComplete;
@@ -216,5 +220,83 @@ describe('GrowspaceEnvChart — period-indexed guide marks', () => {
     expect(guideLabels(el)).toEqual(['2.0 kPa', '1.0 kPa']);
     // One region for the whole window, not a step with nothing to step on.
     expect(pane(el).querySelectorAll('rect')).toHaveLength(1);
+  });
+});
+
+describe('GrowspaceEnvChart — the header does not tint its text', () => {
+  /**
+   * DESIGN.md § Contrast Target: never tint the text. A metric hue is measured
+   * against the card surface, and every one of them failed 4.5:1 on the default
+   * light scheme while CO2 failed on dark too. `--primary-text-color` is the one
+   * colour the active theme guarantees against its own surface, so the assertion
+   * is on the declared colour rather than on a ratio computed here — jsdom
+   * resolves no theme, and pinning a ratio would pin the default palette instead
+   * of the rule.
+   */
+  const THEME_TEXT = 'var(--primary-text-color, #e1e1e1)';
+
+  function declaredColor(el: GrowspaceEnvChart, selector: string): string {
+    const node = el.shadowRoot?.querySelector(selector);
+    if (!node) throw new Error(`${selector} did not render`);
+    // The inline style is where the hue used to be written; the class rule is
+    // where the theme colour now lives.
+    return (node as HTMLElement).style.color;
+  }
+
+  function ruleFor(el: GrowspaceEnvChart, selector: string): string {
+    const sheet = (el.constructor as typeof GrowspaceEnvChart).styles;
+    const cssText = (Array.isArray(sheet) ? sheet : [sheet])
+      .map((style) => String((style as { cssText?: string }).cssText ?? style))
+      .join('\n');
+    const rule = new RegExp(`\\${selector}\\s*\\{([^}]*)\\}`).exec(cssText);
+    if (!rule) throw new Error(`no rule for ${selector}`);
+    return rule[1];
+  }
+
+  it('leaves the metric title and the primary value at the theme text colour', async () => {
+    const el = await mountChart({
+      descriptors: VPD_DESCRIPTORS,
+      history: vpdHistory([]),
+      metricKey: MetricKey.VPD,
+    });
+
+    expect(declaredColor(el, '.gs-env-graph-title')).toBe('');
+    expect(declaredColor(el, '.gs-env-graph-value')).toBe('');
+    expect(ruleFor(el, '.gs-env-graph-title')).toContain(THEME_TEXT);
+    expect(ruleFor(el, '.gs-env-graph-value')).toContain(THEME_TEXT);
+  });
+
+  it('keeps the metric hue on the header icon, which only needs 3:1', async () => {
+    const el = await mountChart({
+      descriptors: VPD_DESCRIPTORS,
+      history: vpdHistory([]),
+      metricKey: MetricKey.VPD,
+    });
+
+    // The identity signal does not disappear when the words stop carrying it.
+    expect(declaredColor(el, '.gs-env-graph-icon')).not.toBe('');
+  });
+
+  it('leaves the combined legend titles at the theme text colour too', async () => {
+    const el = await mountChart({
+      descriptors: VPD_DESCRIPTORS,
+      history: {
+        ...vpdHistory([]),
+        [MetricKey.TEMPERATURE]: [
+          entry('sensor.tent_temperature', 50, '24'),
+          entry('sensor.tent_temperature', 10, '22'),
+        ],
+      },
+      metricKey: MetricKey.VPD,
+      metrics: [MetricKey.VPD, MetricKey.TEMPERATURE],
+      isCombined: true,
+    });
+
+    const titles = [...(el.shadowRoot?.querySelectorAll('.gs-legend-title') ?? [])];
+    expect(titles.length).toBeGreaterThan(1);
+    for (const title of titles) {
+      expect((title as HTMLElement).style.color).toBe('');
+    }
+    expect(ruleFor(el, '.gs-legend-title')).toContain(THEME_TEXT);
   });
 });

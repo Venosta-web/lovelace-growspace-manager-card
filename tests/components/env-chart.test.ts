@@ -74,9 +74,7 @@ describe('GrowspaceEnvChart hygiene', () => {
   }
 
   function headerValue() {
-    return element.shadowRoot
-      ?.querySelector('.gs-env-graph-header div div[style*="font-size:1.2em"]')
-      ?.textContent?.trim();
+    return element.shadowRoot?.querySelector('.gs-env-graph-value')?.textContent?.trim();
   }
 
   function mockChartRect() {

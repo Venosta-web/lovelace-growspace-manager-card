@@ -656,17 +656,15 @@ export class GrowspaceEnvChart extends LitElement {
         @click=${() => this._toggleEnvGraph()}
       >
         <div style="display:flex; align-items:center; gap:8px;">
-          <div
-            style="width:24px; height:24px; color:${series.color}; display:flex; align-items:center; justify-content:center;"
-          >
+          <div class="gs-env-graph-icon" style="color:${series.color};">
             <svg viewBox="0 0 24 24" style="width:100%; height:100%; fill:currentColor;">
               <path d="${series.icon || this.icon}"></path>
             </svg>
           </div>
-          <span style="color:${series.color}; font-weight:500;">${series.title}</span>
+          <span class="gs-env-graph-title">${series.title}</span>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:1.2em; font-weight:bold; color:${series.color};">${valStr}</div>
+          <div class="gs-env-graph-value">${valStr}</div>
         </div>
       </button>
     `;
@@ -738,7 +736,7 @@ export class GrowspaceEnvChart extends LitElement {
                         </svg>
                       </div>`
                     : ''}
-                  <span class="gs-legend-title" style="color:${s.color};">${s.title}</span>
+                  <span class="gs-legend-title">${s.title}</span>
                   <span class="gs-legend-range"
                     >${formatObservedRange(s, s.observedMin, s.observedMax, (key) =>
                       this._localize(key)
@@ -1172,6 +1170,30 @@ export class GrowspaceEnvChart extends LitElement {
     .scroll-nav svg {
       pointer-events: none;
     }
+    /* The header names the metric in the theme's own text colour, never in the
+       metric's hue. A Home Assistant theme guarantees --primary-text-color
+       against its own surface; a metric hue guarantees nothing, and measured
+       against the card surface every one of them failed the 4.5:1 body-text
+       ratio on the default light scheme (CO2 failed on dark too). The hue is
+       not lost — it rides on the icon beside the title and on the series
+       stroke below, roles that only have to clear the 3:1 non-text ratio.
+       DESIGN.md § Contrast Target states this rule; this header broke it. */
+    .gs-env-graph-title {
+      color: var(--primary-text-color, #e1e1e1);
+      font-weight: 500;
+    }
+    .gs-env-graph-value {
+      color: var(--primary-text-color, #e1e1e1);
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+    .gs-env-graph-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
     .gs-env-chart-container {
       position: relative;
       /* The Env Graph Wall tiles these charts far larger than the inline slot
@@ -1359,7 +1381,10 @@ export class GrowspaceEnvChart extends LitElement {
       opacity: 0.8;
       transition: opacity 0.2s;
     }
+    /* Same rule as the single header: the swatch dot and the metric icon carry
+       the hue, the words stay readable. */
     .gs-legend-title {
+      color: var(--primary-text-color, #e1e1e1);
       font-weight: 500;
     }
     .gs-legend-range {
