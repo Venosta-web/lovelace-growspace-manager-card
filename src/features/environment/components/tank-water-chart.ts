@@ -824,6 +824,7 @@ export class TankWaterChart extends LitElement {
         ${this._scrub
           ? html`<chart-scrub-tooltip
               .position=${this._scrub.position}
+              .time=${this._scrub.time}
               .rows=${this._scrub.rows}
             ></chart-scrub-tooltip>`
           : nothing}
@@ -946,12 +947,17 @@ export class TankWaterChart extends LitElement {
           ? startTime - previousStart
           : RANGE_DURATION_MS[this.range] / bars.length;
 
+    // The readout heads itself with the bucket's own start rather than with the
+    // instant under the pointer: bars are picked by even division of the pane,
+    // so a time derived from the window could name a moment outside the very
+    // bar being reported.
     this._scrub = {
       position,
+      time: startTime,
       rows: [
         {
           title: localize('water_chart.title'),
-          time: { kind: 'interval', startTime, endTime: startTime + bucketDuration },
+          interval: { startTime, endTime: startTime + bucketDuration },
           value: `${bucket.liters.toFixed(1)} L`,
         },
       ],

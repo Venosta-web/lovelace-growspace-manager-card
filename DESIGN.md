@@ -690,7 +690,7 @@ Nested card within the main card surface. `background: rgba(0,0,0,0.2)`, `border
 
 ### Domain-Specific: Environment Chart (`.gs-chart-container`)
 
-150px tall SVG chart with amber (`#ffeb3b`) stroke line, `drop-shadow(0 0 4px rgba(255,235,59,0.2))` glow filter, and gradient fill at 20% opacity. A tooltip on hover renders as a frosted glass card: `background: rgba(30,30,35,0.9)`, `backdrop-filter: blur(12px)`, 8px border-radius.
+150px tall SVG chart with amber (`#ffeb3b`) stroke line, `drop-shadow(0 0 4px rgba(255,235,59,0.2))` glow filter, and gradient fill at 20% opacity. Scrubbing is drawn by `<chart-scrub-tooltip>` — one component for every chart in the Env Graph family, so the readout does not change shape with the chart you happen to be on. It is a blurred card on a fixed-dark ground (`rgb(20,20,20)`, `backdrop-filter: blur(4px)`, 8px radius) taking `--on-overlay-*` foregrounds, headed once by the scrubbed moment on the Home Assistant locale's clock, with a swatch per row carrying the series hue — a dot for a reading at that moment, a bar for one averaged over a bucket. Its cursor is a single 1px dashed hairline in a theme-derived rule colour, because it is drawn on the chart's own pane rather than on the readout's ground.
 
 ## 5. Layout Principles
 
