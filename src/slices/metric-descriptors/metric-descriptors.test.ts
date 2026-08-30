@@ -48,6 +48,7 @@ describe('computeMetricDescriptors', () => {
       icon: METRIC_CONFIG[MetricKey.TEMPERATURE].icon,
       chartType: ChartType.LINE,
       axis: 'auto',
+      minimumSpan: METRIC_CONFIG[MetricKey.TEMPERATURE].minimumSpan,
       sensors: [],
       targets: [],
     });
@@ -57,6 +58,16 @@ describe('computeMetricDescriptors', () => {
     const descriptors = computeMetricDescriptors();
 
     expect(Object.keys(descriptors).sort()).toEqual(Object.keys(METRIC_CONFIG).sort());
+  });
+
+  it('declares a positive minimum meaningful span for every metric', () => {
+    const descriptors = computeMetricDescriptors();
+
+    expect(
+      Object.values(descriptors).every(
+        ({ minimumSpan }) => Number.isFinite(minimumSpan) && minimumSpan > 0
+      )
+    ).toBe(true);
   });
 
   it('has no descriptor for a key that is not a metric', () => {
@@ -74,6 +85,7 @@ describe('computeMetricDescriptors', () => {
       icon: METRIC_CONFIG[MetricKey.HUMIDITY].icon,
       chartType: ChartType.LINE,
       axis: 'auto',
+      minimumSpan: METRIC_CONFIG[MetricKey.HUMIDITY].minimumSpan,
       sensors: [],
       targets: [],
     });

@@ -101,6 +101,8 @@ export interface MetricConfigItem {
   title: string;
   unit: string;
   icon: string;
+  /** Smallest data range that still communicates meaningful variation on an auto axis. */
+  minimumSpan: number;
   type?: ChartType;
 }
 
@@ -110,54 +112,63 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     title: 'Temperature',
     unit: '°C',
     icon: mdiThermometer,
+    minimumSpan: 4,
   },
   [MetricKey.HUMIDITY]: {
     color: token['--metric-humidity'],
     title: 'Humidity',
     unit: '%',
     icon: mdiWaterPercent,
+    minimumSpan: 20,
   },
   [MetricKey.VPD]: {
     color: token['--metric-vpd'],
     title: 'VPD',
     unit: 'kPa',
     icon: mdiCloudOutline,
+    minimumSpan: 0.6,
   },
   [MetricKey.CALCULATED_VPD]: {
     color: token['--metric-calculated-vpd'],
     title: 'Calc. VPD',
     unit: 'kPa',
     icon: mdiCalculator,
+    minimumSpan: 0.6,
   },
   [MetricKey.CO2]: {
     color: token['--metric-co2'],
     title: 'CO2',
     unit: 'ppm',
     icon: mdiWeatherCloudy,
+    minimumSpan: 400,
   },
   [MetricKey.AIR_EXCHANGE]: {
     color: token['--metric-air-exchange'],
     title: 'Air Exchange',
     unit: 'm³/h',
     icon: mdiAirFilter,
+    minimumSpan: 100,
   },
   [MetricKey.IRRIGATION_TANK_LEVEL]: {
     color: token['--metric-tank-level'],
     title: 'Tank Level',
     unit: '%',
     icon: mdiBarrel,
+    minimumSpan: 20,
   },
   [MetricKey.SOIL_MOISTURE]: {
     color: token['--metric-soil-moisture'],
     title: 'Soil Moisture',
     unit: '%',
     icon: mdiWaterPercent,
+    minimumSpan: 20,
   },
   [MetricKey.LIGHT]: {
     color: token['--metric-light'],
     title: 'Light',
     unit: 'state',
     icon: mdiLightbulbOn,
+    minimumSpan: 1,
     type: ChartType.STEP,
   },
   [MetricKey.IRRIGATION]: {
@@ -165,6 +176,7 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     title: 'Irrigation',
     unit: 'state',
     icon: mdiWater,
+    minimumSpan: 1,
     type: ChartType.STEP,
   },
   [MetricKey.DRAIN]: {
@@ -172,6 +184,7 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     title: 'Drain',
     unit: 'state',
     icon: mdiWater,
+    minimumSpan: 1,
     type: ChartType.STEP,
   },
   [MetricKey.EXHAUST]: {
@@ -179,24 +192,28 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     title: 'Exhaust',
     unit: '',
     icon: mdiFan,
+    minimumSpan: 10,
   },
   [MetricKey.CIRCULATION_FAN]: {
     color: token['--metric-circulation-fan'],
     title: 'Circulation Fan',
     unit: '',
     icon: mdiFan,
+    minimumSpan: 10,
   },
   [MetricKey.HUMIDIFIER]: {
     color: token['--metric-humidifier'],
     title: 'Humidifier',
     unit: '',
     icon: mdiAirHumidifier,
+    minimumSpan: 10,
   },
   [MetricKey.DEHUMIDIFIER]: {
     color: token['--metric-dehumidifier'],
     title: 'Dehumidifier',
     unit: 'state',
     icon: mdiAirHumidifierOff,
+    minimumSpan: 1,
     type: ChartType.STEP,
   },
   [MetricKey.OPTIMAL]: {
@@ -204,6 +221,7 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     title: 'Optimal Conditions',
     unit: 'state',
     icon: mdiRadioboxMarked,
+    minimumSpan: 1,
     type: ChartType.STEP,
   },
   [MetricKey.DLI]: {
@@ -211,69 +229,92 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     title: 'DLI',
     unit: 'mol/m²/d',
     icon: mdiWeatherSunny,
+    minimumSpan: 10,
   },
   [MetricKey.SUBSTRATE_TEMPERATURE]: {
     color: token['--danger-chip'],
     title: 'Substrate Temp',
     unit: '°C',
     icon: mdiThermometer,
+    minimumSpan: 4,
   },
   [MetricKey.CROP_STEERING]: {
     color: token['--metric-crop-steering'],
     title: 'Crop Steering',
     unit: '',
     icon: mdiSprout,
+    minimumSpan: 1,
   },
   [MetricKey.ENERGY]: {
     color: token['--metric-energy'],
     title: 'Energy',
     unit: 'kWh',
     icon: mdiFlash,
+    minimumSpan: 5,
   },
   [MetricKey.WATER]: {
     color: token['--metric-water'],
     title: 'Water Usage',
     unit: 'L/d',
     icon: mdiWaterMinus,
+    minimumSpan: 5,
   },
-  [MetricKey.PH]: { color: token['--metric-ph'], title: 'pH', unit: '', icon: mdiPh },
+  [MetricKey.PH]: {
+    color: token['--metric-ph'],
+    title: 'pH',
+    unit: '',
+    icon: mdiPh,
+    minimumSpan: 1,
+  },
   [MetricKey.FEED_EC]: {
     color: token['--metric-feed-ec'],
     title: 'Feed EC',
     unit: 'mS/cm',
     icon: mdiLightningBolt,
+    minimumSpan: 1,
   },
   [MetricKey.BULK_EC]: {
     color: token['--metric-bulk-ec'],
     title: 'Bulk EC',
     unit: 'mS/cm',
     icon: mdiLightningBolt,
+    minimumSpan: 1,
   },
   [MetricKey.PORE_EC]: {
     color: token['--danger-chip'],
     title: 'Pore EC',
     unit: 'mS/cm',
     icon: mdiLightningBolt,
+    minimumSpan: 1,
   },
   [MetricKey.RUNOFF_EC]: {
     color: token['--danger-chip'],
     title: 'Runoff EC',
     unit: 'mS/cm',
     icon: mdiLightningBolt,
+    minimumSpan: 1,
   },
   [MetricKey.DRAIN_VOLUME]: {
     color: token['--metric-drain-volume'],
     title: 'Drain Volume',
     unit: 'L',
     icon: mdiWaterMinus,
+    minimumSpan: 5,
   },
   [MetricKey.IRRIGATION_FLOW]: {
     color: token['--metric-irrigation-flow'],
     title: 'Flow Rate',
     unit: 'L/h',
     icon: mdiWaterPump,
+    minimumSpan: 10,
   },
-  [MetricKey.POWER]: { color: token['--metric-power'], title: 'Power', unit: 'W', icon: mdiFlash },
+  [MetricKey.POWER]: {
+    color: token['--metric-power'],
+    title: 'Power',
+    unit: 'W',
+    icon: mdiFlash,
+    minimumSpan: 500,
+  },
 };
 
 /**
@@ -494,6 +535,7 @@ export const DEFAULT_METRIC_CONFIG: MetricConfigItem = {
   title: 'Unknown',
   unit: '',
   icon: mdiMagnify,
+  minimumSpan: 1,
   type: ChartType.LINE,
 };
 
