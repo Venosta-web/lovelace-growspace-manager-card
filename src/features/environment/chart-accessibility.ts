@@ -1,3 +1,5 @@
+import { formatMeasurement } from './metric-value-format';
+
 export interface AccessibleChartSeries {
   name: string;
   min: number;
@@ -6,10 +8,15 @@ export interface AccessibleChartSeries {
   current: string;
   unit?: string;
   decimals?: number;
-}
-
-function formatStatistic(value: number, unit: string, decimals: number): string {
-  return `${value.toFixed(decimals)}${unit ? ` ${unit}` : ''}`;
+  /**
+   * The observed domain, where the caller has one that numbers cannot express.
+   *
+   * A binary metric's trace runs 0 to 1, and a screen reader told an irrigation
+   * chart ranged "0.0 to 1.0" learns nothing a sighted reader learns. Given
+   * one, the summary reports it verbatim and drops the average: the mean of a
+   * switch is a duty fraction, which is not what this sentence is for.
+   */
+  range?: string;
 }
 
 /**
@@ -28,9 +35,12 @@ export function accessibleChartSummary(
   if (series.length === 0) return `${chartName}, ${window} window, no data.`;
 
   const descriptions = series.map(
-    ({ name, min, max, average, current, unit = '', decimals = 1 }) => {
+    ({ name, min, max, average, current, unit = '', decimals = 1, range }) => {
       const metric = series.length === 1 && name === chartName ? '' : `${name}: `;
-      return `${metric}range ${formatStatistic(min, unit, decimals)} to ${formatStatistic(max, unit, decimals)}, average ${formatStatistic(average, unit, decimals)}, current ${current}`;
+      if (range) return `${metric}range ${range}, current ${current}`;
+
+      const statistic = (value: number) => formatMeasurement(value, unit, decimals);
+      return `${metric}range ${statistic(min)} to ${statistic(max)}, average ${statistic(average)}, current ${current}`;
     }
   );
 

@@ -6,6 +6,7 @@ import type { SensorHistories } from '../types';
 import { metricComboFor, type ComboSecondary, type HistoryTimeRange } from '../constants';
 import { computeComboIntervalPane, type ComboIntervalPane } from '../combo-series';
 import { computeEnvSeries } from '../env-series';
+import { formatMeasurement, formatReading, formatScaleMark } from '../metric-value-format';
 import { localizeWithParams } from '../../../localize/localize';
 import '../../../growspace-env-chart';
 import './chart-scrub-tooltip';
@@ -186,10 +187,9 @@ export class MetricComboChart extends LitElement {
   /**
    * The peak cap, formatted.
    *
-   * A percentage reads whole and closed up against its sign; a unit is a word
-   * beside the number. The cap is a scale rather than a measurement, so it keeps
-   * one decimal only where the number is small enough for the decimal to carry
-   * information.
+   * A cap is a scale mark rather than a measurement, so it resolves through the
+   * same owner as the value axis and the [[Guide Mark]] labels beside it — one
+   * chart cannot round the same quantity two ways (#855).
    */
   private _capLabel(pane: ComboIntervalPane): string {
     // A configured ceiling replaces the peak as the readout, because it is what
@@ -197,11 +197,10 @@ export class MetricComboChart extends LitElement {
     // of the two as the scale and leave the reader to work out which.
     if (pane.limit !== undefined) {
       return this._localize('metric_combo.limit_cap', {
-        value: `${pane.limit.toFixed(pane.limit >= 100 ? 0 : 1)} ${pane.unit}`,
+        value: formatScaleMark(pane.limit, pane.unit),
       });
     }
-    if (pane.unit === '%') return `${pane.peak.toFixed(0)}%`;
-    return `${pane.peak.toFixed(pane.peak >= 100 ? 0 : 1)} ${pane.unit}`;
+    return formatScaleMark(pane.peak, pane.unit);
   }
 
   /**
@@ -398,7 +397,7 @@ export class MetricComboChart extends LitElement {
               {
                 title: primary.title,
                 time: { kind: 'moment' as const, time: hoverTime },
-                value: `${primaryPoint.value.toFixed(1)} ${primary.unit}`,
+                value: formatReading(primary, primaryPoint, (key) => this._localize(key)),
                 color: primary.color,
               },
             ]
@@ -475,7 +474,7 @@ export class MetricComboChart extends LitElement {
         startTime: interval.startTime,
         endTime: interval.endTime,
       },
-      value: `${interval.value.toFixed(1)} ${pane.unit}`,
+      value: formatMeasurement(interval.value, pane.unit),
       color: pane.color,
     };
   }

@@ -702,7 +702,7 @@ describe('TankWaterChart – level tooltip', () => {
     const svg = el.shadowRoot!.querySelector('.level-pane svg')!;
     expect(svg.getAttribute('role')).toBe('img');
     expect(svg.getAttribute('aria-label')).toBe(
-      'Tank Level, 1h window. Main Tank: range 40.0 % to 60.0 %, average 50.0 %, current 60.0 %.'
+      'Tank Level, 1h window. Main Tank: range 40.0% to 60.0%, average 50.0%, current 60.0%.'
     );
   });
 

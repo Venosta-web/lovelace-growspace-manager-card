@@ -276,8 +276,10 @@ describe('GrowspaceEnvChart', () => {
       const numeric = await fixture(
         html`<div>${(element as any)._renderYAxisHTML(10, 20, '°C')}</div>`
       );
-      expect(numeric.textContent).toContain('20°C');
-      expect(numeric.textContent).toContain('10°C');
+      // The axis is a scale mark like every other on the chart: a word unit
+      // stands apart from its number, one owner deciding (#855).
+      expect(numeric.textContent).toContain('20 °C');
+      expect(numeric.textContent).toContain('10 °C');
 
       const stated = await fixture(
         html`<div>${(element as any)._renderYAxisHTML(0, 1, 'state')}</div>`
@@ -840,7 +842,7 @@ describe('GrowspaceEnvChart', () => {
         Array.from(element.shadowRoot?.querySelectorAll('.gs-legend-item') ?? []).map((chip) =>
           chip.textContent?.replace(/\s+/g, ' ').trim()
         )
-      ).toEqual(['Temperature 20.5–22.0 °C', 'Humidity 54.0–60.5 %']);
+      ).toEqual(['Temperature 20.5–22.0 °C', 'Humidity 54.0–60.5%']);
     });
 
     it('leaves a single-metric graph with its value axis and no normalised label', async () => {
@@ -851,7 +853,7 @@ describe('GrowspaceEnvChart', () => {
         Array.from(element.shadowRoot?.querySelectorAll('.gs-axis-target') ?? []).map((cap) =>
           cap.textContent?.trim()
         )
-      ).toEqual(['22°C', '20°C']);
+      ).toEqual(['22 °C', '20 °C']);
     });
 
     it('dispatches chart-clicked with the hovered timestamp', async () => {

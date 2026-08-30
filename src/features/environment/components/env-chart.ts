@@ -6,19 +6,17 @@ import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import type { GrowspaceDevice } from '../../../services/types';
-import type { GraphDataPoint, GraphSeries, TooltipData, SensorHistories } from '../types';
+import type { GraphSeries, TooltipData, SensorHistories } from '../types';
 import { ChartUtils } from '../../../utils/chart-utils';
 import { computeEnvSeries } from '../env-series';
 import type { MetricDescriptor } from '../../../slices/metric-descriptors';
 import { localizeWithParams } from '../../../localize/localize';
 import {
   METRIC_CONFIG,
-  MetricKey,
   ChartType,
   StatusLevel,
   STATUS_COLORS,
   ScrollDirection,
-  SENSOR_CHART_DEFAULTS,
 } from '../constants';
 
 import { consume } from '@lit/context';
@@ -29,6 +27,12 @@ import { focusRingStyles } from '../../../styles/focus-ring.styles';
 import { renderGuideLimitMark } from './guide-limit-mark';
 import { guideLabelStyles } from './guide-label';
 import { accessibleChartSummary } from '../chart-accessibility';
+import {
+  formatObservedRange,
+  formatReading,
+  formatScaleMark,
+  isBinaryMetric,
+} from '../metric-value-format';
 import type { ChartScrubDetail } from './chart-scrub-tooltip';
 
 /**
@@ -54,71 +58,6 @@ const GRIDLINE_FRACTIONS = [0, 0.25, 0.5, 0.75, 1] as const;
 interface ChartWindow {
   startTimeMs: number;
   durationMillis: number;
-}
-
-/**
- * Whether a metric reads as on/off rather than as a number.
- *
- * `unit === 'state'` is deliberately not part of the test: `exhaust`,
- * `humidifier` and `circulation_fan` carry that unit for a multi-level speed,
- * which they report through `meta.state`.
- */
-function isBinaryMetric(id: string, unit: string): boolean {
-  return (
-    SENSOR_CHART_DEFAULTS[id]?.binary === true ||
-    id === MetricKey.OPTIMAL ||
-    id === MetricKey.DEHUMIDIFIER ||
-    id === MetricKey.IRRIGATION ||
-    id === MetricKey.DRAIN ||
-    (id === MetricKey.LIGHT && unit !== '%')
-  );
-}
-
-/**
- * The one readout for a point on a trace.
- *
- * The header value and the scrub tooltip both go through this, so they cannot
- * disagree about the same metric: deciding independently had an irrigation chart
- * showing `1.0 state` under an `On` header.
- */
-function formatSeriesValue(
-  series: Pick<GraphSeries, 'id' | 'unit'>,
-  point: GraphDataPoint,
-  localize: (key: string) => string
-): string {
-  const meta = point.meta as Record<string, unknown> | undefined;
-
-  if (isBinaryMetric(series.id, series.unit)) {
-    if (series.id === MetricKey.OPTIMAL) {
-      return point.value === 1
-        ? localize('environment_chart.optimal')
-        : (meta?.reasons as string) || localize('environment_chart.not_optimal');
-    }
-    return localize(point.value === 1 ? 'environment_chart.on' : 'environment_chart.off');
-  }
-
-  if ((series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) && meta?.state) {
-    return meta.state as string;
-  }
-
-  return `${point.value.toFixed(1)} ${series.unit}`;
-}
-
-/**
- * One bound of an [[Optimal Band]], as its inline label reads it.
- *
- * A decimal is kept only where the metric's range needs one — `0.8 kPa` and
- * `2.4 mS/cm` are all signal, `30.0%` is noise — and a percent sign hugs its
- * number the way the value-axis caps above and below it do.
- */
-function formatGuideBound(value: number, unit: string): string {
-  const text = value.toFixed(Math.abs(value) < 10 ? 1 : 0);
-  return unit === '%' ? `${text}%` : `${text} ${unit}`;
-}
-
-/** The observed domain a combined trace maps into its independently scaled pane. */
-function formatObservedRange(min: number, max: number, unit: string): string {
-  return `${min.toFixed(1)}–${max.toFixed(1)}${unit ? ` ${unit}` : ''}`;
 }
 
 @customElement('growspace-env-chart')
@@ -581,7 +520,7 @@ export class GrowspaceEnvChart extends LitElement {
 
       const reading = {
         title: s.title,
-        value: formatSeriesValue(s, closest, (key) => this._localize(key)),
+        value: formatReading(s, closest, (key) => this._localize(key)),
         color: s.color,
       };
 
@@ -595,7 +534,7 @@ export class GrowspaceEnvChart extends LitElement {
         return [
           {
             title: `${s.title} optimal`,
-            value: `${formatGuideBound(segment.min, s.unit)}–${formatGuideBound(segment.max, s.unit)}`,
+            value: `${formatScaleMark(segment.min, s.unit)}–${formatScaleMark(segment.max, s.unit)}`,
             color: metricColor,
           },
         ];
@@ -609,7 +548,7 @@ export class GrowspaceEnvChart extends LitElement {
         return [
           {
             title: `${s.title} ${this._guideMarkLabel(line.id)}`,
-            value: formatGuideBound(segment.value, s.unit),
+            value: formatScaleMark(segment.value, s.unit),
             color: metricColor,
           },
         ];
@@ -623,7 +562,7 @@ export class GrowspaceEnvChart extends LitElement {
         return [
           {
             title: `${s.title} ${limit.side === 'lower' ? 'lower' : 'upper'} limit`,
-            value: formatGuideBound(segment.value, s.unit),
+            value: formatScaleMark(segment.value, s.unit),
             color:
               limit.status === 'warning'
                 ? STATUS_COLORS[StatusLevel.WARNING]
@@ -678,15 +617,24 @@ export class GrowspaceEnvChart extends LitElement {
         const latest = series.points[series.points.length - 1];
         if (!latest) return [];
         const values = series.points.map((point) => point.value);
+        const localize = (key: string) => this._localize(key);
+        const min = series.observedMin ?? Math.min(...values);
+        const max = series.observedMax ?? Math.max(...values);
         return [
           {
             name: series.title,
-            min: series.observedMin ?? Math.min(...values),
-            max: series.observedMax ?? Math.max(...values),
+            min,
+            max,
             average:
               series.avg ?? values.reduce((total, value) => total + value, 0) / values.length,
-            current: formatSeriesValue(series, latest, (key) => this._localize(key)),
+            current: formatReading(series, latest, localize),
             unit: series.unit === 'state' ? '' : series.unit,
+            // A continuous metric reads better spoken — "range 20.0 °C to
+            // 24.0 °C" — so only a binary one hands over its own range, which
+            // numbers cannot express at all.
+            ...(isBinaryMetric(series.id, series.unit)
+              ? { range: formatObservedRange(series, min, max, localize) }
+              : {}),
           },
         ];
       })
@@ -695,7 +643,7 @@ export class GrowspaceEnvChart extends LitElement {
 
   private _renderSingleHeader(series: GraphSeries) {
     const last = series.points[series.points.length - 1];
-    const valStr = last ? formatSeriesValue(series, last, (key) => this._localize(key)) : '-';
+    const valStr = last ? formatReading(series, last, (key) => this._localize(key)) : '-';
     const closeGraphLabel = this._localize('environment_chart.close_graph', {
       graph: series.title,
     });
@@ -792,7 +740,9 @@ export class GrowspaceEnvChart extends LitElement {
                     : ''}
                   <span class="gs-legend-title" style="color:${s.color};">${s.title}</span>
                   <span class="gs-legend-range"
-                    >${formatObservedRange(s.observedMin, s.observedMax, s.unit)}</span
+                    >${formatObservedRange(s, s.observedMin, s.observedMax, (key) =>
+                      this._localize(key)
+                    )}</span
                   >
                 </button>
               `;
@@ -1049,10 +999,10 @@ export class GrowspaceEnvChart extends LitElement {
     return series.guideBands.map(
       (band) => html`
         <span class="gs-guide-label" style="top:${topPercent(band.current.max)}%;color:${color};"
-          >${formatGuideBound(band.current.max, series.unit)}</span
+          >${formatScaleMark(band.current.max, series.unit)}</span
         >
         <span class="gs-guide-label" style="top:${topPercent(band.current.min)}%;color:${color};"
-          >${formatGuideBound(band.current.min, series.unit)}</span
+          >${formatScaleMark(band.current.min, series.unit)}</span
         >
       `
     );
@@ -1126,8 +1076,8 @@ export class GrowspaceEnvChart extends LitElement {
         >`;
     }
     return html`
-      <span class="gs-axis-target" style="top: 8px;">${max.toFixed(0)}${unit}</span>
-      <span class="gs-axis-target" style="bottom: 8px;">${min.toFixed(0)}${unit}</span>
+      <span class="gs-axis-target" style="top: 8px;">${formatScaleMark(max, unit)}</span>
+      <span class="gs-axis-target" style="bottom: 8px;">${formatScaleMark(min, unit)}</span>
     `;
   }
 

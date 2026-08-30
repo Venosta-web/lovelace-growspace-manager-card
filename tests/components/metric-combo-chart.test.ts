@@ -338,7 +338,8 @@ describe('metric-combo-chart', () => {
       .shadowRoot!.querySelectorAll('.chart-scrub-row');
     expect(rows[0].textContent).toMatch(/\d{2}:\d{2}\s*·\s*24\.5 °C/);
     expect(rows[0].textContent).not.toContain('–');
-    expect(rows[1].textContent).toMatch(/\d{2}:\d{2}–\d{2}:\d{2}\s*·\s*80\.0 %/);
+    // Unit spacing is one decision for the whole Env Graph family (#855).
+    expect(rows[1].textContent).toMatch(/\d{2}:\d{2}–\d{2}:\d{2}\s*·\s*80\.0%/);
   });
 
   it('keeps the shared time window anchored while the pointer moves', async () => {
@@ -498,34 +499,45 @@ const ENERGY_SENSOR = 'sensor.tent_energy';
 const POWER_SENSOR = 'sensor.tent_power';
 
 describe('metric-combo-chart — a secondary with no full scale', () => {
-  it('caps the pane in the metric own unit rather than as duty', async () => {
-    // The tank pattern in another unit: an instantaneous draw over the
-    // accumulated consumption. Power scales to its data, so there is no full
-    // scale for a percentage to mean anything against.
+  /** An instantaneous draw over the accumulated consumption, at a given power. */
+  async function mountPower(watts: string): Promise<MetricComboChart> {
     const target = {
       deviceId: 'gs-1',
       name: 'Tent',
       environmentAttributes: { energySensors: [ENERGY_SENSOR], powerSensors: [POWER_SENSOR] },
     } as unknown as GrowspaceDevice;
 
-    const el = await fixture<MetricComboChart>(html`
+    return await fixture<MetricComboChart>(html`
       <metric-combo-chart
         .device=${target}
         .descriptors=${computeMetricDescriptors(null, {}, undefined, target)}
         .sensorHistory=${{
           [MetricKey.ENERGY]: [reading(ENERGY_SENSOR, 26, '12.5')],
-          [MetricKey.POWER]: [reading(POWER_SENSOR, 26, '400')],
+          [MetricKey.POWER]: [reading(POWER_SENSOR, 26, watts)],
         }}
         .range=${'24h'}
         .primary=${MetricKey.ENERGY}
         .secondaries=${[{ metric: MetricKey.POWER }]}
       ></metric-combo-chart>
     `);
+  }
 
-    const readouts = Array.from(el.shadowRoot!.querySelectorAll('.duty-readout')).map((node) =>
+  function caps(el: MetricComboChart): string[] {
+    return Array.from(el.shadowRoot!.querySelectorAll('.duty-readout')).map((node) =>
       node.textContent!.trim()
     );
-    expect(readouts).toEqual(['400 W']);
+  }
+
+  it('caps the pane in the metric own unit rather than as duty', async () => {
+    // The tank pattern in another unit: power scales to its data, so there is
+    // no full scale for a percentage to mean anything against.
+    expect(caps(await mountPower('400'))).toEqual(['400 W']);
+  });
+
+  it('rounds the cap the way every other scale mark on the chart rounds', async () => {
+    // A cap is a scale, not a measurement: `40.0 W` claims a precision the pane
+    // does not have, and rounds differently from the value axis beside it (#855).
+    expect(caps(await mountPower('40'))).toEqual(['40 W']);
   });
 });
 

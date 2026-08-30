@@ -23,6 +23,7 @@ import { ChartUtils } from '../../../utils/chart-utils';
 import type { RawHistoryDataPoint } from '../../../adapters/hass-types';
 import type { SensorHistories } from '../types';
 import { renderGuideLimitMark } from './guide-limit-mark';
+import { formatMeasurement } from '../metric-value-format';
 import { accessibleChartSummary } from '../chart-accessibility';
 import './chart-scrub-tooltip';
 import type { ChartScrubDetail } from './chart-scrub-tooltip';
@@ -777,7 +778,7 @@ export class TankWaterChart extends LitElement {
           min: Math.min(...values),
           max: Math.max(...values),
           average: values.reduce((total, value) => total + value, 0) / values.length,
-          current: `${values[values.length - 1].toFixed(1)} %`,
+          current: formatMeasurement(values[values.length - 1], '%'),
           unit: '%',
         };
       })
@@ -977,7 +978,7 @@ export class TankWaterChart extends LitElement {
             min: Math.min(...bars.map((bar) => bar.liters)),
             max: Math.max(...bars.map((bar) => bar.liters)),
             average: bars.reduce((total, bar) => total + bar.liters, 0) / bars.length,
-            current: `${bars[bars.length - 1].liters.toFixed(1)} L`,
+            current: formatMeasurement(bars[bars.length - 1].liters, 'L'),
             unit: 'L',
           },
         ])}
