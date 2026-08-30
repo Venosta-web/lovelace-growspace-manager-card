@@ -245,7 +245,7 @@ describe('CropSteeringDayChart – rendering', () => {
     const svg = el.shadowRoot!.querySelector('.cs-model svg')!;
     expect(svg.getAttribute('role')).toBe('img');
     expect(svg.getAttribute('aria-label')).toMatch(
-      /^Crop steering substrate model, 24h window\. VWC: range 55\.0 % to 58\.0 %, average 56\.5 %, current 58\.0 %\.$/
+      /^Crop steering substrate model, 24h window\. VWC: range 55\.0% to 58\.0%, average 56\.5%, current 58\.0%\.$/
     );
   });
 

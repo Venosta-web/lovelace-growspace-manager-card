@@ -12,6 +12,7 @@ import { METRIC_CONFIG, MetricKey } from '../constants';
 import { metricHistoryKeys, resolveMetricEntityIds } from '../../../slices/metric-descriptors';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
 import { guideLabelStyles } from './guide-label';
+import { formatMeasurement } from '../metric-value-format';
 import { accessibleChartSummary, type AccessibleChartSeries } from '../chart-accessibility';
 import {
   computeCropSteeringCycle,
@@ -918,7 +919,7 @@ export class CropSteeringDayChart extends LitElement {
           min: Math.min(...values),
           max: Math.max(...values),
           average: values.reduce((total, value) => total + value, 0) / values.length,
-          current: `${values[values.length - 1].toFixed(decimals)} ${unit}`,
+          current: formatMeasurement(values[values.length - 1], unit, decimals),
           unit,
           decimals,
         },

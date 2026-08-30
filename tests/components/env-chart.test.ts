@@ -193,6 +193,77 @@ describe('GrowspaceEnvChart hygiene', () => {
       expect(headerValue()).toBe('22.0 °C');
       expect(tooltip.textContent).toContain('22.0 °C');
     });
+
+    it('hugs the percent sign in the header and the scrub alike', async () => {
+      // Unit spacing is decided once, for every readout on the chart (#855).
+      await showMetric(MetricKey.HUMIDITY, reading(3_600_000, '50'), reading(0, '58'));
+
+      const tooltip = await scrubToNow();
+
+      expect(headerValue()).toBe('58.0%');
+      expect(tooltip.textContent).toContain('58.0%');
+    });
+  });
+
+  describe('one owner for value formatting', () => {
+    it('reads a binary metric as its state in the combined legend, not as 0.0–1.0', async () => {
+      // The legend took its own path to the same defect the header readout was
+      // written to fix: an irrigation trace printed as a number (#855).
+      element.isCombined = true;
+      element.metrics = [MetricKey.IRRIGATION];
+      element.sensorHistory = {
+        [MetricKey.IRRIGATION]: [reading(3_600_000, 'off'), reading(0, 'on')],
+      } as any;
+      await element.updateComplete;
+
+      const ranges = Array.from(element.shadowRoot!.querySelectorAll('.gs-legend-range')).map(
+        (node) => node.textContent!.trim()
+      );
+      expect(ranges).toEqual(['OFF–ON']);
+    });
+
+    it('summarises a binary metric by its states rather than by 0.0 to 1.0', async () => {
+      await showMetric(MetricKey.IRRIGATION, reading(3_600_000, 'off'), reading(0, 'on'));
+
+      const label = chartSvg().getAttribute('aria-label')!;
+
+      expect(label).toContain('range OFF–ON, current ON');
+      expect(label).not.toContain('0.0');
+    });
+
+    it('prints the value axis with the decimals its guide labels use', async () => {
+      // A VPD chart read `2kPa` on the axis, `1.2 kPa` on the band label and
+      // `1.3 kPa` in its accessible summary — three renderings of the same
+      // quantity on one chart (#855).
+      await showMetric(MetricKey.VPD, reading(3_600_000, '1.0'), reading(0, '1.1'));
+
+      const label = element.shadowRoot!.querySelector('.gs-guide-label')!.textContent!.trim();
+      const caps = Array.from(element.shadowRoot!.querySelectorAll('.gs-axis-target')).map((node) =>
+        node.textContent!.trim()
+      );
+
+      expect(label).toBe('1.2 kPa');
+      expect(caps).toHaveLength(2);
+      for (const cap of caps) {
+        expect(cap).toMatch(/^\d\.\d kPa$/);
+      }
+    });
+
+    it('stands a word unit apart from the axis number and hugs a percent sign', async () => {
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '24'));
+      expect(
+        Array.from(element.shadowRoot!.querySelectorAll('.gs-axis-target')).map((node) =>
+          node.textContent!.trim()
+        )
+      ).toEqual(['24 °C', '20 °C']);
+
+      await showMetric(MetricKey.HUMIDITY, reading(3_600_000, '50'), reading(0, '60'));
+      expect(
+        Array.from(element.shadowRoot!.querySelectorAll('.gs-axis-target')).map((node) =>
+          node.textContent!.trim()
+        )
+      ).toEqual(['60%', '50%']);
+    });
   });
 
   describe('one window', () => {
