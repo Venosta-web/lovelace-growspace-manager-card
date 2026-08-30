@@ -109,8 +109,8 @@ export class ChartScrubTooltip extends LitElement {
       margin-top: 2px;
     }
     /* The swatch carries the series' hue so the words do not have to: coloured
-       body text on this ground is the contrast defect #857 took out of the
-       legend, and the same rule holds here. */
+       body text on this ground is the contrast defect the Env Graph legend had
+       taken out of it, and the same rule holds here (ADR 0039). */
     .chart-scrub-swatch {
       display: inline-block;
       width: 7px;
