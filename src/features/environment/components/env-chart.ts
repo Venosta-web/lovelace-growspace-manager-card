@@ -143,6 +143,8 @@ export class GrowspaceEnvChart extends LitElement {
   // For combined graphs
   @property({ type: Array }) metrics: string[] = [];
   @property({ type: Boolean }) isCombined = false;
+  /** Instantaneous context drawn faintly on independently labelled right axes. */
+  @property({ attribute: false }) overlayMetrics: string[] = [];
   /**
    * The window to draw, when a host owns one.
    *
@@ -283,7 +285,7 @@ export class GrowspaceEnvChart extends LitElement {
    */
   private _buildRenderSeries({ startTimeMs, durationMillis }: ChartWindow): GraphSeries[] {
     const { width, height } = CHART_PANE;
-    const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
+    const metricKeys = this.isCombined ? this.metrics : [this.metricKey, ...this.overlayMetrics];
 
     return computeEnvSeries(this.descriptors, this.sensorHistory ?? {}, metricKeys, {
       startTimeMs,
@@ -309,9 +311,13 @@ export class GrowspaceEnvChart extends LitElement {
         type: series.chartType,
         timeRange: this.range,
       }),
-      // Overlaid traces — a combined chart's metrics, or one metric's several
-      // sensors — take a flat fill; a lone trace keeps its gradient.
-      fillType: this.isCombined || series.sensor ? ('flat' as const) : ('gradient' as const),
+      // Context overlays stay lines only; combined or multi-sensor traces take
+      // a flat fill, while a lone primary keeps its gradient.
+      fillType: this._isOverlaySeries(series.id)
+        ? ('none' as const)
+        : this.isCombined || series.sensor
+          ? ('flat' as const)
+          : ('gradient' as const),
       vpdBands: series.vpdBands,
       guideBands: series.guideBands,
       guideLines: series.guideLines,
@@ -329,6 +335,7 @@ export class GrowspaceEnvChart extends LitElement {
       changedProperties.has('metricKey') ||
       changedProperties.has('metrics') ||
       changedProperties.has('isCombined') ||
+      changedProperties.has('overlayMetrics') ||
       changedProperties.has('chartWindow')
     ) {
       this._renderWindow = this.chartWindow ?? this._windowFor(this.range);
@@ -340,7 +347,6 @@ export class GrowspaceEnvChart extends LitElement {
     if (!this.device) return html``;
 
     const { width, height } = CHART_PANE;
-    const { startTimeMs, durationMillis } = this._renderWindow;
     const series = this._renderSeries;
 
     if (series.length === 0) {
@@ -398,6 +404,7 @@ export class GrowspaceEnvChart extends LitElement {
               : html`<span class="gs-axis-normalised"
                   >${this._localize('environment_chart.normalised')}</span
                 >`}
+            ${this.overlayMetrics.length > 0 ? this._renderValueAxisLabels(series) : ''}
             ${
               // Inline labels only on a single-metric chart: a combined chart's
               // four bands would be eight labels on a 180px pane, which is a
@@ -425,44 +432,21 @@ export class GrowspaceEnvChart extends LitElement {
                 this._renderDarkPeriods(series[0].darkPeriods, this._renderWindow)
               }
               ${this._renderGrid(width, height)}
-              ${series.map((s) => this._renderGuideBands(s, this._renderWindow))}
-              ${series.map((s) => this._renderGuideLines(s, this._renderWindow))}
-              ${series.map((s) => this._renderGuideLimits(s, this._renderWindow))}
-              ${series.map((s) => {
-                // VPD bands remain in value/time space until this render step, where
-                // the component has the chart dimensions needed to create paths.
-                if (s.vpdBands?.length) {
-                  return svg`${s.vpdBands.map((band) => {
-                    const bandPoints = s.points.filter(
-                      (point) => point.time >= band.startTime && point.time <= band.endTime
-                    );
-                    const path = ChartUtils.generatePathFromValues(bandPoints, width, height, {
-                      min: s.min,
-                      max: s.max,
-                      startTime: startTimeMs,
-                      endTime: startTimeMs + durationMillis,
-                      type: ChartType.LINE,
-                      timeRange: this.range,
-                    });
-                    return svg`<path d="${path}" fill="none" stroke="${this._getVpdStatusColor(band.status)}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />`;
-                  })}`;
-                }
-
-                // Skip rendering regular paths if no valid path data
-                if (!s.path || s.path.trim() === '' || s.points.length === 0) {
-                  return svg``;
-                }
-
-                return svg`
-                  ${s.fillType === 'gradient' ? svg`<defs>${this._renderGradient(s.id, s.color)}</defs>` : ''}
-                  ${
-                    s.fillType === 'gradient'
-                      ? svg`<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
-                      : svg`<path d="${s.path} V ${height} H ${((s.points[0].time - startTimeMs) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`
-                  }
-                  <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" vector-effect="non-scaling-stroke" />
-                `;
-              })}
+              ${series
+                .filter((candidate) => this._isOverlaySeries(candidate.id))
+                .map((candidate) => this._renderSeriesTrace(candidate, this._renderWindow))}
+              ${series
+                .filter((candidate) => !this._isOverlaySeries(candidate.id))
+                .map((candidate) => this._renderGuideBands(candidate, this._renderWindow))}
+              ${series
+                .filter((candidate) => !this._isOverlaySeries(candidate.id))
+                .map((candidate) => this._renderGuideLines(candidate, this._renderWindow))}
+              ${series
+                .filter((candidate) => !this._isOverlaySeries(candidate.id))
+                .map((candidate) => this._renderGuideLimits(candidate, this._renderWindow))}
+              ${series
+                .filter((candidate) => !this._isOverlaySeries(candidate.id))
+                .map((candidate) => this._renderSeriesTrace(candidate, this._renderWindow))}
             </svg>
           </div>
           <!--
@@ -473,6 +457,52 @@ export class GrowspaceEnvChart extends LitElement {
           <slot name="secondary-pane"></slot>
         </div>
       </error-boundary>
+    `;
+  }
+
+  private _renderSeriesTrace(series: GraphSeries, { startTimeMs, durationMillis }: ChartWindow) {
+    const { width, height } = CHART_PANE;
+
+    // VPD bands remain in value/time space until this render step, where the
+    // component has the chart dimensions needed to create paths.
+    if (series.vpdBands?.length) {
+      return svg`${series.vpdBands.map((band) => {
+        const bandPoints = series.points.filter(
+          (point) => point.time >= band.startTime && point.time <= band.endTime
+        );
+        const path = ChartUtils.generatePathFromValues(bandPoints, width, height, {
+          min: series.min,
+          max: series.max,
+          startTime: startTimeMs,
+          endTime: startTimeMs + durationMillis,
+          type: ChartType.LINE,
+          timeRange: this.range,
+        });
+        return svg`<path class="gs-vpd-status-trace" d="${path}" fill="none" stroke="${this._getVpdStatusColor(band.status)}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />`;
+      })}`;
+    }
+
+    if (!series.path || series.path.trim() === '' || series.points.length === 0) {
+      return svg``;
+    }
+
+    const secondary = this._isOverlaySeries(series.id);
+    return svg`
+      ${series.fillType === 'gradient' ? svg`<defs>${this._renderGradient(series.id, series.color)}</defs>` : ''}
+      ${
+        series.fillType === 'gradient'
+          ? svg`<path d="${series.path} V ${height} H 0 Z" fill="url(#grad-${series.id})" />`
+          : series.fillType === 'flat'
+            ? svg`<path d="${series.path} V ${height} H ${((series.points[0].time - startTimeMs) / durationMillis) * width} Z" fill="${series.color}" fill-opacity="0.1" stroke="none" />`
+            : ''
+      }
+      <path
+        class=${secondary ? 'gs-secondary-trace' : 'gs-primary-trace'}
+        d="${series.path}" fill="none" stroke="${series.color}"
+        stroke-width=${secondary ? '1.25' : '2'}
+        stroke-opacity=${secondary ? '0.38' : '1'}
+        vector-effect="non-scaling-stroke"
+      />
     `;
   }
 
@@ -830,14 +860,15 @@ export class GrowspaceEnvChart extends LitElement {
           const bottom = yAt(segment.min);
           return svg`
           <rect
+            class="gs-guide-mark"
             x="${left}" y="${top}"
             width="${Math.max(0, right - left)}" height="${Math.max(0, bottom - top)}"
             fill="${color}" fill-opacity="0.08"
           />
-          <line x1="${left}" x2="${right}" y1="${top}" y2="${top}"
+          <line class="gs-guide-mark" x1="${left}" x2="${right}" y1="${top}" y2="${top}"
                 stroke="${color}" stroke-opacity="0.6" stroke-width="1"
                 stroke-dasharray="6 4" vector-effect="non-scaling-stroke" />
-          <line x1="${left}" x2="${right}" y1="${bottom}" y2="${bottom}"
+          <line class="gs-guide-mark" x1="${left}" x2="${right}" y1="${bottom}" y2="${bottom}"
                 stroke="${color}" stroke-opacity="0.6" stroke-width="1"
                 stroke-dasharray="6 4" vector-effect="non-scaling-stroke" />
         `;
@@ -877,6 +908,7 @@ export class GrowspaceEnvChart extends LitElement {
           const y = yAt(segment.value);
           const deadband = line.tolerance
             ? svg`<rect
+                class="gs-guide-mark"
                 x="${left}" y="${yAt(segment.value + line.tolerance)}"
                 width="${Math.max(0, right - left)}"
                 height="${Math.max(0, yAt(segment.value - line.tolerance) - yAt(segment.value + line.tolerance))}"
@@ -885,7 +917,7 @@ export class GrowspaceEnvChart extends LitElement {
             : svg``;
           return svg`
           ${deadband}
-          <line x1="${left}" x2="${right}" y1="${y}" y2="${y}"
+          <line class="gs-guide-mark" x1="${left}" x2="${right}" y1="${y}" y2="${y}"
                 stroke="${color}" stroke-opacity="0.85" stroke-width="1"
                 stroke-dasharray="10 6" vector-effect="non-scaling-stroke" />
         `;
@@ -947,18 +979,20 @@ export class GrowspaceEnvChart extends LitElement {
         limit.status === 'warning'
           ? STATUS_COLORS[StatusLevel.WARNING]
           : STATUS_COLORS[StatusLevel.DANGER];
-      return limit.segments.map((segment) =>
-        renderGuideLimitMark({
-          id: limit.id,
-          value: segment.value,
-          min: series.min,
-          max: series.max,
-          width,
-          height,
-          color,
-          x1: xAt(segment.startTime),
-          x2: xAt(segment.endTime),
-        })
+      return limit.segments.map(
+        (segment) => svg`<g class="gs-guide-mark">
+          ${renderGuideLimitMark({
+            id: limit.id,
+            value: segment.value,
+            min: series.min,
+            max: series.max,
+            width,
+            height,
+            color,
+            x1: xAt(segment.startTime),
+            x2: xAt(segment.endTime),
+          })}
+        </g>`
       );
     })}`;
   }
@@ -1061,6 +1095,28 @@ export class GrowspaceEnvChart extends LitElement {
     return html`
       <span class="gs-axis-target" style="top: 8px;">${max.toFixed(0)}${unit}</span>
       <span class="gs-axis-target" style="bottom: 8px;">${min.toFixed(0)}${unit}</span>
+    `;
+  }
+
+  private _isOverlaySeries(id: string): boolean {
+    return this.overlayMetrics.some((key) => id === key || id.startsWith(`${key}:`));
+  }
+
+  private _renderValueAxisLabels(series: GraphSeries[]) {
+    const primary = series.find((candidate) => !this._isOverlaySeries(candidate.id));
+    const secondaries = series.filter((candidate) => this._isOverlaySeries(candidate.id));
+    if (!primary || secondaries.length === 0) return '';
+
+    return html`
+      <span class="gs-value-axis-label primary">${primary.title} · ${primary.unit}</span>
+      <span class="gs-value-axis-label secondary">
+        ${secondaries.map(
+          (secondary) =>
+            html`<span class="series-label" style="color:${secondary.color}"
+              >${secondary.title} · ${secondary.unit}</span
+            >`
+        )}
+      </span>
     `;
   }
 
@@ -1196,6 +1252,39 @@ export class GrowspaceEnvChart extends LitElement {
       text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
       line-height: 1;
       pointer-events: none;
+    }
+    .gs-value-axis-label {
+      position: absolute;
+      top: 50%;
+      z-index: 3;
+      display: flex;
+      gap: 8px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      pointer-events: none;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: translateY(-50%) rotate(180deg);
+      padding: 4px 3px;
+      border-radius: 6px;
+      background: color-mix(
+        in srgb,
+        var(--card-background-color, var(--surface-color)) 78%,
+        transparent
+      );
+      box-shadow: 0 0 8px color-mix(in srgb, var(--card-background-color) 60%, transparent);
+      backdrop-filter: blur(3px);
+    }
+    .gs-value-axis-label.primary {
+      left: 7px;
+    }
+    .gs-value-axis-label.secondary {
+      right: 7px;
+    }
+    .gs-value-axis-label .series-label {
+      white-space: nowrap;
     }
 
     /* A combined chart has no shared value ticks. Name its per-series geometry

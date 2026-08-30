@@ -132,7 +132,7 @@ describe('GrowspaceAnalyticsContainer', () => {
     $analyticsViewState.set({
       historyLoading: false,
       historyLoaded: true,
-      activeEnvGraphs: new Set(['vpd', 'ph']),
+      activeEnvGraphs: new Set(['feed_ec', 'ph']),
       linkedGraphGroups: [],
       combinedHistory: {},
       graphRanges: {},
@@ -248,6 +248,22 @@ describe('GrowspaceAnalyticsContainer', () => {
 
     expect((element as any)._items).toEqual([
       { type: 'combo', metrics: ['energy', 'power'], sortIndex: 17 },
+    ]);
+  });
+
+  it('_items renders VPD with its instantaneous temperature and humidity context', async () => {
+    $analyticsViewState.set({
+      historyLoading: false,
+      historyLoaded: true,
+      activeEnvGraphs: new Set(['vpd']),
+      linkedGraphGroups: [],
+      combinedHistory: {},
+      graphRanges: {},
+    });
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([
+      { type: 'combo', metrics: ['vpd', 'temperature', 'humidity'], sortIndex: 2 },
     ]);
   });
 
