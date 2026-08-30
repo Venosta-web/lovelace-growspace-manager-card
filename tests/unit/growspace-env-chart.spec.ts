@@ -89,9 +89,7 @@ describe('GrowspaceEnvChart', () => {
   }
 
   function headerValue() {
-    return element.shadowRoot?.querySelector(
-      '.gs-env-graph-header div div[style*="font-size:1.2em"]'
-    )?.textContent;
+    return element.shadowRoot?.querySelector('.gs-env-graph-value')?.textContent;
   }
 
   describe('render guards', () => {
