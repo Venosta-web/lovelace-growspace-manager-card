@@ -25,6 +25,7 @@ import { consume } from '@lit/context';
 import { hassContext } from '../../../lib/context';
 import '../../shared/ui/error-boundary';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
+import { focusRingStyles } from '../../../styles/focus-ring.styles';
 import { renderGuideLimitMark } from './guide-limit-mark';
 import { guideLabelStyles } from './guide-label';
 import { accessibleChartSummary } from '../chart-accessibility';
@@ -353,19 +354,28 @@ export class GrowspaceEnvChart extends LitElement {
     if (series.length === 0) {
       const chartName =
         this.title ||
+        this.descriptors[this.metricKey]?.title ||
         METRIC_CONFIG[this.metricKey]?.title ||
         this._localize('environment_chart.graph');
+      const closeGraphLabel = this._localize('environment_chart.close_graph', {
+        graph: chartName,
+      });
       return html`
         <div class="gs-env-graph-card">
-          <div class="gs-env-graph-header">
+          <button
+            class="gs-env-graph-header gs-env-graph-header-button focus-ring"
+            type="button"
+            aria-label=${closeGraphLabel}
+            @click=${() => this._toggleEnvGraph()}
+          >
             <div style="display:flex; align-items:center; gap:8px;">
               ${this.icon ? html`<ha-svg-icon .path=${this.icon}></ha-svg-icon>` : ''}
-              <span>${this.title || this._localize('environment_chart.graph')}</span>
+              <span>${chartName}</span>
             </div>
             <span style="opacity:0.6; font-size:0.9em"
               >${this._localize('environment_chart.no_data')}</span
             >
-          </div>
+          </button>
           <div class="gs-env-chart-container empty">
             <svg
               class="chart-svg empty-chart-svg"
@@ -686,9 +696,17 @@ export class GrowspaceEnvChart extends LitElement {
   private _renderSingleHeader(series: GraphSeries) {
     const last = series.points[series.points.length - 1];
     const valStr = last ? formatSeriesValue(series, last, (key) => this._localize(key)) : '-';
+    const closeGraphLabel = this._localize('environment_chart.close_graph', {
+      graph: series.title,
+    });
 
     return html`
-      <div class="gs-env-graph-header" @click=${() => this._toggleEnvGraph()}>
+      <button
+        class="gs-env-graph-header gs-env-graph-header-button focus-ring"
+        type="button"
+        aria-label=${closeGraphLabel}
+        @click=${() => this._toggleEnvGraph()}
+      >
         <div style="display:flex; align-items:center; gap:8px;">
           <div
             style="width:24px; height:24px; color:${series.color}; display:flex; align-items:center; justify-content:center;"
@@ -702,7 +720,7 @@ export class GrowspaceEnvChart extends LitElement {
         <div style="text-align:right;">
           <div style="font-size:1.2em; font-weight:bold; color:${series.color};">${valStr}</div>
         </div>
-      </div>
+      </button>
     `;
   }
 
@@ -712,15 +730,19 @@ export class GrowspaceEnvChart extends LitElement {
       <div class="gs-env-graph-header">
         <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
           ${this._canScrollLeft
-            ? html`<div
-                class="scroll-nav left"
+            ? html`<button
+                class="scroll-nav left focus-ring"
+                type="button"
+                aria-label=${this._localize('environment_chart.scroll_metrics_left')}
                 @click=${(e: Event) => {
                   e.stopPropagation();
                   this._scrollChips(ScrollDirection.LEFT);
                 }}
               >
-                <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
-              </div>`
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="${mdiChevronLeft}"></path>
+                </svg>
+              </button>`
             : ''}
 
           <div
@@ -728,14 +750,20 @@ export class GrowspaceEnvChart extends LitElement {
             ${ref(this._chipsContainerRef)}
             @click=${(e: Event) => e.stopPropagation()}
           >
-            ${seriesList.map(
-              (s) => html`
-                <div
+            ${seriesList.map((s) => {
+              const unlinkGraphLabel = this._localize('environment_chart.unlink_graph', {
+                graph: s.title,
+              });
+              return html`
+                <button
                   class=${classMap({
                     'gs-legend-item': true,
+                    'focus-ring': true,
                     'mask-left': this._canScrollLeft,
                     'mask-right': this._canScrollRight,
                   })}
+                  type="button"
+                  aria-label=${unlinkGraphLabel}
                   @click=${(e: Event) => {
                     e.stopPropagation();
                     this.dispatchEvent(
@@ -766,21 +794,25 @@ export class GrowspaceEnvChart extends LitElement {
                   <span class="gs-legend-range"
                     >${formatObservedRange(s.observedMin, s.observedMax, s.unit)}</span
                   >
-                </div>
-              `
-            )}
+                </button>
+              `;
+            })}
           </div>
 
           ${this._canScrollRight
-            ? html`<div
-                class="scroll-nav right"
+            ? html`<button
+                class="scroll-nav right focus-ring"
+                type="button"
+                aria-label=${this._localize('environment_chart.scroll_metrics_right')}
                 @click=${(e: Event) => {
                   e.stopPropagation();
                   this._scrollChips(ScrollDirection.RIGHT);
                 }}
               >
-                <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-              </div>`
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="${mdiChevronRight}"></path>
+                </svg>
+              </button>`
             : ''}
         </div>
         <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
@@ -1141,9 +1173,10 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   static styles = css`
+    ${focusRingStyles}
     ${guideLabelStyles}
 
-    :host {
+      :host {
       display: block;
       position: relative;
       /* Spacing for the inline stack. It lives on the host, not on the card,
@@ -1172,7 +1205,22 @@ export class GrowspaceEnvChart extends LitElement {
       align-items: center;
       justify-content: space-between;
       margin-bottom: 8px;
+      min-height: 24px;
+    }
+    .gs-env-graph-header-button {
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: start;
       cursor: pointer;
+    }
+    .gs-env-graph-header-button *,
+    .gs-legend-item *,
+    .scroll-nav svg {
+      pointer-events: none;
     }
     .gs-env-chart-container {
       position: relative;
@@ -1347,7 +1395,15 @@ export class GrowspaceEnvChart extends LitElement {
     .gs-legend-item {
       display: flex;
       align-items: center;
+      min-width: 24px;
+      min-height: 24px;
       margin-right: 12px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: start;
       font-size: 0.85rem;
       cursor: pointer;
       opacity: 0.8;
@@ -1366,7 +1422,8 @@ export class GrowspaceEnvChart extends LitElement {
       content: '·';
       margin-right: 5px;
     }
-    .gs-legend-item:hover {
+    .gs-legend-item:hover,
+    .gs-legend-item:focus-visible {
       opacity: 1;
     }
 
@@ -1381,7 +1438,7 @@ export class GrowspaceEnvChart extends LitElement {
       scroll-behavior: smooth;
       flex: 1;
       min-width: 0;
-      padding: 0 10px;
+      padding: 4px 10px;
       transition: mask-image 0.3s;
     }
     .chips-scroll-container.mask-right {
@@ -1420,9 +1477,15 @@ export class GrowspaceEnvChart extends LitElement {
       opacity: 0.5;
       transition: opacity 0.2s;
       min-width: 24px;
+      height: 24px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font: inherit;
       color: var(--primary-text-color, #fff);
     }
-    .scroll-nav:hover {
+    .scroll-nav:hover,
+    .scroll-nav:focus-visible {
       opacity: 1;
     }
     .scroll-nav svg {
