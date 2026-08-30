@@ -15,6 +15,8 @@ vi.mock('../../src/localize/localize', async (importOriginal) => {
 import { hassContext } from '../../src/context';
 import type { GrowspaceEnvChart } from '../../src/features/environment/components/env-chart';
 import '../../src/features/environment/components/env-chart';
+import type { MetricComboChart } from '../../src/features/environment/components/metric-combo-chart';
+import '../../src/features/environment/components/metric-combo-chart';
 import type { GrowspaceAnalyticsUI } from '../../src/features/ui/components/growspace-analytics-ui';
 import '../../src/features/ui/components/growspace-analytics-ui';
 
@@ -164,6 +166,60 @@ describe('environment analytics localization', () => {
     expect(localization.localizeWithParams).toHaveBeenCalledWith(
       'environment_chart.render_failed',
       {},
+      'de-DE'
+    );
+
+    host.remove();
+  });
+
+  it('localizes combo pane labels, caps, and accessible names with the Home Assistant locale', async () => {
+    const host = document.createElement('div');
+    new ContextProvider(host, hassContext, HASS);
+    const element = document.createElement('metric-combo-chart') as MetricComboChart;
+    host.append(element);
+    document.body.append(host);
+    await element.updateComplete;
+
+    const dutyPane = {
+      key: 'exhaust',
+      title: 'Exhaust',
+      color: 'green',
+      unit: '%',
+      bars: [{ startTime: 0, endTime: 1, value: 80 }],
+      peak: 80,
+    };
+    const deltaPane = {
+      key: 'runoff_ec',
+      title: 'Runoff EC',
+      baselineTitle: 'Feed EC',
+      color: 'blue',
+      unit: 'mS/cm',
+      bars: [{ startTime: 0, endTime: 1, value: 0.5 }],
+      peak: 0.5,
+      limit: 1,
+    };
+
+    await fixture(html`<div>${(element as any)._renderIntervalPane(dutyPane, 0, 1)}</div>`);
+    await fixture(html`<div>${(element as any)._renderIntervalPane(deltaPane, 0, 1)}</div>`);
+
+    expect(localization.localizeWithParams).toHaveBeenCalledWith(
+      'metric_combo.duty_label',
+      { metric: 'Exhaust' },
+      'de-DE'
+    );
+    expect(localization.localizeWithParams).toHaveBeenCalledWith(
+      'metric_combo.delta_label',
+      { metric: 'Runoff EC', baseline: 'Feed EC' },
+      'de-DE'
+    );
+    expect(localization.localizeWithParams).toHaveBeenCalledWith(
+      'metric_combo.limit_cap',
+      { value: '1.0 mS/cm' },
+      'de-DE'
+    );
+    expect(localization.localizeWithParams).toHaveBeenCalledWith(
+      'metric_combo.pane_accessible_name',
+      { metric: 'Exhaust duty', scale: '80%' },
       'de-DE'
     );
 

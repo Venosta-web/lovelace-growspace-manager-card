@@ -1,12 +1,16 @@
 import { LitElement, html, css, svg, nothing, type PropertyValues, type TemplateResult } from 'lit';
+import { consume } from '@lit/context';
 import { customElement, property, state } from 'lit/decorators.js';
+import type { HomeAssistant } from 'custom-card-helpers';
 import type { GrowspaceDevice } from '../../../services/types';
 import type { MetricDescriptor } from '../../../slices/metric-descriptors';
+import { hassContext } from '../../../lib/context';
 import type { SensorHistories } from '../types';
 import { metricComboFor, type ComboSecondary, type HistoryTimeRange } from '../constants';
 import { computeComboIntervalPane, type ComboIntervalPane } from '../combo-series';
 import { computeEnvSeries } from '../env-series';
 import { formatMeasurement, formatReading, formatScaleMark } from '../metric-value-format';
+import { accessibleChartSummary } from '../chart-accessibility';
 import { localizeWithParams } from '../../../localize/localize';
 import '../../../growspace-env-chart';
 import './chart-scrub-tooltip';
@@ -59,6 +63,9 @@ const DUTY_PANE = { width: 100, height: 80 } as const;
 
 @customElement('metric-combo-chart')
 export class MetricComboChart extends LitElement {
+  @consume({ context: hassContext, subscribe: true })
+  hass!: HomeAssistant;
+
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
   @property({ attribute: false }) sensorHistory: SensorHistories = {};
   @property({ attribute: false }) descriptors: Record<string, MetricDescriptor> = {};
@@ -162,7 +169,7 @@ export class MetricComboChart extends LitElement {
   `;
 
   private _localize(key: string, params: Record<string, string | number> = {}): string {
-    return localizeWithParams(key, params, 'en');
+    return localizeWithParams(key, params, this.hass?.locale?.language ?? 'en');
   }
 
   /**
@@ -213,6 +220,33 @@ export class MetricComboChart extends LitElement {
    */
   private _paneScale(pane: ComboIntervalPane): number {
     return Math.max(pane.peak, pane.limit ?? 0);
+  }
+
+  /**
+   * One accessible name for the pane's SVG, using the Env Graph's summary
+   * contract so its bars are exposed as one graphic rather than as anonymous
+   * rectangles.
+   */
+  private _paneAccessibleSummary(pane: ComboIntervalPane): string {
+    const paneName = this._localize('metric_combo.pane_accessible_name', {
+      metric: this._paneLabel(pane),
+      scale: this._capLabel(pane),
+    });
+    const values = pane.bars.map((bar) => bar.value);
+    const latest = values[values.length - 1];
+
+    if (latest === undefined) return accessibleChartSummary(paneName, this.range, []);
+
+    return accessibleChartSummary(paneName, this.range, [
+      {
+        name: paneName,
+        min: Math.min(...values),
+        max: Math.max(...values),
+        average: values.reduce((total, value) => total + value, 0) / values.length,
+        current: formatMeasurement(latest, pane.unit),
+        unit: pane.unit,
+      },
+    ]);
   }
 
   /** Anchor a window when chart inputs change, never when only the scrub moves. */
@@ -324,7 +358,12 @@ export class MetricComboChart extends LitElement {
             this._scrubIntervalPane(event, startTimeMs, durationMillis)}
         >
           <span class="duty-readout">${this._capLabel(pane)}</span>
-          <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+          <svg
+            viewBox="0 0 ${width} ${height}"
+            preserveAspectRatio="none"
+            role="img"
+            aria-label=${this._paneAccessibleSummary(pane)}
+          >
             ${pane.bars.map((bar) => {
               const barHeight = scale > 0 ? Math.max(0, (bar.value / scale) * height) : 0;
               const left = xAt(bar.startTime);
