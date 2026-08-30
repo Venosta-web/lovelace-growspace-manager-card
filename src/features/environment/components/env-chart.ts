@@ -321,7 +321,9 @@ export class GrowspaceEnvChart extends LitElement {
               viewBox="0 0 ${width} ${height}"
               preserveAspectRatio="none"
               role="img"
-              aria-label=${accessibleChartSummary(chartName, this.range, [])}
+              aria-label=${accessibleChartSummary(chartName, this.range, [], (key, params) =>
+                this._localize(key, params)
+              )}
             ></svg>
             <span class="empty-message"
               >${this._localize('environment_chart.no_history_for_range', {
@@ -536,7 +538,9 @@ export class GrowspaceEnvChart extends LitElement {
         if (!segment) return [];
         return [
           {
-            title: `${s.title} optimal`,
+            title: this._localize('environment_chart.optimal_band_label', {
+              metric: s.title,
+            }),
             value: `${formatScaleMark(segment.min, s.unit)}–${formatScaleMark(segment.max, s.unit)}`,
             color: metricColor,
           },
@@ -550,7 +554,10 @@ export class GrowspaceEnvChart extends LitElement {
         if (!segment) return [];
         return [
           {
-            title: `${s.title} ${this._guideMarkLabel(line.id)}`,
+            title: this._localize('environment_chart.guide_mark_label', {
+              metric: s.title,
+              mark: this._guideMarkLabel(line.id),
+            }),
             value: formatScaleMark(segment.value, s.unit),
             color: metricColor,
           },
@@ -564,7 +571,12 @@ export class GrowspaceEnvChart extends LitElement {
         if (!segment) return [];
         return [
           {
-            title: `${s.title} ${limit.side === 'lower' ? 'lower' : 'upper'} limit`,
+            title: this._localize(
+              limit.side === 'lower'
+                ? 'environment_chart.lower_limit_label'
+                : 'environment_chart.upper_limit_label',
+              { metric: s.title }
+            ),
             value: formatScaleMark(segment.value, s.unit),
             color:
               limit.status === 'warning'
@@ -607,7 +619,7 @@ export class GrowspaceEnvChart extends LitElement {
 
   private _accessibleSummary(seriesList: GraphSeries[]): string {
     const chartName = this.isCombined
-      ? this.title || 'Environment metrics'
+      ? this.title || this._localize('environment_chart.environment_metrics')
       : seriesList[0]?.title ||
         this.title ||
         METRIC_CONFIG[this.metricKey]?.title ||
@@ -640,7 +652,8 @@ export class GrowspaceEnvChart extends LitElement {
               : {}),
           },
         ];
-      })
+      }),
+      (key, params) => this._localize(key, params)
     );
   }
 

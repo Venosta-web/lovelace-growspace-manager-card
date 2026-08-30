@@ -14,6 +14,7 @@ import { reducedMotion } from '../../../styles/reduced-motion.styles';
 import { guideLabelStyles } from './guide-label';
 import { formatMeasurement } from '../metric-value-format';
 import { accessibleChartSummary, type AccessibleChartSeries } from '../chart-accessibility';
+import { localizeWithParams } from '../../../localize/localize';
 import {
   computeCropSteeringCycle,
   computePhases,
@@ -937,11 +938,16 @@ export class CropSteeringDayChart extends LitElement {
         },
       ];
     };
-    const accessibleSummary = accessibleChartSummary('Crop steering substrate model', this.range, [
-      ...summarizeTrace('VWC', '%', vwcPts),
-      ...summarizeTrace('Pore EC', 'mS/cm', poreEcPts, 2),
-      ...summarizeTrace('Bulk EC', 'mS/cm', bulkEcPts, 2),
-    ]);
+    const accessibleSummary = accessibleChartSummary(
+      'Crop steering substrate model',
+      this.range,
+      [
+        ...summarizeTrace('VWC', '%', vwcPts),
+        ...summarizeTrace('Pore EC', 'mS/cm', poreEcPts, 2),
+        ...summarizeTrace('Bulk EC', 'mS/cm', bulkEcPts, 2),
+      ],
+      (key, params) => localizeWithParams(key, params)
+    );
 
     const showPhaseStrip = !this.rollingWindow || this.range === '24h';
     const rollingPhaseSegments =

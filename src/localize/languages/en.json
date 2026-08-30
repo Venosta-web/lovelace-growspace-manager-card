@@ -63,7 +63,18 @@
     "on": "ON",
     "off": "OFF",
     "optimal": "Optimal",
-    "not_optimal": "Not Optimal"
+    "not_optimal": "Not Optimal",
+    "environment_metrics": "Environment metrics",
+    "optimal_band_label": "{metric} optimal",
+    "guide_mark_label": "{metric} {mark}",
+    "lower_limit_label": "{metric} lower limit",
+    "upper_limit_label": "{metric} upper limit",
+    "accessible_no_data": "{chart}, {window} window, no data.",
+    "accessible_summary": "{chart}, {window} window. {descriptions}",
+    "accessible_series": "range {minimum} to {maximum}, average {average}, current {current}.",
+    "accessible_named_series": "{metric}: range {minimum} to {maximum}, average {average}, current {current}.",
+    "accessible_series_range": "range {range}, current {current}.",
+    "accessible_named_series_range": "{metric}: range {range}, current {current}."
   },
   "tasks": {
     "menu": "Tasks",

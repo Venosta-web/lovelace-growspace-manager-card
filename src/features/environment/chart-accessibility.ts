@@ -19,6 +19,12 @@ export interface AccessibleChartSeries {
   range?: string;
 }
 
+/** The caller's localizer, injected so this formatter stays pure. */
+export type LocalizeChartSummary = (
+  key: string,
+  params?: Record<string, string | number>
+) => string;
+
 /**
  * Turn the values already derived for a chart into one stable accessible name.
  *
@@ -30,19 +36,44 @@ export interface AccessibleChartSeries {
 export function accessibleChartSummary(
   chartName: string,
   window: string,
-  series: AccessibleChartSeries[]
+  series: AccessibleChartSeries[],
+  localize: LocalizeChartSummary
 ): string {
-  if (series.length === 0) return `${chartName}, ${window} window, no data.`;
+  if (series.length === 0) {
+    return localize('environment_chart.accessible_no_data', { chart: chartName, window });
+  }
 
   const descriptions = series.map(
     ({ name, min, max, average, current, unit = '', decimals = 1, range }) => {
-      const metric = series.length === 1 && name === chartName ? '' : `${name}: `;
-      if (range) return `${metric}range ${range}, current ${current}`;
+      const isOnlyNamedSeries = series.length === 1 && name === chartName;
+      if (range) {
+        return localize(
+          isOnlyNamedSeries
+            ? 'environment_chart.accessible_series_range'
+            : 'environment_chart.accessible_named_series_range',
+          { metric: name, range, current }
+        );
+      }
 
       const statistic = (value: number) => formatMeasurement(value, unit, decimals);
-      return `${metric}range ${statistic(min)} to ${statistic(max)}, average ${statistic(average)}, current ${current}`;
+      return localize(
+        isOnlyNamedSeries
+          ? 'environment_chart.accessible_series'
+          : 'environment_chart.accessible_named_series',
+        {
+          metric: name,
+          minimum: statistic(min),
+          maximum: statistic(max),
+          average: statistic(average),
+          current,
+        }
+      );
     }
   );
 
-  return `${chartName}, ${window} window. ${descriptions.join('. ')}.`;
+  return localize('environment_chart.accessible_summary', {
+    chart: chartName,
+    window,
+    descriptions: descriptions.join(' '),
+  });
 }
