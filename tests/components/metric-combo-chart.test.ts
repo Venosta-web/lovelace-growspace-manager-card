@@ -244,7 +244,7 @@ describe('metric-combo-chart', () => {
 
     expect(svg.getAttribute('role')).toBe('img');
     expect(svg.getAttribute('aria-label')).toBe(
-      'Exhaust duty, scale 80%, 24h window. range 80.0% to 80.0%, average 80.0%, current 80.0%.'
+      'Exhaust duty, scale 100%, 24h window. range 80.0% to 80.0%, average 80.0%, current 80.0%.'
     );
   });
 

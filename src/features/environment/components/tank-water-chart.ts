@@ -781,7 +781,8 @@ export class TankWaterChart extends LitElement {
           current: formatMeasurement(values[values.length - 1], '%'),
           unit: '%',
         };
-      })
+      }),
+      (key, params) => localizeWithParams(key, params)
     );
   }
 
@@ -972,16 +973,21 @@ export class TankWaterChart extends LitElement {
         viewBox="0 0 100 ${chartH}"
         preserveAspectRatio="none"
         role="img"
-        aria-label=${accessibleChartSummary(localize('water_chart.title'), this.range, [
-          {
-            name: localize('water_chart.title'),
-            min: Math.min(...bars.map((bar) => bar.liters)),
-            max: Math.max(...bars.map((bar) => bar.liters)),
-            average: bars.reduce((total, bar) => total + bar.liters, 0) / bars.length,
-            current: formatMeasurement(bars[bars.length - 1].liters, 'L'),
-            unit: 'L',
-          },
-        ])}
+        aria-label=${accessibleChartSummary(
+          localize('water_chart.title'),
+          this.range,
+          [
+            {
+              name: localize('water_chart.title'),
+              min: Math.min(...bars.map((bar) => bar.liters)),
+              max: Math.max(...bars.map((bar) => bar.liters)),
+              average: bars.reduce((total, bar) => total + bar.liters, 0) / bars.length,
+              current: formatMeasurement(bars[bars.length - 1].liters, 'L'),
+              unit: 'L',
+            },
+          ],
+          (key, params) => localizeWithParams(key, params)
+        )}
       >
         ${bars.map((bucket, i) => {
           // The tallest bar spends the whole box: the peak cap above the pane

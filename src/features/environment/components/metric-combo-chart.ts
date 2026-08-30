@@ -223,18 +223,27 @@ export class MetricComboChart extends LitElement {
     const values = pane.bars.map((bar) => bar.value);
     const latest = values[values.length - 1];
 
-    if (latest === undefined) return accessibleChartSummary(paneName, this.range, []);
+    if (latest === undefined) {
+      return accessibleChartSummary(paneName, this.range, [], (key, params) =>
+        this._localize(key, params)
+      );
+    }
 
-    return accessibleChartSummary(paneName, this.range, [
-      {
-        name: paneName,
-        min: Math.min(...values),
-        max: Math.max(...values),
-        average: values.reduce((total, value) => total + value, 0) / values.length,
-        current: formatMeasurement(latest, pane.unit),
-        unit: pane.unit,
-      },
-    ]);
+    return accessibleChartSummary(
+      paneName,
+      this.range,
+      [
+        {
+          name: paneName,
+          min: Math.min(...values),
+          max: Math.max(...values),
+          average: values.reduce((total, value) => total + value, 0) / values.length,
+          current: formatMeasurement(latest, pane.unit),
+          unit: pane.unit,
+        },
+      ],
+      (key, params) => this._localize(key, params)
+    );
   }
 
   /** Anchor a window when chart inputs change, never when only the scrub moves. */
