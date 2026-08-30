@@ -17,10 +17,11 @@ into Comparison would hand the grower an unlink chip that dismantles Temperature
 + Exhaust into two charts, one of which — exhaust duty alone on an auto axis — is
 close to meaningless on its own.
 
-The asymmetry is the point and it has a rendering consequence: a combo hard-codes
-its secondary as bars in a subordinate pane per ADR-0049, which an arbitrary-N
-overlay can never do. Comparison must handle two to four metrics of any kind;
-a combo is a fixed recipe with a known shape.
+The asymmetry is the point and it has a rendering consequence: a combo applies
+ADR-0049 mechanically to its fixed context. Interval secondaries become bars in
+a subordinate pane; instantaneous secondaries may become faint traces on a
+labelled second axis. Comparison must handle two to four metrics of any kind;
+a combo is a fixed recipe whose context has a known data shape.
 
 Branching one `AnalyticsItem type: 'group'` renderer on whether its metrics
 happen to match a known recipe was the third option, and it makes one type mean
@@ -28,7 +29,7 @@ two renderings depending on content.
 
 ## Consequences
 
-The recipe set — which pairs exist, which side is primary — is a hard-coded table
+The recipe set — which combinations exist, which side is primary — is a hard-coded table
 beside `METRIC_CONFIG`, where the pairing sits next to the colour, unit and icon
 facts it depends on. It is deliberately **not** card YAML config yet: the
 editorial claim is the whole value, and a `combos:` key would have growers

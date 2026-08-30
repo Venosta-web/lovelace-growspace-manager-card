@@ -307,16 +307,17 @@ export interface ComboSecondary {
 export interface MetricComboRecipe {
   primary: MetricKey;
   /**
-   * The subordinate panes that give the primary context, in the order they are
-   * stacked beneath it.
+   * The subordinate contexts that give the primary meaning, in render order.
    *
    * A list rather than one metric because some questions have two halves that
    * do not collapse into each other: humidity drifting with the humidifier idle
    * and humidity drifting with the dehumidifier pinned are different readings of
-   * the same trace, so each takes its own pane. This is the primitive repeated,
-   * not new geometry — nothing here says how a pane is drawn.
+   * the same trace. The recipe's shape decides whether they become panes or
+   * faint overlays; the list itself only names the context.
    */
   secondaries: ComboSecondary[];
+  /** The fact ADR-0049 uses to choose overlay or two-pane geometry. */
+  secondaryShape: 'instantaneous' | 'interval';
 }
 
 /**
@@ -326,28 +327,35 @@ export interface MetricComboRecipe {
  * unit and icon facts it depends on, and deliberately **not** card YAML: the
  * editorial claim is the whole value of a combo, and a `combos:` key would have
  * growers curating before there is an established sense of what a good one is
- * (ADR-0051). Which geometry a recipe gets is not stated here either — it
- * follows from the secondary's data shape (ADR-0049).
+ * (ADR-0051). The recipe records the secondary data shape that selects its
+ * geometry, so the renderer applies ADR-0049 without metric-specific branches.
  */
 export const METRIC_COMBOS: Record<string, MetricComboRecipe> = {
   [MetricKey.TEMPERATURE]: {
     primary: MetricKey.TEMPERATURE,
     secondaries: [{ metric: MetricKey.EXHAUST }],
+    secondaryShape: 'interval',
   },
   // The same actuator-effort reading as temperature, in both directions: the
   // {on, off} thresholds already render as setpoint pairs on the primary pane.
   [MetricKey.HUMIDITY]: {
     primary: MetricKey.HUMIDITY,
     secondaries: [{ metric: MetricKey.HUMIDIFIER }, { metric: MetricKey.DEHUMIDIFIER }],
+    secondaryShape: 'interval',
   },
   // Exhaust dumps CO2, so the anticorrelation is the whole story — and it is
   // invisible while the two are separate charts.
-  [MetricKey.CO2]: { primary: MetricKey.CO2, secondaries: [{ metric: MetricKey.EXHAUST }] },
+  [MetricKey.CO2]: {
+    primary: MetricKey.CO2,
+    secondaries: [{ metric: MetricKey.EXHAUST }],
+    secondaryShape: 'interval',
+  },
   // The literal stock-and-flow case: substrate water content over the shots
   // that fill it.
   [MetricKey.SOIL_MOISTURE]: {
     primary: MetricKey.SOIL_MOISTURE,
     secondaries: [{ metric: MetricKey.IRRIGATION }],
+    secondaryShape: 'interval',
   },
   // The delta between feed and runoff is the diagnostic, and the configured
   // maximum EC delta is the mark to read it against.
@@ -360,10 +368,20 @@ export const METRIC_COMBOS: Record<string, MetricComboRecipe> = {
         limitOf: (device) => device.drainConfig?.maxEcDelta,
       },
     ],
+    secondaryShape: 'interval',
   },
   // The tank pattern in another unit: an instantaneous draw over the
   // accumulated consumption.
-  [MetricKey.ENERGY]: { primary: MetricKey.ENERGY, secondaries: [{ metric: MetricKey.POWER }] },
+  [MetricKey.ENERGY]: {
+    primary: MetricKey.ENERGY,
+    secondaries: [{ metric: MetricKey.POWER }],
+    secondaryShape: 'interval',
+  },
+  [MetricKey.VPD]: {
+    primary: MetricKey.VPD,
+    secondaries: [{ metric: MetricKey.TEMPERATURE }, { metric: MetricKey.HUMIDITY }],
+    secondaryShape: 'instantaneous',
+  },
 };
 
 /**

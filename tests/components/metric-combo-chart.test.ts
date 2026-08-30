@@ -11,6 +11,8 @@ import type { SensorHistories } from '../../src/features/environment/types';
 const HOUR_MS = 60 * 60 * 1000;
 
 const TEMPERATURE_SENSOR = 'sensor.tent_temperature';
+const VPD_HUMIDITY_SENSOR = 'sensor.tent_humidity';
+const VPD_SENSOR = 'sensor.tent_vpd';
 const EXHAUST_SENSOR = 'sensor.tent_exhaust_speed';
 
 function reading(entityId: string, hoursAgo: number, state: string) {
@@ -76,7 +78,141 @@ async function mount(withExhaust = true): Promise<MetricComboChart> {
   `);
 }
 
+async function mountVpd({
+  temperature = true,
+  humidity = true,
+}: { temperature?: boolean; humidity?: boolean } = {}): Promise<MetricComboChart> {
+  const target = {
+    deviceId: 'gs-1',
+    name: 'Tent',
+    environmentAttributes: {
+      vpdSensor: VPD_SENSOR,
+      ...(temperature ? { temperatureSensor: TEMPERATURE_SENSOR } : {}),
+      ...(humidity ? { humiditySensor: VPD_HUMIDITY_SENSOR } : {}),
+    },
+  } as unknown as GrowspaceDevice;
+  const descriptors = computeMetricDescriptors(null, {}, undefined, target);
+  const sensorHistory: SensorHistories = {
+    [MetricKey.VPD]: [reading(VPD_SENSOR, 20, '1.1'), reading(VPD_SENSOR, 1, '1.4')],
+    [MetricKey.TEMPERATURE]: [
+      reading(TEMPERATURE_SENSOR, 20, '21.0'),
+      reading(TEMPERATURE_SENSOR, 1, '26.0'),
+    ],
+    [MetricKey.HUMIDITY]: [
+      reading(VPD_HUMIDITY_SENSOR, 20, '62'),
+      reading(VPD_HUMIDITY_SENSOR, 1, '48'),
+    ],
+  };
+
+  return await fixture<MetricComboChart>(html`
+    <metric-combo-chart
+      .device=${target}
+      .descriptors=${descriptors}
+      .sensorHistory=${sensorHistory}
+      .range=${'24h'}
+      .primary=${MetricKey.VPD}
+      .secondaries=${[{ metric: MetricKey.TEMPERATURE }, { metric: MetricKey.HUMIDITY }]}
+    ></metric-combo-chart>
+  `);
+}
+
 describe('metric-combo-chart', () => {
+  it('overlays instantaneous secondaries behind VPD on labelled value axes', async () => {
+    const el = await mountVpd();
+    const chart = el.shadowRoot!.querySelector('growspace-env-chart')!;
+    await (chart as any).updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.duty-pane')).toBeNull();
+    expect(chart.shadowRoot!.querySelectorAll('.gs-secondary-trace')).toHaveLength(2);
+    expect(chart.shadowRoot!.querySelector('.gs-value-axis-label.primary')!.textContent).toContain(
+      'VPD · kPa'
+    );
+    expect(
+      chart.shadowRoot!.querySelector('.gs-value-axis-label.secondary')!.textContent
+    ).toContain('Temperature · °C');
+    expect(
+      chart.shadowRoot!.querySelector('.gs-value-axis-label.secondary')!.textContent
+    ).toContain('Humidity · %');
+    expect(
+      chart.shadowRoot!.querySelectorAll('.gs-value-axis-label.secondary .series-label')
+    ).toHaveLength(2);
+  });
+
+  it('keeps VPD and its guide marks visually above the subordinate traces', async () => {
+    const el = await mountVpd();
+    const chart = el.shadowRoot!.querySelector('growspace-env-chart')!;
+    await (chart as any).updateComplete;
+
+    const traces = Array.from(
+      chart.shadowRoot!.querySelectorAll<SVGPathElement>('.gs-secondary-trace')
+    );
+    expect(traces).toHaveLength(2);
+    expect(traces.every((trace) => trace.getAttribute('stroke-width') === '1.25')).toBe(true);
+    expect(traces.every((trace) => trace.getAttribute('stroke-opacity') === '0.38')).toBe(true);
+
+    const svg = chart.shadowRoot!.querySelector('.chart-svg')!;
+    const layers = Array.from(
+      svg.querySelectorAll('.gs-secondary-trace, .gs-guide-mark, .gs-vpd-status-trace')
+    );
+    expect(
+      layers.filter((layer) => layer.classList.contains('gs-guide-mark')).length
+    ).toBeGreaterThan(0);
+    expect(
+      layers.filter((layer) => layer.classList.contains('gs-vpd-status-trace')).length
+    ).toBeGreaterThan(0);
+    expect(
+      layers.slice(0, 2).every((layer) => layer.classList.contains('gs-secondary-trace'))
+    ).toBe(true);
+    expect(chart.shadowRoot!.querySelectorAll('.gs-guide-label').length).toBeGreaterThan(0);
+  });
+
+  it('scrubs VPD, temperature, and humidity at one moment with no interval rows', async () => {
+    const el = await mountVpd();
+    const chart = el.shadowRoot!.querySelector('growspace-env-chart') as HTMLElement & {
+      updateComplete: Promise<unknown>;
+    };
+    await chart.updateComplete;
+    const pane = chart.shadowRoot!.querySelector<HTMLElement>('.gs-env-chart-container')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 800,
+      height: 200,
+    } as DOMRect);
+
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 400,
+        pointerId: 1,
+        pointerType: 'mouse',
+      })
+    );
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await el.updateComplete;
+
+    const tooltip = el.shadowRoot!.querySelector('chart-scrub-tooltip') as any;
+    expect(tooltip).not.toBeNull();
+    const seriesRows = tooltip.rows.filter((row: any) =>
+      ['VPD', 'Temperature', 'Humidity'].includes(row.title)
+    );
+    expect(seriesRows.map((row: any) => row.title)).toEqual(['VPD', 'Temperature', 'Humidity']);
+    expect(tooltip.rows.every((row: any) => row.time.kind === 'moment')).toBe(true);
+  });
+
+  it('keeps the configured instantaneous secondary when the other is unavailable', async () => {
+    const el = await mountVpd({ humidity: false });
+    const chart = el.shadowRoot!.querySelector('growspace-env-chart')!;
+    await (chart as any).updateComplete;
+
+    // The fixture retains stale humidity history on purpose. Configuration is
+    // the authority, so that cache must not resurrect an unavailable trace.
+    expect(chart.shadowRoot!.querySelectorAll('.gs-secondary-trace')).toHaveLength(1);
+    const axis = chart.shadowRoot!.querySelector('.gs-value-axis-label.secondary')!.textContent!;
+    expect(axis).toContain('Temperature · °C');
+    expect(axis).not.toContain('Humidity');
+  });
+
   it('draws the secondary as a bar pane beneath the primary Env Graph', async () => {
     const el = await mount();
 

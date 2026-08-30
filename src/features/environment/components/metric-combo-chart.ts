@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import type { GrowspaceDevice } from '../../../services/types';
 import type { MetricDescriptor } from '../../../slices/metric-descriptors';
 import type { SensorHistories } from '../types';
-import type { ComboSecondary, HistoryTimeRange } from '../constants';
+import { metricComboFor, type ComboSecondary, type HistoryTimeRange } from '../constants';
 import { computeComboIntervalPane, type ComboIntervalPane } from '../combo-series';
 import { computeEnvSeries } from '../env-series';
 import { localizeWithParams } from '../../../localize/localize';
@@ -12,17 +12,18 @@ import './chart-scrub-tooltip';
 import type { ChartScrubDetail, ChartScrubRow } from './chart-scrub-tooltip';
 
 /**
- * A [[Curated Combo]]: a primary [[Env Graph]] over a subordinate bar pane, on
- * one shared X axis (ADR-0049, ADR-0051).
+ * A [[Curated Combo]]: one primary [[Env Graph]] with contextual secondaries
+ * whose data shape selects the geometry (ADR-0049, ADR-0051).
  *
  * The primary pane *is* an Env Graph — the same element, with its [[Guide
  * Mark]]s, dark-period shading and scrub — rather than a second drawing of one.
- * This component owns only the interval pane beneath it, which it projects into
- * that chart's card so the two read as one chart and not as two.
+ * This component owns that choice: [[Interval Metric]] context becomes a bar
+ * pane beneath the primary, while [[Instantaneous Metric]] context is handed to
+ * the Env Graph as faint traces on labelled right-hand axes.
  *
- * Both panes are drawn against **one window**, computed here and handed down,
- * for the reason [[Env Series]] takes its window as a parameter: two now-anchored
- * windows resolved a moment apart are a silently misaligned axis.
+ * Every trace and pane is drawn against **one window**, computed here and handed
+ * down, for the reason [[Env Series]] takes its window as a parameter: two
+ * now-anchored windows resolved a moment apart are a silently misaligned axis.
  *
  * There is no unlink affordance and none is redispatched. A combo is the card's
  * editorial claim about which metric is primary and which is context, not a
@@ -64,8 +65,8 @@ export class MetricComboChart extends LitElement {
   /** The metric the combo is about, drawn as the line pane. */
   @property({ type: String }) primary = '';
   /**
-   * The subordinate panes that give it context, one each, stacked beneath the
-   * primary in the order given.
+   * The subordinate contexts that give the primary meaning, in recipe order.
+   * Interval contexts become stacked panes; instantaneous contexts overlay.
    */
   @property({ attribute: false }) secondaries: ComboSecondary[] = [];
   @state() private _scrub: { position: number; rows: ChartScrubRow[] } | undefined;
@@ -261,7 +262,14 @@ export class MetricComboChart extends LitElement {
 
   render(): TemplateResult {
     const { startTimeMs, durationMillis } = this._renderWindow;
-    const panes = this._panesFor(startTimeMs, durationMillis);
+    const secondaryShape = metricComboFor(this.primary)?.secondaryShape ?? 'interval';
+    const panes = secondaryShape === 'interval' ? this._panesFor(startTimeMs, durationMillis) : [];
+    const overlayMetrics =
+      secondaryShape === 'instantaneous'
+        ? this.secondaries
+            .map((secondary) => secondary.metric)
+            .filter((key) => (this.descriptors[key]?.sensors.length ?? 0) > 0)
+        : [];
 
     return html`
       <growspace-env-chart
@@ -270,9 +278,10 @@ export class MetricComboChart extends LitElement {
         .descriptors=${this.descriptors}
         .metricKey=${this.primary}
         .metrics=${[this.primary]}
+        .overlayMetrics=${overlayMetrics}
         .range=${this.range}
         .chartWindow=${{ startTimeMs, durationMillis }}
-        .delegateScrub=${panes.length > 0}
+        .delegateScrub=${panes.length > 0 || overlayMetrics.length > 0}
         @chart-scrub=${(event: CustomEvent<ChartScrubDetail>) =>
           this._scrubPrimaryPane(event, panes, startTimeMs, durationMillis)}
         @pointerleave=${this._clearScrub}
@@ -406,7 +415,10 @@ export class MetricComboChart extends LitElement {
     startTimeMs: number,
     durationMillis: number
   ): void {
-    if (panes.length === 0) return;
+    if (panes.length === 0) {
+      this._scrub = event.detail;
+      return;
+    }
     const hoverTime = startTimeMs + event.detail.position * durationMillis;
     this._scrub = {
       position: event.detail.position,
