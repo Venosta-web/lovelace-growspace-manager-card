@@ -12,6 +12,8 @@ vi.mock('../../src/features/environment/combo-series', async (importOriginal) =>
   return { ...actual, computeComboIntervalPane: bucketPane };
 });
 import { fixture, html } from '@open-wc/testing-helpers';
+import { ContextProvider } from '@lit/context';
+import { hassContext } from '../../src/context';
 import '../../src/features/environment/components/metric-combo-chart';
 import type { MetricComboChart } from '../../src/features/environment/components/metric-combo-chart';
 import { MetricKey } from '../../src/features/environment/constants';
@@ -218,7 +220,8 @@ describe('metric-combo-chart', () => {
       ['VPD', 'Temperature', 'Humidity'].includes(row.title)
     );
     expect(seriesRows.map((row: any) => row.title)).toEqual(['VPD', 'Temperature', 'Humidity']);
-    expect(tooltip.rows.every((row: any) => row.time.kind === 'moment')).toBe(true);
+    expect(tooltip.rows.every((row: any) => row.interval === undefined)).toBe(true);
+    expect(tooltip.time).toBeGreaterThan(0);
   });
 
   it('keeps the configured instantaneous secondary when the other is unavailable', async () => {
@@ -352,7 +355,41 @@ describe('metric-combo-chart', () => {
     expect(el.shadowRoot!.querySelector('chart-scrub-tooltip')).toBeNull();
   });
 
-  it('labels instantaneous rows with a moment and interval rows with their bucket span', async () => {
+  it('reads its clock off Home Assistant, not off the browser', async () => {
+    // The combo mounted the readout but never bound its locale, so a delegated
+    // scrub fell back to the browser's — and then forced a 24-hour clock over
+    // the top of it anyway (#866).
+    const parent = await fixture(html`<div></div>`);
+    new ContextProvider(parent, hassContext, {
+      states: {},
+      locale: { language: 'en-US' },
+    } as never);
+    const el = await mount();
+    parent.appendChild(el);
+    await el.updateComplete;
+
+    const pane = el.shadowRoot!.querySelector<HTMLElement>('.duty-pane')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 64,
+    } as DOMRect);
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, clientX: 50, pointerId: 1 })
+    );
+    await settleScrub(el);
+
+    const readout = el.shadowRoot!.querySelector('chart-scrub-tooltip') as HTMLElement & {
+      locale?: string;
+      updateComplete: Promise<unknown>;
+    };
+    await readout.updateComplete;
+    expect(readout.locale).toBe('en-US');
+    expect(readout.shadowRoot!.querySelector('.chart-scrub-time')!.textContent).toMatch(/AM|PM/i);
+  });
+
+  it('prints the moment once and tells an interval row apart by its swatch', async () => {
     const el = await mount();
     const pane = el.shadowRoot!.querySelector<HTMLElement>('.duty-pane')!;
     vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
@@ -366,13 +403,23 @@ describe('metric-combo-chart', () => {
     );
     await settleScrub(el);
 
-    const rows = el
-      .shadowRoot!.querySelector('chart-scrub-tooltip')!
-      .shadowRoot!.querySelectorAll('.chart-scrub-row');
-    expect(rows[0].textContent).toMatch(/\d{2}:\d{2}\s*·\s*24\.5 °C/);
-    expect(rows[0].textContent).not.toContain('–');
+    const readout = el.shadowRoot!.querySelector('chart-scrub-tooltip')!.shadowRoot!;
+    // The scrub is one instant, so it is stated once rather than restated on
+    // every row (#866).
+    expect(readout.querySelectorAll('.chart-scrub-time')).toHaveLength(1);
+    expect(readout.querySelector('.chart-scrub-time')!.textContent).toMatch(/\d{1,2}:\d{2}/);
+
+    const rows = readout.querySelectorAll('.chart-scrub-row');
+    expect(rows[0].textContent).toContain('24.5 °C');
     // Unit spacing is one decision for the whole Env Graph family (#855).
-    expect(rows[1].textContent).toMatch(/\d{2}:\d{2}–\d{2}:\d{2}\s*·\s*80\.0%/);
+    expect(rows[1].textContent).toContain('80.0%');
+    for (const row of rows) expect(row.textContent).not.toMatch(/\d{1,2}:\d{2}/);
+
+    // What separates the two: the reading was taken at the moment, the duty was
+    // averaged across a bucket containing it.
+    const swatches = readout.querySelectorAll('.chart-scrub-swatch');
+    expect(swatches[0].classList.contains('is-interval')).toBe(false);
+    expect(swatches[1].classList.contains('is-interval')).toBe(true);
   });
 
   it('keeps the shared time window anchored while the pointer moves', async () => {

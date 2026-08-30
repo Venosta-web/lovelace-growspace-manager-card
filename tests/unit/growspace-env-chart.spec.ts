@@ -9,6 +9,7 @@
  * resize observers, event dispatch, and the no-data render.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { LitElement } from 'lit';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceEnvChart } from '../../src/growspace-env-chart';
 import { hassContext } from '../../src/context';
@@ -307,6 +308,16 @@ describe('GrowspaceEnvChart', () => {
   });
 
   describe('tooltip', () => {
+    /** The readout's own text — it is a child element now, not inline markup. */
+    async function readoutText(): Promise<string> {
+      const readout = element.shadowRoot?.querySelector('chart-scrub-tooltip') as
+        | LitElement
+        | null
+        | undefined;
+      await readout?.updateComplete;
+      return readout?.shadowRoot?.textContent ?? '';
+    }
+
     it('shows a tooltip on hover', async () => {
       vi.useFakeTimers();
       await showMetric(MetricKey.TEMPERATURE, reading(3600000, '20'), reading(0, '22'));
@@ -330,8 +341,7 @@ describe('GrowspaceEnvChart', () => {
       await vi.runAllTimersAsync();
       await element.updateComplete;
 
-      const tooltip = element.shadowRoot?.querySelector('.gs-tooltip');
-      expect(tooltip?.textContent).toContain('Temperature');
+      expect(await readoutText()).toContain('Temperature');
 
       vi.useRealTimers();
     });
@@ -358,7 +368,7 @@ describe('GrowspaceEnvChart', () => {
       await vi.runAllTimersAsync();
       await element.updateComplete;
 
-      const tooltip = element.shadowRoot?.querySelector('.gs-tooltip')?.textContent ?? '';
+      const tooltip = await readoutText();
       expect(tooltip).toContain('VPD optimal');
       expect(tooltip).toContain('0.8 kPa–1.2 kPa');
       expect(tooltip).toContain('VPD lower limit');
@@ -405,7 +415,7 @@ describe('GrowspaceEnvChart', () => {
       await vi.runAllTimersAsync();
       await element.updateComplete;
 
-      const tooltip = element.shadowRoot?.querySelector('.gs-tooltip')?.textContent ?? '';
+      const tooltip = await readoutText();
       expect(tooltip).toContain('Temperature Exhaust');
       expect(tooltip).toContain('24 °C');
 
@@ -438,7 +448,8 @@ describe('GrowspaceEnvChart', () => {
         })
       );
       await vi.runAllTimersAsync();
-      expect(element.shadowRoot?.querySelector('.gs-tooltip')?.textContent).toContain('10');
+      await element.updateComplete;
+      expect(await readoutText()).toContain('10');
 
       container?.dispatchEvent(
         new PointerEvent('pointermove', {
@@ -450,7 +461,7 @@ describe('GrowspaceEnvChart', () => {
       );
       await vi.runAllTimersAsync();
       await element.updateComplete;
-      expect(element.shadowRoot?.querySelector('.gs-tooltip')?.textContent).toContain('30');
+      expect(await readoutText()).toContain('30');
 
       vi.useRealTimers();
     });
@@ -506,8 +517,8 @@ describe('GrowspaceEnvChart', () => {
       });
       await element.updateComplete;
 
-      const tooltip = (element as any)._activeTooltip;
-      expect(tooltip.items.map((item: any) => item.value)).toEqual([
+      const scrub = (element as any)._activeScrub;
+      expect(scrub.rows.map((row: any) => row.value)).toEqual([
         'Not Optimal',
         'Optimal',
         'OFF',
@@ -536,7 +547,7 @@ describe('GrowspaceEnvChart', () => {
       await vi.runAllTimersAsync();
       await element.updateComplete;
 
-      expect((element as any)._activeTooltip).not.toBeNull();
+      expect((element as any)._activeScrub).not.toBeNull();
       expect((element as any)._cachedChartRect).not.toBeNull();
       vi.useRealTimers();
     });
@@ -551,7 +562,7 @@ describe('GrowspaceEnvChart', () => {
           durationMillis: 1000,
         })
       ).not.toThrow();
-      expect((element as any)._activeTooltip).toBeFalsy();
+      expect((element as any)._activeScrub).toBeFalsy();
     });
 
     it('throws on a series with no points — documenting the current guard gap', () => {
@@ -584,25 +595,25 @@ describe('GrowspaceEnvChart', () => {
     it('cancels a pending frame and clears the tooltip on pointerleave', () => {
       const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame');
       (element as any)._tooltipRafId = 456;
-      (element as any)._activeTooltip = { id: 'test' };
+      (element as any)._activeScrub = { position: 0.5, time: 0, rows: [] };
 
       (element as any)._onPointerLeave();
 
       expect(cancelSpy).toHaveBeenCalledWith(456);
-      expect((element as any)._activeTooltip).toBeNull();
+      expect((element as any)._activeScrub).toBeNull();
       cancelSpy.mockRestore();
     });
 
     it('clears the tooltip on pointerleave without a pending frame', () => {
       const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame');
       (element as any)._tooltipRafId = null;
-      (element as any)._activeTooltip = { id: 'test' };
+      (element as any)._activeScrub = { position: 0.5, time: 0, rows: [] };
       (element as any)._hoverTime = 12345;
 
       (element as any)._onPointerLeave();
 
       expect(cancelSpy).not.toHaveBeenCalled();
-      expect((element as any)._activeTooltip).toBeNull();
+      expect((element as any)._activeScrub).toBeNull();
       expect((element as any)._hoverTime).toBeNull();
       cancelSpy.mockRestore();
     });

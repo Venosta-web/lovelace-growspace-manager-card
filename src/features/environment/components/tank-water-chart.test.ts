@@ -319,7 +319,15 @@ describe('TankWaterChart – _renderBars', () => {
     const overlay = el.shadowRoot!.querySelector('chart-scrub-tooltip');
     expect(overlay).not.toBeNull();
     expect(overlay!.shadowRoot!.textContent).toContain('Water Consumption');
-    expect(overlay!.shadowRoot!.textContent).toMatch(/\d{2}:\d{2}–\d{2}:\d{2}\s*·\s*1\.0 L/);
+    expect(overlay!.shadowRoot!.textContent).toContain('1.0 L');
+    // The bucket is stated once, as the readout's heading, and the row says it
+    // is a bucket by its swatch rather than by a timestamp of its own (#866).
+    expect(overlay!.shadowRoot!.querySelector('.chart-scrub-time')!.textContent).toMatch(
+      /\d{1,2}:\d{2}/
+    );
+    expect(
+      overlay!.shadowRoot!.querySelector('.chart-scrub-swatch')!.classList.contains('is-interval')
+    ).toBe(true);
     expect(getComputedStyle(pane).touchAction).toBe('pan-y');
   });
 

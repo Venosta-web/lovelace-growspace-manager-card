@@ -315,9 +315,7 @@ describe('environment analytics localization', () => {
       durationMillis: 100,
     });
 
-    expect(
-      (element as any)._activeTooltip.items.map((item: { title: string }) => item.title)
-    ).toEqual([
+    expect((element as any)._activeScrub.rows.map((row: { title: string }) => row.title)).toEqual([
       'VPD',
       'Optimalbereich für VPD',
       'Umluft bei VPD',

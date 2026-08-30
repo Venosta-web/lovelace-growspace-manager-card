@@ -9,6 +9,7 @@
  * `tests/unit/growspace-env-chart.spec.ts`.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import type { LitElement } from 'lit';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { ContextProvider } from '@lit/context';
 import '../../src/features/environment/components/env-chart';
@@ -102,7 +103,9 @@ describe('GrowspaceEnvChart hygiene', () => {
     );
     await vi.runAllTimersAsync();
     await element.updateComplete;
-    return element.shadowRoot?.querySelector('.gs-tooltip') as HTMLElement;
+    const readout = element.shadowRoot?.querySelector('chart-scrub-tooltip') as LitElement;
+    await readout?.updateComplete;
+    return readout?.shadowRoot?.querySelector('.chart-scrub-tooltip') as HTMLElement;
   }
 
   describe('pointer and screen-reader access', () => {
@@ -190,6 +193,41 @@ describe('GrowspaceEnvChart hygiene', () => {
 
       expect(headerValue()).toBe('22.0 °C');
       expect(tooltip.textContent).toContain('22.0 °C');
+    });
+
+    it('draws the readout a Curated Combo draws, not one of its own', async () => {
+      // Whether a metric has a combo recipe is an editorial claim about which
+      // metrics pair with which context, and it decided the scrub's markup,
+      // clock and cursor until #866.
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '22'));
+      await scrubToNow();
+
+      const readout = element.shadowRoot!.querySelector('chart-scrub-tooltip')!;
+      expect(readout).not.toBeNull();
+      expect(element.shadowRoot!.querySelector('.gs-tooltip')).toBeNull();
+      expect(element.shadowRoot!.querySelector('.gs-cursor-line')).toBeNull();
+      expect(readout.shadowRoot!.querySelectorAll('.chart-scrub-cursor')).toHaveLength(1);
+    });
+
+    it("prints the moment once, on the Home Assistant locale's clock", async () => {
+      (element as unknown as { hass: unknown }).hass = {
+        states: {},
+        locale: { language: 'de-DE' },
+      };
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '22'));
+      const tooltip = await scrubToNow();
+
+      const headings = tooltip.querySelectorAll('.chart-scrub-time');
+      expect(headings).toHaveLength(1);
+      // The locale's own clock, never a forced 24-hour one — and never the
+      // browser's, which is what the delegating path used to fall back to.
+      expect(headings[0].textContent).not.toMatch(/AM|PM/i);
+      expect(
+        (element.shadowRoot!.querySelector('chart-scrub-tooltip') as { locale?: string }).locale
+      ).toBe('de-DE');
+      for (const row of tooltip.querySelectorAll('.chart-scrub-row')) {
+        expect(row.textContent).not.toMatch(/\d{1,2}:\d{2}/);
+      }
     });
 
     it('hugs the percent sign in the header and the scrub alike', async () => {

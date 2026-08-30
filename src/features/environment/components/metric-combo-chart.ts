@@ -77,7 +77,7 @@ export class MetricComboChart extends LitElement {
    * Interval contexts become stacked panes; instantaneous contexts overlay.
    */
   @property({ attribute: false }) secondaries: ComboSecondary[] = [];
-  @state() private _scrub: { position: number; rows: ChartScrubRow[] } | undefined;
+  @state() private _scrub: ChartScrubDetail | undefined;
   private _renderWindow = this._windowFor(this.range);
   /**
    * The pending scrub derivation, so a drag costs one per frame rather than one
@@ -333,7 +333,9 @@ export class MetricComboChart extends LitElement {
       ${this._scrub
         ? html`<chart-scrub-tooltip
             .position=${this._scrub.position}
+            .time=${this._scrub.time}
             .rows=${this._scrub.rows}
+            .locale=${this.hass?.locale?.language || undefined}
           ></chart-scrub-tooltip>`
         : nothing}
     `;
@@ -463,12 +465,12 @@ export class MetricComboChart extends LitElement {
 
     this._scrub = {
       position,
+      time: hoverTime,
       rows: [
         ...(primary && primaryPoint
           ? [
               {
                 title: primary.title,
-                time: { kind: 'moment' as const, time: hoverTime },
                 value: formatReading(primary, primaryPoint, (key) => this._localize(key)),
                 color: primary.color,
               },
@@ -492,7 +494,7 @@ export class MetricComboChart extends LitElement {
     }
     const hoverTime = startTimeMs + event.detail.position * durationMillis;
     this._scrub = {
-      position: event.detail.position,
+      ...event.detail,
       rows: [...event.detail.rows, ...this._intervalRows(hoverTime, panes)],
     };
   }
@@ -539,11 +541,7 @@ export class MetricComboChart extends LitElement {
   ): ChartScrubRow {
     return {
       title: pane.title,
-      time: {
-        kind: 'interval',
-        startTime: interval.startTime,
-        endTime: interval.endTime,
-      },
+      interval: { startTime: interval.startTime, endTime: interval.endTime },
       value: formatMeasurement(interval.value, pane.unit),
       color: pane.color,
     };

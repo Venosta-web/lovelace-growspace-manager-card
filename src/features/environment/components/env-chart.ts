@@ -6,7 +6,7 @@ import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import type { GrowspaceDevice } from '../../../services/types';
-import type { GraphSeries, TooltipData, SensorHistories } from '../types';
+import type { GraphSeries, SensorHistories } from '../types';
 import { ChartUtils } from '../../../utils/chart-utils';
 import { computeEnvSeries } from '../env-series';
 import type { MetricDescriptor } from '../../../slices/metric-descriptors';
@@ -33,7 +33,8 @@ import {
   formatScaleMark,
   isBinaryMetric,
 } from '../metric-value-format';
-import type { ChartScrubDetail } from './chart-scrub-tooltip';
+import './chart-scrub-tooltip';
+import type { ChartScrubDetail, ChartScrubRow } from './chart-scrub-tooltip';
 
 /**
  * The pane every trace, band and gridline is drawn into.
@@ -98,7 +99,11 @@ export class GrowspaceEnvChart extends LitElement {
   /** Lets a two-pane host own the one scrub overlay spanning both panes. */
   @property({ type: Boolean }) delegateScrub = false;
 
-  @state() private _activeTooltip: TooltipData | null = null;
+  /**
+   * The scrub this chart is drawing itself, in the shape it would have
+   * dispatched — one readout means one payload, whoever renders it.
+   */
+  @state() private _activeScrub: ChartScrubDetail | null = null;
   @state() private _hoverTime: number | null = null;
   @state() private _canScrollLeft = false;
   @state() private _canScrollRight = false;
@@ -472,7 +477,7 @@ export class GrowspaceEnvChart extends LitElement {
 
   private _onPointerLeave = () => {
     if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
-    this._activeTooltip = null;
+    this._activeScrub = null;
     this._hoverTime = null;
   };
 
@@ -501,7 +506,7 @@ export class GrowspaceEnvChart extends LitElement {
     const relX = rect.width > 0 ? Math.max(0, Math.min(1, mouseX / rect.width)) : 0.5;
     const hoverTime = chartWindow.startTimeMs + relX * chartWindow.durationMillis;
 
-    const items = seriesList.flatMap((s) => {
+    const items: ChartScrubRow[] = seriesList.flatMap((s) => {
       let closest = s.points[0];
       let minDiff = Number.MAX_VALUE;
       let lo = 0;
@@ -589,30 +594,21 @@ export class GrowspaceEnvChart extends LitElement {
       return [reading, ...bandItems, ...lineItems, ...limitItems];
     });
 
-    const locale = this.hass?.locale?.language || undefined;
-    const tooltip = {
-      id: 'hover',
-      x: mouseX,
-      time: new Date(hoverTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
-      items,
-    };
+    // One payload, whether this chart draws the readout or a host does: the
+    // two used to be assembled separately and drifted apart in what they said
+    // and how they said it (#866).
+    const scrub: ChartScrubDetail = { position: relX, time: hoverTime, rows: items };
     if (this.delegateScrub) {
-      this._activeTooltip = null;
+      this._activeScrub = null;
       this.dispatchEvent(
         new CustomEvent<ChartScrubDetail>('chart-scrub', {
-          detail: {
-            position: relX,
-            rows: items.map((item) => ({
-              ...item,
-              time: { kind: 'moment' as const, time: hoverTime },
-            })),
-          },
+          detail: scrub,
           bubbles: true,
           composed: true,
         })
       );
     } else {
-      this._activeTooltip = tooltip;
+      this._activeScrub = scrub;
     }
     this._hoverTime = hoverTime;
   }
@@ -794,38 +790,22 @@ export class GrowspaceEnvChart extends LitElement {
     `;
   }
 
+  /**
+   * The scrub readout, when this chart owns it.
+   *
+   * The same element a [[Curated Combo]] mounts, rather than a second drawing
+   * of one — the whole point of #866. A delegating chart renders nothing here:
+   * its host has the payload and draws the one readout spanning every pane.
+   */
   private _renderTooltip() {
-    if (this.delegateScrub || !this._activeTooltip) return html``;
-    const { x, time, items } = this._activeTooltip;
+    if (this.delegateScrub || !this._activeScrub) return html``;
     return html`
-      <div class="gs-tooltip" style=${styleMap({ left: `${x}px`, top: '0' })}>
-        <div
-          style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:2px;"
-        >
-          ${time}
-        </div>
-        ${items.map(
-          (i) => html`
-            <div
-              style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:2px;"
-            >
-              <span style="color:${i.color};">${i.title}:</span>
-              <span style="font-family:monospace; font-weight:bold;">${i.value}</span>
-            </div>
-          `
-        )}
-      </div>
-      <div
-        class="gs-cursor-line"
-        style=${styleMap({
-          left: `${x}px`,
-          height: '100%',
-          top: '0',
-          position: 'absolute',
-          borderLeft: '1px dashed rgba(255,255,255,0.3)',
-          pointerEvents: 'none',
-        })}
-      ></div>
+      <chart-scrub-tooltip
+        .position=${this._activeScrub.position}
+        .time=${this._activeScrub.time}
+        .rows=${this._activeScrub.rows}
+        .locale=${this.hass?.locale?.language || undefined}
+      ></chart-scrub-tooltip>
     `;
   }
 
@@ -1389,34 +1369,6 @@ export class GrowspaceEnvChart extends LitElement {
       transition:
         d var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard),
         stroke var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
-    }
-
-    .gs-tooltip {
-      position: absolute;
-      background: var(--card-background-color, rgba(30, 30, 35, 0.95));
-      color: var(--primary-text-color, #fff);
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      pointer-events: none;
-      transform: translate(-50%, 0);
-      z-index: 100;
-      white-space: nowrap;
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      backdrop-filter: blur(4px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-      line-height: 1.4;
-      text-align: center;
-    }
-    .gs-cursor-line {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 1px;
-      background: rgba(255, 255, 255, 0.3);
-      pointer-events: none;
-      z-index: 5;
-      border-left: 1px dashed rgba(255, 255, 255, 0.5);
     }
 
     .gs-legend-item {

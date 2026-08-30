@@ -54,19 +54,6 @@ export interface GraphSeries {
   metricColor?: string;
 }
 
-export interface TooltipItem {
-  title: string;
-  value: string;
-  color: string;
-}
-
-export interface TooltipData {
-  id: string;
-  x: number;
-  time: string;
-  items: TooltipItem[];
-}
-
 // A sensor group is a wire shape: it round-trips through `environment_config`.
 // `SensorGroupSchema` in the subarea slice describes it (ADR 0031).
 export type { SensorGroup } from '../../slices/subarea/schema';
