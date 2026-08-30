@@ -149,13 +149,13 @@ describe('CropSteeringDayChart – rendering', () => {
     expect(readout?.textContent?.replace(/\s+/g, ' ')).toMatch(/VWC\s*[\d.]+%/);
   });
 
-  it('shows "Target X%" and "P3 trigger X%" reference labels', async () => {
+  it('shows "Target X%" and "P2 trigger X%" reference labels', async () => {
     const el = createElement();
     el.device = makeDevice();
     await el.updateComplete;
     await vi.waitFor(() => el.shadowRoot!.querySelector('.cs-model') !== null);
 
-    const labels = Array.from(el.shadowRoot!.querySelectorAll('.cm-target')).map(
+    const labels = Array.from(el.shadowRoot!.querySelectorAll('.gs-guide-label')).map(
       (t) => t.textContent ?? ''
     );
     expect(labels.some((l) => l.includes('Target') && l.includes('%'))).toBe(true);
@@ -280,10 +280,152 @@ describe('CropSteeringDayChart – rendering', () => {
     expect(getComputedStyle(model).minHeight).toBe('420px');
 
     const overlayPositions = Array.from(
-      el.shadowRoot!.querySelectorAll<HTMLElement>('.cm-tick, .cm-target')
+      el.shadowRoot!.querySelectorAll<HTMLElement>('.cm-tick, .gs-guide-label')
     ).map((overlay) => overlay.style.top);
     expect(overlayPositions.length).toBeGreaterThan(0);
     expect(overlayPositions.every((position) => position.endsWith('%'))).toBe(true);
+  });
+});
+
+// ─── guide marks ──────────────────────────────────────────────────────────────
+
+describe('CropSteeringDayChart – guide marks', () => {
+  async function mountChart(): Promise<CropSteeringDayChart> {
+    const el = createElement();
+    el.device = makeDevice();
+    await el.updateComplete;
+    await vi.waitFor(() => expect(el.shadowRoot!.querySelector('.cs-model svg')).not.toBeNull());
+    return el;
+  }
+
+  it('draws the P2 trigger as a Setpoint, carrying the Saturation Target’s mark', async () => {
+    const el = await mountChart();
+
+    const target = el.shadowRoot!.querySelector('[data-guide-id="saturation-target"]')!;
+    const trigger = el.shadowRoot!.querySelector('[data-guide-id="p2-trigger"]')!;
+
+    // ADR 0048: both are values the controller acts on, so they carry one mark —
+    // the looser setpoint dash, never the Limit's tighter one.
+    expect(target.getAttribute('stroke-dasharray')).toBe('6 4');
+    expect(target.getAttribute('stroke-opacity')).toBe('0.6');
+    expect(trigger.getAttribute('stroke-dasharray')).toBe('6 4');
+    expect(trigger.getAttribute('stroke-opacity')).toBe('0.6');
+
+    // ADR 0047: the trigger is the VWC floor P2 maintains, so its line and its
+    // label read as P2 and not as a warning.
+    expect(trigger.getAttribute('stroke')).toContain('--phase-p2');
+    const triggerLabel = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.gs-guide-label')].find(
+      (label) => label.textContent?.includes('P2 trigger')
+    )!;
+    expect(triggerLabel.style.color).toContain('--phase-p2');
+  });
+
+  it('holds every guide mark’s dash rhythm when the pane is stretched', async () => {
+    const el = createElement();
+    el.device = makeDevice({
+      biologicalMetrics: { granularStage: 'veg' },
+      irrigationConfig: { ecTargetRanges: [{ stage: 'veg', minEc: 2.5, maxEc: 3.5 }] },
+    } as Partial<GrowspaceDevice>);
+    await el.updateComplete;
+    await vi.waitFor(() => expect(el.shadowRoot!.querySelector('.cs-model svg')).not.toBeNull());
+
+    // The pane is a fixed 1000x300 viewBox drawn with preserveAspectRatio="none",
+    // so a scaled dash pattern reads at a different rhythm from the trace beside it.
+    const marks = [...el.shadowRoot!.querySelectorAll('[data-guide-kind]')];
+    expect(marks.map((mark) => mark.getAttribute('data-guide-id'))).toEqual([
+      'saturation-target',
+      'p2-trigger',
+      'pore-ec-target',
+    ]);
+    for (const mark of marks) {
+      expect(mark.getAttribute('vector-effect')).toBe('non-scaling-stroke');
+      // One kind is one mark, on the second value axis as much as the first.
+      expect(mark.getAttribute('stroke-dasharray')).toBe('6 4');
+      expect(mark.getAttribute('stroke-opacity')).toBe('0.6');
+    }
+  });
+
+  it('rings the current-value dots in the pane’s own ground, whatever the theme', async () => {
+    const el = createElement();
+    // A light Home Assistant theme. The pane follows it, so the halo separating a
+    // dot from the traces under it has to follow it too — a fixed dark surface
+    // colour here is a black ring on a light card.
+    el.style.setProperty('--secondary-background-color', 'rgb(250, 250, 250)');
+    el.device = makeDevice();
+    await el.updateComplete;
+    await vi.waitFor(() => expect(el.shadowRoot!.querySelector('.cm-now-dot')).not.toBeNull());
+
+    const pane = el.shadowRoot!.querySelector<HTMLElement>('.cs-model')!;
+    expect(getComputedStyle(pane).backgroundColor).toBe('rgb(250, 250, 250)');
+
+    const dots = [...el.shadowRoot!.querySelectorAll<SVGCircleElement>('.cm-now-dot')];
+    expect(dots.length).toBeGreaterThan(0);
+    for (const dot of dots) {
+      expect(getComputedStyle(dot).stroke).toBe('rgb(250, 250, 250)');
+    }
+  });
+
+  it('places a guide label on its own mark, with no clamp of its own', async () => {
+    // A Pore EC target that lands within a couple of pixels of the axis floor,
+    // where the chart used to shunt its label clear of the "mS/cm" axis cap.
+    mockHassCall.mockResolvedValue({
+      growspace_id: 'gs1',
+      lights_on: LIGHTS_ON_ISO,
+      soil_moisture: [mkBucket(0, 55), mkBucket(30, 58)],
+      pore_ec: [mkBucket(0, 0.05), mkBucket(30, 5)],
+    });
+    const el = createElement();
+    el.device = makeDevice({
+      biologicalMetrics: { granularStage: 'veg' },
+      irrigationConfig: { ecTargetRanges: [{ stage: 'veg', minEc: 0.05, maxEc: 0.05 }] },
+    } as Partial<GrowspaceDevice>);
+    await el.updateComplete;
+    await vi.waitFor(() =>
+      expect(el.shadowRoot!.querySelector('[data-guide-id="pore-ec-target"]')).not.toBeNull()
+    );
+
+    const svgEl = el.shadowRoot!.querySelector('.cs-model svg')!;
+    const paneHeight = Number(svgEl.getAttribute('viewBox')!.split(' ')[3]);
+    const line = el.shadowRoot!.querySelector('[data-guide-id="pore-ec-target"]')!;
+    const label = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.gs-guide-label')].find(
+      (candidate) => candidate.textContent?.includes('Pore EC target')
+    )!;
+
+    // The mark lands in the band the retired clamp used to shunt a label out of.
+    expect(parseFloat(line.getAttribute('y1')!)).toBeGreaterThan(paneHeight - 30);
+
+    // The drawn y is rounded to a tenth of a viewBox unit; the clamp this replaces
+    // moved the label by more than half a percent of the pane.
+    expect(parseFloat(label.style.top)).toBeCloseTo(
+      (parseFloat(line.getAttribute('y1')!) / paneHeight) * 100,
+      1
+    );
+  });
+
+  it('reads its chrome off the theme’s text roles, so it stays legible on a light card', async () => {
+    const el = createElement();
+    // A light Home Assistant theme, ground and text together.
+    el.style.setProperty('--secondary-background-color', 'rgb(250, 250, 250)');
+    el.style.setProperty('--primary-text-color', 'rgb(33, 33, 33)');
+    el.style.setProperty('--secondary-text-color', 'rgb(90, 90, 90)');
+    el.device = makeDevice();
+    await el.updateComplete;
+    await vi.waitFor(() => expect(el.shadowRoot!.querySelector('.cm-readout')).not.toBeNull());
+
+    const chrome = [
+      ...el.shadowRoot!.querySelectorAll<HTMLElement>(
+        '.cm-title, .cm-readout, .cm-readout b, .cm-axis-cap, .cm-tick, .x-label, .cs-phase-nm, .cs-phase-meta'
+      ),
+    ];
+    expect(chrome.length).toBeGreaterThan(6);
+    for (const node of chrome) {
+      // Every one resolves to the theme's own text, never to a white the chart
+      // painted itself and cannot take back on a light ground.
+      expect([getComputedStyle(node).color, node.className]).toEqual([
+        expect.stringMatching(/^rgb\((?:33, 33, 33|90, 90, 90)\)$/),
+        node.className,
+      ]);
+    }
   });
 });
 

@@ -26,6 +26,7 @@ import { hassContext } from '../../../lib/context';
 import '../../shared/ui/error-boundary';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
 import { renderGuideLimitMark } from './guide-limit-mark';
+import { guideLabelStyles } from './guide-label';
 import { accessibleChartSummary } from '../chart-accessibility';
 import type { ChartScrubDetail } from './chart-scrub-tooltip';
 
@@ -1140,6 +1141,8 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   static styles = css`
+    ${guideLabelStyles}
+
     :host {
       display: block;
       position: relative;
@@ -1304,37 +1307,6 @@ export class GrowspaceEnvChart extends LitElement {
       letter-spacing: 0.04em;
       line-height: 1;
       pointer-events: none;
-    }
-
-    /* Guide-mark labels sit inboard of the value-axis caps at the left edge, the
-       way the model dialog keeps its target labels clear of its tick column. */
-    .gs-guide-label {
-      position: absolute;
-      left: 44px;
-      z-index: 2;
-      transform: translateY(-50%);
-      font-size: var(--font-size-xs);
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 0.02em;
-      white-space: nowrap;
-      opacity: 0.95;
-      text-shadow:
-        0 1px 4px rgba(0, 0, 0, 0.95),
-        0 0 4px rgba(0, 0, 0, 0.8);
-      pointer-events: none;
-    }
-
-    /*
-     * A setpoint's name sits on the right so it cannot collide with the band
-     * value labels on the left, and lighter than them because it names a mark
-     * rather than reporting a reading.
-     */
-    .gs-guide-label.setpoint {
-      left: auto;
-      right: 8px;
-      font-weight: 500;
-      opacity: 0.8;
     }
 
     svg path {

@@ -46,7 +46,13 @@ resolves it per point. A flat line on a 24h or 7d range would sit at a value tha
 was wrong for half the window, so these marks step at lights-on and lights-off,
 with the label anchored to the segment under the current time.
 
-**`crop-steering-day-chart` currently contradicts this.** Its Saturation Target
-and P2 trigger are both setpoints, but the P2 trigger is styled as a limit. The
-retrofit reconciles them; until it lands, the reference implementation is not the
-reference for this one detail.
+**`crop-steering-day-chart` is reconciled with this.** Its Saturation Target and
+P2 trigger were both setpoints while only the target was drawn as one; the retrofit
+gives them one mark — the looser `6 4` dash at one weight, unioned into the value
+axis — so the reference implementation is the reference for this detail too.
+
+The trigger keeps a hue of its own rather than taking the metric colour: ADR 0047
+binds it to `--phase-p2`, which makes it agree with the Phase Strip directly below
+it and keeps it distinguishable from the target line a few pixels above. One kind
+does not mean one colour, and two identical lines with no way to tell which is
+which is the failure this taxonomy exists to prevent.
