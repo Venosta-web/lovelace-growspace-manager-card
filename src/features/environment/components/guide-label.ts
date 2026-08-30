@@ -16,9 +16,11 @@ import { css } from 'lit';
  * name uses `setpoint` for the same reason, so it cannot collide with the band
  * values on the left.
  *
- * The halo behind the text is the pane's own ground rather than a fixed black, so
- * it separates the label from the traces under it on a light theme as well as a
- * dark one — the same binding the current-value dot halos use.
+ * The token-backed chip behind the text is the same treatment the normalised-axis
+ * label uses. The muted Home Assistant text role passes AA on the card surface in
+ * both default themes, while it does not pass on the light theme's darker chart
+ * pane; keeping the chip opaque makes that contrast pair deterministic even when
+ * a trace runs beneath the label.
  */
 export const guideLabelStyles = css`
   .gs-guide-label {
@@ -31,11 +33,22 @@ export const guideLabelStyles = css`
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.02em;
     white-space: nowrap;
-    opacity: 0.95;
-    text-shadow:
-      0 1px 4px var(--secondary-background-color, #0d0d0d),
-      0 0 4px var(--secondary-background-color, #0d0d0d);
+    color: var(--text-muted, var(--secondary-text-color, rgba(255, 255, 255, 0.55)));
+    padding: 2px 4px;
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+    border-radius: 6px;
+    background: var(--card-background-color, var(--surface, #1e1e1e));
     pointer-events: none;
+  }
+
+  .gs-guide-label::before {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    margin-inline-end: 4px;
+    border-radius: 50%;
+    background: var(--guide-color);
+    content: '';
   }
 
   /*
@@ -47,6 +60,5 @@ export const guideLabelStyles = css`
     left: auto;
     right: 8px;
     font-weight: 500;
-    opacity: 0.8;
   }
 `;

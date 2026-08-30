@@ -341,7 +341,10 @@ export class GrowspaceEnvChart extends LitElement {
             : this._renderSingleHeader(series[0])}
 
           <div
-            class="gs-env-chart-container"
+            class=${classMap({
+              'gs-env-chart-container': true,
+              'has-overlay-axis': this.overlayMetrics.length > 0,
+            })}
             ${ref(this._chartContainerRef)}
             @pointermove=${(e: PointerEvent) => this._onPointerMove(e, series, this._renderWindow)}
             @pointerleave=${this._onPointerLeave}
@@ -931,7 +934,10 @@ export class GrowspaceEnvChart extends LitElement {
       (line) => html`
         <span
           class="gs-guide-label setpoint"
-          style="top:${topPercent(line.current)}%;color:${color};"
+          style=${styleMap({
+            top: `${topPercent(line.current)}%`,
+            '--guide-color': color,
+          })}
           >${this._guideMarkLabel(line.id)}</span
         >
       `
@@ -996,10 +1002,20 @@ export class GrowspaceEnvChart extends LitElement {
 
     return series.guideBands.map(
       (band) => html`
-        <span class="gs-guide-label" style="top:${topPercent(band.current.max)}%;color:${color};"
+        <span
+          class="gs-guide-label"
+          style=${styleMap({
+            top: `${topPercent(band.current.max)}%`,
+            '--guide-color': color,
+          })}
           >${formatScaleMark(band.current.max, series.unit)}</span
         >
-        <span class="gs-guide-label" style="top:${topPercent(band.current.min)}%;color:${color};"
+        <span
+          class="gs-guide-label"
+          style=${styleMap({
+            top: `${topPercent(band.current.min)}%`,
+            '--guide-color': color,
+          })}
           >${formatScaleMark(band.current.min, series.unit)}</span
         >
       `
@@ -1093,7 +1109,7 @@ export class GrowspaceEnvChart extends LitElement {
       <span class="gs-value-axis-label secondary">
         ${secondaries.map(
           (secondary) =>
-            html`<span class="series-label" style="color:${secondary.color}"
+            html`<span class="series-label" style=${styleMap({ '--series-color': secondary.color })}
               >${secondary.title} · ${secondary.unit}</span
             >`
         )}
@@ -1244,14 +1260,16 @@ export class GrowspaceEnvChart extends LitElement {
 
     .gs-axis-cap {
       position: absolute;
-      bottom: 19px;
+      bottom: 29px;
       z-index: 2;
       font-size: var(--font-size-xs);
       font-weight: 500;
       letter-spacing: 0.04em;
       color: var(--text-muted);
-      opacity: 0.4;
-      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+      padding: 2px 4px;
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+      border-radius: 6px;
+      background: var(--card-background-color, var(--surface, #1e1e1e));
       line-height: 1;
       pointer-events: none;
     }
@@ -1271,8 +1289,10 @@ export class GrowspaceEnvChart extends LitElement {
       letter-spacing: 0.02em;
       white-space: nowrap;
       color: var(--text-muted);
-      opacity: 0.5;
-      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+      padding: 2px 4px;
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+      border-radius: 6px;
+      background: var(--card-background-color, var(--surface, #1e1e1e));
       line-height: 1;
       pointer-events: none;
     }
@@ -1292,13 +1312,9 @@ export class GrowspaceEnvChart extends LitElement {
       transform: translateY(-50%) rotate(180deg);
       padding: 4px 3px;
       border-radius: 6px;
-      background: color-mix(
-        in srgb,
-        var(--card-background-color, var(--surface-color)) 78%,
-        transparent
-      );
-      box-shadow: 0 0 8px color-mix(in srgb, var(--card-background-color) 60%, transparent);
-      backdrop-filter: blur(3px);
+      background: var(--card-background-color, var(--surface, #1e1e1e));
+      box-shadow: 0 0 8px
+        color-mix(in srgb, var(--card-background-color, var(--surface, #1e1e1e)) 60%, transparent);
     }
     .gs-value-axis-label.primary {
       left: 7px;
@@ -1307,7 +1323,22 @@ export class GrowspaceEnvChart extends LitElement {
       right: 7px;
     }
     .gs-value-axis-label .series-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
       white-space: nowrap;
+      color: var(--text-muted);
+    }
+    .gs-value-axis-label .series-label::before {
+      width: 6px;
+      height: 6px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--series-color);
+      content: '';
+    }
+    .gs-env-chart-container.has-overlay-axis .gs-guide-label.setpoint {
+      right: 32px;
     }
 
     /* A combined chart has no shared value ticks. Name its per-series geometry
