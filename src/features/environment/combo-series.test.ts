@@ -66,7 +66,42 @@ describe('computeComboIntervalPane — exhaust duty', () => {
     );
 
     expect(pane?.bars.map((bar) => bar.value)).toEqual([100, 0, 50, 25]);
-    expect(pane?.peak).toBe(100);
+    expect(pane?.scale).toBe(100);
+  });
+
+  it('scales the pane against 0-100 rather than against its own peak', () => {
+    // A fan that never left 55% is a fan at a bit over half effort. Scaled to
+    // its own peak it would fill the pane exactly as a fan pinned at 100% does,
+    // so the two duty panes of a humidity combo would read the same and no pane
+    // would be comparable with itself across time ranges. Duty states what full
+    // is; the pane uses it.
+    const pane = computeComboIntervalPane(
+      DESCRIPTORS,
+      exhaustHistory(reading(5, '5.5')),
+      { metric: MetricKey.EXHAUST },
+      windowOf(4, 4)
+    );
+
+    expect(pane?.bars.map((bar) => bar.value)).toEqual([
+      expect.closeTo(55),
+      expect.closeTo(55),
+      expect.closeTo(55),
+      expect.closeTo(55),
+    ]);
+    expect(pane?.scale).toBe(100);
+  });
+
+  it('scales past full when the metric reports above its own axis', () => {
+    // The axis says where full is, not what the sensor may report. A bar that
+    // does not fit is a worse reading than a scale stretched to hold it.
+    const pane = computeComboIntervalPane(
+      DESCRIPTORS,
+      exhaustHistory(reading(5, '11')),
+      { metric: MetricKey.EXHAUST },
+      windowOf(4, 4)
+    );
+
+    expect(pane?.scale).toBeCloseTo(110);
   });
 });
 
@@ -128,7 +163,9 @@ describe('computeComboIntervalPane — a secondary with no full scale', () => {
 
     expect(pane?.unit).toBe('W');
     expect(pane?.bars.map((bar) => bar.value)).toEqual([100, 400, 200, 300]);
-    expect(pane?.peak).toBe(400);
+    // No full scale means no ceiling to hold headroom for, so the tallest bar
+    // spends the whole box and the peak is the scale.
+    expect(pane?.scale).toBe(400);
   });
 });
 
@@ -172,6 +209,33 @@ describe('computeComboIntervalPane — a secondary read relative to another', ()
 
     expect(pane?.unit).toBe('mS/cm');
     expect(pane?.bars.map((bar) => bar.value)).toEqual([0.5, 1.5]);
+    // Percentage points are not duty, so a delta has no full scale either and
+    // keeps the peak.
+    expect(pane?.scale).toBe(1.5);
+  });
+
+  it('takes a configured limit as the scale, and stretches past a breach', () => {
+    // The whole point of the pane is whether the bars cross the ceiling, so the
+    // ceiling is what they are read against — until one crosses it, which still
+    // has to fit.
+    const histories = {
+      [MetricKey.FEED_EC]: [ecReading(FEED_SENSOR, 4, '1.5')],
+      [MetricKey.RUNOFF_EC]: [ecReading(RUNOFF_SENSOR, 4, '2'), ecReading(RUNOFF_SENSOR, 2, '3')],
+    };
+    const secondary = { metric: MetricKey.RUNOFF_EC, relativeTo: MetricKey.FEED_EC };
+    const descriptors = computeMetricDescriptors(null, {}, undefined, ecDevice());
+
+    const withHeadroom = computeComboIntervalPane(descriptors, histories, secondary, {
+      ...windowOf(4, 2),
+      limit: 3,
+    });
+    const breached = computeComboIntervalPane(descriptors, histories, secondary, {
+      ...windowOf(4, 2),
+      limit: 1,
+    });
+
+    expect(withHeadroom?.scale).toBe(3);
+    expect(breached?.scale).toBe(1.5);
   });
 
   it('yields no pane when the metric it is read against has no sensor', () => {

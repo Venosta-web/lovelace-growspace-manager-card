@@ -221,18 +221,21 @@ describe('metric-combo-chart', () => {
     expect(el.shadowRoot!.querySelectorAll('.duty-bar').length).toBe(24);
   });
 
-  it('caps the secondary pane with its peak and nothing else', async () => {
+  it('reads the secondary pane against full duty, and caps it with nothing else', async () => {
     const el = await mount();
     const pane = el.shadowRoot!.querySelector('.duty-pane')!;
 
     // The fan held 8 of its 0–10 scale for the whole window, so every bucket is
-    // 80% duty and the peak is 80%. The cap is the pane's scale, so it is also
-    // the pane's only readout: no value axis beside it, and no range total —
-    // summed fan duty is not a quantity a grower acts on (ADR-0049).
+    // 80% duty — of the 0–100 duty already states, which is what the pane is
+    // scaled to and what the cap names. The cap is the pane's only readout: no
+    // value axis beside it, and no range total — summed fan duty is not a
+    // quantity a grower acts on (ADR-0049).
     const readouts = Array.from(pane.querySelectorAll('.duty-readout')).map((node) =>
       node.textContent!.trim()
     );
-    expect(readouts).toEqual(['80%']);
+    expect(readouts).toEqual(['100%']);
+    // Four fifths of the 80-unit box, and the headroom above it is the point.
+    expect(Number(pane.querySelector('.duty-bar')!.getAttribute('height'))).toBeCloseTo(64);
   });
 
   it('scrubs the interval pane with one tooltip and one cursor shared by both panes', async () => {
@@ -437,17 +440,36 @@ async function mountHumidity(withDehumidifier = true): Promise<MetricComboChart>
   `);
 }
 
+/** The height of the tallest bar in a pane, in the drawing box's own units. */
+function tallestBar(pane: Element): number {
+  return Math.max(
+    ...Array.from(pane.querySelectorAll('.duty-bar')).map((bar) =>
+      Number(bar.getAttribute('height'))
+    )
+  );
+}
+
 describe('metric-combo-chart — a combo with two secondaries', () => {
-  it('gives each secondary its own bar pane with its own peak cap', async () => {
+  it('gives each secondary its own bar pane, the two read against one scale', async () => {
     // Humidity drifting with the humidifier idle is a different problem from
     // humidity drifting with it pinned, and the dehumidifier answers the
-    // mirror-image question — so neither collapses into the other's pane.
+    // mirror-image question — so neither collapses into the other's pane. Both
+    // panes are read against the same 0–100, which is what lets the grower
+    // compare them: peak-scaled, a humidifier ticking over at a quarter effort
+    // and a dehumidifier that ran flat out are the same wall of full bars.
     const el = await mountHumidity();
 
     const readouts = Array.from(el.shadowRoot!.querySelectorAll('.duty-readout')).map((node) =>
       node.textContent!.trim()
     );
-    expect(readouts).toEqual(['25%', '100%']);
+    expect(readouts).toEqual(['100%', '100%']);
+
+    const [humidifier, dehumidifier] = Array.from(
+      el.shadowRoot!.querySelectorAll('.duty-pane')
+    ).map(tallestBar);
+    // A quarter of the 80-unit box, against the whole of it.
+    expect(humidifier).toBeCloseTo(20);
+    expect(dehumidifier).toBeCloseTo(80);
   });
 
   it('scrubs every pane at once from whichever one is hovered', async () => {
@@ -484,10 +506,12 @@ describe('metric-combo-chart — a combo with two secondaries', () => {
     const el = await mountHumidity(false);
 
     expect(el.shadowRoot!.querySelector('growspace-env-chart')).not.toBeNull();
-    const readouts = Array.from(el.shadowRoot!.querySelectorAll('.duty-readout')).map((node) =>
-      node.textContent!.trim()
+    const panes = Array.from(el.shadowRoot!.querySelectorAll('.duty-pane'));
+    expect(panes).toHaveLength(1);
+    expect(el.shadowRoot!.querySelector('.duty-eyebrow')!.textContent!.trim()).toBe(
+      'Humidifier duty'
     );
-    expect(readouts).toEqual(['25%']);
+    expect(tallestBar(panes[0])).toBeCloseTo(20);
   });
 });
 
