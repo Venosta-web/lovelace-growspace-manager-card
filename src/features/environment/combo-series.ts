@@ -49,11 +49,20 @@ export interface ComboIntervalPane {
   unit: string;
   bars: ComboIntervalBar[];
   /**
-   * The tallest bar's value. The cap *is* the pane's scale, the way
-   * `tank-water-chart` reasons about its usage pane, so it is derived here
-   * rather than recomputed by whoever draws the bars.
+   * What full pane height is worth, and what the pane's cap reads. The scale
+   * *is* the cap, the way `tank-water-chart` reasons about its usage pane, so
+   * it is derived here rather than recomputed by whoever draws the bars.
+   *
+   * Duty is a percentage of a full scale, so it has a ceiling of its own and is
+   * read against it: a `%` pane spans 0–100. That is what makes the two duty
+   * panes of one combo comparable with each other, and a pane comparable with
+   * itself across time ranges. A pane carrying a reading in its own unit has no
+   * such ceiling — holding back headroom there would shrink every bar for
+   * nothing — so its tallest bar spends the box. A configured `limit` displaces
+   * both. Whichever applies, a bar above it still has to fit, so the tallest
+   * wins.
    */
-  peak: number;
+  scale: number;
   /**
    * The metric this pane's bars are read *against*, when it reports a delta.
    *
@@ -63,8 +72,9 @@ export interface ComboIntervalPane {
   baselineTitle?: string;
   /**
    * The configured value the pane is read against, when the growspace declares
-   * one. Where it is present it, not the peak, is the pane's scale: the whole
-   * point of the pane is whether the bars cross it.
+   * one. Where it is present it, and not the metric's own ceiling, is what
+   * `scale` resolves to: the whole point of the pane is whether the bars cross
+   * it.
    */
   limit?: number;
 }
@@ -181,13 +191,20 @@ export function computeComboIntervalPane(
     bars.push({ startTime, endTime, value: fullScale ? (mean / fullScale) * 100 : mean });
   }
 
+  const peak = bars.reduce((highest, bar) => Math.max(highest, bar.value), 0);
   const pane: ComboIntervalPane = {
     key: secondary.metric,
     title: descriptor.title,
     color: descriptor.color,
     unit: fullScale ? '%' : descriptor.unit,
     bars,
-    peak: bars.reduce((highest, bar) => Math.max(highest, bar.value), 0),
+    // Duty already states what full is, so the pane is read against 0-100
+    // rather than against whatever the metric happened to reach: peak-scaled, a
+    // fan holding 55% and a fan pinned at 100% are the same wall of full-height
+    // bars. A reading in its own unit has no such ceiling and keeps the peak; a
+    // configured limit displaces both. A bar above the ceiling still has to
+    // fit, so the tallest of them wins.
+    scale: Math.max(peak, fullScale ? 100 : 0, limit ?? 0),
   };
   if (baseline) pane.baselineTitle = baseline.title;
   if (limit !== undefined) pane.limit = limit;

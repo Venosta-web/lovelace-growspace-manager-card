@@ -119,7 +119,7 @@ export class MetricComboChart extends LitElement {
       touch-action: pan-y;
     }
     /*
-     * The peak cap, and the pane's only readout. It is the scale — the same
+     * The cap, and the pane's only readout. It is the scale — the same
      * reasoning tank-water-chart applies to its usage pane — which is why
      * there is no value axis beside it. There is deliberately no range total
      * either: litres accumulate into a quantity a grower acts on, where summed
@@ -138,9 +138,9 @@ export class MetricComboChart extends LitElement {
          and the bars it scales cannot be two different colours — and so a
          second recipe needs no new rule here. */
       color: currentColor;
-      /* The tallest bar reaches the top of the pane, so the cap is read against
-         its own colour. The same shadow the Env Graph's axis captions use is
-         what keeps it legible there. */
+      /* A bar reaching the top of the pane is read behind the cap, so the cap
+         is read against its own colour. The same shadow the Env Graph's axis
+         captions use is what keeps it legible there. */
       text-shadow:
         0 1px 4px rgba(0, 0, 0, 0.95),
         0 0 4px rgba(0, 0, 0, 0.8);
@@ -192,7 +192,7 @@ export class MetricComboChart extends LitElement {
   }
 
   /**
-   * The peak cap, formatted.
+   * The pane's cap, formatted.
    *
    * A cap is a scale mark rather than a measurement, so it resolves through the
    * same owner as the value axis and the [[Guide Mark]] labels beside it — one
@@ -207,19 +207,7 @@ export class MetricComboChart extends LitElement {
         value: formatScaleMark(pane.limit, pane.unit),
       });
     }
-    return formatScaleMark(pane.peak, pane.unit);
-  }
-
-  /**
-   * What full pane height is worth.
-   *
-   * Normally the peak: the tallest bar spends the whole box, so holding back
-   * headroom would only shrink every bar for nothing. Where a limit is
-   * configured it is the scale instead — but a breach must still fit, so the
-   * taller of the two wins and the rule slides down inside the box.
-   */
-  private _paneScale(pane: ComboIntervalPane): number {
-    return Math.max(pane.peak, pane.limit ?? 0);
+    return formatScaleMark(pane.scale, pane.unit);
   }
 
   /**
@@ -345,7 +333,9 @@ export class MetricComboChart extends LitElement {
   ) {
     const { width, height } = DUTY_PANE;
     const xAt = (time: number) => ((time - startTimeMs) / durationMillis) * width;
-    const scale = this._paneScale(pane);
+    // Whether the box is worth 100% duty, the pane's peak or a configured
+    // ceiling is a fact about the pane, settled where the bars are derived.
+    const { scale } = pane;
 
     return html`
       <div slot="secondary-pane" style="color:${pane.color}">
@@ -375,7 +365,7 @@ export class MetricComboChart extends LitElement {
                 width="${Math.max(0, barWidth - gap)}" height="${barHeight}" rx="1"
               ></rect>`;
             })}
-            ${this._renderLimitRule(pane, scale)}
+            ${this._renderLimitRule(pane)}
           </svg>
         </div>
       </div>
@@ -390,11 +380,11 @@ export class MetricComboChart extends LitElement {
    * pane's own bars are read against, which is why it lives here and not in the
    * Env Graph above.
    */
-  private _renderLimitRule(pane: ComboIntervalPane, scale: number) {
-    if (pane.limit === undefined || scale <= 0) return nothing;
+  private _renderLimitRule(pane: ComboIntervalPane) {
+    if (pane.limit === undefined || pane.scale <= 0) return nothing;
 
     const { width, height } = DUTY_PANE;
-    const y = height - (pane.limit / scale) * height;
+    const y = height - (pane.limit / pane.scale) * height;
     return svg`<line
       class="duty-limit"
       x1="0" x2="${width}" y1="${y}" y2="${y}"

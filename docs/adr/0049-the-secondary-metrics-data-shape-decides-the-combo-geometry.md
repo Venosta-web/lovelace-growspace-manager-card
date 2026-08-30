@@ -44,3 +44,28 @@ A secondary pane gets a peak cap rather than a value axis, following
 `tank-water-chart`'s reasoning that the cap is the scale. It does not inherit
 that chart's range total: litres accumulate into a quantity a grower acts on,
 where summed fan duty does not.
+
+## Amendment — duty is read against 0–100, not against its own peak (#861)
+
+The peak cap above is the rule for a pane with **no natural ceiling**, and the
+reasoning behind it holds only there: where nothing says what full is, holding
+back headroom shrinks every bar for nothing.
+
+Duty says what full is. A `%` pane is a percentage of the metric's own full
+scale, so its ceiling is not something to observe from the data, and scaling it
+to its own peak throws that ceiling away. The cost is visible live: exhaust duty
+held at 55% and exhaust duty pinned at 100% render as the same solid wall of
+full-height bars, and the humidifier and dehumidifier panes of a humidity combo
+look identical whatever either appliance was doing.
+
+So a pane's scale is now the ceiling it has: 0–100 for duty, a configured
+`limitOf` where the growspace declares one, and the peak only where there is
+neither. That is the same move the limit path already made — when there is a
+known scale, use it instead of the peak — and a bar above whichever ceiling
+applies still has to fit, so the tallest wins in every case. The cap names the
+resulting scale rather than the peak, so the pane still says what its bars are
+read against.
+
+The scale is derived in `computeComboIntervalPane` beside the bars, not in the
+renderer: which ceiling applies follows from whether the metric has a full scale,
+which is a fact of the derivation's own value space.
