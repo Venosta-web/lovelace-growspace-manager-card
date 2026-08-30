@@ -27,7 +27,8 @@
   "metric_combo": {
     "duty_label": "{metric} duty",
     "delta_label": "{metric} − {baseline}",
-    "limit_cap": "max {value}"
+    "limit_cap": "max {value}",
+    "pane_accessible_name": "{metric}, scale {scale}"
   },
   "water_chart": {
     "title": "Water Consumption",

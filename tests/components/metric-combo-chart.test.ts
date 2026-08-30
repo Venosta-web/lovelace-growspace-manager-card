@@ -235,6 +235,16 @@ describe('metric-combo-chart', () => {
     expect(readouts).toEqual(['80%']);
   });
 
+  it('exposes the interval pane as one graphic with its metric, window, scale, and values', async () => {
+    const el = await mount();
+    const svg = el.shadowRoot!.querySelector('.duty-pane svg')!;
+
+    expect(svg.getAttribute('role')).toBe('img');
+    expect(svg.getAttribute('aria-label')).toBe(
+      'Exhaust duty, scale 80%, 24h window. range 80.0% to 80.0%, average 80.0%, current 80.0%.'
+    );
+  });
+
   it('scrubs the interval pane with one tooltip and one cursor shared by both panes', async () => {
     const el = await mount();
     const pane = el.shadowRoot!.querySelector<HTMLElement>('.duty-pane')!;
