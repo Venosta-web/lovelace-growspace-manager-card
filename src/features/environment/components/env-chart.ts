@@ -1373,11 +1373,22 @@ export class GrowspaceEnvChart extends LitElement {
       pointer-events: none;
     }
 
-    svg path {
+    /*
+     * Only the traces morph. A bare "svg path" rule also caught the header
+     * icon, the scroll chevrons, the gradient fill and the [[Guide Mark]] limit
+     * chevrons — none of which have a d worth interpolating, and all of which
+     * paid for the hint. Interpolating d is CPU path morphing rather than a
+     * compositor property, so there is deliberately no will-change either: it
+     * is a targeted hint for a known expensive animation, not a baseline, and
+     * the render series rebuilds on every sensor tick, so a standing hint on
+     * eight or more [[Env Graph Wall]] tiles is the cost without the benefit.
+     */
+    .gs-primary-trace,
+    .gs-secondary-trace,
+    .gs-vpd-status-trace {
       transition:
-        d 0.3s ease-out,
-        stroke 0.3s ease;
-      will-change: d;
+        d var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard),
+        stroke var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
     }
 
     .gs-tooltip {

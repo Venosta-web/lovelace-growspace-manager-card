@@ -300,3 +300,82 @@ describe('GrowspaceEnvChart — the header does not tint its text', () => {
     expect(ruleFor(el, '.gs-legend-title')).toContain(THEME_TEXT);
   });
 });
+
+describe('GrowspaceEnvChart — only the traces carry the morph transition', () => {
+  /**
+   * A bare `svg path` rule put `transition: d` and a standing `will-change: d`
+   * on every path in the shadow root — the header icon, the scroll chevrons,
+   * the gradient fill and the [[Guide Mark]] limit chevrons included. None of
+   * those have a `d` worth interpolating, interpolating `d` is CPU path
+   * morphing rather than a compositor property, and the render series rebuilds
+   * on every sensor tick, so on an [[Env Graph Wall]] tiling eight charts the
+   * hint was the cost without the benefit.
+   */
+  const TRACE_CLASSES = ['.gs-primary-trace', '.gs-secondary-trace', '.gs-vpd-status-trace'];
+
+  /** The composed sheet, less its comments — which discuss the rule below. */
+  function sheetText(el: GrowspaceEnvChart): string {
+    const sheet = (el.constructor as typeof GrowspaceEnvChart).styles;
+    return (Array.isArray(sheet) ? sheet : [sheet])
+      .map((style) => String((style as { cssText?: string }).cssText ?? style))
+      .join('\n')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+  }
+
+  /** The selector list and declarations of the rule that transitions `d`. */
+  function morphRule(el: GrowspaceEnvChart): { selectors: string[]; declarations: string } {
+    const match = /([^{}]+)\{(\s*transition:\s*d\s[^}]*)\}/.exec(sheetText(el));
+    if (!match) throw new Error('no rule transitions d');
+    return {
+      selectors: match[1]
+        .split(',')
+        .map((selector) => selector.trim())
+        .filter(Boolean),
+      declarations: match[2],
+    };
+  }
+
+  async function mountVpdChart(): Promise<GrowspaceEnvChart> {
+    return await mountChart({
+      descriptors: VPD_DESCRIPTORS,
+      history: vpdHistory([]),
+      metricKey: MetricKey.VPD,
+    });
+  }
+
+  it('names the trace paths and nothing else', async () => {
+    const el = await mountVpdChart();
+
+    expect(morphRule(el).selectors.sort()).toEqual([...TRACE_CLASSES].sort());
+  });
+
+  it('leaves no standing compositor hint at rest', async () => {
+    const el = await mountVpdChart();
+
+    expect(sheetText(el)).not.toContain('will-change');
+  });
+
+  it('takes its duration from the MD3 motion scale rather than a literal', async () => {
+    const el = await mountVpdChart();
+    const { declarations } = morphRule(el);
+
+    expect(declarations).toContain('var(--md3-motion-duration-medium2)');
+    expect(declarations).not.toMatch(/\b\d+(\.\d+)?m?s\b/);
+  });
+
+  it('matches the rendered traces and none of the chart other paths', async () => {
+    const el = await mountVpdChart();
+    const selector = TRACE_CLASSES.join(', ');
+    const paths = [...(el.shadowRoot?.querySelectorAll('path') ?? [])];
+
+    // The header icon, the scroll chevrons and the gradient fill all draw a
+    // path; the chart is not worth asserting on if none of them rendered.
+    expect(paths.some((path) => !path.matches(selector))).toBe(true);
+    expect(paths.some((path) => path.matches(selector))).toBe(true);
+    for (const path of paths) {
+      expect(path.matches(selector)).toBe(
+        TRACE_CLASSES.some((traceClass) => path.classList.contains(traceClass.slice(1)))
+      );
+    }
+  });
+});
