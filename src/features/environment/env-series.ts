@@ -6,6 +6,10 @@
  * **No pixels and no SVG paths** — geometry belongs to the rendering component,
  * which owns the chart's width and height.
  *
+ * Unmarked auto axes also honour the descriptor's minimum meaningful span. A
+ * steady metric therefore keeps visible headroom instead of magnifying ordinary
+ * sensor noise into a full-height swing.
+ *
  * A metric is derived here only when the descriptor table carries it. That table
  * covers every metric the card knows, so an absent key means "not a metric".
  *
@@ -306,9 +310,10 @@ function _reduce(points: EnvSeriesPoint[]): { min: number; max: number; avg: num
 }
 
 /**
- * Resolve the axis bounds a series renders against. A flat auto-scaled line is
- * widened by ±1 so it draws through the middle of the chart instead of along an
- * edge; step metrics keep their bounds, which are meaningful as-is.
+ * Resolve the axis bounds a series renders against. An unmarked auto-scaled line
+ * is widened around the observed midpoint to the metric's minimum meaningful
+ * span; step metrics and combined charts keep their bounds, which are meaningful
+ * as-is in those presentations.
  */
 function _axisBounds(
   descriptor: MetricDescriptor,
@@ -347,8 +352,13 @@ function _axisBounds(
     return { min: min - pad, max: max + pad };
   }
 
-  if (!isCombined && max === min && descriptor.chartType !== ChartType.STEP) {
-    return { min: min - 1, max: max + 1 };
+  if (!isCombined && descriptor.chartType !== ChartType.STEP) {
+    const span = max - min;
+    if (span < descriptor.minimumSpan) {
+      const midpoint = (min + max) / 2;
+      const halfMinimumSpan = descriptor.minimumSpan / 2;
+      return { min: midpoint - halfMinimumSpan, max: midpoint + halfMinimumSpan };
+    }
   }
   return { min, max };
 }

@@ -851,7 +851,7 @@ describe('GrowspaceEnvChart', () => {
         Array.from(element.shadowRoot?.querySelectorAll('.gs-axis-target') ?? []).map((cap) =>
           cap.textContent?.trim()
         )
-      ).toEqual(['22 °C', '20 °C']);
+      ).toEqual(['23 °C', '19 °C']);
     });
 
     it('dispatches chart-clicked with the hovered timestamp', async () => {

@@ -103,18 +103,25 @@ describe('computeEnvSeries — temperature', () => {
     expect(last.value).toBe(19);
   });
 
-  it('pads a flat line by one unit either side so it does not draw on an edge', () => {
+  it('centres a flat line in the metric minimum span so it does not draw on an edge', () => {
     const [series] = computeTemperature(temperatureHistory(reading(120, '20'), reading(60, '20')));
 
-    expect(series.min).toBe(19);
-    expect(series.max).toBe(21);
+    expect(series.min).toBe(18);
+    expect(series.max).toBe(22);
   });
 
-  it('does not pad a range that already spans values', () => {
+  it('centres a narrow range in the metric minimum span', () => {
     const [series] = computeTemperature(temperatureHistory(reading(120, '20'), reading(60, '22')));
 
+    expect(series.min).toBe(19);
+    expect(series.max).toBe(23);
+  });
+
+  it('does not widen a range that already meets the metric minimum span', () => {
+    const [series] = computeTemperature(temperatureHistory(reading(120, '20'), reading(60, '24')));
+
     expect(series.min).toBe(20);
-    expect(series.max).toBe(22);
+    expect(series.max).toBe(24);
   });
 
   it('skips unparseable and unavailable readings', () => {
@@ -400,6 +407,31 @@ describe('computeEnvSeries — optimal bands', () => {
     expect(series.max).toBeGreaterThan(65);
   });
 
+  it('keeps the existing union-and-pad bounds when a guide band is narrower than the floor', () => {
+    const device = {
+      deviceId: 'g1',
+      name: 'Tent',
+      biologicalMetrics: { granularStage: 'veg' },
+      environmentAttributes: {
+        soilMoistureBand: { min: 50, max: 52, is_custom: true },
+        soilMoistureBandCompatible: true,
+      },
+    } as unknown as GrowspaceDevice;
+    const descriptors = computeMetricDescriptors(null, {}, undefined, device);
+
+    const [series] = computeEnvSeries(
+      descriptors,
+      { [MetricKey.SOIL_MOISTURE]: [entry('sensor.tent_moisture', 30, '51')] },
+      [MetricKey.SOIL_MOISTURE],
+      windowOf(1)
+    );
+
+    // The 50..52 union receives the existing 8% guide pad. Applying the
+    // metric's 20-point minimum span here would replace these bounds.
+    expect(series.min).toBeCloseTo(49.84);
+    expect(series.max).toBeCloseTo(52.16);
+  });
+
   it('leaves a metric with no configured target exactly as it was', () => {
     const [series] = computeTemperature(temperatureHistory(reading(50, '20'), reading(20, '24')));
 
@@ -647,10 +679,33 @@ describe('computeEnvSeries — descriptor-owned chart shape and axes', () => {
     });
   });
 
-  it('pads one flat auto-scaled line by ±1', () => {
+  it('pads one flat auto-scaled line to its metric minimum span', () => {
     const [series] = computeTemperature(temperatureHistory(reading(30, '20')));
 
-    expect({ min: series.min, max: series.max }).toEqual({ min: 19, max: 21 });
+    expect({ min: series.min, max: series.max }).toEqual({ min: 18, max: 22 });
+  });
+
+  it('makes a narrow CO2 wobble look steady while preserving its observed range', () => {
+    const [series] = computeEnvSeries(
+      DESCRIPTORS,
+      metricHistory(MetricKey.CO2, reading(30, '414'), reading(10, '435')),
+      [MetricKey.CO2],
+      windowOf(24)
+    );
+
+    expect({ min: series.min, max: series.max }).toEqual({ min: 224.5, max: 624.5 });
+    expect({ min: series.observedMin, max: series.observedMax }).toEqual({ min: 414, max: 435 });
+  });
+
+  it('leaves a genuinely wide CO2 swing on its observed bounds', () => {
+    const [series] = computeEnvSeries(
+      DESCRIPTORS,
+      metricHistory(MetricKey.CO2, reading(30, '400'), reading(10, '800')),
+      [MetricKey.CO2],
+      windowOf(24)
+    );
+
+    expect({ min: series.min, max: series.max }).toEqual({ min: 400, max: 800 });
   });
 
   it('does not pad a flat step series', () => {
@@ -855,7 +910,11 @@ describe('computeEnvSeries — multi-sensor metrics', () => {
       'sensor.t2'
     );
 
-    expect({ min: series[0].min, max: series[0].max }).toEqual({ min: 18, max: 20 });
+    expect({ min: series[0].min, max: series[0].max }).toEqual({ min: 17, max: 21 });
+    expect({ min: series[0].observedMin, max: series[0].observedMax }).toEqual({
+      min: 18,
+      max: 20,
+    });
     expect({ min: series[1].min, max: series[1].max }).toEqual({ min: 25, max: 30 });
   });
 

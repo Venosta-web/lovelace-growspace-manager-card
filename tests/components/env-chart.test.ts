@@ -260,7 +260,7 @@ describe('GrowspaceEnvChart hygiene', () => {
         Array.from(element.shadowRoot!.querySelectorAll('.gs-axis-target')).map((node) =>
           node.textContent!.trim()
         )
-      ).toEqual(['60%', '50%']);
+      ).toEqual(['65%', '45%']);
     });
   });
 

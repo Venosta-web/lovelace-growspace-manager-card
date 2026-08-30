@@ -1,7 +1,7 @@
 /**
  * Metric Descriptor module — the single owner of the per-`MetricKey` facts that a
  * header chip and an Env Graph must agree on: display title, colour, unit, icon,
- * chart type, axis scale and [[Metric Target]]s.
+ * chart type, axis scale, minimum meaningful span and [[Metric Target]]s.
  *
  * Public API (pure computation):
  *   computeMetricDescriptors() — derive the descriptor table.
@@ -93,6 +93,8 @@ export interface MetricDescriptor {
   icon: string;
   chartType: ChartType;
   axis: MetricAxis;
+  /** Smallest range an unmarked auto axis displays, in this metric's unit. */
+  minimumSpan: number;
   /**
    * The normalised guide-mark records for this metric (ADR-0050), empty when
    * nothing is configured. It **absorbed** the raw VPD-only threshold field this
@@ -136,6 +138,7 @@ function _fanDescriptor(
     icon: config.icon,
     chartType: ChartType.LINE,
     axis: fanReadingToAxisScale(kind),
+    minimumSpan: config.minimumSpan,
     entityId,
     sensors: [],
     targets: [],
@@ -165,6 +168,7 @@ function _lightDescriptor(
     // between two discrete brightness updates.
     chartType: ChartType.STEP,
     axis: isPercentage ? { min: 0, max: 100 } : { min: 0, max: 1 },
+    minimumSpan: config.minimumSpan,
     entityId,
     sensors: [],
     targets: [],
@@ -186,6 +190,7 @@ function _descriptor(
     icon: config.icon,
     chartType,
     axis,
+    minimumSpan: config.minimumSpan,
     sensors: [],
     targets: [],
   };
