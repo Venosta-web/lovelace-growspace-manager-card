@@ -16,6 +16,37 @@ const mockHassCall = vi.mocked(hassCall);
 
 const LIGHTS_ON_ISO = '2024-01-15T06:00:00.000Z';
 
+function contrastRatio(foreground: string, background: string): number {
+  const parse = (color: string) => {
+    const channels = color.match(/[\d.]+/g)?.map(Number);
+    if (!channels || channels.length < 3) throw new Error(`Unsupported CSS color: ${color}`);
+    if (color.startsWith('color(srgb')) {
+      return { rgb: channels.slice(0, 3).map((channel) => channel * 255), alpha: channels[3] ?? 1 };
+    }
+    return { rgb: channels.slice(0, 3), alpha: channels[3] ?? 1 };
+  };
+  const backgroundColor = parse(background);
+  const foregroundColor = parse(foreground);
+  const composite = foregroundColor.rgb.map(
+    (channel, index) =>
+      channel * foregroundColor.alpha + backgroundColor.rgb[index] * (1 - foregroundColor.alpha)
+  );
+  const luminance = (channels: number[]) =>
+    channels
+      .map((channel) => {
+        const normalized = channel / 255;
+        return normalized <= 0.04045
+          ? normalized / 12.92
+          : Math.pow((normalized + 0.055) / 1.055, 2.4);
+      })
+      .reduce((total, channel, index) => total + channel * [0.2126, 0.7152, 0.0722][index], 0);
+  const foregroundLuminance = luminance(composite);
+  const backgroundLuminance = luminance(backgroundColor.rgb);
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 function mkBucket(minutesAfterLightsOn: number, v: number | null) {
   return {
     timestamp: new Date(Date.parse(LIGHTS_ON_ISO) + minutesAfterLightsOn * 60000).toISOString(),
@@ -311,13 +342,16 @@ describe('CropSteeringDayChart – guide marks', () => {
     expect(trigger.getAttribute('stroke-dasharray')).toBe('6 4');
     expect(trigger.getAttribute('stroke-opacity')).toBe('0.6');
 
-    // ADR 0047: the trigger is the VWC floor P2 maintains, so its line and its
-    // label read as P2 and not as a warning.
+    // ADR 0047: the trigger is the VWC floor P2 maintains, so its line reads as
+    // P2 and not as a warning. The label itself follows the theme foreground so
+    // it remains AA-legible on the theme-owned pane (issue #859).
     expect(trigger.getAttribute('stroke')).toContain('--phase-p2');
     const triggerLabel = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.gs-guide-label')].find(
       (label) => label.textContent?.includes('P2 trigger')
     )!;
-    expect(triggerLabel.style.color).toContain('--phase-p2');
+    el.style.setProperty('--primary-text-color', 'rgb(33, 33, 33)');
+    expect(triggerLabel.style.color).toBe('');
+    expect(getComputedStyle(triggerLabel).color).toBe('rgb(33, 33, 33)');
   });
 
   it('holds every guide mark’s dash rhythm when the pane is stretched', async () => {
@@ -402,29 +436,99 @@ describe('CropSteeringDayChart – guide marks', () => {
     );
   });
 
-  it('reads its chrome off the theme’s text roles, so it stays legible on a light card', async () => {
+  it.each([
+    {
+      scheme: 'default light',
+      ground: 'rgb(250, 250, 250)',
+      primary: 'rgb(33, 33, 33)',
+      secondary: 'rgb(97, 97, 97)',
+      divider: 'rgba(0, 0, 0, 0.12)',
+    },
+    {
+      scheme: 'default dark',
+      ground: 'rgb(17, 17, 17)',
+      primary: 'rgb(225, 225, 225)',
+      secondary: 'rgb(176, 176, 176)',
+      divider: 'rgba(255, 255, 255, 0.12)',
+    },
+  ])('keeps chart text and rules at AA contrast in the $scheme scheme', async (theme) => {
     const el = createElement();
-    // A light Home Assistant theme, ground and text together.
-    el.style.setProperty('--secondary-background-color', 'rgb(250, 250, 250)');
-    el.style.setProperty('--primary-text-color', 'rgb(33, 33, 33)');
-    el.style.setProperty('--secondary-text-color', 'rgb(90, 90, 90)');
+    el.style.setProperty('--secondary-background-color', theme.ground);
+    el.style.setProperty('--primary-text-color', theme.primary);
+    el.style.setProperty('--secondary-text-color', theme.secondary);
+    el.style.setProperty('--divider-color', theme.divider);
     el.device = makeDevice();
     await el.updateComplete;
     await vi.waitFor(() => expect(el.shadowRoot!.querySelector('.cm-readout')).not.toBeNull());
 
-    const chrome = [
+    const text = [
       ...el.shadowRoot!.querySelectorAll<HTMLElement>(
         '.cm-title, .cm-readout, .cm-readout b, .cm-axis-cap, .cm-tick, .x-label, .cs-phase-nm, .cs-phase-meta'
       ),
     ];
-    expect(chrome.length).toBeGreaterThan(6);
-    for (const node of chrome) {
-      // Every one resolves to the theme's own text, never to a white the chart
-      // painted itself and cannot take back on a light ground.
-      expect([getComputedStyle(node).color, node.className]).toEqual([
-        expect.stringMatching(/^rgb\((?:33, 33, 33|90, 90, 90)\)$/),
-        node.className,
-      ]);
+    expect(text.length).toBeGreaterThan(6);
+    for (const node of text) {
+      const color = getComputedStyle(node).color;
+      expect(color, `${node.className} follows the theme's primary text role`).toBe(theme.primary);
+      expect(
+        contrastRatio(color, theme.ground),
+        `${node.className} reaches 4.5:1`
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+
+    const panes = [
+      ...el.shadowRoot!.querySelectorAll<HTMLElement>('.cs-model, .cs-track, .cs-phase-strip'),
+    ];
+    expect(panes).toHaveLength(3);
+    for (const pane of panes) {
+      const style = getComputedStyle(pane);
+      expect(
+        contrastRatio(style.borderTopColor, style.backgroundColor),
+        `${pane.className} frame reaches 3:1`
+      ).toBeGreaterThanOrEqual(3);
+    }
+
+    const gridRule = el.shadowRoot!.querySelector<HTMLElement>('.grid-v.major')!;
+    const ruleColor = getComputedStyle(gridRule).backgroundColor;
+    expect(contrastRatio(ruleColor, theme.ground)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('uses on-overlay roles for every label and border on its fixed-dark tooltip', async () => {
+    const el = createElement();
+    el.style.setProperty('--secondary-background-color', 'rgb(250, 250, 250)');
+    el.style.setProperty('--primary-text-color', 'rgb(33, 33, 33)');
+    el.style.setProperty('--secondary-text-color', 'rgb(97, 97, 97)');
+    el.style.setProperty('--on-overlay-primary', 'rgb(245, 245, 245)');
+    el.style.setProperty('--on-overlay-muted', 'rgba(255, 255, 255, 0.55)');
+    el.device = makeDevice();
+    await el.updateComplete;
+    await vi.waitFor(() => expect(el.shadowRoot!.querySelector('.cs-model')).not.toBeNull());
+
+    el.shadowRoot!.querySelector<HTMLElement>('.cs-model')!.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, clientX: 10, clientY: 10 })
+    );
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await el.updateComplete;
+    await vi.waitFor(() =>
+      expect(el.shadowRoot!.querySelector('.cs-model-tooltip')).not.toBeNull()
+    );
+
+    const tooltip = el.shadowRoot!.querySelector<HTMLElement>('.cs-model-tooltip')!;
+    const tooltipStyle = getComputedStyle(tooltip);
+    expect(tooltipStyle.backgroundColor).toBe('rgb(20, 20, 20)');
+    expect(
+      contrastRatio(tooltipStyle.borderTopColor, tooltipStyle.backgroundColor)
+    ).toBeGreaterThanOrEqual(3);
+
+    const labels = [
+      el.shadowRoot!.querySelector<HTMLElement>('.cs-model-tooltip-time')!,
+      ...el.shadowRoot!.querySelectorAll<HTMLElement>('.cs-model-tooltip-row span'),
+    ];
+    expect(labels.length).toBeGreaterThan(2);
+    for (const label of labels) {
+      const color = getComputedStyle(label).color;
+      expect(color).toBe('rgb(245, 245, 245)');
+      expect(contrastRatio(color, tooltipStyle.backgroundColor)).toBeGreaterThanOrEqual(4.5);
     }
   });
 });
