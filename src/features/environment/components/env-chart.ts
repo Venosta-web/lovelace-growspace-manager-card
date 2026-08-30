@@ -307,11 +307,11 @@ export class GrowspaceEnvChart extends LitElement {
             aria-label=${closeGraphLabel}
             @click=${() => this._toggleEnvGraph()}
           >
-            <div style="display:flex; align-items:center; gap:8px;">
+            <div class="gs-env-graph-heading">
               ${this.icon ? html`<ha-svg-icon .path=${this.icon}></ha-svg-icon>` : ''}
-              <span>${chartName}</span>
+              <span class="gs-env-graph-title">${chartName}</span>
             </div>
-            <span style="opacity:0.6; font-size:0.9em"
+            <span class="gs-env-graph-empty-value"
               >${this._localize('environment_chart.no_data')}</span
             >
           </button>
@@ -341,6 +341,9 @@ export class GrowspaceEnvChart extends LitElement {
           ${this.isCombined
             ? this._renderCombinedHeader(series)
             : this._renderSingleHeader(series[0])}
+          ${this.overlayMetrics.length > 0
+            ? html`<div class="gs-value-axis-legend">${this._renderValueAxisLabels(series)}</div>`
+            : ''}
 
           <div
             class=${classMap({
@@ -359,7 +362,6 @@ export class GrowspaceEnvChart extends LitElement {
               : html`<span class="gs-axis-normalised"
                   >${this._localize('environment_chart.normalised')}</span
                 >`}
-            ${this.overlayMetrics.length > 0 ? this._renderValueAxisLabels(series) : ''}
             ${
               // Inline labels only on a single-metric chart: a combined chart's
               // four bands would be eight labels on a 180px pane, which is a
@@ -671,7 +673,7 @@ export class GrowspaceEnvChart extends LitElement {
         aria-label=${closeGraphLabel}
         @click=${() => this._toggleEnvGraph()}
       >
-        <div style="display:flex; align-items:center; gap:8px;">
+        <div class="gs-env-graph-heading">
           <div class="gs-env-graph-icon" style="color:${series.color};">
             <svg viewBox="0 0 24 24" style="width:100%; height:100%; fill:currentColor;">
               <path d="${series.icon || this.icon}"></path>
@@ -679,7 +681,7 @@ export class GrowspaceEnvChart extends LitElement {
           </div>
           <span class="gs-env-graph-title">${series.title}</span>
         </div>
-        <div style="text-align:right;">
+        <div class="gs-env-graph-reading">
           <div class="gs-env-graph-value">${valStr}</div>
         </div>
       </button>
@@ -1170,8 +1172,11 @@ export class GrowspaceEnvChart extends LitElement {
     .gs-env-graph-card {
       display: flex;
       flex-direction: column;
+      position: relative;
       height: 100%;
       box-sizing: border-box;
+      container-name: env-chart;
+      container-type: inline-size;
       background: var(--card-background-color, #1a1a1a);
       border-radius: 12px;
       padding: 16px;
@@ -1181,6 +1186,8 @@ export class GrowspaceEnvChart extends LitElement {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
       margin-bottom: 8px;
       min-height: 24px;
     }
@@ -1208,15 +1215,39 @@ export class GrowspaceEnvChart extends LitElement {
        stroke below, roles that only have to clear the 3:1 non-text ratio.
        DESIGN.md § Contrast Target states this rule; this header broke it. */
     .gs-env-graph-title {
+      min-width: 0;
+      overflow: hidden;
       color: var(--primary-text-color, #e1e1e1);
       font-weight: 500;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .gs-env-graph-heading {
+      display: flex;
+      flex: 1 1 auto;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .gs-env-graph-reading,
+    .gs-env-graph-empty-value {
+      flex: 0 0 auto;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .gs-env-graph-empty-value {
+      color: var(--text-muted);
+      font-size: 0.9em;
     }
     .gs-env-graph-value {
       color: var(--primary-text-color, #e1e1e1);
       font-size: 1.2em;
+      font-variant-numeric: tabular-nums;
       font-weight: bold;
+      white-space: nowrap;
     }
     .gs-env-graph-icon {
+      flex: 0 0 auto;
       width: 24px;
       height: 24px;
       display: flex;
@@ -1309,6 +1340,12 @@ export class GrowspaceEnvChart extends LitElement {
       line-height: 1;
       pointer-events: none;
     }
+    .gs-value-axis-legend {
+      position: absolute;
+      inset: 48px 23px 16px;
+      z-index: 3;
+      pointer-events: none;
+    }
     .gs-value-axis-label {
       position: absolute;
       top: 50%;
@@ -1353,7 +1390,6 @@ export class GrowspaceEnvChart extends LitElement {
     .gs-env-chart-container.has-overlay-axis .gs-guide-label.setpoint {
       right: 32px;
     }
-
     /* A combined chart has no shared value ticks. Name its per-series geometry
        where a value axis would begin, before the eye reaches the traces. */
     .gs-axis-normalised {
@@ -1526,6 +1562,50 @@ export class GrowspaceEnvChart extends LitElement {
     @media (pointer: coarse) {
       .scroll-nav {
         display: none;
+      }
+    }
+
+    @container env-chart (max-width: 320px) {
+      .gs-value-axis-legend {
+        position: static;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: clamp(4px, 2cqw, 8px);
+        min-width: 0;
+        margin-bottom: 6px;
+      }
+      .gs-value-axis-label {
+        position: static;
+        display: flex;
+        align-items: center;
+        gap: clamp(3px, 1.5cqw, 6px);
+        min-width: 0;
+        padding: 0;
+        overflow: hidden;
+        background: transparent;
+        box-shadow: none;
+        transform: none;
+        writing-mode: horizontal-tb;
+      }
+      .gs-value-axis-label.primary {
+        display: none;
+      }
+      .gs-value-axis-label.secondary {
+        flex: 1 1 auto;
+        justify-content: flex-end;
+      }
+      .gs-value-axis-label .series-label {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .gs-env-chart-container.has-overlay-axis .gs-guide-label.setpoint {
+        right: 8px;
+      }
+      .gs-env-chart-container {
+        flex-basis: min(var(--gs-env-chart-height, 180px), 50cqw);
+        min-height: min(var(--gs-env-chart-height, 180px), 50cqw);
       }
     }
 
