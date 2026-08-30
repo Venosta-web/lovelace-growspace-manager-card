@@ -79,6 +79,12 @@ export class MetricComboChart extends LitElement {
   @property({ attribute: false }) secondaries: ComboSecondary[] = [];
   @state() private _scrub: { position: number; rows: ChartScrubRow[] } | undefined;
   private _renderWindow = this._windowFor(this.range);
+  /**
+   * The pending scrub derivation, so a drag costs one per frame rather than one
+   * per pointer event — the same gate the [[Env Graph]] one component away puts
+   * on its own hover.
+   */
+  private _scrubRafId: number | null = null;
 
   static styles = css`
     /* The inline stack's spacing sits here rather than on the Env Graph inside,
@@ -252,6 +258,11 @@ export class MetricComboChart extends LitElement {
     return { startTimeMs: Date.now() - durationMillis, durationMillis };
   }
 
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._cancelPendingScrub();
+  }
+
   protected willUpdate(changed: PropertyValues<this>): void {
     if (
       changed.has('device') ||
@@ -317,7 +328,7 @@ export class MetricComboChart extends LitElement {
         @pointerleave=${this._clearScrub}
         @pointercancel=${this._clearScrub}
       >
-        ${panes.map((pane) => this._renderIntervalPane(pane, startTimeMs, durationMillis))}
+        ${panes.map((pane) => this._renderIntervalPane(pane, panes, startTimeMs, durationMillis))}
       </growspace-env-chart>
       ${this._scrub
         ? html`<chart-scrub-tooltip
@@ -337,6 +348,7 @@ export class MetricComboChart extends LitElement {
    */
   private _renderIntervalPane(
     pane: ComboIntervalPane,
+    panes: ComboIntervalPane[],
     startTimeMs: number,
     durationMillis: number
   ) {
@@ -354,7 +366,7 @@ export class MetricComboChart extends LitElement {
         <div
           class="duty-pane"
           @pointermove=${(event: PointerEvent) =>
-            this._scrubIntervalPane(event, startTimeMs, durationMillis)}
+            this._scrubIntervalPane(event, panes, startTimeMs, durationMillis)}
         >
           <span class="duty-readout">${this._capLabel(pane)}</span>
           <svg
@@ -408,15 +420,37 @@ export class MetricComboChart extends LitElement {
    * the instant plus one interval row per pane, so hovering any of them reports
    * the same moment across all of them rather than only the one under the
    * pointer.
+   *
+   * Frame-gated: a slow drag across a pane fires `pointermove` far faster than
+   * the display refreshes, and each derivation re-reads the primary's
+   * [[Env Series]]. The pointer position is read off the event synchronously —
+   * `currentTarget` is null by the time the frame runs — and everything derived
+   * from it happens once, in that frame.
    */
   private _scrubIntervalPane(
     event: PointerEvent,
+    panes: ComboIntervalPane[],
     startTimeMs: number,
     durationMillis: number
   ): void {
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const position =
       rect.width > 0 ? Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)) : 0.5;
+
+    this._cancelPendingScrub();
+    this._scrubRafId = requestAnimationFrame(() => {
+      this._scrubRafId = null;
+      this._deriveIntervalScrub(position, panes, startTimeMs, durationMillis);
+    });
+  }
+
+  /** The interval-pane scrub's rows, derived once for the frame it runs in. */
+  private _deriveIntervalScrub(
+    position: number,
+    panes: ComboIntervalPane[],
+    startTimeMs: number,
+    durationMillis: number
+  ): void {
     const hoverTime = startTimeMs + position * durationMillis;
     const primary = computeEnvSeries(this.descriptors, this.sensorHistory ?? {}, [this.primary], {
       startTimeMs,
@@ -440,7 +474,7 @@ export class MetricComboChart extends LitElement {
               },
             ]
           : []),
-        ...this._intervalRows(hoverTime, startTimeMs, durationMillis),
+        ...this._intervalRows(hoverTime, panes),
       ],
     };
   }
@@ -459,23 +493,21 @@ export class MetricComboChart extends LitElement {
     const hoverTime = startTimeMs + event.detail.position * durationMillis;
     this._scrub = {
       position: event.detail.position,
-      rows: [...event.detail.rows, ...this._intervalRows(hoverTime, startTimeMs, durationMillis)],
+      rows: [...event.detail.rows, ...this._intervalRows(hoverTime, panes)],
     };
   }
 
   /**
    * One row per subordinate pane, for the bucket under `hoverTime`.
    *
-   * Derived from the panes rather than taken as an argument so both entry points
-   * read the same buckets — the panes are cheap to recompute and a second
-   * derivation is a second chance for the two tooltips to disagree.
+   * Taken as an argument rather than re-derived: these are the panes the render
+   * drew, so both entry points read the same buckets the bars were cut from and
+   * a second derivation cannot let the tooltip and the bars disagree. It also
+   * keeps the scrub off `computeComboIntervalPane`, which a drag would
+   * otherwise re-run once per pane per pointer event.
    */
-  private _intervalRows(
-    hoverTime: number,
-    startTimeMs: number,
-    durationMillis: number
-  ): ChartScrubRow[] {
-    return this._panesFor(startTimeMs, durationMillis).flatMap((pane) => {
+  private _intervalRows(hoverTime: number, panes: ComboIntervalPane[]): ChartScrubRow[] {
+    return panes.flatMap((pane) => {
       const interval = this._intervalAt(pane, hoverTime);
       return interval ? [this._intervalRow(pane, interval)] : [];
     });
@@ -518,8 +550,16 @@ export class MetricComboChart extends LitElement {
   }
 
   private _clearScrub = (): void => {
+    this._cancelPendingScrub();
     this._scrub = undefined;
   };
+
+  private _cancelPendingScrub(): void {
+    if (this._scrubRafId !== null) {
+      cancelAnimationFrame(this._scrubRafId);
+      this._scrubRafId = null;
+    }
+  }
 }
 
 declare global {

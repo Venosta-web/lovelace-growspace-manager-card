@@ -199,8 +199,9 @@ describe('environment analytics localization', () => {
       limit: 1,
     };
 
-    await fixture(html`<div>${(element as any)._renderIntervalPane(dutyPane, 0, 1)}</div>`);
-    await fixture(html`<div>${(element as any)._renderIntervalPane(deltaPane, 0, 1)}</div>`);
+    const panes = [dutyPane, deltaPane];
+    await fixture(html`<div>${(element as any)._renderIntervalPane(dutyPane, panes, 0, 1)}</div>`);
+    await fixture(html`<div>${(element as any)._renderIntervalPane(deltaPane, panes, 0, 1)}</div>`);
 
     expect(localization.localizeWithParams).toHaveBeenCalledWith(
       'metric_combo.duty_label',

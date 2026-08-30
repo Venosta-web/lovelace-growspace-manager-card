@@ -1,4 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
+
+/**
+ * The bucketing the scrub must not re-run. Wrapped rather than replaced — every
+ * other test in this file reads the real bars.
+ */
+const bucketPane = vi.hoisted(() => vi.fn());
+vi.mock('../../src/features/environment/combo-series', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../../src/features/environment/combo-series')>();
+  bucketPane.mockImplementation(actual.computeComboIntervalPane);
+  return { ...actual, computeComboIntervalPane: bucketPane };
+});
 import { fixture, html } from '@open-wc/testing-helpers';
 import '../../src/features/environment/components/metric-combo-chart';
 import type { MetricComboChart } from '../../src/features/environment/components/metric-combo-chart';
@@ -9,6 +21,16 @@ import type { GrowspaceDevice } from '../../src/services/types';
 import type { SensorHistories } from '../../src/features/environment/types';
 
 const HOUR_MS = 60 * 60 * 1000;
+
+/**
+ * Both scrub entry points are frame-gated — the [[Env Graph]]'s own hover gate
+ * on the primary pane, the combo's on a subordinate one — so the rows land on
+ * the frame after the pointer event rather than during it.
+ */
+async function settleScrub(el: MetricComboChart): Promise<void> {
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  await el.updateComplete;
+}
 
 const TEMPERATURE_SENSOR = 'sensor.tent_temperature';
 const VPD_HUMIDITY_SENSOR = 'sensor.tent_humidity';
@@ -188,8 +210,7 @@ describe('metric-combo-chart', () => {
         pointerType: 'mouse',
       })
     );
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    await el.updateComplete;
+    await settleScrub(el);
 
     const tooltip = el.shadowRoot!.querySelector('chart-scrub-tooltip') as any;
     expect(tooltip).not.toBeNull();
@@ -266,7 +287,7 @@ describe('metric-combo-chart', () => {
         pointerType: 'touch',
       })
     );
-    await el.updateComplete;
+    await settleScrub(el);
 
     const overlays = el.shadowRoot!.querySelectorAll('chart-scrub-tooltip');
     expect(overlays).toHaveLength(1);
@@ -298,8 +319,7 @@ describe('metric-combo-chart', () => {
         pointerType: 'mouse',
       })
     );
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    await el.updateComplete;
+    await settleScrub(el);
 
     const overlay = el.shadowRoot!.querySelector('chart-scrub-tooltip')!;
     expect(overlay).not.toBeNull();
@@ -321,7 +341,7 @@ describe('metric-combo-chart', () => {
     intervalPane.dispatchEvent(
       new PointerEvent('pointermove', { bubbles: true, clientX: 50, pointerId: 1 })
     );
-    await el.updateComplete;
+    await settleScrub(el);
     expect(el.shadowRoot!.querySelector('chart-scrub-tooltip')).not.toBeNull();
 
     el.shadowRoot!.querySelector('growspace-env-chart')!.dispatchEvent(
@@ -344,7 +364,7 @@ describe('metric-combo-chart', () => {
     pane.dispatchEvent(
       new PointerEvent('pointermove', { bubbles: true, clientX: 50, pointerId: 1 })
     );
-    await el.updateComplete;
+    await settleScrub(el);
 
     const rows = el
       .shadowRoot!.querySelector('chart-scrub-tooltip')!
@@ -375,7 +395,7 @@ describe('metric-combo-chart', () => {
     pane.dispatchEvent(
       new PointerEvent('pointermove', { bubbles: true, clientX: 50, pointerId: 1 })
     );
-    await el.updateComplete;
+    await settleScrub(el);
     now.mockRestore();
 
     expect(chart.chartWindow).toEqual(windowBeforeScrub);
@@ -499,7 +519,7 @@ describe('metric-combo-chart — a combo with two secondaries', () => {
     pane.dispatchEvent(
       new PointerEvent('pointermove', { bubbles: true, clientX: 50, pointerId: 1 })
     );
-    await el.updateComplete;
+    await settleScrub(el);
 
     const overlays = el.shadowRoot!.querySelectorAll('chart-scrub-tooltip');
     expect(overlays).toHaveLength(1);
@@ -510,6 +530,61 @@ describe('metric-combo-chart — a combo with two secondaries', () => {
     expect(rows.join(' ')).toContain('Humidity');
     expect(rows.join(' ')).toContain('Humidifier');
     expect(rows.join(' ')).toContain('Dehumidifier');
+  });
+
+  it('holds the scrub to one derivation per frame however fast the drag fires', async () => {
+    // A drag emits pointermove far faster than the display refreshes, and each
+    // derivation re-reads the primary's [[Env Series]] and every pane's
+    // buckets. The Env Graph one component away gates its own hover on a frame;
+    // this is the same gate, so the cost is paid per frame and not per event.
+    const el = await mountHumidity();
+    const pane = el.shadowRoot!.querySelector<HTMLElement>('.duty-pane')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 64,
+    } as DOMRect);
+    const paneCount = el.shadowRoot!.querySelectorAll('.duty-pane').length;
+    bucketPane.mockClear();
+
+    for (const clientX of [10, 20, 30, 40, 50]) {
+      pane.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX, pointerId: 1 }));
+    }
+    // Nothing has been derived yet: the whole burst is still one pending frame.
+    expect(el.shadowRoot!.querySelector('chart-scrub-tooltip')).toBeNull();
+
+    await settleScrub(el);
+
+    const tooltip = el.shadowRoot!.querySelector('chart-scrub-tooltip') as HTMLElement & {
+      position: number;
+    };
+    // The last event in the burst is the one the grower is pointing at.
+    expect(tooltip.position).toBeCloseTo(0.5);
+    // Re-rendering with the tooltip re-buckets the panes once; the scrub itself
+    // reads the bars the render already cut rather than bucketing per event.
+    expect(bucketPane.mock.calls.length).toBeLessThanOrEqual(paneCount);
+  });
+
+  it('drops a queued scrub when the pointer leaves before the frame runs', async () => {
+    const el = await mountHumidity();
+    const pane = el.shadowRoot!.querySelector<HTMLElement>('.duty-pane')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 64,
+    } as DOMRect);
+
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, clientX: 50, pointerId: 1 })
+    );
+    el.shadowRoot!.querySelector('growspace-env-chart')!.dispatchEvent(
+      new PointerEvent('pointerleave', { pointerId: 1 })
+    );
+    await settleScrub(el);
+
+    expect(el.shadowRoot!.querySelector('chart-scrub-tooltip')).toBeNull();
   });
 
   it('degrades to the secondaries the growspace actually has', async () => {
