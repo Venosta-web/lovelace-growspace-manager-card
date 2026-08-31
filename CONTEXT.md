@@ -431,10 +431,34 @@ A single actionable item inside an [[AI Briefing]]. Carries `title` (one concise
 The left rail of the Briefing panel lists four views scoped to the current [[AI Briefing]]: **Morning Briefing** (full view — all [[Recommendation]]s), **Risk Watch** (filtered to `impact: high`), **What's Going Well** (filtered to `impact: low`), and **7-day Forecast** (placeholder — predictive forecast not yet implemented).
 
 **Growmaster Settings Panel**
-The fourth panel in the [[Growmaster Dialog]], reached via the gear icon at the bottom of the nav rail. Exposes the user-facing fields from the integration's global `ai_settings` config entry options — all except `vision_debug_enabled` (diagnostic, reserved for the HA options flow) and `ai_auto_alerts` (moved to the [[Notifications Tab]]). Fields are grouped into four sections: **Core** (`ai_enabled`, `assistant_id`), **Responses** (`notification_personality`, `max_response_length`), **Vision** (`vision_checkup_enabled`), and **Briefings** (`briefing_interval_minutes`, `briefing_trigger_entities`, `ai_task_entity_id`). Changes are persisted via an explicit Save button rendered in the dialog footer when the Settings panel is active. The settings are global — they apply to all growspaces, not just the one the dialog was opened from.
+The fourth panel in the [[Growmaster Dialog]], reached via the gear icon at the bottom of the nav rail. Exposes the user-facing fields from the integration's global `ai_settings` config entry options — all except `vision_debug_enabled` (diagnostic, reserved for the HA options flow) and `ai_auto_alerts` (moved to the [[Notifications Tab]]). Fields are grouped into four sections: **Core** (`ai_enabled`, `assistant_id`), **Responses** (`notification_personality`, `max_response_length`), **Vision** (`vision_explainer_sees_image`), and **Briefings** (`briefing_interval_minutes`, `briefing_trigger_entities`, `ai_task_entity_id`). Changes are persisted via an explicit Save button rendered in the dialog footer when the Settings panel is active. The settings are global — they apply to all growspaces, not just the one the dialog was opened from; scheduling a Vision Checkup remains growspace-local.
 
 **AI Settings Draft**
 The in-flight, unsaved state of the [[Growmaster Settings Panel]] form. Lives in local component or atom state scoped to the dialog's lifetime. Draft values survive rail-tab switches within the same dialog session — switching from Settings to Chat and back preserves edits. The draft is discarded when the dialog closes. Nothing is written to the backend until the user explicitly hits Save.
+
+**Vision Checkup**
+One growspace observation task containing one [[Vision Capture Result]] per configured camera. Its `completed`, `partial` or `failed` outcome describes the task's operation; it has no aggregate cross-camera fusion verdict.
+_Avoid_: Vision diagnosis, AI verdict, checkup result
+
+**Vision Capture Result**
+The evidence shown for one camera capture: image availability, quality, visual comparison, environmental evidence, fusion, trend, model provenance and optional explainer prose. It has no severity or symptom field; presentation tone comes from the fusion contract.
+_Avoid_: AI analysis, plant-health result, severity result
+
+**Vision Service Status**
+The integration-provided `ready`, `unavailable` or `incompatible` state of Growspace Vision, including the active model version when known. The card renders it read-only, leaves schedule editing available, and permits **Run now** only while ready.
+_Avoid_: Connected toggle, App configuration, health probe
+
+**Vision History**
+One newest-first timeline containing V1 [[Vision Checkup]] envelopes and clearly marked [[Legacy Vision Checkup Result]]s. Pagination counts checkups, while each V1 item may contain several capture results.
+_Avoid_: Capture history, AI findings list
+
+**Legacy Vision Checkup Result**
+A frozen cloud-era result discriminated as `legacy_cloud_v1` and rendered with a visible **Legacy cloud analysis** label. Its original severity and issues are historical attribution only and never restyled as V1 fusion evidence.
+_Avoid_: Migrated result, V1 result
+
+**Vision Configuration Panel**
+The growspace-local camera and schedule section in the config dialog's Vision tab, topped by read-only [[Vision Service Status]]. It never owns the service endpoint, bearer token, scoring thresholds or model selection.
+_Avoid_: Vision App settings, model settings
 
 ## Localization
 
