@@ -565,7 +565,7 @@ describe('GrowspaceEnvChart', () => {
       expect((element as any)._activeScrub).toBeFalsy();
     });
 
-    it('throws on a series with no points — documenting the current guard gap', () => {
+    it('skips a series with no points while keeping the scrub position usable', () => {
       (element as any)._cachedChartRect = { left: 0, width: 200, top: 0, height: 100 };
       const series = [
         { id: MetricKey.TEMPERATURE, title: 'Temp', unit: '°C', points: [], color: 'red' },
@@ -576,7 +576,9 @@ describe('GrowspaceEnvChart', () => {
           startTimeMs: 0,
           durationMillis: 2000,
         })
-      ).toThrow();
+      ).not.toThrow();
+      expect((element as any)._hoverTime).toBe(1000);
+      expect((element as any)._activeScrub.rows).toEqual([]);
     });
 
     it('cancels a pending frame on the next pointermove', () => {

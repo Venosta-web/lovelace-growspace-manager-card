@@ -61,6 +61,17 @@ interface ChartWindow {
   durationMillis: number;
 }
 
+/** A bounded number of useful stops for every supported history window. */
+const KEYBOARD_SCRUB_STEP_MS: Record<GrowspaceEnvChart['range'], number> = {
+  '1h': 5 * 60_000,
+  '6h': 15 * 60_000,
+  '24h': 60 * 60_000,
+  '7d': 6 * 60 * 60_000,
+};
+
+/** Coalesce held-arrow updates before handing them to a polite live region. */
+const SCRUB_ANNOUNCEMENT_DELAY_MS = 200;
+
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
   @consume({ context: hassContext, subscribe: true })
@@ -108,6 +119,7 @@ export class GrowspaceEnvChart extends LitElement {
   @state() private _canScrollLeft = false;
   @state() private _canScrollRight = false;
   @state() private _renderSeries: GraphSeries[] = [];
+  @state() private _scrubAnnouncement = '';
   /**
    * The window `_renderSeries` was built against.
    *
@@ -125,6 +137,8 @@ export class GrowspaceEnvChart extends LitElement {
   // Optimization: Cache bounding rect for tooltip
   private _cachedChartRect: DOMRect | null = null;
   private _tooltipRafId: number | null = null;
+  private _scrubAnnouncementTimeout: number | undefined;
+  private _keyboardScrubbing = false;
 
   private _localize(key: string, params: Record<string, string | number> = {}): string {
     return localizeWithParams(key, params, this.hass?.locale?.language ?? 'en');
@@ -209,6 +223,7 @@ export class GrowspaceEnvChart extends LitElement {
     if (this._chartObserver) this._chartObserver.disconnect();
     if (this._scrollCheckTimeout) clearTimeout(this._scrollCheckTimeout);
     if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
+    this._cancelScrubAnnouncement();
 
     window.removeEventListener('scroll', this._invalidateRectCacheBound);
     window.removeEventListener('resize', this._invalidateRectCacheBound);
@@ -340,6 +355,8 @@ export class GrowspaceEnvChart extends LitElement {
       `;
     }
 
+    const chartName = this._chartName(series);
+
     return html`
       <error-boundary .fallbackMessage=${this._localize('environment_chart.render_failed')}>
         <div class="gs-env-graph-card">
@@ -350,15 +367,29 @@ export class GrowspaceEnvChart extends LitElement {
             ? html`<div class="gs-value-axis-legend">${this._renderValueAxisLabels(series)}</div>`
             : ''}
 
+          <span id="env-chart-keyboard-instructions" class="visually-hidden">
+            ${this._localize('environment_chart.keyboard_scrub_instructions')}
+          </span>
+
           <div
             class=${classMap({
               'gs-env-chart-container': true,
               'has-overlay-axis': this.overlayMetrics.length > 0,
+              'focus-ring': true,
             })}
             ${ref(this._chartContainerRef)}
+            role="group"
+            tabindex="0"
+            aria-label=${this._localize('environment_chart.keyboard_scrub_label', {
+              chart: chartName,
+            })}
+            aria-describedby="env-chart-keyboard-instructions"
+            aria-keyshortcuts="ArrowLeft ArrowRight Home End Escape"
             @pointermove=${(e: PointerEvent) => this._onPointerMove(e, series, this._renderWindow)}
             @pointerleave=${this._onPointerLeave}
             @pointercancel=${this._onPointerLeave}
+            @keydown=${this._onChartKeydown}
+            @blur=${this._onChartBlur}
             @click=${() => this._onChartClick()}
           >
             ${this._renderTooltip()}
@@ -411,6 +442,9 @@ export class GrowspaceEnvChart extends LitElement {
                 .map((candidate) => this._renderSeriesTrace(candidate, this._renderWindow))}
             </svg>
           </div>
+          <span class="visually-hidden scrub-announcer" aria-live="polite" aria-atomic="true"
+            >${this._scrubAnnouncement}</span
+          >
           <!--
             A subordinate pane, when a host projects one: the bar half of a
             [[Curated Combo]]. It sits inside this card rather than beside it,
@@ -469,6 +503,9 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   private _onPointerMove(e: PointerEvent, seriesList: GraphSeries[], chartWindow: ChartWindow) {
+    this._keyboardScrubbing = false;
+    this._cancelScrubAnnouncement();
+    this._scrubAnnouncement = '';
     if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
 
     this._tooltipRafId = requestAnimationFrame(() => {
@@ -478,9 +515,57 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   private _onPointerLeave = () => {
-    if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
-    this._activeScrub = null;
-    this._hoverTime = null;
+    if (this._keyboardScrubbing) return;
+    this._clearScrub();
+  };
+
+  private _onChartBlur = () => this._clearScrub();
+
+  /**
+   * Explore the time axis without borrowing browser or assistive-technology
+   * shortcuts that belong to the vertical axis.
+   *
+   * An inactive scrub enters at the edge named by the arrow: Right starts at
+   * the beginning and Left starts at now. Subsequent presses move by a fixed
+   * time step, so sparse and dense sensors take the same number of presses.
+   */
+  private _onChartKeydown = (event: KeyboardEvent): void => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Escape'].includes(event.key)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (event.key === 'Escape') {
+      this._clearScrub();
+      return;
+    }
+
+    const currentPosition =
+      this._hoverTime === null
+        ? undefined
+        : (this._hoverTime - this._renderWindow.startTimeMs) / this._renderWindow.durationMillis;
+    const step =
+      (KEYBOARD_SCRUB_STEP_MS[this.range] ?? KEYBOARD_SCRUB_STEP_MS['24h']) /
+      this._renderWindow.durationMillis;
+    let position: number;
+
+    switch (event.key) {
+      case 'Home':
+        position = 0;
+        break;
+      case 'End':
+        position = 1;
+        break;
+      case 'ArrowLeft':
+        position = currentPosition === undefined ? 1 : currentPosition - step;
+        break;
+      default:
+        position = currentPosition === undefined ? 0 : currentPosition + step;
+        break;
+    }
+
+    this._keyboardScrubbing = true;
+    this._scrubAtPosition(position, this._renderSeries, this._renderWindow, 'keyboard');
   };
 
   private _onChartClick() {
@@ -504,11 +589,23 @@ export class GrowspaceEnvChart extends LitElement {
 
     const rect = this._cachedChartRect!;
     const mouseX = e.clientX - rect.left;
+    const position = rect.width > 0 ? mouseX / rect.width : 0.5;
+    this._scrubAtPosition(position, seriesList, chartWindow, 'pointer');
+  }
 
-    const relX = rect.width > 0 ? Math.max(0, Math.min(1, mouseX / rect.width)) : 0.5;
-    const hoverTime = chartWindow.startTimeMs + relX * chartWindow.durationMillis;
+  /** One derivation for pointer and keyboard, including the shared value formatter. */
+  private _scrubAtPosition(
+    rawPosition: number,
+    seriesList: GraphSeries[],
+    chartWindow: ChartWindow,
+    source: 'pointer' | 'keyboard'
+  ): void {
+    const position = Math.max(0, Math.min(1, rawPosition));
+    const hoverTime = chartWindow.startTimeMs + position * chartWindow.durationMillis;
+    const readingItems: ChartScrubRow[] = [];
 
     const items: ChartScrubRow[] = seriesList.flatMap((s) => {
+      if (s.points.length === 0) return [];
       let closest = s.points[0];
       let minDiff = Number.MAX_VALUE;
       let lo = 0;
@@ -535,6 +632,7 @@ export class GrowspaceEnvChart extends LitElement {
         value: formatReading(s, closest, (key) => this._localize(key)),
         color: s.color,
       };
+      readingItems.push(reading);
 
       const metricColor = s.metricColor ?? s.color;
       const bandItems = (s.guideBands ?? []).flatMap((band) => {
@@ -599,7 +697,7 @@ export class GrowspaceEnvChart extends LitElement {
     // One payload, whether this chart draws the readout or a host does: the
     // two used to be assembled separately and drifted apart in what they said
     // and how they said it (#866).
-    const scrub: ChartScrubDetail = { position: relX, time: hoverTime, rows: items };
+    const scrub: ChartScrubDetail = { position, time: hoverTime, rows: items, source };
     if (this.delegateScrub) {
       this._activeScrub = null;
       this.dispatchEvent(
@@ -612,16 +710,60 @@ export class GrowspaceEnvChart extends LitElement {
     } else {
       this._activeScrub = scrub;
     }
+    if (source === 'keyboard') this._queueScrubAnnouncement(hoverTime, readingItems);
     this._hoverTime = hoverTime;
   }
 
+  /** Speak after held-arrow input settles, and omit guide/interval context rows. */
+  private _queueScrubAnnouncement(time: number, readings: ChartScrubRow[]): void {
+    this._cancelScrubAnnouncement();
+    const locale = this.hass?.locale?.language || 'en';
+    const labels = readings.map((reading) =>
+      this._localize('environment_chart.keyboard_scrub_series', {
+        metric: reading.title,
+        value: reading.value,
+      })
+    );
+    const readingList = new Intl.ListFormat(locale, {
+      style: 'long',
+      type: 'conjunction',
+    }).format(labels);
+    const announcement = this._localize('environment_chart.keyboard_scrub_announcement', {
+      time: new Date(time).toLocaleTimeString(locale, {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      readings: readingList,
+    });
+
+    this._scrubAnnouncementTimeout = window.setTimeout(() => {
+      this._scrubAnnouncementTimeout = undefined;
+      this._scrubAnnouncement = announcement;
+    }, SCRUB_ANNOUNCEMENT_DELAY_MS);
+  }
+
+  private _cancelScrubAnnouncement(): void {
+    if (this._scrubAnnouncementTimeout !== undefined) {
+      window.clearTimeout(this._scrubAnnouncementTimeout);
+      this._scrubAnnouncementTimeout = undefined;
+    }
+  }
+
+  private _clearScrub(): void {
+    if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
+    this._tooltipRafId = null;
+    this._cancelScrubAnnouncement();
+    this._activeScrub = null;
+    this._hoverTime = null;
+    this._keyboardScrubbing = false;
+    this._scrubAnnouncement = '';
+    if (this.delegateScrub) {
+      this.dispatchEvent(new CustomEvent('chart-scrub-clear', { bubbles: true, composed: true }));
+    }
+  }
+
   private _accessibleSummary(seriesList: GraphSeries[]): string {
-    const chartName = this.isCombined
-      ? this.title || this._localize('environment_chart.environment_metrics')
-      : seriesList[0]?.title ||
-        this.title ||
-        METRIC_CONFIG[this.metricKey]?.title ||
-        this._localize('environment_chart.graph');
+    const chartName = this._chartName(seriesList);
 
     return accessibleChartSummary(
       chartName,
@@ -653,6 +795,15 @@ export class GrowspaceEnvChart extends LitElement {
       }),
       (key, params) => this._localize(key, params)
     );
+  }
+
+  private _chartName(seriesList: GraphSeries[]): string {
+    return this.isCombined
+      ? this.title || this._localize('environment_chart.environment_metrics')
+      : seriesList[0]?.title ||
+          this.title ||
+          METRIC_CONFIG[this.metricKey]?.title ||
+          this._localize('environment_chart.graph');
   }
 
   private _renderSingleHeader(series: GraphSeries) {
@@ -1162,6 +1313,17 @@ export class GrowspaceEnvChart extends LitElement {
       padding: 16px;
       contain: content;
     }
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
     .gs-env-graph-header {
       display: flex;
       align-items: center;
@@ -1251,6 +1413,12 @@ export class GrowspaceEnvChart extends LitElement {
       cursor: crosshair;
       overflow: hidden;
       touch-action: pan-y;
+    }
+    /* This pane clips the trace and scrub overlay, so the shared positive
+       outline offset would be clipped with them. Keep the same focus colour
+       and weight as the neighbouring controls, inset just enough to stay visible. */
+    .gs-env-chart-container.focus-ring:focus-visible {
+      outline-offset: -3px;
     }
     .gs-env-chart-container.empty {
       display: flex;
