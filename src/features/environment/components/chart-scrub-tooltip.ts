@@ -24,6 +24,8 @@ export interface ChartScrubDetail {
   /** The instant scrubbed. Every row reports this moment, however it reads it. */
   time: number;
   rows: ChartScrubRow[];
+  /** Input owner, so a composed chart can keep keyboard scrubs across pointer exits. */
+  source?: 'pointer' | 'keyboard';
 }
 
 /**

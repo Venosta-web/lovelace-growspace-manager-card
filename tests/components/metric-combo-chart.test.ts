@@ -332,6 +332,37 @@ describe('metric-combo-chart', () => {
     expect(chart.shadowRoot!.querySelector('.gs-tooltip')).toBeNull();
   });
 
+  it('keyboard-scrubs the shared combo cursor while announcing only primary readings', async () => {
+    vi.useFakeTimers();
+    try {
+      const el = await mount();
+      const chart = el.shadowRoot!.querySelector('growspace-env-chart') as HTMLElement & {
+        updateComplete: Promise<unknown>;
+      };
+      await chart.updateComplete;
+      const pane = chart.shadowRoot!.querySelector<HTMLElement>('.gs-env-chart-container')!;
+
+      pane.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      await el.updateComplete;
+
+      const overlay = el.shadowRoot!.querySelector('chart-scrub-tooltip') as any;
+      expect(overlay).not.toBeNull();
+      expect(overlay.rows.map((row: any) => row.title)).toEqual(['Temperature', 'Exhaust']);
+
+      await vi.advanceTimersByTimeAsync(200);
+      await (chart as any).updateComplete;
+      const announcement = chart.shadowRoot!.querySelector('.scrub-announcer')!.textContent!;
+      expect(announcement).toContain('Temperature: 26.0 °C');
+      expect(announcement).not.toContain('Exhaust');
+
+      pane.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await el.updateComplete;
+      expect(el.shadowRoot!.querySelector('chart-scrub-tooltip')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('clears the shared tooltip and cursor together when the combo is left', async () => {
     const el = await mount();
     const intervalPane = el.shadowRoot!.querySelector<HTMLElement>('.duty-pane')!;

@@ -1,6 +1,7 @@
 import { fixture, html } from '@open-wc/testing-helpers';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContextProvider } from '@lit/context';
+import type { LitElement } from 'lit';
 import '../../src/features/environment/components/env-chart';
 import type { GrowspaceEnvChart } from '../../src/features/environment/components/env-chart';
 import { hassContext } from '../../src/context';
@@ -133,5 +134,115 @@ describe('GrowspaceEnvChart accessibility', () => {
     expect(legend.getAttribute('aria-label')).toBe('Unlink Temperature graph');
     legend.click();
     expect(unlinks[0].detail).toBe(MetricKey.TEMPERATURE);
+  });
+
+  it('makes the populated chart body a named keyboard exploration target', async () => {
+    element.metricKey = MetricKey.TEMPERATURE;
+    element.sensorHistory = {
+      [MetricKey.TEMPERATURE]: [reading('20'), reading('22.5')],
+    } as any;
+    await element.updateComplete;
+
+    const chartBody = element.shadowRoot!.querySelector('.gs-env-chart-container') as HTMLElement;
+    const instructions = element.shadowRoot!.querySelector('#env-chart-keyboard-instructions');
+
+    expect(chartBody.tabIndex).toBe(0);
+    expect(chartBody.getAttribute('role')).toBe('group');
+    expect(chartBody.classList).toContain('focus-ring');
+    expect(chartBody.getAttribute('aria-label')).toBe('Explore Temperature graph values');
+    expect(chartBody.getAttribute('aria-describedby')).toBe('env-chart-keyboard-instructions');
+    expect(chartBody.getAttribute('aria-keyshortcuts')).toBe(
+      'ArrowLeft ArrowRight Home End Escape'
+    );
+    expect(instructions?.textContent).toContain('Left and Right Arrow keys');
+    expect(instructions?.textContent).toContain('Home and End');
+    expect(instructions?.textContent).toContain('Escape');
+  });
+
+  it('moves through a 24h window in one-hour steps and supports its edge and clear keys', async () => {
+    const endTime = Date.now();
+    const durationMillis = 24 * 60 * 60 * 1000;
+    element.metricKey = MetricKey.TEMPERATURE;
+    element.chartWindow = { startTimeMs: endTime - durationMillis, durationMillis };
+    element.sensorHistory = {
+      [MetricKey.TEMPERATURE]: [reading('20'), reading('22.5')],
+    } as any;
+    await element.updateComplete;
+
+    const chartBody = element.shadowRoot!.querySelector('.gs-env-chart-container') as HTMLElement;
+    const press = async (key: string) => {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      chartBody.dispatchEvent(event);
+      await element.updateComplete;
+      expect(event.defaultPrevented).toBe(true);
+    };
+
+    await press('Home');
+    expect((element as any)._hoverTime).toBe(endTime - durationMillis);
+
+    await press('ArrowRight');
+    expect((element as any)._hoverTime).toBe(endTime - durationMillis + 60 * 60 * 1000);
+
+    await press('End');
+    expect((element as any)._hoverTime).toBe(endTime);
+
+    await press('ArrowLeft');
+    expect((element as any)._hoverTime).toBe(endTime - 60 * 60 * 1000);
+    expect(element.shadowRoot!.querySelector('chart-scrub-tooltip')).not.toBeNull();
+
+    await press('Escape');
+    expect((element as any)._hoverTime).toBeNull();
+    expect(element.shadowRoot!.querySelector('chart-scrub-tooltip')).toBeNull();
+  });
+
+  it('debounces a polite reading-only announcement and uses the pointer formatter', async () => {
+    vi.useFakeTimers();
+    try {
+      element.metricKey = MetricKey.IRRIGATION;
+      element.sensorHistory = {
+        [MetricKey.IRRIGATION]: [reading('off'), reading('on')],
+      } as any;
+      await element.updateComplete;
+
+      const chartBody = element.shadowRoot!.querySelector('.gs-env-chart-container') as HTMLElement;
+      const announcer = element.shadowRoot!.querySelector('.scrub-announcer') as HTMLElement;
+
+      chartBody.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      await element.updateComplete;
+      expect(announcer.textContent?.trim()).toBe('');
+
+      chartBody.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      chartBody.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      await vi.advanceTimersByTimeAsync(199);
+      await element.updateComplete;
+      expect(announcer.textContent?.trim()).toBe('');
+
+      await vi.advanceTimersByTimeAsync(1);
+      await element.updateComplete;
+      expect(announcer.getAttribute('aria-live')).toBe('polite');
+      expect(announcer.getAttribute('aria-atomic')).toBe('true');
+      expect(announcer.textContent).toContain('Irrigation: OFF');
+      expect(announcer.textContent).not.toContain('1.0');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps keyboard cursor movement instantaneous', async () => {
+    element.metricKey = MetricKey.TEMPERATURE;
+    element.sensorHistory = {
+      [MetricKey.TEMPERATURE]: [reading('20'), reading('22.5')],
+    } as any;
+    await element.updateComplete;
+
+    const chartBody = element.shadowRoot!.querySelector('.gs-env-chart-container') as HTMLElement;
+    chartBody.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    await element.updateComplete;
+
+    const readout = element.shadowRoot!.querySelector('chart-scrub-tooltip') as LitElement;
+    await readout.updateComplete;
+    const cursor = readout.shadowRoot!.querySelector('.chart-scrub-cursor') as HTMLElement;
+    expect(getComputedStyle(cursor).transitionProperty).not.toContain('left');
+    expect(getComputedStyle(cursor).transitionProperty).not.toContain('transform');
   });
 });

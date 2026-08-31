@@ -325,8 +325,9 @@ export class MetricComboChart extends LitElement {
         .delegateScrub=${panes.length > 0 || overlayMetrics.length > 0}
         @chart-scrub=${(event: CustomEvent<ChartScrubDetail>) =>
           this._scrubPrimaryPane(event, panes, startTimeMs, durationMillis)}
-        @pointerleave=${this._clearScrub}
-        @pointercancel=${this._clearScrub}
+        @chart-scrub-clear=${this._clearScrub}
+        @pointerleave=${this._clearPointerScrub}
+        @pointercancel=${this._clearPointerScrub}
       >
         ${panes.map((pane) => this._renderIntervalPane(pane, panes, startTimeMs, durationMillis))}
       </growspace-env-chart>
@@ -466,6 +467,7 @@ export class MetricComboChart extends LitElement {
     this._scrub = {
       position,
       time: hoverTime,
+      source: 'pointer',
       rows: [
         ...(primary && primaryPoint
           ? [
@@ -489,12 +491,16 @@ export class MetricComboChart extends LitElement {
     durationMillis: number
   ): void {
     if (panes.length === 0) {
-      this._scrub = event.detail;
+      this._scrub = {
+        ...event.detail,
+        source: event.detail.source ?? 'pointer',
+      };
       return;
     }
     const hoverTime = startTimeMs + event.detail.position * durationMillis;
     this._scrub = {
       ...event.detail,
+      source: event.detail.source ?? 'pointer',
       rows: [...event.detail.rows, ...this._intervalRows(hoverTime, panes)],
     };
   }
@@ -550,6 +556,11 @@ export class MetricComboChart extends LitElement {
   private _clearScrub = (): void => {
     this._cancelPendingScrub();
     this._scrub = undefined;
+  };
+
+  private _clearPointerScrub = (): void => {
+    if (this._scrub?.source === 'keyboard') return;
+    this._clearScrub();
   };
 
   private _cancelPendingScrub(): void {
