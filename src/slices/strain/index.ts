@@ -88,11 +88,53 @@ function _parseLibrary(rawStrains: z.output<typeof StrainLibrarySchema>): Strain
 }
 
 /**
+ * Fields the `add_strain` / `update_strain_meta` services accept — the required
+ * `strain` plus `STRAIN_BASE_FIELDS` in the integration's `schemas.py`.
+ *
+ * Home Assistant validates service data with voluptuous, which rejects anything
+ * else outright ("extra keys not allowed @ data['<key>']"), so the payload is
+ * projected onto this list instead of passing the read model through: `key`,
+ * `parents`, `analytics` and `is_stub` are view-only fields, and an imported
+ * strain can still carry source-specific keys.
+ */
+const STRAIN_PAYLOAD_FIELDS = [
+  'strain',
+  'phenotype',
+  'breeder',
+  'breeder_logo',
+  'type',
+  'lineage',
+  'sex',
+  'flower_days_min',
+  'flower_days_max',
+  'flowering_days_min',
+  'flowering_days_max',
+  'description',
+  'image',
+  'image_base64',
+  'image_path',
+  'image_crop_meta',
+  'sativa_percentage',
+  'indica_percentage',
+  'yield_potential',
+  'height',
+  'thc',
+  'cbd',
+  'cbg',
+  'awards',
+  'lineage_tree',
+  'images',
+] as const;
+
+/**
  * Build the service-call payload for add/update operations, applying the
  * image-routing rules:
  *   - gallery present  → send `images`, omit `image`
  *   - data: URL        → send `image_base64`, omit `image`
  *   - path/remote URL  → send `image_path`, omit `image`
+ *
+ * Only `STRAIN_PAYLOAD_FIELDS` survive; `parents` is a lineage tree handled
+ * out-of-band via `importStrainLineageTree`.
  */
 function _buildStrainPayload(
   data: Partial<StrainEntry> & {
@@ -102,23 +144,12 @@ function _buildStrainPayload(
 ): Record<string, unknown> {
   const payload: Record<string, unknown> = { ...data };
 
-  // `parents` is a lineage tree handled out-of-band via importStrainLineageTree,
-  // never part of the add/update_strain payload.
-  delete payload.parents;
-  // `key` is a read-only composite identifier from the strain read model.
-  delete payload.key;
-
   // Coerce flowering-day ranges to numbers (form inputs deliver strings).
   if (payload.flowering_days_min !== undefined && payload.flowering_days_min !== null) {
     payload.flowering_days_min = Number(payload.flowering_days_min);
   }
   if (payload.flowering_days_max !== undefined && payload.flowering_days_max !== null) {
     payload.flowering_days_max = Number(payload.flowering_days_max);
-  }
-
-  // Remove undefined keys
-  for (const key of Object.keys(payload)) {
-    if (payload[key] === undefined) delete payload[key];
   }
 
   if (data.images && data.images.length > 0) {
@@ -132,7 +163,13 @@ function _buildStrainPayload(
     delete payload.image;
   }
 
-  return payload;
+  // Keep only accepted fields, dropping undefined values along with them.
+  return Object.fromEntries(
+    STRAIN_PAYLOAD_FIELDS.filter((field) => payload[field] !== undefined).map((field) => [
+      field,
+      payload[field],
+    ])
+  );
 }
 
 // ---------------------------------------------------------------------------
