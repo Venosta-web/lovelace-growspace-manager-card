@@ -4,11 +4,11 @@ import React from 'react';
 
 // Require images via Webpack/Remotion handling to ensure bundle inclusion
 // In a real scenario we might dynamic import, but static require is reliable for Remotion
-const mainCard = require('../../assets/screenshots/main-card.png');
-const plantOverview = require('../../assets/screenshots/plant-overview-tab.png');
-const timeline = require('../../assets/screenshots/plant-timeline-tab.png');
-const library = require('../../assets/screenshots/strain-library.png');
-const mobile = require('../../assets/screenshots/mobile-view.png');
+const mainCard = require('../../assets/screenshots/overview.png');
+const plantOverview = require('../../assets/screenshots/plant-dialog.png');
+const cropSteering = require('../../assets/screenshots/crop-steering.png');
+const library = require('../../assets/screenshots/strain-library-grid.png');
+const mobile = require('../../assets/screenshots/mobile.png');
 
 export const WalkthroughComposition: React.FC = () => {
     const { fps } = useVideoConfig(); // use `fps`
@@ -28,9 +28,9 @@ export const WalkthroughComposition: React.FC = () => {
             duration: 150
         },
         {
-            image: timeline,
-            title: "Growth Timeline",
-            description: "Visualize lifecycle progress from seed to harvest.",
+            image: cropSteering,
+            title: "Crop Steering",
+            description: "Phase-driven irrigation computed from live VWC targets.",
             duration: 150
         },
         {
