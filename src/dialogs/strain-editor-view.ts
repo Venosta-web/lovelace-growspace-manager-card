@@ -34,7 +34,12 @@ import '../features/shared/ui/lineage-tree';
 import '../features/shared/ui/gs-help-tooltip';
 import '../features/shared/ui/camera-capture';
 import type { CameraCapture } from '../features/shared/ui/camera-capture';
-import { createInitialSM, transition, type StrainEditorSM } from './strain-editor-view-sm';
+import {
+  createInitialSM,
+  mergeImportedStrain,
+  transition,
+  type StrainEditorSM,
+} from './strain-editor-view-sm';
 
 @customElement('strain-editor-view')
 export class StrainEditorView extends LitElement {
@@ -390,18 +395,7 @@ export class StrainEditorView extends LitElement {
   }
 
   private _handleSeedfinderImport(e: CustomEvent): void {
-    const data = e.detail;
-    const gallery: StrainGalleryImage[] | undefined = data.images?.length
-      ? data.images.map((url: string, i: number) => ({
-          path: url,
-          is_thumbnail: i === 0,
-        }))
-      : undefined;
-    const merged = {
-      ...this._sm.draft,
-      ...data,
-      ...(gallery ? { images: gallery, image: gallery[0].path } : {}),
-    };
+    const merged = mergeImportedStrain(this._sm.draft, e.detail);
     // Apply merged fields individually via DraftFieldChanged
     for (const [key, value] of Object.entries(merged)) {
       if (
