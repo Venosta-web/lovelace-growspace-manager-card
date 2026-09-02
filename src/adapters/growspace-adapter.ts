@@ -330,6 +330,11 @@ export class GrowspaceAdapter {
           autoLightTracking: irrigationStrategyRaw.auto_light_tracking,
           detectedLightsOnTime: irrigationStrategyRaw.detected_lights_on_time,
           declaredSteeringMode: irrigationStrategyRaw.declared_steering_mode ?? null,
+          // [[Recipe Stamp]] provenance (ADR-0045). `?? null` collapses "the
+          // backend omitted the key" onto "never applied" — the same answer for
+          // the Recipe tab, which reports both as "no recipe applied yet".
+          appliedRecipeId: irrigationStrategyRaw.applied_recipe_id ?? null,
+          recipeAppliedAt: irrigationStrategyRaw.recipe_applied_at ?? null,
           // Adaptive Shot Control (ADR-0014). Master toggle defaults on to match
           // the backend default and the previously always-on size feedback.
           dynamicShotEnabled: irrigationStrategyRaw.dynamic_shot_enabled ?? true,
@@ -339,6 +344,30 @@ export class GrowspaceAdapter {
           dynamicIntervalCeiling: irrigationStrategyRaw.dynamic_interval_ceiling,
         }
       : undefined;
+
+    // The global [[Irrigation Recipe]] library rides every growspace payload.
+    // Ordered by name so the Recipe tab has a stable base ordering to sort on
+    // top of; the wire shape is a dict, whose key order is not a contract.
+    // `undefined` when the backend omits the key entirely (a release predating
+    // the feature) — distinct from `{}`, which is a real empty library. The
+    // hydration fan-out relies on telling those apart.
+    const irrigationRecipes = !irrigation?.recipes
+      ? undefined
+      : Object.values(irrigation.recipes)
+          .map((r) => ({
+            id: r.id,
+            name: r.name,
+            kind: r.kind,
+            provenance: {
+              mediaType: r.provenance.media_type,
+              litersPerPot: r.provenance.liters_per_pot,
+              pumpFlowRateMlPerSec: r.provenance.pump_flow_rate_ml_per_sec,
+              stage: r.provenance.stage,
+              week: r.provenance.week,
+            },
+            createdAt: r.created_at,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
 
     const drainConfigRaw = irrigation?.drain_config;
     const drainConfig = drainConfigRaw
@@ -462,6 +491,10 @@ export class GrowspaceAdapter {
       irrigationConfig,
       irrigationStrategy,
       volumeModeCapable: irrigation?.volume_mode_capable ?? false,
+      irrigationRecipes,
+      // `?? null` keeps "the backend omitted the key" and "the question does not
+      // apply" as one answer: both mean the Recipe tab shows no drift verdict.
+      appliedRecipeDrifted: irrigation?.applied_recipe_drifted ?? null,
       drainConfig,
       energyTracking,
       waterUsage,

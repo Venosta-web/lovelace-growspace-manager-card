@@ -11,6 +11,7 @@
  *   - updateIrrigationStrategy: optimistic strategy update + rollback
  *   - saveIrrigationSettings: optimistic settings patch + rollback
  *   - logDrainReading / configureDrainMonitoring / runIrrigationCycle: fire-and-forget calls
+ *   - saveIrrigationRecipe / applyIrrigationRecipe: the Irrigation Recipe library
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -42,6 +43,10 @@ import {
   runIrrigationCycle,
   fetchCropSteeringHistory,
   getIrrigationAnalytics,
+  irrigationRecipes$,
+  setIrrigationRecipes,
+  saveIrrigationRecipe,
+  applyIrrigationRecipe,
 } from './index';
 import { CropSteeringHistorySchema } from '../../schemas/api-schema';
 import {
@@ -57,6 +62,8 @@ import {
   RunIrrigationCyclePayloadSchema,
   PhaseWindowSchema,
   PhaseWindowsSchema,
+  SaveIrrigationRecipePayloadSchema,
+  ApplyIrrigationRecipePayloadSchema,
 } from './schema';
 
 vi.mock('../../services/hass-call', () => ({
@@ -96,6 +103,7 @@ beforeEach(() => {
   irrigationStrategies$.set(new Map());
   tankLevels$.set(new Map());
   cropSteeringHistory$.set(new Map());
+  irrigationRecipes$.set([]);
   devices$.set([]);
   vi.clearAllMocks();
   vi.mocked(hassCall.callService).mockResolvedValue(undefined);
@@ -1336,5 +1344,229 @@ describe('getIrrigationAnalytics', () => {
     const result = await getIrrigationAnalytics('gs1');
 
     expect(result).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Irrigation Recipes
+// ---------------------------------------------------------------------------
+
+const WIRE_RECIPE = {
+  id: 'r1',
+  name: 'Flower week 3',
+  kind: 'crop_steering' as const,
+  provenance: {
+    media_type: 'rockwool' as const,
+    liters_per_pot: 7.5,
+    pump_flow_rate_ml_per_sec: 13.5,
+    stage: 'flower',
+    week: 3,
+  },
+  crop_steering: null,
+  schedule: null,
+  created_at: '2026-08-04T09:00:00+00:00',
+};
+
+describe('saveIrrigationRecipe', () => {
+  it('sends the growspace, the name and the half being captured', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_RECIPE);
+
+    await saveIrrigationRecipe({
+      growspaceId: 'gs1',
+      name: 'Flower week 3',
+      kind: 'crop_steering',
+    });
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/save_irrigation_recipe',
+      { growspace_id: 'gs1', name: 'Flower week 3', kind: 'crop_steering' },
+      expect.anything()
+    );
+  });
+
+  it('sends recipe_id only when overwriting an existing recipe', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_RECIPE);
+
+    await saveIrrigationRecipe({
+      growspaceId: 'gs1',
+      name: 'Flower week 3',
+      kind: 'crop_steering',
+      recipeId: 'r1',
+    });
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/save_irrigation_recipe',
+      expect.objectContaining({ recipe_id: 'r1' }),
+      expect.anything()
+    );
+  });
+
+  it('merges the saved recipe into the library, name-ordered', async () => {
+    setIrrigationRecipes([
+      {
+        id: 'z',
+        name: 'Zulu',
+        kind: 'crop_steering',
+        provenance: {
+          mediaType: 'coco',
+          litersPerPot: 5,
+          pumpFlowRateMlPerSec: 11,
+          stage: 'veg',
+          week: 2,
+        },
+        createdAt: '2026-08-01T00:00:00+00:00',
+      },
+    ]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_RECIPE);
+
+    await saveIrrigationRecipe({
+      growspaceId: 'gs1',
+      name: 'Flower week 3',
+      kind: 'crop_steering',
+    });
+
+    expect(irrigationRecipes$.get().map((r) => r.id)).toEqual(['r1', 'z']);
+    expect(irrigationRecipes$.get()[0].provenance).toEqual({
+      mediaType: 'rockwool',
+      litersPerPot: 7.5,
+      pumpFlowRateMlPerSec: 13.5,
+      stage: 'flower',
+      week: 3,
+    });
+  });
+
+  it('replaces rather than duplicates when the same recipe is saved again', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_RECIPE);
+    await saveIrrigationRecipe({
+      growspaceId: 'gs1',
+      name: 'Flower week 3',
+      kind: 'crop_steering',
+    });
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ ...WIRE_RECIPE, name: 'Renamed' });
+    await saveIrrigationRecipe({
+      growspaceId: 'gs1',
+      name: 'Renamed',
+      kind: 'crop_steering',
+      recipeId: 'r1',
+    });
+
+    expect(irrigationRecipes$.get().map((r) => r.name)).toEqual(['Renamed']);
+  });
+
+  it('leaves the library untouched when the backend refuses the capture', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(
+      new Error('no pump flow rate is configured')
+    );
+
+    await expect(
+      saveIrrigationRecipe({ growspaceId: 'gs1', name: 'Nope', kind: 'crop_steering' })
+    ).rejects.toThrow('no pump flow rate is configured');
+    expect(irrigationRecipes$.get()).toEqual([]);
+  });
+});
+
+describe('applyIrrigationRecipe', () => {
+  const REPLY = {
+    growspace_id: 'gs1',
+    applied_recipe_id: 'r1',
+    recipe_applied_at: '2026-08-10T07:15:00+00:00',
+    warning: null,
+  };
+
+  it('calls the apply_irrigation_recipe WS command with the growspace and recipe', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(REPLY);
+
+    await applyIrrigationRecipe('gs1', 'r1');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/apply_irrigation_recipe',
+      { growspace_id: 'gs1', recipe_id: 'r1' },
+      expect.anything()
+    );
+  });
+
+  it('records the stamp on the device and clears the drift verdict', async () => {
+    setDevices([
+      createGrowspaceDevice({ deviceId: 'gs1', name: 'G1', irrigationStrategy: makeStrategy() }),
+    ]);
+    setIrrigationStrategy('gs1', makeStrategy());
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(REPLY);
+
+    await applyIrrigationRecipe('gs1', 'r1');
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationStrategy?.appliedRecipeId).toBe('r1');
+    expect(device?.irrigationStrategy?.recipeAppliedAt).toBe('2026-08-10T07:15:00+00:00');
+    expect(device?.appliedRecipeDrifted).toBe(false);
+  });
+
+  it('returns the backend notice so a cross-media apply can be surfaced', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      ...REPLY,
+      warning:
+        "Irrigation recipe 'Flower week 3' was authored in rockwool and applied to a coco growspace.",
+    });
+
+    const result = await applyIrrigationRecipe('gs1', 'r1');
+
+    expect(result.warning).toContain('rockwool');
+  });
+
+  it('rolls the stamp back when the apply is refused', async () => {
+    setDevices([
+      createGrowspaceDevice({
+        deviceId: 'gs1',
+        name: 'G1',
+        irrigationStrategy: makeStrategy({ appliedRecipeId: 'previous' }),
+      }),
+    ]);
+    setIrrigationStrategy('gs1', makeStrategy({ appliedRecipeId: 'previous' }));
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('kind mismatch'));
+
+    await expect(applyIrrigationRecipe('gs1', 'r1')).rejects.toThrow();
+
+    expect(irrigationStrategies$.get().get('gs1')?.appliedRecipeId).toBe('previous');
+    expect(devices$.get()[0].irrigationStrategy?.appliedRecipeId).toBe('previous');
+  });
+});
+
+describe('Irrigation Recipe payload schemas', () => {
+  it('validates the save payload, with recipe_id only when overwriting', () => {
+    const create = { growspace_id: 'gs1', name: 'Flower week 3', kind: 'crop_steering' as const };
+    expect(SaveIrrigationRecipePayloadSchema.parse(create)).toEqual(create);
+
+    const overwrite = { ...create, recipe_id: 'r1' };
+    expect(SaveIrrigationRecipePayloadSchema.parse(overwrite)).toEqual(overwrite);
+  });
+
+  it('rejects a save payload carrying a key the backend does not accept', () => {
+    expect(
+      SaveIrrigationRecipePayloadSchema.safeParse({
+        growspace_id: 'gs1',
+        name: 'Flower week 3',
+        kind: 'crop_steering',
+        recipeId: 'r1',
+      }).success
+    ).toBe(false);
+  });
+
+  it('rejects a kind that is neither half a recipe can carry', () => {
+    expect(
+      SaveIrrigationRecipePayloadSchema.safeParse({
+        growspace_id: 'gs1',
+        name: 'Both',
+        kind: 'both',
+      }).success
+    ).toBe(false);
+  });
+
+  it('validates the apply payload', () => {
+    const payload = { growspace_id: 'gs1', recipe_id: 'r1' };
+    expect(ApplyIrrigationRecipePayloadSchema.parse(payload)).toEqual(payload);
+    expect(ApplyIrrigationRecipePayloadSchema.safeParse({ growspace_id: 'gs1' }).success).toBe(
+      false
+    );
   });
 });

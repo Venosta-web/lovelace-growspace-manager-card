@@ -37,10 +37,20 @@ vi.mock('../slices/irrigation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../slices/irrigation')>()),
   applySteeringMode: vi.fn().mockResolvedValue(undefined),
   fetchCropSteeringHistory: vi.fn().mockResolvedValue(undefined),
+  saveIrrigationRecipe: vi.fn().mockResolvedValue(undefined),
+  applyIrrigationRecipe: vi.fn().mockResolvedValue({
+    growspace_id: 'gs1',
+    applied_recipe_id: 'r1',
+    recipe_applied_at: '2026-08-10T07:15:00+00:00',
+    warning: null,
+  }),
 }));
 import {
   applySteeringMode as sliceApplySteeringMode,
   fetchCropSteeringHistory as sliceFetchCropSteeringHistory,
+  applyIrrigationRecipe as sliceApplyIrrigationRecipe,
+  irrigationRecipes$,
+  saveIrrigationRecipe as sliceSaveIrrigationRecipe,
 } from '../slices/irrigation';
 
 afterEach(() => {
@@ -48,6 +58,7 @@ afterEach(() => {
   cropSteeringHistory$.set(new Map());
   irrigationConfigs$.set(new Map());
   tankLevels$.set(new Map());
+  irrigationRecipes$.set([]);
   vi.restoreAllMocks();
 });
 
@@ -2275,5 +2286,212 @@ describe('IrrigationDialog – Crop Steering Day Chart legend: EC sensor presenc
     const text = normalize(legend?.textContent);
     expect(text).toContain('Pore EC not configured');
     expect(text).toContain('Bulk EC not configured');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Recipe tab – the whole grower story through the Dialog Shell
+// ---------------------------------------------------------------------------
+
+function makeRecipe(
+  overrides: Partial<import('../services/types').IrrigationRecipe> = {}
+): import('../services/types').IrrigationRecipe {
+  return {
+    id: 'r1',
+    name: 'Flower week 3',
+    kind: 'crop_steering',
+    provenance: {
+      mediaType: 'coco',
+      litersPerPot: 5,
+      pumpFlowRateMlPerSec: 11,
+      stage: 'flower',
+      week: 3,
+    },
+    createdAt: '2026-08-04T09:00:00+00:00',
+    ...overrides,
+  };
+}
+
+function recipeDevice(overrides: Partial<Parameters<typeof createGrowspaceDevice>[0]> = {}) {
+  return withPump({
+    biologicalMetrics: {
+      vpdStatus: 'ok',
+      vpdTargetMin: 0,
+      vpdTargetMax: 0,
+      vpdDangerMin: 0,
+      vpdDangerMax: 0,
+      granularStage: 'flower_mid',
+      isDay: true,
+      vegWeek: 0,
+      flowerWeek: 3,
+    },
+    irrigationStrategy: makeStrategy(),
+    ...overrides,
+  });
+}
+
+async function openRecipesTab(device: ReturnType<typeof recipeDevice>) {
+  const el = await fixture<IrrigationDialog>(html`
+    <irrigation-dialog .open=${true} .device=${device} growspaceName="Tent 1"></irrigation-dialog>
+  `);
+  await el.updateComplete;
+  (el.shadowRoot!.querySelector('[data-tab="recipes"]') as HTMLElement).click();
+  await el.updateComplete;
+  const tab = el.shadowRoot!.querySelector('irrigation-recipes-tab') as LitElement;
+  await tab.updateComplete;
+  return { el, tab };
+}
+
+describe('IrrigationDialog – Recipe tab', () => {
+  it('offers the tab once a pump is configured, and not before', async () => {
+    const withoutPump = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${makeDevice()}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await withoutPump.updateComplete;
+    expect(withoutPump.shadowRoot!.querySelector('[data-tab="recipes"]')).toBeNull();
+
+    const withIt = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${recipeDevice()}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await withIt.updateComplete;
+    expect(withIt.shadowRoot!.querySelector('[data-tab="recipes"]')).not.toBeNull();
+  });
+
+  it('lists the library and pre-selects the recipe authored in this stage and week', async () => {
+    irrigationRecipes$.set([
+      makeRecipe({
+        id: 'far',
+        name: 'Aaa veg',
+        provenance: { ...makeRecipe().provenance, stage: 'veg', week: 1 },
+      }),
+      makeRecipe({ id: 'exact', name: 'Zzz flower 3' }),
+    ]);
+
+    const { tab } = await openRecipesTab(recipeDevice());
+    const rows = [...tab.shadowRoot!.querySelectorAll('[data-recipe-id]')];
+
+    expect(rows.map((r) => r.getAttribute('data-recipe-id'))).toEqual(['exact', 'far']);
+    expect(rows[0].classList.contains('selected')).toBe(true);
+  });
+
+  it('does not offer a recipe of the half this growspace is not running', async () => {
+    irrigationRecipes$.set([makeRecipe({ id: 'sched', kind: 'schedule' })]);
+
+    const { tab } = await openRecipesTab(recipeDevice());
+
+    expect(tab.shadowRoot!.querySelector('[data-recipe-id="sched"]')).toBeNull();
+    expect(
+      normalize(tab.shadowRoot!.querySelector('[data-hidden-by-kind]')?.textContent)
+    ).toContain('1 recipe is not listed');
+  });
+
+  it('applies the selected recipe and reflects the new applied state', async () => {
+    irrigationRecipes$.set([makeRecipe()]);
+    const { el, tab } = await openRecipesTab(recipeDevice());
+
+    (tab.shadowRoot!.querySelector('.btn-apply-recipe') as HTMLButtonElement).click();
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await el.updateComplete;
+
+    expect(sliceApplyIrrigationRecipe).toHaveBeenCalledWith('gs1', 'r1');
+    // The slice owns the optimistic device write; the dialog reflects the stamp
+    // it was handed back once the device prop carries it.
+    const applied = await openRecipesTab(
+      recipeDevice({
+        irrigationStrategy: makeStrategy({
+          appliedRecipeId: 'r1',
+          recipeAppliedAt: '2026-08-10T07:15:00+00:00',
+        }),
+        appliedRecipeDrifted: false,
+      })
+    );
+    expect(normalize(applied.tab.shadowRoot!.querySelector('.applied-name')?.textContent)).toBe(
+      'Flower week 3'
+    );
+    expect(applied.tab.shadowRoot!.querySelector('[data-drift]')!.getAttribute('data-drift')).toBe(
+      'in-sync'
+    );
+  });
+
+  it('surfaces the backend notice when the apply crosses growing media', async () => {
+    vi.mocked(sliceApplyIrrigationRecipe).mockResolvedValueOnce({
+      growspace_id: 'gs1',
+      applied_recipe_id: 'r1',
+      recipe_applied_at: '2026-08-10T07:15:00+00:00',
+      warning:
+        "Irrigation recipe 'Flower week 3' was authored in coco and applied to a rockwool growspace.",
+    });
+    irrigationRecipes$.set([makeRecipe()]);
+    const { el, tab } = await openRecipesTab(recipeDevice());
+
+    (tab.shadowRoot!.querySelector('.btn-apply-recipe') as HTMLButtonElement).click();
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await el.updateComplete;
+    await tab.updateComplete;
+
+    expect(normalize(tab.shadowRoot!.querySelector('[data-apply-warning]')?.textContent)).toContain(
+      'authored in coco and applied to a rockwool growspace'
+    );
+  });
+
+  it('saves the current settings under the typed name and clears the field', async () => {
+    const { el, tab } = await openRecipesTab(recipeDevice());
+    const input = tab.shadowRoot!.querySelector('.recipe-name-input') as HTMLInputElement;
+    input.value = 'Flower week 3 — generative';
+    input.dispatchEvent(new Event('input'));
+    await el.updateComplete;
+    await tab.updateComplete;
+
+    (tab.shadowRoot!.querySelector('.btn-save-recipe') as HTMLButtonElement).click();
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await el.updateComplete;
+
+    expect(sliceSaveIrrigationRecipe).toHaveBeenCalledWith({
+      growspaceId: 'gs1',
+      name: 'Flower week 3 — generative',
+      kind: 'crop_steering',
+    });
+    expect(
+      (el as unknown as { _sm: { tabs: { recipes: { draft: { name: string } } } } })._sm.tabs
+        .recipes.draft.name
+    ).toBe('');
+  });
+
+  it('shows the backend refusal, naming the missing field, instead of a generic failure', async () => {
+    vi.mocked(sliceSaveIrrigationRecipe).mockRejectedValueOnce(
+      Object.assign(
+        new Error(
+          'Cannot save an irrigation recipe from a growspace in Seconds Shot Sizing Mode: ' +
+            'no pump flow rate is configured.'
+        ),
+        { code: 'validation_failed' }
+      )
+    );
+    const { el, tab } = await openRecipesTab(recipeDevice());
+    const input = tab.shadowRoot!.querySelector('.recipe-name-input') as HTMLInputElement;
+    input.value = 'Nope';
+    input.dispatchEvent(new Event('input'));
+    await el.updateComplete;
+    await tab.updateComplete;
+
+    (tab.shadowRoot!.querySelector('.btn-save-recipe') as HTMLButtonElement).click();
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await el.updateComplete;
+
+    expect(normalize(el.shadowRoot!.querySelector('.toast-notification')?.textContent)).toContain(
+      'no pump flow rate is configured'
+    );
   });
 });

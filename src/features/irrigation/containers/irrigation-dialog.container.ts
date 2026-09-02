@@ -16,6 +16,7 @@ import {
   mdiBullseyeArrow,
   mdiTrendingUp,
   mdiCompassOutline,
+  mdiBookmarkMultipleOutline,
 } from '@mdi/js';
 import type { ECRampCurve, ECRampPoint, CropSteeringHistory } from '../../../schemas/api-schema';
 import { IrrigationStrategy, GrowspaceDevice } from '../../../types';
@@ -60,6 +61,9 @@ import {
   logDrainReading,
   applySteeringMode,
   fetchCropSteeringHistory,
+  applyIrrigationRecipe,
+  saveIrrigationRecipe,
+  irrigationRecipes$,
 } from '../../../slices/irrigation';
 import { configureEnvironment, resetWaterTracking } from '../../../slices/growspace';
 import type {
@@ -142,6 +146,15 @@ import {
   createSteeringTabViewModel,
   type SteeringTabViewModel,
 } from '../viewmodels/steering-tab.viewmodel';
+// Decomposed Recipe tab (ADR-0019 + ADR-0045): reads the GLOBAL Irrigation Recipe
+// library from the slice atom rather than the device, so an optimistic save shows
+// up before the next sync. No `$caps` — its only capability question is which half
+// the growspace runs, which is the strategy's own `enabled` flag.
+import {
+  createRecipesTabViewModel,
+  type RecipesTabViewModel,
+} from '../viewmodels/recipes-tab.viewmodel';
+import type { IrrigationRecipeKind } from '../../../slices/irrigation/schema';
 import { atom, computed, type ReadableAtom } from 'nanostores';
 import '../components/irrigation-overview-tab';
 import '../components/irrigation-tanks-tab';
@@ -152,6 +165,7 @@ import '../components/irrigation-config-tab';
 import '../components/irrigation-water-analytics-tab';
 import '../components/irrigation-substrate-ec-tab';
 import '../components/irrigation-steering-tab';
+import '../components/irrigation-recipes-tab';
 
 type TabId =
   | 'overview'
@@ -162,7 +176,8 @@ type TabId =
   | 'water_analytics'
   | 'drain_ec'
   | 'substrate_ec'
-  | 'ec_ramp';
+  | 'ec_ramp'
+  | 'recipes';
 
 interface NavDef {
   id: TabId;
@@ -210,6 +225,12 @@ interface EditTimeParams {
 interface SaveTankParams {
   growspaceId: string;
   irrigationTanks: IrrigationTank[];
+}
+
+/** Recipe save payload — the name typed on the tab plus the half being captured. */
+interface SaveRecipeParams {
+  name: string;
+  kind: IrrigationRecipeKind;
 }
 
 /** EC Ramp save payload — composed by `composeEcRampSave`, carried in `applying.status`. */
@@ -359,6 +380,13 @@ export class IrrigationDialog extends LitElement {
     this._deviceAtom
   );
   private _steeringVmController = new StoreController(this, this._steeringVm);
+  /** Recipe tab ViewModel — `$sm`-first, plus the global recipe library and the device. */
+  private _recipesVm: ReadableAtom<RecipesTabViewModel> = createRecipesTabViewModel(
+    this._smAtom,
+    irrigationRecipes$,
+    this._deviceAtom
+  );
+  private _recipesVmController = new StoreController(this, this._recipesVm);
 
   // ─── Crop Steering History (Schedules tab) ────────────────────────────
   private _cropSteeringHistoryFetched = false;
@@ -397,6 +425,8 @@ export class IrrigationDialog extends LitElement {
     'save-ec-ramp-curve': (params) => this._effectSaveEcRampCurve(params as EcRampSaveParams),
     'remove-ec-ramp-curve': (params) =>
       this._effectRemoveEcRampCurve(params as { curveId: string }),
+    'save-recipe': (params) => this._effectSaveRecipe(params as SaveRecipeParams),
+    'apply-recipe': (params) => this._effectApplyRecipe(params as { recipeId: string }),
   };
 
   static styles = [
@@ -729,6 +759,11 @@ export class IrrigationDialog extends LitElement {
     const hasSchedules =
       ((this._liveConfig ?? this.device?.irrigationConfig)?.irrigationTimes?.length ?? 0) > 0;
     if (hasPump && hasSchedules && hasEcSensorsForRamp) tabs.push('ec_ramp');
+
+    // Recipes: pump-gated, and nothing narrower. Both halves a recipe can carry
+    // are pump-driven — shot sizes and schedule times alike — so without one
+    // there is nothing to capture and nothing an apply could write.
+    if (hasPump) tabs.push('recipes');
 
     return tabs;
   }
@@ -1353,6 +1388,7 @@ export class IrrigationDialog extends LitElement {
         icon: mdiWater,
         badge: tankCount || undefined,
       },
+      { id: 'recipes', label: 'Recipes', group: 'Library', icon: mdiBookmarkMultipleOutline },
       { id: 'water_analytics', label: 'Water Analytics', group: 'Telemetry', icon: mdiChartBar },
       { id: 'drain_ec', label: 'Drain EC', group: 'Telemetry', icon: mdiArrowDownCircle },
       { id: 'ec_ramp', label: 'EC Ramp', group: 'Telemetry', icon: mdiTrendingUp },
@@ -1604,6 +1640,14 @@ export class IrrigationDialog extends LitElement {
           @substrate-ec-pore-band-changed=${this._onSubstratePoreBandChanged}
           @substrate-ec-targets-changed=${this._onSubstrateTargetsChanged}
         ></irrigation-substrate-ec-tab>`;
+      case 'recipes':
+        return html`<irrigation-recipes-tab
+          .vm=${this._recipesVmController.value}
+          @recipe-name-changed=${this._onRecipeNameChanged}
+          @recipe-selected=${this._onRecipeSelected}
+          @recipe-save-requested=${this._onRecipeSaveRequested}
+          @recipe-apply-requested=${this._onRecipeApplyRequested}
+        ></irrigation-recipes-tab>`;
       case 'ec_ramp':
         return html`<irrigation-ec-ramp-tab
           .vm=${this._ecRampVmController.value}
@@ -1837,6 +1881,63 @@ export class IrrigationDialog extends LitElement {
   private async _effectRemoveEcRampCurve(params: { curveId: string }) {
     await sliceRemoveECRampCurve(params.curveId);
     await fetchECRampCurves({ cache: true, force: true });
+  }
+
+  // ─── Recipe tab intents (ADR-0019 + ADR-0045) ──────────────────────────────
+  // Both gestures are one-way writes with no local half to buffer: saving
+  // snapshots what is already persisted, applying is a server-side stamp. So the
+  // handlers stay synchronous and dispatch straight through the mutation seam
+  // (ADR-0015), with the payload snapshotted into `applying.params`.
+
+  private _onRecipeNameChanged(e: CustomEvent<{ name: string }>) {
+    this.dispatch({ type: 'UPDATE_RECIPE_NAME', name: e.detail.name });
+  }
+
+  private _onRecipeSelected(e: CustomEvent<{ recipeId: string }>) {
+    this.dispatch({ type: 'SELECT_RECIPE', recipeId: e.detail.recipeId });
+  }
+
+  private _onRecipeSaveRequested() {
+    const vm = this._recipesVmController.value;
+    const name = vm.nameDraft.trim();
+    if (!name || !this.device?.deviceId) return;
+    const params: SaveRecipeParams = { name, kind: vm.runningKind };
+    this.dispatch({ type: 'SaveRequested', action: 'save-recipe', params });
+  }
+
+  private _onRecipeApplyRequested(e: CustomEvent<{ recipeId: string | null }>) {
+    const recipeId = e.detail.recipeId;
+    if (!recipeId || !this.device?.deviceId) return;
+    // Clear the previous apply's notice up front, so a second apply that returns
+    // nothing cannot leave the first one's warning standing beside it.
+    this.dispatch({ type: 'SET_RECIPE_APPLY_WARNING', warning: null });
+    this.dispatch({ type: 'SaveRequested', action: 'apply-recipe', params: { recipeId } });
+  }
+
+  /**
+   * Effects read only `params`. A rejection propagates to the
+   * MutationRunController, which surfaces it through `actionErrorMessage` —
+   * which, for these two actions, keeps the backend's own wording because it
+   * names the missing prerequisite the grower has to fix.
+   */
+  private async _effectSaveRecipe(params: SaveRecipeParams) {
+    if (!this.device?.deviceId) return;
+    await saveIrrigationRecipe({
+      growspaceId: this.device.deviceId,
+      name: params.name,
+      kind: params.kind,
+    });
+    // The name has done its job; clearing it keeps the form from looking like it
+    // is still holding an unsaved recipe.
+    this.dispatch({ type: 'UPDATE_RECIPE_NAME', name: '' });
+  }
+
+  private async _effectApplyRecipe(params: { recipeId: string }) {
+    if (!this.device?.deviceId) return;
+    const result = await applyIrrigationRecipe(this.device.deviceId, params.recipeId);
+    // A cross-media apply succeeds and warns. Carry the backend's own sentence
+    // into the tab rather than a paraphrase — it names both media.
+    this.dispatch({ type: 'SET_RECIPE_APPLY_WARNING', warning: result.warning });
   }
 
   // ─── Drain EC tab intents (ADR-0019) ───────────────────────────────────────

@@ -194,6 +194,49 @@ export function patchDeviceStrategy(growspaceId: string, patch: Partial<Irrigati
 }
 
 /**
+ * Patch the [[Recipe Stamp]] a device carries — which Irrigation Recipe was
+ * applied, when, and whether its settings still match it.
+ *
+ * One helper rather than three writes because the three are one fact: the
+ * recorded stamp lives on `irrigationStrategy` while the drift verdict is
+ * derived per-growspace and sits beside it on the device, and an optimistic
+ * apply that moved one without the other would show a recipe applied and a
+ * stale drift badge at the same time. Omitting `drifted` leaves the current
+ * verdict untouched (the apply is still in flight and the answer is not known).
+ */
+export function patchDeviceRecipeStamp(
+  growspaceId: string,
+  stamp: {
+    appliedRecipeId?: string | null;
+    recipeAppliedAt?: string | null;
+    drifted?: boolean | null;
+  }
+): void {
+  const current = devices$.get();
+  const idx = current.findIndex((d) => d.deviceId === growspaceId);
+  if (idx === -1) return;
+  devices$.set(
+    current.map((d, i) => {
+      if (i !== idx) return d;
+      const strategy = d.irrigationStrategy;
+      return {
+        ...d,
+        ...(strategy
+          ? {
+              irrigationStrategy: {
+                ...strategy,
+                ...('appliedRecipeId' in stamp ? { appliedRecipeId: stamp.appliedRecipeId } : {}),
+                ...('recipeAppliedAt' in stamp ? { recipeAppliedAt: stamp.recipeAppliedAt } : {}),
+              },
+            }
+          : {}),
+        ...('drifted' in stamp ? { appliedRecipeDrifted: stamp.drifted } : {}),
+      };
+    })
+  );
+}
+
+/**
  * Patch a single device's environmentAttributes in place.
  * Lets immediate-persist environment controls (humidifier/dehumidifier control
  * enable) reflect on the device the config dialog reads optimistically, rather
