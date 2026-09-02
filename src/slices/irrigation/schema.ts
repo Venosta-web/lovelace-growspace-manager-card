@@ -368,6 +368,9 @@ export const CropSteeringRecipeSchema = z.object({
   ec_modulation_enabled: z.boolean(),
 });
 
+/** The crop-steering half's stored values, in the backend's own field names. */
+export type CropSteeringRecipeValues = z.infer<typeof CropSteeringRecipeSchema>;
+
 /**
  * The time-schedule half of a recipe. Declared complete per ADR-0031 and
  * unread by the card, for the same reason as its crop-steering twin.
@@ -381,6 +384,9 @@ export const ScheduleRecipeSchema = z.object({
   max_cycles_per_day: z.number().nullable(),
   skip_during_dark: z.boolean(),
 });
+
+/** The schedule half's stored values, in the backend's own field names. */
+export type ScheduleRecipeValues = z.infer<typeof ScheduleRecipeSchema>;
 
 /**
  * One [[Irrigation Recipe]] as the backend emits it. Exactly one of
@@ -417,6 +423,24 @@ export const SaveIrrigationRecipePayloadSchema = z.strictObject({
 });
 
 export type SaveIrrigationRecipePayload = z.infer<typeof SaveIrrigationRecipePayloadSchema>;
+
+/**
+ * The sparse edit payload for `update_irrigation_recipe`.
+ *
+ * Everything but the id is optional and an unnamed field keeps what the recipe
+ * stores, so a rename carries no values and a value correction carries no name.
+ * The half must be the one the recipe's `kind` holds; neither `kind` itself nor
+ * any [[Recipe Provenance]] field is writable, because provenance records where
+ * the recipe came from rather than what it should say.
+ */
+export const UpdateIrrigationRecipePayloadSchema = z.strictObject({
+  recipe_id: z.string(),
+  name: z.string().optional(),
+  crop_steering: CropSteeringRecipeSchema.partial().optional(),
+  schedule: ScheduleRecipeSchema.partial().optional(),
+});
+
+export type UpdateIrrigationRecipePayload = z.infer<typeof UpdateIrrigationRecipePayloadSchema>;
 
 export const ApplyIrrigationRecipePayloadSchema = z.strictObject({
   growspace_id: z.string(),

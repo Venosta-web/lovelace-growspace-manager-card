@@ -365,6 +365,10 @@ export class GrowspaceAdapter {
               stage: r.provenance.stage,
               week: r.provenance.week,
             },
+            // Carried wire-shaped: the library editor is the only reader and it
+            // sends changed fields straight back under these same names.
+            cropSteering: r.crop_steering,
+            schedule: r.schedule,
             createdAt: r.created_at,
           }))
           .sort((a, b) => a.name.localeCompare(b.name));

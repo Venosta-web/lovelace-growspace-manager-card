@@ -117,6 +117,7 @@ describe('growspace header operational priority', () => {
         'training',
         'arrange',
         'irrigation',
+        'irrigation-recipes',
         'nutrients',
         'strains',
         'compare',

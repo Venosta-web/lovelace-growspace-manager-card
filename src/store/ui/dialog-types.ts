@@ -33,6 +33,7 @@ export type ActiveDialogState =
   | { type: 'LOGBOOK'; payload: { growspaceId: string } }
   | { type: 'WATERING'; payload: WateringDialogState }
   | { type: 'NUTRIENT_PRESETS'; payload: NutrientPresetsDialogState }
+  | { type: 'IRRIGATION_RECIPES'; payload: Record<string, never> }
   | { type: 'TRAINING'; payload: TrainingDialogState }
   | { type: 'IPM'; payload: IPMDialogState }
   | { type: 'TAKE_CLONE'; payload: CloneDialogState }

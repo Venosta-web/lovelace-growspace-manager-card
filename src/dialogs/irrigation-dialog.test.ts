@@ -2307,6 +2307,8 @@ function makeRecipe(
       stage: 'flower',
       week: 3,
     },
+    cropSteering: null,
+    schedule: null,
     createdAt: '2026-08-04T09:00:00+00:00',
     ...overrides,
   };

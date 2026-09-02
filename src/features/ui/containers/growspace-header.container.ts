@@ -337,6 +337,9 @@ export class GrowspaceHeaderContainer extends LitElement {
         );
         break;
       }
+      case 'irrigation-recipes':
+        uiSlice.openIrrigationRecipesDialog();
+        break;
       case 'nutrients':
         uiSlice.openNutrientsDialog();
         break;

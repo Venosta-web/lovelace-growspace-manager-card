@@ -16,7 +16,13 @@ import type {
   SerializedShotComposition,
   SerializedSubstrateMetrics,
 } from '../slices/growspace/schema';
-import type { IrrigationRecipeKind } from '../slices/irrigation/schema';
+import type {
+  CropSteeringRecipeValues,
+  IrrigationRecipeKind,
+  ScheduleRecipeValues,
+} from '../slices/irrigation/schema';
+
+export type { CropSteeringRecipeValues, ScheduleRecipeValues };
 
 // --- Irrigation ---
 
@@ -108,10 +114,10 @@ export interface IrrigationStrategy {
  * snapshot of one growspace's irrigation settings, held in a global library and
  * applicable to any other growspace.
  *
- * The recipe's own setpoints are deliberately absent: applying is a server-side
- * stamp, so the card never needs the values, only the identity and the
- * [[Recipe Provenance]] that sorts the picker and names the authoring medium.
- * The full wire shape is declared once in the Irrigation slice's schema.
+ * The card reads the identity and the [[Recipe Provenance]] that sorts the
+ * picker and names the authoring medium. It reads the setpoints too, but for
+ * one surface only — the recipe library editor, the one place a grower corrects
+ * a stored value. Applying never touches them: that is a server-side stamp.
  */
 export interface IrrigationRecipe {
   id: string;
@@ -127,6 +133,20 @@ export interface IrrigationRecipe {
     stage: string | null;
     week: number;
   };
+  /**
+   * The stored setpoints, populated for exactly the half `kind` names.
+   *
+   * Deliberately **not** camelised, unlike every other field here. Applying is
+   * a server-side stamp, so the only thing the card ever does with these values
+   * is show them in the recipe library editor and send the changed ones back to
+   * `update_irrigation_recipe` — which names its fields exactly as the backend
+   * stores them. Renaming twenty-five fields on the way in so a second mapper
+   * could rename them back on the way out buys nothing and loses a value every
+   * time one of the pair is missed. `IrrigationScheduleItem` above is
+   * wire-shaped for the same reason.
+   */
+  cropSteering: CropSteeringRecipeValues | null;
+  schedule: ScheduleRecipeValues | null;
   createdAt: string;
 }
 

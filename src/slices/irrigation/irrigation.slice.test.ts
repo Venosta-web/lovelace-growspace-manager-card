@@ -11,7 +11,8 @@
  *   - updateIrrigationStrategy: optimistic strategy update + rollback
  *   - saveIrrigationSettings: optimistic settings patch + rollback
  *   - logDrainReading / configureDrainMonitoring / runIrrigationCycle: fire-and-forget calls
- *   - saveIrrigationRecipe / applyIrrigationRecipe: the Irrigation Recipe library
+ *   - saveIrrigationRecipe / updateIrrigationRecipe / removeIrrigationRecipe /
+ *     applyIrrigationRecipe: the Irrigation Recipe library
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -46,6 +47,8 @@ import {
   irrigationRecipes$,
   setIrrigationRecipes,
   saveIrrigationRecipe,
+  updateIrrigationRecipe,
+  removeIrrigationRecipe,
   applyIrrigationRecipe,
 } from './index';
 import { CropSteeringHistorySchema } from '../../schemas/api-schema';
@@ -1414,6 +1417,8 @@ describe('saveIrrigationRecipe', () => {
           stage: 'veg',
           week: 2,
         },
+        cropSteering: null,
+        schedule: null,
         createdAt: '2026-08-01T00:00:00+00:00',
       },
     ]);
@@ -1568,5 +1573,181 @@ describe('Irrigation Recipe payload schemas', () => {
     expect(ApplyIrrigationRecipePayloadSchema.safeParse({ growspace_id: 'gs1' }).success).toBe(
       false
     );
+  });
+});
+
+describe('updateIrrigationRecipe', () => {
+  it('sends only what changed — a rename carries no values', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      ...WIRE_RECIPE,
+      name: 'Flower week 4',
+    });
+
+    await updateIrrigationRecipe({ recipeId: 'r1', name: 'Flower week 4' });
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/update_irrigation_recipe',
+      { recipe_id: 'r1', name: 'Flower week 4' },
+      expect.anything()
+    );
+  });
+
+  it('sends the half wire-shaped, sparsely', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_RECIPE);
+
+    await updateIrrigationRecipe({
+      recipeId: 'r1',
+      cropSteering: { p1_shot_volume_percent: 7.5 },
+    });
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/update_irrigation_recipe',
+      { recipe_id: 'r1', crop_steering: { p1_shot_volume_percent: 7.5 } },
+      expect.anything()
+    );
+  });
+
+  it('replaces the edited recipe in the library, keeping the name order', async () => {
+    setIrrigationRecipes([
+      {
+        id: 'r1',
+        name: 'Flower week 3',
+        kind: 'crop_steering',
+        provenance: {
+          mediaType: 'rockwool',
+          litersPerPot: 7.5,
+          pumpFlowRateMlPerSec: 13.5,
+          stage: 'flower',
+          week: 3,
+        },
+        cropSteering: null,
+        schedule: null,
+        createdAt: '2026-08-04T09:00:00+00:00',
+      },
+      {
+        id: 'z',
+        name: 'Alpha',
+        kind: 'crop_steering',
+        provenance: {
+          mediaType: 'coco',
+          litersPerPot: 5,
+          pumpFlowRateMlPerSec: 11,
+          stage: 'veg',
+          week: 2,
+        },
+        cropSteering: null,
+        schedule: null,
+        createdAt: '2026-08-01T00:00:00+00:00',
+      },
+    ]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      ...WIRE_RECIPE,
+      name: 'Zulu week 4',
+    });
+
+    const edited = await updateIrrigationRecipe({ recipeId: 'r1', name: 'Zulu week 4' });
+
+    expect(edited.name).toBe('Zulu week 4');
+    expect(irrigationRecipes$.get().map((r) => r.name)).toEqual(['Alpha', 'Zulu week 4']);
+    expect(irrigationRecipes$.get()).toHaveLength(2);
+  });
+
+  it('carries the edited half back into the library', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      ...WIRE_RECIPE,
+      crop_steering: {
+        lights_on_time: '06:00:00',
+        p0_duration_minutes: 60,
+        p2_stop_before_lights_off_minutes: 120,
+        target_vwc_percent: 55,
+        maintenance_dryback_percent: 2,
+        p1_shot_volume_percent: 7.5,
+        p1_shot_interval_minutes: 15,
+        p2_shot_volume_percent: 3,
+        p2_shot_interval_minutes: 20,
+        auto_light_tracking: false,
+        dynamic_shot_enabled: true,
+        dynamic_aggressiveness: 1,
+        dynamic_recovery: 0.1,
+        dynamic_shot_size_floor: 0.5,
+        dynamic_interval_ceiling: 1.5,
+        pore_ec_target_min: null,
+        pore_ec_target_max: null,
+        ec_modulation_enabled: false,
+      },
+    });
+
+    const edited = await updateIrrigationRecipe({
+      recipeId: 'r1',
+      cropSteering: { p1_shot_volume_percent: 7.5 },
+    });
+
+    expect(edited.cropSteering?.p1_shot_volume_percent).toBe(7.5);
+  });
+
+  it('leaves the library alone when the command is refused', async () => {
+    setIrrigationRecipes([]);
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('not part of'));
+
+    await expect(updateIrrigationRecipe({ recipeId: 'r1', name: 'x' })).rejects.toThrow(
+      'not part of'
+    );
+    expect(irrigationRecipes$.get()).toEqual([]);
+  });
+});
+
+describe('removeIrrigationRecipe', () => {
+  it('sends the recipe id and drops it from the library', async () => {
+    setIrrigationRecipes([
+      {
+        id: 'r1',
+        name: 'Flower week 3',
+        kind: 'crop_steering',
+        provenance: {
+          mediaType: 'coco',
+          litersPerPot: 5,
+          pumpFlowRateMlPerSec: 11,
+          stage: 'flower',
+          week: 3,
+        },
+        cropSteering: null,
+        schedule: null,
+        createdAt: '2026-08-04T09:00:00+00:00',
+      },
+    ]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(undefined);
+
+    await removeIrrigationRecipe('r1');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/remove_irrigation_recipe',
+      { recipe_id: 'r1' },
+      expect.anything()
+    );
+    expect(irrigationRecipes$.get()).toEqual([]);
+  });
+
+  it('keeps the recipe when the command fails', async () => {
+    setIrrigationRecipes([
+      {
+        id: 'r1',
+        name: 'Flower week 3',
+        kind: 'crop_steering',
+        provenance: {
+          mediaType: 'coco',
+          litersPerPot: 5,
+          pumpFlowRateMlPerSec: 11,
+          stage: 'flower',
+          week: 3,
+        },
+        cropSteering: null,
+        schedule: null,
+        createdAt: '2026-08-04T09:00:00+00:00',
+      },
+    ]);
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('boom'));
+
+    await expect(removeIrrigationRecipe('r1')).rejects.toThrow('boom');
+    expect(irrigationRecipes$.get()).toHaveLength(1);
   });
 });
