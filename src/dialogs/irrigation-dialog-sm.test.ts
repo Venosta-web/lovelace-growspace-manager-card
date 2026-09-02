@@ -1997,3 +1997,62 @@ describe('recipes tab', () => {
     expect(sm.status.kind).toBe('idle');
   });
 });
+
+// ─── Program tab ──────────────────────────────────────────────────────────────
+
+describe('program tab', () => {
+  it('starts with no pick and no pending confirmation', () => {
+    const sm = createInitialSM();
+    expect(sm.tabs.program.draft).toEqual({ pickedProgramId: undefined });
+    expect(sm.tabs.program.confirm).toBeNull();
+  });
+
+  it('SELECT_PROGRAM records the grower pick over the ViewModel fallback', () => {
+    const sm = transition(createInitialSM(), { type: 'SELECT_PROGRAM', programId: 'p7' });
+    expect(sm.tabs.program.draft.pickedProgramId).toBe('p7');
+  });
+
+  it('keeps "no program" apart from "has not picked" — one of them unbinds', () => {
+    const unpicked = createInitialSM();
+    const picked = transition(unpicked, { type: 'SELECT_PROGRAM', programId: null });
+
+    expect(unpicked.tabs.program.draft.pickedProgramId).toBeUndefined();
+    expect(picked.tabs.program.draft.pickedProgramId).toBeNull();
+  });
+
+  it('SET_PROGRAM_CONFIRM raises and clears the pending consequence', () => {
+    const raised = transition(createInitialSM(), {
+      type: 'SET_PROGRAM_CONFIRM',
+      confirm: { kind: 'enable-auto-advance' },
+    });
+    expect(raised.tabs.program.confirm).toEqual({ kind: 'enable-auto-advance' });
+    expect(
+      transition(raised, { type: 'SET_PROGRAM_CONFIRM', confirm: null }).tabs.program.confirm
+    ).toBeNull();
+  });
+
+  it('abandons an unanswered confirmation on leaving the tab', () => {
+    let sm = transition(createInitialSM(), { type: 'SWITCH_TAB', tab: 'program' });
+    sm = transition(sm, { type: 'SELECT_PROGRAM', programId: 'p7' });
+    sm = transition(sm, { type: 'SET_PROGRAM_CONFIRM', confirm: { kind: 'enable-auto-advance' } });
+
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'config' });
+
+    // Answered later, it would be answered about a growspace that has moved.
+    expect(sm.tabs.program.confirm).toBeNull();
+    expect(sm.tabs.program.draft).toEqual({ pickedProgramId: undefined });
+  });
+
+  it('never guards a tab switch — the tab buffers no growspace settings', () => {
+    let sm = transition(createInitialSM(), { type: 'SWITCH_TAB', tab: 'program' });
+    sm = transition(sm, { type: 'SELECT_PROGRAM', programId: 'p7' });
+    expect(isActiveTabDirty(sm, makeDevice())).toBe(false);
+  });
+
+  it("names its two failures without borrowing another action's copy", () => {
+    expect(actionErrorMessage('assign-program')).toBe('Failed to assign the irrigation program');
+    expect(actionErrorMessage('set-program-auto-advance')).toBe(
+      'Failed to change program auto-advance'
+    );
+  });
+});

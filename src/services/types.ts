@@ -19,10 +19,17 @@ import type {
 import type {
   CropSteeringRecipeValues,
   IrrigationRecipeKind,
+  ProgramHold,
+  ProgramProgressionState,
   ScheduleRecipeValues,
 } from '../slices/irrigation/schema';
 
-export type { CropSteeringRecipeValues, ScheduleRecipeValues };
+export type {
+  CropSteeringRecipeValues,
+  ProgramHold,
+  ProgramProgressionState,
+  ScheduleRecipeValues,
+};
 
 // --- Irrigation ---
 
@@ -107,6 +114,13 @@ export interface IrrigationStrategy {
   // reports them.
   appliedRecipeId?: string | null;
   recipeAppliedAt?: string | null;
+  /**
+   * The [[Irrigation Program]] this growspace is bound to, or null for none.
+   * Binding writes this one field and no setpoint, which is why it sits here
+   * beside the stamp rather than replacing it: the plan and the values a
+   * growspace is actually running are different facts.
+   */
+  irrigationProgramId?: string | null;
 }
 
 /**
@@ -150,6 +164,73 @@ export interface IrrigationRecipe {
   createdAt: string;
 }
 
+/**
+ * One `(stage, week)` slot of an [[Irrigation Program]].
+ *
+ * `recipeId` is a reference, never a copy: correcting one recipe corrects every
+ * program using it. It may name a recipe the library no longer holds — deleting
+ * a recipe empties slots rather than cascading — and an empty slot is a
+ * [[Program Hold]], so it can never actuate anything.
+ */
+export interface ProgramSlot {
+  /** One of the live stages a slot may be keyed by (`PROGRAM_STAGES`). */
+  stage: string;
+  /** 1-indexed week within that stage. */
+  week: number;
+  recipeId: string;
+}
+
+/**
+ * One [[Irrigation Program]] as the card reads it — a whole-run plan assigning
+ * [[Irrigation Recipe]]s to `(stage, week)` slots, held in a global library.
+ *
+ * Whole-run rather than per-stage: a program defining only flower slots already
+ * *is* a per-stage program. Slots arrive in run order.
+ */
+export interface IrrigationProgram {
+  id: string;
+  name: string;
+  slots: ProgramSlot[];
+  createdAt: string;
+}
+
+/**
+ * What the program layer will do about a growspace's current position, and why
+ * it is doing nothing when it is.
+ *
+ * `state`/`hold` are `null` when the backend named a value this card does not
+ * know — the set has grown before, and an unknown cause must not read as one of
+ * the known ones. `detail` is the backend's own grower-facing sentence and is
+ * always present, so an unknown answer still says something true.
+ */
+export interface ProgramProgression {
+  state: ProgramProgressionState | null;
+  hold: ProgramHold | null;
+  detail: string;
+}
+
+/**
+ * Where a growspace sits in the [[Irrigation Program]] it is bound to, resolved
+ * by the backend on read. `undefined`/`null` means nothing is bound (or the
+ * binding names a program the library no longer holds).
+ *
+ * `stage`/`week` are reported even when no slot matched, so the card can say
+ * *which* week found no instruction rather than only that none was found.
+ */
+export interface IrrigationProgramState {
+  programId: string;
+  name: string;
+  /** null when the growspace has no live plants, and so no position. */
+  stage: string | null;
+  week: number;
+  /** null when the plan defines nothing for this position — a [[Program Hold]]. */
+  slot: ProgramSlot | null;
+  /** The slot's recipe, or null when the slot names one since deleted. */
+  recipe: IrrigationRecipe | null;
+  autoAdvance: boolean;
+  progression: ProgramProgression;
+}
+
 export interface IrrigationConfig {
   irrigationPumpEntity?: string | null;
   /** Measured pump output; a positive value is required for Volume Mode. */
@@ -170,6 +251,11 @@ export interface IrrigationConfig {
   logToLogbook?: boolean;
   autoAdvanceP1ToP2?: boolean;
   autoAdvanceP2ToP3?: boolean;
+  /**
+   * Opt-in, defaulting off: whether reaching a new week of the bound
+   * [[Irrigation Program]] stamps that slot's recipe unattended.
+   */
+  programAutoAdvance?: boolean;
   haltOnRunoffEcThreshold?: number | null;
   ecTargetRanges?: ECTargetRange[];
   activeSteeringPhase?: 'p1' | 'p2' | 'p3';
@@ -449,6 +535,16 @@ export interface GrowspaceDevice {
    * was ever applied, or the applied one has since left the library.
    */
   appliedRecipeDrifted?: boolean | null;
+  /**
+   * The global [[Irrigation Program]] library, as it rides this growspace's
+   * payload — global exactly as `irrigationRecipes` beside it is.
+   */
+  irrigationPrograms?: IrrigationProgram[];
+  /**
+   * Where this growspace sits in the program it is bound to. `null` when
+   * nothing is bound; the whole question is per-growspace, unlike the library.
+   */
+  irrigationProgram?: IrrigationProgramState | null;
 
   drainConfig?: DrainConfig | null;
   energyTracking?: EnergyTracking | null;

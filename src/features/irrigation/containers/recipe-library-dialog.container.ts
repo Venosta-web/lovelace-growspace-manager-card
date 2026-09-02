@@ -14,7 +14,9 @@
  *
  * The library rides every growspace payload at `irrigation.recipes`, so this
  * dialog reads `irrigationRecipes$` rather than self-fetching on open: the data
- * is already there before the dialog is.
+ * is already there before the dialog is. The program library rides the same
+ * payloads and is read for one thing only — naming the plans a delete would
+ * leave holding.
  *
  * Effects run from `updated()` on entering an in-flight status, the pattern the
  * feed-and-water dialog's editors use — the click handlers stay synchronous and
@@ -35,6 +37,7 @@ import {
   type RecipeLibrarySM,
 } from '../../../dialogs/recipe-library-sm';
 import {
+  irrigationPrograms$,
   irrigationRecipes$,
   removeIrrigationRecipe,
   updateIrrigationRecipe,
@@ -57,7 +60,13 @@ export class RecipeLibraryDialog extends LitElement {
    * global library exactly as every other ADR-0019 surface is.
    */
   private readonly _sm$ = atom<RecipeLibrarySM>(this._sm);
-  private readonly _vm$ = createRecipeLibraryViewModel(this._sm$, irrigationRecipes$);
+  private readonly _vm$ = createRecipeLibraryViewModel(
+    this._sm$,
+    irrigationRecipes$,
+    // The program library is read for one reason: the delete confirmation
+    // names the plans whose slots point at the recipe.
+    irrigationPrograms$
+  );
   private _vm = new StoreController(this, this._vm$);
 
   static styles = [

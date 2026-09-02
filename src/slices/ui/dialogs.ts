@@ -313,6 +313,17 @@ export function openIrrigationRecipesDialog(): void {
   openDialog({ type: 'IRRIGATION_RECIPES', payload: {} });
 }
 
+/**
+ * Open the standalone [[Irrigation Program]] editor.
+ *
+ * Takes no growspace, for the same reason the recipe library does not: a
+ * program is a plan, and it exists whether or not any tent follows it. Binding
+ * one to a growspace is the irrigation dialog's Program tab.
+ */
+export function openIrrigationProgramsDialog(): void {
+  openDialog({ type: 'IRRIGATION_PROGRAMS', payload: {} });
+}
+
 export function openSnapshotsDialog(growspaceId?: string): void {
   openDialog({
     type: 'SNAPSHOTS',

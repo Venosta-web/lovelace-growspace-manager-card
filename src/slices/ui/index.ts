@@ -409,6 +409,7 @@ export {
   openStrainLibraryDialog,
   openIrrigationDialog,
   openIrrigationRecipesDialog,
+  openIrrigationProgramsDialog,
   openGrowMasterDialog,
   openWateringDialog,
   openTrainingDialog,

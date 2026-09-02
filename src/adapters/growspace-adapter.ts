@@ -11,8 +11,20 @@ import {
   IrrigationConfig,
   IrrigationStrategy,
 } from '../types';
-import type { ECTargetStage, SteeringMetrics, SerializedIrrigationConfig } from '../services/types';
-import { ActiveEventSchema, IrrigationTankRowSchema } from '../slices/irrigation/schema';
+import type {
+  ECTargetStage,
+  IrrigationProgramState,
+  IrrigationRecipe,
+  SteeringMetrics,
+  SerializedIrrigationConfig,
+} from '../services/types';
+import {
+  ActiveEventSchema,
+  IrrigationTankRowSchema,
+  asProgramHold,
+  asProgramProgressionState,
+  type SerializedIrrigationRecipe,
+} from '../slices/irrigation/schema';
 import { LegacyStageThresholdsSchema } from '../slices/growspace/schema';
 import { normalizeTriggerType } from '../slices/notification/triggers';
 import { SensorGroupSchema } from '../slices/subarea/schema';
@@ -23,6 +35,33 @@ function parseSensorGroups(raw: unknown[] | undefined): SensorGroup[] {
     const parsed = SensorGroupSchema.safeParse(g);
     return parsed.success ? [parsed.data] : [];
   });
+}
+
+/**
+ * One wire recipe → the shape the card reads.
+ *
+ * Shared by the library at `irrigation.recipes` and the one nested inside
+ * `irrigation.program`, which are the same object arriving twice: a single
+ * mapper is what stops the program's copy from quietly losing a field the
+ * library's copy kept. The two halves stay wire-shaped — see `IrrigationRecipe`
+ * in services/types.ts for why.
+ */
+function toIrrigationRecipe(r: SerializedIrrigationRecipe): IrrigationRecipe {
+  return {
+    id: r.id,
+    name: r.name,
+    kind: r.kind,
+    provenance: {
+      mediaType: r.provenance.media_type,
+      litersPerPot: r.provenance.liters_per_pot,
+      pumpFlowRateMlPerSec: r.provenance.pump_flow_rate_ml_per_sec,
+      stage: r.provenance.stage,
+      week: r.provenance.week,
+    },
+    cropSteering: r.crop_steering,
+    schedule: r.schedule,
+    createdAt: r.created_at,
+  };
 }
 
 function parseLegacyStageThresholds(raw: unknown) {
@@ -278,6 +317,7 @@ export class GrowspaceAdapter {
       logToLogbook: irrigationConfigRaw.log_to_logbook,
       autoAdvanceP1ToP2: irrigationConfigRaw.auto_advance_p1_to_p2,
       autoAdvanceP2ToP3: irrigationConfigRaw.auto_advance_p2_to_p3,
+      programAutoAdvance: irrigationConfigRaw.program_auto_advance,
       haltOnRunoffEcThreshold: irrigationConfigRaw.halt_on_runoff_ec_threshold,
       activeSteeringPhase: irrigationConfigRaw.active_steering_phase,
       phaseChangedAt: irrigationConfigRaw.phase_changed_at ?? undefined,
@@ -335,6 +375,9 @@ export class GrowspaceAdapter {
           // the Recipe tab, which reports both as "no recipe applied yet".
           appliedRecipeId: irrigationStrategyRaw.applied_recipe_id ?? null,
           recipeAppliedAt: irrigationStrategyRaw.recipe_applied_at ?? null,
+          // The [[Irrigation Program]] binding, collapsed the same way: an
+          // omitted key and an explicit null both mean "bound to nothing".
+          irrigationProgramId: irrigationStrategyRaw.irrigation_program_id ?? null,
           // Adaptive Shot Control (ADR-0014). Master toggle defaults on to match
           // the backend default and the previously always-on size feedback.
           dynamicShotEnabled: irrigationStrategyRaw.dynamic_shot_enabled ?? true,
@@ -354,24 +397,60 @@ export class GrowspaceAdapter {
     const irrigationRecipes = !irrigation?.recipes
       ? undefined
       : Object.values(irrigation.recipes)
-          .map((r) => ({
-            id: r.id,
-            name: r.name,
-            kind: r.kind,
-            provenance: {
-              mediaType: r.provenance.media_type,
-              litersPerPot: r.provenance.liters_per_pot,
-              pumpFlowRateMlPerSec: r.provenance.pump_flow_rate_ml_per_sec,
-              stage: r.provenance.stage,
-              week: r.provenance.week,
-            },
-            // Carried wire-shaped: the library editor is the only reader and it
-            // sends changed fields straight back under these same names.
-            cropSteering: r.crop_steering,
-            schedule: r.schedule,
-            createdAt: r.created_at,
+          .map(toIrrigationRecipe)
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+    // The global [[Irrigation Program]] library rides every payload too, and is
+    // read exactly as the recipe library above: name-ordered because the wire
+    // shape is a dict whose key order is not a contract, and `undefined` rather
+    // than `[]` when the key is absent, so hydration can tell a release
+    // predating the feature from a real empty library.
+    const irrigationPrograms = !irrigation?.programs
+      ? undefined
+      : Object.values(irrigation.programs)
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            // Slots arrive in run order and are kept in it — the order is what
+            // says when a part of the plan applies.
+            slots: p.slots.map((slot) => ({
+              stage: slot.stage,
+              week: slot.week,
+              recipeId: slot.recipe_id,
+            })),
+            createdAt: p.created_at,
           }))
           .sort((a, b) => a.name.localeCompare(b.name));
+
+    // Where this growspace sits in the program it is bound to. `?? null` keeps
+    // "the backend omitted the key" and "nothing is bound" as one answer: both
+    // mean the Program tab has no position to report.
+    const programRaw = irrigation?.program ?? null;
+    const irrigationProgram: IrrigationProgramState | null = programRaw
+      ? {
+          programId: programRaw.program_id,
+          name: programRaw.name,
+          stage: programRaw.stage,
+          week: programRaw.week,
+          slot: programRaw.slot
+            ? {
+                stage: programRaw.slot.stage,
+                week: programRaw.slot.week,
+                recipeId: programRaw.slot.recipe_id,
+              }
+            : null,
+          recipe: programRaw.recipe ? toIrrigationRecipe(programRaw.recipe) : null,
+          autoAdvance: programRaw.auto_advance,
+          progression: {
+            // Narrowed rather than trusted: an unrecognised state or hold cause
+            // becomes null, so it can never be mistaken for a known one. The
+            // backend's `detail` sentence carries the meaning either way.
+            state: asProgramProgressionState(programRaw.progression.state),
+            hold: asProgramHold(programRaw.progression.hold),
+            detail: programRaw.progression.detail,
+          },
+        }
+      : null;
 
     const drainConfigRaw = irrigation?.drain_config;
     const drainConfig = drainConfigRaw
@@ -496,6 +575,8 @@ export class GrowspaceAdapter {
       irrigationStrategy,
       volumeModeCapable: irrigation?.volume_mode_capable ?? false,
       irrigationRecipes,
+      irrigationPrograms,
+      irrigationProgram,
       // `?? null` keeps "the backend omitted the key" and "the question does not
       // apply" as one answer: both mean the Recipe tab shows no drift verdict.
       appliedRecipeDrifted: irrigation?.applied_recipe_drifted ?? null,

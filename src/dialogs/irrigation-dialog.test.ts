@@ -44,6 +44,8 @@ vi.mock('../slices/irrigation', async (importOriginal) => ({
     recipe_applied_at: '2026-08-10T07:15:00+00:00',
     warning: null,
   }),
+  assignIrrigationProgram: vi.fn().mockResolvedValue(undefined),
+  setProgramAutoAdvance: vi.fn().mockResolvedValue(undefined),
 }));
 import {
   applySteeringMode as sliceApplySteeringMode,
@@ -51,6 +53,9 @@ import {
   applyIrrigationRecipe as sliceApplyIrrigationRecipe,
   irrigationRecipes$,
   saveIrrigationRecipe as sliceSaveIrrigationRecipe,
+  assignIrrigationProgram as sliceAssignIrrigationProgram,
+  setProgramAutoAdvance as sliceSetProgramAutoAdvance,
+  irrigationPrograms$,
 } from '../slices/irrigation';
 
 afterEach(() => {
@@ -2495,5 +2500,252 @@ describe('IrrigationDialog – Recipe tab', () => {
     expect(normalize(el.shadowRoot!.querySelector('.toast-notification')?.textContent)).toContain(
       'no pump flow rate is configured'
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Program tab – binding, progression, and the consent auto-advance needs
+// ---------------------------------------------------------------------------
+
+const PROGRAM: import('../services/types').IrrigationProgram = {
+  id: 'p1',
+  name: 'Full run',
+  slots: [
+    { stage: 'veg', week: 1, recipeId: 'r-veg' },
+    { stage: 'flower', week: 3, recipeId: 'r1' },
+  ],
+  createdAt: '2026-08-06T09:00:00+00:00',
+};
+
+function programState(
+  overrides: Partial<import('../services/types').IrrigationProgramState> = {}
+): import('../services/types').IrrigationProgramState {
+  return {
+    programId: 'p1',
+    name: 'Full run',
+    stage: 'flower',
+    week: 3,
+    slot: { stage: 'flower', week: 3, recipeId: 'r1' },
+    recipe: makeRecipe(),
+    autoAdvance: false,
+    progression: {
+      state: 'available',
+      hold: null,
+      detail: 'Flower week 3 calls for irrigation recipe.',
+    },
+    ...overrides,
+  };
+}
+
+function programDevice(overrides: Partial<Parameters<typeof createGrowspaceDevice>[0]> = {}) {
+  return recipeDevice({
+    irrigationStrategy: makeStrategy({ irrigationProgramId: 'p1' }),
+    irrigationProgram: programState(),
+    ...overrides,
+  });
+}
+
+async function openProgramTab(device: ReturnType<typeof recipeDevice>) {
+  const el = await fixture<IrrigationDialog>(html`
+    <irrigation-dialog .open=${true} .device=${device} growspaceName="Tent 1"></irrigation-dialog>
+  `);
+  await el.updateComplete;
+  (el.shadowRoot!.querySelector('[data-tab="program"]') as HTMLElement).click();
+  await el.updateComplete;
+  const tab = el.shadowRoot!.querySelector('irrigation-program-tab') as LitElement;
+  await tab.updateComplete;
+  return { el, tab };
+}
+
+async function settle(el: IrrigationDialog, tab: LitElement) {
+  await el.updateComplete;
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await el.updateComplete;
+  await tab.updateComplete;
+}
+
+describe('IrrigationDialog – Program tab', () => {
+  beforeEach(() => {
+    // The slice mutators are module-level mocks shared by the whole file, so
+    // "was this written?" is only a real question once the calls are cleared.
+    vi.clearAllMocks();
+    irrigationPrograms$.set([PROGRAM]);
+    irrigationRecipes$.set([makeRecipe()]);
+  });
+
+  it('offers the tab once a pump is configured, and not before', async () => {
+    const withoutPump = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${makeDevice()}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await withoutPump.updateComplete;
+    expect(withoutPump.shadowRoot!.querySelector('[data-tab="program"]')).toBeNull();
+
+    const withIt = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${programDevice()}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await withIt.updateComplete;
+    expect(withIt.shadowRoot!.querySelector('[data-tab="program"]')).not.toBeNull();
+  });
+
+  it('shows the assigned program, the current slot and what comes next', async () => {
+    const { tab } = await openProgramTab(
+      programDevice({ irrigationProgram: programState({ stage: 'veg', week: 1 }) })
+    );
+
+    expect(normalize(tab.shadowRoot!.textContent)).toContain('Full run');
+    expect(normalize(tab.shadowRoot!.querySelector('[data-current-week]')?.textContent)).toContain(
+      'Veg week 1'
+    );
+    // The plan crosses into flower; "next" follows the run, not the week number.
+    expect(normalize(tab.shadowRoot!.querySelector('[data-next-slot]')?.textContent)).toContain(
+      'Flower week 3'
+    );
+  });
+
+  it('assigns the picked program through the mutation seam', async () => {
+    irrigationPrograms$.set([PROGRAM, { ...PROGRAM, id: 'p2', name: 'Short run' }]);
+    const { el, tab } = await openProgramTab(programDevice());
+
+    const select = tab.shadowRoot!.querySelector('.program-select') as HTMLSelectElement;
+    select.value = 'p2';
+    select.dispatchEvent(new Event('change'));
+    await el.updateComplete;
+    await tab.updateComplete;
+    (tab.shadowRoot!.querySelector('.btn-assign-program') as HTMLButtonElement).click();
+    await settle(el, tab);
+
+    expect(sliceAssignIrrigationProgram).toHaveBeenCalledWith('gs1', 'p2');
+  });
+
+  it('unbinds when the grower picks no program', async () => {
+    const { el, tab } = await openProgramTab(programDevice());
+
+    const select = tab.shadowRoot!.querySelector('.program-select') as HTMLSelectElement;
+    select.value = '';
+    select.dispatchEvent(new Event('change'));
+    await el.updateComplete;
+    await tab.updateComplete;
+    (tab.shadowRoot!.querySelector('.btn-assign-program') as HTMLButtonElement).click();
+    await settle(el, tab);
+
+    expect(sliceAssignIrrigationProgram).toHaveBeenCalledWith('gs1', null);
+  });
+
+  it('applies the week’s recipe from the prompt, through the same stamp the Recipe tab uses', async () => {
+    const { el, tab } = await openProgramTab(programDevice());
+
+    (tab.shadowRoot!.querySelector('.btn-apply-program-recipe') as HTMLButtonElement).click();
+    await settle(el, tab);
+
+    expect(sliceApplyIrrigationRecipe).toHaveBeenCalledWith('gs1', 'r1');
+  });
+
+  it('asks before turning auto-advance on, and writes nothing until it is answered', async () => {
+    const { el, tab } = await openProgramTab(programDevice());
+
+    const toggle = tab.shadowRoot!.querySelector('.program-auto-advance') as HTMLInputElement;
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    await settle(el, tab);
+
+    expect(sliceSetProgramAutoAdvance).not.toHaveBeenCalled();
+    const message = normalize(tab.shadowRoot!.querySelector('[data-confirm-message]')?.textContent);
+    expect(message).toContain('Flower week 3');
+    expect(message).toContain('flower week 3');
+  });
+
+  it('writes the opt-in once the grower accepts the consequence', async () => {
+    const { el, tab } = await openProgramTab(programDevice());
+
+    const toggle = tab.shadowRoot!.querySelector('.program-auto-advance') as HTMLInputElement;
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    await settle(el, tab);
+    (tab.shadowRoot!.querySelector('.btn-confirm-accept') as HTMLButtonElement).click();
+    await settle(el, tab);
+
+    expect(sliceSetProgramAutoAdvance).toHaveBeenCalledWith('gs1', true);
+  });
+
+  it('writes nothing when the grower cancels, and the toggle returns to what is stored', async () => {
+    const { el, tab } = await openProgramTab(programDevice());
+
+    const toggle = tab.shadowRoot!.querySelector('.program-auto-advance') as HTMLInputElement;
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    await settle(el, tab);
+    (tab.shadowRoot!.querySelector('.btn-confirm-cancel') as HTMLButtonElement).click();
+    await settle(el, tab);
+
+    expect(sliceSetProgramAutoAdvance).not.toHaveBeenCalled();
+    expect(
+      (tab.shadowRoot!.querySelector('.program-auto-advance') as HTMLInputElement).checked
+    ).toBe(false);
+  });
+
+  it('turns auto-advance off without asking — it takes something away', async () => {
+    const { el, tab } = await openProgramTab(
+      programDevice({ irrigationProgram: programState({ autoAdvance: true }) })
+    );
+
+    const toggle = tab.shadowRoot!.querySelector('.program-auto-advance') as HTMLInputElement;
+    toggle.checked = false;
+    toggle.dispatchEvent(new Event('change'));
+    await settle(el, tab);
+
+    expect(sliceSetProgramAutoAdvance).toHaveBeenCalledWith('gs1', false);
+    expect(tab.shadowRoot!.querySelector('[data-program-confirm]')).toBeNull();
+  });
+
+  it('turns it on without asking when nothing is assigned — there is no week to apply', async () => {
+    const { el, tab } = await openProgramTab(
+      programDevice({
+        irrigationStrategy: makeStrategy({ irrigationProgramId: null }),
+        irrigationProgram: null,
+      })
+    );
+
+    const toggle = tab.shadowRoot!.querySelector('.program-auto-advance') as HTMLInputElement;
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    await settle(el, tab);
+
+    expect(sliceSetProgramAutoAdvance).toHaveBeenCalledWith('gs1', true);
+  });
+
+  it('renders each hold with its own cause, and the backend sentence under it', async () => {
+    const { tab } = await openProgramTab(
+      programDevice({
+        irrigationProgram: programState({
+          week: 4,
+          slot: null,
+          recipe: null,
+          progression: {
+            state: 'held',
+            hold: 'program_complete',
+            detail:
+              "Irrigation program 'Full run' is complete: flower week 4 is past its last slot.",
+          },
+        }),
+      })
+    );
+
+    expect(
+      tab.shadowRoot!.querySelector('[data-progression-hold="program_complete"]')
+    ).not.toBeNull();
+    expect(normalize(tab.shadowRoot!.querySelector('[data-progression-title]')?.textContent)).toBe(
+      'Program complete'
+    );
+    expect(
+      normalize(tab.shadowRoot!.querySelector('[data-progression-detail]')?.textContent)
+    ).toContain('past its last slot');
   });
 });

@@ -6,12 +6,14 @@
  *   irrigationStrategies$ — read: Map<growspaceId, IrrigationStrategy>
  *   tankLevels$           — read: Map<growspaceId, IrrigationTank[]>
  *   irrigationRecipes$    — read: IrrigationRecipe[] (the GLOBAL recipe library)
+ *   irrigationPrograms$   — read: IrrigationProgram[] (the GLOBAL program library)
  *
  * Public API (bootstrap writes — called by SyncService):
  *   setIrrigationConfig()   — replace the IrrigationConfig for a growspace
  *   setIrrigationStrategy() — replace the IrrigationStrategy for a growspace
  *   setTankLevels()         — replace the IrrigationTank list for a growspace
  *   setIrrigationRecipes()  — replace the global Irrigation Recipe library
+ *   setIrrigationPrograms() — replace the global Irrigation Program library
  *
  * Public API (pure computation):
  *   computeIrrigationMode()  — derive 'manual' | 'crop_steering' from strategy
@@ -33,6 +35,10 @@
  *   updateIrrigationRecipe()     — rename / correct a stored recipe in place
  *   removeIrrigationRecipe()     — drop a recipe from the library
  *   applyIrrigationRecipe()      — stamp a saved recipe into a growspace
+ *   saveIrrigationProgram()      — save a whole-run plan of (stage, week) slots
+ *   removeIrrigationProgram()    — drop a program from the library
+ *   assignIrrigationProgram()    — bind a growspace to a program, or unbind it
+ *   setProgramAutoAdvance()      — opt a growspace in or out of unattended stamps
  *
  * Action type, payload shapes, and zod schemas are private to this module.
  * Tank data absorption: this slice is the authoritative source for tank levels,
@@ -44,9 +50,11 @@ import { z } from 'zod';
 import type {
   CropSteeringRecipeValues,
   IrrigationConfig,
+  IrrigationProgram,
   IrrigationRecipe,
   IrrigationStrategy,
   IrrigationTank,
+  ProgramSlot,
   ScheduleRecipeValues,
   ECTargetRange,
 } from '../../services/types';
@@ -54,14 +62,22 @@ import { mutate } from '../../services/mutate';
 import { callService, hassCall } from '../../services/hass-call';
 import type { IrrigationMode, PhaseWindows, IrrigationAnalytics } from './schema';
 import { IrrigationAnalyticsSchema } from './schema';
-import { patchDeviceIrrigationConfig, patchDeviceRecipeStamp, patchDeviceStrategy } from '../grid';
+import {
+  patchDeviceIrrigationConfig,
+  patchDeviceProgramBinding,
+  patchDeviceRecipeStamp,
+  patchDeviceStrategy,
+} from '../grid';
 import { CropSteeringHistorySchema, type CropSteeringHistory } from '../../schemas/api-schema';
 import { ApplySteeringModeResultSchema, type SteeringMode } from './schema';
 import {
   ApplyIrrigationRecipeResultSchema,
+  AssignIrrigationProgramResultSchema,
+  IrrigationProgramSchema,
   IrrigationRecipeSchema,
   type ApplyIrrigationRecipeResult,
   type IrrigationRecipeKind,
+  type SerializedIrrigationProgram,
   type SerializedIrrigationRecipe,
 } from './schema';
 import { computePhases } from '../../features/environment/crop-steering-model';
@@ -81,6 +97,12 @@ export const cropSteeringHistory$ = atom<Map<string, CropSteeringHistory>>(new M
  * it rather than fetching it separately.
  */
 export const irrigationRecipes$ = atom<IrrigationRecipe[]>([]);
+/**
+ * The [[Irrigation Program]] library — **global** for the same reason the recipe
+ * library above is, and riding the same payloads. A program is a plan that
+ * exists whether or not any growspace is bound to it.
+ */
+export const irrigationPrograms$ = atom<IrrigationProgram[]>([]);
 
 // ---------------------------------------------------------------------------
 // Bootstrap writes (called by SyncService when fresh data arrives)
@@ -108,6 +130,11 @@ export function setTankLevels(growspaceId: string, tanks: IrrigationTank[]): voi
  * library is one list shared by every tent. */
 export function setIrrigationRecipes(recipes: IrrigationRecipe[]): void {
   irrigationRecipes$.set(recipes);
+}
+
+/** Replace the global Irrigation Program library. Takes no growspace either. */
+export function setIrrigationPrograms(programs: IrrigationProgram[]): void {
+  irrigationPrograms$.set(programs);
 }
 
 // ---------------------------------------------------------------------------
@@ -654,6 +681,182 @@ export async function applyIrrigationRecipe(
   );
 
   return result;
+}
+
+/**
+ * One command reply → the program library's own shape.
+ *
+ * Shared by save and the library hydration for the same reason
+ * `toIrrigationRecipe` is: the two must not disagree about a program the
+ * library already holds. Slot order is preserved because the backend already
+ * sorted it into run order, which is what says when a part of the plan applies.
+ */
+function toIrrigationProgram(wire: SerializedIrrigationProgram): IrrigationProgram {
+  return {
+    id: wire.id,
+    name: wire.name,
+    slots: wire.slots.map((slot) => ({
+      stage: slot.stage,
+      week: slot.week,
+      recipeId: slot.recipe_id,
+    })),
+    createdAt: wire.created_at,
+  };
+}
+
+/**
+ * Save a whole-run plan of `(stage, week)` slots as a named [[Irrigation
+ * Program]].
+ *
+ * Saving **replaces** the program's whole slot list rather than merging into
+ * it, so the editor sends the plan it is showing and a slot the grower emptied
+ * is actually gone. Recipes are held by reference — a slot carries a recipe id
+ * and nothing else — so this writes no values into any growspace.
+ *
+ * Not a `mutate()`: no growspace changes, and the stored program cannot be
+ * constructed locally (the backend assigns the id and puts the slots in run
+ * order). The library is updated from the command's own reply.
+ *
+ * A refusal — a stage no growspace could ever resolve to, a week below 1, two
+ * slots claiming the same position — arrives as a `validation_failed` WSError
+ * whose message names the offending slot.
+ */
+export async function saveIrrigationProgram(params: {
+  name: string;
+  slots: ProgramSlot[];
+  /** Present only when overwriting an existing program. */
+  programId?: string;
+}): Promise<IrrigationProgram> {
+  const saved = await hassCall(
+    'growspace_manager/save_irrigation_program',
+    {
+      name: params.name,
+      slots: params.slots.map((slot) => ({
+        stage: slot.stage,
+        week: slot.week,
+        recipe_id: slot.recipeId,
+      })),
+      ...(params.programId ? { program_id: params.programId } : {}),
+    },
+    IrrigationProgramSchema
+  );
+
+  const program = toIrrigationProgram(saved);
+  const rest = irrigationPrograms$.get().filter((p) => p.id !== program.id);
+  irrigationPrograms$.set([...rest, program].sort((a, b) => a.name.localeCompare(b.name)));
+  return program;
+}
+
+/**
+ * Drop a program from the global library.
+ *
+ * Never refused and never cascading: a growspace bound to it keeps the id it
+ * was given and simply reports no current slot, exactly as a deleted recipe
+ * leaves `appliedRecipeId` dangling. Nothing is written to any growspace.
+ */
+export async function removeIrrigationProgram(programId: string): Promise<void> {
+  await hassCall(
+    'growspace_manager/remove_irrigation_program',
+    { program_id: programId },
+    z.unknown()
+  );
+  irrigationPrograms$.set(irrigationPrograms$.get().filter((p) => p.id !== programId));
+}
+
+/**
+ * Bind a growspace to an [[Irrigation Program]], or unbind it with `null`.
+ *
+ * **Binding only.** It writes that one id and no setpoint, so picking a program
+ * from a dropdown cannot change what a pump does that same minute — which is
+ * why the optimistic patch here moves the binding and nothing else. The one
+ * exception is the backend's, not the card's: with auto-advance already on, the
+ * server applies the current slot immediately, and the values that arrives with
+ * come back through the ordinary device sync like every other stamp.
+ *
+ * Unbinding clears the resolved position too, because there is no program left
+ * to have one. Binding does not invent it: which slot the growspace lands in is
+ * the backend's answer.
+ */
+export async function assignIrrigationProgram(
+  growspaceId: string,
+  programId: string | null
+): Promise<void> {
+  const prev = _getStrategy(growspaceId);
+  const prevProgramId = prev.irrigationProgramId ?? null;
+
+  await mutate(
+    {
+      type: 'assignIrrigationProgram',
+      optimistic: () => {
+        _patchStrategy(growspaceId, { irrigationProgramId: programId });
+        patchDeviceProgramBinding(
+          growspaceId,
+          programId === null
+            ? { irrigationProgramId: null, programState: null }
+            : { irrigationProgramId: programId }
+        );
+      },
+      // Binding writes nothing else, so restoring the id restores everything
+      // this call did. The resolved position is only cleared on an unbind, and
+      // the next sync re-derives it either way.
+      inverse: () => {
+        _patchStrategy(growspaceId, { irrigationProgramId: prevProgramId });
+        patchDeviceProgramBinding(growspaceId, { irrigationProgramId: prevProgramId });
+      },
+      apply: async () => {
+        const result = await hassCall(
+          'growspace_manager/assign_irrigation_program',
+          { growspace_id: growspaceId, program_id: programId },
+          AssignIrrigationProgramResultSchema
+        );
+        // The reply is authoritative about what the growspace now holds.
+        _patchStrategy(growspaceId, { irrigationProgramId: result.irrigation_program_id });
+        patchDeviceProgramBinding(growspaceId, {
+          irrigationProgramId: result.irrigation_program_id,
+        });
+      },
+    },
+    growspaceId
+  );
+}
+
+/**
+ * Opt a growspace in or out of unattended [[Irrigation Program]] progression.
+ *
+ * A **sparse** `set_irrigation_settings` carrying this one field, unlike
+ * `saveIrrigationSettings` below, which persists the whole buffered form. The
+ * toggle is a single consent gesture on the Program tab and re-sending the pump
+ * entities and durations beside it would quietly make another tab's draft part
+ * of it. The service takes every field but the growspace id as optional, so a
+ * one-field call is the contract rather than a shortcut through it.
+ *
+ * Turning it **on** is what makes the current slot due: the next evaluation
+ * stamps it. That is a consequence the caller must have put to the grower
+ * first — nothing here asks.
+ */
+export async function setProgramAutoAdvance(growspaceId: string, enabled: boolean): Promise<void> {
+  const prev = _getConfig(growspaceId);
+  const prevValue = prev.programAutoAdvance ?? false;
+
+  await mutate(
+    {
+      type: 'setProgramAutoAdvance',
+      optimistic: () => {
+        _patchConfig(growspaceId, { programAutoAdvance: enabled });
+        patchDeviceIrrigationConfig(growspaceId, { programAutoAdvance: enabled });
+      },
+      inverse: () => {
+        _patchConfig(growspaceId, { programAutoAdvance: prevValue });
+        patchDeviceIrrigationConfig(growspaceId, { programAutoAdvance: prevValue });
+      },
+      apply: () =>
+        callService('growspace_manager', 'set_irrigation_settings', {
+          growspace_id: growspaceId,
+          program_auto_advance: enabled,
+        }),
+    },
+    growspaceId
+  );
 }
 
 /**

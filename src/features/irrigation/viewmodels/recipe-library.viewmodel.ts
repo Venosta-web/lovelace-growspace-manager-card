@@ -24,6 +24,7 @@
 import { computed, type ReadableAtom } from 'nanostores';
 import type {
   CropSteeringRecipeValues,
+  IrrigationProgram,
   IrrigationRecipe,
   ScheduleRecipeValues,
 } from '../../../services/types';
@@ -71,8 +72,8 @@ export interface DeleteConfirmVM {
    * Deleting is never refused and never cascades — a slot pointing at a deleted
    * recipe degrades to "no instruction", which the [[Program Hold]] rule
    * already treats as "change nothing". So this names them rather than blocking
-   * on them. Empty until programs exist (#107 supplies the source); an empty
-   * list renders as a plain confirmation, not as "referenced by nothing".
+   * on them. An empty list renders as a plain confirmation, not as "referenced
+   * by nothing".
    */
   referencingPrograms: string[];
 }
@@ -261,17 +262,34 @@ function toFields(recipe: IrrigationRecipe, draftValues: Record<string, unknown>
 }
 
 /**
+ * The names of the [[Irrigation Program]]s whose slots point at one recipe.
+ *
+ * Names, once each and in library order, because this is a sentence a grower
+ * reads before deleting rather than a count. It never blocks: deleting is never
+ * refused and never cascades — the slots simply become gaps, which the
+ * [[Program Hold]] rule already treats as "change nothing".
+ */
+export function referencingPrograms(programs: IrrigationProgram[], recipeId: string): string[] {
+  return programs
+    .filter((program) => program.slots.some((slot) => slot.recipeId === recipeId))
+    .map((program) => program.name);
+}
+
+/**
  * Pure factory: SM atom + the Irrigation slice's global `irrigationRecipes$` →
  * one library VM atom.
  *
  * No device atom, and that absence is the point: this surface is about the
- * library, not about any one growspace.
+ * library, not about any one growspace. The program library is not a growspace
+ * either — it is the other global library, and it is here only to tell a
+ * grower which plans a delete would leave holding.
  */
 export function createRecipeLibraryViewModel(
   $sm: ReadableAtom<RecipeLibrarySM>,
-  $recipes: ReadableAtom<IrrigationRecipe[]>
+  $recipes: ReadableAtom<IrrigationRecipe[]>,
+  $programs: ReadableAtom<IrrigationProgram[]>
 ): ReadableAtom<RecipeLibraryViewModel> {
-  return computed([$sm, $recipes], (sm, recipes) => {
+  return computed([$sm, $recipes, $programs], (sm, recipes, programs) => {
     const status = sm.status;
     // A selection whose recipe has left the library (deleted in another
     // session) falls back to the list rather than showing an empty detail.
@@ -300,7 +318,11 @@ export function createRecipeLibraryViewModel(
       errorMessage: status.kind === 'error' ? status.message : null,
       deleteConfirm:
         status.kind === 'confirm-delete'
-          ? { id: status.id, name: status.name, referencingPrograms: [] }
+          ? {
+              id: status.id,
+              name: status.name,
+              referencingPrograms: referencingPrograms(programs, status.id),
+            }
           : null,
       busy,
       toast: sm.toast,

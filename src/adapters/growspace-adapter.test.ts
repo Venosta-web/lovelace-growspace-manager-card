@@ -828,3 +828,193 @@ describe('GrowspaceAdapter irrigation recipes through the wire schema', () => {
     expect(device?.appliedRecipeDrifted).toBeNull();
   });
 });
+
+describe('GrowspaceAdapter irrigation programs through the wire schema', () => {
+  const RECIPE = {
+    id: 'r-flower',
+    name: 'Flower generative',
+    kind: 'crop_steering',
+    provenance: {
+      media_type: 'coco',
+      liters_per_pot: 5,
+      pump_flow_rate_ml_per_sec: 11,
+      stage: 'flower',
+      week: 3,
+    },
+    crop_steering: {
+      lights_on_time: '06:00:00',
+      p0_duration_minutes: 90,
+      p2_stop_before_lights_off_minutes: 75,
+      target_vwc_percent: 58,
+      maintenance_dryback_percent: 3.5,
+      p1_shot_volume_percent: 4.5,
+      p1_shot_interval_minutes: 20,
+      p2_shot_volume_percent: 3,
+      p2_shot_interval_minutes: 30,
+      auto_light_tracking: true,
+      dynamic_shot_enabled: true,
+      dynamic_aggressiveness: 1.2,
+      dynamic_recovery: 0.15,
+      dynamic_shot_size_floor: 0.6,
+      dynamic_interval_ceiling: 1.8,
+      pore_ec_target_min: 2.1,
+      pore_ec_target_max: 2.8,
+      ec_modulation_enabled: true,
+    },
+    schedule: null,
+    created_at: '2026-08-04T09:00:00+00:00',
+  };
+
+  const PROGRAM = {
+    id: 'p1',
+    name: 'Zulu run',
+    slots: [
+      { stage: 'veg', week: 1, recipe_id: 'r-veg' },
+      { stage: 'flower', week: 3, recipe_id: 'r-flower' },
+    ],
+    created_at: '2026-08-06T09:00:00+00:00',
+  };
+
+  const PROGRAM_STATE = {
+    program_id: 'p1',
+    name: 'Zulu run',
+    stage: 'flower',
+    week: 3,
+    slot: { stage: 'flower', week: 3, recipe_id: 'r-flower' },
+    recipe: RECIPE,
+    auto_advance: true,
+    progression: {
+      state: 'up_to_date',
+      hold: null,
+      detail: "Irrigation recipe 'Flower generative' is the one this growspace is running.",
+    },
+  };
+
+  function hydrate(irrigation: Record<string, unknown>) {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      identity: {
+        growspace_id: 'gs1',
+        name: 'Tent',
+        overview_entity_id: 'sensor.gs1',
+        type: 'normal',
+      },
+      irrigation,
+    });
+    return GrowspaceAdapter.transformGrowspace(null, parsed as unknown as GrowspaceAPIResponse);
+  }
+
+  it('reads the program library off the payload, name-ordered and camelised', () => {
+    const device = hydrate({
+      programs: { p1: PROGRAM, a: { ...PROGRAM, id: 'a', name: 'Alpha run' } },
+    });
+
+    expect(device?.irrigationPrograms?.map((p) => p.name)).toEqual(['Alpha run', 'Zulu run']);
+    expect(device?.irrigationPrograms?.[1].slots).toEqual([
+      { stage: 'veg', week: 1, recipeId: 'r-veg' },
+      { stage: 'flower', week: 3, recipeId: 'r-flower' },
+    ]);
+  });
+
+  it('keeps an empty program library distinct from a backend that predates it', () => {
+    expect(hydrate({ programs: {} })?.irrigationPrograms).toEqual([]);
+    expect(hydrate({})?.irrigationPrograms).toBeUndefined();
+  });
+
+  it('deserializes the resolved position, its slot and its recipe', () => {
+    const device = hydrate({ program: PROGRAM_STATE });
+
+    expect(device?.irrigationProgram).toMatchObject({
+      programId: 'p1',
+      name: 'Zulu run',
+      stage: 'flower',
+      week: 3,
+      slot: { stage: 'flower', week: 3, recipeId: 'r-flower' },
+      autoAdvance: true,
+    });
+    // The nested recipe goes through the same mapper as the library's copy.
+    expect(device?.irrigationProgram?.recipe?.name).toBe('Flower generative');
+    expect(device?.irrigationProgram?.recipe?.provenance.mediaType).toBe('coco');
+    expect(device?.irrigationProgram?.recipe?.cropSteering?.p1_shot_volume_percent).toBe(4.5);
+  });
+
+  it('carries the progression the card reads and never re-derives', () => {
+    const device = hydrate({
+      program: {
+        ...PROGRAM_STATE,
+        progression: { state: 'held', hold: 'no_slot', detail: 'defines no slot' },
+      },
+    });
+
+    expect(device?.irrigationProgram?.progression).toEqual({
+      state: 'held',
+      hold: 'no_slot',
+      detail: 'defines no slot',
+    });
+  });
+
+  it('narrows an unrecognised state or hold to null, keeping the sentence', () => {
+    // The hold set has grown before. A seventh cause must degrade rather than
+    // be mistaken for one of the six, and must never fail the payload parse.
+    const device = hydrate({
+      program: {
+        ...PROGRAM_STATE,
+        progression: { state: 'quantum', hold: 'sideways', detail: 'something new' },
+      },
+    });
+
+    expect(device?.irrigationProgram?.progression).toEqual({
+      state: null,
+      hold: null,
+      detail: 'something new',
+    });
+  });
+
+  it('reports a slot naming a deleted recipe as a slot with no recipe', () => {
+    const device = hydrate({ program: { ...PROGRAM_STATE, recipe: null } });
+
+    expect(device?.irrigationProgram?.slot).not.toBeNull();
+    expect(device?.irrigationProgram?.recipe).toBeNull();
+  });
+
+  it('collapses an absent block and an explicit null onto "nothing bound"', () => {
+    expect(hydrate({ program: null })?.irrigationProgram).toBeNull();
+    expect(hydrate({})?.irrigationProgram).toBeNull();
+  });
+
+  it('deserializes the binding and the auto-advance opt-in', () => {
+    const device = hydrate({
+      irrigation_strategy: {
+        enabled: true,
+        lights_on_time: '06:00:00',
+        p0_duration_minutes: 60,
+        p2_stop_before_lights_off_minutes: 120,
+        target_vwc_percent: 55,
+        maintenance_dryback_percent: 2,
+        shot_duration_seconds: 10,
+        shot_interval_minutes: 15,
+        irrigation_program_id: 'p1',
+      },
+      irrigation_config: { program_auto_advance: true },
+    });
+
+    expect(device?.irrigationStrategy?.irrigationProgramId).toBe('p1');
+    expect(device?.irrigationConfig?.programAutoAdvance).toBe(true);
+  });
+
+  it('reads no binding as null rather than as undefined', () => {
+    const device = hydrate({
+      irrigation_strategy: {
+        enabled: true,
+        lights_on_time: '06:00:00',
+        p0_duration_minutes: 60,
+        p2_stop_before_lights_off_minutes: 120,
+        target_vwc_percent: 55,
+        maintenance_dryback_percent: 2,
+        shot_duration_seconds: 10,
+        shot_interval_minutes: 15,
+      },
+    });
+
+    expect(device?.irrigationStrategy?.irrigationProgramId).toBeNull();
+  });
+});
