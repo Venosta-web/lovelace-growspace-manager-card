@@ -466,3 +466,152 @@ export const ApplyIrrigationRecipeResultSchema = z.object({
 });
 
 export type ApplyIrrigationRecipeResult = z.infer<typeof ApplyIrrigationRecipeResultSchema>;
+
+// ---------------------------------------------------------------------------
+// Irrigation Programs (read — the global library and a growspace's position in
+// the program it is bound to, plus the three write commands)
+// ---------------------------------------------------------------------------
+
+/**
+ * The live stages an [[Irrigation Program]] slot may be keyed by, in run order.
+ *
+ * The backend's `LIVE_STAGE_ORDER` verbatim: it is the set of stages
+ * `resolve_feed_stage_week` can ever answer with, so a slot keyed by anything
+ * else could never resolve and the save is refused naming it. The card needs
+ * the same list to lay out the editor's grid and the same *order* to say which
+ * slot comes next.
+ */
+export const PROGRAM_STAGES = ['seedling', 'clone', 'mother', 'veg', 'flower'] as const;
+export type ProgramStage = (typeof PROGRAM_STAGES)[number];
+
+/**
+ * One `(stage, week)` slot. `recipe_id` may name a recipe the library no longer
+ * holds — deleting a recipe empties slots rather than cascading — so a reader
+ * resolves it and treats a miss as a gap rather than as an error.
+ */
+export const ProgramSlotSchema = z.object({
+  stage: z.string(),
+  week: z.number(),
+  recipe_id: z.string(),
+});
+
+export type SerializedProgramSlot = z.infer<typeof ProgramSlotSchema>;
+
+/** One [[Irrigation Program]] as the backend emits it, slots already in run order. */
+export const IrrigationProgramSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slots: z.array(ProgramSlotSchema),
+  created_at: z.string(),
+});
+
+export type SerializedIrrigationProgram = z.infer<typeof IrrigationProgramSchema>;
+
+/**
+ * The global program library as it rides every growspace payload at
+ * `irrigation.programs`, keyed by program id — global exactly as the recipe
+ * library beside it is.
+ */
+export const IrrigationProgramLibrarySchema = z.record(z.string(), IrrigationProgramSchema);
+
+export type IrrigationProgramLibrary = z.infer<typeof IrrigationProgramLibrarySchema>;
+
+/**
+ * Why a [[Program Hold]] is holding — the backend's `ProgramHold` values.
+ *
+ * Declared as a list the card narrows against rather than as a `z.enum` on the
+ * wire, for the reason `RecipeProvenance.stage` is a bare string: the set has
+ * already grown once (three causes in ADR-0045, six once the rule had to act
+ * rather than only report), and a seventh must not fail the parse of the whole
+ * growspace payload. An unrecognised cause degrades to the backend's own
+ * `detail` sentence, which is written for the grower anyway.
+ */
+export const PROGRAM_HOLDS = [
+  'no_position',
+  'no_slot',
+  'program_complete',
+  'recipe_missing',
+  'drifted',
+  'not_applicable',
+] as const;
+
+export type ProgramHold = (typeof PROGRAM_HOLDS)[number];
+
+/** What the program layer will do about a growspace's position, same caveat. */
+export const PROGRAM_PROGRESSION_STATES = ['up_to_date', 'available', 'due', 'held'] as const;
+
+export type ProgramProgressionState = (typeof PROGRAM_PROGRESSION_STATES)[number];
+
+export function asProgramHold(value: string | null | undefined): ProgramHold | null {
+  return (PROGRAM_HOLDS as readonly string[]).includes(value ?? '') ? (value as ProgramHold) : null;
+}
+
+export function asProgramProgressionState(value: string): ProgramProgressionState | null {
+  return (PROGRAM_PROGRESSION_STATES as readonly string[]).includes(value)
+    ? (value as ProgramProgressionState)
+    : null;
+}
+
+/**
+ * Where a bound growspace currently sits in its [[Irrigation Program]], at
+ * `irrigation.program`.
+ *
+ * `stage`/`week` are reported even when nothing matched, so the card can say
+ * *which* week found no slot. `slot` and `recipe` are null independently of one
+ * another: a defined position may simply have no slot, and a slot may name a
+ * recipe the library no longer holds.
+ */
+export const GrowspaceProgramStateSchema = z.object({
+  program_id: z.string(),
+  name: z.string(),
+  stage: z.string().nullable(),
+  week: z.number(),
+  slot: ProgramSlotSchema.nullable(),
+  recipe: IrrigationRecipeSchema.nullable(),
+  auto_advance: z.boolean(),
+  progression: z.object({
+    state: z.string(),
+    hold: z.string().nullable(),
+    detail: z.string(),
+  }),
+});
+
+export type SerializedGrowspaceProgramState = z.infer<typeof GrowspaceProgramStateSchema>;
+
+/**
+ * `save_irrigation_program` replaces the program's whole slot list rather than
+ * merging into it, so the editor always sends the plan it is showing.
+ */
+export const SaveIrrigationProgramPayloadSchema = z.strictObject({
+  name: z.string(),
+  // Strict per slot, mirroring the backend's own refusal: a slot naming a key
+  // it does not know is rejected rather than silently dropped, so a card
+  // sending one finds out here instead of storing a plan it thinks it made.
+  slots: z.array(z.strictObject(ProgramSlotSchema.shape)),
+  /** Present only when overwriting an existing program. */
+  program_id: z.string().optional(),
+});
+
+export type SaveIrrigationProgramPayload = z.infer<typeof SaveIrrigationProgramPayloadSchema>;
+
+export const RemoveIrrigationProgramPayloadSchema = z.strictObject({
+  program_id: z.string(),
+});
+
+export type RemoveIrrigationProgramPayload = z.infer<typeof RemoveIrrigationProgramPayloadSchema>;
+
+/** Omitting `program_id` unbinds. Binding writes that one id and no setpoint. */
+export const AssignIrrigationProgramPayloadSchema = z.strictObject({
+  growspace_id: z.string(),
+  program_id: z.string().nullable().optional(),
+});
+
+export type AssignIrrigationProgramPayload = z.infer<typeof AssignIrrigationProgramPayloadSchema>;
+
+/** Result of the assign command — what the growspace now holds. */
+export const AssignIrrigationProgramResultSchema = z.object({
+  growspace_id: z.string(),
+  irrigation_program_id: z.string().nullable(),
+});
+
+export type AssignIrrigationProgramResult = z.infer<typeof AssignIrrigationProgramResultSchema>;

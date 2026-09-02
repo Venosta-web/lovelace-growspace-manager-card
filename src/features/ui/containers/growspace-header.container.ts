@@ -340,6 +340,9 @@ export class GrowspaceHeaderContainer extends LitElement {
       case 'irrigation-recipes':
         uiSlice.openIrrigationRecipesDialog();
         break;
+      case 'irrigation-programs':
+        uiSlice.openIrrigationProgramsDialog();
+        break;
       case 'nutrients':
         uiSlice.openNutrientsDialog();
         break;

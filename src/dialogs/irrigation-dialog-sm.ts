@@ -30,7 +30,8 @@ export type TabId =
   | 'drain_ec'
   | 'substrate_ec'
   | 'ec_ramp'
-  | 'recipes';
+  | 'recipes'
+  | 'program';
 
 // ─── Overview tab (read-only crop-steering diagnostics) ─────────────────────────
 
@@ -231,6 +232,45 @@ export interface RecipesTabState {
   sub: { kind: 'idle' };
 }
 
+// ─── Program tab ───────────────────────────────────────────────────────────────
+//
+// Like the Recipes tab, this holds no buffered copy of the growspace's
+// settings: assigning writes one id, applying is a server-side stamp, and the
+// auto-advance flag is persisted the moment it is confirmed. So its draft is
+// only the program the grower has picked in the assign control, and the tab
+// takes no part in the dirty guard.
+
+/** A consequence the grower is shown before it is allowed to happen. */
+export type ProgramConfirm =
+  /**
+   * Turning auto-advance on while a program is assigned. It is not a preference
+   * that takes effect later: the growspace is already in a week of the plan, so
+   * switching it on is consent for that week's recipe to be stamped. Saying so
+   * first is the whole reason this state exists.
+   */
+  { kind: 'enable-auto-advance' };
+
+export interface ProgramDraft {
+  /**
+   * The program the grower explicitly picked in the assign control.
+   *
+   * Three states, and all three are needed. `undefined` is "they have not
+   * picked", which the Program Tab ViewModel resolves to whatever the growspace
+   * is already bound to, so the control opens on the truth rather than on an
+   * empty box. `null` is a **pick**: the grower chose "no program", which is
+   * how a growspace is unbound. Collapsing the two would make unbinding
+   * unreachable, because it would read as never having chosen at all.
+   */
+  pickedProgramId: string | null | undefined;
+}
+
+export interface ProgramTabState {
+  draft: ProgramDraft;
+  /** The pending confirmation, or null. */
+  confirm: ProgramConfirm | null;
+  sub: { kind: 'idle' };
+}
+
 // ─── Root SM ───────────────────────────────────────────────────────────────────
 
 export interface TabStates {
@@ -244,6 +284,7 @@ export interface TabStates {
   substrate_ec: SubstrateEcTabState;
   ec_ramp: EcRampTabState;
   recipes: RecipesTabState;
+  program: ProgramTabState;
 }
 
 /** Root-level overlays (not scoped to a tab). */
@@ -345,6 +386,12 @@ export type DialogEvent =
   | { type: 'SELECT_RECIPE'; recipeId: string }
   /** Carry (or clear) the notice an apply returned. */
   | { type: 'SET_RECIPE_APPLY_WARNING'; warning: string | null }
+
+  // ── Program ──
+  /** Pick a program in the assign control; null is the unbind option. */
+  | { type: 'SELECT_PROGRAM'; programId: string | null }
+  /** Raise (or clear) the consequence the grower must accept before it happens. */
+  | { type: 'SET_PROGRAM_CONFIRM'; confirm: ProgramConfirm | null }
 
   // ── Drain EC ──
   | { type: 'UPDATE_DRAIN_EC_DRAFT'; partial: Partial<DrainEcDraft> }
@@ -461,6 +508,10 @@ function defaultRecipesDraft(): RecipesDraft {
   return { name: '', selectedRecipeId: null };
 }
 
+function defaultProgramTab(): ProgramTabState {
+  return { draft: { pickedProgramId: undefined }, confirm: null, sub: { kind: 'idle' } };
+}
+
 function defaultTabs(): TabStates {
   return {
     overview: { sub: { kind: 'idle' } },
@@ -473,6 +524,7 @@ function defaultTabs(): TabStates {
     substrate_ec: { draft: defaultSubstrateEcDraft(), sub: { kind: 'idle' } },
     ec_ramp: { sub: { kind: 'list' }, error: null },
     recipes: { draft: defaultRecipesDraft(), applyWarning: null, sub: { kind: 'idle' } },
+    program: defaultProgramTab(),
   };
 }
 
@@ -812,6 +864,8 @@ const ACTION_ERROR_MESSAGES: Record<string, string> = {
   'remove-ec-ramp-curve': 'Failed to delete EC ramp curve',
   'save-recipe': 'Failed to save irrigation recipe',
   'apply-recipe': 'Failed to apply irrigation recipe',
+  'assign-program': 'Failed to assign the irrigation program',
+  'set-program-auto-advance': 'Failed to change program auto-advance',
 };
 
 /**
@@ -875,6 +929,10 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
             sm.activeTab === 'recipes'
               ? { draft: defaultRecipesDraft(), applyWarning: null, sub: { kind: 'idle' } }
               : sm.tabs.recipes,
+          // Same reason again, and one more: an unanswered confirmation must
+          // never survive leaving the tab that raised it, or it would be
+          // answered later about a growspace state that has since moved.
+          program: sm.activeTab === 'program' ? defaultProgramTab() : sm.tabs.program,
         },
       };
 
@@ -1311,6 +1369,26 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
           ...sm.tabs,
           recipes: { ...sm.tabs.recipes, applyWarning: event.warning },
         },
+      };
+
+    // ── Program ──────────────────────────────────────────────────────────────
+
+    case 'SELECT_PROGRAM':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          program: {
+            ...sm.tabs.program,
+            draft: { ...sm.tabs.program.draft, pickedProgramId: event.programId },
+          },
+        },
+      };
+
+    case 'SET_PROGRAM_CONFIRM':
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, program: { ...sm.tabs.program, confirm: event.confirm } },
       };
 
     // ── Drain EC ─────────────────────────────────────────────────────────────

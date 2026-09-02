@@ -9,6 +9,7 @@ import {
 } from '../../../dialogs/recipe-library-sm';
 import type {
   CropSteeringRecipeValues,
+  IrrigationProgram,
   IrrigationRecipe,
   ScheduleRecipeValues,
 } from '../../../services/types';
@@ -76,11 +77,30 @@ function scheduleRecipe(over: Partial<IrrigationRecipe> = {}): IrrigationRecipe 
 
 /** Build the VM over a library and a walked SM. */
 function vmOf(recipes: IrrigationRecipe[], ...events: RecipeLibraryEvent[]) {
+  return vmWithPrograms(recipes, [], ...events);
+}
+
+/** Same, plus the program library the delete confirmation names plans from. */
+function vmWithPrograms(
+  recipes: IrrigationRecipe[],
+  programs: IrrigationProgram[],
+  ...events: RecipeLibraryEvent[]
+) {
   const sm = events.reduce<RecipeLibrarySM>(
     (acc, event) => transition(acc, event),
     createInitialSM()
   );
-  return createRecipeLibraryViewModel(atom(sm), atom(recipes)).get();
+  return createRecipeLibraryViewModel(atom(sm), atom(recipes), atom(programs)).get();
+}
+
+function program(over: Partial<IrrigationProgram> = {}): IrrigationProgram {
+  return {
+    id: 'p1',
+    name: 'Full run',
+    slots: [{ stage: 'flower', week: 3, recipeId: 'r-steering' }],
+    createdAt: '2026-08-06T09:00:00+00:00',
+    ...over,
+  };
 }
 
 describe('recipe library VM — the list', () => {
@@ -271,16 +291,36 @@ describe('recipe library VM — deleting', () => {
     });
   });
 
-  it('names no referencing programs while no programs exist', () => {
-    const vm = vmOf([steeringRecipe()], {
-      type: 'DeleteRequested',
-      id: 'r1',
-      name: 'Flower week 3',
-    });
+  it('names no referencing programs when no program points at the recipe', () => {
+    const vm = vmWithPrograms(
+      [steeringRecipe()],
+      [program({ slots: [{ stage: 'veg', week: 1, recipeId: 'other' }] })],
+      { type: 'DeleteRequested', id: 'r1', name: 'Flower week 3' }
+    );
 
-    // The seam is here and empty; #107 supplies the source. An empty list is
-    // not "referenced by nothing" — the UI simply omits the sentence.
+    // An empty list is not "referenced by nothing" — the UI omits the sentence.
     expect(vm.deleteConfirm?.referencingPrograms).toEqual([]);
+  });
+
+  it('names each program whose slots point at the recipe, once', () => {
+    const vm = vmWithPrograms(
+      [steeringRecipe()],
+      [
+        program({
+          id: 'p1',
+          name: 'Full run',
+          slots: [
+            { stage: 'flower', week: 1, recipeId: 'r1' },
+            { stage: 'flower', week: 3, recipeId: 'r1' },
+          ],
+        }),
+        program({ id: 'p2', name: 'Short run', slots: [] }),
+      ],
+      { type: 'DeleteRequested', id: 'r1', name: 'Flower week 3' }
+    );
+
+    // Two slots in one program is still one program to name.
+    expect(vm.deleteConfirm?.referencingPrograms).toEqual(['Full run']);
   });
 
   it('is busy while the delete is in flight', () => {

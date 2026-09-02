@@ -32,6 +32,7 @@ import type { GrowspaceDevice, PlantEntity } from '../../types';
 import type {
   EnvironmentAttributes,
   IrrigationConfig,
+  IrrigationProgramState,
   IrrigationStrategy,
 } from '../../services/types';
 import { PlantUtils } from '../../utils/plant-utils';
@@ -231,6 +232,49 @@ export function patchDeviceRecipeStamp(
             }
           : {}),
         ...('drifted' in stamp ? { appliedRecipeDrifted: stamp.drifted } : {}),
+      };
+    })
+  );
+}
+
+/**
+ * Patch the [[Irrigation Program]] a device is bound to.
+ *
+ * Its own helper rather than a branch of `patchDeviceRecipeStamp`, because the
+ * two facts are deliberately separate: assigning a program writes this one id
+ * and **no setpoint**, so an optimistic assign that also touched the stamp
+ * would show a growspace running values nothing had applied to it.
+ *
+ * `programState` moves with the binding when it is passed: unbinding clears the
+ * whole resolved position at once, which is what the Program tab reads. It is
+ * omitted while a bind is still in flight — which slot the growspace lands in
+ * is the backend's answer, arriving on the next sync.
+ */
+export function patchDeviceProgramBinding(
+  growspaceId: string,
+  binding: {
+    irrigationProgramId: string | null;
+    programState?: IrrigationProgramState | null;
+  }
+): void {
+  const current = devices$.get();
+  const idx = current.findIndex((d) => d.deviceId === growspaceId);
+  if (idx === -1) return;
+  devices$.set(
+    current.map((d, i) => {
+      if (i !== idx) return d;
+      const strategy = d.irrigationStrategy;
+      return {
+        ...d,
+        ...(strategy
+          ? {
+              irrigationStrategy: {
+                ...strategy,
+                irrigationProgramId: binding.irrigationProgramId,
+              },
+            }
+          : {}),
+        ...('programState' in binding ? { irrigationProgram: binding.programState } : {}),
       };
     })
   );

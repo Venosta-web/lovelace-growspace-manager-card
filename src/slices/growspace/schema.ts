@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import { VisionCheckupConfigSchema } from '../camera/schema';
 import { GridApiSchema } from '../grid/schema';
-import { IrrigationRecipeSchema, SteeringModeSchema } from '../irrigation/schema';
+import {
+  GrowspaceProgramStateSchema,
+  IrrigationProgramSchema,
+  IrrigationRecipeSchema,
+  SteeringModeSchema,
+} from '../irrigation/schema';
 import { TimedNotificationSchema } from '../notification/schema';
 import { SubareaSchema } from '../subarea/schema';
 
@@ -67,6 +72,10 @@ export const IrrigationStrategySchema = z.object({
   // behaviour; they name what the Recipe tab reports.
   applied_recipe_id: z.string().nullable().optional(),
   recipe_applied_at: z.string().nullable().optional(),
+  // The [[Irrigation Program]] this growspace is bound to, or null for none.
+  // Binding is explicit and writes no setpoint; it may name a program the
+  // library no longer holds, which the read path reports as no current slot.
+  irrigation_program_id: z.string().nullable().optional(),
   // Adaptive Shot Control (ADR-0014).
   dynamic_shot_enabled: z.boolean().optional(),
   dynamic_aggressiveness: z.number().optional(),
@@ -114,6 +123,10 @@ export const IrrigationConfigSchema = z.object({
     .default([]),
   auto_advance_p1_to_p2: z.boolean().optional(),
   auto_advance_p2_to_p3: z.boolean().optional(),
+  // Whether reaching a new week of the bound [[Irrigation Program]] stamps that
+  // slot's recipe unattended. Opt-in and defaulting off, exactly as the two
+  // phase flags above are — the same kind of consent, given in advance.
+  program_auto_advance: z.boolean().optional(),
   halt_on_runoff_ec_threshold: z.number().nullable().optional(),
   active_steering_phase: z.enum(['p1', 'p2', 'p3']).optional(),
   phase_changed_at: z.string().nullable().optional(),
@@ -548,6 +561,14 @@ export const GrowspaceAPIResponseSchema = z.object({
       // was edited. null means the question does not apply: no recipe was ever
       // applied, or the applied one has since been removed from the library.
       applied_recipe_drifted: z.boolean().nullable().optional(),
+      // The global [[Irrigation Program]] library, keyed by program id. Rides
+      // every payload for the same reason the recipe library above does: the
+      // program editor seeds from a device the card already has.
+      programs: z.record(z.string(), IrrigationProgramSchema).optional(),
+      // Where this growspace sits in the program it is bound to, resolved on
+      // read. null when nothing is bound, or the binding names a program the
+      // library no longer holds.
+      program: GrowspaceProgramStateSchema.nullable().optional(),
     })
     .optional()
     .prefault({}),

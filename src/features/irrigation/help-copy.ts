@@ -201,3 +201,37 @@ export const RECIPES = {
       'This recipe was authored in a different medium. Applying still works and the values are copied unchanged: pot size scales between growspaces, medium does not, and coco, rockwool and soil dry back differently enough that converting between them would be a guess.',
   },
 } as const;
+
+/**
+ * The [[Irrigation Program]] layer (ADR-0045).
+ *
+ * Written against the [[Program Hold]] rule rather than against the word
+ * "automatic": every sentence here has to survive the days the program does
+ * nothing, because those are the days a grower comes to this tab to find out
+ * why.
+ */
+export const PROGRAM = {
+  section: {
+    label: 'Irrigation Programs',
+    lead: 'A program is a plan for a whole run: which recipe each week of each stage should use.',
+    body: 'Assigning one changes nothing by itself — it only tells this growspace which plan to read. Whenever the plan has no clear instruction for the week it is in, the program leaves the settings exactly as they are and says why: the week may have no recipe, the run may have outgrown the plan, or you may have hand-tuned the growspace since the last recipe was applied.',
+  },
+
+  assign: {
+    label: 'Follow a program',
+    content:
+      'Binding only. No setpoint is written and no pump fires — the growspace simply starts reporting which week of the plan it is in. The one exception is when auto-advance is already on, which is the same consent given in advance.',
+  },
+
+  autoAdvance: {
+    label: 'Advance automatically',
+    content:
+      'Lets the program apply a new week’s recipe on its own. It never overwrites a hand tweak: if the settings no longer match the recipe last applied, the program holds and waits for you instead, because a change you made deliberately is not one to undo unattended.',
+  },
+
+  drift: {
+    label: 'Settings changed since the last apply',
+    content:
+      'The growspace no longer holds what its last recipe stamped — hand-tuned since, or the recipe itself was edited. Auto-advance will not write over that. Applying this week’s recipe yourself is the way forward; the program picks up from there.',
+  },
+} as const;

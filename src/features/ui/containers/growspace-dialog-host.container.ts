@@ -84,6 +84,7 @@ import {
 
 import './growspace-nutrient-presets-editor.container';
 import '../../irrigation/containers/recipe-library-dialog.container';
+import '../../irrigation/containers/program-library-dialog.container';
 import '../../../dialogs/add-plant-dialog';
 import '../../../dialogs/add-plants-dialog';
 import '../../../dialogs/clone-dialog';
@@ -254,6 +255,8 @@ export class GrowspaceDialogHost extends LitElement {
               return this._renderNutrientPresetsDialog(active, effectiveDeviceData);
             case 'IRRIGATION_RECIPES':
               return this._renderIrrigationRecipesDialog(active);
+            case 'IRRIGATION_PROGRAMS':
+              return this._renderIrrigationProgramsDialog(active);
             case 'TRAINING':
               return this._renderTrainingDialog(active, effectiveDeviceData);
             case 'TAKE_CLONE':
@@ -1410,6 +1413,23 @@ export class GrowspaceDialogHost extends LitElement {
         .open=${true}
         @close=${() => this._closeDialogIfActive('IRRIGATION_RECIPES')}
       ></recipe-library-dialog>
+    `;
+  }
+
+  /**
+   * The standalone [[Irrigation Program]] editor.
+   *
+   * Takes no growspace, like the recipe library above: a program is a plan, not
+   * one tent's settings. It needs no `data-changed` hook either — saving and
+   * deleting update `irrigationPrograms$` from their own replies.
+   */
+  private _renderIrrigationProgramsDialog(active: ActiveDialogState): TemplateResult {
+    if (active.type !== 'IRRIGATION_PROGRAMS') return html``;
+    return html`
+      <program-library-dialog
+        .open=${true}
+        @close=${() => this._closeDialogIfActive('IRRIGATION_PROGRAMS')}
+      ></program-library-dialog>
     `;
   }
 

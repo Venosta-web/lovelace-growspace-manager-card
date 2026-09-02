@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { hydrate } from './hydrate';
 import { devices$, setDevices } from '../slices/grid';
 import { setPlants } from '../slices/plant';
-import { setIrrigationConfig, setIrrigationRecipes, setTankLevels } from '../slices/irrigation';
+import {
+  setIrrigationConfig,
+  setIrrigationPrograms,
+  setIrrigationRecipes,
+  setTankLevels,
+} from '../slices/irrigation';
 
 vi.mock('../slices/device-state', () => ({
   setDeviceSnapshot: vi.fn(),
@@ -21,6 +26,7 @@ vi.mock('../slices/environment', () => ({
 
 vi.mock('../slices/irrigation', () => ({
   setIrrigationConfig: vi.fn(),
+  setIrrigationPrograms: vi.fn(),
   setIrrigationRecipes: vi.fn(),
   setIrrigationStrategy: vi.fn(),
   setTankLevels: vi.fn(),
@@ -174,6 +180,72 @@ describe('hydrate() — the global Irrigation Recipe library', () => {
   it('leaves the library alone when the backend predates the feature', () => {
     hydrate(minimalCollection as never, {});
 
+    expect(setIrrigationRecipes).not.toHaveBeenCalled();
+  });
+});
+
+describe('hydrate() — the global Irrigation Program library', () => {
+  const program = {
+    id: 'p1',
+    name: 'Full run',
+    slots: [{ stage: 'flower', week: 3, recipe_id: 'r1' }],
+    created_at: '2026-08-06T09:00:00+00:00',
+  };
+
+  it('sets it once, not per growspace — every payload carries the same list', () => {
+    const collection = {
+      'gs-1': {
+        identity: { growspace_id: 'gs-1', name: 'Tent A', type: 'flower' },
+        irrigation: { programs: { p1: program } },
+      },
+      'gs-2': {
+        identity: { growspace_id: 'gs-2', name: 'Tent B', type: 'flower' },
+        irrigation: { programs: { p1: program } },
+      },
+    };
+
+    hydrate(collection as never, {});
+
+    expect(setIrrigationPrograms).toHaveBeenCalledTimes(1);
+    expect(setIrrigationPrograms).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 'p1', name: 'Full run' }),
+    ]);
+  });
+
+  it('sets an empty library — no programs built yet is a real answer', () => {
+    hydrate(
+      {
+        'gs-1': {
+          identity: { growspace_id: 'gs-1', name: 'Tent A', type: 'flower' },
+          irrigation: { programs: {} },
+        },
+      } as never,
+      {}
+    );
+
+    expect(setIrrigationPrograms).toHaveBeenCalledWith([]);
+  });
+
+  it('leaves it alone when the backend predates the feature', () => {
+    hydrate(minimalCollection as never, {});
+
+    expect(setIrrigationPrograms).not.toHaveBeenCalled();
+  });
+
+  it('finds each library on its own device, not on whichever carries either', () => {
+    // A backend mid-upgrade can carry one library and not the other. Sharing a
+    // single "first device with irrigation data" would set one of them from a
+    // payload that never had it.
+    const collection = {
+      'gs-1': {
+        identity: { growspace_id: 'gs-1', name: 'Tent A', type: 'flower' },
+        irrigation: { programs: { p1: program } },
+      },
+    };
+
+    hydrate(collection as never, {});
+
+    expect(setIrrigationPrograms).toHaveBeenCalledWith([expect.objectContaining({ id: 'p1' })]);
     expect(setIrrigationRecipes).not.toHaveBeenCalled();
   });
 });
