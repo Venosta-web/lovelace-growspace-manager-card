@@ -17,7 +17,12 @@ import {
   subareaEnvSnapshots$,
   envSnapshotEntityIds,
 } from '../slices/environment';
-import { setIrrigationConfig, setIrrigationStrategy, setTankLevels } from '../slices/irrigation';
+import {
+  setIrrigationConfig,
+  setIrrigationRecipes,
+  setIrrigationStrategy,
+  setTankLevels,
+} from '../slices/irrigation';
 import { subareas$, subareasGrowspaceId$ } from '../slices/subarea';
 
 /**
@@ -49,6 +54,13 @@ export function hydrate(
   setPlants(allPlants);
 
   const hydratedGrowspaceId = subareasGrowspaceId$.get();
+
+  // The Irrigation Recipe library is GLOBAL: every growspace payload carries the
+  // same list, so it is set once from the first device that has one rather than
+  // per device inside the loop below. An empty library is a real answer (no
+  // recipes saved yet); only a payload predating the feature is skipped.
+  const withRecipes = devices.find((d) => d.irrigationRecipes !== undefined);
+  if (withRecipes) setIrrigationRecipes(withRecipes.irrigationRecipes ?? []);
 
   devices.forEach((d) => {
     setDeviceSnapshot(d.deviceId, d, hassStates, registry);

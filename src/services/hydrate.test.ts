@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { hydrate } from './hydrate';
 import { devices$, setDevices } from '../slices/grid';
 import { setPlants } from '../slices/plant';
-import { setIrrigationConfig, setTankLevels } from '../slices/irrigation';
+import { setIrrigationConfig, setIrrigationRecipes, setTankLevels } from '../slices/irrigation';
 
 vi.mock('../slices/device-state', () => ({
   setDeviceSnapshot: vi.fn(),
@@ -21,6 +21,7 @@ vi.mock('../slices/environment', () => ({
 
 vi.mock('../slices/irrigation', () => ({
   setIrrigationConfig: vi.fn(),
+  setIrrigationRecipes: vi.fn(),
   setIrrigationStrategy: vi.fn(),
   setTankLevels: vi.fn(),
 }));
@@ -116,5 +117,63 @@ describe('hydrate()', () => {
 
     expect(watched).toBeInstanceOf(Set);
     expect(watched.has('sensor.plant_1')).toBe(true);
+  });
+});
+
+describe('hydrate() — the global Irrigation Recipe library', () => {
+  const recipe = {
+    id: 'r1',
+    name: 'Flower week 3',
+    kind: 'crop_steering',
+    provenance: {
+      media_type: 'coco',
+      liters_per_pot: 5,
+      pump_flow_rate_ml_per_sec: 11,
+      stage: 'flower',
+      week: 3,
+    },
+    crop_steering: null,
+    schedule: null,
+    created_at: '2026-08-04T09:00:00+00:00',
+  };
+
+  it('sets it once, not per growspace — every payload carries the same list', () => {
+    const collection = {
+      'gs-1': {
+        identity: { growspace_id: 'gs-1', name: 'Tent A', type: 'flower' },
+        irrigation: { recipes: { r1: recipe } },
+      },
+      'gs-2': {
+        identity: { growspace_id: 'gs-2', name: 'Tent B', type: 'flower' },
+        irrigation: { recipes: { r1: recipe } },
+      },
+    };
+
+    hydrate(collection as never, {});
+
+    expect(setIrrigationRecipes).toHaveBeenCalledTimes(1);
+    expect(setIrrigationRecipes).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 'r1', name: 'Flower week 3' }),
+    ]);
+  });
+
+  it('sets an empty library — no recipes saved yet is a real answer', () => {
+    hydrate(
+      {
+        'gs-1': {
+          identity: { growspace_id: 'gs-1', name: 'Tent A', type: 'flower' },
+          irrigation: { recipes: {} },
+        },
+      } as never,
+      {}
+    );
+
+    expect(setIrrigationRecipes).toHaveBeenCalledWith([]);
+  });
+
+  it('leaves the library alone when the backend predates the feature', () => {
+    hydrate(minimalCollection as never, {});
+
+    expect(setIrrigationRecipes).not.toHaveBeenCalled();
   });
 });

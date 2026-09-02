@@ -300,3 +300,145 @@ export const IrrigationAnalyticsSchema = z.object({
 });
 
 export type IrrigationAnalytics = z.infer<typeof IrrigationAnalyticsSchema>;
+
+// ---------------------------------------------------------------------------
+// Irrigation Recipes (read — the global library, plus its two write commands)
+// ---------------------------------------------------------------------------
+
+/**
+ * One schedule row inside a [[Schedule Recipe]] — the backend's
+ * `IrrigationScheduleItem` TypedDict verbatim. Declared separately from the
+ * growspace payload's transforming twin so this slice owns its own shape and
+ * the two schema files stay acyclic; a recipe's rows are never read as times by
+ * the card, only carried, so no `time`/`start_time` reconciliation is needed.
+ */
+const RecipeScheduleItemSchema = z.object({
+  time: z.string().optional(),
+  duration: z.number().nullable().optional(),
+  start_time: z.string().optional(),
+  duration_seconds: z.number().nullable().optional(),
+});
+
+export const IrrigationRecipeKindSchema = z.enum(['crop_steering', 'schedule']);
+export type IrrigationRecipeKind = z.infer<typeof IrrigationRecipeKindSchema>;
+
+/**
+ * [[Recipe Provenance]] — the authoring context stamped onto a recipe at save
+ * time. Purely descriptive: it sorts and pre-selects the picker and names the
+ * authoring medium in a cross-media warning. It never gates an apply.
+ *
+ * `stage` is null (and `week` 0) when the authoring growspace held no live
+ * plants. `stage` stays a bare string rather than an enum because the backend
+ * types it as one — a new live stage must not fail the whole payload parse.
+ */
+export const RecipeProvenanceSchema = z.object({
+  media_type: z.enum(['coco', 'rockwool', 'soil']),
+  liters_per_pot: z.number(),
+  pump_flow_rate_ml_per_sec: z.number(),
+  stage: z.string().nullable(),
+  week: z.number(),
+});
+
+export type RecipeProvenance = z.infer<typeof RecipeProvenanceSchema>;
+
+/**
+ * The crop-steering half of a recipe. Declared complete per ADR-0031 and
+ * **unread by the card**: applying is a server-side stamp, so these setpoints
+ * only ever travel through GSM. Shot sizes are percents of substrate volume,
+ * never pump seconds ([[Substrate-Relative Shot Storage]]).
+ */
+export const CropSteeringRecipeSchema = z.object({
+  lights_on_time: z.string(),
+  p0_duration_minutes: z.number(),
+  p2_stop_before_lights_off_minutes: z.number(),
+  target_vwc_percent: z.number(),
+  maintenance_dryback_percent: z.number(),
+  p1_shot_volume_percent: z.number(),
+  p1_shot_interval_minutes: z.number(),
+  p2_shot_volume_percent: z.number(),
+  p2_shot_interval_minutes: z.number(),
+  auto_light_tracking: z.boolean(),
+  dynamic_shot_enabled: z.boolean(),
+  dynamic_aggressiveness: z.number(),
+  dynamic_recovery: z.number(),
+  dynamic_shot_size_floor: z.number(),
+  dynamic_interval_ceiling: z.number(),
+  pore_ec_target_min: z.number().nullable(),
+  pore_ec_target_max: z.number().nullable(),
+  ec_modulation_enabled: z.boolean(),
+});
+
+/**
+ * The time-schedule half of a recipe. Declared complete per ADR-0031 and
+ * unread by the card, for the same reason as its crop-steering twin.
+ */
+export const ScheduleRecipeSchema = z.object({
+  irrigation_times: z.array(RecipeScheduleItemSchema),
+  drain_times: z.array(RecipeScheduleItemSchema),
+  irrigation_duration: z.number().nullable(),
+  drain_duration: z.number().nullable(),
+  daily_volume_cap_liters: z.number().nullable(),
+  max_cycles_per_day: z.number().nullable(),
+  skip_during_dark: z.boolean(),
+});
+
+/**
+ * One [[Irrigation Recipe]] as the backend emits it. Exactly one of
+ * `crop_steering` / `schedule` is populated, matching `kind` — the library
+ * refuses to store any other combination, so the card can read `kind` alone.
+ */
+export const IrrigationRecipeSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  kind: IrrigationRecipeKindSchema,
+  provenance: RecipeProvenanceSchema,
+  crop_steering: CropSteeringRecipeSchema.nullable(),
+  schedule: ScheduleRecipeSchema.nullable(),
+  created_at: z.string(),
+});
+
+export type SerializedIrrigationRecipe = z.infer<typeof IrrigationRecipeSchema>;
+
+/**
+ * The global library as it rides every growspace payload at
+ * `irrigation.recipes`, keyed by recipe id. Global, not per-growspace: a recipe
+ * saved from one tent is listed from every other.
+ */
+export const IrrigationRecipeLibrarySchema = z.record(z.string(), IrrigationRecipeSchema);
+
+export type IrrigationRecipeLibrary = z.infer<typeof IrrigationRecipeLibrarySchema>;
+
+export const SaveIrrigationRecipePayloadSchema = z.strictObject({
+  growspace_id: z.string(),
+  name: z.string(),
+  kind: IrrigationRecipeKindSchema,
+  /** Present only when overwriting an existing recipe. */
+  recipe_id: z.string().optional(),
+});
+
+export type SaveIrrigationRecipePayload = z.infer<typeof SaveIrrigationRecipePayloadSchema>;
+
+export const ApplyIrrigationRecipePayloadSchema = z.strictObject({
+  growspace_id: z.string(),
+  recipe_id: z.string(),
+});
+
+export type ApplyIrrigationRecipePayload = z.infer<typeof ApplyIrrigationRecipePayloadSchema>;
+
+/**
+ * Result of the apply_irrigation_recipe WS command (the server stamps the
+ * recipe's values into the ordinary strategy/config fields).
+ *
+ * It echoes what was recorded so the caller need not re-read the growspace.
+ * `warning` is the media-mismatch notice: the apply **succeeded** and the
+ * values were deliberately not scaled, because pot size normalises across
+ * growspaces and media does not.
+ */
+export const ApplyIrrigationRecipeResultSchema = z.object({
+  growspace_id: z.string(),
+  applied_recipe_id: z.string().nullable(),
+  recipe_applied_at: z.string().nullable(),
+  warning: z.string().nullable(),
+});
+
+export type ApplyIrrigationRecipeResult = z.infer<typeof ApplyIrrigationRecipeResultSchema>;

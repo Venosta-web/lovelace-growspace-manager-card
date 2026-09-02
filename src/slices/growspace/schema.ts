@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { VisionCheckupConfigSchema } from '../camera/schema';
 import { GridApiSchema } from '../grid/schema';
-import { SteeringModeSchema } from '../irrigation/schema';
+import { IrrigationRecipeSchema, SteeringModeSchema } from '../irrigation/schema';
 import { TimedNotificationSchema } from '../notification/schema';
 import { SubareaSchema } from '../subarea/schema';
 
@@ -60,6 +60,13 @@ export const IrrigationStrategySchema = z.object({
   ec_modulation_enabled: z.boolean().optional(),
   // Declared steering intent (ADR-0012). null means never stamped.
   declared_steering_mode: SteeringModeSchema.nullable().optional(),
+  // [[Recipe Stamp]] provenance (ADR-0045): which grower-authored Irrigation
+  // Recipe was last stamped into the fields above, and when. Both null means
+  // "never applied" — a real third state, exactly as the declared steering mode
+  // is undeclared until its first stamp. The card never reads them to drive
+  // behaviour; they name what the Recipe tab reports.
+  applied_recipe_id: z.string().nullable().optional(),
+  recipe_applied_at: z.string().nullable().optional(),
   // Adaptive Shot Control (ADR-0014).
   dynamic_shot_enabled: z.boolean().optional(),
   dynamic_aggressiveness: z.number().optional(),
@@ -531,6 +538,16 @@ export const GrowspaceAPIResponseSchema = z.object({
       projected_shot_window: z.object({ start: z.string(), end: z.string() }).nullable().optional(),
       cycles_today: z.number().optional().default(0),
       volume_dispensed_today: z.number().optional().default(0),
+      // The global [[Irrigation Recipe]] library, keyed by recipe id. It rides
+      // every growspace payload (the same library on each) so the irrigation
+      // dialog's Recipe tab seeds from the device it already has.
+      recipes: z.record(z.string(), IrrigationRecipeSchema).optional(),
+      // Whether the growspace still holds what its applied recipe stamped.
+      // Computed on read, never stored — recipes are held by reference, so a
+      // hash written at stamp time would go stale the moment the recipe itself
+      // was edited. null means the question does not apply: no recipe was ever
+      // applied, or the applied one has since been removed from the library.
+      applied_recipe_drifted: z.boolean().nullable().optional(),
     })
     .optional()
     .prefault({}),

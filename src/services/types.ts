@@ -16,6 +16,7 @@ import type {
   SerializedShotComposition,
   SerializedSubstrateMetrics,
 } from '../slices/growspace/schema';
+import type { IrrigationRecipeKind } from '../slices/irrigation/schema';
 
 // --- Irrigation ---
 
@@ -94,6 +95,39 @@ export interface IrrigationStrategy {
   dynamicRecovery?: number;
   dynamicShotSizeFloor?: number;
   dynamicIntervalCeiling?: number;
+  // [[Recipe Stamp]] provenance (ADR-0045). Both null/undefined means the
+  // growspace has never had an Irrigation Recipe applied — a real third state,
+  // not a defaulted one. Nothing in the card branches on them; the Recipe tab
+  // reports them.
+  appliedRecipeId?: string | null;
+  recipeAppliedAt?: string | null;
+}
+
+/**
+ * One [[Irrigation Recipe]] as the card reads it — a grower-authored, reusable
+ * snapshot of one growspace's irrigation settings, held in a global library and
+ * applicable to any other growspace.
+ *
+ * The recipe's own setpoints are deliberately absent: applying is a server-side
+ * stamp, so the card never needs the values, only the identity and the
+ * [[Recipe Provenance]] that sorts the picker and names the authoring medium.
+ * The full wire shape is declared once in the Irrigation slice's schema.
+ */
+export interface IrrigationRecipe {
+  id: string;
+  name: string;
+  /** Which half the recipe carries. A recipe is never half-applied. */
+  kind: IrrigationRecipeKind;
+  /** Authoring context — descriptive only; it never gates an apply. */
+  provenance: {
+    mediaType: SubstrateMediaType;
+    litersPerPot: number;
+    pumpFlowRateMlPerSec: number;
+    /** null when the authoring growspace held no live plants (week is then 0). */
+    stage: string | null;
+    week: number;
+  };
+  createdAt: string;
 }
 
 export interface IrrigationConfig {
@@ -383,6 +417,18 @@ export interface GrowspaceDevice {
    * this — it gates the Volume Mode toggle on this flag directly.
    */
   volumeModeCapable?: boolean;
+
+  /**
+   * The global [[Irrigation Recipe]] library, as it rides this growspace's
+   * payload. Global, not per-growspace: every device carries the same list.
+   */
+  irrigationRecipes?: IrrigationRecipe[];
+  /**
+   * Whether this growspace's irrigation settings still match the recipe it last
+   * had applied. `null`/undefined means the question does not apply — no recipe
+   * was ever applied, or the applied one has since left the library.
+   */
+  appliedRecipeDrifted?: boolean | null;
 
   drainConfig?: DrainConfig | null;
   energyTracking?: EnergyTracking | null;

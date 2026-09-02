@@ -1910,3 +1910,90 @@ describe('ec_ramp tab', () => {
     expect(actionErrorMessage('remove-ec-ramp-curve')).toBe('Failed to delete EC ramp curve');
   });
 });
+
+// ─── Recipes tab ──────────────────────────────────────────────────────────────
+
+describe('recipes tab', () => {
+  it('starts with an empty name, no explicit selection, and no apply notice', () => {
+    const sm = createInitialSM();
+    expect(sm.tabs.recipes.draft).toEqual({ name: '', selectedRecipeId: null });
+    expect(sm.tabs.recipes.applyWarning).toBeNull();
+  });
+
+  it('UPDATE_RECIPE_NAME records what was typed', () => {
+    const sm = transition(createInitialSM(), { type: 'UPDATE_RECIPE_NAME', name: 'Veg week 2' });
+    expect(sm.tabs.recipes.draft.name).toBe('Veg week 2');
+  });
+
+  it('SELECT_RECIPE records the grower pick over the ViewModel pre-selection', () => {
+    const sm = transition(createInitialSM(), { type: 'SELECT_RECIPE', recipeId: 'r7' });
+    expect(sm.tabs.recipes.draft.selectedRecipeId).toBe('r7');
+  });
+
+  it('SET_RECIPE_APPLY_WARNING carries and clears the backend notice', () => {
+    const warned = transition(createInitialSM(), {
+      type: 'SET_RECIPE_APPLY_WARNING',
+      warning: 'authored in coco',
+    });
+    expect(warned.tabs.recipes.applyWarning).toBe('authored in coco');
+    expect(
+      transition(warned, { type: 'SET_RECIPE_APPLY_WARNING', warning: null }).tabs.recipes
+        .applyWarning
+    ).toBeNull();
+  });
+
+  it('abandons the half-typed name and the notice on leaving the tab', () => {
+    let sm = transition(createInitialSM(), { type: 'SWITCH_TAB', tab: 'recipes' });
+    sm = transition(sm, { type: 'UPDATE_RECIPE_NAME', name: 'half typed' });
+    sm = transition(sm, { type: 'SELECT_RECIPE', recipeId: 'r7' });
+    sm = transition(sm, { type: 'SET_RECIPE_APPLY_WARNING', warning: 'authored in coco' });
+
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'config' });
+
+    expect(sm.tabs.recipes.draft).toEqual({ name: '', selectedRecipeId: null });
+    expect(sm.tabs.recipes.applyWarning).toBeNull();
+  });
+
+  it('never guards a tab switch — the tab buffers no growspace settings', () => {
+    let sm = transition(createInitialSM(), { type: 'SWITCH_TAB', tab: 'recipes' });
+    sm = transition(sm, { type: 'UPDATE_RECIPE_NAME', name: 'half typed' });
+    expect(isActiveTabDirty(sm, makeDevice())).toBe(false);
+  });
+
+  it('keeps the backend refusal for the recipe actions, which names what is missing', () => {
+    const refusal = Object.assign(
+      new Error(
+        'Cannot save an irrigation recipe from a growspace in Seconds Shot Sizing Mode: ' +
+          'no pump flow rate is configured.'
+      ),
+      { code: 'validation_failed' }
+    );
+    expect(actionErrorMessage('save-recipe', refusal)).toContain('no pump flow rate is configured');
+    expect(actionErrorMessage('apply-recipe', refusal)).toContain('Seconds Shot Sizing Mode');
+  });
+
+  it('falls back to the generic copy for a failure that is not a typed refusal', () => {
+    expect(actionErrorMessage('save-recipe', new Error('socket closed'))).toBe(
+      'Failed to save irrigation recipe'
+    );
+    expect(actionErrorMessage('apply-recipe')).toBe('Failed to apply irrigation recipe');
+  });
+
+  it('does not let a backend message displace another action’s reviewed copy', () => {
+    const refusal = Object.assign(new Error('raw backend detail'), { code: 'validation_failed' });
+    expect(actionErrorMessage('save-all', refusal)).toBe('Failed to save irrigation settings');
+  });
+
+  it('surfaces the refusal through SaveFailed', () => {
+    const refusal = Object.assign(new Error('the growspace holds no live plants'), {
+      code: 'validation_failed',
+    });
+    const sm = transition(createInitialSM(), {
+      type: 'SaveFailed',
+      action: 'save-recipe',
+      error: refusal,
+    });
+    expect(sm.toast).toBe('the growspace holds no live plants');
+    expect(sm.status.kind).toBe('idle');
+  });
+});

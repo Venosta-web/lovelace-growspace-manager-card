@@ -5,11 +5,13 @@
  *   irrigationConfigs$    — read: Map<growspaceId, IrrigationConfig>
  *   irrigationStrategies$ — read: Map<growspaceId, IrrigationStrategy>
  *   tankLevels$           — read: Map<growspaceId, IrrigationTank[]>
+ *   irrigationRecipes$    — read: IrrigationRecipe[] (the GLOBAL recipe library)
  *
  * Public API (bootstrap writes — called by SyncService):
  *   setIrrigationConfig()   — replace the IrrigationConfig for a growspace
  *   setIrrigationStrategy() — replace the IrrigationStrategy for a growspace
  *   setTankLevels()         — replace the IrrigationTank list for a growspace
+ *   setIrrigationRecipes()  — replace the global Irrigation Recipe library
  *
  * Public API (pure computation):
  *   computeIrrigationMode()  — derive 'manual' | 'crop_steering' from strategy
@@ -27,6 +29,8 @@
  *   configureDrainMonitoring()   — fire-and-forget
  *   runIrrigationCycle()         — fire-and-forget
  *   fetchCropSteeringHistory()   — fetches sensor-driven VWC/EC history for one growspace
+ *   saveIrrigationRecipe()       — snapshot a growspace's settings into the library
+ *   applyIrrigationRecipe()      — stamp a saved recipe into a growspace
  *
  * Action type, payload shapes, and zod schemas are private to this module.
  * Tank data absorption: this slice is the authoritative source for tank levels,
@@ -36,6 +40,7 @@
 import { atom } from 'nanostores';
 import type {
   IrrigationConfig,
+  IrrigationRecipe,
   IrrigationStrategy,
   IrrigationTank,
   ECTargetRange,
@@ -44,9 +49,15 @@ import { mutate } from '../../services/mutate';
 import { callService, hassCall } from '../../services/hass-call';
 import type { IrrigationMode, PhaseWindows, IrrigationAnalytics } from './schema';
 import { IrrigationAnalyticsSchema } from './schema';
-import { patchDeviceIrrigationConfig, patchDeviceStrategy } from '../grid';
+import { patchDeviceIrrigationConfig, patchDeviceRecipeStamp, patchDeviceStrategy } from '../grid';
 import { CropSteeringHistorySchema, type CropSteeringHistory } from '../../schemas/api-schema';
 import { ApplySteeringModeResultSchema, type SteeringMode } from './schema';
+import {
+  ApplyIrrigationRecipeResultSchema,
+  IrrigationRecipeSchema,
+  type ApplyIrrigationRecipeResult,
+  type IrrigationRecipeKind,
+} from './schema';
 import { computePhases } from '../../features/environment/crop-steering-model';
 
 // ---------------------------------------------------------------------------
@@ -57,6 +68,13 @@ export const irrigationConfigs$ = atom<Map<string, IrrigationConfig>>(new Map())
 export const irrigationStrategies$ = atom<Map<string, IrrigationStrategy>>(new Map());
 export const tankLevels$ = atom<Map<string, IrrigationTank[]>>(new Map());
 export const cropSteeringHistory$ = atom<Map<string, CropSteeringHistory>>(new Map());
+/**
+ * The [[Irrigation Recipe]] library — **global**, not keyed by growspace: a
+ * recipe saved from one tent is listed from every other. It rides every
+ * growspace payload, so hydration sets this once from whichever device carries
+ * it rather than fetching it separately.
+ */
+export const irrigationRecipes$ = atom<IrrigationRecipe[]>([]);
 
 // ---------------------------------------------------------------------------
 // Bootstrap writes (called by SyncService when fresh data arrives)
@@ -78,6 +96,12 @@ export function setTankLevels(growspaceId: string, tanks: IrrigationTank[]): voi
   const updated = new Map(tankLevels$.get());
   updated.set(growspaceId, tanks);
   tankLevels$.set(updated);
+}
+
+/** Replace the global Irrigation Recipe library. Takes no growspace id — the
+ * library is one list shared by every tent. */
+export function setIrrigationRecipes(recipes: IrrigationRecipe[]): void {
+  irrigationRecipes$.set(recipes);
 }
 
 // ---------------------------------------------------------------------------
@@ -432,6 +456,127 @@ export async function applySteeringMode(growspaceId: string, mode: SteeringMode)
     },
     growspaceId
   );
+}
+
+/**
+ * Save a growspace's current irrigation settings as a named [[Irrigation
+ * Recipe]] (ADR-0045).
+ *
+ * Not a `mutate()`: nothing about the growspace changes, and the recipe the
+ * library gains cannot be constructed locally — the backend derives its
+ * [[Recipe Provenance]] and, in Seconds [[Shot Sizing Mode]], recovers the shot
+ * percents through the target's own flow rate and pot volume. So there is
+ * nothing to show optimistically and nothing to roll back; the saved recipe is
+ * merged into the library from the command's own reply.
+ *
+ * A refusal (Seconds Mode without the inputs to derive a percent) arrives as a
+ * `validation_failed` WSError whose message names the missing prerequisite.
+ * Callers surface that message rather than a generic failure.
+ */
+export async function saveIrrigationRecipe(params: {
+  growspaceId: string;
+  name: string;
+  kind: IrrigationRecipeKind;
+  /** Present only when overwriting an existing recipe. */
+  recipeId?: string;
+}): Promise<void> {
+  const saved = await hassCall(
+    'growspace_manager/save_irrigation_recipe',
+    {
+      growspace_id: params.growspaceId,
+      name: params.name,
+      kind: params.kind,
+      ...(params.recipeId ? { recipe_id: params.recipeId } : {}),
+    },
+    IrrigationRecipeSchema
+  );
+
+  const recipe: IrrigationRecipe = {
+    id: saved.id,
+    name: saved.name,
+    kind: saved.kind,
+    provenance: {
+      mediaType: saved.provenance.media_type,
+      litersPerPot: saved.provenance.liters_per_pot,
+      pumpFlowRateMlPerSec: saved.provenance.pump_flow_rate_ml_per_sec,
+      stage: saved.provenance.stage,
+      week: saved.provenance.week,
+    },
+    createdAt: saved.created_at,
+  };
+
+  // Upsert by id and keep the name ordering the adapter establishes, so the
+  // picker does not reshuffle when the next sync replaces this list.
+  const rest = irrigationRecipes$.get().filter((r) => r.id !== recipe.id);
+  irrigationRecipes$.set([...rest, recipe].sort((a, b) => a.name.localeCompare(b.name)));
+}
+
+/**
+ * Stamp a saved [[Irrigation Recipe]] into a growspace ([[Recipe Stamp]]).
+ *
+ * The server owns the stamp: it re-expresses the recipe's substrate-relative
+ * shot sizes in this growspace's own units and writes them into the ordinary
+ * editable fields. We optimistically reflect only what was *recorded* — which
+ * recipe, when, and that the growspace therefore no longer differs from it —
+ * so the Recipe tab updates immediately; the stamped numeric field values
+ * arrive through the normal device sync, exactly as for the Steering Mode
+ * stamp.
+ *
+ * Returns the command's reply so the caller can surface `warning`: a
+ * cross-media apply **succeeds** and warns, naming both media, because pot size
+ * normalises across growspaces and media does not.
+ */
+export async function applyIrrigationRecipe(
+  growspaceId: string,
+  recipeId: string
+): Promise<ApplyIrrigationRecipeResult> {
+  const prev = _getStrategy(growspaceId);
+  const prevStamp = {
+    appliedRecipeId: prev.appliedRecipeId ?? null,
+    recipeAppliedAt: prev.recipeAppliedAt ?? null,
+  };
+  let result!: ApplyIrrigationRecipeResult;
+
+  await mutate(
+    {
+      type: 'applyIrrigationRecipe',
+      optimistic: () => {
+        _patchStrategy(growspaceId, { appliedRecipeId: recipeId });
+        patchDeviceRecipeStamp(growspaceId, { appliedRecipeId: recipeId });
+      },
+      // Failure rollback only. A committed stamp has no inverse — it overwrote
+      // the previous setpoints and they are not recoverable — so, exactly as for
+      // the Steering Mode stamp, the way back is to re-apply the recipe the
+      // growspace was on. The drift verdict is deliberately untouched here: if
+      // the apply never committed, the verdict the backend last gave is still
+      // the right one.
+      inverse: () => {
+        _patchStrategy(growspaceId, prevStamp);
+        patchDeviceRecipeStamp(growspaceId, prevStamp);
+      },
+      apply: async () => {
+        result = await hassCall(
+          'growspace_manager/apply_irrigation_recipe',
+          { growspace_id: growspaceId, recipe_id: recipeId },
+          ApplyIrrigationRecipeResultSchema
+        );
+        // The reply carries the authoritative stamp; a fresh stamp cannot have
+        // drifted, so the tab's verdict is known without waiting for a sync.
+        _patchStrategy(growspaceId, {
+          appliedRecipeId: result.applied_recipe_id,
+          recipeAppliedAt: result.recipe_applied_at,
+        });
+        patchDeviceRecipeStamp(growspaceId, {
+          appliedRecipeId: result.applied_recipe_id,
+          recipeAppliedAt: result.recipe_applied_at,
+          drifted: false,
+        });
+      },
+    },
+    growspaceId
+  );
+
+  return result;
 }
 
 /**
