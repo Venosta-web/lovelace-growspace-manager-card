@@ -41,35 +41,9 @@ jobs:
       - name: Fetch GSM contract fixtures
         env:
           RELEASE_TAG: ${{ steps.gsm-release.outputs.tag }}
-        run: |
-          base_url="https://raw.githubusercontent.com/Venosta-web/growspace_manager"
-          fixture_dir="tests/fixtures/contract"
-          curl --fail-with-body --location --retry 3 \
-            --output "$RUNNER_TEMP/gsm-main-growspace.json" \
-            "$base_url/main/$fixture_dir/growspace_payload.json"
-          curl --fail-with-body --location --retry 3 \
-            --output "$RUNNER_TEMP/gsm-release-growspace.json" \
-            "$base_url/$RELEASE_TAG/$fixture_dir/growspace_payload.json"
-
-          for fixture in \
-            vision_status_response \
-            vision_history_response \
-            trigger_vision_checkup_response
-          do
-            curl --fail-with-body --location --retry 3 \
-              --output "$RUNNER_TEMP/gsm-prerelease-$fixture.json" \
-              "$base_url/prerelease/$fixture_dir/$fixture.json"
-
-            release_output="$RUNNER_TEMP/gsm-release-$fixture.json"
-            status="$({ curl --silent --show-error --location --retry 3 \
-              --write-out '%{http_code}' --output "$release_output" \
-              "$base_url/$RELEASE_TAG/$fixture_dir/$fixture.json"; } 2>&1)"
-            case "$status" in
-              200) ;;
-              404) rm -f "$release_output" ;;
-              *) echo "release fixture fetch failed with HTTP $status" >&2; exit 1 ;;
-            esac
-          done
+          # Remove this immutable bootstrap after backend PR #727 lands on prerelease.
+          GSM_VISION_BOOTSTRAP_REF: 9f2446af7141ccd16eb814059cfed6e74f51c859
+        run: node scripts/fetch-contract-fixtures.mjs
 
       - name: Diff fixture and schema key sets
         env:
