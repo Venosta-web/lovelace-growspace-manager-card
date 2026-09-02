@@ -30,6 +30,8 @@
  *   runIrrigationCycle()         — fire-and-forget
  *   fetchCropSteeringHistory()   — fetches sensor-driven VWC/EC history for one growspace
  *   saveIrrigationRecipe()       — snapshot a growspace's settings into the library
+ *   updateIrrigationRecipe()     — rename / correct a stored recipe in place
+ *   removeIrrigationRecipe()     — drop a recipe from the library
  *   applyIrrigationRecipe()      — stamp a saved recipe into a growspace
  *
  * Action type, payload shapes, and zod schemas are private to this module.
@@ -38,11 +40,14 @@
  */
 
 import { atom } from 'nanostores';
+import { z } from 'zod';
 import type {
+  CropSteeringRecipeValues,
   IrrigationConfig,
   IrrigationRecipe,
   IrrigationStrategy,
   IrrigationTank,
+  ScheduleRecipeValues,
   ECTargetRange,
 } from '../../services/types';
 import { mutate } from '../../services/mutate';
@@ -57,6 +62,7 @@ import {
   IrrigationRecipeSchema,
   type ApplyIrrigationRecipeResult,
   type IrrigationRecipeKind,
+  type SerializedIrrigationRecipe,
 } from './schema';
 import { computePhases } from '../../features/environment/crop-steering-model';
 
@@ -459,6 +465,31 @@ export async function applySteeringMode(growspaceId: string, mode: SteeringMode)
 }
 
 /**
+ * One command reply → the library's own shape.
+ *
+ * Shared by save and update so the two cannot disagree about a recipe the
+ * library already holds. The two halves are carried verbatim rather than
+ * camelised — see `IrrigationRecipe` in services/types.ts for why.
+ */
+function toIrrigationRecipe(wire: SerializedIrrigationRecipe): IrrigationRecipe {
+  return {
+    id: wire.id,
+    name: wire.name,
+    kind: wire.kind,
+    provenance: {
+      mediaType: wire.provenance.media_type,
+      litersPerPot: wire.provenance.liters_per_pot,
+      pumpFlowRateMlPerSec: wire.provenance.pump_flow_rate_ml_per_sec,
+      stage: wire.provenance.stage,
+      week: wire.provenance.week,
+    },
+    cropSteering: wire.crop_steering,
+    schedule: wire.schedule,
+    createdAt: wire.created_at,
+  };
+}
+
+/**
  * Save a growspace's current irrigation settings as a named [[Irrigation
  * Recipe]] (ADR-0045).
  *
@@ -491,24 +522,70 @@ export async function saveIrrigationRecipe(params: {
     IrrigationRecipeSchema
   );
 
-  const recipe: IrrigationRecipe = {
-    id: saved.id,
-    name: saved.name,
-    kind: saved.kind,
-    provenance: {
-      mediaType: saved.provenance.media_type,
-      litersPerPot: saved.provenance.liters_per_pot,
-      pumpFlowRateMlPerSec: saved.provenance.pump_flow_rate_ml_per_sec,
-      stage: saved.provenance.stage,
-      week: saved.provenance.week,
-    },
-    createdAt: saved.created_at,
-  };
+  const recipe = toIrrigationRecipe(saved);
 
   // Upsert by id and keep the name ordering the adapter establishes, so the
   // picker does not reshuffle when the next sync replaces this list.
   const rest = irrigationRecipes$.get().filter((r) => r.id !== recipe.id);
   irrigationRecipes$.set([...rest, recipe].sort((a, b) => a.name.localeCompare(b.name)));
+}
+
+/**
+ * Rename a stored [[Irrigation Recipe]] and/or correct the values it holds.
+ *
+ * Sparse, exactly as the command is: a field this call does not name keeps
+ * what the recipe stores, so renaming carries no values. `kind` and
+ * [[Recipe Provenance]] are not writable — provenance records where the recipe
+ * came from, not what it should say.
+ *
+ * Not a `mutate()`, for the same reason `saveIrrigationRecipe` is not: no
+ * growspace changes. Applying a recipe is a by-value stamp, so a growspace
+ * that carries this one keeps the numbers it was given and simply starts
+ * reading as drifted — a server-derived flag, arriving on the next sync rather
+ * than something the card may invent locally.
+ *
+ * The library is updated from the command's own reply, which is the whole
+ * edited recipe.
+ */
+export async function updateIrrigationRecipe(params: {
+  recipeId: string;
+  name?: string;
+  cropSteering?: Partial<CropSteeringRecipeValues>;
+  schedule?: Partial<ScheduleRecipeValues>;
+}): Promise<IrrigationRecipe> {
+  const saved = await hassCall(
+    'growspace_manager/update_irrigation_recipe',
+    {
+      recipe_id: params.recipeId,
+      ...(params.name !== undefined ? { name: params.name } : {}),
+      ...(params.cropSteering ? { crop_steering: params.cropSteering } : {}),
+      ...(params.schedule ? { schedule: params.schedule } : {}),
+    },
+    IrrigationRecipeSchema
+  );
+
+  const recipe = toIrrigationRecipe(saved);
+  const rest = irrigationRecipes$.get().filter((r) => r.id !== recipe.id);
+  irrigationRecipes$.set([...rest, recipe].sort((a, b) => a.name.localeCompare(b.name)));
+  return recipe;
+}
+
+/**
+ * Drop a recipe from the global library.
+ *
+ * Never refused and never cascading: a growspace that had this recipe applied
+ * keeps its stamped `appliedRecipeId`, which is why the Recipe tab reports an
+ * applied recipe with no name rather than pretending nothing was applied. A
+ * program slot pointing here degrades to "no instruction", which the
+ * [[Program Hold]] rule already treats as "change nothing".
+ */
+export async function removeIrrigationRecipe(recipeId: string): Promise<void> {
+  await hassCall(
+    'growspace_manager/remove_irrigation_recipe',
+    { recipe_id: recipeId },
+    z.unknown()
+  );
+  irrigationRecipes$.set(irrigationRecipes$.get().filter((r) => r.id !== recipeId));
 }
 
 /**

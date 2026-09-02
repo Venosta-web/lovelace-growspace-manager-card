@@ -743,8 +743,44 @@ describe('GrowspaceAdapter irrigation recipes through the wire schema', () => {
         stage: 'flower',
         week: 3,
       },
+      cropSteering: STEERING_RECIPE.crop_steering,
+      schedule: null,
       createdAt: '2026-08-04T09:00:00+00:00',
     });
+  });
+
+  it('carries the stored setpoints for the library editor to correct', () => {
+    // Wire-shaped on purpose: the editor is their only reader and sends the
+    // changed ones straight back under these same names.
+    const device = hydrate({ recipes: { z: STEERING_RECIPE } });
+
+    expect(device?.irrigationRecipes?.[0].cropSteering?.p1_shot_volume_percent).toBe(4.5);
+    expect(device?.irrigationRecipes?.[0].schedule).toBeNull();
+  });
+
+  it('carries the schedule half for a schedule recipe', () => {
+    const device = hydrate({
+      recipes: {
+        s: {
+          ...STEERING_RECIPE,
+          id: 's',
+          kind: 'schedule',
+          crop_steering: null,
+          schedule: {
+            irrigation_times: [{ time: '08:00:00', duration: 30 }],
+            drain_times: [],
+            irrigation_duration: 30,
+            drain_duration: null,
+            daily_volume_cap_liters: 12.5,
+            max_cycles_per_day: 6,
+            skip_during_dark: true,
+          },
+        },
+      },
+    });
+
+    expect(device?.irrigationRecipes?.[0].cropSteering).toBeNull();
+    expect(device?.irrigationRecipes?.[0].schedule?.max_cycles_per_day).toBe(6);
   });
 
   it('keeps an empty library distinct from a backend that predates the feature', () => {

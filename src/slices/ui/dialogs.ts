@@ -303,6 +303,16 @@ export function openNutrientsDialog(): void {
   openDialog({ type: 'NUTRIENTS', payload: {} });
 }
 
+/**
+ * Open the standalone [[Irrigation Recipe]] library editor.
+ *
+ * Takes no growspace: the library is global, and this surface edits recipes as
+ * objects. Applying one to a tent is the irrigation dialog's Recipe tab.
+ */
+export function openIrrigationRecipesDialog(): void {
+  openDialog({ type: 'IRRIGATION_RECIPES', payload: {} });
+}
+
 export function openSnapshotsDialog(growspaceId?: string): void {
   openDialog({
     type: 'SNAPSHOTS',
