@@ -14,7 +14,7 @@
     "build:coverage": "COVERAGE=true rollup -c",
     "test": "npm run --silent test:e2e-runtime-harness && node scripts/run-browser-tests.mjs",
     "test:contract-fixture": "vitest run --config vitest.contract.config.ts",
-    "test:ci-policy": "node --test scripts/ci-release-policy.test.mjs scripts/publishing.test.mjs",
+    "test:ci-policy": "node --test scripts/ci-release-policy.test.mjs scripts/fetch-contract-fixtures.test.mjs scripts/publishing.test.mjs",
     "test:e2e-runtime-harness": "node --test scripts/e2e-build-state.test.mjs scripts/e2e-runtime-harness.test.mjs tests/e2e/global-setup.test.mjs",
     "test:e2e": "node scripts/run-e2e-runtime-harness.mjs managed",
     "test:ha": "node scripts/run-e2e-runtime-harness.mjs attached",

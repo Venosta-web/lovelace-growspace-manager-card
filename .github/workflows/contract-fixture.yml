@@ -41,18 +41,18 @@ jobs:
       - name: Fetch GSM contract fixtures
         env:
           RELEASE_TAG: ${{ steps.gsm-release.outputs.tag }}
-        run: |
-          fixture_path="tests/fixtures/contract/growspace_payload.json"
-          base_url="https://raw.githubusercontent.com/Venosta-web/growspace_manager"
-          curl --fail-with-body --location --retry 3 \
-            --output "$RUNNER_TEMP/gsm-main.json" \
-            "$base_url/main/$fixture_path"
-          curl --fail-with-body --location --retry 3 \
-            --output "$RUNNER_TEMP/gsm-release.json" \
-            "$base_url/$RELEASE_TAG/$fixture_path"
+          # Remove this immutable bootstrap after backend PR #727 lands on prerelease.
+          GSM_VISION_BOOTSTRAP_REF: 9f2446af7141ccd16eb814059cfed6e74f51c859
+        run: node scripts/fetch-contract-fixtures.mjs
 
       - name: Diff fixture and schema key sets
         env:
-          GSM_MAIN_FIXTURE: ${{ runner.temp }}/gsm-main.json
-          GSM_RELEASE_FIXTURE: ${{ runner.temp }}/gsm-release.json
+          GSM_MAIN_GROWSPACE_FIXTURE: ${{ runner.temp }}/gsm-main-growspace.json
+          GSM_RELEASE_GROWSPACE_FIXTURE: ${{ runner.temp }}/gsm-release-growspace.json
+          GSM_PRERELEASE_VISION_STATUS_FIXTURE: ${{ runner.temp }}/gsm-prerelease-vision_status_response.json
+          GSM_RELEASE_VISION_STATUS_FIXTURE: ${{ runner.temp }}/gsm-release-vision_status_response.json
+          GSM_PRERELEASE_VISION_HISTORY_FIXTURE: ${{ runner.temp }}/gsm-prerelease-vision_history_response.json
+          GSM_RELEASE_VISION_HISTORY_FIXTURE: ${{ runner.temp }}/gsm-release-vision_history_response.json
+          GSM_PRERELEASE_VISION_TRIGGER_FIXTURE: ${{ runner.temp }}/gsm-prerelease-trigger_vision_checkup_response.json
+          GSM_RELEASE_VISION_TRIGGER_FIXTURE: ${{ runner.temp }}/gsm-release-trigger_vision_checkup_response.json
         run: npm run test:contract-fixture

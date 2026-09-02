@@ -23,6 +23,25 @@ export {
   StrainLibrarySchema,
   StrainLibraryWrapperSchema,
 } from '../slices/strain/schema';
+
+export {
+  VisionStatusSchema,
+  VisionCaptureResultSchema,
+  VisionCheckupSchema,
+  LegacyVisionCheckupResultSchema,
+  VisionHistoryItemSchema,
+  GetVisionHistoryV2ResponseSchema,
+  TriggerVisionCheckupResponseSchema,
+} from '../slices/camera/schema';
+export type {
+  VisionStatus,
+  VisionCaptureResult,
+  VisionCheckup,
+  LegacyVisionCheckupResult,
+  VisionHistoryItem,
+  GetVisionHistoryV2Response,
+  TriggerVisionCheckupResponse,
+} from '../slices/camera/schema';
 export type { StrainLibrary, StrainLibraryResponse } from '../slices/strain/schema';
 
 // Nutrient schemas live in the Nutrient slice — re-exported here for backwards compatibility.
