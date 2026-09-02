@@ -42,17 +42,43 @@ jobs:
         env:
           RELEASE_TAG: ${{ steps.gsm-release.outputs.tag }}
         run: |
-          fixture_path="tests/fixtures/contract/growspace_payload.json"
           base_url="https://raw.githubusercontent.com/Venosta-web/growspace_manager"
+          fixture_dir="tests/fixtures/contract"
           curl --fail-with-body --location --retry 3 \
-            --output "$RUNNER_TEMP/gsm-main.json" \
-            "$base_url/main/$fixture_path"
+            --output "$RUNNER_TEMP/gsm-main-growspace.json" \
+            "$base_url/main/$fixture_dir/growspace_payload.json"
           curl --fail-with-body --location --retry 3 \
-            --output "$RUNNER_TEMP/gsm-release.json" \
-            "$base_url/$RELEASE_TAG/$fixture_path"
+            --output "$RUNNER_TEMP/gsm-release-growspace.json" \
+            "$base_url/$RELEASE_TAG/$fixture_dir/growspace_payload.json"
+
+          for fixture in \
+            vision_status_response \
+            vision_history_response \
+            trigger_vision_checkup_response
+          do
+            curl --fail-with-body --location --retry 3 \
+              --output "$RUNNER_TEMP/gsm-prerelease-$fixture.json" \
+              "$base_url/prerelease/$fixture_dir/$fixture.json"
+
+            release_output="$RUNNER_TEMP/gsm-release-$fixture.json"
+            status="$({ curl --silent --show-error --location --retry 3 \
+              --write-out '%{http_code}' --output "$release_output" \
+              "$base_url/$RELEASE_TAG/$fixture_dir/$fixture.json"; } 2>&1)"
+            case "$status" in
+              200) ;;
+              404) rm -f "$release_output" ;;
+              *) echo "release fixture fetch failed with HTTP $status" >&2; exit 1 ;;
+            esac
+          done
 
       - name: Diff fixture and schema key sets
         env:
-          GSM_MAIN_FIXTURE: ${{ runner.temp }}/gsm-main.json
-          GSM_RELEASE_FIXTURE: ${{ runner.temp }}/gsm-release.json
+          GSM_MAIN_GROWSPACE_FIXTURE: ${{ runner.temp }}/gsm-main-growspace.json
+          GSM_RELEASE_GROWSPACE_FIXTURE: ${{ runner.temp }}/gsm-release-growspace.json
+          GSM_PRERELEASE_VISION_STATUS_FIXTURE: ${{ runner.temp }}/gsm-prerelease-vision_status_response.json
+          GSM_RELEASE_VISION_STATUS_FIXTURE: ${{ runner.temp }}/gsm-release-vision_status_response.json
+          GSM_PRERELEASE_VISION_HISTORY_FIXTURE: ${{ runner.temp }}/gsm-prerelease-vision_history_response.json
+          GSM_RELEASE_VISION_HISTORY_FIXTURE: ${{ runner.temp }}/gsm-release-vision_history_response.json
+          GSM_PRERELEASE_VISION_TRIGGER_FIXTURE: ${{ runner.temp }}/gsm-prerelease-trigger_vision_checkup_response.json
+          GSM_RELEASE_VISION_TRIGGER_FIXTURE: ${{ runner.temp }}/gsm-release-trigger_vision_checkup_response.json
         run: npm run test:contract-fixture
