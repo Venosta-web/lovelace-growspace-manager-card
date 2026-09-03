@@ -17,7 +17,7 @@
  * Dumb by contract (ADR-0019): `vm` in, nothing out, no `hass`, no `@state()`.
  */
 
-import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
+import { LitElement, html, css, nothing, svg, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { statusTokens } from '../../../styles/status.styles';
@@ -193,6 +193,20 @@ export class GrowspaceVisionCaptureLedger extends LitElement {
         display: block;
       }
 
+      /* A fill="var(--tone)" presentation attribute does not resolve: a custom
+         property is not substituted there, and every dot renders black —
+         invisible on this surface. Paint has to come from a real CSS rule.
+         Measured, not assumed; the sparkline test pins it. */
+      .spark path {
+        fill: none;
+        stroke: var(--secondary-text-color, #bbb);
+        stroke-width: 1.5;
+      }
+
+      .spark circle {
+        fill: var(--tone);
+      }
+
       .spark-legend {
         display: flex;
         justify-content: space-between;
@@ -357,15 +371,20 @@ export class GrowspaceVisionCaptureLedger extends LitElement {
     if (!trend) return nothing;
     const width = 240;
     const height = 44;
+    const radius = 3;
     const scored = trend.points.filter((point) => point.score !== null);
     if (scored.length === 0) return nothing;
-    const step = trend.points.length > 1 ? width / (trend.points.length - 1) : width;
-    const y = (score: number): number => height - 4 - score * (height - 10);
+    // Inset by the dot radius at both ends: a point at x=0 or x=width is drawn
+    // half outside the viewBox and reads as a missing dot rather than a first one.
+    const span = width - radius * 2;
+    const step = trend.points.length > 1 ? span / (trend.points.length - 1) : 0;
+    const x = (index: number): number => radius + index * step;
+    const y = (score: number): number => height - radius - 1 - score * (height - radius * 2 - 2);
     const path = trend.points
       .map((point, index) =>
         point.score === null
           ? ''
-          : `${index === 0 ? 'M' : 'L'}${(index * step).toFixed(1)},${y(point.score).toFixed(1)}`
+          : `${index === 0 ? 'M' : 'L'}${x(index).toFixed(1)},${y(point.score).toFixed(1)}`
       )
       .join('');
     return html`
@@ -376,21 +395,18 @@ export class GrowspaceVisionCaptureLedger extends LitElement {
           aria-label=${trend.accessibleLabel}
           preserveAspectRatio="xMinYMid meet"
         >
-          <path
-            d=${path}
-            fill="none"
-            stroke="var(--secondary-text-color, #bbb)"
-            stroke-width="1.5"
-          />
+          <path d=${path} />
           ${trend.points.map((point, index) =>
             point.score === null
               ? nothing
-              : html`<circle
+              : // `svg`, not `html`: a nested template is parsed on its own, so an
+                // interpolated <circle> written with `html` is created in the HTML
+                // namespace — right fill, zero geometry, and nothing on screen.
+                svg`<circle
                   class="tone-${point.tone}"
-                  cx=${(index * step).toFixed(1)}
+                  cx=${x(index).toFixed(1)}
                   cy=${y(point.score).toFixed(1)}
-                  r="3"
-                  fill="var(--tone)"
+                  r=${radius}
                 >
                   <title>${point.title}</title>
                 </circle>`

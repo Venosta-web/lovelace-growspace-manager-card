@@ -340,6 +340,78 @@ describe('growspace-vision-capture-ledger', () => {
     expect(getComputedStyle(channels).gridTemplateColumns.split(' ')).toHaveLength(3);
   });
 
+  it('never lets its content scroll the panel sideways', async () => {
+    const element = await mount({
+      history: [
+        checkup([
+          capture({
+            trend: [
+              { evaluated_at: '2026-09-01T12:00:00+00:00', anomaly_score: 0.88, verdict: 'uncertain' },
+              { evaluated_at: '2026-08-31T12:00:00+00:00', anomaly_score: 0.22, verdict: 'normal' },
+            ],
+          }),
+        ]),
+      ],
+    });
+    const ledger = ledgerOf(element);
+
+    for (const width of [360, 420, 620, 900]) {
+      ledger.style.width = `${width}px`;
+      await ledger.updateComplete;
+      const root = ledger.shadowRoot!;
+      for (const selector of ['.channels', 'section.channel', '.gate', '.fusion']) {
+        for (const node of root.querySelectorAll<HTMLElement>(selector)) {
+          expect(
+            node.scrollWidth,
+            `${selector} overflows at ${width}px`
+          ).toBeLessThanOrEqual(node.clientWidth + 1);
+        }
+      }
+    }
+  });
+
+  it('colours each sparkline point by its own verdict', async () => {
+    const element = await mount({
+      history: [
+        checkup([
+          capture({
+            trend: [
+              {
+                evaluated_at: '2026-09-01T12:00:00+00:00',
+                anomaly_score: 0.98,
+                verdict: 'material_scene_change',
+              },
+              { evaluated_at: '2026-08-31T12:00:00+00:00', anomaly_score: 0.22, verdict: 'normal' },
+            ],
+          }),
+        ]),
+      ],
+    });
+    const circles = ledgerOf(element).shadowRoot!.querySelectorAll('.spark circle');
+
+    expect(circles).toHaveLength(2);
+    const fills = [...circles].map((circle) => getComputedStyle(circle).fill);
+    expect(new Set(fills).size).toBe(2);
+    for (const fill of fills) {
+      expect(fill).not.toBe('none');
+      // Black is what an unresolved `var()` in an SVG presentation attribute
+      // renders as, which is invisible on this surface.
+      expect(fill).not.toBe('rgb(0, 0, 0)');
+    }
+
+    const line = ledgerOf(element).shadowRoot!.querySelector('.spark path')!;
+    expect(getComputedStyle(line).stroke).not.toBe('none');
+    expect(getComputedStyle(line).fill).toBe('none');
+
+    // Geometry, not just paint. A nested Lit template is parsed on its own, so a
+    // <circle> written with `html` instead of `svg` lands in the HTML namespace:
+    // it keeps its class and its computed fill, and draws nothing at all.
+    for (const circle of circles) {
+      expect(circle.namespaceURI).toBe('http://www.w3.org/2000/svg');
+      expect(circle.getBoundingClientRect().width).toBeGreaterThan(0);
+    }
+  });
+
   it('renders the resolved frame, and says so when the frame is gone', async () => {
     const withFrame = ledgerOf(await mount()).shadowRoot!.querySelector('img.frame')!;
     expect(withFrame.getAttribute('src')).toBe('/media/local/x.jpg?authSig=abc');
