@@ -82,19 +82,6 @@ export interface VisionCheckupConfigEventDetail {
   visionCheckupConfig: VisionCheckupConfig;
 }
 
-/**
- * Sparse environment patch (ADR-0032).
- *
- * Only `selectedGrowspaceId` is guaranteed — it routes the command. Every other
- * key is present exactly when the user edited it, and a present key carries a
- * deliberate value, including an empty one. Consumers must branch on key
- * *presence* (`'key' in detail`), never on truthiness or array length, or
- * untouched fields get rewritten and deliberate clears get dropped.
- *
- * The humidity control flags are deliberately absent: they are immediate-persist
- * (`set_humidifier_control` / `set_dehumidifier_control`) and must never be
- * re-sent by the buffered Save.
- */
 export interface ConfigDialogState {
   currentTab:
     | 'growspaces'
