@@ -1,0 +1,1746 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>PROTOTYPE — Vision V1 evidence presentation</title>
+<!--
+  THROWAWAY PROTOTYPE — not production code, not on main.  Issue #92.
+
+  Plan: three structurally different variants of the Vision V1 evidence
+  presentation, plus a Card | Local report surface toggle and a 14-scenario
+  evidence matrix, switchable via `?variant=` on a standalone page.
+
+  Sub-shape B (a standalone page) rather than the preferred sub-shape A,
+  because there is no existing page that hosts vision evidence AND the dev
+  runtime on branch `codex/move-vision-to-own-repo` has no vision service, so
+  no live evidence can reach the card.  Tokens below are transcribed from
+  src/styles/variables.generated.ts so density and palette are the real ones.
+
+  The question this answers (#92): what is the smallest presentation that lets
+  a grower distinguish Frame Quality Result, Baseline State, Visual Comparison
+  Result, Evidence Fusion Outcome, Capture Continuity Break, environmental
+  evidence, and optional cloud explanation WITHOUT reading an Anomaly Score as
+  a plant-health probability?
+
+  Each variant answers the Anomaly Score half differently on purpose:
+    A  banded rail, verdict word dominant, number subordinate
+    B  a sentence only, no numeral badge and no gauge
+    C  hidden by default behind "Show measurements"
+
+  Payloads are the real `evidence_v1` shapes emitted by
+  growspace_manager/custom_components/growspace_manager/presentation/vision.py.
+  Numbers are the aggregate corpus measurements already published on #62/#66/#74.
+  Frames are neutral placeholders drawn from scratch — the dev runtime's e2e
+  assets carry burned-in symptom overlays that V1 does not emit, and the private
+  109-frame corpus is not on this host and is never published.
+-->
+<style>
+  :root {
+    --spacing-xs: 4px; --spacing-sm: 8px; --spacing-md: 16px;
+    --spacing-lg: 24px; --spacing-xl: 32px;
+    --border-radius-xs: 4px; --border-radius-sm: 8px; --border-radius-md: 12px;
+    --border-radius-lg: 16px; --border-radius-full: 9999px;
+    --font-size-xs: 0.6875rem; --font-size-supporting: 0.75rem;
+    --font-size-sm: 0.875rem; --font-size-md: 1rem;
+    --font-size-lg: 1.25rem; --font-size-xl: 1.5rem;
+
+    --surface-dim: #141414; --surface: #1e1e1e;
+    --surface-container-lowest: #101010; --surface-container-low: #1a1a1a;
+    --surface-container: #1e1e1e; --surface-container-high: #2a2a2a;
+    --surface-container-highest: #3a3a3a;
+
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-muted: rgba(255, 255, 255, 0.55);
+    --text-disabled: rgba(255, 255, 255, 0.38);
+    --divider-color: rgba(255, 255, 255, 0.12);
+    --outline-hover: rgba(255, 255, 255, 0.2);
+
+    --gm-primary-color: #4caf50;
+    --gm-warning-color: #ff9800;
+    --gm-info-color: #2196f3;
+    --gm-error-color: #f44336;
+    --gm-ipm-color: #9c27b0;
+    --error-bg: rgba(244, 67, 54, 0.1);
+    --error-border: rgba(244, 67, 54, 0.3);
+
+    --md3-elevation-level1: 0 1px 2px rgba(0,0,0,.3), 0 1px 3px 1px rgba(0,0,0,.15);
+    --md3-elevation-level2: 0 1px 2px rgba(0,0,0,.3), 0 2px 6px 2px rgba(0,0,0,.15);
+
+    /* Evidence-availability palette. Deliberately NOT a severity ramp: these
+       encode "can this channel speak", not "how bad is the plant". */
+    --ev-available: #4fc3f7;
+    --ev-unavailable: var(--text-disabled);
+    --ev-equipment: var(--gm-ipm-color);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: var(--spacing-lg) var(--spacing-md) 104px;
+    background: var(--surface-dim); color: var(--text-primary);
+    font-family: Roboto, "Helvetica Neue", -apple-system, system-ui, sans-serif;
+    font-size: var(--font-size-md); line-height: 1.5;
+  }
+  h1, h2, h3, h4 { margin: 0; font-weight: 500; }
+  .stage { max-width: 1080px; margin: 0 auto; }
+
+  /* ---------- prototype chrome (obviously not the design being judged) ---- */
+  .proto-note {
+    border: 1px dashed #ffb300; border-radius: var(--border-radius-sm);
+    background: rgba(255, 179, 0, 0.07); color: #ffd54f;
+    padding: var(--spacing-sm) var(--spacing-md); margin-bottom: var(--spacing-lg);
+    font-size: var(--font-size-supporting); line-height: 1.6;
+  }
+  .proto-note b { color: #ffe082; }
+  .proto-note code {
+    background: rgba(0,0,0,.4); padding: 1px 5px; border-radius: 3px;
+    font-size: var(--font-size-xs);
+  }
+  .scenario-bar {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--spacing-lg);
+  }
+  .scenario-bar button {
+    font: inherit; font-size: var(--font-size-xs); cursor: pointer;
+    background: var(--surface-container-high); color: var(--text-secondary);
+    border: 1px solid transparent; border-radius: var(--border-radius-full);
+    padding: 5px 11px;
+  }
+  .scenario-bar button:hover { border-color: var(--outline-hover); color: var(--text-primary); }
+  .scenario-bar button[aria-pressed='true'] {
+    background: #ffd54f; color: #1a1a1a; font-weight: 500;
+  }
+  .switcher {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+    display: flex; align-items: stretch; gap: 2px; z-index: 99;
+    background: #ffd54f; color: #16160f; border-radius: var(--border-radius-full);
+    box-shadow: 0 6px 24px rgba(0,0,0,.55); overflow: hidden;
+    font-size: var(--font-size-sm);
+  }
+  .switcher button {
+    font: inherit; cursor: pointer; border: 0; background: transparent;
+    color: inherit; padding: 10px 16px; font-weight: 600;
+  }
+  .switcher button:hover { background: rgba(0,0,0,.12); }
+  .switcher .label { padding: 10px 6px; min-width: 260px; text-align: center; font-weight: 600; }
+  .switcher .surface { display: flex; border-left: 2px solid rgba(0,0,0,.22); }
+  .switcher .surface button[aria-pressed='true'] { background: rgba(0,0,0,.22); }
+
+  /* ---------- shared card furniture (the real card idiom) --------------- */
+  .card {
+    background: var(--surface-container); border-radius: var(--border-radius-lg);
+    box-shadow: var(--md3-elevation-level1); overflow: hidden;
+  }
+  .card + .card { margin-top: var(--spacing-md); }
+  .card-head {
+    display: flex; align-items: center; gap: var(--spacing-sm);
+    padding: var(--spacing-md); border-bottom: 1px solid var(--divider-color);
+  }
+  .card-head h2 { font-size: var(--font-size-md); }
+  .card-head .when { margin-left: auto; font-size: var(--font-size-supporting); color: var(--text-muted); }
+  .card-body { padding: var(--spacing-md); }
+  .muted { color: var(--text-muted); }
+  .supporting { font-size: var(--font-size-supporting); color: var(--text-secondary); }
+  .xs { font-size: var(--font-size-xs); color: var(--text-muted); }
+  .mono { font-variant-numeric: tabular-nums; font-family: "Roboto Mono", ui-monospace, monospace; }
+
+  /* The scope line. Present in every variant and every surface: #75 requires
+     the UI to state permanently that V1 is scene-change monitoring only. */
+  .scope-line {
+    display: flex; align-items: center; gap: var(--spacing-sm);
+    padding: 10px var(--spacing-md); background: var(--surface-container-low);
+    border-top: 1px solid var(--divider-color);
+    font-size: var(--font-size-xs); color: var(--text-muted); line-height: 1.5;
+  }
+  .scope-line b { color: var(--text-secondary); font-weight: 500; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
+    border-radius: var(--border-radius-full); font-size: var(--font-size-xs);
+    border: 1px solid var(--divider-color); color: var(--text-secondary);
+    background: var(--surface-container-high); white-space: nowrap;
+  }
+  .chip .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+
+  .banner {
+    display: flex; gap: var(--spacing-sm); align-items: flex-start;
+    padding: var(--spacing-sm) var(--spacing-md); font-size: var(--font-size-sm);
+    border-left: 3px solid var(--ev-equipment); background: rgba(156, 39, 176, .1);
+  }
+  .banner.err { border-left-color: var(--gm-error-color); background: var(--error-bg); }
+  .banner h4 { font-size: var(--font-size-sm); }
+
+  img.frame {
+    display: block; width: 100%; border-radius: var(--border-radius-sm);
+    background: var(--surface-container-lowest);
+  }
+  details > summary {
+    cursor: pointer; font-size: var(--font-size-supporting);
+    color: var(--text-secondary); padding: 6px 0; user-select: none;
+  }
+  details > summary:hover { color: var(--text-primary); }
+  table.measure { border-collapse: collapse; width: 100%; font-size: var(--font-size-supporting); }
+  table.measure td { padding: 4px 0; border-bottom: 1px solid var(--divider-color); vertical-align: top; }
+  table.measure td:first-child { color: var(--text-muted); width: 55%; }
+  table.measure td:last-child { text-align: right; }
+</style>
+
+<div class="stage">
+  <div class="proto-note">
+    <b>THROWAWAY PROTOTYPE — issue #92.</b> Three structurally different answers to
+    “how do we show seven kinds of vision evidence without the Anomaly Score reading
+    as a plant-health probability”. Switch variants with the yellow bar (or
+    <code>←</code>/<code>→</code>); switch surface with <code>Card</code> /
+    <code>Local report</code>; switch scenario with the chips below.
+    Payload shapes are the real <code>evidence_v1</code> projection. Numbers are the
+    published aggregate corpus measurements. Frames are neutral placeholders —
+    the private 109-frame corpus is not on this host and is never published.
+  </div>
+  <div class="scenario-bar" id="scenarios"></div>
+  <div id="root"></div>
+</div>
+
+<div class="switcher">
+  <button id="prev" title="Previous variant (←)">‹</button>
+  <div class="label" id="variant-label"></div>
+  <button id="next" title="Next variant (→)">›</button>
+  <div class="surface">
+    <button data-surface="card">Card</button>
+    <button data-surface="report">Local report</button>
+  </div>
+</div>
+
+<script>
+/* Neutral placeholder canopy frames, drawn from scratch. NOT the dev runtime's
+   e2e camera assets: those carry burned-in symptom overlays ("chlorosis 0.86"),
+   which is precisely the output #68 ruled out of V1 and would make the card look
+   like it emits a health claim. The private corpus is never published. */
+const FRAMES = {"full":{"normal":"data:image/jpeg;base64,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","normal_alt":"data:image/jpeg;base64,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","late_flower":"data:image/jpeg;base64,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","dark":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBUODAsLDBkSEw8VHhsgHx4bHR0hJTApISMtJB0dKjkqLTEzNjY2ICg7Pzo0PjA1NjP/2wBDAQkJCQwLDBgODhgzIh0iMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzP/wAARCAEsAZADASIAAhEBAxEB/8QAFwABAQEBAAAAAAAAAAAAAAAAAAECB//EABsQAQEBAQEBAQEAAAAAAAAAAAABETESIUEC/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAH/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwDgAACxAFAQAAAFFQAURUAAAEBRNAUQUCgCpAAVAFEAUQQUCACKACAogAAoAIAAFQooAAAAAAoigAIAAAAACgAAAAAgAAAAAAAAAAAAAKACAAoAAAIAACLqKAAAAIqAKAAAAqAKIuoAAAAAAAAAAAAAICiAKJq6AAAAAAAAAAAAACAqAoAAAACAAACoAoAAAAAAAAABoAaAAAAAAAAAABgAAAAAAAAAAAAAAAAAICoAAAAAAAAAKIAoigAAAAAAAAAAAACHaDULFEQSqAmGKAyLhiqgAAAAAAAAJoKIAAAAAAAAAAAAAAAAAAAAAAAaCzoLjPG0s+IjISatmKqLJ9SdbgACIAAAAAzaBb9QFUAAAAAAAAAAAAAAAAAAAAAAAAAAABYYTqgkn1QQTysmVQQAAkw/ABidbZk/WgAAAAAAOs2Y1rNuqqAYALiAAAAAAAAAAAAAAAAAAAAAAAAAAAuKkqoAKAAIAAAAAAAAAAJVQGViXrU4qgCIAAlQFUAAAAAAAAAAAAAAAAAAAAAAABZFSKgAoAAgAAAAAAAAAAioDKzhekVVARAEoJboCqAAAAAAAAAAAAAAAAAAAAAABi4BFSKgAAuiAiiaaCgxboLbpKiziq1KIqIAAIArIZgoumoA0yAAAAAAAAAAAAAAAAAAAAAAACyI0AAgAAACAoCMrWsVWdqLZiANRlqcBQEQAAABmkmrZtUVmz4jV4yoAAAAAAAAAAAAAAAAAAAAAAAAsipFQAAAAT6at4nlRqfYJJiohgAF+xJFAMwAAAAAAAAAEvE8tAMAKoAAAAAAAAAAAAAAAAAAAAACyKkqoAAAAJWowsuKNAIgAAAAAAAAAAAAAAl1QGBbUVQAAAAAAAAAAAAAAAAAAAAACNayA0MgNJUAG2FlBoBEAAAAE36W5GQbGfVNoNDPo9A0JLqgAAJd/FQGQFUAAAAAAAAAAAAAAAAAAAAAAAAAAAAWdQBsZ2npEaE9HoFGfS7AS9QFUAAABf5aZiohoAoUURhcWwVWRrNKDIAAAAAAAAAAAKAAAAAAAAAAAAAAAAAAAAAAAAAAACgICoogAAAAADN6LUVQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUoIAAAAAAqAKAgoAgAAACVGqyqgAAAAAAAAAAAAAAAAAAAAAAAAAAACgAAiFRUVQAAAAAF1ABYrOroKAiCWlqCrqAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAoigAIgioqgAAAAAAAAALqACwsJxUQ4l4oCYYpeAyAqgAAAAAP//Z","occluded":"data:image/jpeg;base64,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","reframed":"data:image/jpeg;base64,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","postharvest":"data:image/jpeg;base64,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"},"thumb":{"normal":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAwICQsJCAwLCgsODQwOEh4UEhEREiUbHBYeLCcuLisnKyoxN0Y7MTRCNCorPVM+QkhKTk9OLztWXFVMW0ZNTkv/2wBDAQ0ODhIQEiQUFCRLMisyS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0v/wAARCABIAGADASIAAhEBAxEB/8QAGgAAAgMBAQAAAAAAAAAAAAAAAAQCAwUGAf/EACsQAAEEAQMDAwQDAQEAAAAAAAEAAgMRBBIhMQUTQSJRUhQyYZFCcdGh4f/EABgBAAMBAQAAAAAAAAAAAAAAAAECAwAE/8QAIBEAAgIDAAIDAQAAAAAAAAAAAAECEQMSIRMxIkJhQ//aAAwDAQACEQMRAD8A4iGThPwyhYkclJqOevKRoZM2WyBSEgWY3I/KmMjblJqGx8yBR7oSByPyofUWaHK2prNMSj3XvcCze48N1FrgLq68+y9+orlbU1ml3AoukCR+o/Kg7I/K2prGZpRRSM0m5UJZ7vdLPksp0gNi7XKbX0qgvbVBS8SlTD3kEhrqbV7cJZtFw1GhYsgcLrcZgdodYcSB6q5Usk9BJz1MUYcz8EZLDqs/YBvV1au6TivdnO7o0mHlp5utl0GkeAqhE2KR8rW+p9aj70ud5m00ReVtNEywe3CxesNx4bdbvqHm6vwtouFWsOcOzsyWKZ4McB9IaK590MXuwY3TszO8fdeGUprPwo4IS9mqxQ52/srNtdcWpK0dKlfSxz7UC5RJQnCAQgL0chYxdDiTSgOaz08gnzS6eCQta07E1uq8WIR47GDVTRQ1crxxlbkRtgEZ/kWuNbDmv2uOc93RzSlsNvzoIi0TPEeo0C7hZ+P1OTOzHNha0QMG+rk/n/xaE2JFM57pGAlzNBv2/wBVOD02HCJMeouIpzieVNOCX6ItUv0vIJHC57JmyMXqGQ5kYIO59P8AH32XSqieBskcrft7jac4cnakYSSfTRlT6cvm5hytI06Q3xzulVbkxtiyJGMJLWuIBPJCqXdFJLh1qkuAhCEQghO9mP4BHZj+AQsNF0PWZIo2sMTXaRV6ip4OaMjqzJJI3EuGlga77f8AfKW7MfwCOzH8QkcI9oTRHYNG3Cy+p9VbhZTItJfsS8D/AIsfW+q1vr21lRlb3Hl0tuf5LiSVGOBJ9JrDT6auP1yGaWOPtPaXkCyRQWi57a5/S5zFjibkRuc0AA3fsV0EYB8JMkVF8EyQUXw5fOEkmVNIdbxr06i39BKrtSwHkDdc9n48bMyUaBub/avjybcK457cMtCd7MfwCOzH8Aq2VomhCEAghCFjDeExrg4mi4eFHNYGvBHJ5QhR+5H+gsmYc2WIsGoljfHFoQqtJ+yrSfs0GZ/d0shbqlcODw3+0rNhZczmvfTnu2PjShC55Pxv4nPJ+N8EXDSSDyDS8QhdB0H/2Q==","normal_alt":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAwICQsJCAwLCgsODQwOEh4UEhEREiUbHBYeLCcuLisnKyoxN0Y7MTRCNCorPVM+QkhKTk9OLztWXFVMW0ZNTkv/2wBDAQ0ODhIQEiQUFCRLMisyS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0v/wAARCABIAGADASIAAhEBAxEB/8QAGgAAAgMBAQAAAAAAAAAAAAAAAAQCBQYDAf/EACoQAAICAQIFBAICAwAAAAAAAAECAAMRBCEFEhMxQSJRUmEGFHHxQqGx/8QAGAEAAwEBAAAAAAAAAAAAAAAAAAECAwT/xAAdEQADAQEBAQEBAQAAAAAAAAAAAQIREgMhEzFR/9oADAMBAAIRAxEAPwDEU2do/TaJSV2YjVd+PMhopMuVsEl1IhpX61gTOM+Yw9VqLkerfGB/2ZPE8E7SeM7GyRNoiDaj7kDqPuVyVpZi0T3qCVY1H3JjUfcOQ0suoJFrBEf2PuQbUfcOQ0Zut2MRus3MhbfnO8WezJlpC0XUyavichPZoSXnArOZrRzHO3px/vMuCBiY6m+2huaqxkP0e8tOF8Q1N2qRLrWas9/QD/X8zm9PNtujD0ht6Wx4dXbS6YCczZBA7T2zhtWQalCbAEe8eHYY3gZzd1/pj2/9M3xHQ2abmtXBryBt33ho9BZetVjnFTZJx3H9zQWIHGCM+Z4FAGwmv7PMNP1eYZjVo+mudSGCcxCsR3i5tMt/yJB0a3PPzA4GOwz7ygzOnzfU6bxXS06M+ZAtImE0KCEJc6Tgoekte2C2CpU9h3MmqU/0mqU/0po/wi6um4lzhiMb+06cY0IoK2U1hKgADv53lZF8uQ+WjYabW0s5RLUc+waMLYWOJjdLa9NytWMt2wPM0mhvutXnsrKDxk7n32nL6eXJz358ljOWos6aZHfO09NyqpJzgDMotZxoPqG6a89QHo8HPmREOn8JmXQtxm2571R3LIRkKBgZiJqcVdQoQhPLzY2zLfhqfvWnU3cpKEBAP8Y/rNOlunZSgbGSozgZnT+nGSbd8/DLQhCbmxOmw02pYvdCCJr9LfXqaFsrPpbx7H2ma6NfwE6IzJX00ZlTOcAkbzH0jsi/PosPyBl/WUEAsW2y24+8eZnhHTUjHJXJ9zDo1/ASoXKwczysFEbkdW32OdjvNPpdRW9IfmAXGSSe0o+jX8BPemvLy429s7RXKsKjoseIcToOlsSi0NYwwMA+e8oI6KEJ2QGBpQd0AjiVCxDmVPxHPQattHeHGeQ7OvuI3qeNPajJXUqg7Zbfb+Jw6NfwEOjX8BG5lvWgcJvWJQjvRr+Ah0a/gJWlYThCEQwhCEACEIQAnU4R8ntPbnFjAgHAhCLFuk4t05whCMoIQhAD/9k=","late_flower":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAwICQsJCAwLCgsODQwOEh4UEhEREiUbHBYeLCcuLisnKyoxN0Y7MTRCNCorPVM+QkhKTk9OLztWXFVMW0ZNTkv/2wBDAQ0ODhIQEiQUFCRLMisyS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0v/wAARCABIAGADASIAAhEBAxEB/8QAGgAAAgMBAQAAAAAAAAAAAAAAAAQCAwUGAf/EACwQAAEEAQMDAwMEAwAAAAAAAAEAAgMRBBIhMQUTUSJBUhRhkTJCcdGBoeH/xAAYAQADAQEAAAAAAAAAAAAAAAAAAgMBBP/EAB8RAAICAwADAQEAAAAAAAAAAAABAhEDEiEiMUJRYf/aAAwDAQACEQMRAD8A4mGThPwyiuViRyVSainr3UnEombTZApCQLLbkfdTGTtyk1Gs0DIomUJA5P3UPqLNDco1CzTEo8r3uBZvceG6i1wF1de/hejIrlGobGl3AoukCQ+p+6g7I25RqFjM0oopGaTcqEs93ulXy2U6iK2LtcptkpVBe2qCDAlPlTD3kE6Xemr24SraLhqJAsWQOF12MwO0OsOJA9Vcqc5amOVGKMOZ+CMlh1Wf0Ab1dWrukYsjs93eGkw8tPN1sug0j2CqELYpHytb6n1rPmlB5W00T3bJlja443WL1luPDbrf9Q83V+y2y4Vawpw7PzJYpngxwH0hoq78rMfuzIvpl94+V4ZT5TWfhRwQl7NVihzt/JWba6otNWiydljpLUC5RJQnAEIC9HIQBdDiTSgPaw6eQT70upgkLWtNAmt1XixCPHjYNVNFDVyFFxlbkRtgEZ/cWONbA71+VyTluSbsbfnwRFomeIy40C7hZ+P1SXOzXNhY0QMG+rk/f/i0JsSGZz3SMDi5mg34/tU4PTIcEl0eouIpzieUi1S/ovKLy0kcLncmbIxeo5DmRgg7n0/t87LplRPA2SOVv6e42nOHJ2pbCVPoJ0ctm5rsrSNOlrfbndKq3JjbFkSRsJLWuIBPJCqXYkkuFkCEIWmghO9mP4BHZj+AWWbRdB1mSKJrDC12kVeoqeDmjI6uyWSNxLhpYGu/T/fuluzH8Ajsx/EJNYi6HYtG3Cy+p9WbhZTItJfsS8D/AEsfW+q7j68ayoyt7jy6W3P9y4klSjiSfRVj/TVx+uwzTRx9p7S8gWSKC0XPbR3/AAucxI4m5EbnNAAN34K6CMA+yTJFRfBZxo5bOEkmVNIdbxr06i38BKrtiwHkDdc9n48bMyUaBub/ACrY8l8Gi74ZSE72Y/gEdmP4BVspRYhCEowIQhADWExjg4mi7wo5rA17SOTyhCn9kvsXTEObLEWDUSxvtxf+UITtJ+yjSZos6h3dLIW6pXDg8N/lKz4WXM5r5Kc92x9tKEKL8Hwi/B8EHDSSDyDSEIVyx//Z","dark":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAwICQsJCAwLCgsODQwOEh4UEhEREiUbHBYeLCcuLisnKyoxN0Y7MTRCNCorPVM+QkhKTk9OLztWXFVMW0ZNTkv/2wBDAQ0ODhIQEiQUFCRLMisyS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0v/wAARCABIAGADASIAAhEBAxEB/8QAFwABAQEBAAAAAAAAAAAAAAAAAAECB//EABgQAQEBAQEAAAAAAAAAAAAAAAABETFB/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAH/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwDlSoAoAAAAAAACAAAACgnixQBKqdBAoAAAAAoAaaGIKy0gIAoAAAAaToA0lqALqsqCUaZoAAAAAAKACKAGgAgAP//Z","occluded":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAwICQsJCAwLCgsODQwOEh4UEhEREiUbHBYeLCcuLisnKyoxN0Y7MTRCNCorPVM+QkhKTk9OLztWXFVMW0ZNTkv/2wBDAQ0ODhIQEiQUFCRLMisyS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0v/wAARCABIAGADASIAAhEBAxEB/8QAGwABAAMAAwEAAAAAAAAAAAAAAAQFBgECAwf/xAAwEAABAwIFAgUDAwUAAAAAAAABAAIDBBEFEhMhMUFRBhRSYXEigZEVscEyQqHw8f/EABkBAAIDAQAAAAAAAAAAAAAAAAMEAAIFAf/EACERAAIDAAICAwEBAAAAAAAAAAABAgMREjEhQQQiQlFx/9oADAMBAAIRAxEAPwDFQv4VlTSGOVhcC3cciyrcFkb+owB/BNh822Wrc0PGV4Dge6WtnxeYCst4vMOxTkfKIkxM4AsABwF4VrbxhwG7SpB4RdTx6WjJxlpBdTPbEXki4Fy1R9QK1cLtd7grNCe32TNTct0bpsc90sdQLq6QWUHzHuurqj3ReIfSRNJsVClk3K6ST3vuo75LlXSONnhG8sc1zTZwIIPutrQVba2lZMNidnDseqo/C0kQmljcG6rgCwkdByAtJx0S3yJa8wTulrzDlCiJYXB4REUIFGrRHHQ1BLQGhhJ252UlV+LFssfli7d1nOA7f9/ZWj2Wj2ZfWPdcGUqVXUccEOdma4sOdvkrzwihOI1rIblrLZnkdAFoco5yHuazSM59170eH1ddmNPEXtby4mw+LlXdf4aY6pp/KXZE82lub5R3H+8rQQQR08TIYWhsbBYAIM/kJL6gpXJL6nzqIvbI0xlweCMuXm/strh0tVLTg1kOlIOtx9XvbosZSzupqiOZgBcwggFa2ixikqwBn0pD/Y82/B6rvyE2vCJcm10WCIiSFAiIoQ4JygkrKVtTUxYlUSZM1wCRbho4+FpJH5j7BRZ4GyMkb/TqNsSOTtZGraj2Gg+PZXYPp4tiAbPEDHFGX5Dvc7D+VfYfhUFBUzywbNlAAb6e/wBln/DxbTY86JpOVzXMaXcnqP2WvCl7aeLolraeLoDhERLAT5oimaUfoCaUfpC2NNPCRT43NBG1gYDlFr5ipVBjdRNXBjwTHJs1ot9J7+6rdKP0hNKP0hDdcH6BuuL9Gxa9xUDEMZhon6RY98hF7C1gqHO+1s77ds5XErdR5dLdz+pcSSgxoW+QaoW+SzgxuGaWOPSe0vIFyRYKxc9tufws7SxxNqI3OAAB57FX7AD0XLIqL8FbIqL8GedNLDinmhneI5h9Vv8AH4W7Y5r2New3a4XB9lTloO5Cm4W9xhkYRtG+zfiwP8oVr5JP+A7HyX+ExEun3S4IwaIi1zUCIihCXRMa4OJsXdl1rWBrwRyeURC/YH9kZSIayWMsGYlrenF0REaT7CtJ9lgyv1crIW5pXDg8N+V60tRiFMDdkcuobkONsv4REtNKLzBaaUXmHSPxDUMe4SxRvF+Gkiylx+IaVw+uOVh+AUREdEH6COmD9H//2Q==","reframed":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAwICQsJCAwLCgsODQwOEh4UEhEREiUbHBYeLCcuLisnKyoxN0Y7MTRCNCorPVM+QkhKTk9OLztWXFVMW0ZNTkv/2wBDAQ0ODhIQEiQUFCRLMisyS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0v/wAARCABIAGADASIAAhEBAxEB/8QAGgAAAgMBAQAAAAAAAAAAAAAAAAUCAwQBBv/EAC8QAAICAgEDAgMHBQEAAAAAAAECAAMEERIFITFBYRNRcRQiIzKRsdEGYoGhwfH/xAAYAQADAQEAAAAAAAAAAAAAAAACAwQAAf/EABwRAAMBAAMBAQAAAAAAAAAAAAABAhEDEjEhQf/aAAwDAQACEQMRAD8A8ct/bzLBf7xULZMXQOoWjI3+8ib/AHmGt2tdUQbZjoCGQLMe012jiwnMXhzTX8f39J0XyfQ6Da7XOv3VGl36mNji1cFQovFTsA+BF1yKXguuVS8FIv8Aed+P7y7OwR+JeLVrUDeuOhE4uhzlLUHNql8GJv8AeVvf7zCbpFrfeF1C00WXb/WZ2s3K2ff6yBaEkcOco26dhV34oa2pg29ht+RE89B0Mj7JrkSeXgnx7QOVtT8F8jaXw3Y/TsdbRcqcbA2wQe36TQ+PW7cmQFtFNkeksqIKjR3JmROm2StsxdOx/seOtLNyYbOx9ZqMzLl0X2MlVisyHvoywsdamet6zPd+irrFy5DnFRHN6He/AA/7F7dNvA2CpO9ATTlXpT1jlZZ24aP3fHymi/JqWk2B1I129ZSm5SSHJuUkhE21YqfI7HUiTOMeTE6A330PAnDKR50n95yH8wExhp03p9eRQXs3y3oA9tRpVUuMGA0qb351qR6awfErIZmHHWyNSWfetGM7to9tAH1PpI6p1WE1Nt4aUQvWXRgdfKKeoWdR+yDl3qvb8oB5p8lP1jTpdVC4wNCNWtmiQd9j/mbCux3HfX+4CrrXgPbqxP0PFavGPxailgY62O+iBGhUGSOgdb7wg1XZ6C3r0VZvSlycsWElE194jyx9BPPXV/CtdO+gxAOvOjPaNPP/ANQj8Wo81IAICjz9Y/htt4xvHb3BRAwgZUUB/MBD+YCYxbXfdUNV2uo+QMLci+5QttjuoOwCfWa4QfhsQ26X1OtsdRk5KfFHY7HH/wBjBc7FZuK5NWz/AHCeZnVRm3ob0NxFcMt6KfCvdOX9WyTlXW0twD6AGt6A8S3G6xmNkVK7KylgCOA7iVSyh1ruVmGwD3jHM54G4WeHoDb8gYo6pg35eTWyIoXRBff7+saUsGAKkEEeRLZLNOHqJU+r+HkMjDvxlDWpxBJA778Sgier6onLEYgflIMSSvjvstKorstMGv3nBGEIeh4EIQnDoDWxvsI0RVCALrjCEVy/gnl/BfkKFuYCVwhDnwZPiJrdYqcFchd70DGNPVFFZ+IuiPAXvuEJyoVenKhV6Ssqy8ziSwrqcflB8fX5zDdhW01mxwAoOvPeEImbaeITNtPEZ4QhKSk//9k=","postharvest":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAwICQsJCAwLCgsODQwOEh4UEhEREiUbHBYeLCcuLisnKyoxN0Y7MTRCNCorPVM+QkhKTk9OLztWXFVMW0ZNTkv/2wBDAQ0ODhIQEiQUFCRLMisyS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0v/wAARCABIAGADASIAAhEBAxEB/8QAGgAAAgMBAQAAAAAAAAAAAAAAAAQCAwUBBv/EAC4QAAICAQIEBAQHAQAAAAAAAAABAgMRBCESEzFSQWFykQUzUXEUIiNDYqHBsf/EABcBAQEBAQAAAAAAAAAAAAAAAAABAgP/xAAZEQEBAQEBAQAAAAAAAAAAAAAAARESIUH/2gAMAwEAAhEDEQA/APEU2dB+m0xK7MDVd+PExY1K2Y2IkrEZkdR5k1qNupjldPuxEXahB6jzIPUb9Rya01ajvMRlrUeZNajzHJrS5hGViEfxHmQlqPMcmmbrdmI3WbkLb853Fp2ZZuRNLxkTjPBUjuToyvVrJxsbTx4LLFcllT/Jb6P9RMVY7mRdryU5DO4xF7m44z4rKOq5lVr2r9C/0hkYpqNjlJRXVvCIu1lenf69fqRXnYYLJTyQciLAqAAQABZX8u30r/qOVQ5lsYfVjsaIRhKPA98EtWRnh4l2pp5UlhNKSzuS01CsjKbTaTwNMV2/t+iJWaE9PCzhSg1hJbCElwtr6ZEpYnp/n1+orXQfp08anGUotvrkqv06hU5xi1jA30wqAAVAA7ya+xBya+xE1cVaFZ1UfLL/AKNUU0tcI25jFJ4GzNahD4mvlv7ot+HLGnb+smT1cIzjHiWcMlp4qNKUVhbjfD6tMa9YvsX8mbInZVB3tuKy5CUpxbLBRrVnS2fbP9l5C1KVUk1lNEVigO8mvsQcmvsRvWMTAAIrqbXRtHeOXc/cAA45N9W2ClJLCk/cAAOOXc/cMvOc7gAHeOXc/c5xy7n7gAHAAAP/2Q=="}};
+
+/* ---------------------------------------------------------------------------
+ * Evidence fixtures.
+ *
+ * Shapes are exactly what presentation/vision.py emits (`evidence_v1`).
+ * `_frame` is the only prototype-only key: the card resolves an authenticated
+ * `media-source://` id, which a static page cannot, so it carries the pixels.
+ *
+ * Magnitudes come from the published aggregate corpus results:
+ *   in-bucket noise floor  0.057 +/- 0.024, gate ~0.13   (#62, #66)
+ *   occlusion              0.45 - 0.59                   (#62)
+ *   reframe                0.29 - 0.74                   (#62)
+ *   harvest                0.69                          (#62)
+ *   lights-off             0.93                          (#62)
+ *   darkness floor         mean luminance 16             (#74)
+ * Anomaly Score is the strict leave-one-out rank over 30 members: <0.90 normal,
+ * 0.90..<1.00 uncertain, 1.00 material scene change (#66 / ADR 0004).
+ * ------------------------------------------------------------------------ */
+
+const READY_STATUS = {
+  availability: 'ready',
+  connection_source: 'supervisor',
+  service_version: '1.0.0',
+  vision_schema_version: 1,
+  model: { id: 'dinov2-vits14', version: '1.0.0', dimension: 384 },
+};
+
+const PROV = {
+  vision_schema_version: 1,
+  service_version: '1.0.0',
+  model_id: 'dinov2-vits14',
+  model_version: '1.0.0',
+  scoring_policy_version: '1.0.0',
+};
+
+/* A trend is measurements only — never narrative. Feeding a previous
+   explanation back would turn a hallucination into established history (#71). */
+function trend(points) {
+  const day = 86400000;
+  const t0 = Date.parse('2026-06-14T09:12:00Z');
+  return points.map(([score, verdict, fusion], i) => ({
+    evaluated_at: new Date(t0 + i * day).toISOString(),
+    anomaly_score: score,
+    verdict,
+    ...(fusion ? { fusion_state: fusion } : {}),
+  }));
+}
+
+const CALM_TREND = trend([
+  [0.33, 'normal', 'no_detected_change'], [0.47, 'normal', 'no_detected_change'],
+  [0.27, 'normal', 'no_detected_change'], [0.60, 'normal', 'no_detected_change'],
+  [0.40, 'normal', 'no_detected_change'], [0.53, 'normal', 'no_detected_change'],
+  [0.43, 'normal', 'no_detected_change'],
+]);
+
+const RISING_TREND = trend([
+  [0.37, 'normal', 'no_detected_change'], [0.50, 'normal', 'no_detected_change'],
+  [0.63, 'normal', 'no_detected_change'], [0.87, 'normal', 'no_detected_change'],
+  [0.93, 'uncertain', 'visual_anomaly'], [0.97, 'uncertain', 'visual_anomaly'],
+  [1.00, 'material_scene_change', 'visual_anomaly'],
+]);
+
+function capture(over) {
+  return Object.assign({
+    capture_id: '0198f2c1-7a3e-7c19-9b40-3f6d21ab5e04',
+    camera_id: 'camera.growcam_sog',
+    captured_at: '2026-06-21T09:12:00Z',
+    analysis_state: 'analyzed',
+    image: { available: true, media_content_id: 'media-source://media_source/local/growspace_vision/2026/06/21/0198f2c1.jpg' },
+    _frame: 'normal',
+    quality: {
+      accepted: true, reasons: [],
+      metrics: { mean_luminance: 118.4, clipped_pixel_fraction: 0.071, mean_absolute_gradient: 14.2 },
+    },
+    provenance: PROV,
+    visual: {
+      outcome: 'scored', baseline_state: 'ready',
+      samples_collected: 30, samples_required: 30,
+      raw_distance: 0.061, anomaly_score: 0.43,
+      verdict: 'normal', comparison_confidence: 0.88, unavailable_reasons: [],
+    },
+    environment: {
+      verdict: 'within_evaluated_range', stress_reasons: [], mold_reasons: [],
+      evaluated_at: '2026-06-21T09:11:44Z',
+    },
+    fusion: { state: 'no_detected_change', confidence: 'confirmed', coverage: 'complete', unavailable_reasons: [] },
+    trend: CALM_TREND,
+  }, over);
+}
+
+function checkup(over, captures) {
+  return Object.assign({
+    result_schema: 'evidence_v1',
+    checkup_id: '0198f2c1-7a3e-7c19-9b40-3f6d21ab5e00',
+    growspace_id: 'gs_sog_tent',
+    trigger_source: 'scheduled',
+    light_window: 'mid',
+    started_at: '2026-06-21T09:11:50Z',
+    completed_at: '2026-06-21T09:12:06Z',
+    status: 'completed',
+    captures: captures || [capture({})],
+  }, over);
+}
+
+const SCENARIOS = [
+  {
+    key: 'normal',
+    label: 'Normal',
+    note: 'Baseline ready, scene matches its own recent history, environment inside its evaluated range. The everyday case — it should be quiet, and it should still be legible that four separate channels agreed.',
+    status: READY_STATUS, continuity: null, checkup: checkup({}),
+  },
+  {
+    key: 'late-flower',
+    label: 'Late-flower fade',
+    note: 'The largest genuine appearance change in the corpus is normal late-flower fade, which must NOT alarm — but it resembles nitrogen-deficiency chlorosis. The presentation must neither raise it nor let the grower conclude the plant was cleared as healthy.',
+    status: READY_STATUS, continuity: null,
+    checkup: checkup({}, [capture({
+      _frame: 'late_flower',
+      visual: {
+        outcome: 'scored', baseline_state: 'ready',
+        samples_collected: 30, samples_required: 30,
+        raw_distance: 0.089, anomaly_score: 0.77,
+        verdict: 'normal', comparison_confidence: 0.71, unavailable_reasons: [],
+      },
+    })]),
+  },
+  {
+    key: 'monitoring',
+    label: 'Baseline monitoring',
+    note: 'Fewer than 30 members, so there is no Visual Comparison Result at all — not a normal one. Baseline State must never be mistaken for Plant-Health Calibration (#75).',
+    status: READY_STATUS, continuity: null,
+    checkup: checkup({}, [capture({
+      visual: {
+        outcome: 'monitoring', baseline_state: 'monitoring',
+        samples_collected: 12, samples_required: 30, unavailable_reasons: [],
+      },
+      fusion: { unavailable_reasons: ['visual_comparison_unavailable'] },
+      trend: [],
+    })]),
+  },
+  {
+    key: 'stale',
+    label: 'Stale baseline',
+    note: 'Ready, then 14 days with no admitted member. The bucket still exists but may no longer describe the scene, so nothing is scored.',
+    status: READY_STATUS, continuity: null,
+    checkup: checkup({}, [capture({
+      visual: {
+        outcome: 'unavailable', baseline_state: 'stale',
+        samples_collected: 30, samples_required: 30,
+        unavailable_reasons: ['baseline_stale'],
+      },
+      fusion: { unavailable_reasons: ['visual_comparison_unavailable'] },
+      trend: [],
+    })]),
+  },
+  {
+    key: 'unusable',
+    label: 'Capture unusable',
+    note: 'Lights-off frame below the absolute darkness floor. A first-class Frame Quality Result: no comparison, no baseline admission, no trend, never silently dropped (#74).',
+    status: READY_STATUS, continuity: null,
+    checkup: checkup({ status: 'partial' }, [capture({
+      analysis_state: 'rejected', _frame: 'dark',
+      quality: {
+        accepted: false, reasons: ['below_absolute_luminance_floor'],
+        metrics: { mean_luminance: 3.1, clipped_pixel_fraction: 0.0, mean_absolute_gradient: 1.8 },
+      },
+      provenance: { vision_schema_version: 1, service_version: '1.0.0' },
+      visual: { outcome: 'unavailable', unavailable_reasons: ['frame_rejected'] },
+      fusion: { unavailable_reasons: ['visual_comparison_unavailable'] },
+      trend: [],
+    })]),
+  },
+  {
+    key: 'uncertain',
+    label: 'Uncertain',
+    note: 'Anomaly Score 0.93 sits in the uncertain band. Comparison Confidence is separation from that tail — never a health probability. The fusion outcome is held as monitor, which can never reach the concurrent or persistent state.',
+    status: READY_STATUS, continuity: null,
+    checkup: checkup({}, [capture({
+      _frame: 'occluded',
+      visual: {
+        outcome: 'scored', baseline_state: 'ready',
+        samples_collected: 30, samples_required: 30,
+        raw_distance: 0.118, anomaly_score: 0.93,
+        verdict: 'uncertain', comparison_confidence: 0.34, unavailable_reasons: [],
+      },
+      fusion: { state: 'visual_anomaly', confidence: 'monitor', coverage: 'complete', unavailable_reasons: [] },
+      trend: RISING_TREND,
+    })]),
+  },
+  {
+    key: 'scene-change',
+    label: 'Material scene change',
+    note: 'Harvest day: raw distance 0.69 against a 0.13 gate, rank 1.00. The claim is "this scene is materially different from its recent history" — never "the plant looks unhealthy" (plant-vs-camera AUC 0.56).',
+    status: READY_STATUS, continuity: null,
+    checkup: checkup({}, [capture({
+      _frame: 'postharvest',
+      visual: {
+        outcome: 'scored', baseline_state: 'ready',
+        samples_collected: 30, samples_required: 30,
+        raw_distance: 0.688, anomaly_score: 1.0,
+        verdict: 'material_scene_change', comparison_confidence: 0.97, unavailable_reasons: [],
+      },
+      fusion: { state: 'visual_anomaly', confidence: 'confirmed', coverage: 'complete', unavailable_reasons: [] },
+      trend: RISING_TREND,
+    })]),
+  },
+  {
+    key: 'continuity',
+    label: 'Continuity break',
+    note: 'Three consecutive non-comparable scheduled captures. An equipment-class condition that names no cause and no plant condition — the only thing V1 alerts on (#75). It must not read as a plant verdict.',
+    status: READY_STATUS,
+    continuity: {
+      active: true, consecutive_count: 3, threshold: 3,
+      streak_started_at: '2026-06-19T09:12:00Z',
+      reason_counts: [['material_scene_change', 2], ['frame_rejected', 1]],
+      message: 'Camera captures no longer match recent history. Inspect the camera, lens, lighting, and growspace. Restart the visual baseline only if the framing change was intentional.',
+    },
+    checkup: checkup({ status: 'partial' }, [capture({
+      analysis_state: 'rejected', _frame: 'occluded',
+      quality: {
+        accepted: false, reasons: ['relative_detail_collapse'],
+        metrics: { mean_luminance: 96.4, clipped_pixel_fraction: 0.052, mean_absolute_gradient: 6.1 },
+      },
+      visual: { outcome: 'unavailable', unavailable_reasons: ['frame_rejected'] },
+      fusion: { unavailable_reasons: ['visual_comparison_unavailable'] },
+      trend: [],
+    })]),
+  },
+  {
+    key: 'env-only',
+    label: 'Environmental risk only',
+    note: 'THE core invariant: environmental risk can never, on its own, be reported as visible plant stress. The camera saw nothing unusual. The two channels must stay visibly separate.',
+    status: READY_STATUS, continuity: null,
+    checkup: checkup({}, [capture({
+      environment: {
+        verdict: 'risk', stress_reasons: ['vpd_above_range', 'leaf_temp_delta_high'],
+        mold_reasons: [], evaluated_at: '2026-06-21T09:11:44Z',
+      },
+      fusion: { state: 'environmental_risk', confidence: 'confirmed', coverage: 'complete', unavailable_reasons: [] },
+    })]),
+  },
+  {
+    key: 'concurrent',
+    label: 'Concurrent',
+    note: 'Co-occurrence, not correlation and not causation. The presentation must not let adjacency imply that the environment explains what the camera saw.',
+    status: READY_STATUS, continuity: null,
+    checkup: checkup({}, [capture({
+      _frame: 'reframed',
+      visual: {
+        outcome: 'scored', baseline_state: 'ready',
+        samples_collected: 30, samples_required: 30,
+        raw_distance: 0.412, anomaly_score: 1.0,
+        verdict: 'material_scene_change', comparison_confidence: 0.94, unavailable_reasons: [],
+      },
+      environment: {
+        verdict: 'risk', stress_reasons: ['vpd_above_range'],
+        mold_reasons: ['rh_dewpoint_margin_low'], evaluated_at: '2026-06-21T09:11:44Z',
+      },
+      fusion: {
+        state: 'concurrent_environmental_risk_and_visual_anomaly',
+        confidence: 'confirmed', coverage: 'complete', unavailable_reasons: [],
+      },
+      trend: RISING_TREND,
+    })]),
+  },
+  {
+    key: 'persistent',
+    label: 'Persistent visual anomaly',
+    note: 'Fusion precedence and persistence, not plant danger. Renamed from critical_scene_issue precisely so it cannot be read as a health escalation (#75).',
+    status: READY_STATUS, continuity: null,
+    checkup: checkup({}, [capture({
+      _frame: 'reframed',
+      visual: {
+        outcome: 'scored', baseline_state: 'ready',
+        samples_collected: 30, samples_required: 30,
+        raw_distance: 0.503, anomaly_score: 1.0,
+        verdict: 'material_scene_change', comparison_confidence: 0.96, unavailable_reasons: [],
+      },
+      fusion: { state: 'persistent_visual_anomaly', confidence: 'confirmed', coverage: 'complete', unavailable_reasons: [] },
+      trend: RISING_TREND,
+    })]),
+  },
+  {
+    key: 'partial',
+    label: 'Partial coverage',
+    note: 'Zero observations produced a 0.0 probability, which is UNAVAILABLE — never evidence of normal conditions (ADR 0040). "No environmental evidence" must not render as "environment fine".',
+    status: READY_STATUS, continuity: null,
+    checkup: checkup({}, [capture({
+      _frame: 'occluded',
+      visual: {
+        outcome: 'scored', baseline_state: 'ready',
+        samples_collected: 30, samples_required: 30,
+        raw_distance: 0.124, anomaly_score: 0.95,
+        verdict: 'uncertain', comparison_confidence: 0.31, unavailable_reasons: [],
+      },
+      environment: { verdict: 'unavailable', stress_reasons: [], mold_reasons: [] },
+      fusion: { state: 'visual_anomaly', confidence: 'monitor', coverage: 'partial', unavailable_reasons: [] },
+      trend: RISING_TREND,
+    })]),
+  },
+  {
+    key: 'explained',
+    label: 'Cloud explanation (contradicting)',
+    note: 'The optional two-pass explainer. The observation pass never saw the evidence and the explanation pass never saw the image, so they CAN disagree with the measurements. Contradiction is carried, not suppressed — a contradiction detector would be unvalidatable (#71).',
+    status: READY_STATUS, continuity: null,
+    checkup: checkup({}, [capture({
+      _frame: 'postharvest',
+      visual: {
+        outcome: 'scored', baseline_state: 'ready',
+        samples_collected: 30, samples_required: 30,
+        raw_distance: 0.688, anomaly_score: 1.0,
+        verdict: 'material_scene_change', comparison_confidence: 0.97, unavailable_reasons: [],
+      },
+      environment: {
+        verdict: 'risk', stress_reasons: ['vpd_above_range'], mold_reasons: [],
+        evaluated_at: '2026-06-21T09:11:44Z',
+      },
+      fusion: {
+        state: 'concurrent_environmental_risk_and_visual_anomaly',
+        confidence: 'confirmed', coverage: 'complete', unavailable_reasons: [],
+      },
+      trend: RISING_TREND,
+      report: {
+        observation: 'The frame is dominated by bare support structure and growing medium. Little foliage is present in the field of view. Lighting is even and no part of the frame is obscured.',
+        environmental_risk: 'Vapour pressure deficit was above its evaluated range for part of the preceding window.',
+        hypothesis: 'The canopy appears unremarkable and consistent with a healthy late-flower stand; the elevated VPD is the more likely driver of any change.',
+        recommendations: ['Review the VPD setpoint for the current light window.', 'Confirm the camera framing has not been altered.'],
+      },
+    })]),
+  },
+  {
+    key: 'offline',
+    label: 'Vision service offline',
+    note: 'Local-only operation is complete without the cloud, and a checkup runs fully without the App — three of four stages do not need it. Offline is a connection fact, not a plant verdict.',
+    status: {
+      availability: 'unavailable', connection_source: 'supervisor', reason: 'not_running',
+    },
+    continuity: null,
+    checkup: checkup({ status: 'partial' }, [capture({
+      analysis_state: 'failed',
+      image: { available: true, media_content_id: 'media-source://media_source/local/growspace_vision/2026/06/21/0198f2c1.jpg' },
+      quality: { accepted: false, reasons: [] },
+      provenance: { vision_schema_version: 1 },
+      visual: { outcome: 'unavailable', unavailable_reasons: ['vision_unavailable'] },
+      environment: {
+        verdict: 'risk', stress_reasons: ['vpd_above_range'], mold_reasons: [],
+        evaluated_at: '2026-06-21T09:11:44Z',
+      },
+      fusion: { state: 'environmental_risk', confidence: 'confirmed', coverage: 'partial', unavailable_reasons: [] },
+      trend: [],
+    })]),
+  },
+];
+
+/* ---------------------------------------------------------------------------
+ * Copy layer.
+ *
+ * This is where the question is actually won or lost. Every enum value gets a
+ * plain-language gloss that names WHAT WAS MEASURED and refuses to imply plant
+ * health. Domain terms are kept verbatim (Frame Quality Result, Baseline State,
+ * Visual Comparison Result, Evidence Fusion Outcome, Capture Continuity Break,
+ * Anomaly Score, Comparison Confidence) rather than paraphrased into synonyms.
+ * ------------------------------------------------------------------------ */
+
+const SCOPE_LINE =
+  '<b>Scene-change monitoring only.</b> Growspace Vision compares this camera to its own ' +
+  'recent history. It does not assess plant health, and it does not diagnose symptoms.';
+
+/* #75: the UI permanently distinguishes Baseline State from Plant-Health
+   Calibration. Baseline State is a readiness fact about the comparison; there
+   is no plant-health calibration in V1, and saying so is the point. */
+const CALIBRATION_LINE =
+  'Plant-health calibration: <b>none in V1</b>. Baseline State describes only whether ' +
+  'this camera has enough recent history to compare against.';
+
+const VERDICT = {
+  normal: {
+    title: 'Matches recent history',
+    gloss: 'This frame sits inside the spread of this camera’s own last 30 accepted frames.',
+    caveat: 'Not a health check — a visibly unhealthy plant can score here.',
+    tone: 'calm',
+  },
+  uncertain: {
+    title: 'Borderline',
+    gloss: 'This frame is near the edge of that spread. Too close to call either way.',
+    caveat: 'Held as “monitor”. No conclusion is drawn from a single borderline frame.',
+    tone: 'watch',
+  },
+  material_scene_change: {
+    title: 'Materially different scene',
+    gloss: 'This frame is further from this camera’s recent history than every one of its last 30 accepted frames.',
+    caveat: 'Says the SCENE changed — a moved camera, a light change, a harvest. It cannot tell those apart, and it is not a plant verdict.',
+    tone: 'alert',
+  },
+};
+
+const BASELINE = {
+  ready: { title: 'Ready', gloss: 'members collected — comparison is running.' },
+  monitoring: { title: 'Monitoring only', gloss: 'still collecting. Nothing is compared until the bucket is full.' },
+  stale: { title: 'Stale', gloss: 'no new member admitted for 14 days. The stored history may no longer describe this scene.' },
+};
+
+const FUSION = {
+  no_detected_change: {
+    title: 'Nothing detected',
+    gloss: 'Complete evidence from both channels found neither environmental risk nor a material departure from recent scene history.',
+    caveat: 'This means both channels stayed quiet. It is not a clean bill of health.',
+    tone: 'calm',
+  },
+  environmental_risk: {
+    title: 'Environmental risk',
+    gloss: 'The sensors flagged risk. The camera did not see a material scene change.',
+    caveat: 'Environmental risk on its own is never a report of visible plant stress.',
+    tone: 'watch',
+  },
+  visual_anomaly: {
+    title: 'Visual anomaly',
+    gloss: 'The camera saw a material departure from recent scene history. The sensors did not flag risk.',
+    caveat: 'A scene departure, not a symptom. No cause is named.',
+    tone: 'watch',
+  },
+  concurrent_environmental_risk_and_visual_anomaly: {
+    title: 'Both, at the same time',
+    gloss: 'Both channels reported something in the same window.',
+    caveat: 'Co-occurrence only. Neither channel explains the other, and no causal link is claimed.',
+    tone: 'alert',
+  },
+  persistent_visual_anomaly: {
+    title: 'Persistent visual anomaly',
+    gloss: 'The camera has reported a material scene departure across repeated captures.',
+    caveat: 'Describes persistence and fusion precedence — not danger to the plant.',
+    tone: 'alert',
+  },
+};
+
+const ENVIRONMENT = {
+  risk: { title: 'Risk flagged', gloss: 'One or more environmental evaluations are active.', tone: 'watch' },
+  within_evaluated_range: { title: 'Within evaluated range', gloss: 'Fresh evaluations completed and none is active.', tone: 'calm' },
+  unavailable: {
+    title: 'No environmental evidence',
+    gloss: 'No fresh evaluation could be made for this capture.',
+    caveat: 'Unavailable is not “fine”. A zero probability from zero observations is no evidence at all.',
+    tone: 'none',
+  },
+};
+
+const QUALITY_REASON = {
+  below_absolute_luminance_floor: 'Too dark to analyse — mean luminance below the absolute floor of 16. Usually lights-off.',
+  relative_detail_collapse: 'Detail fell below half of this camera’s recent typical level.',
+  exposure_excursion: 'Brightness landed outside 0.5–2.0x this camera’s recent typical level.',
+};
+
+const UNAVAILABLE_REASON = {
+  frame_rejected: 'the frame was not usable, so there was nothing to compare',
+  analysis_pending: 'the analysis has not finished yet',
+  vision_unavailable: 'the Vision service could not be reached',
+  baseline_stale: 'the baseline is stale',
+  comparison_unavailable: 'no comparison was produced',
+  visual_comparison_unavailable: 'there is no Visual Comparison Result to fuse',
+};
+
+const SERVICE_REASON = {
+  not_installed: 'The Growspace Vision App is not installed.',
+  not_running: 'The Growspace Vision App is installed but not running.',
+  not_configured: 'No Vision endpoint is configured.',
+  unreachable: 'The Vision endpoint did not respond.',
+  schema_mismatch: 'The service speaks a schema version this integration does not support.',
+  model_unavailable: 'The pinned model is not available on the service.',
+};
+
+const TONE_COLOR = {
+  calm: 'var(--gm-primary-color)',
+  watch: 'var(--gm-warning-color)',
+  alert: 'var(--gm-error-color)',
+  none: 'var(--text-disabled)',
+  equipment: 'var(--ev-equipment)',
+};
+
+const ENV_REASON_TEXT = {
+  vpd_above_range: 'VPD above range',
+  leaf_temp_delta_high: 'Leaf-temperature delta high',
+  rh_dewpoint_margin_low: 'Dew-point margin low',
+  temp_above_range: 'Temperature above range',
+};
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pct = (v) => `${Math.round(v * 100)}%`;
+const num = (v, d = 3) => (v === undefined || v === null ? '—' : v.toFixed(d));
+const clock = (iso) => new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+const words = (k) => String(k).replace(/_/g, ' ');
+const envReason = (k) => ENV_REASON_TEXT[k] || words(k);
+
+/* The Anomaly Score, said in words rather than shown as a number. This is the
+   sentence form variant B relies on entirely and A/C use as a subtitle. */
+function rankSentence(v) {
+  if (v.anomaly_score === undefined) return '';
+  const n = Math.round(v.anomaly_score * (v.samples_collected || 30));
+  if (v.anomaly_score >= 1) {
+    return `Further from this camera’s recent history than <b>all ${v.samples_collected} frames</b> in its baseline.`;
+  }
+  return `Further from this camera’s recent history than <b>${n} of the ${v.samples_collected} frames</b> in its baseline.`;
+}
+
+/* Comparison Confidence is separation from the uncertain tail, never a health
+   probability — so it is never rendered as a bare percentage on its own. */
+function confidenceSentence(v) {
+  if (v.comparison_confidence === undefined) return '';
+  const strong = v.comparison_confidence >= 0.7;
+  return `${strong ? 'Clear of' : 'Close to'} the borderline band (${pct(v.comparison_confidence)} separation).`;
+}
+
+function scopeFooter() {
+  return `<div class="scope-line"><span>👁</span><span>${SCOPE_LINE}</span></div>
+          <div class="scope-line"><span>⌁</span><span>${CALIBRATION_LINE}</span></div>`;
+}
+
+/* ---------------------------------------------------------------------------
+ * Shared furniture. Deliberately small: a header and a thumbnail are fine to
+ * share, a layout is not — each variant must be free to throw the layout out.
+ * ------------------------------------------------------------------------ */
+
+function serviceStrip(status) {
+  if (status.availability === 'ready') {
+    return `<div class="chip" style="color:var(--gm-primary-color)"><span class="dot"></span>
+              Vision connected</div>
+            <span class="xs">model ${esc(status.model.id)} ${esc(status.model.version)} ·
+              ${status.model.dimension}-d · schema v${status.vision_schema_version} ·
+              via ${esc(status.connection_source)}</span>`;
+  }
+  const color = status.availability === 'incompatible' ? 'var(--gm-error-color)' : 'var(--text-disabled)';
+  return `<div class="chip" style="color:${color}"><span class="dot"></span>
+            Vision ${esc(status.availability)}</div>
+          <span class="xs">${esc(SERVICE_REASON[status.reason] || status.reason || '')}</span>`;
+}
+
+/* A Capture Continuity Break is equipment-class. It is coloured off the
+   severity ramp on purpose so it cannot be mistaken for a plant verdict. */
+function continuityBanner(c) {
+  if (!c || !c.active) return '';
+  const reasons = c.reason_counts.map(([r, n]) => `${n}x ${words(r)}`).join(', ');
+  return `<div class="banner">
+    <span style="font-size:18px;line-height:1.2">🛠</span>
+    <div>
+      <h4>Capture Continuity Break — check the equipment</h4>
+      <div class="supporting" style="margin-top:4px">${esc(c.message)}</div>
+      <div class="xs" style="margin-top:6px">
+        ${c.consecutive_count} consecutive scheduled captures could not be compared
+        (${esc(reasons)}), since ${clock(c.streak_started_at)}.
+        This names no cause and no plant condition.
+      </div>
+    </div>
+  </div>`;
+}
+
+function trendSpark(points, w = 260, h = 44) {
+  if (!points.length) return '<div class="xs">No comparable history yet.</div>';
+  const step = points.length > 1 ? w / (points.length - 1) : w;
+  const y = (s) => h - 4 - s * (h - 10);
+  const path = points.map((p, i) => `${i ? 'L' : 'M'}${(i * step).toFixed(1)},${y(p.anomaly_score).toFixed(1)}`).join('');
+  const dots = points.map((p, i) => {
+    const c = TONE_COLOR[p.verdict === 'normal' ? 'calm' : p.verdict === 'uncertain' ? 'watch' : 'alert'];
+    return `<circle cx="${(i * step).toFixed(1)}" cy="${y(p.anomaly_score).toFixed(1)}" r="3" fill="${c}"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img"
+            style="max-width:100%" preserveAspectRatio="xMinYMid meet"
+            aria-label="Anomaly Score of the last ${points.length} comparable captures">
+    <rect x="0" y="${y(1).toFixed(1)}" width="${w}" height="${(y(0.9) - y(1)).toFixed(1)}"
+          fill="var(--gm-warning-color)" opacity=".13"/>
+    <line x1="0" y1="${y(1).toFixed(1)}" x2="${w}" y2="${y(1).toFixed(1)}"
+          stroke="var(--gm-error-color)" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>
+    <path d="${path}" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"/>
+    ${dots}
+  </svg>
+  <div class="xs" style="display:flex;justify-content:space-between">
+    <span>${points.length} comparable captures</span>
+    <span>band: normal · borderline · materially different</span>
+  </div>`;
+}
+
+function measuresTable(cap) {
+  const q = cap.quality.metrics || {};
+  const v = cap.visual;
+  const rows = [
+    ['Mean luminance', q.mean_luminance !== undefined ? num(q.mean_luminance, 1) : '—'],
+    ['Clipped-pixel fraction', q.clipped_pixel_fraction !== undefined ? num(q.clipped_pixel_fraction, 3) : '—'],
+    ['Mean absolute gradient', q.mean_absolute_gradient !== undefined ? num(q.mean_absolute_gradient, 1) : '—'],
+    ['Raw centroid-cosine distance', num(v.raw_distance)],
+    ['Anomaly Score (leave-one-out rank)', v.anomaly_score !== undefined ? num(v.anomaly_score, 2) : '—'],
+    ['Comparison Confidence', v.comparison_confidence !== undefined ? num(v.comparison_confidence, 2) : '—'],
+    ['Baseline members', v.samples_collected !== undefined ? `${v.samples_collected} / ${v.samples_required}` : '—'],
+    ['Model', cap.provenance.model_id ? `${cap.provenance.model_id} ${cap.provenance.model_version}` : '—'],
+    ['Scoring policy', cap.provenance.scoring_policy_version || '—'],
+    ['Capture id', cap.capture_id.slice(0, 8)],
+  ];
+  return `<table class="measure mono">${rows
+    .map(([k, val]) => `<tr><td>${esc(k)}</td><td>${esc(val)}</td></tr>`)
+    .join('')}</table>`;
+}
+
+/* ===========================================================================
+ * VARIANT A — Evidence chain
+ *
+ * One vertical, ordered chain of custody: Capture -> Frame Quality -> Baseline
+ * -> Visual Comparison -> Environment -> Fusion -> Explanation. Every evidence
+ * kind is its own labelled stage, so "which of the seven is this" is answered
+ * by position. Primary affordance: expand a stage.
+ *
+ * Anomaly Score treatment: a BANDED RAIL. The verdict word is the heading, the
+ * rail shows where the rank fell between the three named bands, and the numeral
+ * is a subordinate caption. The axis is labelled with what it is a rank OF.
+ * ======================================================================== */
+
+function variantA(sc) {
+  const cap = sc.checkup.captures[0];
+  return `
+  <div class="card">
+    <div class="card-head">
+      <h2>Vision Checkup</h2>
+      <span class="chip">${esc(words(sc.checkup.light_window))} window</span>
+      <span class="chip">${esc(sc.checkup.trigger_source)}</span>
+      <span class="when">${clock(cap.captured_at)}</span>
+    </div>
+    <div style="display:flex;gap:var(--spacing-sm);align-items:center;flex-wrap:wrap;
+                padding:10px var(--spacing-md);border-bottom:1px solid var(--divider-color)">
+      ${serviceStrip(sc.status)}
+    </div>
+    ${continuityBanner(sc.continuity)}
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:132px 1fr;gap:var(--spacing-md)">
+        <div>
+          <img class="frame" src="${FRAMES.full[cap._frame]}" alt="Capture from ${esc(cap.camera_id)}"/>
+          <div class="xs" style="margin-top:6px">${esc(cap.camera_id)}</div>
+        </div>
+        <div class="chain">${aStages(cap).join('')}</div>
+      </div>
+      <details style="margin-top:var(--spacing-md)">
+        <summary>Show all measurements</summary>
+        ${measuresTable(cap)}
+      </details>
+    </div>
+    ${scopeFooter()}
+  </div>`;
+}
+
+function aStage({ term, state, gloss, caveat, tone, extra }) {
+  return `<div style="display:grid;grid-template-columns:10px 1fr;gap:var(--spacing-sm);
+                      padding-bottom:var(--spacing-md)">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <span style="width:10px;height:10px;border-radius:50%;margin-top:6px;flex:none;
+                   background:${TONE_COLOR[tone]}"></span>
+      <span style="flex:1;width:2px;background:var(--divider-color);margin-top:4px"></span>
+    </div>
+    <div>
+      <div class="xs" style="text-transform:uppercase;letter-spacing:.06em">${esc(term)}</div>
+      <div style="font-size:var(--font-size-md);font-weight:500;margin:1px 0 2px">${esc(state)}</div>
+      <div class="supporting">${gloss}</div>
+      ${caveat ? `<div class="xs" style="margin-top:4px;font-style:italic">${caveat}</div>` : ''}
+      ${extra || ''}
+    </div>
+  </div>`;
+}
+
+function aStages(cap) {
+  const out = [];
+  const v = cap.visual;
+
+  const q = cap.quality;
+  out.push(aStage({
+    term: 'Frame Quality Result',
+    state: q.accepted ? 'Frame usable' : 'Capture unusable',
+    gloss: q.accepted
+      ? 'The frame passed the darkness floor and the history-relative bounds.'
+      : q.reasons.map((r) => esc(QUALITY_REASON[r] || words(r))).join(' '),
+    caveat: q.accepted ? null : 'The capture is kept and shown. It is never silently dropped.',
+    tone: q.accepted ? 'calm' : 'alert',
+  }));
+
+  const bstate = v.baseline_state;
+  out.push(aStage({
+    term: 'Baseline State',
+    state: bstate ? BASELINE[bstate].title : 'Not established',
+    gloss: bstate
+      ? `${v.samples_collected}/${v.samples_required} ${BASELINE[bstate].gloss}`
+      : 'This capture never reached baseline comparison.',
+    caveat: 'A readiness fact about the comparison — not a plant-health calibration.',
+    tone: bstate === 'ready' ? 'calm' : bstate === 'stale' ? 'watch' : 'none',
+  }));
+
+  if (v.outcome === 'scored') {
+    const d = VERDICT[v.verdict];
+    out.push(aStage({
+      term: 'Visual Comparison Result',
+      state: d.title,
+      gloss: d.gloss,
+      caveat: d.caveat,
+      tone: d.tone,
+      extra: aRail(v),
+    }));
+  } else {
+    out.push(aStage({
+      term: 'Visual Comparison Result',
+      state: v.outcome === 'monitoring' ? 'Not compared yet' : 'No comparison',
+      gloss: `No Visual Comparison Result, because ${(v.unavailable_reasons || [])
+        .map((r) => esc(UNAVAILABLE_REASON[r] || words(r))).join(' and ') || 'the baseline is not ready'}.`,
+      caveat: 'Absence of a comparison is not a normal comparison.',
+      tone: 'none',
+    }));
+  }
+
+  const e = ENVIRONMENT[cap.environment.verdict];
+  const reasons = [...cap.environment.stress_reasons, ...cap.environment.mold_reasons];
+  out.push(aStage({
+    term: 'Environmental evidence',
+    state: e.title,
+    gloss: e.gloss + (reasons.length ? ` — ${reasons.map((r) => esc(envReason(r))).join(', ')}.` : ''),
+    caveat: e.caveat || 'Measured from sensors. The camera never sees any of it.',
+    tone: e.tone,
+  }));
+
+  const f = cap.fusion;
+  if (f.state) {
+    const d = FUSION[f.state];
+    out.push(aStage({
+      term: 'Evidence Fusion Outcome',
+      state: d.title,
+      gloss: d.gloss,
+      caveat: d.caveat,
+      tone: d.tone,
+      extra: `<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+        <span class="chip">held as ${esc(f.confidence)}</span>
+        <span class="chip"${f.coverage === 'partial' ? ' style="color:var(--gm-warning-color)"' : ''}>
+          ${esc(f.coverage)} coverage</span>
+      </div>`,
+    }));
+  } else {
+    out.push(aStage({
+      term: 'Evidence Fusion Outcome',
+      state: 'No outcome',
+      gloss: `Fusion produced nothing, because ${(f.unavailable_reasons || [])
+        .map((r) => esc(UNAVAILABLE_REASON[r] || words(r))).join(' and ')}.`,
+      tone: 'none',
+    }));
+  }
+
+  if (cap.report) out.push(aStage({
+    term: 'Cloud explanation (optional)',
+    state: 'Written from the evidence above',
+    gloss: esc(cap.report.hypothesis),
+    caveat: 'Generated text. The pass that wrote this never saw the image; the pass that saw the image never saw the evidence. It can disagree with the measurements above, and it is not corrected when it does.',
+    tone: 'none',
+    extra: `<details style="margin-top:6px"><summary>Full explanation</summary>
+      <div class="supporting"><b>Observed in the image:</b> ${esc(cap.report.observation)}</div>
+      <div class="supporting" style="margin-top:6px"><b>Environmental risk:</b> ${esc(cap.report.environmental_risk)}</div>
+      <ul class="supporting" style="margin:6px 0 0;padding-left:18px">
+        ${cap.report.recommendations.map((r) => `<li>${esc(r)}</li>`).join('')}
+      </ul></details>`,
+  }));
+
+  if (cap.trend.length) out.push(aStage({
+    term: 'Recent history',
+    state: 'Measurements only',
+    gloss: 'Anomaly Score of this camera’s recent comparable captures.',
+    caveat: 'Measurements only — previous explanations are never carried forward.',
+    tone: 'none',
+    extra: `<div style="margin-top:6px">${trendSpark(cap.trend)}</div>`,
+  }));
+
+  return out;
+}
+
+/* The banded rail: the Anomaly Score placed between its three NAMED bands, so
+   the number is read as "which band", not as "how likely is illness". */
+function aRail(v) {
+  const x = Math.min(v.anomaly_score, 1) * 100;
+  return `<div style="margin-top:10px">
+    <div style="position:relative;height:12px;border-radius:var(--border-radius-full);overflow:hidden;
+                background:linear-gradient(90deg,
+                  color-mix(in srgb, var(--gm-primary-color) 34%, transparent) 0 90%,
+                  color-mix(in srgb, var(--gm-warning-color) 46%, transparent) 90% 99.4%,
+                  color-mix(in srgb, var(--gm-error-color) 60%, transparent) 99.4% 100%)">
+      <span style="position:absolute;left:${x}%;top:-2px;width:3px;height:16px;background:var(--text-primary);
+                   transform:translateX(-1.5px);border-radius:2px"></span>
+    </div>
+    <div class="xs" style="display:flex;justify-content:space-between;margin-top:3px">
+      <span>matches history</span><span>borderline</span><span>materially different</span>
+    </div>
+    <div class="supporting" style="margin-top:6px">${rankSentence(v)}</div>
+    <div class="xs">${confidenceSentence(v)}
+      Anomaly Score <span class="mono">${num(v.anomaly_score, 2)}</span>, raw distance
+      <span class="mono">${num(v.raw_distance)}</span> — a rank against this camera’s own
+      history, not a probability of anything.</div>
+  </div>`;
+}
+
+/* ===========================================================================
+ * VARIANT B — Two-channel ledger
+ *
+ * The core invariant made structural: two columns that NEVER merge. The left
+ * column is only what the camera saw; the right column is only what the
+ * sensors measured. Neither can borrow the other's language, because they are
+ * physically separate surfaces. A gate strip above them decides whether the
+ * left column may speak at all, and a fusion band below is the ONLY place the
+ * two are named together — explicitly as co-occurrence.
+ *
+ * Anomaly Score treatment: a SENTENCE ONLY. No numeral badge, no gauge, no
+ * bar. The rank appears as "further from its own recent history than 27 of the
+ * 30 frames in its baseline", and the raw numbers live behind a disclosure.
+ * ======================================================================== */
+
+function variantB(sc) {
+  const cap = sc.checkup.captures[0];
+  const gate = cap.quality.accepted;
+  return `
+  <div class="card">
+    <div class="card-head">
+      <h2>${esc(cap.camera_id)}</h2>
+      <span class="chip">${esc(words(sc.checkup.light_window))} window</span>
+      <span class="when">${clock(cap.captured_at)} · ${esc(sc.checkup.trigger_source)}</span>
+    </div>
+    <div style="display:flex;gap:var(--spacing-sm);align-items:center;flex-wrap:wrap;
+                padding:10px var(--spacing-md);border-bottom:1px solid var(--divider-color)">
+      ${serviceStrip(sc.status)}
+    </div>
+    ${continuityBanner(sc.continuity)}
+    ${bGate(cap, gate)}
+    <div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:0">
+      ${bVisualColumn(cap, gate)}
+      <div style="background:var(--divider-color)"></div>
+      ${bEnvColumn(cap)}
+    </div>
+    ${bFusionBand(cap)}
+    ${scopeFooter()}
+  </div>`;
+}
+
+function bGate(cap, gate) {
+  const q = cap.quality;
+  const v = cap.visual;
+  const bstate = v.baseline_state;
+  return `<div style="display:flex;gap:var(--spacing-md);align-items:center;flex-wrap:wrap;
+              padding:var(--spacing-sm) var(--spacing-md);background:var(--surface-container-low);
+              border-bottom:1px solid var(--divider-color)">
+    <div style="display:flex;gap:6px;align-items:center">
+      <span class="dot" style="width:8px;height:8px;border-radius:50%;
+            background:${gate ? TONE_COLOR.calm : TONE_COLOR.alert}"></span>
+      <span class="supporting"><b>Frame Quality Result:</b>
+        ${gate ? 'usable' : 'unusable'}</span>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span class="dot" style="width:8px;height:8px;border-radius:50%;
+            background:${bstate === 'ready' ? TONE_COLOR.calm : bstate === 'stale' ? TONE_COLOR.watch : TONE_COLOR.none}"></span>
+      <span class="supporting"><b>Baseline State:</b>
+        ${bstate ? esc(BASELINE[bstate].title.toLowerCase()) : 'none'}${
+          v.samples_collected !== undefined ? ` (${v.samples_collected}/${v.samples_required})` : ''}</span>
+    </div>
+    ${!gate ? `<span class="xs" style="flex-basis:100%">
+        ${q.reasons.map((r) => esc(QUALITY_REASON[r] || words(r))).join(' ')}
+        The capture is kept and shown; it is never silently dropped.</span>` : ''}
+  </div>`;
+}
+
+function bColumnHead(icon, title, sub) {
+  return `<div style="padding:var(--spacing-md) var(--spacing-md) var(--spacing-sm)">
+    <div style="display:flex;gap:8px;align-items:baseline">
+      <span>${icon}</span><h3 style="font-size:var(--font-size-sm)">${esc(title)}</h3>
+    </div>
+    <div class="xs" style="margin-top:2px">${esc(sub)}</div>
+  </div>`;
+}
+
+function bVisualColumn(cap, gate) {
+  const v = cap.visual;
+  let body;
+  if (v.outcome === 'scored') {
+    const d = VERDICT[v.verdict];
+    body = `<div style="font-size:var(--font-size-lg);font-weight:500;color:${TONE_COLOR[d.tone]}">
+        ${esc(d.title)}</div>
+      <div class="supporting" style="margin-top:6px">${d.gloss}</div>
+      <div class="supporting" style="margin-top:8px;padding-left:10px;
+            border-left:2px solid var(--divider-color)">${rankSentence(v)}</div>
+      <div class="xs" style="margin-top:6px">${confidenceSentence(v)}</div>
+      <div class="xs" style="margin-top:8px;font-style:italic">${d.caveat}</div>
+      ${cap.trend.length ? `<div style="margin-top:10px">${trendSpark(cap.trend, 240, 40)}</div>` : ''}
+      <details style="margin-top:8px"><summary>Numbers behind this</summary>
+        <table class="measure mono">
+          <tr><td>Anomaly Score (rank of 30)</td><td>${num(v.anomaly_score, 2)}</td></tr>
+          <tr><td>Raw centroid-cosine distance</td><td>${num(v.raw_distance)}</td></tr>
+          <tr><td>Comparison Confidence</td><td>${num(v.comparison_confidence, 2)}</td></tr>
+          <tr><td>Model</td><td>${esc(cap.provenance.model_id || '—')} ${esc(cap.provenance.model_version || '')}</td></tr>
+        </table>
+        <div class="xs" style="margin-top:6px">The Anomaly Score is a rank against this
+          camera's own last 30 accepted frames. It is not a probability, and it carries
+          no information about plant health.</div>
+      </details>`;
+  } else {
+    body = `<div style="font-size:var(--font-size-lg);font-weight:500;color:var(--text-disabled)">
+        ${v.outcome === 'monitoring' ? 'Not compared yet' : 'Nothing to report'}</div>
+      <div class="supporting" style="margin-top:6px">
+        No Visual Comparison Result, because ${(v.unavailable_reasons || [])
+          .map((r) => esc(UNAVAILABLE_REASON[r] || words(r))).join(' and ') || 'the baseline is not ready'}.</div>
+      <div class="xs" style="margin-top:8px;font-style:italic">
+        This column is silent. A silent column is not a normal reading.</div>`;
+  }
+  return `<div style="opacity:${gate || v.outcome !== 'unavailable' ? 1 : 0.85}">
+    ${bColumnHead('📷', 'What the camera saw', 'Compared only against this camera’s own recent frames. Receives no sensor data of any kind.')}
+    <div style="padding:0 var(--spacing-md) var(--spacing-md)">
+      <img class="frame" style="margin-bottom:10px" src="${FRAMES.full[cap._frame]}"
+           alt="Capture from ${esc(cap.camera_id)}"/>
+      ${body}
+    </div>
+  </div>`;
+}
+
+/* The environmental channel gets its own history, so the ledger's two columns
+   carry comparable weight and neither looks like the other's annotation. Read
+   off the `fusion_state` the trend already carries — the projection exposes no
+   separate environmental history, and inventing one would be a fiction. */
+function bEnvHistory(cap) {
+  const pts = cap.trend.filter((p) => p.fusion_state);
+  if (!pts.length) return '<div class="xs" style="margin-top:8px">No evaluated history for this camera yet.</div>';
+  const dots = pts.map((p) => {
+    const risk = p.fusion_state.includes('environmental_risk');
+    return `<span title="${esc(clock(p.evaluated_at))} — ${risk ? 'risk' : 'within evaluated range'}"
+      style="width:14px;height:14px;border-radius:3px;flex:none;background:${
+        risk ? TONE_COLOR.watch : TONE_COLOR.calm}; opacity:.85"></span>`;
+  }).join('');
+  return `<div style="margin-top:10px">
+    <div class="xs">Recent evaluations</div>
+    <div style="display:flex;gap:3px;margin-top:4px">${dots}</div>
+    <div class="xs" style="margin-top:4px">${pts.length} evaluated captures · amber = risk active</div>
+  </div>`;
+}
+
+function bEnvColumn(cap) {
+  const e = cap.environment;
+  const d = ENVIRONMENT[e.verdict];
+  const reasons = [...e.stress_reasons, ...e.mold_reasons];
+  return `<div>
+    ${bColumnHead('🌡', 'What the sensors measured', 'Evaluated from environmental readings alone. Never shown to the camera model or to the image pass.')}
+    <div style="padding:0 var(--spacing-md) var(--spacing-md)">
+      <div style="font-size:var(--font-size-lg);font-weight:500;color:${TONE_COLOR[d.tone]}">
+        ${esc(d.title)}</div>
+      <div class="supporting" style="margin-top:6px">${d.gloss}</div>
+      ${reasons.length ? `<ul class="supporting" style="margin:8px 0 0;padding-left:18px">
+        ${reasons.map((r) => `<li>${esc(envReason(r))}</li>`).join('')}</ul>` : ''}
+      ${d.caveat ? `<div class="xs" style="margin-top:8px;font-style:italic">${d.caveat}</div>` : ''}
+      ${e.evaluated_at ? `<div class="xs" style="margin-top:8px">Evaluated ${clock(e.evaluated_at)}</div>` : ''}
+      ${bEnvHistory(cap)}
+      <div class="xs" style="margin-top:8px;font-style:italic">
+        Environmental risk on its own is never a report of visible plant stress.</div>
+    </div>
+  </div>`;
+}
+
+/* The only place the two channels are named together. It says co-occurrence
+   out loud so adjacency cannot be read as explanation. */
+function bFusionBand(cap) {
+  const f = cap.fusion;
+  if (!f.state) {
+    return `<div style="padding:var(--spacing-sm) var(--spacing-md);
+                background:var(--surface-container-low);border-top:1px solid var(--divider-color)">
+      <span class="xs"><b>Evidence Fusion Outcome:</b> none —
+        ${(f.unavailable_reasons || []).map((r) => esc(UNAVAILABLE_REASON[r] || words(r))).join(' and ')}.</span>
+    </div>`;
+  }
+  const d = FUSION[f.state];
+  return `<div style="padding:var(--spacing-md);border-top:2px solid ${TONE_COLOR[d.tone]};
+              background:var(--surface-container-low)">
+    <div class="xs" style="text-transform:uppercase;letter-spacing:.06em">Evidence Fusion Outcome</div>
+    <div style="display:flex;gap:var(--spacing-sm);align-items:baseline;flex-wrap:wrap;margin-top:2px">
+      <span style="font-size:var(--font-size-md);font-weight:500">${esc(d.title)}</span>
+      <span class="chip">held as ${esc(f.confidence)}</span>
+      <span class="chip"${f.coverage === 'partial' ? ' style="color:var(--gm-warning-color)"' : ''}>
+        ${esc(f.coverage)} coverage</span>
+    </div>
+    <div class="supporting" style="margin-top:4px">${d.gloss}</div>
+    <div class="xs" style="margin-top:4px;font-style:italic">${d.caveat}</div>
+    ${cap.report ? `<details style="margin-top:10px">
+      <summary>Optional cloud explanation — generated text, may disagree with the columns above</summary>
+      <div class="supporting" style="margin-top:4px"><b>Observed in the image:</b> ${esc(cap.report.observation)}</div>
+      <div class="supporting" style="margin-top:6px"><b>Environmental risk:</b> ${esc(cap.report.environmental_risk)}</div>
+      <div class="supporting" style="margin-top:6px"><b>Hypothesis:</b> ${esc(cap.report.hypothesis)}</div>
+      <ul class="supporting" style="margin:6px 0 0;padding-left:18px">
+        ${cap.report.recommendations.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
+      <div class="xs" style="margin-top:6px">Two passes that cannot see each other's inputs: the
+        pass that saw the image received no evidence, and the pass that wrote the hypothesis saw no
+        image. It is carried verbatim and is never corrected against the measurements.</div>
+    </details>` : ''}
+  </div>`;
+}
+
+/* ===========================================================================
+ * VARIANT C — Headline and disclosure
+ *
+ * The most aggressive reading of "smallest". One plain-language headline
+ * answers the only two questions a grower has at a glance ("could this capture
+ * be compared, and did the scene change?"). Below it, a single row of seven
+ * chips — one per evidence kind — where COLOUR ENCODES WHETHER THE CHANNEL
+ * COULD SPEAK, not how bad anything is. Everything else, including every
+ * number, is behind one disclosure.
+ *
+ * Anomaly Score treatment: HIDDEN BY DEFAULT. The headline never contains a
+ * numeral. The score is reachable in one click, framed at the point of use.
+ * ======================================================================== */
+
+function variantC(sc) {
+  const cap = sc.checkup.captures[0];
+  const h = cHeadline(sc, cap);
+  return `
+  <div class="card">
+    ${continuityBanner(sc.continuity)}
+    <div class="card-body" style="display:grid;grid-template-columns:200px 1fr;gap:var(--spacing-lg)">
+      <div>
+        <img class="frame" src="${FRAMES.full[cap._frame]}" alt="Capture from ${esc(cap.camera_id)}"/>
+        <div class="xs" style="margin-top:6px">${esc(cap.camera_id)} · ${clock(cap.captured_at)}
+          · ${esc(words(sc.checkup.light_window))} window</div>
+      </div>
+      <div>
+        <div class="xs" style="text-transform:uppercase;letter-spacing:.06em">Vision Checkup</div>
+        <h2 style="font-size:var(--font-size-xl);line-height:1.25;margin:4px 0 0;color:${TONE_COLOR[h.tone]}">
+          ${h.title}</h2>
+        <p class="supporting" style="margin:8px 0 0;max-width:56ch">${h.body}</p>
+        <p class="xs" style="margin:8px 0 0;max-width:56ch;font-style:italic">${h.caveat}</p>
+
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:var(--spacing-md)">
+          ${cChips(sc, cap).join('')}
+        </div>
+        <div class="xs" style="margin-top:6px">
+          Filled = this evidence had something to say. Hollow = it could not speak for this capture.
+        </div>
+
+        <details style="margin-top:var(--spacing-md)">
+          <summary>Show the evidence and measurements</summary>
+          ${cDetail(sc, cap)}
+        </details>
+      </div>
+    </div>
+    ${scopeFooter()}
+  </div>`;
+}
+
+/* The headline answers comparability first, then scene change. It never
+   contains a numeral and never names a plant condition. */
+function cHeadline(sc, cap) {
+  if (sc.continuity && sc.continuity.active) {
+    return {
+      tone: 'equipment',
+      title: 'Three captures in a row could not be compared',
+      body: 'Something about the camera or the scene has changed enough that Growspace Vision can no longer line these frames up against recent history.',
+      caveat: 'This is an equipment condition. It names no cause, and it says nothing about the plants.',
+    };
+  }
+  if (sc.status.availability !== 'ready') {
+    return {
+      tone: 'none',
+      title: 'No visual comparison — the Vision service is offline',
+      body: `${SERVICE_REASON[sc.status.reason] || ''} Environmental evaluation and the rest of the checkup ran normally without it.`,
+      caveat: 'Offline is a connection fact. Nothing has been concluded about the plants or the scene.',
+    };
+  }
+  if (!cap.quality.accepted) {
+    return {
+      tone: 'alert',
+      title: 'This capture could not be used',
+      body: cap.quality.reasons.map((r) => QUALITY_REASON[r] || words(r)).join(' ') +
+        ' Nothing was compared, and nothing was added to the baseline.',
+      caveat: 'The frame is kept and shown above so you can see what the camera saw.',
+    };
+  }
+  const v = cap.visual;
+  if (v.outcome !== 'scored') {
+    const why = v.baseline_state === 'stale'
+      ? 'This camera has not contributed a usable frame for two weeks, so its stored history may no longer describe the scene.'
+      : `Growspace Vision is still learning what normal looks like for this camera — ${v.samples_collected} of ${v.samples_required} frames collected.`;
+    return {
+      tone: 'none',
+      title: v.baseline_state === 'stale' ? 'Comparison paused — the baseline is stale' : 'Still learning this camera',
+      body: why + ' Nothing is compared until it has a full set.',
+      caveat: 'This is a readiness state, not a verdict, and it is not a plant-health calibration.',
+    };
+  }
+  const f = cap.fusion.state;
+  const d = VERDICT[v.verdict];
+  if (f === 'concurrent_environmental_risk_and_visual_anomaly') {
+    return {
+      tone: 'alert',
+      title: 'The scene changed, and the sensors flagged risk',
+      body: 'Both happened in the same window. The camera saw a frame materially different from this camera’s recent history, and the environmental evaluations are active.',
+      caveat: 'These are two separate findings that happened at the same time. Neither explains the other, and no link between them is claimed.',
+    };
+  }
+  if (f === 'persistent_visual_anomaly') {
+    return {
+      tone: 'alert',
+      title: 'The scene has stayed different across several captures',
+      body: 'Repeated captures are materially different from this camera’s recent history. A moved camera, a lighting change and a harvest all look like this.',
+      caveat: 'Describes persistence, not danger. Growspace Vision cannot tell these causes apart and does not try.',
+    };
+  }
+  if (f === 'environmental_risk') {
+    return {
+      tone: 'watch',
+      title: 'The sensors flagged risk — the camera saw nothing unusual',
+      body: 'Environmental evaluations are active. The frame matches this camera’s recent history.',
+      caveat: 'Environmental risk is never, on its own, a report of visible plant stress.',
+    };
+  }
+  if (v.verdict === 'material_scene_change') {
+    return {
+      tone: 'alert',
+      title: 'This frame is a materially different scene',
+      body: 'It is further from this camera’s recent history than every frame in its baseline. A moved camera, a light change and a harvest all look like this.',
+      caveat: d.caveat,
+    };
+  }
+  if (v.verdict === 'uncertain') {
+    return {
+      tone: 'watch',
+      title: 'Borderline — too close to call',
+      body: 'This frame sits near the edge of this camera’s recent history. One borderline frame is not treated as a finding.',
+      caveat: d.caveat,
+    };
+  }
+  return {
+    tone: 'calm',
+    title: 'Nothing detected',
+    body: 'The frame matches this camera’s recent history, and the environmental evaluations are inside their evaluated range.',
+    caveat: 'This means both channels stayed quiet. It is not a clean bill of health — Growspace Vision cannot see plant health.',
+  };
+}
+
+function cChip(label, spoke, said, tone) {
+  const color = spoke ? TONE_COLOR[tone] : 'var(--text-disabled)';
+  return `<span class="chip" title="${esc(label)}: ${esc(said)}"
+    style="color:${color};${spoke ? `background:color-mix(in srgb, ${color} 14%, var(--surface-container-high));` : ''}">
+    <span class="dot" style="${spoke ? '' : 'background:transparent;box-shadow:inset 0 0 0 1.5px currentColor'}"></span>
+    ${esc(label)}: ${esc(said)}</span>`;
+}
+
+function cChips(sc, cap) {
+  const v = cap.visual;
+  const e = cap.environment;
+  const f = cap.fusion;
+  return [
+    cChip('Frame quality', true, cap.quality.accepted ? 'usable' : 'unusable', cap.quality.accepted ? 'calm' : 'alert'),
+    cChip('Baseline', !!v.baseline_state, v.baseline_state ? BASELINE[v.baseline_state].title.toLowerCase() : 'none',
+      v.baseline_state === 'ready' ? 'calm' : v.baseline_state === 'stale' ? 'watch' : 'none'),
+    cChip('Visual comparison', v.outcome === 'scored', v.outcome === 'scored' ? words(v.verdict) : 'no result',
+      v.outcome === 'scored' ? VERDICT[v.verdict].tone : 'none'),
+    cChip('Environment', e.verdict !== 'unavailable', e.verdict === 'unavailable' ? 'no evidence' : words(e.verdict),
+      ENVIRONMENT[e.verdict].tone),
+    cChip('Fusion', !!f.state, f.state ? FUSION[f.state].title.toLowerCase() : 'no outcome',
+      f.state ? FUSION[f.state].tone : 'none'),
+    cChip('Continuity', !!(sc.continuity && sc.continuity.active),
+      sc.continuity && sc.continuity.active ? 'break' : 'unbroken',
+      sc.continuity && sc.continuity.active ? 'equipment' : 'calm'),
+    cChip('Cloud explanation', !!cap.report, cap.report ? 'written' : 'not configured', 'none'),
+  ];
+}
+
+function cDetail(sc, cap) {
+  const v = cap.visual;
+  const e = cap.environment;
+  const f = cap.fusion;
+  const reasons = [...e.stress_reasons, ...e.mold_reasons];
+  const block = (h, b) => `<div style="margin-top:var(--spacing-md)">
+    <div class="xs" style="text-transform:uppercase;letter-spacing:.06em">${esc(h)}</div>
+    <div class="supporting" style="margin-top:2px">${b}</div></div>`;
+
+  let visual;
+  if (v.outcome === 'scored') {
+    visual = `${VERDICT[v.verdict].gloss} ${rankSentence(v)} ${confidenceSentence(v)}
+      <div class="xs" style="margin-top:6px">The <b>Anomaly Score</b> is the rank of this frame's
+        distance among this camera's own last ${v.samples_required} accepted frames:
+        <span class="mono">${num(v.anomaly_score, 2)}</span> (raw distance
+        <span class="mono">${num(v.raw_distance)}</span>). Below 0.90 matches history, 0.90 to 0.99
+        is borderline, 1.00 means further than all of them. <b>It is a rank, not a probability, and
+        it says nothing about plant health.</b></div>`;
+  } else {
+    visual = `No Visual Comparison Result, because ${(v.unavailable_reasons || [])
+      .map((r) => esc(UNAVAILABLE_REASON[r] || words(r))).join(' and ') || 'the baseline is not ready'}.
+      Absence of a comparison is not a normal comparison.`;
+  }
+
+  return `
+    ${block('Frame Quality Result', cap.quality.accepted
+      ? 'Passed the darkness floor and this camera’s history-relative bounds.'
+      : cap.quality.reasons.map((r) => esc(QUALITY_REASON[r] || words(r))).join(' '))}
+    ${block('Baseline State', v.baseline_state
+      ? `${BASELINE[v.baseline_state].title} — ${v.samples_collected}/${v.samples_required} ${BASELINE[v.baseline_state].gloss}
+         <span class="xs">A readiness fact about the comparison, not a plant-health calibration.</span>`
+      : 'No baseline was reached for this capture.')}
+    ${block('Visual Comparison Result — what the camera saw', visual)}
+    ${block('Environmental evidence — what the sensors measured', `${ENVIRONMENT[e.verdict].gloss}
+      ${reasons.length ? reasons.map((r) => esc(envReason(r))).join(', ') + '.' : ''}
+      ${ENVIRONMENT[e.verdict].caveat ? `<span class="xs" style="font-style:italic">${ENVIRONMENT[e.verdict].caveat}</span>` : ''}
+      <div class="xs" style="margin-top:4px">The camera model never receives any of this.</div>`)}
+    ${block('Evidence Fusion Outcome', f.state
+      ? `${FUSION[f.state].title} — ${FUSION[f.state].gloss} Held as ${esc(f.confidence)}, ${esc(f.coverage)} coverage.
+         <span class="xs" style="font-style:italic">${FUSION[f.state].caveat}</span>`
+      : `None — ${(f.unavailable_reasons || []).map((r) => esc(UNAVAILABLE_REASON[r] || words(r))).join(' and ')}.`)}
+    ${cap.report ? block('Cloud explanation (optional)',
+      `<b>Observed in the image:</b> ${esc(cap.report.observation)}<br>
+       <b>Environmental risk:</b> ${esc(cap.report.environmental_risk)}<br>
+       <b>Hypothesis:</b> ${esc(cap.report.hypothesis)}
+       <ul style="margin:6px 0 0;padding-left:18px">${cap.report.recommendations.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
+       <div class="xs" style="margin-top:6px">Generated by two passes that cannot see each other's
+         inputs. It can disagree with the measurements above, and it is never corrected when it does.</div>`) : ''}
+    ${cap.trend.length ? block('Recent history (measurements only)', trendSpark(cap.trend, 420, 48)) : ''}
+    ${block('Connection', `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${serviceStrip(sc.status)}</div>`)}
+    <details style="margin-top:var(--spacing-md)"><summary>Raw measurements</summary>${measuresTable(cap)}</details>`;
+}
+
+/* ===========================================================================
+ * SURFACE 2 — the local visual report (#94)
+ *
+ * The private corpus replay. This artefact is LOCAL and unpublished: it may
+ * carry representative thumbnails, while repositories and tracker comments may
+ * carry only aggregate, non-identifying results. The segmentation below is the
+ * published corrected corpus segmentation (109 frames, one camera, one Grow
+ * Run); the frames rendered are neutral placeholders standing in for it.
+ * ======================================================================== */
+
+const SEGMENTS = [
+  { name: 'framing-1 veg',        from: '03-21', to: '04-12', n: 23, frame: 'normal',      band: [0.03, 0.09], event: null },
+  { name: 'occlusion-1',          from: '04-13', to: '04-21', n: 9,  frame: 'occluded',    band: [0.45, 0.59], event: 'occlusion' },
+  { name: 'framing-2',            from: '04-22', to: '04-26', n: 5,  frame: 'reframed',    band: [0.29, 0.42], event: 'reframe' },
+  { name: 'framing-3',            from: '04-27', to: '05-03', n: 7,  frame: 'reframed',    band: [0.31, 0.48], event: 'reframe' },
+  { name: 'occlusion-2',          from: '05-04', to: '05-15', n: 12, frame: 'occluded',    band: [0.46, 0.58], event: 'occlusion' },
+  { name: 'reframe day',          from: '05-16', to: '05-16', n: 1,  frame: 'reframed',    band: [0.74, 0.74], event: 'reframe' },
+  { name: 'framing-4 STABLE',     from: '05-17', to: '06-20', n: 35, frame: 'late_flower', band: [0.033, 0.081], event: null },
+  { name: 'post-harvest',         from: '06-21', to: '06-24', n: 4,  frame: 'postharvest', band: [0.66, 0.71], event: 'harvest' },
+  { name: 'lights-off',           from: '06-25', to: '07-07', n: 13, frame: 'dark',        band: [0.90, 0.95], event: 'lights-off' },
+];
+
+/* Deterministic pseudo-random so the report is stable across reloads. */
+function rng(seed) {
+  let s = seed >>> 0;
+  return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+}
+
+function buildReplay() {
+  const rand = rng(20260921);
+  const rows = [];
+  let idx = 0;
+  /* One frame per day, no gaps, 2026-03-21 -> 2026-07-07 (109 days). The date
+     is computed from the index rather than the segment bounds — the segments
+     only say which regime a day belongs to. */
+  const DAY0 = Date.parse('2026-03-21T00:00:00Z');
+  const dateAt = (i) => new Date(DAY0 + i * 86400000).toISOString().slice(0, 10);
+  for (const seg of SEGMENTS) {
+    for (let i = 0; i < seg.n; i++) {
+      const d = seg.band[0] + rand() * (seg.band[1] - seg.band[0]);
+      const rejected = seg.event === 'lights-off';
+      /* The Anomaly Score is a rank, so it saturates long before the raw
+         distance does — which is exactly the thing the report has to show. */
+      let score = null, verdict = null;
+      if (!rejected) {
+        score = d < 0.10 ? Math.min(0.89, d / 0.13) : d < 0.13 ? 0.90 + (d - 0.10) : 1.0;
+        score = Math.round(score * 100) / 100;
+        verdict = score >= 1 ? 'material_scene_change' : score >= 0.9 ? 'uncertain' : 'normal';
+      }
+      rows.push({
+        i: idx, date: dateAt(idx++), seg: seg.name, event: seg.event,
+        frame: seg.frame, raw_distance: d, anomaly_score: score, verdict,
+        quality_accepted: !rejected,
+        quality_reason: rejected ? 'below_absolute_luminance_floor' : null,
+        mean_luminance: rejected ? 1.2 + rand() * 2.9 : 96 + rand() * 60,
+      });
+    }
+  }
+  return rows;
+}
+
+const REPLAY = buildReplay();
+
+function replayTotals() {
+  const usable = REPLAY.filter((r) => r.quality_accepted);
+  const scored = usable.filter((r) => r.anomaly_score !== null);
+  return {
+    total: REPLAY.length,
+    rejected: REPLAY.length - usable.length,
+    normal: scored.filter((r) => r.verdict === 'normal').length,
+    uncertain: scored.filter((r) => r.verdict === 'uncertain').length,
+    changed: scored.filter((r) => r.verdict === 'material_scene_change').length,
+    events: SEGMENTS.filter((s) => s.event).length,
+  };
+}
+
+function reportHeader(sub) {
+  const t = replayTotals();
+  const cell = (k, v, c) => `<div><div class="xs">${esc(k)}</div>
+    <div class="mono" style="font-size:var(--font-size-lg);color:${c || 'var(--text-primary)'}">${v}</div></div>`;
+  return `<div class="card">
+    <div class="card-head"><h2>Private corpus replay — visual evidence report</h2>
+      <span class="when">109 frames · camera growcam_sog · one Grow Run · 2026-03-21 → 07-07</span></div>
+    <div class="card-body">
+      <div class="supporting">${sub}</div>
+      <div style="display:flex;gap:var(--spacing-xl);flex-wrap:wrap;margin-top:var(--spacing-md)">
+        ${cell('Frames', t.total)}
+        ${cell('Unusable', t.rejected, 'var(--gm-error-color)')}
+        ${cell('Matches history', t.normal, 'var(--gm-primary-color)')}
+        ${cell('Borderline', t.uncertain, 'var(--gm-warning-color)')}
+        ${cell('Materially different', t.changed, 'var(--gm-error-color)')}
+        ${cell('Event segments', t.events)}
+      </div>
+      <div class="xs" style="margin-top:var(--spacing-md);line-height:1.6">
+        This corpus is a <b>labelled-healthy reference set</b>: the window is confirmed healthy, so it
+        contains <b>zero real health positives</b> and specificity is the only thing measurable here.
+        Every positive below is a <b>scene</b> event — two occlusion windows, the camera repositions, the harvest and lights-off. Sensitivity to
+        plant health is not measured, cannot be measured from this data, and is not claimed.
+      </div>
+      <div class="xs" style="margin-top:8px;color:var(--gm-warning-color)">
+        🔒 Local artefact. Thumbnails stay on this machine; only aggregate, non-identifying results
+        may be copied into a repository or a tracker comment.
+      </div>
+    </div>
+    ${scopeFooter()}
+  </div>`;
+}
+
+function segColor(seg) {
+  return seg.event === 'lights-off' ? 'var(--text-disabled)'
+    : seg.event === 'harvest' ? 'var(--gm-error-color)'
+    : seg.event ? 'var(--gm-ipm-color)' : 'var(--gm-primary-color)';
+}
+
+/* ---- Report A: the chain idiom, one compact chain per frame ------------- */
+function reportA() {
+  const rows = REPLAY.map((r) => {
+    const tone = !r.quality_accepted ? 'alert'
+      : r.verdict === 'normal' ? 'calm' : r.verdict === 'uncertain' ? 'watch' : 'alert';
+    const state = !r.quality_accepted ? 'Capture unusable'
+      : VERDICT[r.verdict].title;
+    return `<tr>
+      <td style="width:64px"><img src="${FRAMES.thumb[r.frame]}" width="56" height="42"
+            style="border-radius:4px;display:block" alt=""/></td>
+      <td class="mono xs" style="width:78px">${esc(r.date)}</td>
+      <td style="width:120px"><span class="xs">${esc(r.seg)}</span></td>
+      <td style="width:180px">
+        <span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;
+              background:${TONE_COLOR[tone]};margin-right:6px"></span>
+        <span class="supporting">${esc(state)}</span></td>
+      <td class="supporting">${r.quality_accepted
+        ? `${rankSentence({ anomaly_score: r.anomaly_score, samples_collected: 30, samples_required: 30 })}`
+        : esc(QUALITY_REASON[r.quality_reason])}</td>
+      <td class="mono xs" style="width:150px;text-align:right">
+        ${r.quality_accepted ? `score ${num(r.anomaly_score, 2)} · raw ${num(r.raw_distance)}`
+          : `luminance ${num(r.mean_luminance, 1)}`}</td>
+    </tr>`;
+  }).join('');
+  return reportHeader('Every frame as its own chain of custody, in order. The chain never collapses: a frame that failed quality shows an empty comparison rather than a normal one.') +
+    `<div class="card"><div class="card-body" style="max-height:70vh;overflow:auto">
+      <table class="measure" style="width:100%">${rows}</table></div></div>`;
+}
+
+/* ---- Report B: two independent tracks over the whole run ---------------- */
+function reportB() {
+  const w = 1000, h = 150;
+  const step = w / REPLAY.length;
+  const y = (d) => h - 8 - Math.min(d, 1) * (h - 24);
+  const bars = REPLAY.map((r, i) => {
+    const c = !r.quality_accepted ? 'var(--text-disabled)'
+      : r.verdict === 'normal' ? 'var(--gm-primary-color)'
+      : r.verdict === 'uncertain' ? 'var(--gm-warning-color)' : 'var(--gm-error-color)';
+    return `<rect x="${(i * step).toFixed(2)}" y="${y(r.raw_distance).toFixed(1)}"
+      width="${(step - 0.7).toFixed(2)}" height="${(h - 8 - y(r.raw_distance)).toFixed(1)}"
+      fill="${c}"><title>${esc(r.date)} — ${esc(r.seg)} — raw ${num(r.raw_distance)}</title></rect>`;
+  }).join('');
+  let x = 0;
+  const bands = SEGMENTS.map((s) => {
+    const bw = s.n * step;
+    const fits = bw > s.name.length * 4.6 + 6;
+    const r = `<g><title>${esc(s.name)} — ${s.n} frames</title>
+      <rect x="${x.toFixed(2)}" y="0" width="${bw.toFixed(2)}" height="14" fill="${segColor(s)}" opacity=".55"/>
+      ${fits ? `<text x="${(x + 3).toFixed(2)}" y="10" font-size="8" fill="#fff" opacity=".9">${esc(s.name)}</text>` : ''}</g>`;
+    x += bw; return r;
+  }).join('');
+  const gate = y(0.13);
+  return reportHeader('The two channels kept apart across the whole run. The upper track is what the camera measured; the lower strip is the ground truth it is being judged against. They are never overlaid into one score.') +
+    `<div class="card"><div class="card-body">
+      <div class="xs" style="text-transform:uppercase;letter-spacing:.06em">Camera track — raw centroid-cosine distance</div>
+      <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="margin-top:6px" role="img"
+           aria-label="Raw embedding distance for all 109 replayed frames">
+        ${bands}${bars}
+        <line x1="0" y1="${gate.toFixed(1)}" x2="${w}" y2="${gate.toFixed(1)}"
+              stroke="#fff" stroke-dasharray="4 4" opacity=".5"/>
+        <text x="4" y="${(gate - 4).toFixed(1)}" font-size="9" fill="#fff" opacity=".7">
+          ~0.13 in-bucket ceiling (noise floor 0.057 ± 0.024)</text>
+      </svg>
+      <div class="xs" style="margin-top:8px;line-height:1.6">
+        Note what the two rows disagree about: the <b>raw distance</b> separates the events by a wide
+        margin, but the <b>Anomaly Score</b> is a rank, so it saturates at 1.00 for occlusion, reframe
+        and harvest alike. The score cannot rank severity, and reading it as one would invent a
+        precision that is not there.
+      </div>
+      <div class="xs" style="margin-top:var(--spacing-md);text-transform:uppercase;letter-spacing:.06em">
+        Ground truth — real scene events in this run</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+        ${SEGMENTS.filter((s) => s.event).map((s) => `<span class="chip"
+          style="color:${segColor(s)}">${esc(s.name)} · ${esc(s.event)} · ${s.n} frames</span>`).join('')}
+      </div>
+      <div class="xs" style="margin-top:10px">
+        No environmental track: the corpus is raw daily frames from a separate automation, with no
+        sensor history and no light-window buckets. An empty channel is drawn as empty, never as calm.
+      </div>
+    </div></div>`;
+}
+
+/* ---- Report C: filmstrip, everything numeric collapsed ------------------ */
+function reportC() {
+  const cells = REPLAY.map((r) => {
+    const c = !r.quality_accepted ? 'var(--text-disabled)'
+      : r.verdict === 'normal' ? 'var(--gm-primary-color)'
+      : r.verdict === 'uncertain' ? 'var(--gm-warning-color)' : 'var(--gm-error-color)';
+    return `<figure style="margin:0" title="${esc(r.date)} · ${esc(r.seg)}">
+      <img src="${FRAMES.thumb[r.frame]}" width="96" height="72" alt=""
+           style="display:block;border-radius:4px;border-bottom:3px solid ${c}"/>
+      <figcaption class="xs" style="margin-top:2px">${esc(r.date.slice(5))}</figcaption>
+    </figure>`;
+  }).join('');
+  const t = replayTotals();
+  return reportHeader('One picture per frame, in order, with a single colour band for what the comparison said. The numbers exist, but you have to ask for them.') +
+    `<div class="card"><div class="card-body">
+      <h3 style="font-size:var(--font-size-lg)">
+        Across a confirmed-healthy run, the comparison stayed quiet except where the scene actually changed.</h3>
+      <p class="supporting" style="margin:8px 0 0;max-width:78ch">
+        ${t.normal} of ${t.total} frames matched their own recent history, ${t.rejected} were too dark
+        to use, and the ${t.changed + t.uncertain} that did not match line up with the camera
+        events, the harvest and lights-off — not with anything about the plants. The largest genuine appearance
+        change in this run is normal late-flower fade, and it did not alarm.
+      </p>
+      <p class="xs" style="margin:8px 0 0;max-width:78ch;font-style:italic">
+        That last sentence is the whole claim. This run contains no health positives, so nothing here
+        shows that Growspace Vision would notice a sick plant — only that it does not shout at a healthy one.
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--spacing-md)">${cells}</div>
+      <details style="margin-top:var(--spacing-md)"><summary>Show the measurements</summary>
+        <table class="measure mono" style="margin-top:6px">
+          <tr><td>In-bucket noise floor (stable framing)</td><td>0.057 ± 0.024</td></tr>
+          <tr><td>In-bucket ceiling / gate</td><td>~0.13</td></tr>
+          <tr><td>Occlusion windows</td><td>0.45 – 0.59</td></tr>
+          <tr><td>Camera repositions</td><td>0.29 – 0.74</td></tr>
+          <tr><td>Harvest</td><td>0.69</td></tr>
+          <tr><td>Lights-off</td><td>0.93 (rejected on the darkness floor first)</td></tr>
+          <tr><td>Plant-vs-camera separation</td><td>AUC 0.56</td></tr>
+        </table>
+        <div class="xs" style="margin-top:6px">AUC 0.56 is the reason this report never phrases a
+          result as a plant finding: a white-balance shift inside the camera's own range scores as
+          high as visually obvious yellowing.</div>
+      </details>
+    </div></div>`;
+}
+
+/* ---------------------------------------------------------------------------
+ * Switcher. Prototype chrome only — deliberately loud so it is never mistaken
+ * for part of the design being judged.
+ * ------------------------------------------------------------------------ */
+
+const VARIANTS = [
+  { key: 'A', name: 'Evidence chain', card: variantA, report: reportA },
+  { key: 'B', name: 'Two-channel ledger', card: variantB, report: reportB },
+  { key: 'C', name: 'Headline + disclosure', card: variantC, report: reportC },
+];
+
+const params = () => new URLSearchParams(location.search);
+
+function state() {
+  const p = params();
+  const v = (p.get('variant') || 'A').toUpperCase();
+  return {
+    variant: VARIANTS.some((x) => x.key === v) ? v : 'A',
+    surface: p.get('surface') === 'report' ? 'report' : 'card',
+    scenario: p.get('scenario') || SCENARIOS[0].key,
+  };
+}
+
+function go(patch) {
+  const p = params();
+  Object.entries(patch).forEach(([k, v]) => p.set(k, v));
+  history.replaceState(null, '', `${location.pathname}?${p}`);
+  render();
+}
+
+function render() {
+  const s = state();
+  const variant = VARIANTS.find((x) => x.key === s.variant);
+  const sc = SCENARIOS.find((x) => x.key === s.scenario) || SCENARIOS[0];
+
+  document.getElementById('variant-label').textContent = `${variant.key} — ${variant.name}`;
+  document.querySelectorAll('.switcher .surface button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.surface === s.surface));
+  });
+
+  const bar = document.getElementById('scenarios');
+  bar.style.display = s.surface === 'report' ? 'none' : 'flex';
+  bar.innerHTML = SCENARIOS.map((x) =>
+    `<button data-scenario="${x.key}" aria-pressed="${x.key === sc.key}">${esc(x.label)}</button>`).join('');
+
+  const note = s.surface === 'card'
+    ? `<div class="proto-note" style="border-color:#4fc3f7;background:rgba(79,195,247,.07);color:#b3e5fc">
+         <b>Scenario — ${esc(sc.label)}.</b> ${esc(sc.note)}</div>`
+    : '';
+
+  document.getElementById('root').innerHTML =
+    note + (s.surface === 'card' ? variant.card(sc) : variant.report());
+}
+
+function cycle(delta) {
+  const i = VARIANTS.findIndex((x) => x.key === state().variant);
+  go({ variant: VARIANTS[(i + delta + VARIANTS.length) % VARIANTS.length].key });
+}
+
+document.getElementById('prev').onclick = () => cycle(-1);
+document.getElementById('next').onclick = () => cycle(1);
+document.querySelectorAll('.switcher .surface button').forEach((b) => {
+  b.onclick = () => go({ surface: b.dataset.surface });
+});
+document.getElementById('scenarios').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-scenario]');
+  if (b) go({ scenario: b.dataset.scenario });
+});
+addEventListener('keydown', (e) => {
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  if (e.key === 'ArrowLeft') cycle(-1);
+  if (e.key === 'ArrowRight') cycle(1);
+});
+
+render();
+</script>
