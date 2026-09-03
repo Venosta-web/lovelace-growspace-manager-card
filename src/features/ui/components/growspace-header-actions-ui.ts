@@ -19,6 +19,8 @@ import {
   mdiClipboardTextClock,
   mdiWater,
   mdiWaterPlus,
+  mdiBookmarkMultipleOutline,
+  mdiCalendarClock,
   mdiBottleTonicPlus,
   mdiBug,
   mdiDumbbell,
@@ -628,6 +630,8 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         )}
         ${this.isMobile ? this._menuItem(mdiCog, 'Settings', 'config') : nothing}
         ${this._menuItem(mdiWater, 'Irrigation', 'irrigation')}
+        ${this._menuItem(mdiBookmarkMultipleOutline, 'Irrigation Recipes', 'irrigation-recipes')}
+        ${this._menuItem(mdiCalendarClock, 'Irrigation Programs', 'irrigation-programs')}
         ${this._menuItem(mdiBottleTonicPlus, 'Nutrients', 'nutrients')}
         ${this._menuItem(mdiDna, 'Strains', 'strains')}
 

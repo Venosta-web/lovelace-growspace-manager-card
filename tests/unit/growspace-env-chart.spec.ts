@@ -9,6 +9,7 @@
  * resize observers, event dispatch, and the no-data render.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { LitElement } from 'lit';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceEnvChart } from '../../src/growspace-env-chart';
 import { hassContext } from '../../src/context';
@@ -89,9 +90,7 @@ describe('GrowspaceEnvChart', () => {
   }
 
   function headerValue() {
-    return element.shadowRoot?.querySelector(
-      '.gs-env-graph-header div div[style*="font-size:1.2em"]'
-    )?.textContent;
+    return element.shadowRoot?.querySelector('.gs-env-graph-value')?.textContent;
   }
 
   describe('render guards', () => {
@@ -180,6 +179,22 @@ describe('GrowspaceEnvChart', () => {
   });
 
   describe('geometry and axes', () => {
+    async function showTemperatureLimit(low: number | null, high: number | null) {
+      element.descriptors = computeMetricDescriptors(null, {}, undefined, {
+        deviceId: 'd1',
+        name: 'Tent',
+        biologicalMetrics: { granularStage: 'veg' },
+        environmentAttributes: {
+          circulationFanConfig: {
+            critical_temp_low: low,
+            critical_temp_high: high,
+          },
+        },
+        irrigationConfig: {},
+      } as any);
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(1_800_000, '24'));
+    }
+
     it('renders a trace and the latest value for a single metric', async () => {
       await showMetric(
         MetricKey.TEMPERATURE,
@@ -228,12 +243,42 @@ describe('GrowspaceEnvChart', () => {
       expect((element as any)._getVpdStatusColor('danger')).toBe(STATUS_COLORS[StatusLevel.DANGER]);
     });
 
+    it('renders an in-range Limit as a tight-dashed status-coloured line', async () => {
+      await showTemperatureLimit(null, 22);
+
+      const mark = element.shadowRoot?.querySelector(
+        '[data-guide-id="circulation-critical-temperature-high"]'
+      );
+      expect(mark?.tagName.toLowerCase()).toBe('line');
+      expect(mark?.getAttribute('data-guide-placement')).toBe('line');
+      expect(mark?.getAttribute('stroke')).toBe(STATUS_COLORS[StatusLevel.DANGER]);
+      expect(mark?.getAttribute('stroke-dasharray')).toBe('2 2.5');
+      expect(element.shadowRoot?.querySelector('.gs-guide-label')).toBeNull();
+    });
+
+    it('renders far Limits as chevrons at the edge each one crossed', async () => {
+      await showTemperatureLimit(0, 100);
+
+      const low = element.shadowRoot?.querySelector(
+        '[data-guide-id="circulation-critical-temperature-low"]'
+      );
+      const high = element.shadowRoot?.querySelector(
+        '[data-guide-id="circulation-critical-temperature-high"]'
+      );
+      expect(low?.tagName.toLowerCase()).toBe('path');
+      expect(low?.getAttribute('data-guide-placement')).toBe('lower-edge');
+      expect(high?.tagName.toLowerCase()).toBe('path');
+      expect(high?.getAttribute('data-guide-placement')).toBe('upper-edge');
+    });
+
     it('labels the Y axis numerically, and as ON/OFF for binary ranges', async () => {
       const numeric = await fixture(
         html`<div>${(element as any)._renderYAxisHTML(10, 20, '°C')}</div>`
       );
-      expect(numeric.textContent).toContain('20°C');
-      expect(numeric.textContent).toContain('10°C');
+      // The axis is a scale mark like every other on the chart: a word unit
+      // stands apart from its number, one owner deciding (#855).
+      expect(numeric.textContent).toContain('20 °C');
+      expect(numeric.textContent).toContain('10 °C');
 
       const stated = await fixture(
         html`<div>${(element as any)._renderYAxisHTML(0, 1, 'state')}</div>`
@@ -263,6 +308,16 @@ describe('GrowspaceEnvChart', () => {
   });
 
   describe('tooltip', () => {
+    /** The readout's own text — it is a child element now, not inline markup. */
+    async function readoutText(): Promise<string> {
+      const readout = element.shadowRoot?.querySelector('chart-scrub-tooltip') as
+        | LitElement
+        | null
+        | undefined;
+      await readout?.updateComplete;
+      return readout?.shadowRoot?.textContent ?? '';
+    }
+
     it('shows a tooltip on hover', async () => {
       vi.useFakeTimers();
       await showMetric(MetricKey.TEMPERATURE, reading(3600000, '20'), reading(0, '22'));
@@ -275,12 +330,94 @@ describe('GrowspaceEnvChart', () => {
         height: 200,
       } as DOMRect);
 
-      container?.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 400 }));
+      container?.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: 400,
+          pointerId: 1,
+          pointerType: 'mouse',
+        })
+      );
       await vi.runAllTimersAsync();
       await element.updateComplete;
 
-      const tooltip = element.shadowRoot?.querySelector('.gs-tooltip');
-      expect(tooltip?.textContent).toContain('Temperature');
+      expect(await readoutText()).toContain('Temperature');
+
+      vi.useRealTimers();
+    });
+
+    it('shows optimal-band and unlabeled Limit values in the scrub tooltip', async () => {
+      vi.useFakeTimers();
+      await showMetric(MetricKey.VPD, reading(3_600_000, '1.0'), reading(0, '1.1'));
+
+      const container = element.shadowRoot?.querySelector('.gs-env-chart-container');
+      vi.spyOn(container as Element, 'getBoundingClientRect').mockReturnValue({
+        left: 0,
+        width: 800,
+        top: 0,
+        height: 200,
+      } as DOMRect);
+      container?.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: 400,
+          pointerId: 1,
+          pointerType: 'touch',
+        })
+      );
+      await vi.runAllTimersAsync();
+      await element.updateComplete;
+
+      const tooltip = await readoutText();
+      expect(tooltip).toContain('VPD optimal');
+      expect(tooltip).toContain('0.8 kPa–1.2 kPa');
+      expect(tooltip).toContain('VPD lower limit');
+      expect(tooltip).toContain('0.4 kPa');
+      expect(tooltip).toContain('VPD upper limit');
+      expect(tooltip).toContain('1.6 kPa');
+
+      vi.useRealTimers();
+    });
+
+    it('shows Setpoint values in the scrub tooltip alongside their names', async () => {
+      vi.useFakeTimers();
+      const setpointDevice: any = {
+        ...mockDevice,
+        biologicalMetrics: { granularStage: 'flower_mid' },
+        environmentAttributes: {
+          exhaustFanConfig: {
+            enabled: true,
+            temperature_target: 24,
+            temperature_tolerance: 1.5,
+          },
+        },
+        irrigationConfig: {},
+      };
+      element.device = setpointDevice;
+      element.descriptors = computeMetricDescriptors(null, {}, undefined, setpointDevice);
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '22'), reading(0, '23'));
+
+      const container = element.shadowRoot?.querySelector('.gs-env-chart-container');
+      vi.spyOn(container as Element, 'getBoundingClientRect').mockReturnValue({
+        left: 0,
+        width: 800,
+        top: 0,
+        height: 200,
+      } as DOMRect);
+      container?.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: 400,
+          pointerId: 1,
+          pointerType: 'touch',
+        })
+      );
+      await vi.runAllTimersAsync();
+      await element.updateComplete;
+
+      const tooltip = await readoutText();
+      expect(tooltip).toContain('Temperature Exhaust');
+      expect(tooltip).toContain('24 °C');
 
       vi.useRealTimers();
     });
@@ -302,14 +439,29 @@ describe('GrowspaceEnvChart', () => {
         height: 200,
       } as DOMRect);
 
-      container?.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 0 }));
-      await vi.runAllTimersAsync();
-      expect(element.shadowRoot?.querySelector('.gs-tooltip')?.textContent).toContain('10');
-
-      container?.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 790 }));
+      container?.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: 0,
+          pointerId: 1,
+          pointerType: 'touch',
+        })
+      );
       await vi.runAllTimersAsync();
       await element.updateComplete;
-      expect(element.shadowRoot?.querySelector('.gs-tooltip')?.textContent).toContain('30');
+      expect(await readoutText()).toContain('10');
+
+      container?.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: 790,
+          pointerId: 1,
+          pointerType: 'touch',
+        })
+      );
+      await vi.runAllTimersAsync();
+      await element.updateComplete;
+      expect(await readoutText()).toContain('30');
 
       vi.useRealTimers();
     });
@@ -359,11 +511,14 @@ describe('GrowspaceEnvChart', () => {
       ] as any;
 
       (element as any)._cachedChartRect = { left: 0, width: 100, top: 0, height: 100 };
-      (element as any)._handleGraphHover({ clientX: 50 } as any, series, new Date(0), 2000);
+      (element as any)._handleGraphHover({ clientX: 50 } as any, series, {
+        startTimeMs: 0,
+        durationMillis: 2000,
+      });
       await element.updateComplete;
 
-      const tooltip = (element as any)._activeTooltip;
-      expect(tooltip.items.map((item: any) => item.value)).toEqual([
+      const scrub = (element as any)._activeScrub;
+      expect(scrub.rows.map((row: any) => row.value)).toEqual([
         'Not Optimal',
         'Optimal',
         'OFF',
@@ -384,16 +539,15 @@ describe('GrowspaceEnvChart', () => {
         height: 200,
       } as any);
 
-      (element as any)._onMouseMove(
-        new MouseEvent('mousemove', { clientX: 100 }),
+      (element as any)._onPointerMove(
+        new PointerEvent('pointermove', { clientX: 100 }),
         (element as any)._renderSeries,
-        new Date(Date.now() - 3600000),
-        3600000
+        { startTimeMs: Date.now() - 3600000, durationMillis: 3600000 }
       );
       await vi.runAllTimersAsync();
       await element.updateComplete;
 
-      expect((element as any)._activeTooltip).not.toBeNull();
+      expect((element as any)._activeScrub).not.toBeNull();
       expect((element as any)._cachedChartRect).not.toBeNull();
       vi.useRealTimers();
     });
@@ -403,54 +557,65 @@ describe('GrowspaceEnvChart', () => {
       (element as any)._chartContainerRef = { value: null };
 
       expect(() =>
-        (element as any)._handleGraphHover({ clientX: 50 } as any, [], new Date(), 1000)
+        (element as any)._handleGraphHover({ clientX: 50 } as any, [], {
+          startTimeMs: Date.now(),
+          durationMillis: 1000,
+        })
       ).not.toThrow();
-      expect((element as any)._activeTooltip).toBeFalsy();
+      expect((element as any)._activeScrub).toBeFalsy();
     });
 
-    it('throws on a series with no points — documenting the current guard gap', () => {
+    it('skips a series with no points while keeping the scrub position usable', () => {
       (element as any)._cachedChartRect = { left: 0, width: 200, top: 0, height: 100 };
       const series = [
         { id: MetricKey.TEMPERATURE, title: 'Temp', unit: '°C', points: [], color: 'red' },
       ] as any;
 
       expect(() =>
-        (element as any)._handleGraphHover({ clientX: 100 } as any, series, new Date(0), 2000)
-      ).toThrow();
+        (element as any)._handleGraphHover({ clientX: 100 } as any, series, {
+          startTimeMs: 0,
+          durationMillis: 2000,
+        })
+      ).not.toThrow();
+      expect((element as any)._hoverTime).toBe(1000);
+      expect((element as any)._activeScrub.rows).toEqual([]);
     });
 
-    it('cancels a pending frame on the next mousemove', () => {
+    it('cancels a pending frame on the next pointermove', () => {
       const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame');
       (element as any)._tooltipRafId = 123;
 
-      (element as any)._onMouseMove({ clientX: 50 } as MouseEvent, [], new Date(), 1000);
+      (element as any)._onPointerMove({ clientX: 50 } as PointerEvent, [], {
+        startTimeMs: Date.now(),
+        durationMillis: 1000,
+      });
 
       expect(cancelSpy).toHaveBeenCalledWith(123);
       cancelSpy.mockRestore();
     });
 
-    it('cancels a pending frame and clears the tooltip on mouseleave', () => {
+    it('cancels a pending frame and clears the tooltip on pointerleave', () => {
       const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame');
       (element as any)._tooltipRafId = 456;
-      (element as any)._activeTooltip = { id: 'test' };
+      (element as any)._activeScrub = { position: 0.5, time: 0, rows: [] };
 
-      (element as any)._onMouseLeave();
+      (element as any)._onPointerLeave();
 
       expect(cancelSpy).toHaveBeenCalledWith(456);
-      expect((element as any)._activeTooltip).toBeNull();
+      expect((element as any)._activeScrub).toBeNull();
       cancelSpy.mockRestore();
     });
 
-    it('clears the tooltip on mouseleave without a pending frame', () => {
+    it('clears the tooltip on pointerleave without a pending frame', () => {
       const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame');
       (element as any)._tooltipRafId = null;
-      (element as any)._activeTooltip = { id: 'test' };
+      (element as any)._activeScrub = { position: 0.5, time: 0, rows: [] };
       (element as any)._hoverTime = 12345;
 
-      (element as any)._onMouseLeave();
+      (element as any)._onPointerLeave();
 
       expect(cancelSpy).not.toHaveBeenCalled();
-      expect((element as any)._activeTooltip).toBeNull();
+      expect((element as any)._activeScrub).toBeNull();
       expect((element as any)._hoverTime).toBeNull();
       cancelSpy.mockRestore();
     });
@@ -673,6 +838,33 @@ describe('GrowspaceEnvChart', () => {
       });
 
       expect(element.shadowRoot?.querySelectorAll('.gs-legend-item')?.length).toBe(2);
+    });
+
+    it('labels a combined pane as normalised and puts observed ranges on its chips', async () => {
+      await showCombined({
+        [MetricKey.TEMPERATURE]: [reading(3_600_000, '20.5'), reading(0, '22')],
+        [MetricKey.HUMIDITY]: [reading(3_600_000, '54'), reading(0, '60.5')],
+      });
+
+      expect(element.shadowRoot?.querySelector('.gs-axis-normalised')?.textContent?.trim()).toBe(
+        'Normalised'
+      );
+      expect(
+        Array.from(element.shadowRoot?.querySelectorAll('.gs-legend-item') ?? []).map((chip) =>
+          chip.textContent?.replace(/\s+/g, ' ').trim()
+        )
+      ).toEqual(['Temperature 20.5–22.0 °C', 'Humidity 54.0–60.5%']);
+    });
+
+    it('leaves a single-metric graph with its value axis and no normalised label', async () => {
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '22'));
+
+      expect(element.shadowRoot?.querySelector('.gs-axis-normalised')).toBeNull();
+      expect(
+        Array.from(element.shadowRoot?.querySelectorAll('.gs-axis-target') ?? []).map((cap) =>
+          cap.textContent?.trim()
+        )
+      ).toEqual(['23 °C', '19 °C']);
     });
 
     it('dispatches chart-clicked with the hovered timestamp', async () => {

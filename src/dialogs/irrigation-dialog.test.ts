@@ -36,10 +36,25 @@ vi.mock('../slices/irrigation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../slices/irrigation')>()),
   applySteeringMode: vi.fn().mockResolvedValue(undefined),
   fetchCropSteeringHistory: vi.fn().mockResolvedValue(undefined),
+  saveIrrigationRecipe: vi.fn().mockResolvedValue(undefined),
+  applyIrrigationRecipe: vi.fn().mockResolvedValue({
+    growspace_id: 'gs1',
+    applied_recipe_id: 'r1',
+    recipe_applied_at: '2026-08-10T07:15:00+00:00',
+    warning: null,
+  }),
+  assignIrrigationProgram: vi.fn().mockResolvedValue(undefined),
+  setProgramAutoAdvance: vi.fn().mockResolvedValue(undefined),
 }));
 import {
   applySteeringMode as sliceApplySteeringMode,
   fetchCropSteeringHistory as sliceFetchCropSteeringHistory,
+  applyIrrigationRecipe as sliceApplyIrrigationRecipe,
+  irrigationRecipes$,
+  saveIrrigationRecipe as sliceSaveIrrigationRecipe,
+  assignIrrigationProgram as sliceAssignIrrigationProgram,
+  setProgramAutoAdvance as sliceSetProgramAutoAdvance,
+  irrigationPrograms$,
 } from '../slices/irrigation';
 
 afterEach(() => {
@@ -47,6 +62,7 @@ afterEach(() => {
   cropSteeringHistory$.set(new Map());
   irrigationConfigs$.set(new Map());
   tankLevels$.set(new Map());
+  irrigationRecipes$.set([]);
   vi.restoreAllMocks();
 });
 
@@ -2275,5 +2291,461 @@ describe('IrrigationDialog – Crop Steering Day Chart legend: EC sensor presenc
     const text = normalize(legend?.textContent);
     expect(text).toContain('Pore EC not configured');
     expect(text).toContain('Bulk EC not configured');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Recipe tab – the whole grower story through the Dialog Shell
+// ---------------------------------------------------------------------------
+
+function makeRecipe(
+  overrides: Partial<import('../services/types').IrrigationRecipe> = {}
+): import('../services/types').IrrigationRecipe {
+  return {
+    id: 'r1',
+    name: 'Flower week 3',
+    kind: 'crop_steering',
+    provenance: {
+      mediaType: 'coco',
+      litersPerPot: 5,
+      pumpFlowRateMlPerSec: 11,
+      stage: 'flower',
+      week: 3,
+    },
+    cropSteering: null,
+    schedule: null,
+    createdAt: '2026-08-04T09:00:00+00:00',
+    ...overrides,
+  };
+}
+
+function recipeDevice(overrides: Partial<Parameters<typeof createGrowspaceDevice>[0]> = {}) {
+  return withPump({
+    biologicalMetrics: {
+      vpdStatus: 'ok',
+      vpdTargetMin: 0,
+      vpdTargetMax: 0,
+      vpdDangerMin: 0,
+      vpdDangerMax: 0,
+      granularStage: 'flower_mid',
+      isDay: true,
+      vegWeek: 0,
+      flowerWeek: 3,
+    },
+    irrigationStrategy: makeStrategy(),
+    ...overrides,
+  });
+}
+
+async function openRecipesTab(device: ReturnType<typeof recipeDevice>) {
+  const el = await fixture<IrrigationDialog>(html`
+    <irrigation-dialog .open=${true} .device=${device} growspaceName="Tent 1"></irrigation-dialog>
+  `);
+  await el.updateComplete;
+  (el.shadowRoot!.querySelector('[data-tab="recipes"]') as HTMLElement).click();
+  await el.updateComplete;
+  const tab = el.shadowRoot!.querySelector('irrigation-recipes-tab') as LitElement;
+  await tab.updateComplete;
+  return { el, tab };
+}
+
+describe('IrrigationDialog – Recipe tab', () => {
+  it('offers the tab once a pump is configured, and not before', async () => {
+    const withoutPump = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${makeDevice()}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await withoutPump.updateComplete;
+    expect(withoutPump.shadowRoot!.querySelector('[data-tab="recipes"]')).toBeNull();
+
+    const withIt = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${recipeDevice()}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await withIt.updateComplete;
+    expect(withIt.shadowRoot!.querySelector('[data-tab="recipes"]')).not.toBeNull();
+  });
+
+  it('lists the library and pre-selects the recipe authored in this stage and week', async () => {
+    irrigationRecipes$.set([
+      makeRecipe({
+        id: 'far',
+        name: 'Aaa veg',
+        provenance: { ...makeRecipe().provenance, stage: 'veg', week: 1 },
+      }),
+      makeRecipe({ id: 'exact', name: 'Zzz flower 3' }),
+    ]);
+
+    const { tab } = await openRecipesTab(recipeDevice());
+    const rows = [...tab.shadowRoot!.querySelectorAll('[data-recipe-id]')];
+
+    expect(rows.map((r) => r.getAttribute('data-recipe-id'))).toEqual(['exact', 'far']);
+    expect(rows[0].classList.contains('selected')).toBe(true);
+  });
+
+  it('does not offer a recipe of the half this growspace is not running', async () => {
+    irrigationRecipes$.set([makeRecipe({ id: 'sched', kind: 'schedule' })]);
+
+    const { tab } = await openRecipesTab(recipeDevice());
+
+    expect(tab.shadowRoot!.querySelector('[data-recipe-id="sched"]')).toBeNull();
+    expect(
+      normalize(tab.shadowRoot!.querySelector('[data-hidden-by-kind]')?.textContent)
+    ).toContain('1 recipe is not listed');
+  });
+
+  it('applies the selected recipe and reflects the new applied state', async () => {
+    irrigationRecipes$.set([makeRecipe()]);
+    const { el, tab } = await openRecipesTab(recipeDevice());
+
+    (tab.shadowRoot!.querySelector('.btn-apply-recipe') as HTMLButtonElement).click();
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await el.updateComplete;
+
+    expect(sliceApplyIrrigationRecipe).toHaveBeenCalledWith('gs1', 'r1');
+    // The slice owns the optimistic device write; the dialog reflects the stamp
+    // it was handed back once the device prop carries it.
+    const applied = await openRecipesTab(
+      recipeDevice({
+        irrigationStrategy: makeStrategy({
+          appliedRecipeId: 'r1',
+          recipeAppliedAt: '2026-08-10T07:15:00+00:00',
+        }),
+        appliedRecipeDrifted: false,
+      })
+    );
+    expect(normalize(applied.tab.shadowRoot!.querySelector('.applied-name')?.textContent)).toBe(
+      'Flower week 3'
+    );
+    expect(applied.tab.shadowRoot!.querySelector('[data-drift]')!.getAttribute('data-drift')).toBe(
+      'in-sync'
+    );
+  });
+
+  it('surfaces the backend notice when the apply crosses growing media', async () => {
+    vi.mocked(sliceApplyIrrigationRecipe).mockResolvedValueOnce({
+      growspace_id: 'gs1',
+      applied_recipe_id: 'r1',
+      recipe_applied_at: '2026-08-10T07:15:00+00:00',
+      warning:
+        "Irrigation recipe 'Flower week 3' was authored in coco and applied to a rockwool growspace.",
+    });
+    irrigationRecipes$.set([makeRecipe()]);
+    const { el, tab } = await openRecipesTab(recipeDevice());
+
+    (tab.shadowRoot!.querySelector('.btn-apply-recipe') as HTMLButtonElement).click();
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await el.updateComplete;
+    await tab.updateComplete;
+
+    expect(normalize(tab.shadowRoot!.querySelector('[data-apply-warning]')?.textContent)).toContain(
+      'authored in coco and applied to a rockwool growspace'
+    );
+  });
+
+  it('saves the current settings under the typed name and clears the field', async () => {
+    const { el, tab } = await openRecipesTab(recipeDevice());
+    const input = tab.shadowRoot!.querySelector('.recipe-name-input') as HTMLInputElement;
+    input.value = 'Flower week 3 — generative';
+    input.dispatchEvent(new Event('input'));
+    await el.updateComplete;
+    await tab.updateComplete;
+
+    (tab.shadowRoot!.querySelector('.btn-save-recipe') as HTMLButtonElement).click();
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await el.updateComplete;
+
+    expect(sliceSaveIrrigationRecipe).toHaveBeenCalledWith({
+      growspaceId: 'gs1',
+      name: 'Flower week 3 — generative',
+      kind: 'crop_steering',
+    });
+    expect(
+      (el as unknown as { _sm: { tabs: { recipes: { draft: { name: string } } } } })._sm.tabs
+        .recipes.draft.name
+    ).toBe('');
+  });
+
+  it('shows the backend refusal, naming the missing field, instead of a generic failure', async () => {
+    vi.mocked(sliceSaveIrrigationRecipe).mockRejectedValueOnce(
+      Object.assign(
+        new Error(
+          'Cannot save an irrigation recipe from a growspace in Seconds Shot Sizing Mode: ' +
+            'no pump flow rate is configured.'
+        ),
+        { code: 'validation_failed' }
+      )
+    );
+    const { el, tab } = await openRecipesTab(recipeDevice());
+    const input = tab.shadowRoot!.querySelector('.recipe-name-input') as HTMLInputElement;
+    input.value = 'Nope';
+    input.dispatchEvent(new Event('input'));
+    await el.updateComplete;
+    await tab.updateComplete;
+
+    (tab.shadowRoot!.querySelector('.btn-save-recipe') as HTMLButtonElement).click();
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await el.updateComplete;
+
+    expect(normalize(el.shadowRoot!.querySelector('.toast-notification')?.textContent)).toContain(
+      'no pump flow rate is configured'
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Program tab – binding, progression, and the consent auto-advance needs
+// ---------------------------------------------------------------------------
+
+const PROGRAM: import('../services/types').IrrigationProgram = {
+  id: 'p1',
+  name: 'Full run',
+  slots: [
+    { stage: 'veg', week: 1, recipeId: 'r-veg' },
+    { stage: 'flower', week: 3, recipeId: 'r1' },
+  ],
+  createdAt: '2026-08-06T09:00:00+00:00',
+};
+
+function programState(
+  overrides: Partial<import('../services/types').IrrigationProgramState> = {}
+): import('../services/types').IrrigationProgramState {
+  return {
+    programId: 'p1',
+    name: 'Full run',
+    stage: 'flower',
+    week: 3,
+    slot: { stage: 'flower', week: 3, recipeId: 'r1' },
+    recipe: makeRecipe(),
+    autoAdvance: false,
+    progression: {
+      state: 'available',
+      hold: null,
+      detail: 'Flower week 3 calls for irrigation recipe.',
+    },
+    ...overrides,
+  };
+}
+
+function programDevice(overrides: Partial<Parameters<typeof createGrowspaceDevice>[0]> = {}) {
+  return recipeDevice({
+    irrigationStrategy: makeStrategy({ irrigationProgramId: 'p1' }),
+    irrigationProgram: programState(),
+    ...overrides,
+  });
+}
+
+async function openProgramTab(device: ReturnType<typeof recipeDevice>) {
+  const el = await fixture<IrrigationDialog>(html`
+    <irrigation-dialog .open=${true} .device=${device} growspaceName="Tent 1"></irrigation-dialog>
+  `);
+  await el.updateComplete;
+  (el.shadowRoot!.querySelector('[data-tab="program"]') as HTMLElement).click();
+  await el.updateComplete;
+  const tab = el.shadowRoot!.querySelector('irrigation-program-tab') as LitElement;
+  await tab.updateComplete;
+  return { el, tab };
+}
+
+async function settle(el: IrrigationDialog, tab: LitElement) {
+  await el.updateComplete;
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await el.updateComplete;
+  await tab.updateComplete;
+}
+
+describe('IrrigationDialog – Program tab', () => {
+  beforeEach(() => {
+    // The slice mutators are module-level mocks shared by the whole file, so
+    // "was this written?" is only a real question once the calls are cleared.
+    vi.clearAllMocks();
+    irrigationPrograms$.set([PROGRAM]);
+    irrigationRecipes$.set([makeRecipe()]);
+  });
+
+  it('offers the tab once a pump is configured, and not before', async () => {
+    const withoutPump = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${makeDevice()}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await withoutPump.updateComplete;
+    expect(withoutPump.shadowRoot!.querySelector('[data-tab="program"]')).toBeNull();
+
+    const withIt = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${programDevice()}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await withIt.updateComplete;
+    expect(withIt.shadowRoot!.querySelector('[data-tab="program"]')).not.toBeNull();
+  });
+
+  it('shows the assigned program, the current slot and what comes next', async () => {
+    const { tab } = await openProgramTab(
+      programDevice({ irrigationProgram: programState({ stage: 'veg', week: 1 }) })
+    );
+
+    expect(normalize(tab.shadowRoot!.textContent)).toContain('Full run');
+    expect(normalize(tab.shadowRoot!.querySelector('[data-current-week]')?.textContent)).toContain(
+      'Veg week 1'
+    );
+    // The plan crosses into flower; "next" follows the run, not the week number.
+    expect(normalize(tab.shadowRoot!.querySelector('[data-next-slot]')?.textContent)).toContain(
+      'Flower week 3'
+    );
+  });
+
+  it('assigns the picked program through the mutation seam', async () => {
+    irrigationPrograms$.set([PROGRAM, { ...PROGRAM, id: 'p2', name: 'Short run' }]);
+    const { el, tab } = await openProgramTab(programDevice());
+
+    const select = tab.shadowRoot!.querySelector('.program-select') as HTMLSelectElement;
+    select.value = 'p2';
+    select.dispatchEvent(new Event('change'));
+    await el.updateComplete;
+    await tab.updateComplete;
+    (tab.shadowRoot!.querySelector('.btn-assign-program') as HTMLButtonElement).click();
+    await settle(el, tab);
+
+    expect(sliceAssignIrrigationProgram).toHaveBeenCalledWith('gs1', 'p2');
+  });
+
+  it('unbinds when the grower picks no program', async () => {
+    const { el, tab } = await openProgramTab(programDevice());
+
+    const select = tab.shadowRoot!.querySelector('.program-select') as HTMLSelectElement;
+    select.value = '';
+    select.dispatchEvent(new Event('change'));
+    await el.updateComplete;
+    await tab.updateComplete;
+    (tab.shadowRoot!.querySelector('.btn-assign-program') as HTMLButtonElement).click();
+    await settle(el, tab);
+
+    expect(sliceAssignIrrigationProgram).toHaveBeenCalledWith('gs1', null);
+  });
+
+  it('applies the week’s recipe from the prompt, through the same stamp the Recipe tab uses', async () => {
+    const { el, tab } = await openProgramTab(programDevice());
+
+    (tab.shadowRoot!.querySelector('.btn-apply-program-recipe') as HTMLButtonElement).click();
+    await settle(el, tab);
+
+    expect(sliceApplyIrrigationRecipe).toHaveBeenCalledWith('gs1', 'r1');
+  });
+
+  it('asks before turning auto-advance on, and writes nothing until it is answered', async () => {
+    const { el, tab } = await openProgramTab(programDevice());
+
+    const toggle = tab.shadowRoot!.querySelector('.program-auto-advance') as HTMLInputElement;
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    await settle(el, tab);
+
+    expect(sliceSetProgramAutoAdvance).not.toHaveBeenCalled();
+    const message = normalize(tab.shadowRoot!.querySelector('[data-confirm-message]')?.textContent);
+    expect(message).toContain('Flower week 3');
+    expect(message).toContain('flower week 3');
+  });
+
+  it('writes the opt-in once the grower accepts the consequence', async () => {
+    const { el, tab } = await openProgramTab(programDevice());
+
+    const toggle = tab.shadowRoot!.querySelector('.program-auto-advance') as HTMLInputElement;
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    await settle(el, tab);
+    (tab.shadowRoot!.querySelector('.btn-confirm-accept') as HTMLButtonElement).click();
+    await settle(el, tab);
+
+    expect(sliceSetProgramAutoAdvance).toHaveBeenCalledWith('gs1', true);
+  });
+
+  it('writes nothing when the grower cancels, and the toggle returns to what is stored', async () => {
+    const { el, tab } = await openProgramTab(programDevice());
+
+    const toggle = tab.shadowRoot!.querySelector('.program-auto-advance') as HTMLInputElement;
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    await settle(el, tab);
+    (tab.shadowRoot!.querySelector('.btn-confirm-cancel') as HTMLButtonElement).click();
+    await settle(el, tab);
+
+    expect(sliceSetProgramAutoAdvance).not.toHaveBeenCalled();
+    expect(
+      (tab.shadowRoot!.querySelector('.program-auto-advance') as HTMLInputElement).checked
+    ).toBe(false);
+  });
+
+  it('turns auto-advance off without asking — it takes something away', async () => {
+    const { el, tab } = await openProgramTab(
+      programDevice({ irrigationProgram: programState({ autoAdvance: true }) })
+    );
+
+    const toggle = tab.shadowRoot!.querySelector('.program-auto-advance') as HTMLInputElement;
+    toggle.checked = false;
+    toggle.dispatchEvent(new Event('change'));
+    await settle(el, tab);
+
+    expect(sliceSetProgramAutoAdvance).toHaveBeenCalledWith('gs1', false);
+    expect(tab.shadowRoot!.querySelector('[data-program-confirm]')).toBeNull();
+  });
+
+  it('turns it on without asking when nothing is assigned — there is no week to apply', async () => {
+    const { el, tab } = await openProgramTab(
+      programDevice({
+        irrigationStrategy: makeStrategy({ irrigationProgramId: null }),
+        irrigationProgram: null,
+      })
+    );
+
+    const toggle = tab.shadowRoot!.querySelector('.program-auto-advance') as HTMLInputElement;
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    await settle(el, tab);
+
+    expect(sliceSetProgramAutoAdvance).toHaveBeenCalledWith('gs1', true);
+  });
+
+  it('renders each hold with its own cause, and the backend sentence under it', async () => {
+    const { tab } = await openProgramTab(
+      programDevice({
+        irrigationProgram: programState({
+          week: 4,
+          slot: null,
+          recipe: null,
+          progression: {
+            state: 'held',
+            hold: 'program_complete',
+            detail:
+              "Irrigation program 'Full run' is complete: flower week 4 is past its last slot.",
+          },
+        }),
+      })
+    );
+
+    expect(
+      tab.shadowRoot!.querySelector('[data-progression-hold="program_complete"]')
+    ).not.toBeNull();
+    expect(normalize(tab.shadowRoot!.querySelector('[data-progression-title]')?.textContent)).toBe(
+      'Program complete'
+    );
+    expect(
+      normalize(tab.shadowRoot!.querySelector('[data-progression-detail]')?.textContent)
+    ).toContain('past its last slot');
   });
 });

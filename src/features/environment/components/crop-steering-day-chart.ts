@@ -11,6 +11,10 @@ import { PollingController } from '../../shared/controllers/polling.controller';
 import { METRIC_CONFIG, MetricKey } from '../constants';
 import { metricHistoryKeys, resolveMetricEntityIds } from '../../../slices/metric-descriptors';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
+import { guideLabelStyles } from './guide-label';
+import { formatMeasurement } from '../metric-value-format';
+import { accessibleChartSummary, type AccessibleChartSeries } from '../chart-accessibility';
+import { localizeWithParams } from '../../../localize/localize';
 import {
   computeCropSteeringCycle,
   computePhases,
@@ -38,11 +42,19 @@ type CsModelTooltip = {
  * Chip's inline graph slot (Custom Graph Routing).
  */
 /**
- * The chart does not compose `statusTokens`, so the token carries the chain it is
- * defined as — the same shape `features/environment/constants.ts` uses. `--warning`,
- * which these sites referenced before, is declared nowhere.
+ * The P2 trigger's colour. ADR 0047: the trigger is the VWC floor P2 maintains,
+ * not the boundary P3 begins at, so it reads as P2 and agrees with the Phase
+ * Strip below it. The fallback is carried because the chart renders inside the
+ * portalled dialog host as well as inside the card (ADR 0036).
  */
-const STATUS_WARNING = 'var(--gm-status-warning, var(--warning-color, #ffa726))';
+const PHASE_P2 = 'var(--phase-p2, #2196f3)';
+
+/**
+ * The ground every pane in this chart is painted on, reached from SVG as well as
+ * from CSS: the current-value dot halos are a ring of it, and a halo that does not
+ * move with the pane is a black ring on a light theme.
+ */
+const PANE_GROUND = 'var(--secondary-background-color, #0d0d0d)';
 
 @customElement('crop-steering-day-chart')
 export class CropSteeringDayChart extends LitElement {
@@ -59,27 +71,38 @@ export class CropSteeringDayChart extends LitElement {
   private _csModelRafId: number | null = null;
 
   static styles = css`
+    ${guideLabelStyles}
+
     :host {
       display: flex;
       flex-direction: column;
+      /* Rules sit on a theme-owned pane, so they need a theme-owned foreground
+         with non-text contrast of its own. HA's divider role is intentionally
+         subtler than the 3:1 this chart's dense grid and frames require. */
+      --cs-rule-color: color-mix(
+        in srgb,
+        var(--primary-text-color, #ffffff) 50%,
+        var(--secondary-background-color, #0d0d0d)
+      );
     }
     .cs-model {
       position: relative;
       height: auto;
       flex: 1 0 var(--gs-env-chart-height, 300px);
       min-height: var(--gs-env-chart-height, 300px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--cs-rule-color);
       border-radius: var(--border-radius-md, 12px);
-      background: rgba(0, 0, 0, 0.2);
+      background: var(--secondary-background-color, #0d0d0d);
       overflow: hidden;
       cursor: crosshair;
+      touch-action: pan-y;
     }
     .cs-model-cursor {
       position: absolute;
       top: 0;
       bottom: 0;
       width: 1px;
-      background: rgba(255, 255, 255, 0.25);
+      background: var(--cs-rule-color);
       pointer-events: none;
       z-index: 5;
     }
@@ -87,21 +110,24 @@ export class CropSteeringDayChart extends LitElement {
       position: absolute;
       top: 24px;
       z-index: 6;
-      background: rgba(20, 20, 20, 0.9);
+      /* Unlike the chart panes, the tooltip owns this fixed-dark ground. Its
+         foreground therefore uses the matching on-overlay roles (ADR 0039). */
+      background: rgb(20, 20, 20);
       backdrop-filter: blur(6px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: 1px solid var(--on-overlay-muted, rgba(255, 255, 255, 0.55));
       border-radius: var(--border-radius-sm, 8px);
       padding: 6px 8px;
       pointer-events: none;
       font-size: 10.5px;
       white-space: nowrap;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      box-shadow: var(--card-shadow, var(--md3-elevation-level1));
+      color: var(--on-overlay-primary, #ffffff);
     }
     .cs-model-tooltip-time {
       font-weight: 600;
       margin-bottom: 4px;
-      color: rgba(255, 255, 255, 0.7);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--on-overlay-primary, #ffffff);
+      border-bottom: 1px solid var(--on-overlay-muted, rgba(255, 255, 255, 0.55));
       padding-bottom: 3px;
     }
     .cs-model-tooltip-row {
@@ -111,6 +137,14 @@ export class CropSteeringDayChart extends LitElement {
       gap: 10px;
       margin-top: 2px;
       font-family: monospace;
+      color: var(--on-overlay-primary, #ffffff);
+    }
+    .cs-model-tooltip-row i {
+      width: 6px;
+      height: 6px;
+      margin-right: 4px;
+      border-radius: 50%;
+      display: inline-block;
     }
     .cs-model svg {
       position: absolute;
@@ -128,7 +162,7 @@ export class CropSteeringDayChart extends LitElement {
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: rgba(255, 255, 255, 0.4);
+      color: var(--text-primary, var(--primary-text-color, #ffffff));
     }
     .cm-readout {
       position: absolute;
@@ -138,7 +172,7 @@ export class CropSteeringDayChart extends LitElement {
       display: flex;
       gap: 12px;
       font-size: 10.5px;
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--text-primary, var(--primary-text-color, #ffffff));
       font-variant-numeric: tabular-nums;
     }
     .cm-readout span {
@@ -154,7 +188,7 @@ export class CropSteeringDayChart extends LitElement {
       display: inline-block;
     }
     .cm-readout b {
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--text-primary, var(--primary-text-color, #ffffff));
       font-weight: 600;
     }
     .cm-axis-cap {
@@ -165,7 +199,7 @@ export class CropSteeringDayChart extends LitElement {
       font-weight: 500;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.3);
+      color: var(--text-primary, var(--primary-text-color, #ffffff));
     }
     .cm-axis-cap.left {
       left: 7px;
@@ -173,27 +207,15 @@ export class CropSteeringDayChart extends LitElement {
     .cm-axis-cap.right {
       right: 7px;
     }
-    /* Guide labels sit inboard of the tick columns they belong to: VWC reads off
-       the left axis, EC off the right, matching the axis caps below them. */
-    .cm-target {
-      position: absolute;
-      left: 44px;
-      z-index: 2;
-      transform: translateY(-50%);
-      font-size: var(--font-size-xs);
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 0.02em;
-      white-space: nowrap;
-      opacity: 0.95;
-      text-shadow:
-        0 1px 4px rgba(0, 0, 0, 0.95),
-        0 0 4px rgba(0, 0, 0, 0.8);
-      pointer-events: none;
-    }
-    .cm-target.right {
+    /* The shared placement keeps a label clear of the left tick column. This chart
+       has a second value axis, so an EC label is anchored inboard of the right
+       tick column instead, matching the axis cap below it. */
+    .gs-guide-label.right {
       right: 52px;
       left: auto;
+    }
+    .gs-guide-label {
+      color: var(--text-primary, var(--primary-text-color, #ffffff));
     }
     .cm-tick {
       position: absolute;
@@ -201,7 +223,7 @@ export class CropSteeringDayChart extends LitElement {
       transform: translateY(-50%);
       font-size: var(--font-size-xs);
       font-variant-numeric: tabular-nums;
-      color: rgba(255, 255, 255, 0.32);
+      color: var(--text-primary, var(--primary-text-color, #ffffff));
       pointer-events: none;
     }
     .cm-tick.left {
@@ -213,7 +235,7 @@ export class CropSteeringDayChart extends LitElement {
     .placeholder {
       padding: 32px;
       text-align: center;
-      color: var(--text-muted);
+      color: var(--text-primary, var(--primary-text-color, #ffffff));
       font-size: var(--font-size-supporting);
     }
     .cs-phase-strip {
@@ -221,9 +243,9 @@ export class CropSteeringDayChart extends LitElement {
       flex: none;
       height: 52px;
       margin-bottom: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--cs-rule-color);
       border-radius: var(--border-radius-md, 12px);
-      background: rgba(0, 0, 0, 0.2);
+      background: var(--secondary-background-color, #0d0d0d);
       overflow: hidden;
     }
     .cs-phase-block {
@@ -237,9 +259,11 @@ export class CropSteeringDayChart extends LitElement {
       justify-content: center;
       overflow: hidden;
     }
+    /* An unlit stretch, tinted with the theme's own text colour so it reads as
+       "the lights were off" on a light card as well as a dark one. */
     .cs-phase-block.dark {
-      background: rgba(0, 0, 0, 0.35);
-      border-left: 1px solid rgba(255, 255, 255, 0.06);
+      background: color-mix(in srgb, var(--primary-text-color, #ffffff) 12%, transparent);
+      border-left: 1px solid var(--cs-rule-color);
     }
     .cs-phase-num {
       font-size: var(--font-size-xs);
@@ -247,17 +271,18 @@ export class CropSteeringDayChart extends LitElement {
       letter-spacing: 0.08em;
       text-transform: uppercase;
       white-space: nowrap;
+      color: var(--text-primary, var(--primary-text-color, #ffffff));
     }
     .cs-phase-nm {
       font-size: 11px;
       font-weight: 500;
       text-transform: none;
       letter-spacing: 0;
-      color: rgba(255, 255, 255, 0.85);
+      color: var(--text-primary, var(--primary-text-color, #ffffff));
     }
     .cs-phase-meta {
       font-size: var(--font-size-xs);
-      color: rgba(255, 255, 255, 0.4);
+      color: var(--text-primary, var(--primary-text-color, #ffffff));
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
       overflow: hidden;
@@ -268,9 +293,9 @@ export class CropSteeringDayChart extends LitElement {
       flex: none;
       height: 108px;
       margin-bottom: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--cs-rule-color);
       border-radius: var(--border-radius-md, 12px);
-      background: rgba(0, 0, 0, 0.2);
+      background: var(--secondary-background-color, #0d0d0d);
       overflow: hidden;
     }
     .grid-v {
@@ -278,18 +303,18 @@ export class CropSteeringDayChart extends LitElement {
       top: 0;
       bottom: 18px;
       width: 1px;
-      background: rgba(255, 255, 255, 0.04);
+      background: var(--cs-rule-color);
       pointer-events: none;
     }
     .grid-v.major {
-      background: rgba(255, 255, 255, 0.09);
+      background: var(--cs-rule-color);
     }
     .x-label {
       position: absolute;
       bottom: 4px;
       transform: translateX(-50%);
       font-size: var(--font-size-xs);
-      color: rgba(255, 255, 255, 0.35);
+      color: var(--text-primary, var(--primary-text-color, #ffffff));
       font-variant-numeric: tabular-nums;
     }
     .cs-track .grid-v {
@@ -300,8 +325,14 @@ export class CropSteeringDayChart extends LitElement {
       position: absolute;
       top: 0;
       height: 8px;
-      background: linear-gradient(to bottom, rgba(255, 235, 59, 0.22), rgba(255, 235, 59, 0.04));
-      border-bottom: 1px solid rgba(255, 235, 59, 0.4);
+      /* The lit stretch of the day is the Light metric, which is what plots it
+         everywhere else in the card. */
+      background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--metric-light, #ffc107) 22%, transparent),
+        color-mix(in srgb, var(--metric-light, #ffc107) 4%, transparent)
+      );
+      border-bottom: 1px solid var(--cs-rule-color);
     }
     .cs-phase-bg {
       position: absolute;
@@ -317,7 +348,7 @@ export class CropSteeringDayChart extends LitElement {
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      opacity: 0.7;
+      color: var(--text-primary, var(--primary-text-color, #ffffff));
       pointer-events: none;
     }
     .cs-event {
@@ -339,7 +370,13 @@ export class CropSteeringDayChart extends LitElement {
       content: '';
       position: absolute;
       inset: 0;
-      background: repeating-linear-gradient(45deg, transparent 0 3px, rgba(0, 0, 0, 0.18) 3px 5px);
+      /* Hatched over the event's own metric-coloured fill, which is fixed whatever
+         the theme — so the hatch is a literal-valued token too (ADR 0039 §1). */
+      background: repeating-linear-gradient(
+        45deg,
+        transparent 0 3px,
+        color-mix(in srgb, var(--surface-container-lowest, #101010) 18%, transparent) 3px 5px
+      );
       border-radius: inherit;
     }
     .cs-now-line {
@@ -347,8 +384,8 @@ export class CropSteeringDayChart extends LitElement {
       top: 12px;
       bottom: 22px;
       width: 1px;
-      background: var(--marker-now);
-      box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+      background: var(--primary-text-color, #ffffff);
+      box-shadow: 0 0 8px color-mix(in srgb, var(--primary-text-color, #ffffff) 50%, transparent);
       pointer-events: none;
       z-index: 8;
     }
@@ -360,7 +397,7 @@ export class CropSteeringDayChart extends LitElement {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: var(--marker-now);
+      background: var(--primary-text-color, #ffffff);
     }
 
     ${reducedMotion}
@@ -535,14 +572,14 @@ export class CropSteeringDayChart extends LitElement {
       .filter((s) => s.widthPct > 0);
   }
 
-  private _onCsModelMouseLeave = () => {
+  private _onCsModelPointerLeave = () => {
     if (this._csModelRafId) cancelAnimationFrame(this._csModelRafId);
     this._csModelRafId = null;
     this._csModelTooltip = null;
   };
 
-  private _onCsModelMouseMove(
-    e: MouseEvent,
+  private _onCsModelPointerMove(
+    e: PointerEvent,
     ctx: {
       vwcPts: TracePt[];
       poreEcPts: TracePt[] | null;
@@ -659,7 +696,7 @@ export class CropSteeringDayChart extends LitElement {
         ${items.map(
           (item) => html`
             <div class="cs-model-tooltip-row">
-              <span style="color:${item.color};">${item.title}:</span>
+              <span><i style="background:${item.color};"></i>${item.title}:</span>
               <span>${item.value}</span>
             </div>
           `
@@ -858,9 +895,7 @@ export class CropSteeringDayChart extends LitElement {
 
     const targetY = yAtVwc(target);
     const p2TriggerY = yAtVwc(p2Trigger);
-    // Keep the label clear of the bottom-right axis-cap row ("mS/cm") when the EC target sits
-    // near the axis floor (e.g. 0.1) and would otherwise land in that corner.
-    const ecTargetY = ecTargetMid !== null ? Math.min(yAtEc(ecTargetMid), svgH - 30) : 0;
+    const ecTargetY = ecTargetMid !== null ? yAtEc(ecTargetMid) : 0;
 
     const projVwcSeg = projection
       .map(
@@ -882,6 +917,37 @@ export class CropSteeringDayChart extends LitElement {
     const cur = lastHistory ?? { offset: nowOffset, v: seedVwc };
     const curPore = lastKnown(poreEcPts ?? []) ?? seedPore;
     const curBulk = lastKnown(bulkEcPts ?? []) ?? Math.max(0.8, curPore * (cur.v / 100) * 1.32);
+
+    const summarizeTrace = (
+      name: string,
+      unit: string,
+      points: TracePt[] | null,
+      decimals = 1
+    ): AccessibleChartSeries[] => {
+      if (!points?.length) return [];
+      const values = points.map((point) => point.v);
+      return [
+        {
+          name,
+          min: Math.min(...values),
+          max: Math.max(...values),
+          average: values.reduce((total, value) => total + value, 0) / values.length,
+          current: formatMeasurement(values[values.length - 1], unit, decimals),
+          unit,
+          decimals,
+        },
+      ];
+    };
+    const accessibleSummary = accessibleChartSummary(
+      'Crop steering substrate model',
+      this.range,
+      [
+        ...summarizeTrace('VWC', '%', vwcPts),
+        ...summarizeTrace('Pore EC', 'mS/cm', poreEcPts, 2),
+        ...summarizeTrace('Bulk EC', 'mS/cm', bulkEcPts, 2),
+      ],
+      (key, params) => localizeWithParams(key, params)
+    );
 
     const showPhaseStrip = !this.rollingWindow || this.range === '24h';
     const rollingPhaseSegments =
@@ -924,9 +990,9 @@ export class CropSteeringDayChart extends LitElement {
                           <div
                             class="cs-phase-block"
                             style="left:${s.leftPct}%;width:${s.widthPct}%;background:${s.phase!
-                              .color}22;border-left:1px solid ${s.phase!.color}88;"
+                              .color}22;border-left:1px solid var(--cs-rule-color);"
                           >
-                            <div class="cs-phase-num" style="color:${s.phase!.color};">
+                            <div class="cs-phase-num">
                               ${s.phase!.label} <span class="cs-phase-nm">· ${s.phase!.name}</span>
                             </div>
                             <div class="cs-phase-meta">
@@ -948,9 +1014,9 @@ export class CropSteeringDayChart extends LitElement {
                         <div
                           class="cs-phase-block"
                           style="left:${pctAt(p.start)}%;width:${((p.end - p.start) / day) *
-                          100}%;background:${p.color}22;border-left:1px solid ${p.color}88;"
+                          100}%;background:${p.color}22;border-left:1px solid var(--cs-rule-color);"
                         >
-                          <div class="cs-phase-num" style="color:${p.color};">
+                          <div class="cs-phase-num">
                             ${p.label} <span class="cs-phase-nm">· ${p.name}</span>
                           </div>
                           <div class="cs-phase-meta">
@@ -986,9 +1052,9 @@ export class CropSteeringDayChart extends LitElement {
                   <div
                     class="cs-phase-bg"
                     style="left:${pctAt(p.start)}%;width:${((p.end - p.start) / day) *
-                    100}%;background:${p.color}1a;border-left:1px dashed ${p.color}55;"
+                    100}%;background:${p.color}1a;border-left:1px dashed var(--cs-rule-color);"
                   >
-                    <span class="cs-phase-bg-lbl" style="color:${p.color}cc;">${p.label}</span>
+                    <span class="cs-phase-bg-lbl">${p.label}</span>
                   </div>
                 `
               )}
@@ -1031,8 +1097,8 @@ export class CropSteeringDayChart extends LitElement {
 
       <div
         class="cs-model"
-        @mousemove=${(e: MouseEvent) =>
-          this._onCsModelMouseMove(e, {
+        @pointermove=${(e: PointerEvent) =>
+          this._onCsModelPointerMove(e, {
             vwcPts,
             poreEcPts,
             bulkEcPts,
@@ -1041,7 +1107,8 @@ export class CropSteeringDayChart extends LitElement {
             day,
             anchorMs,
           })}
-        @mouseleave=${this._onCsModelMouseLeave}
+        @pointerleave=${this._onCsModelPointerLeave}
+        @pointercancel=${this._onCsModelPointerLeave}
       >
         ${this._renderCsModelTooltip()}
         <span class="cm-title">Substrate model · live + projected</span>
@@ -1063,6 +1130,8 @@ export class CropSteeringDayChart extends LitElement {
           viewBox="0 0 ${svgW} ${svgH}"
           preserveAspectRatio="none"
           style="width:100%;height:100%;display:block;"
+          role="img"
+          aria-label=${accessibleSummary}
         >
           <defs>
             <linearGradient id="vwcModelArea-${growspaceId}" x1="0" y1="0" x2="0" y2="1">
@@ -1077,7 +1146,7 @@ export class CropSteeringDayChart extends LitElement {
               <line
                 x1="${xAt(0)}" x2="${xAt(day)}"
                 y1="${(padT + iH - f * iH).toFixed(1)}" y2="${(padT + iH - f * iH).toFixed(1)}"
-                stroke="rgba(255,255,255,0.05)"
+                stroke="var(--cs-rule-color)"
               />
             `
           )}
@@ -1090,13 +1159,19 @@ export class CropSteeringDayChart extends LitElement {
               <line
                 x1="${xAt(offset)}" x2="${xAt(offset)}"
                 y1="${padT}" y2="${padT + iH}"
-                stroke="rgba(255,255,255,0.05)"
+                stroke="var(--cs-rule-color)"
               />
             `
           )}
 
-          <!-- Saturation Target guide line (VWC scale) -->
+          <!-- The guide marks. The pane is a fixed viewBox stretched with
+               preserveAspectRatio="none", so every dashed mark holds its stroke
+               off the transform — a scaled dash reads at a different rhythm from
+               the trace beside it. -->
+          <!-- Saturation Target [[Setpoint]] (VWC scale) -->
           <line
+            data-guide-id="saturation-target"
+            data-guide-kind="setpoint"
             x1="${xAt(0)}"
             x2="${xAt(day)}"
             y1="${targetY.toFixed(1)}"
@@ -1104,23 +1179,30 @@ export class CropSteeringDayChart extends LitElement {
             stroke="${vwcColor}"
             stroke-opacity="0.6"
             stroke-dasharray="6 4"
+            vector-effect="non-scaling-stroke"
           />
-          <!-- P3 dryback trigger guide line (VWC scale) -->
+          <!-- P2 trigger [[Setpoint]] (VWC scale). Both marks here are values the
+               controller acts on, so under ADR 0048 they carry one kind. -->
           <line
+            data-guide-id="p2-trigger"
+            data-guide-kind="setpoint"
             x1="${xAt(0)}"
             x2="${xAt(day)}"
             y1="${p2TriggerY.toFixed(1)}"
             y2="${p2TriggerY.toFixed(1)}"
-            stroke="${STATUS_WARNING}"
-            stroke-opacity="0.5"
-            stroke-dasharray="2 3"
+            stroke="${PHASE_P2}"
+            stroke-opacity="0.6"
+            stroke-dasharray="6 4"
+            vector-effect="non-scaling-stroke"
           />
           ${ecTargetMid !== null
             ? svg`
                 <line
+                  data-guide-id="pore-ec-target" data-guide-kind="setpoint"
                   x1="${xAt(0)}" x2="${xAt(day)}"
                   y1="${yAtEc(ecTargetMid).toFixed(1)}" y2="${yAtEc(ecTargetMid).toFixed(1)}"
-                  stroke="${poreEcColor}" stroke-opacity="0.5" stroke-dasharray="6 4"
+                  stroke="${poreEcColor}" stroke-opacity="0.6" stroke-dasharray="6 4"
+                  vector-effect="non-scaling-stroke"
                 />
               `
             : nothing}
@@ -1168,24 +1250,26 @@ export class CropSteeringDayChart extends LitElement {
                 <line
                   x1="${nowX}" x2="${nowX}"
                   y1="${(padT - 6).toFixed(1)}" y2="${(padT + iH).toFixed(1)}"
-                  stroke="var(--marker-now)" stroke-dasharray="3 3"
+                  stroke="var(--primary-text-color, #ffffff)" stroke-dasharray="3 3"
                 />
               `
             : nothing}
 
-          <!-- current-value dots -->
+          <!-- Current-value dots. The halo is the pane's own ground, so it lifts the
+               dot off the traces under it on a light theme as well as a dark one. -->
           ${bulkEcPts !== null
-            ? svg`<circle cx="${nowX}" cy="${yAtEc(curBulk).toFixed(1)}" r="3" fill="${bulkEcColor}" stroke="var(--surface-dim, #141414)" stroke-width="1.5" />`
+            ? svg`<circle class="cm-now-dot" cx="${nowX}" cy="${yAtEc(curBulk).toFixed(1)}" r="3" fill="${bulkEcColor}" stroke="${PANE_GROUND}" stroke-width="1.5" />`
             : nothing}
           ${poreEcPts !== null
-            ? svg`<circle cx="${nowX}" cy="${yAtEc(curPore).toFixed(1)}" r="3" fill="${poreEcColor}" stroke="var(--surface-dim, #141414)" stroke-width="1.5" />`
+            ? svg`<circle class="cm-now-dot" cx="${nowX}" cy="${yAtEc(curPore).toFixed(1)}" r="3" fill="${poreEcColor}" stroke="${PANE_GROUND}" stroke-width="1.5" />`
             : nothing}
           <circle
+            class="cm-now-dot"
             cx="${nowX}"
             cy="${yAtVwc(cur.v).toFixed(1)}"
             r="3.4"
             fill="${vwcColor}"
-            stroke="var(--surface-dim, #141414)"
+            stroke="${PANE_GROUND}"
             stroke-width="1.5"
           />
         </svg>
@@ -1211,20 +1295,16 @@ export class CropSteeringDayChart extends LitElement {
           `
         )}
 
-        <span
-          class="cm-target"
-          style="top:${((targetY / svgH) * 100).toFixed(3)}%;color:${vwcColor};"
+        <span class="gs-guide-label" style="top:${((targetY / svgH) * 100).toFixed(3)}%;"
           >Target ${target.toFixed(0)}%</span
         >
-        <span
-          class="cm-target"
-          style="top:${((p2TriggerY / svgH) * 100).toFixed(3)}%;color:${STATUS_WARNING};"
+        <span class="gs-guide-label" style="top:${((p2TriggerY / svgH) * 100).toFixed(3)}%;"
           >P2 trigger ${p2Trigger.toFixed(0)}%</span
         >
         ${ecTargetMid !== null
           ? html`<span
-              class="cm-target right"
-              style="top:${((ecTargetY / svgH) * 100).toFixed(3)}%;color:${poreEcColor};"
+              class="gs-guide-label right"
+              style="top:${((ecTargetY / svgH) * 100).toFixed(3)}%;"
               >Pore EC target ${ecTargetMid.toFixed(1)}</span
             >`
           : nothing}

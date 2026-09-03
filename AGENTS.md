@@ -26,21 +26,20 @@ states. No page navigation is required for pure-API specs.
 npm run test:ha          # verify the served bundle, then run e2e specs
 npm run test:ha:headed   # same, with visible browser
 npm run test:ha:debug    # same, with Playwright Inspector
-npm run test:e2e         # build, remount/restart HA, verify, then run e2e
+npm run test:e2e         # build and run e2e in a disposable managed HA runtime
 ```
 
-Run `test:ha` directly when iterating on specs. Every e2e entry point compares a hash of
-the runtime source and build configuration with `dist/`, then compares the exact local
-build ID with the bundle served by HA. A stale/missing bundle or a Docker bind mount that
-still points at a replaced `dist/` fails before Playwright starts. Use `test:e2e` after
-source changes; it rebuilds and recreates the HA dev container with this checkout's
-`dist/` mounted. The Playwright config also enforces the preflight for commands run
-directly from `tests/e2e/`.
+Run `test:ha` directly when iterating against an attached instance. Attached, headed, and
+debug runs verify the exact served build before Playwright and otherwise leave that runtime
+alone. `test:e2e` builds the card and owns a disposable Home Assistant container, config,
+port, fixtures, dashboards, and cleanup; it never remounts the shared dev runtime. The
+Playwright config also enforces the preflight for commands run directly from `tests/e2e/`.
 
-## First-time setup
+## First-time attached setup
 
-Before the first Playwright run you must populate `.env.test` with growspace IDs and
-configure the HA access token:
+Managed `test:e2e` runs need Docker and the conventional local integration/workspace
+checkouts, but no `.env.test`. Before the first attached Playwright run, populate
+`.env.test` with growspace IDs and configure the HA access token:
 
 ```bash
 cd tests/e2e

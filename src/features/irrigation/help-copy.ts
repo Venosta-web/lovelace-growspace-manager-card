@@ -156,3 +156,82 @@ export const ADAPTIVE = {
       'The longest an adaptive interval may stretch to, as a multiple of the configured interval. 1.5 means never more than half again. The interval never drops below 1.0×, so this is the whole range.',
   },
 } as const satisfies Record<string, HelpCopy>;
+
+/**
+ * The [[Irrigation Recipe]] library (ADR-0045).
+ *
+ * Copy is written against what the stamp actually does, not against the words
+ * "save" and "apply": both are one-way writes with no undo, and a recipe is a
+ * reference the growspace records rather than a link it stays bound to.
+ */
+export const RECIPES = {
+  section: {
+    label: 'Irrigation Recipes',
+    lead: 'A recipe is a reusable snapshot of one growspace’s irrigation settings, saved into a library every tent can see.',
+    body: 'Applying one writes its values into this growspace’s ordinary settings once — nothing stays linked afterwards, and the growspace only records which recipe it was and when. Shot sizes travel as a percent of substrate volume rather than pump seconds, so a recipe moved to plumbing with a different flow rate or pot size still delivers the same shot.',
+  },
+
+  save: {
+    label: 'Save as recipe',
+    content:
+      'Snapshots the settings this growspace already has saved — not the unsaved edits on the other tabs. Save those first if you want them in the recipe.',
+  },
+
+  apply: {
+    label: 'Apply recipe',
+    content:
+      'Writes the recipe’s values over this growspace’s current ones. Applying always writes, so re-applying the recipe already showing above resets any hand-tuning since — which is the way back after an experiment.',
+  },
+
+  drift: {
+    label: 'Drifted from recipe',
+    content:
+      'The settings no longer match the recipe that was applied. Nothing is wrong — it just means they have been hand-tuned since, or the recipe itself was edited. Re-apply to go back to the recipe.',
+  },
+
+  kind: {
+    label: 'Why some recipes are not listed',
+    content:
+      'A recipe carries either crop-steering setpoints or a time schedule, never both, and only the half this growspace is running can be applied. Switch the irrigation mode on the Steering tab to reach the others.',
+  },
+
+  media: {
+    label: 'Different growing medium',
+    content:
+      'This recipe was authored in a different medium. Applying still works and the values are copied unchanged: pot size scales between growspaces, medium does not, and coco, rockwool and soil dry back differently enough that converting between them would be a guess.',
+  },
+} as const;
+
+/**
+ * The [[Irrigation Program]] layer (ADR-0045).
+ *
+ * Written against the [[Program Hold]] rule rather than against the word
+ * "automatic": every sentence here has to survive the days the program does
+ * nothing, because those are the days a grower comes to this tab to find out
+ * why.
+ */
+export const PROGRAM = {
+  section: {
+    label: 'Irrigation Programs',
+    lead: 'A program is a plan for a whole run: which recipe each week of each stage should use.',
+    body: 'Assigning one changes nothing by itself — it only tells this growspace which plan to read. Whenever the plan has no clear instruction for the week it is in, the program leaves the settings exactly as they are and says why: the week may have no recipe, the run may have outgrown the plan, or you may have hand-tuned the growspace since the last recipe was applied.',
+  },
+
+  assign: {
+    label: 'Follow a program',
+    content:
+      'Binding only. No setpoint is written and no pump fires — the growspace simply starts reporting which week of the plan it is in. The one exception is when auto-advance is already on, which is the same consent given in advance.',
+  },
+
+  autoAdvance: {
+    label: 'Advance automatically',
+    content:
+      'Lets the program apply a new week’s recipe on its own. It never overwrites a hand tweak: if the settings no longer match the recipe last applied, the program holds and waits for you instead, because a change you made deliberately is not one to undo unattended.',
+  },
+
+  drift: {
+    label: 'Settings changed since the last apply',
+    content:
+      'The growspace no longer holds what its last recipe stamped — hand-tuned since, or the recipe itself was edited. Auto-advance will not write over that. Applying this week’s recipe yourself is the way forward; the program picks up from there.',
+  },
+} as const;

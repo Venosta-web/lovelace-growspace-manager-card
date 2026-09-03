@@ -29,7 +29,9 @@ export type TabId =
   | 'water_analytics'
   | 'drain_ec'
   | 'substrate_ec'
-  | 'ec_ramp';
+  | 'ec_ramp'
+  | 'recipes'
+  | 'program';
 
 // ─── Overview tab (read-only crop-steering diagnostics) ─────────────────────────
 
@@ -195,6 +197,80 @@ export interface EcRampTabState {
   error: string | null;
 }
 
+// ─── Recipes tab ───────────────────────────────────────────────────────────────
+//
+// The tab holds no buffered copy of the growspace's settings: saving a recipe
+// snapshots what is already persisted, and applying one is a server-side stamp.
+// So its draft is only the two things the grower types or picks, and the tab
+// takes no part in the dirty guard — there is nothing here to lose.
+
+export interface RecipesDraft {
+  /** Name for the recipe the save form will create. */
+  name: string;
+  /**
+   * The recipe the grower explicitly picked, or `null` while they have not.
+   * `null` is not "nothing selected": the Recipes Tab ViewModel resolves it to
+   * the pre-selection its [[Recipe Provenance]] ordering puts first, so the
+   * picker opens on the most relevant recipe without that guess ever becoming
+   * a choice the grower did not make.
+   */
+  selectedRecipeId: string | null;
+}
+
+export interface RecipesTabState {
+  draft: RecipesDraft;
+  /**
+   * The notice the backend returned from the last apply, or null.
+   *
+   * Held rather than toasted because it is not an error and not transient: a
+   * cross-media apply **succeeded**, and what it says — that the values were
+   * copied unscaled — stays true about the growspace afterwards. It is the
+   * backend's own wording, so the card never paraphrases the one thing it
+   * cannot re-derive.
+   */
+  applyWarning: string | null;
+  sub: { kind: 'idle' };
+}
+
+// ─── Program tab ───────────────────────────────────────────────────────────────
+//
+// Like the Recipes tab, this holds no buffered copy of the growspace's
+// settings: assigning writes one id, applying is a server-side stamp, and the
+// auto-advance flag is persisted the moment it is confirmed. So its draft is
+// only the program the grower has picked in the assign control, and the tab
+// takes no part in the dirty guard.
+
+/** A consequence the grower is shown before it is allowed to happen. */
+export type ProgramConfirm =
+  /**
+   * Turning auto-advance on while a program is assigned. It is not a preference
+   * that takes effect later: the growspace is already in a week of the plan, so
+   * switching it on is consent for that week's recipe to be stamped. Saying so
+   * first is the whole reason this state exists.
+   */
+  { kind: 'enable-auto-advance' };
+
+export interface ProgramDraft {
+  /**
+   * The program the grower explicitly picked in the assign control.
+   *
+   * Three states, and all three are needed. `undefined` is "they have not
+   * picked", which the Program Tab ViewModel resolves to whatever the growspace
+   * is already bound to, so the control opens on the truth rather than on an
+   * empty box. `null` is a **pick**: the grower chose "no program", which is
+   * how a growspace is unbound. Collapsing the two would make unbinding
+   * unreachable, because it would read as never having chosen at all.
+   */
+  pickedProgramId: string | null | undefined;
+}
+
+export interface ProgramTabState {
+  draft: ProgramDraft;
+  /** The pending confirmation, or null. */
+  confirm: ProgramConfirm | null;
+  sub: { kind: 'idle' };
+}
+
 // ─── Root SM ───────────────────────────────────────────────────────────────────
 
 export interface TabStates {
@@ -207,6 +283,8 @@ export interface TabStates {
   drain_ec: DrainEcTabState;
   substrate_ec: SubstrateEcTabState;
   ec_ramp: EcRampTabState;
+  recipes: RecipesTabState;
+  program: ProgramTabState;
 }
 
 /** Root-level overlays (not scoped to a tab). */
@@ -300,6 +378,20 @@ export type DialogEvent =
   | { type: 'EC_RAMP_UPDATE_POINT'; index: number; partial: Partial<ECRampPoint> }
   /** Set (or clear) the synchronous validation error for the open editor. */
   | { type: 'SET_EC_RAMP_ERROR'; error: string | null }
+
+  // ── Recipes ──
+  /** Type into the "save current settings as a recipe" name field. */
+  | { type: 'UPDATE_RECIPE_NAME'; name: string }
+  /** Pick a recipe in the apply picker, replacing the VM's pre-selection. */
+  | { type: 'SELECT_RECIPE'; recipeId: string }
+  /** Carry (or clear) the notice an apply returned. */
+  | { type: 'SET_RECIPE_APPLY_WARNING'; warning: string | null }
+
+  // ── Program ──
+  /** Pick a program in the assign control; null is the unbind option. */
+  | { type: 'SELECT_PROGRAM'; programId: string | null }
+  /** Raise (or clear) the consequence the grower must accept before it happens. */
+  | { type: 'SET_PROGRAM_CONFIRM'; confirm: ProgramConfirm | null }
 
   // ── Drain EC ──
   | { type: 'UPDATE_DRAIN_EC_DRAFT'; partial: Partial<DrainEcDraft> }
@@ -412,6 +504,14 @@ function ecTargetRangesFromConfig(ranges: ECTargetRange[] | undefined): ECTarget
   );
 }
 
+function defaultRecipesDraft(): RecipesDraft {
+  return { name: '', selectedRecipeId: null };
+}
+
+function defaultProgramTab(): ProgramTabState {
+  return { draft: { pickedProgramId: undefined }, confirm: null, sub: { kind: 'idle' } };
+}
+
 function defaultTabs(): TabStates {
   return {
     overview: { sub: { kind: 'idle' } },
@@ -423,6 +523,8 @@ function defaultTabs(): TabStates {
     drain_ec: { draft: defaultDrainEcDraft(), sub: { kind: 'idle' } },
     substrate_ec: { draft: defaultSubstrateEcDraft(), sub: { kind: 'idle' } },
     ec_ramp: { sub: { kind: 'list' }, error: null },
+    recipes: { draft: defaultRecipesDraft(), applyWarning: null, sub: { kind: 'idle' } },
+    program: defaultProgramTab(),
   };
 }
 
@@ -755,15 +857,42 @@ function resetActiveTabDraft(sm: DialogSM, device: GrowspaceDevice): TabStates {
 const ACTION_ERROR_MESSAGES: Record<string, string> = {
   'save-all': 'Failed to save irrigation settings',
   'save-settings': 'Failed to save irrigation settings',
+  'set-steering-phase': 'Failed to change the steering phase',
   'run-now': 'Failed to run irrigation cycle',
   'edit-irrigation-time': 'Failed to save irrigation time',
   'edit-drain-time': 'Failed to save drain time',
   'save-ec-ramp-curve': 'Failed to save EC ramp curve',
   'remove-ec-ramp-curve': 'Failed to delete EC ramp curve',
+  'save-recipe': 'Failed to save irrigation recipe',
+  'apply-recipe': 'Failed to apply irrigation recipe',
+  'assign-program': 'Failed to assign the irrigation program',
+  'set-program-auto-advance': 'Failed to change program auto-advance',
 };
 
-export function actionErrorMessage(action: string): string {
-  return ACTION_ERROR_MESSAGES[action] ?? 'Operation failed';
+/**
+ * Actions whose backend refusal is already written for the grower, so the
+ * generic fallback above must not replace it.
+ *
+ * Both recipe commands refuse by *naming what is missing* — the pump flow rate,
+ * the per-pot substrate volume, or a live plant count — because a shot size
+ * stored as a percent of substrate volume cannot be derived from, or turned
+ * back into, pump seconds without them. "Failed to save irrigation recipe"
+ * would throw that away and leave the grower with nothing to fix. Scoped to
+ * these two actions rather than applied to every action, because no other
+ * effect's backend message has been reviewed as user-facing copy.
+ */
+const TYPED_MESSAGE_ACTIONS: ReadonlySet<string> = new Set(['save-recipe', 'apply-recipe']);
+
+/** A backend `validation_failed` rejection, whose message is grower-facing copy. */
+function validationMessage(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  const code = (error as { code?: unknown }).code;
+  return code === 'validation_failed' && error.message ? error.message : null;
+}
+
+export function actionErrorMessage(action: string, error?: unknown): string {
+  const typed = TYPED_MESSAGE_ACTIONS.has(action) ? validationMessage(error) : null;
+  return typed ?? ACTION_ERROR_MESSAGES[action] ?? 'Operation failed';
 }
 
 // ─── Transition function ────────────────────────────────────────────────────────
@@ -795,6 +924,16 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
           // never reopens a stale editor draft (replaces the old willUpdate reset).
           ec_ramp:
             sm.activeTab === 'ec_ramp' ? { sub: { kind: 'list' }, error: null } : sm.tabs.ec_ramp,
+          // Same reason as ec_ramp: a half-typed recipe name is a gesture in
+          // progress, not saved state, so leaving the tab abandons it.
+          recipes:
+            sm.activeTab === 'recipes'
+              ? { draft: defaultRecipesDraft(), applyWarning: null, sub: { kind: 'idle' } }
+              : sm.tabs.recipes,
+          // Same reason again, and one more: an unanswered confirmation must
+          // never survive leaving the tab that raised it, or it would be
+          // answered later about a growspace state that has since moved.
+          program: sm.activeTab === 'program' ? defaultProgramTab() : sm.tabs.program,
         },
       };
 
@@ -1201,6 +1340,58 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
         tabs: { ...sm.tabs, ec_ramp: { ...sm.tabs.ec_ramp, error: event.error } },
       };
 
+    // ── Recipes ──────────────────────────────────────────────────────────────
+
+    case 'UPDATE_RECIPE_NAME':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          recipes: { ...sm.tabs.recipes, draft: { ...sm.tabs.recipes.draft, name: event.name } },
+        },
+      };
+
+    case 'SELECT_RECIPE':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          recipes: {
+            ...sm.tabs.recipes,
+            draft: { ...sm.tabs.recipes.draft, selectedRecipeId: event.recipeId },
+          },
+        },
+      };
+
+    case 'SET_RECIPE_APPLY_WARNING':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          recipes: { ...sm.tabs.recipes, applyWarning: event.warning },
+        },
+      };
+
+    // ── Program ──────────────────────────────────────────────────────────────
+
+    case 'SELECT_PROGRAM':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          program: {
+            ...sm.tabs.program,
+            draft: { ...sm.tabs.program.draft, pickedProgramId: event.programId },
+          },
+        },
+      };
+
+    case 'SET_PROGRAM_CONFIRM':
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, program: { ...sm.tabs.program, confirm: event.confirm } },
+      };
+
     // ── Drain EC ─────────────────────────────────────────────────────────────
 
     case 'UPDATE_DRAIN_EC_DRAFT':
@@ -1289,7 +1480,7 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
       return {
         ...sm,
         status: { kind: 'idle' },
-        toast: actionErrorMessage(event.action),
+        toast: actionErrorMessage(event.action, event.error),
       };
 
     // ── Global ───────────────────────────────────────────────────────────────

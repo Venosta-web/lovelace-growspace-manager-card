@@ -84,6 +84,8 @@ import {
 } from '../../../slices/nutrient';
 
 import './growspace-nutrient-presets-editor.container';
+import '../../irrigation/containers/recipe-library-dialog.container';
+import '../../irrigation/containers/program-library-dialog.container';
 import '../../../dialogs/add-plant-dialog';
 import '../../../dialogs/add-plants-dialog';
 import '../../../dialogs/clone-dialog';
@@ -252,6 +254,10 @@ export class GrowspaceDialogHost extends LitElement {
               );
             case 'NUTRIENT_PRESETS':
               return this._renderNutrientPresetsDialog(active, effectiveDeviceData);
+            case 'IRRIGATION_RECIPES':
+              return this._renderIrrigationRecipesDialog(active);
+            case 'IRRIGATION_PROGRAMS':
+              return this._renderIrrigationProgramsDialog(active);
             case 'TRAINING':
               return this._renderTrainingDialog(active, effectiveDeviceData);
             case 'TAKE_CLONE':
@@ -1365,6 +1371,41 @@ export class GrowspaceDialogHost extends LitElement {
     } catch (err: any) {
       uiSlice.showToast(`Watering failed: ${err.message || err}`, 'error');
     }
+  }
+
+  /**
+   * The standalone [[Irrigation Recipe]] library editor.
+   *
+   * Takes no growspace, unlike almost everything else here: the library is
+   * global, so this surface edits recipes as objects rather than as one tent's
+   * settings. It also needs no `data-changed` hook — the mutations it runs
+   * update `irrigationRecipes$` from their own replies.
+   */
+  private _renderIrrigationRecipesDialog(active: ActiveDialogState): TemplateResult {
+    if (active.type !== 'IRRIGATION_RECIPES') return html``;
+    return html`
+      <recipe-library-dialog
+        .open=${true}
+        @close=${() => this._closeDialogIfActive('IRRIGATION_RECIPES')}
+      ></recipe-library-dialog>
+    `;
+  }
+
+  /**
+   * The standalone [[Irrigation Program]] editor.
+   *
+   * Takes no growspace, like the recipe library above: a program is a plan, not
+   * one tent's settings. It needs no `data-changed` hook either — saving and
+   * deleting update `irrigationPrograms$` from their own replies.
+   */
+  private _renderIrrigationProgramsDialog(active: ActiveDialogState): TemplateResult {
+    if (active.type !== 'IRRIGATION_PROGRAMS') return html``;
+    return html`
+      <program-library-dialog
+        .open=${true}
+        @close=${() => this._closeDialogIfActive('IRRIGATION_PROGRAMS')}
+      ></program-library-dialog>
+    `;
   }
 
   private _renderNutrientPresetsDialog(

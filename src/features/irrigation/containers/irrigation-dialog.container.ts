@@ -16,6 +16,7 @@ import {
   mdiBullseyeArrow,
   mdiTrendingUp,
   mdiCompassOutline,
+  mdiBookmarkMultipleOutline,
 } from '@mdi/js';
 import type { ECRampCurve, ECRampPoint, CropSteeringHistory } from '../../../schemas/api-schema';
 import { IrrigationStrategy, GrowspaceDevice } from '../../../types';
@@ -52,6 +53,7 @@ import {
   addDrainTime,
   removeDrainTime,
   saveIrrigationSettings,
+  setSteeringPhase,
   updateIrrigationStrategy,
   runIrrigationCycle,
   configureDrainMonitoring,
@@ -60,6 +62,12 @@ import {
   logDrainReading,
   applySteeringMode,
   fetchCropSteeringHistory,
+  applyIrrigationRecipe,
+  saveIrrigationRecipe,
+  irrigationRecipes$,
+  assignIrrigationProgram,
+  setProgramAutoAdvance,
+  irrigationPrograms$,
 } from '../../../slices/irrigation';
 import { resetWaterTracking } from '../../../slices/growspace';
 import { createEnvironmentChangeAdapter } from '../../../slices/growspace/environment-change.adapter';
@@ -144,6 +152,23 @@ import {
   createSteeringTabViewModel,
   type SteeringTabViewModel,
 } from '../viewmodels/steering-tab.viewmodel';
+// Decomposed Recipe tab (ADR-0019 + ADR-0045): reads the GLOBAL Irrigation Recipe
+// library from the slice atom rather than the device, so an optimistic save shows
+// up before the next sync. No `$caps` — its only capability question is which half
+// the growspace runs, which is the strategy's own `enabled` flag.
+import {
+  createRecipesTabViewModel,
+  type RecipesTabViewModel,
+} from '../viewmodels/recipes-tab.viewmodel';
+import type { IrrigationRecipeKind } from '../../../slices/irrigation/schema';
+// Decomposed Program tab (ADR-0019 + ADR-0045): reads both global libraries from
+// the slice atoms plus the device, because the payload's `program` block answers
+// about *now* while "what does the plan hold next" is a question only the
+// library can answer.
+import {
+  createProgramTabViewModel,
+  type ProgramTabViewModel,
+} from '../viewmodels/program-tab.viewmodel';
 import { atom, computed, type ReadableAtom } from 'nanostores';
 import '../components/irrigation-overview-tab';
 import '../components/irrigation-tanks-tab';
@@ -154,6 +179,8 @@ import '../components/irrigation-config-tab';
 import '../components/irrigation-water-analytics-tab';
 import '../components/irrigation-substrate-ec-tab';
 import '../components/irrigation-steering-tab';
+import '../components/irrigation-recipes-tab';
+import '../components/irrigation-program-tab';
 
 type TabId =
   | 'overview'
@@ -164,7 +191,9 @@ type TabId =
   | 'water_analytics'
   | 'drain_ec'
   | 'substrate_ec'
-  | 'ec_ramp';
+  | 'ec_ramp'
+  | 'recipes'
+  | 'program';
 
 interface NavDef {
   id: TabId;
@@ -193,7 +222,6 @@ interface SaveSettingsParams {
   autoAdvanceP1ToP2: boolean;
   autoAdvanceP2ToP3: boolean;
   haltOnRunoffEcThreshold: number | null;
-  activeSteeringPhase: 'p1' | 'p2' | 'p3';
 }
 
 interface SaveAllParams {
@@ -212,6 +240,17 @@ interface EditTimeParams {
 interface SaveTankParams {
   growspaceId: string;
   irrigationTanks: IrrigationTank[];
+}
+
+/** Recipe save payload — the name typed on the tab plus the half being captured. */
+interface SaveRecipeParams {
+  name: string;
+  kind: IrrigationRecipeKind;
+}
+
+/** Program assign payload. `null` unbinds; binding writes no setpoint. */
+interface AssignProgramParams {
+  programId: string | null;
 }
 
 /** EC Ramp save payload — composed by `composeEcRampSave`, carried in `applying.status`. */
@@ -361,6 +400,21 @@ export class IrrigationDialog extends LitElement {
     this._deviceAtom
   );
   private _steeringVmController = new StoreController(this, this._steeringVm);
+  /** Recipe tab ViewModel — `$sm`-first, plus the global recipe library and the device. */
+  private _recipesVm: ReadableAtom<RecipesTabViewModel> = createRecipesTabViewModel(
+    this._smAtom,
+    irrigationRecipes$,
+    this._deviceAtom
+  );
+  private _recipesVmController = new StoreController(this, this._recipesVm);
+  /** Program tab ViewModel — `$sm`-first, both global libraries, and the device. */
+  private _programVm: ReadableAtom<ProgramTabViewModel> = createProgramTabViewModel(
+    this._smAtom,
+    irrigationPrograms$,
+    irrigationRecipes$,
+    this._deviceAtom
+  );
+  private _programVmController = new StoreController(this, this._programVm);
 
   // ─── Crop Steering History (Schedules tab) ────────────────────────────
   private _cropSteeringHistoryFetched = false;
@@ -392,6 +446,7 @@ export class IrrigationDialog extends LitElement {
   public readonly effects: Record<string, (params: unknown) => Promise<void>> = {
     'save-all': (params) => this._effectSaveAll(params as SaveAllParams),
     'save-settings': (params) => this._effectSaveSettings(params as SaveSettingsParams),
+    'set-steering-phase': (params) => this._effectSetSteeringPhase(params as { phase: Phase }),
     'run-now': () => this._effectRunNow(),
     'edit-irrigation-time': (params) => this._effectEditIrrigationTime(params as EditTimeParams),
     'edit-drain-time': (params) => this._effectEditDrainTime(params as EditTimeParams),
@@ -399,6 +454,11 @@ export class IrrigationDialog extends LitElement {
     'save-ec-ramp-curve': (params) => this._effectSaveEcRampCurve(params as EcRampSaveParams),
     'remove-ec-ramp-curve': (params) =>
       this._effectRemoveEcRampCurve(params as { curveId: string }),
+    'save-recipe': (params) => this._effectSaveRecipe(params as SaveRecipeParams),
+    'apply-recipe': (params) => this._effectApplyRecipe(params as { recipeId: string }),
+    'assign-program': (params) => this._effectAssignProgram(params as AssignProgramParams),
+    'set-program-auto-advance': (params) =>
+      this._effectSetProgramAutoAdvance(params as { enabled: boolean }),
   };
 
   static styles = [
@@ -732,6 +792,15 @@ export class IrrigationDialog extends LitElement {
       ((this._liveConfig ?? this.device?.irrigationConfig)?.irrigationTimes?.length ?? 0) > 0;
     if (hasPump && hasSchedules && hasEcSensorsForRamp) tabs.push('ec_ramp');
 
+    // Recipes: pump-gated, and nothing narrower. Both halves a recipe can carry
+    // are pump-driven — shot sizes and schedule times alike — so without one
+    // there is nothing to capture and nothing an apply could write.
+    if (hasPump) tabs.push('recipes');
+
+    // Program: pump-gated for the same reason. A plan can only ever hand the
+    // growspace a recipe, and a recipe without a pump has nothing to write to.
+    if (hasPump) tabs.push('program');
+
     return tabs;
   }
 
@@ -937,7 +1006,6 @@ export class IrrigationDialog extends LitElement {
       autoAdvanceP1ToP2: cfg.autoAdvanceP1ToP2,
       autoAdvanceP2ToP3: cfg.autoAdvanceP2ToP3,
       haltOnRunoffEcThreshold: cfg.haltOnRunoffEcThreshold,
-      activeSteeringPhase: this._sm.tabs.steering.phase,
     };
 
     // Older integration releases expose this value in the growspace payload but
@@ -1013,19 +1081,14 @@ export class IrrigationDialog extends LitElement {
     await setEcTargetRanges(id, params.ecTargetRanges);
   }
 
-  /** Save just the settings (used by phase-change confirm). Synchronous dispatcher. */
-  private _saveSettings() {
-    if (!this.device?.deviceId) return;
-    this.dispatch({
-      type: 'SaveRequested',
-      action: 'save-settings',
-      params: this._buildSettingsParams(),
-    });
-  }
-
   private async _effectSaveSettings(params: SaveSettingsParams) {
     if (!this.device?.deviceId) return;
     await saveIrrigationSettings(this.device.deviceId, params);
+  }
+
+  private async _effectSetSteeringPhase(params: { phase: Phase }) {
+    if (!this.device?.deviceId) return;
+    await setSteeringPhase(this.device.deviceId, params.phase);
   }
 
   private async _fetchStageAnalytics() {
@@ -1355,6 +1418,8 @@ export class IrrigationDialog extends LitElement {
         icon: mdiWater,
         badge: tankCount || undefined,
       },
+      { id: 'recipes', label: 'Recipes', group: 'Library', icon: mdiBookmarkMultipleOutline },
+      { id: 'program', label: 'Program', group: 'Library', icon: mdiCalendarClock },
       { id: 'water_analytics', label: 'Water Analytics', group: 'Telemetry', icon: mdiChartBar },
       { id: 'drain_ec', label: 'Drain EC', group: 'Telemetry', icon: mdiArrowDownCircle },
       { id: 'ec_ramp', label: 'EC Ramp', group: 'Telemetry', icon: mdiTrendingUp },
@@ -1606,6 +1671,24 @@ export class IrrigationDialog extends LitElement {
           @substrate-ec-pore-band-changed=${this._onSubstratePoreBandChanged}
           @substrate-ec-targets-changed=${this._onSubstrateTargetsChanged}
         ></irrigation-substrate-ec-tab>`;
+      case 'recipes':
+        return html`<irrigation-recipes-tab
+          .vm=${this._recipesVmController.value}
+          @recipe-name-changed=${this._onRecipeNameChanged}
+          @recipe-selected=${this._onRecipeSelected}
+          @recipe-save-requested=${this._onRecipeSaveRequested}
+          @recipe-apply-requested=${this._onRecipeApplyRequested}
+        ></irrigation-recipes-tab>`;
+      case 'program':
+        return html`<irrigation-program-tab
+          .vm=${this._programVmController.value}
+          @program-selected=${this._onProgramSelected}
+          @program-assign-requested=${this._onProgramAssignRequested}
+          @program-recipe-apply-requested=${this._onProgramRecipeApplyRequested}
+          @program-auto-advance-changed=${this._onProgramAutoAdvanceChanged}
+          @program-confirm-accepted=${this._onProgramConfirmAccepted}
+          @program-confirm-cancelled=${this._onProgramConfirmCancelled}
+        ></irrigation-program-tab>`;
       case 'ec_ramp':
         return html`<irrigation-ec-ramp-tab
           .vm=${this._ecRampVmController.value}
@@ -1628,7 +1711,7 @@ export class IrrigationDialog extends LitElement {
   // The Shell owns the translation. The steering UI writes TWO drafts, so the
   // steering tab emits two distinct draft intents (steering vs config). The two
   // confirm-CONFIRMED intents keep their preserved side-effects here (ADR-0012):
-  // the `applySteeringMode` store action and `_saveSettings`.
+  // the `applySteeringMode` and `setSteeringPhase` store actions.
 
   /** Steering draft field → UPDATE_STEERING_DRAFT. */
   private _onSteeringDraftChanged(e: CustomEvent<{ partial: Partial<IrrigationStrategy> }>) {
@@ -1670,10 +1753,22 @@ export class IrrigationDialog extends LitElement {
     this._sm = transition(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: e.detail.phase });
   }
 
-  /** Confirm the phase change (ADR-0012): commit the transition, then persist. */
+  /** Confirm the phase change (ADR-0012): commit the transition, then persist.
+   *
+   * Persisted by its own action, not by a settings save: the phase belongs to
+   * the backend steering machine, so writing it is this one gesture and never
+   * a passenger on the buffered form.
+   */
   private _onPhaseChangeConfirmed() {
+    const phase = this._sm.tabs.steering.sub;
+    if (phase.kind !== 'confirm-phase') return;
+    const pending = phase.pending;
     this._sm = transition(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
-    this._saveSettings();
+    this.dispatch({
+      type: 'SaveRequested',
+      action: 'set-steering-phase',
+      params: { phase: pending },
+    });
   }
 
   /** Cancel/close the phase-change confirm overlay. */
@@ -1842,6 +1937,145 @@ export class IrrigationDialog extends LitElement {
   private async _effectRemoveEcRampCurve(params: { curveId: string }) {
     await sliceRemoveECRampCurve(params.curveId);
     await fetchECRampCurves({ cache: true, force: true });
+  }
+
+  // ─── Recipe tab intents (ADR-0019 + ADR-0045) ──────────────────────────────
+  // Both gestures are one-way writes with no local half to buffer: saving
+  // snapshots what is already persisted, applying is a server-side stamp. So the
+  // handlers stay synchronous and dispatch straight through the mutation seam
+  // (ADR-0015), with the payload snapshotted into `applying.params`.
+
+  private _onRecipeNameChanged(e: CustomEvent<{ name: string }>) {
+    this.dispatch({ type: 'UPDATE_RECIPE_NAME', name: e.detail.name });
+  }
+
+  private _onRecipeSelected(e: CustomEvent<{ recipeId: string }>) {
+    this.dispatch({ type: 'SELECT_RECIPE', recipeId: e.detail.recipeId });
+  }
+
+  private _onRecipeSaveRequested() {
+    const vm = this._recipesVmController.value;
+    const name = vm.nameDraft.trim();
+    if (!name || !this.device?.deviceId) return;
+    const params: SaveRecipeParams = { name, kind: vm.runningKind };
+    this.dispatch({ type: 'SaveRequested', action: 'save-recipe', params });
+  }
+
+  private _onRecipeApplyRequested(e: CustomEvent<{ recipeId: string | null }>) {
+    const recipeId = e.detail.recipeId;
+    if (!recipeId || !this.device?.deviceId) return;
+    // Clear the previous apply's notice up front, so a second apply that returns
+    // nothing cannot leave the first one's warning standing beside it.
+    this.dispatch({ type: 'SET_RECIPE_APPLY_WARNING', warning: null });
+    this.dispatch({ type: 'SaveRequested', action: 'apply-recipe', params: { recipeId } });
+  }
+
+  /**
+   * Effects read only `params`. A rejection propagates to the
+   * MutationRunController, which surfaces it through `actionErrorMessage` —
+   * which, for these two actions, keeps the backend's own wording because it
+   * names the missing prerequisite the grower has to fix.
+   */
+  private async _effectSaveRecipe(params: SaveRecipeParams) {
+    if (!this.device?.deviceId) return;
+    await saveIrrigationRecipe({
+      growspaceId: this.device.deviceId,
+      name: params.name,
+      kind: params.kind,
+    });
+    // The name has done its job; clearing it keeps the form from looking like it
+    // is still holding an unsaved recipe.
+    this.dispatch({ type: 'UPDATE_RECIPE_NAME', name: '' });
+  }
+
+  private async _effectApplyRecipe(params: { recipeId: string }) {
+    if (!this.device?.deviceId) return;
+    const result = await applyIrrigationRecipe(this.device.deviceId, params.recipeId);
+    // A cross-media apply succeeds and warns. Carry the backend's own sentence
+    // into the tab rather than a paraphrase — it names both media.
+    this.dispatch({ type: 'SET_RECIPE_APPLY_WARNING', warning: result.warning });
+  }
+
+  // ─── Program tab intents (ADR-0019 + ADR-0045) ─────────────────────────────
+  // Assigning writes one id, applying is a server-side stamp, and the
+  // auto-advance flag is a one-field write. None of them buffers anything, so
+  // the handlers stay synchronous and dispatch straight through the mutation
+  // seam (ADR-0015) with the payload snapshotted into `applying.params`.
+
+  private _onProgramSelected(e: CustomEvent<{ programId: string | null }>) {
+    this.dispatch({ type: 'SELECT_PROGRAM', programId: e.detail.programId });
+  }
+
+  private _onProgramAssignRequested(e: CustomEvent<{ programId: string | null }>) {
+    if (!this.device?.deviceId) return;
+    const params: AssignProgramParams = { programId: e.detail.programId };
+    this.dispatch({ type: 'SaveRequested', action: 'assign-program', params });
+  }
+
+  /**
+   * Applying the week's recipe from the Program tab.
+   *
+   * The same stamp the Recipe tab's picker performs, reached from the sentence
+   * that recommended it, so the grower never has to translate "flower week 3
+   * calls for X" into finding X in another tab's list.
+   */
+  private _onProgramRecipeApplyRequested(e: CustomEvent<{ recipeId: string }>) {
+    if (!this.device?.deviceId || !e.detail.recipeId) return;
+    this.dispatch({ type: 'SET_RECIPE_APPLY_WARNING', warning: null });
+    this.dispatch({
+      type: 'SaveRequested',
+      action: 'apply-recipe',
+      params: { recipeId: e.detail.recipeId },
+    });
+  }
+
+  /**
+   * Turning auto-advance **on** is not a preference that takes effect later:
+   * the growspace is already in a week of its plan, so it makes that week's
+   * recipe due and the next evaluation stamps it. That consequence is put to
+   * the grower before anything is written. Turning it **off** takes something
+   * away and needs no confirmation.
+   */
+  private _onProgramAutoAdvanceChanged(e: CustomEvent<{ enabled: boolean }>) {
+    if (!this.device?.deviceId) return;
+    const vm = this._programVmController.value;
+    if (e.detail.enabled && vm.assignedProgramId !== null) {
+      this.dispatch({ type: 'SET_PROGRAM_CONFIRM', confirm: { kind: 'enable-auto-advance' } });
+      return;
+    }
+    this.dispatch({
+      type: 'SaveRequested',
+      action: 'set-program-auto-advance',
+      params: { enabled: e.detail.enabled },
+    });
+  }
+
+  private _onProgramConfirmAccepted() {
+    this.dispatch({ type: 'SET_PROGRAM_CONFIRM', confirm: null });
+    this.dispatch({
+      type: 'SaveRequested',
+      action: 'set-program-auto-advance',
+      params: { enabled: true },
+    });
+  }
+
+  /**
+   * Cancelling re-renders the tab from the VM, whose `autoAdvance` still reads
+   * the persisted value — so the checkbox the grower ticked snaps back on its
+   * own, because nothing was ever written.
+   */
+  private _onProgramConfirmCancelled() {
+    this.dispatch({ type: 'SET_PROGRAM_CONFIRM', confirm: null });
+  }
+
+  private async _effectAssignProgram(params: AssignProgramParams) {
+    if (!this.device?.deviceId) return;
+    await assignIrrigationProgram(this.device.deviceId, params.programId);
+  }
+
+  private async _effectSetProgramAutoAdvance(params: { enabled: boolean }) {
+    if (!this.device?.deviceId) return;
+    await setProgramAutoAdvance(this.device.deviceId, params.enabled);
   }
 
   // ─── Drain EC tab intents (ADR-0019) ───────────────────────────────────────

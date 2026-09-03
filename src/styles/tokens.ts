@@ -450,6 +450,18 @@ export const groups: TokenGroup[] = [
     ],
   },
   {
+    title: 'Feature chrome',
+    note: 'Identity accents for feature surfaces, not plotted data. A feature accent may share a value with a stage or metric today while remaining free to diverge with its own UI role.',
+    tokens: [
+      {
+        css: '--crop-steering-accent',
+        value: '#26c6da',
+        doc: 'colors.crop-steering-accent',
+        note: "The Steering Phase Hero Card's border, tint, active ring and icon. Its VWC trace remains on --metric-soil-moisture; phase data remains on --phase-p*. See ADR 0047.",
+      },
+    ],
+  },
+  {
     title: 'Crop steering phases',
     note: "P0/P1/P2/P3 are painted as chart bands, listed as phase chips and worn as the hero's phase badge, all from one family that lived as three literals in slices/irrigation/index.ts. The P1/P2/P3 values are unchanged from those literals. See ADR 0042 §1.",
     tokens: [

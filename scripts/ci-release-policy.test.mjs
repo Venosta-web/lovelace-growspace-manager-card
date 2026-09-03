@@ -7,48 +7,93 @@ import { parse } from 'yaml';
 const readWorkflow = async (name) =>
   parse(await readFile(new URL(`../.github/workflows/${name}`, import.meta.url), 'utf8'));
 
-const branchesFor = (workflow, event) => workflow.on?.[event]?.branches ?? [];
-const hasEvent = (workflow, event) => Object.hasOwn(workflow.on ?? {}, event);
+const readAction = async (name) =>
+  parse(await readFile(new URL(`../.github/actions/${name}/action.yml`, import.meta.url), 'utf8'));
 
-test('stable publishing is gated while dev prereleases stay E2E-free', async () => {
+function publishingJobForBranch(workflow, branch) {
+  const branchCondition = `github.ref == 'refs/heads/${branch}'`;
+  const matches = Object.values(workflow.jobs).filter(
+    (job) => job.if === branchCondition && Array.isArray(job.steps)
+  );
+  assert.equal(matches.length, 1, `${branch} must route to exactly one publishing job`);
+  return matches[0];
+}
+
+function runCommands(job) {
+  return job.steps.filter((step) => step.run).map((step) => step.run);
+}
+
+function releaseRuntimeUses(job) {
+  return job.steps.filter((step) => step.uses === './.github/actions/setup-release-node');
+}
+
+test('the GitHub adapter retains only routing, validation edges, and module invocations', async () => {
   const release = await readWorkflow('release.yml');
-  const e2e = await readWorkflow('e2e-frontend.yaml');
   const lint = await readWorkflow('lint.yml');
-  const unit = await readWorkflow('test.yml');
-  const contract = await readWorkflow('contract-fixture.yml');
+  const releaseRuntime = await readAction('setup-release-node');
 
-  assert.deepEqual(branchesFor(release, 'push'), ['main', 'dev']);
-  assert.ok(hasEvent(release, 'workflow_dispatch'), 'release keeps optional manual dispatch');
+  assert.deepEqual(release.on.push.branches, ['main', 'dev']);
 
-  const stable = release.jobs['stable-release'];
-  assert.ok(stable, 'release defines a dedicated stable-release job');
-  assert.deepEqual(stable.needs, ['lint-and-build', 'unit-tests', 'contract-fixture', 'e2e']);
-  assert.match(stable.if, /refs\/heads\/main/);
+  const stable = publishingJobForBranch(release, 'main');
+  assert.deepEqual(
+    stable.needs.map((jobName) => release.jobs[jobName].uses),
+    [
+      './.github/workflows/lint.yml',
+      './.github/workflows/test.yml',
+      './.github/workflows/contract-fixture.yml',
+      './.github/workflows/e2e-frontend.yaml',
+    ],
+    'stable publishing keeps every explicit validation edge'
+  );
+  assert.equal(
+    stable.if,
+    "github.ref == 'refs/heads/main'",
+    'the branch condition must retain GitHub default successful-needs behavior'
+  );
+  assert.equal(stable['continue-on-error'], undefined);
+  assert.deepEqual(runCommands(stable), ['npm run publishing:publish -- stable']);
 
-  const prerelease = release.jobs.prerelease;
-  assert.ok(prerelease, 'release defines a dedicated prerelease job');
-  assert.equal(prerelease.needs, undefined, 'dev prerelease must not wait for stable validation');
-  assert.match(prerelease.if, /refs\/heads\/dev/);
+  const prerelease = publishingJobForBranch(release, 'dev');
+  assert.equal(prerelease.needs, undefined, 'dev prereleases stay outside stable validation');
+  assert.deepEqual(runCommands(prerelease), ['npm run publishing:publish -- prerelease']);
 
-  for (const jobName of ['lint-and-build', 'unit-tests', 'contract-fixture', 'e2e']) {
-    assert.match(release.jobs[jobName].if, /refs\/heads\/main/);
+  const verificationJobs = Object.values(lint.jobs).filter((job) =>
+    runCommands(job).includes('npm run publishing:verify')
+  );
+  assert.equal(verificationJobs.length, 1, 'preflight enters the Publishing Interface once');
+
+  for (const job of [stable, prerelease, verificationJobs[0]]) {
+    assert.equal(
+      releaseRuntimeUses(job).length,
+      1,
+      'every publishing entry uses the shared runtime'
+    );
   }
+  assert.equal(releaseRuntime.runs.steps[0].with['node-version'], '22');
+  assert.equal(releaseRuntime.runs.steps[0].with.cache, 'npm');
+});
 
-  assert.ok(hasEvent(e2e, 'workflow_call'), 'the main release gate can call the E2E workflow');
-  assert.ok(hasEvent(e2e, 'workflow_dispatch'), 'E2E keeps optional manual dispatch');
-  assert.equal(e2e.on.push, undefined, 'E2E must not independently run for dev or main pushes');
-  assert.equal(e2e.on.pull_request, undefined, 'E2E must not run for pull requests');
-  for (const [name, workflow] of [
-    ['lint', lint],
-    ['unit tests', unit],
-    ['contract fixture', contract],
-  ]) {
-    assert.ok(hasEvent(workflow, 'workflow_call'), `${name} is reusable by the release gate`);
-  }
+test('the public demo deploys only after a successful stable release', async () => {
+  const release = await readWorkflow('release.yml');
+  const demo = await readWorkflow('demo.yaml');
 
-  const e2eCommands = e2e.jobs['e2e-tests'].steps
-    .map((step) => step.run)
-    .filter(Boolean)
-    .join('\n');
-  assert.match(e2eCommands, /npm run test:(?:e2e|ha)/, 'E2E runs the Home Assistant suite');
+  assert.equal(
+    demo.on.push,
+    undefined,
+    'an independent main push must not deploy before stable publishing finishes'
+  );
+  assert.ok('workflow_call' in demo.on, 'the stable release can call the demo workflow');
+  assert.deepEqual(demo.on.pull_request.branches, ['main']);
+
+  const deployment = release.jobs['deploy-demo'];
+  assert.equal(deployment.if, "github.ref == 'refs/heads/main'");
+  assert.equal(deployment.needs, 'stable-release');
+  assert.equal(deployment.uses, './.github/workflows/demo.yaml');
+
+  assert.equal(demo.jobs.deploy.needs, 'build');
+  assert.equal(
+    demo.jobs.deploy.if,
+    "github.event_name != 'pull_request'",
+    'pull requests verify the assembled demo without publishing Pages'
+  );
 });

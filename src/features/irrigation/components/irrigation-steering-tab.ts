@@ -16,7 +16,7 @@
  *
  * Confirm flows (ADR-0012) — the component renders the overlays from
  * `vm.confirmMode` / `vm.confirmPhase` and emits intents; the Shell owns the
- * side-effects (the `applySteeringMode` store action and `_saveSettings`):
+ * side-effects (the `applySteeringMode` and `setSteeringPhase` store actions):
  *       `steering-mode-requested`  detail: { mode: SteeringMode }   (open confirm)
  *       `steering-mode-confirmed`                                   (Apply)
  *       `steering-mode-cancelled`                                   (Cancel/close)

@@ -37,6 +37,7 @@ growspace_manager/
 # Ignore test results
 test-results/
 server.log
+/.artifacts/
 
 # Ignore test output
 test_*.txt

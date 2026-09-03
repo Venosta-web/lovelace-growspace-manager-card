@@ -9,12 +9,19 @@ import { localizeWithParams } from '../../../localize/localize';
 import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
 import '../../../growspace-env-chart';
-import { MetricKey } from '../../environment/constants';
+import { MetricKey, metricComboFor } from '../../environment/constants';
 import '../../environment/components/tank-water-chart';
 import '../../environment/components/crop-steering-day-chart';
+import '../../environment/components/metric-combo-chart';
 
 export type AnalyticsItem = {
-  type: 'group' | 'single';
+  /**
+   * `group` is a [[Metric Comparison]] the grower composed, `combo` a
+   * [[Curated Combo]] the card asserts. They are separate types rather than one
+   * renderer branching on content: a combo's metrics are ordered — primary
+   * first, its context second — and it carries no unlink affordance (ADR-0051).
+   */
+  type: 'group' | 'single' | 'combo';
   metrics: string[];
 };
 
@@ -171,9 +178,12 @@ export class GrowspaceAnalyticsUI extends LitElement {
       .graphs-container.wall .graphs > * {
         min-width: 0;
       }
-      /* env-chart's top margin is spacing for the inline stack; here the grid
-         gap owns it, and a margin would push the card past its stretched row. */
-      .graphs-container.wall .graphs > growspace-env-chart {
+      /* A chart's top margin is spacing for the inline stack; here the grid
+         gap owns it, and a margin would push the card past its stretched row.
+         A [[Curated Combo]] carries the same margin on its own host, so it is
+         named beside the Env Graph rather than left to inherit nothing. */
+      .graphs-container.wall .graphs > growspace-env-chart,
+      .graphs-container.wall .graphs > metric-combo-chart {
         margin-top: 0;
       }
     `,
@@ -233,7 +243,9 @@ export class GrowspaceAnalyticsUI extends LitElement {
       ${repeat<AnalyticsItem>(
         this.items,
         (item: AnalyticsItem) =>
-          item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`,
+          item.type === 'single'
+            ? `single-${item.metrics[0]}`
+            : `${item.type}-${item.metrics.join('-')}`,
         (item: AnalyticsItem) => this._renderItem(item)
       )}
     `;
@@ -299,6 +311,27 @@ export class GrowspaceAnalyticsUI extends LitElement {
   }
 
   private _renderItem(item: AnalyticsItem): TemplateResult {
+    if (item.type === 'combo') {
+      // No unlink handlers, because a combo emits none: the pairing is the
+      // card's claim, not a grouping the grower can dismantle. `toggle-graph`
+      // needs no redispatch either — the chart's own event is composed, so it
+      // crosses this component's shadow boundary on its way to the container.
+      // `item.metrics` is the combo's identity — the flat key list that keys the
+      // render and says what history is needed. Its *structure* is the recipe's,
+      // which is the only place a pairing is declared, so the panes are read
+      // from there rather than reconstructed from the flattening.
+      const recipe = metricComboFor(item.metrics[0]);
+      return html`
+        <metric-combo-chart
+          .device=${this.device}
+          .sensorHistory=${this.sensorHistory}
+          .descriptors=${this.descriptors}
+          .primary=${item.metrics[0]}
+          .secondaries=${recipe?.secondaries ?? []}
+          .range=${this.range}
+        ></metric-combo-chart>
+      `;
+    }
     if (item.type === 'group') {
       return html`
         <growspace-env-chart

@@ -8,6 +8,7 @@ import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { toggleEnvGraph } from '../../../slices/ui';
 import type { GrowspaceDevice } from '../../../types';
 import { METRIC_SORT_ORDER, type MetricKey } from '../../../constants';
+import { metricComboFor, metricComboKeys } from '../../environment/constants';
 import type { AnalyticsItem } from '../components/growspace-analytics-ui';
 import { deviceSnapshots$, type DeviceSnapshot } from '../../../slices/device-state';
 import { computeMetricDescriptors } from '../../../slices/metric-descriptors';
@@ -168,7 +169,19 @@ export class GrowspaceAnalyticsContainer extends LitElement {
     activeEnvGraphs.forEach((metric) => {
       if (!processed.has(metric) && isVisible(metric)) {
         const base = metric.includes(':') ? metric.split(':')[0] : metric;
-        items.push({ type: 'single', metrics: [metric], sortIndex: getSortIndex(base) });
+        // A [[Curated Combo]] is its own item type, never a pre-seeded
+        // Comparison: the grouping above wins where a grower composed one, and
+        // what is left is the card's own editorial pairing (ADR-0051).
+        const combo = metricComboFor(metric);
+        items.push(
+          combo
+            ? {
+                type: 'combo',
+                metrics: metricComboKeys(combo),
+                sortIndex: getSortIndex(base),
+              }
+            : { type: 'single', metrics: [metric], sortIndex: getSortIndex(base) }
+        );
       }
     });
 

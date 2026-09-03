@@ -45,17 +45,8 @@ jobs:
           # bypass on user-owned repos, so release commits/tags use SSH.
           ssh-key: ${{ secrets.RELEASE_SSH_KEY }}
 
-      - name: Use Node.js
-        uses: actions/setup-node@v6.4.0
-        with:
-          # Node 24's bundled undici rejects octokit's asset upload with an
-          # invalid content-length error; keep this equal to release-preflight.
-          node-version: '22'
-          cache: 'npm'
-
-      - run: npm ci
-      - run: npm run build
-      - run: npm run validate:hacs-release
+      - name: Set up release Node.js
+        uses: ./.github/actions/setup-release-node
 
       - name: Release prerelease
         env:
@@ -64,17 +55,7 @@ jobs:
           GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
-        run: npx semantic-release
-
-      - name: Keep built bundles in release tag only
-        run: |
-          if git ls-files 'dist/*.js' | grep -q .; then
-            git rm --cached dist/*.js
-            git -c user.name='github-actions[bot]' \
-              -c user.email='github-actions[bot]@users.noreply.github.com' \
-              commit -m 'chore(release): untrack built bundle'
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-          fi
+        run: npm run publishing:publish -- prerelease
 
   stable-release:
     if: github.ref == 'refs/heads/main'
@@ -86,15 +67,8 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.RELEASE_SSH_KEY }}
 
-      - name: Use Node.js
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - run: npm ci
-      - run: npm run build
-      - run: npm run validate:hacs-release
+      - name: Set up release Node.js
+        uses: ./.github/actions/setup-release-node
 
       # This is unreachable when any required validation job fails or is
       # cancelled: GitHub skips jobs whose `needs` did not all succeed.
@@ -105,14 +79,12 @@ jobs:
           GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
-        run: npx semantic-release
+        run: npm run publishing:publish -- stable
 
-      - name: Keep built bundles in release tag only
-        run: |
-          if git ls-files 'dist/*.js' | grep -q .; then
-            git rm --cached dist/*.js
-            git -c user.name='github-actions[bot]' \
-              -c user.email='github-actions[bot]@users.noreply.github.com' \
-              commit -m 'chore(release): untrack built bundle'
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-          fi
+  # The public demo is release output. Calling its reusable workflow here keeps
+  # Pages behind the same validation and stable-publishing transaction instead
+  # of racing it as an independent main-push workflow.
+  deploy-demo:
+    if: github.ref == 'refs/heads/main'
+    needs: stable-release
+    uses: ./.github/workflows/demo.yaml

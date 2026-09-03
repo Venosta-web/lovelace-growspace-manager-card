@@ -2,15 +2,31 @@ import { LitElement, html, css, svg, nothing, type TemplateResult, type Property
 import { customElement, property, state } from 'lit/decorators.js';
 import { z } from 'zod';
 import type { GrowspaceDevice, IrrigationTank } from '../../../services/types';
-import { ChartType, MetricKey, type HistoryTimeRange } from '../constants';
+import {
+  ChartType,
+  MetricKey,
+  StatusLevel,
+  STATUS_COLORS,
+  type HistoryTimeRange,
+} from '../constants';
 import { hassCall } from '../../../services/hass-call';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
 import { localize, localizeWithParams } from '../../../localize/localize';
 import { mdiBarrel } from '@mdi/js';
-import { metricHistoryKeys } from '../../../slices/metric-descriptors';
+import {
+  computeMetricTargets,
+  isLimit,
+  metricHistoryKeys,
+  type LimitTarget,
+} from '../../../slices/metric-descriptors';
 import { ChartUtils } from '../../../utils/chart-utils';
 import type { RawHistoryDataPoint } from '../../../adapters/hass-types';
 import type { SensorHistories } from '../types';
+import { renderGuideLimitMark } from './guide-limit-mark';
+import { formatMeasurement } from '../metric-value-format';
+import { accessibleChartSummary } from '../chart-accessibility';
+import './chart-scrub-tooltip';
+import type { ChartScrubDetail } from './chart-scrub-tooltip';
 
 const TankWaterBucketSchema = z.object({
   timestamp: z.string(),
@@ -163,6 +179,7 @@ export class TankWaterChart extends LitElement {
   @state() private _loading = false;
   @state() private _error = false;
   @state() private _levelTooltip: TankLevelTooltip | undefined;
+  @state() private _scrub: ChartScrubDetail | undefined;
 
   private _lastRequestKey: string | undefined;
   private _requestVersion = 0;
@@ -172,6 +189,7 @@ export class TankWaterChart extends LitElement {
       display: block;
     }
     .chart-wrapper {
+      position: relative;
       display: flex;
       flex-direction: column;
       height: 100%;
@@ -221,6 +239,7 @@ export class TankWaterChart extends LitElement {
       background: var(--gs-chart-surface, #0d0d0d);
       border-radius: 8px;
       overflow: hidden;
+      touch-action: pan-y;
     }
     .level-axis-max,
     .level-axis-min {
@@ -256,12 +275,6 @@ export class TankWaterChart extends LitElement {
     .level-midline {
       stroke-width: 0.5;
       stroke-dasharray: 4 4;
-    }
-    .level-warning {
-      stroke: var(--gm-status-danger, var(--error-color, #f44336));
-      stroke-opacity: 0.55;
-      stroke-width: 1;
-      stroke-dasharray: 6 5;
     }
     .level-fill {
       fill: url(#tank-level-fill);
@@ -375,6 +388,7 @@ export class TankWaterChart extends LitElement {
       background: var(--gs-chart-surface, #0d0d0d);
       border-radius: 8px;
       overflow: hidden;
+      touch-action: pan-y;
     }
     .usage-pane--message {
       height: auto;
@@ -641,32 +655,41 @@ export class TankWaterChart extends LitElement {
   /**
    * The level a tank is considered low at.
    *
-   * The lowest configured `warningLevel` wins: with several tanks the growspace
-   * is in trouble as soon as the first of them is, so the line marks the point
-   * the earliest warning fires.
+   * Preserve the chart's existing shared-boundary rule when several tank Limits
+   * exist: the lowest configured warning level wins.
    */
-  private get _warningLevel(): number | undefined {
-    const levels = this._tanks
-      .map((tank) => tank.warningLevel)
-      .filter((level): level is number => level != null);
-    return levels.length === 0 ? undefined : Math.min(...levels);
+  private get _warningLimit(): LimitTarget | undefined {
+    if (!this.device) return undefined;
+    const limits = computeMetricTargets(MetricKey.IRRIGATION_TANK_LEVEL, this.device).filter(
+      isLimit
+    );
+    return limits.reduce<LimitTarget | undefined>(
+      (lowest, limit) => (!lowest || limit.day < lowest.day ? limit : lowest),
+      undefined
+    );
   }
 
   private _renderLevelPane(): TemplateResult {
     const { width, height, min, max } = LEVEL_PANE;
     const traces = this._levelTraces;
-    const warning = this._warningLevel;
+    const warning = this._warningLimit;
 
     return html`
       <div
         class="level-pane"
-        @mousemove=${this._handleLevelHover}
-        @mouseleave=${this._clearLevelTooltip}
+        @pointermove=${this._handleLevelPointerMove}
+        @pointerleave=${this._clearLevelTooltip}
+        @pointercancel=${this._clearLevelTooltip}
       >
         ${this._renderLevelTooltip()}
         <span class="level-axis-max">${max}%</span>
         <span class="level-axis-min">${min}%</span>
-        <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+        <svg
+          viewBox="0 0 ${width} ${height}"
+          preserveAspectRatio="none"
+          role="img"
+          aria-label=${this._levelAccessibleSummary(traces)}
+        >
           <defs>
             <linearGradient id="tank-level-fill" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stop-color="currentColor" stop-opacity="0.4"></stop>
@@ -677,7 +700,19 @@ export class TankWaterChart extends LitElement {
           <line class="level-midline" x1="0" y1=${height / 2} x2=${width} y2=${height / 2}></line>
           ${warning == null
             ? nothing
-            : svg`<line class="level-warning" x1="0" y1="${levelY(warning)}" x2="${width}" y2="${levelY(warning)}"></line>`}
+            : renderGuideLimitMark({
+                id: warning.id,
+                value: warning.day,
+                min,
+                max,
+                width,
+                height,
+                color:
+                  warning.status === 'warning'
+                    ? STATUS_COLORS[StatusLevel.WARNING]
+                    : STATUS_COLORS[StatusLevel.DANGER],
+                className: 'tank-warning-limit',
+              })}
           ${traces.map(
             (trace) => svg`
               <path class="level-fill" d="${trace.path} V ${height} H 0 Z"></path>
@@ -693,7 +728,7 @@ export class TankWaterChart extends LitElement {
     `;
   }
 
-  private _handleLevelHover = (event: MouseEvent): void => {
+  private _handleLevelPointerMove = (event: PointerEvent): void => {
     const traces = this._levelTraces;
     if (traces.length === 0) {
       this._clearLevelTooltip();
@@ -712,20 +747,44 @@ export class TankWaterChart extends LitElement {
         hour: '2-digit',
         minute: '2-digit',
       }),
-      items: traces.map((trace) => {
-        const closest = trace.points.reduce((candidate, point) =>
-          Math.abs(point.time - hoverTime) < Math.abs(candidate.time - hoverTime)
-            ? point
-            : candidate
-        );
-        return { title: trace.title, value: `${closest.value.toFixed(1)} %` };
-      }),
+      items: [
+        ...traces.map((trace) => {
+          const closest = trace.points.reduce((candidate, point) =>
+            Math.abs(point.time - hoverTime) < Math.abs(candidate.time - hoverTime)
+              ? point
+              : candidate
+          );
+          return { title: trace.title, value: `${closest.value.toFixed(1)} %` };
+        }),
+        ...(this._warningLimit == null
+          ? []
+          : [{ title: 'Warning limit', value: `${this._warningLimit.day.toFixed(1)} %` }]),
+      ],
     };
   };
 
   private _clearLevelTooltip = (): void => {
     this._levelTooltip = undefined;
   };
+
+  private _levelAccessibleSummary(traces: TankLevelTrace[]): string {
+    return accessibleChartSummary(
+      localize('water_chart.tank_level_title'),
+      this.range,
+      traces.map((trace) => {
+        const values = trace.points.map((point) => point.value);
+        return {
+          name: trace.title,
+          min: Math.min(...values),
+          max: Math.max(...values),
+          average: values.reduce((total, value) => total + value, 0) / values.length,
+          current: formatMeasurement(values[values.length - 1], '%'),
+          unit: '%',
+        };
+      }),
+      (key, params) => localizeWithParams(key, params)
+    );
+  }
 
   private _renderLevelTooltip(): TemplateResult | typeof nothing {
     const tooltip = this._levelTooltip;
@@ -762,6 +821,13 @@ export class TankWaterChart extends LitElement {
               </span>`}
         </div>
         ${this._renderUsagePane(bars)}
+        ${this._scrub
+          ? html`<chart-scrub-tooltip
+              .position=${this._scrub.position}
+              .time=${this._scrub.time}
+              .rows=${this._scrub.rows}
+            ></chart-scrub-tooltip>`
+          : nothing}
       </div>
     `;
   }
@@ -823,7 +889,12 @@ export class TankWaterChart extends LitElement {
     // not fit the plot's 64px. Those two states are allowed to grow; the plot
     // and the empty pane are not, so switching range never resizes the card.
     return html`
-      <div class="usage-pane ${axis ? '' : 'usage-pane--message'}">
+      <div
+        class="usage-pane ${axis ? '' : 'usage-pane--message'}"
+        @pointermove=${axis ? this._handleUsagePointerMove : nothing}
+        @pointerleave=${this._clearScrub}
+        @pointercancel=${this._clearScrub}
+      >
         ${body}
         ${axis
           ? html`
@@ -856,6 +927,47 @@ export class TankWaterChart extends LitElement {
     return foldUsageBuckets(this._buckets, USAGE_BAR_TARGET[this.range]);
   }
 
+  private _handleUsagePointerMove = (event: PointerEvent): void => {
+    const bars = this._bars;
+    if (bars.length === 0) return;
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const position =
+      rect.width > 0 ? Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)) : 0.5;
+    const index = Math.min(bars.length - 1, Math.floor(position * bars.length));
+    const bucket = bars[index];
+    const startTime = new Date(bucket.timestamp).getTime();
+    const nextStart = bars[index + 1] ? new Date(bars[index + 1].timestamp).getTime() : undefined;
+    const previousStart = bars[index - 1]
+      ? new Date(bars[index - 1].timestamp).getTime()
+      : undefined;
+    const bucketDuration =
+      nextStart != null
+        ? nextStart - startTime
+        : previousStart != null
+          ? startTime - previousStart
+          : RANGE_DURATION_MS[this.range] / bars.length;
+
+    // The readout heads itself with the bucket's own start rather than with the
+    // instant under the pointer: bars are picked by even division of the pane,
+    // so a time derived from the window could name a moment outside the very
+    // bar being reported.
+    this._scrub = {
+      position,
+      time: startTime,
+      rows: [
+        {
+          title: localize('water_chart.title'),
+          interval: { startTime, endTime: startTime + bucketDuration },
+          value: `${bucket.liters.toFixed(1)} L`,
+        },
+      ],
+    };
+  };
+
+  private _clearScrub = (): void => {
+    this._scrub = undefined;
+  };
+
   private _renderBars(bars: TankWaterBucket[]): TemplateResult {
     const max = Math.max(...bars.map((b) => b.liters), 0.001);
     const chartH = 80;
@@ -863,7 +975,26 @@ export class TankWaterChart extends LitElement {
     const gap = Math.min(0.5, barW * 0.2);
 
     return html`
-      <svg viewBox="0 0 100 ${chartH}" preserveAspectRatio="none">
+      <svg
+        viewBox="0 0 100 ${chartH}"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label=${accessibleChartSummary(
+          localize('water_chart.title'),
+          this.range,
+          [
+            {
+              name: localize('water_chart.title'),
+              min: Math.min(...bars.map((bar) => bar.liters)),
+              max: Math.max(...bars.map((bar) => bar.liters)),
+              average: bars.reduce((total, bar) => total + bar.liters, 0) / bars.length,
+              current: formatMeasurement(bars[bars.length - 1].liters, 'L'),
+              unit: 'L',
+            },
+          ],
+          (key, params) => localizeWithParams(key, params)
+        )}
+      >
         ${bars.map((bucket, i) => {
           // The tallest bar spends the whole box: the peak cap above the pane
           // is what says how many liters full height is worth, so holding back
@@ -871,13 +1002,14 @@ export class TankWaterChart extends LitElement {
           const barH = (bucket.liters / max) * chartH;
           const x = i * barW + gap / 2;
           const y = chartH - barH;
-          return svg`
-            <rect class="bar" x="${x}" y="${y}" width="${barW - gap}" height="${barH}" rx="1">
-              <title>
-                ${new Date(bucket.timestamp).toLocaleTimeString()} — ${bucket.liters.toFixed(1)} L
-              </title>
-            </rect>
-          `;
+          return svg`<rect
+            class="bar"
+            x="${x}"
+            y="${y}"
+            width="${barW - gap}"
+            height="${barH}"
+            rx="1"
+          ></rect>`;
         })}
       </svg>
     `;

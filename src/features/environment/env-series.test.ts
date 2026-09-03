@@ -103,18 +103,25 @@ describe('computeEnvSeries — temperature', () => {
     expect(last.value).toBe(19);
   });
 
-  it('pads a flat line by one unit either side so it does not draw on an edge', () => {
+  it('centres a flat line in the metric minimum span so it does not draw on an edge', () => {
     const [series] = computeTemperature(temperatureHistory(reading(120, '20'), reading(60, '20')));
 
-    expect(series.min).toBe(19);
-    expect(series.max).toBe(21);
+    expect(series.min).toBe(18);
+    expect(series.max).toBe(22);
   });
 
-  it('does not pad a range that already spans values', () => {
+  it('centres a narrow range in the metric minimum span', () => {
     const [series] = computeTemperature(temperatureHistory(reading(120, '20'), reading(60, '22')));
 
+    expect(series.min).toBe(19);
+    expect(series.max).toBe(23);
+  });
+
+  it('does not widen a range that already meets the metric minimum span', () => {
+    const [series] = computeTemperature(temperatureHistory(reading(120, '20'), reading(60, '24')));
+
     expect(series.min).toBe(20);
-    expect(series.max).toBe(22);
+    expect(series.max).toBe(24);
   });
 
   it('skips unparseable and unavailable readings', () => {
@@ -276,6 +283,347 @@ describe('computeEnvSeries — VPD', () => {
   });
 });
 
+describe('computeEnvSeries — optimal bands', () => {
+  const vpdDescriptors = computeMetricDescriptors(
+    null,
+    {},
+    {
+      attributes: {
+        day_vpd_target_min: 1,
+        day_vpd_target_max: 2,
+        day_vpd_danger_min: 0.5,
+        day_vpd_danger_max: 2.5,
+        night_vpd_target_min: 0.4,
+        night_vpd_target_max: 0.6,
+        night_vpd_danger_min: 0.2,
+        night_vpd_danger_max: 0.8,
+      },
+    }
+  );
+
+  function entry(entityId: string, minutesAgo: number, state: string): HistorySensorState {
+    return { ...reading(minutesAgo, state), entity_id: entityId };
+  }
+
+  function vpdSeries(histories: SensorHistories) {
+    return computeEnvSeries(vpdDescriptors, histories, [MetricKey.VPD], windowOf(1))[0];
+  }
+
+  it('steps the VPD band at lights-on, and labels the segment under now', () => {
+    const series = vpdSeries({
+      [MetricKey.VPD]: [entry('sensor.tent_vpd', 50, '1.5'), entry('sensor.tent_vpd', 20, '1.5')],
+      // Before the first ON event getIsDay infers night; after it, day.
+      [MetricKey.LIGHT]: [entry('light.tent', 30, 'on')],
+    });
+
+    expect(series.guideBands).toEqual([
+      {
+        id: 'vpd-optimal',
+        segments: [
+          {
+            startTime: NOW.getTime() - HOUR_MS,
+            endTime: NOW.getTime() - 30 * 60 * 1000,
+            min: 0.4,
+            max: 0.6,
+          },
+          {
+            startTime: NOW.getTime() - 30 * 60 * 1000,
+            endTime: NOW.getTime(),
+            min: 1,
+            max: 2,
+          },
+        ],
+        current: { min: 1, max: 2 },
+      },
+    ]);
+  });
+
+  it('spans the window with one segment when day and night agree', () => {
+    const flat = computeMetricDescriptors(
+      null,
+      {},
+      { attributes: { vpd_target_min: 0.8, vpd_target_max: 1.2 } }
+    );
+    const [series] = computeEnvSeries(
+      flat,
+      {
+        [MetricKey.VPD]: [entry('sensor.tent_vpd', 50, '1.0'), entry('sensor.tent_vpd', 20, '1.1')],
+        [MetricKey.LIGHT]: [entry('light.tent', 30, 'on')],
+      },
+      [MetricKey.VPD],
+      windowOf(1)
+    );
+
+    expect(series.guideBands?.[0].segments).toEqual([
+      { startTime: NOW.getTime() - HOUR_MS, endTime: NOW.getTime(), min: 0.8, max: 1.2 },
+    ]);
+  });
+
+  it('contains the band in full when the data never reached it', () => {
+    const series = vpdSeries({
+      [MetricKey.VPD]: [entry('sensor.tent_vpd', 50, '1.5'), entry('sensor.tent_vpd', 20, '1.5')],
+      [MetricKey.LIGHT]: [entry('light.tent', 120, 'on')],
+    });
+
+    // Day band is 1–2 and every reading sat at 1.5; the axis still shows both bounds.
+    expect(series.min).toBeLessThan(1);
+    expect(series.max).toBeGreaterThan(2);
+    // Legend copy reports the readings, not the axis widened around that band.
+    expect({ min: series.observedMin, max: series.observedMax }).toEqual({ min: 1.5, max: 1.5 });
+  });
+
+  it('contains the data in full when it ran outside the band', () => {
+    const series = vpdSeries({
+      [MetricKey.VPD]: [entry('sensor.tent_vpd', 50, '0.2'), entry('sensor.tent_vpd', 20, '3.4')],
+      [MetricKey.LIGHT]: [entry('light.tent', 120, 'on')],
+    });
+
+    // Anchoring on the band alone would have flattened these readings against an edge.
+    expect(series.min).toBeLessThan(0.2);
+    expect(series.max).toBeGreaterThan(3.4);
+  });
+
+  it('draws a device-configured moisture band with no photoperiod to consult', () => {
+    const device = {
+      deviceId: 'g1',
+      name: 'Tent',
+      biologicalMetrics: { granularStage: 'veg' },
+      environmentAttributes: {
+        soilMoistureBand: { min: 40, max: 65, is_custom: true },
+        soilMoistureBandCompatible: true,
+      },
+    } as unknown as GrowspaceDevice;
+    const descriptors = computeMetricDescriptors(null, {}, undefined, device);
+
+    const [series] = computeEnvSeries(
+      descriptors,
+      { [MetricKey.SOIL_MOISTURE]: [entry('sensor.tent_moisture', 30, '52')] },
+      [MetricKey.SOIL_MOISTURE],
+      windowOf(1)
+    );
+
+    expect(series.guideBands?.[0].current).toEqual({ min: 40, max: 65 });
+    expect(series.min).toBeLessThan(40);
+    expect(series.max).toBeGreaterThan(65);
+  });
+
+  it('keeps the existing union-and-pad bounds when a guide band is narrower than the floor', () => {
+    const device = {
+      deviceId: 'g1',
+      name: 'Tent',
+      biologicalMetrics: { granularStage: 'veg' },
+      environmentAttributes: {
+        soilMoistureBand: { min: 50, max: 52, is_custom: true },
+        soilMoistureBandCompatible: true,
+      },
+    } as unknown as GrowspaceDevice;
+    const descriptors = computeMetricDescriptors(null, {}, undefined, device);
+
+    const [series] = computeEnvSeries(
+      descriptors,
+      { [MetricKey.SOIL_MOISTURE]: [entry('sensor.tent_moisture', 30, '51')] },
+      [MetricKey.SOIL_MOISTURE],
+      windowOf(1)
+    );
+
+    // The 50..52 union receives the existing 8% guide pad. Applying the
+    // metric's 20-point minimum span here would replace these bounds.
+    expect(series.min).toBeCloseTo(49.84);
+    expect(series.max).toBeCloseTo(52.16);
+  });
+
+  it('leaves a metric with no configured target exactly as it was', () => {
+    const [series] = computeTemperature(temperatureHistory(reading(50, '20'), reading(20, '24')));
+
+    expect(series.guideBands).toBeUndefined();
+    expect({ min: series.min, max: series.max }).toEqual({ min: 20, max: 24 });
+  });
+});
+
+describe('computeEnvSeries — setpoints', () => {
+  function entry(entityId: string, minutesAgo: number, state: string): HistorySensorState {
+    return { ...reading(minutesAgo, state), entity_id: entityId };
+  }
+
+  function deviceWith(environment: Record<string, unknown>): GrowspaceDevice {
+    return {
+      deviceId: 'g1',
+      name: 'Tent',
+      biologicalMetrics: { granularStage: 'flower_mid' },
+      environmentAttributes: environment,
+      irrigationConfig: {},
+    } as unknown as GrowspaceDevice;
+  }
+
+  const fanConfig = {
+    enabled: true,
+    min_speed: 20,
+    max_speed: 100,
+    temperature_target: 24,
+    temperature_tolerance: 1.5,
+    humidity_target: 60,
+    humidity_tolerance: 5,
+    vpd_target: 1.2,
+    vpd_tolerance: 0.15,
+    critical_temp_low: null,
+    critical_temp_high: null,
+    critical_temp_hysteresis: 1,
+    stage_vpd_enabled: false,
+    stage_vpd_overrides: {},
+  };
+
+  function temperatureSeries(environment: Record<string, unknown>, histories: SensorHistories) {
+    const descriptors = computeMetricDescriptors(null, {}, undefined, deviceWith(environment));
+    return computeEnvSeries(descriptors, histories, [MetricKey.TEMPERATURE], windowOf(1))[0];
+  }
+
+  it('spans the window with one segment for a setpoint that does not step', () => {
+    const series = temperatureSeries(
+      { exhaustFanConfig: fanConfig },
+      temperatureHistory(reading(50, '22'), reading(20, '23'))
+    );
+
+    expect(series.guideLines).toEqual([
+      {
+        id: 'exhaust-fan-target',
+        segments: [{ startTime: NOW.getTime() - HOUR_MS, endTime: NOW.getTime(), value: 24 }],
+        current: 24,
+        tolerance: 1.5,
+      },
+    ]);
+  });
+
+  it('contains the setpoint and its deadband in full when the data never reached them', () => {
+    const series = temperatureSeries(
+      { exhaustFanConfig: fanConfig },
+      temperatureHistory(reading(50, '18'), reading(20, '19'))
+    );
+
+    expect(series.max).toBeGreaterThan(24 + 1.5);
+  });
+
+  it('steps a period-indexed hysteresis setpoint at lights-on', () => {
+    const descriptors = computeMetricDescriptors(
+      null,
+      {},
+      undefined,
+      deviceWith({
+        humidifierControlEnabled: true,
+        humidifierThresholds: {
+          flower_mid: { day: { on: 1.6, off: 1.4 }, night: { on: 1.2, off: 1.0 } },
+        },
+      })
+    );
+
+    const [series] = computeEnvSeries(
+      descriptors,
+      {
+        [MetricKey.VPD]: [entry('sensor.tent_vpd', 50, '1.3'), entry('sensor.tent_vpd', 20, '1.5')],
+        [MetricKey.LIGHT]: [entry('light.tent', 30, 'on')],
+      },
+      [MetricKey.VPD],
+      windowOf(1)
+    );
+
+    expect(series.guideLines?.map((line) => line.id)).toEqual(['humidifier-on', 'humidifier-off']);
+    expect(series.guideLines?.[0].segments).toEqual([
+      { startTime: NOW.getTime() - HOUR_MS, endTime: NOW.getTime() - 30 * 60 * 1000, value: 1.2 },
+      { startTime: NOW.getTime() - 30 * 60 * 1000, endTime: NOW.getTime(), value: 1.6 },
+    ]);
+    // The label reads the segment in force now, not the one the window opened on.
+    expect(series.guideLines?.[0].current).toBe(1.6);
+  });
+
+  it('reports a band and its setpoints separately, so neither is drawn as the other', () => {
+    const descriptors = computeMetricDescriptors(
+      null,
+      {},
+      { attributes: { vpd_target_min: 0.8, vpd_target_max: 1.4 } },
+      deviceWith({
+        humidifierControlEnabled: true,
+        humidifierThresholds: { flower_mid: { day: { on: 1.6, off: 1.4 } } },
+      })
+    );
+
+    const [series] = computeEnvSeries(
+      descriptors,
+      { [MetricKey.VPD]: [entry('sensor.tent_vpd', 30, '1.1')] },
+      [MetricKey.VPD],
+      windowOf(1)
+    );
+
+    expect(series.guideBands?.map((band) => band.id)).toEqual(['vpd-optimal']);
+    expect(series.guideLines?.map((line) => line.id)).toEqual(['humidifier-on', 'humidifier-off']);
+  });
+
+  it('carries no tolerance for a setpoint whose source declares no deadband', () => {
+    const series = temperatureSeries(
+      { exhaustFanConfig: { ...fanConfig, temperature_tolerance: 0 } },
+      temperatureHistory(reading(50, '22'), reading(20, '23'))
+    );
+
+    expect(series.guideLines?.[0]).not.toHaveProperty('tolerance');
+  });
+
+  it('leaves a metric with no configured setpoint exactly as it was', () => {
+    const [series] = computeTemperature(temperatureHistory(reading(50, '20'), reading(20, '24')));
+
+    expect(series.guideLines).toBeUndefined();
+    expect({ min: series.min, max: series.max }).toEqual({ min: 20, max: 24 });
+  });
+});
+
+describe('computeEnvSeries — limits', () => {
+  function temperatureWithLimit(limit: number) {
+    const device = {
+      deviceId: 'g1',
+      name: 'Tent',
+      biologicalMetrics: { granularStage: 'veg' },
+      environmentAttributes: {
+        circulationFanConfig: {
+          critical_temp_low: null,
+          critical_temp_high: limit,
+        },
+      },
+      irrigationConfig: {},
+    } as unknown as GrowspaceDevice;
+    const descriptors = computeMetricDescriptors(null, {}, undefined, device);
+    return computeEnvSeries(
+      descriptors,
+      temperatureHistory(reading(50, '20'), reading(20, '24')),
+      [MetricKey.TEMPERATURE],
+      windowOf(1)
+    )[0];
+  }
+
+  it('carries a Limit in value space without unioning it into the axis', () => {
+    const series = temperatureWithLimit(100);
+
+    expect({ min: series.min, max: series.max }).toEqual({ min: 20, max: 24 });
+    expect(series.guideLimits).toEqual([
+      {
+        id: 'circulation-critical-temperature-high',
+        side: 'upper',
+        status: 'danger',
+        segments: [
+          {
+            startTime: NOW.getTime() - HOUR_MS,
+            endTime: NOW.getTime(),
+            value: 100,
+          },
+        ],
+        current: 100,
+      },
+    ]);
+  });
+
+  it('keeps an in-range Limit in the same unchanged data domain', () => {
+    const series = temperatureWithLimit(22);
+
+    expect({ min: series.min, max: series.max }).toEqual({ min: 20, max: 24 });
+    expect(series.guideLimits?.[0].current).toBe(22);
+  });
+});
 describe('computeEnvSeries — descriptor-owned chart shape and axes', () => {
   it.each([
     [MetricKey.OPTIMAL, 'on', ChartType.STEP, 0, 1],
@@ -331,10 +679,33 @@ describe('computeEnvSeries — descriptor-owned chart shape and axes', () => {
     });
   });
 
-  it('pads one flat auto-scaled line by ±1', () => {
+  it('pads one flat auto-scaled line to its metric minimum span', () => {
     const [series] = computeTemperature(temperatureHistory(reading(30, '20')));
 
-    expect({ min: series.min, max: series.max }).toEqual({ min: 19, max: 21 });
+    expect({ min: series.min, max: series.max }).toEqual({ min: 18, max: 22 });
+  });
+
+  it('makes a narrow CO2 wobble look steady while preserving its observed range', () => {
+    const [series] = computeEnvSeries(
+      DESCRIPTORS,
+      metricHistory(MetricKey.CO2, reading(30, '414'), reading(10, '435')),
+      [MetricKey.CO2],
+      windowOf(24)
+    );
+
+    expect({ min: series.min, max: series.max }).toEqual({ min: 224.5, max: 624.5 });
+    expect({ min: series.observedMin, max: series.observedMax }).toEqual({ min: 414, max: 435 });
+  });
+
+  it('leaves a genuinely wide CO2 swing on its observed bounds', () => {
+    const [series] = computeEnvSeries(
+      DESCRIPTORS,
+      metricHistory(MetricKey.CO2, reading(30, '400'), reading(10, '800')),
+      [MetricKey.CO2],
+      windowOf(24)
+    );
+
+    expect({ min: series.min, max: series.max }).toEqual({ min: 400, max: 800 });
   });
 
   it('does not pad a flat step series', () => {
@@ -539,7 +910,11 @@ describe('computeEnvSeries — multi-sensor metrics', () => {
       'sensor.t2'
     );
 
-    expect({ min: series[0].min, max: series[0].max }).toEqual({ min: 18, max: 20 });
+    expect({ min: series[0].min, max: series[0].max }).toEqual({ min: 17, max: 21 });
+    expect({ min: series[0].observedMin, max: series[0].observedMax }).toEqual({
+      min: 18,
+      max: 20,
+    });
     expect({ min: series[1].min, max: series[1].max }).toEqual({ min: 25, max: 30 });
   });
 

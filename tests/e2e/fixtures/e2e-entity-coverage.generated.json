@@ -57,20 +57,23 @@
               "volume_liters": 50
             }
           ],
+          "light_sensors": [
+            "sensor.e2e_veg_light"
+          ],
           "exhaust_fan_entities": [
-            "switch.sim_e2e_veg_exhaust_fan"
+            "number.sim_e2e_veg_exhaust_fan"
           ],
           "circulation_fan_entities": [
-            "switch.sim_e2e_veg_circulation_fan"
+            "number.sim_e2e_veg_circulation_fan"
           ],
           "humidifier_entities": [
-            "switch.sim_e2e_veg_humidifier"
+            "number.sim_e2e_veg_humidifier"
+          ],
+          "growlight_entities": [
+            "number.sim_e2e_veg_growlight"
           ],
           "dehumidifier_entities": [
             "switch.sim_e2e_veg_dehumidifier"
-          ],
-          "growlight_entities": [
-            "switch.sim_e2e_veg_growlight"
           ]
         },
         "set_irrigation_settings": {
@@ -129,20 +132,23 @@
               "volume_liters": 50
             }
           ],
+          "light_sensors": [
+            "sensor.e2e_clone_light"
+          ],
           "exhaust_fan_entities": [
-            "switch.sim_e2e_clone_exhaust_fan"
+            "number.sim_e2e_clone_exhaust_fan"
           ],
           "circulation_fan_entities": [
-            "switch.sim_e2e_clone_circulation_fan"
+            "number.sim_e2e_clone_circulation_fan"
           ],
           "humidifier_entities": [
-            "switch.sim_e2e_clone_humidifier"
+            "number.sim_e2e_clone_humidifier"
+          ],
+          "growlight_entities": [
+            "number.sim_e2e_clone_growlight"
           ],
           "dehumidifier_entities": [
             "switch.sim_e2e_clone_dehumidifier"
-          ],
-          "growlight_entities": [
-            "switch.sim_e2e_clone_growlight"
           ]
         },
         "set_irrigation_settings": {
@@ -201,20 +207,23 @@
               "volume_liters": 50
             }
           ],
+          "light_sensors": [
+            "sensor.e2e_mother_light"
+          ],
           "exhaust_fan_entities": [
-            "switch.sim_e2e_mother_exhaust_fan"
+            "number.sim_e2e_mother_exhaust_fan"
           ],
           "circulation_fan_entities": [
-            "switch.sim_e2e_mother_circulation_fan"
+            "number.sim_e2e_mother_circulation_fan"
           ],
           "humidifier_entities": [
-            "switch.sim_e2e_mother_humidifier"
+            "number.sim_e2e_mother_humidifier"
+          ],
+          "growlight_entities": [
+            "number.sim_e2e_mother_growlight"
           ],
           "dehumidifier_entities": [
             "switch.sim_e2e_mother_dehumidifier"
-          ],
-          "growlight_entities": [
-            "switch.sim_e2e_mother_growlight"
           ]
         },
         "set_irrigation_settings": {
@@ -273,20 +282,23 @@
               "volume_liters": 50
             }
           ],
+          "light_sensors": [
+            "sensor.e2e_flower_light"
+          ],
           "exhaust_fan_entities": [
-            "switch.sim_e2e_flower_exhaust_fan"
+            "number.sim_e2e_flower_exhaust_fan"
           ],
           "circulation_fan_entities": [
-            "switch.sim_e2e_flower_circulation_fan"
+            "number.sim_e2e_flower_circulation_fan"
           ],
           "humidifier_entities": [
-            "switch.sim_e2e_flower_humidifier"
+            "number.sim_e2e_flower_humidifier"
+          ],
+          "growlight_entities": [
+            "number.sim_e2e_flower_growlight"
           ],
           "dehumidifier_entities": [
             "switch.sim_e2e_flower_dehumidifier"
-          ],
-          "growlight_entities": [
-            "switch.sim_e2e_flower_growlight"
           ]
         },
         "set_irrigation_settings": {
@@ -345,20 +357,23 @@
               "volume_liters": 50
             }
           ],
+          "light_sensors": [
+            "sensor.e2e_dry_light"
+          ],
           "exhaust_fan_entities": [
-            "switch.sim_e2e_dry_exhaust_fan"
+            "number.sim_e2e_dry_exhaust_fan"
           ],
           "circulation_fan_entities": [
-            "switch.sim_e2e_dry_circulation_fan"
+            "number.sim_e2e_dry_circulation_fan"
           ],
           "humidifier_entities": [
-            "switch.sim_e2e_dry_humidifier"
+            "number.sim_e2e_dry_humidifier"
+          ],
+          "growlight_entities": [
+            "number.sim_e2e_dry_growlight"
           ],
           "dehumidifier_entities": [
             "switch.sim_e2e_dry_dehumidifier"
-          ],
-          "growlight_entities": [
-            "switch.sim_e2e_dry_growlight"
           ]
         },
         "set_irrigation_settings": {
@@ -417,20 +432,23 @@
               "volume_liters": 50
             }
           ],
+          "light_sensors": [
+            "sensor.e2e_cure_light"
+          ],
           "exhaust_fan_entities": [
-            "switch.sim_e2e_cure_exhaust_fan"
+            "number.sim_e2e_cure_exhaust_fan"
           ],
           "circulation_fan_entities": [
-            "switch.sim_e2e_cure_circulation_fan"
+            "number.sim_e2e_cure_circulation_fan"
           ],
           "humidifier_entities": [
-            "switch.sim_e2e_cure_humidifier"
+            "number.sim_e2e_cure_humidifier"
+          ],
+          "growlight_entities": [
+            "number.sim_e2e_cure_growlight"
           ],
           "dehumidifier_entities": [
             "switch.sim_e2e_cure_dehumidifier"
-          ],
-          "growlight_entities": [
-            "switch.sim_e2e_cure_growlight"
           ]
         },
         "set_irrigation_settings": {
@@ -447,34 +465,34 @@
       "stage_days_ago": 15,
       "services": {
         "configure_environment": {
-          "temperature_sensor": "input_number.e2e_vwc_veg_temperature",
-          "humidity_sensor": "input_number.e2e_vwc_veg_humidity",
-          "vpd_sensor": "input_number.e2e_vwc_veg_vpd",
-          "co2_sensor": "input_number.e2e_vwc_veg_co2",
+          "temperature_sensor": "sensor.e2e_vwc_veg_temperature",
+          "humidity_sensor": "sensor.e2e_vwc_veg_humidity",
+          "vpd_sensor": "sensor.e2e_vwc_veg_vpd",
+          "co2_sensor": "sensor.e2e_vwc_veg_co2",
           "feed_ec_sensors": [
-            "input_number.e2e_vwc_veg_feed_ec"
+            "sensor.e2e_vwc_veg_feed_ec"
           ],
           "bulk_ec_sensors": [
-            "input_number.e2e_vwc_veg_bulk_ec"
+            "sensor.e2e_vwc_veg_bulk_ec"
           ],
           "pore_ec_sensors": [
-            "input_number.e2e_vwc_veg_pore_ec"
+            "sensor.e2e_vwc_veg_pore_ec"
           ],
           "runoff_ec_sensors": [
-            "input_number.e2e_vwc_veg_runoff_ec"
+            "sensor.e2e_vwc_veg_runoff_ec"
           ],
           "ph_sensors": [
-            "input_number.e2e_vwc_veg_ph"
+            "sensor.e2e_vwc_veg_ph"
           ],
           "substrate_temperature_sensors": [
-            "input_number.e2e_vwc_veg_substrate_temperature"
+            "sensor.e2e_vwc_veg_substrate_temperature"
           ],
           "soil_moisture_sensor": "input_number.e2e_vwc_veg_substrate_moisture",
           "power_sensors": [
-            "input_number.e2e_vwc_veg_power"
+            "sensor.e2e_vwc_veg_power"
           ],
           "energy_sensors": [
-            "input_number.e2e_vwc_veg_energy"
+            "sensor.e2e_vwc_veg_energy"
           ],
           "irrigation_tanks": [
             {
@@ -483,20 +501,23 @@
               "volume_liters": 50
             }
           ],
+          "light_sensors": [
+            "sensor.e2e_vwc_veg_light"
+          ],
           "exhaust_fan_entities": [
-            "switch.sim_e2e_vwc_veg_exhaust_fan"
+            "number.sim_e2e_vwc_veg_exhaust_fan"
           ],
           "circulation_fan_entities": [
-            "switch.sim_e2e_vwc_veg_circulation_fan"
+            "number.sim_e2e_vwc_veg_circulation_fan"
           ],
           "humidifier_entities": [
-            "switch.sim_e2e_vwc_veg_humidifier"
+            "number.sim_e2e_vwc_veg_humidifier"
+          ],
+          "growlight_entities": [
+            "number.sim_e2e_vwc_veg_growlight"
           ],
           "dehumidifier_entities": [
             "switch.sim_e2e_vwc_veg_dehumidifier"
-          ],
-          "growlight_entities": [
-            "switch.sim_e2e_vwc_veg_growlight"
           ]
         },
         "set_irrigation_settings": {
@@ -521,34 +542,34 @@
       "stage_days_ago": 40,
       "services": {
         "configure_environment": {
-          "temperature_sensor": "input_number.e2e_vwc_flower_temperature",
-          "humidity_sensor": "input_number.e2e_vwc_flower_humidity",
-          "vpd_sensor": "input_number.e2e_vwc_flower_vpd",
-          "co2_sensor": "input_number.e2e_vwc_flower_co2",
+          "temperature_sensor": "sensor.e2e_vwc_flower_temperature",
+          "humidity_sensor": "sensor.e2e_vwc_flower_humidity",
+          "vpd_sensor": "sensor.e2e_vwc_flower_vpd",
+          "co2_sensor": "sensor.e2e_vwc_flower_co2",
           "feed_ec_sensors": [
-            "input_number.e2e_vwc_flower_feed_ec"
+            "sensor.e2e_vwc_flower_feed_ec"
           ],
           "bulk_ec_sensors": [
-            "input_number.e2e_vwc_flower_bulk_ec"
+            "sensor.e2e_vwc_flower_bulk_ec"
           ],
           "pore_ec_sensors": [
-            "input_number.e2e_vwc_flower_pore_ec"
+            "sensor.e2e_vwc_flower_pore_ec"
           ],
           "runoff_ec_sensors": [
-            "input_number.e2e_vwc_flower_runoff_ec"
+            "sensor.e2e_vwc_flower_runoff_ec"
           ],
           "ph_sensors": [
-            "input_number.e2e_vwc_flower_ph"
+            "sensor.e2e_vwc_flower_ph"
           ],
           "substrate_temperature_sensors": [
-            "input_number.e2e_vwc_flower_substrate_temperature"
+            "sensor.e2e_vwc_flower_substrate_temperature"
           ],
           "soil_moisture_sensor": "input_number.e2e_vwc_flower_substrate_moisture",
           "power_sensors": [
-            "input_number.e2e_vwc_flower_power"
+            "sensor.e2e_vwc_flower_power"
           ],
           "energy_sensors": [
-            "input_number.e2e_vwc_flower_energy"
+            "sensor.e2e_vwc_flower_energy"
           ],
           "irrigation_tanks": [
             {
@@ -557,20 +578,23 @@
               "volume_liters": 50
             }
           ],
+          "light_sensors": [
+            "sensor.e2e_vwc_flower_light"
+          ],
           "exhaust_fan_entities": [
-            "switch.sim_e2e_vwc_flower_exhaust_fan"
+            "number.sim_e2e_vwc_flower_exhaust_fan"
           ],
           "circulation_fan_entities": [
-            "switch.sim_e2e_vwc_flower_circulation_fan"
+            "number.sim_e2e_vwc_flower_circulation_fan"
           ],
           "humidifier_entities": [
-            "switch.sim_e2e_vwc_flower_humidifier"
+            "number.sim_e2e_vwc_flower_humidifier"
+          ],
+          "growlight_entities": [
+            "number.sim_e2e_vwc_flower_growlight"
           ],
           "dehumidifier_entities": [
             "switch.sim_e2e_vwc_flower_dehumidifier"
-          ],
-          "growlight_entities": [
-            "switch.sim_e2e_vwc_flower_growlight"
           ]
         },
         "set_irrigation_settings": {
@@ -639,19 +663,19 @@
             "sensor.e2e_telemetry_multi_light_2"
           ],
           "exhaust_fan_entities": [
-            "switch.sim_e2e_telemetry_multi_exhaust_fan"
+            "number.sim_e2e_telemetry_multi_exhaust_fan"
           ],
           "circulation_fan_entities": [
-            "switch.sim_e2e_telemetry_multi_circulation_fan"
+            "number.sim_e2e_telemetry_multi_circulation_fan"
           ],
           "humidifier_entities": [
-            "switch.sim_e2e_telemetry_multi_humidifier"
+            "number.sim_e2e_telemetry_multi_humidifier"
+          ],
+          "growlight_entities": [
+            "number.sim_e2e_telemetry_multi_growlight"
           ],
           "dehumidifier_entities": [
             "switch.sim_e2e_telemetry_multi_dehumidifier"
-          ],
-          "growlight_entities": [
-            "switch.sim_e2e_telemetry_multi_growlight"
           ]
         }
       }
@@ -664,26 +688,58 @@
       "stage_days_ago": 0,
       "services": {
         "configure_environment": {
+          "temperature_sensor": "sensor.e2e_irrigation_monitored_temperature",
+          "humidity_sensor": "sensor.e2e_irrigation_monitored_humidity",
+          "vpd_sensor": "sensor.e2e_irrigation_monitored_vpd",
+          "co2_sensor": "sensor.e2e_irrigation_monitored_co2",
+          "feed_ec_sensors": [
+            "sensor.e2e_irrigation_monitored_feed_ec"
+          ],
+          "bulk_ec_sensors": [
+            "sensor.e2e_irrigation_monitored_bulk_ec"
+          ],
+          "pore_ec_sensors": [
+            "sensor.e2e_irrigation_monitored_pore_ec"
+          ],
+          "runoff_ec_sensors": [
+            "sensor.e2e_irrigation_monitored_runoff_ec"
+          ],
+          "ph_sensors": [
+            "sensor.e2e_irrigation_monitored_ph"
+          ],
+          "substrate_temperature_sensors": [
+            "sensor.e2e_irrigation_monitored_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "sensor.e2e_irrigation_monitored_substrate_moisture",
+          "power_sensors": [
+            "sensor.e2e_irrigation_monitored_power"
+          ],
+          "energy_sensors": [
+            "sensor.e2e_irrigation_monitored_energy"
+          ],
           "drain_volume_sensors": [
             "input_number.e2e_irrigation_monitored_drain_volume"
           ],
           "irrigation_flow_sensors": [
             "input_number.e2e_irrigation_monitored_irrigation_flow"
           ],
+          "light_sensors": [
+            "sensor.e2e_irrigation_monitored_light"
+          ],
           "exhaust_fan_entities": [
-            "switch.sim_e2e_irrigation_monitored_exhaust_fan"
+            "number.sim_e2e_irrigation_monitored_exhaust_fan"
           ],
           "circulation_fan_entities": [
-            "switch.sim_e2e_irrigation_monitored_circulation_fan"
+            "number.sim_e2e_irrigation_monitored_circulation_fan"
           ],
           "humidifier_entities": [
-            "switch.sim_e2e_irrigation_monitored_humidifier"
+            "number.sim_e2e_irrigation_monitored_humidifier"
+          ],
+          "growlight_entities": [
+            "number.sim_e2e_irrigation_monitored_growlight"
           ],
           "dehumidifier_entities": [
             "switch.sim_e2e_irrigation_monitored_dehumidifier"
-          ],
-          "growlight_entities": [
-            "switch.sim_e2e_irrigation_monitored_growlight"
           ]
         },
         "set_irrigation_settings": {
@@ -700,6 +756,35 @@
       "stage_days_ago": 0,
       "services": {
         "configure_environment": {
+          "temperature_sensor": "sensor.e2e_irrigation_tanks_temperature",
+          "humidity_sensor": "sensor.e2e_irrigation_tanks_humidity",
+          "vpd_sensor": "sensor.e2e_irrigation_tanks_vpd",
+          "co2_sensor": "sensor.e2e_irrigation_tanks_co2",
+          "feed_ec_sensors": [
+            "sensor.e2e_irrigation_tanks_feed_ec"
+          ],
+          "bulk_ec_sensors": [
+            "sensor.e2e_irrigation_tanks_bulk_ec"
+          ],
+          "pore_ec_sensors": [
+            "sensor.e2e_irrigation_tanks_pore_ec"
+          ],
+          "runoff_ec_sensors": [
+            "sensor.e2e_irrigation_tanks_runoff_ec"
+          ],
+          "ph_sensors": [
+            "sensor.e2e_irrigation_tanks_ph"
+          ],
+          "substrate_temperature_sensors": [
+            "sensor.e2e_irrigation_tanks_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "sensor.e2e_irrigation_tanks_substrate_moisture",
+          "power_sensors": [
+            "sensor.e2e_irrigation_tanks_power"
+          ],
+          "energy_sensors": [
+            "sensor.e2e_irrigation_tanks_energy"
+          ],
           "irrigation_tanks": [
             {
               "name": "Tank 1",
@@ -712,20 +797,23 @@
               "volume_liters": 50
             }
           ],
+          "light_sensors": [
+            "sensor.e2e_irrigation_tanks_light"
+          ],
           "exhaust_fan_entities": [
-            "switch.sim_e2e_irrigation_tanks_exhaust_fan"
+            "number.sim_e2e_irrigation_tanks_exhaust_fan"
           ],
           "circulation_fan_entities": [
-            "switch.sim_e2e_irrigation_tanks_circulation_fan"
+            "number.sim_e2e_irrigation_tanks_circulation_fan"
           ],
           "humidifier_entities": [
-            "switch.sim_e2e_irrigation_tanks_humidifier"
+            "number.sim_e2e_irrigation_tanks_humidifier"
+          ],
+          "growlight_entities": [
+            "number.sim_e2e_irrigation_tanks_growlight"
           ],
           "dehumidifier_entities": [
             "switch.sim_e2e_irrigation_tanks_dehumidifier"
-          ],
-          "growlight_entities": [
-            "switch.sim_e2e_irrigation_tanks_growlight"
           ]
         },
         "set_irrigation_settings": {
@@ -747,6 +835,20 @@
             "sunrise_enabled": false,
             "sunrise_minutes": 0
           },
+          "temperature_sensor": "sensor.e2e_lighting_temperature",
+          "humidity_sensor": "sensor.e2e_lighting_humidity",
+          "vpd_sensor": "sensor.e2e_lighting_vpd",
+          "co2_sensor": "sensor.e2e_lighting_co2",
+          "substrate_temperature_sensors": [
+            "sensor.e2e_lighting_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "sensor.e2e_lighting_substrate_moisture",
+          "power_sensors": [
+            "sensor.e2e_lighting_power"
+          ],
+          "energy_sensors": [
+            "sensor.e2e_lighting_energy"
+          ],
           "light_sensors": [
             "binary_sensor.e2e_lighting_light_state"
           ],
@@ -755,13 +857,13 @@
             "light.e2e_lighting_growlight_dimmable"
           ],
           "exhaust_fan_entities": [
-            "switch.sim_e2e_lighting_exhaust_fan"
+            "number.sim_e2e_lighting_exhaust_fan"
           ],
           "circulation_fan_entities": [
-            "switch.sim_e2e_lighting_circulation_fan"
+            "number.sim_e2e_lighting_circulation_fan"
           ],
           "humidifier_entities": [
-            "switch.sim_e2e_lighting_humidifier"
+            "number.sim_e2e_lighting_humidifier"
           ],
           "dehumidifier_entities": [
             "switch.sim_e2e_lighting_dehumidifier"
@@ -817,6 +919,20 @@
           "vpd_sensors": [
             "input_number.e2e_climate_plain_vpd"
           ],
+          "co2_sensor": "sensor.e2e_climate_plain_co2",
+          "substrate_temperature_sensors": [
+            "sensor.e2e_climate_plain_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "sensor.e2e_climate_plain_substrate_moisture",
+          "power_sensors": [
+            "sensor.e2e_climate_plain_power"
+          ],
+          "energy_sensors": [
+            "sensor.e2e_climate_plain_energy"
+          ],
+          "light_sensors": [
+            "sensor.e2e_climate_plain_light"
+          ],
           "circulation_fan_entities": [
             "fan.e2e_climate_plain_circulation_fan_percentage",
             "input_number.e2e_climate_plain_circulation_fan_speed",
@@ -836,7 +952,7 @@
             "switch.e2e_climate_plain_dehumidifier_switch"
           ],
           "growlight_entities": [
-            "switch.sim_e2e_climate_plain_growlight"
+            "number.sim_e2e_climate_plain_growlight"
           ]
         },
         "configure_circulation_fan": {
@@ -928,6 +1044,20 @@
           "vpd_sensors": [
             "input_number.e2e_ac_infinity_vpd"
           ],
+          "co2_sensor": "sensor.e2e_ac_infinity_co2",
+          "substrate_temperature_sensors": [
+            "sensor.e2e_ac_infinity_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "sensor.e2e_ac_infinity_substrate_moisture",
+          "power_sensors": [
+            "sensor.e2e_ac_infinity_power"
+          ],
+          "energy_sensors": [
+            "sensor.e2e_ac_infinity_energy"
+          ],
+          "light_sensors": [
+            "sensor.e2e_ac_infinity_light"
+          ],
           "circulation_fan_ac_infinity_devices": [
             {
               "mode_entity": "select.e2e_ac_infinity_circulation_active_mode",
@@ -1017,20 +1147,37 @@
       "services": {
         "configure_environment": {
           "snapshot_interval_hours": 6,
+          "temperature_sensor": "sensor.e2e_vision_temperature",
+          "humidity_sensor": "sensor.e2e_vision_humidity",
+          "vpd_sensor": "sensor.e2e_vision_vpd",
+          "co2_sensor": "sensor.e2e_vision_co2",
+          "substrate_temperature_sensors": [
+            "sensor.e2e_vision_substrate_temperature"
+          ],
+          "soil_moisture_sensor": "sensor.e2e_vision_substrate_moisture",
+          "power_sensors": [
+            "sensor.e2e_vision_power"
+          ],
+          "energy_sensors": [
+            "sensor.e2e_vision_energy"
+          ],
+          "light_sensors": [
+            "sensor.e2e_vision_light"
+          ],
           "exhaust_fan_entities": [
-            "switch.sim_e2e_vision_exhaust_fan"
+            "number.sim_e2e_vision_exhaust_fan"
           ],
           "circulation_fan_entities": [
-            "switch.sim_e2e_vision_circulation_fan"
+            "number.sim_e2e_vision_circulation_fan"
           ],
           "humidifier_entities": [
-            "switch.sim_e2e_vision_humidifier"
+            "number.sim_e2e_vision_humidifier"
+          ],
+          "growlight_entities": [
+            "number.sim_e2e_vision_growlight"
           ],
           "dehumidifier_entities": [
             "switch.sim_e2e_vision_dehumidifier"
-          ],
-          "growlight_entities": [
-            "switch.sim_e2e_vision_growlight"
           ],
           "camera_entities": [
             "camera.e2e_vision_1",
@@ -1114,20 +1261,70 @@
       "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_temperature",
+      "entity_id": "sensor.e2e_vwc_veg_temperature",
       "role": "environment.temperature",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_flower_temperature",
+      "entity_id": "sensor.e2e_vwc_flower_temperature",
       "role": "environment.temperature",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_temperature",
+      "role": "environment.temperature",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_temperature",
+      "role": "environment.temperature",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_lighting_temperature",
+      "role": "environment.temperature",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_vision_temperature",
+      "role": "environment.temperature",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
     },
     {
       "entity_id": "sensor.e2e_telemetry_multi_temperature_1",
@@ -1236,20 +1433,70 @@
       "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_humidity",
+      "entity_id": "sensor.e2e_vwc_veg_humidity",
       "role": "environment.humidity",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "humidity",
+      "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_flower_humidity",
+      "entity_id": "sensor.e2e_vwc_flower_humidity",
       "role": "environment.humidity",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "humidity",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_humidity",
+      "role": "environment.humidity",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "humidity",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_humidity",
+      "role": "environment.humidity",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "humidity",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_lighting_humidity",
+      "role": "environment.humidity",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "humidity",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_vision_humidity",
+      "role": "environment.humidity",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "humidity",
+      "state_class": "measurement"
     },
     {
       "entity_id": "sensor.e2e_telemetry_multi_humidity_1",
@@ -1358,20 +1605,70 @@
       "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_vpd",
+      "entity_id": "sensor.e2e_vwc_veg_vpd",
       "role": "environment.vpd",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kPa",
+      "device_class": null,
+      "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_flower_vpd",
+      "entity_id": "sensor.e2e_vwc_flower_vpd",
       "role": "environment.vpd",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kPa",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_vpd",
+      "role": "environment.vpd",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kPa",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_vpd",
+      "role": "environment.vpd",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kPa",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_lighting_vpd",
+      "role": "environment.vpd",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kPa",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_vision_vpd",
+      "role": "environment.vpd",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kPa",
+      "device_class": null,
+      "state_class": "measurement"
     },
     {
       "entity_id": "sensor.e2e_telemetry_multi_vpd_1",
@@ -1480,20 +1777,92 @@
       "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_co2",
+      "entity_id": "sensor.e2e_vwc_veg_co2",
       "role": "environment.co2",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "ppm",
+      "device_class": "carbon_dioxide",
+      "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_flower_co2",
+      "entity_id": "sensor.e2e_vwc_flower_co2",
       "role": "environment.co2",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "ppm",
+      "device_class": "carbon_dioxide",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_co2",
+      "role": "environment.co2",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "ppm",
+      "device_class": "carbon_dioxide",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_co2",
+      "role": "environment.co2",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "ppm",
+      "device_class": "carbon_dioxide",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_lighting_co2",
+      "role": "environment.co2",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "ppm",
+      "device_class": "carbon_dioxide",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_climate_plain_co2",
+      "role": "environment.co2",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "ppm",
+      "device_class": "carbon_dioxide",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_ac_infinity_co2",
+      "role": "environment.co2",
+      "profile": "ac_infinity",
+      "slug": "ac_infinity",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "ppm",
+      "device_class": "carbon_dioxide",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_vision_co2",
+      "role": "environment.co2",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "ppm",
+      "device_class": "carbon_dioxide",
+      "state_class": "measurement"
     },
     {
       "entity_id": "sensor.e2e_telemetry_multi_co2",
@@ -1574,20 +1943,48 @@
       "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_feed_ec",
+      "entity_id": "sensor.e2e_vwc_veg_feed_ec",
       "role": "irrigation.feed_ec",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_flower_feed_ec",
+      "entity_id": "sensor.e2e_vwc_flower_feed_ec",
       "role": "irrigation.feed_ec",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_feed_ec",
+      "role": "irrigation.feed_ec",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_feed_ec",
+      "role": "irrigation.feed_ec",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
     },
     {
       "entity_id": "sensor.e2e_telemetry_multi_feed_ec",
@@ -1668,20 +2065,48 @@
       "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_bulk_ec",
+      "entity_id": "sensor.e2e_vwc_veg_bulk_ec",
       "role": "irrigation.bulk_ec",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_flower_bulk_ec",
+      "entity_id": "sensor.e2e_vwc_flower_bulk_ec",
       "role": "irrigation.bulk_ec",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_bulk_ec",
+      "role": "irrigation.bulk_ec",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_bulk_ec",
+      "role": "irrigation.bulk_ec",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
     },
     {
       "entity_id": "sensor.e2e_telemetry_multi_bulk_ec",
@@ -1762,20 +2187,48 @@
       "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_pore_ec",
+      "entity_id": "sensor.e2e_vwc_veg_pore_ec",
       "role": "irrigation.pore_ec",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_flower_pore_ec",
+      "entity_id": "sensor.e2e_vwc_flower_pore_ec",
       "role": "irrigation.pore_ec",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_pore_ec",
+      "role": "irrigation.pore_ec",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_pore_ec",
+      "role": "irrigation.pore_ec",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
     },
     {
       "entity_id": "sensor.e2e_telemetry_multi_pore_ec",
@@ -1856,20 +2309,48 @@
       "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_runoff_ec",
+      "entity_id": "sensor.e2e_vwc_veg_runoff_ec",
       "role": "irrigation.runoff_ec",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_flower_runoff_ec",
+      "entity_id": "sensor.e2e_vwc_flower_runoff_ec",
       "role": "irrigation.runoff_ec",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_runoff_ec",
+      "role": "irrigation.runoff_ec",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_runoff_ec",
+      "role": "irrigation.runoff_ec",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "mS/cm",
+      "device_class": null,
+      "state_class": "measurement"
     },
     {
       "entity_id": "sensor.e2e_telemetry_multi_runoff_ec",
@@ -1950,20 +2431,48 @@
       "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_ph",
+      "entity_id": "sensor.e2e_vwc_veg_ph",
       "role": "irrigation.ph",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "pH",
+      "device_class": null,
+      "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_flower_ph",
+      "entity_id": "sensor.e2e_vwc_flower_ph",
       "role": "irrigation.ph",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "pH",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_ph",
+      "role": "irrigation.ph",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "pH",
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_ph",
+      "role": "irrigation.ph",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "pH",
+      "device_class": null,
+      "state_class": "measurement"
     },
     {
       "entity_id": "sensor.e2e_telemetry_multi_ph",
@@ -2044,20 +2553,92 @@
       "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_substrate_temperature",
+      "entity_id": "sensor.e2e_vwc_veg_substrate_temperature",
       "role": "environment.substrate_temperature",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_flower_substrate_temperature",
+      "entity_id": "sensor.e2e_vwc_flower_substrate_temperature",
       "role": "environment.substrate_temperature",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_lighting_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_climate_plain_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_ac_infinity_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "ac_infinity",
+      "slug": "ac_infinity",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_vision_substrate_temperature",
+      "role": "environment.substrate_temperature",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "state_class": "measurement"
     },
     {
       "entity_id": "sensor.e2e_telemetry_multi_substrate_temperature_1",
@@ -2166,6 +2747,72 @@
       "behavior": "controllable"
     },
     {
+      "entity_id": "sensor.e2e_irrigation_monitored_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "moisture",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "moisture",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_lighting_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "moisture",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_climate_plain_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "moisture",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_ac_infinity_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "ac_infinity",
+      "slug": "ac_infinity",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "moisture",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_vision_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "moisture",
+      "state_class": "measurement"
+    },
+    {
       "entity_id": "sensor.e2e_telemetry_multi_substrate_moisture",
       "role": "environment.substrate_moisture",
       "profile": "telemetry_multi",
@@ -2244,20 +2891,92 @@
       "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_power",
+      "entity_id": "sensor.e2e_vwc_veg_power",
       "role": "environment.power",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "W",
+      "device_class": "power",
+      "state_class": "measurement"
     },
     {
-      "entity_id": "input_number.e2e_vwc_flower_power",
+      "entity_id": "sensor.e2e_vwc_flower_power",
       "role": "environment.power",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "W",
+      "device_class": "power",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_power",
+      "role": "environment.power",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "W",
+      "device_class": "power",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_power",
+      "role": "environment.power",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "W",
+      "device_class": "power",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_lighting_power",
+      "role": "environment.power",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "W",
+      "device_class": "power",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_climate_plain_power",
+      "role": "environment.power",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "W",
+      "device_class": "power",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_ac_infinity_power",
+      "role": "environment.power",
+      "profile": "ac_infinity",
+      "slug": "ac_infinity",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "W",
+      "device_class": "power",
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_vision_power",
+      "role": "environment.power",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "W",
+      "device_class": "power",
+      "state_class": "measurement"
     },
     {
       "entity_id": "sensor.e2e_telemetry_multi_power",
@@ -2338,20 +3057,92 @@
       "state_class": "total_increasing"
     },
     {
-      "entity_id": "input_number.e2e_vwc_veg_energy",
+      "entity_id": "sensor.e2e_vwc_veg_energy",
       "role": "environment.energy",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kWh",
+      "device_class": "energy",
+      "state_class": "total_increasing"
     },
     {
-      "entity_id": "input_number.e2e_vwc_flower_energy",
+      "entity_id": "sensor.e2e_vwc_flower_energy",
       "role": "environment.energy",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_number",
-      "behavior": "controllable"
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kWh",
+      "device_class": "energy",
+      "state_class": "total_increasing"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_energy",
+      "role": "environment.energy",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kWh",
+      "device_class": "energy",
+      "state_class": "total_increasing"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_energy",
+      "role": "environment.energy",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kWh",
+      "device_class": "energy",
+      "state_class": "total_increasing"
+    },
+    {
+      "entity_id": "sensor.e2e_lighting_energy",
+      "role": "environment.energy",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kWh",
+      "device_class": "energy",
+      "state_class": "total_increasing"
+    },
+    {
+      "entity_id": "sensor.e2e_climate_plain_energy",
+      "role": "environment.energy",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kWh",
+      "device_class": "energy",
+      "state_class": "total_increasing"
+    },
+    {
+      "entity_id": "sensor.e2e_ac_infinity_energy",
+      "role": "environment.energy",
+      "profile": "ac_infinity",
+      "slug": "ac_infinity",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kWh",
+      "device_class": "energy",
+      "state_class": "total_increasing"
+    },
+    {
+      "entity_id": "sensor.e2e_vision_energy",
+      "role": "environment.energy",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "kWh",
+      "device_class": "energy",
+      "state_class": "total_increasing"
     },
     {
       "entity_id": "sensor.e2e_telemetry_multi_energy",
@@ -2612,14 +3403,157 @@
       "behavior": "controllable"
     },
     {
+      "entity_id": "sensor.e2e_veg_light",
+      "role": "environment.light",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": null,
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_clone_light",
+      "role": "environment.light",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": null,
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_mother_light",
+      "role": "environment.light",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": null,
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_flower_light",
+      "role": "environment.light",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": null,
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_dry_light",
+      "role": "environment.light",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": null,
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_cure_light",
+      "role": "environment.light",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": null,
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_vwc_veg_light",
+      "role": "environment.light",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": null,
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_vwc_flower_light",
+      "role": "environment.light",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": null,
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_light",
+      "role": "environment.light",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": null,
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_tanks_light",
+      "role": "environment.light",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": null,
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_climate_plain_light",
+      "role": "environment.light",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": null,
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_ac_infinity_light",
+      "role": "environment.light",
+      "profile": "ac_infinity",
+      "slug": "ac_infinity",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": null,
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
+      "entity_id": "sensor.e2e_vision_light",
+      "role": "environment.light",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": null,
+      "device_class": null,
+      "state_class": "measurement"
+    },
+    {
       "entity_id": "sensor.e2e_telemetry_multi_light_1",
       "role": "environment.light",
       "profile": "telemetry_multi",
       "slug": "telemetry_multi",
       "domain": "sensor",
       "behavior": "read-only",
-      "unit_of_measurement": "lx",
-      "device_class": "illuminance",
+      "unit_of_measurement": null,
+      "device_class": null,
       "state_class": "measurement",
       "backing_entity_id": "input_number.sim_e2e_telemetry_multi_light_1"
     },
@@ -2630,8 +3564,8 @@
       "slug": "telemetry_multi",
       "domain": "sensor",
       "behavior": "read-only",
-      "unit_of_measurement": "lx",
-      "device_class": "illuminance",
+      "unit_of_measurement": null,
+      "device_class": null,
       "state_class": "measurement",
       "backing_entity_id": "input_number.sim_e2e_telemetry_multi_light_2"
     },
@@ -3308,627 +4242,835 @@
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_veg_exhaust_fan",
+      "entity_id": "number.sim_e2e_veg_exhaust_fan",
       "role": "dashboard_equipment.exhaust_fan",
       "profile": "stage",
       "slug": "veg",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_clone_exhaust_fan",
+      "entity_id": "number.sim_e2e_clone_exhaust_fan",
       "role": "dashboard_equipment.exhaust_fan",
       "profile": "stage",
       "slug": "clone",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_mother_exhaust_fan",
+      "entity_id": "number.sim_e2e_mother_exhaust_fan",
       "role": "dashboard_equipment.exhaust_fan",
       "profile": "stage",
       "slug": "mother",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_flower_exhaust_fan",
+      "entity_id": "number.sim_e2e_flower_exhaust_fan",
       "role": "dashboard_equipment.exhaust_fan",
       "profile": "stage",
       "slug": "flower",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_dry_exhaust_fan",
+      "entity_id": "number.sim_e2e_dry_exhaust_fan",
       "role": "dashboard_equipment.exhaust_fan",
       "profile": "stage",
       "slug": "dry",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_cure_exhaust_fan",
+      "entity_id": "number.sim_e2e_cure_exhaust_fan",
       "role": "dashboard_equipment.exhaust_fan",
       "profile": "stage",
       "slug": "cure",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_vwc_veg_exhaust_fan",
+      "entity_id": "number.sim_e2e_vwc_veg_exhaust_fan",
       "role": "dashboard_equipment.exhaust_fan",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_vwc_flower_exhaust_fan",
+      "entity_id": "number.sim_e2e_vwc_flower_exhaust_fan",
       "role": "dashboard_equipment.exhaust_fan",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_telemetry_multi_exhaust_fan",
+      "entity_id": "number.sim_e2e_telemetry_multi_exhaust_fan",
       "role": "dashboard_equipment.exhaust_fan",
       "profile": "telemetry_multi",
       "slug": "telemetry_multi",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_irrigation_monitored_exhaust_fan",
+      "entity_id": "number.sim_e2e_irrigation_monitored_exhaust_fan",
       "role": "dashboard_equipment.exhaust_fan",
       "profile": "irrigation_monitored",
       "slug": "irrigation_monitored",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_irrigation_tanks_exhaust_fan",
+      "entity_id": "number.sim_e2e_irrigation_tanks_exhaust_fan",
       "role": "dashboard_equipment.exhaust_fan",
       "profile": "irrigation_tanks",
       "slug": "irrigation_tanks",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_lighting_exhaust_fan",
+      "entity_id": "number.sim_e2e_lighting_exhaust_fan",
       "role": "dashboard_equipment.exhaust_fan",
       "profile": "lighting",
       "slug": "lighting",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_vision_exhaust_fan",
+      "entity_id": "number.sim_e2e_vision_exhaust_fan",
       "role": "dashboard_equipment.exhaust_fan",
       "profile": "vision",
       "slug": "vision",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_veg_exhaust_fan",
-      "role": "simulation.dashboard_exhaust_fan_state",
+      "entity_id": "input_number.sim_e2e_veg_exhaust_fan_level",
+      "role": "simulation.dashboard_exhaust_fan_level",
       "profile": "stage",
       "slug": "veg",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_clone_exhaust_fan",
-      "role": "simulation.dashboard_exhaust_fan_state",
+      "entity_id": "input_number.sim_e2e_clone_exhaust_fan_level",
+      "role": "simulation.dashboard_exhaust_fan_level",
       "profile": "stage",
       "slug": "clone",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_mother_exhaust_fan",
-      "role": "simulation.dashboard_exhaust_fan_state",
+      "entity_id": "input_number.sim_e2e_mother_exhaust_fan_level",
+      "role": "simulation.dashboard_exhaust_fan_level",
       "profile": "stage",
       "slug": "mother",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_flower_exhaust_fan",
-      "role": "simulation.dashboard_exhaust_fan_state",
+      "entity_id": "input_number.sim_e2e_flower_exhaust_fan_level",
+      "role": "simulation.dashboard_exhaust_fan_level",
       "profile": "stage",
       "slug": "flower",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_dry_exhaust_fan",
-      "role": "simulation.dashboard_exhaust_fan_state",
+      "entity_id": "input_number.sim_e2e_dry_exhaust_fan_level",
+      "role": "simulation.dashboard_exhaust_fan_level",
       "profile": "stage",
       "slug": "dry",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_cure_exhaust_fan",
-      "role": "simulation.dashboard_exhaust_fan_state",
+      "entity_id": "input_number.sim_e2e_cure_exhaust_fan_level",
+      "role": "simulation.dashboard_exhaust_fan_level",
       "profile": "stage",
       "slug": "cure",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_vwc_veg_exhaust_fan",
-      "role": "simulation.dashboard_exhaust_fan_state",
+      "entity_id": "input_number.sim_e2e_vwc_veg_exhaust_fan_level",
+      "role": "simulation.dashboard_exhaust_fan_level",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_vwc_flower_exhaust_fan",
-      "role": "simulation.dashboard_exhaust_fan_state",
+      "entity_id": "input_number.sim_e2e_vwc_flower_exhaust_fan_level",
+      "role": "simulation.dashboard_exhaust_fan_level",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_telemetry_multi_exhaust_fan",
-      "role": "simulation.dashboard_exhaust_fan_state",
+      "entity_id": "input_number.sim_e2e_telemetry_multi_exhaust_fan_level",
+      "role": "simulation.dashboard_exhaust_fan_level",
       "profile": "telemetry_multi",
       "slug": "telemetry_multi",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_irrigation_monitored_exhaust_fan",
-      "role": "simulation.dashboard_exhaust_fan_state",
+      "entity_id": "input_number.sim_e2e_irrigation_monitored_exhaust_fan_level",
+      "role": "simulation.dashboard_exhaust_fan_level",
       "profile": "irrigation_monitored",
       "slug": "irrigation_monitored",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_irrigation_tanks_exhaust_fan",
-      "role": "simulation.dashboard_exhaust_fan_state",
+      "entity_id": "input_number.sim_e2e_irrigation_tanks_exhaust_fan_level",
+      "role": "simulation.dashboard_exhaust_fan_level",
       "profile": "irrigation_tanks",
       "slug": "irrigation_tanks",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_lighting_exhaust_fan",
-      "role": "simulation.dashboard_exhaust_fan_state",
+      "entity_id": "input_number.sim_e2e_lighting_exhaust_fan_level",
+      "role": "simulation.dashboard_exhaust_fan_level",
       "profile": "lighting",
       "slug": "lighting",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_vision_exhaust_fan",
-      "role": "simulation.dashboard_exhaust_fan_state",
+      "entity_id": "input_number.sim_e2e_vision_exhaust_fan_level",
+      "role": "simulation.dashboard_exhaust_fan_level",
       "profile": "vision",
       "slug": "vision",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_veg_circulation_fan",
+      "entity_id": "number.sim_e2e_veg_circulation_fan",
       "role": "dashboard_equipment.circulation_fan",
       "profile": "stage",
       "slug": "veg",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_clone_circulation_fan",
+      "entity_id": "number.sim_e2e_clone_circulation_fan",
       "role": "dashboard_equipment.circulation_fan",
       "profile": "stage",
       "slug": "clone",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_mother_circulation_fan",
+      "entity_id": "number.sim_e2e_mother_circulation_fan",
       "role": "dashboard_equipment.circulation_fan",
       "profile": "stage",
       "slug": "mother",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_flower_circulation_fan",
+      "entity_id": "number.sim_e2e_flower_circulation_fan",
       "role": "dashboard_equipment.circulation_fan",
       "profile": "stage",
       "slug": "flower",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_dry_circulation_fan",
+      "entity_id": "number.sim_e2e_dry_circulation_fan",
       "role": "dashboard_equipment.circulation_fan",
       "profile": "stage",
       "slug": "dry",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_cure_circulation_fan",
+      "entity_id": "number.sim_e2e_cure_circulation_fan",
       "role": "dashboard_equipment.circulation_fan",
       "profile": "stage",
       "slug": "cure",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_vwc_veg_circulation_fan",
+      "entity_id": "number.sim_e2e_vwc_veg_circulation_fan",
       "role": "dashboard_equipment.circulation_fan",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_vwc_flower_circulation_fan",
+      "entity_id": "number.sim_e2e_vwc_flower_circulation_fan",
       "role": "dashboard_equipment.circulation_fan",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_telemetry_multi_circulation_fan",
+      "entity_id": "number.sim_e2e_telemetry_multi_circulation_fan",
       "role": "dashboard_equipment.circulation_fan",
       "profile": "telemetry_multi",
       "slug": "telemetry_multi",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_irrigation_monitored_circulation_fan",
+      "entity_id": "number.sim_e2e_irrigation_monitored_circulation_fan",
       "role": "dashboard_equipment.circulation_fan",
       "profile": "irrigation_monitored",
       "slug": "irrigation_monitored",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_irrigation_tanks_circulation_fan",
+      "entity_id": "number.sim_e2e_irrigation_tanks_circulation_fan",
       "role": "dashboard_equipment.circulation_fan",
       "profile": "irrigation_tanks",
       "slug": "irrigation_tanks",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_lighting_circulation_fan",
+      "entity_id": "number.sim_e2e_lighting_circulation_fan",
       "role": "dashboard_equipment.circulation_fan",
       "profile": "lighting",
       "slug": "lighting",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_vision_circulation_fan",
+      "entity_id": "number.sim_e2e_vision_circulation_fan",
       "role": "dashboard_equipment.circulation_fan",
       "profile": "vision",
       "slug": "vision",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_veg_circulation_fan",
-      "role": "simulation.dashboard_circulation_fan_state",
+      "entity_id": "input_number.sim_e2e_veg_circulation_fan_level",
+      "role": "simulation.dashboard_circulation_fan_level",
       "profile": "stage",
       "slug": "veg",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_clone_circulation_fan",
-      "role": "simulation.dashboard_circulation_fan_state",
+      "entity_id": "input_number.sim_e2e_clone_circulation_fan_level",
+      "role": "simulation.dashboard_circulation_fan_level",
       "profile": "stage",
       "slug": "clone",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_mother_circulation_fan",
-      "role": "simulation.dashboard_circulation_fan_state",
+      "entity_id": "input_number.sim_e2e_mother_circulation_fan_level",
+      "role": "simulation.dashboard_circulation_fan_level",
       "profile": "stage",
       "slug": "mother",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_flower_circulation_fan",
-      "role": "simulation.dashboard_circulation_fan_state",
+      "entity_id": "input_number.sim_e2e_flower_circulation_fan_level",
+      "role": "simulation.dashboard_circulation_fan_level",
       "profile": "stage",
       "slug": "flower",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_dry_circulation_fan",
-      "role": "simulation.dashboard_circulation_fan_state",
+      "entity_id": "input_number.sim_e2e_dry_circulation_fan_level",
+      "role": "simulation.dashboard_circulation_fan_level",
       "profile": "stage",
       "slug": "dry",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_cure_circulation_fan",
-      "role": "simulation.dashboard_circulation_fan_state",
+      "entity_id": "input_number.sim_e2e_cure_circulation_fan_level",
+      "role": "simulation.dashboard_circulation_fan_level",
       "profile": "stage",
       "slug": "cure",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_vwc_veg_circulation_fan",
-      "role": "simulation.dashboard_circulation_fan_state",
+      "entity_id": "input_number.sim_e2e_vwc_veg_circulation_fan_level",
+      "role": "simulation.dashboard_circulation_fan_level",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_vwc_flower_circulation_fan",
-      "role": "simulation.dashboard_circulation_fan_state",
+      "entity_id": "input_number.sim_e2e_vwc_flower_circulation_fan_level",
+      "role": "simulation.dashboard_circulation_fan_level",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_telemetry_multi_circulation_fan",
-      "role": "simulation.dashboard_circulation_fan_state",
+      "entity_id": "input_number.sim_e2e_telemetry_multi_circulation_fan_level",
+      "role": "simulation.dashboard_circulation_fan_level",
       "profile": "telemetry_multi",
       "slug": "telemetry_multi",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_irrigation_monitored_circulation_fan",
-      "role": "simulation.dashboard_circulation_fan_state",
+      "entity_id": "input_number.sim_e2e_irrigation_monitored_circulation_fan_level",
+      "role": "simulation.dashboard_circulation_fan_level",
       "profile": "irrigation_monitored",
       "slug": "irrigation_monitored",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_irrigation_tanks_circulation_fan",
-      "role": "simulation.dashboard_circulation_fan_state",
+      "entity_id": "input_number.sim_e2e_irrigation_tanks_circulation_fan_level",
+      "role": "simulation.dashboard_circulation_fan_level",
       "profile": "irrigation_tanks",
       "slug": "irrigation_tanks",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_lighting_circulation_fan",
-      "role": "simulation.dashboard_circulation_fan_state",
+      "entity_id": "input_number.sim_e2e_lighting_circulation_fan_level",
+      "role": "simulation.dashboard_circulation_fan_level",
       "profile": "lighting",
       "slug": "lighting",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_vision_circulation_fan",
-      "role": "simulation.dashboard_circulation_fan_state",
+      "entity_id": "input_number.sim_e2e_vision_circulation_fan_level",
+      "role": "simulation.dashboard_circulation_fan_level",
       "profile": "vision",
       "slug": "vision",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_veg_humidifier",
+      "entity_id": "number.sim_e2e_veg_humidifier",
       "role": "dashboard_equipment.humidifier",
       "profile": "stage",
       "slug": "veg",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_clone_humidifier",
+      "entity_id": "number.sim_e2e_clone_humidifier",
       "role": "dashboard_equipment.humidifier",
       "profile": "stage",
       "slug": "clone",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_mother_humidifier",
+      "entity_id": "number.sim_e2e_mother_humidifier",
       "role": "dashboard_equipment.humidifier",
       "profile": "stage",
       "slug": "mother",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_flower_humidifier",
+      "entity_id": "number.sim_e2e_flower_humidifier",
       "role": "dashboard_equipment.humidifier",
       "profile": "stage",
       "slug": "flower",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_dry_humidifier",
+      "entity_id": "number.sim_e2e_dry_humidifier",
       "role": "dashboard_equipment.humidifier",
       "profile": "stage",
       "slug": "dry",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_cure_humidifier",
+      "entity_id": "number.sim_e2e_cure_humidifier",
       "role": "dashboard_equipment.humidifier",
       "profile": "stage",
       "slug": "cure",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_vwc_veg_humidifier",
+      "entity_id": "number.sim_e2e_vwc_veg_humidifier",
       "role": "dashboard_equipment.humidifier",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_vwc_flower_humidifier",
+      "entity_id": "number.sim_e2e_vwc_flower_humidifier",
       "role": "dashboard_equipment.humidifier",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_telemetry_multi_humidifier",
+      "entity_id": "number.sim_e2e_telemetry_multi_humidifier",
       "role": "dashboard_equipment.humidifier",
       "profile": "telemetry_multi",
       "slug": "telemetry_multi",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_irrigation_monitored_humidifier",
+      "entity_id": "number.sim_e2e_irrigation_monitored_humidifier",
       "role": "dashboard_equipment.humidifier",
       "profile": "irrigation_monitored",
       "slug": "irrigation_monitored",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_irrigation_tanks_humidifier",
+      "entity_id": "number.sim_e2e_irrigation_tanks_humidifier",
       "role": "dashboard_equipment.humidifier",
       "profile": "irrigation_tanks",
       "slug": "irrigation_tanks",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_lighting_humidifier",
+      "entity_id": "number.sim_e2e_lighting_humidifier",
       "role": "dashboard_equipment.humidifier",
       "profile": "lighting",
       "slug": "lighting",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_vision_humidifier",
+      "entity_id": "number.sim_e2e_vision_humidifier",
       "role": "dashboard_equipment.humidifier",
       "profile": "vision",
       "slug": "vision",
-      "domain": "switch",
+      "domain": "number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_veg_humidifier",
-      "role": "simulation.dashboard_humidifier_state",
+      "entity_id": "input_number.sim_e2e_veg_humidifier_level",
+      "role": "simulation.dashboard_humidifier_level",
       "profile": "stage",
       "slug": "veg",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_clone_humidifier",
-      "role": "simulation.dashboard_humidifier_state",
+      "entity_id": "input_number.sim_e2e_clone_humidifier_level",
+      "role": "simulation.dashboard_humidifier_level",
       "profile": "stage",
       "slug": "clone",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_mother_humidifier",
-      "role": "simulation.dashboard_humidifier_state",
+      "entity_id": "input_number.sim_e2e_mother_humidifier_level",
+      "role": "simulation.dashboard_humidifier_level",
       "profile": "stage",
       "slug": "mother",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_flower_humidifier",
-      "role": "simulation.dashboard_humidifier_state",
+      "entity_id": "input_number.sim_e2e_flower_humidifier_level",
+      "role": "simulation.dashboard_humidifier_level",
       "profile": "stage",
       "slug": "flower",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_dry_humidifier",
-      "role": "simulation.dashboard_humidifier_state",
+      "entity_id": "input_number.sim_e2e_dry_humidifier_level",
+      "role": "simulation.dashboard_humidifier_level",
       "profile": "stage",
       "slug": "dry",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_cure_humidifier",
-      "role": "simulation.dashboard_humidifier_state",
+      "entity_id": "input_number.sim_e2e_cure_humidifier_level",
+      "role": "simulation.dashboard_humidifier_level",
       "profile": "stage",
       "slug": "cure",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_vwc_veg_humidifier",
-      "role": "simulation.dashboard_humidifier_state",
+      "entity_id": "input_number.sim_e2e_vwc_veg_humidifier_level",
+      "role": "simulation.dashboard_humidifier_level",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_vwc_flower_humidifier",
-      "role": "simulation.dashboard_humidifier_state",
+      "entity_id": "input_number.sim_e2e_vwc_flower_humidifier_level",
+      "role": "simulation.dashboard_humidifier_level",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_telemetry_multi_humidifier",
-      "role": "simulation.dashboard_humidifier_state",
+      "entity_id": "input_number.sim_e2e_telemetry_multi_humidifier_level",
+      "role": "simulation.dashboard_humidifier_level",
       "profile": "telemetry_multi",
       "slug": "telemetry_multi",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_irrigation_monitored_humidifier",
-      "role": "simulation.dashboard_humidifier_state",
+      "entity_id": "input_number.sim_e2e_irrigation_monitored_humidifier_level",
+      "role": "simulation.dashboard_humidifier_level",
       "profile": "irrigation_monitored",
       "slug": "irrigation_monitored",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_irrigation_tanks_humidifier",
-      "role": "simulation.dashboard_humidifier_state",
+      "entity_id": "input_number.sim_e2e_irrigation_tanks_humidifier_level",
+      "role": "simulation.dashboard_humidifier_level",
       "profile": "irrigation_tanks",
       "slug": "irrigation_tanks",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_lighting_humidifier",
-      "role": "simulation.dashboard_humidifier_state",
+      "entity_id": "input_number.sim_e2e_lighting_humidifier_level",
+      "role": "simulation.dashboard_humidifier_level",
       "profile": "lighting",
       "slug": "lighting",
-      "domain": "input_boolean",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_vision_humidifier",
-      "role": "simulation.dashboard_humidifier_state",
+      "entity_id": "input_number.sim_e2e_vision_humidifier_level",
+      "role": "simulation.dashboard_humidifier_level",
       "profile": "vision",
       "slug": "vision",
-      "domain": "input_boolean",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "number.sim_e2e_veg_growlight",
+      "role": "dashboard_equipment.growlight",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "number.sim_e2e_clone_growlight",
+      "role": "dashboard_equipment.growlight",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "number.sim_e2e_mother_growlight",
+      "role": "dashboard_equipment.growlight",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "number.sim_e2e_flower_growlight",
+      "role": "dashboard_equipment.growlight",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "number.sim_e2e_dry_growlight",
+      "role": "dashboard_equipment.growlight",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "number.sim_e2e_cure_growlight",
+      "role": "dashboard_equipment.growlight",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "number.sim_e2e_vwc_veg_growlight",
+      "role": "dashboard_equipment.growlight",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "number.sim_e2e_vwc_flower_growlight",
+      "role": "dashboard_equipment.growlight",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "number.sim_e2e_telemetry_multi_growlight",
+      "role": "dashboard_equipment.growlight",
+      "profile": "telemetry_multi",
+      "slug": "telemetry_multi",
+      "domain": "number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "number.sim_e2e_irrigation_monitored_growlight",
+      "role": "dashboard_equipment.growlight",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "number.sim_e2e_irrigation_tanks_growlight",
+      "role": "dashboard_equipment.growlight",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "number.sim_e2e_climate_plain_growlight",
+      "role": "dashboard_equipment.growlight",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "number.sim_e2e_vision_growlight",
+      "role": "dashboard_equipment.growlight",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.sim_e2e_veg_growlight_level",
+      "role": "simulation.dashboard_growlight_level",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.sim_e2e_clone_growlight_level",
+      "role": "simulation.dashboard_growlight_level",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.sim_e2e_mother_growlight_level",
+      "role": "simulation.dashboard_growlight_level",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.sim_e2e_flower_growlight_level",
+      "role": "simulation.dashboard_growlight_level",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.sim_e2e_dry_growlight_level",
+      "role": "simulation.dashboard_growlight_level",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.sim_e2e_cure_growlight_level",
+      "role": "simulation.dashboard_growlight_level",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.sim_e2e_vwc_veg_growlight_level",
+      "role": "simulation.dashboard_growlight_level",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.sim_e2e_vwc_flower_growlight_level",
+      "role": "simulation.dashboard_growlight_level",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.sim_e2e_telemetry_multi_growlight_level",
+      "role": "simulation.dashboard_growlight_level",
+      "profile": "telemetry_multi",
+      "slug": "telemetry_multi",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.sim_e2e_irrigation_monitored_growlight_level",
+      "role": "simulation.dashboard_growlight_level",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.sim_e2e_irrigation_tanks_growlight_level",
+      "role": "simulation.dashboard_growlight_level",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.sim_e2e_climate_plain_growlight_level",
+      "role": "simulation.dashboard_growlight_level",
+      "profile": "climate_plain",
+      "slug": "climate_plain",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_number.sim_e2e_vision_growlight_level",
+      "role": "simulation.dashboard_growlight_level",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "input_number",
       "behavior": "controllable"
     },
     {
@@ -4140,208 +5282,520 @@
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_veg_growlight",
-      "role": "dashboard_equipment.growlight",
+      "entity_id": "input_boolean.sim_e2e_veg_exhaust_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "stage",
       "slug": "veg",
-      "domain": "switch",
+      "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_clone_growlight",
-      "role": "dashboard_equipment.growlight",
+      "entity_id": "input_boolean.sim_e2e_clone_exhaust_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "stage",
       "slug": "clone",
-      "domain": "switch",
+      "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_mother_growlight",
-      "role": "dashboard_equipment.growlight",
+      "entity_id": "input_boolean.sim_e2e_mother_exhaust_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "stage",
       "slug": "mother",
-      "domain": "switch",
+      "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_flower_growlight",
-      "role": "dashboard_equipment.growlight",
+      "entity_id": "input_boolean.sim_e2e_flower_exhaust_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "stage",
       "slug": "flower",
-      "domain": "switch",
+      "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_dry_growlight",
-      "role": "dashboard_equipment.growlight",
+      "entity_id": "input_boolean.sim_e2e_dry_exhaust_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "stage",
       "slug": "dry",
-      "domain": "switch",
+      "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_cure_growlight",
-      "role": "dashboard_equipment.growlight",
+      "entity_id": "input_boolean.sim_e2e_cure_exhaust_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "stage",
       "slug": "cure",
-      "domain": "switch",
+      "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_vwc_veg_growlight",
-      "role": "dashboard_equipment.growlight",
+      "entity_id": "input_boolean.sim_e2e_vwc_veg_exhaust_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "vwc",
       "slug": "vwc_veg",
-      "domain": "switch",
+      "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_vwc_flower_growlight",
-      "role": "dashboard_equipment.growlight",
+      "entity_id": "input_boolean.sim_e2e_vwc_flower_exhaust_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "vwc",
       "slug": "vwc_flower",
-      "domain": "switch",
+      "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_telemetry_multi_growlight",
-      "role": "dashboard_equipment.growlight",
+      "entity_id": "input_boolean.sim_e2e_telemetry_multi_exhaust_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "telemetry_multi",
       "slug": "telemetry_multi",
-      "domain": "switch",
+      "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_irrigation_monitored_growlight",
-      "role": "dashboard_equipment.growlight",
+      "entity_id": "input_boolean.sim_e2e_irrigation_monitored_exhaust_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "irrigation_monitored",
       "slug": "irrigation_monitored",
-      "domain": "switch",
+      "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_irrigation_tanks_growlight",
-      "role": "dashboard_equipment.growlight",
+      "entity_id": "input_boolean.sim_e2e_irrigation_tanks_exhaust_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "irrigation_tanks",
       "slug": "irrigation_tanks",
-      "domain": "switch",
+      "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_climate_plain_growlight",
-      "role": "dashboard_equipment.growlight",
-      "profile": "climate_plain",
-      "slug": "climate_plain",
-      "domain": "switch",
+      "entity_id": "input_boolean.sim_e2e_lighting_exhaust_fan_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "switch.sim_e2e_vision_growlight",
-      "role": "dashboard_equipment.growlight",
+      "entity_id": "input_boolean.sim_e2e_vision_exhaust_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "vision",
       "slug": "vision",
-      "domain": "switch",
+      "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_veg_growlight",
-      "role": "simulation.dashboard_growlight_state",
+      "entity_id": "input_boolean.sim_e2e_veg_circulation_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "stage",
       "slug": "veg",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_clone_growlight",
-      "role": "simulation.dashboard_growlight_state",
+      "entity_id": "input_boolean.sim_e2e_clone_circulation_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "stage",
       "slug": "clone",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_mother_growlight",
-      "role": "simulation.dashboard_growlight_state",
+      "entity_id": "input_boolean.sim_e2e_mother_circulation_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "stage",
       "slug": "mother",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_flower_growlight",
-      "role": "simulation.dashboard_growlight_state",
+      "entity_id": "input_boolean.sim_e2e_flower_circulation_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "stage",
       "slug": "flower",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_dry_growlight",
-      "role": "simulation.dashboard_growlight_state",
+      "entity_id": "input_boolean.sim_e2e_dry_circulation_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "stage",
       "slug": "dry",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_cure_growlight",
-      "role": "simulation.dashboard_growlight_state",
+      "entity_id": "input_boolean.sim_e2e_cure_circulation_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "stage",
       "slug": "cure",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_vwc_veg_growlight",
-      "role": "simulation.dashboard_growlight_state",
+      "entity_id": "input_boolean.sim_e2e_vwc_veg_circulation_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "vwc",
       "slug": "vwc_veg",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_vwc_flower_growlight",
-      "role": "simulation.dashboard_growlight_state",
+      "entity_id": "input_boolean.sim_e2e_vwc_flower_circulation_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "vwc",
       "slug": "vwc_flower",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_telemetry_multi_growlight",
-      "role": "simulation.dashboard_growlight_state",
+      "entity_id": "input_boolean.sim_e2e_telemetry_multi_circulation_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "telemetry_multi",
       "slug": "telemetry_multi",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_irrigation_monitored_growlight",
-      "role": "simulation.dashboard_growlight_state",
+      "entity_id": "input_boolean.sim_e2e_irrigation_monitored_circulation_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "irrigation_monitored",
       "slug": "irrigation_monitored",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_irrigation_tanks_growlight",
-      "role": "simulation.dashboard_growlight_state",
+      "entity_id": "input_boolean.sim_e2e_irrigation_tanks_circulation_fan_manual",
+      "role": "simulation.manual_equipment",
       "profile": "irrigation_tanks",
       "slug": "irrigation_tanks",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_climate_plain_growlight",
-      "role": "simulation.dashboard_growlight_state",
+      "entity_id": "input_boolean.sim_e2e_lighting_circulation_fan_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vision_circulation_fan_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_veg_humidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_clone_humidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_mother_humidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_flower_humidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_dry_humidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_cure_humidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_veg_humidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_flower_humidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_telemetry_multi_humidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "telemetry_multi",
+      "slug": "telemetry_multi",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_irrigation_monitored_humidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_irrigation_tanks_humidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_lighting_humidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vision_humidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_veg_growlight_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_clone_growlight_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_mother_growlight_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_flower_growlight_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_dry_growlight_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_cure_growlight_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_veg_growlight_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_flower_growlight_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_telemetry_multi_growlight_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "telemetry_multi",
+      "slug": "telemetry_multi",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_irrigation_monitored_growlight_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_irrigation_tanks_growlight_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_climate_plain_growlight_manual",
+      "role": "simulation.manual_equipment",
       "profile": "climate_plain",
       "slug": "climate_plain",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
     {
-      "entity_id": "input_boolean.sim_e2e_vision_growlight",
-      "role": "simulation.dashboard_growlight_state",
+      "entity_id": "input_boolean.sim_e2e_vision_growlight_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "vision",
+      "slug": "vision",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_veg_dehumidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "veg",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_clone_dehumidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "clone",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_mother_dehumidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "mother",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_flower_dehumidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "flower",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_dry_dehumidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "dry",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_cure_dehumidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "stage",
+      "slug": "cure",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_veg_dehumidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_flower_dehumidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_telemetry_multi_dehumidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "telemetry_multi",
+      "slug": "telemetry_multi",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_irrigation_monitored_dehumidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_irrigation_tanks_dehumidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "irrigation_tanks",
+      "slug": "irrigation_tanks",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_lighting_dehumidifier_manual",
+      "role": "simulation.manual_equipment",
+      "profile": "lighting",
+      "slug": "lighting",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vision_dehumidifier_manual",
+      "role": "simulation.manual_equipment",
       "profile": "vision",
       "slug": "vision",
       "domain": "input_boolean",

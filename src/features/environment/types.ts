@@ -23,25 +23,35 @@ export interface GraphSeries {
   unit: string;
   icon?: string;
   points: GraphDataPoint[];
+  /** Axis bounds used to scale the trace. */
   min: number;
   max: number;
+  /** Observed extrema shown on a Metric Comparison's legend chip. */
+  observedMin: number;
+  observedMax: number;
   avg?: number;
   path: string;
   fillType: 'gradient' | 'flat' | 'none';
   vpdBands?: import('./env-series').VpdBand[];
-}
-
-export interface TooltipItem {
-  title: string;
-  value: string;
-  color: string;
-}
-
-export interface TooltipData {
-  id: string;
-  x: number;
-  time: string;
-  items: TooltipItem[];
+  /** The [[Optimal Band]]s to draw over this series, in its own value space. */
+  guideBands?: import('./env-series').EnvGuideBand[];
+  /** The [[Setpoint]]s to draw over this series, in its own value space. */
+  guideLines?: import('./env-series').EnvGuideLine[];
+  /** Limits never widen the value domain; off-scale ones render at its edge. */
+  guideLimits?: import('./env-series').EnvGuideLimit[];
+  /**
+   * The window's unlit stretches, shaded behind the gridlines. Empty when the
+   * growspace reported no light history.
+   */
+  darkPeriods?: import('./env-series').EnvDarkPeriod[];
+  /**
+   * The metric's own colour, which a guide mark is drawn in.
+   *
+   * `color` above is not it for VPD: that trace takes a status colour, and a
+   * band drawn in the colour of the status it is being compared against would
+   * change colour as the reading crossed it.
+   */
+  metricColor?: string;
 }
 
 // A sensor group is a wire shape: it round-trips through `environment_config`.

@@ -15,6 +15,8 @@ vi.mock('../../src/localize/localize', async (importOriginal) => {
 import { hassContext } from '../../src/context';
 import type { GrowspaceEnvChart } from '../../src/features/environment/components/env-chart';
 import '../../src/features/environment/components/env-chart';
+import type { MetricComboChart } from '../../src/features/environment/components/metric-combo-chart';
+import '../../src/features/environment/components/metric-combo-chart';
 import type { GrowspaceAnalyticsUI } from '../../src/features/ui/components/growspace-analytics-ui';
 import '../../src/features/ui/components/growspace-analytics-ui';
 
@@ -167,6 +169,175 @@ describe('environment analytics localization', () => {
       'de-DE'
     );
 
+    host.remove();
+  });
+
+  it('localizes combo pane labels, caps, and accessible names with the Home Assistant locale', async () => {
+    const host = document.createElement('div');
+    new ContextProvider(host, hassContext, HASS);
+    const element = document.createElement('metric-combo-chart') as MetricComboChart;
+    host.append(element);
+    document.body.append(host);
+    await element.updateComplete;
+
+    const dutyPane = {
+      key: 'exhaust',
+      title: 'Exhaust',
+      color: 'green',
+      unit: '%',
+      bars: [{ startTime: 0, endTime: 1, value: 80 }],
+      scale: 100,
+    };
+    const deltaPane = {
+      key: 'runoff_ec',
+      title: 'Runoff EC',
+      baselineTitle: 'Feed EC',
+      color: 'blue',
+      unit: 'mS/cm',
+      bars: [{ startTime: 0, endTime: 1, value: 0.5 }],
+      scale: 1,
+      limit: 1,
+    };
+
+    const panes = [dutyPane, deltaPane];
+    await fixture(html`<div>${(element as any)._renderIntervalPane(dutyPane, panes, 0, 1)}</div>`);
+    await fixture(html`<div>${(element as any)._renderIntervalPane(deltaPane, panes, 0, 1)}</div>`);
+
+    expect(localization.localizeWithParams).toHaveBeenCalledWith(
+      'metric_combo.duty_label',
+      { metric: 'Exhaust' },
+      'de-DE'
+    );
+    expect(localization.localizeWithParams).toHaveBeenCalledWith(
+      'metric_combo.delta_label',
+      { metric: 'Runoff EC', baseline: 'Feed EC' },
+      'de-DE'
+    );
+    expect(localization.localizeWithParams).toHaveBeenCalledWith(
+      'metric_combo.limit_cap',
+      { value: '1.0 mS/cm' },
+      'de-DE'
+    );
+    expect(localization.localizeWithParams).toHaveBeenCalledWith(
+      'metric_combo.pane_accessible_name',
+      { metric: 'Exhaust duty', scale: '100%' },
+      'de-DE'
+    );
+
+    host.remove();
+  });
+
+  it('uses non-English word order in scrub labels and the accessible summary', async () => {
+    const originalLocalize = localization.localizeWithParams.getMockImplementation();
+    const german = {
+      'environment_chart.environment_metrics': 'Umweltmesswerte',
+      'environment_chart.optimal_band_label': 'Optimalbereich für {metric}',
+      'environment_chart.guide_mark_label': '{mark} bei {metric}',
+      'environment_chart.lower_limit_label': 'Untergrenze für {metric}',
+      'environment_chart.upper_limit_label': 'Obergrenze für {metric}',
+      'environment_chart.accessible_summary': '{window}-Fenster für {chart}. {descriptions}',
+      'environment_chart.accessible_named_series':
+        '{metric}: Bereich {minimum} bis {maximum}, Mittelwert {average}, aktuell {current}.',
+      'guide_marks.circulation-fan-target': 'Umluft',
+    } as Record<string, string>;
+
+    localization.localizeWithParams.mockImplementation(
+      (key: string, params: Record<string, string | number> = {}, language = 'en') => {
+        if (language !== 'de-DE' || !german[key]) {
+          return originalLocalize?.(key, params, language) ?? key;
+        }
+        return Object.entries(params).reduce(
+          (translated, [name, value]) => translated.replaceAll(`{${name}}`, String(value)),
+          german[key]
+        );
+      }
+    );
+
+    const host = document.createElement('div');
+    new ContextProvider(host, hassContext, HASS);
+    const element = document.createElement('growspace-env-chart') as GrowspaceEnvChart;
+    element.device = DEVICE;
+    element.isCombined = true;
+    host.append(element);
+    document.body.append(host);
+    await element.updateComplete;
+
+    const series = {
+      id: 'vpd',
+      title: 'VPD',
+      color: 'green',
+      metricColor: 'green',
+      unit: 'kPa',
+      icon: '',
+      points: [{ time: 50, value: 1.1 }],
+      min: 0.4,
+      max: 1.6,
+      observedMin: 1.1,
+      observedMax: 1.1,
+      avg: 1.1,
+      path: 'M 0 0',
+      fillType: 'none',
+      guideBands: [
+        {
+          id: 'vpd-optimal',
+          current: { min: 0.8, max: 1.2 },
+          segments: [{ startTime: 0, endTime: 100, min: 0.8, max: 1.2 }],
+        },
+      ],
+      guideLines: [
+        {
+          id: 'circulation-fan-target',
+          current: 1,
+          segments: [{ startTime: 0, endTime: 100, value: 1 }],
+        },
+      ],
+      guideLimits: [
+        {
+          id: 'vpd-lower',
+          side: 'lower',
+          status: 'danger',
+          current: 0.4,
+          segments: [{ startTime: 0, endTime: 100, value: 0.4 }],
+        },
+        {
+          id: 'vpd-upper',
+          side: 'upper',
+          status: 'danger',
+          current: 1.6,
+          segments: [{ startTime: 0, endTime: 100, value: 1.6 }],
+        },
+      ],
+    } as any;
+
+    (element as any)._cachedChartRect = { left: 0, width: 100 };
+    (element as any)._handleGraphHover({ clientX: 50 } as PointerEvent, [series], {
+      startTimeMs: 0,
+      durationMillis: 100,
+    });
+
+    expect((element as any)._activeScrub.rows.map((row: { title: string }) => row.title)).toEqual([
+      'VPD',
+      'Optimalbereich für VPD',
+      'Umluft bei VPD',
+      'Untergrenze für VPD',
+      'Obergrenze für VPD',
+    ]);
+    expect((element as any)._accessibleSummary([series])).toBe(
+      '24h-Fenster für Umweltmesswerte. VPD: Bereich 1.1 kPa bis 1.1 kPa, Mittelwert 1.1 kPa, aktuell 1.1 kPa.'
+    );
+
+    expect(localization.localizeWithParams).toHaveBeenCalledWith(
+      'environment_chart.optimal_band_label',
+      { metric: 'VPD' },
+      'de-DE'
+    );
+    expect(localization.localizeWithParams).toHaveBeenCalledWith(
+      'environment_chart.accessible_summary',
+      expect.any(Object),
+      'de-DE'
+    );
+
+    localization.localizeWithParams.mockImplementation(originalLocalize!);
     host.remove();
   });
 });

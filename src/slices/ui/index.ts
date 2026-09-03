@@ -408,6 +408,8 @@ export {
   openConfigDialog,
   openStrainLibraryDialog,
   openIrrigationDialog,
+  openIrrigationRecipesDialog,
+  openIrrigationProgramsDialog,
   openGrowMasterDialog,
   openWateringDialog,
   openTrainingDialog,

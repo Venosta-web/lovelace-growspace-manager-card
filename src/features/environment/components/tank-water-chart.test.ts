@@ -279,16 +279,56 @@ describe('TankWaterChart – _renderBars', () => {
     });
   });
 
-  it('each bar has a title with timestamp and liter value', async () => {
+  it('does not attach a browser-native title tooltip to usage bars', async () => {
     const el = createElement();
     el.device = { deviceId: 'gs-1' } as any;
     await el.updateComplete;
     await vi.waitFor(() => el.shadowRoot!.querySelectorAll('rect').length === 3);
-    const titles = Array.from(el.shadowRoot!.querySelectorAll('rect title')).map(
-      (t) => t.textContent ?? ''
+    expect(el.shadowRoot!.querySelector('.bar title')).toBeNull();
+  });
+
+  it('makes interval bar values reachable by touch through the shared tooltip', async () => {
+    mockHassCall.mockResolvedValue({
+      buckets: Array.from({ length: 24 }, (_, hour) =>
+        mkBucket(new Date(Date.UTC(2024, 0, 1, hour)).toISOString(), hour === 0 ? 1 : 0.5)
+      ),
+    });
+    const el = createElement();
+    el.device = { deviceId: 'gs-1' } as any;
+    el.range = '24h';
+    await el.updateComplete;
+    await vi.waitFor(() => expect(el.shadowRoot!.querySelectorAll('.bar')).toHaveLength(24));
+    const pane = el.shadowRoot!.querySelector<HTMLElement>('.usage-pane')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 240,
+      height: 64,
+    } as DOMRect);
+
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 5,
+        pointerId: 1,
+        pointerType: 'touch',
+      })
     );
-    expect(titles[0]).toContain('4.0 L');
-    expect(titles[1]).toContain('2.0 L');
+    await el.updateComplete;
+
+    const overlay = el.shadowRoot!.querySelector('chart-scrub-tooltip');
+    expect(overlay).not.toBeNull();
+    expect(overlay!.shadowRoot!.textContent).toContain('Water Consumption');
+    expect(overlay!.shadowRoot!.textContent).toContain('1.0 L');
+    // The bucket is stated once, as the readout's heading, and the row says it
+    // is a bucket by its swatch rather than by a timestamp of its own (#866).
+    expect(overlay!.shadowRoot!.querySelector('.chart-scrub-time')!.textContent).toMatch(
+      /\d{1,2}:\d{2}/
+    );
+    expect(
+      overlay!.shadowRoot!.querySelector('.chart-scrub-swatch')!.classList.contains('is-interval')
+    ).toBe(true);
+    expect(getComputedStyle(pane).touchAction).toBe('pan-y');
   });
 
   it('tallest bar corresponds to the bucket with most liters', async () => {
@@ -362,10 +402,26 @@ describe('TankWaterChart – usage bucket folding', () => {
     await el.updateComplete;
     await vi.waitFor(() => expect(el.shadowRoot!.querySelectorAll('.bar').length).toBe(24));
 
-    const titles = Array.from(el.shadowRoot!.querySelectorAll('.bar title')).map(
-      (t) => t.textContent ?? ''
+    const pane = el.shadowRoot!.querySelector<HTMLElement>('.usage-pane')!;
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 240,
+      height: 64,
+    } as DOMRect);
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 5,
+        pointerId: 1,
+        pointerType: 'touch',
+      })
     );
-    expect(titles.every((title) => title.includes('4.0 L'))).toBe(true);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('chart-scrub-tooltip')!.shadowRoot!.textContent).toContain(
+      '4.0 L'
+    );
   });
 
   it('folds a 168-bucket 7d response into 7 daily bars', async () => {
@@ -543,16 +599,33 @@ describe('TankWaterChart – level pane', () => {
     expect(traceYs(el)).toSatisfy((ys: number[]) => ys.every((y) => Math.abs(y - 100) < 0.001));
   });
 
-  it('marks the tank warning level with a threshold line', async () => {
+  it('renders the tank warning level as an in-range warning Limit', async () => {
     const el = createElement();
     el.device = mkDevice([mkTank({ warningLevel: 25 })]);
     el.sensorHistory = { irrigation_tank_level: levelHistory([90, 84]) };
     await el.updateComplete;
-    await vi.waitFor(() => expect(el.shadowRoot!.querySelector('.level-warning')).not.toBeNull());
+    await vi.waitFor(() =>
+      expect(el.shadowRoot!.querySelector('[data-guide-id="tank-warning-0"]')).not.toBeNull()
+    );
 
     // 25% on a 20-100 domain over a 200-unit box: (100 - 25) / 80 * 200 = 187.5
-    const line = el.shadowRoot!.querySelector('.level-warning')!;
+    const line = el.shadowRoot!.querySelector('[data-guide-id="tank-warning-0"]')!;
+    expect(line.tagName.toLowerCase()).toBe('line');
+    expect(line.getAttribute('data-guide-placement')).toBe('line');
+    expect(line.getAttribute('stroke')).toContain('--gm-status-warning');
+    expect(line.getAttribute('stroke-dasharray')).toBe('2 2.5');
     expect(parseFloat(line.getAttribute('y1')!)).toBeCloseTo(187.5, 1);
+  });
+
+  it('renders an off-scale tank warning Limit as a lower-edge chevron', async () => {
+    const el = createElement();
+    el.device = mkDevice([mkTank({ warningLevel: 10 })]);
+    el.sensorHistory = { irrigation_tank_level: levelHistory([90, 84]) };
+    await el.updateComplete;
+
+    const mark = el.shadowRoot!.querySelector('[data-guide-id="tank-warning-0"]')!;
+    expect(mark.tagName.toLowerCase()).toBe('path');
+    expect(mark.getAttribute('data-guide-placement')).toBe('lower-edge');
   });
 
   it('keeps the level pane framed when no history has arrived yet', async () => {
@@ -594,6 +667,7 @@ describe('TankWaterChart – level tooltip', () => {
     await el.updateComplete;
 
     const pane = el.shadowRoot!.querySelector<HTMLElement>('.level-pane')!;
+    expect(getComputedStyle(pane).touchAction).toBe('pan-y');
     vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
       left: 0,
       top: 0,
@@ -601,15 +675,52 @@ describe('TankWaterChart – level tooltip', () => {
       height: 200,
     } as DOMRect);
 
-    pane.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 400 }));
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 400,
+        pointerId: 1,
+        pointerType: 'touch',
+      })
+    );
     await el.updateComplete;
 
     const tooltip = el.shadowRoot!.querySelector<HTMLElement>('.tank-tooltip');
     expect(tooltip).not.toBeNull();
     expect(tooltip!.textContent).toContain('Main Tank');
     expect(tooltip!.textContent).toContain('42.0 %');
+    expect(tooltip!.textContent).toContain('Warning limit');
+    expect(tooltip!.textContent).toContain('25.0 %');
     expect(tooltip!.textContent).toMatch(/\d{2}:\d{2}/);
     expect(tooltip!.style.left).toBe('400px');
+  });
+
+  it('exposes the level metric, window, statistics and current value as one image', async () => {
+    const el = createElement();
+    el.device = mkDevice([mkTank({ name: 'Main Tank' })]);
+    el.range = '1h';
+    el.sensorHistory = {
+      irrigation_tank_level: levelHistory([
+        { minutesAgo: 50, value: 40 },
+        { minutesAgo: 30, value: 60 },
+      ]),
+    };
+    await el.updateComplete;
+
+    const svg = el.shadowRoot!.querySelector('.level-pane svg')!;
+    expect(svg.getAttribute('role')).toBe('img');
+    expect(svg.getAttribute('aria-label')).toBe(
+      'Tank Level, 1h window. Main Tank: range 40.0% to 60.0%, average 50.0%, current 60.0%.'
+    );
+  });
+
+  it('names the level chart as having no data before history arrives', async () => {
+    const el = createElement();
+    el.device = mkDevice([mkTank()]);
+    await el.updateComplete;
+
+    const svg = el.shadowRoot!.querySelector('.level-pane svg')!;
+    expect(svg.getAttribute('aria-label')).toBe('Tank Level, 24h window, no data.');
   });
 
   it('clears the tooltip when the pointer leaves the level pane', async () => {
@@ -631,11 +742,18 @@ describe('TankWaterChart – level tooltip', () => {
       width: 800,
       height: 200,
     } as DOMRect);
-    pane.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 400 }));
+    pane.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 400,
+        pointerId: 1,
+        pointerType: 'mouse',
+      })
+    );
     await el.updateComplete;
     expect(el.shadowRoot!.querySelector('.tank-tooltip')).not.toBeNull();
 
-    pane.dispatchEvent(new MouseEvent('mouseleave'));
+    pane.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 1, pointerType: 'touch' }));
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.tank-tooltip')).toBeNull();

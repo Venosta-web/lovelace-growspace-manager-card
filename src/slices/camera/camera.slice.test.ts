@@ -21,8 +21,12 @@ import {
   getSnapshots,
   captureSnapshot,
   visionHistory$,
+  visionHistoryV2$,
+  visionStatus$,
   setVisionHistory,
   getVisionHistory,
+  getVisionHistoryV2,
+  getVisionStatus,
   triggerVisionCheckup,
   updateVisionCheckupConfig,
 } from './index';
@@ -52,6 +56,18 @@ beforeEach(() => {
   setSnapshots([]);
   setVisionHistory([]);
   vi.clearAllMocks();
+});
+
+const aVisionCheckup = () => ({
+  result_schema: 'evidence_v1' as const,
+  checkup_id: 'checkup-1',
+  growspace_id: 'gs1',
+  trigger_source: 'scheduled' as const,
+  light_window: 'early' as const,
+  started_at: '2026-09-01T06:00:00Z',
+  completed_at: '2026-09-01T06:00:04Z',
+  status: 'completed' as const,
+  captures: [],
 });
 
 // ---------------------------------------------------------------------------
@@ -284,6 +300,43 @@ describe('getVisionHistory', () => {
     await expect(getVisionHistory('gs1')).rejects.toThrow();
 
     expect(visionHistory$.get()).toHaveLength(1);
+  });
+});
+
+describe('V2 vision evidence state', () => {
+  it('reads cached service status through the additive command', async () => {
+    const status = {
+      availability: 'ready' as const,
+      connection_source: 'supervisor' as const,
+      service_version: '1.4.0',
+      vision_schema_version: 1,
+      model: { id: 'dinov2-small', version: '1.0.0', dimension: 384 },
+    };
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(status);
+
+    await getVisionStatus();
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_vision_status',
+      {},
+      expect.anything()
+    );
+    expect(visionStatus$.get()).toEqual(status);
+  });
+
+  it('keeps versioned checkup envelopes separate from legacy dialog state', async () => {
+    const response = { history: [aVisionCheckup()], total: 1, capture_total: 0 };
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(response);
+
+    await getVisionHistoryV2('gs1', 5);
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_vision_history_v2',
+      { growspace_id: 'gs1', limit: 5 },
+      expect.anything()
+    );
+    expect(visionHistoryV2$.get()).toEqual(response.history);
+    expect(visionHistory$.get()).toEqual([]);
   });
 });
 

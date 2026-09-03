@@ -26,12 +26,17 @@ import {
   type CaptureSnapshotResponse,
   type VisionCheckupConfig,
   type VisionCheckupResult,
+  type VisionHistoryItem,
+  type VisionStatus,
   type GetVisionHistoryResponse,
+  type GetVisionHistoryV2Response,
   type TriggerVisionCheckupResponse,
   type UpdateVisionCheckupConfigResponse,
   GetSnapshotsResponseSchema,
   CaptureSnapshotResponseSchema,
   GetVisionHistoryResponseSchema,
+  GetVisionHistoryV2ResponseSchema,
+  VisionStatusSchema,
   TriggerVisionCheckupResponseSchema,
   UpdateVisionCheckupConfigResponseSchema,
 } from './schema';
@@ -43,7 +48,10 @@ export type {
   CaptureSnapshotResponse,
   VisionCheckupConfig,
   VisionCheckupResult,
+  VisionHistoryItem,
+  VisionStatus,
   GetVisionHistoryResponse,
+  GetVisionHistoryV2Response,
   TriggerVisionCheckupResponse,
   UpdateVisionCheckupConfigResponse,
 };
@@ -54,6 +62,8 @@ export type {
 
 export const snapshots$ = atom<Snapshot[]>([]);
 export const visionHistory$ = atom<VisionCheckupResult[]>([]);
+export const visionHistoryV2$ = atom<VisionHistoryItem[]>([]);
+export const visionStatus$ = atom<VisionStatus | null>(null);
 
 // ---------------------------------------------------------------------------
 // Bootstrap writes (called by SyncService when fresh data arrives)
@@ -130,6 +140,27 @@ export async function getVisionHistory(
     GetVisionHistoryResponseSchema
   );
   visionHistory$.set(response.history);
+  return response;
+}
+
+/** Fetch the cached Growspace Vision service status. */
+export async function getVisionStatus(): Promise<VisionStatus> {
+  const response = await hassCall('growspace_manager/get_vision_status', {}, VisionStatusSchema);
+  visionStatus$.set(response);
+  return response;
+}
+
+/** Fetch versioned capture evidence without mutating the legacy dialog atom. */
+export async function getVisionHistoryV2(
+  growspaceId: string,
+  limit: number = 10
+): Promise<GetVisionHistoryV2Response> {
+  const response = await hassCall(
+    'growspace_manager/get_vision_history_v2',
+    { growspace_id: growspaceId, limit },
+    GetVisionHistoryV2ResponseSchema
+  );
+  visionHistoryV2$.set(response.history);
   return response;
 }
 

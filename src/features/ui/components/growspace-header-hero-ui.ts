@@ -7,21 +7,12 @@ import { HeaderChip } from '../../../slices/header-metrics';
 import { metricHistoryKeys } from '../../../slices/metric-descriptors';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { statusTokens } from '../../../styles/status.styles';
-import {
-  METRIC_CONFIG,
-  MetricKey,
-  STATUS_CUES,
-  toStatusLevel,
-} from '../../../features/environment/constants';
-import {
-  computePhases,
-  resolveSaturationCrossing,
-  type VwcSample,
-} from '../../../features/environment/crop-steering-model';
+import { MetricKey, STATUS_CUES, toStatusLevel } from '../../../features/environment/constants';
 import type { IrrigationStrategy, IrrigationConfig } from '../../../services/types';
 import type { RawHistoryDataPoint } from '../../../adapters/hass-types';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { mdiChevronDown } from '@mdi/js';
+import './growspace-phase-hero-card';
 
 @customElement('growspace-header-hero-ui')
 export class GrowspaceHeaderHeroUI extends LitElement {
@@ -39,8 +30,10 @@ export class GrowspaceHeaderHeroUI extends LitElement {
   @property({ type: Boolean }) public isFlower = false;
 
   @state() private _deckIndex = 0;
-  @state() private _phaseHoverX: number | null = null;
+  @state() private _sparklineSizes: Record<string, { width: number; height: number }> = {};
   @query('.deck-scroll') private _deckEl?: HTMLElement;
+  private _sparklineObserver: ResizeObserver | undefined;
+  private _observedSparklines = new Set<SVGSVGElement>();
 
   private _prioritizeExceptions(chips: HeaderChip[]): HeaderChip[] {
     const highestPriorityIndex = chips.findIndex((chip) => chip.status === 'danger');
@@ -77,6 +70,64 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     if (changedProperties.has('chips') || changedProperties.has('additionalChips')) {
       this._deckIndex = 0;
     }
+  }
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    void this.updateComplete.then(() => {
+      if (this.isConnected) this._observeSparklines();
+    });
+  }
+
+  protected updated(): void {
+    this._observeSparklines();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._sparklineObserver?.disconnect();
+    this._sparklineObserver = undefined;
+    this._observedSparklines.clear();
+  }
+
+  private _observeSparklines(): void {
+    const sparklines = new Set(
+      this.renderRoot.querySelectorAll<SVGSVGElement>('.hero-sparkline[data-sparkline-key]')
+    );
+
+    this._sparklineObserver ??= new ResizeObserver((entries) => {
+      let nextSizes: Record<string, { width: number; height: number }> | undefined;
+
+      for (const entry of entries) {
+        const key = (entry.target as SVGSVGElement).dataset.sparklineKey;
+        const { width, height } = entry.contentRect;
+        if (!key) continue;
+
+        const current = this._sparklineSizes[key];
+        if (
+          width <= 0 ||
+          height <= 0 ||
+          (current &&
+            Math.abs(current.width - width) < 0.1 &&
+            Math.abs(current.height - height) < 0.1)
+        ) {
+          continue;
+        }
+
+        nextSizes ??= { ...this._sparklineSizes };
+        nextSizes[key] = { width, height };
+      }
+
+      if (nextSizes) this._sparklineSizes = nextSizes;
+    });
+
+    for (const observed of this._observedSparklines) {
+      if (!sparklines.has(observed)) this._sparklineObserver.unobserve(observed);
+    }
+    for (const sparkline of sparklines) {
+      if (!this._observedSparklines.has(sparkline)) this._sparklineObserver.observe(sparkline);
+    }
+    this._observedSparklines = sparklines;
   }
 
   private _onDeckScroll() {
@@ -295,6 +346,10 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         min-height: 50px;
       }
 
+      growspace-phase-hero-card {
+        display: contents;
+      }
+
       .hero-card {
         background: var(--glass-bg, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
@@ -310,7 +365,11 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         gap: 8px;
         position: relative;
         cursor: grab;
-        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        transition:
+          background-color 0.2s cubic-bezier(0.2, 0, 0, 1),
+          border-color 0.2s cubic-bezier(0.2, 0, 0, 1),
+          box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1),
+          transform 0.2s cubic-bezier(0.2, 0, 0, 1);
         overflow: hidden;
         min-height: 110px;
         width: 100%;
@@ -323,6 +382,18 @@ export class GrowspaceHeaderHeroUI extends LitElement {
       .hero-card:focus-visible {
         outline: 3px solid var(--gm-primary-color);
         outline-offset: 3px;
+      }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
 
       .hero-card:active {
@@ -399,16 +470,13 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
       .hero-card.active .hero-value,
       .hero-card.active .hero-label,
-      .hero-card.active .hero-unit,
-      .hero-card.active .hero-icon {
+      .hero-card.active .hero-unit {
         color: var(--primary-text-color, #fff) !important;
-        fill: var(--primary-text-color, #fff) !important;
       }
 
-      /* Phase card keeps its own colours when active */
-      .phase-hero-card.active .hero-icon {
-        color: rgba(38, 198, 218, 0.85) !important;
-        fill: rgba(38, 198, 218, 0.85) !important;
+      .hero-card.active .hero-icon {
+        color: var(--primary-text-color, #fff);
+        fill: currentColor;
       }
 
       .phase-hero-card.active .hero-label {
@@ -678,9 +746,13 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 4px;
-        border-color: rgba(38, 198, 218, 0.16);
+        border-color: color-mix(in srgb, var(--crop-steering-accent) 16%, transparent);
         background:
-          linear-gradient(180deg, rgba(38, 198, 218, 0.045) 0%, rgba(38, 198, 218, 0.012) 100%),
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--crop-steering-accent) 4.5%, transparent) 0%,
+            color-mix(in srgb, var(--crop-steering-accent) 1.2%, transparent) 100%
+          ),
           var(--glass-bg, rgba(255, 255, 255, 0.05));
         backdrop-filter: var(--glass-blur);
         box-shadow:
@@ -690,9 +762,13 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
       .phase-hero-card:hover {
         background:
-          linear-gradient(180deg, rgba(38, 198, 218, 0.055) 0%, rgba(38, 198, 218, 0.018) 100%),
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--crop-steering-accent) 5.5%, transparent) 0%,
+            color-mix(in srgb, var(--crop-steering-accent) 1.8%, transparent) 100%
+          ),
           var(--secondary-background-color, rgba(255, 255, 255, 0.08));
-        border-color: rgba(38, 198, 218, 0.28);
+        border-color: color-mix(in srgb, var(--crop-steering-accent) 28%, transparent);
         box-shadow:
           0 8px 32px -4px rgba(0, 0, 0, 0.3),
           0 0 0 1px rgba(255, 255, 255, 0.05) inset;
@@ -701,21 +777,25 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
       .phase-hero-card.active {
         background:
-          linear-gradient(180deg, rgba(38, 198, 218, 0.08) 0%, rgba(38, 198, 218, 0.025) 100%),
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--crop-steering-accent) 8%, transparent) 0%,
+            color-mix(in srgb, var(--crop-steering-accent) 2.5%, transparent) 100%
+          ),
           var(--glass-bg, rgba(255, 255, 255, 0.05));
-        border-color: rgba(38, 198, 218, 0.3);
+        border-color: color-mix(in srgb, var(--crop-steering-accent) 30%, transparent);
         box-shadow:
           0 8px 32px -4px rgba(0, 0, 0, 0.3),
-          0 0 0 1px rgba(38, 198, 218, 0.35) inset;
+          0 0 0 1px color-mix(in srgb, var(--crop-steering-accent) 35%, transparent) inset;
       }
 
       .phase-hero-card .hero-header {
         color: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
       }
 
-      .phase-hero-card .hero-icon {
-        color: rgba(38, 198, 218, 0.85) !important;
-        fill: rgba(38, 198, 218, 0.85) !important;
+      .hero-card.phase-hero-card .hero-icon {
+        color: color-mix(in srgb, var(--crop-steering-accent) 85%, transparent);
+        fill: currentColor;
       }
 
       .phase-hero-card .hero-label {
@@ -764,7 +844,60 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         width: 100%;
         height: 100%;
         cursor: crosshair;
+        touch-action: pan-y;
         overflow: visible;
+      }
+
+      .phase-reference-label {
+        position: absolute;
+        right: 4px;
+        z-index: 2;
+        font-family: var(--font-family, sans-serif);
+        font-size: var(--font-size-xs, 0.6875rem);
+        font-weight: 500;
+        line-height: 1;
+        white-space: nowrap;
+        opacity: 0.85;
+        pointer-events: none;
+      }
+
+      .phase-target-label {
+        transform: translateY(calc(-100% - 3px));
+      }
+
+      .phase-trigger-label {
+        color: var(--phase-p2, #2196f3);
+        transform: translateY(3px);
+      }
+
+      .phase-now-marker {
+        position: absolute;
+        z-index: 2;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+      }
+
+      .phase-now-dot,
+      .phase-now-pulse {
+        position: absolute;
+        top: 0;
+        left: 0;
+        border-radius: 50%;
+        background: currentColor;
+        transform: translate(-50%, -50%);
+      }
+
+      .phase-now-dot {
+        width: 6.4px;
+        height: 6.4px;
+        border: 1.4px solid var(--card-background-color, #1e1e1e);
+      }
+
+      .phase-now-pulse {
+        width: 8px;
+        height: 8px;
+        opacity: 0.35;
       }
 
       .phase-now-pulse {
@@ -775,12 +908,12 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
       @keyframes phase-pulse {
         0% {
-          transform: scale(1);
+          transform: translate(-50%, -50%) scale(1);
           opacity: 0.4;
         }
         70%,
         100% {
-          transform: scale(2.6);
+          transform: translate(-50%, -50%) scale(2.6);
           opacity: 0;
         }
       }
@@ -808,11 +941,11 @@ export class GrowspaceHeaderHeroUI extends LitElement {
       .phase-tooltip {
         position: absolute;
         top: -4px;
-        transform: translateX(-50%);
         padding: 3px 7px;
         border-radius: var(--border-radius-sm, 8px);
         pointer-events: none;
-        background: rgba(20, 20, 24, 0.85);
+        background: var(--surface-dim, #141414);
+        color: var(--on-overlay-primary, #ffffff);
         backdrop-filter: blur(8px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         font-size: 0.67rem;
@@ -822,17 +955,42 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         z-index: 10;
       }
 
+      .phase-tooltip--anchor-start {
+        transform: translateX(0);
+      }
+
+      .phase-tooltip--anchor-center {
+        transform: translateX(-50%);
+      }
+
+      .phase-tooltip--anchor-end {
+        transform: translateX(-100%);
+      }
+
       .phase-tooltip-phase {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        color: inherit;
         font-weight: 700;
       }
 
+      .phase-tooltip-phase::before {
+        content: '';
+        width: 0.5em;
+        height: 0.5em;
+        border-radius: 50%;
+        background: var(--phase-tooltip-accent);
+        flex-shrink: 0;
+      }
+
       .phase-tooltip-time {
-        color: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
+        color: inherit;
         font-variant-numeric: tabular-nums;
       }
 
       .phase-tooltip-vwc {
-        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        color: inherit;
         font-variant-numeric: tabular-nums;
       }
 
@@ -897,484 +1055,21 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     `;
   }
 
-  // ── Phase hero card helpers ────────────────────────────────────────────────
-
-  private _buildPhaseChart(
-    historyData: RawHistoryDataPoint[] | undefined,
-    targetVwc: number,
-    triggerVwc: number,
-    chartW: number,
-    chartH: number
-  ): {
-    linePath: string;
-    areaPath: string;
-    targetY: number;
-    triggerY: number;
-    nowX: number;
-    nowY: number;
-    currentVwc: number;
-    hoverVwc: (t: number) => number;
-    hoverTime: (t: number) => string;
-    hoverMinuteOfDay: (t: number) => number;
-    /** Map a unix-ms timestamp to a 0..1 chart fraction (clamped). */
-    tsToFrac: (ts: number) => number;
-    minTime: number;
-    timeSpan: number;
-  } | null {
-    if (!historyData || historyData.length < 2) return null;
-
-    const sorted = [...historyData].sort(
-      (a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()
-    );
-    const valid = sorted.filter((d) => {
-      const v = parseFloat(d.state);
-      return !isNaN(v) && d.state !== 'unavailable' && d.state !== 'unknown';
-    });
-    if (valid.length < 2) return null;
-
-    let minVal = Infinity;
-    let maxVal = -Infinity;
-    let minTime = Infinity;
-    let maxTime = -Infinity;
-    for (const d of valid) {
-      const v = parseFloat(d.state);
-      const t = new Date(d.last_changed).getTime();
-      if (v < minVal) minVal = v;
-      if (v > maxVal) maxVal = v;
-      if (t < minTime) minTime = t;
-      if (t > maxTime) maxTime = t;
-    }
-
-    const vwcMin = Math.min(minVal, triggerVwc - 5);
-    const vwcMax = Math.max(maxVal, targetVwc + 5);
-    const vwcRange = vwcMax - vwcMin || 1;
-    const timeSpan = maxTime - minTime || 1;
-
-    const xOf = (t: number) => ((t - minTime) / timeSpan) * chartW;
-    const yOf = (v: number) => chartH - ((v - vwcMin) / vwcRange) * chartH;
-
-    const pts = valid.map((d) => ({
-      x: xOf(new Date(d.last_changed).getTime()),
-      y: yOf(parseFloat(d.state)),
-      v: parseFloat(d.state),
-    }));
-
-    const linePath = pts
-      .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`)
-      .join(' ');
-    const areaPath = `${linePath} L ${chartW},${chartH} L 0,${chartH} Z`;
-
-    const currentVwc = pts[pts.length - 1].v;
-
-    const hoverVwc = (t: number): number => {
-      const x = t * chartW;
-      for (let i = 1; i < pts.length; i++) {
-        if (pts[i].x >= x) {
-          const frac = (x - pts[i - 1].x) / (pts[i].x - pts[i - 1].x + 0.001);
-          return pts[i - 1].v + frac * (pts[i].v - pts[i - 1].v);
-        }
-      }
-      return currentVwc;
-    };
-
-    // Map hover fraction (0..1) to a wall-clock timestamp, return HH:MM string.
-    const hoverTime = (t: number): string => {
-      const ms = minTime + t * timeSpan;
-      const d = new Date(ms);
-      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    };
-
-    // Map hover fraction to minute-of-day (0..1439) for phase lookup.
-    const hoverMinuteOfDay = (t: number): number => {
-      const ms = minTime + t * timeSpan;
-      const d = new Date(ms);
-      return d.getHours() * 60 + d.getMinutes();
-    };
-
-    const tsToFrac = (ts: number) => Math.max(0, Math.min(1, (ts - minTime) / timeSpan));
-
-    return {
-      linePath,
-      areaPath,
-      targetY: yOf(targetVwc),
-      triggerY: yOf(triggerVwc),
-      nowX: pts[pts.length - 1].x,
-      nowY: pts[pts.length - 1].y,
-      currentVwc,
-      hoverVwc,
-      hoverTime,
-      hoverMinuteOfDay,
-      tsToFrac,
-      minTime,
-      timeSpan,
-    };
-  }
-
   private _renderPhaseHeroCard(chip: HeaderChip) {
-    const strategy = this.irrigationStrategy!;
-    const config = this.irrigationConfig;
-
-    const CHART_W = 300;
-    const CHART_H = 68;
-    // The same VWC series crop-steering-day-chart plots, read through the same
-    // descriptor so the two charts cannot drift apart again (ADR 0045 §3).
-    const CS = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
-
-    const targetVwc = strategy.targetVwcPercent;
-    const triggerVwc = targetVwc - strategy.maintenanceDrybackPercent;
-
     const historyData = (this.historyCache as Record<string, RawHistoryDataPoint[]>)?.[
       MetricKey.SOIL_MOISTURE
     ];
-    const chart = this._buildPhaseChart(historyData, targetVwc, triggerVwc, CHART_W, CHART_H);
-
-    const dayHours = config?.resolvedDayHours ?? 12;
-    // The P1→P2 boundary the backend decides on the measurement rather than the
-    // clock, re-derived from the same VWC series this card already plots.
-    const vwcSamples: VwcSample[] = (historyData ?? []).flatMap((d) => {
-      const vwc = parseFloat(d.state);
-      const atMs = Date.parse(d.last_changed);
-      return isNaN(vwc) || Number.isNaN(atMs) ? [] : [{ atMs, vwc }];
-    });
-    const phases = computePhases(
-      strategy,
-      dayHours,
-      config,
-      resolveSaturationCrossing(strategy, dayHours, vwcSamples, Date.now())
-    );
-
-    // Parse chip value: "P3 · 22:40"
-    const valueMatch = chip.value?.match(/^(P[123])\s*·\s*(.+)$/);
-    const currentPhase = valueMatch?.[1] ?? chip.value ?? '';
-    const transitionTime = valueMatch?.[2] ?? '';
-    const isP3 = currentPhase === 'P3';
-
-    const hv = this._phaseHoverX;
-    const hovVwc = hv != null && chart ? chart.hoverVwc(hv) : null;
-    const hovTimeStr = hv != null && chart ? chart.hoverTime(hv) : null;
-    const hovMinute = hv != null && chart ? chart.hoverMinuteOfDay(hv) : null;
-
-    // Determine which crop-steering phase the hovered minute falls in.
-    const hovPhase =
-      hovMinute != null && phases
-        ? (phases.phases.find((p) => hovMinute >= p.start && hovMinute < p.end) ?? null)
-        : null;
-
-    const vwcDisplay = hovVwc != null ? hovVwc.toFixed(1) : (chart?.currentVwc?.toFixed(1) ?? null);
-
-    // Phase bar: map minute-of-day → chart timestamp → chart fraction.
-    // Uses the same coordinate space as the VWC sparkline so labels align with the chart.
-    const pct = (f: number) => `${(f * 100).toFixed(2)}%`;
-    const segBar =
-      phases && chart
-        ? (() => {
-            const { lightsOnMin, lightsOffMin, phases: ph } = phases;
-
-            const DAY_MS = 24 * 60 * 60 * 1000;
-
-            // Get midnight of the day that contains the latest data point.
-            const latest = new Date(chart.minTime + chart.timeSpan);
-            const todayMidnight = new Date(
-              latest.getFullYear(),
-              latest.getMonth(),
-              latest.getDate()
-            ).getTime();
-
-            if (this.timeRange === '7d') {
-              // Enumerate every calendar day in the chart window and emit phase segments
-              // for each. Only the last (rightmost) day gets labels to avoid clutter.
-              const result: Array<{
-                key: string;
-                leftFrac: number;
-                widthFrac: number;
-                c: string;
-                label: string | null;
-              }> = [];
-              const firstDayTs = new Date(chart.minTime);
-              let dayRef = new Date(
-                firstDayTs.getFullYear(),
-                firstDayTs.getMonth(),
-                firstDayTs.getDate()
-              ).getTime();
-              let dayIndex = 0;
-              while (dayRef <= chart.minTime + chart.timeSpan) {
-                const isLastDay = dayRef + DAY_MS > chart.minTime + chart.timeSpan;
-                const seg7 = (
-                  key: string,
-                  startMin: number,
-                  endMin: number,
-                  c: string,
-                  label: string | null
-                ) => {
-                  const leftFrac = chart.tsToFrac(dayRef + startMin * 60 * 1000);
-                  const rightFrac = chart.tsToFrac(dayRef + endMin * 60 * 1000);
-                  return {
-                    key: `${key}-${dayIndex}`,
-                    leftFrac,
-                    widthFrac: Math.max(0, rightFrac - leftFrac),
-                    c,
-                    label: isLastDay ? label : null,
-                  };
-                };
-                result.push(
-                  seg7('pre', 0, lightsOnMin, 'rgba(255,255,255,0.07)', null),
-                  seg7('p1', ph[0].start, ph[0].end, ph[0].color, ph[0].label),
-                  seg7('p2', ph[1].start, ph[1].end, ph[1].color, ph[1].label),
-                  seg7('p3', ph[2].start, ph[2].end, ph[2].color, ph[2].label),
-                  seg7('post', lightsOffMin, 1440, 'rgba(255,255,255,0.07)', null)
-                );
-                dayRef += DAY_MS;
-                dayIndex++;
-              }
-              return result;
-            }
-
-            // Single-day logic for 1h/6h/24h.
-            // For each segment, pick a single day reference from the START minute and
-            // apply it to both start and end — avoids rightFrac < leftFrac when the end
-            // minute is past maxTime and the per-minute heuristic picks different days.
-            const mid = chart.minTime + chart.timeSpan / 2;
-
-            const dayRefFor = (startMin: number): number => {
-              const todayTs = todayMidnight + startMin * 60 * 1000;
-              const yesterdayTs = todayMidnight - DAY_MS + startMin * 60 * 1000;
-              return Math.abs(todayTs - mid) <= Math.abs(yesterdayTs - mid)
-                ? todayMidnight
-                : todayMidnight - DAY_MS;
-            };
-
-            const seg = (
-              key: string,
-              startMin: number,
-              endMin: number,
-              c: string,
-              label: string | null
-            ) => {
-              const ref = dayRefFor(startMin);
-              const leftFrac = chart.tsToFrac(ref + startMin * 60 * 1000);
-              const rightFrac = chart.tsToFrac(ref + endMin * 60 * 1000);
-              return { key, leftFrac, widthFrac: Math.max(0, rightFrac - leftFrac), c, label };
-            };
-
-            return [
-              seg('pre', 0, lightsOnMin, 'rgba(255,255,255,0.07)', null),
-              seg('p1', ph[0].start, ph[0].end, ph[0].color, ph[0].label),
-              seg('p2', ph[1].start, ph[1].end, ph[1].color, ph[1].label),
-              seg('p3', ph[2].start, ph[2].end, ph[2].color, ph[2].label),
-              seg('post', lightsOffMin, 1440, 'rgba(255,255,255,0.07)', null),
-            ];
-          })()
-        : [];
 
     return html`
-      <button
-        class="hero-card ${chip.active ? 'active' : ''} phase-hero-card"
-        type="button"
-        aria-label="Toggle ${chip.label ?? 'phase'} graph${chip.linked ? ', linked' : ''}"
-        aria-pressed=${chip.active}
-        draggable="false"
-        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
-        @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
-        @dragover=${(e: DragEvent) => this._handleDragOver(e)}
-        @click=${() => this._toggleEnvGraph(chip.key)}
-        title="${chip.tooltip || ''}"
-      >
-        <!-- Header: label (left) + live VWC readout (right) -->
-        <div class="hero-header">
-          <ha-svg-icon class="hero-icon" .path=${chip.icon}></ha-svg-icon>
-          <span class="hero-label">${chip.label ?? 'Phase'}</span>
-          ${vwcDisplay != null
-            ? html`<span class="phase-vwc-readout">VWC&nbsp;${vwcDisplay}%</span>`
-            : nothing}
-        </div>
-
-        <!-- Value: current phase + transition time + optional badge -->
-        <div class="hero-value-group">
-          <span class="hero-value">${currentPhase}</span>
-          ${transitionTime
-            ? html`<span class="hero-unit">&nbsp;·&nbsp;${transitionTime}</span>`
-            : nothing}
-          ${isP3 ? html`<span class="phase-badge phase-badge--dryback">Dryback</span>` : nothing}
-        </div>
-
-        <!-- VWC chart -->
-        ${chart
-          ? html`
-              <div class="phase-chart-container">
-                <svg
-                  class="phase-chart-svg"
-                  viewBox="0 0 ${CHART_W} ${CHART_H}"
-                  preserveAspectRatio="none"
-                  @mousemove=${(e: MouseEvent) => {
-                    const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
-                    this._phaseHoverX = Math.max(
-                      0,
-                      Math.min(1, (e.clientX - rect.left) / rect.width)
-                    );
-                  }}
-                  @mouseleave=${() => {
-                    this._phaseHoverX = null;
-                  }}
-                >
-                  <defs>
-                    <linearGradient id="phase-area-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="${CS}" stop-opacity="0.38" />
-                      <stop offset="100%" stop-color="${CS}" stop-opacity="0" />
-                    </linearGradient>
-                  </defs>
-
-                  <!-- Area fill -->
-                  <path d="${chart.areaPath}" fill="url(#phase-area-grad)" />
-
-                  <!-- VWC line -->
-                  <path
-                    d="${chart.linePath}"
-                    fill="none"
-                    stroke="${CS}"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-
-                  <!-- Target VWC reference line -->
-                  <line
-                    x1="0"
-                    y1="${chart.targetY.toFixed(1)}"
-                    x2="${CHART_W}"
-                    y2="${chart.targetY.toFixed(1)}"
-                    stroke="${CS}"
-                    stroke-width="1"
-                    stroke-dasharray="4 4"
-                    opacity="0.45"
-                  />
-                  <text
-                    x="${CHART_W - 4}"
-                    y="${Math.max(9, chart.targetY - 3).toFixed(1)}"
-                    fill="${CS}"
-                    font-size="6"
-                    text-anchor="end"
-                    font-family="var(--font-family, sans-serif)"
-                    opacity="0.85"
-                  >
-                    Target ${targetVwc}%
-                  </text>
-
-                  <!-- P2 trigger reference line -->
-                  <line
-                    x1="0"
-                    y1="${chart.triggerY.toFixed(1)}"
-                    x2="${CHART_W}"
-                    y2="${chart.triggerY.toFixed(1)}"
-                    stroke="var(--phase-p3, #ff9800)"
-                    stroke-width="1"
-                    stroke-dasharray="4 4"
-                    opacity="0.45"
-                  />
-                  <text
-                    x="${CHART_W - 4}"
-                    y="${Math.min(CHART_H - 3, chart.triggerY + 10).toFixed(1)}"
-                    fill="var(--phase-p3, #ff9800)"
-                    font-size="6"
-                    text-anchor="end"
-                    font-family="var(--font-family, sans-serif)"
-                    opacity="0.85"
-                  >
-                    P2 trigger ${triggerVwc.toFixed(0)}%
-                  </text>
-
-                  <!-- Now dot (hidden while hovering) -->
-                  ${hv == null
-                    ? svg`
-                      <circle class="phase-now-pulse" cx="${chart.nowX.toFixed(1)}" cy="${chart.nowY.toFixed(1)}" r="4" fill="${CS}" opacity="0.35" />
-                      <circle cx="${chart.nowX.toFixed(1)}" cy="${chart.nowY.toFixed(1)}" r="3.2" fill="${CS}" stroke="var(--card-background-color, #1e1e1e)" stroke-width="1.4" />
-                    `
-                    : nothing}
-
-                  <!-- Hover scrubber -->
-                  ${hv != null && chart
-                    ? svg`
-                      <line
-                        x1="${(hv * CHART_W).toFixed(1)}"
-                        y1="0"
-                        x2="${(hv * CHART_W).toFixed(1)}"
-                        y2="${CHART_H}"
-                        stroke="rgba(255,255,255,0.45)"
-                        stroke-width="1"
-                      />
-                      <circle
-                        cx="${(hv * CHART_W).toFixed(1)}"
-                        cy="${chart.targetY + (chart.triggerY - chart.targetY) * 0.5 /* approx — will update */}"
-                        r="0"
-                        fill="transparent"
-                      />
-                    `
-                    : nothing}
-                </svg>
-
-                <!-- Hover tooltip -->
-                ${hv != null && hovVwc != null
-                  ? html`
-                      <div
-                        class="phase-tooltip"
-                        style="left: ${Math.max(4, Math.min(82, hv * 100)).toFixed(0)}%"
-                      >
-                        ${hovPhase
-                          ? html`<span class="phase-tooltip-phase" style="color:${hovPhase.color};"
-                              >${hovPhase.label}</span
-                            >`
-                          : nothing}
-                        ${hovTimeStr
-                          ? html`<span class="phase-tooltip-time">${hovTimeStr}</span>`
-                          : nothing}
-                        <span class="phase-tooltip-vwc">VWC ${hovVwc.toFixed(1)}%</span>
-                      </div>
-                    `
-                  : nothing}
-              </div>
-            `
-          : nothing}
-
-        <!-- Phase bar (absolutely-positioned segments matching cs-phase-strip approach) -->
-        ${segBar.length
-          ? html`
-              <div class="phase-bar">
-                <div class="phase-bar-track">
-                  ${segBar.map(
-                    (s) => html`
-                      <div
-                        class="phase-bar-seg"
-                        style="left:${pct(s.leftFrac)};width:${pct(s.widthFrac)};background:${s.c};"
-                      ></div>
-                    `
-                  )}
-                  <!-- now notch aligned with the chart's now-dot -->
-                  ${chart
-                    ? html`<div
-                        class="phase-bar-now"
-                        style="left:${pct(chart.nowX / CHART_W)}"
-                      ></div>`
-                    : nothing}
-                </div>
-                <div class="phase-bar-labels">
-                  ${segBar
-                    .filter((s) => s.label)
-                    .map(
-                      (s) => html`
-                        <span
-                          class="phase-bar-label"
-                          style="left:${pct(s.leftFrac + s.widthFrac / 2)};color:${s.c};"
-                          >${s.label}</span
-                        >
-                      `
-                    )}
-                </div>
-              </div>
-            `
-          : nothing}
-      </button>
+      <growspace-phase-hero-card
+        .chip=${chip}
+        .strategy=${this.irrigationStrategy!}
+        .config=${this.irrigationConfig}
+        .historyData=${historyData}
+        .timeRange=${this.timeRange}
+      ></growspace-phase-hero-card>
     `;
   }
-
   private _renderHeroCard(chip: HeaderChip) {
     if (chip.key === MetricKey.STEERING_PHASE && this.irrigationStrategy?.enabled) {
       return this._renderPhaseHeroCard(chip);
@@ -1384,8 +1079,10 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     const val = match ? match[1] : chip.value;
     const unit = match ? match[2] : '';
 
-    const sparklineWidth = 140;
-    const sparklineHeight = 80;
+    const { width: sparklineWidth, height: sparklineHeight } = this._sparklineSizes[chip.key] ?? {
+      width: 140,
+      height: 80,
+    };
 
     const timeRange = this.timeRange;
     const isVpd = chip.key === 'vpd';
@@ -1471,14 +1168,14 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
         @dragover=${(e: DragEvent) => this._handleDragOver(e)}
         @click=${() => this._toggleEnvGraph(chip.key)}
-        title="${chip.tooltip || ''}"
+        title=${chip.tooltip || nothing}
       >
         ${useVpdSegments
           ? html`
               <svg
                 class="hero-sparkline"
+                data-sparkline-key=${chip.key}
                 viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
-                preserveAspectRatio="none"
                 style="overflow: visible;"
               >
                 <rect
@@ -1499,8 +1196,8 @@ export class GrowspaceHeaderHeroUI extends LitElement {
             ? html`
                 <svg
                   class="hero-sparkline"
+                  data-sparkline-key=${chip.key}
                   viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
-                  preserveAspectRatio="none"
                 >
                   <defs>
                     <linearGradient

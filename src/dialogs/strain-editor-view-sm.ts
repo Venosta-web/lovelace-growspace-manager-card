@@ -80,6 +80,63 @@ export type EditorEvent =
   | { type: 'BreederDialogClosed' }
   | { type: 'ToastDismissed' };
 
+// ─── External import ──────────────────────────────────────────────────────────
+
+/**
+ * A strain as `growspace_manager/get_external_strain_details` returns it. The
+ * external source names its fields for itself, not for the strain library.
+ */
+export interface ExternalStrainImport {
+  name?: string;
+  breeder?: string;
+  type?: string;
+  indica_percentage?: number;
+  sativa_percentage?: number;
+  flowering_days?: number;
+  description?: string;
+  image?: string;
+  images?: string[];
+  yield_potential?: string;
+  height?: string;
+  thc?: number;
+  awards?: string[];
+  parents?: unknown;
+}
+
+/**
+ * Merge an external strain import into the draft, translating the source's field
+ * names to the strain entry's own.
+ *
+ * The translation belongs here rather than at the service call: `name` is the
+ * source's word for `strain`, and `flowering_days` is a single averaged figure
+ * where the library stores a range. Both are rejected by the service schema, so
+ * a straight spread of the import detail made saving fail with "extra keys not
+ * allowed @ data['name']".
+ */
+export function mergeImportedStrain(
+  draft: Partial<StrainEntry>,
+  detail: ExternalStrainImport
+): Partial<StrainEntry> {
+  const { name, flowering_days: floweringDays, images, image, ...rest } = detail;
+  const merged: Partial<StrainEntry> = { ...draft, ...(rest as Partial<StrainEntry>) };
+
+  if (name) merged.strain = name;
+
+  if (floweringDays) {
+    merged.flowering_days_min = floweringDays;
+    merged.flowering_days_max = floweringDays;
+  }
+
+  if (images?.length) {
+    merged.images = images.map((path, i) => ({ path, is_thumbnail: i === 0 }));
+    merged.image = images[0];
+  } else if (image) {
+    merged.image = image;
+  }
+
+  return merged;
+}
+
 // ─── Factory ──────────────────────────────────────────────────────────────────
 
 export function createInitialSM(draft: Partial<StrainEntry> = {}): StrainEditorSM {

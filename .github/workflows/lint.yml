@@ -62,24 +62,15 @@ jobs:
   # some transitive deps, so a lockfile can satisfy every PR check and still fail
   # `npm ci` on Release after merge — which is exactly what broke dev in #462.
   #
-  # Keep the Node version here equal to release.yml's. If that pin moves, move
-  # this one in the same commit.
+  # The release-only Node pin lives in setup-release-node, which this preflight
+  # and both publishing jobs consume.
   release-preflight:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6.0.2
 
-      - name: Set up Node.js (matching release.yml)
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version: '22'
-          cache: 'npm'
+      - name: Set up release Node.js
+        uses: ./.github/actions/setup-release-node
 
-      - name: Install with the Release job's npm
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Validate HACS release layout
-        run: npm run validate:hacs-release
+      - name: Verify publishing plans
+        run: npm run publishing:verify

@@ -24,6 +24,12 @@
   "errors": {
     "fetch_failed": "Failed to fetch data"
   },
+  "metric_combo": {
+    "duty_label": "{metric} duty",
+    "delta_label": "{metric} − {baseline}",
+    "limit_cap": "max {value}",
+    "pane_accessible_name": "{metric}, scale {scale}"
+  },
   "water_chart": {
     "title": "Water Consumption",
     "loading": "Loading water history...",
@@ -47,12 +53,32 @@
     "no_data": "No Data",
     "no_history_for_range": "No history data available for {range}",
     "render_failed": "Failed to render environment chart",
+    "close_graph": "Close {graph} graph",
+    "unlink_graph": "Unlink {graph} graph",
     "unlink_graphs": "Unlink Graphs",
+    "scroll_metrics_left": "Scroll graph metrics left",
+    "scroll_metrics_right": "Scroll graph metrics right",
+    "keyboard_scrub_label": "Explore {chart} graph values",
+    "keyboard_scrub_instructions": "Use the Left and Right Arrow keys to move through readings. Home and End jump to the window edges. Escape clears the reading.",
+    "keyboard_scrub_series": "{metric}: {value}",
+    "keyboard_scrub_announcement": "{time}. {readings}.",
+    "normalised": "Normalised",
     "now": "Now",
     "on": "ON",
     "off": "OFF",
     "optimal": "Optimal",
-    "not_optimal": "Not Optimal"
+    "not_optimal": "Not Optimal",
+    "environment_metrics": "Environment metrics",
+    "optimal_band_label": "{metric} optimal",
+    "guide_mark_label": "{metric} {mark}",
+    "lower_limit_label": "{metric} lower limit",
+    "upper_limit_label": "{metric} upper limit",
+    "accessible_no_data": "{chart}, {window} window, no data.",
+    "accessible_summary": "{chart}, {window} window. {descriptions}",
+    "accessible_series": "range {minimum} to {maximum}, average {average}, current {current}.",
+    "accessible_named_series": "{metric}: range {minimum} to {maximum}, average {average}, current {current}.",
+    "accessible_series_range": "range {range}, current {current}.",
+    "accessible_named_series_range": "{metric}: range {range}, current {current}."
   },
   "tasks": {
     "menu": "Tasks",
@@ -152,5 +178,13 @@
     "view_mode_standard": "Standard",
     "view_mode_compact": "Compact (Grid Only)",
     "view_mode_header": "Header Only"
+  },
+  "guide_marks": {
+    "circulation-fan-target": "Circulation",
+    "exhaust-fan-target": "Exhaust",
+    "humidifier-on": "Humidifier on",
+    "humidifier-off": "Humidifier off",
+    "dehumidifier-on": "Dehumidifier on",
+    "dehumidifier-off": "Dehumidifier off"
   }
 }
