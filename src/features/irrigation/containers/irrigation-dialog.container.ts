@@ -255,6 +255,7 @@ interface AssignProgramParams {
 
 /** EC Ramp save payload — composed by `composeEcRampSave`, carried in `applying.status`. */
 interface EcRampSaveParams {
+  growspace_id: string;
   curve_id?: string;
   name: string;
   stage: string;
@@ -330,7 +331,8 @@ export class IrrigationDialog extends LitElement {
   /** EC Ramp tab ViewModel — reads the Nutrient slice's `ecRampCurves$` (ADR-0005). */
   private _ecRampVm: ReadableAtom<EcRampTabViewModel> = createEcRampTabViewModel(
     this._smAtom,
-    ecRampCurves$
+    ecRampCurves$,
+    this._deviceAtom
   );
   private _ecRampVmController = new StoreController(this, this._ecRampVm);
   /**
@@ -1913,8 +1915,10 @@ export class IrrigationDialog extends LitElement {
    */
   private _onEcRampSaveCurve() {
     const sub = this._sm.tabs.ec_ramp.sub;
-    if (sub.kind !== 'editing') return;
-    const result = composeEcRampSave(sub.draft);
+    // The curve's owner is required (ADR-0046), so there is nothing to save
+    // without a growspace — same guard the tank handler uses.
+    if (sub.kind !== 'editing' || !this.device?.deviceId) return;
+    const result = composeEcRampSave(sub.draft, this.device.deviceId);
     if (!result.ok) {
       this.dispatch({ type: 'SET_EC_RAMP_ERROR', error: result.error });
       return;
