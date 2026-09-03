@@ -14,13 +14,12 @@ import type { IrrigationDialog } from './irrigation-dialog';
 import './irrigation-dialog';
 import { hassWithEntities, mountWithHass } from '../../tests/harness/entity-picker';
 
-// ADR-0019: the Tanks tab Save effect persists via the Growspace slice's
-// configureEnvironment. Mock it so the inline-edit test can assert the call.
-vi.mock('../slices/growspace', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../slices/growspace')>();
-  return { ...actual, configureEnvironment: vi.fn().mockResolvedValue(undefined) };
+// Tank edits enter the Environment Change module as a narrow request variant.
+vi.mock('../features/config/environment-change', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../features/config/environment-change')>();
+  return { ...actual, applyEnvironmentChange: vi.fn().mockResolvedValue(undefined) };
 });
-import { configureEnvironment } from '../slices/growspace';
+import { applyEnvironmentChange } from '../features/config/environment-change';
 
 // EC ramp fetch/save/remove now go through the Nutrient slice mutators directly.
 vi.mock('../slices/nutrient', async (importOriginal) => ({
@@ -1796,7 +1795,7 @@ describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
 describe('IrrigationDialog – Tanks tab inline edit', () => {
   // The Tanks tab renders in the decomposed child whose VM reads tankLevels$
   // (seeded here as sync-service does in prod). The edit draft lives in the SM;
-  // Save persists through the Growspace slice's configureEnvironment (mocked).
+  // Save persists through the Environment Change interface (mocked).
   async function mountTanks() {
     const device = makeTankDevice();
     setTankLevels('gs1', device.environmentAttributes!.irrigationTanks as never);
@@ -1892,8 +1891,8 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
     expect(inner.includeEntities).toEqual(['sensor.tank_a', 'sensor.tank_b']);
   });
 
-  it('clicking Save calls configureEnvironment with the updated tank and closes the form', async () => {
-    vi.mocked(configureEnvironment).mockClear();
+  it('clicking Save requests a Tank Config Change and closes the form', async () => {
+    vi.mocked(applyEnvironmentChange).mockClear();
     const { el, tab } = await mountTanks();
     await openEditor(tab, el);
 
@@ -1913,11 +1912,12 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
     await el.updateComplete;
     await tab.updateComplete;
 
-    expect(configureEnvironment).toHaveBeenCalledOnce();
-    const [call] = vi.mocked(configureEnvironment).mock.calls;
-    expect(call[0].selectedGrowspaceId).toBe('gs1');
-    const tanks = (call[0] as { irrigationTanks: Array<{ warningLevel: number; name: string }> })
-      .irrigationTanks;
+    expect(applyEnvironmentChange).toHaveBeenCalledOnce();
+    const [call] = vi.mocked(applyEnvironmentChange).mock.calls;
+    expect(call[0].kind).toBe('tank-config-change');
+    if (call[0].kind !== 'tank-config-change') throw new Error('Expected Tank Config Change');
+    expect(call[0].growspaceId).toBe('gs1');
+    const tanks = call[0].irrigationTanks;
     expect(tanks[0].warningLevel).toBe(25);
     expect(tanks[1].name).toBe('Tank B'); // other tank unchanged
 

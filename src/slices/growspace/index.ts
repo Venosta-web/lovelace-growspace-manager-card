@@ -9,14 +9,7 @@ import {
   GrowReportSchema,
   type GrowReport,
   type CirculationFanConfig,
-  type ExhaustFanConfig,
 } from './schema';
-import type { EnvironmentDraft } from '../../dialogs/config-dialog-sm';
-import type { EnvironmentConfigEventDetail } from '../../lib/types/dialog';
-import {
-  ENV_ATOMIC_GROUPS,
-  type BufferedEnvironmentDraftKey,
-} from '../../features/config/environment-persistence';
 import type { GrowspaceDevice, GrowspaceAPIResponse } from '../../services/types';
 
 export type { GrowReport } from './schema';
@@ -186,116 +179,6 @@ export async function updateSensorCoordinates(
   );
 }
 
-type EnvironmentActionField<Key extends BufferedEnvironmentDraftKey> = {
-  serviceKey: string;
-  include?: (value: EnvironmentDraft[Key]) => boolean;
-  serialize?: (value: EnvironmentDraft[Key]) => unknown;
-};
-
-type EnvironmentActionFields = {
-  [Key in BufferedEnvironmentDraftKey]: EnvironmentActionField<Key>;
-};
-
-/**
- * The one compile-time-total Environment Draft → HA action mapping.
- *
- * `BufferedEnvironmentDraftKey` is derived from `ENV_PERSISTENCE`, so adding a
- * buffered draft field without adding its rename here fails type checking.
- * The action iterates this same table for omission gating; there is no second
- * passthrough allowlist or handwritten per-key gate to drift from it.
- */
-const ENVIRONMENT_ACTION_FIELDS = {
-  temperatureSensors: { serviceKey: 'temperature_sensors' },
-  humiditySensors: { serviceKey: 'humidity_sensors' },
-  vpdSensors: { serviceKey: 'vpd_sensors' },
-  co2Sensor: { serviceKey: 'co2_sensor', serialize: (value) => value || null },
-  lightSensors: { serviceKey: 'light_sensors' },
-  exhaustFanEntities: { serviceKey: 'exhaust_fan_entities' },
-  circulationFanEntities: { serviceKey: 'circulation_fan_entities' },
-  exhaustFanAcInfinityDevices: { serviceKey: 'exhaust_fan_ac_infinity_devices' },
-  circulationFanAcInfinityDevices: { serviceKey: 'circulation_fan_ac_infinity_devices' },
-  // Older GSM releases reject null for these two fields. Preserve their stored
-  // values until the installed backend can express an explicit clear.
-  stressThreshold: { serviceKey: 'stress_threshold', include: (value) => value !== null },
-  moldThreshold: { serviceKey: 'mold_threshold', include: (value) => value !== null },
-  humidifierEntities: { serviceKey: 'humidifier_entities' },
-  dehumidifierEntities: { serviceKey: 'dehumidifier_entities' },
-  humidifierAcInfinityDevices: { serviceKey: 'humidifier_ac_infinity_devices' },
-  dehumidifierAcInfinityDevices: { serviceKey: 'dehumidifier_ac_infinity_devices' },
-  humidifierThresholds: { serviceKey: 'humidifier_thresholds' },
-  dehumidifierThresholds: { serviceKey: 'dehumidifier_thresholds' },
-  soilMoistureSensor: {
-    serviceKey: 'soil_moisture_sensor',
-    serialize: (value) => value || null,
-  },
-  soilMoistureMin: { serviceKey: 'soil_moisture_min' },
-  soilMoistureMax: { serviceKey: 'soil_moisture_max' },
-  substrateTemperatureSensors: { serviceKey: 'substrate_temperature_sensors' },
-  phSensors: { serviceKey: 'ph_sensors' },
-  feedEcSensors: { serviceKey: 'feed_ec_sensors' },
-  bulkEcSensors: { serviceKey: 'bulk_ec_sensors' },
-  poreEcSensors: { serviceKey: 'pore_ec_sensors' },
-  runoffEcSensors: { serviceKey: 'runoff_ec_sensors' },
-  drainVolumeSensors: { serviceKey: 'drain_volume_sensors' },
-  irrigationFlowSensors: { serviceKey: 'irrigation_flow_sensors' },
-  powerSensors: { serviceKey: 'power_sensors' },
-  energySensors: { serviceKey: 'energy_sensors' },
-  sensorGroups: { serviceKey: 'sensor_groups' },
-  sensorCoordinates: { serviceKey: 'sensor_coordinates' },
-  irrigationTanks: {
-    serviceKey: 'irrigation_tanks',
-    serialize: (tanks) =>
-      tanks.map((tank) => ({
-        sensor_entity: tank.sensorEntity,
-        name: tank.name,
-        warning_level: tank.warningLevel,
-        ...(tank.volumeLiters != null ? { volume_liters: tank.volumeLiters } : {}),
-      })),
-  },
-  cameraEntities: { serviceKey: 'camera_entities' },
-  lungroomTempSensors: { serviceKey: 'lung_room_temp_sensors' },
-  circulationFanConfig: { serviceKey: 'circulation_fan_config' },
-  growlightEntities: { serviceKey: 'growlight_entities' },
-  growlightAcInfinityDevices: { serviceKey: 'growlight_ac_infinity_devices' },
-  growlightConfig: { serviceKey: 'growlight_config' },
-  vpdOptimalOverrides: { serviceKey: 'vpd_optimal_overrides' },
-  lstOffset: { serviceKey: 'lst_offset' },
-} satisfies EnvironmentActionFields;
-
-function atomicGroupFor(
-  key: BufferedEnvironmentDraftKey
-): readonly BufferedEnvironmentDraftKey[] | undefined {
-  return ENV_ATOMIC_GROUPS.find((group) => group.includes(key)) as
-    | readonly BufferedEnvironmentDraftKey[]
-    | undefined;
-}
-
-function assignEnvironmentActionField<Key extends BufferedEnvironmentDraftKey>(
-  payload: Record<string, unknown>,
-  patch: EnvironmentConfigEventDetail,
-  key: Key
-): void {
-  const mapping = ENVIRONMENT_ACTION_FIELDS[key] as EnvironmentActionField<Key>;
-  const value = patch[key] as EnvironmentDraft[Key] | undefined;
-  if (value === undefined) return;
-
-  const atomicGroup = atomicGroupFor(key);
-  if (atomicGroup?.some((member) => patch[member] === undefined)) return;
-  if (mapping.include && !mapping.include(value)) return;
-
-  payload[mapping.serviceKey] = mapping.serialize ? mapping.serialize(value) : value;
-}
-
-export async function configureEnvironment(patch: EnvironmentConfigEventDetail): Promise<void> {
-  const payload: Record<string, unknown> = { growspace_id: patch.selectedGrowspaceId };
-
-  for (const key of Object.keys(ENVIRONMENT_ACTION_FIELDS) as BufferedEnvironmentDraftKey[]) {
-    assignEnvironmentActionField(payload, patch, key);
-  }
-
-  await callService('growspace_manager', 'configure_environment', payload);
-}
-
 export async function configureCirculationFan({
   growspaceId,
   fanConfig,
@@ -304,19 +187,6 @@ export async function configureCirculationFan({
   fanConfig: CirculationFanConfig;
 }): Promise<void> {
   await callService('growspace_manager', 'configure_circulation_fan', {
-    growspace_id: growspaceId,
-    ...fanConfig,
-  });
-}
-
-export async function configureExhaustFan({
-  growspaceId,
-  fanConfig,
-}: {
-  growspaceId: string;
-  fanConfig: ExhaustFanConfig;
-}): Promise<void> {
-  await callService('growspace_manager', 'configure_exhaust_fan', {
     growspace_id: growspaceId,
     ...fanConfig,
   });

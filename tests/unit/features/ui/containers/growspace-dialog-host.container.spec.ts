@@ -13,10 +13,8 @@ import {
   advancePlantStage as sliceAdvancePlantStage,
   waterGrowspace as sliceWaterGrowspace,
 } from '../../../../../src/slices/plant';
-import {
-  configureEnvironment as sliceConfigureEnvironment,
-  removeEnvironment as sliceRemoveEnvironment,
-} from '../../../../../src/slices/growspace';
+import { removeEnvironment as sliceRemoveEnvironment } from '../../../../../src/slices/growspace';
+import { applyEnvironmentChange as mockApplyEnvironmentChange } from '../../../../../src/features/config/environment-change';
 import { fetchStrainLibrary as sliceFetchStrainLibrary } from '../../../../../src/slices/strain';
 import { hassCall, callService, callServiceReturning } from '../../../../../src/services/hass-call';
 import { notification$ } from '../../../../../src/slices/ui';
@@ -63,13 +61,18 @@ vi.mock('../../../../../src/features/genetics/state/genetics.actions', () => ({
   loadAllGenetics: vi.fn().mockResolvedValue(true),
 }));
 
-// Override only the environment ops; keep growspace CRUD (add/update/remove) real
+// Override only environment removal; keep growspace CRUD (add/update/remove) real
 // so the #340 callService assertions still hold.
 vi.mock('../../../../../src/slices/growspace', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../../../src/slices/growspace')>()),
-  configureEnvironment: vi.fn().mockResolvedValue(undefined),
-  configureExhaustFan: vi.fn().mockResolvedValue(undefined),
   removeEnvironment: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../../../../src/features/config/environment-change', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('../../../../../src/features/config/environment-change')
+  >()),
+  applyEnvironmentChange: vi.fn().mockResolvedValue(undefined),
 }));
 
 // The host's _exportStrainLibrary now reads the library via the strain slice
@@ -234,7 +237,6 @@ describe('GrowspaceDialogHostContainer', () => {
         $nutrientInventory: createMockAtom(null),
         $nutrientDataState: createMockAtom({}),
         $ecRampCurves: createMockAtom({}),
-        configureEnvironment: vi.fn().mockResolvedValue(true),
         fetchGeneticsData: vi.fn().mockResolvedValue({ seed_batches: {}, pollination_events: {} }),
         saveIPMPreset: vi.fn().mockResolvedValue(true),
         deleteIPMPreset: vi.fn().mockResolvedValue(true),
@@ -1126,23 +1128,6 @@ describe('GrowspaceDialogHostContainer', () => {
       expect.any(Error)
     );
     consoleErrorSpy.mockRestore();
-  });
-
-  it('should handle _handleEnvironmentConfig failure', async () => {
-    vi.mocked(sliceConfigureEnvironment).mockRejectedValueOnce(new Error('Config failed'));
-
-    await (element as any)._handleEnvironmentConfig({
-      selectedGrowspaceId: 'g1',
-      temperatureSensors: ['t1'],
-      humiditySensors: ['h1'],
-    } as any);
-
-    expect(notification$.get()).toEqual(
-      expect.objectContaining({
-        message: expect.stringContaining('Failed to configure environment'),
-        type: 'error',
-      })
-    );
   });
 
   it('should handle _handleVisionCheckupConfig failure', async () => {
@@ -2262,36 +2247,21 @@ describe('GrowspaceDialogHostContainer', () => {
       });
     });
 
-    it('should handle @configure-environment-submit on CONFIG dialog', async () => {
+    it('should forward @environment-change-requested on CONFIG dialog', async () => {
       await openDialog('CONFIG', {});
       const dialog = element.shadowRoot?.querySelector('config-dialog');
-      dialog?.dispatchEvent(
-        new CustomEvent('configure-environment-submit', {
-          detail: {
-            selectedGrowspaceId: 'g1',
-            temperatureSensors: ['sensor.temp'],
-            humiditySensors: ['sensor.humidity'],
-          },
-        })
-      );
+      const request = {
+        kind: 'shared-environment-draft' as const,
+        draft: {
+          selectedGrowspaceId: 'g1',
+          temperatureSensors: ['sensor.temp'],
+          humiditySensors: ['sensor.humidity'],
+        },
+        dirty: new Set(['temperatureSensors']),
+      };
+      dialog?.dispatchEvent(new CustomEvent('environment-change-requested', { detail: request }));
       await vi.waitFor(() => {
-        expect(sliceConfigureEnvironment).toHaveBeenCalled();
-      });
-    });
-
-    it('should handle @configure-environment-submit validation failure (missing mandatory fields)', async () => {
-      await openDialog('CONFIG', {});
-      const dialog = element.shadowRoot?.querySelector('config-dialog');
-      dialog?.dispatchEvent(
-        new CustomEvent('configure-environment-submit', {
-          detail: { selectedGrowspaceId: '', temperatureSensors: [], humiditySensors: [] },
-        })
-      );
-      await vi.waitFor(() => {
-        expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
-          expect.stringContaining('mandatory'),
-          'error'
-        );
+        expect(mockApplyEnvironmentChange).toHaveBeenCalledWith(request, expect.any(Object));
       });
     });
 
@@ -3212,19 +3182,6 @@ describe('GrowspaceDialogHostContainer', () => {
 
         // Restore
         element.store = originalStore;
-      });
-
-      it('should fallback to empty array for falsy sensor fields in _handleEnvironmentConfig', async () => {
-        // @ts-ignore
-        await element._handleEnvironmentConfig({
-          selectedGrowspaceId: 'g1',
-          temperatureSensors: undefined,
-          humiditySensors: undefined,
-        });
-        expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
-          'Growspace, Temperature, and Humidity sensors are mandatory',
-          'error'
-        );
       });
 
       it('should handle missing sensor.growspace_manager or attributes in _renderGrowMasterDialog', () => {

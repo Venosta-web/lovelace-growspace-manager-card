@@ -49,7 +49,6 @@ const sliceMocks = vi.hoisted(() => ({
     .fn()
     .mockResolvedValue({ growspace_id: 'gs1', stage_aggregates: { veg: 12.5, flower: 30.0 } }),
   resetWaterTracking: vi.fn().mockResolvedValue(undefined),
-  configureEnvironment: vi.fn().mockResolvedValue(undefined),
   saveECRampCurve: vi.fn().mockResolvedValue(undefined),
   removeECRampCurve: vi.fn().mockResolvedValue(undefined),
   fetchECRampCurves: vi.fn().mockResolvedValue(undefined),
@@ -71,7 +70,6 @@ vi.mock('../../../src/slices/growspace', async (importOriginal) => {
   return {
     ...actual,
     resetWaterTracking: sliceMocks.resetWaterTracking,
-    configureEnvironment: sliceMocks.configureEnvironment,
   };
 });
 
