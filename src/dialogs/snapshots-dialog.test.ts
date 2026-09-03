@@ -12,14 +12,30 @@ vi.mock('../slices/camera', () => ({
   getSnapshots: vi.fn(),
   captureSnapshot: vi.fn(),
   getVisionHistory: vi.fn(),
+  getVisionHistoryV2: vi.fn(),
+  getVisionStatus: vi.fn(),
+  resolveVisionImage: vi.fn(),
   triggerVisionCheckup: vi.fn(),
 }));
 
+// `showToast` is re-exported here for the alert slice, which the Vision evidence
+// surface imports transitively. A mock missing it does not fail as an undefined
+// call — the module graph refuses to link at all.
 vi.mock('../slices/ui', () => ({
   withToast: vi.fn(async (fn: () => Promise<unknown>) => fn()),
+  showToast: vi.fn(),
 }));
 
+vi.mock('../slices/ai-insight', async () => {
+  const { atom } = await import('nanostores');
+  return {
+    aiAlerts$: atom(new Map()),
+    fetchAlerts: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
 import * as cameraSlice from '../slices/camera';
+import * as aiInsightSlice from '../slices/ai-insight';
 import './snapshots-dialog';
 
 // ---------------------------------------------------------------------------
@@ -119,6 +135,21 @@ describe('SnapshotsDialog', () => {
       snapshots: [],
     });
     vi.mocked(cameraSlice.triggerVisionCheckup).mockResolvedValue(FINDING);
+    // The Vision evidence surface loads alongside the captures browser; without
+    // defaults every capture test would drown in its unhandled rejections.
+    vi.mocked(cameraSlice.getVisionHistoryV2).mockResolvedValue({
+      history: [],
+      total: 0,
+      capture_total: 0,
+    });
+    vi.mocked(cameraSlice.getVisionStatus).mockResolvedValue({
+      availability: 'ready',
+      connection_source: 'supervisor',
+      vision_schema_version: 1,
+      model: { id: 'dinov2', version: '1.0.0', dimension: 384 },
+    });
+    vi.mocked(cameraSlice.resolveVisionImage).mockResolvedValue('/media/local/x.jpg?authSig=abc');
+    aiInsightSlice.aiAlerts$.set(new Map());
 
     showToast = vi.fn();
     element = document.createElement('snapshots-dialog') as SnapshotsDialog;
@@ -578,5 +609,171 @@ describe('SnapshotsDialog', () => {
       new CustomEvent('close', { bubbles: true, composed: true })
     );
     expect(closeSpy).toHaveBeenCalled();
+  });
+
+  // ── Vision evidence surface ────────────────────────────────────────────────
+
+  const A_CHECKUP = {
+    result_schema: 'evidence_v1' as const,
+    checkup_id: 'chk-1',
+    growspace_id: 'gs1',
+    trigger_source: 'scheduled' as const,
+    light_window: 'mid' as const,
+    started_at: '2026-09-01T14:00:00+00:00',
+    completed_at: '2026-09-01T14:03:00+00:00',
+    status: 'completed' as const,
+    captures: [
+      {
+        capture_id: 'cap-1',
+        camera_id: 'camera.grow_cam',
+        captured_at: '2026-09-01T14:02:00+00:00',
+        analysis_state: 'analyzed' as const,
+        image: { available: true, media_content_id: 'media-source://media_source/local/a.jpg' },
+        quality: { accepted: true, reasons: [] },
+        provenance: { model_id: 'dinov2', model_version: '1.0.0' },
+        visual: {
+          outcome: 'scored' as const,
+          baseline_state: 'ready' as const,
+          samples_collected: 30,
+          samples_required: 30,
+          raw_distance: 0.184,
+          anomaly_score: 0.9,
+          verdict: 'normal' as const,
+          comparison_confidence: 0.82,
+          unavailable_reasons: [],
+        },
+        environment: {
+          verdict: 'within_evaluated_range' as const,
+          stress_reasons: [],
+          mold_reasons: [],
+        },
+        fusion: {
+          state: 'no_detected_change' as const,
+          confidence: 'confirmed' as const,
+          coverage: 'complete' as const,
+          unavailable_reasons: [],
+        },
+        trend: [],
+      },
+    ],
+  };
+
+  const showEvidence = async () => {
+    qa(element, '.view-tab')
+      .find((tab) => tab.textContent?.includes('Vision evidence'))
+      ?.click();
+    await flush(element);
+  };
+
+  it('offers both surfaces as tabs and opens on the captures browser', async () => {
+    await mount();
+    const tabs = qa(element, '.view-tab');
+
+    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(['Captures', 'Vision evidence']);
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+    expect(q(element, '.view-switch')?.getAttribute('role')).toBe('tablist');
+  });
+
+  it('loads evidence alongside the captures browser, not only when switched to', async () => {
+    await mount();
+    expect(cameraSlice.getVisionHistoryV2).toHaveBeenCalledWith('gs1');
+    expect(cameraSlice.getVisionStatus).toHaveBeenCalled();
+    expect(aiInsightSlice.fetchAlerts).toHaveBeenCalledWith('gs1');
+  });
+
+  it('reaches the evidence surface even when there is not a single snapshot file', async () => {
+    vi.mocked(cameraSlice.getVisionHistoryV2).mockResolvedValue({
+      history: [A_CHECKUP],
+      total: 1,
+      capture_total: 1,
+    });
+    await mount([], []);
+    await showEvidence();
+
+    expect(q(element, 'growspace-vision-evidence')).toBeTruthy();
+    expect(q(element, '.stage')).toBeNull();
+  });
+
+  it('resolves each capture frame through Home Assistant rather than a /local/ path', async () => {
+    vi.mocked(cameraSlice.getVisionHistoryV2).mockResolvedValue({
+      history: [A_CHECKUP],
+      total: 1,
+      capture_total: 1,
+    });
+    await mount();
+
+    expect(cameraSlice.resolveVisionImage).toHaveBeenCalledWith(
+      'media-source://media_source/local/a.jpg'
+    );
+  });
+
+  it('keeps the panel usable when a frame will not resolve', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(cameraSlice.getVisionHistoryV2).mockResolvedValue({
+      history: [A_CHECKUP],
+      total: 1,
+      capture_total: 1,
+    });
+    vi.mocked(cameraSlice.resolveVisionImage).mockRejectedValue(new Error('expired'));
+    await mount();
+    await showEvidence();
+
+    expect(q(element, 'growspace-vision-evidence')).toBeTruthy();
+    consoleSpy.mockRestore();
+  });
+
+  it('passes only this camera-continuity alert kind to the panel', async () => {
+    vi.mocked(cameraSlice.getVisionHistoryV2).mockResolvedValue({
+      history: [A_CHECKUP],
+      total: 1,
+      capture_total: 1,
+    });
+    aiInsightSlice.aiAlerts$.set(
+      new Map([
+        [
+          'gs1',
+          [
+            { id: 'a1', type: 'capture_continuity_break', camera_id: 'camera.grow_cam' },
+            { id: 'a2', type: 'stress' },
+          ],
+        ],
+      ]) as never
+    );
+    await mount();
+
+    const alerts = (element as unknown as { _continuityAlerts: { type: string }[] })
+      ._continuityAlerts;
+    expect(alerts.map((alert) => alert.type)).toEqual(['capture_continuity_break']);
+  });
+
+  it('reports an evidence failure on its own surface, leaving the captures browser alone', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(cameraSlice.getVisionHistoryV2).mockRejectedValue(new Error('offline'));
+    await mount();
+
+    expect(q(element, '.stage')).toBeTruthy();
+    expect(q(element, '.inline-status[role="alert"]')).toBeNull();
+
+    await showEvidence();
+    expect((element as unknown as { _evidenceError: string | null })._evidenceError).toContain(
+      "Vision evidence couldn't be loaded"
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it('discards an in-flight evidence response once the dialog has moved growspace', async () => {
+    const late = deferred<{ history: unknown[]; total: number; capture_total: number }>();
+    vi.mocked(cameraSlice.getVisionHistoryV2).mockReturnValueOnce(late.promise as never);
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+
+    // Move to another growspace, then let gs1's request finally answer.
+    element.dialogState = { growspaceId: 'gs2' };
+    await flush(element);
+    late.resolve({ history: [A_CHECKUP], total: 1, capture_total: 1 });
+    await flush(element);
+
+    expect((element as unknown as { _evidence: unknown[] })._evidence).toHaveLength(0);
   });
 });

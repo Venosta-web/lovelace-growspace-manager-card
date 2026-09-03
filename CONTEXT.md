@@ -460,6 +460,30 @@ _Avoid_: Migrated result, V1 result
 The growspace-local camera and schedule section in the config dialog's Vision tab, topped by read-only [[Vision Service Status]]. It never owns the service endpoint, bearer token, scoring thresholds or model selection.
 _Avoid_: Vision App settings, model settings
 
+**Vision Evidence Panel**
+The second surface of the Camera Snapshots dialog, reached by the view switch beside **Captures**. It renders [[Vision Service Status]] as its head and one [[Two-Channel Ledger]] per [[Vision Capture Result]], and it is never gated on the presence of `/local/` snapshot files — the two surfaces share a camera, not a data source.
+_Avoid_: Vision tab, findings panel, analysis view
+
+**Two-Channel Ledger**
+The presentation of one [[Vision Capture Result]]: a gate strip carrying Frame Quality Result and Baseline State, two sibling columns — _what the camera saw_ and _what the sensors measured_ — that never merge, and the [[Evidence Fusion Outcome]] band beneath them as the only place both channels are named. Structural, not editorial: the columns receive separate inputs, so environmental risk cannot be reported as visible plant stress.
+_Avoid_: Evidence card, verdict card, two-column view
+
+**Anomaly Score Sentence**
+The only surface form of the Anomaly Score — "further from this camera's recent history than 27 of the 30 frames in its baseline". Never a numeral badge, never a gauge. The decimal, the raw distance and the Comparison Confidence live behind the **Numbers behind this** disclosure, beside the statement that the score is not a probability. Withheld entirely when no baseline member count is available, because there is then no denominator to rank against.
+_Avoid_: Anomaly percentage, confidence score, risk score
+
+**Evidence Fusion Outcome**
+The band naming both channels for one capture, explicitly as co-occurrence. `partial` coverage says at least one channel could not speak; an absent outcome takes the [[Quiet Tone]] and says why it is absent.
+_Avoid_: Overall verdict, combined severity
+
+**Quiet Tone**
+The tone for the absence of evidence, deliberately outside the `calm | watch | alert` ramp. An unavailable channel, a not-yet-ready baseline and a missing fusion outcome all take it, because colouring absence as calm is the "unavailable reads as fine" failure the evidence presentation exists to prevent.
+_Avoid_: Neutral, disabled, no data
+
+**Capture Continuity Break Banner**
+The equipment-class banner above the gate strip, shown while a `capture_continuity_break` Triage Alert is `condition_active` for that camera. Coloured off the severity ramp on purpose so a camera fault cannot read as a plant verdict, and it names no cause and no plant condition. Its data does not travel in the `evidence_v1` projection — it is joined from the growspace's Triage Alerts by `camera_id`.
+_Avoid_: Camera error, capture failure alert
+
 ## Localization
 
 **Translation Key**
