@@ -27,6 +27,7 @@ import {
   getVisionHistory,
   getVisionHistoryV2,
   getVisionStatus,
+  resolveVisionImage,
   triggerVisionCheckup,
   updateVisionCheckupConfig,
 } from './index';
@@ -411,5 +412,35 @@ describe('updateVisionCheckupConfig', () => {
     vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('save failed'));
 
     await expect(updateVisionCheckupConfig('gs1', config)).rejects.toThrow('save failed');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveVisionImage
+// ---------------------------------------------------------------------------
+
+describe('resolveVisionImage', () => {
+  it('asks Home Assistant to resolve the capture identifier, not growspace_manager', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      url: '/media/local/growspace_vision/a.jpg?authSig=abc',
+      mime_type: 'image/jpeg',
+    });
+
+    const url = await resolveVisionImage(
+      'media-source://media_source/local/growspace_vision/a.jpg'
+    );
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'media_source/resolve_media',
+      { media_content_id: 'media-source://media_source/local/growspace_vision/a.jpg' },
+      expect.anything()
+    );
+    expect(url).toBe('/media/local/growspace_vision/a.jpg?authSig=abc');
+  });
+
+  it('re-throws so the caller can render "frame unavailable" instead of a broken image', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('gone'));
+
+    await expect(resolveVisionImage('media-source://x')).rejects.toThrow('gone');
   });
 });

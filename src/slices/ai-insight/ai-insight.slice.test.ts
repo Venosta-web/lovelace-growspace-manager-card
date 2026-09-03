@@ -322,9 +322,53 @@ describe('TriageAlertSchema', () => {
     resolution_note: null,
   };
 
+  const continuityAlert = {
+    id: 'alert-2',
+    growspace_id: 'gs1',
+    type: 'capture_continuity_break',
+    title: 'Capture continuity break',
+    description: 'Scheduled captures could not be compared.',
+    severity: 'warning',
+    timestamp: 1700000000,
+    resolved: false,
+    resolution_note: null,
+    camera_id: 'camera.tent_a',
+    streak_started_at: 1699990000,
+    consecutive_count: 4,
+    reason_counts: { frame_rejected: 3, vision_unavailable: 1 },
+    latest_capture_id: 'cap-9',
+    latest_captured_at: 1700000000,
+    condition_active: true,
+    cleared_at: null,
+  };
+
   it('accepts a record with ai_reasoning: null', () => {
     const result = TriageAlertSchema.safeParse(validAlert);
     expect(result.success).toBe(true);
+  });
+
+  it('accepts a capture_continuity_break, which carries no Bayesian or AI evidence', () => {
+    const result = TriageAlertSchema.safeParse(continuityAlert);
+
+    expect(result.success).toBe(true);
+    expect(result.data?.bayesian_reasons).toEqual([]);
+    expect(result.data?.ai_reasoning).toBeNull();
+  });
+
+  it('keeps the continuity evidence a banner needs instead of stripping it', () => {
+    const alert = TriageAlertSchema.parse(continuityAlert);
+
+    expect(alert.camera_id).toBe('camera.tent_a');
+    expect(alert.consecutive_count).toBe(4);
+    expect(alert.reason_counts).toEqual({ frame_rejected: 3, vision_unavailable: 1 });
+    expect(alert.condition_active).toBe(true);
+  });
+
+  it('parses a mixed array — one continuity row must not empty the whole list', () => {
+    const result = TriageAlertSchema.array().safeParse([validAlert, continuityAlert]);
+
+    expect(result.success).toBe(true);
+    expect(result.data).toHaveLength(2);
   });
 });
 

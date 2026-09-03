@@ -261,6 +261,25 @@ export const GetVisionHistoryV2ResponseSchema = z
 export type GetVisionHistoryV2Response = z.infer<typeof GetVisionHistoryV2ResponseSchema>;
 
 // ---------------------------------------------------------------------------
+// media_source/resolve_media response
+// ---------------------------------------------------------------------------
+
+/**
+ * Home Assistant's own command, not a `growspace_manager` one.
+ *
+ * `evidence_v1` never puts an image path on the wire — a capture carries a
+ * `media-source://` identifier, which only Home Assistant can turn into a
+ * signed, expiring URL. Non-strict on purpose: this payload belongs to the
+ * frontend, and a future field of theirs must not fail our parse.
+ */
+export const ResolvedMediaSchema = z.object({
+  url: z.string(),
+  mime_type: z.string().optional(),
+});
+
+export type ResolvedMedia = z.infer<typeof ResolvedMediaSchema>;
+
+// ---------------------------------------------------------------------------
 // get_vision_history response
 // ---------------------------------------------------------------------------
 
