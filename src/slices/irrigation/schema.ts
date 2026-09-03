@@ -88,10 +88,21 @@ export const SaveIrrigationSettingsPayloadSchema = growspaceIdPayload.extend({
   auto_advance_p1_to_p2: z.boolean().optional(),
   auto_advance_p2_to_p3: z.boolean().optional(),
   halt_on_runoff_ec_threshold: z.number().nullable().optional(),
-  active_steering_phase: z.enum(['p1', 'p2', 'p3']).optional(),
 });
 
 export type SaveIrrigationSettingsPayload = z.infer<typeof SaveIrrigationSettingsPayloadSchema>;
+
+/**
+ * The manual phase override (ADR-0012) — its own action, because the phase is
+ * the backend steering machine's to decide and a settings save must not be
+ * able to carry a stale one. Named `steering_phase` on the wire, beside
+ * `steering_mode`; the growspace payload reports it as `active_steering_phase`.
+ */
+export const SetSteeringPhasePayloadSchema = growspaceIdPayload.extend({
+  steering_phase: z.enum(['p1', 'p2', 'p3']),
+});
+
+export type SetSteeringPhasePayload = z.infer<typeof SetSteeringPhasePayloadSchema>;
 
 // ---------------------------------------------------------------------------
 // Schedule

@@ -38,6 +38,7 @@ import {
   updateIrrigationStrategy,
   applySteeringMode,
   saveIrrigationSettings,
+  setSteeringPhase,
   logDrainReading,
   configureDrainMonitoring,
   setEcTargetRanges,
@@ -62,6 +63,7 @@ import {
   IrrigationModeSchema,
   SetIrrigationStrategyPayloadSchema,
   SaveIrrigationSettingsPayloadSchema,
+  SetSteeringPhasePayloadSchema,
   AddIrrigationTimePayloadSchema,
   RemoveIrrigationTimePayloadSchema,
   AddDrainTimePayloadSchema,
@@ -886,7 +888,6 @@ describe('saveIrrigationSettings', () => {
       autoAdvanceP1ToP2: true,
       autoAdvanceP2ToP3: true,
       haltOnRunoffEcThreshold: 4.2,
-      activeSteeringPhase: 'p3',
     });
 
     expect(hassCall.callService).toHaveBeenCalledWith(
@@ -908,9 +909,23 @@ describe('saveIrrigationSettings', () => {
         auto_advance_p1_to_p2: true,
         auto_advance_p2_to_p3: true,
         halt_on_runoff_ec_threshold: 4.2,
-        active_steering_phase: 'p3',
       })
     );
+  });
+
+  it('never carries the steering phase: that is set_steering_phase alone', async () => {
+    setIrrigationConfig('gs1', makeConfig());
+
+    await saveIrrigationSettings('gs1', {
+      irrigationPumpEntity: 'switch.pump',
+      drainPumpEntity: 'switch.drain',
+      irrigationDuration: 60,
+      drainDuration: 30,
+    });
+
+    const payload = vi.mocked(hassCall.callService).mock.calls[0][2] as Record<string, unknown>;
+    expect(payload).not.toHaveProperty('active_steering_phase');
+    expect(payload).not.toHaveProperty('steering_phase');
   });
 
   it('rolls back settings on failure', async () => {
@@ -952,6 +967,33 @@ describe('saveIrrigationSettings', () => {
 
     const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.irrigationPumpEntity).toBe('switch.new');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// setSteeringPhase
+// ---------------------------------------------------------------------------
+
+describe('setSteeringPhase', () => {
+  it('calls set_steering_phase and patches the phase optimistically', async () => {
+    setIrrigationConfig('gs1', makeConfig({ activeSteeringPhase: 'p2' }));
+
+    await setSteeringPhase('gs1', 'p3');
+
+    expect(hassCall.callService).toHaveBeenCalledWith('growspace_manager', 'set_steering_phase', {
+      growspace_id: 'gs1',
+      steering_phase: 'p3',
+    });
+    expect(irrigationConfigs$.get().get('gs1')?.activeSteeringPhase).toBe('p3');
+  });
+
+  it('restores the previous phase when the service refuses', async () => {
+    setIrrigationConfig('gs1', makeConfig({ activeSteeringPhase: 'p2' }));
+    vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('fail'));
+
+    await expect(setSteeringPhase('gs1', 'p3')).rejects.toThrow();
+
+    expect(irrigationConfigs$.get().get('gs1')?.activeSteeringPhase).toBe('p2');
   });
 });
 
@@ -1137,21 +1179,24 @@ describe('Zod Schema Validations', () => {
         auto_advance_p1_to_p2: true,
         auto_advance_p2_to_p3: true,
         halt_on_runoff_ec_threshold: 3.5,
-        active_steering_phase: 'p2',
       };
       expect(SaveIrrigationSettingsPayloadSchema.parse(payload)).toEqual(payload);
     });
+  });
+
+  describe('SetSteeringPhasePayloadSchema', () => {
+    it('validates the manual phase override payload', () => {
+      const payload = { growspace_id: 'gs1', steering_phase: 'p2' };
+      expect(SetSteeringPhasePayloadSchema.parse(payload)).toEqual(payload);
+    });
 
     it('rejects invalid phase enum', () => {
-      const payload = {
-        growspace_id: 'gs1',
-        irrigation_pump_entity: 'switch.pump',
-        drain_pump_entity: 'switch.drain',
-        irrigation_duration: 60,
-        drain_duration: 30,
-        active_steering_phase: 'invalid-phase',
-      };
-      expect(SaveIrrigationSettingsPayloadSchema.safeParse(payload).success).toBe(false);
+      expect(
+        SetSteeringPhasePayloadSchema.safeParse({
+          growspace_id: 'gs1',
+          steering_phase: 'invalid-phase',
+        }).success
+      ).toBe(false);
     });
   });
 

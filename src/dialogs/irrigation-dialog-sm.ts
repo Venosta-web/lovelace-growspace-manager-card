@@ -857,6 +857,7 @@ function resetActiveTabDraft(sm: DialogSM, device: GrowspaceDevice): TabStates {
 const ACTION_ERROR_MESSAGES: Record<string, string> = {
   'save-all': 'Failed to save irrigation settings',
   'save-settings': 'Failed to save irrigation settings',
+  'set-steering-phase': 'Failed to change the steering phase',
   'run-now': 'Failed to run irrigation cycle',
   'edit-irrigation-time': 'Failed to save irrigation time',
   'edit-drain-time': 'Failed to save drain time',
