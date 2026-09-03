@@ -98,8 +98,15 @@ export const ECRampPointSchema = z
     target_ec: data.target_ec ?? data.ec_min ?? 0,
   }));
 
+/**
+ * A curve is owned by exactly one growspace (ADR-0046) and drives only that
+ * growspace's feed EC target. `growspace_id` defaults to '' rather than being
+ * required because curves stored before the binding existed carry no owner —
+ * they are inert, and Home Assistant raises a repair asking for a re-save.
+ */
 export const ECRampCurveSchema = z.object({
   id: z.string(),
+  growspace_id: z.string().optional().default(''),
   name: z.string(),
   stage: z.string().optional().default('flower'),
   points: z.array(ECRampPointSchema),

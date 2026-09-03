@@ -63,6 +63,8 @@ function deriveRow(curve: ECRampCurve): EcRampCurveRowVM {
  * snapshot the payload into `applying.params` at dispatch time (ADR-0015).
  */
 export interface EcRampSavePayload {
+  /** The growspace that owns the curve (ADR-0046) — required by the service. */
+  growspace_id: string;
   curve_id?: string;
   name: string;
   stage: string;
@@ -70,7 +72,8 @@ export interface EcRampSavePayload {
 }
 
 export function composeEcRampSave(
-  draft: EcRampCurveDraft
+  draft: EcRampCurveDraft,
+  growspaceId: string
 ): { ok: true; payload: EcRampSavePayload } | { ok: false; error: string } {
   if (!draft.name?.trim()) {
     return { ok: false, error: 'Curve name is required' };
@@ -82,6 +85,7 @@ export function composeEcRampSave(
   return {
     ok: true,
     payload: {
+      growspace_id: growspaceId,
       curve_id: draft.id,
       name: draft.name.trim(),
       stage: draft.stage ?? 'flower',
@@ -94,14 +98,22 @@ export function composeEcRampSave(
  * Pure factory: SM atom + the Nutrient slice's `ecRampCurves$` → one EC Ramp VM
  * atom. `$sm`-first (it carries the view + draft + error); the curve data comes
  * from the slice (ADR-0005), not a fresh source. No `$caps`. Testable with no DOM.
+ *
+ * The slice holds every growspace's curves, but a curve belongs to exactly one
+ * growspace (ADR-0046), so the device atom scopes the list to this dialog's own.
+ * Curves with no owner — stored before the binding existed — belong to no
+ * growspace and are listed nowhere; Home Assistant raises a repair for them.
  */
 export function createEcRampTabViewModel(
   $sm: ReadableAtom<DialogSM>,
-  $ecRampCurves: ReadableAtom<ECRampCurvesResponse | null>
+  $ecRampCurves: ReadableAtom<ECRampCurvesResponse | null>,
+  $device: ReadableAtom<{ deviceId: string } | undefined>
 ): ReadableAtom<EcRampTabViewModel> {
-  return computed([$sm, $ecRampCurves], (sm, curves) => {
+  return computed([$sm, $ecRampCurves, $device], (sm, curves, device) => {
     const tab = sm.tabs.ec_ramp;
-    const rows = Object.values(curves ?? {}).map(deriveRow);
+    const rows = Object.values(curves ?? {})
+      .filter((curve) => !!device && curve.growspace_id === device.deviceId)
+      .map(deriveRow);
     const sub = tab.sub;
     return {
       curves: rows,

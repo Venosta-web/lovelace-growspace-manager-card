@@ -429,6 +429,7 @@ describe('removeNutrientStock', () => {
 describe('saveECRampCurve', () => {
   it('transforms day/target_ec points to week/ec_min/ec_max before calling callService', async () => {
     await saveECRampCurve({
+      growspace_id: 'gs1',
       name: 'Flower Ramp',
       stage: 'flower',
       points: [
@@ -441,6 +442,7 @@ describe('saveECRampCurve', () => {
       'growspace_manager',
       'save_ec_ramp_curve',
       {
+        growspace_id: 'gs1',
         curve_id: undefined,
         name: 'Flower Ramp',
         stage: 'flower',
@@ -453,7 +455,11 @@ describe('saveECRampCurve', () => {
   });
 
   it('defaults stage to flower when not provided', async () => {
-    await saveECRampCurve({ name: 'Ramp', points: [{ day: 1, target_ec: 1.2 }] });
+    await saveECRampCurve({
+      growspace_id: 'gs1',
+      name: 'Ramp',
+      points: [{ day: 1, target_ec: 1.2 }],
+    });
 
     expect(hassCallModule.callService).toHaveBeenCalledWith(
       'growspace_manager',
@@ -463,7 +469,7 @@ describe('saveECRampCurve', () => {
   });
 
   it('passes curve_id when provided', async () => {
-    await saveECRampCurve({ curve_id: 'c1', name: 'Ramp', points: [] });
+    await saveECRampCurve({ growspace_id: 'gs1', curve_id: 'c1', name: 'Ramp', points: [] });
 
     expect(hassCallModule.callService).toHaveBeenCalledWith(
       'growspace_manager',
@@ -475,7 +481,19 @@ describe('saveECRampCurve', () => {
   it('re-throws on failure', async () => {
     vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('save failed'));
 
-    await expect(saveECRampCurve({ name: 'X', points: [] })).rejects.toThrow('save failed');
+    await expect(saveECRampCurve({ growspace_id: 'gs1', name: 'X', points: [] })).rejects.toThrow(
+      'save failed'
+    );
+  });
+
+  it('sends the owning growspace, which the service requires (ADR-0046)', async () => {
+    await saveECRampCurve({ growspace_id: 'gs_flower_tent', name: 'Ramp', points: [] });
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'save_ec_ramp_curve',
+      expect.objectContaining({ growspace_id: 'gs_flower_tent' })
+    );
   });
 });
 
