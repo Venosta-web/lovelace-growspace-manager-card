@@ -199,7 +199,7 @@ export class GrowspaceVisionCaptureLedger extends LitElement {
          Measured, not assumed; the sparkline test pins it. */
       .spark path {
         fill: none;
-        stroke: var(--secondary-text-color, #bbb);
+        stroke: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
         stroke-width: 1.5;
       }
 
