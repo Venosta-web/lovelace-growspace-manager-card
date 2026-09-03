@@ -26,6 +26,7 @@
  *   addDrainTime()               — optimistic: append + sort drain schedule
  *   removeDrainTime()            — optimistic: remove from drain schedule
  *   updateIrrigationStrategy()   — optimistic: merge strategy fields
+ *   setSteeringPhase()           — optimistic: override the active phase
  *   saveIrrigationSettings()     — optimistic: merge config settings
  *   logDrainReading()            — fire-and-forget
  *   configureDrainMonitoring()   — fire-and-forget
@@ -860,6 +861,44 @@ export async function setProgramAutoAdvance(growspaceId: string, enabled: boolea
 }
 
 /**
+ * Override the active crop-steering phase by hand (ADR-0012).
+ *
+ * Its **own** action rather than a field of `saveIrrigationSettings` below: the
+ * phase is the backend steering machine's to decide every tick, so a settings
+ * save that carried it would write whatever phase this dialog last hydrated
+ * over whatever the machine has since decided. The override holds until the
+ * machine next transitions on its own — a correction, not a lock.
+ *
+ * Optimistic: patches the phase the steering tab and the day chart read.
+ */
+export async function setSteeringPhase(
+  growspaceId: string,
+  phase: 'p1' | 'p2' | 'p3'
+): Promise<void> {
+  const prevValue = _getConfig(growspaceId).activeSteeringPhase;
+
+  await mutate(
+    {
+      type: 'setSteeringPhase',
+      optimistic: () => {
+        _patchConfig(growspaceId, { activeSteeringPhase: phase });
+        patchDeviceIrrigationConfig(growspaceId, { activeSteeringPhase: phase });
+      },
+      inverse: () => {
+        _patchConfig(growspaceId, { activeSteeringPhase: prevValue });
+        patchDeviceIrrigationConfig(growspaceId, { activeSteeringPhase: prevValue });
+      },
+      apply: () =>
+        callService('growspace_manager', 'set_steering_phase', {
+          growspace_id: growspaceId,
+          steering_phase: phase,
+        }),
+    },
+    growspaceId
+  );
+}
+
+/**
  * Persist irrigation settings (pump entities, durations, caps, flags).
  *
  * Optimistic: patches irrigationConfigs$ with the new settings.
@@ -883,7 +922,6 @@ export async function saveIrrigationSettings(
     autoAdvanceP1ToP2?: boolean;
     autoAdvanceP2ToP3?: boolean;
     haltOnRunoffEcThreshold?: number | null;
-    activeSteeringPhase?: 'p1' | 'p2' | 'p3';
   }
 ): Promise<void> {
   const prev = _getConfig(growspaceId);
@@ -902,7 +940,6 @@ export async function saveIrrigationSettings(
     autoAdvanceP1ToP2: settings.autoAdvanceP1ToP2,
     autoAdvanceP2ToP3: settings.autoAdvanceP2ToP3,
     haltOnRunoffEcThreshold: settings.haltOnRunoffEcThreshold,
-    activeSteeringPhase: settings.activeSteeringPhase,
   };
   if (settings.pumpFlowRateMlPerSec !== undefined)
     patch.pumpFlowRateMlPerSec = settings.pumpFlowRateMlPerSec;
@@ -930,8 +967,6 @@ export async function saveIrrigationSettings(
     payload.auto_advance_p2_to_p3 = settings.autoAdvanceP2ToP3;
   if (settings.haltOnRunoffEcThreshold !== undefined)
     payload.halt_on_runoff_ec_threshold = settings.haltOnRunoffEcThreshold;
-  if (settings.activeSteeringPhase !== undefined)
-    payload.active_steering_phase = settings.activeSteeringPhase;
 
   await mutate(
     {

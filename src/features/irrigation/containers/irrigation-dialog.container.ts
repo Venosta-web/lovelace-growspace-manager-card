@@ -53,6 +53,7 @@ import {
   addDrainTime,
   removeDrainTime,
   saveIrrigationSettings,
+  setSteeringPhase,
   updateIrrigationStrategy,
   runIrrigationCycle,
   configureDrainMonitoring,
@@ -219,7 +220,6 @@ interface SaveSettingsParams {
   autoAdvanceP1ToP2: boolean;
   autoAdvanceP2ToP3: boolean;
   haltOnRunoffEcThreshold: number | null;
-  activeSteeringPhase: 'p1' | 'p2' | 'p3';
 }
 
 interface SaveAllParams {
@@ -444,6 +444,7 @@ export class IrrigationDialog extends LitElement {
   public readonly effects: Record<string, (params: unknown) => Promise<void>> = {
     'save-all': (params) => this._effectSaveAll(params as SaveAllParams),
     'save-settings': (params) => this._effectSaveSettings(params as SaveSettingsParams),
+    'set-steering-phase': (params) => this._effectSetSteeringPhase(params as { phase: Phase }),
     'run-now': () => this._effectRunNow(),
     'edit-irrigation-time': (params) => this._effectEditIrrigationTime(params as EditTimeParams),
     'edit-drain-time': (params) => this._effectEditDrainTime(params as EditTimeParams),
@@ -1003,7 +1004,6 @@ export class IrrigationDialog extends LitElement {
       autoAdvanceP1ToP2: cfg.autoAdvanceP1ToP2,
       autoAdvanceP2ToP3: cfg.autoAdvanceP2ToP3,
       haltOnRunoffEcThreshold: cfg.haltOnRunoffEcThreshold,
-      activeSteeringPhase: this._sm.tabs.steering.phase,
     };
 
     // Older integration releases expose this value in the growspace payload but
@@ -1079,19 +1079,14 @@ export class IrrigationDialog extends LitElement {
     await setEcTargetRanges(id, params.ecTargetRanges);
   }
 
-  /** Save just the settings (used by phase-change confirm). Synchronous dispatcher. */
-  private _saveSettings() {
-    if (!this.device?.deviceId) return;
-    this.dispatch({
-      type: 'SaveRequested',
-      action: 'save-settings',
-      params: this._buildSettingsParams(),
-    });
-  }
-
   private async _effectSaveSettings(params: SaveSettingsParams) {
     if (!this.device?.deviceId) return;
     await saveIrrigationSettings(this.device.deviceId, params);
+  }
+
+  private async _effectSetSteeringPhase(params: { phase: Phase }) {
+    if (!this.device?.deviceId) return;
+    await setSteeringPhase(this.device.deviceId, params.phase);
   }
 
   private async _fetchStageAnalytics() {
@@ -1714,7 +1709,7 @@ export class IrrigationDialog extends LitElement {
   // The Shell owns the translation. The steering UI writes TWO drafts, so the
   // steering tab emits two distinct draft intents (steering vs config). The two
   // confirm-CONFIRMED intents keep their preserved side-effects here (ADR-0012):
-  // the `applySteeringMode` store action and `_saveSettings`.
+  // the `applySteeringMode` and `setSteeringPhase` store actions.
 
   /** Steering draft field → UPDATE_STEERING_DRAFT. */
   private _onSteeringDraftChanged(e: CustomEvent<{ partial: Partial<IrrigationStrategy> }>) {
@@ -1756,10 +1751,22 @@ export class IrrigationDialog extends LitElement {
     this._sm = transition(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: e.detail.phase });
   }
 
-  /** Confirm the phase change (ADR-0012): commit the transition, then persist. */
+  /** Confirm the phase change (ADR-0012): commit the transition, then persist.
+   *
+   * Persisted by its own action, not by a settings save: the phase belongs to
+   * the backend steering machine, so writing it is this one gesture and never
+   * a passenger on the buffered form.
+   */
   private _onPhaseChangeConfirmed() {
+    const phase = this._sm.tabs.steering.sub;
+    if (phase.kind !== 'confirm-phase') return;
+    const pending = phase.pending;
     this._sm = transition(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
-    this._saveSettings();
+    this.dispatch({
+      type: 'SaveRequested',
+      action: 'set-steering-phase',
+      params: { phase: pending },
+    });
   }
 
   /** Cancel/close the phase-change confirm overlay. */
