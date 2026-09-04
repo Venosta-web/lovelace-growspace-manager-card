@@ -12,6 +12,13 @@ const VISION_FIXTURES = [
   'vision_history_response',
   'trigger_vision_checkup_response',
 ];
+// Every payload the card's TC chunk parses, and the local file each is written
+// to. One entry per contract, so adding a TC command is one line here rather
+// than a fourth copy of the download call.
+const TC_FIXTURES = [
+  ['tc_manifest_response', 'tc-main-manifest.json'],
+  ['tc_culture_media_response', 'tc-main-culture-media.json'],
+];
 
 async function fetchWithRetry(url, fetchImpl, attempts = 3) {
   let lastError;
@@ -92,16 +99,18 @@ export async function fetchContractFixtures({
 
   // TC integrates on `main` and has published no release yet, so there is no
   // backward-safety ref to check against: nothing is installed that a card
-  // change could strand. This is required, not optional — a missing fixture
+  // change could strand. These are required, not optional — a missing fixture
   // means the TC contract has not landed, which is exactly when the card must
   // not merge.
-  await downloadFixture({
-    baseUrl: tcBaseUrl,
-    fetchImpl,
-    fixture: 'tc_manifest_response',
-    output: path.join(outputDirectory, 'tc-main-manifest.json'),
-    refs: ['main'],
-  });
+  for (const [fixture, output] of TC_FIXTURES) {
+    await downloadFixture({
+      baseUrl: tcBaseUrl,
+      fetchImpl,
+      fixture,
+      output: path.join(outputDirectory, output),
+      refs: ['main'],
+    });
+  }
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {

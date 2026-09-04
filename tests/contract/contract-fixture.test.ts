@@ -12,7 +12,7 @@ import {
   formatContractDrift,
   type ContractVerdict,
 } from '../../src/contract-fixture/key-set-diff';
-import { TcManifestSchema } from '../../src/slices/tc/schema';
+import { CultureMediaResponseSchema, TcManifestSchema } from '../../src/slices/tc/schema';
 
 interface FixtureContract {
   name: string;
@@ -67,6 +67,13 @@ const CONTRACTS: FixtureContract[] = [
     schema: TcManifestSchema,
     leadingVariable: 'TC_MAIN_MANIFEST_FIXTURE',
     releaseVariable: 'TC_RELEASE_MANIFEST_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'TC culture media',
+    schema: CultureMediaResponseSchema,
+    leadingVariable: 'TC_MAIN_CULTURE_MEDIA_FIXTURE',
+    releaseVariable: 'TC_RELEASE_CULTURE_MEDIA_FIXTURE',
     releaseRequired: false,
   },
 ];

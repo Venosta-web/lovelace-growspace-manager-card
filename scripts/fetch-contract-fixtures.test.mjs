@@ -65,7 +65,7 @@ test('a non-404 prerelease failure stays attributed to the current backend', asy
   );
 });
 
-test('the TC manifest is fetched from the TC repository, not the backend', async (t) => {
+test('TC fixtures are fetched from the TC repository, not the backend', async (t) => {
   const outputDirectory = await mkdtemp(path.join(os.tmpdir(), 'gsm-fixtures-'));
   t.after(() => rm(outputDirectory, { recursive: true, force: true }));
   const urls = [];
@@ -88,6 +88,33 @@ test('the TC manifest is fetched from the TC repository, not the backend', async
   assert.equal(
     manifest.source,
     'https://tc-fixtures.example/main/tests/fixtures/contract/tc_manifest_response.json'
+  );
+  const media = JSON.parse(
+    await readFile(path.join(outputDirectory, 'tc-main-culture-media.json'), 'utf8')
+  );
+  assert.equal(
+    media.source,
+    'https://tc-fixtures.example/main/tests/fixtures/contract/tc_culture_media_response.json'
+  );
+});
+
+test('a card change cannot merge ahead of the TC media contract it consumes', async (t) => {
+  const outputDirectory = await mkdtemp(path.join(os.tmpdir(), 'gsm-fixtures-'));
+  t.after(() => rm(outputDirectory, { recursive: true, force: true }));
+  const fetchImpl = async (url) =>
+    url.includes('tc_culture_media_response')
+      ? new Response('not found', { status: 404 })
+      : new Response('{}', { status: 200 });
+
+  await assert.rejects(
+    fetchContractFixtures({
+      releaseTag: 'v1.2.3',
+      outputDirectory,
+      baseUrl: 'https://fixtures.example',
+      tcBaseUrl: 'https://tc-fixtures.example',
+      fetchImpl,
+    }),
+    /tc_culture_media_response was not found at refs: main/
   );
 });
 
