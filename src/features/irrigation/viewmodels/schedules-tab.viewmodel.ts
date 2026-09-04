@@ -18,8 +18,10 @@
  * `tabs.steering.draft` (the cross-tab read for shot/phase computation — expected
  * per ADR-0019, the VM reads `$sm`; steering state is never duplicated). The
  * device atom supplies the schedule rows, `flowerWeek`, `irrigationConfig` (for
- * phase boundaries) and is passed through for the chart. The history atom supplies
- * the legend's "sensor not configured" flags.
+ * phase boundaries) and is passed through for the chart. The steering draft is
+ * passed through beside it, because the chart resolves its own strategy and would
+ * otherwise draw the persisted one while this VM already derived the draft (growspace_manager_workspace#130).
+ * The history atom supplies the legend's "sensor not configured" flags.
  *
  * Time-of-day (`now` / `isPast` / the now-line) is deliberately NOT derived here:
  * it is view geometry that depends on `Date.now()`, so it stays in the component's
@@ -105,6 +107,13 @@ export interface SchedulesTabViewModel {
   cropSteering: CropSteeringScheduleVM | null;
   /** Passed straight through so the component can host `<crop-steering-day-chart>`. */
   device: GrowspaceDevice | undefined;
+  /**
+   * The unsaved steering draft, handed to the hosted chart as its strategy so the
+   * preview is derived from the same values this VM's `cropSteering` panel is.
+   * Without it the chart would read `device.irrigationStrategy` and keep drawing
+   * the last saved strategy while the legend beside it already showed the draft.
+   */
+  steeringDraft: Partial<IrrigationStrategy>;
 }
 
 /** Builds the time-block list for one schedule section (transcribed verbatim). */
@@ -247,6 +256,7 @@ export function createSchedulesTabViewModel(
         ? deriveCropSteeringPanel(device, steeringDraft, history.get(device?.deviceId ?? ''))
         : null,
       device,
+      steeringDraft,
     };
   });
 }

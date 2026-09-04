@@ -15,6 +15,7 @@ import type {
   ScheduleSectionVM,
   CropSteeringScheduleVM,
 } from '../../../../../src/features/irrigation/viewmodels/schedules-tab.viewmodel';
+import type { CropSteeringDayChart } from '../../../../../src/features/environment/components/crop-steering-day-chart';
 
 // Stub HA + md3 + the shared chart custom elements unavailable in the test env.
 for (const tag of [
@@ -93,6 +94,7 @@ function makeVm(overrides: Partial<SchedulesTabViewModel> = {}): SchedulesTabVie
     drainSection: null,
     cropSteering: null,
     device: undefined,
+    steeringDraft: {},
     ...overrides,
   };
 }
@@ -247,6 +249,25 @@ describe('irrigation-schedules-tab', () => {
       b.textContent?.includes('ADD TIME')
     );
     expect(addTime).toBeUndefined();
+  });
+
+  it('hands the unsaved steering draft to the chart as its strategy (growspace_manager_workspace#130)', async () => {
+    const steeringDraft = { enabled: true, lightsOnTime: '06:00:00', p0DurationMinutes: 45 };
+    const el = await mount(
+      makeVm({
+        isCropSteering: true,
+        irrigationSection: null,
+        cropSteering: cropSteeringPanel(),
+        steeringDraft,
+      })
+    );
+
+    // The chart resolves its own strategy, so the draft has to reach it as a
+    // property — otherwise it keeps drawing the last saved one.
+    const chart = el.shadowRoot!.querySelector(
+      'crop-steering-day-chart'
+    ) as Partial<CropSteeringDayChart>;
+    expect(chart.strategyOverride).toBe(steeringDraft);
   });
 
   it('shows the crop-steering empty state when not configured', async () => {

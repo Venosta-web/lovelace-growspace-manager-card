@@ -12,7 +12,9 @@
  * Time-of-day view geometry (the now-line position, `isPast` shading) is computed
  * here in `render()` from `Date.now()` — it is presentation, not state, so it
  * stays out of the pure ViewModel. The shared `<crop-steering-day-chart>` is
- * hosted unchanged with the `device` passed through the VM.
+ * hosted with the `device` passed through the VM, and with the VM's unsaved
+ * `steeringDraft` as its `strategyOverride` so the chart previews the same draft
+ * the panel around it already reads (growspace_manager_workspace#130).
  *
  * Tab Intents (the Dialog Shell owns their translation to SM events):
  *   - `schedules-begin-add`        detail: { type, time, duration }
@@ -440,7 +442,10 @@ export class IrrigationSchedulesTab extends LitElement {
 
         <div class="cs-timeline">
           <!-- Phase strip + shot track + substrate model: all owned by the shared chart -->
-          <crop-steering-day-chart .device=${this.vm.device}></crop-steering-day-chart>
+          <crop-steering-day-chart
+            .device=${this.vm.device}
+            .strategyOverride=${this.vm.steeringDraft}
+          ></crop-steering-day-chart>
 
           <!-- Legend: flags missing sensors only — the readout above already
                supplies the color-to-trace mapping for configured metrics -->

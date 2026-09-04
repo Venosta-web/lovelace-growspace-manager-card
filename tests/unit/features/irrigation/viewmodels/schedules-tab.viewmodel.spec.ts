@@ -267,6 +267,55 @@ describe('createSchedulesTabViewModel — crop-steering mode', () => {
     expect(cs.phases.find((p) => p.id === 'p2')!.shotCount).toBe(6);
   });
 
+  it('exposes the steering draft so the hosted chart can preview it (growspace_manager_workspace#130)', () => {
+    const dev = steeringDevice();
+    const vm = build(createInitialSM(dev), dev);
+    // Hydrated from the device, so an untouched dialog previews what is running.
+    expect(vm.steeringDraft.p2StopBeforeLightsOffMinutes).toBe(120);
+    expect(vm.steeringDraft.lightsOnTime).toBe('06:00:00');
+  });
+
+  it('recomputes the projected day from an unsaved P2 timing change (growspace_manager_workspace#130)', () => {
+    // Lights 06:00–17:00, P0 ends 07:00, P2 stops 120m before lights-off (15:00),
+    // shots every 120m → 07:00, 09:00, 11:00, 13:00.
+    const dev = device({
+      irrigationStrategy: {
+        enabled: true,
+        lightsOnTime: '06:00:00',
+        p0DurationMinutes: 60,
+        p2StopBeforeLightsOffMinutes: 120,
+        shotDurationSeconds: 15,
+        shotIntervalMinutes: 120,
+        maintenanceDrybackPercent: 3,
+      },
+      irrigationConfig: {
+        irrigationPumpEntity: 'switch.pump',
+        drainPumpEntity: '',
+        irrigationDuration: 60,
+        drainDuration: 60,
+        irrigationTimes: [],
+        drainTimes: [],
+        resolvedDayHours: 11,
+      },
+    } as unknown as Partial<GrowspaceDevice>);
+
+    const saved = build(createInitialSM(dev), dev);
+    expect(saved.cropSteering!.shotCount).toBe(4);
+
+    // The grower stops P2 six hours before lights-off instead of two. Nothing is
+    // saved: the device atom still carries the 120m strategy.
+    const edited = transition(createInitialSM(dev), {
+      type: 'UPDATE_STEERING_DRAFT',
+      partial: { p2StopBeforeLightsOffMinutes: 360 },
+    });
+    const preview = build(edited, dev);
+
+    expect(dev.irrigationStrategy!.p2StopBeforeLightsOffMinutes).toBe(120);
+    expect(preview.cropSteering!.shotCount).toBe(2);
+    // …and the same draft reaches the chart, which resolves its own strategy.
+    expect(preview.steeringDraft.p2StopBeforeLightsOffMinutes).toBe(360);
+  });
+
   it('flags missing pore/bulk EC sensors from the history atom', () => {
     const dev = steeringDevice();
     const history = new Map<string, CropSteeringHistory>([

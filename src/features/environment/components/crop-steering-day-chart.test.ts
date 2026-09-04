@@ -2,7 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import './crop-steering-day-chart';
 import type { CropSteeringDayChart } from './crop-steering-day-chart';
 import { cropSteeringHistory$ } from '../../../slices/irrigation';
-import { createGrowspaceDevice, type GrowspaceDevice } from '../../../services/types';
+import {
+  createGrowspaceDevice,
+  type GrowspaceDevice,
+  type IrrigationStrategy,
+} from '../../../services/types';
 import { hassCall } from '../../../services/hass-call';
 import { METRIC_CONFIG, MetricKey } from '../constants';
 import type { HistorySensorState, SensorHistories } from '../types';
@@ -530,6 +534,83 @@ describe('CropSteeringDayChart – guide marks', () => {
       expect(color).toBe('rgb(245, 245, 245)');
       expect(contrastRatio(color, tooltipStyle.backgroundColor)).toBeGreaterThanOrEqual(4.5);
     }
+  });
+});
+
+// ─── strategy override (live preview) ─────────────────────────────────────────
+
+describe('CropSteeringDayChart – strategyOverride', () => {
+  /**
+   * Lights 06:00–18:00 (no `resolvedDayHours`, so the 12h default), P0 ends
+   * 07:00, P2 stops 180m before lights-off (15:00), shots every 120m →
+   * 07:00 · 09:00 · 11:00 · 13:00 = four shots.
+   */
+  function fourShotStrategy(): IrrigationStrategy {
+    return {
+      enabled: true,
+      lightsOnTime: '06:00:00',
+      p0DurationMinutes: 60,
+      p2StopBeforeLightsOffMinutes: 180,
+      targetVwcPercent: 65,
+      maintenanceDrybackPercent: 3,
+      shotDurationSeconds: 30,
+      shotIntervalMinutes: 120,
+    };
+  }
+
+  /** The same day with P2 stopping 420m early (11:00) → 07:00 · 09:00 = two. */
+  function twoShotOverride(): IrrigationStrategy {
+    return { ...fourShotStrategy(), p2StopBeforeLightsOffMinutes: 420 };
+  }
+
+  const shotCount = (el: CropSteeringDayChart) =>
+    el.shadowRoot!.querySelectorAll('.cs-event').length;
+
+  it('draws the device strategy when no override is given', async () => {
+    const el = createElement();
+    el.device = makeDevice({ irrigationStrategy: fourShotStrategy() });
+    await el.updateComplete;
+
+    expect(shotCount(el)).toBe(4);
+  });
+
+  it('draws an unsaved override instead of the persisted strategy (growspace_manager_workspace#130)', async () => {
+    const el = createElement();
+    el.device = makeDevice({ irrigationStrategy: fourShotStrategy() });
+    await el.updateComplete;
+    expect(shotCount(el)).toBe(4);
+
+    // The grower moves the P2 stop boundary in the dialog. Nothing is saved —
+    // the device still carries the four-shot strategy — but the preview follows.
+    el.strategyOverride = twoShotOverride();
+    await el.updateComplete;
+
+    expect(el.device!.irrigationStrategy!.p2StopBeforeLightsOffMinutes).toBe(180);
+    expect(shotCount(el)).toBe(2);
+  });
+
+  it('falls back to the device strategy when the override is cleared', async () => {
+    const el = createElement();
+    el.device = makeDevice({ irrigationStrategy: fourShotStrategy() });
+    el.strategyOverride = twoShotOverride();
+    await el.updateComplete;
+    expect(shotCount(el)).toBe(2);
+
+    el.strategyOverride = undefined;
+    await el.updateComplete;
+
+    expect(shotCount(el)).toBe(4);
+  });
+
+  it('shows the empty state when the override disables steering', async () => {
+    const el = createElement();
+    el.device = makeDevice({ irrigationStrategy: fourShotStrategy() });
+    el.strategyOverride = { ...fourShotStrategy(), enabled: false };
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.placeholder')?.textContent).toContain(
+      'No strategy configured'
+    );
   });
 });
 

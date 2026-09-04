@@ -2,7 +2,7 @@ import { LitElement, html, svg, css, type TemplateResult, type PropertyValues, n
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { StoreController } from '@nanostores/lit';
-import type { GrowspaceDevice } from '../../../services/types';
+import type { GrowspaceDevice, IrrigationStrategy } from '../../../services/types';
 import type { SensorHistories } from '../types';
 import { ChartUtils } from '../../../utils/chart-utils';
 import { cropSteeringHistory$, fetchCropSteeringHistory } from '../../../slices/irrigation';
@@ -59,6 +59,15 @@ const PANE_GROUND = 'var(--secondary-background-color, #0d0d0d)';
 @customElement('crop-steering-day-chart')
 export class CropSteeringDayChart extends LitElement {
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
+  /**
+   * An unsaved strategy to draw instead of the device's persisted one, so a host
+   * editing crop steering can render a live preview. The Irrigation Dialog passes
+   * its steering draft here: the dialog's own legend already recomputes from that
+   * draft, and without this the chart beside it would keep drawing the last saved
+   * strategy until a save round-tripped. Hosts with nothing unsaved to show — the
+   * Steering Phase Chip's inline graph — leave it undefined and get the device.
+   */
+  @property({ attribute: false }) strategyOverride: Partial<IrrigationStrategy> | undefined;
   @property({ type: Boolean }) hideShotTrack = false;
   @property({ type: Boolean }) rollingWindow = false;
   @property({ type: String }) range: '1h' | '6h' | '24h' | '7d' = '24h';
@@ -706,7 +715,12 @@ export class CropSteeringDayChart extends LitElement {
   }
 
   render(): TemplateResult {
-    const strategy = this.device?.irrigationStrategy;
+    // The draft is a `Partial` only because the dialog builds it field by field;
+    // it carries every field the crop-steering model reads, so it is cast the way
+    // the Schedules Tab ViewModel casts the same draft before calling the model.
+    const strategy = (this.strategyOverride ?? this.device?.irrigationStrategy) as
+      | IrrigationStrategy
+      | undefined;
     if (!strategy?.enabled) {
       return html`<div class="placeholder">No strategy configured.</div>`;
     }
