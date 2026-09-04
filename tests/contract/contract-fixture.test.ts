@@ -12,7 +12,11 @@ import {
   formatContractDrift,
   type ContractVerdict,
 } from '../../src/contract-fixture/key-set-diff';
-import { CultureMediaResponseSchema, TcManifestSchema } from '../../src/slices/tc/schema';
+import {
+  CultureLinesResponseSchema,
+  CultureMediaResponseSchema,
+  TcManifestSchema,
+} from '../../src/slices/tc/schema';
 
 interface FixtureContract {
   name: string;
@@ -76,6 +80,13 @@ const CONTRACTS: FixtureContract[] = [
     releaseVariable: 'TC_RELEASE_CULTURE_MEDIA_FIXTURE',
     releaseRequired: false,
   },
+  {
+    name: 'TC culture lines',
+    schema: CultureLinesResponseSchema,
+    leadingVariable: 'TC_MAIN_CULTURE_LINES_FIXTURE',
+    releaseVariable: 'TC_RELEASE_CULTURE_LINES_FIXTURE',
+    releaseRequired: false,
+  },
 ];
 
 async function readFixture(variable: string, required: boolean): Promise<unknown | null> {
@@ -110,12 +121,7 @@ async function expectFixtureToMatch(
 describe('GSM contract fixtures', () => {
   it('checks prerelease completeness and released-backend safety', async () => {
     for (const contract of CONTRACTS) {
-      await expectFixtureToMatch(
-        contract,
-        contract.leadingVariable,
-        'completeness',
-        true
-      );
+      await expectFixtureToMatch(contract, contract.leadingVariable, 'completeness', true);
       await expectFixtureToMatch(
         contract,
         contract.releaseVariable,

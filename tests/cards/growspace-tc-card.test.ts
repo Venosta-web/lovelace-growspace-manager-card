@@ -6,8 +6,14 @@ import { hassCall } from '../../src/services/hass-call';
 import { WSError } from '../../src/services/errors';
 import { resetTcPresence } from '../../src/slices/tc';
 
+// The lazy TC chunk reaches the strain slice — the culture board resolves its
+// phenotype references against Growspace Manager's library client-side — so the
+// mock has to answer for every export that module imports, or the chunk fails
+// to evaluate and the card reports itself missing.
 vi.mock('../../src/services/hass-call', () => ({
   hassCall: vi.fn(),
+  callService: vi.fn(),
+  callFetch: vi.fn(),
   setHass: vi.fn(),
 }));
 

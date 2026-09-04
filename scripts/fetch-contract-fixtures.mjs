@@ -18,6 +18,7 @@ const VISION_FIXTURES = [
 const TC_FIXTURES = [
   ['tc_manifest_response', 'tc-main-manifest.json'],
   ['tc_culture_media_response', 'tc-main-culture-media.json'],
+  ['tc_culture_lines_response', 'tc-main-culture-lines.json'],
 ];
 
 async function fetchWithRetry(url, fetchImpl, attempts = 3) {
