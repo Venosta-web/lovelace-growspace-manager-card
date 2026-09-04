@@ -38,7 +38,7 @@ jobs:
           test -n "$release_tag" && test "$release_tag" != "null"
           echo "tag=$release_tag" >> "$GITHUB_OUTPUT"
 
-      - name: Fetch GSM contract fixtures
+      - name: Fetch GSM and TC contract fixtures
         env:
           RELEASE_TAG: ${{ steps.gsm-release.outputs.tag }}
         run: node scripts/fetch-contract-fixtures.mjs
@@ -53,4 +53,6 @@ jobs:
           GSM_RELEASE_VISION_HISTORY_FIXTURE: ${{ runner.temp }}/gsm-release-vision_history_response.json
           GSM_PRERELEASE_VISION_TRIGGER_FIXTURE: ${{ runner.temp }}/gsm-prerelease-trigger_vision_checkup_response.json
           GSM_RELEASE_VISION_TRIGGER_FIXTURE: ${{ runner.temp }}/gsm-release-trigger_vision_checkup_response.json
+          TC_MAIN_MANIFEST_FIXTURE: ${{ runner.temp }}/tc-main-manifest.json
+          TC_MAIN_CULTURE_MEDIA_FIXTURE: ${{ runner.temp }}/tc-main-culture-media.json
         run: npm run test:contract-fixture

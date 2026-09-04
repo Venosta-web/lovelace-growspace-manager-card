@@ -3,11 +3,21 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const DEFAULT_BASE_URL = 'https://raw.githubusercontent.com/Venosta-web/growspace_manager';
+// Growspace Manager TC is a separate repository that owns its own WebSocket
+// contract, and it records its fixtures under the same path.
+const DEFAULT_TC_BASE_URL = 'https://raw.githubusercontent.com/Venosta-web/growspace_manager_tc';
 const FIXTURE_DIRECTORY = 'tests/fixtures/contract';
 const VISION_FIXTURES = [
   'vision_status_response',
   'vision_history_response',
   'trigger_vision_checkup_response',
+];
+// Every payload the card's TC chunk parses, and the local file each is written
+// to. One entry per contract, so adding a TC command is one line here rather
+// than a fourth copy of the download call.
+const TC_FIXTURES = [
+  ['tc_manifest_response', 'tc-main-manifest.json'],
+  ['tc_culture_media_response', 'tc-main-culture-media.json'],
 ];
 
 async function fetchWithRetry(url, fetchImpl, attempts = 3) {
@@ -47,6 +57,7 @@ export async function fetchContractFixtures({
   releaseTag,
   outputDirectory,
   baseUrl = DEFAULT_BASE_URL,
+  tcBaseUrl = DEFAULT_TC_BASE_URL,
   fetchImpl = fetch,
 }) {
   if (!releaseTag) throw new Error('RELEASE_TAG must name the published prerelease');
@@ -83,6 +94,21 @@ export async function fetchContractFixtures({
       output: path.join(outputDirectory, `gsm-release-${fixture}.json`),
       refs: [releaseTag],
       optional: true,
+    });
+  }
+
+  // TC integrates on `main` and has published no release yet, so there is no
+  // backward-safety ref to check against: nothing is installed that a card
+  // change could strand. These are required, not optional — a missing fixture
+  // means the TC contract has not landed, which is exactly when the card must
+  // not merge.
+  for (const [fixture, output] of TC_FIXTURES) {
+    await downloadFixture({
+      baseUrl: tcBaseUrl,
+      fetchImpl,
+      fixture,
+      output: path.join(outputDirectory, output),
+      refs: ['main'],
     });
   }
 }
