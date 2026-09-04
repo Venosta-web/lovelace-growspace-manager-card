@@ -17,6 +17,13 @@ export type CropSteeringPhase = {
   end: number;
   color: string;
   target: string;
+  /**
+   * True on the P2 window when [[Skip P2]] is set — the phase is configured and
+   * bypassed, not absent. Distinct from the zero-width P2 `computePhases`
+   * returns when nothing has reached the Saturation Target yet: that one is
+   * "has not begun", this one is "will not begin today".
+   */
+  skipped?: boolean;
 };
 
 export type CropSteeringPhases = {
@@ -28,6 +35,15 @@ export type CropSteeringPhases = {
 
 export type SubstrateProjectionPoint = { offset: number; vwc: number; pore: number; bulk: number };
 
+/**
+ * Lifts a plain minute-of-day into a cycle's own minute space, anchored at
+ * `anchor` — the space `computePhases` returns, where a photoperiod wrapping
+ * past midnight keeps ordered boundaries above 1440 instead of restarting.
+ */
+function liftIntoCycle(minuteOfDay: number, anchor: number): number {
+  return anchor + ((((minuteOfDay - anchor) % 1440) + 1440) % 1440);
+}
+
 /** Formats a minute-of-day (0-1439) as `HH:MM`, wrapping past midnight. */
 export function fmtMinuteOfDay(minutes: number): string {
   const h = Math.floor((minutes / 60) % 24);
@@ -35,7 +51,16 @@ export function fmtMinuteOfDay(minutes: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-/** Generates the day's irrigation shot cycle (P1 ramp-up through the P2→P3 cutoff). */
+/**
+ * Generates the day's irrigation shot cycle (P1 ramp-up through the P2→P3 cutoff).
+ *
+ * `saturationReachedAt` is only consulted under [[Skip P2]]: the shot window
+ * then ends where P1 completed rather than at the P2 Stop Buffer, because no
+ * maintenance shots follow. Pass the same crossing `computePhases` is given —
+ * the two describe one day and would otherwise disagree about where it stops.
+ * Without a measured crossing there is nothing to move the cutoff to, so the
+ * buffer still decides and the projection is the one it would have drawn.
+ */
 export function computeCropSteeringCycle(
   strategy: Pick<
     IrrigationStrategy,
@@ -44,8 +69,10 @@ export function computeCropSteeringCycle(
     | 'shotDurationSeconds'
     | 'p0DurationMinutes'
     | 'p2StopBeforeLightsOffMinutes'
+    | 'skipP2AfterP1'
   >,
-  dayHours: number
+  dayHours: number,
+  saturationReachedAt?: number | null
 ): CropSteeringShot[] {
   if (
     !strategy.lightsOnTime ||
@@ -60,7 +87,11 @@ export function computeCropSteeringCycle(
   const lightsOnMin = hh * 60 + (mm || 0);
   const lightsOffMin = lightsOnMin + dayHours * 60;
   const firstShotMin = lightsOnMin + (strategy.p0DurationMinutes ?? 0);
-  const cutoffMin = lightsOffMin - (strategy.p2StopBeforeLightsOffMinutes ?? 0);
+  const bufferCutoffMin = lightsOffMin - (strategy.p2StopBeforeLightsOffMinutes ?? 0);
+  const cutoffMin =
+    strategy.skipP2AfterP1 && saturationReachedAt != null
+      ? Math.min(bufferCutoffMin, liftIntoCycle(saturationReachedAt, firstShotMin))
+      : bufferCutoffMin;
 
   const shots: CropSteeringShot[] = [];
   for (let t = firstShotMin; t < cutoffMin; t += strategy.shotIntervalMinutes) {
@@ -160,6 +191,12 @@ export function resolveSaturationCrossing(
  * (it is returned as a zero-width window at P3's start rather than dropped, so
  * legends and chip rows keep all four phases).
  *
+ * Under [[Skip P2]] the P1→P3 boundary replaces the P2→P3 one: P3 starts where
+ * P1 completed and P2 comes back zero-width and flagged `skipped`. With no
+ * measured crossing there is no completion to move P3 to, so the day is drawn
+ * exactly as it would be without the option — which is the honest picture, the
+ * card having nothing yet to say when P1 ends.
+ *
  * Minutes are returned in the cycle's own space anchored on lights-on, so
  * `lightsOffMin` and the later boundaries may exceed 1440 when the photoperiod
  * wraps past midnight. Callers normalise with `% 1440`.
@@ -172,6 +209,7 @@ export function computePhases(
     | 'p0DurationMinutes'
     | 'p2StopBeforeLightsOffMinutes'
     | 'maintenanceDrybackPercent'
+    | 'skipP2AfterP1'
   >,
   dayHours: number,
   irrigationConfig:
@@ -204,7 +242,15 @@ export function computePhases(
   const p1End =
     saturationReachedAt == null
       ? p3Start
-      : Math.min(p0End + ((((saturationReachedAt - p0End) % 1440) + 1440) % 1440), p3Start);
+      : Math.min(liftIntoCycle(saturationReachedAt, p0End), p3Start);
+
+  // [[Skip P2]]: P3 begins where P1 completed, so P2 collapses to nothing. It
+  // still comes back as a window — flagged, at that instant — because the
+  // grower's P2 settings are bypassed rather than gone, and a legend that
+  // dropped the phase would say the wrong one of those two things.
+  const skipP2 = strategy.skipP2AfterP1 === true;
+  const p2End = skipP2 ? p1End : p3Start;
+  if (skipP2) p3Start = p1End;
 
   return {
     lightsOnMin,
@@ -234,9 +280,10 @@ export function computePhases(
         label: 'P2',
         name: 'Maintenance',
         start: p1End,
-        end: p3Start,
+        end: p2End,
         color: token['--phase-p2'],
-        target: 'Runoff target',
+        target: skipP2 ? 'Skipped' : 'Runoff target',
+        skipped: skipP2,
       },
       {
         id: 'p3',

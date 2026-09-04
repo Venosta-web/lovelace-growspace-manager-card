@@ -421,6 +421,7 @@ export async function updateIrrigationStrategy(
     payload.p1_shot_volume_percent = updates.p1ShotVolumePercent;
   if (updates.p2ShotVolumePercent !== undefined)
     payload.p2_shot_volume_percent = updates.p2ShotVolumePercent;
+  if (updates.skipP2AfterP1 !== undefined) payload.skip_p2_after_p1 = updates.skipP2AfterP1;
   if (updates.shotSizingMode !== undefined) payload.shot_sizing_mode = updates.shotSizingMode;
   // Substrate Profile serializes to the backend's flat keys (folded into the
   // nested substrate_profile server-side); the read side stays nested.

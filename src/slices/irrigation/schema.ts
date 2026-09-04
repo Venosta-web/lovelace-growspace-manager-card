@@ -38,6 +38,8 @@ export const SetIrrigationStrategyPayloadSchema = growspaceIdPayload.extend({
   p2_shot_interval_minutes: z.number().int().optional(),
   p1_shot_volume_percent: z.number().optional(),
   p2_shot_volume_percent: z.number().optional(),
+  // [[Skip P2]] (#131): a phase-transition rule, never an edit of the P2 pair.
+  skip_p2_after_p1: z.boolean().optional(),
   shot_sizing_mode: z.enum(['seconds', 'volume']).optional(),
   // Substrate Profile (#446): the backend accepts flat keys and folds them into
   // the nested substrate_profile server-side (read side stays nested).

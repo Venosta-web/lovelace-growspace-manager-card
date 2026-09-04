@@ -49,6 +49,9 @@ export const IrrigationStrategySchema = z.object({
   p1_shot_interval_minutes: z.number().optional(),
   p2_shot_duration_seconds: z.number().optional(),
   p2_shot_interval_minutes: z.number().optional(),
+  // [[Skip P2]] (#131): optional, because a backend predating it omits the key
+  // and the card must read that as the default-off progression.
+  skip_p2_after_p1: z.boolean().optional(),
   // Volume Mode (ADR-0011): shot sizes as a percent of substrate volume.
   p1_shot_volume_percent: z.number().optional(),
   p2_shot_volume_percent: z.number().optional(),

@@ -697,6 +697,21 @@ describe('updateIrrigationStrategy', () => {
     );
   });
 
+  it('serializes Skip P2 to the payload without touching the P2 pair', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+
+    await updateIrrigationStrategy('gs1', { skipP2AfterP1: true });
+
+    const payload = (hassCall.callService as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls[0][2] as Record<string, unknown>;
+    expect(payload).toMatchObject({ growspace_id: 'gs1', skip_p2_after_p1: true });
+    // A sparse patch: skipping P2 never writes its timing, so the stored values
+    // survive to come back when the option is cleared.
+    expect(payload).not.toHaveProperty('p2_shot_duration_seconds');
+    expect(payload).not.toHaveProperty('p2_shot_interval_minutes');
+    expect(payload).not.toHaveProperty('p2_stop_before_lights_off_minutes');
+  });
+
   it('serializes Adaptive Shot Control fields to the payload', async () => {
     setIrrigationStrategy('gs1', makeStrategy());
 

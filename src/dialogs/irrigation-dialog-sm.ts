@@ -450,6 +450,7 @@ function defaultSteeringDraft(): Partial<IrrigationStrategy> {
     p2ShotIntervalMinutes: 15,
     p1ShotVolumePercent: 4.0,
     p2ShotVolumePercent: 4.0,
+    skipP2AfterP1: false,
     autoLightTracking: false,
     detectedLightsOnTime: null,
     declaredSteeringMode: null,
@@ -570,6 +571,10 @@ function applyDeviceToSM(sm: DialogSM, device: GrowspaceDevice): DialogSM {
     p2ShotIntervalMinutes: strat?.p2ShotIntervalMinutes ?? strat?.shotIntervalMinutes ?? 15,
     p1ShotVolumePercent: strat?.p1ShotVolumePercent ?? 4.0,
     p2ShotVolumePercent: strat?.p2ShotVolumePercent ?? 4.0,
+    // [[Skip P2]] is buffered like the rest of the timing: it changes the
+    // projected day, so the preview has to follow the draft rather than wait
+    // for a save (growspace_manager_workspace#131).
+    skipP2AfterP1: strat?.skipP2AfterP1 ?? false,
     // shotSizingMode is intentionally absent: it persists immediately on toggle
     // (ADR-0017) and is read from the live strategy, not buffered here.
     autoLightTracking: strat?.autoLightTracking ?? false,
@@ -666,6 +671,7 @@ export function isSteeringDirty(sm: DialogSM, device: GrowspaceDevice): boolean 
       (s.p2ShotIntervalMinutes ?? s.shotIntervalMinutes) ||
     (d.p1ShotVolumePercent ?? 4.0) !== (s.p1ShotVolumePercent ?? 4.0) ||
     (d.p2ShotVolumePercent ?? 4.0) !== (s.p2ShotVolumePercent ?? 4.0) ||
+    (d.skipP2AfterP1 ?? false) !== (s.skipP2AfterP1 ?? false) ||
     // shotSizingMode is not buffered here (ADR-0017) — it persists immediately.
     (d.autoLightTracking ?? false) !== (s.autoLightTracking ?? false) ||
     (d.detectedLightsOnTime ?? null) !== (s.detectedLightsOnTime ?? null) ||
@@ -788,6 +794,7 @@ function resetActiveTabDraft(sm: DialogSM, device: GrowspaceDevice): TabStates {
             maintenanceDrybackPercent: strat?.maintenanceDrybackPercent ?? 3.0,
             shotDurationSeconds: strat?.shotDurationSeconds ?? 15,
             shotIntervalMinutes: strat?.shotIntervalMinutes ?? 15,
+            skipP2AfterP1: strat?.skipP2AfterP1 ?? false,
             autoLightTracking: strat?.autoLightTracking ?? false,
             detectedLightsOnTime: strat?.detectedLightsOnTime ?? null,
           },

@@ -90,6 +90,13 @@ export interface IrrigationStrategy {
   // Per-phase shot sizes as a percent of substrate volume (Volume Mode).
   p1ShotVolumePercent?: number;
   p2ShotVolumePercent?: number;
+  /**
+   * [[Skip P2]] (growspace_manager_workspace#131): when true a completed P1
+   * hands the day straight to P3 and P2 never runs. A phase-transition rule
+   * only — the P2 fields above keep their values while it bypasses them, so
+   * clearing it restores the ordinary P1 → P2 → P3 day untouched.
+   */
+  skipP2AfterP1?: boolean;
   shotSizingMode?: ShotSizingMode;
   // Substrate Profile (#446); backs Volume Mode capability.
   substrateProfile?: SubstrateProfile;

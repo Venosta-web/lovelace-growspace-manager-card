@@ -70,6 +70,7 @@ function cropSteeringPanel(
         color: '#4CAF50',
         target: 'Reach FC',
         shotCount: null,
+        skipped: false,
       },
       {
         id: 'p2',
@@ -78,6 +79,7 @@ function cropSteeringPanel(
         color: '#2196F3',
         target: 'Runoff target',
         shotCount: 9,
+        skipped: false,
       },
     ],
     hasPoreEc: true,
@@ -268,6 +270,32 @@ describe('irrigation-schedules-tab', () => {
       'crop-steering-day-chart'
     ) as Partial<CropSteeringDayChart>;
     expect(chart.strategyOverride).toBe(steeringDraft);
+  });
+
+  it('marks the P2 legend chip skipped without dropping it (growspace_manager_workspace#131)', async () => {
+    const panel = cropSteeringPanel();
+    const el = await mount(
+      makeVm({
+        isCropSteering: true,
+        irrigationSection: null,
+        cropSteering: {
+          ...panel,
+          shotCount: 3,
+          phases: panel.phases.map((p) =>
+            p.id === 'p2' ? { ...p, skipped: true, target: 'Skipped', shotCount: 0 } : p
+          ),
+        },
+      })
+    );
+
+    const p2 = el.shadowRoot!.querySelector('[data-phase="p2"]') as HTMLElement;
+    // Present, so the grower can see the phase exists and is bypassed.
+    expect(p2).not.toBeNull();
+    expect(p2.classList.contains('skipped')).toBe(true);
+    expect(norm(p2.textContent)).toContain('Skipped');
+    expect(
+      (el.shadowRoot!.querySelector('[data-phase="p1"]') as HTMLElement).classList
+    ).not.toContain('skipped');
   });
 
   it('shows the crop-steering empty state when not configured', async () => {

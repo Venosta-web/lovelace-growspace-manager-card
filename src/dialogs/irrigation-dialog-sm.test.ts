@@ -1051,6 +1051,7 @@ describe('isSteeringDirty', () => {
       { partial: { shotIntervalMinutes: 10 }, desc: 'shotIntervalMinutes' },
       { partial: { autoLightTracking: true }, desc: 'autoLightTracking' },
       { partial: { detectedLightsOnTime: '08:00:00' }, desc: 'detectedLightsOnTime' },
+      { partial: { skipP2AfterP1: true }, desc: 'skipP2AfterP1' },
     ];
 
     for (const { partial, desc } of fieldsToTest) {

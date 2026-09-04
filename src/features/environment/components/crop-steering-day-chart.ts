@@ -726,20 +726,27 @@ export class CropSteeringDayChart extends LitElement {
     }
 
     const dayHours = this.device?.irrigationConfig?.resolvedDayHours ?? 12;
-    const shots: CropSteeringShot[] = computeCropSteeringCycle(strategy, dayHours);
 
     const growspaceId = this.device?.deviceId ?? '';
     const history = this._historyController?.value?.get(growspaceId);
 
     // The P1→P2 boundary is threshold-driven, so it comes from the measured VWC
     // series rather than the strategy — read off the cycle whose lights-on the
-    // history itself reports.
+    // history itself reports. Both the shot cycle and the phase windows are
+    // derived from it, so under [[Skip P2]] the track stops where the strip's
+    // P3 starts instead of drawing maintenance shots into a phase that ended.
     const saturationReachedAt = resolveSaturationCrossing(
       strategy,
       dayHours,
       this._vwcSamples(history),
       Date.now(),
       history ? Date.parse(history.lights_on) : null
+    );
+
+    const shots: CropSteeringShot[] = computeCropSteeringCycle(
+      strategy,
+      dayHours,
+      saturationReachedAt
     );
 
     const phases = computePhases(
