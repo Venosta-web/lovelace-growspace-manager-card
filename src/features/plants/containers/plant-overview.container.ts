@@ -979,15 +979,33 @@ export class PlantOverviewContainer extends LitElement {
     this._showAllDates = !this._showAllDates;
   }
 
+  /**
+   * Narrow the seeded edit buffer to the fields the user actually touched.
+   *
+   * A lifecycle edit names exactly one stage: update_plant rejects a payload
+   * carrying several populated `*_start` fields with no `stage`. The buffer is
+   * seeded verbatim from `plant.attributes` and md3-date-input only emits on
+   * user input, so an identity comparison against the plant is exact — an
+   * untouched field still holds the very value it was seeded with.
+   */
+  private _changedAttributes(): Partial<PlantOverviewEditedAttributes> {
+    const edited = this._editedAttributesAtom.get() as Record<string, unknown>;
+    const original = (this.plant?.attributes ?? {}) as Record<string, unknown>;
+    const changed: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(edited)) {
+      if (value !== original[key]) changed[key] = value;
+    }
+    return changed as Partial<PlantOverviewEditedAttributes>;
+  }
+
   private _handleSave(): void {
-    const attrs = this._editedAttributesAtom.get();
     // No date/time completeness validation: md3-date-input never emits a partial
     // value (an empty date clears the field, a missing time defaults to midnight),
     // and the Lifecycle Timestamp seam owns the format on the way out (toWire).
     // See ADR-0018.
     this.dispatchEvent(
       new CustomEvent('update-plant', {
-        detail: attrs,
+        detail: this._changedAttributes(),
         bubbles: true,
         composed: true,
       })

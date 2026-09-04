@@ -384,6 +384,45 @@ describe('PlantOverviewContainer – _handleSave', () => {
     expect(dispatched).not.toBeNull();
   });
 
+  it('sends only the touched date when the plant already has earlier stage dates', () => {
+    // The reported bug: a veg plant carries seedling_start and veg_start, the user
+    // adds a flowering start, and the whole seeded buffer went to the backend —
+    // which rejects several populated *_start fields with no stage
+    // ("A lifecycle date edit must identify exactly one current stage").
+    (el as any).plant = makeMockPlant({
+      seedling_start: '2026-01-15T00:00:00+00:00',
+      veg_start: '2026-02-01T00:00:00+00:00',
+    });
+
+    const dispatched = saveWith({
+      strain: 'Test Strain',
+      phenotype: 'Pheno A',
+      row: 0,
+      col: 0,
+      seedling_start: '2026-01-15T00:00:00+00:00',
+      veg_start: '2026-02-01T00:00:00+00:00',
+      flower_start: '2026-03-01T14:30',
+    });
+
+    expect(dispatched).not.toBeNull();
+    expect((dispatched as unknown as CustomEvent).detail).toEqual({
+      flower_start: '2026-03-01T14:30',
+    });
+  });
+
+  it('sends only the edited current start when correcting it in place', () => {
+    (el as any).plant = makeMockPlant({ veg_start: '2026-02-01T00:00:00+00:00' });
+
+    const dispatched = saveWith({
+      strain: 'Test Strain',
+      veg_start: '2026-01-20T08:00',
+    });
+
+    expect((dispatched as unknown as CustomEvent).detail).toEqual({
+      veg_start: '2026-01-20T08:00',
+    });
+  });
+
   it('never raises the old "set both date and time" toast (validator removed)', () => {
     // Even values the old guard would have rejected now dispatch unchanged —
     // the validation is gone (ADR-0018).
