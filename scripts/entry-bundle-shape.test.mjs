@@ -6,6 +6,7 @@ import {
   assertChunksBindToLoadedEntry,
   assertSelfContainedEntry,
   declaredCardTypes,
+  declaredLazyChunkNames,
   staticDependencies,
 } from './entry-bundle-shape.mjs';
 
@@ -92,4 +93,15 @@ test('a chunk that binds to the loaded entry passes', () => {
     ],
     entryFileName: 'growspace-manager-card.js',
   });
+});
+
+test('the lazy chunk registry declares names the build can emit', async () => {
+  const names = declaredLazyChunkNames(await readFile('src/lib/lazy-chunk.ts', 'utf8'));
+  assert.ok(names.includes('heatmap-3d'));
+  assert.ok(names.includes('growspace-dialog-host.container'));
+  assert.equal(new Set(names).size, names.length);
+});
+
+test('a registry with no chunk names fails the release', () => {
+  assert.throws(() => declaredLazyChunkNames('export const LAZY_CHUNKS = {};\n'), /No LAZY_CHUNKS/);
 });

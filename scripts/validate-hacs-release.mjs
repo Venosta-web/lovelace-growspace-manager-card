@@ -7,6 +7,7 @@ import {
   assertChunksBindToLoadedEntry,
   assertSelfContainedEntry,
   declaredCardTypes,
+  declaredLazyChunkNames,
 } from './entry-bundle-shape.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -33,10 +34,17 @@ if (!process.argv.includes('--config-only')) {
   // Everything the first render does not need stays behind a dynamic import, so
   // the entry the dashboard blocks on carries the render path and nothing else.
   const lazyChunkPrefixes = [
-    'dist/growspace-heatmap-3d-',
-    'dist/growspace-growspace-dialog-host.',
-    'dist/growspace-config-dialog-',
-    ...cardTypes.map((type) => `dist/growspace-${type}-editor-`),
+    ...new Set([
+      'dist/growspace-heatmap-3d-',
+      'dist/growspace-growspace-dialog-host.',
+      'dist/growspace-config-dialog-',
+      ...cardTypes.map((type) => `dist/growspace-${type}-editor-`),
+      // Each chunk the card offers to name when it fails to load must be one
+      // the build actually emits under that name.
+      ...declaredLazyChunkNames(await readFile('src/lib/lazy-chunk.ts', 'utf8')).map(
+        (name) => `dist/growspace-${name}-`
+      ),
+    ]),
   ];
   for (const prefix of lazyChunkPrefixes) {
     if (!bundlePaths.some((emittedPath) => emittedPath.startsWith(prefix))) {

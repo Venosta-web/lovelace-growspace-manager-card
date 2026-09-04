@@ -15,6 +15,8 @@ import { growspaceCardStyles } from '../styles/growspace-card.styles';
 import '../features/shared/ui/growspace-logbook';
 import '../features/shared/ui/growspace-timeline';
 import '../features/shared/ui/error-boundary';
+import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
+import { lazyChunkErrorEditor } from '../features/shared/ui/lazy-chunk-error';
 
 @customElement('growspace-logbook-card')
 export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
@@ -36,7 +38,13 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
   private _bootstrapCtrl!: BootstrapController;
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    await import('./editors/growspace-logbook-card-editor.js');
+    const editor = await loadLazyChunk(
+      LAZY_CHUNKS.logbookCardEditor,
+      () => import('./editors/growspace-logbook-card-editor.js')
+    );
+    if (!editor) {
+      return lazyChunkErrorEditor(LAZY_CHUNKS.logbookCardEditor) as unknown as LovelaceCardEditor;
+    }
     return document.createElement('growspace-logbook-card-editor') as unknown as LovelaceCardEditor;
   }
 
