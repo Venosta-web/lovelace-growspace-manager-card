@@ -83,13 +83,8 @@ describe('environment analytics localization', () => {
       'de-DE'
     );
     expect(localization.localizeWithParams).toHaveBeenCalledWith(
-      'environment_chart.no_data',
-      {},
-      'de-DE'
-    );
-    expect(localization.localizeWithParams).toHaveBeenCalledWith(
-      'environment_chart.no_history_for_range',
-      { range: '7d' },
+      'environment_chart.no_history',
+      { metric: 'Graph', range: '7d' },
       'de-DE'
     );
 

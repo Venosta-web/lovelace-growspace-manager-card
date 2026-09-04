@@ -72,6 +72,20 @@ const KEYBOARD_SCRUB_STEP_MS: Record<GrowspaceEnvChart['range'], number> = {
 /** Coalesce held-arrow updates before handing them to a polite live region. */
 const SCRUB_ANNOUNCEMENT_DELAY_MS = 200;
 
+/**
+ * Mean of a series' readings, in one pass over the points.
+ *
+ * Only the fallback for a `GraphSeries` that arrived without an `avg`;
+ * [[Env Series]] reduces its own. Written as a loop for the same reason that
+ * reduction is: a chart window holds hundreds of points, and spreading them
+ * into a call is the cost this file no longer pays.
+ */
+function _meanValue(points: readonly { value: number }[]): number {
+  let sum = 0;
+  for (const point of points) sum += point.value;
+  return sum / points.length;
+}
+
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
   @consume({ context: hassContext, subscribe: true })
@@ -129,6 +143,17 @@ export class GrowspaceEnvChart extends LitElement {
    * nothing about — the silent misalignment [[EnvSeriesWindow]] warns about.
    */
   private _renderWindow: ChartWindow = this._windowFor(this.range);
+
+  /**
+   * The chart pane's accessible name, held for the same reason `_renderWindow`
+   * is: `hass` lands on this element on every state tick, so composing the
+   * sentence inside the template walks every series again for a re-render that
+   * cannot have changed a word of it. Rebuilt with `_renderSeries`, and
+   * otherwise only when something the sentence itself reads has moved.
+   */
+  private _renderSummary = '';
+  /** The language `_renderSummary` was worded in — the only part of `hass` it reads. */
+  private _summaryLanguage: string | null = null;
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
   private _chartContainerRef: Ref<HTMLDivElement> = createRef();
@@ -289,7 +314,7 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   protected willUpdate(changedProperties: PropertyValues) {
-    if (
+    const seriesChanged =
       changedProperties.has('descriptors') ||
       changedProperties.has('sensorHistory') ||
       changedProperties.has('range') ||
@@ -297,10 +322,17 @@ export class GrowspaceEnvChart extends LitElement {
       changedProperties.has('metrics') ||
       changedProperties.has('isCombined') ||
       changedProperties.has('overlayMetrics') ||
-      changedProperties.has('chartWindow')
-    ) {
+      changedProperties.has('chartWindow');
+
+    if (seriesChanged) {
       this._renderWindow = this.chartWindow ?? this._windowFor(this.range);
       this._renderSeries = this._buildRenderSeries(this._renderWindow);
+    }
+
+    const language = this.hass?.locale?.language ?? 'en';
+    if (seriesChanged || changedProperties.has('title') || language !== this._summaryLanguage) {
+      this._summaryLanguage = language;
+      this._renderSummary = this._accessibleSummary(this._renderSeries);
     }
   }
 
@@ -310,15 +342,15 @@ export class GrowspaceEnvChart extends LitElement {
     const { width, height } = CHART_PANE;
     const series = this._renderSeries;
 
+    const chartName = this._chartName(series);
+
     if (series.length === 0) {
-      const chartName =
-        this.title ||
-        this.descriptors[this.metricKey]?.title ||
-        METRIC_CONFIG[this.metricKey]?.title ||
-        this._localize('environment_chart.graph');
       const closeGraphLabel = this._localize('environment_chart.close_graph', {
         graph: chartName,
       });
+      // One sentence, in the empty pane the eye lands on. The header already
+      // names the graph, and the reading slot beside it used to repeat "No
+      // Data" over this same message — three statements of one fact (issue 868).
       return html`
         <div class="gs-env-graph-card">
           <button
@@ -331,9 +363,6 @@ export class GrowspaceEnvChart extends LitElement {
               ${this.icon ? html`<ha-svg-icon .path=${this.icon}></ha-svg-icon>` : ''}
               <span class="gs-env-graph-title">${chartName}</span>
             </div>
-            <span class="gs-env-graph-empty-value"
-              >${this._localize('environment_chart.no_data')}</span
-            >
           </button>
           <div class="gs-env-chart-container empty">
             <svg
@@ -341,12 +370,11 @@ export class GrowspaceEnvChart extends LitElement {
               viewBox="0 0 ${width} ${height}"
               preserveAspectRatio="none"
               role="img"
-              aria-label=${accessibleChartSummary(chartName, this.range, [], (key, params) =>
-                this._localize(key, params)
-              )}
+              aria-label=${this._renderSummary}
             ></svg>
             <span class="empty-message"
-              >${this._localize('environment_chart.no_history_for_range', {
+              >${this._localize('environment_chart.no_history', {
+                metric: chartName,
                 range: this.range,
               })}</span
             >
@@ -354,8 +382,6 @@ export class GrowspaceEnvChart extends LitElement {
         </div>
       `;
     }
-
-    const chartName = this._chartName(series);
 
     return html`
       <error-boundary .fallbackMessage=${this._localize('environment_chart.render_failed')}>
@@ -417,7 +443,7 @@ export class GrowspaceEnvChart extends LitElement {
               preserveAspectRatio="none"
               class="chart-svg"
               role="img"
-              aria-label=${this._accessibleSummary(series)}
+              aria-label=${this._renderSummary}
             >
               ${
                 // One backdrop for the pane, not one per trace: a combined
@@ -771,17 +797,20 @@ export class GrowspaceEnvChart extends LitElement {
       seriesList.flatMap((series) => {
         const latest = series.points[series.points.length - 1];
         if (!latest) return [];
-        const values = series.points.map((point) => point.value);
         const localize = (key: string) => this._localize(key);
-        const min = series.observedMin ?? Math.min(...values);
-        const max = series.observedMax ?? Math.max(...values);
+        // [[Env Series]] already reduced the window in a single pass; reading
+        // its bounds back is the point of carrying them. Both are required on
+        // a GraphSeries, so there is nothing to fall back to.
+        const { observedMin: min, observedMax: max } = series;
         return [
           {
             name: series.title,
             min,
             max,
-            average:
-              series.avg ?? values.reduce((total, value) => total + value, 0) / values.length,
+            // `avg` is optional — a chart that builds its own GraphSeries need
+            // not have one — so the fallback stays, as the same single pass
+            // rather than a second array.
+            average: series.avg ?? _meanValue(series.points),
             current: formatReading(series, latest, localize),
             unit: series.unit === 'state' ? '' : series.unit,
             // A continuous metric reads better spoken — "range 20.0 °C to
@@ -802,6 +831,9 @@ export class GrowspaceEnvChart extends LitElement {
       ? this.title || this._localize('environment_chart.environment_metrics')
       : seriesList[0]?.title ||
           this.title ||
+          // Reached only with no series to name themselves, which is why the
+          // descriptor is consulted here and nowhere else.
+          this.descriptors[this.metricKey]?.title ||
           METRIC_CONFIG[this.metricKey]?.title ||
           this._localize('environment_chart.graph');
   }
@@ -1359,7 +1391,7 @@ export class GrowspaceEnvChart extends LitElement {
     .gs-env-graph-title {
       min-width: 0;
       overflow: hidden;
-      color: var(--primary-text-color, #e1e1e1);
+      color: var(--primary-text-color, #fff);
       font-weight: 500;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -1371,18 +1403,13 @@ export class GrowspaceEnvChart extends LitElement {
       gap: 8px;
       min-width: 0;
     }
-    .gs-env-graph-reading,
-    .gs-env-graph-empty-value {
+    .gs-env-graph-reading {
       flex: 0 0 auto;
       text-align: right;
       white-space: nowrap;
     }
-    .gs-env-graph-empty-value {
-      color: var(--text-muted);
-      font-size: 0.9em;
-    }
     .gs-env-graph-value {
-      color: var(--primary-text-color, #e1e1e1);
+      color: var(--primary-text-color, #fff);
       font-size: 1.2em;
       font-variant-numeric: tabular-nums;
       font-weight: bold;
@@ -1446,7 +1473,7 @@ export class GrowspaceEnvChart extends LitElement {
        colour is used so the shading darkens a light theme and lightens a dark
        one, which is the direction that reads as "the lights were off" in both. */
     .gs-dark-period {
-      fill: var(--primary-text-color, #e1e1e1);
+      fill: var(--primary-text-color, #fff);
       fill-opacity: 0.06;
     }
 
@@ -1460,7 +1487,7 @@ export class GrowspaceEnvChart extends LitElement {
       color: var(--text-muted);
       padding: 2px 4px;
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
-      border-radius: 6px;
+      border-radius: var(--border-radius-sm, 8px);
       background: var(--card-background-color, var(--surface, #1e1e1e));
       line-height: 1;
       pointer-events: none;
@@ -1483,7 +1510,7 @@ export class GrowspaceEnvChart extends LitElement {
       color: var(--text-muted);
       padding: 2px 4px;
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
-      border-radius: 6px;
+      border-radius: var(--border-radius-sm, 8px);
       background: var(--card-background-color, var(--surface, #1e1e1e));
       line-height: 1;
       pointer-events: none;
@@ -1500,8 +1527,13 @@ export class GrowspaceEnvChart extends LitElement {
       z-index: 3;
       display: flex;
       gap: 8px;
-      font-size: 10px;
+      font-size: var(--font-size-xs);
       font-weight: 600;
+      /* Pinned like .gs-axis-cap and .gs-axis-target beside it. An inherited
+         normal line-height leaves the row height to font metrics, and at phone
+         width the container query below drops this label into the flow, where
+         that decides the card's height to the subpixel. */
+      line-height: 1;
       letter-spacing: 0.04em;
       color: var(--text-muted);
       pointer-events: none;
@@ -1509,7 +1541,7 @@ export class GrowspaceEnvChart extends LitElement {
       text-orientation: mixed;
       transform: translateY(-50%) rotate(180deg);
       padding: 4px 3px;
-      border-radius: 6px;
+      border-radius: var(--border-radius-sm, 8px);
       background: var(--card-background-color, var(--surface, #1e1e1e));
       box-shadow: 0 0 8px
         color-mix(in srgb, var(--card-background-color, var(--surface, #1e1e1e)) 60%, transparent);
@@ -1595,7 +1627,7 @@ export class GrowspaceEnvChart extends LitElement {
     /* Same rule as the single header: the swatch dot and the metric icon carry
        the hue, the words stay readable. */
     .gs-legend-title {
-      color: var(--primary-text-color, #e1e1e1);
+      color: var(--primary-text-color, #fff);
       font-weight: 500;
     }
     .gs-legend-range {

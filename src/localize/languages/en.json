@@ -50,8 +50,7 @@
   },
   "environment_chart": {
     "graph": "Graph",
-    "no_data": "No Data",
-    "no_history_for_range": "No history data available for {range}",
+    "no_history": "No {metric} history for {range}",
     "render_failed": "Failed to render environment chart",
     "close_graph": "Close {graph} graph",
     "unlink_graph": "Unlink {graph} graph",

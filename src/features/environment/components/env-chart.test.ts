@@ -233,7 +233,7 @@ describe('GrowspaceEnvChart — the header does not tint its text', () => {
    * resolves no theme, and pinning a ratio would pin the default palette instead
    * of the rule.
    */
-  const THEME_TEXT = 'var(--primary-text-color, #e1e1e1)';
+  const THEME_TEXT = 'var(--primary-text-color, #fff)';
 
   function declaredColor(el: GrowspaceEnvChart, selector: string): string {
     const node = el.shadowRoot?.querySelector(selector);

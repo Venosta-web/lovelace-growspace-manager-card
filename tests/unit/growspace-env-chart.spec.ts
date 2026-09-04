@@ -103,15 +103,25 @@ describe('GrowspaceEnvChart', () => {
       await element.updateComplete;
 
       expect(element.shadowRoot?.querySelector('.gs-env-graph-card')).toBeTruthy();
-      expect(element.shadowRoot?.textContent).toContain('No history data');
+      expect(element.shadowRoot?.querySelector('.empty-message')?.textContent).toContain(
+        'history for 24h'
+      );
     });
 
     it('renders the no-data state for a metric whose history is empty', async () => {
       await showMetric(MetricKey.TEMPERATURE);
 
-      expect(element.shadowRoot?.querySelector('.gs-env-graph-card')?.textContent).toContain(
-        'No Data'
+      expect(element.shadowRoot?.querySelector('.empty-message')?.textContent).toBe(
+        'No Temperature history for 24h'
       );
+    });
+
+    it('says it once — the header names the graph, the pane carries the message', async () => {
+      await showMetric(MetricKey.TEMPERATURE);
+
+      const header = element.shadowRoot?.querySelector('.gs-env-graph-header');
+      expect(header?.textContent?.trim()).toBe('Temperature');
+      expect(element.shadowRoot?.querySelectorAll('.empty-message')).toHaveLength(1);
     });
 
     it('renders nothing at all without a device', async () => {
@@ -129,7 +139,6 @@ describe('GrowspaceEnvChart', () => {
 
       const header = element.shadowRoot?.querySelector('.gs-env-graph-header');
       expect(header?.textContent).toContain('Test Metric');
-      expect(header?.textContent).toContain('No Data');
       expect(element.shadowRoot?.querySelector('ha-icon')).toBeFalsy();
     });
 

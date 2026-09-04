@@ -364,7 +364,7 @@ export class CropSteeringDayChart extends LitElement {
       position: absolute;
       top: 22px;
       height: 56px;
-      border-radius: var(--border-radius-xs, 4px);
+      border-radius: var(--border-radius-xs);
       opacity: 0.9;
       cursor: default;
       transition: transform 0.15s;

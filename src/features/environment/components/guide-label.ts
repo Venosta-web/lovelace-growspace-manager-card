@@ -36,7 +36,7 @@ export const guideLabelStyles = css`
     color: var(--text-muted, var(--secondary-text-color, rgba(255, 255, 255, 0.55)));
     padding: 2px 4px;
     border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
-    border-radius: 6px;
+    border-radius: var(--border-radius-sm, 8px);
     background: var(--card-background-color, var(--surface, #1e1e1e));
     pointer-events: none;
   }

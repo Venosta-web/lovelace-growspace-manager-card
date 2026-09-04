@@ -128,7 +128,8 @@ export class ChartScrubTooltip extends LitElement {
     .chart-scrub-swatch.is-interval {
       width: 11px;
       height: 4px;
-      border-radius: 1px;
+      /* rounded.xs, which a 4px-tall bar clamps to 2px corners of its own. */
+      border-radius: var(--border-radius-xs);
     }
     .chart-scrub-value {
       font-family: monospace;

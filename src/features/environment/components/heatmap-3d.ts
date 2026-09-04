@@ -218,7 +218,7 @@ export class Heatmap3D extends LitElement {
       .legend {
         width: 100%;
         height: 8px;
-        border-radius: var(--border-radius-xs, 4px);
+        border-radius: var(--border-radius-xs);
         position: relative;
         box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
       }
