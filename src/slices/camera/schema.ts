@@ -92,7 +92,7 @@ export const VisionStatusSchema = z
       .optional(),
     connection_source: z.enum(['supervisor', 'manual']),
     service_version: z.string().optional(),
-    vision_schema_version: z.number().int().optional(),
+    vision_schema_version: z.literal(1).optional(),
     model: z
       .object({
         id: z.string(),
@@ -123,7 +123,7 @@ const VisionQualitySchema = z
 
 const VisionProvenanceSchema = z
   .object({
-    vision_schema_version: z.number().int().optional(),
+    vision_schema_version: z.literal(1).optional(),
     service_version: z.string().optional(),
     model_id: z.string().optional(),
     model_version: z.string().optional(),

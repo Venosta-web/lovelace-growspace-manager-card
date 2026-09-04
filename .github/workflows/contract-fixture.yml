@@ -41,8 +41,6 @@ jobs:
       - name: Fetch GSM contract fixtures
         env:
           RELEASE_TAG: ${{ steps.gsm-release.outputs.tag }}
-          # Remove this immutable bootstrap after backend PR #727 lands on prerelease.
-          GSM_VISION_BOOTSTRAP_REF: 9f2446af7141ccd16eb814059cfed6e74f51c859
         run: node scripts/fetch-contract-fixtures.mjs
 
       - name: Diff fixture and schema key sets

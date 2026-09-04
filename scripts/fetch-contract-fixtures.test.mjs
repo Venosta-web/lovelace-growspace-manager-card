@@ -1,14 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
 import { fetchContractFixtures } from './fetch-contract-fixtures.mjs';
 
-const BOOTSTRAP_REF = '9f2446af7141ccd16eb814059cfed6e74f51c859';
-
-test('missing prerelease Vision fixtures fall back to the pinned backend commit', async (t) => {
+test('missing prerelease Vision fixtures fail at the current backend boundary', async (t) => {
   const outputDirectory = await mkdtemp(path.join(os.tmpdir(), 'gsm-fixtures-'));
   t.after(() => rm(outputDirectory, { recursive: true, force: true }));
   const urls = [];
@@ -26,29 +24,23 @@ test('missing prerelease Vision fixtures fall back to the pinned backend commit'
     return new Response(JSON.stringify({ source: url }), { status: 200 });
   };
 
-  await fetchContractFixtures({
-    releaseTag: 'v1.2.3',
-    outputDirectory,
-    visionBootstrapRef: BOOTSTRAP_REF,
-    baseUrl: 'https://fixtures.example',
-    fetchImpl,
-  });
-
-  const statusFixture = JSON.parse(
-    await readFile(path.join(outputDirectory, 'gsm-prerelease-vision_status_response.json'), 'utf8')
+  await assert.rejects(
+    fetchContractFixtures({
+      releaseTag: 'v1.2.3',
+      outputDirectory,
+      baseUrl: 'https://fixtures.example',
+      fetchImpl,
+    }),
+    /vision_status_response was not found at refs: prerelease/
   );
-  assert.match(statusFixture.source, new RegExp(`/${BOOTSTRAP_REF}/`));
+
   assert.deepEqual(
     urls.filter((url) => url.endsWith('/vision_status_response.json')),
-    [
-      'https://fixtures.example/prerelease/tests/fixtures/contract/vision_status_response.json',
-      `https://fixtures.example/${BOOTSTRAP_REF}/tests/fixtures/contract/vision_status_response.json`,
-      'https://fixtures.example/v1.2.3/tests/fixtures/contract/vision_status_response.json',
-    ]
+    ['https://fixtures.example/prerelease/tests/fixtures/contract/vision_status_response.json']
   );
 });
 
-test('a non-404 prerelease failure does not silently use the bootstrap fixture', async (t) => {
+test('a non-404 prerelease failure stays attributed to the current backend', async (t) => {
   const outputDirectory = await mkdtemp(path.join(os.tmpdir(), 'gsm-fixtures-'));
   t.after(() => rm(outputDirectory, { recursive: true, force: true }));
   const urls = [];
@@ -62,14 +54,13 @@ test('a non-404 prerelease failure does not silently use the bootstrap fixture',
     fetchContractFixtures({
       releaseTag: 'v1.2.3',
       outputDirectory,
-      visionBootstrapRef: BOOTSTRAP_REF,
       baseUrl: 'https://fixtures.example',
       fetchImpl,
     }),
     /fetch from prerelease failed with HTTP 403/
   );
   assert.equal(
-    urls.some((url) => url.includes(`/${BOOTSTRAP_REF}/`)),
+    urls.some((url) => /\/[0-9a-f]{40}\//.test(url)),
     false
   );
 });

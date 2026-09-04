@@ -46,15 +46,11 @@ async function downloadFixture({ baseUrl, fetchImpl, fixture, output, refs, opti
 export async function fetchContractFixtures({
   releaseTag,
   outputDirectory,
-  visionBootstrapRef,
   baseUrl = DEFAULT_BASE_URL,
   fetchImpl = fetch,
 }) {
   if (!releaseTag) throw new Error('RELEASE_TAG must name the published prerelease');
   if (!outputDirectory) throw new Error('RUNNER_TEMP must name the fixture directory');
-  if (!visionBootstrapRef) {
-    throw new Error('GSM_VISION_BOOTSTRAP_REF must pin the backend fixture commit');
-  }
   await mkdir(outputDirectory, { recursive: true });
 
   await downloadFixture({
@@ -78,7 +74,7 @@ export async function fetchContractFixtures({
       fetchImpl,
       fixture,
       output: path.join(outputDirectory, `gsm-prerelease-${fixture}.json`),
-      refs: ['prerelease', visionBootstrapRef],
+      refs: ['prerelease'],
     });
     await downloadFixture({
       baseUrl,
@@ -95,6 +91,5 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   await fetchContractFixtures({
     releaseTag: process.env.RELEASE_TAG,
     outputDirectory: process.env.RUNNER_TEMP,
-    visionBootstrapRef: process.env.GSM_VISION_BOOTSTRAP_REF,
   });
 }
