@@ -18,7 +18,18 @@ hub; for specifics see:
 2. **Interactions are store-driven, not `tap_action`.** Plant grid cells, hero cards, and
    chips dispatch through the nanostores state machine — not generic Lovelace
    `tap_action`/`hold_action`. Don't wire up the Lovelace action model for these.
-3. **Respect the data-flow layering.** Components never call `hass` directly for growspace
+3. **The entry bundle is self-contained; the lazy chunks bind back to it.**
+   `dist/growspace-manager-card.js` carries the registration and the render path
+   for all 8 cards, so the stale chunk set HACS leaves behind when it rewrites
+   only the entry costs the dialogs, not the whole dashboard.
+   `preserveEntrySignatures: false` in `rollup.config.js` is what keeps the eager
+   graph in the entry instead of a re-export facade, and
+   `scripts/lazy-chunk-entry-binding.mjs` rewrites every chunk's import of the
+   entry into a dynamic one against `window.__growspaceEntryUrl` — Home Assistant
+   loads the entry with a cache-busting query, and a static import would resolve
+   to a second copy and define every element twice.
+   `npm run validate:hacs-release` fails the build if either half regresses.
+4. **Respect the data-flow layering.** Components never call `hass` directly for growspace
    data. The flow is **API service → store action → atom → card**. Reaching into `hass`
    from a component to fetch/mutate growspace data bypasses the store and breaks reactivity.
 
