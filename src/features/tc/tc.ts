@@ -8,5 +8,7 @@
  */
 
 import './containers/growspace-tc-view.container';
+import './containers/growspace-tc-cultures.container';
 
 export { GrowspaceTcView } from './containers/growspace-tc-view.container';
+export { GrowspaceTcCultures } from './containers/growspace-tc-cultures.container';

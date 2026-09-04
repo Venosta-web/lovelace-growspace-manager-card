@@ -6,8 +6,13 @@ import { WSError } from '../../src/services/errors';
 import { GrowspaceTcView } from '../../src/features/tc/containers/growspace-tc-view.container';
 import { CultureMediumSchema, resetTcPresence, type CultureMedium } from '../../src/slices/tc';
 
+// The view reaches the strain slice through the culture board container, which
+// resolves phenotype references client-side, so the mock answers for every
+// export that module imports.
 vi.mock('../../src/services/hass-call', () => ({
   hassCall: vi.fn(),
+  callService: vi.fn(),
+  callFetch: vi.fn(),
   setHass: vi.fn(),
 }));
 

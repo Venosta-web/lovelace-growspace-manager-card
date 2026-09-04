@@ -111,3 +111,113 @@ export const CultureMediumDraftSchema = MediumVersionSchema.omit({
 }).extend({ name: z.string() });
 
 export type CultureMediumDraft = z.infer<typeof CultureMediumDraftSchema>;
+
+// ---------------------------------------------------------------------------
+// The culture board
+// ---------------------------------------------------------------------------
+
+/**
+ * A phenotype reference: an opaque ID, and the name it had when it was taken.
+ *
+ * `id` is Growspace Manager's and TC never parses it (TC ADR-0002), so the
+ * card is what joins it against the strain library. `name_snapshot` is a
+ * display fallback for when that join fails (TC ADR-0006) — never a second
+ * source of truth, and never shown while the ID still resolves.
+ */
+export const PhenotypeReferenceSchema = z.object({
+  id: z.string(),
+  name_snapshot: z.string(),
+  snapshot_at: z.string(),
+});
+
+/** Which of the line's replate intervals a Culture is measured against. */
+export const CultureStageSchema = z.enum(['multiplication', 'rooting']);
+
+/**
+ * Where a Culture stands.
+ *
+ * An Introduction only ever produces `active`; the other two are written by the
+ * Maintenance Actions that own them. A Culture is never deleted, so a board
+ * that has been worked for a season still holds every vessel that ever existed.
+ */
+export const CultureStatusSchema = z.enum(['active', 'discarded', 'graduated']);
+
+/** How many days a Culture may sit on one medium, per Culture Stage. */
+export const ReplateIntervalsSchema = z.object({
+  multiplication: z.number(),
+  rooting: z.number(),
+});
+
+/**
+ * One plantlet group in one vessel.
+ *
+ * `plantlet_count` is `null` when nobody counted, which is not the same fact as
+ * a count of zero — the card renders the two differently for exactly that
+ * reason. `last_replated_at` is the anchor the line's interval is measured
+ * from; an Introduction sets it, because placing the explant is itself a
+ * plating onto fresh medium.
+ */
+export const CultureSchema = z.object({
+  id: z.string(),
+  line_id: z.string(),
+  stage: CultureStageSchema,
+  status: CultureStatusSchema,
+  started_at: z.string(),
+  last_replated_at: z.string(),
+  plantlet_count: z.number().nullable(),
+  location: z.string(),
+});
+
+/**
+ * One preserved lineage of one phenotype, with the vessels it is kept in.
+ *
+ * `cultures` always travels with the line — empty rather than absent — so a
+ * line whose every Culture has ended reads the same shape as one that never had
+ * any. `archived_at` is a stamp or `null` rather than a flag, because when a
+ * line was put away is the question anyone asks about it.
+ */
+export const CultureLineSchema = z.object({
+  id: z.string(),
+  phenotype: PhenotypeReferenceSchema,
+  replate_interval_days: ReplateIntervalsSchema,
+  created_at: z.string(),
+  updated_at: z.string(),
+  archived_at: z.string().nullable(),
+  cultures: z.array(CultureSchema),
+});
+
+/** The reply to `growspace_manager_tc/culture_lines/list`. */
+export const CultureLinesResponseSchema = z.object({
+  culture_lines: z.array(CultureLineSchema),
+});
+
+/** The reply to `introduce`, `relink_phenotype` and `set_archived`. */
+export const CultureLineMutationSchema = z.object({
+  line: CultureLineSchema,
+});
+
+export type PhenotypeReference = z.infer<typeof PhenotypeReferenceSchema>;
+export type CultureStage = z.infer<typeof CultureStageSchema>;
+export type CultureStatus = z.infer<typeof CultureStatusSchema>;
+export type ReplateIntervals = z.infer<typeof ReplateIntervalsSchema>;
+export type Culture = z.infer<typeof CultureSchema>;
+export type CultureLine = z.infer<typeof CultureLineSchema>;
+
+/**
+ * What the Introduction form sends.
+ *
+ * The phenotype travels as two flat fields rather than as the reference object
+ * the reply carries: the card is choosing a phenotype, and `snapshot_at` is the
+ * backend's to stamp — a card that sent one would be claiming to know when the
+ * name it is looking at was true.
+ */
+export const IntroductionDraftSchema = z.object({
+  phenotype_id: z.string(),
+  phenotype_name: z.string(),
+  replate_interval_days: ReplateIntervalsSchema,
+  stage: CultureStageSchema,
+  plantlet_count: z.number().nullable(),
+  location: z.string(),
+});
+
+export type IntroductionDraft = z.infer<typeof IntroductionDraftSchema>;

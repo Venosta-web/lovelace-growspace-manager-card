@@ -10,11 +10,13 @@ import {
   deleteCultureMedium,
   fetchCultureMedia,
   updateCultureMedium,
+  TC_FEATURE_CULTURE_LINES,
   TC_FEATURE_CULTURE_MEDIA,
   type CultureMedium,
   type CultureMediumDraft,
   type TcManifest,
 } from '../../../slices/tc';
+import './growspace-tc-cultures.container';
 import '../components/growspace-tc-medium-library';
 import '../components/growspace-tc-medium-form';
 
@@ -23,11 +25,11 @@ type Editing = { open: false } | { open: true; medium?: CultureMedium };
 /**
  * The tissue-culture view.
  *
- * It holds the Culture Medium library today; the remaining V1 model tickets add
- * the due/overdue worklist, the culture board and the pairing editor around it.
- * What it proves is the whole load path — the presence probe answered, the
- * chunk was fetched, and the surface rendered inside a card that ships no TC
- * code in its entry bundle.
+ * It holds the culture board and the Culture Medium library today; the
+ * remaining V1 model tickets add the due/overdue worklist and the pairing
+ * editor around them. What it proves is the whole load path — the presence
+ * probe answered, the chunk was fetched, and the surface rendered inside a card
+ * that ships no TC code in its entry bundle.
  *
  * Every surface is gated on a manifest feature rather than on the installed
  * release: a TC that predates the medium library answers the presence probe
@@ -107,6 +109,10 @@ export class GrowspaceTcView extends LitElement {
 
   private get _hasMediumLibrary(): boolean {
     return this.manifest?.features.includes(TC_FEATURE_CULTURE_MEDIA) ?? false;
+  }
+
+  private get _hasCultureBoard(): boolean {
+    return this.manifest?.features.includes(TC_FEATURE_CULTURE_LINES) ?? false;
   }
 
   connectedCallback(): void {
@@ -234,7 +240,10 @@ export class GrowspaceTcView extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (!this._hasMediumLibrary) {
+    // Nothing this release can serve: an installation older than every surface
+    // answers the presence probe perfectly well, and a view of broken calls
+    // would be worse than one that says there is nothing here yet.
+    if (!this._hasMediumLibrary && !this._hasCultureBoard) {
       return html`
         <div class="state" role="region" aria-label=${this._t('view_title')}>
           <h3>${this._t('empty_title')}</h3>
@@ -246,6 +255,18 @@ export class GrowspaceTcView extends LitElement {
     return html`
       <div role="region" aria-label=${this._t('view_title')}>
         ${this._error ? html`<p class="error" role="alert">${this._error}</p>` : nothing}
+        ${this._hasCultureBoard
+          ? html`<growspace-tc-cultures .language=${this.language}></growspace-tc-cultures>`
+          : nothing}
+        ${this._hasMediumLibrary ? this._renderMediumLibrary() : nothing}
+      </div>
+    `;
+  }
+
+  /** The Culture Medium library, and whichever of its panels is open. */
+  private _renderMediumLibrary(): TemplateResult {
+    return html`
+      <div>
         ${this._pendingDelete ? this._renderDeleteConfirmation(this._pendingDelete) : nothing}
         ${this._editing.open
           ? html`<growspace-tc-medium-form
