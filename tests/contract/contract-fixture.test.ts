@@ -12,6 +12,7 @@ import {
   formatContractDrift,
   type ContractVerdict,
 } from '../../src/contract-fixture/key-set-diff';
+import { TcManifestSchema } from '../../src/slices/tc/schema';
 
 interface FixtureContract {
   name: string;
@@ -55,6 +56,17 @@ const CONTRACTS: FixtureContract[] = [
     schema: TriggerVisionCheckupResponseSchema,
     leadingVariable: 'GSM_PRERELEASE_VISION_TRIGGER_FIXTURE',
     releaseVariable: 'GSM_RELEASE_VISION_TRIGGER_FIXTURE',
+    releaseRequired: false,
+  },
+  // Growspace Manager TC is a separate repository that owns its own WebSocket
+  // contract and integrates on `main`. It has published no release yet, so
+  // there is no installed card-facing shape to stay backward-safe with; the
+  // release variable stays unset until it publishes one.
+  {
+    name: 'TC manifest',
+    schema: TcManifestSchema,
+    leadingVariable: 'TC_MAIN_MANIFEST_FIXTURE',
+    releaseVariable: 'TC_RELEASE_MANIFEST_FIXTURE',
     releaseRequired: false,
   },
 ];

@@ -76,6 +76,18 @@ export const LAZY_CHUNKS = {
     name: 'growspace-carousel-card-editor',
     feature: 'The Growspace Carousel card editor',
   },
+  tcCardEditor: {
+    name: 'growspace-tc-card-editor',
+    feature: 'The Growspace Tissue Culture card editor',
+  },
+  // Not an editor: the tissue-culture view itself (TC ADR-0003). It is fetched
+  // only after Growspace Manager TC answers the presence probe, so reaching
+  // this chunk at all means the user has the integration — a failure here is a
+  // stale install to report, never an absent integration to hide.
+  tcView: {
+    name: 'tc',
+    feature: 'The tissue culture view',
+  },
 } as const satisfies Record<string, LazyChunk>;
 
 /** The dist file the chunk is emitted as, with its content hash left open. */

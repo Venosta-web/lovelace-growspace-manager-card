@@ -3,6 +3,9 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const DEFAULT_BASE_URL = 'https://raw.githubusercontent.com/Venosta-web/growspace_manager';
+// Growspace Manager TC is a separate repository that owns its own WebSocket
+// contract, and it records its fixtures under the same path.
+const DEFAULT_TC_BASE_URL = 'https://raw.githubusercontent.com/Venosta-web/growspace_manager_tc';
 const FIXTURE_DIRECTORY = 'tests/fixtures/contract';
 const VISION_FIXTURES = [
   'vision_status_response',
@@ -47,6 +50,7 @@ export async function fetchContractFixtures({
   releaseTag,
   outputDirectory,
   baseUrl = DEFAULT_BASE_URL,
+  tcBaseUrl = DEFAULT_TC_BASE_URL,
   fetchImpl = fetch,
 }) {
   if (!releaseTag) throw new Error('RELEASE_TAG must name the published prerelease');
@@ -85,6 +89,19 @@ export async function fetchContractFixtures({
       optional: true,
     });
   }
+
+  // TC integrates on `main` and has published no release yet, so there is no
+  // backward-safety ref to check against: nothing is installed that a card
+  // change could strand. This is required, not optional — a missing fixture
+  // means the TC contract has not landed, which is exactly when the card must
+  // not merge.
+  await downloadFixture({
+    baseUrl: tcBaseUrl,
+    fetchImpl,
+    fixture: 'tc_manifest_response',
+    output: path.join(outputDirectory, 'tc-main-manifest.json'),
+    refs: ['main'],
+  });
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
