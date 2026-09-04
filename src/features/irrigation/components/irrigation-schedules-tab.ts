@@ -321,6 +321,13 @@ export class IrrigationSchedulesTab extends LitElement {
         color: rgba(255, 255, 255, 0.9);
         font-weight: 500;
       }
+      /* [[Skip P2]]: the phase is configured and bypassed, so its chip stays in
+         the legend and reads as disabled rather than disappearing. */
+      .cs-leg-chip.skipped {
+        opacity: 0.45;
+        text-decoration: line-through;
+        text-decoration-color: rgba(255, 255, 255, 0.4);
+      }
       .cs-leg-dot {
         width: 8px;
         height: 8px;
@@ -468,7 +475,13 @@ export class IrrigationSchedulesTab extends LitElement {
           <div class="cs-legend">
             ${cs.phases.map(
               (p) => html`
-                <span class="cs-leg-chip">
+                <span
+                  class="cs-leg-chip ${p.skipped ? 'skipped' : ''}"
+                  data-phase=${p.id}
+                  title=${p.skipped
+                    ? 'P2 is skipped: irrigation goes straight from P1 to P3. Its settings are kept.'
+                    : nothing}
+                >
                   <span class="cs-leg-dot" style="background:${p.color};"></span>
                   <strong>${p.label}</strong> ${p.name}${p.shotCount !== null
                     ? html` · ${p.shotCount} shots`

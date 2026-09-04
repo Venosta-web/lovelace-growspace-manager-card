@@ -74,6 +74,8 @@ export interface CropSteeringPhaseChipVM {
   target: string;
   /** Shot count appended to the P2 chip only (per the former inline render). */
   shotCount: number | null;
+  /** True on the P2 chip while [[Skip P2]] bypasses it — dims the chip. */
+  skipped: boolean;
 }
 
 /** The read-only crop-steering schedule panel projection. */
@@ -137,26 +139,30 @@ function deriveCropSteeringPanel(
   history: CropSteeringHistory | undefined
 ): CropSteeringScheduleVM {
   const dayHours = device?.irrigationConfig?.resolvedDayHours ?? 12;
-  const shots: CropSteeringShot[] = computeCropSteeringCycle(
-    strategy as IrrigationStrategy,
-    dayHours
-  );
   // P1 and P2 are split by the measured Saturation Target crossing, not the clock.
   const vwcSamples: VwcSample[] = (history?.soil_moisture ?? []).flatMap((b) => {
     const atMs = Date.parse(b.timestamp);
     return b.value == null || Number.isNaN(atMs) ? [] : [{ atMs, vwc: b.value }];
   });
+  // The one crossing both halves of the projection are drawn from: it splits the
+  // phase windows, and under [[Skip P2]] it also closes the shot window.
+  const saturationReachedAt = resolveSaturationCrossing(
+    strategy as IrrigationStrategy,
+    dayHours,
+    vwcSamples,
+    Date.now(),
+    history ? Date.parse(history.lights_on) : null
+  );
+  const shots: CropSteeringShot[] = computeCropSteeringCycle(
+    strategy as IrrigationStrategy,
+    dayHours,
+    saturationReachedAt
+  );
   const phases = computePhases(
     strategy as IrrigationStrategy,
     dayHours,
     device?.irrigationConfig,
-    resolveSaturationCrossing(
-      strategy as IrrigationStrategy,
-      dayHours,
-      vwcSamples,
-      Date.now(),
-      history ? Date.parse(history.lights_on) : null
-    )
+    saturationReachedAt
   );
 
   if (!phases) {
@@ -200,6 +206,7 @@ function deriveCropSteeringPanel(
         color: p.color,
         target: p.target,
         shotCount: p.id === 'p1' || p.id === 'p2' ? shotsIn(p) : null,
+        skipped: p.skipped === true,
       })
     ),
     hasPoreEc: history?.pore_ec !== undefined,

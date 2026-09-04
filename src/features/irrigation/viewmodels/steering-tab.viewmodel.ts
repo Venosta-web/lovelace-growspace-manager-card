@@ -70,6 +70,12 @@ export interface PhaseShotDescriptor {
   intervalValue: number | string | undefined;
   /** True when sizing mode is Volume → parseFloat into `sizeField`; false → parseInt. */
   isVolume: boolean;
+  /**
+   * True on the P2 descriptor while [[Skip P2]] is on: the fields render
+   * disabled and dimmed, still showing the values they hold. Bypassed, not
+   * cleared — the grower gets them back untouched by turning the option off.
+   */
+  bypassed: boolean;
 }
 
 /**
@@ -153,6 +159,14 @@ export interface SteeringTabViewModel {
   // ── Adaptive Shot Control (ADR-0014) ──
   /** Master toggle (defaults true). Tunables are hidden while disabled. */
   adaptiveEnabled: boolean;
+
+  // ── Skip P2 (growspace_manager_workspace#131) ──
+  /**
+   * Whether a completed P1 hands the day straight to P3. A steering-draft
+   * field, unlike the phase-trigger toggles beside it in the UI: it changes the
+   * projected day, and the preview reads the draft.
+   */
+  skipP2AfterP1: boolean;
 
   // ── Config draft (UPDATE_CONFIG_DRAFT) — fields living in the steering UI ──
   /** P2 Direct Trigger (%); null = Off. */
@@ -278,6 +292,10 @@ export function createSteeringTabViewModel(
     // `device.irrigationStrategy.shotSizingMode === 'volume'` read.
     const isVolume = caps.sizingModeLabel === 'Volume';
 
+    // Read from the draft, not the device: the toggle has to dim the P2 fields
+    // and redraw the projected day on the gesture, with nothing saved yet.
+    const skipP2AfterP1 = draft.skipP2AfterP1 === true;
+
     // The integration resolves the lit period once and serializes that number;
     // the card never re-picks between veg and flower day-hours (#42). Same
     // fallback as every other consumer of it.
@@ -298,6 +316,7 @@ export function createSteeringTabViewModel(
         intervalField,
         intervalValue: draft[intervalField] as number | string | undefined,
         isVolume,
+        bypassed: p.id === 'p2' && skipP2AfterP1,
       };
     });
 
@@ -314,6 +333,7 @@ export function createSteeringTabViewModel(
       resolvedDayHours,
       timingExplainer: deriveTimingExplainer(draft, resolvedDayHours, device),
       adaptiveEnabled: draft.dynamicShotEnabled ?? true,
+      skipP2AfterP1,
       soilTriggerPercent: config.soilTriggerPercent,
       autoAdvanceP1ToP2: config.autoAdvanceP1ToP2,
       autoAdvanceP2ToP3: config.autoAdvanceP2ToP3,

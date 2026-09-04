@@ -357,6 +357,7 @@ export class GrowspaceAdapter {
             irrigationStrategyRaw.shot_interval_minutes,
           p1ShotVolumePercent: irrigationStrategyRaw.p1_shot_volume_percent,
           p2ShotVolumePercent: irrigationStrategyRaw.p2_shot_volume_percent,
+          skipP2AfterP1: irrigationStrategyRaw.skip_p2_after_p1 ?? false,
           shotSizingMode: irrigationStrategyRaw.shot_sizing_mode ?? 'seconds',
           substrateProfile: irrigationStrategyRaw.substrate_profile
             ? {

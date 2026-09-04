@@ -118,6 +118,39 @@ describe('createSteeringTabViewModel', () => {
     expect(p2.sizeValue).toBe(5.5);
   });
 
+  // ── Skip P2 (growspace_manager_workspace#131) ──
+
+  it('reads Skip P2 off by default and marks neither phase bypassed', () => {
+    const vm = build(createInitialSM(), device(), caps());
+    expect(vm.skipP2AfterP1).toBe(false);
+    expect(vm.phaseShots.map((p) => p.bypassed)).toEqual([false, false]);
+  });
+
+  it('projects Skip P2 from the unsaved draft, bypassing the P2 fields only', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'UPDATE_STEERING_DRAFT',
+      partial: { skipP2AfterP1: true },
+    });
+    const vm = build(sm, device(), caps());
+    expect(vm.skipP2AfterP1).toBe(true);
+    expect(vm.phaseShots.map((p) => p.bypassed)).toEqual([false, true]);
+  });
+
+  it('keeps the bypassed P2 values on the descriptor rather than clearing them', () => {
+    const edited = transition(createInitialSM(), {
+      type: 'UPDATE_STEERING_DRAFT',
+      partial: { p2ShotDurationSeconds: 9, p2ShotIntervalMinutes: 40 },
+    });
+    const sm = transition(edited, {
+      type: 'UPDATE_STEERING_DRAFT',
+      partial: { skipP2AfterP1: true },
+    });
+    const p2 = build(sm, device(), caps()).phaseShots[1];
+    expect(p2.bypassed).toBe(true);
+    expect(p2.sizeValue).toBe(9);
+    expect(p2.intervalValue).toBe(40);
+  });
+
   // ── Light-sensor gate (from the device) ──
 
   it('gates the auto-track switch on the presence of light sensors', () => {

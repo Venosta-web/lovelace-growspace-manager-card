@@ -602,6 +602,38 @@ describe('CropSteeringDayChart – strategyOverride', () => {
     expect(shotCount(el)).toBe(4);
   });
 
+  it('closes the shot track at P1 completion when the override skips P2 (growspace_manager_workspace#131)', async () => {
+    // Local-time fixtures, because the crossing is resolved as a minute-of-day:
+    // lights on 06:00, VWC reaches the 65% target at 10:00.
+    const at = (hh: number) => {
+      const d = new Date();
+      d.setHours(hh, 0, 0, 0);
+      return d;
+    };
+    mockHassCall.mockResolvedValue({
+      growspace_id: 'gs1',
+      lights_on: at(6).toISOString(),
+      soil_moisture: [
+        { timestamp: at(8).toISOString(), value: 55 },
+        { timestamp: at(10).toISOString(), value: 70 },
+      ],
+    });
+
+    const el = createElement();
+    el.device = makeDevice({ irrigationStrategy: fourShotStrategy() });
+    el.strategyOverride = fourShotStrategy();
+    await el.updateComplete;
+    await vi.waitFor(() => expect(shotCount(el)).toBe(4));
+
+    // The grower ticks Skip P2 in the dialog. Nothing is saved; only the
+    // override changes, and the two shots P2 would have fired go away.
+    el.strategyOverride = { ...fourShotStrategy(), skipP2AfterP1: true };
+    await el.updateComplete;
+
+    expect(el.device!.irrigationStrategy!.skipP2AfterP1).toBeUndefined();
+    expect(shotCount(el)).toBe(2);
+  });
+
   it('shows the empty state when the override disables steering', async () => {
     const el = createElement();
     el.device = makeDevice({ irrigationStrategy: fourShotStrategy() });

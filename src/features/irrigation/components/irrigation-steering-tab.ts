@@ -288,9 +288,11 @@ export class IrrigationSteeringTab extends LitElement {
                 this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
             ></md3-number-input>
             <md3-number-input
+              data-field="soilTriggerPercent"
               label="P2 Direct Trigger (%)"
               placeholder="Off"
               .value=${vm.soilTriggerPercent != null ? String(vm.soilTriggerPercent) : ''}
+              .disabled=${vm.skipP2AfterP1}
               @change=${(e: CustomEvent) => {
                 const v = e.detail;
                 this._updateConfigField({
@@ -387,6 +389,31 @@ export class IrrigationSteeringTab extends LitElement {
               }}
             ></md3-switch>
           </div>
+        </div>
+        <div style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="stub-row-label">Skip P2 after P1</div>
+              <div class="stub-row-desc">
+                When enabled, irrigation transitions directly from P1 to P3 once P1 is
+                complete.
+              </div>
+            </div>
+            <md3-switch
+              data-field="skipP2AfterP1"
+              .checked=${vm.skipP2AfterP1}
+              @change=${(e: Event) => {
+                this._updateStrategyField('skipP2AfterP1', (e.target as HTMLInputElement).checked);
+              }}
+            ></md3-switch>
+          </div>
+          ${
+            vm.skipP2AfterP1
+              ? html`<p class="field-dependency-hint" data-field="skipP2AfterP1Hint">
+                  P2's shot settings above are kept, not cleared — turning this off restores them.
+                </p>`
+              : nothing
+          }
         </div>
         <div style="margin-bottom:8px;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -690,6 +717,7 @@ export class IrrigationSteeringTab extends LitElement {
           label=${p.sizeLabel}
           .help=${p.isVolume ? sizeCopy.volume : sizeCopy.duration}
           .value=${String(p.sizeValue ?? '')}
+          .disabled=${p.bypassed}
           @change=${(e: CustomEvent) =>
             this._updateStrategyField(
               p.sizeField,
@@ -701,9 +729,20 @@ export class IrrigationSteeringTab extends LitElement {
           label="${p.label} Shot Interval (min)"
           .help=${intervalCopy}
           .value=${String(p.intervalValue ?? '')}
+          .disabled=${p.bypassed}
           @change=${(e: CustomEvent) =>
             this._updateStrategyField(p.intervalField, parseInt(e.detail))}
         ></md3-number-input>
+        ${p.bypassed
+          ? html`<p
+              class="field-dependency-hint"
+              data-field="p2BypassedHint"
+              style="grid-column:span 2;"
+            >
+              P2 is skipped, so these are not used today. They are kept, not cleared — turn Skip P2
+              after P1 off in Phase Triggers to use them again.
+            </p>`
+          : nothing}
       `;
     });
   }
