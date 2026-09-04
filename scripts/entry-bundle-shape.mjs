@@ -80,3 +80,18 @@ export function assertChunksBindToLoadedEntry({ chunks, entryFileName }) {
     );
   }
 }
+
+/**
+ * Chunk names `src/lib/lazy-chunk.ts` promises the user, from its `LAZY_CHUNKS`
+ * registry. A failed chunk names the file to reinstall, so a name that matches
+ * nothing in `dist/` sends the reader looking for a file that was never built.
+ */
+export function declaredLazyChunkNames(registrySource) {
+  const names = [...registrySource.matchAll(/^\s{4}name:\s*'([\w.-]+)',$/gm)].map(
+    ([, name]) => name
+  );
+  if (names.length === 0) {
+    throw new Error('No LAZY_CHUNKS entries found in src/lib/lazy-chunk.ts');
+  }
+  return names;
+}

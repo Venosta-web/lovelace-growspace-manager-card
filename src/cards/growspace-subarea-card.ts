@@ -48,6 +48,8 @@ import { metricHistoryKeys } from '../slices/metric-descriptors';
 import { BootstrapController } from '../controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
+import { LAZY_CHUNKS, LazyChunk, loadLazyChunk } from '../lib/lazy-chunk';
+import { lazyChunkErrorEditor } from '../features/shared/ui/lazy-chunk-error';
 
 export interface GrowspaceSubareaCardConfig extends GrowspaceManagerCardConfig {
   /** Legacy key retained for existing dashboard configurations. */
@@ -109,6 +111,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
   @state() private _error: string | null = null;
   @state() private _parentGrowspaceName = '';
   @state() private _showConfigDialog = false;
+  @state() private _missingChunk: LazyChunk | null = null;
   @state() private _historyCache: Record<string, any[]> = {};
   /**
    * The entity lists `_historyCache` was keyed by. Handed to the analytics
@@ -419,7 +422,13 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
   }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    await import('./editors/growspace-subarea-card-editor.js');
+    const editor = await loadLazyChunk(
+      LAZY_CHUNKS.subareaCardEditor,
+      () => import('./editors/growspace-subarea-card-editor.js')
+    );
+    if (!editor) {
+      return lazyChunkErrorEditor(LAZY_CHUNKS.subareaCardEditor) as unknown as LovelaceCardEditor;
+    }
     return document.createElement('growspace-subarea-card-editor') as unknown as LovelaceCardEditor;
   }
 
@@ -493,6 +502,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         .onError=${this._handleError}
       >
         <ha-card>
+          <growspace-lazy-chunk-error .chunk=${this._missingChunk}></growspace-lazy-chunk-error>
           ${this._loading
             ? html`
                 <div class="loading-container">
@@ -519,7 +529,15 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                             title="Configure subareas"
                             @click=${() => {
                               this._showConfigDialog = true;
-                              void import('../dialogs/config-dialog');
+                              void loadLazyChunk(
+                                LAZY_CHUNKS.configDialog,
+                                () => import('../dialogs/config-dialog')
+                              ).then((configDialog) => {
+                                if (!configDialog) {
+                                  this._showConfigDialog = false;
+                                  this._missingChunk = LAZY_CHUNKS.configDialog;
+                                }
+                              });
                             }}
                           >
                             <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>

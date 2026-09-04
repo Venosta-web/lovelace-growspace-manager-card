@@ -15,7 +15,7 @@
  */
 
 import { LitElement, html, TemplateResult, PropertyValues } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
 import { mdiChevronUp, mdiChevronDown, mdiFullscreenExit } from '@mdi/js';
@@ -27,6 +27,7 @@ import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { LayoutSpec } from '../../../slices/ui/layout-spec';
 import { showToast } from '../../../slices/ui';
 import { gridInteraction$ } from '../../../slices/grid-interaction';
+import { LAZY_CHUNKS, loadLazyChunk } from '../../../lib/lazy-chunk';
 
 // Side-effect imports register child custom elements
 import '../../ui/containers/growspace-header.container';
@@ -35,6 +36,7 @@ import '../../ui/components/growspace-edit-mode-banner-ui';
 import '../../plants/components/transplant-source-panel';
 import '../../plants/containers/growspace-grid.container';
 import '../ui/error-boundary';
+import '../ui/lazy-chunk-error';
 
 import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
@@ -64,6 +66,9 @@ export class GrowspaceView extends LitElement {
   @property({ attribute: false }) taskState: CardTaskState = { kind: 'idle' };
   @property({ attribute: false }) config: GrowspaceManagerCardConfig | undefined;
   @property({ type: Boolean }) editMode3DCords = false;
+
+  /** Set once the 3D heatmap chunk has failed; `<heatmap-3d>` never upgrades. */
+  @state() private _heatmapMissing = false;
 
   // ── Internal store subscriptions ──────────────────────────────────────────
 
@@ -166,7 +171,19 @@ export class GrowspaceView extends LitElement {
   private _renderChart(): TemplateResult {
     const spec = this._specController?.value;
     if (spec?.chartType === 'heatmap') {
-      void import('../../environment/components/heatmap-3d');
+      if (this._heatmapMissing) {
+        return html`<growspace-lazy-chunk-error
+          .chunk=${LAZY_CHUNKS.heatmap3d}
+        ></growspace-lazy-chunk-error>`;
+      }
+      // Without the chunk `<heatmap-3d>` stays an undefined element: an empty
+      // box where the chart was, and nothing said about why.
+      void loadLazyChunk(
+        LAZY_CHUNKS.heatmap3d,
+        () => import('../../environment/components/heatmap-3d')
+      ).then((heatmap) => {
+        if (!heatmap) this._heatmapMissing = true;
+      });
       return html`
         <heatmap-3d
           .device=${this.device}

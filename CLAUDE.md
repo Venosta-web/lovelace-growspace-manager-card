@@ -29,7 +29,15 @@ hub; for specifics see:
    loads the entry with a cache-busting query, and a static import would resolve
    to a second copy and define every element twice.
    `npm run validate:hacs-release` fails the build if either half regresses.
-4. **Respect the data-flow layering.** Components never call `hass` directly for growspace
+4. **Load lazy chunks through `src/lib/lazy-chunk.ts`, never a bare `import()`.**
+   `loadLazyChunk` resolves to `null` instead of rejecting and logs the diagnosis
+   once, so the surface that triggered the load renders
+   `<growspace-lazy-chunk-error>` in place of the feature — naming the missing
+   `growspace-<name>-*.js` and telling the user to redownload the card in HACS.
+   A bare `import()` gives an unhandled rejection and a click that does nothing.
+   Register the chunk in `LAZY_CHUNKS`; the release validator fails the build if
+   a name there matches no emitted chunk.
+5. **Respect the data-flow layering.** Components never call `hass` directly for growspace
    data. The flow is **API service → store action → atom → card**. Reaching into `hass`
    from a component to fetch/mutate growspace data bypasses the store and breaks reactivity.
 

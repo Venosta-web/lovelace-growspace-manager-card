@@ -41,6 +41,8 @@ import {
   ComparisonConstraintError,
 } from './store/comparisons/metric-comparison-store';
 import { WSError } from './services/errors';
+import { LAZY_CHUNKS, LazyChunk, loadLazyChunk } from './lib/lazy-chunk';
+import { lazyChunkErrorEditor } from './features/shared/ui/lazy-chunk-error';
 import { localizeWithParams } from './localize/localize';
 
 @customElement('growspace-manager-card')
@@ -52,9 +54,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   private _dialogPortal: GrowspaceDialogHost | null = null;
   private _dialogHostModule?: Promise<
-    typeof import('./features/ui/containers/growspace-dialog-host.container')
+    typeof import('./features/ui/containers/growspace-dialog-host.container') | null
   >;
   private _dialogUnsubscribe?: () => void;
+  @state() private _missingChunk: LazyChunk | null = null;
   private _viewModeInitialized = false;
   private _bootstrapCtrl!: BootstrapController;
 
@@ -158,20 +161,39 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private async _ensureDialogPortal(): Promise<void> {
-    await (this._dialogHostModule ??=
-      import('./features/ui/containers/growspace-dialog-host.container'));
-    if (!this.isConnected || this._dialogPortal) return;
+    const dialogHost = await (this._dialogHostModule ??= loadLazyChunk(
+      LAZY_CHUNKS.dialogHost,
+      () => import('./features/ui/containers/growspace-dialog-host.container')
+    ));
+    // Without the chunk there is no dialog to open, so the card itself carries
+    // the message — otherwise every dialog trigger is a click that does nothing.
+    // Close the dialog the store believes it opened; nothing will ever render it.
+    if (!dialogHost) {
+      this._missingChunk = LAZY_CHUNKS.dialogHost;
+      this.store.ui.closeDialog();
+      return;
+    }
+    if (!this.isConnected) return;
+
+    // Current Home Assistant form controls consume internal Lit contexts
+    // instead of reading a `.hass` property. Keep the portal below HA's root
+    // context provider; a body-level sibling leaves those controls without
+    // states, registries, config, or internationalization data.
+    const host = document.querySelector('home-assistant')?.shadowRoot ?? document.body;
+
+    if (this._dialogPortal) {
+      // A cached chunk resolves within a microtask of the card mounting, which
+      // can be before Home Assistant's own root exists — that would strand the
+      // portal on <body> for the life of the card. Re-home it once it is there.
+      if (this._dialogPortal.parentNode !== host) host.appendChild(this._dialogPortal);
+      return;
+    }
 
     const portal = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
     portal.store = this.store;
     if (this.hass) portal.hass = this.hass;
     if (this._config) portal.config = this._config;
-    // Current Home Assistant form controls consume internal Lit contexts
-    // instead of reading a `.hass` property. Keep the portal below HA's root
-    // context provider; a body-level sibling leaves those controls without
-    // states, registries, config, or internationalization data.
-    const homeAssistantRoot = document.querySelector('home-assistant')?.shadowRoot;
-    (homeAssistantRoot ?? document.body).appendChild(portal);
+    host.appendChild(portal);
     this._dialogPortal = portal;
   }
 
@@ -225,7 +247,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     // path must match where the editor JS is served relative to the card script
-    await import('./growspace-manager-card-editor.js');
+    const editor = await loadLazyChunk(
+      LAZY_CHUNKS.managerCardEditor,
+      () => import('./growspace-manager-card-editor.js')
+    );
+    if (!editor) {
+      return lazyChunkErrorEditor(LAZY_CHUNKS.managerCardEditor) as unknown as LovelaceCardEditor;
+    }
     const el = document.createElement(
       'growspace-manager-card-editor'
     ) as unknown as LovelaceCardEditor;
@@ -616,6 +644,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           <div class="sr-only-announcer" aria-live="polite" aria-atomic="true">
             ${this._viewController.value.ui.announcement?.message ?? ''}
           </div>
+          <growspace-lazy-chunk-error .chunk=${this._missingChunk}></growspace-lazy-chunk-error>
           <div
             class="unified-growspace-card glass-surface glass-panel"
             role="region"
