@@ -97,3 +97,49 @@ test('the public demo deploys only after a successful stable release', async () 
     'pull requests verify the assembled demo without publishing Pages'
   );
 });
+
+test('the HACS update check follows publishing on both channels and gates neither', async () => {
+  const release = await readWorkflow('release.yml');
+  const check = await readWorkflow('hacs-update-check.yaml');
+
+  const job = release.jobs['hacs-update-check'];
+  assert.deepEqual(
+    job.needs,
+    ['prerelease', 'stable-release'],
+    'the check runs after whichever channel published'
+  );
+  assert.equal(job.uses, './.github/workflows/hacs-update-check.yaml');
+
+  // A job cannot both depend on publishing and hold it up, and nothing else
+  // may depend on this one either — ADR-0025 keeps the dev prerelease path
+  // free of validation edges, and an update check is not a release gate.
+  for (const [name, other] of Object.entries(release.jobs)) {
+    if (name === 'hacs-update-check') continue;
+    const needs = other.needs === undefined ? [] : [other.needs].flat();
+    assert.ok(!needs.includes('hacs-update-check'), `${name} must not wait on the update check`);
+  }
+  assert.equal(release.jobs.prerelease.needs, undefined);
+  assert.equal(job['continue-on-error'], undefined, 'a broken update graph reports red');
+
+  // Only a publish that produced a tag is worth checking: the extra Release
+  // run every publish triggers with its cleanup push produces none.
+  assert.equal(
+    job.if,
+    'always() && (needs.prerelease.outputs.tag || needs.stable-release.outputs.tag)'
+  );
+  assert.equal(
+    job.with.tag,
+    '${{ needs.prerelease.outputs.tag || needs.stable-release.outputs.tag }}'
+  );
+  for (const channel of ['prerelease', 'stable-release']) {
+    assert.equal(
+      release.jobs[channel].outputs.tag,
+      '${{ steps.publish.outputs.tag }}',
+      `${channel} reports the tag it published`
+    );
+  }
+
+  assert.equal(check.on.push, undefined, 'the check never runs outside a publish');
+  assert.ok('workflow_call' in check.on, 'the release workflow calls it');
+  assert.equal(check.on.workflow_call.inputs.tag.required, true);
+});

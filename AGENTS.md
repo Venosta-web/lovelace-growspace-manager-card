@@ -122,5 +122,12 @@ bypass only for the GitHub Actions app (semantic-release). Cross-repo features l
 change is a Backward-Safe Card Change (release-ref contract fixture parse passes;
 see `docs/adr/0029` and CONTEXT.md).
 
+Publishing is followed, on both channels, by a HACS update check that installs the
+previous release and updates to the new one, because HACS never cleans the directory
+it downloads into and an update can leave the entry importing the previous release's
+chunks. It gates nothing — see `docs/adr/0053` — so a red `Release` run after a
+publish means the shipped release's chunk graph is broken, not that the publish
+failed.
+
 Before opening or updating a PR, inspect `.github/workflows/pr-title.yml` and format the
 title as a Conventional Commit (`type(optional-scope): description`) using an allowed type.
