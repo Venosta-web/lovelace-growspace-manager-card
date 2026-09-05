@@ -37,6 +37,11 @@ jobs:
   prerelease:
     if: github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
+    # Empty when this push had no releasable commit — including the extra run
+    # every publish triggers with its bundle-cleanup push. That emptiness is
+    # what keeps the post-publish check off a pair it has already checked.
+    outputs:
+      tag: ${{ steps.publish.outputs.tag }}
     steps:
       - uses: actions/checkout@v6.0.2
         with:
@@ -49,6 +54,7 @@ jobs:
         uses: ./.github/actions/setup-release-node
 
       - name: Release prerelease
+        id: publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_AUTHOR_NAME: github-actions[bot]
@@ -61,6 +67,8 @@ jobs:
     if: github.ref == 'refs/heads/main'
     needs: [lint-and-build, unit-tests, contract-fixture, e2e]
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.publish.outputs.tag }}
     steps:
       - uses: actions/checkout@v6.0.2
         with:
@@ -73,6 +81,7 @@ jobs:
       # This is unreachable when any required validation job fails or is
       # cancelled: GitHub skips jobs whose `needs` did not all succeed.
       - name: Release stable
+        id: publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_AUTHOR_NAME: github-actions[bot]
@@ -80,6 +89,17 @@ jobs:
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
         run: npm run publishing:publish -- stable
+
+  # Post-publish on both channels, and a gate on neither: it depends on the
+  # publishing jobs so it can name the tag they produced, which means it cannot
+  # start until publishing is already done and cannot hold it up. It runs only
+  # when one of them actually released something.
+  hacs-update-check:
+    needs: [prerelease, stable-release]
+    if: always() && (needs.prerelease.outputs.tag || needs.stable-release.outputs.tag)
+    uses: ./.github/workflows/hacs-update-check.yaml
+    with:
+      tag: ${{ needs.prerelease.outputs.tag || needs.stable-release.outputs.tag }}
 
   # The public demo is release output. Calling its reusable workflow here keeps
   # Pages behind the same validation and stable-publishing transaction instead

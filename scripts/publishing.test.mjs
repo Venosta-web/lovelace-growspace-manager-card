@@ -8,12 +8,14 @@ const CHANNELS = [
     channel: 'stable',
     branch: 'main',
     version: '1.3.0',
+    gitTag: 'v1.3.0',
     gitAssets: ['package.json', 'CHANGELOG.md', 'dist/*.js'],
   },
   {
     channel: 'prerelease',
     branch: 'dev',
     version: '1.3.0-next.1',
+    gitTag: 'v1.3.0-next.1',
     gitAssets: ['dist/*.js'],
   },
 ];
@@ -134,9 +136,9 @@ test('verify accepts the repository stable and prerelease artifact plans', async
   });
 });
 
-for (const { channel, branch, version, gitAssets } of CHANNELS) {
+for (const { channel, branch, version, gitTag, gitAssets } of CHANNELS) {
   test(`publish ${channel} owns channel assets and orders release before cleanup`, async () => {
-    const mockAdapters = createMockAdapters({ release: { nextRelease: { version } } });
+    const mockAdapters = createMockAdapters({ release: { nextRelease: { version, gitTag } } });
 
     const result = await runPublishing({
       mode: 'publish',
@@ -146,7 +148,9 @@ for (const { channel, branch, version, gitAssets } of CHANNELS) {
       releaseConfigFactory: releaseConfigFor,
     });
 
-    assert.deepEqual(result, { outcome: 'published', channel });
+    // The tag travels with the outcome: the post-publish HACS update check
+    // replays the update from the previous release to exactly this one.
+    assert.deepEqual(result, { outcome: 'published', channel, tag: gitTag });
     assert.deepEqual(mockAdapters.calls.events, [
       ...SUCCESSFUL_PUBLISHING_STAGES,
       `semantic-release:${branch}`,
@@ -188,7 +192,9 @@ for (const { channel, branch, version, gitAssets } of CHANNELS) {
       releaseConfigFactory: releaseConfigFor,
     });
 
-    assert.deepEqual(result, { outcome: 'no-release', channel });
+    // A run that published nothing names no tag, which is what keeps the
+    // post-publish check off a pair that was already checked.
+    assert.deepEqual(result, { outcome: 'no-release', channel, tag: null });
     assert.deepEqual(mockAdapters.calls.events, [
       ...SUCCESSFUL_PUBLISHING_STAGES,
       `semantic-release:${branch}`,
@@ -209,7 +215,9 @@ for (const { channel, branch, version, gitAssets } of CHANNELS) {
       releaseConfigFactory: releaseConfigFor,
     });
 
-    assert.deepEqual(result, { outcome: 'no-release', channel });
+    // A run that published nothing names no tag, which is what keeps the
+    // post-publish check off a pair that was already checked.
+    assert.deepEqual(result, { outcome: 'no-release', channel, tag: null });
     assert.deepEqual(mockAdapters.calls.events, [
       ...SUCCESSFUL_PUBLISHING_STAGES,
       `semantic-release:${branch}`,

@@ -1,0 +1,79 @@
+name: HACS Update Check
+
+# Post-publish only. HACS never cleans the directory it downloads a plugin
+# into, so an update can rewrite the entry file and leave an older chunk set
+# beside it — the entry then imports chunks that are not there, every module
+# 404s and the dashboard renders nothing. No rebuild, browser refresh or
+# runtime restart reveals it: the dev runtime bind-mounts the whole build
+# output, and a *fresh* HACS download fetches every asset of its tag and
+# passes. Only install-then-update reproduces it, which cannot be done before
+# both releases exist.
+#
+# It is therefore never a gate. ADR-0025 keeps e2e a main-only release gate and
+# leaves the dev prerelease job with no `needs` so the frequent path stays fast;
+# a gate here would break that, and would have caught nothing anyway — every
+# broken release in the incident this comes from was a dev prerelease.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: The release tag that was just published.
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release tag to check the update path of.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  hacs-update-check:
+    name: HACS update into ${{ inputs.tag }}
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+
+    steps:
+      # The reproducer, the compose runtime and the clean :8124 config all live
+      # in the workspace hub, which owns cross-repo tooling. Nothing of the card
+      # is checked out: this must exercise the published release assets exactly
+      # as a user's HACS fetches them, not the tree that produced them.
+      - name: Checkout Growspace workspace runtime
+        uses: actions/checkout@v6.0.2
+        with:
+          repository: Venosta-web/growspace_manager_workspace
+          ref: main
+          path: workspace
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: '24'
+
+      # Home Assistant and the tooling driving it write the same bind-mounted
+      # config directory. The hub pins the container to uid 1000 because that
+      # is the developer; on a runner it is 1001, and a mismatch has each side
+      # locking the other out of directories it created.
+      - name: Match the container user to the runner
+        run: echo "GROWSPACE_HA_USER=$(id -u):$(id -g)" >> "$GITHUB_ENV"
+
+      - name: Replay the HACS update into ${{ inputs.tag }}
+        working-directory: workspace
+        env:
+          # HACS authenticates every repository read, and this repository is
+          # private, so the download needs a token that can see its releases.
+          HACS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISHED_TAG: ${{ inputs.tag }}
+        run: ./scripts/card-release-update-check --tag "$PUBLISHED_TAG" --reset
+
+      - name: Upload the import-graph walk
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: hacs-update-check
+          path: workspace/artifacts/card-hacs-update/
+          if-no-files-found: warn
+          retention-days: 30
