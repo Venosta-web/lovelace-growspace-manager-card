@@ -495,3 +495,37 @@ describe('GrowspaceTcCultures — recording an act', () => {
     expect(dialog(element)).toBeNull();
   });
 });
+
+test('a failed bridge closes the completed action and explains manual recovery', async () => {
+  answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY });
+  const element = await render(true);
+  await requestAction(element, 'graduate');
+  hassCallMock.mockResolvedValueOnce({
+    line: aLine({ cultures: [aCulture({ status: 'graduated' })] }),
+    action: { action: 'graduate', plant_id: null },
+  });
+  dialog(element)?.dispatchEvent(
+    new CustomEvent('maintenance-requested', {
+      detail: {
+        request: {
+          action: 'graduate',
+          cultureId: 'culture-1',
+          note: '',
+          plant: {
+            growspace_id: 'tent',
+            strain: 'Blue Dream',
+            phenotype: 'Pheno 2',
+            row: 1,
+            col: 1,
+          },
+        },
+      },
+      bubbles: true,
+      composed: true,
+    })
+  );
+  await vi.waitFor(() => expect(dialog(element)).toBeNull());
+  expect(element.shadowRoot?.textContent).toContain(
+    'Check Growspace Manager before adding a plant manually'
+  );
+});

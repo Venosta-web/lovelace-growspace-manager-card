@@ -269,6 +269,7 @@ export class GrowspaceTcView extends LitElement {
         ${this._hasCultureBoard
           ? html`<growspace-tc-cultures
               .maintenance=${this._hasMaintenance}
+              .graduationBridge=${this.manifest?.features.includes('graduation_bridge') ?? false}
               .language=${this.language}
             ></growspace-tc-cultures>`
           : nothing}

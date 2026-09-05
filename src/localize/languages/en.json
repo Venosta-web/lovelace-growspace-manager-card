@@ -469,7 +469,7 @@
     "action_replate_explainer": "The first vessel is this culture, replated: it keeps its identity and its history. Every further vessel is a new culture the division creates.",
     "action_discard_explainer": "The vessel stays in your history, ended. Nothing is deleted.",
     "action_note_explainer": "Recorded against this vessel. Nothing else changes.",
-    "action_graduate_explainer": "This ends the culture. Creating the matching plant in Growspace Manager is not wired up yet.",
+    "action_graduate_explainer": "End this culture and keep its history. You can optionally create one plant in Growspace Manager.",
     "action_medium": "Culture medium",
     "action_medium_version": "Version {version}",
     "action_medium_none": "No culture medium to pour from yet. Add one in the medium library first — a replate has to pin the version it was poured from.",
@@ -519,6 +519,17 @@
     "pairing_missing_medium": "Missing culture medium",
     "pairing_missing_phenotype": "Missing phenotype. Edit this pairing to choose a replacement, or remove it.",
     "pairing_loading": "Loading pairings…",
-    "pairing_retry": "Retry loading pairings"
+    "pairing_retry": "Retry loading pairings",
+    "graduation_create_plant": "Create a plant in Growspace Manager",
+    "graduation_bridge_help": "Creates one plant in the clone stage. Confirm the genetics and an empty position. If creation fails, the culture still graduates.",
+    "graduation_no_growspace": "No growspace is available for a new plant. You can still record the graduation.",
+    "graduation_growspace": "Growspace",
+    "graduation_strain": "Strain",
+    "graduation_phenotype": "Phenotype (optional)",
+    "graduation_row": "Row",
+    "graduation_col": "Column",
+    "graduation_view_plant": "View linked plant",
+    "graduation_unlinked": "Culture graduated, but no plant was linked. Check Growspace Manager before adding a plant manually.",
+    "history_close": "Close history"
   }
 }

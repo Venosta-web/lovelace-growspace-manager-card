@@ -519,14 +519,22 @@ export async function moveCultureToRooting(
   return _act(WS_TC_MOVE_TO_ROOTING, { culture_id: cultureId, note });
 }
 
-/**
- * End a Culture by taking it out of vitro.
- *
- * A plain ending here: creating the corresponding plant in Growspace Manager
- * goes through its public service (TC ADR-0005) and is a later ticket.
- */
-export async function graduateCulture(cultureId: string, note = ''): Promise<MaintenanceAction> {
-  return _act(WS_TC_GRADUATE, { culture_id: cultureId, note });
+/** Destination and genetics explicitly confirmed for the optional GM clone. */
+export interface GraduationPlant {
+  growspace_id: string;
+  strain: string;
+  phenotype: string;
+  row: number;
+  col: number;
+}
+
+/** Omit plant to keep the original plain graduation command. */
+export async function graduateCulture(
+  cultureId: string,
+  note = '',
+  plant?: GraduationPlant
+): Promise<MaintenanceAction> {
+  return _act(WS_TC_GRADUATE, { culture_id: cultureId, note, ...(plant ? { plant } : {}) });
 }
 
 /**
@@ -665,7 +673,8 @@ export function draftReplate(culture: Culture, medium?: CultureMedium): ReplateD
 export type MaintenanceRequest =
   | { action: 'replate'; cultureId: string; draft: ReplateDraft }
   | { action: 'discard'; cultureId: string; reason: DiscardReason; note: string }
-  | { action: 'note' | 'move_to_rooting' | 'graduate'; cultureId: string; note: string };
+  | { action: 'note' | 'move_to_rooting'; cultureId: string; note: string }
+  | { action: 'graduate'; cultureId: string; note: string; plant?: GraduationPlant };
 
 /** Perform one requested act. The board is updated from the reply. */
 export async function recordMaintenance(request: MaintenanceRequest): Promise<MaintenanceAction> {
@@ -679,7 +688,7 @@ export async function recordMaintenance(request: MaintenanceRequest): Promise<Ma
     case 'move_to_rooting':
       return moveCultureToRooting(request.cultureId, request.note);
     case 'graduate':
-      return graduateCulture(request.cultureId, request.note);
+      return graduateCulture(request.cultureId, request.note, request.plant);
   }
 }
 

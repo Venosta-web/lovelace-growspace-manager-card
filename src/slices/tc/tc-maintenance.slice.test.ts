@@ -23,7 +23,13 @@ import {
   type CultureLine,
   type MaintenanceAction,
 } from './index';
-import { CultureLineSchema, CultureSchema, MaintenanceActionSchema } from './schema';
+import {
+  CultureLineSchema,
+  CultureSchema,
+  MaintenanceActionSchema,
+  MaintenanceHistoryResponseSchema,
+} from './schema';
+import maintenanceFixture from '../../../tests/fixtures/contract/tc_maintenance_response.json';
 
 vi.mock('../../services/hass-call', () => ({
   hassCall: vi.fn(),
@@ -293,4 +299,56 @@ describe('draftReplate', () => {
   it('has no medium to pin when the library is empty', () => {
     expect(draftReplate(aCulture()).medium_id).toBe('');
   });
+});
+
+describe('graduation bridge', () => {
+  it('passes the opt-in plant to TC and retains the returned link', async () => {
+    const plant = {
+      growspace_id: 'tent',
+      strain: 'Blue Dream',
+      phenotype: 'Pheno 2',
+      row: 1,
+      col: 2,
+    };
+    hassCallMock.mockResolvedValue({
+      line: aLine(),
+      action: anAction({ action: 'graduate', plant_id: 'plant-1' }),
+    });
+    const action = await recordMaintenance({
+      action: 'graduate',
+      cultureId: 'culture-1',
+      note: '',
+      plant,
+    });
+    expect(hassCallMock).toHaveBeenCalledWith(
+      WS_TC_GRADUATE,
+      { culture_id: 'culture-1', note: '', plant },
+      expect.anything()
+    );
+    expect(action.plant_id).toBe('plant-1');
+  });
+  it('accepts older records without a plant field', () => {
+    const legacy = { ...anAction() };
+    Reflect.deleteProperty(legacy, 'plant_id');
+    expect(MaintenanceActionSchema.parse(legacy).plant_id).toBeNull();
+  });
+  it('publishes the completed culture when plant creation fails', async () => {
+    cultureLines$.set([aLine()]);
+    const ended = aLine({ cultures: [aCulture({ status: 'graduated' })] });
+    hassCallMock.mockResolvedValue({ line: ended, action: anAction({ action: 'graduate' }) });
+    const action = await graduateCulture('culture-1', '', {
+      growspace_id: 'tent',
+      strain: 'Blue Dream',
+      phenotype: '',
+      row: 1,
+      col: 1,
+    });
+    expect(action.plant_id).toBeNull();
+    expect(cultureLines$.get()[0].cultures[0].status).toBe('graduated');
+  });
+});
+
+it('parses the TC producer fixture with its linked graduation', () => {
+  const { actions } = MaintenanceHistoryResponseSchema.parse(maintenanceFixture);
+  expect(actions.find((action) => action.action === 'graduate')?.plant_id).toBe('gm-plant-1');
 });

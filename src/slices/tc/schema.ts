@@ -289,6 +289,8 @@ export const MaintenanceActionSchema = z.object({
   reason: DiscardReasonSchema.nullable(),
   /** Move to rooting only: the Stage the Culture was moved to. */
   stage: CultureStageSchema.nullable(),
+  /** Absent on older TC releases and null on unlinked graduations. */
+  plant_id: z.string().nullable().default(null),
 });
 
 /** The reply to `growspace_manager_tc/maintenance/history`. */

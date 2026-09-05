@@ -53,6 +53,8 @@ import {
   type PhenotypeResolution,
   type WorklistEntry,
 } from '../../../slices/tc';
+import { devices$ } from '../../../slices/grid';
+import type { GrowspaceDevice } from '../../../services/types';
 import type { StrainEntry } from '../../../types';
 import '../components/growspace-tc-action-dialog';
 import '../components/growspace-tc-culture-board';
@@ -75,8 +77,11 @@ export class GrowspaceTcCultures extends LitElement {
    * installed — an older release would answer the board and none of the rest.
    */
   @property({ type: Boolean }) maintenance = false;
+  @property({ type: Boolean }) graduationBridge = false;
   @property({ type: String }) language = 'en';
 
+  @state() private _devices: GrowspaceDevice[] = [];
+  @state() private _graduationNotice = '';
   @state() private _lines: CultureLine[] = [];
   @state() private _library: StrainEntry[] = [];
   @state() private _libraryLoaded = false;
@@ -148,6 +153,9 @@ export class GrowspaceTcCultures extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     this._unsubscribe = [
+      devices$.subscribe((devices) => {
+        this._devices = [...devices];
+      }),
       cultureLines$.subscribe((lines) => {
         this._lines = [...lines];
       }),
@@ -170,7 +178,11 @@ export class GrowspaceTcCultures extends LitElement {
 
   disconnectedCallback(): void {
     for (const unsubscribe of this._unsubscribe) unsubscribe();
-    this._unsubscribe = [];
+    this._unsubscribe = [
+      devices$.subscribe((devices) => {
+        this._devices = [...devices];
+      }),
+    ];
     super.disconnectedCallback();
   }
 
@@ -290,7 +302,12 @@ export class GrowspaceTcCultures extends LitElement {
     this._saving = true;
     this._saveError = '';
     try {
-      await recordMaintenance(event.detail.request);
+      const request = event.detail.request;
+      const action = await recordMaintenance(request);
+      this._graduationNotice =
+        request.action === 'graduate' && request.plant && !action.plant_id
+          ? this._t('graduation_unlinked')
+          : '';
       this._acting = { open: false };
       // The act moved a due date, so the worklist is re-judged against the
       // clock as it reads now rather than as it read when the board loaded.
@@ -390,6 +407,11 @@ export class GrowspaceTcCultures extends LitElement {
       .culture=${acting.culture}
       .lineName=${this._lineNames.get(acting.line.id) ?? acting.line.phenotype.name_snapshot}
       .media=${this._media}
+      .graduationBridge=${this.graduationBridge}
+      .growspaces=${this._devices.filter(
+        (device) => device.type === 'normal' || device.type === 'clone'
+      )}
+      .genetics=${this._library.find((entry) => entry.key === acting.line.phenotype.id)}
       .history=${this._history}
       .historyLoading=${this._historyLoading}
       .saving=${this._saving}
@@ -415,6 +437,7 @@ export class GrowspaceTcCultures extends LitElement {
     return html`
       <div>
         ${this._error ? html`<p class="error" role="alert">${this._error}</p>` : nothing}
+        ${this._graduationNotice ? html`<p role="status">${this._graduationNotice}</p>` : nothing}
         ${this._acting.open ? this._renderActionDialog(this._acting) : nothing}
         ${this._relinking.open ? this._renderRelink(this._relinking.line) : nothing}
         ${this.maintenance

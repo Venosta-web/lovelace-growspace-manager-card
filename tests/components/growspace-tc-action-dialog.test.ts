@@ -149,8 +149,10 @@ describe('GrowspaceTcActionDialog — replate', () => {
 
     const request = await submit(element);
 
-    expect((request as { draft: { vessels: Array<{ plantlet_count: number | null }> } }).draft
-      .vessels[0].plantlet_count).toBeNull();
+    expect(
+      (request as { draft: { vessels: Array<{ plantlet_count: number | null }> } }).draft.vessels[0]
+        .plantlet_count
+    ).toBeNull();
   });
 
   test('refuses to record when there is no medium to pin', async () => {
@@ -172,7 +174,12 @@ describe('GrowspaceTcActionDialog — the other four acts', () => {
 
     const request = await submit(element);
 
-    expect(request).toEqual({ action: 'discard', cultureId: 'culture-1', reason: 'spent', note: '' });
+    expect(request).toEqual({
+      action: 'discard',
+      cultureId: 'culture-1',
+      reason: 'spent',
+      note: '',
+    });
   });
 
   test('says a discard keeps the vessel in history', async () => {
@@ -180,11 +187,13 @@ describe('GrowspaceTcActionDialog — the other four acts', () => {
   });
 
   test('says a move to rooting does not re-plate the vessel', async () => {
-    expect(textOf(await render('move_to_rooting'))).toContain('stays on the medium it is already on');
+    expect(textOf(await render('move_to_rooting'))).toContain(
+      'stays on the medium it is already on'
+    );
   });
 
-  test('says a graduation is an ending and no bridge yet', async () => {
-    expect(textOf(await render('graduate'))).toContain('not wired up yet');
+  test('explains graduation and optional plant creation', async () => {
+    expect(textOf(await render('graduate'))).toContain('End this culture and keep its history');
   });
 
   test('will not record an empty note', async () => {
@@ -275,5 +284,59 @@ describe('GrowspaceTcActionDialog — the vessel`s history', () => {
     await click(element, "Show this vessel's history");
 
     expect(textOf(element)).toContain('Nothing recorded against this vessel yet');
+  });
+});
+
+describe('graduation bridge', () => {
+  async function bridgeForm(): Promise<GrowspaceTcActionDialog> {
+    const element = await render('graduate');
+    element.graduationBridge = true;
+    element.growspaces = [{ deviceId: 'tent', name: 'Nursery', rows: 2, plantsPerRow: 3 }];
+    element.genetics = { strain: 'Blue Dream', phenotype: 'Pheno 2' };
+    element.culture = aCulture();
+    await element.updateComplete;
+    return element;
+  }
+  test('defaults to opt-out, then sends the confirmed position only when opted in', async () => {
+    const element = await bridgeForm();
+    expect(await submit(element)).toEqual({ action: 'graduate', cultureId: 'culture-1', note: '' });
+    inputs(element, '[name="createPlant"]')[0].click();
+    await element.updateComplete;
+    await type(inputs(element, '[name="col"]')[0], '2');
+    expect(await submit(element)).toEqual({
+      action: 'graduate',
+      cultureId: 'culture-1',
+      note: '',
+      plant: { growspace_id: 'tent', strain: 'Blue Dream', phenotype: 'Pheno 2', row: 1, col: 2 },
+    });
+    inputs(element, '[name="createPlant"]')[0].click();
+    await element.updateComplete;
+    expect(await submit(element)).not.toHaveProperty('plant');
+  });
+  test('keeps the plain action available on older TC versions', async () => {
+    const element = await render('graduate');
+    expect(inputs(element, '[name="createPlant"]')).toHaveLength(0);
+    expect(await submit(element)).not.toHaveProperty('plant');
+  });
+  test('rejects out-of-bounds positions and missing genetics', async () => {
+    const element = await bridgeForm();
+    inputs(element, '[name="createPlant"]')[0].click();
+    await element.updateComplete;
+    await type(inputs(element, '[name="row"]')[0], '9');
+    expect(await submit(element)).toBeUndefined();
+    await type(inputs(element, '[name="row"]')[0], '1');
+    await type(inputs(element, '[name="strain"]')[0], '');
+    expect(await submit(element)).toBeUndefined();
+  });
+  test('shows a stored plant link on an ended culture without another submit', async () => {
+    const element = await render('graduate', {
+      culture: aCulture({ status: 'graduated' }),
+      history: [anAction({ action: 'graduate', plant_id: 'plant / 1' })],
+    });
+    expect(element.shadowRoot?.querySelector('a')?.getAttribute('href')).toBe(
+      '?plantId=plant%20%2F%201'
+    );
+    expect(textOf(element)).toContain('View linked plant');
+    expect(element.shadowRoot?.querySelector('button[type="submit"]')).toBeNull();
   });
 });

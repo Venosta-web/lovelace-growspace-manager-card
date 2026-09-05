@@ -11,7 +11,7 @@
  * Each act carries its own explainer because each does something the grower
  * cannot take back or would otherwise mis-read: a Discard keeps the vessel in
  * history rather than deleting it, a move to rooting does not re-plate, and a
- * Graduation is a plain ending until the Growspace Manager bridge lands.
+ * Graduation optionally creates a plant in Growspace Manager.
  *
  * Dumb by contract (ADR-0019): a culture, the media it could be poured onto and
  * its recorded history in; one `maintenance-requested` intent out.
@@ -25,6 +25,7 @@ import { sharedStyles } from '../../../styles/shared.styles';
 import { variables } from '../../../styles/variables';
 import {
   draftReplate,
+  type GraduationPlant,
   type Culture,
   type CultureMedium,
   type DiscardReason,
@@ -34,6 +35,8 @@ import {
   type ReplateDraft,
   type ReplateVesselDraft,
 } from '../../../slices/tc';
+
+type GraduationGrowspace = { deviceId: string; name: string; rows: number; plantsPerRow: number };
 
 const DISCARD_REASONS: DiscardReason[] = ['contamination', 'spent', 'mistake'];
 
@@ -50,6 +53,18 @@ export class GrowspaceTcActionDialog extends LitElement {
   /** A backend rejection, already phrased for the grower by the backend. */
   @property({ type: String }) error = '';
   @property({ type: String }) language = 'en';
+  @property({ type: Boolean }) graduationBridge = false;
+  @property({ attribute: false }) growspaces: GraduationGrowspace[] = [];
+  @property({ attribute: false }) genetics?: { strain: string; phenotype?: string };
+
+  @state() private _createPlant = false;
+  @state() private _plant: GraduationPlant = {
+    growspace_id: '',
+    strain: '',
+    phenotype: '',
+    row: 1,
+    col: 1,
+  };
 
   @state() private _note = '';
   @state() private _reason: DiscardReason = 'contamination';
@@ -168,6 +183,40 @@ export class GrowspaceTcActionDialog extends LitElement {
         min-height: 32px;
       }
 
+      .bridge-toggle {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+      }
+      .bridge-toggle input {
+        min-height: 24px;
+        width: 24px;
+        accent-color: var(--primary-color);
+      }
+      .plant-fields {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+      }
+      .plant-fields select,
+      .plant-fields input {
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      a {
+        color: var(--primary-color);
+        text-underline-offset: 3px;
+      }
+      button:disabled {
+        cursor: default;
+        opacity: 0.5;
+      }
+      :is(button, input, select, a):focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 3px;
+      }
+
       .error {
         color: var(--error-color, #f44336);
       }
@@ -185,6 +234,18 @@ export class GrowspaceTcActionDialog extends LitElement {
   }
 
   protected willUpdate(changed: Map<string | number | symbol, unknown>): void {
+    if (changed.has('culture')) {
+      this._createPlant = false;
+      this._note = '';
+      this._showHistory = false;
+      this._plant = {
+        growspace_id: this.growspaces[0]?.deviceId ?? '',
+        strain: this.genetics?.strain ?? '',
+        phenotype: this.genetics?.phenotype === 'default' ? '' : (this.genetics?.phenotype ?? ''),
+        row: 1,
+        col: 1,
+      };
+    }
     // The Replate draft is seeded from the vessel being replated, so what the
     // dialog sends is always what the grower is looking at: this culture's
     // count and shelf, and the medium it would most likely be poured onto.
@@ -245,11 +306,21 @@ export class GrowspaceTcActionDialog extends LitElement {
     if (this.action === 'discard') {
       return { action: 'discard', cultureId, reason: this._reason, note: this._note };
     }
+    if (this.action === 'graduate') {
+      return {
+        action: 'graduate',
+        cultureId,
+        note: this._note,
+        ...(this.graduationBridge && this._createPlant ? { plant: { ...this._plant } } : {}),
+      };
+    }
     return { action: this.action, cultureId, note: this._note };
   }
 
   private _submit(event: Event): void {
     event.preventDefault();
+    if (this.saving || this.culture?.status !== 'active') return;
+    if (!(event.target as HTMLFormElement).reportValidity()) return;
     const request = this._request();
     if (!request) return;
     this.dispatchEvent(
@@ -316,6 +387,12 @@ export class GrowspaceTcActionDialog extends LitElement {
             <li>
               <span class="when">${this._day(action.recorded_at)}</span>
               — ${this._historyLine(action)}${action.note ? html` — ${action.note}` : nothing}
+              ${action.plant_id
+                ? html` —
+                    <a href=${`?plantId=${encodeURIComponent(action.plant_id)}`}
+                      >${this._t('graduation_view_plant')}</a
+                    >`
+                : nothing}
             </li>
           `
         )}
@@ -416,8 +493,117 @@ export class GrowspaceTcActionDialog extends LitElement {
     `;
   }
 
+  private _renderGraduation(): TemplateResult {
+    if (!this.graduationBridge) return html`${nothing}`;
+    const destination = this.growspaces.find(
+      (entry) => entry.deviceId === this._plant.growspace_id
+    );
+    return html`
+      <label class="bridge-toggle">
+        <input
+          type="checkbox"
+          name="createPlant"
+          .checked=${this._createPlant}
+          ?disabled=${this.saving || !this.growspaces.length}
+          @change=${(event: Event) =>
+            (this._createPlant = (event.target as HTMLInputElement).checked)}
+        />
+        ${this._t('graduation_create_plant')}
+      </label>
+      <p class="supporting">
+        ${this._t(this.growspaces.length ? 'graduation_bridge_help' : 'graduation_no_growspace')}
+      </p>
+      ${this._createPlant
+        ? html`<div class="plant-fields">
+            <label
+              >${this._t('graduation_growspace')}
+              <select
+                name="growspace"
+                required
+                .value=${this._plant.growspace_id}
+                ?disabled=${this.saving}
+                @change=${(e: Event) => {
+                  this._plant = {
+                    ...this._plant,
+                    growspace_id: (e.target as HTMLSelectElement).value,
+                    row: 1,
+                    col: 1,
+                  };
+                }}
+              >
+                ${this.growspaces.map(
+                  (entry) => html`<option value=${entry.deviceId}>${entry.name}</option>`
+                )}
+              </select>
+            </label>
+            <label
+              >${this._t('graduation_strain')}
+              <input
+                name="strain"
+                required
+                .value=${this._plant.strain}
+                ?disabled=${this.saving}
+                @input=${(e: Event) => {
+                  this._plant = { ...this._plant, strain: (e.target as HTMLInputElement).value };
+                }}
+              />
+            </label>
+            <label
+              >${this._t('graduation_phenotype')}
+              <input
+                name="phenotype"
+                .value=${this._plant.phenotype}
+                ?disabled=${this.saving}
+                @input=${(e: Event) => {
+                  this._plant = { ...this._plant, phenotype: (e.target as HTMLInputElement).value };
+                }}
+              />
+            </label>
+            ${(['row', 'col'] as const).map(
+              (field) =>
+                html`<label
+                  >${this._t(`graduation_${field}`)}
+                  <input
+                    name=${field}
+                    type="number"
+                    required
+                    min="1"
+                    step="1"
+                    max=${destination
+                      ? field === 'row'
+                        ? destination.rows
+                        : destination.plantsPerRow
+                      : 1}
+                    .value=${String(this._plant[field])}
+                    ?disabled=${this.saving}
+                    @input=${(e: Event) => {
+                      this._plant = {
+                        ...this._plant,
+                        [field]: Number((e.target as HTMLInputElement).value),
+                      };
+                    }}
+                  />
+                </label>`
+            )}
+          </div>`
+        : nothing}
+    `;
+  }
+
   protected render(): TemplateResult {
     if (!this.culture) return html`${nothing}`;
+    if (this.culture.status !== 'active')
+      return html`<form
+        role="dialog"
+        aria-label=${this._t('history_show')}
+        @submit=${(event: Event) => event.preventDefault()}
+      >
+        <h3>${this.lineName} — ${this._t('history_show')}</h3>
+        ${this._renderHistory()}
+        <div class="buttons">
+          <button type="button" @click=${this._cancel}>${this._t('history_close')}</button>
+        </div>
+      </form>`;
     const replating = this.action === 'replate';
     // A Replate cannot be recorded without a medium to pin, and a note that
     // says nothing is not an act — both are refused on the wire, so the button
@@ -440,6 +626,7 @@ export class GrowspaceTcActionDialog extends LitElement {
 
         ${replating ? this._renderReplate() : nothing}
         ${this.action === 'discard' ? this._renderDiscard() : nothing}
+        ${this.action === 'graduate' ? this._renderGraduation() : nothing}
 
         <label>
           ${this._t('action_note_label')}
