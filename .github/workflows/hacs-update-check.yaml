@@ -63,8 +63,9 @@ jobs:
       - name: Replay the HACS update into ${{ inputs.tag }}
         working-directory: workspace
         env:
-          # HACS authenticates every repository read, and this repository is
-          # private, so the download needs a token that can see its releases.
+          # HACS authenticates every repository read and refuses to work
+          # without a token; an unauthenticated runner would also share this
+          # IP's 60-an-hour rate limit with everyone else on it.
           HACS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISHED_TAG: ${{ inputs.tag }}
         run: ./scripts/card-release-update-check --tag "$PUBLISHED_TAG" --reset
