@@ -81,7 +81,36 @@ export class GrowspaceTcCard extends LitElement implements LovelaceCard {
     // Hiding is an attribute rather than a render branch so that Home
     // Assistant's own layout collapses the slot instead of reserving space
     // around an empty element.
-    this.toggleAttribute('hidden', this._presence.status !== 'present');
+    const hide = this._presence.status !== 'present';
+    if (this.hasAttribute('hidden') !== hide) {
+      this.toggleAttribute('hidden', hide);
+      this._announceVisibility(!hide);
+    }
+  }
+
+  /**
+   * Tell the wrapper that the flag it caches has moved.
+   *
+   * `hui-card` reads the card's own `hidden` off the element and then keeps
+   * that answer until its own `hass`, `config` or `preview` changes. A card
+   * that reveals itself out of band — which is exactly what an async probe
+   * does — leaves the wrapper holding a stale `true`, and on an idle dashboard
+   * nothing arrives to refresh it: the whole TC surface stays collapsed until
+   * some unrelated entity happens to change state.
+   *
+   * `card-visibility-changed` is the event Home Assistant provides for this.
+   * `hui-card` subscribes to it on every card element it builds and responds by
+   * re-reading the flag, which is all this needs — no rebuild, and the memoised
+   * probe is not asked again.
+   */
+  private _announceVisibility(value: boolean): void {
+    this.dispatchEvent(
+      new CustomEvent('card-visibility-changed', {
+        detail: { value },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   private async _detect(): Promise<void> {
