@@ -103,6 +103,33 @@ test('TC fixtures are fetched from the TC repository, not the backend', async (t
     lines.source,
     'https://tc-fixtures.example/main/tests/fixtures/contract/tc_culture_lines_response.json'
   );
+  const maintenance = JSON.parse(
+    await readFile(path.join(outputDirectory, 'tc-main-maintenance.json'), 'utf8')
+  );
+  assert.equal(
+    maintenance.source,
+    'https://tc-fixtures.example/main/tests/fixtures/contract/tc_maintenance_response.json'
+  );
+});
+
+test('a card change cannot merge ahead of the TC maintenance contract it consumes', async (t) => {
+  const outputDirectory = await mkdtemp(path.join(os.tmpdir(), 'gsm-fixtures-'));
+  t.after(() => rm(outputDirectory, { recursive: true, force: true }));
+  const fetchImpl = async (url) =>
+    url.includes('tc_maintenance_response')
+      ? new Response('not found', { status: 404 })
+      : new Response('{}', { status: 200 });
+
+  await assert.rejects(
+    fetchContractFixtures({
+      releaseTag: 'v1.2.3',
+      outputDirectory,
+      baseUrl: 'https://fixtures.example',
+      tcBaseUrl: 'https://tc-fixtures.example',
+      fetchImpl,
+    }),
+    /tc_maintenance_response was not found at refs: main/
+  );
 });
 
 test('a card change cannot merge ahead of the TC culture line contract it consumes', async (t) => {

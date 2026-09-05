@@ -7,6 +7,8 @@ import {
   CultureMediaResponseSchema,
   CultureMediumDeletionSchema,
   CultureMediumMutationSchema,
+  MaintenanceHistoryResponseSchema,
+  MaintenanceMutationSchema,
   TcManifestSchema,
   type Culture,
   type CultureLine,
@@ -14,11 +16,17 @@ import {
   type CultureMediumDraft,
   type CultureStage,
   type CultureStatus,
+  type DiscardReason,
   type IntroductionDraft,
+  type MaintenanceAction,
+  type MaintenanceActionType,
   type MediumComponent,
   type MediumVersion,
   type PhenotypeReference,
+  type ReplateDraft,
   type ReplateIntervals,
+  type ReplateVessel,
+  type ReplateVesselDraft,
   type TcManifest,
 } from './schema';
 
@@ -29,11 +37,17 @@ export type {
   CultureMediumDraft,
   CultureStage,
   CultureStatus,
+  DiscardReason,
   IntroductionDraft,
+  MaintenanceAction,
+  MaintenanceActionType,
   MediumComponent,
   MediumVersion,
   PhenotypeReference,
+  ReplateDraft,
   ReplateIntervals,
+  ReplateVessel,
+  ReplateVesselDraft,
   TcManifest,
 };
 export {
@@ -44,9 +58,15 @@ export {
   CultureMediumDraftSchema,
   CultureMediumSchema,
   CultureSchema,
+  DiscardReasonSchema,
   IntroductionDraftSchema,
+  MaintenanceActionSchema,
+  MaintenanceActionTypeSchema,
+  MaintenanceHistoryResponseSchema,
+  MaintenanceMutationSchema,
   MediumVersionSchema,
   PhenotypeReferenceSchema,
+  ReplateDraftSchema,
   TcManifestSchema,
 } from './schema';
 
@@ -60,6 +80,12 @@ export const WS_TC_LIST_CULTURE_LINES = `${TC_DOMAIN}/culture_lines/list`;
 export const WS_TC_INTRODUCE_CULTURE_LINE = `${TC_DOMAIN}/culture_lines/introduce`;
 export const WS_TC_RELINK_PHENOTYPE = `${TC_DOMAIN}/culture_lines/relink_phenotype`;
 export const WS_TC_SET_CULTURE_LINE_ARCHIVED = `${TC_DOMAIN}/culture_lines/set_archived`;
+export const WS_TC_REPLATE = `${TC_DOMAIN}/maintenance/replate`;
+export const WS_TC_DISCARD = `${TC_DOMAIN}/maintenance/discard`;
+export const WS_TC_NOTE = `${TC_DOMAIN}/maintenance/note`;
+export const WS_TC_MOVE_TO_ROOTING = `${TC_DOMAIN}/maintenance/move_to_rooting`;
+export const WS_TC_GRADUATE = `${TC_DOMAIN}/maintenance/graduate`;
+export const WS_TC_MAINTENANCE_HISTORY = `${TC_DOMAIN}/maintenance/history`;
 
 /**
  * The manifest feature that has to be present before any of the above is
@@ -69,6 +95,15 @@ export const TC_FEATURE_CULTURE_MEDIA = 'culture_media';
 
 /** The manifest feature gating the culture board and the Introduction form. */
 export const TC_FEATURE_CULTURE_LINES = 'culture_lines';
+
+/**
+ * The manifest feature gating the Maintenance Action dialogs and the worklist.
+ *
+ * Separate from `culture_lines` because the worklist reads `replate_due_at`,
+ * which a release predating this feature does not send — a card gating on
+ * `culture_lines` alone would render a worklist of vessels with no due date.
+ */
+export const TC_FEATURE_MAINTENANCE = 'maintenance';
 
 /**
  * Whether Growspace Manager TC is there to talk to.
@@ -422,4 +457,220 @@ export function phenotypeOptions(library: StrainEntry[]): PhenotypeOption[] {
 /** The same join, indexed for resolving a stored reference back to a name. */
 export function phenotypeNameIndex(library: StrainEntry[]): ReadonlyMap<string, string> {
   return new Map(library.map((entry) => [entry.key, phenotypeLabel(entry)]));
+}
+
+// ---------------------------------------------------------------------------
+// Maintenance Actions
+// ---------------------------------------------------------------------------
+
+/**
+ * Every act replies with the whole line plus what it wrote, so each of the five
+ * calls is the same two steps: send, then replace the line on the board from
+ * the answer. The board is never re-listed — a Replate can divide one Culture
+ * into several, and the reply already carries every vessel the act produced.
+ */
+async function _act(command: string, payload: Record<string, unknown>): Promise<MaintenanceAction> {
+  const { line, action } = await hassCall(command, payload, MaintenanceMutationSchema);
+  cultureLines$.set(_replaceLine(line));
+  return action;
+}
+
+/**
+ * Transfer a Culture onto fresh medium, dividing it if the draft asks.
+ *
+ * A plain transfer is a division of one: the first vessel is the Culture being
+ * replated and keeps its identity, and every further one is a new Culture the
+ * backend creates. One call, one dialog, one shape in the history.
+ */
+export async function replateCulture(
+  cultureId: string,
+  draft: ReplateDraft
+): Promise<MaintenanceAction> {
+  return _act(WS_TC_REPLATE, { culture_id: cultureId, ...draft });
+}
+
+/** End a Culture with a reason. The vessel stays on the board, ended. */
+export async function discardCulture(
+  cultureId: string,
+  reason: DiscardReason,
+  note = ''
+): Promise<MaintenanceAction> {
+  return _act(WS_TC_DISCARD, { culture_id: cultureId, reason, note });
+}
+
+/** Record an observation against a Culture, changing nothing else. */
+export async function noteOnCulture(cultureId: string, note: string): Promise<MaintenanceAction> {
+  return _act(WS_TC_NOTE, { culture_id: cultureId, note });
+}
+
+/** Move a Culture to the rooting Stage — a shorter interval, the same anchor. */
+export async function moveCultureToRooting(
+  cultureId: string,
+  note = ''
+): Promise<MaintenanceAction> {
+  return _act(WS_TC_MOVE_TO_ROOTING, { culture_id: cultureId, note });
+}
+
+/**
+ * End a Culture by taking it out of vitro.
+ *
+ * A plain ending here: creating the corresponding plant in Growspace Manager
+ * goes through its public service (TC ADR-0005) and is a later ticket.
+ */
+export async function graduateCulture(cultureId: string, note = ''): Promise<MaintenanceAction> {
+  return _act(WS_TC_GRADUATE, { culture_id: cultureId, note });
+}
+
+/**
+ * Fetch recorded acts, newest first.
+ *
+ * Not published to an atom: the history is append-only and read on demand for
+ * one vessel or one lineage, so a shared copy would only ever be a snapshot of
+ * whichever panel was opened last.
+ */
+export async function fetchMaintenanceHistory(
+  filter: { cultureId?: string; lineId?: string } = {}
+): Promise<MaintenanceAction[]> {
+  const { actions } = await hassCall(
+    WS_TC_MAINTENANCE_HISTORY,
+    {
+      ...(filter.cultureId ? { culture_id: filter.cultureId } : {}),
+      ...(filter.lineId ? { line_id: filter.lineId } : {}),
+    },
+    MaintenanceHistoryResponseSchema
+  );
+  return actions;
+}
+
+// ---------------------------------------------------------------------------
+// The due/overdue worklist
+// ---------------------------------------------------------------------------
+
+/**
+ * Where one Culture stands against its Replate Due Date.
+ *
+ * Three states rather than a boolean, because "due today" is the one a grower
+ * acts on and folding it into either neighbour loses the day's work: merged
+ * into `overdue` it cries wolf, merged into `scheduled` it hides the bench.
+ */
+export type ReplateUrgency = 'overdue' | 'due' | 'scheduled';
+
+/** One vessel on the worklist, with the line it belongs to. */
+export interface WorklistEntry {
+  line: CultureLine;
+  culture: Culture;
+  /** The stamp the backend derived. Never recomputed here. */
+  dueAt: string;
+  urgency: ReplateUrgency;
+  /** Whole local days from today to the due day: negative when overdue. */
+  daysUntilDue: number;
+}
+
+function _startOfDay(value: Date): number {
+  return new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
+}
+
+const _DAY_MS = 86_400_000;
+
+/**
+ * Build the worklist from the board.
+ *
+ * **Overdue is decided here, against the clock passed in.** The backend states
+ * a due date and nothing more; whether that date has passed depends on when the
+ * card is looking, so a flag baked into the payload would be wrong for every
+ * render after the first. `now` is a parameter rather than a `new Date()` for
+ * the same honesty: a list whose contents depend on the clock has to be
+ * testable against a fixed one.
+ *
+ * Compared by local calendar day, not by instant, because that is what a due
+ * date means to a grower and what the calendar entity draws — a vessel due at
+ * 09:00 is not "not yet due" at 08:00 on the same morning.
+ *
+ * Archived lines are left out: a line put away is not work. Cultures with no
+ * due date are left out too — an ended vessel is not overdue, it is over.
+ */
+export function worklistEntries(lines: CultureLine[], now: Date): WorklistEntry[] {
+  const today = _startOfDay(now);
+  const entries: WorklistEntry[] = [];
+
+  for (const line of lines) {
+    if (line.archived_at !== null) continue;
+    for (const culture of line.cultures) {
+      if (culture.replate_due_at === null) continue;
+      const due = new Date(culture.replate_due_at);
+      if (Number.isNaN(due.getTime())) continue;
+      const daysUntilDue = Math.round((_startOfDay(due) - today) / _DAY_MS);
+      entries.push({
+        line,
+        culture,
+        dueAt: culture.replate_due_at,
+        urgency: daysUntilDue < 0 ? 'overdue' : daysUntilDue === 0 ? 'due' : 'scheduled',
+        daysUntilDue,
+      });
+    }
+  }
+
+  return entries.sort(
+    (a, b) => a.daysUntilDue - b.daysUntilDue || a.culture.id.localeCompare(b.culture.id)
+  );
+}
+
+/**
+ * The Locations in use, for the worklist's filter.
+ *
+ * Location is free text by design (TC CONTEXT.md) — never a structured
+ * hierarchy — so the filter's options are whatever the grower has actually
+ * typed, gathered from the board rather than from a list nobody maintains.
+ * Blank locations are left out: "no shelf recorded" is not a shelf.
+ */
+export function locationOptions(lines: CultureLine[]): string[] {
+  const seen = new Map<string, string>();
+  for (const line of lines) {
+    for (const culture of line.cultures) {
+      const location = culture.location.trim();
+      if (location && !seen.has(location.toLowerCase())) {
+        seen.set(location.toLowerCase(), location);
+      }
+    }
+  }
+  return [...seen.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+
+/** The Replate a dialog over one Culture starts from: this vessel, where it is. */
+export function draftReplate(culture: Culture, medium?: CultureMedium): ReplateDraft {
+  return {
+    medium_id: medium?.id ?? '',
+    medium_version: medium?.current_version ?? 1,
+    vessels: [{ plantlet_count: culture.plantlet_count, location: culture.location }],
+    note: '',
+  };
+}
+
+/**
+ * What an action dialog asks the container to record.
+ *
+ * A discriminated union rather than one bag of optional fields: the five acts
+ * take genuinely different arguments — that is why the backend serves five
+ * commands rather than one — and a union is what stops a dialog dispatching a
+ * Discard with no reason and finding out on the wire.
+ */
+export type MaintenanceRequest =
+  | { action: 'replate'; cultureId: string; draft: ReplateDraft }
+  | { action: 'discard'; cultureId: string; reason: DiscardReason; note: string }
+  | { action: 'note' | 'move_to_rooting' | 'graduate'; cultureId: string; note: string };
+
+/** Perform one requested act. The board is updated from the reply. */
+export async function recordMaintenance(request: MaintenanceRequest): Promise<MaintenanceAction> {
+  switch (request.action) {
+    case 'replate':
+      return replateCulture(request.cultureId, request.draft);
+    case 'discard':
+      return discardCulture(request.cultureId, request.reason, request.note);
+    case 'note':
+      return noteOnCulture(request.cultureId, request.note);
+    case 'move_to_rooting':
+      return moveCultureToRooting(request.cultureId, request.note);
+    case 'graduate':
+      return graduateCulture(request.cultureId, request.note);
+  }
 }

@@ -35,6 +35,7 @@ const aCulture = (overrides: Record<string, unknown> = {}) => ({
   last_replated_at: '2026-01-04T09:12:00+00:00',
   plantlet_count: 6,
   location: 'Shelf A',
+  replate_due_at: '2026-02-03T09:12:00+00:00',
   ...overrides,
 });
 

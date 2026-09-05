@@ -17,6 +17,7 @@ const aCulture = (overrides: Record<string, unknown> = {}) => ({
   last_replated_at: '2026-01-04T09:12:00+00:00',
   plantlet_count: 6,
   location: 'Shelf A',
+  replate_due_at: '2026-02-03T09:12:00+00:00',
   ...overrides,
 });
 
@@ -39,7 +40,8 @@ const aLine = (overrides: Record<string, unknown> = {}): CultureLine =>
 async function render(
   lines: CultureLine[],
   resolutions: Array<[string, PhenotypeResolution]> = [],
-  showArchived = false
+  showArchived = false,
+  actionable = false
 ): Promise<GrowspaceTcCultureBoard> {
   const element = await fixture<GrowspaceTcCultureBoard>(
     '<growspace-tc-culture-board></growspace-tc-culture-board>'
@@ -47,6 +49,7 @@ async function render(
   element.lines = lines;
   element.resolutions = new Map(resolutions);
   element.showArchived = showArchived;
+  element.actionable = actionable;
   await element.updateComplete;
   return element;
 }
@@ -210,5 +213,59 @@ describe('GrowspaceTcCultureBoard — archived lines', () => {
     await click(element, 'Introduce');
 
     expect(await event).toBeTruthy();
+  });
+});
+
+describe('GrowspaceTcCultureBoard — the vessels', () => {
+  test('shows a vessel`s next replate, and a dash when it has none', async () => {
+    const element = await render([
+      aLine({
+        cultures: [
+          aCulture(),
+          aCulture({ id: 'culture-2', status: 'discarded', replate_due_at: null }),
+        ],
+      }),
+    ]);
+    await click(element, 'Show vessels');
+
+    const due = Array.from(element.shadowRoot?.querySelectorAll('table.cultures tbody tr') ?? []).map(
+      (row) => row.children[5].textContent?.trim()
+    );
+    expect(due[0]).not.toBe('—');
+    expect(due[1]).toBe('—');
+  });
+
+  test('offers the five acts on a vessel that is still being maintained', async () => {
+    const element = await render([aLine()], [], false, true);
+    await click(element, 'Show vessels');
+    const requested: unknown[] = [];
+    element.addEventListener('culture-action-requested', (event) =>
+      requested.push((event as CustomEvent).detail)
+    );
+
+    const actions = element.shadowRoot?.querySelectorAll('.culture-actions button');
+    expect(actions).toHaveLength(5);
+    (actions?.[0] as HTMLButtonElement).click();
+
+    expect(requested).toEqual([{ cultureId: 'culture-1', action: 'replate' }]);
+  });
+
+  test('offers no act on a vessel that has ended', async () => {
+    const element = await render(
+      [aLine({ cultures: [aCulture({ status: 'graduated', replate_due_at: null })] })],
+      [],
+      false,
+      true
+    );
+    await click(element, 'Show vessels');
+
+    expect(element.shadowRoot?.querySelectorAll('.culture-actions button')).toHaveLength(0);
+  });
+
+  test('offers no act at all when this TC release cannot serve them', async () => {
+    const element = await render([aLine()], [], false, false);
+    await click(element, 'Show vessels');
+
+    expect(element.shadowRoot?.querySelectorAll('.culture-actions button')).toHaveLength(0);
   });
 });

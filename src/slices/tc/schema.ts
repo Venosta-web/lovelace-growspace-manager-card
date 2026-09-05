@@ -156,6 +156,13 @@ export const ReplateIntervalsSchema = z.object({
  * reason. `last_replated_at` is the anchor the line's interval is measured
  * from; an Introduction sets it, because placing the explant is itself a
  * plating onto fresh medium.
+ *
+ * `replate_due_at` is that anchor plus the line's interval for this vessel's
+ * Culture Stage. The backend derives it and never stores it, and it is `null`
+ * for a Culture that has ended — a discarded or graduated vessel is not
+ * overdue, it is over. **Whether it has passed is the card's verdict**: TC
+ * states a date, and a boolean computed when the payload was built would be
+ * stale the moment it sat in an atom.
  */
 export const CultureSchema = z.object({
   id: z.string(),
@@ -166,6 +173,7 @@ export const CultureSchema = z.object({
   last_replated_at: z.string(),
   plantlet_count: z.number().nullable(),
   location: z.string(),
+  replate_due_at: z.string().nullable(),
 });
 
 /**
@@ -221,3 +229,110 @@ export const IntroductionDraftSchema = z.object({
 });
 
 export type IntroductionDraft = z.infer<typeof IntroductionDraftSchema>;
+
+// ---------------------------------------------------------------------------
+// Maintenance Actions
+// ---------------------------------------------------------------------------
+
+/**
+ * The closed vocabulary of acts recorded on a Culture.
+ *
+ * Closed on the backend and closed here: a spelling the card invented would be
+ * rejected on the wire, and one it failed to handle would render a history row
+ * with no label. Every member has a dialog and a history line.
+ */
+export const MaintenanceActionTypeSchema = z.enum([
+  'replate',
+  'discard',
+  'note',
+  'move_to_rooting',
+  'graduate',
+]);
+
+/** Why a Culture was ended. Closed, so "lost to contamination" stays countable. */
+export const DiscardReasonSchema = z.enum(['contamination', 'spent', 'mistake']);
+
+/**
+ * One vessel a Replate produced.
+ *
+ * The first names the Culture that was replated — its identity survives the
+ * transfer — and every further one a Culture the division created, in the order
+ * the act asked for them.
+ */
+export const ReplateVesselSchema = z.object({
+  culture_id: z.string(),
+  plantlet_count: z.number().nullable(),
+  location: z.string(),
+});
+
+/**
+ * One recorded act on one Culture.
+ *
+ * Flat, with every field always present: the fields an act does not use are
+ * `null` or empty rather than absent, so this is one schema instead of a union
+ * of five and a reader counting replates never has to guess whether a missing
+ * key means "not applicable" or "an older release did not write it".
+ */
+export const MaintenanceActionSchema = z.object({
+  id: z.string(),
+  culture_id: z.string(),
+  line_id: z.string(),
+  action: MaintenanceActionTypeSchema,
+  recorded_at: z.string(),
+  note: z.string(),
+  /** Replate only: the Medium Version this placement pinned. */
+  medium_id: z.string().nullable(),
+  medium_version: z.number().nullable(),
+  /** Replate only: the vessels the act produced. Empty for every other act. */
+  vessels: z.array(ReplateVesselSchema),
+  /** Discard only. */
+  reason: DiscardReasonSchema.nullable(),
+  /** Move to rooting only: the Stage the Culture was moved to. */
+  stage: CultureStageSchema.nullable(),
+});
+
+/** The reply to `growspace_manager_tc/maintenance/history`. */
+export const MaintenanceHistoryResponseSchema = z.object({
+  actions: z.array(MaintenanceActionSchema),
+});
+
+/**
+ * The reply to every one of the five acts.
+ *
+ * The whole line, because a Replate can divide one Culture into several and the
+ * smallest honest unit of change is therefore the line — plus the act that was
+ * written, so the card can show what it just did without re-reading the history.
+ */
+export const MaintenanceMutationSchema = z.object({
+  line: CultureLineSchema,
+  action: MaintenanceActionSchema,
+});
+
+export type MaintenanceActionType = z.infer<typeof MaintenanceActionTypeSchema>;
+export type DiscardReason = z.infer<typeof DiscardReasonSchema>;
+export type ReplateVessel = z.infer<typeof ReplateVesselSchema>;
+export type MaintenanceAction = z.infer<typeof MaintenanceActionSchema>;
+
+/**
+ * One vessel a Replate dialog is asking for.
+ *
+ * `location` is a string here and never `undefined`: the dialog seeds it from
+ * the Culture it is replating, so what it sends is always what the grower is
+ * looking at. The wire's "absent means inherit" default exists for callers that
+ * have nothing to seed from, which a dialog over a known vessel never is.
+ */
+export const ReplateVesselDraftSchema = z.object({
+  plantlet_count: z.number().nullable(),
+  location: z.string(),
+});
+
+/** What the Replate dialog sends: the medium pin, the vessels, and a note. */
+export const ReplateDraftSchema = z.object({
+  medium_id: z.string(),
+  medium_version: z.number(),
+  vessels: z.array(ReplateVesselDraftSchema),
+  note: z.string(),
+});
+
+export type ReplateVesselDraft = z.infer<typeof ReplateVesselDraftSchema>;
+export type ReplateDraft = z.infer<typeof ReplateDraftSchema>;
