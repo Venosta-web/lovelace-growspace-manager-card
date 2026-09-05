@@ -9,6 +9,11 @@ import {
   CultureMediumMutationSchema,
   MaintenanceHistoryResponseSchema,
   MaintenanceMutationSchema,
+  PairingMutationSchema,
+  PairingDeletionSchema,
+  PairingsResponseSchema,
+  type Pairing,
+  type PairingDraft,
   TcManifestSchema,
   type Culture,
   type CultureLine,
@@ -31,6 +36,8 @@ import {
 } from './schema';
 
 export type {
+  Pairing,
+  PairingDraft,
   Culture,
   CultureLine,
   CultureMedium,
@@ -166,6 +173,7 @@ export function resetTcPresence(): void {
   tcPresence$.set({ status: 'unknown' });
   cultureMedia$.set([]);
   cultureLines$.set([]);
+  pairings$.set([]);
 }
 
 // ---------------------------------------------------------------------------
@@ -673,4 +681,33 @@ export async function recordMaintenance(request: MaintenanceRequest): Promise<Ma
     case 'graduate':
       return graduateCulture(request.cultureId, request.note);
   }
+}
+
+// One shared set; grouping by medium or phenotype is purely a view concern.
+export const TC_FEATURE_PAIRINGS = 'pairings';
+export const pairings$ = atom<Pairing[]>([]);
+
+export async function fetchPairings(): Promise<Pairing[]> {
+  const { pairings } = await hassCall(`${TC_DOMAIN}/pairings/list`, {}, PairingsResponseSchema);
+  pairings$.set(pairings);
+  return pairings;
+}
+
+export async function savePairing(draft: PairingDraft, id?: string): Promise<Pairing> {
+  const { pairing } = await hassCall(
+    `${TC_DOMAIN}/pairings/${id ? 'update' : 'create'}`,
+    { ...draft, ...(id ? { pairing_id: id } : {}) },
+    PairingMutationSchema
+  );
+  pairings$.set([...pairings$.get().filter((row) => row.id !== pairing.id), pairing]);
+  return pairing;
+}
+
+export async function deletePairing(id: string): Promise<void> {
+  const { pairing_id } = await hassCall(
+    `${TC_DOMAIN}/pairings/delete`,
+    { pairing_id: id },
+    PairingDeletionSchema
+  );
+  pairings$.set(pairings$.get().filter((row) => row.id !== pairing_id));
 }

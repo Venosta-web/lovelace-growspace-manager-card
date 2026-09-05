@@ -498,6 +498,27 @@
     "culture_due": "Next replate",
     "culture_due_none": "—",
     "worklist_plantlets": "{count} plantlets",
-    "action_move_to_rooting_explainer": "The rooting interval starts applying to the same last replate. The vessel stays on the medium it is already on."
+    "action_move_to_rooting_explainer": "The rooting interval starts applying to the same last replate. The vessel stays on the medium it is already on.",
+    "pairing_title": "Curated pairings",
+    "pairing_body": "Record which phenotypes suit a culture medium, with your notes. Pairings apply across all versions of the medium.",
+    "pairing_view": "Group pairings",
+    "pairing_by_medium": "By culture medium",
+    "pairing_by_phenotype": "By phenotype",
+    "pairing_add": "Add pairing",
+    "pairing_edit": "Edit pairing",
+    "pairing_remove": "Remove pairing",
+    "pairing_remove_confirm": "Remove this endorsement?",
+    "pairing_phenotype": "Phenotype",
+    "pairing_medium": "Culture medium",
+    "pairing_choose_medium": "Choose a culture medium",
+    "pairing_notes": "Notes (optional)",
+    "pairing_duplicate": "This phenotype already has a pairing with this culture medium. Edit the existing pairing instead.",
+    "pairing_saving": "Saving…",
+    "pairing_needs_medium": "Add a culture medium to the library before creating a pairing.",
+    "pairing_empty": "No pairings yet. Add an endorsement to start your collection.",
+    "pairing_missing_medium": "Missing culture medium",
+    "pairing_missing_phenotype": "Missing phenotype. Edit this pairing to choose a replacement, or remove it.",
+    "pairing_loading": "Loading pairings…",
+    "pairing_retry": "Retry loading pairings"
   }
 }

@@ -56,5 +56,6 @@ jobs:
           TC_MAIN_MANIFEST_FIXTURE: ${{ runner.temp }}/tc-main-manifest.json
           TC_MAIN_CULTURE_MEDIA_FIXTURE: ${{ runner.temp }}/tc-main-culture-media.json
           TC_MAIN_CULTURE_LINES_FIXTURE: ${{ runner.temp }}/tc-main-culture-lines.json
+          TC_MAIN_PAIRINGS_FIXTURE: ${{ runner.temp }}/tc-main-pairings.json
           TC_MAIN_MAINTENANCE_FIXTURE: ${{ runner.temp }}/tc-main-maintenance.json
         run: npm run test:contract-fixture
