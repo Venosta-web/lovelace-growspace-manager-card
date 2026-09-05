@@ -307,7 +307,15 @@ export class GrowspaceTcCultureBoard extends LitElement {
    * invitation to an error message.
    */
   private _renderActions(culture: Culture): TemplateResult {
-    if (!this.actionable || culture.status !== 'active') return html`${nothing}`;
+    if (!this.actionable) return html`${nothing}`;
+    if (culture.status !== 'active')
+      return html`<button
+        class="small"
+        @click=${() =>
+          this._emit('culture-action-requested', { cultureId: culture.id, action: 'graduate' })}
+      >
+        ${this._t('history_show')}
+      </button>`;
     return html`
       <div class="culture-actions">
         ${OFFERED_ACTIONS.map(
