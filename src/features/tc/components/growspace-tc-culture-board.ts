@@ -15,6 +15,12 @@
  * identical from the join alone, and marking every line missing because a fetch
  * failed would be a worse lie than a stale name.
  *
+ * Expanding a line shows its vessels, their Replate Due Dates and the five
+ * Maintenance Actions. The worklist above answers "what has to be done today";
+ * the board is where a vessel that is not due yet — or one that has already
+ * ended — can still be acted on, which is why the actions live in both places
+ * rather than only on the urgent list.
+ *
  * Dumb by contract (ADR-0019): lines and resolutions in, intents out. Which
  * line's vessels are expanded is the only state it owns.
  */
@@ -25,7 +31,24 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { localize, localizeWithParams } from '../../../localize/localize';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { variables } from '../../../styles/variables';
-import type { Culture, CultureLine, PhenotypeResolution } from '../../../slices/tc';
+import type {
+  Culture,
+  CultureLine,
+  MaintenanceActionType,
+  PhenotypeResolution,
+} from '../../../slices/tc';
+
+/**
+ * The five Maintenance Actions, in the order a vessel meets them: the routine
+ * one first, the endings last.
+ */
+const OFFERED_ACTIONS: MaintenanceActionType[] = [
+  'replate',
+  'move_to_rooting',
+  'note',
+  'discard',
+  'graduate',
+];
 
 @customElement('growspace-tc-culture-board')
 export class GrowspaceTcCultureBoard extends LitElement {
@@ -34,6 +57,15 @@ export class GrowspaceTcCultureBoard extends LitElement {
   @property({ attribute: false }) resolutions: ReadonlyMap<string, PhenotypeResolution> = new Map();
   /** Whether archived lines are shown. Archived lines are never dropped. */
   @property({ type: Boolean }) showArchived = false;
+  /**
+   * Whether this installation serves Maintenance Actions.
+   *
+   * Gated on the manifest feature rather than assumed: a TC release older than
+   * the acts answers the board perfectly well, and offering five buttons whose
+   * every call comes back `unknown_command` would be worse than not offering
+   * them.
+   */
+  @property({ type: Boolean }) actionable = false;
   @property({ type: String }) language = 'en';
 
   @state() private _openLines = new Set<string>();
@@ -180,6 +212,18 @@ export class GrowspaceTcCultureBoard extends LitElement {
         text-decoration: underline;
         min-height: 32px;
       }
+
+      button.small {
+        font-size: 0.75rem;
+        padding: 2px 10px;
+        min-height: 28px;
+      }
+
+      .culture-actions {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
     `,
   ];
 
@@ -224,6 +268,8 @@ export class GrowspaceTcCultureBoard extends LitElement {
             <th>${this._t('culture_plantlets')}</th>
             <th>${this._t('culture_location')}</th>
             <th>${this._t('culture_started')}</th>
+            <th>${this._t('culture_due')}</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -239,11 +285,42 @@ export class GrowspaceTcCultureBoard extends LitElement {
                 </td>
                 <td>${culture.location || this._t('culture_location_none')}</td>
                 <td>${this._day(culture.started_at)}</td>
+                <td>
+                  ${culture.replate_due_at === null
+                    ? this._t('culture_due_none')
+                    : this._day(culture.replate_due_at)}
+                </td>
+                <td>${this._renderActions(culture)}</td>
               </tr>
             `
           )}
         </tbody>
       </table>
+    `;
+  }
+
+  /**
+   * The five acts, offered only while the vessel is still being maintained.
+   *
+   * An ended Culture keeps its row — it is history, not clutter — but every act
+   * is refused on it by the backend, so offering the buttons would be an
+   * invitation to an error message.
+   */
+  private _renderActions(culture: Culture): TemplateResult {
+    if (!this.actionable || culture.status !== 'active') return html`${nothing}`;
+    return html`
+      <div class="culture-actions">
+        ${OFFERED_ACTIONS.map(
+          (action) =>
+            html`<button
+              class="small"
+              @click=${() =>
+                this._emit('culture-action-requested', { cultureId: culture.id, action })}
+            >
+              ${this._t(`action_${action}`)}
+            </button>`
+        )}
+      </div>
     `;
   }
 

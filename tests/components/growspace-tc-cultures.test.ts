@@ -4,8 +4,13 @@ import { fixture } from '@open-wc/testing-helpers';
 import { hassCall } from '../../src/services/hass-call';
 import { GrowspaceTcCultures } from '../../src/features/tc/containers/growspace-tc-cultures.container';
 import { strainLibrary$ } from '../../src/slices/strain';
-import { resetTcPresence, type CultureLine } from '../../src/slices/tc';
-import { WS_TC_LIST_CULTURE_LINES, WS_TC_RELINK_PHENOTYPE } from '../../src/slices/tc';
+import { cultureMedia$, resetTcPresence, type CultureLine } from '../../src/slices/tc';
+import {
+  WS_TC_LIST_CULTURE_LINES,
+  WS_TC_MAINTENANCE_HISTORY,
+  WS_TC_RELINK_PHENOTYPE,
+  WS_TC_REPLATE,
+} from '../../src/slices/tc';
 
 vi.mock('../../src/services/hass-call', () => ({
   hassCall: vi.fn(),
@@ -36,6 +41,21 @@ const aLine = (overrides: Record<string, unknown> = {}): CultureLine =>
     ...overrides,
   }) as CultureLine;
 
+const aCulture = (overrides: Record<string, unknown> = {}) => ({
+  id: 'culture-1',
+  line_id: 'line-1',
+  stage: 'multiplication',
+  status: 'active',
+  started_at: '2026-01-04T09:12:00+00:00',
+  last_replated_at: '2026-01-04T09:12:00+00:00',
+  plantlet_count: 6,
+  location: 'Shelf A',
+  // Long past, so the vessel is overdue whenever this suite runs and the
+  // worklist's default filter keeps it.
+  replate_due_at: '2020-02-03T09:12:00+00:00',
+  ...overrides,
+});
+
 /** The `get_strain_library` reply that yields one phenotype. */
 const A_LIBRARY = {
   strains: {
@@ -49,20 +69,28 @@ const A_LIBRARY = {
  * The board and the strain library are fetched independently, so a test says
  * what each of them does rather than sharing one mock resolution.
  */
-function answer(options: { lines?: CultureLine[]; library?: unknown | Error }): void {
+function answer(options: {
+  lines?: CultureLine[];
+  library?: unknown | Error;
+  history?: unknown[];
+}): void {
   hassCallMock.mockImplementation(async (command: string) => {
     if (command === WS_TC_LIST_CULTURE_LINES) {
       return { culture_lines: options.lines ?? [] };
+    }
+    if (command === WS_TC_MAINTENANCE_HISTORY) {
+      return { actions: options.history ?? [] };
     }
     if (options.library instanceof Error) throw options.library;
     return options.library ?? { strains: {} };
   });
 }
 
-async function render(): Promise<GrowspaceTcCultures> {
+async function render(maintenance = false): Promise<GrowspaceTcCultures> {
   const element = await fixture<GrowspaceTcCultures>(
     '<growspace-tc-cultures></growspace-tc-cultures>'
   );
+  element.maintenance = maintenance;
   await vi.waitFor(() =>
     expect((element as unknown as { _loading: boolean })._loading).toBe(false)
   );
@@ -77,6 +105,28 @@ const board = (element: GrowspaceTcCultures) =>
 
 const boardText = (element: GrowspaceTcCultures): string =>
   board(element)?.shadowRoot?.textContent ?? '';
+
+const worklist = (element: GrowspaceTcCultures) =>
+  element.shadowRoot?.querySelector('growspace-tc-worklist');
+
+const dialog = (element: GrowspaceTcCultures) =>
+  element.shadowRoot?.querySelector('growspace-tc-action-dialog');
+
+async function requestAction(
+  element: GrowspaceTcCultures,
+  action: string,
+  cultureId = 'culture-1'
+): Promise<void> {
+  board(element)?.dispatchEvent(
+    new CustomEvent('culture-action-requested', {
+      detail: { cultureId, action },
+      bubbles: true,
+      composed: true,
+    })
+  );
+  await vi.waitFor(() => expect(dialog(element)).toBeTruthy());
+  await element.updateComplete;
+}
 
 beforeEach(() => {
   resetTcPresence();
@@ -244,5 +294,204 @@ describe('GrowspaceTcCultures — the introduction', () => {
         )?.error
       ).toContain('Rooting interval')
     );
+  });
+});
+
+describe('GrowspaceTcCultures — the worklist', () => {
+  test('lands on the worklist, above the board', async () => {
+    answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY });
+
+    const element = await render(true);
+
+    const children = Array.from(element.shadowRoot?.querySelectorAll('*') ?? []).map(
+      (node) => node.localName
+    );
+    expect(children.indexOf('growspace-tc-worklist')).toBeGreaterThan(-1);
+    expect(children.indexOf('growspace-tc-worklist')).toBeLessThan(
+      children.indexOf('growspace-tc-culture-board')
+    );
+  });
+
+  test('builds the worklist from the board it fetched', async () => {
+    answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY });
+
+    const element = await render(true);
+
+    const entries = (worklist(element) as unknown as { entries: Array<{ urgency: string }> })
+      .entries;
+    expect(entries).toHaveLength(1);
+    expect(entries[0].urgency).toBe('overdue');
+  });
+
+  test('offers the shelves in use as the worklist`s filter', async () => {
+    answer({
+      lines: [aLine({ cultures: [aCulture(), aCulture({ id: 'c2', location: 'Shelf B' })] })],
+      library: A_LIBRARY,
+    });
+
+    const element = await render(true);
+
+    expect((worklist(element) as unknown as { locations: string[] }).locations).toEqual([
+      'Shelf A',
+      'Shelf B',
+    ]);
+  });
+
+  test('renders no worklist and no action buttons when TC cannot serve them', async () => {
+    answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY });
+
+    const element = await render(false);
+
+    expect(worklist(element)).toBeNull();
+    expect((board(element) as unknown as { actionable: boolean }).actionable).toBe(false);
+  });
+});
+
+describe('GrowspaceTcCultures — recording an act', () => {
+  test('opens a dialog over the vessel and fetches its history', async () => {
+    answer({
+      lines: [aLine({ cultures: [aCulture()] })],
+      library: A_LIBRARY,
+      history: [
+        {
+          id: 'action-1',
+          culture_id: 'culture-1',
+          line_id: 'line-1',
+          action: 'note',
+          recorded_at: '2026-02-03T09:20:00+00:00',
+          note: 'Looking good.',
+          medium_id: null,
+          medium_version: null,
+          vessels: [],
+          reason: null,
+          stage: null,
+        },
+      ],
+    });
+    const element = await render(true);
+
+    await requestAction(element, 'replate');
+
+    expect(hassCallMock).toHaveBeenCalledWith(
+      WS_TC_MAINTENANCE_HISTORY,
+      { culture_id: 'culture-1' },
+      expect.anything()
+    );
+    await vi.waitFor(() =>
+      expect((dialog(element) as unknown as { history: unknown[] }).history).toHaveLength(1)
+    );
+    expect((dialog(element) as unknown as { lineName: string }).lineName).toBe(
+      'Blue Dream — Pheno 2'
+    );
+  });
+
+  test('hands the dialog the media the replate can pin', async () => {
+    answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY });
+    cultureMedia$.set([{ id: 'medium-1', name: 'MS', current_version: 2 } as never]);
+    const element = await render(true);
+
+    await requestAction(element, 'replate');
+
+    expect((dialog(element) as unknown as { media: unknown[] }).media).toHaveLength(1);
+  });
+
+  test('records the act and closes the dialog', async () => {
+    answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY });
+    const element = await render(true);
+    await requestAction(element, 'replate');
+
+    hassCallMock.mockResolvedValueOnce({
+      line: aLine({ cultures: [aCulture({ plantlet_count: 5 })] }),
+      action: {
+        id: 'action-1',
+        culture_id: 'culture-1',
+        line_id: 'line-1',
+        action: 'replate',
+        recorded_at: '2026-02-03T09:20:00+00:00',
+        note: '',
+        medium_id: 'medium-1',
+        medium_version: 1,
+        vessels: [],
+        reason: null,
+        stage: null,
+      },
+    });
+    dialog(element)?.dispatchEvent(
+      new CustomEvent('maintenance-requested', {
+        detail: {
+          request: {
+            action: 'replate',
+            cultureId: 'culture-1',
+            draft: { medium_id: 'medium-1', medium_version: 1, vessels: [{}], note: '' },
+          },
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+
+    await vi.waitFor(() =>
+      expect(hassCallMock).toHaveBeenCalledWith(
+        WS_TC_REPLATE,
+        expect.objectContaining({ culture_id: 'culture-1', medium_id: 'medium-1' }),
+        expect.anything()
+      )
+    );
+    await vi.waitFor(() => expect(dialog(element)).toBeNull());
+  });
+
+  test('keeps the dialog open holding the draft when the backend rejects it', async () => {
+    answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY });
+    const element = await render(true);
+    await requestAction(element, 'discard');
+
+    hassCallMock.mockRejectedValueOnce(new Error('That culture has already been discarded.'));
+    dialog(element)?.dispatchEvent(
+      new CustomEvent('maintenance-requested', {
+        detail: {
+          request: { action: 'discard', cultureId: 'culture-1', reason: 'spent', note: '' },
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+
+    await vi.waitFor(() =>
+      expect((dialog(element) as unknown as { error: string })?.error).toContain(
+        'already been discarded'
+      )
+    );
+  });
+
+  test('opens the dialog even when the vessel`s history could not be read', async () => {
+    hassCallMock.mockImplementation(async (command: string) => {
+      if (command === WS_TC_LIST_CULTURE_LINES) {
+        return { culture_lines: [aLine({ cultures: [aCulture()] })] };
+      }
+      if (command === WS_TC_MAINTENANCE_HISTORY) throw new Error('history is down');
+      return A_LIBRARY;
+    });
+    const element = await render(true);
+
+    await requestAction(element, 'note');
+
+    expect((dialog(element) as unknown as { history: unknown[] }).history).toEqual([]);
+    expect(element.shadowRoot?.querySelector('.error')).toBeNull();
+  });
+
+  test('ignores an action for a vessel the board does not hold', async () => {
+    answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY });
+    const element = await render(true);
+
+    board(element)?.dispatchEvent(
+      new CustomEvent('culture-action-requested', {
+        detail: { cultureId: 'gone', action: 'note' },
+        bubbles: true,
+        composed: true,
+      })
+    );
+    await element.updateComplete;
+
+    expect(dialog(element)).toBeNull();
   });
 });

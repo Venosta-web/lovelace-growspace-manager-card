@@ -13,6 +13,12 @@
  * phenotype are indistinguishable from the join alone, so a failed fetch would
  * otherwise mark every line missing and offer to repair references that were
  * never broken.
+ *
+ * It also owns the second clock-dependent judgement on this surface: **overdue**.
+ * The backend states a Replate Due Date and nothing more, because whether that
+ * date has passed depends on when the card is looking. The worklist is built
+ * here against a clock this element reads, so a board left open overnight is one
+ * render away from telling the truth again.
  */
 
 import { LitElement, html, css, nothing, type CSSResultGroup, type TemplateResult } from 'lit';
@@ -24,27 +30,51 @@ import { variables } from '../../../styles/variables';
 import { fetchStrainLibrary, strainLibrary$ } from '../../../slices/strain';
 import {
   cultureLines$,
+  cultureMedia$,
   fetchCultureLines,
+  fetchMaintenanceHistory,
   introduceCultureLine,
+  locationOptions,
   phenotypeNameIndex,
   phenotypeOptions,
+  recordMaintenance,
   relinkPhenotype,
   resolvePhenotype,
   setCultureLineArchived,
+  worklistEntries,
+  type Culture,
   type CultureLine,
+  type CultureMedium,
   type IntroductionDraft,
+  type MaintenanceAction,
+  type MaintenanceActionType,
+  type MaintenanceRequest,
   type PhenotypeOption,
   type PhenotypeResolution,
+  type WorklistEntry,
 } from '../../../slices/tc';
 import type { StrainEntry } from '../../../types';
+import '../components/growspace-tc-action-dialog';
 import '../components/growspace-tc-culture-board';
 import '../components/growspace-tc-introduction-form';
 import '../components/growspace-tc-phenotype-picker';
+import '../components/growspace-tc-worklist';
 
 type Relinking = { open: false } | { open: true; line: CultureLine };
+type Acting =
+  | { open: false }
+  | { open: true; action: MaintenanceActionType; culture: Culture; line: CultureLine };
 
 @customElement('growspace-tc-cultures')
 export class GrowspaceTcCultures extends LitElement {
+  /**
+   * Whether this installation serves Maintenance Actions.
+   *
+   * The worklist reads `replate_due_at` and the dialogs call the five commands,
+   * so both are gated on the manifest feature rather than on TC merely being
+   * installed — an older release would answer the board and none of the rest.
+   */
+  @property({ type: Boolean }) maintenance = false;
   @property({ type: String }) language = 'en';
 
   @state() private _lines: CultureLine[] = [];
@@ -57,6 +87,16 @@ export class GrowspaceTcCultures extends LitElement {
   @state() private _introducing = false;
   @state() private _relinking: Relinking = { open: false };
   @state() private _showArchived = false;
+  @state() private _media: CultureMedium[] = [];
+  @state() private _acting: Acting = { open: false };
+  @state() private _history: MaintenanceAction[] = [];
+  @state() private _historyLoading = false;
+  /**
+   * The clock the worklist is built against, re-read on every load and after
+   * every act. A `Date` in a render would make the element re-sort itself on
+   * unrelated updates and make a test wait for midnight.
+   */
+  @state() private _now = new Date();
 
   private _unsubscribe: Array<() => void> = [];
 
@@ -118,6 +158,12 @@ export class GrowspaceTcCultures extends LitElement {
         // one is settled by `_load` instead, which knows whether it threw.
         if (library.length) this._libraryLoaded = true;
       }),
+      // Read, never fetched here: the view container owns the one call that
+      // fills this atom for the medium library, and the Replate dialog needs
+      // the same list to pin a Medium Version from.
+      cultureMedia$.subscribe((media) => {
+        this._media = [...media];
+      }),
     ];
     void this._load();
   }
@@ -146,6 +192,7 @@ export class GrowspaceTcCultures extends LitElement {
   private async _load(): Promise<void> {
     this._loading = true;
     this._error = '';
+    this._now = new Date();
     const library = this._loadLibrary();
     try {
       await fetchCultureLines();
@@ -190,6 +237,71 @@ export class GrowspaceTcCultures extends LitElement {
         resolvePhenotype(line.phenotype, names, this._libraryLoaded),
       ])
     );
+  }
+
+  /** The name to show per line — the resolution's, whichever answer it was. */
+  private get _lineNames(): ReadonlyMap<string, string> {
+    return new Map([...this._resolutions].map(([lineId, resolution]) => [lineId, resolution.name]));
+  }
+
+  private get _worklist(): WorklistEntry[] {
+    return worklistEntries(this._lines, this._now);
+  }
+
+  /**
+   * Open an action dialog over one vessel, and fetch what has been recorded
+   * against it.
+   *
+   * The history is fetched on open rather than held in an atom: it is
+   * append-only and asked about one vessel at a time, so a shared copy would
+   * only ever be a snapshot of whichever dialog was opened last.
+   */
+  private async _startAction(
+    event: CustomEvent<{ cultureId: string; action: MaintenanceActionType }>
+  ): Promise<void> {
+    const { cultureId, action } = event.detail;
+    const line = this._lines.find((entry) =>
+      entry.cultures.some((culture) => culture.id === cultureId)
+    );
+    const culture = line?.cultures.find((entry) => entry.id === cultureId);
+    if (!line || !culture) return;
+
+    this._saveError = '';
+    this._history = [];
+    this._acting = { open: true, action, culture, line };
+    this._historyLoading = true;
+    try {
+      this._history = await fetchMaintenanceHistory({ cultureId });
+    } catch {
+      // Swallowed: the dialog's job is to record the next act, and a history
+      // panel that failed to load is no reason to refuse to do it.
+      this._history = [];
+    } finally {
+      this._historyLoading = false;
+    }
+  }
+
+  private _cancelAction(): void {
+    this._acting = { open: false };
+    this._saveError = '';
+  }
+
+  private async _record(event: CustomEvent<{ request: MaintenanceRequest }>): Promise<void> {
+    this._saving = true;
+    this._saveError = '';
+    try {
+      await recordMaintenance(event.detail.request);
+      this._acting = { open: false };
+      // The act moved a due date, so the worklist is re-judged against the
+      // clock as it reads now rather than as it read when the board loaded.
+      this._now = new Date();
+    } catch (error) {
+      // The dialog stays open holding the draft: the backend rejected a value,
+      // and throwing the grower's typing away would be the second failure.
+      this._saveError = GrowspaceTcCultures._message(error);
+    } finally {
+      this._saving = false;
+    }
   }
 
   private _startIntroduction(): void {
@@ -271,6 +383,23 @@ export class GrowspaceTcCultures extends LitElement {
     `;
   }
 
+  /** The dialog for the act being recorded, over the vessel it names. */
+  private _renderActionDialog(acting: Acting & { open: true }): TemplateResult {
+    return html`<growspace-tc-action-dialog
+      .action=${acting.action}
+      .culture=${acting.culture}
+      .lineName=${this._lineNames.get(acting.line.id) ?? acting.line.phenotype.name_snapshot}
+      .media=${this._media}
+      .history=${this._history}
+      .historyLoading=${this._historyLoading}
+      .saving=${this._saving}
+      .error=${this._saveError}
+      .language=${this.language}
+      @maintenance-requested=${this._record}
+      @maintenance-cancelled=${this._cancelAction}
+    ></growspace-tc-action-dialog>`;
+  }
+
   protected render(): TemplateResult {
     if (this._introducing) {
       return html`<growspace-tc-introduction-form
@@ -286,16 +415,28 @@ export class GrowspaceTcCultures extends LitElement {
     return html`
       <div>
         ${this._error ? html`<p class="error" role="alert">${this._error}</p>` : nothing}
+        ${this._acting.open ? this._renderActionDialog(this._acting) : nothing}
         ${this._relinking.open ? this._renderRelink(this._relinking.line) : nothing}
+        ${this.maintenance
+          ? html`<growspace-tc-worklist
+              .entries=${this._worklist}
+              .names=${this._lineNames}
+              .locations=${locationOptions(this._lines)}
+              .language=${this.language}
+              @culture-action-requested=${this._startAction}
+            ></growspace-tc-worklist>`
+          : nothing}
         <growspace-tc-culture-board
           .lines=${this._lines}
           .resolutions=${this._resolutions}
           .showArchived=${this._showArchived}
+          .actionable=${this.maintenance}
           .language=${this.language}
           @line-introduce-requested=${this._startIntroduction}
           @line-relink-requested=${this._startRelink}
           @line-archive-requested=${this._setArchived}
           @line-show-archived-toggled=${() => (this._showArchived = !this._showArchived)}
+          @culture-action-requested=${this._startAction}
         ></growspace-tc-culture-board>
         ${this._loading ? html`<p class="supporting">${this._t('board_loading')}</p>` : nothing}
       </div>

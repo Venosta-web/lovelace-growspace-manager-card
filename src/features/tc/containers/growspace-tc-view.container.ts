@@ -12,6 +12,7 @@ import {
   updateCultureMedium,
   TC_FEATURE_CULTURE_LINES,
   TC_FEATURE_CULTURE_MEDIA,
+  TC_FEATURE_MAINTENANCE,
   type CultureMedium,
   type CultureMediumDraft,
   type TcManifest,
@@ -25,11 +26,11 @@ type Editing = { open: false } | { open: true; medium?: CultureMedium };
 /**
  * The tissue-culture view.
  *
- * It holds the culture board and the Culture Medium library today; the
- * remaining V1 model tickets add the due/overdue worklist and the pairing
- * editor around them. What it proves is the whole load path — the presence
- * probe answered, the chunk was fetched, and the surface rendered inside a card
- * that ships no TC code in its entry bundle.
+ * It holds the due/overdue worklist, the culture board and the Culture Medium
+ * library today; the remaining V1 model ticket adds the pairing editor. The
+ * worklist leads because it is the answer to the question a grower opens this
+ * view with — what has to be replated — and the board is what they reach for
+ * once that is done.
  *
  * Every surface is gated on a manifest feature rather than on the installed
  * release: a TC that predates the medium library answers the presence probe
@@ -113,6 +114,10 @@ export class GrowspaceTcView extends LitElement {
 
   private get _hasCultureBoard(): boolean {
     return this.manifest?.features.includes(TC_FEATURE_CULTURE_LINES) ?? false;
+  }
+
+  private get _hasMaintenance(): boolean {
+    return this.manifest?.features.includes(TC_FEATURE_MAINTENANCE) ?? false;
   }
 
   connectedCallback(): void {
@@ -256,7 +261,10 @@ export class GrowspaceTcView extends LitElement {
       <div role="region" aria-label=${this._t('view_title')}>
         ${this._error ? html`<p class="error" role="alert">${this._error}</p>` : nothing}
         ${this._hasCultureBoard
-          ? html`<growspace-tc-cultures .language=${this.language}></growspace-tc-cultures>`
+          ? html`<growspace-tc-cultures
+              .maintenance=${this._hasMaintenance}
+              .language=${this.language}
+            ></growspace-tc-cultures>`
           : nothing}
         ${this._hasMediumLibrary ? this._renderMediumLibrary() : nothing}
       </div>

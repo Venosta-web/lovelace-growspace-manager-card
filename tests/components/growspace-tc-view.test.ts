@@ -235,3 +235,27 @@ describe('GrowspaceTcView', () => {
     expect(hassCallMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('GrowspaceTcView — the maintenance gate', () => {
+  test('tells the board container whether this release serves the acts', async () => {
+    hassCallMock.mockResolvedValue({ culture_lines: [], strains: {} });
+
+    const without = await render(['culture_lines']);
+    expect(
+      (
+        without.shadowRoot?.querySelector('growspace-tc-cultures') as unknown as {
+          maintenance: boolean;
+        }
+      ).maintenance
+    ).toBe(false);
+
+    const with_ = await render(['culture_lines', 'maintenance']);
+    expect(
+      (
+        with_.shadowRoot?.querySelector('growspace-tc-cultures') as unknown as {
+          maintenance: boolean;
+        }
+      ).maintenance
+    ).toBe(true);
+  });
+});

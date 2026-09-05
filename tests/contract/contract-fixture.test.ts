@@ -15,6 +15,7 @@ import {
 import {
   CultureLinesResponseSchema,
   CultureMediaResponseSchema,
+  MaintenanceHistoryResponseSchema,
   TcManifestSchema,
 } from '../../src/slices/tc/schema';
 
@@ -85,6 +86,13 @@ const CONTRACTS: FixtureContract[] = [
     schema: CultureLinesResponseSchema,
     leadingVariable: 'TC_MAIN_CULTURE_LINES_FIXTURE',
     releaseVariable: 'TC_RELEASE_CULTURE_LINES_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'TC maintenance history',
+    schema: MaintenanceHistoryResponseSchema,
+    leadingVariable: 'TC_MAIN_MAINTENANCE_FIXTURE',
+    releaseVariable: 'TC_RELEASE_MAINTENANCE_FIXTURE',
     releaseRequired: false,
   },
 ];
