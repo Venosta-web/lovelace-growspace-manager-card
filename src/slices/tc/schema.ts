@@ -336,3 +336,24 @@ export const ReplateDraftSchema = z.object({
 
 export type ReplateVesselDraft = z.infer<typeof ReplateVesselDraftSchema>;
 export type ReplateDraft = z.infer<typeof ReplateDraftSchema>;
+
+/** A curated endorsement of a medium itself, never a Medium Version. */
+export const PairingSchema = z.object({
+  id: z.string(),
+  phenotype: PhenotypeReferenceSchema,
+  medium_id: z.string(),
+  notes: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+export const PairingsResponseSchema = z.object({ pairings: z.array(PairingSchema) });
+export const PairingMutationSchema = z.object({ pairing: PairingSchema });
+export const PairingDeletionSchema = z.object({ pairing_id: z.string() });
+export const PairingDraftSchema = z.object({
+  phenotype_id: z.string(),
+  phenotype_name: z.string(),
+  medium_id: z.string(),
+  notes: z.string(),
+});
+export type Pairing = z.infer<typeof PairingSchema>;
+export type PairingDraft = z.infer<typeof PairingDraftSchema>;

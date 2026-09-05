@@ -17,6 +17,7 @@ import {
   CultureMediaResponseSchema,
   MaintenanceHistoryResponseSchema,
   TcManifestSchema,
+  PairingsResponseSchema,
 } from '../../src/slices/tc/schema';
 
 interface FixtureContract {
@@ -35,6 +36,13 @@ const VisionStatusFixtureSchema = z
   .strict();
 
 const CONTRACTS: FixtureContract[] = [
+  {
+    name: 'TC pairings',
+    schema: PairingsResponseSchema,
+    leadingVariable: 'TC_MAIN_PAIRINGS_FIXTURE',
+    releaseVariable: 'TC_RELEASE_PAIRINGS_FIXTURE',
+    releaseRequired: false,
+  },
   {
     name: 'growspace payload',
     schema: GrowspaceAPIResponseSchema,

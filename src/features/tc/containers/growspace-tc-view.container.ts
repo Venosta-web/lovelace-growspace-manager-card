@@ -13,11 +13,13 @@ import {
   TC_FEATURE_CULTURE_LINES,
   TC_FEATURE_CULTURE_MEDIA,
   TC_FEATURE_MAINTENANCE,
+  TC_FEATURE_PAIRINGS,
   type CultureMedium,
   type CultureMediumDraft,
   type TcManifest,
 } from '../../../slices/tc';
 import './growspace-tc-cultures.container';
+import './growspace-tc-pairings.container';
 import '../components/growspace-tc-medium-library';
 import '../components/growspace-tc-medium-form';
 
@@ -27,7 +29,7 @@ type Editing = { open: false } | { open: true; medium?: CultureMedium };
  * The tissue-culture view.
  *
  * It holds the due/overdue worklist, the culture board and the Culture Medium
- * library today; the remaining V1 model ticket adds the pairing editor. The
+ * library and curated pairing editor. The
  * worklist leads because it is the answer to the question a grower opens this
  * view with — what has to be replated — and the board is what they reach for
  * once that is done.
@@ -248,7 +250,11 @@ export class GrowspaceTcView extends LitElement {
     // Nothing this release can serve: an installation older than every surface
     // answers the presence probe perfectly well, and a view of broken calls
     // would be worse than one that says there is nothing here yet.
-    if (!this._hasMediumLibrary && !this._hasCultureBoard) {
+    if (
+      !this._hasMediumLibrary &&
+      !this._hasCultureBoard &&
+      !this.manifest?.features.includes(TC_FEATURE_PAIRINGS)
+    ) {
       return html`
         <div class="state" role="region" aria-label=${this._t('view_title')}>
           <h3>${this._t('empty_title')}</h3>
@@ -267,6 +273,9 @@ export class GrowspaceTcView extends LitElement {
             ></growspace-tc-cultures>`
           : nothing}
         ${this._hasMediumLibrary ? this._renderMediumLibrary() : nothing}
+        ${this.manifest?.features.includes(TC_FEATURE_PAIRINGS)
+          ? html`<growspace-tc-pairings .language=${this.language}></growspace-tc-pairings>`
+          : nothing}
       </div>
     `;
   }

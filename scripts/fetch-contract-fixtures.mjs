@@ -20,6 +20,7 @@ const TC_FIXTURES = [
   ['tc_culture_media_response', 'tc-main-culture-media.json'],
   ['tc_culture_lines_response', 'tc-main-culture-lines.json'],
   ['tc_maintenance_response', 'tc-main-maintenance.json'],
+  ['tc_pairings_response', 'tc-main-pairings.json'],
 ];
 
 async function fetchWithRetry(url, fetchImpl, attempts = 3) {

@@ -191,3 +191,22 @@ test('a card change cannot merge ahead of the TC contract it consumes', async (t
     /tc_manifest_response was not found at refs: main/
   );
 });
+test('a card change cannot merge ahead of the TC pairings contract it consumes', async (t) => {
+  const outputDirectory = await mkdtemp(path.join(os.tmpdir(), 'gsm-fixtures-'));
+  t.after(() => rm(outputDirectory, { recursive: true, force: true }));
+  const fetchImpl = async (url) =>
+    url.includes('tc_pairings_response')
+      ? new Response('not found', { status: 404 })
+      : new Response('{}', { status: 200 });
+
+  await assert.rejects(
+    fetchContractFixtures({
+      releaseTag: 'v1.2.3',
+      outputDirectory,
+      baseUrl: 'https://fixtures.example',
+      tcBaseUrl: 'https://tc-fixtures.example',
+      fetchImpl,
+    }),
+    /tc_pairings_response was not found at refs: main/
+  );
+});
