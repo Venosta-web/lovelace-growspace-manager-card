@@ -13,7 +13,8 @@ import {
 import { applyEnvironmentChange as mockApplyEnvironmentChange } from '../../config/environment-change';
 import { applyIPM as mockApplyIPM } from '../../../slices/nutrient';
 import { saveNotificationSettings as mockSaveNotificationSettings } from '../../../slices/notification';
-import { notification$, activeDialog$ } from '../../../slices/ui';
+import { notification$, activeDialog$, pendingDeepLinkPlantId$ } from '../../../slices/ui';
+import { tcPresence$ } from '../../../slices/tc';
 import { mountedDialogPortals$ } from '../../../slices/ui/dialog-portals';
 import './growspace-dialog-host.container';
 import { GrowspaceDialogHost } from './growspace-dialog-host.container';
@@ -849,5 +850,130 @@ describe('GrowspaceDialogHost – edit-growspace-submit handler', () => {
     expect(mockUpdateGrowspace).toHaveBeenCalledWith(
       expect.objectContaining({ notificationService: '' })
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// render() — the Tissue Culture dialog (workspace #155)
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceDialogHost – render() the TC dialog', () => {
+  function makeTcPortal(instanceId: string, payload: Record<string, unknown>) {
+    const el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    (el as any).store = {
+      instanceId,
+      $dialogHostState: {
+        subscribe: vi.fn(() => () => {}),
+        get: vi.fn().mockReturnValue({
+          activeDialog: { type: 'TC', payload },
+          devices: [{ deviceId: 'gs-1', name: 'Tent 1' }],
+          selectedDevice: 'gs-1',
+          strainLibrary: [],
+          nutrientPresets: {},
+          ipmPresets: {},
+          nutrientInventory: null,
+        }),
+      },
+    };
+    (el as any)._initControllers();
+    return el;
+  }
+
+  async function renderedTcDialog(el: GrowspaceDialogHost) {
+    const container = document.createElement('div');
+    const { render } = await import('lit');
+    render((el as any).render(), container);
+    return container.querySelector('tc-dialog');
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mountedDialogPortals$.set([]);
+    tcPresence$.set({
+      status: 'present',
+      manifest: {
+        contract_version: 1,
+        integration_version: '0.1.0',
+        features: ['culture_lines', 'maintenance', 'culture_media', 'pairings'],
+        collections: {},
+      },
+    });
+  });
+
+  afterEach(() => {
+    mountedDialogPortals$.set([]);
+    tcPresence$.set({ status: 'unknown' });
+  });
+
+  it('renders exactly once, in the portal the payload names', async () => {
+    mountedDialogPortals$.set(['portal-a', 'portal-b']);
+    const opening = makeTcPortal('portal-b', { growspaceId: 'gs-1', portalId: 'portal-b' });
+    const sibling = makeTcPortal('portal-a', { growspaceId: 'gs-1', portalId: 'portal-b' });
+
+    expect(await renderedTcDialog(opening)).not.toBeNull();
+    expect(await renderedTcDialog(sibling)).toBeNull();
+  });
+
+  it('fails open in every portal when the payload names none', async () => {
+    mountedDialogPortals$.set(['portal-a', 'portal-b']);
+
+    expect(await renderedTcDialog(makeTcPortal('portal-a', {}))).not.toBeNull();
+    expect(await renderedTcDialog(makeTcPortal('portal-b', {}))).not.toBeNull();
+  });
+
+  it('reads the manifest off tcPresence$, never off the payload', async () => {
+    mountedDialogPortals$.set(['portal-a']);
+    const el = makeTcPortal('portal-a', { growspaceId: 'gs-1', portalId: 'portal-a' });
+
+    const dialog = (await renderedTcDialog(el)) as unknown as {
+      manifest?: { features: string[] };
+    };
+    expect(dialog.manifest?.features).toContain('pairings');
+  });
+
+  it('leaves the growspace out of everything but the payload it was captured in', async () => {
+    mountedDialogPortals$.set(['portal-a']);
+    const el = makeTcPortal('portal-a', { growspaceId: 'gs-1', portalId: 'portal-a' });
+
+    // TC is not growspace-scoped: `growspaceId` is carried for Graduation
+    // (ADR-0027) and nothing hands it to the dialog to filter by.
+    const dialog = (await renderedTcDialog(el)) as unknown as Record<string, unknown>;
+    expect(dialog.growspaceId).toBeUndefined();
+    expect(dialog.device).toBeUndefined();
+  });
+
+  it('hands the requested tab and scroll target through as properties', async () => {
+    mountedDialogPortals$.set(['portal-a']);
+    const el = makeTcPortal('portal-a', {
+      portalId: 'portal-a',
+      initialTab: 'media',
+      scrollToField: 'medium-1',
+    });
+
+    const dialog = (await renderedTcDialog(el)) as unknown as {
+      initialTab?: string;
+      scrollToField?: string;
+    };
+    expect(dialog.initialTab).toBe('media');
+    expect(dialog.scrollToField).toBe('medium-1');
+  });
+
+  it('opens the plant overview in place rather than reloading the page', async () => {
+    mountedDialogPortals$.set(['portal-a']);
+    pendingDeepLinkPlantId$.set(null);
+    const el = makeTcPortal('portal-a', { portalId: 'portal-a' });
+    const closed: string[] = [];
+    (el as any)._closeDialogIfActive = (type: string) => closed.push(type);
+
+    (el as any)._showPlantFromTc(
+      new CustomEvent('plant-view-requested', { detail: { plantId: 'plant / 1' } })
+    );
+
+    // No page load: the dialog closes and the deep link is resolved in place.
+    // With no hydrated devices in this suite that resolution parks the id,
+    // which is `handleDeepLink`'s own documented behaviour and proof it ran.
+    expect(closed).toEqual(['TC']);
+    expect(pendingDeepLinkPlantId$.get()).toBe('plant / 1');
+    pendingDeepLinkPlantId$.set(null);
   });
 });

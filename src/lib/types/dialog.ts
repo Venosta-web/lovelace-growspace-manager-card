@@ -5,6 +5,7 @@ import type {
   CirculationFanConfig,
   ExhaustFanConfig,
 } from '../../slices/growspace/schema';
+import type { TcTabId } from '../../features/tc/tc-dialog-sm';
 
 export type { VisionCheckupConfig };
 export type { CirculationFanConfig };
@@ -197,6 +198,43 @@ export interface BatchCloneDialogState {
 export interface IrrigationDialogState extends PortalScopedDialogState {
   growspaceId?: string;
   initialTab?: string;
+  scrollToField?: string;
+}
+
+export type { TcTabId };
+
+/**
+ * What opening the Tissue Culture dialog carries with it.
+ *
+ * Every field is optional, so the payload has a legal empty form the way
+ * `IrrigationDialogState` does. That is a type-level convenience and not a
+ * licence: the one opener always sets `growspaceId` and `portalId`.
+ */
+export interface TcDialogState extends PortalScopedDialogState {
+  /**
+   * Target growspace, captured at open time (ADR-0027).
+   *
+   * Carried even though Tissue Culture is not growspace-scoped, and nothing in
+   * the dialog reads it: Graduation will need the growspace the menu was opened
+   * from, and re-deriving it from ambient selection at that point is the
+   * anti-pattern ADR-0027 names. **Nothing may filter TC data by it** — the
+   * dialog shows all cultures.
+   */
+  growspaceId?: string;
+  /**
+   * Which tab the dialog opens on. Unset means the worklist.
+   *
+   * A narrow union rather than `IrrigationDialogState`'s loose string: the tab
+   * set is fixed and small, and a typo in a loose string would fall back to the
+   * default tab in silence.
+   */
+  initialTab?: TcTabId;
+  /**
+   * A `data-scroll-target` value inside the initial tab, scrolled into view and
+   * pulsed on open — exactly `ConfigDialogState`'s semantics, deliberately
+   * reused. A scroll hint, not a selection and not a sub-view: a caller that
+   * wants a specific culture or medium marks that row and names it here.
+   */
   scrollToField?: string;
 }
 

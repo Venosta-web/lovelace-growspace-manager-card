@@ -3,6 +3,7 @@ import { PlantEntity, GrowspaceDevice } from '../../types';
 import { plantToDeviceMap$, devices$, optimisticDeletedPlantIds$ } from '../grid';
 import { openDialog, setPendingDeepLink } from './index';
 import type { GrowspaceViewMode } from '../../types';
+import type { TcTabId } from '../../features/tc/tc-dialog-sm';
 
 /** Minimal per-card view-mode surface (a card's `store.ui`) used to drop HEADER → STANDARD. */
 interface ViewModeHost {
@@ -271,6 +272,26 @@ export function openIrrigationDialog(options?: {
   portalId?: string;
 }): void {
   openDialog({ type: 'IRRIGATION', payload: options ?? {} });
+}
+
+/**
+ * Open the Tissue Culture dialog.
+ *
+ * An options object rather than positional arguments, matching
+ * `openIrrigationDialog` — the closest analogue, and the codebase's positional
+ * openers are the ones that never grew a third argument.
+ *
+ * `growspaceId` is the growspace the menu was opened from (ADR-0027) even
+ * though TC is not growspace-scoped; `portalId` is the opening card's
+ * `store.instanceId`, so only that card's portal renders it (ADR-0055).
+ */
+export function openTcDialog(options?: {
+  growspaceId?: string;
+  portalId?: string;
+  initialTab?: TcTabId;
+  scrollToField?: string;
+}): void {
+  openDialog({ type: 'TC', payload: options ?? {} });
 }
 
 export function openGrowMasterDialog(growspaceId: string): void {
