@@ -3,6 +3,8 @@ import { haTest as test, expect, callHAService } from '../fixtures/ha-setup';
 
 const MONITORED_SLUG = 'irrigation_monitored';
 const TANKS_SLUG = 'irrigation_tanks';
+// A growspace with no irrigation hardware at all, for the closed-gate case.
+const PUMPLESS_SLUG = 'climate_plain';
 const TANK_1 = `input_number.e2e_${TANKS_SLUG}_irrigation_tank_1`;
 const TANK_2 = `input_number.e2e_${TANKS_SLUG}_irrigation_tank_2`;
 
@@ -185,6 +187,13 @@ test.describe('Irrigation hardware capability profiles', () => {
     expect(tanks.find((tank) => tank.sensor_entity === TANK_2)?.is_warning).toBe(false);
   });
 
+  // The Crop-Steering gate is `(hasSoilMoisture || hasStrategy) && hasPump`
+  // (ADR-0016), and the E2E entity coverage contract wires a substrate probe
+  // into every profile's `soil_moisture_sensor` — see `environment.substrate_moisture`
+  // in the hub's `e2e/entity_coverage.py`. So the `hasSoilMoisture` arm is
+  // satisfied for every growspace here and `hasPump` is what actually opens or
+  // closes the gate; `PUMPLESS_SLUG` is the case that proves the `&& hasPump`
+  // half still closes it, strategy or no strategy.
   test('the card derives pump, tank, and Crop Steering capabilities from live payloads', async ({
     page,
     testContext,
@@ -193,15 +202,25 @@ test.describe('Irrigation hardware capability profiles', () => {
     expect(monitored).toMatchObject({
       hasPump: true,
       hasTank: false,
+      hasSoilMoisture: true,
       hasStrategy: false,
-      cropSteeringGroupVisible: false,
+      cropSteeringGroupVisible: true,
     });
 
     const tanks = await cardCapabilities(await getOverview(page, TANKS_SLUG));
     expect(tanks).toMatchObject({
       hasPump: true,
       hasTank: true,
+      hasSoilMoisture: true,
       hasStrategy: false,
+      cropSteeringGroupVisible: true,
+    });
+
+    const pumpless = await cardCapabilities(await getOverview(page, PUMPLESS_SLUG));
+    expect(pumpless).toMatchObject({
+      hasPump: false,
+      hasTank: false,
+      hasSoilMoisture: true,
       cropSteeringGroupVisible: false,
     });
 
@@ -226,6 +245,7 @@ test.describe('Irrigation hardware capability profiles', () => {
     expect(vwc).toMatchObject({
       hasPump: true,
       hasTank: true,
+      hasSoilMoisture: true,
       hasStrategy: true,
       cropSteeringGroupVisible: true,
     });

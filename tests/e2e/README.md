@@ -166,7 +166,8 @@ test.describe('Feature Name', () => {
 **GrowspaceCard**: Main card interactions
 - `navigate(dashboardPath)` - Go to dashboard
 - `openMenu()` - Open header menu
-- `clickMenuItem(text)` - Click menu item
+- `clickMenuAction(action)` - Click a menu item by its `data-action` (preferred)
+- `clickMenuItem(text)` - Click a menu item by label; only when the label is the assertion
 - `allPlantCards()` - Get all plant cards
 - `getPlantCount()` - Count plant cards
 

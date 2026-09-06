@@ -1,6 +1,30 @@
 import type { Page, Locator } from '@playwright/test';
 import { PlantData, Position } from './types';
 
+/**
+ * The `data-action` of every entry in the card's header menu, as rendered by
+ * `growspace-header-actions-ui`. Keeping the union here means a renamed or
+ * removed action fails to typecheck at the call site instead of timing out.
+ */
+export type MenuAction =
+  | 'select_plants'
+  | 'add_plant'
+  | 'water'
+  | 'ipm'
+  | 'training'
+  | 'arrange'
+  | 'config'
+  | 'irrigation'
+  | 'irrigation-recipes'
+  | 'irrigation-programs'
+  | 'nutrients'
+  | 'strains'
+  | 'compare'
+  | 'heatmap'
+  | 'logbook'
+  | 'snapshots'
+  | 'ai';
+
 export class GrowspaceCard {
   readonly page: Page;
   readonly card: Locator;
@@ -45,7 +69,30 @@ export class GrowspaceCard {
   }
 
   /**
-   * Click a menu item by text
+   * Click a menu item by its `data-action`.
+   *
+   * Prefer this over `clickMenuItem`. Menu labels are prose and the menu keeps
+   * growing: adding "Irrigation Recipes" and "Irrigation Programs" beside
+   * "Irrigation" made a `/irrigation/i` label match resolve to three elements
+   * and every spec that used it died on a strict-mode violation before the
+   * dialog opened. `data-action` is the stable identity the component already
+   * renders, so a new entry cannot silently capture an existing call site.
+   */
+  async clickMenuAction(action: MenuAction) {
+    await this.openMenu();
+    const menuItem = this.menu.locator(`.menu-item[data-action="${action}"]`);
+    // dispatchEvent bypasses all Playwright viewport and visibility guards,
+    // needed for menu items that overflow the dropdown container off-screen.
+    await menuItem.dispatchEvent('click');
+  }
+
+  /**
+   * Click a menu item by text.
+   *
+   * Only for labels that are themselves the assertion (a menu entry that
+   * changes wording with selection state). Anything else should use
+   * `clickMenuAction` — see the note there. Pass an anchored regex when the
+   * label is a prefix of another entry's.
    */
   async clickMenuItem(itemText: string | RegExp) {
     await this.openMenu();

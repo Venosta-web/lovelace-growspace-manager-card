@@ -35,19 +35,19 @@ test.describe('Setup dialogs', () => {
   });
 
   test('irrigation dialog opens from menu', async ({ page }) => {
-    await growspaceCard.clickMenuItem(/irrigation/i);
+    await growspaceCard.clickMenuAction('irrigation');
     const dialog = new IrrigationDialog(page);
     await dialog.waitForOpen();
   });
 
   test('nutrients dialog opens from menu', async ({ page }) => {
-    await growspaceCard.clickMenuItem(/nutrients/i);
+    await growspaceCard.clickMenuAction('nutrients');
     const dialog = new NutrientDialog(page);
     await dialog.waitForOpen();
   });
 
   test('strain library dialog opens from menu', async ({ page }) => {
-    await growspaceCard.clickMenuItem(/strains/i);
+    await growspaceCard.clickMenuAction('strains');
     const dialog = new StrainLibraryDialog(page);
     await dialog.waitForOpen();
   });
