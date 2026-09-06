@@ -14,6 +14,7 @@ import { applyEnvironmentChange as mockApplyEnvironmentChange } from '../../conf
 import { applyIPM as mockApplyIPM } from '../../../slices/nutrient';
 import { saveNotificationSettings as mockSaveNotificationSettings } from '../../../slices/notification';
 import { notification$, activeDialog$ } from '../../../slices/ui';
+import { mountedDialogPortals$ } from '../../../slices/ui/dialog-portals';
 import './growspace-dialog-host.container';
 import { GrowspaceDialogHost } from './growspace-dialog-host.container';
 import { portalVariables } from '../../../styles/variables';
@@ -480,10 +481,99 @@ describe('GrowspaceDialogHost – _initControllers idempotency', () => {
 });
 
 // ---------------------------------------------------------------------------
-// render() — multi-instance portal guard
+// render() — portal identity (#913 / ADR-0055)
 // ---------------------------------------------------------------------------
 
-describe('GrowspaceDialogHost – render() multi-instance portal guard', () => {
+describe('GrowspaceDialogHost – render() portal identity', () => {
+  // Two carousel cards on one dashboard: both portals see the same page-global
+  // devices, so the device-ownership guard below cannot tell them apart. Only
+  // the portal the opener named renders.
+  function makePortal(instanceId: string, payload: Record<string, unknown>) {
+    const el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    (el as any).store = {
+      instanceId,
+      $dialogHostState: {
+        subscribe: vi.fn(() => () => {}),
+        get: vi.fn().mockReturnValue({
+          activeDialog: { type: 'IRRIGATION', payload },
+          devices: [{ deviceId: 'gs-1', name: 'Tent 1' }],
+          selectedDevice: 'gs-1',
+          strainLibrary: [],
+          nutrientPresets: {},
+          ipmPresets: {},
+          nutrientInventory: null,
+        }),
+      },
+    };
+    (el as any)._initControllers();
+    return el;
+  }
+
+  async function renderedDialog(el: GrowspaceDialogHost) {
+    const container = document.createElement('div');
+    const { render } = await import('lit');
+    render((el as any).render(), container);
+    return container.querySelector('irrigation-dialog');
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mountedDialogPortals$.set([]);
+  });
+
+  afterEach(() => {
+    mountedDialogPortals$.set([]);
+  });
+
+  it('renders the dialog in the portal the payload names', async () => {
+    mountedDialogPortals$.set(['portal-a', 'portal-b']);
+    const opening = makePortal('portal-a', { growspaceId: 'gs-1', portalId: 'portal-a' });
+
+    expect(await renderedDialog(opening)).not.toBeNull();
+  });
+
+  it('renders nothing in the sibling portal the payload does not name', async () => {
+    mountedDialogPortals$.set(['portal-a', 'portal-b']);
+    const sibling = makePortal('portal-b', { growspaceId: 'gs-1', portalId: 'portal-a' });
+
+    expect(await renderedDialog(sibling)).toBeNull();
+  });
+
+  it('renders in every portal when the payload names none', async () => {
+    mountedDialogPortals$.set(['portal-a', 'portal-b']);
+    const a = makePortal('portal-a', { growspaceId: 'gs-1' });
+    const b = makePortal('portal-b', { growspaceId: 'gs-1' });
+
+    expect(await renderedDialog(a)).not.toBeNull();
+    expect(await renderedDialog(b)).not.toBeNull();
+  });
+
+  // An opener in a card that mounts no portal of its own — the analytics card's
+  // crop-steering chip — names a portal that does not exist. Failing open there
+  // is deliberate: the dialog must still open somewhere.
+  it('renders when the payload names a portal that is not mounted', async () => {
+    mountedDialogPortals$.set(['portal-a']);
+    const a = makePortal('portal-a', { growspaceId: 'gs-1', portalId: 'portal-nowhere' });
+
+    expect(await renderedDialog(a)).not.toBeNull();
+  });
+
+  it('registers its store id while connected and withdraws it on disconnect', () => {
+    const el = makePortal('portal-a', { growspaceId: 'gs-1', portalId: 'portal-a' });
+
+    document.body.appendChild(el);
+    expect(mountedDialogPortals$.get()).toContain('portal-a');
+
+    el.remove();
+    expect(mountedDialogPortals$.get()).not.toContain('portal-a');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// render() — device-ownership guard
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceDialogHost – render() device-ownership guard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

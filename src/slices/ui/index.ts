@@ -16,6 +16,7 @@
  *   language$               — read: active UI language code
  *   pendingDeepLinkPlantId$ — read: plant ID awaiting deep-link navigation (null = none)
  *   flowerFlipDismissed$    — read: map of growspace ID → dismissed flower-flip date
+ *   mountedDialogPortals$   — read: ids of the mounted dialog-host portals
  *   isCompactView$          — computed: true when viewMode is COMPACT
  *   cardViewState$          — computed: combined view-state object for card subscription
  *
@@ -39,6 +40,9 @@
  *   setLanguage()           — change the UI language
  *   setPendingDeepLink()    — set or clear the pending deep-link plant ID
  *   dismissFlowerFlip()     — record a dismissed flower-flip notification
+ *   registerDialogPortal()  — announce a mounted dialog-host portal
+ *   unregisterDialogPortal()— withdraw one
+ *   portalOwnsDialog()      — whether a payload's portalId belongs to a portal
  *
  * This slice owns no backend calls — all state is local UI-only.
  */
@@ -416,3 +420,10 @@ export {
   openNutrientsDialog,
   openSnapshotsDialog,
 } from './dialogs';
+
+export {
+  mountedDialogPortals$,
+  registerDialogPortal,
+  unregisterDialogPortal,
+  portalOwnsDialog,
+} from './dialog-portals';

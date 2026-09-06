@@ -249,7 +249,13 @@ export class GrowspaceHeaderContainer extends LitElement {
       return;
     }
     if (metric === 'crop_steering') {
-      uiSlice.toggleEnvGraph(metric, this.store.history, this.store.ui, this.device.deviceId);
+      uiSlice.toggleEnvGraph(
+        metric,
+        this.store.history,
+        this.store.ui,
+        this.device.deviceId,
+        this.store.instanceId
+      );
       return;
     }
     const comparison = this.store.comparisons?.groupFor(metric);
@@ -301,7 +307,10 @@ export class GrowspaceHeaderContainer extends LitElement {
         break;
       case 'irrigation':
         if (this.device?.deviceId)
-          uiSlice.openIrrigationDialog({ growspaceId: this.device.deviceId });
+          uiSlice.openIrrigationDialog({
+            growspaceId: this.device.deviceId,
+            portalId: this.store.instanceId,
+          });
         break;
       case 'ai':
         uiSlice.openGrowMasterDialog(this.device?.deviceId || '');

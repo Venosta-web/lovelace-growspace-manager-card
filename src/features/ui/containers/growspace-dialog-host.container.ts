@@ -51,6 +51,12 @@ import {
 } from '../../../slices/growspace';
 import { saveNotificationSettings } from '../../../slices/notification';
 import { withToast, showError, showToast, closeDialog } from '../../../slices/ui';
+import {
+  mountedDialogPortals$,
+  portalOwnsDialog,
+  registerDialogPortal,
+  unregisterDialogPortal,
+} from '../../../slices/ui/dialog-portals';
 import * as uiSlice from '../../../slices/ui';
 import { setHass } from '../../../services/hass-call';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
@@ -145,7 +151,10 @@ export class GrowspaceDialogHost extends LitElement {
   }>;
   private _seedBatchesController!: StoreController<readonly SeedBatch[]>;
   private _pollinationEventsController!: StoreController<readonly PollinationEvent[]>;
+  private _mountedPortalsController!: StoreController<readonly string[]>;
   private _controllersInitialized = false;
+  /** The id this portal currently holds in the page-global portal registry. */
+  private _registeredPortalId: string | null = null;
   private _dataChangeTimeout?: any;
   private _geneticsLoaded = false;
   @state() private _addPlantsLibraryError = '';
@@ -155,13 +164,41 @@ export class GrowspaceDialogHost extends LitElement {
     if (this.store) {
       this._initControllers();
     }
+    this._registerPortal();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unregisterPortal();
   }
 
   protected willUpdate(changed: PropertyValues): void {
     super.willUpdate(changed);
     if (changed.has('store')) {
       this._initControllers();
+      this._registerPortal();
     }
+  }
+
+  /**
+   * Announce this portal under its store's id, so a sibling portal can tell a
+   * dialog addressed to this one from a dialog addressed to nobody. The host
+   * registers itself rather than the card doing it: portals mount lazily on the
+   * first dialog open, and a card that forgot would be a portal that no sibling
+   * ever stands down for.
+   */
+  private _registerPortal(): void {
+    const portalId = this.store?.instanceId;
+    if (!portalId || this._registeredPortalId === portalId) return;
+    this._unregisterPortal();
+    registerDialogPortal(portalId);
+    this._registeredPortalId = portalId;
+  }
+
+  private _unregisterPortal(): void {
+    if (!this._registeredPortalId) return;
+    unregisterDialogPortal(this._registeredPortalId);
+    this._registeredPortalId = null;
   }
 
   protected updated(changed: PropertyValues): void {
@@ -178,6 +215,10 @@ export class GrowspaceDialogHost extends LitElement {
     this._dialogHostController = new StoreController(this, this.store.$dialogHostState);
     this._seedBatchesController = new StoreController(this, seedBatches$);
     this._pollinationEventsController = new StoreController(this, pollinationEvents$);
+    // Portals mount lazily, so the registry changes under an already-rendered
+    // dialog: this subscription is what makes a portal stand down when the one
+    // the payload named finally arrives.
+    this._mountedPortalsController = new StoreController(this, mountedDialogPortals$);
     this._controllersInitialized = true;
   }
 
@@ -206,11 +247,29 @@ export class GrowspaceDialogHost extends LitElement {
     // Resolve context-specific device data (from payload or global selection)
     const payloadGrowspaceId = (active.payload as { growspaceId?: string })?.growspaceId;
 
-    // activeDialog$ is a global singleton shared by every growspace-manager-card
-    // instance, each of which mounts its own dialog-host portal. The irrigation
-    // dialog is opened with an explicit growspaceId, so only the portal whose
-    // `devices` list owns that growspace should render it — otherwise every other
-    // portal renders a duplicate dialog stacked on top with no matching device.
+    // activeDialog$ is a global singleton shared by every card that mounts a
+    // dialog-host portal, so a dialog that named no portal renders in all of
+    // them, stacked. The opener captures the opening card's `store.instanceId`
+    // as `portalId` (ADR-0055) and this portal stands down for it — but only
+    // when that portal is mounted, so a payload from a card that owns no portal
+    // still opens somewhere.
+    const payloadPortalId = (active.payload as { portalId?: string } | undefined)?.portalId;
+    if (
+      !portalOwnsDialog(
+        this.store.instanceId,
+        payloadPortalId,
+        this._mountedPortalsController.value
+      )
+    ) {
+      return html``;
+    }
+
+    // A device-ownership test, not an instance one: it suppresses a portal whose
+    // `devices` genuinely lacks the target growspace — before hydration, or for a
+    // collection that does not contain it. It cannot separate two portals on one
+    // dashboard, because `makePerCardGridSlice` computes `devices` from the
+    // page-global `devices$` and every portal therefore owns every growspace
+    // (#913). Portal identity above is what does that.
     if (
       active.type === 'IRRIGATION' &&
       payloadGrowspaceId &&

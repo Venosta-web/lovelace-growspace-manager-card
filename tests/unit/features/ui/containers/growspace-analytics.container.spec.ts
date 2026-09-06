@@ -42,6 +42,9 @@ const createViewStateAtom = (
 const buildMockStore = ($analyticsViewState: ReturnType<typeof atom>) => {
   const toggleEnvGraph = vi.fn();
   return {
+    // Portal identity the container forwards so the irrigation dialog the
+    // crop-steering chip opens lands in one portal (#913 / ADR-0055).
+    instanceId: 'gs-store-analytics',
     history: {
       $analyticsViewState,
       startAutoRefresh: vi.fn(),
@@ -390,7 +393,8 @@ describe('GrowspaceAnalyticsContainer', () => {
       'temperature',
       mockStore.history,
       mockStore.ui,
-      'grow1'
+      'grow1',
+      'gs-store-analytics'
     );
   });
 
@@ -401,7 +405,8 @@ describe('GrowspaceAnalyticsContainer', () => {
       'co2',
       mockStore.history,
       mockStore.ui,
-      'grow1'
+      'grow1',
+      'gs-store-analytics'
     );
   });
 
