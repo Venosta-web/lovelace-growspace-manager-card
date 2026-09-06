@@ -92,7 +92,17 @@ describe('GrowspaceTcView — what the manifest composes', () => {
     expect(surfaceOf(element, 'growspace-tc-cultures')).toBeNull();
     expect(surfaceOf(element, 'growspace-tc-pairings')).toBeNull();
     expect(hassCallMock).not.toHaveBeenCalled();
-    expect(element.shadowRoot?.textContent).toContain('Nothing in culture yet');
+    // Missing capabilities, not missing data: "nothing in culture yet" would
+    // describe an empty library on an installation that has one.
+    expect(element.shadowRoot?.textContent).toContain('No supported Tissue Culture features');
+    expect(element.shadowRoot?.textContent).toContain('up to date');
+  });
+
+  test('says the same thing for a manifest of features this card does not know', async () => {
+    const element = await render(['tissue_teleportation']);
+
+    expect(element.shadowRoot?.textContent).toContain('No supported Tissue Culture features');
+    expect(hassCallMock).not.toHaveBeenCalled();
   });
 
   test('omits exactly the surface whose feature is missing', async () => {

@@ -19,6 +19,10 @@ export type MenuAction =
   | 'irrigation-programs'
   | 'nutrients'
   | 'strains'
+  // Rendered only when Growspace Manager TC answered the presence probe,
+  // which the managed E2E runtime cannot install — the union claims to be
+  // exhaustive, so it lists this anyway.
+  | 'tc'
   | 'compare'
   | 'heatmap'
   | 'logbook'

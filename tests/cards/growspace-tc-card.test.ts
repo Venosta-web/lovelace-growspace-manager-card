@@ -120,3 +120,33 @@ describe('GrowspaceTcCard — showing a graduated plant', () => {
     expect(shown).toEqual(['plant / 1']);
   });
 });
+
+describe('GrowspaceTcCard — when it probes', () => {
+  test('makes no request, and caches no absence, without hass', async () => {
+    const element = await fixture<GrowspaceTcCard>('<growspace-tc-card></growspace-tc-card>');
+    element.setConfig({ type: 'custom:growspace-tc-card' });
+    await element.updateComplete;
+
+    // Every probe failure collapses to `absent` and is cached for the life of
+    // the page, so probing a transport that cannot answer would cache "not
+    // installed" for a dashboard that simply handed `hass` over a tick late.
+    expect(hassCallMock).not.toHaveBeenCalled();
+    expect((element as any)._presence.status).toBe('unknown');
+  });
+
+  test('starts exactly one probe when hass arrives late', async () => {
+    hassCallMock.mockResolvedValue(MANIFEST);
+    const element = await fixture<GrowspaceTcCard>('<growspace-tc-card></growspace-tc-card>');
+    element.setConfig({ type: 'custom:growspace-tc-card' });
+    await element.updateComplete;
+
+    element.hass = { language: 'en' } as any;
+    await element.updateComplete;
+    element.hass = { language: 'en', states: {} } as any;
+    await element.updateComplete;
+    await vi.waitFor(() => expect((element as any)._presence.status).toBe('present'));
+
+    expect(hassCallMock).toHaveBeenCalledTimes(1);
+    expect(hassCallMock.mock.calls[0][0]).toBe('growspace_manager_tc/get_manifest');
+  });
+});

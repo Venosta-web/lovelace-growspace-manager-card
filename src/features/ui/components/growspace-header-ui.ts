@@ -41,6 +41,8 @@ export class GrowspaceHeaderUI extends LitElement {
   @property() activeTask: 'idle' | 'arrange' | 'compare' | 'select_plants' = 'idle';
   @property({ type: Boolean }) canArrange = false;
   @property({ type: Boolean }) canCompare = false;
+  /** Whether Growspace Manager TC answered the presence probe (ADR 0057). */
+  @property({ type: Boolean }) tcAvailable = false;
 
   private _resizeController = new ResizeController(this, () => {});
 
@@ -261,6 +263,7 @@ export class GrowspaceHeaderUI extends LitElement {
             .activeTask=${this.activeTask}
             .canArrange=${this.canArrange}
             .canCompare=${this.canCompare}
+            .tcAvailable=${this.tcAvailable}
             .language=${this.hass?.language ?? 'en'}
             @toggle-graph=${(e: CustomEvent) => {
               e.stopPropagation();

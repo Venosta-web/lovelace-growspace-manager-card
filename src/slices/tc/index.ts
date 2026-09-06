@@ -141,10 +141,17 @@ let probe: Promise<TcPresence> | null = null;
 /**
  * Probe once per page load, and share the answer.
  *
- * Several cards on one dashboard must not each open the same round trip, and
- * the result is cached for the session in both directions — installing or
- * removing TC is a Home Assistant restart away from the browser, so a reload is
- * the honest boundary for re-asking.
+ * Several cards on one dashboard must not each open the same round trip, so
+ * every host — the manager card's bootstrap and the standalone TC card alike —
+ * calls this and shares one answer.
+ *
+ * **That answer stands for the life of the loaded page, and a browser reload is
+ * the only recheck.** It is cached in both directions, a transient failure
+ * included: installing TC and not seeing the menu item until reload is
+ * deliberate, and the obvious fixes — polling, invalidating on reconnect, a
+ * config-entry subscription — are the ones this policy forbids. A stale
+ * positive is not a promise that later operations succeed; those use their own
+ * error handling and never rewrite presence. See ADR 0057.
  */
 export async function detectTc(): Promise<TcPresence> {
   probe ??= (async (): Promise<TcPresence> => {

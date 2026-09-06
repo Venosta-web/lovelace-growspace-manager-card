@@ -100,12 +100,14 @@ export class GrowspaceTcView extends LitElement {
 
     // Nothing this release can serve: an installation older than every surface
     // answers the presence probe perfectly well, and a view of broken calls
-    // would be worse than one that says so.
+    // would be worse than one that says so. The copy says *capabilities*, not
+    // data — an installation with no supported features is not an empty one,
+    // and both hosts render this same state.
     if (surfaces.length === 0) {
       return html`
         <div class="state" role="region" aria-label=${this._t('view_title')}>
-          <h3>${this._t('empty_title')}</h3>
-          <p class="supporting">${this._t('empty_body')}</p>
+          <h3>${this._t('incompatible_title')}</h3>
+          <p class="supporting">${this._t('incompatible_body')}</p>
         </div>
       `;
     }
