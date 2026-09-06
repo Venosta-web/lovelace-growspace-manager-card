@@ -58,9 +58,8 @@ test.describe('Config dialog empty entity fields', () => {
     page,
     testContext,
   }) => {
-    test.skip(!testContext.vwcFlowerDashboardPath, 'TEST_VWC_FLOWER_DASHBOARD_PATH is required');
     const growspaceCard = new GrowspaceCard(page);
-    await growspaceCard.navigate(testContext.vwcFlowerDashboardPath);
+    await growspaceCard.navigate(testContext.dashboardPath);
     await growspaceCard.waitForCardReady();
 
     await growspaceCard.card.locator('[aria-label="Settings"]').click();
@@ -69,6 +68,29 @@ test.describe('Config dialog empty entity fields', () => {
     await dialog.clickTab('humidity');
 
     const deviceFields = dialog.dialog.locator('config-humidity-tab config-entity-multi-select');
+    await expect(deviceFields).toHaveCount(2);
+
+    // Arrange the empty state here rather than pointing at a growspace that
+    // happens to have none. The E2E entity coverage contract gives every
+    // growspace it declares a humidifier and a dehumidifier — a simulated pair
+    // on most profiles, faithful hardware on the plain-climate and AC Infinity
+    // ones — so no fixture starts out empty, and one that did would only stay
+    // empty until the contract grew another device (workspace#160).
+    //
+    // Removing the chips is a draft edit: the field emits
+    // `entity-values-changed`, the Humidity tab forwards it as
+    // `env-draft-changed`, and the Config Dialog merges it into its own state
+    // machine. Nothing reaches the backend unless Save is pressed, and this
+    // test never presses it — so the growspace is left exactly as the contract
+    // configured it and no other spec inherits anything from this one.
+    for (const field of await deviceFields.all()) {
+      const chipRemovals = field.locator('button.chip-remove');
+      for (let remaining = await chipRemovals.count(); remaining > 0; remaining--) {
+        await chipRemovals.first().click();
+      }
+      await expect(chipRemovals).toHaveCount(0);
+    }
+
     await expect
       .poll(() =>
         deviceFields.evaluateAll((fields) =>
