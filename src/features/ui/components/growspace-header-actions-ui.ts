@@ -25,6 +25,7 @@ import {
   mdiBug,
   mdiDumbbell,
   mdiPlus,
+  mdiFlaskOutline,
   mdiDna,
   mdiCube,
   mdiCamera,
@@ -45,6 +46,15 @@ export class GrowspaceHeaderActionsUI extends LitElement {
   @property({ type: Boolean }) public canArrange = false;
   @property({ type: Boolean }) public canCompare = false;
   @property() public language = 'en';
+  /**
+   * Whether Growspace Manager TC answered the presence probe.
+   *
+   * False while the answer is `unknown`, so the item is absent until the probe
+   * resolves rather than appearing and vanishing. The probe is one per page and
+   * its answer stands for the life of the page (ADR 0057), so this flips at
+   * most once.
+   */
+  @property({ type: Boolean }) public tcAvailable = false;
 
   @state() private _draggedMetric: string | null = null;
   @state() private _menuOpen = false;
@@ -634,6 +644,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         ${this._menuItem(mdiCalendarClock, 'Irrigation Programs', 'irrigation-programs')}
         ${this._menuItem(mdiBottleTonicPlus, 'Nutrients', 'nutrients')}
         ${this._menuItem(mdiDna, 'Strains', 'strains')}
+        ${this.tcAvailable ? this._menuItem(mdiFlaskOutline, 'Tissue Culture', 'tc') : nothing}
 
         <div class="menu-divider" role="separator"></div>
 

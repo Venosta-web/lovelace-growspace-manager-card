@@ -5,6 +5,7 @@ import { devices$ } from '../slices/grid';
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import { fetchRawCollection } from '../slices/growspace';
 import { hydrate } from '../services/hydrate';
+import { detectTc } from '../slices/tc';
 import { setIsLoading } from '../slices/ui';
 import { setHass } from '../services/hass-call';
 import type { EntityRegistry } from '../slices/device-state';
@@ -95,6 +96,13 @@ export class BootstrapController implements ReactiveController {
     // The hydration fetch (fetchRawCollection) and every slice mutation go
     // through the global hass-call seam, so the controller must keep it primed.
     setHass(hass);
+
+    // One probe per page, shared by every card that asks (ADR 0057). It starts
+    // here because this is the first moment the transport can answer, and it is
+    // deliberately not awaited: it must not wait for the Growspace collection,
+    // block ordinary card loading, or repeat on an entity update — the slice
+    // deduplicates concurrent and later calls, failed ones included.
+    void detectTc();
 
     if (!this._lastCollection) {
       this._lastHassRef = hass;

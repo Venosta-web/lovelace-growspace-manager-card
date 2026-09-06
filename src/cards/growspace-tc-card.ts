@@ -29,6 +29,7 @@ export class GrowspaceTcCard extends LitElement implements LovelaceCard {
   @state() private _viewMissing = false;
 
   private _chunk?: Promise<unknown>;
+  private _detecting = false;
 
   static styles: CSSResultGroup = css`
     :host([hidden]) {
@@ -72,12 +73,11 @@ export class GrowspaceTcCard extends LitElement implements LovelaceCard {
   }
 
   protected firstUpdated(): void {
-    if (this.hass) setHass(this.hass);
-    void this._detect();
+    this._primeAndDetect();
   }
 
   protected updated(changedProps: Map<string | number | symbol, unknown>): void {
-    if (changedProps.has('hass') && this.hass) setHass(this.hass);
+    if (changedProps.has('hass') && this.hass) this._primeAndDetect();
     // Hiding is an attribute rather than a render branch so that Home
     // Assistant's own layout collapses the slot instead of reserving space
     // around an empty element.
@@ -111,6 +111,24 @@ export class GrowspaceTcCard extends LitElement implements LovelaceCard {
         composed: true,
       })
     );
+  }
+
+  /**
+   * Probe once the transport can actually answer.
+   *
+   * A card constructed without `hass` used to probe anyway, and every failure
+   * collapses to `absent` — which is cached for the life of the page. So a
+   * dashboard that handed `hass` over a tick late cached "TC is not installed"
+   * on a transport that had never been asked. Waiting for the first usable
+   * `hass` and starting exactly once is the whole fix; the slice deduplicates
+   * the rest, including the manager card's probe from `BootstrapController`.
+   */
+  private _primeAndDetect(): void {
+    if (!this.hass) return;
+    setHass(this.hass);
+    if (this._detecting) return;
+    this._detecting = true;
+    void this._detect();
   }
 
   private async _detect(): Promise<void> {

@@ -134,7 +134,7 @@ describe('TcDialog — which tab it lands on', () => {
 
     expect(element.shadowRoot?.querySelector('.tab-bar')).toBeNull();
     const rendered = await untilView(element);
-    expect(rendered.shadowRoot?.textContent).toContain('Nothing in culture yet');
+    expect(rendered.shadowRoot?.textContent).toContain('No supported Tissue Culture features');
   });
 });
 
