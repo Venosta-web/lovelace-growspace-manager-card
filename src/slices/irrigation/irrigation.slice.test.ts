@@ -5,14 +5,18 @@
  *   - computeIrrigationMode: mode derivation from strategy.enabled
  *   - computePhaseWindows: P0–P3 phase derivation from strategy
  *   - setIrrigationConfig / setIrrigationStrategy / setTankLevels: bootstrap writes
- *   - toggleIrrigationMode: optimistic toggle + service call + rollback
+ *   - toggleIrrigationMode: which flag the gesture derives from the stored one
  *   - addIrrigationTime / removeIrrigationTime: optimistic schedule edits + rollback
  *   - addDrainTime / removeDrainTime: optimistic drain edits + rollback
- *   - updateIrrigationStrategy: optimistic strategy update + rollback
- *   - saveIrrigationSettings: optimistic settings patch + rollback
  *   - logDrainReading / configureDrainMonitoring / runIrrigationCycle: fire-and-forget calls
  *   - saveIrrigationRecipe / updateIrrigationRecipe / removeIrrigationRecipe /
  *     applyIrrigationRecipe: the Irrigation Recipe library
+ *
+ * The configuration mutators — settings, strategy, the manual phase override
+ * and the Steering Mode stamp — are covered by `irrigation-command.test.ts`,
+ * which owns their wire payloads and their optimistic transaction because the
+ * [[Irrigation Command]] module owns those. What stays here is what this slice
+ * still decides for itself.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -36,9 +40,6 @@ import {
   addDrainTime,
   removeDrainTime,
   updateIrrigationStrategy,
-  applySteeringMode,
-  saveIrrigationSettings,
-  setSteeringPhase,
   logDrainReading,
   configureDrainMonitoring,
   setEcTargetRanges,
@@ -61,9 +62,6 @@ import {
 import { CropSteeringHistorySchema } from '../../schemas/api-schema';
 import {
   IrrigationModeSchema,
-  SetIrrigationStrategyPayloadSchema,
-  SaveIrrigationSettingsPayloadSchema,
-  SetSteeringPhasePayloadSchema,
   AddIrrigationTimePayloadSchema,
   RemoveIrrigationTimePayloadSchema,
   AddDrainTimePayloadSchema,
@@ -286,27 +284,6 @@ describe('toggleIrrigationMode', () => {
     setIrrigationStrategy('gs1', makeStrategy({ enabled: true }));
 
     await toggleIrrigationMode('gs1');
-
-    expect(irrigationStrategies$.get().get('gs1')?.enabled).toBe(false);
-  });
-
-  it('calls set_irrigation_strategy service with the updated enabled flag', async () => {
-    setIrrigationStrategy('gs1', makeStrategy({ enabled: false }));
-
-    await toggleIrrigationMode('gs1');
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      expect.objectContaining({ growspace_id: 'gs1', enabled: true })
-    );
-  });
-
-  it('rolls back optimistic update when service call fails', async () => {
-    setIrrigationStrategy('gs1', makeStrategy({ enabled: false }));
-    vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('backend error'));
-
-    await expect(toggleIrrigationMode('gs1')).rejects.toThrow();
 
     expect(irrigationStrategies$.get().get('gs1')?.enabled).toBe(false);
   });
@@ -611,182 +588,8 @@ describe('removeDrainTime', () => {
 // ---------------------------------------------------------------------------
 
 describe('updateIrrigationStrategy', () => {
-  it('patches strategy fields immediately (optimistic)', async () => {
-    setIrrigationStrategy('gs1', makeStrategy({ lightsOnTime: '06:00' }));
-
-    await updateIrrigationStrategy('gs1', { lightsOnTime: '07:00' });
-
-    expect(irrigationStrategies$.get().get('gs1')?.lightsOnTime).toBe('07:00');
-  });
-
-  it('calls set_irrigation_strategy service with serialized payload', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await updateIrrigationStrategy('gs1', { lightsOnTime: '07:00', p0DurationMinutes: 90 });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        lights_on_time: '07:00',
-        p0_duration_minutes: 90,
-      })
-    );
-  });
-
-  it('calls set_irrigation_strategy service with all fields mapped to payload', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await updateIrrigationStrategy('gs1', {
-      enabled: true,
-      lightsOnTime: '07:30',
-      p0DurationMinutes: 45,
-      p2StopBeforeLightsOffMinutes: 180,
-      targetVwcPercent: 62.5,
-      maintenanceDrybackPercent: 4.5,
-      shotDurationSeconds: 40,
-      shotIntervalMinutes: 25,
-      autoLightTracking: true,
-    });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        enabled: true,
-        lights_on_time: '07:30',
-        p0_duration_minutes: 45,
-        p2_stop_before_lights_off_minutes: 180,
-        target_vwc_percent: 62.5,
-        maintenance_dryback_percent: 4.5,
-        shot_duration_seconds: 40,
-        shot_interval_minutes: 25,
-        auto_light_tracking: true,
-      })
-    );
-  });
-
-  it('serializes per-phase shot and sizing-mode fields to the payload', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await updateIrrigationStrategy('gs1', {
-      p1ShotDurationSeconds: 12,
-      p1ShotIntervalMinutes: 20,
-      p2ShotDurationSeconds: 18,
-      p2ShotIntervalMinutes: 30,
-      p1ShotVolumePercent: 3.5,
-      p2ShotVolumePercent: 5,
-      shotSizingMode: 'volume',
-    });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        p1_shot_duration_seconds: 12,
-        p1_shot_interval_minutes: 20,
-        p2_shot_duration_seconds: 18,
-        p2_shot_interval_minutes: 30,
-        p1_shot_volume_percent: 3.5,
-        p2_shot_volume_percent: 5,
-        shot_sizing_mode: 'volume',
-      })
-    );
-  });
-
-  it('serializes Skip P2 to the payload without touching the P2 pair', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await updateIrrigationStrategy('gs1', { skipP2AfterP1: true });
-
-    const payload = (hassCall.callService as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][2] as Record<string, unknown>;
-    expect(payload).toMatchObject({ growspace_id: 'gs1', skip_p2_after_p1: true });
-    // A sparse patch: skipping P2 never writes its timing, so the stored values
-    // survive to come back when the option is cleared.
-    expect(payload).not.toHaveProperty('p2_shot_duration_seconds');
-    expect(payload).not.toHaveProperty('p2_shot_interval_minutes');
-    expect(payload).not.toHaveProperty('p2_stop_before_lights_off_minutes');
-  });
-
-  it('serializes Adaptive Shot Control fields to the payload', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await updateIrrigationStrategy('gs1', {
-      dynamicShotEnabled: false,
-      dynamicAggressiveness: 1.5,
-      dynamicRecovery: 0.2,
-      dynamicShotSizeFloor: 0.4,
-      dynamicIntervalCeiling: 2.0,
-    });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        dynamic_shot_enabled: false,
-        dynamic_aggressiveness: 1.5,
-        dynamic_recovery: 0.2,
-        dynamic_shot_size_floor: 0.4,
-        dynamic_interval_ceiling: 2.0,
-      })
-    );
-  });
-
-  it('serializes substrate profile to flat keys and band/modulation fields', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await updateIrrigationStrategy('gs1', {
-      substrateProfile: { mediaType: 'rockwool', litersPerPot: 6.5 },
-      poreEcTargetMin: 2.5,
-      poreEcTargetMax: 4.0,
-      ecModulationEnabled: true,
-    });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        substrate_media_type: 'rockwool',
-        substrate_liters_per_pot: 6.5,
-        pore_ec_target_min: 2.5,
-        pore_ec_target_max: 4.0,
-        ec_modulation_enabled: true,
-      })
-    );
-  });
-
-  it('rolls back strategy on failure', async () => {
-    setIrrigationStrategy('gs1', makeStrategy({ lightsOnTime: '06:00' }));
-    vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('fail'));
-
-    await expect(updateIrrigationStrategy('gs1', { lightsOnTime: '07:00' })).rejects.toThrow();
-
-    expect(irrigationStrategies$.get().get('gs1')?.lightsOnTime).toBe('06:00');
-  });
-
-  it('calls set_irrigation_strategy service without lightsOnTime', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await updateIrrigationStrategy('gs1', { enabled: false });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      {
-        growspace_id: 'gs1',
-        enabled: false,
-      }
-    );
-  });
-
   it('handles update when growspace has no strategy (uses fallback)', async () => {
-    // irrigationStrategies$ starts empty, so _getStrategy will return the default fallback
+    // irrigationStrategies$ starts empty, so the read model supplies its defaults
     await updateIrrigationStrategy('new_gs', { enabled: true, lightsOnTime: '08:00' });
 
     const strategy = irrigationStrategies$.get().get('new_gs');
@@ -800,215 +603,6 @@ describe('updateIrrigationStrategy', () => {
       shotDurationSeconds: 30,
       shotIntervalMinutes: 15,
     });
-  });
-});
-
-// ---------------------------------------------------------------------------
-// applySteeringMode
-// ---------------------------------------------------------------------------
-
-describe('applySteeringMode', () => {
-  it('calls the apply_steering_mode WS command with the chosen mode', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await applySteeringMode('gs1', 'generative');
-
-    expect(hassCall.hassCall).toHaveBeenCalledWith(
-      'growspace_manager/apply_steering_mode',
-      { growspace_id: 'gs1', steering_mode: 'generative' },
-      expect.anything()
-    );
-  });
-
-  it('reflects the selected mode optimistically', async () => {
-    setIrrigationStrategy('gs1', makeStrategy({ declaredSteeringMode: null }));
-
-    await applySteeringMode('gs1', 'vegetative');
-
-    expect(irrigationStrategies$.get().get('gs1')?.declaredSteeringMode).toBe('vegetative');
-  });
-
-  it('rolls back the declared mode on failure', async () => {
-    setIrrigationStrategy('gs1', makeStrategy({ declaredSteeringMode: 'balanced' }));
-    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('fail'));
-
-    await expect(applySteeringMode('gs1', 'generative')).rejects.toThrow();
-
-    expect(irrigationStrategies$.get().get('gs1')?.declaredSteeringMode).toBe('balanced');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// saveIrrigationSettings
-// ---------------------------------------------------------------------------
-
-describe('saveIrrigationSettings', () => {
-  it('patches irrigationPumpEntity immediately (optimistic)', async () => {
-    setIrrigationConfig(
-      'gs1',
-      makeConfig({ irrigationPumpEntity: 'switch.old_pump', pumpFlowRateMlPerSec: 10 })
-    );
-
-    await saveIrrigationSettings('gs1', {
-      irrigationPumpEntity: 'switch.new_pump',
-      drainPumpEntity: '',
-      irrigationDuration: 90,
-      drainDuration: 45,
-    });
-
-    expect(irrigationConfigs$.get().get('gs1')?.irrigationPumpEntity).toBe('switch.new_pump');
-    expect(irrigationConfigs$.get().get('gs1')?.pumpFlowRateMlPerSec).toBe(10);
-  });
-
-  it('calls set_irrigation_settings service with serialized payload', async () => {
-    setIrrigationConfig('gs1', makeConfig());
-
-    await saveIrrigationSettings('gs1', {
-      irrigationPumpEntity: 'switch.pump',
-      pumpFlowRateMlPerSec: 12.5,
-      drainPumpEntity: 'switch.drain',
-      irrigationDuration: 60,
-      drainDuration: 30,
-    });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_settings',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        irrigation_pump_entity: 'switch.pump',
-        pump_flow_rate_ml_per_sec: 12.5,
-        drain_pump_entity: 'switch.drain',
-        irrigation_duration: 60,
-        drain_duration: 30,
-      })
-    );
-  });
-
-  it('calls set_irrigation_settings service with all options included in payload', async () => {
-    setIrrigationConfig('gs1', makeConfig());
-
-    await saveIrrigationSettings('gs1', {
-      irrigationPumpEntity: 'switch.pump',
-      pumpFlowRateMlPerSec: 12.5,
-      drainPumpEntity: 'switch.drain',
-      irrigationDuration: 60,
-      drainDuration: 30,
-      soilTriggerPercent: 55,
-      dailyVolumeCapLiters: 12.5,
-      maxCyclesPerDay: 8,
-      skipDuringDark: true,
-      pauseOnLowTank: true,
-      logToLogbook: true,
-      autoAdvanceP1ToP2: true,
-      autoAdvanceP2ToP3: true,
-      haltOnRunoffEcThreshold: 4.2,
-    });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_settings',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        irrigation_pump_entity: 'switch.pump',
-        pump_flow_rate_ml_per_sec: 12.5,
-        drain_pump_entity: 'switch.drain',
-        irrigation_duration: 60,
-        drain_duration: 30,
-        soil_trigger_percent: 55,
-        daily_volume_cap_liters: 12.5,
-        max_cycles_per_day: 8,
-        skip_during_dark: true,
-        pause_on_low_tank: true,
-        log_to_logbook: true,
-        auto_advance_p1_to_p2: true,
-        auto_advance_p2_to_p3: true,
-        halt_on_runoff_ec_threshold: 4.2,
-      })
-    );
-  });
-
-  it('never carries the steering phase: that is set_steering_phase alone', async () => {
-    setIrrigationConfig('gs1', makeConfig());
-
-    await saveIrrigationSettings('gs1', {
-      irrigationPumpEntity: 'switch.pump',
-      drainPumpEntity: 'switch.drain',
-      irrigationDuration: 60,
-      drainDuration: 30,
-    });
-
-    const payload = vi.mocked(hassCall.callService).mock.calls[0][2] as Record<string, unknown>;
-    expect(payload).not.toHaveProperty('active_steering_phase');
-    expect(payload).not.toHaveProperty('steering_phase');
-  });
-
-  it('rolls back settings on failure', async () => {
-    setIrrigationConfig('gs1', makeConfig({ irrigationPumpEntity: 'switch.old' }));
-    vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('fail'));
-
-    await expect(
-      saveIrrigationSettings('gs1', {
-        irrigationPumpEntity: 'switch.new',
-        drainPumpEntity: '',
-        irrigationDuration: 60,
-        drainDuration: 30,
-      })
-    ).rejects.toThrow();
-
-    expect(irrigationConfigs$.get().get('gs1')?.irrigationPumpEntity).toBe('switch.old');
-  });
-
-  it('cross-slice bridge: also patches devices$.irrigationConfig pump entity optimistically', async () => {
-    setDevices([
-      createGrowspaceDevice({
-        deviceId: 'gs1',
-        name: 'G1',
-        irrigationConfig: {
-          irrigationTimes: [],
-          drainTimes: [],
-          irrigationPumpEntity: 'switch.old',
-        },
-      }),
-    ]);
-    setIrrigationConfig('gs1', makeConfig({ irrigationPumpEntity: 'switch.old' }));
-
-    await saveIrrigationSettings('gs1', {
-      irrigationPumpEntity: 'switch.new',
-      drainPumpEntity: 'switch.drain',
-      irrigationDuration: 60,
-      drainDuration: 30,
-    });
-
-    const device = devices$.get().find((d) => d.deviceId === 'gs1');
-    expect(device?.irrigationConfig.irrigationPumpEntity).toBe('switch.new');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// setSteeringPhase
-// ---------------------------------------------------------------------------
-
-describe('setSteeringPhase', () => {
-  it('calls set_steering_phase and patches the phase optimistically', async () => {
-    setIrrigationConfig('gs1', makeConfig({ activeSteeringPhase: 'p2' }));
-
-    await setSteeringPhase('gs1', 'p3');
-
-    expect(hassCall.callService).toHaveBeenCalledWith('growspace_manager', 'set_steering_phase', {
-      growspace_id: 'gs1',
-      steering_phase: 'p3',
-    });
-    expect(irrigationConfigs$.get().get('gs1')?.activeSteeringPhase).toBe('p3');
-  });
-
-  it('restores the previous phase when the service refuses', async () => {
-    setIrrigationConfig('gs1', makeConfig({ activeSteeringPhase: 'p2' }));
-    vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('fail'));
-
-    await expect(setSteeringPhase('gs1', 'p3')).rejects.toThrow();
-
-    expect(irrigationConfigs$.get().get('gs1')?.activeSteeringPhase).toBe('p2');
   });
 });
 
@@ -1148,70 +742,6 @@ describe('Zod Schema Validations', () => {
 
     it('rejects invalid modes', () => {
       expect(IrrigationModeSchema.safeParse('invalid_mode').success).toBe(false);
-    });
-  });
-
-  describe('SetIrrigationStrategyPayloadSchema', () => {
-    it('validates a valid payload with optional fields', () => {
-      const payload = {
-        growspace_id: 'gs1',
-        enabled: true,
-        lights_on_time: '06:00',
-        p0_duration_minutes: 60,
-        p2_stop_before_lights_off_minutes: 120,
-        target_vwc_percent: 65,
-        maintenance_dryback_percent: 3,
-        shot_duration_seconds: 30,
-        shot_interval_minutes: 15,
-        auto_light_tracking: false,
-      };
-      expect(SetIrrigationStrategyPayloadSchema.parse(payload)).toEqual(payload);
-    });
-
-    it('rejects payload with invalid types', () => {
-      const payload = {
-        growspace_id: 'gs1',
-        enabled: 'not-a-boolean',
-      };
-      expect(SetIrrigationStrategyPayloadSchema.safeParse(payload).success).toBe(false);
-    });
-  });
-
-  describe('SaveIrrigationSettingsPayloadSchema', () => {
-    it('validates a valid settings payload', () => {
-      const payload = {
-        growspace_id: 'gs1',
-        irrigation_pump_entity: 'switch.pump',
-        drain_pump_entity: 'switch.drain',
-        irrigation_duration: 60,
-        drain_duration: 30,
-        soil_trigger_percent: 45,
-        daily_volume_cap_liters: 10,
-        max_cycles_per_day: 5,
-        skip_during_dark: true,
-        pause_on_low_tank: true,
-        log_to_logbook: true,
-        auto_advance_p1_to_p2: true,
-        auto_advance_p2_to_p3: true,
-        halt_on_runoff_ec_threshold: 3.5,
-      };
-      expect(SaveIrrigationSettingsPayloadSchema.parse(payload)).toEqual(payload);
-    });
-  });
-
-  describe('SetSteeringPhasePayloadSchema', () => {
-    it('validates the manual phase override payload', () => {
-      const payload = { growspace_id: 'gs1', steering_phase: 'p2' };
-      expect(SetSteeringPhasePayloadSchema.parse(payload)).toEqual(payload);
-    });
-
-    it('rejects invalid phase enum', () => {
-      expect(
-        SetSteeringPhasePayloadSchema.safeParse({
-          growspace_id: 'gs1',
-          steering_phase: 'invalid-phase',
-        }).success
-      ).toBe(false);
     });
   });
 
