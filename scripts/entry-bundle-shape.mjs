@@ -95,3 +95,66 @@ export function declaredLazyChunkNames(registrySource) {
   }
   return names;
 }
+
+/**
+ * Chunk names that declare `onDemandOnly: true` in `LAZY_CHUNKS`.
+ *
+ * Read out of the registry source the way {@link declaredLazyChunkNames} reads
+ * the names, because these checks assert on what ships rather than on what the
+ * build config claims. An empty result is legal: the flag is opt-in per chunk
+ * (ADR 0056), and only a chunk whose absence is the point declares it.
+ */
+export function declaredOnDemandOnlyChunkNames(registrySource) {
+  const entries = registrySource.matchAll(/^ {2}[A-Za-z0-9_$]+: \{$([\s\S]*?)^ {2}\},$/gm);
+  const names = [];
+  for (const [, body] of entries) {
+    if (!/^ {4}onDemandOnly: true,$/m.test(body)) continue;
+    const declared = body.match(/^ {4}name: '([\w.-]+)',$/m);
+    if (!declared) {
+      throw new Error('A LAZY_CHUNKS entry declares onDemandOnly without a name');
+    }
+    names.push(declared[1]);
+  }
+  return names;
+}
+
+/** The last segment of a path or an import specifier. */
+const fileNameOf = (specifier) => specifier.slice(specifier.lastIndexOf('/') + 1);
+
+/**
+ * Fails when another emitted chunk statically imports an on-demand-only chunk.
+ *
+ * The house pattern for a dialog is a static import — all 23 of them in
+ * `growspace-dialog-host.container.ts` are written that way — and written that
+ * way the tissue-culture view becomes a static dependency of the dialog-host
+ * chunk, fetched by the first dialog every dashboard opens, with every other
+ * check in this repository still green. Chunk-to-chunk static imports are not
+ * themselves a smell: the dialog-host chunk legitimately imports
+ * `growspace-config-dialog-*.js`. So the rule is opt-in, per chunk, and this
+ * is what the opt-in means. See ADR 0056.
+ *
+ * @param {{ chunks: Array<{ fileName: string, source: string }>, onDemandFileNames: string[] }} args
+ *   every emitted bundle, and the emitted file names of the declared chunks.
+ */
+export function assertOnDemandChunksAreNotImported({ chunks, onDemandFileNames }) {
+  const guarded = new Set(onDemandFileNames);
+  const violations = [];
+
+  for (const chunk of chunks) {
+    const importer = fileNameOf(chunk.fileName);
+    for (const specifier of staticDependencies(chunk.source)) {
+      const imported = fileNameOf(specifier);
+      if (imported !== importer && guarded.has(imported)) {
+        violations.push(`${chunk.fileName} statically imports ${imported}`);
+      }
+    }
+  }
+
+  if (violations.length > 0) {
+    throw new Error(
+      `${violations.join('; ')}. That chunk declares onDemandOnly in src/lib/lazy-chunk.ts: ` +
+        'nothing may pull it in eagerly, because a dashboard without the feature ' +
+        'must not download it. Reach it with a dynamic import() instead.'
+    );
+  }
+}
