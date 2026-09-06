@@ -89,7 +89,7 @@ test.describe('Camera and Vision Checkup capability profile', () => {
   });
 
   test('captures and presents one distinguishable snapshot per camera', async ({ page }) => {
-    await card.clickMenuItem(/camera snapshots/i);
+    await card.clickMenuAction('snapshots');
     const dialog = new SnapshotsDialog(page);
     await dialog.waitForOpen();
 
@@ -115,7 +115,7 @@ test.describe('Camera and Vision Checkup capability profile', () => {
   test('keeps history empty and reports the existing AI availability gate locally', async ({
     page,
   }) => {
-    await card.clickMenuItem(/camera snapshots/i);
+    await card.clickMenuAction('snapshots');
     const dialog = new SnapshotsDialog(page);
     await dialog.waitForOpen();
     await dialog.dialog.getByText('Vision Checkup', { exact: true }).click();

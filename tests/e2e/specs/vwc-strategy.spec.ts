@@ -14,6 +14,12 @@ test.describe('VWC strategy — Schedules tab conditional display', () => {
     await callHAService(page, 'growspace_manager', 'set_irrigation_strategy', {
       growspace_id: testContext.vwcVegGrowspaceId,
       enabled: false,
+      // Pin the sizing mode: the Steering tab relabels its shot fields to
+      // "P1 Shot Size (%)" under Volume Mode (ADR-0017), so a growspace another
+      // spec left in Volume Mode makes every field lookup below time out. This
+      // suite is about the Seconds fields, so it states that rather than
+      // inheriting whatever ran last against the shared instance.
+      shot_sizing_mode: 'seconds',
     });
   });
 
@@ -34,7 +40,7 @@ test.describe('VWC strategy — Schedules tab conditional display', () => {
       p2ShotIntervalMinutes: 12,
     };
 
-    await growspaceCard.clickMenuItem(/irrigation/i);
+    await growspaceCard.clickMenuAction('irrigation');
     const dialog = new IrrigationDialog(page);
     await dialog.waitForOpen();
 
@@ -60,7 +66,7 @@ test.describe('VWC strategy — Schedules tab conditional display', () => {
     await dialog.saveAll();
     await dialog.close();
     await growspaceCard.waitForCardReady();
-    await growspaceCard.clickMenuItem(/irrigation/i);
+    await growspaceCard.clickMenuAction('irrigation');
     await dialog.waitForOpen();
     await dialog.clickTab('steering');
 
@@ -111,7 +117,7 @@ test.describe('VWC strategy — Schedules tab conditional display', () => {
 
     await page.reload();
     await growspaceCard.waitForCardReady();
-    await growspaceCard.clickMenuItem(/irrigation/i);
+    await growspaceCard.clickMenuAction('irrigation');
     const dialog = new IrrigationDialog(page);
     await dialog.waitForOpen();
     await dialog.clickTab('steering');
@@ -123,7 +129,7 @@ test.describe('VWC strategy — Schedules tab conditional display', () => {
     page,
     testContext,
   }) => {
-    await growspaceCard.clickMenuItem(/irrigation/i);
+    await growspaceCard.clickMenuAction('irrigation');
     const dialog = new IrrigationDialog(page);
     await dialog.waitForOpen();
 
@@ -140,7 +146,7 @@ test.describe('VWC strategy — Schedules tab conditional display', () => {
 
     await dialog.close();
     await growspaceCard.waitForCardReady();
-    await growspaceCard.clickMenuItem(/irrigation/i);
+    await growspaceCard.clickMenuAction('irrigation');
     await dialog.waitForOpen();
 
     await dialog.clickTab('schedules');

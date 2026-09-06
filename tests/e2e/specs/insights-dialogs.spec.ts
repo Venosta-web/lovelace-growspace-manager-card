@@ -17,19 +17,19 @@ test.describe('Insights dialogs', () => {
   });
 
   test('logbook dialog opens from menu', async ({ page }) => {
-    await growspaceCard.clickMenuItem(/logbook/i);
+    await growspaceCard.clickMenuAction('logbook');
     const dialog = new LogbookDialog(page);
     await dialog.waitForOpen();
   });
 
   test('camera snapshots dialog opens from menu', async ({ page }) => {
-    await growspaceCard.clickMenuItem(/camera snapshots/i);
+    await growspaceCard.clickMenuAction('snapshots');
     const dialog = new SnapshotsDialog(page);
     await dialog.waitForOpen();
   });
 
   test('ask AI dialog opens from menu', async ({ page }) => {
-    await growspaceCard.clickMenuItem(/ask ai/i);
+    await growspaceCard.clickMenuAction('ai');
     const dialog = new GrowMasterDialog(page);
     await dialog.waitForOpen();
   });
