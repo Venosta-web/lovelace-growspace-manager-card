@@ -44,6 +44,16 @@
  * Action type, payload shapes, and zod schemas are private to this module.
  * Tank data absorption: this slice is the authoritative source for tank levels,
  * superseding direct reads from store/growspace or services/api/TankAPI.
+ *
+ * The configuration mutators — settings, strategy (mode toggle and the
+ * immediate lights-on edit included), the manual phase override, the Program
+ * auto-advance consent and the Steering Mode stamp — are adapters over the
+ * [[Irrigation Command]] module in `irrigation-command.ts`, which owns
+ * compilation, clearing semantics, strict outbound validation, the optimistic
+ * projections and their inverse. That module is deliberately not re-exported:
+ * callers ask for the change they mean by name. Schedules, Drain Monitoring,
+ * readings, cycles, analytics, the recipe and program stamps, and hydration
+ * are outside it and keep their own writers here.
  */
 
 import { atom } from 'nanostores';
@@ -61,16 +71,28 @@ import type {
 } from '../../services/types';
 import { mutate } from '../../services/mutate';
 import { callService, hassCall } from '../../services/hass-call';
+import {
+  irrigationConfigs$,
+  irrigationStrategies$,
+  patchIrrigationConfig,
+  patchIrrigationStrategy,
+  readIrrigationConfig,
+  readIrrigationStrategy,
+} from './read-model';
+import {
+  runIrrigationCommand,
+  type IrrigationSettingsChange,
+  type SteeringPhase,
+} from './irrigation-command';
 import type { IrrigationMode, PhaseWindows, IrrigationAnalytics } from './schema';
 import { IrrigationAnalyticsSchema } from './schema';
 import {
   patchDeviceIrrigationConfig,
   patchDeviceProgramBinding,
   patchDeviceRecipeStamp,
-  patchDeviceStrategy,
 } from '../grid';
 import { CropSteeringHistorySchema, type CropSteeringHistory } from '../../schemas/api-schema';
-import { ApplySteeringModeResultSchema, type SteeringMode } from './schema';
+import type { SteeringMode } from './schema';
 import {
   ApplyIrrigationRecipeResultSchema,
   AssignIrrigationProgramResultSchema,
@@ -87,8 +109,7 @@ import { computePhases } from '../../features/environment/crop-steering-model';
 // Atoms (public read)
 // ---------------------------------------------------------------------------
 
-export const irrigationConfigs$ = atom<Map<string, IrrigationConfig>>(new Map());
-export const irrigationStrategies$ = atom<Map<string, IrrigationStrategy>>(new Map());
+export { irrigationConfigs$, irrigationStrategies$ } from './read-model';
 export const tankLevels$ = atom<Map<string, IrrigationTank[]>>(new Map());
 export const cropSteeringHistory$ = atom<Map<string, CropSteeringHistory>>(new Map());
 /**
@@ -178,37 +199,6 @@ export function computePhaseWindows(
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function _getConfig(growspaceId: string): IrrigationConfig {
-  return irrigationConfigs$.get().get(growspaceId) ?? { irrigationTimes: [], drainTimes: [] };
-}
-
-function _getStrategy(growspaceId: string): IrrigationStrategy {
-  return (
-    irrigationStrategies$.get().get(growspaceId) ?? {
-      enabled: false,
-      lightsOnTime: '06:00',
-      p0DurationMinutes: 60,
-      p2StopBeforeLightsOffMinutes: 120,
-      targetVwcPercent: 65,
-      maintenanceDrybackPercent: 3,
-      shotDurationSeconds: 30,
-      shotIntervalMinutes: 15,
-    }
-  );
-}
-
-function _patchConfig(growspaceId: string, patch: Partial<IrrigationConfig>): void {
-  const updated = new Map(irrigationConfigs$.get());
-  updated.set(growspaceId, { ..._getConfig(growspaceId), ...patch });
-  irrigationConfigs$.set(updated);
-}
-
-function _patchStrategy(growspaceId: string, patch: Partial<IrrigationStrategy>): void {
-  const updated = new Map(irrigationStrategies$.get());
-  updated.set(growspaceId, { ..._getStrategy(growspaceId), ...patch });
-  irrigationStrategies$.set(updated);
-}
-
 /** Sort schedule items by time string (HH:MM or HH:MM:SS). */
 function _sortByTime<T extends { time?: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
@@ -221,27 +211,17 @@ function _sortByTime<T extends { time?: string }>(items: T[]): T[] {
 /**
  * Toggle irrigation mode between 'manual' and 'crop_steering'.
  *
- * Optimistic: flips strategy.enabled in irrigationStrategies$.
- * Apply: calls growspace_manager.set_irrigation_strategy with the new enabled flag.
- * Inverse: restores previous enabled value on failure.
+ * One strategy field, so it is an [[Irrigation Command]] like any other
+ * strategy change; the flip is computed from the stored value here because the
+ * gesture is "the other one", not a value the caller names.
  */
 export async function toggleIrrigationMode(growspaceId: string): Promise<void> {
-  const prev = _getStrategy(growspaceId);
-  const nextEnabled = !prev.enabled;
-
-  await mutate(
-    {
-      type: 'toggleIrrigationMode',
-      optimistic: () => _patchStrategy(growspaceId, { enabled: nextEnabled }),
-      inverse: () => _patchStrategy(growspaceId, { enabled: prev.enabled }),
-      apply: () =>
-        callService('growspace_manager', 'set_irrigation_strategy', {
-          growspace_id: growspaceId,
-          enabled: nextEnabled,
-        }),
-    },
-    growspaceId
-  );
+  await runIrrigationCommand({
+    kind: 'strategy',
+    type: 'toggleIrrigationMode',
+    growspaceId,
+    strategy: { enabled: !readIrrigationStrategy(growspaceId).enabled },
+  });
 }
 
 /**
@@ -256,18 +236,18 @@ export async function addIrrigationTime(
   time: string,
   duration = 60
 ): Promise<void> {
-  const prev = _getConfig(growspaceId);
+  const prev = readIrrigationConfig(growspaceId);
   const next = _sortByTime([...prev.irrigationTimes, { time, duration }]);
 
   await mutate(
     {
       type: 'addIrrigationTime',
       optimistic: () => {
-        _patchConfig(growspaceId, { irrigationTimes: next });
+        patchIrrigationConfig(growspaceId, { irrigationTimes: next });
         patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next });
       },
       inverse: () => {
-        _patchConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
+        patchIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
         patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
       },
       apply: () =>
@@ -289,18 +269,18 @@ export async function addIrrigationTime(
  * Inverse: restores the previous irrigationTimes list on failure.
  */
 export async function removeIrrigationTime(growspaceId: string, time: string): Promise<void> {
-  const prev = _getConfig(growspaceId);
+  const prev = readIrrigationConfig(growspaceId);
   const next = prev.irrigationTimes.filter((t) => t.time !== time);
 
   await mutate(
     {
       type: 'removeIrrigationTime',
       optimistic: () => {
-        _patchConfig(growspaceId, { irrigationTimes: next });
+        patchIrrigationConfig(growspaceId, { irrigationTimes: next });
         patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next });
       },
       inverse: () => {
-        _patchConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
+        patchIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
         patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
       },
       apply: () =>
@@ -325,18 +305,18 @@ export async function addDrainTime(
   time: string,
   duration = 60
 ): Promise<void> {
-  const prev = _getConfig(growspaceId);
+  const prev = readIrrigationConfig(growspaceId);
   const next = _sortByTime([...prev.drainTimes, { time, duration }]);
 
   await mutate(
     {
       type: 'addDrainTime',
       optimistic: () => {
-        _patchConfig(growspaceId, { drainTimes: next });
+        patchIrrigationConfig(growspaceId, { drainTimes: next });
         patchDeviceIrrigationConfig(growspaceId, { drainTimes: next });
       },
       inverse: () => {
-        _patchConfig(growspaceId, { drainTimes: prev.drainTimes });
+        patchIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes });
         patchDeviceIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes });
       },
       apply: () =>
@@ -358,18 +338,18 @@ export async function addDrainTime(
  * Inverse: restores the previous drainTimes list on failure.
  */
 export async function removeDrainTime(growspaceId: string, time: string): Promise<void> {
-  const prev = _getConfig(growspaceId);
+  const prev = readIrrigationConfig(growspaceId);
   const next = prev.drainTimes.filter((t) => t.time !== time);
 
   await mutate(
     {
       type: 'removeDrainTime',
       optimistic: () => {
-        _patchConfig(growspaceId, { drainTimes: next });
+        patchIrrigationConfig(growspaceId, { drainTimes: next });
         patchDeviceIrrigationConfig(growspaceId, { drainTimes: next });
       },
       inverse: () => {
-        _patchConfig(growspaceId, { drainTimes: prev.drainTimes });
+        patchIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes });
         patchDeviceIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes });
       },
       apply: () =>
@@ -385,112 +365,42 @@ export async function removeDrainTime(growspaceId: string, time: string): Promis
 /**
  * Merge partial strategy updates into the active irrigation strategy.
  *
- * Optimistic: patches irrigationStrategies$ with the provided fields.
- * Apply: calls growspace_manager.set_irrigation_strategy with serialized payload.
- * Inverse: restores the previous strategy on failure.
+ * The whole-form Steering save and every immediate-persist control come through
+ * here, including the Growlights tab's lights-on edit. It is a **sparse** change
+ * — an omitted field keeps whatever the growspace has stored — and the fields
+ * the backend does not let a strategy write name (the detected lights-on time,
+ * the declared Steering Mode, the recipe and program stamps) are dropped by the
+ * [[Irrigation Command]] compiler rather than refused, because the Steering
+ * tab's draft is seeded from the whole strategy and legitimately carries them.
  */
 export async function updateIrrigationStrategy(
   growspaceId: string,
   updates: Partial<IrrigationStrategy>
 ): Promise<void> {
-  const prev = _getStrategy(growspaceId);
-
-  const payload: Record<string, unknown> = { growspace_id: growspaceId };
-  if (updates.enabled !== undefined) payload.enabled = updates.enabled;
-  if (updates.lightsOnTime !== undefined) payload.lights_on_time = updates.lightsOnTime;
-  if (updates.p0DurationMinutes !== undefined)
-    payload.p0_duration_minutes = updates.p0DurationMinutes;
-  if (updates.p2StopBeforeLightsOffMinutes !== undefined)
-    payload.p2_stop_before_lights_off_minutes = updates.p2StopBeforeLightsOffMinutes;
-  if (updates.targetVwcPercent !== undefined) payload.target_vwc_percent = updates.targetVwcPercent;
-  if (updates.maintenanceDrybackPercent !== undefined)
-    payload.maintenance_dryback_percent = updates.maintenanceDrybackPercent;
-  if (updates.shotDurationSeconds !== undefined)
-    payload.shot_duration_seconds = updates.shotDurationSeconds;
-  if (updates.shotIntervalMinutes !== undefined)
-    payload.shot_interval_minutes = updates.shotIntervalMinutes;
-  if (updates.p1ShotDurationSeconds !== undefined)
-    payload.p1_shot_duration_seconds = updates.p1ShotDurationSeconds;
-  if (updates.p1ShotIntervalMinutes !== undefined)
-    payload.p1_shot_interval_minutes = updates.p1ShotIntervalMinutes;
-  if (updates.p2ShotDurationSeconds !== undefined)
-    payload.p2_shot_duration_seconds = updates.p2ShotDurationSeconds;
-  if (updates.p2ShotIntervalMinutes !== undefined)
-    payload.p2_shot_interval_minutes = updates.p2ShotIntervalMinutes;
-  if (updates.p1ShotVolumePercent !== undefined)
-    payload.p1_shot_volume_percent = updates.p1ShotVolumePercent;
-  if (updates.p2ShotVolumePercent !== undefined)
-    payload.p2_shot_volume_percent = updates.p2ShotVolumePercent;
-  if (updates.skipP2AfterP1 !== undefined) payload.skip_p2_after_p1 = updates.skipP2AfterP1;
-  if (updates.shotSizingMode !== undefined) payload.shot_sizing_mode = updates.shotSizingMode;
-  // Substrate Profile serializes to the backend's flat keys (folded into the
-  // nested substrate_profile server-side); the read side stays nested.
-  if (updates.substrateProfile !== undefined) {
-    payload.substrate_media_type = updates.substrateProfile.mediaType;
-    payload.substrate_liters_per_pot = updates.substrateProfile.litersPerPot;
-  }
-  if (updates.poreEcTargetMin !== undefined) payload.pore_ec_target_min = updates.poreEcTargetMin;
-  if (updates.poreEcTargetMax !== undefined) payload.pore_ec_target_max = updates.poreEcTargetMax;
-  if (updates.ecModulationEnabled !== undefined)
-    payload.ec_modulation_enabled = updates.ecModulationEnabled;
-  if (updates.autoLightTracking !== undefined)
-    payload.auto_light_tracking = updates.autoLightTracking;
-  if (updates.dynamicShotEnabled !== undefined)
-    payload.dynamic_shot_enabled = updates.dynamicShotEnabled;
-  if (updates.dynamicAggressiveness !== undefined)
-    payload.dynamic_aggressiveness = updates.dynamicAggressiveness;
-  if (updates.dynamicRecovery !== undefined) payload.dynamic_recovery = updates.dynamicRecovery;
-  if (updates.dynamicShotSizeFloor !== undefined)
-    payload.dynamic_shot_size_floor = updates.dynamicShotSizeFloor;
-  if (updates.dynamicIntervalCeiling !== undefined)
-    payload.dynamic_interval_ceiling = updates.dynamicIntervalCeiling;
-
-  await mutate(
-    {
-      type: 'updateIrrigationStrategy',
-      // Patch both the strategy read-model atom and the device the dialog reads,
-      // so immediate-persist controls (sizing mode, profile, modulation) reflect
-      // optimistically without waiting for a full device sync (ADR-0017).
-      optimistic: () => {
-        _patchStrategy(growspaceId, updates);
-        patchDeviceStrategy(growspaceId, updates);
-      },
-      inverse: () => {
-        _patchStrategy(growspaceId, prev);
-        patchDeviceStrategy(growspaceId, prev);
-      },
-      apply: () => callService('growspace_manager', 'set_irrigation_strategy', payload),
-    },
-    growspaceId
-  );
+  await runIrrigationCommand({
+    kind: 'strategy',
+    type: 'updateIrrigationStrategy',
+    growspaceId,
+    strategy: updates,
+  });
 }
 
 /**
  * Stamp a Steering Mode's server-owned preset into the strategy (ADR-0012).
  *
  * The server owns the preset table and writes the new field values; the WS
- * command returns only the declared mode. We optimistically reflect the
- * selected mode so the selector highlights immediately — the stamped numeric
- * field values arrive through the normal device sync.
+ * command returns only the declared mode, so the only thing shown optimistically
+ * is the selected intent — the stamped numeric values arrive with the next
+ * device sync. Its own command kind rather than a strategy field: naming a mode
+ * is the whole payload, and the preset values are unwritable through it.
  */
 export async function applySteeringMode(growspaceId: string, mode: SteeringMode): Promise<void> {
-  const prev = _getStrategy(growspaceId);
-
-  await mutate(
-    {
-      type: 'applySteeringMode',
-      optimistic: () => _patchStrategy(growspaceId, { declaredSteeringMode: mode }),
-      inverse: () => _patchStrategy(growspaceId, prev),
-      apply: async () => {
-        await hassCall(
-          'growspace_manager/apply_steering_mode',
-          { growspace_id: growspaceId, steering_mode: mode },
-          ApplySteeringModeResultSchema
-        );
-      },
-    },
-    growspaceId
-  );
+  await runIrrigationCommand({
+    kind: 'steering-mode',
+    type: 'applySteeringMode',
+    growspaceId,
+    mode,
+  });
 }
 
 /**
@@ -636,7 +546,7 @@ export async function applyIrrigationRecipe(
   growspaceId: string,
   recipeId: string
 ): Promise<ApplyIrrigationRecipeResult> {
-  const prev = _getStrategy(growspaceId);
+  const prev = readIrrigationStrategy(growspaceId);
   const prevStamp = {
     appliedRecipeId: prev.appliedRecipeId ?? null,
     recipeAppliedAt: prev.recipeAppliedAt ?? null,
@@ -647,7 +557,7 @@ export async function applyIrrigationRecipe(
     {
       type: 'applyIrrigationRecipe',
       optimistic: () => {
-        _patchStrategy(growspaceId, { appliedRecipeId: recipeId });
+        patchIrrigationStrategy(growspaceId, { appliedRecipeId: recipeId });
         patchDeviceRecipeStamp(growspaceId, { appliedRecipeId: recipeId });
       },
       // Failure rollback only. A committed stamp has no inverse — it overwrote
@@ -657,7 +567,7 @@ export async function applyIrrigationRecipe(
       // the apply never committed, the verdict the backend last gave is still
       // the right one.
       inverse: () => {
-        _patchStrategy(growspaceId, prevStamp);
+        patchIrrigationStrategy(growspaceId, prevStamp);
         patchDeviceRecipeStamp(growspaceId, prevStamp);
       },
       apply: async () => {
@@ -668,7 +578,7 @@ export async function applyIrrigationRecipe(
         );
         // The reply carries the authoritative stamp; a fresh stamp cannot have
         // drifted, so the tab's verdict is known without waiting for a sync.
-        _patchStrategy(growspaceId, {
+        patchIrrigationStrategy(growspaceId, {
           appliedRecipeId: result.applied_recipe_id,
           recipeAppliedAt: result.recipe_applied_at,
         });
@@ -783,14 +693,14 @@ export async function assignIrrigationProgram(
   growspaceId: string,
   programId: string | null
 ): Promise<void> {
-  const prev = _getStrategy(growspaceId);
+  const prev = readIrrigationStrategy(growspaceId);
   const prevProgramId = prev.irrigationProgramId ?? null;
 
   await mutate(
     {
       type: 'assignIrrigationProgram',
       optimistic: () => {
-        _patchStrategy(growspaceId, { irrigationProgramId: programId });
+        patchIrrigationStrategy(growspaceId, { irrigationProgramId: programId });
         patchDeviceProgramBinding(
           growspaceId,
           programId === null
@@ -802,7 +712,7 @@ export async function assignIrrigationProgram(
       // this call did. The resolved position is only cleared on an unbind, and
       // the next sync re-derives it either way.
       inverse: () => {
-        _patchStrategy(growspaceId, { irrigationProgramId: prevProgramId });
+        patchIrrigationStrategy(growspaceId, { irrigationProgramId: prevProgramId });
         patchDeviceProgramBinding(growspaceId, { irrigationProgramId: prevProgramId });
       },
       apply: async () => {
@@ -812,7 +722,7 @@ export async function assignIrrigationProgram(
           AssignIrrigationProgramResultSchema
         );
         // The reply is authoritative about what the growspace now holds.
-        _patchStrategy(growspaceId, { irrigationProgramId: result.irrigation_program_id });
+        patchIrrigationStrategy(growspaceId, { irrigationProgramId: result.irrigation_program_id });
         patchDeviceProgramBinding(growspaceId, {
           irrigationProgramId: result.irrigation_program_id,
         });
@@ -837,28 +747,12 @@ export async function assignIrrigationProgram(
  * first — nothing here asks.
  */
 export async function setProgramAutoAdvance(growspaceId: string, enabled: boolean): Promise<void> {
-  const prev = _getConfig(growspaceId);
-  const prevValue = prev.programAutoAdvance ?? false;
-
-  await mutate(
-    {
-      type: 'setProgramAutoAdvance',
-      optimistic: () => {
-        _patchConfig(growspaceId, { programAutoAdvance: enabled });
-        patchDeviceIrrigationConfig(growspaceId, { programAutoAdvance: enabled });
-      },
-      inverse: () => {
-        _patchConfig(growspaceId, { programAutoAdvance: prevValue });
-        patchDeviceIrrigationConfig(growspaceId, { programAutoAdvance: prevValue });
-      },
-      apply: () =>
-        callService('growspace_manager', 'set_irrigation_settings', {
-          growspace_id: growspaceId,
-          program_auto_advance: enabled,
-        }),
-    },
-    growspaceId
-  );
+  await runIrrigationCommand({
+    kind: 'settings',
+    type: 'setProgramAutoAdvance',
+    growspaceId,
+    settings: { programAutoAdvance: enabled },
+  });
 }
 
 /**
@@ -872,120 +766,41 @@ export async function setProgramAutoAdvance(growspaceId: string, enabled: boolea
  *
  * Optimistic: patches the phase the steering tab and the day chart read.
  */
-export async function setSteeringPhase(
-  growspaceId: string,
-  phase: 'p1' | 'p2' | 'p3'
-): Promise<void> {
-  const prevValue = _getConfig(growspaceId).activeSteeringPhase;
-
-  await mutate(
-    {
-      type: 'setSteeringPhase',
-      optimistic: () => {
-        _patchConfig(growspaceId, { activeSteeringPhase: phase });
-        patchDeviceIrrigationConfig(growspaceId, { activeSteeringPhase: phase });
-      },
-      inverse: () => {
-        _patchConfig(growspaceId, { activeSteeringPhase: prevValue });
-        patchDeviceIrrigationConfig(growspaceId, { activeSteeringPhase: prevValue });
-      },
-      apply: () =>
-        callService('growspace_manager', 'set_steering_phase', {
-          growspace_id: growspaceId,
-          steering_phase: phase,
-        }),
-    },
-    growspaceId
-  );
+export async function setSteeringPhase(growspaceId: string, phase: SteeringPhase): Promise<void> {
+  await runIrrigationCommand({
+    kind: 'steering-phase',
+    type: 'setSteeringPhase',
+    growspaceId,
+    phase,
+  });
 }
 
 /**
  * Persist irrigation settings (pump entities, durations, caps, flags).
  *
- * Optimistic: patches irrigationConfigs$ with the new settings.
- * Apply: calls growspace_manager.set_irrigation_settings with serialized payload.
- * Inverse: restores the previous config on failure.
+ * The whole-form save from the Irrigation dialog, which is why the four
+ * hardware fields are required here while every other settings field — and
+ * every field of a sparse settings command — stays optional. A `null` pump
+ * entity means "no pump"; the [[Irrigation Command]] compiler turns it into the
+ * empty string the action has always read that way. `null` also clears the
+ * three optional caps and the runoff-EC halt; anything else the backend has no
+ * clear for is refused before the growspace is touched.
  */
 export async function saveIrrigationSettings(
   growspaceId: string,
-  settings: {
-    irrigationPumpEntity: string;
-    pumpFlowRateMlPerSec?: number;
-    drainPumpEntity: string;
+  settings: IrrigationSettingsChange & {
+    irrigationPumpEntity: string | null;
+    drainPumpEntity: string | null;
     irrigationDuration: number;
     drainDuration: number;
-    soilTriggerPercent?: number | null;
-    dailyVolumeCapLiters?: number | null;
-    maxCyclesPerDay?: number | null;
-    skipDuringDark?: boolean;
-    pauseOnLowTank?: boolean;
-    logToLogbook?: boolean;
-    autoAdvanceP1ToP2?: boolean;
-    autoAdvanceP2ToP3?: boolean;
-    haltOnRunoffEcThreshold?: number | null;
   }
 ): Promise<void> {
-  const prev = _getConfig(growspaceId);
-
-  const patch: Partial<IrrigationConfig> = {
-    irrigationPumpEntity: settings.irrigationPumpEntity,
-    drainPumpEntity: settings.drainPumpEntity,
-    irrigationDuration: settings.irrigationDuration,
-    drainDuration: settings.drainDuration,
-    soilTriggerPercent: settings.soilTriggerPercent,
-    dailyVolumeCapLiters: settings.dailyVolumeCapLiters,
-    maxCyclesPerDay: settings.maxCyclesPerDay,
-    skipDuringDark: settings.skipDuringDark,
-    pauseOnLowTank: settings.pauseOnLowTank,
-    logToLogbook: settings.logToLogbook,
-    autoAdvanceP1ToP2: settings.autoAdvanceP1ToP2,
-    autoAdvanceP2ToP3: settings.autoAdvanceP2ToP3,
-    haltOnRunoffEcThreshold: settings.haltOnRunoffEcThreshold,
-  };
-  if (settings.pumpFlowRateMlPerSec !== undefined)
-    patch.pumpFlowRateMlPerSec = settings.pumpFlowRateMlPerSec;
-
-  const payload: Record<string, unknown> = {
-    growspace_id: growspaceId,
-    irrigation_pump_entity: settings.irrigationPumpEntity,
-    drain_pump_entity: settings.drainPumpEntity,
-    irrigation_duration: settings.irrigationDuration,
-    drain_duration: settings.drainDuration,
-  };
-  if (settings.pumpFlowRateMlPerSec !== undefined)
-    payload.pump_flow_rate_ml_per_sec = settings.pumpFlowRateMlPerSec;
-  if (settings.soilTriggerPercent !== undefined)
-    payload.soil_trigger_percent = settings.soilTriggerPercent;
-  if (settings.dailyVolumeCapLiters !== undefined)
-    payload.daily_volume_cap_liters = settings.dailyVolumeCapLiters;
-  if (settings.maxCyclesPerDay !== undefined) payload.max_cycles_per_day = settings.maxCyclesPerDay;
-  if (settings.skipDuringDark !== undefined) payload.skip_during_dark = settings.skipDuringDark;
-  if (settings.pauseOnLowTank !== undefined) payload.pause_on_low_tank = settings.pauseOnLowTank;
-  if (settings.logToLogbook !== undefined) payload.log_to_logbook = settings.logToLogbook;
-  if (settings.autoAdvanceP1ToP2 !== undefined)
-    payload.auto_advance_p1_to_p2 = settings.autoAdvanceP1ToP2;
-  if (settings.autoAdvanceP2ToP3 !== undefined)
-    payload.auto_advance_p2_to_p3 = settings.autoAdvanceP2ToP3;
-  if (settings.haltOnRunoffEcThreshold !== undefined)
-    payload.halt_on_runoff_ec_threshold = settings.haltOnRunoffEcThreshold;
-
-  await mutate(
-    {
-      type: 'saveIrrigationSettings',
-      optimistic: () => {
-        _patchConfig(growspaceId, patch);
-        patchDeviceIrrigationConfig(growspaceId, patch);
-      },
-      inverse: () => {
-        const restored = new Map(irrigationConfigs$.get());
-        restored.set(growspaceId, prev);
-        irrigationConfigs$.set(restored);
-        patchDeviceIrrigationConfig(growspaceId, prev);
-      },
-      apply: () => callService('growspace_manager', 'set_irrigation_settings', payload),
-    },
-    growspaceId
-  );
+  await runIrrigationCommand({
+    kind: 'settings',
+    type: 'saveIrrigationSettings',
+    growspaceId,
+    settings,
+  });
 }
 
 /**

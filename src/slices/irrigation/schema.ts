@@ -5,6 +5,14 @@
  * calls. They replace the Irrigation-related schemas that lived in the monolithic
  * `schemas/api-schema.ts` and the legacy IrrigationAPI class.
  *
+ * The four configuration-write schemas below — strategy, settings, steering
+ * phase and Steering Mode — are **strict**, and the [[Irrigation Command]]
+ * compiler parses every payload through them before anything is projected or
+ * sent. Strict is the point: the backend's Irrigation Change seam refuses a
+ * field it does not own by name (growspace_manager ADR-0046), so a key this
+ * card invents is an error to surface here rather than a rejection to explain
+ * from a service trace.
+ *
  * All schemas are private to the Irrigation slice unless re-exported here.
  */
 
@@ -23,40 +31,42 @@ const growspaceIdPayload = z.object({ growspace_id: z.string() });
 export const IrrigationModeSchema = z.enum(['manual', 'crop_steering']);
 export type IrrigationMode = z.infer<typeof IrrigationModeSchema>;
 
-export const SetIrrigationStrategyPayloadSchema = growspaceIdPayload.extend({
-  enabled: z.boolean().optional(),
-  lights_on_time: z.string().optional(),
-  p0_duration_minutes: z.number().int().optional(),
-  p2_stop_before_lights_off_minutes: z.number().int().optional(),
-  target_vwc_percent: z.number().optional(),
-  maintenance_dryback_percent: z.number().optional(),
-  shot_duration_seconds: z.number().int().optional(),
-  shot_interval_minutes: z.number().int().optional(),
-  p1_shot_duration_seconds: z.number().int().optional(),
-  p1_shot_interval_minutes: z.number().int().optional(),
-  p2_shot_duration_seconds: z.number().int().optional(),
-  p2_shot_interval_minutes: z.number().int().optional(),
-  p1_shot_volume_percent: z.number().optional(),
-  p2_shot_volume_percent: z.number().optional(),
-  // [[Skip P2]] (#131): a phase-transition rule, never an edit of the P2 pair.
-  skip_p2_after_p1: z.boolean().optional(),
-  shot_sizing_mode: z.enum(['seconds', 'volume']).optional(),
-  // Substrate Profile (#446): the backend accepts flat keys and folds them into
-  // the nested substrate_profile server-side (read side stays nested).
-  substrate_media_type: z.enum(['coco', 'rockwool', 'soil']).optional(),
-  substrate_liters_per_pot: z.number().optional(),
-  // Pore EC Target Band + EC Modulation (#447). null clears a band edge.
-  pore_ec_target_min: z.number().nullable().optional(),
-  pore_ec_target_max: z.number().nullable().optional(),
-  ec_modulation_enabled: z.boolean().optional(),
-  auto_light_tracking: z.boolean().optional(),
-  // Adaptive Shot Control (ADR-0014).
-  dynamic_shot_enabled: z.boolean().optional(),
-  dynamic_aggressiveness: z.number().optional(),
-  dynamic_recovery: z.number().optional(),
-  dynamic_shot_size_floor: z.number().optional(),
-  dynamic_interval_ceiling: z.number().optional(),
-});
+export const SetIrrigationStrategyPayloadSchema = growspaceIdPayload
+  .extend({
+    enabled: z.boolean().optional(),
+    lights_on_time: z.string().optional(),
+    p0_duration_minutes: z.number().int().optional(),
+    p2_stop_before_lights_off_minutes: z.number().int().optional(),
+    target_vwc_percent: z.number().optional(),
+    maintenance_dryback_percent: z.number().optional(),
+    shot_duration_seconds: z.number().int().optional(),
+    shot_interval_minutes: z.number().int().optional(),
+    p1_shot_duration_seconds: z.number().int().optional(),
+    p1_shot_interval_minutes: z.number().int().optional(),
+    p2_shot_duration_seconds: z.number().int().optional(),
+    p2_shot_interval_minutes: z.number().int().optional(),
+    p1_shot_volume_percent: z.number().optional(),
+    p2_shot_volume_percent: z.number().optional(),
+    // [[Skip P2]] (#131): a phase-transition rule, never an edit of the P2 pair.
+    skip_p2_after_p1: z.boolean().optional(),
+    shot_sizing_mode: z.enum(['seconds', 'volume']).optional(),
+    // Substrate Profile (#446): the backend accepts flat keys and folds them into
+    // the nested substrate_profile server-side (read side stays nested).
+    substrate_media_type: z.enum(['coco', 'rockwool', 'soil']).optional(),
+    substrate_liters_per_pot: z.number().optional(),
+    // Pore EC Target Band + EC Modulation (#447). null clears a band edge.
+    pore_ec_target_min: z.number().nullable().optional(),
+    pore_ec_target_max: z.number().nullable().optional(),
+    ec_modulation_enabled: z.boolean().optional(),
+    auto_light_tracking: z.boolean().optional(),
+    // Adaptive Shot Control (ADR-0014).
+    dynamic_shot_enabled: z.boolean().optional(),
+    dynamic_aggressiveness: z.number().optional(),
+    dynamic_recovery: z.number().optional(),
+    dynamic_shot_size_floor: z.number().optional(),
+    dynamic_interval_ceiling: z.number().optional(),
+  })
+  .strict();
 
 export type SetIrrigationStrategyPayload = z.infer<typeof SetIrrigationStrategyPayloadSchema>;
 
@@ -75,22 +85,36 @@ export type ApplySteeringModeResult = z.infer<typeof ApplySteeringModeResultSche
 // Settings
 // ---------------------------------------------------------------------------
 
-export const SaveIrrigationSettingsPayloadSchema = growspaceIdPayload.extend({
-  irrigation_pump_entity: z.string(),
-  pump_flow_rate_ml_per_sec: z.number().nonnegative().optional(),
-  drain_pump_entity: z.string(),
-  irrigation_duration: z.number().int(),
-  drain_duration: z.number().int(),
-  soil_trigger_percent: z.number().nullable().optional(),
-  daily_volume_cap_liters: z.number().nullable().optional(),
-  max_cycles_per_day: z.number().int().nullable().optional(),
-  skip_during_dark: z.boolean().optional(),
-  pause_on_low_tank: z.boolean().optional(),
-  log_to_logbook: z.boolean().optional(),
-  auto_advance_p1_to_p2: z.boolean().optional(),
-  auto_advance_p2_to_p3: z.boolean().optional(),
-  halt_on_runoff_ec_threshold: z.number().nullable().optional(),
-});
+/**
+ * Every field but the growspace id is optional, because the action's own schema
+ * makes them optional and a one-field save is the contract rather than a
+ * shortcut through it — `setProgramAutoAdvance` sends exactly one. What the
+ * card still requires of a whole-form save is stated by `saveIrrigationSettings`
+ * itself, which is the interface a caller holds.
+ *
+ * The pump entities are `string` and never null: a growspace with no pump is
+ * spelled as the empty string on this wire, and the [[Irrigation Command]]
+ * compiler is what turns a domain `null` into it.
+ */
+export const SaveIrrigationSettingsPayloadSchema = growspaceIdPayload
+  .extend({
+    irrigation_pump_entity: z.string().optional(),
+    pump_flow_rate_ml_per_sec: z.number().nonnegative().optional(),
+    drain_pump_entity: z.string().optional(),
+    irrigation_duration: z.number().int().optional(),
+    drain_duration: z.number().int().optional(),
+    soil_trigger_percent: z.number().nullable().optional(),
+    daily_volume_cap_liters: z.number().nullable().optional(),
+    max_cycles_per_day: z.number().int().nullable().optional(),
+    skip_during_dark: z.boolean().optional(),
+    pause_on_low_tank: z.boolean().optional(),
+    log_to_logbook: z.boolean().optional(),
+    auto_advance_p1_to_p2: z.boolean().optional(),
+    auto_advance_p2_to_p3: z.boolean().optional(),
+    program_auto_advance: z.boolean().optional(),
+    halt_on_runoff_ec_threshold: z.number().nullable().optional(),
+  })
+  .strict();
 
 export type SaveIrrigationSettingsPayload = z.infer<typeof SaveIrrigationSettingsPayloadSchema>;
 
@@ -100,11 +124,26 @@ export type SaveIrrigationSettingsPayload = z.infer<typeof SaveIrrigationSetting
  * able to carry a stale one. Named `steering_phase` on the wire, beside
  * `steering_mode`; the growspace payload reports it as `active_steering_phase`.
  */
-export const SetSteeringPhasePayloadSchema = growspaceIdPayload.extend({
-  steering_phase: z.enum(['p1', 'p2', 'p3']),
-});
+export const SetSteeringPhasePayloadSchema = growspaceIdPayload
+  .extend({
+    steering_phase: z.enum(['p1', 'p2', 'p3']),
+  })
+  .strict();
 
 export type SetSteeringPhasePayload = z.infer<typeof SetSteeringPhasePayloadSchema>;
+
+/**
+ * The Steering Mode stamp names a mode and nothing else (ADR-0012): the preset
+ * values are the server's to write, so a payload that spelled one out would be
+ * a card writing the table it is supposed to be reading.
+ */
+export const ApplySteeringModePayloadSchema = growspaceIdPayload
+  .extend({
+    steering_mode: SteeringModeSchema,
+  })
+  .strict();
+
+export type ApplySteeringModePayload = z.infer<typeof ApplySteeringModePayloadSchema>;
 
 // ---------------------------------------------------------------------------
 // Schedule
