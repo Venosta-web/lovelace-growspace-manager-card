@@ -95,3 +95,28 @@ describe('GrowspaceTcCard', () => {
     expect(GrowspaceTcCard.getStubConfig().type).toBe('custom:growspace-tc-card');
   });
 });
+
+describe('GrowspaceTcCard — showing a graduated plant', () => {
+  test('answers the view`s plant-view-requested itself', async () => {
+    hassCallMock.mockResolvedValue(MANIFEST);
+    const element = await renderTcCard();
+    // Replaced on the instance rather than spied on `window.location`, whose
+    // members are unforgeable — and actually navigating would take the test
+    // page with it. What the handler navigates *to* is asserted on the link's
+    // href in `growspace-tc-action-dialog.test.ts`, which is the same target
+    // this card has always used.
+    const shown: string[] = [];
+    (element as any)._showPlant = (event: CustomEvent<{ plantId: string }>) =>
+      shown.push(event.detail.plantId);
+
+    element.shadowRoot?.querySelector('growspace-tc-view')?.dispatchEvent(
+      new CustomEvent('plant-view-requested', {
+        detail: { plantId: 'plant / 1' },
+        bubbles: true,
+        composed: true,
+      })
+    );
+
+    expect(shown).toEqual(['plant / 1']);
+  });
+});

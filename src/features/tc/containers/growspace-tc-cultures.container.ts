@@ -51,6 +51,7 @@ import {
   type MaintenanceRequest,
   type PhenotypeOption,
   type PhenotypeResolution,
+  type TcSurfaceId,
   type WorklistEntry,
 } from '../../../slices/tc';
 import { devices$ } from '../../../slices/grid';
@@ -79,6 +80,22 @@ export class GrowspaceTcCultures extends LitElement {
   @property({ type: Boolean }) maintenance = false;
   @property({ type: Boolean }) graduationBridge = false;
   @property({ type: String }) language = 'en';
+
+  /**
+   * Which of this element's two surfaces to show. Omitted means both.
+   *
+   * The Worklist and the Culture Board are two faces of one element, and they
+   * are one element because everything behind them is shared: one fetch of the
+   * culture lines, one strain-library join, one clock the worklist is judged
+   * against, and one action state either pane can open. Splitting them to give
+   * the dialog two tabs would duplicate all four — so the tabs select a face
+   * instead, which is also what makes an action opened from the Worklist return
+   * to the Worklist with nothing reloaded.
+   *
+   * Selected with `hidden`, never with a template branch: see the same property
+   * on `growspace-tc-view` and ADR 0055.
+   */
+  @property({ type: String }) surface?: Extract<TcSurfaceId, 'worklist' | 'cultures'>;
 
   @state() private _devices: GrowspaceDevice[] = [];
   @state() private _graduationNotice = '';
@@ -111,6 +128,12 @@ export class GrowspaceTcCultures extends LitElement {
     css`
       :host {
         display: block;
+      }
+
+      /* Beats the hidden pane's own :host display rule. A rule in the tree an
+         element lives in outranks the :host rules inside it. */
+      [hidden] {
+        display: none;
       }
 
       .error {
@@ -448,14 +471,20 @@ export class GrowspaceTcCultures extends LitElement {
       ></growspace-tc-introduction-form>`;
     }
 
+    // An open action replaces the panes rather than sitting above them, the way
+    // the introduction already does. Both are one thing the grower is doing,
+    // and cancelling either returns to exactly the pane it was opened from —
+    // the surface never moved, only what is drawn in it.
+    if (this._acting.open) return this._renderActionDialog(this._acting);
+
     return html`
       <div>
         ${this._error ? html`<p class="error" role="alert">${this._error}</p>` : nothing}
         ${this._graduationNotice ? html`<p role="status">${this._graduationNotice}</p>` : nothing}
-        ${this._acting.open ? this._renderActionDialog(this._acting) : nothing}
         ${this._relinking.open ? this._renderRelink(this._relinking.line) : nothing}
         ${this.maintenance
           ? html`<growspace-tc-worklist
+              ?hidden=${this.surface === 'cultures'}
               .entries=${this._worklist}
               .names=${this._lineNames}
               .locations=${locationOptions(this._lines)}
@@ -464,6 +493,7 @@ export class GrowspaceTcCultures extends LitElement {
             ></growspace-tc-worklist>`
           : nothing}
         <growspace-tc-culture-board
+          ?hidden=${this.surface === 'worklist'}
           .lines=${this._lines}
           .resolutions=${this._resolutions}
           .showArchived=${this._showArchived}

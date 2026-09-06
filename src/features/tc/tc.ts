@@ -9,6 +9,8 @@
 
 import './containers/growspace-tc-view.container';
 import './containers/growspace-tc-cultures.container';
+import './containers/growspace-tc-media.container';
 
 export { GrowspaceTcView } from './containers/growspace-tc-view.container';
 export { GrowspaceTcCultures } from './containers/growspace-tc-cultures.container';
+export { GrowspaceTcMedia } from './containers/growspace-tc-media.container';

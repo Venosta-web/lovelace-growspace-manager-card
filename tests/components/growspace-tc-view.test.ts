@@ -2,7 +2,6 @@ import { expect, test, describe, vi, beforeEach, afterEach } from 'vitest';
 import { fixture } from '@open-wc/testing-helpers';
 
 import { hassCall } from '../../src/services/hass-call';
-import { WSError } from '../../src/services/errors';
 import { GrowspaceTcView } from '../../src/features/tc/containers/growspace-tc-view.container';
 import { CultureMediumSchema, resetTcPresence, type CultureMedium } from '../../src/slices/tc';
 
@@ -22,28 +21,26 @@ if (!customElements.get('growspace-tc-view')) {
   customElements.define('growspace-tc-view', GrowspaceTcView);
 }
 
-const aVersion = (version: number, overrides: Record<string, unknown> = {}) => ({
-  version,
-  created_at: `2026-0${version}-04T09:12:00+00:00`,
-  base_salts: 'MS',
-  additives: [],
-  hormones: [{ name: 'BAP', amount: 0.5 * version, unit: 'mg/L' }],
-  agar_g_per_l: 7,
-  sugar_g_per_l: 30,
-  ph_target: 5.8,
-  notes: '',
-  ...overrides,
-});
-
-const aMedium = (overrides: Record<string, unknown> = {}): CultureMedium =>
+const aMedium = (): CultureMedium =>
   CultureMediumSchema.parse({
     id: 'medium-1',
     name: 'MS multiplication',
     created_at: '2026-01-04T09:12:00+00:00',
     updated_at: '2026-01-04T09:12:00+00:00',
     current_version: 1,
-    versions: [aVersion(1)],
-    ...overrides,
+    versions: [
+      {
+        version: 1,
+        created_at: '2026-01-04T09:12:00+00:00',
+        base_salts: 'MS',
+        additives: [],
+        hormones: [{ name: 'BAP', amount: 0.5, unit: 'mg/L' }],
+        agar_g_per_l: 7,
+        sugar_g_per_l: 30,
+        ph_target: 5.8,
+        notes: '',
+      },
+    ],
   });
 
 const manifest = (features: string[]) => ({
@@ -53,193 +50,60 @@ const manifest = (features: string[]) => ({
   collections: {},
 });
 
-async function render(features = ['culture_media']): Promise<GrowspaceTcView> {
+/** Every command any surface issues, so a composition can mount all of them. */
+function answerEverything(): void {
+  hassCallMock.mockImplementation(async (command: string) => {
+    if (command.endsWith('/culture_media/list')) return { culture_media: [aMedium()] };
+    if (command.endsWith('/culture_lines/list')) return { culture_lines: [] };
+    if (command.endsWith('/pairings/list')) return { pairings: [] };
+    if (command.endsWith('/maintenance/history')) return { actions: [] };
+    return { strains: {} };
+  });
+}
+
+async function render(features: string[], surface?: string): Promise<GrowspaceTcView> {
   const element = await fixture<GrowspaceTcView>('<growspace-tc-view></growspace-tc-view>');
   element.manifest = manifest(features);
+  if (surface) element.setAttribute('surface', surface);
   await element.updateComplete;
-  await vi.waitFor(() => expect((element as any)._loading).toBe(false));
+  await new Promise((resolve) => setTimeout(resolve, 0));
   await element.updateComplete;
   return element;
 }
 
-const library = (element: GrowspaceTcView) =>
-  element.shadowRoot?.querySelector('growspace-tc-medium-library');
-const form = (element: GrowspaceTcView) =>
-  element.shadowRoot?.querySelector('growspace-tc-medium-form');
-
-/** Open the editor the way the library does — through the edit intent. */
-async function openEditor(element: GrowspaceTcView): Promise<void> {
-  library(element)?.dispatchEvent(
-    new CustomEvent('medium-edit-requested', {
-      detail: { id: 'medium-1' },
-      bubbles: true,
-      composed: true,
-    })
-  );
-  await element.updateComplete;
-}
-
-/** Submit the open editor, the way the form does. */
-function save(element: GrowspaceTcView): void {
-  form(element)?.dispatchEvent(
-    new CustomEvent('medium-save-requested', {
-      detail: { id: 'medium-1', draft: { name: 'MS multiplication' } },
-      bubbles: true,
-      composed: true,
-    })
-  );
-}
+const surfaceOf = (element: GrowspaceTcView, tag: string) =>
+  element.shadowRoot?.querySelector(tag) as HTMLElement | null;
 
 beforeEach(() => {
   resetTcPresence();
   vi.clearAllMocks();
-  hassCallMock.mockResolvedValue({ culture_media: [aMedium()] });
+  answerEverything();
 });
 
 afterEach(() => {
   resetTcPresence();
 });
 
-describe('GrowspaceTcView', () => {
-  test('fetches the library and hands it to the list', async () => {
-    const element = await render();
-
-    expect(hassCallMock.mock.calls[0][0]).toBe('growspace_manager_tc/culture_media/list');
-    expect(library(element)?.media).toHaveLength(1);
-  });
-
-  test('renders no library, and fetches nothing, when TC does not serve the feature', async () => {
+describe('GrowspaceTcView — what the manifest composes', () => {
+  test('renders nothing but the compatibility state for a featureless manifest', async () => {
     const element = await render([]);
 
-    expect(library(element)).toBeNull();
+    expect(surfaceOf(element, 'growspace-tc-media')).toBeNull();
+    expect(surfaceOf(element, 'growspace-tc-cultures')).toBeNull();
+    expect(surfaceOf(element, 'growspace-tc-pairings')).toBeNull();
     expect(hassCallMock).not.toHaveBeenCalled();
     expect(element.shadowRoot?.textContent).toContain('Nothing in culture yet');
   });
 
-  test('reports a failed fetch instead of showing an empty library', async () => {
-    hassCallMock.mockRejectedValue(new WSError('internal_error', 'the backend fell over'));
+  test('omits exactly the surface whose feature is missing', async () => {
+    const element = await render(['culture_lines', 'maintenance', 'pairings']);
 
-    const element = await render();
-
-    expect(element.shadowRoot?.querySelector('[role="alert"]')?.textContent).toContain(
-      'the backend fell over'
-    );
+    expect(surfaceOf(element, 'growspace-tc-cultures')).toBeTruthy();
+    expect(surfaceOf(element, 'growspace-tc-pairings')).toBeTruthy();
+    expect(surfaceOf(element, 'growspace-tc-media')).toBeNull();
   });
 
-  test('opens an empty form on the create intent', async () => {
-    const element = await render();
-
-    library(element)?.dispatchEvent(
-      new CustomEvent('medium-create-requested', { bubbles: true, composed: true })
-    );
-    await element.updateComplete;
-
-    expect(form(element)?.medium).toBeUndefined();
-    expect(library(element)).toBeNull();
-  });
-
-  test('opens the form on the medium the edit intent named', async () => {
-    const element = await render();
-
-    library(element)?.dispatchEvent(
-      new CustomEvent('medium-edit-requested', {
-        detail: { id: 'medium-1' },
-        bubbles: true,
-        composed: true,
-      })
-    );
-    await element.updateComplete;
-
-    expect(form(element)?.medium?.id).toBe('medium-1');
-  });
-
-  test('sends an edit as an update and closes the form on success', async () => {
-    const element = await render();
-    await openEditor(element);
-    const forked = aMedium({ current_version: 2, versions: [aVersion(1), aVersion(2)] });
-    hassCallMock.mockResolvedValue({ medium: forked });
-
-    save(element);
-    await vi.waitFor(() => expect(form(element)).toBeNull());
-
-    expect(hassCallMock.mock.calls[1][0]).toBe('growspace_manager_tc/culture_media/update');
-    expect(library(element)?.media[0].current_version).toBe(2);
-  });
-
-  test('keeps the form open, holding the draft, when the backend rejects a value', async () => {
-    const element = await render();
-    await openEditor(element);
-    hassCallMock.mockRejectedValue(
-      new WSError('validation_failed', 'pH target must be between 3 and 9.')
-    );
-
-    save(element);
-    await vi.waitFor(() => expect(form(element)?.error).toBeTruthy());
-
-    expect(form(element)?.error).toContain('pH target');
-  });
-
-  test('asks before deleting, and says what the deletion takes with it', async () => {
-    const element = await render();
-
-    library(element)?.dispatchEvent(
-      new CustomEvent('medium-delete-requested', {
-        detail: { id: 'medium-1' },
-        bubbles: true,
-        composed: true,
-      })
-    );
-    await element.updateComplete;
-
-    const confirmation = element.shadowRoot?.querySelector('.confirm');
-    expect(confirmation?.textContent).toContain('MS multiplication');
-    expect(confirmation?.textContent).toContain('1 recorded versions');
-    expect(hassCallMock).toHaveBeenCalledTimes(1);
-  });
-
-  test('deletes only once the confirmation is accepted', async () => {
-    const element = await render();
-    library(element)?.dispatchEvent(
-      new CustomEvent('medium-delete-requested', {
-        detail: { id: 'medium-1' },
-        bubbles: true,
-        composed: true,
-      })
-    );
-    await element.updateComplete;
-    hassCallMock.mockResolvedValue({ medium_id: 'medium-1' });
-
-    const buttons = [...(element.shadowRoot?.querySelectorAll('.confirm button') ?? [])];
-    (buttons[buttons.length - 1] as HTMLButtonElement).click();
-    await vi.waitFor(() => expect(library(element)?.media).toHaveLength(0));
-
-    expect(hassCallMock.mock.calls[1][0]).toBe('growspace_manager_tc/culture_media/delete');
-  });
-
-  test('a cancelled confirmation deletes nothing', async () => {
-    const element = await render();
-    library(element)?.dispatchEvent(
-      new CustomEvent('medium-delete-requested', {
-        detail: { id: 'medium-1' },
-        bubbles: true,
-        composed: true,
-      })
-    );
-    await element.updateComplete;
-
-    const buttons = [...(element.shadowRoot?.querySelectorAll('.confirm button') ?? [])];
-    (buttons[0] as HTMLButtonElement).click();
-    await element.updateComplete;
-
-    expect(element.shadowRoot?.querySelector('.confirm')).toBeNull();
-    expect(hassCallMock).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('GrowspaceTcView — the maintenance gate', () => {
   test('tells the board container whether this release serves the acts', async () => {
-    hassCallMock.mockResolvedValue({ culture_lines: [], strains: {} });
-
     const without = await render(['culture_lines']);
     expect(
       (
@@ -257,5 +121,72 @@ describe('GrowspaceTcView — the maintenance gate', () => {
         }
       ).maintenance
     ).toBe(true);
+  });
+});
+
+describe('GrowspaceTcView — selecting one surface', () => {
+  const everything = ['culture_lines', 'maintenance', 'culture_media', 'pairings'];
+
+  test('with no surface it stacks them all, which is what the card gets', async () => {
+    const element = await render(everything);
+
+    for (const tag of ['growspace-tc-cultures', 'growspace-tc-media', 'growspace-tc-pairings']) {
+      expect(surfaceOf(element, tag)?.hidden, tag).toBe(false);
+    }
+    expect(
+      (surfaceOf(element, 'growspace-tc-cultures') as unknown as { surface?: string }).surface
+    ).toBeUndefined();
+  });
+
+  test('hides the surfaces it is not showing, and unmounts none of them', async () => {
+    const element = await render(everything, 'media');
+
+    expect(surfaceOf(element, 'growspace-tc-media')?.hidden).toBe(false);
+    expect(surfaceOf(element, 'growspace-tc-cultures')?.hidden).toBe(true);
+    expect(surfaceOf(element, 'growspace-tc-pairings')?.hidden).toBe(true);
+  });
+
+  test('shows the cultures element for both of its faces, and selects between them', async () => {
+    for (const surface of ['worklist', 'cultures']) {
+      const element = await render(everything, surface);
+      const cultures = surfaceOf(element, 'growspace-tc-cultures');
+
+      expect(cultures?.hidden, surface).toBe(false);
+      expect((cultures as unknown as { surface?: string }).surface).toBe(surface);
+    }
+  });
+
+  test('a surface hidden and shown again is the same element, with its fetch not repeated', async () => {
+    const element = await render(everything, 'media');
+    const media = surfaceOf(element, 'growspace-tc-media');
+    const fetches = hassCallMock.mock.calls.length;
+
+    element.setAttribute('surface', 'pairings');
+    await element.updateComplete;
+    element.setAttribute('surface', 'media');
+    await element.updateComplete;
+
+    expect(surfaceOf(element, 'growspace-tc-media')).toBe(media);
+    expect(hassCallMock.mock.calls.length).toBe(fetches);
+  });
+
+  test('an open Culture Medium draft survives a switch away and back', async () => {
+    const element = await render(everything, 'media');
+    const media = surfaceOf(element, 'growspace-tc-media');
+    media?.shadowRoot
+      ?.querySelector('growspace-tc-medium-library')
+      ?.dispatchEvent(
+        new CustomEvent('medium-create-requested', { bubbles: true, composed: true })
+      );
+    await (media as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect(media?.shadowRoot?.querySelector('growspace-tc-medium-form')).toBeTruthy();
+
+    element.setAttribute('surface', 'pairings');
+    await element.updateComplete;
+    element.setAttribute('surface', 'media');
+    await element.updateComplete;
+
+    expect(surfaceOf(element, 'growspace-tc-media')?.shadowRoot).toBe(media?.shadowRoot);
+    expect(media?.shadowRoot?.querySelector('growspace-tc-medium-form')).toBeTruthy();
   });
 });

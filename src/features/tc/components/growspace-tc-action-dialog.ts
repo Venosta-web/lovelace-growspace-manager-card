@@ -373,6 +373,31 @@ export class GrowspaceTcActionDialog extends LitElement {
     }
   }
 
+  /**
+   * Ask the host to show the graduated plant, instead of navigating here.
+   *
+   * The two hosts have different correct answers, which is what an event at a
+   * seam is for. The standalone card may be on a dashboard with no Growspace
+   * Manager card at all, so the full-page navigation the `href` describes is
+   * what makes the link work there. Inside the Tissue Culture dialog the
+   * manager card is on the page and can open the Plant Overview directly, with
+   * no reload and nothing destroyed. TC has no business deciding between them.
+   *
+   * The `href` stays real so the link is still a link — modified clicks keep
+   * opening a tab, and a host that listens for nothing still navigates.
+   */
+  private _requestPlantView(event: MouseEvent, plantId: string): void {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey) return;
+    event.preventDefault();
+    this.dispatchEvent(
+      new CustomEvent('plant-view-requested', {
+        detail: { plantId },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
   private _renderHistory(): TemplateResult {
     if (this.historyLoading) {
       return html`<p class="supporting">${this._t('history_loading')}</p>`;
@@ -389,7 +414,10 @@ export class GrowspaceTcActionDialog extends LitElement {
               — ${this._historyLine(action)}${action.note ? html` — ${action.note}` : nothing}
               ${action.plant_id
                 ? html` —
-                    <a href=${`?plantId=${encodeURIComponent(action.plant_id)}`}
+                    <a
+                      href=${`?plantId=${encodeURIComponent(action.plant_id)}`}
+                      @click=${(event: MouseEvent) =>
+                        this._requestPlantView(event, action.plant_id as string)}
                       >${this._t('graduation_view_plant')}</a
                     >`
                 : nothing}

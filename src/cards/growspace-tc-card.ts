@@ -129,6 +129,20 @@ export class GrowspaceTcCard extends LitElement implements LovelaceCard {
     this._presence = presence;
   }
 
+  /**
+   * Show a graduated plant the way the link in the history always has.
+   *
+   * A full-page navigation to `?plantId=…`, which `growspace-manager-card`
+   * reads on load, strips, and hands to `handleDeepLink`. It looks heavy, and
+   * from inside the Tissue Culture dialog it would be — but this card can be
+   * the only Growspace card on the dashboard, and then the reload is the entire
+   * mechanism by which the link works. The dialog host answers the same event
+   * differently, which is why the view raises one instead of navigating.
+   */
+  private _showPlant(event: CustomEvent<{ plantId: string }>): void {
+    window.location.assign(`?plantId=${encodeURIComponent(event.detail.plantId)}`);
+  }
+
   protected render() {
     if (this._presence.status !== 'present') return nothing;
 
@@ -141,6 +155,8 @@ export class GrowspaceTcCard extends LitElement implements LovelaceCard {
           : html`<growspace-tc-view
               .manifest=${this._presence.manifest}
               .language=${this.hass?.language ?? 'en'}
+              @plant-view-requested=${(event: CustomEvent<{ plantId: string }>) =>
+                this._showPlant(event)}
             ></growspace-tc-view>`}
       </ha-card>
     `;

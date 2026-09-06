@@ -568,3 +568,86 @@ test('a failed bridge closes the completed action and explains manual recovery',
     'Check Growspace Manager before adding a plant manually'
   );
 });
+
+describe('GrowspaceTcCultures — the two faces of one element', () => {
+  test('shows both panes when no surface is named, which is what the card gets', async () => {
+    answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY });
+
+    const element = await render(true);
+
+    expect(worklist(element)?.hasAttribute('hidden')).toBe(false);
+    expect(board(element)?.hasAttribute('hidden')).toBe(false);
+  });
+
+  test('hides the pane it is not showing rather than unmounting it', async () => {
+    answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY });
+    const element = await render(true);
+
+    element.surface = 'worklist';
+    await element.updateComplete;
+    expect(worklist(element)?.hasAttribute('hidden')).toBe(false);
+    expect(board(element)?.hasAttribute('hidden')).toBe(true);
+
+    element.surface = 'cultures';
+    await element.updateComplete;
+    expect(worklist(element)?.hasAttribute('hidden')).toBe(true);
+    expect(board(element)?.hasAttribute('hidden')).toBe(false);
+  });
+
+  test('switching faces re-fetches nothing', async () => {
+    answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY });
+    const element = await render(true);
+    const fetches = hassCallMock.mock.calls.length;
+
+    element.surface = 'worklist';
+    await element.updateComplete;
+    element.surface = 'cultures';
+    await element.updateComplete;
+
+    expect(hassCallMock.mock.calls.length).toBe(fetches);
+  });
+});
+
+describe('GrowspaceTcCultures — an act replaces what it was opened from', () => {
+  test('an action opened from the worklist returns to the worklist', async () => {
+    answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY });
+    const element = await render(true);
+    element.surface = 'worklist';
+    await element.updateComplete;
+
+    worklist(element)?.dispatchEvent(
+      new CustomEvent('culture-action-requested', {
+        detail: { cultureId: 'culture-1', action: 'replate' },
+        bubbles: true,
+        composed: true,
+      })
+    );
+    await vi.waitFor(() => expect(dialog(element)).toBeTruthy());
+    await element.updateComplete;
+
+    // The act replaces the panes, the way the introduction already does.
+    expect(worklist(element)).toBeNull();
+    expect(board(element)).toBeNull();
+
+    dialog(element)?.dispatchEvent(
+      new CustomEvent('maintenance-cancelled', { bubbles: true, composed: true })
+    );
+    await element.updateComplete;
+
+    // The surface never moved — only what was drawn in it.
+    expect(element.surface).toBe('worklist');
+    expect(worklist(element)?.hasAttribute('hidden')).toBe(false);
+    expect(board(element)?.hasAttribute('hidden')).toBe(true);
+  });
+
+  test('an act does not render above the panes it interrupts', async () => {
+    answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY });
+    const element = await render(true);
+
+    await requestAction(element, 'replate');
+
+    expect(dialog(element)).toBeTruthy();
+    expect(worklist(element)).toBeNull();
+    expect(board(element)).toBeNull();
+  });
+});

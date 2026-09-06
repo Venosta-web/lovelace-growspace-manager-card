@@ -1,67 +1,68 @@
 import { LitElement, html, css, nothing, type CSSResultGroup, type TemplateResult } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 
-import { localize, localizeWithParams } from '../../../localize/localize';
+import { localize } from '../../../localize/localize';
 import { variables } from '../../../styles/variables';
 import { sharedStyles } from '../../../styles/shared.styles';
 import {
-  createCultureMedium,
-  cultureMedia$,
-  deleteCultureMedium,
-  fetchCultureMedia,
-  updateCultureMedium,
-  TC_FEATURE_CULTURE_LINES,
-  TC_FEATURE_CULTURE_MEDIA,
+  tcSurfaces,
   TC_FEATURE_MAINTENANCE,
-  TC_FEATURE_PAIRINGS,
-  type CultureMedium,
-  type CultureMediumDraft,
   type TcManifest,
+  type TcSurfaceId,
 } from '../../../slices/tc';
 import './growspace-tc-cultures.container';
+import './growspace-tc-media.container';
 import './growspace-tc-pairings.container';
-import '../components/growspace-tc-medium-library';
-import '../components/growspace-tc-medium-form';
-
-type Editing = { open: false } | { open: true; medium?: CultureMedium };
 
 /**
  * The tissue-culture view.
  *
- * It holds the due/overdue worklist, the culture board and the Culture Medium
- * library and curated pairing editor. The
- * worklist leads because it is the answer to the question a grower opens this
- * view with — what has to be replated — and the board is what they reach for
- * once that is done.
+ * It composes TC's four surfaces — the due/overdue worklist, the culture board,
+ * the Culture Medium library and the curated pairing editor — and owns none of
+ * them. The worklist leads because it is the answer to the question a grower
+ * opens this view with: what has to be replated. The board is what they reach
+ * for once that is done.
  *
- * Every surface is gated on a manifest feature rather than on the installed
- * release: a TC that predates the medium library answers the presence probe
- * perfectly well, and the honest response to that is a view without a library,
- * not a library whose every call fails.
+ * Which surfaces exist is `tcSurfaces(manifest)`'s answer, not this element's:
+ * every surface is gated on a manifest feature rather than on the installed
+ * release, because a TC that predates the medium library answers the presence
+ * probe perfectly well, and the honest response to that is a view without a
+ * library rather than a library whose every call fails.
+ *
+ * **Two hosts mount this element**: the standalone `growspace-tc-card`, which
+ * sets no `surface` and gets the stacked composition, and the Tissue Culture
+ * dialog, which names one surface per tab. So it holds no state, reads no
+ * `hass`, no context and no per-card store, and declares neither height nor
+ * overflow — the chrome, the geometry and what a plant link means belong to the
+ * host, and the seam between the two is this property interface.
  */
 @customElement('growspace-tc-view')
 export class GrowspaceTcView extends LitElement {
   @property({ attribute: false }) manifest?: TcManifest;
   @property({ type: String }) language = 'en';
 
-  @state() private _media: CultureMedium[] = [];
-  @state() private _loading = false;
-  @state() private _error = '';
-  @state() private _saving = false;
-  @state() private _saveError = '';
-  @state() private _editing: Editing = { open: false };
-  @state() private _pendingDelete?: CultureMedium;
-
-  private _unsubscribe?: () => void;
-  private _requested = false;
+  /**
+   * Which surface to show. Omitted means all of them, stacked.
+   *
+   * A rendered surface stays mounted: this hides the others and never unmounts
+   * them. Every surface owns its own fetch, subscriptions and drafts, so
+   * unmounting one drops an in-progress Replate, a half-typed Culture Medium, a
+   * Pairing edit and the clock the worklist is judged against. That is the
+   * ADR-0019 exception recorded in ADR 0055, and it is the one rule the
+   * implementation must not break.
+   */
+  @property({ type: String }) surface?: TcSurfaceId;
 
   static styles: CSSResultGroup = [
     variables,
     sharedStyles,
     css`
       :host {
+        /* The host tunes the inset without a JS property: an ha-card wants
+           the 16px, a dialog whose frame already pads its content pane may
+           want none of it. */
         display: block;
-        padding: 16px;
+        padding: var(--growspace-tc-view-padding, 16px);
       }
 
       .state {
@@ -77,184 +78,30 @@ export class GrowspaceTcView extends LitElement {
         opacity: 0.7;
       }
 
-      .error {
-        color: var(--error-color, #f44336);
-      }
-
-      .confirm {
-        border: 1px solid var(--error-color, #f44336);
-        border-radius: 10px;
-        padding: 12px;
-        margin-bottom: 12px;
-      }
-
-      .confirm p {
-        margin: 0 0 8px;
-      }
-
-      .confirm-buttons {
-        display: flex;
-        gap: 8px;
-      }
-
-      button {
-        font: inherit;
-        color: inherit;
-        background: none;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
-        border-radius: 999px;
-        padding: 6px 14px;
-        min-height: 36px;
-        cursor: pointer;
+      /* Beats the hidden surface's own :host display rule. A rule in the tree
+         an element lives in outranks the :host rules inside it. */
+      [hidden] {
+        display: none;
       }
     `,
   ];
-
-  private get _hasMediumLibrary(): boolean {
-    return this.manifest?.features.includes(TC_FEATURE_CULTURE_MEDIA) ?? false;
-  }
-
-  private get _hasCultureBoard(): boolean {
-    return this.manifest?.features.includes(TC_FEATURE_CULTURE_LINES) ?? false;
-  }
-
-  private get _hasMaintenance(): boolean {
-    return this.manifest?.features.includes(TC_FEATURE_MAINTENANCE) ?? false;
-  }
-
-  connectedCallback(): void {
-    super.connectedCallback();
-    this._unsubscribe = cultureMedia$.subscribe((media) => {
-      this._media = [...media];
-    });
-  }
-
-  disconnectedCallback(): void {
-    this._unsubscribe?.();
-    this._unsubscribe = undefined;
-    super.disconnectedCallback();
-  }
-
-  protected updated(changed: Map<string | number | symbol, unknown>): void {
-    // Driven by the manifest rather than by the first render: the card sets
-    // `.manifest` once the presence probe answers, and a view that fetched in
-    // `firstUpdated` would decide against a manifest it did not have yet.
-    if (changed.has('manifest') && this._hasMediumLibrary && !this._requested) {
-      this._requested = true;
-      void this._load();
-    }
-  }
 
   private _t(key: string): string {
     return localize(`tc.${key}`, '', '', this.language);
   }
 
-  private static _message(error: unknown): string {
-    return error instanceof Error ? error.message : String(error);
-  }
-
-  private async _load(): Promise<void> {
-    this._loading = true;
-    this._error = '';
-    try {
-      await fetchCultureMedia();
-    } catch (error) {
-      this._error = GrowspaceTcView._message(error);
-    } finally {
-      this._loading = false;
-    }
-  }
-
-  private _startCreate(): void {
-    this._saveError = '';
-    this._editing = { open: true };
-  }
-
-  private _startEdit(event: CustomEvent<{ id: string }>): void {
-    const medium = this._media.find((entry) => entry.id === event.detail.id);
-    if (!medium) return;
-    this._saveError = '';
-    this._editing = { open: true, medium };
-  }
-
-  private _cancelEdit(): void {
-    this._editing = { open: false };
-    this._saveError = '';
-  }
-
-  private async _save(
-    event: CustomEvent<{ id?: string; draft: CultureMediumDraft }>
-  ): Promise<void> {
-    const { id, draft } = event.detail;
-    this._saving = true;
-    this._saveError = '';
-    try {
-      if (id) {
-        await updateCultureMedium(id, draft);
-      } else {
-        await createCultureMedium(draft);
-      }
-      this._editing = { open: false };
-    } catch (error) {
-      // The form stays open holding the draft: the backend rejected a value,
-      // and throwing the grower's typing away would be the second failure.
-      this._saveError = GrowspaceTcView._message(error);
-    } finally {
-      this._saving = false;
-    }
-  }
-
-  private _askToDelete(event: CustomEvent<{ id: string }>): void {
-    this._pendingDelete = this._media.find((entry) => entry.id === event.detail.id);
-  }
-
-  private async _confirmDelete(): Promise<void> {
-    const medium = this._pendingDelete;
-    if (!medium) return;
-    this._pendingDelete = undefined;
-    try {
-      await deleteCultureMedium(medium.id);
-      if (this._editing.open && this._editing.medium?.id === medium.id) {
-        this._editing = { open: false };
-      }
-    } catch (error) {
-      this._error = GrowspaceTcView._message(error);
-    }
-  }
-
-  /**
-   * Deleting a medium takes its whole version history with it, so the prompt
-   * says so and counts the versions rather than asking "are you sure?".
-   */
-  private _renderDeleteConfirmation(medium: CultureMedium): TemplateResult {
-    return html`
-      <div class="confirm" role="alertdialog" aria-label=${this._t('medium_delete')}>
-        <p>
-          ${localizeWithParams(
-            'tc.medium_delete_confirm',
-            { name: medium.name, count: medium.versions.length },
-            this.language
-          )}
-        </p>
-        <div class="confirm-buttons">
-          <button @click=${() => (this._pendingDelete = undefined)}>
-            ${this._t('medium_cancel')}
-          </button>
-          <button @click=${this._confirmDelete}>${this._t('medium_delete')}</button>
-        </div>
-      </div>
-    `;
+  /** Whether a surface this installation offers is not the one being shown. */
+  private _hidden(...ids: TcSurfaceId[]): boolean {
+    return this.surface !== undefined && !ids.includes(this.surface);
   }
 
   protected render(): TemplateResult {
+    const surfaces = tcSurfaces(this.manifest);
+
     // Nothing this release can serve: an installation older than every surface
     // answers the presence probe perfectly well, and a view of broken calls
-    // would be worse than one that says there is nothing here yet.
-    if (
-      !this._hasMediumLibrary &&
-      !this._hasCultureBoard &&
-      !this.manifest?.features.includes(TC_FEATURE_PAIRINGS)
-    ) {
+    // would be worse than one that says so.
+    if (surfaces.length === 0) {
       return html`
         <div class="state" role="region" aria-label=${this._t('view_title')}>
           <h3>${this._t('empty_title')}</h3>
@@ -265,45 +112,36 @@ export class GrowspaceTcView extends LitElement {
 
     return html`
       <div role="region" aria-label=${this._t('view_title')}>
-        ${this._error ? html`<p class="error" role="alert">${this._error}</p>` : nothing}
-        ${this._hasCultureBoard
+        ${surfaces.includes('cultures')
           ? html`<growspace-tc-cultures
-              .maintenance=${this._hasMaintenance}
+              ?hidden=${this._hidden('worklist', 'cultures')}
+              .surface=${this.surface === 'worklist' || this.surface === 'cultures'
+                ? this.surface
+                : undefined}
+              .maintenance=${this.manifest?.features.includes(TC_FEATURE_MAINTENANCE) ?? false}
               .graduationBridge=${this.manifest?.features.includes('graduation_bridge') ?? false}
               .language=${this.language}
             ></growspace-tc-cultures>`
           : nothing}
-        ${this._hasMediumLibrary ? this._renderMediumLibrary() : nothing}
-        ${this.manifest?.features.includes(TC_FEATURE_PAIRINGS)
-          ? html`<growspace-tc-pairings .language=${this.language}></growspace-tc-pairings>`
+        ${surfaces.includes('media')
+          ? html`<growspace-tc-media
+              ?hidden=${this._hidden('media')}
+              .language=${this.language}
+            ></growspace-tc-media>`
+          : nothing}
+        ${surfaces.includes('pairings')
+          ? html`<growspace-tc-pairings
+              ?hidden=${this._hidden('pairings')}
+              .language=${this.language}
+            ></growspace-tc-pairings>`
           : nothing}
       </div>
     `;
   }
+}
 
-  /** The Culture Medium library, and whichever of its panels is open. */
-  private _renderMediumLibrary(): TemplateResult {
-    return html`
-      <div>
-        ${this._pendingDelete ? this._renderDeleteConfirmation(this._pendingDelete) : nothing}
-        ${this._editing.open
-          ? html`<growspace-tc-medium-form
-              .medium=${this._editing.medium}
-              .saving=${this._saving}
-              .error=${this._saveError}
-              .language=${this.language}
-              @medium-save-requested=${this._save}
-              @medium-cancel-requested=${this._cancelEdit}
-            ></growspace-tc-medium-form>`
-          : html`<growspace-tc-medium-library
-              .media=${this._media}
-              .language=${this.language}
-              @medium-create-requested=${this._startCreate}
-              @medium-edit-requested=${this._startEdit}
-              @medium-delete-requested=${this._askToDelete}
-            ></growspace-tc-medium-library>`}
-        ${this._loading ? html`<p class="supporting">${this._t('medium_loading')}</p>` : nothing}
-      </div>
-    `;
+declare global {
+  interface HTMLElementTagNameMap {
+    'growspace-tc-view': GrowspaceTcView;
   }
 }
