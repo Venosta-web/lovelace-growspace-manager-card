@@ -88,43 +88,96 @@ test.describe('Camera and Vision Checkup capability profile', () => {
       .toEqual([45, 6, 45]);
   });
 
+  /**
+   * Capture writes one file per configured camera, and the rail is where the
+   * dialog offers them back.
+   *
+   * A frame is tied to its camera by its filename — `<stamp>_<entity id with
+   * dots as underscores>.jpg`, the join the capture writers and the Snapshots
+   * ViewModel already share — so that is the handle used here rather than the
+   * friendly name the thumbnail happens to print today.
+   *
+   * The two bodies differing is the whole point: one frame reused for both
+   * cameras is the bug this guards, and it would satisfy every other assertion.
+   */
   test('captures and presents one distinguishable snapshot per camera', async ({ page }) => {
+    // Two real camera captures plus the reload of the rail behind them.
+    test.setTimeout(45_000);
     await card.clickMenuAction('snapshots');
     const dialog = new SnapshotsDialog(page);
     await dialog.waitForOpen();
 
-    await dialog.dialog.getByText('Capture Now', { exact: true }).click();
-    await expect(dialog.dialog.getByText('Capture Now', { exact: true })).toBeVisible();
+    const framesOf = (entityId: string) =>
+      dialog.dialog.locator(`.thumb img[src*="_${entityId.replace('.', '_')}."]`);
+    const before = await Promise.all(CAMERAS.map((entityId) => framesOf(entityId).count()));
 
-    const first = dialog.dialog.locator('img.snapshot-image[src*="camera_e2e_vision_1.jpg"]');
-    const second = dialog.dialog.locator('img.snapshot-image[src*="camera_e2e_vision_2.jpg"]');
-    await expect(first.first()).toBeVisible();
-    await expect(second.first()).toBeVisible();
+    await dialog.dialog.locator('.header-actions .capture-btn').click();
 
-    const [firstResponse, secondResponse] = await Promise.all([
-      page.request.get((await first.first().getAttribute('src'))!),
-      page.request.get((await second.first().getAttribute('src'))!),
-    ]);
-    expect(firstResponse.ok()).toBe(true);
-    expect(secondResponse.ok()).toBe(true);
-    expect(firstResponse.headers()['content-type']).toContain('image/jpeg');
-    expect(secondResponse.headers()['content-type']).toContain('image/jpeg');
-    expect(await firstResponse.body()).not.toEqual(await secondResponse.body());
+    const captured: string[] = [];
+    for (const [index, entityId] of CAMERAS.entries()) {
+      const frames = framesOf(entityId);
+      await expect
+        .poll(() => frames.count(), {
+          message: `capture should add one ${entityId} frame to the rail`,
+          timeout: 20_000,
+        })
+        .toBe(before[index] + 1);
+      // The rail lists newest first, so the first frame is the one just taken.
+      captured.push((await frames.first().getAttribute('src'))!);
+    }
+
+    const [first, second] = await Promise.all(captured.map((src) => page.request.get(src)));
+    expect(first.ok()).toBe(true);
+    expect(second.ok()).toBe(true);
+    expect(first.headers()['content-type']).toContain('image/jpeg');
+    expect(second.headers()['content-type']).toContain('image/jpeg');
+    expect(await first.body()).not.toEqual(await second.body());
   });
+});
 
-  test('keeps history empty and reports the existing AI availability gate locally', async ({
+/**
+ * The other half of the profile: a growspace a Vision Checkup cannot run for.
+ *
+ * Every E2E growspace except `E2E Vision` is declared without cameras, and the
+ * checkup refuses on exactly that before it records anything — so this is the
+ * one gate that fires identically on a managed runtime and on a live `ha-dev`
+ * whose Vision App is up and configured. Pointing it at the Vision growspace
+ * instead would assert a failure that a correctly provisioned dev runtime does
+ * not produce: `./scripts/e2e vision` configures the manual endpoint and
+ * checkups there succeed.
+ *
+ * Two things must hold, and a redesign can quietly drop either: an evidence
+ * surface with nothing to show has to say so rather than render a blank frame,
+ * and a checkup that cannot run has to reach the user instead of being
+ * swallowed, leaving the history exactly as empty as it was.
+ */
+test.describe('Vision Checkup on a growspace with no camera to check', () => {
+  test('announces the empty evidence history and surfaces the checkup gate', async ({
     page,
+    testContext,
   }) => {
+    expect(testContext.vegGrowspaceId).not.toBe('');
+    expect(testContext.vegDashboardPath).not.toBe('');
+    const card = new GrowspaceCard(page);
+    await card.navigate(testContext.vegDashboardPath);
+    await card.waitForCardReady();
+
     await card.clickMenuAction('snapshots');
     const dialog = new SnapshotsDialog(page);
     await dialog.waitForOpen();
-    await dialog.dialog.getByText('Vision Checkup', { exact: true }).click();
+    await dialog.dialog.locator('.view-tab', { hasText: 'Vision evidence' }).click();
 
-    await expect(dialog.dialog.getByText(/No vision checkups yet/i)).toBeVisible();
-    await dialog.dialog.getByText('Run Checkup Now', { exact: true }).click();
+    const evidence = dialog.dialog.locator('growspace-vision-evidence');
+    const checkups = evidence.locator('section.checkup');
+    await expect(evidence.locator('.state h4')).toHaveText(/No Vision evidence yet/i);
+    await expect(checkups).toHaveCount(0);
+
+    await dialog.dialog.locator('.header-actions .run-checkup-btn').click();
+
     await expect(card.card.locator('growspace-toast-ui .toast-message')).toContainText(
       'Failed to trigger checkup'
     );
-    await expect(dialog.dialog.getByText(/No vision checkups yet/i)).toBeVisible();
+    await expect(evidence.locator('.state h4')).toHaveText(/No Vision evidence yet/i);
+    await expect(checkups).toHaveCount(0);
   });
 });
