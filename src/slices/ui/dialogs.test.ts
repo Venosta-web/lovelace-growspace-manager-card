@@ -102,6 +102,26 @@ describe('slices/ui pure dialog-open helpers', () => {
     }
   });
 
+  // Regression for #913 / ADR-0055: the irrigation dialog names the portal that
+  // opened it, so two cards on one dashboard do not stack two copies of it.
+  it('openIrrigationDialog carries the opening portal id', () => {
+    openIrrigationDialog({ growspaceId: 'gs-1', portalId: 'gs-store-7' });
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('IRRIGATION');
+    if (dialog.type === 'IRRIGATION') {
+      expect(dialog.payload.portalId).toBe('gs-store-7');
+    }
+  });
+
+  it('openIrrigationDialog leaves portalId absent when the caller names no portal', () => {
+    openIrrigationDialog({ growspaceId: 'gs-1' });
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('IRRIGATION');
+    if (dialog.type === 'IRRIGATION') {
+      expect(dialog.payload.portalId).toBeUndefined();
+    }
+  });
+
   // Regression for #440 / ADR-0027: IPM and crop-steering must resolve their
   // growspace from an explicit/per-card source, never the dead page-global.
   it('openIPMDialog opens IPM with an explicit growspace id', () => {
@@ -138,6 +158,15 @@ describe('slices/ui pure dialog-open helpers', () => {
     expect(dialog.type).toBe('IRRIGATION');
     if (dialog.type === 'IRRIGATION') {
       expect(dialog.payload.growspaceId).toBe('gs-1');
+    }
+  });
+
+  it('toggleEnvGraph(crop_steering) passes the caller portal id into the payload', () => {
+    toggleEnvGraph('crop_steering', undefined, undefined, 'gs-1', 'gs-store-4');
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('IRRIGATION');
+    if (dialog.type === 'IRRIGATION') {
+      expect(dialog.payload.portalId).toBe('gs-store-4');
     }
   });
 

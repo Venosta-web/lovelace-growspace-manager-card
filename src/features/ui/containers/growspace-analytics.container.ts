@@ -249,7 +249,8 @@ export class GrowspaceAnalyticsContainer extends LitElement {
         metric,
         this.store?.history,
         this.store?.ui,
-        this.device?.deviceId ?? this.store?.grid.$selectedDevice.get()
+        this.device?.deviceId ?? this.store?.grid.$selectedDevice.get(),
+        this.store?.instanceId
       );
     }
   }

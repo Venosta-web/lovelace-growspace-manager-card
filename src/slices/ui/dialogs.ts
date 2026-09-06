@@ -100,17 +100,22 @@ export function openAddPlantDialog(growspaceId: string | null, row?: number, col
  * Toggle an environment metric graph. `crop_steering` opens the irrigation dialog
  * instead of a graph; other metrics toggle the per-card history graph (passed in,
  * since it's per-card state) and drop HEADER view back to STANDARD when activated.
+ *
+ * `portalId` is the calling card's `store.instanceId`, so the irrigation dialog
+ * opens in that card's portal alone (ADR-0055). Omitting it opens it in every
+ * portal, which is what a caller whose card mounts none gets today.
  */
 export function toggleEnvGraph(
   metric: string,
   history?: { toggleEnvGraph(metric: string): boolean },
   ui?: ViewModeHost,
-  growspaceId?: string | null
+  growspaceId?: string | null,
+  portalId?: string
 ): void {
   if (metric === 'crop_steering') {
     // Target growspace comes from the caller's per-card selection (ADR-0027),
     // never the dead page-global selection.
-    if (growspaceId) openIrrigationDialog({ growspaceId, initialTab: 'overview' });
+    if (growspaceId) openIrrigationDialog({ growspaceId, initialTab: 'overview', portalId });
     return;
   }
   if (!history) return;
@@ -253,10 +258,17 @@ export function openStrainLibraryDialog(initialTab?: 'strains' | 'seeds'): void 
   });
 }
 
+/**
+ * Open the irrigation dialog. `portalId` is the opening card's
+ * `store.instanceId`; the dialog then renders in that card's portal only
+ * (ADR-0055). Callers that cannot name a portal leave it out and the dialog
+ * renders in every one, as it did before portal identity existed.
+ */
 export function openIrrigationDialog(options?: {
   growspaceId?: string;
   initialTab?: string;
   scrollToField?: string;
+  portalId?: string;
 }): void {
   openDialog({ type: 'IRRIGATION', payload: options ?? {} });
 }

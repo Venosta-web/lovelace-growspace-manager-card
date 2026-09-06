@@ -21,6 +21,21 @@ export interface VisionCheckupResult {
   snapshot_paths: string[];
 }
 
+/**
+ * Portal identity carried in a dialog's open payload.
+ *
+ * One page-global `activeDialog$` feeds every card's dialog-host portal, so a
+ * payload that does not say which portal opened it renders in all of them. A
+ * dialog that must appear once captures the opening card's `store.instanceId`
+ * here, the way ADR-0027 captures the target growspace: bound at open time,
+ * never re-derived from ambient page state. Absent — or naming a portal that
+ * is not mounted — every portal renders, which is the pre-identity behaviour.
+ * See ADR-0055.
+ */
+export interface PortalScopedDialogState {
+  portalId?: string;
+}
+
 export interface AddPlantDialogState {
   /** Target growspace, captured at open time (ADR-0027). */
   growspaceId?: string;
@@ -179,7 +194,7 @@ export interface BatchCloneDialogState {
   plantIds: string[];
 }
 
-export interface IrrigationDialogState {
+export interface IrrigationDialogState extends PortalScopedDialogState {
   growspaceId?: string;
   initialTab?: string;
   scrollToField?: string;
