@@ -361,6 +361,11 @@
   },
   "tc": {
     "view_title": "Tissue culture",
+    "view_loading": "Loading the tissue culture view…",
+    "tab_worklist": "Worklist",
+    "tab_cultures": "Cultures",
+    "tab_media": "Media",
+    "tab_pairings": "Pairings",
     "empty_title": "Nothing in culture yet",
     "empty_body": "Culture lines, their maintenance history and the media they grow on will appear here.",
     "editor_note": "Nothing to configure. This card shows your tissue culture lines when the Growspace Manager TC integration is set up, and hides itself when it is not.",

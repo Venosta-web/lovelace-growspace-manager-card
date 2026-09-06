@@ -419,6 +419,7 @@ export {
   openTrainingDialog,
   openNutrientsDialog,
   openSnapshotsDialog,
+  openTcDialog,
 } from './dialogs';
 
 export {

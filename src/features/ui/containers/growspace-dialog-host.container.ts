@@ -57,6 +57,7 @@ import {
   registerDialogPortal,
   unregisterDialogPortal,
 } from '../../../slices/ui/dialog-portals';
+import { tcPresence$, type TcPresence } from '../../../slices/tc';
 import * as uiSlice from '../../../slices/ui';
 import { setHass } from '../../../services/hass-call';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
@@ -90,6 +91,7 @@ import {
 } from '../../../slices/nutrient';
 
 import './growspace-nutrient-presets-editor.container';
+import '../../../dialogs/tc-dialog';
 import '../../irrigation/containers/recipe-library-dialog.container';
 import '../../irrigation/containers/program-library-dialog.container';
 import '../../../dialogs/add-plant-dialog';
@@ -152,6 +154,13 @@ export class GrowspaceDialogHost extends LitElement {
   private _seedBatchesController!: StoreController<readonly SeedBatch[]>;
   private _pollinationEventsController!: StoreController<readonly PollinationEvent[]>;
   private _mountedPortalsController!: StoreController<readonly string[]>;
+  /**
+   * Page-global TC installation state. The dialog needs the manifest and must
+   * not re-probe for it: presence is one answer per page owned by the TC slice,
+   * and it deliberately does not travel in the open payload — ADR-0027's payload
+   * discipline is about targeting a dialog, and this is not a per-dialog fact.
+   */
+  private _tcPresenceController!: StoreController<TcPresence>;
   private _controllersInitialized = false;
   /** The id this portal currently holds in the page-global portal registry. */
   private _registeredPortalId: string | null = null;
@@ -219,6 +228,7 @@ export class GrowspaceDialogHost extends LitElement {
     // dialog: this subscription is what makes a portal stand down when the one
     // the payload named finally arrives.
     this._mountedPortalsController = new StoreController(this, mountedDialogPortals$);
+    this._tcPresenceController = new StoreController(this, tcPresence$);
     this._controllersInitialized = true;
   }
 
@@ -341,6 +351,8 @@ export class GrowspaceDialogHost extends LitElement {
               return this._renderHarvestScoringDialog(active);
             case 'SNAPSHOTS':
               return this._renderSnapshotsDialog(active, effectiveDeviceData);
+            case 'TC':
+              return this._renderTcDialog(active);
             default:
               return html``;
           }
@@ -1327,6 +1339,44 @@ export class GrowspaceDialogHost extends LitElement {
       });
     }
   }
+
+  /**
+   * The Tissue Culture dialog.
+   *
+   * The frame is rendered here and now; the view arrives when the lazy chunk
+   * does, or an error does. The manifest comes off `tcPresence$` rather than
+   * out of the payload, and nothing here filters TC by `growspaceId` — the
+   * dialog shows all cultures, and the id is carried for Graduation later.
+   */
+  private _renderTcDialog(active: ActiveDialogState): TemplateResult {
+    if (active.type !== 'TC') return html``;
+    const presence = this._tcPresenceController.value;
+    return html`
+      <tc-dialog
+        .open=${true}
+        .manifest=${presence.status === 'present' ? presence.manifest : undefined}
+        .language=${this.hass?.language ?? 'en'}
+        .initialTab=${active.payload.initialTab}
+        .scrollToField=${active.payload.scrollToField}
+        @close=${() => this._closeDialogIfActive('TC')}
+        @plant-view-requested=${this._showPlantFromTc}
+      ></tc-dialog>
+    `;
+  }
+
+  /**
+   * A plant link inside the TC dialog: close the dialog and open the Plant
+   * Overview in place.
+   *
+   * The standalone card answers the same event with the full-page navigation
+   * the link describes, because it may be the only Growspace card on the
+   * dashboard. Here the manager card is on the page by definition, so
+   * `handleDeepLink` does it with no reload and nothing destroyed.
+   */
+  private _showPlantFromTc = (event: CustomEvent<{ plantId: string }>): void => {
+    this._closeDialogIfActive('TC');
+    uiSlice.handleDeepLink(event.detail.plantId);
+  };
 
   private _renderIrrigationDialog(
     active: ActiveDialogState,

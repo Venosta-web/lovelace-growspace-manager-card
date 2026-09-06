@@ -17,6 +17,7 @@ import {
   openSnapshotsDialog,
   openBatchWateringDialog,
   openBatchTrainingDialog,
+  openTcDialog,
 } from './index';
 import { setDevices } from '../grid';
 import { ConfigTab } from '../../constants';
@@ -104,6 +105,37 @@ describe('slices/ui pure dialog-open helpers', () => {
 
   // Regression for #913 / ADR-0055: the irrigation dialog names the portal that
   // opened it, so two cards on one dashboard do not stack two copies of it.
+  it('openTcDialog opens TC on the worklist when no tab is named', () => {
+    openTcDialog({ growspaceId: 'gs-1', portalId: 'gs-store-7' });
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('TC');
+    if (dialog.type === 'TC') {
+      // The growspace the menu was opened from (ADR-0027), carried for
+      // Graduation even though nothing in the dialog filters TC by it, and the
+      // portal that opened it (ADR-0055).
+      expect(dialog.payload.growspaceId).toBe('gs-1');
+      expect(dialog.payload.portalId).toBe('gs-store-7');
+      expect(dialog.payload.initialTab).toBeUndefined();
+    }
+  });
+
+  it('openTcDialog carries a requested tab and scroll target', () => {
+    openTcDialog({ portalId: 'gs-store-7', initialTab: 'media', scrollToField: 'medium-1' });
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('TC');
+    if (dialog.type === 'TC') {
+      expect(dialog.payload.initialTab).toBe('media');
+      expect(dialog.payload.scrollToField).toBe('medium-1');
+    }
+  });
+
+  it('openTcDialog has a legal empty form, the way the irrigation opener does', () => {
+    openTcDialog();
+    const dialog = activeDialog$.get();
+    expect(dialog.type).toBe('TC');
+    if (dialog.type === 'TC') expect(dialog.payload).toEqual({});
+  });
+
   it('openIrrigationDialog carries the opening portal id', () => {
     openIrrigationDialog({ growspaceId: 'gs-1', portalId: 'gs-store-7' });
     const dialog = activeDialog$.get();
