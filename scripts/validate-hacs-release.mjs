@@ -5,9 +5,11 @@ import { promisify } from 'node:util';
 
 import {
   assertChunksBindToLoadedEntry,
+  assertOnDemandChunksAreNotImported,
   assertSelfContainedEntry,
   declaredCardTypes,
   declaredLazyChunkNames,
+  declaredOnDemandOnlyChunkNames,
 } from './entry-bundle-shape.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -23,6 +25,7 @@ if (path.basename(bundlePath) !== hacsConfig.filename) {
 
 const entrySource = await readFile('src/index.ts', 'utf8');
 const cardTypes = declaredCardTypes(entrySource);
+const registrySource = await readFile('src/lib/lazy-chunk.ts', 'utf8');
 
 if (!process.argv.includes('--config-only')) {
   const bundlePaths = (await readdir('dist'))
@@ -41,9 +44,7 @@ if (!process.argv.includes('--config-only')) {
       ...cardTypes.map((type) => `dist/growspace-${type}-editor-`),
       // Each chunk the card offers to name when it fails to load must be one
       // the build actually emits under that name.
-      ...declaredLazyChunkNames(await readFile('src/lib/lazy-chunk.ts', 'utf8')).map(
-        (name) => `dist/growspace-${name}-`
-      ),
+      ...declaredLazyChunkNames(registrySource).map((name) => `dist/growspace-${name}-`),
     ]),
   ];
   for (const prefix of lazyChunkPrefixes) {
@@ -58,16 +59,33 @@ if (!process.argv.includes('--config-only')) {
     entryPath: bundlePath,
   });
 
+  const emitted = await Promise.all(
+    bundlePaths.map(async (emittedPath) => ({
+      fileName: emittedPath,
+      source: await readFile(emittedPath, 'utf8'),
+    }))
+  );
+
   assertChunksBindToLoadedEntry({
-    chunks: await Promise.all(
-      bundlePaths
-        .filter((emittedPath) => emittedPath !== bundlePath)
-        .map(async (emittedPath) => ({
-          fileName: emittedPath,
-          source: await readFile(emittedPath, 'utf8'),
-        }))
-    ),
+    chunks: emitted.filter((chunk) => chunk.fileName !== bundlePath),
     entryFileName: path.basename(bundlePath),
+  });
+
+  // A chunk that declares itself on-demand-only is one a dashboard without the
+  // feature must never download, so nothing may reach it except an `import()`.
+  assertOnDemandChunksAreNotImported({
+    chunks: emitted,
+    onDemandFileNames: declaredOnDemandOnlyChunkNames(registrySource).map((name) => {
+      const prefix = `dist/growspace-${name}-`;
+      const matches = bundlePaths.filter((emittedPath) => emittedPath.startsWith(prefix));
+      if (matches.length !== 1) {
+        throw new Error(
+          `${prefix}*.js matches ${matches.length} emitted files; ` +
+            'an on-demand-only chunk must resolve to exactly one'
+        );
+      }
+      return path.basename(matches[0]);
+    }),
   });
 
   for (const emittedPath of bundlePaths) {

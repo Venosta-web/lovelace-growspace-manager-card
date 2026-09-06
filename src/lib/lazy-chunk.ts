@@ -25,6 +25,17 @@ export interface LazyChunk {
   readonly name: string;
   /** What the user was reaching for, as the subject of the message. */
   readonly feature: string;
+  /**
+   * Nothing else may statically import this chunk.
+   *
+   * A `LAZY_CHUNKS` name says nothing about whether some other chunk pulls the
+   * file in eagerly — `config-dialog` has an entry, is emitted as its own file,
+   * and is statically imported by the dialog-host chunk, correctly. For a chunk
+   * whose absence is the whole point, that difference is the feature, so it
+   * says so here and `npm run validate:hacs-release` enforces it against the
+   * emitted graph. Opt-in per chunk. See ADR 0056.
+   */
+  readonly onDemandOnly?: boolean;
 }
 
 /**
@@ -87,6 +98,9 @@ export const LAZY_CHUNKS = {
   tcView: {
     name: 'tc',
     feature: 'The tissue culture view',
+    // Nothing else may statically import it. A dashboard without Growspace
+    // Manager TC must not pay for TC — TC ADR-0003, and ADR 0056 here.
+    onDemandOnly: true,
   },
 } as const satisfies Record<string, LazyChunk>;
 
