@@ -150,8 +150,27 @@ export class GrowspaceTcCultures extends LitElement {
     `,
   ];
 
+  /**
+   * Drop every atom subscription this element holds, and leave it holding none.
+   *
+   * Both lifecycle callbacks go through here. `devices$` and the three TC atoms
+   * are module-global, so a subscription that outlives the element keeps
+   * writing `@state()` on a detached node and pins it for the life of the page;
+   * and an unsubscribe function that is overwritten rather than called can
+   * never be called again, so each connect/disconnect cycle would strand one
+   * more subscriber. Draining on connect as well as on disconnect makes a
+   * re-connect safe whatever the previous cycle left behind — which matters as
+   * soon as a host mounts and unmounts this view rather than keeping it for the
+   * life of the dashboard.
+   */
+  private _drainSubscriptions(): void {
+    for (const unsubscribe of this._unsubscribe) unsubscribe();
+    this._unsubscribe = [];
+  }
+
   connectedCallback(): void {
     super.connectedCallback();
+    this._drainSubscriptions();
     this._unsubscribe = [
       devices$.subscribe((devices) => {
         this._devices = [...devices];
@@ -177,12 +196,7 @@ export class GrowspaceTcCultures extends LitElement {
   }
 
   disconnectedCallback(): void {
-    for (const unsubscribe of this._unsubscribe) unsubscribe();
-    this._unsubscribe = [
-      devices$.subscribe((devices) => {
-        this._devices = [...devices];
-      }),
-    ];
+    this._drainSubscriptions();
     super.disconnectedCallback();
   }
 
