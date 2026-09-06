@@ -339,4 +339,22 @@ describe('graduation bridge', () => {
     expect(textOf(element)).toContain('View linked plant');
     expect(element.shadowRoot?.querySelector('button[type="submit"]')).toBeNull();
   });
+  test('asks the host to show the plant instead of navigating out of it', async () => {
+    const element = await render('graduate', {
+      culture: aCulture({ status: 'graduated' }),
+      history: [anAction({ action: 'graduate', plant_id: 'plant / 1' })],
+    });
+    const raised: Array<{ plantId: string }> = [];
+    element.addEventListener('plant-view-requested', (event) =>
+      raised.push((event as CustomEvent<{ plantId: string }>).detail)
+    );
+
+    const click = new MouseEvent('click', { bubbles: true, composed: true, cancelable: true });
+    element.shadowRoot?.querySelector('a')?.dispatchEvent(click);
+
+    // The two hosts answer this differently — the card navigates, the dialog
+    // opens the Plant Overview in place — so the link stops navigating here.
+    expect(raised).toEqual([{ plantId: 'plant / 1' }]);
+    expect(click.defaultPrevented).toBe(true);
+  });
 });

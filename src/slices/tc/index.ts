@@ -720,3 +720,42 @@ export async function deletePairing(id: string): Promise<void> {
   );
   pairings$.set(pairings$.get().filter((row) => row.id !== pairing_id));
 }
+
+/**
+ * One of the four top-level panes of the tissue-culture view.
+ *
+ * The ids are stable and shared: they name the dialog's tabs, the values of
+ * `growspace-tc-view`'s `surface` property, and this module's answer below. A
+ * union rather than a string is what makes the dialog's id → label mapping and
+ * the view's id → element mapping exhaustive, so a fifth surface cannot be
+ * added to one without the other failing to compile.
+ */
+export type TcSurfaceId = 'worklist' | 'cultures' | 'media' | 'pairings';
+
+/**
+ * Which surfaces this installation offers, in the order they are shown.
+ *
+ * The single answer to that question, called by both hosts: the shared view
+ * composes from it and the dialog builds its tab bar from it. One
+ * implementation, two callers — which is what stops the standalone card and the
+ * dialog disagreeing about what Tissue Culture contains.
+ *
+ * The worklist needs `maintenance` as well as `culture_lines`, because it is
+ * built from `replate_due_at` and a release predating maintenance does not send
+ * one. Maintenance alone offers nothing: it modifies the Cultures surface
+ * rather than being one, so a manifest with no culture lines, media or pairings
+ * returns `[]` however many other features it claims — which is the signal the
+ * view renders its compatibility state from.
+ */
+export function tcSurfaces(manifest?: TcManifest): TcSurfaceId[] {
+  const features = manifest?.features ?? [];
+  const cultureLines = features.includes(TC_FEATURE_CULTURE_LINES);
+  const surfaces: TcSurfaceId[] = [];
+
+  if (cultureLines && features.includes(TC_FEATURE_MAINTENANCE)) surfaces.push('worklist');
+  if (cultureLines) surfaces.push('cultures');
+  if (features.includes(TC_FEATURE_CULTURE_MEDIA)) surfaces.push('media');
+  if (features.includes(TC_FEATURE_PAIRINGS)) surfaces.push('pairings');
+
+  return surfaces;
+}
