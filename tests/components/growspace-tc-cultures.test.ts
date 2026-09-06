@@ -4,6 +4,8 @@ import { fixture } from '@open-wc/testing-helpers';
 import { hassCall } from '../../src/services/hass-call';
 import { GrowspaceTcCultures } from '../../src/features/tc/containers/growspace-tc-cultures.container';
 import { strainLibrary$ } from '../../src/slices/strain';
+import { devices$ } from '../../src/slices/grid';
+import { createGrowspaceDevice } from '../../src/services/types';
 import { cultureMedia$, resetTcPresence, type CultureLine } from '../../src/slices/tc';
 import {
   WS_TC_LIST_CULTURE_LINES,
@@ -344,6 +346,43 @@ describe('GrowspaceTcCultures — the worklist', () => {
 
     expect(worklist(element)).toBeNull();
     expect((board(element) as unknown as { actionable: boolean }).actionable).toBe(false);
+  });
+});
+
+describe('GrowspaceTcCultures — the atom subscriptions', () => {
+  /**
+   * `devices$` is the one module-global atom on this element that is not reset
+   * between tests, so it is also the one that shows a leak: a detached element
+   * that is still subscribed keeps a listener on it for the life of the page,
+   * and every connect/disconnect cycle adds another.
+   */
+  test('leaves nothing subscribed to devices$ after disconnect', async () => {
+    answer({ lines: [aLine()], library: A_LIBRARY });
+    devices$.set([]);
+    const before = devices$.lc;
+
+    const element = await render();
+    expect(devices$.lc).toBeGreaterThan(before);
+
+    element.remove();
+
+    expect(devices$.lc).toBe(before);
+    devices$.set([createGrowspaceDevice({ deviceId: 'tent', name: 'Tent' })]);
+    expect((element as unknown as { _devices: unknown[] })._devices).toEqual([]);
+  });
+
+  test('does not accumulate subscribers across connect/disconnect cycles', async () => {
+    answer({ lines: [aLine()], library: A_LIBRARY });
+    devices$.set([]);
+    const before = devices$.lc;
+
+    const element = await render();
+    element.remove();
+    document.body.appendChild(element);
+    await element.updateComplete;
+    element.remove();
+
+    expect(devices$.lc).toBe(before);
   });
 });
 
