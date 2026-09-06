@@ -8,6 +8,8 @@
  *
  * Safe to re-run — growspaces and plants that already exist are skipped,
  * and .env.test IDs are updated in-place without touching other variables.
+ * An existing growspace is matched by the name its capability profile
+ * declares, so a profile may name its growspace whatever the demo needs.
  *
  * After running, set TEST_*_DASHBOARD_PATH in .env.test to match your HA dashboard URLs.
  */
@@ -229,7 +231,7 @@ async function ensureCameraFixtures(): Promise<void> {
   }
 }
 
-async function ensureGlobalSettings(readinessProbeSlug: string): Promise<void> {
+async function ensureGlobalSettings(readinessProbeName: string): Promise<void> {
   const entries = await callWebSocket<Array<{ entry_id: string }>>('config_entries/get', {
     domain: 'growspace_manager',
   });
@@ -275,7 +277,7 @@ async function ensureGlobalSettings(readinessProbeSlug: string): Promise<void> {
   // already provisioned before issuing another GSM service call.
   for (let attempt = 0; attempt < 20; attempt++) {
     await sleep(500);
-    if (await resolveGrowspaceId(readinessProbeSlug)) {
+    if (await resolveGrowspace(readinessProbeName)) {
       console.log('  configured weather and lung-room sensors');
       return;
     }
@@ -293,8 +295,9 @@ interface VwcStrategyParams {
 }
 
 interface GrowspaceSpec {
-  /** Slug used in entity IDs, e.g. "mother" → sensor.e2e_mother_overview */
+  /** Key for the .env.test variable and the coverage declaration, e.g. "mother" */
   slug: string;
+  /** Declared growspace name — the only thing setup matches an existing one on */
   name: string;
   /** Date field that makes the anchor plant adopt the right stage */
   plantStageField: string;
@@ -331,46 +334,103 @@ const GROWSPACES: GrowspaceSpec[] = COVERAGE.profiles.map((profile) => ({
   services: profile.services,
 }));
 
-async function resolveGrowspaceId(slug: string): Promise<string | null> {
-  const attrs = await getStateAttributes(`sensor.e2e_${slug}_overview`);
-  if (!attrs) return null;
-  // growspace_id is nested under attrs.identity in the current schema
-  const identity = attrs['identity'] as Record<string, unknown> | undefined;
-  return (identity?.['growspace_id'] as string) ?? null;
+/** A growspace as the integration reports it, not as a slug predicts it. */
+interface ResolvedGrowspace {
+  id: string;
+  /**
+   * The overview sensor the integration registered for it — null for roughly
+   * twenty seconds after creation, while the entity registry catches up.
+   */
+  overviewEntityId: string | null;
 }
 
-async function ensureGrowspace(spec: GrowspaceSpec): Promise<string> {
-  const existing = await resolveGrowspaceId(spec.slug);
-  if (existing) {
-    console.log(`  already exists (${existing}) — skipping creation`);
+/** A resolved growspace whose overview sensor is registered and readable. */
+interface ReadyGrowspace extends ResolvedGrowspace {
+  overviewEntityId: string;
+}
+
+function isReady(growspace: ResolvedGrowspace | null): growspace is ReadyGrowspace {
+  return growspace?.overviewEntityId != null;
+}
+
+interface GrowspaceIdentityPayload {
+  identity?: {
+    growspace_id?: string;
+    overview_entity_id?: string;
+    name?: string;
+  };
+}
+
+/**
+ * Find an existing growspace by the name its capability profile declares.
+ *
+ * Home Assistant derives an overview sensor's entity ID from the growspace
+ * name, so guessing `sensor.e2e_<slug>_overview` only works while every
+ * instance happens to be named `E2E <Slug>`. The get_data payload states both
+ * the name and the registered overview entity ID, so ask it instead.
+ */
+async function resolveGrowspace(name: string): Promise<ResolvedGrowspace | null> {
+  let payload: Record<string, GrowspaceIdentityPayload>;
+  try {
+    payload = await callWebSocket<Record<string, GrowspaceIdentityPayload>>(
+      'growspace_manager/get_data',
+      {}
+    );
+  } catch {
+    // The integration is reloading (or not loaded yet) — indistinguishable
+    // here from "no such growspace", and every caller polls.
+    return null;
+  }
+
+  for (const growspace of Object.values(payload)) {
+    const identity = growspace?.identity;
+    if (!identity?.growspace_id || identity.name !== name) continue;
+    return {
+      id: identity.growspace_id,
+      overviewEntityId: identity.overview_entity_id ?? null,
+    };
+  }
+  return null;
+}
+
+async function ensureGrowspace(spec: GrowspaceSpec): Promise<ReadyGrowspace> {
+  const existing = await resolveGrowspace(spec.name);
+  if (isReady(existing)) {
+    console.log(`  already exists (${existing.id}) — skipping creation`);
     return existing;
   }
 
-  console.log(`  creating growspace…`);
-  await callService('growspace_manager', 'add_growspace', {
-    name: spec.name,
-    rows: 2,
-    plants_per_row: 2,
-  });
+  if (existing) {
+    // Created by an earlier run that gave up before the sensor registered.
+    // Adopt it — creating a second one is what this resolver exists to avoid.
+    console.log(`  exists (${existing.id}) without an overview sensor yet — waiting`);
+  } else {
+    console.log(`  creating growspace…`);
+    await callService('growspace_manager', 'add_growspace', {
+      name: spec.name,
+      rows: 2,
+      plants_per_row: 2,
+    });
+  }
 
-  // Wait for the coordinator to create the entity and overview sensor
-  for (let i = 0; i < 10; i++) {
-    await sleep(800);
-    const id = await resolveGrowspaceId(spec.slug);
-    if (id) {
-      console.log(`  created (${id})`);
-      return id;
+  // The growspace appears in the payload at once, but Home Assistant takes
+  // roughly twenty seconds to register its overview sensor. Setup needs that
+  // sensor for the plant-count check, so wait for the entity ID, not the row.
+  for (let i = 0; i < 60; i++) {
+    await sleep(1000);
+    const created = await resolveGrowspace(spec.name);
+    if (isReady(created)) {
+      console.log(`  ready (${created.id} → ${created.overviewEntityId})`);
+      return created;
     }
   }
-  throw new Error(
-    `Overview sensor sensor.e2e_${spec.slug}_overview never appeared after growspace creation`
-  );
+  throw new Error(`Growspace "${spec.name}" never registered an overview sensor`);
 }
 
-async function ensureStagePlant(growspaceId: string, spec: GrowspaceSpec): Promise<void> {
+async function ensureStagePlant(growspace: ReadyGrowspace, spec: GrowspaceSpec): Promise<void> {
   // add_plant silently relocates to the next free position when row/col is occupied,
   // so a 400-based guard never fires. Check the plant count instead.
-  const plantCount = await getStateValue(`sensor.e2e_${spec.slug}_overview`);
+  const plantCount = await getStateValue(growspace.overviewEntityId);
   if (plantCount !== null && parseInt(plantCount, 10) > 0) {
     console.log(`    anchor plant already present — skipping`);
     return;
@@ -378,7 +438,7 @@ async function ensureStagePlant(growspaceId: string, spec: GrowspaceSpec): Promi
 
   console.log(`  placing anchor plant (${spec.plantStageField})…`);
   await callService('growspace_manager', 'add_plant', {
-    growspace_id: growspaceId,
+    growspace_id: growspace.id,
     strain: 'E2E Anchor',
     row: 1,
     col: 1,
@@ -438,7 +498,12 @@ async function ensureTestStrain(): Promise<void> {
   }
 }
 
-async function reloadGrowspaceManager(results: Array<{ slug: string; id: string }>): Promise<void> {
+interface SetupResult extends ReadyGrowspace {
+  slug: string;
+  name: string;
+}
+
+async function reloadGrowspaceManager(results: SetupResult[]): Promise<void> {
   const lighting = results.find((result) => result.slug === 'lighting');
   if (!lighting) return;
 
@@ -447,11 +512,11 @@ async function reloadGrowspaceManager(results: Array<{ slug: string; id: string 
   // (and the VWC coordinator profiles) against their final configuration.
   console.log('\n[integration] reloading Growspace Manager with final profile configuration…');
   await callService('homeassistant', 'reload_config_entry', {
-    entity_id: 'sensor.e2e_lighting_overview',
+    entity_id: lighting.overviewEntityId,
   });
   for (let i = 0; i < 20; i++) {
     await sleep(500);
-    if (await resolveGrowspaceId('lighting')) {
+    if (await resolveGrowspace(lighting.name)) {
       console.log('  reloaded');
       return;
     }
@@ -464,7 +529,7 @@ async function reloadGrowspaceManager(results: Array<{ slug: string; id: string 
  * Existing values are updated; unknown keys are appended.
  * Dashboard path keys are left untouched so the user can set them once.
  */
-function writeIdsToEnvFile(results: Array<{ slug: string; id: string }>): void {
+function writeIdsToEnvFile(results: SetupResult[]): void {
   const envPath = path.join(__dirname, '..', '.env.test');
 
   if (!fs.existsSync(envPath)) {
@@ -500,14 +565,15 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const results: Array<{ slug: string; id: string }> = [];
+  const results: SetupResult[] = [];
 
   await ensureCameraFixtures();
 
   for (const spec of GROWSPACES) {
     console.log(`\n[e2e_${spec.slug}]`);
-    const growspaceId = await ensureGrowspace(spec);
-    await ensureStagePlant(growspaceId, spec);
+    const growspace = await ensureGrowspace(spec);
+    const growspaceId = growspace.id;
+    await ensureStagePlant(growspace, spec);
     await configureProfileServices(growspaceId, spec);
     if (spec.services.update_vision_checkup_config) {
       console.log(`  configuring Vision Checkup schedule…`);
@@ -531,12 +597,16 @@ async function main(): Promise<void> {
         enabled: false,
       });
     }
-    results.push({ slug: spec.slug, id: growspaceId });
+    results.push({ ...growspace, slug: spec.slug, name: spec.name });
   }
+
+  // Any provisioned growspace answers "is the integration back yet?"; the
+  // lighting profile is the one the reload above targets.
+  const readinessProbe = results.find((result) => result.slug === 'lighting') ?? results[0];
 
   await ensureTestStrain();
   await reloadGrowspaceManager(results);
-  await ensureGlobalSettings('lighting');
+  await ensureGlobalSettings(readinessProbe.name);
 
   writeIdsToEnvFile(results);
 }
