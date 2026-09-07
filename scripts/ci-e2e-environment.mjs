@@ -214,6 +214,52 @@ async function bootstrap() {
     );
   }
 
+  // TC is a companion integration whose config flow requires Growspace Manager
+  // to be loaded first. The managed harness mounts both checkouts, so install
+  // the entry here and make the TC-only dashboard a real live surface.
+  let tcFlow;
+  const tcDeadline = Date.now() + 120_000;
+  while (Date.now() < tcDeadline) {
+    const response = await api('/api/config/config_entries/flow', {
+      method: 'POST',
+      token: longLivedToken,
+      data: { handler: 'growspace_manager_tc' },
+    });
+    if (response.ok) {
+      const candidate = await response.json();
+      // The TC flow can answer 200 with an abort while its dependency is still
+      // registering. Keep polling that transient state instead of treating it
+      // as a successful setup.
+      if (candidate.type === 'abort' && candidate.reason === 'growspace_manager_missing') {
+        await sleep(2_000);
+        continue;
+      }
+      tcFlow = candidate;
+      break;
+    }
+    await sleep(2_000);
+  }
+  if (!tcFlow) throw new Error('Growspace Manager TC config flow did not become available');
+  if (tcFlow.type === 'form') {
+    const created = await responseJson(
+      await api(`/api/config/config_entries/flow/${tcFlow.flow_id}`, {
+        method: 'POST',
+        token: longLivedToken,
+        data: {},
+      }),
+      'Growspace Manager TC config entry creation'
+    );
+    if (created.type !== 'create_entry') {
+      throw new Error(
+        `Growspace Manager TC config flow did not create an entry: ${JSON.stringify(created)}`
+      );
+    }
+  } else if (tcFlow.type !== 'create_entry') {
+    throw new Error(
+      `Growspace Manager TC config flow returned ${tcFlow.type}: ${JSON.stringify(tcFlow)}`
+    );
+  }
+
   await responseJson(
     await api('/api/states/weather.e2e_outdoor_conditions', {
       method: 'POST',
@@ -285,9 +331,30 @@ async function dashboards() {
       },
     });
   }
+  for (const dashboard of manifest.integration_dashboards ?? []) {
+    const urlPath = dashboardPath(dashboard.slug).split('/')[1];
+    if (!existingPaths.has(urlPath)) {
+      await websocketCommand(token, 'lovelace/dashboards/create', {
+        url_path: urlPath,
+        title: dashboard.title,
+        show_in_sidebar: false,
+        require_admin: false,
+      });
+      existingPaths.add(urlPath);
+    }
+    await websocketCommand(token, 'lovelace/config/save', {
+      url_path: urlPath,
+      config: {
+        views: [{ title: dashboard.title, type: 'panel', cards: [{ type: dashboard.card }] }],
+      },
+    });
+  }
 
   values.TEST_GROWSPACE_ID = values.TEST_VEG_GROWSPACE_ID;
   values.TEST_DASHBOARD_PATH = '/e2e-veg/0';
+  for (const dashboard of manifest.integration_dashboards ?? []) {
+    values[`TEST_${dashboard.slug.toUpperCase()}_DASHBOARD_PATH`] = dashboardPath(dashboard.slug);
+  }
   const states = await responseJson(
     await api('/api/states', { token }),
     'Home Assistant state lookup'
@@ -302,7 +369,9 @@ async function dashboards() {
   if (!vegPlant) throw new Error('The E2E veg anchor plant was not found');
   values.TEST_VEG_PLANT_ID = vegPlant.attributes.plant_id;
   await writeFile(envPath, serializeEnv(values), { mode: 0o600 });
-  console.log(`Created ${manifest.profiles.length} E2E dashboards.`);
+  console.log(
+    `Created ${manifest.profiles.length + (manifest.integration_dashboards?.length ?? 0)} E2E dashboards.`
+  );
 }
 
 const command = process.argv[2];

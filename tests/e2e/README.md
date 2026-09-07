@@ -58,7 +58,7 @@ Ensure HA is accessible at `http://localhost:8123` and you have:
 ### Disposable managed runtime
 
 From the repository root, `npm run test:e2e` builds the card, discovers the sibling
-`growspace_manager` integration and `growspace_manager_workspace` checkouts, creates an
+`growspace_manager`, `growspace_manager_tc`, and `growspace_manager_workspace` checkouts, creates an
 isolated Home Assistant container on a Docker-assigned port, prepares all fixtures and
 dashboards, verifies the exact served build, and runs Playwright. It removes the container
 and temporary configuration after success, failure, or interruption.
@@ -75,11 +75,21 @@ arguments:
 npm run test:e2e -- \
   --integration-root /path/to/growspace_manager \
   --workspace-root /path/to/growspace_manager_workspace \
+  --tc-root /path/to/growspace_manager_tc \
   -- specs/smoke.spec.ts
 ```
 
-The equivalent environment overrides are `GROWSPACE_E2E_INTEGRATION_ROOT` and
-`GROWSPACE_E2E_WORKSPACE_ROOT`. Failures preserve Home Assistant logs and Playwright
+The equivalent environment overrides are `GROWSPACE_E2E_INTEGRATION_ROOT`,
+`GROWSPACE_E2E_WORKSPACE_ROOT`, and `GROWSPACE_E2E_TC_ROOT`. The managed runtime
+requires the TC checkout because the generated integration dashboard and TC-only
+browser coverage exercise the mounted `growspace_manager_tc` integration. To verify
+the standalone graduation bridge and cleanup on two consecutive runs:
+
+```bash
+npm run test:e2e -- specs/tc-graduation-bridge.spec.ts --repeat-each=2
+```
+
+Failures preserve Home Assistant logs and Playwright
 reports under `.artifacts/e2e-managed/`; successful runs leave that directory absent.
 
 GitHub's stable-main validation and deliberate manual dispatch use this same managed

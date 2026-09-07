@@ -138,10 +138,21 @@ async function resolveManagedInputs({ rootDirectory, environment, managedOptions
       ]),
     ],
   });
+  const tcDirectory = discoverPath({
+    rootDirectory,
+    override: managedOptions.tcDirectory ?? environment.GROWSPACE_E2E_TC_ROOT,
+    environmentName: 'GROWSPACE_E2E_TC_ROOT',
+    marker: path.join('custom_components', 'growspace_manager_tc', 'manifest.json'),
+    candidates: [
+      path.resolve(rootDirectory, '..', 'growspace_manager_tc'),
+      ...ancestors.map((ancestor) => path.join(ancestor, 'growspace_manager_tc')),
+    ],
+  });
 
   return {
     integrationDirectory: path.resolve(integrationDirectory),
     workspaceDirectory: path.resolve(workspaceDirectory),
+    tcDirectory: path.resolve(tcDirectory),
   };
 }
 
@@ -155,7 +166,12 @@ async function requireInputs(inputs) {
   }
 }
 
-async function validateManagedInputs({ rootDirectory, integrationDirectory, workspaceDirectory }) {
+async function validateManagedInputs({
+  rootDirectory,
+  integrationDirectory,
+  workspaceDirectory,
+  tcDirectory,
+}) {
   await requireInputs([
     [
       'integration manifest',
@@ -164,6 +180,10 @@ async function validateManagedInputs({ rootDirectory, integrationDirectory, work
     [
       'workspace simulated sensors',
       path.join(workspaceDirectory, 'ha-dev', 'packages', 'e2e_simulated_sensors.yaml'),
+    ],
+    [
+      'TC integration manifest',
+      path.join(tcDirectory, 'custom_components', 'growspace_manager_tc', 'manifest.json'),
     ],
     [
       'Home Assistant configuration',
@@ -358,6 +378,8 @@ async function runManaged({ rootDirectory, playwrightArguments, environment, man
         `${configDirectory}:/config`,
         '--volume',
         `${path.join(inputs.integrationDirectory, 'custom_components', 'growspace_manager')}:/config/custom_components/growspace_manager:ro`,
+        '--volume',
+        `${path.join(inputs.tcDirectory, 'custom_components', 'growspace_manager_tc')}:/config/custom_components/growspace_manager_tc:ro`,
         '--volume',
         `${path.join(rootDirectory, 'dist')}:/config/www/community/lovelace-growspace-manager-card:ro`,
         '--env',
