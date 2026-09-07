@@ -3,8 +3,9 @@
 A premium, feature-rich **Home Assistant Lovelace custom card** designed for the modern grower. Manage multiple growspaces, track complex plant lifecycles, and leverage AI to optimize your environment—all from a sleek, glassmorphism-inspired interface.
 
 ![Growspace Manager Card](assets/screenshots/overview.png)
-_Unified view: plant grid with per-stage imagery and day counters, environmental
-sparklines, and the live crop-steering phase._
+_Unified view: the growspace's own equipment across the header, environmental
+sparklines beneath it, the live crop-steering phase, and a plant grid with
+per-stage imagery and day counters._
 
 [**Try the live demo →**](https://Venosta-web.github.io/lovelace-growspace-manager-card/demo/)
 
