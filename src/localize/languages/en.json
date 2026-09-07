@@ -528,6 +528,8 @@
     "graduation_create_plant": "Create a plant in Growspace Manager",
     "graduation_bridge_help": "Creates one plant in the clone stage. Confirm the genetics and an empty position. If creation fails, the culture still graduates.",
     "graduation_no_growspace": "No growspace is available for a new plant. You can still record the graduation.",
+    "graduation_growspaces_loading": "Looking for somewhere to put the plant…",
+    "graduation_growspaces_failed": "Growspace Manager did not answer, so its growspaces are unknown. You can still record the graduation.",
     "graduation_growspace": "Growspace",
     "graduation_strain": "Strain",
     "graduation_phenotype": "Phenotype (optional)",

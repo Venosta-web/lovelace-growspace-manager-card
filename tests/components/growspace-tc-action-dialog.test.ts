@@ -328,6 +328,71 @@ describe('graduation bridge', () => {
     await type(inputs(element, '[name="strain"]')[0], '');
     expect(await submit(element)).toBeUndefined();
   });
+  /**
+   * An empty destination list means one of three things, and the grower is
+   * responsible for exactly one of them. Saying "No growspace is available" to
+   * someone with a half-empty tent because the fetch had not landed is the bug
+   * this distinction exists to prevent (workspace #188).
+   */
+  describe('what an empty destination list is allowed to claim', () => {
+    async function withStatus(status: 'loading' | 'ready' | 'failed') {
+      const element = await render('graduate');
+      element.graduationBridge = true;
+      element.growspaces = [];
+      element.growspacesStatus = status;
+      await element.updateComplete;
+      return element;
+    }
+
+    test('claims Growspace Manager has none only once the list is an answer', async () => {
+      expect(textOf(await withStatus('ready'))).toContain('No growspace is available');
+    });
+
+    test('says it is still looking while the list is in flight', async () => {
+      const element = await withStatus('loading');
+      expect(textOf(element)).not.toContain('No growspace is available');
+      expect(textOf(element)).toContain('Looking for somewhere');
+    });
+
+    test('says the growspaces are unknown when the fetch failed', async () => {
+      const element = await withStatus('failed');
+      expect(textOf(element)).not.toContain('No growspace is available');
+      expect(textOf(element)).toContain('growspaces are unknown');
+    });
+
+    test.each(['loading', 'ready', 'failed'] as const)(
+      'keeps the bridge out of reach and the act recordable — %s',
+      async (status) => {
+        const element = await withStatus(status);
+        expect(inputs(element, '[name="createPlant"]')[0].disabled).toBe(true);
+        expect(await submit(element)).toEqual({
+          action: 'graduate',
+          cultureId: 'culture-1',
+          note: '',
+        });
+      }
+    );
+
+    test('offers the bridge as soon as a pending list arrives non-empty', async () => {
+      const element = await withStatus('loading');
+
+      element.growspaces = [{ deviceId: 'tent', name: 'Nursery', rows: 2, plantsPerRow: 3 }];
+      element.growspacesStatus = 'ready';
+      await element.updateComplete;
+
+      expect(inputs(element, '[name="createPlant"]')[0].disabled).toBe(false);
+      inputs(element, '[name="createPlant"]')[0].click();
+      await element.updateComplete;
+      await type(inputs(element, '[name="strain"]')[0], 'Blue Dream');
+
+      // The destination defaults to the first one even though the list landed
+      // after the vessel did — otherwise the form would submit an empty ID.
+      expect(await submit(element)).toMatchObject({
+        plant: { growspace_id: 'tent', row: 1, col: 1 },
+      });
+    });
+  });
+
   test('shows a stored plant link on an ended culture without another submit', async () => {
     const element = await render('graduate', {
       culture: aCulture({ status: 'graduated' }),

@@ -14,6 +14,14 @@
  * otherwise mark every line missing and offer to repair references that were
  * never broken.
  *
+ * The same rule is why it fetches Growspace Manager's growspaces itself. That
+ * list reaches the card through the manager card's bootstrap and through
+ * nothing else, so on a dashboard holding only `custom:growspace-tc-card` a
+ * Graduation could never create a plant, however many tents had free positions.
+ * It is fetched when a Graduation first asks — a TC-only dashboard should not
+ * pay for a payload most sessions never open — and a pending or failed fetch is
+ * reported as itself, never as "Growspace Manager has nowhere to put a plant".
+ *
  * It also owns the second clock-dependent judgement on this surface: **overdue**.
  * The backend states a Replate Due Date and nothing more, because whether that
  * date has passed depends on when the card is looking. The worklist is built
@@ -55,6 +63,8 @@ import {
   type WorklistEntry,
 } from '../../../slices/tc';
 import { devices$ } from '../../../slices/grid';
+import { fetchGraduationDestinations } from '../../../slices/growspace';
+import type { GraduationDestinationsStatus } from '../components/growspace-tc-action-dialog';
 import type { GrowspaceDevice } from '../../../services/types';
 import type { StrainEntry } from '../../../types';
 import '../components/growspace-tc-action-dialog';
@@ -98,6 +108,14 @@ export class GrowspaceTcCultures extends LitElement {
   @property({ type: String }) surface?: Extract<TcSurfaceId, 'worklist' | 'cultures'>;
 
   @state() private _devices: GrowspaceDevice[] = [];
+  /**
+   * How far the graduation destinations have got.
+   *
+   * `idle` is "nobody has needed them" — a TC-only dashboard issues no
+   * growspace request until a Graduation asks — and is never rendered, because
+   * the load starts before the dialog that reads this opens.
+   */
+  @state() private _destinations: 'idle' | GraduationDestinationsStatus = 'idle';
   @state() private _graduationNotice = '';
   @state() private _lines: CultureLine[] = [];
   @state() private _library: StrainEntry[] = [];
@@ -197,6 +215,13 @@ export class GrowspaceTcCultures extends LitElement {
     this._unsubscribe = [
       devices$.subscribe((devices) => {
         this._devices = [...devices];
+        // A hydrated grid is an answer and costs nothing: on a dashboard that
+        // also holds the manager card the destinations are already here, so a
+        // Graduation asks the backend for nothing. An *empty* grid proves
+        // nothing — the subscription fires once on subscribe, before any host
+        // has hydrated anything — so it is left for `_loadDestinations` to
+        // settle, the same rule the strain library is read under.
+        if (devices.length) this._destinations = 'ready';
       }),
       cultureLines$.subscribe((lines) => {
         this._lines = [...lines];
@@ -273,6 +298,34 @@ export class GrowspaceTcCultures extends LitElement {
     }
   }
 
+  /**
+   * Fetch the growspaces a graduating Culture could be planted into, once.
+   *
+   * Lazily, and only for the act that needs them: this view is the whole card
+   * on a TC-only dashboard, and most of what a grower does on it never opens a
+   * Graduation. Deliberately not fetched on load for that reason.
+   *
+   * A failure is kept as a failure rather than collapsing to an empty list.
+   * The dialog's "No growspace is available" is a statement about Growspace
+   * Manager, and a grower with a half-empty tent must not be told it because
+   * the network was down.
+   */
+  private async _loadDestinations(): Promise<void> {
+    if (this._destinations === 'ready' || this._destinations === 'loading') return;
+    this._destinations = 'loading';
+    try {
+      this._devices = await fetchGraduationDestinations();
+      this._destinations = 'ready';
+    } catch {
+      this._destinations = 'failed';
+    }
+  }
+
+  /** The growspaces a plant may be created in — a tent or a cloner, never a subarea. */
+  private get _graduationGrowspaces(): GrowspaceDevice[] {
+    return this._devices.filter((device) => device.type === 'normal' || device.type === 'clone');
+  }
+
   private get _phenotypes(): PhenotypeOption[] {
     return phenotypeOptions(this._library);
   }
@@ -317,6 +370,11 @@ export class GrowspaceTcCultures extends LitElement {
 
     this._saveError = '';
     this._history = [];
+    // Before the dialog opens, so its first render already says "loading"
+    // rather than flashing an empty destination list. A no-op once the
+    // destinations are known, which on a dashboard with a manager card on it
+    // they always are.
+    if (action === 'graduate' && this.graduationBridge) void this._loadDestinations();
     this._acting = { open: true, action, culture, line };
     this._historyLoading = true;
     try {
@@ -445,9 +503,8 @@ export class GrowspaceTcCultures extends LitElement {
       .lineName=${this._lineNames.get(acting.line.id) ?? acting.line.phenotype.name_snapshot}
       .media=${this._media}
       .graduationBridge=${this.graduationBridge}
-      .growspaces=${this._devices.filter(
-        (device) => device.type === 'normal' || device.type === 'clone'
-      )}
+      .growspaces=${this._graduationGrowspaces}
+      .growspacesStatus=${this._destinations === 'idle' ? 'loading' : this._destinations}
       .genetics=${this._library.find((entry) => entry.key === acting.line.phenotype.id)}
       .history=${this._history}
       .historyLoading=${this._historyLoading}

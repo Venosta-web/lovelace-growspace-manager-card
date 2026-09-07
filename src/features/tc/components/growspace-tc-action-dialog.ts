@@ -38,6 +38,16 @@ import {
 
 type GraduationGrowspace = { deviceId: string; name: string; rows: number; plantsPerRow: number };
 
+/**
+ * What `growspaces` is: an answer, or not one yet.
+ *
+ * An empty list means one of three things and the grower is only responsible
+ * for one of them — Growspace Manager really has nowhere to put a plant. The
+ * caller says which, so "No growspace is available" is never what a pending or
+ * a failed fetch looks like.
+ */
+export type GraduationDestinationsStatus = 'loading' | 'ready' | 'failed';
+
 const DISCARD_REASONS: DiscardReason[] = ['contamination', 'spent', 'mistake'];
 
 @customElement('growspace-tc-action-dialog')
@@ -55,6 +65,12 @@ export class GrowspaceTcActionDialog extends LitElement {
   @property({ type: String }) language = 'en';
   @property({ type: Boolean }) graduationBridge = false;
   @property({ attribute: false }) growspaces: GraduationGrowspace[] = [];
+  /**
+   * Whether `growspaces` has been established. Defaults to `ready`, because a
+   * caller that hands over a list is stating it as fact; only a caller that
+   * fetches lazily has anything else to say.
+   */
+  @property({ type: String }) growspacesStatus: GraduationDestinationsStatus = 'ready';
   @property({ attribute: false }) genetics?: { strain: string; phenotype?: string };
 
   @state() private _createPlant = false;
@@ -242,6 +258,22 @@ export class GrowspaceTcActionDialog extends LitElement {
         growspace_id: this.growspaces[0]?.deviceId ?? '',
         strain: this.genetics?.strain ?? '',
         phenotype: this.genetics?.phenotype === 'default' ? '' : (this.genetics?.phenotype ?? ''),
+        row: 1,
+        col: 1,
+      };
+    }
+    // The destinations can land after the dialog is already open: on a
+    // dashboard with no manager card they are fetched when a Graduation first
+    // asks for them. Re-seeding when the list changes — and only when what is
+    // selected is not in it — is what makes the first option the default there
+    // too, without overwriting a choice the grower has already made.
+    if (
+      changed.has('growspaces') &&
+      !this.growspaces.some((entry) => entry.deviceId === this._plant.growspace_id)
+    ) {
+      this._plant = {
+        ...this._plant,
+        growspace_id: this.growspaces[0]?.deviceId ?? '',
         row: 1,
         col: 1,
       };
@@ -521,26 +553,43 @@ export class GrowspaceTcActionDialog extends LitElement {
     `;
   }
 
+  /**
+   * What to say under the bridge toggle.
+   *
+   * Four sentences, not two. A list that has not arrived and a list that
+   * arrived empty look identical from here, and telling a grower with a full tent that
+   * "no growspace is available" is worse than telling them nothing — so the
+   * status decides the sentence and only `ready` may claim there is nowhere to
+   * put the plant.
+   */
+  private get _bridgeHelpKey(): string {
+    if (this.growspacesStatus === 'loading') return 'graduation_growspaces_loading';
+    if (this.growspacesStatus === 'failed') return 'graduation_growspaces_failed';
+    return this.growspaces.length ? 'graduation_bridge_help' : 'graduation_no_growspace';
+  }
+
   private _renderGraduation(): TemplateResult {
     if (!this.graduationBridge) return html`${nothing}`;
     const destination = this.growspaces.find(
       (entry) => entry.deviceId === this._plant.growspace_id
     );
+    // Offerable only once the list is known to hold something. Everything else
+    // — pending, failed, genuinely empty — leaves the graduation recordable
+    // and the bridge out of reach, which is the unchanged behaviour.
+    const offerable = this.growspacesStatus === 'ready' && this.growspaces.length > 0;
     return html`
       <label class="bridge-toggle">
         <input
           type="checkbox"
           name="createPlant"
           .checked=${this._createPlant}
-          ?disabled=${this.saving || !this.growspaces.length}
+          ?disabled=${this.saving || !offerable}
           @change=${(event: Event) =>
             (this._createPlant = (event.target as HTMLInputElement).checked)}
         />
         ${this._t('graduation_create_plant')}
       </label>
-      <p class="supporting">
-        ${this._t(this.growspaces.length ? 'graduation_bridge_help' : 'graduation_no_growspace')}
-      </p>
+      <p class="supporting">${this._t(this._bridgeHelpKey)}</p>
       ${this._createPlant
         ? html`<div class="plant-fields">
             <label

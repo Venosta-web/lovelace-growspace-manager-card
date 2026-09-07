@@ -6,6 +6,7 @@ import {
   growspaceDevices$,
   getGrowspaceDevices,
   fetchGrowspaceData,
+  fetchGraduationDestinations,
   addGrowspace,
   removeGrowspace,
   updateGrowspace,
@@ -92,6 +93,49 @@ describe('fetchGrowspaceData', () => {
     vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('ws failure'));
 
     await expect(fetchGrowspaceData()).rejects.toThrow('ws failure');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchGraduationDestinations
+// ---------------------------------------------------------------------------
+
+describe('fetchGraduationDestinations', () => {
+  it('adapts the collection without touching the hydrated grid', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      gs1: {
+        identity: { growspace_id: 'gs1', name: 'Nursery', type: 'clone' },
+        grid: { rows: 2, plants_per_row: 3 },
+      },
+    });
+
+    const destinations = await fetchGraduationDestinations();
+
+    expect(destinations).toHaveLength(1);
+    expect(destinations[0]).toMatchObject({
+      deviceId: 'gs1',
+      name: 'Nursery',
+      type: 'clone',
+      rows: 2,
+      plantsPerRow: 3,
+    });
+    // The TC surface reads it and nothing else does: hydration is the
+    // bootstrap's job and a partial one from here would strand every other
+    // slice on a stale payload.
+    expect(devices$.get()).toEqual([]);
+    expect(growspaceDevices$.get()).toBeNull();
+  });
+
+  it('resolves empty when Growspace Manager holds no growspaces', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({});
+
+    await expect(fetchGraduationDestinations()).resolves.toEqual([]);
+  });
+
+  it('throws rather than resolving empty when the collection cannot be read', async () => {
+    vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('ws failure'));
+
+    await expect(fetchGraduationDestinations()).rejects.toThrow('ws failure');
   });
 });
 
