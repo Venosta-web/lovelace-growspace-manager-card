@@ -5,6 +5,7 @@ import './print-label-dialog';
 import type { LabelFieldVisibility } from '../lib/types/dialog';
 import { setDevices } from '../slices/grid';
 import { printLabel } from '../slices/plant';
+import { buildQrTargetUrl, deriveLabelFieldValues } from './print-label-logic';
 
 // The dialog now calls the Plant slice `printLabel` mutator directly.
 vi.mock('../slices/plant', () => ({
@@ -435,6 +436,41 @@ describe('PrintLabelDialog – render', () => {
     expect(el.shadowRoot!.querySelector('label-preview')).not.toBeNull();
   });
 
+  it('hands label-preview the shared derivation and its QR target URL', async () => {
+    setDevices([
+      {
+        deviceId: 'dev1',
+        name: 'Growspace 1',
+        type: 'normal' as any,
+        rows: 1,
+        plantsPerRow: 1,
+        plants: [
+          {
+            entity_id: 'sensor.plant_1',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_1', strain: 'OG Kush', days_in_stage: 5 },
+          },
+        ] as any,
+        grid: {},
+        biologicalMetrics: {} as any,
+        environmentAttributes: {} as any,
+        stats: {} as any,
+        irrigationConfig: {} as any,
+      },
+    ] as any);
+
+    const el = await fixture<PrintLabelDialog>(html`
+      <print-label-dialog .open=${true} .dialogState=${{ plantId: 'plant_1' }}></print-label-dialog>
+    `);
+
+    const preview = el.shadowRoot!.querySelector('label-preview') as any;
+    expect(preview.values).toEqual(deriveLabelFieldValues('plant_1'));
+    expect(preview.values.name).toBe('OG Kush');
+    expect(preview.qrValue).toBe(buildQrTargetUrl('plant_1', 'web'));
+
+    setDevices([]);
+  });
+
   it('renders printer-status-strip', async () => {
     const el = await fixture<PrintLabelDialog>(html`
       <print-label-dialog .open=${true}></print-label-dialog>
@@ -540,201 +576,6 @@ describe('PrintLabelDialog – render', () => {
     await el.updateComplete;
     const footer = el.shadowRoot!.querySelector('.footer-meta') as HTMLElement;
     expect(footer?.textContent).toContain('custom-size');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// _getPlant & _getFieldValues
-// ---------------------------------------------------------------------------
-
-describe('PrintLabelDialog – _getPlant & _getFieldValues', () => {
-  afterEach(() => {
-    setDevices([]);
-    vi.restoreAllMocks();
-  });
-
-  it('returns null if plantId is missing', () => {
-    const el = createElement();
-    expect((el as any)._getPlant(undefined)).toBeNull();
-  });
-
-  it('returns plant if found by plant_id attribute', () => {
-    const mockPlant = {
-      entity_id: 'sensor.plant_1',
-      state: 'healthy',
-      attributes: {
-        plant_id: 'plant_1',
-        strain: 'OG Kush',
-        phenotype: 'Ph1',
-        veg_start: '2026-05-01T00:00:00Z',
-        days_in_stage: 5,
-      },
-    };
-    setDevices([
-      {
-        deviceId: 'dev1',
-        name: 'Growspace 1',
-        type: 'normal' as any,
-        rows: 1,
-        plantsPerRow: 1,
-        plants: [mockPlant] as any,
-        grid: {},
-        biologicalMetrics: {} as any,
-        environmentAttributes: {} as any,
-        stats: {} as any,
-        irrigationConfig: {} as any,
-      },
-    ]);
-
-    const el = createElement();
-    expect((el as any)._getPlant('plant_1')).toEqual(mockPlant);
-  });
-
-  it('returns plant if found by entity_id fallback', () => {
-    const mockPlant = {
-      entity_id: 'sensor.plant_1',
-      state: 'healthy',
-      attributes: {
-        strain: 'OG Kush',
-        phenotype: 'Ph1',
-      },
-    };
-    setDevices([
-      {
-        deviceId: 'dev1',
-        name: 'Growspace 1',
-        type: 'normal' as any,
-        rows: 1,
-        plantsPerRow: 1,
-        plants: [mockPlant] as any,
-        grid: {},
-        biologicalMetrics: {} as any,
-        environmentAttributes: {} as any,
-        stats: {} as any,
-        irrigationConfig: {} as any,
-      },
-    ]);
-
-    const el = createElement();
-    expect((el as any)._getPlant('plant_1')).toEqual(mockPlant);
-  });
-
-  it('returns null if plant is not found', () => {
-    setDevices([
-      {
-        deviceId: 'dev1',
-        name: 'Growspace 1',
-        type: 'normal' as any,
-        rows: 1,
-        plantsPerRow: 1,
-        plants: [],
-        grid: {},
-        biologicalMetrics: {} as any,
-        environmentAttributes: {} as any,
-        stats: {} as any,
-        irrigationConfig: {} as any,
-      },
-    ]);
-
-    const el = createElement();
-    expect((el as any)._getPlant('plant_1')).toBeNull();
-  });
-
-  it('formats field values correctly using veg_start date', () => {
-    const mockPlant = {
-      entity_id: 'sensor.plant_1',
-      state: 'healthy',
-      attributes: {
-        plant_id: 'plant_1',
-        strain: 'OG Kush',
-        phenotype: 'Ph1',
-        breeder: 'Barney',
-        lineage: 'Kush x OG',
-        veg_start: '2026-05-01T00:00:00Z',
-        days_in_stage: 5,
-        breeder_logo: 'logo.png',
-      },
-    };
-    setDevices([
-      {
-        deviceId: 'dev1',
-        name: 'Growspace 1',
-        type: 'normal' as any,
-        rows: 1,
-        plantsPerRow: 1,
-        plants: [mockPlant] as any,
-        grid: {},
-        biologicalMetrics: {} as any,
-        environmentAttributes: {} as any,
-        stats: {} as any,
-        irrigationConfig: {} as any,
-      },
-    ]);
-
-    const el = createElement();
-    el.dialogState = { plantId: 'plant_1' };
-    const values = (el as any)._getFieldValues();
-    expect(values.name).toBe('OG Kush');
-    expect(values.phenotype).toBe('Ph1');
-    expect(values.breeder).toBe('Barney');
-    expect(values.lineage).toBe('Kush x OG');
-    expect(values.stageAge).toBe('Day 5');
-    expect(values.logo).toBe('logo.png');
-    expect(values.startDate).toBeTruthy();
-  });
-
-  it('formats field values correctly using flower_start date', () => {
-    const mockPlant = {
-      entity_id: 'sensor.plant_1',
-      state: 'healthy',
-      attributes: {
-        plant_id: 'plant_1',
-        flower_start: '2026-05-01T00:00:00Z',
-      },
-    };
-    setDevices([
-      {
-        deviceId: 'dev1',
-        name: 'Growspace 1',
-        type: 'normal' as any,
-        rows: 1,
-        plantsPerRow: 1,
-        plants: [mockPlant] as any,
-        grid: {},
-        biologicalMetrics: {} as any,
-        environmentAttributes: {} as any,
-        stats: {} as any,
-        irrigationConfig: {} as any,
-      },
-    ]);
-
-    const el = createElement();
-    el.dialogState = { plantId: 'plant_1' };
-    const values = (el as any)._getFieldValues();
-    expect(values.startDate).toBeTruthy();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// _formatDate
-// ---------------------------------------------------------------------------
-
-describe('PrintLabelDialog – _formatDate', () => {
-  it('returns empty string for null or undefined', () => {
-    const el = createElement();
-    expect((el as any)._formatDate(null)).toBe('');
-    expect((el as any)._formatDate(undefined)).toBe('');
-  });
-
-  it('returns original string if parsing throws an error', () => {
-    const el = createElement();
-    expect((el as any)._formatDate('invalid-date-string')).toBe('invalid-date-string');
-  });
-
-  it('returns original input if conversion/parsing throws an error', () => {
-    const el = createElement();
-    const badInput = Symbol('bad') as any;
-    expect((el as any)._formatDate(badInput)).toBe(badInput);
   });
 });
 
