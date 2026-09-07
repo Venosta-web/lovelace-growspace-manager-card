@@ -203,3 +203,26 @@ export async function fetchGrowspaceData(): Promise<void> {
 export async function fetchRawCollection(): Promise<Record<string, GrowspaceAPIResponse>> {
   return hassCall('growspace_manager/get_data', {}, GrowspaceAPICollectionSchema);
 }
+
+/**
+ * The growspaces a graduating Culture could be planted into.
+ *
+ * `devices$` is filled by the manager card's bootstrap and by nothing else, so
+ * on a dashboard holding only `custom:growspace-tc-card` it is permanently
+ * empty — and the Graduate dialog offered no destination at all, however many
+ * growspaces with free positions Growspace Manager had (workspace #188). The
+ * TC surface therefore asks for the list itself, the way it already asks for
+ * the strain library, rather than waiting for a host that may not be there.
+ *
+ * The same collection the bootstrap hydrates from answers it, so no backend
+ * change and no second parser: `transformGrowspace` is the one reader of that
+ * payload. It throws rather than resolving empty — "Growspace Manager has none"
+ * and "nobody could ask" are different answers and only one of them is the
+ * grower's problem.
+ */
+export async function fetchGraduationDestinations(): Promise<GrowspaceDevice[]> {
+  const collection = await fetchRawCollection();
+  return Object.values(collection)
+    .map((wsData) => GrowspaceAdapter.transformGrowspace(null, wsData))
+    .filter((device): device is GrowspaceDevice => device !== null);
+}

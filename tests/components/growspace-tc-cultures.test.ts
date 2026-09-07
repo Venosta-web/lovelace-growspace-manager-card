@@ -8,6 +8,7 @@ import { devices$ } from '../../src/slices/grid';
 import { createGrowspaceDevice } from '../../src/services/types';
 import { cultureMedia$, resetTcPresence, type CultureLine } from '../../src/slices/tc';
 import {
+  WS_TC_GRADUATE,
   WS_TC_LIST_CULTURE_LINES,
   WS_TC_MAINTENANCE_HISTORY,
   WS_TC_RELINK_PHENOTYPE,
@@ -22,6 +23,9 @@ vi.mock('../../src/services/hass-call', () => ({
 }));
 
 const hassCallMock = vi.mocked(hassCall);
+
+/** Growspace Manager's collection — where the graduation destinations come from. */
+const WS_GET_DATA = 'growspace_manager/get_data';
 
 if (!customElements.get('growspace-tc-cultures')) {
   customElements.define('growspace-tc-cultures', GrowspaceTcCultures);
@@ -65,16 +69,26 @@ const A_LIBRARY = {
   },
 };
 
+/** The `get_data` reply that yields one tent with a 2x3 grid. */
+const A_COLLECTION = {
+  tent: {
+    identity: { growspace_id: 'tent', name: 'Nursery', type: 'normal' },
+    grid: { rows: 2, plants_per_row: 3 },
+  },
+};
+
 /**
  * Answer each WebSocket command the container issues.
  *
- * The board and the strain library are fetched independently, so a test says
- * what each of them does rather than sharing one mock resolution.
+ * The board, the strain library and Growspace Manager's collection are fetched
+ * independently, so a test says what each of them does rather than sharing one
+ * mock resolution.
  */
 function answer(options: {
   lines?: CultureLine[];
   library?: unknown | Error;
   history?: unknown[];
+  collection?: unknown | Error;
 }): void {
   hassCallMock.mockImplementation(async (command: string) => {
     if (command === WS_TC_LIST_CULTURE_LINES) {
@@ -83,10 +97,18 @@ function answer(options: {
     if (command === WS_TC_MAINTENANCE_HISTORY) {
       return { actions: options.history ?? [] };
     }
+    if (command === WS_GET_DATA) {
+      if (options.collection instanceof Error) throw options.collection;
+      return options.collection ?? {};
+    }
     if (options.library instanceof Error) throw options.library;
     return options.library ?? { strains: {} };
   });
 }
+
+/** The command the graduation destinations ride in on. */
+const collectionCalls = (): unknown[][] =>
+  hassCallMock.mock.calls.filter((call) => call[0] === WS_GET_DATA);
 
 async function render(maintenance = false): Promise<GrowspaceTcCultures> {
   const element = await fixture<GrowspaceTcCultures>(
@@ -133,6 +155,10 @@ async function requestAction(
 beforeEach(() => {
   resetTcPresence();
   strainLibrary$.set([]);
+  // Module-global, and one suite below deliberately leaves a device in it.
+  // A hydrated grid is what suppresses the destination fetch, so a leak here
+  // would silently pass the very tests that prove the fetch happens.
+  devices$.set([]);
   localStorage.clear();
   vi.clearAllMocks();
 });
@@ -649,5 +675,215 @@ describe('GrowspaceTcCultures — an act replaces what it was opened from', () =
     expect(dialog(element)).toBeTruthy();
     expect(worklist(element)).toBeNull();
     expect(board(element)).toBeNull();
+  });
+});
+
+/**
+ * The graduation destinations, on a dashboard with nothing to hydrate them.
+ *
+ * `devices$` is filled by the manager card's bootstrap and by nothing else, so
+ * on a dashboard holding only `custom:growspace-tc-card` this view is the only
+ * thing that can get Growspace Manager's growspaces — and until it did, the
+ * Graduate dialog offered none of them (workspace #188).
+ */
+describe('GrowspaceTcCultures — graduation destinations', () => {
+  const actionDialog = (element: GrowspaceTcCultures) =>
+    dialog(element) as unknown as (HTMLElement & { updateComplete: Promise<unknown> }) | null;
+
+  async function settledDialog(element: GrowspaceTcCultures): Promise<HTMLElement> {
+    const open = actionDialog(element)!;
+    await vi.waitFor(async () => {
+      await element.updateComplete;
+      await open.updateComplete;
+      expect(open.shadowRoot?.textContent).not.toContain('Looking for somewhere');
+    });
+    return open;
+  }
+
+  const bridgeToggle = (open: HTMLElement) =>
+    open.shadowRoot?.querySelector<HTMLInputElement>('input[name="createPlant"]') ?? null;
+
+  /** Close the open act, so the board — and its next action — is back. */
+  async function dismiss(element: GrowspaceTcCultures): Promise<void> {
+    dialog(element)?.dispatchEvent(
+      new CustomEvent('maintenance-cancelled', { bubbles: true, composed: true })
+    );
+    await element.updateComplete;
+  }
+
+  async function graduate(
+    element: GrowspaceTcCultures,
+    cultureId = 'culture-1'
+  ): Promise<HTMLElement> {
+    element.graduationBridge = true;
+    await requestAction(element, 'graduate', cultureId);
+    return settledDialog(element);
+  }
+
+  test('offers Growspace Manager`s growspaces with no manager card to hydrate them', async () => {
+    answer({
+      lines: [aLine({ cultures: [aCulture()] })],
+      library: A_LIBRARY,
+      collection: A_COLLECTION,
+    });
+    const element = await render(true);
+
+    const open = await graduate(element);
+
+    expect(bridgeToggle(open)?.disabled).toBe(false);
+    expect(open.shadowRoot?.textContent).not.toContain('No growspace is available');
+
+    bridgeToggle(open)!.checked = true;
+    bridgeToggle(open)!.dispatchEvent(new Event('change'));
+    await (open as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+
+    const options = [...open.shadowRoot!.querySelectorAll('select[name="growspace"] option')];
+    expect(options.map((option) => option.textContent)).toEqual(['Nursery']);
+    expect(options[0].getAttribute('value')).toBe('tent');
+  });
+
+  test('takes the row and column limits from the chosen destination`s own grid', async () => {
+    answer({
+      lines: [aLine({ cultures: [aCulture()] })],
+      library: A_LIBRARY,
+      collection: A_COLLECTION,
+    });
+    const element = await render(true);
+    const open = await graduate(element);
+
+    bridgeToggle(open)!.checked = true;
+    bridgeToggle(open)!.dispatchEvent(new Event('change'));
+    await (open as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+
+    expect(open.shadowRoot?.querySelector('input[name="row"]')?.getAttribute('max')).toBe('2');
+    expect(open.shadowRoot?.querySelector('input[name="col"]')?.getAttribute('max')).toBe('3');
+  });
+
+  test('the recorded graduation carries the plant it was given a destination for', async () => {
+    answer({
+      lines: [aLine({ cultures: [aCulture()] })],
+      library: A_LIBRARY,
+      collection: A_COLLECTION,
+    });
+    const element = await render(true);
+    const open = await graduate(element);
+
+    bridgeToggle(open)!.checked = true;
+    bridgeToggle(open)!.dispatchEvent(new Event('change'));
+    await (open as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+
+    hassCallMock.mockResolvedValueOnce({
+      line: aLine({ cultures: [aCulture({ status: 'graduated' })] }),
+      action: { action: 'graduate', plant_id: 'plant-1' },
+    });
+    (open.shadowRoot?.querySelector('form') as HTMLFormElement).requestSubmit();
+    await vi.waitFor(() => expect(dialog(element)).toBeNull());
+
+    const recorded = hassCallMock.mock.calls.find((call) => call[0] === WS_TC_GRADUATE);
+    expect(recorded?.[1]).toMatchObject({
+      culture_id: 'culture-1',
+      plant: { growspace_id: 'tent', strain: 'Blue Dream', phenotype: 'Pheno 2', row: 1, col: 1 },
+    });
+    expect(element.shadowRoot?.textContent).not.toContain(
+      'Check Growspace Manager before adding a plant manually'
+    );
+  });
+
+  test('asks for nothing until a graduation needs one', async () => {
+    answer({
+      lines: [aLine({ cultures: [aCulture()] })],
+      library: A_LIBRARY,
+      collection: A_COLLECTION,
+    });
+    const element = await render(true);
+    element.graduationBridge = true;
+
+    expect(collectionCalls()).toHaveLength(0);
+
+    // Every other act on the board leaves it unasked too.
+    await requestAction(element, 'note');
+    expect(collectionCalls()).toHaveLength(0);
+    await dismiss(element);
+
+    await graduate(element);
+    expect(collectionCalls()).toHaveLength(1);
+  });
+
+  test('asks once, however many graduations are opened', async () => {
+    answer({
+      lines: [aLine({ cultures: [aCulture()] })],
+      library: A_LIBRARY,
+      collection: A_COLLECTION,
+    });
+    const element = await render(true);
+
+    await graduate(element);
+    await dismiss(element);
+    await graduate(element);
+
+    expect(collectionCalls()).toHaveLength(1);
+  });
+
+  test('asks for nothing when a manager card has already hydrated the grid', async () => {
+    answer({
+      lines: [aLine({ cultures: [aCulture()] })],
+      library: A_LIBRARY,
+      collection: A_COLLECTION,
+    });
+    devices$.set([
+      createGrowspaceDevice({
+        deviceId: 'hydrated',
+        name: 'Flower Room',
+        rows: 4,
+        plantsPerRow: 5,
+      }),
+    ]);
+    const element = await render(true);
+
+    const open = await graduate(element);
+
+    expect(collectionCalls()).toHaveLength(0);
+    expect(bridgeToggle(open)?.disabled).toBe(false);
+  });
+
+  test('says no growspace is available only when Growspace Manager really has none', async () => {
+    answer({ lines: [aLine({ cultures: [aCulture()] })], library: A_LIBRARY, collection: {} });
+    const element = await render(true);
+
+    const open = await graduate(element);
+
+    expect(collectionCalls()).toHaveLength(1);
+    expect(open.shadowRoot?.textContent).toContain('No growspace is available');
+    expect(bridgeToggle(open)?.disabled).toBe(true);
+  });
+
+  test('a collection that would not load is unknown, never none', async () => {
+    answer({
+      lines: [aLine({ cultures: [aCulture()] })],
+      library: A_LIBRARY,
+      collection: new Error('offline'),
+    });
+    const element = await render(true);
+
+    const open = await graduate(element);
+
+    expect(open.shadowRoot?.textContent).not.toContain('No growspace is available');
+    expect(open.shadowRoot?.textContent).toContain('growspaces are unknown');
+    // The act itself is still recordable — the bridge is what is out of reach.
+    expect(bridgeToggle(open)?.disabled).toBe(true);
+    expect(open.shadowRoot?.querySelector('button[type="submit"]')).not.toBeNull();
+  });
+
+  test('never asks when the backend does not advertise the bridge', async () => {
+    answer({
+      lines: [aLine({ cultures: [aCulture()] })],
+      library: A_LIBRARY,
+      collection: A_COLLECTION,
+    });
+    const element = await render(true);
+
+    await requestAction(element, 'graduate');
+
+    expect(collectionCalls()).toHaveLength(0);
   });
 });
