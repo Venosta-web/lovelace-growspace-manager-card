@@ -1023,6 +1023,16 @@ User-selectable ink darkness: Light, Normal, or Dark. Mapped to a numeric `densi
 **QR Target**
 The URL encoded in the label's QR code. Options: HA deep link to the plant, or raw plant UUID.
 
+**Label Derivation** (`dialogs/print-label-logic.ts`)
+The one place a plant becomes a label: it finds the plant across the active growspaces (by
+`plant_id`, falling back to the entity id without its `sensor.` prefix), reads every
+[[Label Field]] value off that plant's attributes with the calling dialog's own state as
+fallback and the empty string when neither has it, and builds the [[QR Target]] URL. Both
+the Print Label Dialog and the Batch Print Labels Dialog read it, so one plant yields one
+label whichever dialog is printing — a label that differed between the single and batch
+paths is one the grower could not trust. The two dialogs likewise share one printer list,
+`getPrinters` from `printer-status-strip.ts`, for the same reason.
+
 ## Nutrients
 
 **Feed & Water Dialog** (`feed-and-water-dialog`)

@@ -6,6 +6,7 @@ import { BatchPrintLabelDialog } from './batch-print-label-dialog';
 import './batch-print-label-dialog';
 import { __resetUiSliceForTests, notification$ } from '../slices/ui';
 import { printLabel } from '../slices/plant';
+import { getPrinters } from '../features/shared/ui/printer-status-strip';
 
 vi.mock('../slices/plant', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../slices/plant')>()),
@@ -111,48 +112,46 @@ function createElement(mockStore = makeMockStore(), hass = makeHass()) {
   return el;
 }
 
-describe('BatchPrintLabelDialog – _getPrinters', () => {
+describe('BatchPrintLabelDialog – printer list', () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it('returns only image entities containing _last_label_made', () => {
-    const el = createElement();
-    const printers = (el as any)._getPrinters();
-    expect(printers).toHaveLength(2);
-    expect(printers.every((p: { value: string }) => p.value.startsWith('image.'))).toBe(true);
-    expect(printers.every((p: { value: string }) => p.value.includes('_last_label_made'))).toBe(
-      true
-    );
+  it('lists the printers the shared helper discovers, in its shape', async () => {
+    const hass = makeHass() as any;
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true} .hass=${hass}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+
+    const select = el.shadowRoot!.querySelector('md3-select') as any;
+    expect(select.options).toEqual([
+      { label: 'Default / Auto', value: '' },
+      ...getPrinters(hass).map((printer) => ({ label: printer.name, value: printer.id })),
+    ]);
+    expect(select.options.slice(1).map((o: { label: string }) => o.label)).toEqual([
+      'Printer A',
+      'Printer B',
+    ]);
   });
 
-  it('strips " Last Label Made" suffix from friendly name', () => {
-    const el = createElement();
-    const printers = (el as any)._getPrinters();
-    const labels = printers.map((p: { label: string }) => p.label);
-    expect(labels).toContain('Printer A');
-    expect(labels).toContain('Printer B');
-  });
-
-  it('returns empty array when hass is not set', () => {
-    const el = document.createElement('batch-print-label-dialog') as BatchPrintLabelDialog;
-    (el as any).hass = null;
-    expect((el as any)._getPrinters()).toEqual([]);
-  });
-
-  it('returns empty array when no matching entities exist', () => {
+  it('offers only the default option when no printers exist', async () => {
     const hass = { states: { 'sensor.temp': { attributes: {} } } } as any;
-    const el = createElement(makeMockStore(), hass);
-    expect((el as any)._getPrinters()).toEqual([]);
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true} .hass=${hass}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+
+    const select = el.shadowRoot!.querySelector('md3-select') as any;
+    expect(select.options).toEqual([{ label: 'Default / Auto', value: '' }]);
   });
 
-  it('uses entity ID when friendly name is missing', () => {
-    const hass = {
-      states: {
-        'image.no_name_last_label_made': { attributes: {} },
-      },
-    } as any;
-    const el = createElement(makeMockStore(), hass);
-    const printers = (el as any)._getPrinters();
-    expect(printers[0].label).toBe('image.no_name_last_label_made');
+  it('selects no printer on open when hass is not set', () => {
+    const el = document.createElement('batch-print-label-dialog') as BatchPrintLabelDialog;
+    (el as any).hass = undefined;
+    (el as any)._selectedDeviceId = '';
+
+    (el as any)._resetForm();
+
+    expect((el as any)._selectedDeviceId).toBe('');
   });
 });
 

@@ -11,6 +11,7 @@ import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { showToast } from '../slices/ui';
 import { printLabel } from '../slices/plant';
+import { getPrinters } from '../features/shared/ui/printer-status-strip';
 
 const LABEL_SIZES: { id: LabelSizeId; label: string }[] = [
   { id: '50x30', label: '50×30' },
@@ -140,21 +141,11 @@ export class BatchPrintLabelDialog extends LitElement {
     this._sizeId = '50x30';
     this._density = 'normal';
     if (!this._selectedDeviceId) {
-      const printers = this._getPrinters();
+      const printers = getPrinters(this.hass);
       if (printers.length > 0) {
-        this._selectedDeviceId = printers[0].value;
+        this._selectedDeviceId = printers[0].id;
       }
     }
-  }
-
-  private _getPrinters() {
-    if (!this.hass) return [];
-    return Object.keys(this.hass.states)
-      .filter((eid) => eid.startsWith('image.') && eid.includes('_last_label_made'))
-      .map((eid) => {
-        const name = this.hass!.states[eid].attributes.friendly_name || eid;
-        return { label: name.replace(' Last Label Made', ''), value: eid };
-      });
   }
 
   private async _submit() {
@@ -218,7 +209,7 @@ export class BatchPrintLabelDialog extends LitElement {
 
   protected render() {
     const plantIds = this.dialogState?.plantIds ?? [];
-    const printers = this._getPrinters();
+    const printers = getPrinters(this.hass);
 
     return html`
       <gs-dialog
@@ -240,7 +231,10 @@ export class BatchPrintLabelDialog extends LitElement {
             <md3-select
               label="Niimbot Printer"
               .value=${this._selectedDeviceId || ''}
-              .options=${[{ label: 'Default / Auto', value: '' }, ...printers]}
+              .options=${[
+                { label: 'Default / Auto', value: '' },
+                ...printers.map((p) => ({ label: p.name, value: p.id })),
+              ]}
               @change=${(e: CustomEvent) => {
                 this._selectedDeviceId = e.detail;
               }}

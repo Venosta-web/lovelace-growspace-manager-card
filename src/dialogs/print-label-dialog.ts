@@ -17,8 +17,8 @@ import type {
 import { printLabel } from '../slices/plant';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
-import { activeDevices$ } from '../slices/grid';
 import { getPrinters } from '../features/shared/ui/printer-status-strip';
+import { buildQrTargetUrl, deriveLabelFieldValues } from './print-label-logic';
 
 const DEFAULT_FIELDS: LabelFieldVisibility = {
   name: true,
@@ -434,60 +434,6 @@ export class PrintLabelDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('close'));
   }
 
-  private _getPlant(plantId?: string) {
-    if (!plantId) return null;
-    const devices = activeDevices$.get();
-    for (const device of devices) {
-      const plant = device.plants.find(
-        (p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId
-      );
-      if (plant) return plant;
-    }
-    return null;
-  }
-
-  private _getFieldValues() {
-    const ds = this.dialogState;
-    const plant = this._getPlant(ds?.plantId);
-    const attrs = plant?.attributes;
-
-    const startDate = attrs?.veg_start
-      ? this._formatDate(attrs.veg_start)
-      : attrs?.flower_start
-        ? this._formatDate(attrs.flower_start)
-        : '';
-
-    const stageAge = attrs?.days_in_stage != null ? `Day ${attrs.days_in_stage}` : '';
-
-    return {
-      name: attrs?.strain ?? ds?.strainName ?? '',
-      phenotype: attrs?.phenotype ?? ds?.phenotype ?? '',
-      breeder: attrs?.breeder ?? ds?.breeder ?? '',
-      lineage: attrs?.lineage ?? ds?.lineage ?? '',
-      startDate,
-      stageAge,
-      plantId: ds?.plantId ?? '',
-      logo: attrs?.breeder_logo ?? ds?.breederLogo ?? '',
-    };
-  }
-
-  private _formatDate(dateStr?: string | null) {
-    if (!dateStr) return '';
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) {
-        return dateStr;
-      }
-      return date.toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: '2-digit',
-      });
-    } catch (_e) {
-      return dateStr;
-    }
-  }
-
   private _renderFooterMeta() {
     const { _printState, _copies, _printProgress } = this;
     if (_printState === 'printing') {
@@ -521,15 +467,12 @@ export class PrintLabelDialog extends LitElement {
     if (!this.open) return nothing;
 
     const ds = this.dialogState;
-    const values = this._getFieldValues();
+    const values = deriveLabelFieldValues(ds?.plantId, ds);
     const printers = this.hass ? getPrinters(this.hass) : [];
     const isPrinting = this._printState === 'printing';
     const sizeLabel = LABEL_SIZES.find((s) => s.id === this._sizeId)?.label ?? this._sizeId;
 
-    const qrValue =
-      this._qrTarget === 'deeplink'
-        ? `growspace://plant/${ds?.plantId ?? ''}`
-        : `https://growspace.app/plant/${ds?.plantId ?? ''}`;
+    const qrValue = buildQrTargetUrl(ds?.plantId, this._qrTarget);
 
     return html`
       <gs-dialog
