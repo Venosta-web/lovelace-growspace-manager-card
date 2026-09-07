@@ -5,6 +5,7 @@ import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
 import { mdiPrinter, mdiCheck } from '@mdi/js';
 import '../features/shared/ui/gs-dialog';
+import '../features/shared/ui/label-preview';
 import '../features/shared/ui/printer-status-strip';
 import type { BatchPrintLabelsDialogState, LabelSizeId, PrintDensity } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
@@ -12,6 +13,13 @@ import type { GrowspaceStore } from '../store/core/growspace-store';
 import { showToast } from '../slices/ui';
 import { printLabel } from '../slices/plant';
 import { getPrinters } from '../features/shared/ui/printer-status-strip';
+import {
+  buildQrTargetUrl,
+  DEFAULT_LABEL_FIELDS,
+  deriveLabelFieldValues,
+} from './print-label-logic';
+
+const DEFAULT_QR_TARGET = 'web' as const;
 
 const LABEL_SIZES: { id: LabelSizeId; label: string }[] = [
   { id: '50x30', label: '50×30' },
@@ -47,6 +55,46 @@ export class BatchPrintLabelDialog extends LitElement {
         align-items: center;
         gap: 12px;
         margin-top: 16px;
+      }
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1.4fr;
+        gap: 20px;
+      }
+      .preview-col {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .preview-stage {
+        position: relative;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--border-radius-md, 12px);
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 260px;
+      }
+      .preview-stage label-preview {
+        width: 100%;
+        max-width: 300px;
+      }
+      .preview-meta {
+        font-size: 0.78rem;
+        opacity: 0.55;
+        text-align: center;
+      }
+      @media (max-width: 600px) {
+        .two-col {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .preview-stage {
+          min-height: 180px;
+        }
       }
       .copies-row label {
         font-size: var(--font-size-sm);
@@ -178,9 +226,11 @@ export class BatchPrintLabelDialog extends LitElement {
         try {
           await printLabel({
             plantId,
+            fields: DEFAULT_LABEL_FIELDS,
             deviceId: this._selectedDeviceId || undefined,
             sizeId: this._sizeId,
             density: this._density,
+            qrTarget: DEFAULT_QR_TARGET,
             preview: false,
             baseUrl: window.location.origin + window.location.pathname,
           });
@@ -209,7 +259,11 @@ export class BatchPrintLabelDialog extends LitElement {
 
   protected render() {
     const plantIds = this.dialogState?.plantIds ?? [];
+    const previewPlantId = plantIds[0];
     const printers = getPrinters(this.hass);
+    const values = deriveLabelFieldValues(previewPlantId);
+    const qrValue = buildQrTargetUrl(previewPlantId, DEFAULT_QR_TARGET);
+    const sizeLabel = LABEL_SIZES.find((size) => size.id === this._sizeId)?.label ?? this._sizeId;
 
     return html`
       <gs-dialog
@@ -221,7 +275,19 @@ export class BatchPrintLabelDialog extends LitElement {
         .submitting=${this._isSubmitting}
         @close=${this._close}
       >
-        <div class="dialog-content-grid" style="display: block;">
+        <div class="dialog-content-grid two-col">
+          <div class="preview-col">
+            <div class="preview-stage">
+              <label-preview
+                .sizeId=${this._sizeId}
+                .fields=${DEFAULT_LABEL_FIELDS}
+                .values=${values}
+                .qrValue=${qrValue}
+                .density=${this._density}
+              ></label-preview>
+            </div>
+            <div class="preview-meta">${sizeLabel} · Thermal 203 dpi</div>
+          </div>
           <div class="form-section">
             <h3>Printer Settings</h3>
             <printer-status-strip

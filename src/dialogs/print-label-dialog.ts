@@ -18,19 +18,11 @@ import { printLabel } from '../slices/plant';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { getPrinters } from '../features/shared/ui/printer-status-strip';
-import { buildQrTargetUrl, deriveLabelFieldValues } from './print-label-logic';
-
-const DEFAULT_FIELDS: LabelFieldVisibility = {
-  name: true,
-  phenotype: true,
-  breeder: true,
-  lineage: true,
-  startDate: true,
-  stageAge: true,
-  plantId: true,
-  logo: true,
-  qr: true,
-};
+import {
+  buildQrTargetUrl,
+  DEFAULT_LABEL_FIELDS,
+  deriveLabelFieldValues,
+} from './print-label-logic';
 
 const LABEL_SIZES: { id: LabelSizeId; label: string }[] = [
   { id: '50x30', label: '50×30' },
@@ -54,7 +46,7 @@ export class PrintLabelDialog extends LitElement {
   @property({ attribute: false }) public dialogState: PrintLabelDialogState | undefined;
 
   @state() private _selectedDeviceId = '';
-  @state() private _fields: LabelFieldVisibility = { ...DEFAULT_FIELDS };
+  @state() private _fields: LabelFieldVisibility = { ...DEFAULT_LABEL_FIELDS };
   @state() private _sizeId: LabelSizeId = '50x30';
   @state() private _density: PrintDensity = 'normal';
   @state() private _qrTarget: QrTarget = 'web';
@@ -390,7 +382,7 @@ export class PrintLabelDialog extends LitElement {
     this._sizeId = ds?.defaultSizeId ?? '50x30';
     this._density = ds?.defaultDensity ?? 'normal';
     this._qrTarget = ds?.defaultQrTarget ?? 'web';
-    this._fields = { ...DEFAULT_FIELDS, ...(ds?.defaultFields ?? {}) };
+    this._fields = { ...DEFAULT_LABEL_FIELDS, ...(ds?.defaultFields ?? {}) };
 
     if (!this._selectedDeviceId && this.hass) {
       const printers = getPrinters(this.hass);
