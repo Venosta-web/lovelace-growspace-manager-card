@@ -1327,6 +1327,15 @@
       }
     }
   ],
+  "integration_dashboards": [
+    {
+      "slug": "tc",
+      "title": "E2E Tissue Culture",
+      "card": "custom:growspace-tc-card",
+      "integration": "growspace_manager_tc",
+      "purpose": "The standalone host of the tissue-culture view. The card takes no options, is pinned to no growspace, and reads the whole bench from Growspace Manager TC — so this dashboard exists to prove that host renders, and renders nothing at all when TC is not installed."
+    }
+  ],
   "entities": [
     {
       "entity_id": "sensor.e2e_veg_temperature",
