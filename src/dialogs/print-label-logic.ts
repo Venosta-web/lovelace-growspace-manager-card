@@ -10,7 +10,20 @@
  */
 import type { PlantEntity } from '../features/plants/types';
 import { activeDevices$ } from '../slices/grid';
-import type { LabelFieldValues, QrTarget } from '../lib/types/dialog';
+import type { LabelFieldValues, LabelFieldVisibility, QrTarget } from '../lib/types/dialog';
+
+/** The complete default field set used when a print dialog has no field overrides. */
+export const DEFAULT_LABEL_FIELDS: LabelFieldVisibility = {
+  name: true,
+  phenotype: true,
+  breeder: true,
+  lineage: true,
+  startDate: true,
+  stageAge: true,
+  plantId: true,
+  logo: true,
+  qr: true,
+};
 
 /**
  * What a dialog knows about a plant when the plant's own entity does not carry
