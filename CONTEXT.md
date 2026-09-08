@@ -1012,7 +1012,7 @@ The state machine for `seeds-genetics-tab.ts`, extracted into `seeds-genetics-ta
 ## Print Label
 
 **Label Field**
-One of nine configurable data rows that can appear on a printed thermal label: strain name (always shown), phenotype, breeder, lineage, start date, stage & age, plant ID, logo, QR code. Each field is independently toggled on/off in the Print Label Dialog. Note: the approved design mockup labels these "Breeder" (= phenotype) and "Genetics" (= breeder) — the canonical names in this codebase are phenotype and breeder respectively.
+One of nine configurable data rows that can appear on a printed thermal label: strain name (always shown), phenotype, breeder, lineage, start date, stage & age, plant ID, logo, QR code. Each field except strain name is independently toggled on/off in both the Print Label Dialog and the Batch Print Labels Dialog. Note: the approved design mockup labels these "Breeder" (= phenotype) and "Genetics" (= breeder) — the canonical names in this codebase are phenotype and breeder respectively.
 
 **Label Size**
 The physical roll dimensions selected for printing: 50×30, 40×30, 50×50, 50×80, or 50×15 mm. Affects both the frontend preview layout and the `width`/`height` values sent to the Niimbot `print` service.
@@ -1032,6 +1032,13 @@ the Print Label Dialog and the Batch Print Labels Dialog read it, so one plant y
 label whichever dialog is printing — a label that differed between the single and batch
 paths is one the grower could not trust. The two dialogs likewise share one printer list,
 `getPrinters` from `printer-status-strip.ts`, for the same reason.
+
+**Batch Print Labels Dialog** (`batch-print-label-dialog`)
+The multi-plant form for printing the same selected [[Label Field]] choices,
+[[Label Size]], [[Print Density]], and [[QR Target]] on every selected plant and
+copy. It previews one selected plant at a time and navigates between plants; the
+Print Label Dialog previews one plant and offers the same controls for that one
+plant.
 
 ## Nutrients
 
