@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
-import { mdiPrinter, mdiCheck } from '@mdi/js';
+import { mdiPrinter, mdiCheck, mdiChevronLeft, mdiChevronRight } from '@mdi/js';
 import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/label-preview';
 import '../features/shared/ui/printer-status-strip';
@@ -46,6 +46,7 @@ export class BatchPrintLabelDialog extends LitElement {
   @state() private _progress = 0;
   @state() private _sizeId: LabelSizeId = '50x30';
   @state() private _density: PrintDensity = 'normal';
+  @state() private _previewIndex = 0;
 
   static styles = [
     dialogStyles,
@@ -85,6 +86,35 @@ export class BatchPrintLabelDialog extends LitElement {
         font-size: 0.78rem;
         opacity: 0.55;
         text-align: center;
+      }
+      .preview-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+      }
+      .preview-nav button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 4px 10px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+        border-radius: var(--border-radius-sm, 8px);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.06));
+        color: var(--primary-text-color, #fff);
+        cursor: pointer;
+      }
+      .preview-nav button:disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
+      }
+      .preview-position {
+        min-width: 4.5rem;
+        text-align: center;
+        font-size: var(--font-size-supporting);
+        opacity: 0.7;
       }
       @media (max-width: 600px) {
         .two-col {
@@ -180,6 +210,10 @@ export class BatchPrintLabelDialog extends LitElement {
     if (changedProps.has('open') && this.open) {
       this._resetForm();
     }
+    if (changedProps.has('dialogState')) {
+      const plantCount = this.dialogState?.plantIds?.length ?? 0;
+      this._previewIndex = Math.min(this._previewIndex, Math.max(plantCount - 1, 0));
+    }
   }
 
   private _resetForm() {
@@ -188,6 +222,7 @@ export class BatchPrintLabelDialog extends LitElement {
     this._copies = 1;
     this._sizeId = '50x30';
     this._density = 'normal';
+    this._previewIndex = 0;
     if (!this._selectedDeviceId) {
       const printers = getPrinters(this.hass);
       if (printers.length > 0) {
@@ -257,9 +292,14 @@ export class BatchPrintLabelDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('close'));
   }
 
+  private _movePreview(offset: number, plantCount: number) {
+    this._previewIndex = Math.max(0, Math.min(this._previewIndex + offset, plantCount - 1));
+  }
+
   protected render() {
     const plantIds = this.dialogState?.plantIds ?? [];
-    const previewPlantId = plantIds[0];
+    const previewIndex = Math.min(this._previewIndex, Math.max(plantIds.length - 1, 0));
+    const previewPlantId = plantIds[previewIndex];
     const printers = getPrinters(this.hass);
     const values = deriveLabelFieldValues(previewPlantId);
     const qrValue = buildQrTargetUrl(previewPlantId, DEFAULT_QR_TARGET);
@@ -286,6 +326,31 @@ export class BatchPrintLabelDialog extends LitElement {
                 .density=${this._density}
               ></label-preview>
             </div>
+            ${plantIds.length > 1
+              ? html`
+                  <nav class="preview-nav" aria-label="Label preview navigation">
+                    <button
+                      type="button"
+                      aria-label="Previous plant"
+                      ?disabled=${previewIndex === 0}
+                      @click=${() => this._movePreview(-1, plantIds.length)}
+                    >
+                      <ha-svg-icon .path=${mdiChevronLeft}></ha-svg-icon>
+                    </button>
+                    <span class="preview-position" aria-live="polite">
+                      Plant ${previewIndex + 1} of ${plantIds.length}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Next plant"
+                      ?disabled=${previewIndex === plantIds.length - 1}
+                      @click=${() => this._movePreview(1, plantIds.length)}
+                    >
+                      <ha-svg-icon .path=${mdiChevronRight}></ha-svg-icon>
+                    </button>
+                  </nav>
+                `
+              : nothing}
             <div class="preview-meta">${sizeLabel} · Thermal 203 dpi</div>
           </div>
           <div class="form-section">

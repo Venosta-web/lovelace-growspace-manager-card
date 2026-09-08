@@ -446,6 +446,19 @@ describe('BatchPrintLabelDialog – willUpdate', () => {
     (el as any).willUpdate(changedProps);
     expect(resetFormSpy).not.toHaveBeenCalled();
   });
+
+  it('resets preview position on reopen and clamps it when the selection shrinks', () => {
+    const el = createElement();
+    (el as any)._previewIndex = 2;
+    el.dialogState = { plantIds: ['p1'] };
+    (el as any).willUpdate(new Map([['dialogState', { plantIds: ['p1', 'p2', 'p3'] }]]));
+    expect((el as any)._previewIndex).toBe(0);
+
+    (el as any)._previewIndex = 2;
+    el.open = true;
+    (el as any).willUpdate(new Map([['open', false]]));
+    expect((el as any)._previewIndex).toBe(0);
+  });
 });
 
 describe('BatchPrintLabelDialog – render', () => {
@@ -509,6 +522,119 @@ describe('BatchPrintLabelDialog – render', () => {
     expect(preview.qrValue).toBe(buildQrTargetUrl('plant_1', 'web'));
     expect(preview.sizeId).toBe('50x30');
     expect(preview.density).toBe('normal');
+  });
+
+  it('steps through every selected plant without changing the print settings', async () => {
+    setDevices([
+      {
+        deviceId: 'dev1',
+        name: 'Growspace 1',
+        type: 'normal' as any,
+        rows: 1,
+        plantsPerRow: 3,
+        plants: [
+          {
+            entity_id: 'sensor.plant_1',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_1', strain: 'OG Kush' },
+          },
+          {
+            entity_id: 'sensor.plant_2',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_2', strain: 'Blue Dream' },
+          },
+          {
+            entity_id: 'sensor.plant_3',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_3', strain: 'Northern Lights' },
+          },
+        ] as any,
+        grid: {},
+        biologicalMetrics: {} as any,
+        environmentAttributes: {} as any,
+        stats: {} as any,
+        irrigationConfig: {} as any,
+      },
+    ] as any);
+
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['plant_1', 'plant_2', 'plant_3'] }}
+      ></batch-print-label-dialog>
+    `);
+    (el as any)._sizeId = '40x30';
+    (el as any)._density = 'high';
+    await el.updateComplete;
+
+    const nav = el.shadowRoot!.querySelector('.preview-nav')!;
+    const buttons = nav.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
+    expect(nav.querySelector('.preview-position')?.textContent).toContain('1 of 3');
+    expect(buttons[0].disabled).toBe(true);
+    expect(buttons[1].disabled).toBe(false);
+
+    buttons[1].click();
+    await el.updateComplete;
+    const preview = el.shadowRoot!.querySelector('label-preview') as any;
+    expect(nav.querySelector('.preview-position')?.textContent).toContain('2 of 3');
+    expect(preview.values.name).toBe('Blue Dream');
+    expect(preview.qrValue).toBe(buildQrTargetUrl('plant_2', 'web'));
+
+    const sizeChips = el.shadowRoot!.querySelectorAll(
+      '.size-chip'
+    ) as NodeListOf<HTMLButtonElement>;
+    const densityButtons = el.shadowRoot!.querySelectorAll(
+      '.density-seg button'
+    ) as NodeListOf<HTMLButtonElement>;
+    sizeChips[2].click();
+    densityButtons[0].click();
+    await el.updateComplete;
+    expect(preview.sizeId).toBe('50x50');
+    expect(preview.density).toBe('low');
+
+    buttons[1].click();
+    await el.updateComplete;
+    expect(nav.querySelector('.preview-position')?.textContent).toContain('3 of 3');
+    expect(buttons[1].disabled).toBe(true);
+    expect(preview.values.name).toBe('Northern Lights');
+    expect(preview.qrValue).toBe(buildQrTargetUrl('plant_3', 'web'));
+    expect(preview.sizeId).toBe('50x50');
+    expect(preview.density).toBe('low');
+
+    buttons[0].click();
+    await el.updateComplete;
+    expect(nav.querySelector('.preview-position')?.textContent).toContain('2 of 3');
+    expect((el as any)._sizeId).toBe('50x50');
+    expect((el as any)._density).toBe('low');
+  });
+
+  it('keeps a single-plant preview simple without navigation controls', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['plant_1'] }}
+      ></batch-print-label-dialog>
+    `);
+
+    expect(el.shadowRoot!.querySelector('.preview-nav')).toBeNull();
+    expect((el as any)._previewIndex).toBe(0);
+  });
+
+  it('prints selected plants in their original order for every copy', async () => {
+    const mockStore = makeMockStore();
+    const el = createElement(mockStore);
+    (el as any).dialogState = { plantIds: ['third', 'first', 'second'] };
+    (el as any)._copies = 2;
+    (el as any)._previewIndex = 2;
+    vi.mocked(printLabel).mockClear();
+
+    await (el as any)._submit();
+
+    const printedPlantIds = vi
+      .mocked(printLabel)
+      .mock.calls.slice(1)
+      .map(([params]) => params.plantId);
+    expect(printedPlantIds).toEqual(['third', 'first', 'second', 'third', 'first', 'second']);
   });
 
   it('updates the rendered preview when size and density change', async () => {
