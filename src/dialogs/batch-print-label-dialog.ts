@@ -21,6 +21,15 @@ import {
 
 const DEFAULT_QR_TARGET = 'web' as const;
 
+interface BatchPrintJob {
+  plantIds: string[];
+  copies: number;
+  deviceId: string | undefined;
+  sizeId: LabelSizeId;
+  density: PrintDensity;
+  baseUrl: string;
+}
+
 const LABEL_SIZES: { id: LabelSizeId; label: string }[] = [
   { id: '50x30', label: '50×30' },
   { id: '40x30', label: '40×30' },
@@ -47,6 +56,7 @@ export class BatchPrintLabelDialog extends LitElement {
   @state() private _sizeId: LabelSizeId = '50x30';
   @state() private _density: PrintDensity = 'normal';
   @state() private _previewIndex = 0;
+  @state() private _activeJob: BatchPrintJob | null = null;
 
   static styles = [
     dialogStyles,
@@ -210,7 +220,7 @@ export class BatchPrintLabelDialog extends LitElement {
     if (changedProps.has('open') && this.open) {
       this._resetForm();
     }
-    if (changedProps.has('dialogState')) {
+    if (changedProps.has('dialogState') && !this._activeJob) {
       const plantCount = this.dialogState?.plantIds?.length ?? 0;
       this._previewIndex = Math.min(this._previewIndex, Math.max(plantCount - 1, 0));
     }
@@ -223,6 +233,7 @@ export class BatchPrintLabelDialog extends LitElement {
     this._sizeId = '50x30';
     this._density = 'normal';
     this._previewIndex = 0;
+    this._activeJob = null;
     if (!this._selectedDeviceId) {
       const printers = getPrinters(this.hass);
       if (printers.length > 0) {
@@ -233,41 +244,55 @@ export class BatchPrintLabelDialog extends LitElement {
 
   private async _submit() {
     if (!this.store || !this.dialogState) return;
-    const { plantIds } = this.dialogState;
-    if (plantIds.length === 0) return;
+    if (this.dialogState.plantIds.length === 0) return;
 
+    const job: BatchPrintJob = {
+      plantIds: [...this.dialogState.plantIds],
+      copies: this._copies,
+      deviceId: this._selectedDeviceId || undefined,
+      sizeId: this._sizeId,
+      density: this._density,
+      baseUrl: window.location.origin + window.location.pathname,
+    };
+
+    this._activeJob = job;
     this._isSubmitting = true;
     this._progress = 0;
+    this._previewIndex = 0;
+    await this._waitForRender();
 
     // Warm up Niimbot before batch printing — the first service call initializes the
     // printer session; without it all labels come out blank.
     try {
       await printLabel({
-        plantId: plantIds[0],
-        deviceId: this._selectedDeviceId || undefined,
+        plantId: job.plantIds[0],
+        deviceId: job.deviceId,
         preview: true,
-        baseUrl: window.location.origin + window.location.pathname,
+        baseUrl: job.baseUrl,
       });
     } catch (_e) {
       // Warm-up failure is non-fatal; attempt batch anyway.
     }
 
-    const total = plantIds.length * this._copies;
+    const total = job.plantIds.length * job.copies;
     let completed = 0;
     const errors: string[] = [];
 
-    for (let copy = 0; copy < this._copies; copy++) {
-      for (const plantId of plantIds) {
+    for (let copy = 0; copy < job.copies; copy++) {
+      for (let plantIndex = 0; plantIndex < job.plantIds.length; plantIndex++) {
+        const plantId = job.plantIds[plantIndex];
+        this._previewIndex = plantIndex;
+        await this._waitForRender();
         try {
           await printLabel({
             plantId,
             fields: DEFAULT_LABEL_FIELDS,
-            deviceId: this._selectedDeviceId || undefined,
-            sizeId: this._sizeId,
-            density: this._density,
+            deviceId: job.deviceId,
+            sizeId: job.sizeId,
+            density: job.density,
             qrTarget: DEFAULT_QR_TARGET,
             preview: false,
-            baseUrl: window.location.origin + window.location.pathname,
+            baseUrl: job.baseUrl,
           });
         } catch (_e) {
           errors.push(plantId);
@@ -292,18 +317,27 @@ export class BatchPrintLabelDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('close'));
   }
 
+  private async _waitForRender() {
+    if (this.isConnected) await this.updateComplete;
+  }
+
   private _movePreview(offset: number, plantCount: number) {
+    if (this._isSubmitting) return;
     this._previewIndex = Math.max(0, Math.min(this._previewIndex + offset, plantCount - 1));
   }
 
   protected render() {
-    const plantIds = this.dialogState?.plantIds ?? [];
+    const plantIds = this._activeJob?.plantIds ?? this.dialogState?.plantIds ?? [];
+    const deviceId = this._activeJob ? this._activeJob.deviceId : this._selectedDeviceId;
+    const copies = this._activeJob?.copies ?? this._copies;
+    const sizeId = this._activeJob?.sizeId ?? this._sizeId;
+    const density = this._activeJob?.density ?? this._density;
     const previewIndex = Math.min(this._previewIndex, Math.max(plantIds.length - 1, 0));
     const previewPlantId = plantIds[previewIndex];
     const printers = getPrinters(this.hass);
     const values = deriveLabelFieldValues(previewPlantId);
     const qrValue = buildQrTargetUrl(previewPlantId, DEFAULT_QR_TARGET);
-    const sizeLabel = LABEL_SIZES.find((size) => size.id === this._sizeId)?.label ?? this._sizeId;
+    const sizeLabel = LABEL_SIZES.find((size) => size.id === sizeId)?.label ?? sizeId;
 
     return html`
       <gs-dialog
@@ -319,11 +353,11 @@ export class BatchPrintLabelDialog extends LitElement {
           <div class="preview-col">
             <div class="preview-stage">
               <label-preview
-                .sizeId=${this._sizeId}
+                .sizeId=${sizeId}
                 .fields=${DEFAULT_LABEL_FIELDS}
                 .values=${values}
                 .qrValue=${qrValue}
-                .density=${this._density}
+                .density=${density}
               ></label-preview>
             </div>
             ${plantIds.length > 1
@@ -332,7 +366,7 @@ export class BatchPrintLabelDialog extends LitElement {
                     <button
                       type="button"
                       aria-label="Previous plant"
-                      ?disabled=${previewIndex === 0}
+                      ?disabled=${this._isSubmitting || previewIndex === 0}
                       @click=${() => this._movePreview(-1, plantIds.length)}
                     >
                       <ha-svg-icon .path=${mdiChevronLeft}></ha-svg-icon>
@@ -343,7 +377,7 @@ export class BatchPrintLabelDialog extends LitElement {
                     <button
                       type="button"
                       aria-label="Next plant"
-                      ?disabled=${previewIndex === plantIds.length - 1}
+                      ?disabled=${this._isSubmitting || previewIndex === plantIds.length - 1}
                       @click=${() => this._movePreview(1, plantIds.length)}
                     >
                       <ha-svg-icon .path=${mdiChevronRight}></ha-svg-icon>
@@ -357,11 +391,12 @@ export class BatchPrintLabelDialog extends LitElement {
             <h3>Printer Settings</h3>
             <printer-status-strip
               .hass=${this.hass}
-              .selectedDeviceId=${this._selectedDeviceId}
+              .selectedDeviceId=${deviceId ?? ''}
             ></printer-status-strip>
             <md3-select
               label="Niimbot Printer"
-              .value=${this._selectedDeviceId || ''}
+              .value=${deviceId ?? ''}
+              .disabled=${this._isSubmitting}
               .options=${[
                 { label: 'Default / Auto', value: '' },
                 ...printers.map((p) => ({ label: p.name, value: p.id })),
@@ -375,7 +410,8 @@ export class BatchPrintLabelDialog extends LitElement {
               ${LABEL_SIZES.map(
                 (s) => html`
                   <button
-                    class="size-chip ${this._sizeId === s.id ? 'active' : ''}"
+                    class="size-chip ${sizeId === s.id ? 'active' : ''}"
+                    ?disabled=${this._isSubmitting}
                     @click=${() => {
                       this._sizeId = s.id;
                     }}
@@ -390,7 +426,8 @@ export class BatchPrintLabelDialog extends LitElement {
               ${(['low', 'normal', 'high'] as PrintDensity[]).map(
                 (d) => html`
                   <button
-                    class=${this._density === d ? 'active' : ''}
+                    class=${density === d ? 'active' : ''}
+                    ?disabled=${this._isSubmitting}
                     @click=${() => {
                       this._density = d;
                     }}
@@ -408,7 +445,8 @@ export class BatchPrintLabelDialog extends LitElement {
                 type="number"
                 min="1"
                 max="99"
-                .value=${String(this._copies)}
+                .value=${String(copies)}
+                ?disabled=${this._isSubmitting}
                 @input=${(e: InputEvent) => {
                   const v = parseInt((e.target as HTMLInputElement).value, 10);
                   if (!isNaN(v) && v >= 1) this._copies = v;
