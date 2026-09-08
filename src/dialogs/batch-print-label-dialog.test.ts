@@ -143,7 +143,7 @@ describe('BatchPrintLabelDialog – printer list', () => {
     `);
     await el.updateComplete;
 
-    const select = el.shadowRoot!.querySelector('md3-select') as any;
+    const select = el.shadowRoot!.querySelector('md3-select[label="Niimbot Printer"]') as any;
     expect(select.options).toEqual([
       { label: 'Default / Auto', value: '' },
       ...getPrinters(hass).map((printer) => ({ label: printer.name, value: printer.id })),
@@ -161,7 +161,7 @@ describe('BatchPrintLabelDialog – printer list', () => {
     `);
     await el.updateComplete;
 
-    const select = el.shadowRoot!.querySelector('md3-select') as any;
+    const select = el.shadowRoot!.querySelector('md3-select[label="Niimbot Printer"]') as any;
     expect(select.options).toEqual([{ label: 'Default / Auto', value: '' }]);
   });
 
@@ -398,6 +398,14 @@ describe('BatchPrintLabelDialog – _submit', () => {
     (el as any)._copies = 2;
     await el.updateComplete;
 
+    const breederSwitch = Array.from(
+      el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.field-toggle-row')
+    ).find((row) => row.getAttribute('aria-label') === 'Breeder')!;
+    breederSwitch.click();
+    const qrSelect = el.shadowRoot!.querySelector('.qr-target-card md3-select')!;
+    qrSelect.dispatchEvent(new CustomEvent('change', { detail: 'deeplink' }));
+    await el.updateComplete;
+
     const preview = el.shadowRoot!.querySelector('label-preview') as any;
     const previewContract = {
       fields: preview.fields,
@@ -413,12 +421,43 @@ describe('BatchPrintLabelDialog – _submit', () => {
       .mock.calls.slice(1)
       .map(([params]) => params);
     expect(batchCalls).toHaveLength(4);
+    expect(batchCalls.map((call) => call.plantId)).toEqual(['p1', 'p2', 'p1', 'p2']);
     for (const call of batchCalls) {
       expect(call.fields).toEqual(previewContract.fields);
+      expect(call.fields).toEqual({ ...DEFAULT_LABEL_FIELDS, breeder: false });
       expect(call.sizeId).toBe(previewContract.sizeId);
       expect(call.density).toBe(previewContract.density);
-      expect(call.qrTarget).toBe('web');
-      expect(buildQrTargetUrl('p1', 'web')).toBe(previewContract.qrValue);
+      expect(call.qrTarget).toBe('deeplink');
+      expect(buildQrTargetUrl('p1', 'deeplink')).toBe(previewContract.qrValue);
+    }
+  });
+
+  it('keeps the submitted choices stable while the warm-up is pending', async () => {
+    let finishWarmUp!: () => void;
+    const warmUpPending = new Promise<void>((resolve) => {
+      finishWarmUp = resolve;
+    });
+    vi.mocked(printLabel).mockImplementationOnce(() => warmUpPending);
+    const el = createElement();
+    (el as any).dialogState = { plantIds: ['p1', 'p2'] };
+    (el as any)._copies = 2;
+    (el as any)._fields = { ...DEFAULT_LABEL_FIELDS, breeder: false, qr: true };
+    (el as any)._qrTarget = 'deeplink';
+
+    const submission = (el as any)._submit();
+    (el as any)._fields = { ...DEFAULT_LABEL_FIELDS, breeder: true, qr: false };
+    (el as any)._qrTarget = 'web';
+    finishWarmUp();
+    await submission;
+
+    const batchCalls = vi
+      .mocked(printLabel)
+      .mock.calls.slice(1)
+      .map(([params]) => params);
+    expect(batchCalls).toHaveLength(4);
+    for (const call of batchCalls) {
+      expect(call.fields).toEqual({ ...DEFAULT_LABEL_FIELDS, breeder: false, qr: true });
+      expect(call.qrTarget).toBe('deeplink');
     }
   });
 
@@ -469,6 +508,8 @@ describe('BatchPrintLabelDialog – _submit', () => {
     (el as any)._copies = 2;
     (el as any)._sizeId = '40x30';
     (el as any)._density = 'high';
+    (el as any)._fields = { ...DEFAULT_LABEL_FIELDS, breeder: false, qr: true };
+    (el as any)._qrTarget = 'deeplink';
     (el as any)._selectedDeviceId = 'image.printer_b_last_label_made';
     await el.updateComplete;
 
@@ -491,15 +532,16 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
       expect(request).toMatchObject({
         plantId,
-        fields: DEFAULT_LABEL_FIELDS,
+        fields: { ...DEFAULT_LABEL_FIELDS, breeder: false, qr: true },
         deviceId: 'image.printer_b_last_label_made',
         sizeId: '40x30',
         density: 'high',
-        qrTarget: 'web',
+        qrTarget: 'deeplink',
         preview: false,
       });
       expect(preview.values).toEqual(deriveLabelFieldValues(plantId));
-      expect(preview.qrValue).toBe(buildQrTargetUrl(plantId, 'web'));
+      expect(preview.fields).toEqual(request.fields);
+      expect(preview.qrValue).toBe(buildQrTargetUrl(plantId, 'deeplink'));
       expect(preview.sizeId).toBe(request.sizeId);
       expect(preview.density).toBe(request.density);
       expect((el as any)._progress).toBe(expectedProgress[index]);
@@ -510,6 +552,8 @@ describe('BatchPrintLabelDialog – _submit', () => {
         (el as any)._copies = 9;
         (el as any)._sizeId = '50x80';
         (el as any)._density = 'low';
+        (el as any)._fields = { ...DEFAULT_LABEL_FIELDS, breeder: true, qr: false };
+        (el as any)._qrTarget = 'web';
         (el as any)._selectedDeviceId = 'image.printer_a_last_label_made';
         pending[index].resolve();
 
@@ -519,13 +563,19 @@ describe('BatchPrintLabelDialog – _submit', () => {
         const selectedSize = el.shadowRoot!.querySelector('.size-chip.active');
         const selectedDensity = el.shadowRoot!.querySelector('.density-seg .active');
         const copies = el.shadowRoot!.querySelector('.copies-input') as HTMLInputElement;
-        const printer = el.shadowRoot!.querySelector('md3-select') as any;
+        const printer = el.shadowRoot!.querySelector('md3-select[label="Niimbot Printer"]') as any;
+        const breeder = Array.from(
+          el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.field-toggle-row')
+        ).find((row) => row.getAttribute('aria-label') === 'Breeder');
+        const qrTarget = el.shadowRoot!.querySelector('.qr-target-card md3-select') as any;
         expect(secondPreview.values).toEqual(deriveLabelFieldValues('plant_2'));
         expect((el as any)._previewIndex).toBe(1);
         expect(selectedSize?.textContent?.trim()).toBe('40×30');
         expect(selectedDensity?.textContent?.trim()).toBe('Dark');
         expect(copies.value).toBe('2');
         expect(printer.value).toBe('image.printer_b_last_label_made');
+        expect(breeder?.getAttribute('aria-checked')).toBe('false');
+        expect(qrTarget.value).toBe('deeplink');
         continue;
       }
 
@@ -651,6 +701,70 @@ describe('BatchPrintLabelDialog – render', () => {
     expect(preview.qrValue).toBe(buildQrTargetUrl('plant_1', 'web'));
     expect(preview.sizeId).toBe('50x30');
     expect(preview.density).toBe('normal');
+  });
+
+  it('renders nine accessible field switches and updates the preview immediately', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['plant_1'] }}
+      ></batch-print-label-dialog>
+    `);
+    const switches = Array.from(
+      el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.field-toggle-row')
+    );
+    const strain = switches.find((row) => row.getAttribute('aria-label') === 'Strain name')!;
+    const breeder = switches.find((row) => row.getAttribute('aria-label') === 'Breeder')!;
+
+    expect(switches).toHaveLength(9);
+    expect(switches.every((row) => row.getAttribute('role') === 'switch')).toBe(true);
+    expect(strain.getAttribute('aria-checked')).toBe('true');
+    expect(strain.getAttribute('aria-disabled')).toBe('true');
+    strain.click();
+    breeder.click();
+    await el.updateComplete;
+
+    const preview = el.shadowRoot!.querySelector('label-preview') as any;
+    expect(preview.fields.name).toBe(true);
+    expect(preview.fields.breeder).toBe(false);
+    expect(breeder.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('shows QR controls only for QR labels and updates the current plant URL', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['plant_1', 'plant_2'] }}
+      ></batch-print-label-dialog>
+    `);
+    const qrSwitch = Array.from(
+      el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.field-toggle-row')
+    ).find((row) => row.getAttribute('aria-label') === 'QR code')!;
+    const qrSelect = el.shadowRoot!.querySelector('.qr-target-card md3-select')!;
+
+    qrSelect.dispatchEvent(new CustomEvent('change', { detail: 'deeplink' }));
+    await el.updateComplete;
+    let preview = el.shadowRoot!.querySelector('label-preview') as any;
+    expect(preview.qrValue).toBe(buildQrTargetUrl('plant_1', 'deeplink'));
+    expect(el.shadowRoot!.querySelector('.qr-url-hint')?.textContent).toContain(
+      buildQrTargetUrl('plant_1', 'deeplink')
+    );
+
+    const next = el.shadowRoot!.querySelector<HTMLButtonElement>(
+      '.preview-nav button[aria-label="Next plant"]'
+    )!;
+    next.click();
+    await el.updateComplete;
+    preview = el.shadowRoot!.querySelector('label-preview') as any;
+    expect(preview.qrValue).toBe(buildQrTargetUrl('plant_2', 'deeplink'));
+    expect(el.shadowRoot!.querySelector('.qr-url-hint')?.textContent).toContain(
+      buildQrTargetUrl('plant_2', 'deeplink')
+    );
+
+    qrSwitch.click();
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector('.qr-target-card')).toBeNull();
+    expect(preview.fields.qr).toBe(false);
   });
 
   it('steps through every selected plant without changing the print settings', async () => {
@@ -844,7 +958,7 @@ describe('BatchPrintLabelDialog – render', () => {
     `);
     await el.updateComplete;
 
-    const select = el.shadowRoot!.querySelector('md3-select') as any;
+    const select = el.shadowRoot!.querySelector('md3-select[label="Niimbot Printer"]')!;
     select.dispatchEvent(new CustomEvent('change', { detail: 'image.printer_b_last_label_made' }));
     expect((el as any)._selectedDeviceId).toBe('image.printer_b_last_label_made');
 
@@ -869,7 +983,7 @@ describe('BatchPrintLabelDialog – render', () => {
       <batch-print-label-dialog .open=${true} .hass=${hass}></batch-print-label-dialog>
     `);
     await el.updateComplete;
-    expect(el.shadowRoot!.querySelector('.form-section')?.textContent).not.toContain(
+    expect(el.shadowRoot!.querySelector('.settings-wrapper')?.textContent).not.toContain(
       'No Niimbot printers discovered'
     );
   });

@@ -7,7 +7,13 @@ import { mdiPrinter, mdiCheck, mdiChevronLeft, mdiChevronRight } from '@mdi/js';
 import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/label-preview';
 import '../features/shared/ui/printer-status-strip';
-import type { BatchPrintLabelsDialogState, LabelSizeId, PrintDensity } from '../lib/types/dialog';
+import type {
+  BatchPrintLabelsDialogState,
+  LabelFieldVisibility,
+  LabelSizeId,
+  PrintDensity,
+  QrTarget,
+} from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { showToast } from '../slices/ui';
@@ -19,14 +25,14 @@ import {
   deriveLabelFieldValues,
 } from './print-label-logic';
 
-const DEFAULT_QR_TARGET = 'web' as const;
-
 interface BatchPrintJob {
   plantIds: string[];
   copies: number;
   deviceId: string | undefined;
   sizeId: LabelSizeId;
   density: PrintDensity;
+  fields: LabelFieldVisibility;
+  qrTarget: QrTarget;
   baseUrl: string;
 }
 
@@ -55,6 +61,8 @@ export class BatchPrintLabelDialog extends LitElement {
   @state() private _progress = 0;
   @state() private _sizeId: LabelSizeId = '50x30';
   @state() private _density: PrintDensity = 'normal';
+  @state() private _fields: LabelFieldVisibility = { ...DEFAULT_LABEL_FIELDS };
+  @state() private _qrTarget: QrTarget = 'web';
   @state() private _previewIndex = 0;
   @state() private _activeJob: BatchPrintJob | null = null;
 
@@ -73,9 +81,99 @@ export class BatchPrintLabelDialog extends LitElement {
         gap: 20px;
       }
       .preview-col {
+        grid-column: 1;
+        grid-row: 1;
         display: flex;
         flex-direction: column;
         gap: 10px;
+      }
+      .settings-wrapper {
+        grid-column: 2;
+        grid-row: 1;
+      }
+      .settings-col {
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        max-height: 525px;
+        padding: 12px 4px 0 0;
+      }
+      .settings-section {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .settings-section-title {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        opacity: 0.5;
+        margin-bottom: 4px;
+      }
+      .field-toggle-row {
+        appearance: none;
+        width: 100%;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 8px;
+        border: 0;
+        border-radius: var(--border-radius-sm, 8px);
+        background: transparent;
+        color: var(--primary-text-color, #fff);
+        cursor: pointer;
+        text-align: left;
+      }
+      .field-toggle-row:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .field-toggle-row.locked {
+        cursor: default;
+        opacity: 0.5;
+      }
+      .field-toggle-row:focus-visible {
+        outline: 2px solid var(--primary-color, #4caf50);
+        outline-offset: 2px;
+      }
+      .field-toggle-label {
+        font-size: var(--font-size-sm);
+      }
+      .toggle-dot {
+        width: 28px;
+        height: 16px;
+        border-radius: var(--border-radius-sm, 8px);
+        background: rgba(255, 255, 255, 0.15);
+        position: relative;
+      }
+      .toggle-dot.on {
+        background: var(--primary-color, #4caf50);
+      }
+      .toggle-dot::after {
+        content: '';
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        top: 2px;
+        left: 2px;
+        background: white;
+        transition: transform 0.2s;
+      }
+      .toggle-dot.on::after {
+        transform: translateX(12px);
+      }
+      .qr-target-card {
+        padding: 10px;
+        border-radius: var(--border-radius-sm, 8px);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .qr-url-hint {
+        font-size: 0.72rem;
+        opacity: 0.6;
+        overflow-wrap: anywhere;
+        margin-top: 8px;
       }
       .preview-stage {
         position: relative;
@@ -130,7 +228,23 @@ export class BatchPrintLabelDialog extends LitElement {
         .two-col {
           display: flex;
           flex-direction: column;
+          min-height: unset;
           gap: 12px;
+        }
+        .preview-col {
+          grid-column: unset;
+          grid-row: unset;
+        }
+        .settings-wrapper {
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: var(--border-radius-md, 12px);
+          overflow: hidden;
+        }
+        .settings-col {
+          max-height: none;
+          overflow-y: visible;
+          padding: 12px 16px;
         }
         .preview-stage {
           min-height: 180px;
@@ -232,6 +346,8 @@ export class BatchPrintLabelDialog extends LitElement {
     this._copies = 1;
     this._sizeId = '50x30';
     this._density = 'normal';
+    this._fields = { ...DEFAULT_LABEL_FIELDS, name: true };
+    this._qrTarget = 'web';
     this._previewIndex = 0;
     this._activeJob = null;
     if (!this._selectedDeviceId) {
@@ -240,6 +356,34 @@ export class BatchPrintLabelDialog extends LitElement {
         this._selectedDeviceId = printers[0].id;
       }
     }
+  }
+
+  private _toggleField(field: keyof LabelFieldVisibility) {
+    if (field === 'name') return;
+    this._fields = { ...this._fields, [field]: !this._fields[field], name: true };
+  }
+
+  private _renderFieldRow(
+    field: keyof LabelFieldVisibility,
+    label: string,
+    fields: LabelFieldVisibility
+  ) {
+    const locked = field === 'name';
+    return html`
+      <button
+        type="button"
+        class="field-toggle-row ${locked ? 'locked' : ''}"
+        role="switch"
+        aria-label=${label}
+        aria-checked=${fields[field]}
+        aria-disabled=${locked || this._isSubmitting}
+        ?disabled=${this._isSubmitting}
+        @click=${locked ? nothing : () => this._toggleField(field)}
+      >
+        <span class="field-toggle-label">${label}</span>
+        <span class="toggle-dot ${fields[field] ? 'on' : ''}" aria-hidden="true"></span>
+      </button>
+    `;
   }
 
   private async _submit() {
@@ -252,6 +396,8 @@ export class BatchPrintLabelDialog extends LitElement {
       deviceId: this._selectedDeviceId || undefined,
       sizeId: this._sizeId,
       density: this._density,
+      fields: { ...this._fields, name: true },
+      qrTarget: this._qrTarget,
       baseUrl: window.location.origin + window.location.pathname,
     };
 
@@ -286,11 +432,11 @@ export class BatchPrintLabelDialog extends LitElement {
         try {
           await printLabel({
             plantId,
-            fields: DEFAULT_LABEL_FIELDS,
+            fields: job.fields,
             deviceId: job.deviceId,
             sizeId: job.sizeId,
             density: job.density,
-            qrTarget: DEFAULT_QR_TARGET,
+            qrTarget: job.qrTarget,
             preview: false,
             baseUrl: job.baseUrl,
           });
@@ -332,11 +478,13 @@ export class BatchPrintLabelDialog extends LitElement {
     const copies = this._activeJob?.copies ?? this._copies;
     const sizeId = this._activeJob?.sizeId ?? this._sizeId;
     const density = this._activeJob?.density ?? this._density;
+    const fields = this._activeJob?.fields ?? this._fields;
+    const qrTarget = this._activeJob?.qrTarget ?? this._qrTarget;
     const previewIndex = Math.min(this._previewIndex, Math.max(plantIds.length - 1, 0));
     const previewPlantId = plantIds[previewIndex];
     const printers = getPrinters(this.hass);
     const values = deriveLabelFieldValues(previewPlantId);
-    const qrValue = buildQrTargetUrl(previewPlantId, DEFAULT_QR_TARGET);
+    const qrValue = buildQrTargetUrl(previewPlantId, qrTarget);
     const sizeLabel = LABEL_SIZES.find((size) => size.id === sizeId)?.label ?? sizeId;
 
     return html`
@@ -354,7 +502,7 @@ export class BatchPrintLabelDialog extends LitElement {
             <div class="preview-stage">
               <label-preview
                 .sizeId=${sizeId}
-                .fields=${DEFAULT_LABEL_FIELDS}
+                .fields=${fields}
                 .values=${values}
                 .qrValue=${qrValue}
                 .density=${density}
@@ -387,71 +535,106 @@ export class BatchPrintLabelDialog extends LitElement {
               : nothing}
             <div class="preview-meta">${sizeLabel} · Thermal 203 dpi</div>
           </div>
-          <div class="form-section">
-            <h3>Printer Settings</h3>
-            <printer-status-strip
-              .hass=${this.hass}
-              .selectedDeviceId=${deviceId ?? ''}
-            ></printer-status-strip>
-            <md3-select
-              label="Niimbot Printer"
-              .value=${deviceId ?? ''}
-              .disabled=${this._isSubmitting}
-              .options=${[
-                { label: 'Default / Auto', value: '' },
-                ...printers.map((p) => ({ label: p.name, value: p.id })),
-              ]}
-              @change=${(e: CustomEvent) => {
-                this._selectedDeviceId = e.detail;
-              }}
-            ></md3-select>
+          <div class="settings-wrapper">
+            <div class="settings-col">
+              <div class="settings-section">
+                <div class="settings-section-title">Label content</div>
+                ${this._renderFieldRow('name', 'Strain name', fields)}
+                ${this._renderFieldRow('phenotype', 'Phenotype', fields)}
+                ${this._renderFieldRow('breeder', 'Breeder', fields)}
+                ${this._renderFieldRow('lineage', 'Lineage', fields)}
+                ${this._renderFieldRow('startDate', 'Start date', fields)}
+                ${this._renderFieldRow('stageAge', 'Stage & age', fields)}
+                ${this._renderFieldRow('plantId', 'Plant ID', fields)}
+                ${this._renderFieldRow('logo', 'Logo', fields)}
+                ${this._renderFieldRow('qr', 'QR code', fields)}
+              </div>
+              ${fields.qr
+                ? html`
+                    <div class="qr-target-card">
+                      <div class="settings-section-title">QR code links to</div>
+                      <md3-select
+                        .value=${qrTarget}
+                        .disabled=${this._isSubmitting}
+                        .options=${[
+                          { label: 'Web (default)', value: 'web' },
+                          { label: 'Deep link', value: 'deeplink' },
+                        ]}
+                        @change=${(e: CustomEvent) => {
+                          this._qrTarget = e.detail as QrTarget;
+                        }}
+                      ></md3-select>
+                      <div class="qr-url-hint">${qrValue}</div>
+                    </div>
+                  `
+                : nothing}
+              <div class="settings-section">
+                <div class="settings-section-title">Printer settings</div>
+                <printer-status-strip
+                  .hass=${this.hass}
+                  .selectedDeviceId=${deviceId ?? ''}
+                ></printer-status-strip>
+                <md3-select
+                  label="Niimbot Printer"
+                  .value=${deviceId ?? ''}
+                  .disabled=${this._isSubmitting}
+                  .options=${[
+                    { label: 'Default / Auto', value: '' },
+                    ...printers.map((p) => ({ label: p.name, value: p.id })),
+                  ]}
+                  @change=${(e: CustomEvent) => {
+                    this._selectedDeviceId = e.detail;
+                  }}
+                ></md3-select>
 
-            <div class="size-chips">
-              ${LABEL_SIZES.map(
-                (s) => html`
-                  <button
-                    class="size-chip ${sizeId === s.id ? 'active' : ''}"
+                <div class="size-chips">
+                  ${LABEL_SIZES.map(
+                    (s) => html`
+                      <button
+                        class="size-chip ${sizeId === s.id ? 'active' : ''}"
+                        ?disabled=${this._isSubmitting}
+                        @click=${() => {
+                          this._sizeId = s.id;
+                        }}
+                      >
+                        ${s.label}
+                      </button>
+                    `
+                  )}
+                </div>
+
+                <div class="density-seg">
+                  ${(['low', 'normal', 'high'] as PrintDensity[]).map(
+                    (d) => html`
+                      <button
+                        class=${density === d ? 'active' : ''}
+                        ?disabled=${this._isSubmitting}
+                        @click=${() => {
+                          this._density = d;
+                        }}
+                      >
+                        ${d === 'low' ? 'Light' : d === 'normal' ? 'Normal' : 'Dark'}
+                      </button>
+                    `
+                  )}
+                </div>
+
+                <div class="copies-row">
+                  <label>Copies per plant</label>
+                  <input
+                    class="copies-input"
+                    type="number"
+                    min="1"
+                    max="99"
+                    .value=${String(copies)}
                     ?disabled=${this._isSubmitting}
-                    @click=${() => {
-                      this._sizeId = s.id;
+                    @input=${(e: InputEvent) => {
+                      const v = parseInt((e.target as HTMLInputElement).value, 10);
+                      if (!isNaN(v) && v >= 1) this._copies = v;
                     }}
-                  >
-                    ${s.label}
-                  </button>
-                `
-              )}
-            </div>
-
-            <div class="density-seg">
-              ${(['low', 'normal', 'high'] as PrintDensity[]).map(
-                (d) => html`
-                  <button
-                    class=${density === d ? 'active' : ''}
-                    ?disabled=${this._isSubmitting}
-                    @click=${() => {
-                      this._density = d;
-                    }}
-                  >
-                    ${d === 'low' ? 'Light' : d === 'normal' ? 'Normal' : 'Dark'}
-                  </button>
-                `
-              )}
-            </div>
-
-            <div class="copies-row">
-              <label>Copies per plant</label>
-              <input
-                class="copies-input"
-                type="number"
-                min="1"
-                max="99"
-                .value=${String(copies)}
-                ?disabled=${this._isSubmitting}
-                @input=${(e: InputEvent) => {
-                  const v = parseInt((e.target as HTMLInputElement).value, 10);
-                  if (!isNaN(v) && v >= 1) this._copies = v;
-                }}
-              />
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
