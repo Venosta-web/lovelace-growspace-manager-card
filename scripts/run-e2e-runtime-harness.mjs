@@ -13,6 +13,7 @@ function managedArguments(values) {
   const optionNames = new Map([
     ['--integration-root', 'integrationDirectory'],
     ['--workspace-root', 'workspaceDirectory'],
+    ['--tc-root', 'tcDirectory'],
     ['--home-assistant-image', 'homeAssistantImage'],
   ]);
   let passthrough = false;
