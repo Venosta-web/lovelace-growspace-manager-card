@@ -123,6 +123,16 @@ function createElement(mockStore = makeMockStore(), hass = makeHass()) {
   return el;
 }
 
+function deferred() {
+  let fulfill!: () => void;
+  let fail!: (reason: Error) => void;
+  const promise = new Promise<void>((resolve, reject) => {
+    fulfill = resolve;
+    fail = reject;
+  });
+  return { promise, resolve: fulfill, reject: fail };
+}
+
 describe('BatchPrintLabelDialog – printer list', () => {
   afterEach(() => vi.restoreAllMocks());
 
@@ -449,6 +459,136 @@ describe('BatchPrintLabelDialog – _submit', () => {
       expect(call.fields).toEqual({ ...DEFAULT_LABEL_FIELDS, breeder: false, qr: true });
       expect(call.qrTarget).toBe('deeplink');
     }
+  });
+
+  it('keeps the mounted preview and progress synchronized with every pending print', async () => {
+    setDevices([
+      {
+        deviceId: 'dev1',
+        name: 'Growspace 1',
+        type: 'normal' as any,
+        rows: 1,
+        plantsPerRow: 2,
+        plants: [
+          {
+            entity_id: 'sensor.plant_1',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_1', strain: 'OG Kush' },
+          },
+          {
+            entity_id: 'sensor.plant_2',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_2', strain: 'Blue Dream' },
+          },
+        ] as any,
+        grid: {},
+        biologicalMetrics: {} as any,
+        environmentAttributes: {} as any,
+        stats: {} as any,
+        irrigationConfig: {} as any,
+      },
+    ] as any);
+
+    const pending: ReturnType<typeof deferred>[] = [];
+    vi.mocked(printLabel).mockImplementation((request) => {
+      if (request.preview) return Promise.resolve();
+      const call = deferred();
+      pending.push(call);
+      return call.promise;
+    });
+
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .hass=${makeHass()}
+        .dialogState=${{ plantIds: ['plant_1', 'plant_2'] }}
+      ></batch-print-label-dialog>
+    `);
+    (el as any).store = makeMockStore();
+    (el as any)._copies = 2;
+    (el as any)._sizeId = '40x30';
+    (el as any)._density = 'high';
+    (el as any)._fields = { ...DEFAULT_LABEL_FIELDS, breeder: false, qr: true };
+    (el as any)._qrTarget = 'deeplink';
+    (el as any)._selectedDeviceId = 'image.printer_b_last_label_made';
+    await el.updateComplete;
+
+    const close = vi.fn();
+    el.addEventListener('close', close);
+    const submission = (el as any)._submit() as Promise<void>;
+    const expectedPlants = ['plant_1', 'plant_2', 'plant_1', 'plant_2'];
+    const expectedProgress = [0, 25, 50, 75];
+
+    for (let index = 0; index < expectedPlants.length; index++) {
+      await vi.waitFor(() => expect(pending).toHaveLength(index + 1));
+      await el.updateComplete;
+
+      const plantId = expectedPlants[index];
+      const request = vi.mocked(printLabel).mock.calls[index + 1][0];
+      const preview = el.shadowRoot!.querySelector('label-preview') as any;
+      const navigation = el.shadowRoot!.querySelectorAll(
+        '.preview-nav button'
+      ) as NodeListOf<HTMLButtonElement>;
+
+      expect(request).toMatchObject({
+        plantId,
+        fields: { ...DEFAULT_LABEL_FIELDS, breeder: false, qr: true },
+        deviceId: 'image.printer_b_last_label_made',
+        sizeId: '40x30',
+        density: 'high',
+        qrTarget: 'deeplink',
+        preview: false,
+      });
+      expect(preview.values).toEqual(deriveLabelFieldValues(plantId));
+      expect(preview.fields).toEqual(request.fields);
+      expect(preview.qrValue).toBe(buildQrTargetUrl(plantId, 'deeplink'));
+      expect(preview.sizeId).toBe(request.sizeId);
+      expect(preview.density).toBe(request.density);
+      expect((el as any)._progress).toBe(expectedProgress[index]);
+      expect(Array.from(navigation).every((button) => button.disabled)).toBe(true);
+
+      if (index === 0) {
+        el.dialogState = { plantIds: ['replacement'] };
+        (el as any)._copies = 9;
+        (el as any)._sizeId = '50x80';
+        (el as any)._density = 'low';
+        (el as any)._fields = { ...DEFAULT_LABEL_FIELDS, breeder: true, qr: false };
+        (el as any)._qrTarget = 'web';
+        (el as any)._selectedDeviceId = 'image.printer_a_last_label_made';
+        pending[index].resolve();
+
+        await vi.waitFor(() => expect(pending).toHaveLength(2));
+        await el.updateComplete;
+        const secondPreview = el.shadowRoot!.querySelector('label-preview') as any;
+        const selectedSize = el.shadowRoot!.querySelector('.size-chip.active');
+        const selectedDensity = el.shadowRoot!.querySelector('.density-seg .active');
+        const copies = el.shadowRoot!.querySelector('.copies-input') as HTMLInputElement;
+        const printer = el.shadowRoot!.querySelector('md3-select[label="Niimbot Printer"]') as any;
+        const breeder = Array.from(
+          el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.field-toggle-row')
+        ).find((row) => row.getAttribute('aria-label') === 'Breeder');
+        const qrTarget = el.shadowRoot!.querySelector('.qr-target-card md3-select') as any;
+        expect(secondPreview.values).toEqual(deriveLabelFieldValues('plant_2'));
+        expect((el as any)._previewIndex).toBe(1);
+        expect(selectedSize?.textContent?.trim()).toBe('40×30');
+        expect(selectedDensity?.textContent?.trim()).toBe('Dark');
+        expect(copies.value).toBe('2');
+        expect(printer.value).toBe('image.printer_b_last_label_made');
+        expect(breeder?.getAttribute('aria-checked')).toBe('false');
+        expect(qrTarget.value).toBe('deeplink');
+        continue;
+      }
+
+      if (index === 1) pending[index].reject(new Error('paper jam'));
+      else pending[index].resolve();
+    }
+
+    await submission;
+    await el.updateComplete;
+
+    expect((el as any)._progress).toBe(100);
+    expect(close).toHaveBeenCalledOnce();
+    expect(notification$.get()).toEqual({ message: 'Printed with 1 error(s)', type: 'error' });
   });
 
   it('warm-up call does not include sizeId or density', async () => {
