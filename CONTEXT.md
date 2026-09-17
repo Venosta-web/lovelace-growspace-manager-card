@@ -1040,6 +1040,12 @@ copy. It previews one selected plant at a time and navigates between plants; the
 Print Label Dialog previews one plant and offers the same controls for that one
 plant.
 
+## Tissue Culture
+
+**Pairing**
+A curated association between a Phenotype and a Culture Medium, with grower-supplied notes. It refers to the medium itself rather than one medium version; grouping by medium or phenotype presents the same set of Pairings.
+_Avoid_: medium version pairing, separate phenotype pairing
+
 ## Nutrients
 
 **Feed & Water Dialog** (`feed-and-water-dialog`)

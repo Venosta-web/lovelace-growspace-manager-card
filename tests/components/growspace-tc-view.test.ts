@@ -1,6 +1,7 @@
 import { expect, test, describe, vi, beforeEach, afterEach } from 'vitest';
 import { fixture } from '@open-wc/testing-helpers';
 
+import pairings from '../fixtures/contract/tc_pairings_response.json';
 import { hassCall } from '../../src/services/hass-call';
 import { GrowspaceTcView } from '../../src/features/tc/containers/growspace-tc-view.container';
 import { CultureMediumSchema, resetTcPresence, type CultureMedium } from '../../src/slices/tc';
@@ -178,6 +179,59 @@ describe('GrowspaceTcView — selecting one surface', () => {
 
     expect(surfaceOf(element, 'growspace-tc-media')).toBe(media);
     expect(hassCallMock.mock.calls.length).toBe(fetches);
+  });
+
+  test('a Pairing draft and pending save survive tab switches without refetching', async () => {
+    let resolveSave!: (value: unknown) => void;
+    const save = new Promise((resolve) => {
+      resolveSave = resolve;
+    });
+    hassCallMock.mockImplementation(async (command: string) => {
+      if (command.endsWith('/culture_media/list')) return { culture_media: [aMedium()] };
+      if (command.endsWith('/pairings/list')) return pairings;
+      if (command.endsWith('/pairings/update')) return save;
+      return { strains: {} };
+    });
+    const element = await render(['culture_media', 'pairings'], 'pairings');
+    const surface = element.shadowRoot!.querySelector('growspace-tc-pairings')!;
+    await vi.waitFor(() =>
+      expect(surface.shadowRoot!.querySelector('[data-action="edit"]')).not.toBeNull()
+    );
+    surface.shadowRoot!.querySelector<HTMLButtonElement>('[data-action="edit"]')!.click();
+    await surface.updateComplete;
+    const notes = surface.shadowRoot!.querySelector('textarea')!;
+    notes.value = 'Keep this draft';
+    notes.dispatchEvent(new Event('input'));
+    await surface.updateComplete;
+    const calls = hassCallMock.mock.calls.length;
+    element.surface = 'media';
+    await element.updateComplete;
+    element.surface = 'pairings';
+    await element.updateComplete;
+    expect(element.shadowRoot!.querySelector('growspace-tc-pairings')).toBe(surface);
+    expect(surface.shadowRoot!.querySelector('textarea')!.value).toBe('Keep this draft');
+    expect(hassCallMock.mock.calls).toHaveLength(calls);
+    surface.shadowRoot!.querySelector('form')!.requestSubmit();
+    await surface.updateComplete;
+    expect(surface.shadowRoot!.querySelector('fieldset')!.disabled).toBe(true);
+    element.surface = 'media';
+    await element.updateComplete;
+    expect(surface.checkVisibility()).toBe(false);
+    element.surface = 'pairings';
+    await element.updateComplete;
+    expect(surface.shadowRoot!.querySelector('fieldset')!.disabled).toBe(true);
+    expect(surface.shadowRoot!.querySelector('textarea')!.value).toBe('Keep this draft');
+    // Success while hidden still completes the edit without pulling focus back.
+    element.surface = 'media';
+    await element.updateComplete;
+    resolveSave({ pairing: { ...pairings.pairings[0], notes: 'Keep this draft' } });
+    await vi.waitFor(() => expect(surface.shadowRoot!.querySelector('form')).toBeNull());
+    element.surface = 'pairings';
+    await element.updateComplete;
+    expect(
+      surface.shadowRoot!.querySelector('[data-pairing-id="pairing-1"] .notes')!.textContent
+    ).toBe('Keep this draft');
+    expect(hassCallMock.mock.calls).toHaveLength(calls + 1);
   });
 
   test('an open Culture Medium draft survives a switch away and back', async () => {
