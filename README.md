@@ -112,6 +112,8 @@ plant grid stacks into a single column.
 
 ### Using HACS (Recommended)
 
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Venosta-web&repository=lovelace-growspace-manager-card&category=lovelace)
+
 1. Add this repository to HACS under **Custom Repositories** with category `Frontend`.
 2. Install `lovelace-growspace-manager-card`.
 3. Add to your Lovelace dashboard:
