@@ -294,6 +294,18 @@ export function openTcDialog(options?: {
   openDialog({ type: 'TC', payload: options ?? {} });
 }
 
+/**
+ * Open the Label Templates dialog.
+ *
+ * No growspace, because the shipped Factory Templates and the printer
+ * profiles that can render them belong to the installation rather than to one
+ * tent. `portalId` is the opening card's `store.instanceId`, so only that
+ * card's portal renders it (ADR-0055).
+ */
+export function openLabelTemplatesDialog(options?: { portalId?: string }): void {
+  openDialog({ type: 'LABEL_TEMPLATES', payload: options ?? {} });
+}
+
 export function openGrowMasterDialog(growspaceId: string): void {
   openDialog({
     type: 'GROW_MASTER',

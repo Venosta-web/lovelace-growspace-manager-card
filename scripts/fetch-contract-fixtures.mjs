@@ -12,6 +12,15 @@ const VISION_FIXTURES = [
   'vision_history_response',
   'trigger_vision_checkup_response',
 ];
+// Every Label Template payload the card parses. They land on `prerelease`
+// first — the architecture branch the template work integrates on — and reach
+// a release tag later, which is why the release copy is optional: a card that
+// required it could not merge until the backend published.
+const LABEL_FIXTURES = [
+  'label_template_capability_v1',
+  'label_factory_template_preview_v1',
+  'label_factory_template_preview_refused_v1',
+];
 // Every payload the card's TC chunk parses, and the local file each is written
 // to. One entry per contract, so adding a TC command is one line here rather
 // than a fourth copy of the download call.
@@ -83,6 +92,24 @@ export async function fetchContractFixtures({
   });
 
   for (const fixture of VISION_FIXTURES) {
+    await downloadFixture({
+      baseUrl,
+      fetchImpl,
+      fixture,
+      output: path.join(outputDirectory, `gsm-prerelease-${fixture}.json`),
+      refs: ['prerelease'],
+    });
+    await downloadFixture({
+      baseUrl,
+      fetchImpl,
+      fixture,
+      output: path.join(outputDirectory, `gsm-release-${fixture}.json`),
+      refs: [releaseTag],
+      optional: true,
+    });
+  }
+
+  for (const fixture of LABEL_FIXTURES) {
     await downloadFixture({
       baseUrl,
       fetchImpl,

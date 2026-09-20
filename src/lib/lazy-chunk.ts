@@ -95,6 +95,17 @@ export const LAZY_CHUNKS = {
   // only after Growspace Manager TC answers the presence probe, so reaching
   // this chunk at all means the user has the integration — a failure here is a
   // stale install to report, never an absent integration to hide.
+  // Not an editor either: the Label Template path. It is fetched only after
+  // the backend publishes the complete Label Template capability, so reaching
+  // this chunk at all means the user's integration serves it -- a failure
+  // here is a stale install to report, never an absent capability to hide.
+  labelTemplates: {
+    name: 'label-templates',
+    feature: 'The Label Template view',
+    // Nothing else may statically import it. A dashboard talking to a backend
+    // with no template capability must not pay for one -- ADR 0056.
+    onDemandOnly: true,
+  },
   tcView: {
     name: 'tc',
     feature: 'The tissue culture view',

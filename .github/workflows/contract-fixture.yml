@@ -53,6 +53,12 @@ jobs:
           GSM_RELEASE_VISION_HISTORY_FIXTURE: ${{ runner.temp }}/gsm-release-vision_history_response.json
           GSM_PRERELEASE_VISION_TRIGGER_FIXTURE: ${{ runner.temp }}/gsm-prerelease-trigger_vision_checkup_response.json
           GSM_RELEASE_VISION_TRIGGER_FIXTURE: ${{ runner.temp }}/gsm-release-trigger_vision_checkup_response.json
+          GSM_PRERELEASE_LABEL_CAPABILITY_FIXTURE: ${{ runner.temp }}/gsm-prerelease-label_template_capability_v1.json
+          GSM_RELEASE_LABEL_CAPABILITY_FIXTURE: ${{ runner.temp }}/gsm-release-label_template_capability_v1.json
+          GSM_PRERELEASE_LABEL_PREVIEW_FIXTURE: ${{ runner.temp }}/gsm-prerelease-label_factory_template_preview_v1.json
+          GSM_RELEASE_LABEL_PREVIEW_FIXTURE: ${{ runner.temp }}/gsm-release-label_factory_template_preview_v1.json
+          GSM_PRERELEASE_LABEL_REFUSAL_FIXTURE: ${{ runner.temp }}/gsm-prerelease-label_factory_template_preview_refused_v1.json
+          GSM_RELEASE_LABEL_REFUSAL_FIXTURE: ${{ runner.temp }}/gsm-release-label_factory_template_preview_refused_v1.json
           TC_MAIN_MANIFEST_FIXTURE: ${{ runner.temp }}/tc-main-manifest.json
           TC_MAIN_CULTURE_MEDIA_FIXTURE: ${{ runner.temp }}/tc-main-culture-media.json
           TC_MAIN_CULTURE_LINES_FIXTURE: ${{ runner.temp }}/tc-main-culture-lines.json

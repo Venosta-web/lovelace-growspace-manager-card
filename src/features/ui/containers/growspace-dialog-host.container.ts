@@ -58,6 +58,7 @@ import {
   unregisterDialogPortal,
 } from '../../../slices/ui/dialog-portals';
 import { tcPresence$, type TcPresence } from '../../../slices/tc';
+import { labelTemplateSupport$, type LabelTemplateSupport } from '../../../slices/labels';
 import * as uiSlice from '../../../slices/ui';
 import { setHass } from '../../../services/hass-call';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
@@ -104,6 +105,7 @@ import '../../../dialogs/harvest-scoring-dialog';
 import '../../../dialogs/irrigation-dialog';
 import '../../../dialogs/logbook-dialog';
 import '../../../dialogs/print-label-dialog';
+import '../../../dialogs/label-templates-dialog';
 import '../../../dialogs/batch-print-label-dialog';
 import '../../../dialogs/batch-clone-dialog';
 import '../../../dialogs/snapshots-dialog';
@@ -161,6 +163,7 @@ export class GrowspaceDialogHost extends LitElement {
    * discipline is about targeting a dialog, and this is not a per-dialog fact.
    */
   private _tcPresenceController!: StoreController<TcPresence>;
+  private _labelSupportController!: StoreController<LabelTemplateSupport>;
   private _controllersInitialized = false;
   /** The id this portal currently holds in the page-global portal registry. */
   private _registeredPortalId: string | null = null;
@@ -229,6 +232,7 @@ export class GrowspaceDialogHost extends LitElement {
     // the payload named finally arrives.
     this._mountedPortalsController = new StoreController(this, mountedDialogPortals$);
     this._tcPresenceController = new StoreController(this, tcPresence$);
+    this._labelSupportController = new StoreController(this, labelTemplateSupport$);
     this._controllersInitialized = true;
   }
 
@@ -353,6 +357,8 @@ export class GrowspaceDialogHost extends LitElement {
               return this._renderSnapshotsDialog(active, effectiveDeviceData);
             case 'TC':
               return this._renderTcDialog(active);
+            case 'LABEL_TEMPLATES':
+              return this._renderLabelTemplatesDialog(active);
             default:
               return html``;
           }
@@ -1338,6 +1344,27 @@ export class GrowspaceDialogHost extends LitElement {
         payload: { isLoading: false, response: null },
       });
     }
+  }
+
+  /**
+   * The Label Templates dialog.
+   *
+   * The frame is rendered here and now; the view arrives when the lazy chunk
+   * does, or a compatibility state does. Support comes off
+   * `labelTemplateSupport$` rather than out of the payload, for the same
+   * reason TC's manifest does: it is page-global, one probe answers every
+   * card on the dashboard, and a dialog must not re-derive it per open.
+   */
+  private _renderLabelTemplatesDialog(active: ActiveDialogState): TemplateResult {
+    if (active.type !== 'LABEL_TEMPLATES') return html``;
+    return html`
+      <label-templates-dialog
+        .open=${true}
+        .support=${this._labelSupportController.value}
+        .language=${this.hass?.language ?? 'en'}
+        @close=${() => this._closeDialogIfActive('LABEL_TEMPLATES')}
+      ></label-templates-dialog>
+    `;
   }
 
   /**

@@ -18,6 +18,7 @@ import type {
   SnapshotsDialogState,
   IrrigationDialogState,
   TcDialogState,
+  LabelTemplatesDialogState,
 } from '../../lib/types/dialog';
 
 // Discriminated union for central dialog management
@@ -46,4 +47,5 @@ export type ActiveDialogState =
   | { type: 'NUTRIENTS'; payload: Record<string, never> }
   | { type: 'HARVEST_SCORING'; payload: HarvestScoringDialogState }
   | { type: 'SNAPSHOTS'; payload: SnapshotsDialogState }
-  | { type: 'TC'; payload: TcDialogState };
+  | { type: 'TC'; payload: TcDialogState }
+  | { type: 'LABEL_TEMPLATES'; payload: LabelTemplatesDialogState };

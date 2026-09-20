@@ -14,6 +14,7 @@ import type {
   PrintDensity,
   QrTarget,
 } from '../lib/types/dialog';
+import { localize } from '../localize/localize';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { showToast } from '../slices/ui';
@@ -533,7 +534,10 @@ export class BatchPrintLabelDialog extends LitElement {
                   </nav>
                 `
               : nothing}
-            <div class="preview-meta">${sizeLabel} · Thermal 203 dpi</div>
+            <div class="preview-meta">
+              ${sizeLabel} ·
+              ${localize('labels.classic_preview_meta', '', '', this.hass?.language ?? 'en')}
+            </div>
           </div>
           <div class="settings-wrapper">
             <div class="settings-col">
